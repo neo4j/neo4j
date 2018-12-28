@@ -81,10 +81,23 @@ the relevant Commercial Agreement.
             <artifactId>neo4j-kernel</artifactId>
             <version>${project.version}</version>
         </dependency>
-
-        <!-- neo4j testing -->
+        <dependency>
+            <groupId>org.neo4j</groupId>
+            <artifactId>neo4j-parser-3.5</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.neo4j</groupId>
+            <artifactId>neo4j-rewriting-3.5</artifactId>
+            <version>${project.version}</version>
+        </dependency>
 
         <!-- Test are located with other IT tests to solve problems with depending of TestGraphDatabaseFactory et.c. -->
+
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-engine</artifactId>
+        </dependency>
 
     </dependencies>
 </project>

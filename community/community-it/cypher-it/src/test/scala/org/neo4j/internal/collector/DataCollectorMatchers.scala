@@ -21,6 +21,7 @@ package org.neo4j.internal.collector
 
 import java.time.ZonedDateTime
 
+import org.neo4j.cypher.internal.v3_5.parser.CypherParser
 import org.scalatest.matchers.{MatchResult, Matcher}
 
 import scala.collection.mutable.ArrayBuffer
@@ -224,6 +225,28 @@ object DataCollectorMatchers {
         rawNegatedFailureMessage = "")
 
     override def toString(): String = s"of type(${clazz.getSimpleName})"
+  }
+
+  /**
+    * Matches instances of the specified type.
+    */
+  def beCypher(text: String): BeCypherMatcher = BeCypherMatcher(text)
+
+  case class BeCypherMatcher(expected: String) extends Matcher[AnyRef] {
+
+    val parser = new CypherParser
+    private val expectedAst = parser.parse(expected)
+
+    override def apply(left: AnyRef): MatchResult =
+      MatchResult(
+        matches = left match {
+          case text: String => parser.parse(text) == expectedAst
+          case _ => false
+        },
+        rawFailureMessage = s"'$left' is not the same Cypher as '$expected'",
+        rawNegatedFailureMessage = s"'$left' is unexpectedly the same Cypher as '$expected'")
+
+    override def toString(): String = s"cypher string `$expected`"
   }
 
   /**

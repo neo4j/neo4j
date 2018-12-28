@@ -22,12 +22,16 @@ package org.neo4j.internal;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.internal.collector.DataCollectorModule;
 import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.NeoStoreDataSource;
+import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
+import org.neo4j.kernel.impl.util.DefaultValueMapper;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.scheduler.JobScheduler;
 
 public class DataCollectorManager extends LifecycleAdapter
@@ -35,15 +39,18 @@ public class DataCollectorManager extends LifecycleAdapter
     private final DataSourceManager dataSourceManager;
     private final JobScheduler jobScheduler;
     private final Procedures procedures;
+    private final Monitors monitors;
     private final List<AutoCloseable> dataCollectors;
 
     public DataCollectorManager( DataSourceManager dataSourceManager,
                                  JobScheduler jobScheduler,
-                                 Procedures procedures )
+                                 Procedures procedures,
+                                 Monitors monitors )
     {
         this.dataSourceManager = dataSourceManager;
         this.jobScheduler = jobScheduler;
         this.procedures = procedures;
+        this.monitors = monitors;
         this.dataCollectors = new ArrayList<>();
     }
 
@@ -52,7 +59,13 @@ public class DataCollectorManager extends LifecycleAdapter
     {
         // When we have multiple dbs, this has to be suitably modified to get the right kernel and procedures
         NeoStoreDataSource dataSource = dataSourceManager.getDataSource();
-        dataCollectors.add( DataCollectorModule.setupDataCollector( procedures, jobScheduler, dataSource.getKernel() ) );
+        EmbeddedProxySPI embeddedProxySPI = dataSource.getDependencyResolver()
+                .resolveDependency( EmbeddedProxySPI.class, DependencyResolver.SelectionStrategy.ONLY );
+        dataCollectors.add( DataCollectorModule.setupDataCollector( procedures,
+                                                                    jobScheduler,
+                                                                    dataSource.getKernel(),
+                                                                    monitors,
+                                                                    new DefaultValueMapper( embeddedProxySPI ) ) );
     }
 
     @Override
