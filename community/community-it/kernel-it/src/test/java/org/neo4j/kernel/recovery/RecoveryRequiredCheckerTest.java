@@ -44,6 +44,7 @@ import org.neo4j.test.rule.TestDirectory;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.DEFAULT_TX_LOGS_ROOT_DIR_NAME;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.transaction_logs_root_path;
 import static org.neo4j.kernel.configuration.LayoutConfig.of;
 
@@ -112,7 +113,7 @@ class RecoveryRequiredCheckerTest
     @Test
     void shouldBeAbleToRecoverBrokenStoreWithLogsInSeparateAbsoluteLocation() throws Exception
     {
-        File customTransactionLogsLocation = testDirectory.directory( "tx-logs" );
+        File customTransactionLogsLocation = testDirectory.directory( DEFAULT_TX_LOGS_ROOT_DIR_NAME );
         Config config = Config.builder().withSetting( transaction_logs_root_path,
                 customTransactionLogsLocation.getAbsolutePath() ).build();
         recoverBrokenStoreWithConfig( config );

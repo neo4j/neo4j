@@ -45,7 +45,6 @@ import org.neo4j.commandline.admin.Usage;
 import org.neo4j.dbms.archive.IncorrectFormat;
 import org.neo4j.dbms.archive.Loader;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.ArrayUtil;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -71,6 +70,8 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.DEFAULT_TX_LOGS_ROOT_DIR_NAME;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.data_directory;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.transaction_logs_root_path;
 
@@ -97,7 +98,8 @@ class LoadCommandTest
     void shouldLoadTheDatabaseFromTheArchive() throws CommandFailed, IncorrectUsage, IOException, IncorrectFormat
     {
         execute( "foo.db" );
-        DatabaseLayout databaseLayout = createDatabaseLayout( homeDir.resolve( "data/databases/foo.db" ), homeDir.resolve( "data/tx-logs" ) );
+        DatabaseLayout databaseLayout = createDatabaseLayout( homeDir.resolve( "data/databases/foo.db" ),
+                homeDir.resolve( "data/" + DEFAULT_TX_LOGS_ROOT_DIR_NAME ) );
         verify( loader ).load( archive, databaseLayout );
     }
 
@@ -107,7 +109,7 @@ class LoadCommandTest
     {
         Path dataDir = testDirectory.directory( "some-other-path" ).toPath();
         Path databaseDir = dataDir.resolve( "databases/foo.db" );
-        Path transactionLogsDir = dataDir.resolve( "tx-logs" );
+        Path transactionLogsDir = dataDir.resolve( DEFAULT_TX_LOGS_ROOT_DIR_NAME );
         Files.createDirectories( databaseDir );
         Files.write( configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ), singletonList( formatProperty( data_directory, dataDir ) ) );
 
@@ -140,7 +142,7 @@ class LoadCommandTest
 
         Path dataDir = testDirectory.directory( "some-other-path" ).toPath();
         Path databaseDir = dataDir.resolve( "databases/foo.db" );
-        Path txLogsDir = dataDir.resolve( "tx-logs" );
+        Path txLogsDir = dataDir.resolve( DEFAULT_TX_LOGS_ROOT_DIR_NAME );
 
         Files.createDirectories( realDatabaseDir );
         Files.createDirectories( dataDir.resolve( "databases" ) );
@@ -173,7 +175,7 @@ class LoadCommandTest
             throws CommandFailed, IncorrectUsage, IOException, IncorrectFormat
     {
         Path databaseDirectory = homeDir.resolve( "data/databases/foo.db" );
-        Path txDirectory = homeDir.resolve( "data/tx-logs" );
+        Path txDirectory = homeDir.resolve( "data/" + DEFAULT_TX_LOGS_ROOT_DIR_NAME );
         Files.createDirectories( databaseDirectory );
         Files.createDirectories( txDirectory );
 
@@ -221,8 +223,8 @@ class LoadCommandTest
     @Test
     void shouldDefaultToGraphDb() throws Exception
     {
-        Path databaseDir = homeDir.resolve( "data/databases/" + GraphDatabaseSettings.DEFAULT_DATABASE_NAME );
-        Path transactionLogsDir = homeDir.resolve( "data/tx-logs" );
+        Path databaseDir = homeDir.resolve( "data/databases/" + DEFAULT_DATABASE_NAME );
+        Path transactionLogsDir = homeDir.resolve( "data/" + DEFAULT_TX_LOGS_ROOT_DIR_NAME );
         Files.createDirectories( databaseDir );
 
         new LoadCommand( homeDir, configDir, loader ).execute( new String[]{"--from=something"} );
@@ -308,7 +310,7 @@ class LoadCommandTest
                             "%n" +
                             "options:%n" +
                             "  --from=<archive-path>   Path to archive created with the dump command.%n" +
-                            "  --database=<name>       Name of database. [default:" + GraphDatabaseSettings.DEFAULT_DATABASE_NAME + "]%n" +
+                            "  --database=<name>       Name of database. [default:" + DEFAULT_DATABASE_NAME + "]%n" +
                             "  --force=<true|false>    If an existing database should be replaced.%n" +
                             "                          [default:false]%n" ),
                     baos.toString() );

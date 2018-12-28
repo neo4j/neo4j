@@ -63,7 +63,6 @@ import static org.neo4j.kernel.configuration.Settings.TIMEZONE;
 import static org.neo4j.kernel.configuration.Settings.TRUE;
 import static org.neo4j.kernel.configuration.Settings.buildSetting;
 import static org.neo4j.kernel.configuration.Settings.derivedSetting;
-import static org.neo4j.kernel.configuration.Settings.except;
 import static org.neo4j.kernel.configuration.Settings.illegalValueMessage;
 import static org.neo4j.kernel.configuration.Settings.list;
 import static org.neo4j.kernel.configuration.Settings.matches;
@@ -95,6 +94,8 @@ public class GraphDatabaseSettings implements LoadableConfig
     public static final String SYSTEM_DATABASE_NAME = "system.db";
     public static final String DEFAULT_DATABASE_NAME = "graph.db";
 
+    public static final String DEFAULT_TX_LOGS_ROOT_DIR_NAME = "tx-logs";
+
     @SuppressWarnings( "unused" ) // accessed by reflection
     @Migrator
     private static final ConfigurationMigrator migrator = new GraphDatabaseConfigurationMigrator();
@@ -119,7 +120,7 @@ public class GraphDatabaseSettings implements LoadableConfig
 
     @Description( "Root location where Neo4j will store transaction logs for configured databases." )
     public static final Setting<File> transaction_logs_root_path = derivedSetting( "dbms.directories.transaction.logs.root",
-            neo4j_home, data_directory, ( home, data ) -> home == null ? null : new File( data, "tx-logs" ), PATH );
+            neo4j_home, data_directory, ( home, data ) -> home == null ? null : new File( data, DEFAULT_TX_LOGS_ROOT_DIR_NAME ), PATH );
 
     @Internal
     public static final Setting<File> database_path = derivedSetting( "unsupported.dbms.directories.database",

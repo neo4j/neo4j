@@ -74,6 +74,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.dbms.archive.TestUtils.withPermissions;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.DEFAULT_TX_LOGS_ROOT_DIR_NAME;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.data_directory;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.transaction_logs_root_path;
 
@@ -112,7 +113,7 @@ class DumpCommandTest
     void shouldCalculateTheDatabaseDirectoryFromConfig() throws Exception
     {
         Path dataDir = testDirectory.directory( "some-other-path" ).toPath();
-        Path txLogsDir = dataDir.resolve( "tx-logs/foo.db" );
+        Path txLogsDir = dataDir.resolve( DEFAULT_TX_LOGS_ROOT_DIR_NAME + "/foo.db" );
         Path databaseDir = dataDir.resolve( "databases/foo.db" );
         putStoreInDirectory( databaseDir );
         Files.write( configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ), singletonList( formatProperty( data_directory, dataDir ) ) );
@@ -145,7 +146,7 @@ class DumpCommandTest
 
         Path dataDir = testDirectory.directory( "some-other-path" ).toPath();
         Path databaseDir = dataDir.resolve( "databases/foo.db" );
-        Path txLogsDir = dataDir.resolve( "tx-logs/foo.db" );
+        Path txLogsDir = dataDir.resolve( DEFAULT_TX_LOGS_ROOT_DIR_NAME + "/foo.db" );
 
         putStoreInDirectory( realDatabaseDir );
         Files.createDirectories( dataDir.resolve( "databases" ) );
@@ -283,7 +284,7 @@ class DumpCommandTest
     void shouldDefaultToGraphDB() throws Exception
     {
         Path dataDir = testDirectory.directory( "some-other-path" ).toPath();
-        Path txLogsDir = dataDir.resolve( "tx-logs/" + DEFAULT_DATABASE_NAME );
+        Path txLogsDir = dataDir.resolve( DEFAULT_TX_LOGS_ROOT_DIR_NAME + "/" + DEFAULT_DATABASE_NAME );
         Path databaseDir = dataDir.resolve( "databases/" + DEFAULT_DATABASE_NAME );
         putStoreInDirectory( databaseDir );
         Files.write( configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ), singletonList( formatProperty( data_directory, dataDir ) ) );
