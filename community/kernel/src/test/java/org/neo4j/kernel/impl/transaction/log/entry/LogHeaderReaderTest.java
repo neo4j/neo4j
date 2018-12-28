@@ -36,9 +36,10 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
@@ -120,7 +121,7 @@ class LogHeaderReaderTest
         final File file = testDirectory.file( "ReadLogHeader" );
         fileSystem.create( file ).close();
         IncompleteLogHeaderException exception = assertThrows( IncompleteLogHeaderException.class, () -> readLogHeader( fileSystem, file ) );
-        assertTrue( exception.getMessage().contains( file.getName() ), exception.getMessage() );
+        assertThat( exception.getMessage(), containsString( file.getName() ) );
     }
 
     @Test
