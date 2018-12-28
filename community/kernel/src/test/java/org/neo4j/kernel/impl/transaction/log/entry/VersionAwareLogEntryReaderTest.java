@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.log.entry;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
@@ -33,15 +33,15 @@ import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChanne
 
 import static java.lang.System.currentTimeMillis;
 import static java.util.Collections.singletonList;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
-public class VersionAwareLogEntryReaderTest
+class VersionAwareLogEntryReaderTest
 {
     private final LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader = new VersionAwareLogEntryReader<>();
 
     @Test
-    public void shouldReadAStartLogEntry() throws IOException
+    void shouldReadAStartLogEntry() throws IOException
     {
         // given
         LogEntryVersion version = LogEntryVersion.CURRENT;
@@ -65,7 +65,7 @@ public class VersionAwareLogEntryReaderTest
     }
 
     @Test
-    public void shouldReadACommitLogEntry() throws IOException
+    void shouldReadACommitLogEntry() throws IOException
     {
         // given
         LogEntryVersion version = LogEntryVersion.CURRENT;
@@ -85,7 +85,7 @@ public class VersionAwareLogEntryReaderTest
     }
 
     @Test
-    public void shouldReadACommandLogEntry() throws IOException
+    void shouldReadACommandLogEntry() throws IOException
     {
         // given
         LogEntryVersion version = LogEntryVersion.CURRENT;
@@ -105,7 +105,7 @@ public class VersionAwareLogEntryReaderTest
     }
 
     @Test
-    public void shouldReadACheckPointLogEntry() throws IOException
+    void shouldReadACheckPointLogEntry() throws IOException
     {
         // given
         LogEntryVersion version = LogEntryVersion.CURRENT;
@@ -126,7 +126,7 @@ public class VersionAwareLogEntryReaderTest
     }
 
     @Test
-    public void shouldReturnNullWhenThereIsNoCommand() throws IOException
+    void shouldReturnNullWhenThereIsNoCommand() throws IOException
     {
         // given
         LogEntryVersion version = LogEntryVersion.CURRENT;
@@ -144,7 +144,7 @@ public class VersionAwareLogEntryReaderTest
     }
 
     @Test
-    public void shouldReturnNullWhenNotEnoughDataInTheChannel() throws IOException
+    void shouldReturnNullWhenNotEnoughDataInTheChannel() throws IOException
     {
         // given
         final InMemoryClosableChannel channel = new InMemoryClosableChannel();
@@ -157,7 +157,7 @@ public class VersionAwareLogEntryReaderTest
     }
 
     @Test
-    public void shouldBeAbleToSkipBadVersionAndTypeBytesInBetweenLogEntries() throws Exception
+    void shouldBeAbleToSkipBadVersionAndTypeBytesInBetweenLogEntries() throws Exception
     {
         // GIVEN
         AcceptingInvalidLogEntryHandler invalidLogEntryHandler = new AcceptingInvalidLogEntryHandler();
@@ -197,7 +197,7 @@ public class VersionAwareLogEntryReaderTest
     }
 
     @Test
-    public void shouldBeAbleToSkipBadLogEntries() throws Exception
+    void shouldBeAbleToSkipBadLogEntries() throws Exception
     {
         // GIVEN
         AcceptingInvalidLogEntryHandler invalidLogEntryHandler = new AcceptingInvalidLogEntryHandler();

@@ -20,6 +20,8 @@
 package org.neo4j.unsafe.impl.internal.dragons;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnJre;
+import org.junit.jupiter.api.condition.JRE;
 
 import java.nio.ByteBuffer;
 import java.util.Objects;
@@ -35,6 +37,7 @@ import static org.hamcrest.Matchers.isOneOf;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -649,5 +652,13 @@ class UnsafeUtilTest
         // THEN
         free( p, sizeInBytes, tracker );
         assertEquals( value, readValue );
+    }
+
+    @Test
+    @DisabledOnJre( JRE.JAVA_8 )
+    void closeNativeByteBufferWithUnsafe()
+    {
+        ByteBuffer directBuffer = ByteBuffer.allocateDirect( 1024 );
+        assertDoesNotThrow( () -> UnsafeUtil.invokeCleaner( directBuffer ) );
     }
 }

@@ -19,10 +19,12 @@
  */
 package org.neo4j.kernel.impl.transaction.log.files;
 
-import sun.nio.ch.DirectBuffer;
+import org.apache.commons.lang3.SystemUtils;
 
+import java.io.Closeable;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -40,6 +42,7 @@ import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.ReaderLogVersionBridge;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
 
 import static java.lang.Math.min;
 import static java.lang.Runtime.getRuntime;
@@ -57,7 +60,7 @@ class TransactionLogFile extends LifecycleAdapter implements LogFile
     private LogVersionRepository logVersionRepository;
 
     private volatile PhysicalLogVersionedStoreChannel channel;
-    private ByteBuffer byteBuffer;
+    private CloseableByteBuffer closeableByteBuffer;
 
     TransactionLogFile( TransactionLogFiles logFiles, TransactionLogFilesContext context )
     {
@@ -86,7 +89,8 @@ class TransactionLogFile extends LifecycleAdapter implements LogFile
         channel = logFiles.createLogChannelForVersion( lastLogVersionUsed, OpenMode.READ_WRITE, context::getLastCommittedTransactionId );
         // Move to the end
         channel.position( channel.size() );
-        byteBuffer = ByteBuffer.allocateDirect( calculateLogBufferSize() );
+        ByteBuffer byteBuffer = ByteBuffer.allocateDirect( calculateLogBufferSize() );
+        closeableByteBuffer = new CloseableByteBuffer( byteBuffer );
         writer = new PositionAwarePhysicalFlushableChannel( channel, byteBuffer );
     }
 
@@ -104,9 +108,9 @@ class TransactionLogFile extends LifecycleAdapter implements LogFile
         {
             channel.close();
         }
-        if ( byteBuffer != null )
+        if ( closeableByteBuffer != null )
         {
-            ((DirectBuffer)byteBuffer).cleaner().clean();
+            closeableByteBuffer.close();
         }
     }
 
@@ -242,5 +246,59 @@ class TransactionLogFile extends LifecycleAdapter implements LogFile
     private static int calculateLogBufferSize()
     {
         return (int) ByteUnit.kibiBytes( min( (getRuntime().availableProcessors() / 4) + 1, 8 ) * 512 );
+    }
+
+    /**
+     * Invokes cleaner if required of provided byte buffer.
+     * In case if byte buffer is not direct - nothing will gonna be executed on close.
+     * <br/>
+     * For direct byte buffers:
+     * <ul>
+     *   <li>For Java 8 direct byte buffer cleaner will be invoked.</li>
+     *   <li>For more recent java versions (9 and above ) unsafe helper method will be invoked to clean native buffer resources.</li>
+     *</ul>
+     */
+    private static class CloseableByteBuffer implements Closeable
+    {
+        private final ByteBuffer byteBuffer;
+
+        CloseableByteBuffer( ByteBuffer byteBuffer )
+        {
+            this.byteBuffer = byteBuffer;
+        }
+
+        @Override
+        public void close() throws IOException
+        {
+            if ( !byteBuffer.isDirect() )
+            {
+                return;
+            }
+            try
+            {
+                if ( SystemUtils.IS_JAVA_1_8 )
+                {
+                    invokeOldBufferCleaner();
+                }
+                else
+                {
+                    UnsafeUtil.invokeCleaner( byteBuffer );
+                }
+            }
+            catch ( Throwable t )
+            {
+                throw new RuntimeException( t );
+            }
+        }
+
+        private void invokeOldBufferCleaner() throws Throwable
+        {
+
+            Class<?> cleanerClass = Class.forName( "sun.misc.Cleaner" );
+            Method cleanerAccessor = byteBuffer.getClass().getMethod( "cleaner" );
+            cleanerAccessor.setAccessible( true );
+            Object cleanerObject = cleanerAccessor.invoke( byteBuffer );
+            cleanerClass.getDeclaredMethod( "clean" ).invoke( cleanerObject );
+        }
     }
 }

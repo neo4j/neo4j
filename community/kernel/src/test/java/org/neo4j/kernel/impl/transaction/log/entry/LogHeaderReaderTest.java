@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.impl.transaction.log.entry;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.io.IOException;
@@ -28,14 +28,17 @@ import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
 import org.neo4j.kernel.impl.util.IoPrimitiveUtils;
+import org.neo4j.test.extension.DefaultFileSystemExtension;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
@@ -43,18 +46,19 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.readLo
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter.encodeLogVersion;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_LOG_VERSION;
 
-public class LogHeaderReaderTest
+@ExtendWith( {DefaultFileSystemExtension.class, TestDirectoryExtension.class} )
+class LogHeaderReaderTest
 {
     private final long expectedLogVersion = CURRENT_LOG_VERSION;
     private final long expectedTxId = 42;
 
-    @Rule
-    public final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
-    @Rule
-    public final TestDirectory testDirectory = TestDirectory.testDirectory();
+    @Inject
+    private DefaultFileSystemAbstraction fileSystem;
+    @Inject
+    private TestDirectory testDirectory;
 
     @Test
-    public void shouldReadALogHeaderFromAByteChannel() throws IOException
+    void shouldReadALogHeaderFromAByteChannel() throws IOException
     {
         // given
         final ByteBuffer buffer = ByteBuffer.allocate( LOG_HEADER_SIZE );
@@ -75,7 +79,7 @@ public class LogHeaderReaderTest
     }
 
     @Test
-    public void shouldFailWhenUnableToReadALogHeaderFromAChannel() throws IOException
+    void shouldFailWhenUnableToReadALogHeaderFromAChannel() throws IOException
     {
         // given
         final ByteBuffer buffer = ByteBuffer.allocate( LOG_HEADER_SIZE );
@@ -83,20 +87,11 @@ public class LogHeaderReaderTest
 
         when( channel.read( buffer ) ).thenReturn( 1 );
 
-        try
-        {
-            // when
-            readLogHeader( buffer, channel, true, null );
-            fail( "should have thrown" );
-        }
-        catch ( IncompleteLogHeaderException ex )
-        {
-            // then good
-        }
+        assertThrows( IncompleteLogHeaderException.class, () -> readLogHeader( buffer, channel, true, null ) );
     }
 
     @Test
-    public void shouldReadALogHeaderFromAFile() throws IOException
+    void shouldReadALogHeaderFromAFile() throws IOException
     {
         // given
         final File file = testDirectory.file( "ReadLogHeader" );
@@ -105,13 +100,13 @@ public class LogHeaderReaderTest
         buffer.putLong( encodeLogVersion( expectedLogVersion ) );
         buffer.putLong( expectedTxId );
 
-        try ( OutputStream stream = fileSystemRule.get().openAsOutputStream( file, false ) )
+        try ( OutputStream stream = fileSystem.openAsOutputStream( file, false ) )
         {
             stream.write( buffer.array() );
         }
 
         // when
-        final LogHeader result = readLogHeader( fileSystemRule.get(), file );
+        final LogHeader result = readLogHeader( fileSystem, file );
 
         // then
         assertEquals( new LogHeader( CURRENT_LOG_VERSION, expectedLogVersion, expectedTxId ), result );
@@ -119,26 +114,17 @@ public class LogHeaderReaderTest
     }
 
     @Test
-    public void shouldFailWhenUnableToReadALogHeaderFromAFile() throws IOException
+    void shouldFailWhenUnableToReadALogHeaderFromAFile() throws IOException
     {
         // given
         final File file = testDirectory.file( "ReadLogHeader" );
-        fileSystemRule.create( file ).close();
-        try
-        {
-            // when
-            readLogHeader( fileSystemRule.get(), file );
-            fail( "should have thrown" );
-        }
-        catch ( IncompleteLogHeaderException ex )
-        {
-            // then
-            assertTrue( ex.getMessage(), ex.getMessage().contains( file.getName() ) );
-        }
+        fileSystem.create( file ).close();
+        IncompleteLogHeaderException exception = assertThrows( IncompleteLogHeaderException.class, () -> readLogHeader( fileSystem, file ) );
+        assertTrue( exception.getMessage().contains( file.getName() ), exception.getMessage() );
     }
 
     @Test
-    public void shouldReadALongString() throws IOException
+    void shouldReadALongString() throws IOException
     {
         // given
 

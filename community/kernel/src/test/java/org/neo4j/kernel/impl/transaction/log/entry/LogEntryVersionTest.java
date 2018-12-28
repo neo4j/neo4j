@@ -19,21 +19,17 @@
  */
 package org.neo4j.kernel.impl.transaction.log.entry;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class LogEntryVersionTest
+class LogEntryVersionTest
 {
-    @Rule
-    public ExpectedException expect = ExpectedException.none();
-
     @Test
-    public void shouldBeAbleToSelectAnyVersion()
+    void shouldBeAbleToSelectAnyVersion()
     {
         for ( LogEntryVersion version : LogEntryVersion.values() )
         {
@@ -49,21 +45,19 @@ public class LogEntryVersionTest
     }
 
     @Test
-    public void shouldWarnAboutOldLogVersion()
+    void shouldWarnAboutOldLogVersion()
     {
-        expect.expect( UnsupportedLogVersionException.class );
-        LogEntryVersion.byVersion( (byte)-4 );
+        assertThrows( UnsupportedLogVersionException.class, () -> LogEntryVersion.byVersion( (byte) -4 ) );
     }
 
     @Test
-    public void shouldWarnAboutNewerLogVersion()
+    void shouldWarnAboutNewerLogVersion()
     {
-        expect.expect( UnsupportedLogVersionException.class );
-        LogEntryVersion.byVersion( (byte)-42 ); // unused for now
+        assertThrows( UnsupportedLogVersionException.class, () -> LogEntryVersion.byVersion( (byte) -42 ) ); // unused for now
     }
 
     @Test
-    public void moreRecent()
+    void moreRecent()
     {
         assertTrue( LogEntryVersion.moreRecentVersionExists( LogEntryVersion.V2_3 ) );
         assertTrue( LogEntryVersion.moreRecentVersionExists( LogEntryVersion.V3_0 ) );

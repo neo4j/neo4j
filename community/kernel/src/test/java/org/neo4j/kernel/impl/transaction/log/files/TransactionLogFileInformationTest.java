@@ -19,25 +19,25 @@
  */
 package org.neo4j.kernel.impl.transaction.log.files;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.kernel.impl.transaction.log.LogHeaderCache;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class TransactionLogFileInformationTest
+class TransactionLogFileInformationTest
 {
     private LogFiles logFiles = mock( TransactionLogFiles.class );
     private LogHeaderCache logHeaderCache = mock( LogHeaderCache.class );
     private TransactionLogFilesContext context = mock( TransactionLogFilesContext.class );
 
     @Test
-    public void shouldReadAndCacheFirstCommittedTransactionIdForAGivenVersionWhenNotCached() throws Exception
+    void shouldReadAndCacheFirstCommittedTransactionIdForAGivenVersionWhenNotCached() throws Exception
     {
         TransactionLogFileInformation info = new TransactionLogFileInformation( logFiles, logHeaderCache, context );
         long expected = 5;
@@ -55,7 +55,7 @@ public class TransactionLogFileInformationTest
     }
 
     @Test
-    public void shouldReadFirstCommittedTransactionIdForAGivenVersionWhenCached() throws Exception
+    void shouldReadFirstCommittedTransactionIdForAGivenVersionWhenCached() throws Exception
     {
         TransactionLogFileInformation info = new TransactionLogFileInformation( logFiles, logHeaderCache, context );
         long expected = 5;
@@ -68,7 +68,7 @@ public class TransactionLogFileInformationTest
     }
 
     @Test
-    public void shouldReadAndCacheFirstCommittedTransactionIdWhenNotCached() throws Exception
+    void shouldReadAndCacheFirstCommittedTransactionIdWhenNotCached() throws Exception
     {
         TransactionLogFileInformation info = new TransactionLogFileInformation( logFiles, logHeaderCache, context );
         long expected = 5;
@@ -88,7 +88,7 @@ public class TransactionLogFileInformationTest
     }
 
     @Test
-    public void shouldReadFirstCommittedTransactionIdWhenCached() throws Exception
+    void shouldReadFirstCommittedTransactionIdWhenCached() throws Exception
     {
         TransactionLogFileInformation info = new TransactionLogFileInformation( logFiles, logHeaderCache, context );
         long expected = 5;
@@ -104,7 +104,7 @@ public class TransactionLogFileInformationTest
     }
 
     @Test
-    public void shouldReturnNothingWhenThereAreNoTransactions() throws Exception
+    void shouldReturnNothingWhenThereAreNoTransactions() throws Exception
     {
         TransactionLogFileInformation info = new TransactionLogFileInformation( logFiles, logHeaderCache, context );
 

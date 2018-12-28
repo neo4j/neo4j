@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.log.checkpoint;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
@@ -30,20 +30,20 @@ import org.neo4j.test.OnDemandJobScheduler;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 
-public class DefaultCheckPointerTracerTest
+class DefaultCheckPointerTracerTest
 {
     private final FakeClock clock = Clocks.fakeClock();
     private final Monitor monitor = mock( Monitor.class );
     private final OnDemandJobScheduler jobScheduler = new OnDemandJobScheduler();
 
     @Test
-    public void shouldCountEventsAnAccumulatedTotalTime()
+    void shouldCountEventsAnAccumulatedTotalTime()
     {
         DefaultCheckPointerTracer tracer = new DefaultCheckPointerTracer( clock, monitor, jobScheduler );
 
@@ -61,7 +61,7 @@ public class DefaultCheckPointerTracerTest
     }
 
     @Test
-    public void shouldReturnZeroIfNoDataIsAvailable()
+    void shouldReturnZeroIfNoDataIsAvailable()
     {
         DefaultCheckPointerTracer tracer = new DefaultCheckPointerTracer( clock, monitor, jobScheduler );
 

@@ -19,38 +19,41 @@
  */
 package org.neo4j.kernel.impl.transaction.log.files;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
+import org.neo4j.test.extension.DefaultFileSystemExtension;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.test.rule.fs.DefaultFileSystemRule;
-import org.neo4j.test.rule.fs.FileSystemRule;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class TransactionLogFilesTest
+@ExtendWith( {DefaultFileSystemExtension.class, TestDirectoryExtension.class} )
+class TransactionLogFilesTest
 {
-    @Rule
-    public final FileSystemRule fileSystemRule = new DefaultFileSystemRule();
-    @Rule
-    public final TestDirectory testDirectory = TestDirectory.testDirectory();
+    @Inject
+    private FileSystemAbstraction fileSystem;
+    @Inject
+    private TestDirectory testDirectory;
     private final String filename = "filename";
 
     @Test
-    public void shouldGetTheFileNameForAGivenVersion() throws IOException
+    void shouldGetTheFileNameForAGivenVersion() throws IOException
     {
         // given
         final LogFiles files = createLogFiles();
@@ -66,16 +69,16 @@ public class TransactionLogFilesTest
     }
 
     @Test
-    public void shouldVisitEachLofFile() throws Throwable
+    void shouldVisitEachLofFile() throws Throwable
     {
         // given
         LogFiles files = createLogFiles();
         DatabaseLayout databaseLayout = testDirectory.databaseLayout();
 
-        fileSystemRule.create( databaseLayout.file( getVersionedLogFileName( "1" ) ) ).close();
-        fileSystemRule.create( databaseLayout.file( getVersionedLogFileName( "some", "2" ) ) ).close();
-        fileSystemRule.create( databaseLayout.file( getVersionedLogFileName( "3" ) ) ).close();
-        fileSystemRule.create( databaseLayout.file( filename ) ).close();
+        fileSystem.create( databaseLayout.file( getVersionedLogFileName( "1" ) ) ).close();
+        fileSystem.create( databaseLayout.file( getVersionedLogFileName( "some", "2" ) ) ).close();
+        fileSystem.create( databaseLayout.file( getVersionedLogFileName( "3" ) ) ).close();
+        fileSystem.create( databaseLayout.file( filename ) ).close();
 
         // when
         final List<File> seenFiles = new ArrayList<>();
@@ -96,16 +99,16 @@ public class TransactionLogFilesTest
     }
 
     @Test
-    public void shouldBeAbleToRetrieveTheHighestLogVersion() throws Throwable
+    void shouldBeAbleToRetrieveTheHighestLogVersion() throws Throwable
     {
         // given
         LogFiles files = createLogFiles();
 
         DatabaseLayout databaseLayout = testDirectory.databaseLayout();
-        fileSystemRule.create( databaseLayout.file( getVersionedLogFileName( "1" ) ) ).close();
-        fileSystemRule.create( databaseLayout.file( getVersionedLogFileName( "some", "4" ) ) ).close();
-        fileSystemRule.create( databaseLayout.file( getVersionedLogFileName( "3" ) ) ).close();
-        fileSystemRule.create( databaseLayout.file( filename ) ).close();
+        fileSystem.create( databaseLayout.file( getVersionedLogFileName( "1" ) ) ).close();
+        fileSystem.create( databaseLayout.file( getVersionedLogFileName( "some", "4" ) ) ).close();
+        fileSystem.create( databaseLayout.file( getVersionedLogFileName( "3" ) ) ).close();
+        fileSystem.create( databaseLayout.file( filename ) ).close();
 
         // when
         final long highestLogVersion = files.getHighestLogVersion();
@@ -116,14 +119,14 @@ public class TransactionLogFilesTest
     }
 
     @Test
-    public void shouldReturnANegativeValueIfThereAreNoLogFiles() throws Throwable
+    void shouldReturnANegativeValueIfThereAreNoLogFiles() throws Throwable
     {
         // given
         LogFiles files = createLogFiles();
         DatabaseLayout databaseLayout = testDirectory.databaseLayout();
 
-        fileSystemRule.create( databaseLayout.file( getVersionedLogFileName( "some", "4" ) ) ).close();
-        fileSystemRule.create( databaseLayout.file( filename ) ).close();
+        fileSystem.create( databaseLayout.file( getVersionedLogFileName( "some", "4" ) ) ).close();
+        fileSystem.create( databaseLayout.file( filename ) ).close();
 
         // when
         final long highestLogVersion = files.getHighestLogVersion();
@@ -134,7 +137,7 @@ public class TransactionLogFilesTest
     }
 
     @Test
-    public void shouldFindTheVersionBasedOnTheFilename() throws Throwable
+    void shouldFindTheVersionBasedOnTheFilename() throws Throwable
     {
         // given
         LogFiles logFiles = createLogFiles();
@@ -149,36 +152,29 @@ public class TransactionLogFilesTest
     }
 
     @Test
-    public void shouldThrowIfThereIsNoVersionInTheFileName() throws IOException
+    void shouldThrowIfThereIsNoVersionInTheFileName() throws IOException
     {
         LogFiles logFiles = createLogFiles();
         final File file = new File( "wrong" );
 
         // when
-        try
-        {
-            logFiles.getLogVersion( file );
-            fail( "should have thrown" );
-        }
-        catch ( RuntimeException ex )
-        {
-            assertEquals( "Invalid log file '" + file.getName() + "'", ex.getMessage() );
-        }
+        RuntimeException exception = assertThrows( RuntimeException.class, () -> logFiles.getLogVersion( file ) );
+        assertEquals( "Invalid log file '" + file.getName() + "'", exception.getMessage() );
     }
 
-    @Test( expected = NumberFormatException.class )
-    public void shouldThrowIfVersionIsNotANumber() throws IOException
+    @Test
+    void shouldThrowIfVersionIsNotANumber() throws IOException
     {
         // given
         LogFiles logFiles = createLogFiles();
         final File file = new File( getVersionedLogFileName( "aa", "A" ) );
 
         // when
-        logFiles.getLogVersion( file );
+        assertThrows( NumberFormatException.class, () -> logFiles.getLogVersion( file ) );
     }
 
     @Test
-    public void isLogFile() throws IOException
+    void isLogFile() throws IOException
     {
         LogFiles logFiles = createLogFiles();
         assertFalse( logFiles.isLogFile( new File( "aaa.tx.log" ) ) );
@@ -189,7 +185,7 @@ public class TransactionLogFilesTest
     private LogFiles createLogFiles() throws IOException
     {
         return LogFilesBuilder
-                .builder( testDirectory.databaseLayout(), fileSystemRule )
+                .builder( testDirectory.databaseLayout(), fileSystem )
                 .withLogFileName( filename )
                 .withTransactionIdStore( new SimpleTransactionIdStore() )
                 .withLogVersionRepository( new SimpleLogVersionRepository() )

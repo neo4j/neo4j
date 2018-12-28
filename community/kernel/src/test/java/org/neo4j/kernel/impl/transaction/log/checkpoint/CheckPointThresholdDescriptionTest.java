@@ -19,16 +19,17 @@
  */
 package org.neo4j.kernel.impl.transaction.log.checkpoint;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.atomic.AtomicReference;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class AbstractCheckPointThresholdTest
+class CheckPointThresholdDescriptionTest
 {
     @Test
-    public void shouldCallConsumerProvidingTheDescriptionWhenThresholdIsTrue()
+    void shouldCallConsumerProvidingTheDescriptionWhenThresholdIsTrue()
     {
         // Given
         String description = "description";
@@ -43,19 +44,14 @@ public class AbstractCheckPointThresholdTest
     }
 
     @Test
-    public void shouldNotCallConsumerProvidingTheDescriptionWhenThresholdIsFalse()
+    void shouldNotCallConsumerProvidingTheDescriptionWhenThresholdIsFalse()
     {
-        // Given
         AbstractCheckPointThreshold threshold = new TheAbstractCheckPointThreshold( false, null );
 
-        // When
-        threshold.isCheckPointingNeeded( 42, s ->
+        assertDoesNotThrow( () -> threshold.isCheckPointingNeeded( 42, s ->
         {
             throw new IllegalStateException( "nooooooooo!" );
-        } );
-
-        // Then
-        // should not throw
+        } ) );
     }
 
     private static class TheAbstractCheckPointThreshold extends AbstractCheckPointThreshold

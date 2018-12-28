@@ -25,6 +25,7 @@ import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -68,6 +69,7 @@ public final class UnsafeUtil
     private static boolean nativeAccessCheckEnabled = true;
 
     private static final Unsafe unsafe;
+    private static final MethodHandle invokeCleanerHandle;
     private static final MethodHandle sharedStringConstructor;
     private static final String allowUnalignedMemoryAccessProperty =
             "org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.allowUnalignedMemoryAccess";
@@ -96,6 +98,7 @@ public final class UnsafeUtil
 
         MethodHandles.Lookup lookup = MethodHandles.lookup();
         sharedStringConstructor = getSharedStringConstructorMethodHandle( lookup );
+        invokeCleanerHandle = getInvokeCleanerMethodHandle( lookup );
 
         Class<?> dbbClass = null;
         Constructor<?> ctor = null;
@@ -239,6 +242,19 @@ public final class UnsafeUtil
         }
     }
 
+    private static MethodHandle getInvokeCleanerMethodHandle( MethodHandles.Lookup lookup )
+    {
+        try
+        {
+            Method invokeCleanerMethod = Unsafe.class.getMethod( "invokeCleaner", ByteBuffer.class );
+            return lookup.unreflect( invokeCleanerMethod );
+        }
+        catch ( Exception ignore )
+        {
+            return null;
+        }
+    }
+
     /**
      * Get the object-relative field offset.
      */
@@ -377,6 +393,26 @@ public final class UnsafeUtil
         else
         {
             return new String( chars );
+        }
+    }
+
+    /**
+     * Invokes cleaner for provided direct byte buffer.
+     * @param byteBuffer provided byte buffer.
+     */
+    public static void invokeCleaner( ByteBuffer byteBuffer )
+    {
+        if ( invokeCleanerHandle == null )
+        {
+            throw new IllegalStateException( "Invoke cleaner handle not initialised." );
+        }
+        try
+        {
+            invokeCleanerHandle.invoke( unsafe, byteBuffer );
+        }
+        catch ( Throwable t )
+        {
+            throw new LinkageError( "Unexpected cleaner invocation failure.", t );
         }
     }
 

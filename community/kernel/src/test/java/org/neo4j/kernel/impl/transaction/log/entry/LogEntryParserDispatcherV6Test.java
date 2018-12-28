@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.log.entry;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
@@ -32,10 +32,11 @@ import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogPositionMarker;
 import org.neo4j.storageengine.api.CommandReaderFactory;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class LogEntryParserDispatcherV6Test
+class LogEntryParserDispatcherV6Test
 {
     private final LogEntryVersion version = LogEntryVersion.CURRENT;
     private final CommandReaderFactory commandReader = new RecordStorageCommandReaderFactory();
@@ -43,7 +44,7 @@ public class LogEntryParserDispatcherV6Test
     private final LogPosition position = new LogPosition( 0, 29 );
 
     @Test
-    public void shouldParserStartEntry() throws IOException
+    void shouldParserStartEntry() throws IOException
     {
         // given
         final LogEntryStart start = new LogEntryStart( version, 1, 2, 3, 4, new byte[]{5}, position );
@@ -68,7 +69,7 @@ public class LogEntryParserDispatcherV6Test
     }
 
     @Test
-    public void shouldParserOnePhaseCommitEntry() throws IOException
+    void shouldParserOnePhaseCommitEntry() throws IOException
     {
         // given
         final LogEntryCommit commit = new LogEntryCommit( version, 42, 21 );
@@ -89,7 +90,7 @@ public class LogEntryParserDispatcherV6Test
     }
 
     @Test
-    public void shouldParserCommandsUsingAGivenFactory() throws IOException
+    void shouldParserCommandsUsingAGivenFactory() throws IOException
     {
         // given
         // The record, it will be used as before and after
@@ -121,7 +122,7 @@ public class LogEntryParserDispatcherV6Test
     }
 
     @Test
-    public void shouldParseCheckPointEntry() throws IOException
+    void shouldParseCheckPointEntry() throws IOException
     {
         // given
         final CheckPoint checkPoint = new CheckPoint( new LogPosition( 43, 44 ) );
@@ -141,13 +142,9 @@ public class LogEntryParserDispatcherV6Test
         assertFalse( parser.skip() );
     }
 
-    @Test( expected = IllegalArgumentException.class )
-    public void shouldThrowWhenParsingUnknownEntry()
+    @Test
+    void shouldThrowWhenParsingUnknownEntry()
     {
-        // when
-        version.entryParser( (byte)42 ); // unused, at lest for now
-
-        // then
-        // it should throw exception
+        assertThrows( IllegalArgumentException.class, () -> version.entryParser( (byte) 42 ) ); // unused, at lest for now
     }
 }
