@@ -23,6 +23,8 @@ import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.proc.Procedures;
+import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.scheduler.JobScheduler;
 
 import static java.util.Objects.requireNonNull;
 
@@ -32,14 +34,17 @@ public class DataCollectorModule
     {
     }
 
-    public static AutoCloseable setupDataCollector( Procedures procedures, DatabaseManager databaseManager, Config config )
-            throws KernelException
+    public static AutoCloseable setupDataCollector( Procedures procedures,
+                                                    JobScheduler jobScheduler,
+                                                    DatabaseManager databaseManager,
+                                                    Config config,
+                                                    Monitors monitors ) throws KernelException
     {
         requireNonNull( databaseManager );
         requireNonNull( config );
-        DataCollector dataCollector = new DataCollector( databaseManager,  config );
+        DataCollector dataCollector = new DataCollector( databaseManager, config, jobScheduler, monitors );
         procedures.registerComponent( DataCollector.class, ctx -> dataCollector, false );
-        procedures.registerProcedure( CollectorProcedures.class );
+        procedures.registerProcedure( DataCollectorProcedures.class );
         return dataCollector;
     }
 }

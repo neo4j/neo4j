@@ -23,13 +23,14 @@ import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 
 class AnonymizeQueryTest extends CypherFunSuite with RewriteTest {
 
-  val anonymizer = new Anonymizer {
+  private val anonymizer = new Anonymizer {
     override def label(name: String): String = "x"+name
     override def relationshipType(name: String): String = "x"+name
     override def propertyKey(name: String): String = "X"+name
     override def variable(name: String): String = "X"+name
     override def unaliasedReturnItemName(anonymizedExpression: Expression, input: String): String = prettifier.mkStringOf(anonymizedExpression)
     override def parameter(name: String): String = "X"+name
+    override def literal(value: String): String = s"string[$value]"
   }
 
   val rewriterUnderTest: Rewriter = anonymizeQuery(anonymizer)
@@ -66,5 +67,10 @@ class AnonymizeQueryTest extends CypherFunSuite with RewriteTest {
 
   test("parameter") {
     assertRewrite("RETURN $param1 AS p1, $param2 AS p2", "RETURN $Xparam1 AS Xp1, $Xparam2 AS Xp2")
+  }
+
+  test("literals") {
+    assertRewrite("RETURN \"hello\"", "RETURN \"string[hello]\"")
+
   }
 }

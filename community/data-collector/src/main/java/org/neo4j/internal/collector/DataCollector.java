@@ -21,20 +21,34 @@ package org.neo4j.internal.collector;
 
 import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseManager;
+import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.database.Database;
+import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
+import org.neo4j.kernel.impl.util.DefaultValueMapper;
+import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.values.ValueMapper;
 
 public class DataCollector implements AutoCloseable
 {
     private final DatabaseManager databaseManager;
     private final Config config;
+    final JobScheduler jobScheduler;
+    final QueryCollector queryCollector;
 
-    DataCollector( DatabaseManager databaseManager, Config config )
+    DataCollector( DatabaseManager databaseManager,
+                   Config config,
+                   JobScheduler jobScheduler,
+                   Monitors monitors )
     {
         this.databaseManager = databaseManager;
         this.config = config;
+        this.jobScheduler = jobScheduler;
+        this.queryCollector = new QueryCollector();
+        monitors.addMonitorListener( queryCollector );
     }
 
     @Override
@@ -48,6 +62,18 @@ public class DataCollector implements AutoCloseable
         return databaseManager.getDatabaseContext( config.get( GraphDatabaseSettings.active_database ) )
                 .map( DatabaseContext::getDatabase )
                 .map( Database::getKernel )
+                .orElseThrow( () -> new IllegalStateException( "Active database not found." ) );
+    }
+
+    public ValueMapper.JavaMapper getValueMapper()
+    {
+        return databaseManager.getDatabaseContext( config.get( GraphDatabaseSettings.active_database ) )
+                .map( DatabaseContext::getDatabase )
+                .map( database -> {
+                    EmbeddedProxySPI spi = database.getDependencyResolver()
+                            .resolveDependency( EmbeddedProxySPI.class, DependencyResolver.SelectionStrategy.SINGLE );
+                    return new DefaultValueMapper( spi );
+                } )
                 .orElseThrow( () -> new IllegalStateException( "Active database not found." ) );
     }
 }

@@ -7,6 +7,8 @@ Apache Software License, Version 2.0
   Apache Commons Lang
   Lucene Core
   Netty/All-in-One
+  parboiled-core
+  parboiled-scala
 ------------------------------------------------------------------------------
 
                                  Apache License

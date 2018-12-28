@@ -175,7 +175,12 @@ public class GraphDatabaseFacadeFactory
         Logger logger = platform.logService.getInternalLog( getClass() ).infoLogger();
         DatabaseManager databaseManager = createAndInitializeDatabaseManager( platform, edition, graphDatabaseFacade, procedures, logger );
 
-        DataCollectorManager dataCollectorManager = new DataCollectorManager( databaseManager, procedures, config );
+        DataCollectorManager dataCollectorManager =
+                new DataCollectorManager( databaseManager,
+                                          platform.jobScheduler,
+                                          procedures,
+                                          config,
+                                          platform.monitors );
         platform.life.add( dataCollectorManager );
 
         edition.createSecurityModule( platform, procedures );
