@@ -19,10 +19,11 @@
  */
 package org.neo4j.cypher.internal
 
+import java.io.File
 import java.util.concurrent.TimeUnit
 
 import org.neo4j.cypher.CypherMorselRuntimeSchedulerOption
-import org.neo4j.cypher.internal.compatibility.CypherRuntimeConfiguration
+import org.neo4j.cypher.internal.compatibility._
 import org.neo4j.cypher.internal.compiler.v4_0.{CypherPlannerConfiguration, StatsDivergenceCalculator}
 import org.neo4j.cypher.{CypherExpressionEngineOption, CypherPlannerOption, CypherRuntimeOption, CypherVersion}
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
@@ -55,6 +56,7 @@ object CypherConfiguration {
       CypherMorselRuntimeSchedulerOption(config.get(GraphDatabaseSettings.cypher_morsel_runtime_scheduler)),
       config.get(GraphDatabaseSettings.cypher_morsel_size),
       config.get(GraphDatabaseSettings.enable_morsel_runtime_trace),
+      config.get(GraphDatabaseSettings.morsel_scheduler_trace_filename),
       config.get(GraphDatabaseSettings.cypher_task_wait),
       config.get(GraphDatabaseSettings.cypher_expression_recompilation_limit)
     )
@@ -93,6 +95,7 @@ case class CypherConfiguration(version: CypherVersion,
                                scheduler: CypherMorselRuntimeSchedulerOption,
                                morselSize: Int,
                                doSchedulerTracing: Boolean,
+                               schedulerTracingFile: File,
                                waitTimeout: Int,
                                recompilationLimit: Int) {
 
@@ -101,9 +104,16 @@ case class CypherConfiguration(version: CypherVersion,
       workers = workers,
       scheduler = scheduler,
       morselSize = morselSize,
-      doSchedulerTracing = doSchedulerTracing,
+      schedulerTracing = toSchedulerTracingConfiguration(doSchedulerTracing, schedulerTracingFile),
       waitTimeout = Duration(waitTimeout, TimeUnit.MILLISECONDS)
     )
+
+  def toSchedulerTracingConfiguration(doSchedulerTracing: Boolean,
+                                      schedulerTracingFile: File): SchedulerTracingConfiguration =
+    if (doSchedulerTracing)
+      if (schedulerTracingFile.getName == "stdOut") StdOutSchedulerTracing
+      else FileSchedulerTracing(schedulerTracingFile)
+    else NoSchedulerTracing
 
   def toCypherPlannerConfiguration(config: Config): CypherPlannerConfiguration =
     CypherPlannerConfiguration(

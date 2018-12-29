@@ -835,6 +835,10 @@ public class GraphDatabaseSettings implements LoadableConfig
             logs -> new File( logs, "query.log" ),
             PATH );
 
+    @Description( "Path to the morsel runtime scheduler trace. If 'stdOut' and tracing is on, will print to std out." )
+    @Internal
+    public static final Setting<File> morsel_scheduler_trace_filename = pathSetting( "unsupported.cypher.morsel_runtime_trace_path", "stdOut" );
+
     @Description( "Path to the user log file." )
     public static final Setting<File> store_user_log_path =
             derivedSetting( "dbms.logs.user.path", logs_directory, logs -> new File( logs, "neo4j.log" ), PATH );

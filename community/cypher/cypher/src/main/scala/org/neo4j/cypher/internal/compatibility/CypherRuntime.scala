@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compatibility
 
+import java.io.File
 import java.time.Clock
 
 import org.neo4j.cypher.CypherMorselRuntimeSchedulerOption
@@ -133,8 +134,13 @@ class FallbackRuntime[CONTEXT <: RuntimeContext](runtimes: Seq[CypherRuntime[CON
 case class CypherRuntimeConfiguration(workers: Int,
                                       scheduler: CypherMorselRuntimeSchedulerOption,
                                       morselSize: Int,
-                                      doSchedulerTracing: Boolean,
+                                      schedulerTracing: SchedulerTracingConfiguration,
                                       waitTimeout: Duration)
+
+sealed trait SchedulerTracingConfiguration
+case object NoSchedulerTracing extends SchedulerTracingConfiguration
+case object StdOutSchedulerTracing extends SchedulerTracingConfiguration
+case class FileSchedulerTracing(file: File) extends SchedulerTracingConfiguration
 
 case class ExecutionPlanWithNotifications(inner: ExecutionPlan, extraNotifications: Set[InternalNotification]) extends DelegatingExecutionPlan(inner) {
 
