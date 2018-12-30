@@ -49,7 +49,8 @@ public class DataCollectorProcedures
     @Description( "Retrieve statistical data about the current database. Valid sections are '" +
                   Sections.GRAPH_COUNTS + "', '" + Sections.TOKENS + "', '" + Sections.QUERIES + "'" )
     @Procedure( name = "db.stats.retrieve", mode = Mode.READ )
-    public Stream<RetrieveResult> retrieve( @Name( value = "section" ) String section )
+    public Stream<RetrieveResult> retrieve( @Name( value = "section" ) String section,
+                                            @Name( value = "config", defaultValue = "" ) Map<String, Object> config )
             throws InvalidArgumentsException, IndexNotFoundKernelException, TransactionFailureException
     {
         String upperSection = section.toUpperCase();
@@ -62,7 +63,9 @@ public class DataCollectorProcedures
             return TokensSection.retrieve( dataCollector.kernel );
 
         case Sections.QUERIES:
-            return QueriesSection.retrieve( dataCollector.queryCollector.doGetData(), new PlainText( dataCollector.valueMapper ) );
+            return QueriesSection.retrieve( dataCollector.queryCollector.doGetData(),
+                                            new PlainText( dataCollector.valueMapper ),
+                                            RetrieveConfig.of( config ).maxInvocations );
 
         default:
             throw Sections.unknownSectionException( section );
@@ -72,8 +75,9 @@ public class DataCollectorProcedures
     @Admin
     @Description( "Retrieve all available statistical data about the current database, in an anonymized form." )
     @Procedure( name = "db.stats.retrieveAllAnonymized", mode = Mode.READ )
-    public Stream<RetrieveResult> retrieveAllAnonymized( @Name( value = "graphToken" ) String graphToken )
-            throws IndexNotFoundKernelException, TransactionFailureException
+    public Stream<RetrieveResult> retrieveAllAnonymized( @Name( value = "graphToken" ) String graphToken,
+                                                         @Name( value = "config", defaultValue = "" ) Map<String, Object> config )
+            throws IndexNotFoundKernelException, TransactionFailureException, InvalidArgumentsException
     {
         Map<String, Object> metaData = new HashMap<>();
         metaData.put( "graphToken", graphToken );
@@ -83,7 +87,9 @@ public class DataCollectorProcedures
 
         return Stream.of( meta,
                           GraphCountsSection.retrieve( dataCollector.kernel, Anonymizer.IDS ),
-                          QueriesSection.retrieve( dataCollector.queryCollector.doGetData(), new IdAnonymizer( transaction.tokenRead() ) )
+                          QueriesSection.retrieve( dataCollector.queryCollector.doGetData(),
+                                                   new IdAnonymizer( transaction.tokenRead() ),
+                                                   RetrieveConfig.of( config ).maxInvocations )
             ).flatMap( x -> x );
     }
 

@@ -200,6 +200,57 @@ class DataCollectorQueriesAcceptanceTest extends ExecutionEngineFunSuite {
     )
   }
 
+  test("should limit number of retrieved invocations of query") {
+    // given
+    execute("CALL db.stats.collect('QUERIES')").single
+    execute("MATCH (n {p: $param}) RETURN count(n)", Map("param" -> "BrassLeg"))
+    execute("MATCH (n {p: $param}) RETURN count(n)", Map("param" -> 2))
+    execute("WITH 42 AS x RETURN x")
+    execute("MATCH (n {p: $param}) RETURN count(n)", Map("param" -> List(3.1, 3.2)))
+    execute("WITH 42 AS x RETURN x")
+    execute("WITH 42 AS x RETURN x")
+    execute("WITH 42 AS x RETURN x")
+    execute("CALL db.stats.stop('QUERIES')").single
+
+    // when
+    val res = execute("CALL db.stats.retrieve('QUERIES', {maxInvocations: 2})").toList
+
+    // then
+    res should beListWithoutOrder(
+      beMapContaining(
+        "section" -> "QUERIES",
+        "data" -> beMapContaining(
+          "query" -> "MATCH (n {p: $param}) RETURN count(n)",
+          "invocations" -> beListInOrder(
+            beMapContaining(
+              "params" -> Map("param" -> "BrassLeg")
+            ),
+            beMapContaining(
+              "params" -> Map("param" -> 2)
+            )
+          )
+        )
+      ),
+      beMapContaining(
+        "section" -> "QUERIES",
+        "data" -> beMapContaining(
+          "query" -> "WITH 42 AS x RETURN x",
+          "invocations" -> beListInOrder(
+            beMapContaining(),
+            beMapContaining()
+          )
+        )
+      )
+    )
+  }
+
+  test("should fail on incorrect maxInvocations") {
+    execute("CALL db.stats.retrieve('QUERIES', {})").toList // missing maxInvocations argument is fine
+    execute("CALL db.stats.retrieve('QUERIES', {maxIndications: -1})").toList // non-related arguments is fine
+    assertInvalidArgument("CALL db.stats.retrieve('QUERIES', {maxInvocations: 'non-integer'})") // non-integer is not fine
+    assertInvalidArgument("CALL db.stats.retrieve('QUERIES', {maxInvocations: -1})") // negative integer is not fine
+  }
+
   test("[retrieveAllAnonymized] should anonymize tokens inside queries") {
     // given
     execute("CREATE (:User {age: 99})-[:KNOWS]->(:Buddy {p: 42})-[:WANTS]->(:Raccoon)") // create tokens
@@ -323,4 +374,15 @@ class DataCollectorQueriesAcceptanceTest extends ExecutionEngineFunSuite {
         "query" -> beCypher(queryText)
       )
     )
+
+  private def assertInvalidArgument(query: String): Unit = {
+    try {
+      execute(query)
+    } catch {
+      case e: CypherExecutionException =>
+        e.status should be(org.neo4j.kernel.api.exceptions.Status.General.InvalidArguments)
+      case x =>
+        x shouldBe a[CypherExecutionException]
+    }
+  }
 }

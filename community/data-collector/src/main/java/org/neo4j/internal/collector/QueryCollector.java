@@ -35,7 +35,7 @@ import org.neo4j.kernel.impl.query.QueryExecutionMonitor;
  *    this could use substantial memory
  *
  *  - All threads that report queries on {@link QueryCollector#endSuccess(org.neo4j.kernel.api.query.ExecutingQuery)}
- *    contend for writing to the queue, which might cause delays at query close time on highly concurrent systems
+ *    contend for writing to the queue, which might cause delays before the first result on highly concurrent systems
  */
 class QueryCollector extends CollectorStateMachine<Iterator<QuerySnapshot>> implements QueryExecutionMonitor
 {

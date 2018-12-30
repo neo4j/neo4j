@@ -121,7 +121,6 @@ class DataCollectorStateAcceptanceTest extends ExecutionEngineFunSuite {
        case x =>
          x shouldBe a[CypherExecutionException]
      }
-
   }
 
   private def assertStatus(status: String): Unit = {
