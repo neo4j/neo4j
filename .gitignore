@@ -30,3 +30,4 @@ Thumbs.db
 packaging/standalone/src/main/distribution/cypher-shell
 /.profiler/
 dependency-reduced-pom.xml
+community/dbms/import.report
