@@ -195,7 +195,7 @@ class CheckPointerImplTest
 
         // Then
         assertEquals( transactionId, txId );
-        verify( storageEngine, times( 1 ) ).flushAndForce( limiter );
+        verify( forceOperation, times( 1 ) ).flushAndForce( limiter );
         verify( health, times( 2 ) ).assertHealthy( IOException.class );
         verify( appender, times( 1 ) ).checkPoint( eq( logPosition ), any( LogCheckPointEvent.class ) );
         verify( threshold, times( 1 ) ).initialize( initialTransactionId );
@@ -203,7 +203,7 @@ class CheckPointerImplTest
         verify( threshold, never() ).isCheckPointingNeeded( transactionId, INFO );
         verify( logPruning, times( 1 ) ).pruneLogs( logPosition.getLogVersion() );
         verifyZeroInteractions( tracer );
-        verifyNoMoreInteractions( storageEngine, health, appender, threshold, tracer );
+        verifyNoMoreInteractions( forceOperation, health, appender, threshold, tracer );
     }
 
     @Test
