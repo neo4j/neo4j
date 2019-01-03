@@ -29,6 +29,7 @@ import org.neo4j.unsafe.impl.batchimport.stats.StatsProvider;
 import org.neo4j.unsafe.impl.batchimport.stats.StepStats;
 
 import static java.lang.Math.pow;
+import static java.lang.String.format;
 import static org.neo4j.helpers.Format.date;
 import static org.neo4j.helpers.Format.duration;
 import static org.neo4j.helpers.collection.Iterables.last;
@@ -83,10 +84,10 @@ public class SpectrumExecutionMonitor extends ExecutionMonitor.Adapter
     }
 
     @Override
-    public void done( long totalTimeMillis, String additionalInformation )
+    public void done( boolean successful, long totalTimeMillis, String additionalInformation )
     {
         out.println();
-        out.println( "IMPORT DONE in " + duration( totalTimeMillis ) + ". " + additionalInformation );
+        out.println( format( "IMPORT %s in %s. %s", successful ? "DONE" : "FAILED", duration( totalTimeMillis ), additionalInformation ) );
     }
 
     @Override

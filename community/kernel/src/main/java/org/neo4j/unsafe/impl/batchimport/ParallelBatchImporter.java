@@ -92,7 +92,7 @@ public class ParallelBatchImporter extends LifecycleAdapter implements BatchImpo
             logic.defragmentRelationshipGroups();
             logic.buildCountsStore();
 
-            store.success();
+            logic.success();
         }
     }
 }

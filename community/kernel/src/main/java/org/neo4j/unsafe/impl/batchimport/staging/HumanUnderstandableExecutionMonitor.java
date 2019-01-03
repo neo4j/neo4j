@@ -422,12 +422,12 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor
     }
 
     @Override
-    public void done( long totalTimeMillis, String additionalInformation )
+    public void done( boolean successful, long totalTimeMillis, String additionalInformation )
     {
         endPrevious();
 
         System.out.println();
-        System.out.println( "IMPORT DONE in " + duration( totalTimeMillis ) + ". " + additionalInformation );
+        System.out.println( format( "IMPORT %s in %s. %s", successful ? "DONE" : "FAILED", duration( totalTimeMillis ), additionalInformation ) );
     }
 
     @Override

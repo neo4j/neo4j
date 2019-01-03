@@ -40,6 +40,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.contains;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
@@ -67,14 +68,15 @@ public class ImportLogicTest
                 storage.directory().directory(), defaultFormat(), DEFAULT, getInstance(), EMPTY, defaults() ) )
         {
             //noinspection EmptyTryBlock
-            try ( ImportLogic ignored = new ImportLogic( storage.directory().directory(), storage.fileSystem(), stores, DEFAULT, getInstance(), monitor,
+            try ( ImportLogic logic = new ImportLogic( storage.directory().directory(), storage.fileSystem(), stores, DEFAULT, getInstance(), monitor,
                     defaultFormat(), NO_MONITOR ) )
             {
                 // nothing to run in this import
+                logic.success();
             }
         }
 
-        verify( monitor ).done( anyLong(), contains( "Data statistics is not available." ) );
+        verify( monitor ).done( eq( true ), anyLong(), contains( "Data statistics is not available." ) );
     }
 
     @Test
@@ -149,10 +151,11 @@ public class ImportLogicTest
                     defaultFormat(), NO_MONITOR ) )
             {
                 logic.putState( dataStatistics );
+                logic.success();
             }
 
             // then
-            verify( monitor ).done( anyLong(), contains( dataStatistics.toString() ) );
+            verify( monitor ).done( eq( true ), anyLong(), contains( dataStatistics.toString() ) );
         }
     }
 }

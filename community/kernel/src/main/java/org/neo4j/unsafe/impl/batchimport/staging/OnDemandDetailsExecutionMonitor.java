@@ -119,7 +119,7 @@ public class OnDemandDetailsExecutionMonitor implements ExecutionMonitor
     }
 
     @Override
-    public void done( long totalTimeMillis, String additionalInformation )
+    public void done( boolean successful, long totalTimeMillis, String additionalInformation )
     {
         if ( printDetailsOnDone )
         {
