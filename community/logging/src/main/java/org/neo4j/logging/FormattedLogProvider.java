@@ -200,9 +200,11 @@ public class FormattedLogProvider extends AbstractLogProvider<FormattedLog>
     private final Supplier<PrintWriter> writerSupplier;
     private final ZoneId zoneId;
     private final boolean renderContext;
-    private final Map<String, Level> levels;
-    private final Level defaultLevel;
     private final boolean autoFlush;
+
+    // Level settings can change dynamically at runtime
+    private volatile Map<String, Level> levels;
+    private volatile Level defaultLevel;
 
     /**
      * Start creating a {@link FormattedLogProvider} which will not render the context (the class name or log name) in each output line.
@@ -342,6 +344,36 @@ public class FormattedLogProvider extends AbstractLogProvider<FormattedLog>
         return buildLog( name, levelForContext( name ) );
     }
 
+    /**
+     * Allows changing default log level at runtime. This works well even with concurrent instantiation and caching of {@link FormattedLog} instances.
+     * @param level new {@link Level} for this log provider.
+     */
+    public void setDefaultLevel( Level level )
+    {
+        makeDynamicLogLevelChange( () -> defaultLevel = level );
+    }
+
+    /**
+     * Allows changing context log levels at runtime. This works well even with concurrent instantiation and caching of {@link FormattedLog} instances.
+     * @param levels map of specific level overrides to use. Any previous levels will be removed.
+     */
+    public void setContextLogLevels( Map<String, Level> levels )
+    {
+        makeDynamicLogLevelChange( () -> this.levels = levels );
+    }
+
+    /**
+     * Performs a log level change under a lock which is coordinated with calls to {@link #getLog(String)} and {@link #getLog(Class)},
+     * those that result in new logger instances being created.
+     *
+     * This method may change one or many aspects of log level settings. It updates existing {@link FormattedLog} instances
+     * with this information too.
+     */
+    private void makeDynamicLogLevelChange( Runnable change )
+    {
+        makeDynamicSettingsChange( change, ( log, context ) -> log.setLevel( levelForContext( context ) ) );
+    }
+
     private FormattedLog buildLog( String context, Level level )
     {
         return new FormattedLog( writerSupplier, zoneId, this, renderContext ? context : null, level, autoFlush );
@@ -349,13 +381,16 @@ public class FormattedLogProvider extends AbstractLogProvider<FormattedLog>
 
     private Level levelForContext( String context )
     {
+        Level matchingLevel = null;
+        int matchSize = 0;
         for ( Map.Entry<String, Level> entry : levels.entrySet() )
         {
-            if ( context.startsWith( entry.getKey() ) )
+            if ( context.startsWith( entry.getKey() ) && entry.getKey().length() > matchSize )
             {
-                return entry.getValue();
+                matchingLevel = entry.getValue();
+                matchSize = entry.getKey().length();
             }
         }
-        return defaultLevel;
+        return matchingLevel != null ? matchingLevel : defaultLevel;
     }
 }

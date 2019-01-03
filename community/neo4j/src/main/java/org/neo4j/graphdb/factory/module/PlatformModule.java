@@ -21,6 +21,9 @@ package org.neo4j.graphdb.factory.module;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -296,10 +299,7 @@ public class PlatformModule
         builder.withRotationListener(
                 logProvider -> dbmsDiagnosticsManager.dumpAll( logProvider.getLog( DiagnosticsManager.class ) ) );
 
-        for ( String debugContext : config.get( GraphDatabaseSettings.store_internal_debug_contexts ) )
-        {
-            builder.withLevel( debugContext, Level.DEBUG );
-        }
+        builder.withLevels( asDebugLogLevels( config.get( GraphDatabaseSettings.store_internal_debug_contexts ) ) );
         builder.withDefaultLevel( config.get( GraphDatabaseSettings.store_internal_log_level ) )
                .withTimeZone( config.get( GraphDatabaseSettings.db_timezone ).getZoneId() );
 
@@ -317,7 +317,17 @@ public class PlatformModule
         {
             throw new RuntimeException( ex );
         }
+        // Listen to changes to the dynamic log level settings.
+        config.registerDynamicUpdateListener( GraphDatabaseSettings.store_internal_log_level,
+                ( before, after ) -> logService.setDefaultLogLevel( after ) );
+        config.registerDynamicUpdateListener( GraphDatabaseSettings.store_internal_debug_contexts,
+                ( before, after ) -> logService.setContextLogLevels( asDebugLogLevels( after ) ) );
         return life.add( logService );
+    }
+
+    private Map<String,Level> asDebugLogLevels( List<String> strings )
+    {
+        return strings.stream().collect( HashMap::new, ( map, string ) -> map.put( string, Level.DEBUG ), HashMap::putAll );
     }
 
     protected JobScheduler createJobScheduler()

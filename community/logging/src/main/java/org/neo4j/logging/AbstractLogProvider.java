@@ -21,14 +21,21 @@ package org.neo4j.logging;
 
 import java.util.Collection;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.function.BiConsumer;
 import java.util.function.Supplier;
+
+import static java.util.stream.Collectors.toList;
 
 /**
  * An abstract {@link LogProvider} implementation, which ensures {@link Log}s are cached and reused.
  */
 public abstract class AbstractLogProvider<T extends Log> implements LogProvider
 {
-    private final ConcurrentHashMap<String, T> logCache = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, LogWithContext> logCache = new ConcurrentHashMap<>();
+    // read-lock: getting log instances, write-lock: changing log level settings
+    private final ReadWriteLock settingsChangeLock = new ReentrantReadWriteLock();
 
     @Override
     public T getLog( final Class loggingClass )
@@ -44,7 +51,23 @@ public abstract class AbstractLogProvider<T extends Log> implements LogProvider
 
     private T getLog( String name, Supplier<T> logSupplier )
     {
-        return logCache.computeIfAbsent( name, s -> logSupplier.get() );
+        // First an optimistic map get
+        LogWithContext log = logCache.get( name );
+        if ( log == null )
+        {
+            // Do this locking here around computeIfAbsent because we want both the construction of the log
+            // and the placement of it in the map to be under the lock
+            settingsChangeLock.readLock().lock();
+            try
+            {
+                log = logCache.computeIfAbsent( name, c -> new LogWithContext( logSupplier.get(), c ) );
+            }
+            finally
+            {
+                settingsChangeLock.readLock().unlock();
+            }
+        }
+        return log.log;
     }
 
     /**
@@ -52,7 +75,7 @@ public abstract class AbstractLogProvider<T extends Log> implements LogProvider
      */
     protected Collection<T> cachedLogs()
     {
-        return logCache.values();
+        return logCache.values().stream().map( logWithContext -> logWithContext.log ).collect( toList() );
     }
 
     /**
@@ -66,4 +89,41 @@ public abstract class AbstractLogProvider<T extends Log> implements LogProvider
      * @return a {@link Log} that logs messages with the specified name as the context
      */
     protected abstract T buildLog( String name );
+
+    /**
+     * Makes a thread-safe change of settings. This method is co-ordinated with {@link #getLog(Class)} and all its variants.
+     * All log instances will be notified with this change.
+     *
+     * @param change the settings change to be performed under a lock.
+     * @param logInstanceRefresher {@link BiConsumer} to refresh existing log instances.
+     */
+    void makeDynamicSettingsChange( Runnable change, BiConsumer<T,String> logInstanceRefresher )
+    {
+        settingsChangeLock.writeLock().lock();
+        try
+        {
+            change.run();
+            logCache.values().forEach( log -> logInstanceRefresher.accept( log.log, log.fullContext ) );
+        }
+        finally
+        {
+            settingsChangeLock.writeLock().unlock();
+        }
+    }
+
+    /**
+     * A log accompanied its original context, since logs may be instantiated with a modified version of the context
+     * and determining things like log level must be done on the original context.
+     */
+    private class LogWithContext
+    {
+        private final T log;
+        private final String fullContext;
+
+        LogWithContext( T log, String fullContext )
+        {
+            this.log = log;
+            this.fullContext = fullContext;
+        }
+    }
 }

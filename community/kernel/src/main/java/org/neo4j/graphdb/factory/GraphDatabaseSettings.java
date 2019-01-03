@@ -446,10 +446,12 @@ public class GraphDatabaseSettings implements LoadableConfig
 
     @Description( "Debug log contexts that should output debug level logging" )
     @Internal
+    @Dynamic
     public static final Setting<List<String>> store_internal_debug_contexts = setting( "unsupported.dbms.logs.debug.debug_loggers",
             list( ",", STRING ), "org.neo4j.diagnostics,org.neo4j.cluster.protocol,org.neo4j.kernel.ha" );
 
     @Description( "Debug log level threshold." )
+    @Dynamic
     public static final Setting<Level> store_internal_log_level = setting( "dbms.logs.debug.level",
             optionsObeyCase( Level.class ), "INFO" );
 

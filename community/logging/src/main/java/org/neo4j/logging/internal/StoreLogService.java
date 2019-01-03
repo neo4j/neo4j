@@ -98,6 +98,12 @@ public class StoreLogService extends AbstractLogService implements Lifecycle
             return this;
         }
 
+        public Builder withLevels( Map<String,Level> levels )
+        {
+            this.logLevels.putAll( levels );
+            return this;
+        }
+
         public Builder withTimeZone( ZoneId timeZoneId )
         {
             this.timeZoneId = timeZoneId;
@@ -241,5 +247,15 @@ public class StoreLogService extends AbstractLogService implements Lifecycle
     public LogProvider getInternalLogProvider()
     {
         return logService.getInternalLogProvider();
+    }
+
+    public void setDefaultLogLevel( Level newLevel )
+    {
+        ((FormattedLogProvider) logService.getInternalLogProvider()).setDefaultLevel( newLevel );
+    }
+
+    public void setContextLogLevels( Map<String,Level> newLevels )
+    {
+        ((FormattedLogProvider) logService.getInternalLogProvider()).setContextLogLevels( newLevels );
     }
 }
