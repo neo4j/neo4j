@@ -22,7 +22,7 @@ package org.neo4j.kernel;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
-import org.neo4j.kernel.impl.spi.KernelContext;
+import org.neo4j.kernel.extension.context.ExtensionContext;
 import org.neo4j.kernel.internal.KernelData;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
@@ -45,7 +45,7 @@ public class DummyExtensionFactory extends KernelExtensionFactory<DummyExtension
     }
 
     @Override
-    public Lifecycle newInstance( KernelContext context, Dependencies dependencies )
+    public Lifecycle newInstance( ExtensionContext context, Dependencies dependencies )
     {
         return new DummyExtension( dependencies );
     }

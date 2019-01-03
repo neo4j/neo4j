@@ -46,10 +46,10 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.extension.ExtensionType;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
+import org.neo4j.kernel.extension.context.ExtensionContext;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.kernel.impl.locking.LockService;
-import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -999,7 +999,7 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
         private final IndexProvider indexProvider;
 
         @Override
-        public Lifecycle newInstance( KernelContext context, NoDeps noDeps )
+        public Lifecycle newInstance( ExtensionContext context, NoDeps noDeps )
         {
             return indexProvider;
         }

@@ -208,7 +208,7 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
 
             Monitors monitors = new Monitors();
             LabelScanStore labelScanStore = startLabelScanStore( pageCache, indexStoreView, monitors );
-            IndexProviderMap indexes = createIndexes( pageCache, fileSystem, directory.databaseDir(), config, scheduler, logProvider, monitors);
+            IndexProviderMap indexes = createIndexes( pageCache, fileSystem, directory.databaseLayout(), config, scheduler, logProvider, monitors);
             directStoreAccess = new DirectStoreAccess( nativeStores, labelScanStore, indexes, counts );
             storeReader = new RecordStorageReader( neoStore );
         }
@@ -232,7 +232,7 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
         return labelScanStore;
     }
 
-    private IndexProviderMap createIndexes( PageCache pageCache, FileSystemAbstraction fileSystem, File storeDir,
+    private IndexProviderMap createIndexes( PageCache pageCache, FileSystemAbstraction fileSystem, DatabaseLayout databaseLayout,
                                             Config config, JobScheduler scheduler, LogProvider logProvider, Monitors monitors )
     {
         LogService logService = new SimpleLogService( logProvider, logProvider );
@@ -240,7 +240,7 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
                 new DelegatingTokenHolder( new ReadOnlyTokenCreator(), TokenHolder.TYPE_PROPERTY_KEY ),
                 new DelegatingTokenHolder( new ReadOnlyTokenCreator(), TokenHolder.TYPE_LABEL ),
                 new DelegatingTokenHolder( new ReadOnlyTokenCreator(), TokenHolder.TYPE_RELATIONSHIP_TYPE ) );
-        DatabaseKernelExtensions extensions = fixtureLife.add( instantiateKernelExtensions( storeDir, fileSystem, config, logService,
+        DatabaseKernelExtensions extensions = fixtureLife.add( instantiateKernelExtensions( databaseLayout, fileSystem, config, logService,
                 pageCache, scheduler, RecoveryCleanupWorkCollector.ignore(), DatabaseInfo.COMMUNITY, monitors, tokenHolders ) );
         return fixtureLife.add( new DefaultIndexProviderMap( extensions, config ) );
     }

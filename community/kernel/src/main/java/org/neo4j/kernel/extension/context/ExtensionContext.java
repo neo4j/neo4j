@@ -17,42 +17,26 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.spi;
+package org.neo4j.kernel.extension.context;
 
 import java.io.File;
 
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.util.DependencySatisfier;
 
-public class SimpleKernelContext implements KernelContext
+/**
+ * Context that provide information about outside environment into the extension.
+ */
+public interface ExtensionContext
 {
-    private final File contextDirectory;
-    private final DatabaseInfo databaseInfo;
-    private final DependencySatisfier satisfier;
+    DatabaseInfo databaseInfo();
 
-    public SimpleKernelContext( File contextDirectory, DatabaseInfo databaseInfo, DependencySatisfier satisfier )
-    {
-        this.contextDirectory = contextDirectory;
-        this.databaseInfo = databaseInfo;
-        this.satisfier = satisfier;
-    }
+    DependencySatisfier dependencySatisfier();
 
-    @Override
-    @Deprecated
-    public File storeDir()
-    {
-        return contextDirectory;
-    }
-
-    @Override
-    public DatabaseInfo databaseInfo()
-    {
-        return databaseInfo;
-    }
-
-    @Override
-    public DependencySatisfier dependencySatisfier()
-    {
-        return satisfier;
-    }
+    /**
+     * Context root directory.
+     * Depending from type of context directory can be equal to store root directory or database root directory.
+     * @return context root directory.
+     */
+    File directory();
 }

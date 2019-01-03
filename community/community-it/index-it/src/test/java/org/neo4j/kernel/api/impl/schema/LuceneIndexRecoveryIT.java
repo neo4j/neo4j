@@ -39,7 +39,7 @@ import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.extension.ExtensionType;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
-import org.neo4j.kernel.impl.spi.KernelContext;
+import org.neo4j.kernel.extension.context.ExtensionContext;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
@@ -331,7 +331,7 @@ public class LuceneIndexRecoveryIT
         }
 
         @Override
-        public Lifecycle newInstance( KernelContext context, LuceneIndexProviderFactory.Dependencies dependencies )
+        public Lifecycle newInstance( ExtensionContext context, LuceneIndexProviderFactory.Dependencies dependencies )
         {
             return new LuceneIndexProvider( fs.get(), directoryFactory, defaultDirectoryStructure( context.directory() ), IndexProvider.Monitor.EMPTY,
                     dependencies.getConfig(), context.databaseInfo().operationalMode );
@@ -347,7 +347,7 @@ public class LuceneIndexRecoveryIT
         }
 
         @Override
-        public Lifecycle newInstance( KernelContext context, LuceneIndexProviderFactory.Dependencies dependencies )
+        public Lifecycle newInstance( ExtensionContext context, LuceneIndexProviderFactory.Dependencies dependencies )
         {
             return new LuceneIndexProvider( fs.get(), directoryFactory, defaultDirectoryStructure( context.directory() ),
                     IndexProvider.Monitor.EMPTY, dependencies.getConfig(), context.databaseInfo().operationalMode )

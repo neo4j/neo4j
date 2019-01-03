@@ -20,73 +20,81 @@
 package org.neo4j.kernel.extension;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
-import org.neo4j.kernel.impl.spi.KernelContext;
-import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.exceptions.UnsatisfiedDependencyException;
-import org.neo4j.kernel.lifecycle.LifeSupport;
+import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.layout.StoreLayout;
+import org.neo4j.kernel.extension.context.DatabaseExtensionContext;
+import org.neo4j.kernel.extension.context.ExtensionContext;
+import org.neo4j.kernel.extension.context.GlobalExtensionContext;
+import org.neo4j.kernel.impl.factory.DatabaseInfo;
+import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.TestDirectoryExtension;
+import org.neo4j.test.rule.TestDirectory;
 
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.helpers.collection.Iterables.iterable;
 
-class GlobalKernelExtensionsTest
+@ExtendWith( TestDirectoryExtension.class )
+class ExtensionContextTest
 {
+    @Inject
+    private TestDirectory testDirectory;
+
     @Test
     void shouldConsultUnsatisfiedDependencyHandlerOnMissingDependencies()
     {
-        // GIVEN
-        KernelContext context = mock( KernelContext.class );
+        GlobalExtensionContext context = mock( GlobalExtensionContext.class );
         KernelExtensionFailureStrategy handler = mock( KernelExtensionFailureStrategy.class );
         Dependencies dependencies = new Dependencies(); // that hasn't got anything.
         TestingExtensionFactory extensionFactory = new TestingExtensionFactory();
         GlobalKernelExtensions extensions = new GlobalKernelExtensions( context, iterable( extensionFactory ), dependencies, handler );
 
-        // WHEN
-        LifeSupport life = new LifeSupport();
-        life.add( extensions );
-        try
+        try ( Lifespan ignored = new Lifespan( extensions ) )
         {
-            life.start();
-
-            // THEN
             verify( handler ).handle( eq( extensionFactory ), any( UnsatisfiedDependencyException.class ) );
-        }
-        finally
-        {
-            life.shutdown();
         }
     }
 
     @Test
     void shouldConsultUnsatisfiedDependencyHandlerOnFailingDependencyClasses()
     {
-        // GIVEN
-        KernelContext context = mock( KernelContext.class );
+        GlobalExtensionContext context = mock( GlobalExtensionContext.class );
         KernelExtensionFailureStrategy handler = mock( KernelExtensionFailureStrategy.class );
         Dependencies dependencies = new Dependencies(); // that hasn't got anything.
         UninitializableKernelExtensionFactory extensionFactory = new UninitializableKernelExtensionFactory();
         GlobalKernelExtensions extensions = new GlobalKernelExtensions( context, iterable( extensionFactory ), dependencies, handler );
 
-        // WHEN
-        LifeSupport life = new LifeSupport();
-        life.add( extensions );
-        try
+        try ( Lifespan ignored = new Lifespan( extensions ) )
         {
-            life.start();
-
-            // THEN
             verify( handler ).handle( eq( extensionFactory ), any( IllegalArgumentException.class ) );
         }
-        finally
-        {
-            life.shutdown();
-        }
+    }
+
+    @Test
+    void globalContextRootDirectoryEqualToStoreDirectory()
+    {
+        StoreLayout storeLayout = testDirectory.storeLayout();
+        GlobalExtensionContext context = new GlobalExtensionContext( storeLayout, DatabaseInfo.TOOL, new Dependencies() );
+        assertSame( storeLayout.storeDirectory(), context.directory() );
+    }
+
+    @Test
+    void databaseContextRootDirectoryEqualToDatabaseDirectory()
+    {
+        DatabaseLayout databaseLayout = testDirectory.databaseLayout();
+        DatabaseExtensionContext context = new DatabaseExtensionContext( databaseLayout, DatabaseInfo.TOOL, new Dependencies() );
+        assertSame( databaseLayout.databaseDirectory(), context.directory() );
     }
 
     private interface TestingDependencies
@@ -103,7 +111,7 @@ class GlobalKernelExtensionsTest
         }
 
         @Override
-        public Lifecycle newInstance( KernelContext context, TestingDependencies dependencies )
+        public Lifecycle newInstance( ExtensionContext context, TestingDependencies dependencies )
         {
             return new TestingExtension( dependencies.jobScheduler() );
         }

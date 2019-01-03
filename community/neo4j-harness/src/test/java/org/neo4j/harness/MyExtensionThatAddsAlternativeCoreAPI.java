@@ -21,9 +21,9 @@ package org.neo4j.harness;
 
 import org.neo4j.kernel.extension.ExtensionType;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
+import org.neo4j.kernel.extension.context.ExtensionContext;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.proc.Procedures;
-import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -42,8 +42,7 @@ public class MyExtensionThatAddsAlternativeCoreAPI
     }
 
     @Override
-    public Lifecycle newInstance( KernelContext context,
-            Dependencies dependencies )
+    public Lifecycle newInstance( ExtensionContext context, Dependencies dependencies )
     {
         dependencies.procedures().registerComponent( MyCoreAPI.class,
                 ctx -> new MyCoreAPI( dependencies.getGraphDatabaseAPI(), dependencies.txBridge(),

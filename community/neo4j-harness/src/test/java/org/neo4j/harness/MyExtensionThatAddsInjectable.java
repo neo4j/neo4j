@@ -20,8 +20,8 @@
 package org.neo4j.harness;
 
 import org.neo4j.kernel.extension.KernelExtensionFactory;
+import org.neo4j.kernel.extension.context.ExtensionContext;
 import org.neo4j.kernel.impl.proc.Procedures;
-import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
@@ -39,8 +39,7 @@ public class MyExtensionThatAddsInjectable
     }
 
     @Override
-    public Lifecycle newInstance( KernelContext context,
-            Dependencies dependencies )
+    public Lifecycle newInstance( ExtensionContext context, Dependencies dependencies )
     {
         dependencies.procedures().registerComponent( SomeService.class, ctx -> new SomeService(), true );
         return new LifecycleAdapter();

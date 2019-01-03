@@ -17,34 +17,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.spi;
+package org.neo4j.kernel.extension.context;
 
-import java.io.File;
-
-import org.neo4j.kernel.extension.ExtensionType;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.util.DependencySatisfier;
 
-public interface KernelContext
+public class DatabaseExtensionContext extends BaseExtensionContext
 {
-    /**
-     * @return store directory for {@link ExtensionType#GLOBAL} extensions and
-     * particular database directory if extension is per {@link ExtensionType#DATABASE}.
-     * @deprecated Please use {@link #directory()} instead.
-     */
-    @Deprecated
-    File storeDir();
-
-    DatabaseInfo databaseInfo();
-
-    DependencySatisfier dependencySatisfier();
-
-    /**
-     * @return store directory for {@link ExtensionType#GLOBAL} extensions and
-     * particular database directory if extension is per {@link ExtensionType#DATABASE}.
-     */
-    default File directory()
+    public DatabaseExtensionContext( DatabaseLayout databaseLayout, DatabaseInfo databaseInfo, DependencySatisfier satisfier )
     {
-        return storeDir();
+        super( databaseLayout.databaseDirectory(), databaseInfo, satisfier );
     }
 }

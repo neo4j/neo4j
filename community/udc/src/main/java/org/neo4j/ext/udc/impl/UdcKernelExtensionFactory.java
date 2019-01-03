@@ -25,7 +25,7 @@ import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
-import org.neo4j.kernel.impl.spi.KernelContext;
+import org.neo4j.kernel.extension.context.ExtensionContext;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.udc.UsageData;
 
@@ -56,7 +56,7 @@ public class UdcKernelExtensionFactory extends KernelExtensionFactory<UdcKernelE
     }
 
     @Override
-    public Lifecycle newInstance( KernelContext kernelContext, UdcKernelExtensionFactory.Dependencies dependencies )
+    public Lifecycle newInstance( ExtensionContext extensionContext, UdcKernelExtensionFactory.Dependencies dependencies )
     {
         Config config = dependencies.config();
         return new UdcKernelExtension(

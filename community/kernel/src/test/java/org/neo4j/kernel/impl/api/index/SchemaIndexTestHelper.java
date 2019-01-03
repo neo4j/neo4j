@@ -29,7 +29,7 @@ import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.ExtensionType;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
-import org.neo4j.kernel.impl.spi.KernelContext;
+import org.neo4j.kernel.extension.context.ExtensionContext;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.recovery.RecoveryExtension;
 
@@ -66,7 +66,7 @@ public class SchemaIndexTestHelper
         }
 
         @Override
-        public Lifecycle newInstance( KernelContext context,
+        public Lifecycle newInstance( ExtensionContext context,
                 SingleInstanceIndexProviderFactoryDependencies dependencies )
         {
             return provider;

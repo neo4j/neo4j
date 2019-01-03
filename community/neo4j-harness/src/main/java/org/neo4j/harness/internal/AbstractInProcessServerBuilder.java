@@ -47,8 +47,8 @@ import org.neo4j.kernel.configuration.HttpConnector.Encryption;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.extension.ExtensionType;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
+import org.neo4j.kernel.extension.context.ExtensionContext;
 import org.neo4j.kernel.impl.proc.Procedures;
-import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.FormattedLogProvider;
@@ -322,8 +322,7 @@ public abstract class AbstractInProcessServerBuilder implements TestServerBuilde
         }
 
         @Override
-        public Lifecycle newInstance( KernelContext context,
-                Dependencies dependencies )
+        public Lifecycle newInstance( ExtensionContext context, Dependencies dependencies )
         {
             return new LifecycleAdapter()
             {

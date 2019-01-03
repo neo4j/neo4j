@@ -22,6 +22,7 @@ package org.neo4j.kernel.api.impl.fulltext;
 import java.io.File;
 
 import org.neo4j.exceptions.KernelException;
+import org.neo4j.exceptions.UnsatisfiedDependencyException;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Service;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -31,13 +32,12 @@ import org.neo4j.kernel.api.index.IndexProviderDescriptor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.ExtensionType;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
+import org.neo4j.kernel.extension.context.ExtensionContext;
 import org.neo4j.kernel.impl.api.NonTransactionalTokenNameLookup;
 import org.neo4j.kernel.impl.core.TokenHolders;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.kernel.impl.proc.Procedures;
-import org.neo4j.kernel.impl.spi.KernelContext;
-import org.neo4j.exceptions.UnsatisfiedDependencyException;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.recovery.RecoveryExtension;
 import org.neo4j.logging.Log;
@@ -83,7 +83,7 @@ public class FulltextIndexProviderFactory extends KernelExtensionFactory<Fulltex
     }
 
     @Override
-    public Lifecycle newInstance( KernelContext context, Dependencies dependencies )
+    public Lifecycle newInstance( ExtensionContext context, Dependencies dependencies )
     {
         Config config = dependencies.getConfig();
         boolean ephemeral = config.get( GraphDatabaseSettings.ephemeral );
@@ -122,7 +122,7 @@ public class FulltextIndexProviderFactory extends KernelExtensionFactory<Fulltex
         return provider;
     }
 
-    private static void logDependencyException( KernelContext context, Logger toolLog, Logger dbmsLog, String message )
+    private static void logDependencyException( ExtensionContext context, Logger toolLog, Logger dbmsLog, String message )
     {
         // We can for instance get unsatisfied dependency exceptions when the kernel extension is created as part of a consistency check run.
         if ( context.databaseInfo() == DatabaseInfo.TOOL )

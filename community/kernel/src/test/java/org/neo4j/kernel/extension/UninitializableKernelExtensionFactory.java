@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.extension;
 
-import org.neo4j.kernel.impl.spi.KernelContext;
+import org.neo4j.kernel.extension.context.ExtensionContext;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
 /**
@@ -33,7 +33,7 @@ public class UninitializableKernelExtensionFactory extends KernelExtensionFactor
     }
 
     @Override
-    public Lifecycle newInstance( KernelContext context, UnproxyableDependencies dependencies )
+    public Lifecycle newInstance( ExtensionContext context, UnproxyableDependencies dependencies )
     {
         return null;
     }

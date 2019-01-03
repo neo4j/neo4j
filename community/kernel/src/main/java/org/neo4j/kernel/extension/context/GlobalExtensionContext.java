@@ -17,16 +17,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.extension;
+package org.neo4j.kernel.extension.context;
 
-import org.neo4j.kernel.extension.context.GlobalExtensionContext;
-import org.neo4j.kernel.impl.util.Dependencies;
+import org.neo4j.io.layout.StoreLayout;
+import org.neo4j.kernel.impl.factory.DatabaseInfo;
+import org.neo4j.kernel.impl.util.DependencySatisfier;
 
-public class GlobalKernelExtensions extends AbstractKernelExtensions
+public class GlobalExtensionContext extends BaseExtensionContext
 {
-    public GlobalKernelExtensions( GlobalExtensionContext extensionContext, Iterable<KernelExtensionFactory<?>> kernelExtensionFactories,
-                             Dependencies dependencies, KernelExtensionFailureStrategy kernelExtensionFailureStrategy )
+    public GlobalExtensionContext( StoreLayout storeLayout, DatabaseInfo databaseInfo, DependencySatisfier satisfier )
     {
-        super( extensionContext, kernelExtensionFactories, dependencies, kernelExtensionFailureStrategy, ExtensionType.GLOBAL );
+        super( storeLayout.storeDirectory(), databaseInfo, satisfier );
     }
 }

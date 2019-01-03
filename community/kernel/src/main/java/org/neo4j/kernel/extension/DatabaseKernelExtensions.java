@@ -19,14 +19,14 @@
  */
 package org.neo4j.kernel.extension;
 
-import org.neo4j.kernel.impl.spi.KernelContext;
+import org.neo4j.kernel.extension.context.DatabaseExtensionContext;
 import org.neo4j.kernel.impl.util.Dependencies;
 
 public class DatabaseKernelExtensions extends AbstractKernelExtensions
 {
-    public DatabaseKernelExtensions( KernelContext kernelContext, Iterable<KernelExtensionFactory<?>> kernelExtensionFactories,
+    public DatabaseKernelExtensions( DatabaseExtensionContext extensionContext, Iterable<KernelExtensionFactory<?>> kernelExtensionFactories,
                              Dependencies dependencies, KernelExtensionFailureStrategy kernelExtensionFailureStrategy )
     {
-        super( kernelContext, kernelExtensionFactories, dependencies, kernelExtensionFailureStrategy, ExtensionType.DATABASE );
+        super( extensionContext, kernelExtensionFactories, dependencies, kernelExtensionFailureStrategy, ExtensionType.DATABASE );
     }
 }

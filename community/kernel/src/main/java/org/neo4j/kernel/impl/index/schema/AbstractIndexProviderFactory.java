@@ -29,8 +29,8 @@ import org.neo4j.kernel.api.index.LoggingMonitor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.ExtensionType;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
+import org.neo4j.kernel.extension.context.ExtensionContext;
 import org.neo4j.kernel.impl.factory.OperationalMode;
-import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.kernel.recovery.RecoveryExtension;
 import org.neo4j.logging.Log;
@@ -45,7 +45,7 @@ public abstract class AbstractIndexProviderFactory<DEPENDENCIES extends Abstract
     }
 
     @Override
-    public IndexProvider newInstance( KernelContext context, DEPENDENCIES dependencies )
+    public IndexProvider newInstance( ExtensionContext context, DEPENDENCIES dependencies )
     {
         PageCache pageCache = dependencies.pageCache();
         File databaseDir = context.directory();

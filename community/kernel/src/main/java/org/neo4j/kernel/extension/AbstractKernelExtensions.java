@@ -23,11 +23,11 @@ import java.lang.reflect.ParameterizedType;
 import java.util.List;
 import java.util.Objects;
 
+import org.neo4j.exceptions.UnsatisfiedDependencyException;
 import org.neo4j.graphdb.DependencyResolver;
-import org.neo4j.kernel.impl.spi.KernelContext;
+import org.neo4j.kernel.extension.context.ExtensionContext;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.DependenciesProxy;
-import org.neo4j.exceptions.UnsatisfiedDependencyException;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
@@ -36,16 +36,16 @@ import static org.neo4j.helpers.collection.Iterables.stream;
 
 public abstract class AbstractKernelExtensions extends DependencyResolver.Adapter implements Lifecycle
 {
-    private final KernelContext kernelContext;
+    private final ExtensionContext extensionContext;
     private final List<KernelExtensionFactory<?>> kernelExtensionFactories;
     private final Dependencies dependencies;
     private final LifeSupport life = new LifeSupport();
     private final KernelExtensionFailureStrategy kernelExtensionFailureStrategy;
 
-    AbstractKernelExtensions( KernelContext kernelContext, Iterable<KernelExtensionFactory<?>> kernelExtensionFactories, Dependencies dependencies,
+    AbstractKernelExtensions( ExtensionContext extensionContext, Iterable<KernelExtensionFactory<?>> kernelExtensionFactories, Dependencies dependencies,
             KernelExtensionFailureStrategy kernelExtensionFailureStrategy, ExtensionType extensionType )
     {
-        this.kernelContext = kernelContext;
+        this.extensionContext = extensionContext;
         this.kernelExtensionFailureStrategy = kernelExtensionFailureStrategy;
         this.kernelExtensionFactories = stream( kernelExtensionFactories ).filter( e -> e.getExtensionType() == extensionType ).collect( toList() );
         this.dependencies = dependencies;
@@ -59,7 +59,7 @@ public abstract class AbstractKernelExtensions extends DependencyResolver.Adapte
             try
             {
                 Object kernelExtensionDependencies = getKernelExtensionDependencies( kernelExtensionFactory );
-                Lifecycle dependency = newInstance( kernelContext, kernelExtensionFactory, kernelExtensionDependencies );
+                Lifecycle dependency = newInstance( extensionContext, kernelExtensionFactory, kernelExtensionDependencies );
                 Objects.requireNonNull( dependency, kernelExtensionFactory.toString() + " returned a null KernelExtension" );
                 life.add( dependencies.satisfyDependency( dependency ) );
             }
@@ -115,8 +115,8 @@ public abstract class AbstractKernelExtensions extends DependencyResolver.Adapte
     }
 
     @SuppressWarnings( "unchecked" )
-    private static <T> Lifecycle newInstance( KernelContext kernelContext, KernelExtensionFactory<T> factory, Object dependencies )
+    private static <T> Lifecycle newInstance( ExtensionContext extensionContext, KernelExtensionFactory<T> factory, Object dependencies )
     {
-        return factory.newInstance( kernelContext, (T)dependencies );
+        return factory.newInstance( extensionContext, (T)dependencies );
     }
 }

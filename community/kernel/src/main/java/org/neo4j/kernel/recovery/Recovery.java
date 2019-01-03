@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.recovery;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
@@ -47,6 +46,7 @@ import org.neo4j.kernel.database.DefaultForceOperation;
 import org.neo4j.kernel.extension.DatabaseKernelExtensions;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.extension.KernelExtensionFailureStrategies;
+import org.neo4j.kernel.extension.context.DatabaseExtensionContext;
 import org.neo4j.kernel.impl.api.DatabaseSchemaState;
 import org.neo4j.kernel.impl.api.NonTransactionalTokenNameLookup;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -59,8 +59,6 @@ import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
 import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
-import org.neo4j.kernel.impl.spi.KernelContext;
-import org.neo4j.kernel.impl.spi.SimpleKernelContext;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.id.DefaultIdController;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
@@ -252,7 +250,7 @@ public final class Recovery
         TokenNameLookup tokenNameLookup = new NonTransactionalTokenNameLookup( tokenHolders );
 
         RecoveryCleanupWorkCollector recoveryCleanupCollector = new GroupingRecoveryCleanupWorkCollector( scheduler );
-        DatabaseKernelExtensions extensions = instantiateRecoveryExtensions( databaseLayout.databaseDirectory(), fs, config, logService, pageCache, scheduler,
+        DatabaseKernelExtensions extensions = instantiateRecoveryExtensions( databaseLayout, fs, config, logService, pageCache, scheduler,
                 recoveryCleanupCollector, DatabaseInfo.TOOL, monitors, tokenHolders, recoveryCleanupCollector, extensionFactories );
         DefaultIndexProviderMap indexProviderMap = new DefaultIndexProviderMap( extensions, config );
 
@@ -341,7 +339,7 @@ public final class Recovery
         return Iterables.cast( Service.load( KernelExtensionFactory.class ) );
     }
 
-    private static DatabaseKernelExtensions instantiateRecoveryExtensions( File databaseDirectory, FileSystemAbstraction fileSystem, Config config,
+    private static DatabaseKernelExtensions instantiateRecoveryExtensions( DatabaseLayout databaseLayout, FileSystemAbstraction fileSystem, Config config,
             LogService logService, PageCache pageCache, JobScheduler jobScheduler, RecoveryCleanupWorkCollector recoveryCollector, DatabaseInfo databaseInfo,
             Monitors monitors, TokenHolders tokenHolders, RecoveryCleanupWorkCollector recoveryCleanupCollector,
             Iterable<KernelExtensionFactory<?>> kernelExtensions )
@@ -354,8 +352,8 @@ public final class Recovery
         NonListenableMonitors nonListenableMonitors = new NonListenableMonitors( monitors );
         deps.satisfyDependencies( fileSystem, config, logService, pageCache, recoveryCollector, nonListenableMonitors, jobScheduler,
                 tokenHolders, recoveryCleanupCollector );
-        KernelContext kernelContext = new SimpleKernelContext( databaseDirectory, databaseInfo, deps );
-        return new DatabaseKernelExtensions( kernelContext, recoveryExtensions, deps, KernelExtensionFailureStrategies.fail() );
+        DatabaseExtensionContext extensionContext = new DatabaseExtensionContext( databaseLayout, databaseInfo, deps );
+        return new DatabaseKernelExtensions( extensionContext, recoveryExtensions, deps, KernelExtensionFailureStrategies.fail() );
     }
 
     private static boolean isRecoveryRequired( FileSystemAbstraction fs, PageCache pageCache, DatabaseLayout databaseLayout, Config config,
