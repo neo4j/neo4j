@@ -185,6 +185,26 @@ public class OtherThreadExecutor<T> implements ThreadFactory, Closeable
         R doWork( T state ) throws Exception;
     }
 
+    public static <T,R> WorkerCommand<T,R> command( Race.ThrowingRunnable runnable )
+    {
+        return state ->
+        {
+            try
+            {
+                runnable.run();
+                return null;
+            }
+            catch ( Exception e )
+            {
+                throw e;
+            }
+            catch ( Throwable throwable )
+            {
+                throw new RuntimeException( throwable );
+            }
+        };
+    }
+
     @Override
     public Thread newThread( Runnable r )
     {
