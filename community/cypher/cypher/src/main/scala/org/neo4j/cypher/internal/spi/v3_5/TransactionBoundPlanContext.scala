@@ -39,13 +39,13 @@ import org.neo4j.internal.kernel.api.procs.Neo4jTypes.AnyType
 import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory
 import org.neo4j.procedure.Mode
-import org.opencypher.v9_0.frontend.phases.InternalNotificationLogger
-import org.opencypher.v9_0.util.symbols
-import org.opencypher.v9_0.util.symbols.CypherType
-import org.opencypher.v9_0.util.CypherExecutionException
-import org.opencypher.v9_0.util.LabelId
-import org.opencypher.v9_0.util.PropertyKeyId
-import org.opencypher.v9_0.util.{symbols => types}
+import org.neo4j.cypher.internal.v3_5.frontend.phases.InternalNotificationLogger
+import org.neo4j.cypher.internal.v3_5.util.symbols
+import org.neo4j.cypher.internal.v3_5.util.symbols.CypherType
+import org.neo4j.cypher.internal.v3_5.util.CypherExecutionException
+import org.neo4j.cypher.internal.v3_5.util.LabelId
+import org.neo4j.cypher.internal.v3_5.util.PropertyKeyId
+import org.neo4j.cypher.internal.v3_5.util.{symbols => types}
 
 import scala.collection.JavaConverters._
 

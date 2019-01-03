@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compatibility.v3_5
 
 import org.neo4j.cypher.internal.compatibility.v3_5.helpers.as4_0
-import org.opencypher.v9_0.{ast => astV3_5}
+import org.neo4j.cypher.internal.v3_5.{ast => astV3_5}
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticCheck
 import org.neo4j.cypher.internal.v4_0.util.InputPosition
 import org.neo4j.cypher.internal.v4_0.{ast => astv4_0}

@@ -24,10 +24,10 @@ import java.time.Clock
 import org.neo4j.cypher.internal.compiler.v3_5.phases.PlannerContext
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.{ExpressionEvaluator, Metrics, MetricsFactory, QueryGraphSolver}
 import org.neo4j.cypher.internal.compiler.v3_5.{ContextCreator, CypherPlannerConfiguration, SyntaxExceptionCreator, UpdateStrategy}
-import org.opencypher.v9_0.frontend.phases.{CompilationPhaseTracer, InternalNotificationLogger, Monitors}
+import org.neo4j.cypher.internal.v3_5.frontend.phases.{CompilationPhaseTracer, InternalNotificationLogger, Monitors}
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanContext
-import org.opencypher.v9_0.util.attribution.IdGen
-import org.opencypher.v9_0.util.{CypherException, InputPosition}
+import org.neo4j.cypher.internal.v3_5.util.attribution.IdGen
+import org.neo4j.cypher.internal.v3_5.util.{CypherException, InputPosition}
 
 class CommunityRuntimeContext(override val exceptionCreator: (String, InputPosition) => CypherException,
                               override val tracer: CompilationPhaseTracer,

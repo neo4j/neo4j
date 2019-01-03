@@ -43,12 +43,12 @@ import org.neo4j.cypher.internal.v4_0.util.{symbols => symbolsV4_0}
 import org.neo4j.cypher.internal.v4_0.{ast => astV4_0}
 import org.neo4j.cypher.internal.v4_0.{util => utilV4_0}
 import org.neo4j.cypher.internal.v4_0.{expressions => expressionsV4_0}
-import org.opencypher.v9_0.util.attribution.{SequentialIdGen => SequentialIdGenV3_5}
-import org.opencypher.v9_0.util.{InputPosition => InputPositionV3_5}
-import org.opencypher.v9_0.util.{symbols => symbolsV3_5}
-import org.opencypher.v9_0.{ast => astV3_5}
-import org.opencypher.v9_0.{expressions => expressionsV3_5}
-import org.opencypher.v9_0.{util => utilV3_5}
+import org.neo4j.cypher.internal.v3_5.util.attribution.{SequentialIdGen => SequentialIdGenV3_5}
+import org.neo4j.cypher.internal.v3_5.util.{InputPosition => InputPositionV3_5}
+import org.neo4j.cypher.internal.v3_5.util.{symbols => symbolsV3_5}
+import org.neo4j.cypher.internal.v3_5.{ast => astV3_5}
+import org.neo4j.cypher.internal.v3_5.{expressions => expressionsV3_5}
+import org.neo4j.cypher.internal.v3_5.{util => utilV3_5}
 import org.reflections.Reflections
 
 import scala.collection.JavaConverters._

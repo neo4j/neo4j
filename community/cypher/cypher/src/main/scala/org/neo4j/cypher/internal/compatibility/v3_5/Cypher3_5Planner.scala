@@ -62,15 +62,15 @@ import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.logging.Log
 import org.neo4j.values.virtual.MapValue
-import org.opencypher.v9_0.ast.{Statement => StatementV3_5}
-import org.opencypher.v9_0.expressions.Expression
-import org.opencypher.v9_0.expressions.Parameter
-import org.opencypher.v9_0.frontend.phases
-import org.opencypher.v9_0.frontend.phases.BaseState
-import org.opencypher.v9_0.frontend.phases.{RecordingNotificationLogger => RecordingNotificationLoggerV3_5}
-import org.opencypher.v9_0.frontend.phases.{Monitors => MonitorsV3_5}
-import org.opencypher.v9_0.rewriting.RewriterStepSequencer
-import org.opencypher.v9_0.{util => utilV3_5}
+import org.neo4j.cypher.internal.v3_5.ast.{Statement => StatementV3_5}
+import org.neo4j.cypher.internal.v3_5.expressions.Expression
+import org.neo4j.cypher.internal.v3_5.expressions.Parameter
+import org.neo4j.cypher.internal.v3_5.frontend.phases
+import org.neo4j.cypher.internal.v3_5.frontend.phases.BaseState
+import org.neo4j.cypher.internal.v3_5.frontend.phases.{RecordingNotificationLogger => RecordingNotificationLoggerV3_5}
+import org.neo4j.cypher.internal.v3_5.frontend.phases.{Monitors => MonitorsV3_5}
+import org.neo4j.cypher.internal.v3_5.rewriting.RewriterStepSequencer
+import org.neo4j.cypher.internal.v3_5.{util => utilV3_5}
 
 case class Cypher3_5Planner(configv4_0: CypherPlannerConfiguration,
                             clock: Clock,
@@ -256,7 +256,7 @@ case class Cypher3_5Planner(configv4_0: CypherPlannerConfiguration,
 
 private[v3_5] class Parser3_5(compiler: v3_5.CypherPlanner[CommunityRuntimeContext],
                               notificationLogger: RecordingNotificationLoggerV3_5,
-                              offset: org.opencypher.v9_0.util.InputPosition,
+                              offset: org.neo4j.cypher.internal.v3_5.util.InputPosition,
                               tracer: phases.CompilationPhaseTracer
                              ) extends Parser[BaseState] {
 

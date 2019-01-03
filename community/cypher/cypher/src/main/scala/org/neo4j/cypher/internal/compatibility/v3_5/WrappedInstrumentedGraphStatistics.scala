@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compatibility.v3_5
 
 import org.neo4j.cypher.internal.planner.v3_5.spi.{GraphStatistics => GraphStatisticsV3_5, IndexDescriptor => IndexDescriptorV3_5, InstrumentedGraphStatistics => InstrumentedGraphStatisticsV3_5, MutableGraphStatisticsSnapshot => MutableGraphStatisticsSnapshotV3_5}
 import org.neo4j.cypher.internal.planner.v4_0.spi._
-import org.opencypher.v9_0.util.{Cardinality => CardinalityV3_5, LabelId => LabelIdV3_5, PropertyKeyId => PropertyKeyIdV3_5, RelTypeId => RelTypeIdV3_5, Selectivity => SelectivityV3_5}
+import org.neo4j.cypher.internal.v3_5.util.{Cardinality => CardinalityV3_5, LabelId => LabelIdV3_5, PropertyKeyId => PropertyKeyIdV3_5, RelTypeId => RelTypeIdV3_5, Selectivity => SelectivityV3_5}
 import org.neo4j.cypher.internal.v4_0.util.{LabelId, PropertyKeyId, RelTypeId}
 
 /**

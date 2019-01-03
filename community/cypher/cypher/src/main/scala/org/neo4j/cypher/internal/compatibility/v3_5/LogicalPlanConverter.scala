@@ -34,9 +34,9 @@ import org.neo4j.cypher.internal.v4_0.util.Rewritable.RewritableAny
 import org.neo4j.cypher.internal.v4_0.util.attribution.IdGen
 import org.neo4j.cypher.internal.v4_0.util.{symbols => symbolsV4_0, _}
 import org.neo4j.cypher.internal.v4_0.{expressions => expressionsV4_0, util => utilV4_0}
-import org.opencypher.v9_0.expressions.{Expression => ExpressionV3_5, SemanticDirection => SemanticDirectionV3_5}
-import org.opencypher.v9_0.util.{InputPosition => InputPositionV3_5, symbols => symbolsV3_5}
-import org.opencypher.v9_0.{ast => astV3_5, expressions => expressionsV3_5, util => utilV3_5}
+import org.neo4j.cypher.internal.v3_5.expressions.{Expression => ExpressionV3_5, SemanticDirection => SemanticDirectionV3_5}
+import org.neo4j.cypher.internal.v3_5.util.{InputPosition => InputPositionV3_5, symbols => symbolsV3_5}
+import org.neo4j.cypher.internal.v3_5.{ast => astV3_5, expressions => expressionsV3_5, util => utilV3_5}
 
 import scala.collection.mutable
 import scala.collection.mutable.{HashMap => MutableHashMap}
@@ -51,15 +51,14 @@ object LogicalPlanConverter {
 
   val oldLogicalPlanPackage = "org.neo4j.cypher.internal.v3_5.logical.plans"
   val newLogicalPlanPackage = "org.neo4j.cypher.internal.v4_0.logical.plans"
-  val oldASTPackage = "org.opencypher.v9_0.ast"
+  val oldASTPackage = "org.neo4j.cypher.internal.v3_5.ast"
   val newASTPackage = "org.neo4j.cypher.internal.v4_0.ast"
-  val oldExpressionPackage = "org.opencypher.v9_0.expressions"
+  val oldExpressionPackage = "org.neo4j.cypher.internal.v3_5.expressions"
   val newExpressionPackage = "org.neo4j.cypher.internal.v4_0.expressions"
-  val oldUtilPackage = "org.opencypher.v9_0.util"
+  val oldUtilPackage = "org.neo4j.cypher.internal.v3_5.util"
   val newUtilPackage = "org.neo4j.cypher.internal.v4_0.util"
   val oldIRPackage = "org.neo4j.cypher.internal.ir.v3_5"
   val newIRPackage = "org.neo4j.cypher.internal.ir.v4_0"
- // val oldRewritersPackage = "org.opencypher.v9_0.ast.rewriters"
 
   /**
     * This rewriter traverses the tree bottom up and applies the mappings given here. We need to use RewriterWithArgs,

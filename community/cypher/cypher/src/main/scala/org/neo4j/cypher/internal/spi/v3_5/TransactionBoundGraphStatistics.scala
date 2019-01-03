@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.spi.v3_5
 
 import org.neo4j.cypher.internal.planner.v3_5.spi.{GraphStatistics, IndexDescriptor, StatisticsCompletingGraphStatistics}
-import org.opencypher.v9_0.util._
+import org.neo4j.cypher.internal.v3_5.util._
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException
 import org.neo4j.internal.kernel.api.{Read, SchemaRead}
 

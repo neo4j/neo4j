@@ -19,12 +19,12 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_5
 
-import org.opencypher.v9_0.ast.semantics.{SemanticTable => SemanticTableV3_5}
-import org.opencypher.v9_0.{ast => astV3_5}
-import org.opencypher.v9_0.ast.{semantics => semanticsV3_5}
-import org.opencypher.v9_0.util.{InputPosition => InputPositionV3_5}
-import org.opencypher.v9_0.{util => utilV3_5}
-import org.opencypher.v9_0.expressions.{Expression => ExpressionV3_5}
+import org.neo4j.cypher.internal.v3_5.ast.semantics.{SemanticTable => SemanticTableV3_5}
+import org.neo4j.cypher.internal.v3_5.{ast => astV3_5}
+import org.neo4j.cypher.internal.v3_5.ast.{semantics => semanticsV3_5}
+import org.neo4j.cypher.internal.v3_5.util.{InputPosition => InputPositionV3_5}
+import org.neo4j.cypher.internal.v3_5.{util => utilV3_5}
+import org.neo4j.cypher.internal.v3_5.expressions.{Expression => ExpressionV3_5}
 import org.neo4j.cypher.internal.v4_0.ast.semantics.{ExpressionTypeInfo, SemanticTable => SemanticTablev4_0}
 import org.neo4j.cypher.internal.v4_0.expressions.{Expression => Expressionv4_0}
 import org.neo4j.cypher.internal.v4_0.{ast => astv4_0, expressions => expressionsv4_0, util => utilv4_0}

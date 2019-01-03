@@ -20,11 +20,11 @@
 package org.neo4j.cypher.internal.compatibility.v3_5
 
 import org.neo4j.cypher.internal.compatibility.v3_5.SemanticTableConverter.ExpressionMapping4To5
-import org.opencypher.v9_0.ast.semantics.{ExpressionTypeInfo => ExpressionTypeInfoV3_5, SemanticTable => SemanticTableV3_5}
-import org.opencypher.v9_0.{ast => astV3_5}
-import org.opencypher.v9_0.util.symbols.{TypeSpec => TypeSpecV3_5}
-import org.opencypher.v9_0.util.{InputPosition => InputPositionV3_5}
-import org.opencypher.v9_0.{expressions => expressionsV3_5}
+import org.neo4j.cypher.internal.v3_5.ast.semantics.{ExpressionTypeInfo => ExpressionTypeInfoV3_5, SemanticTable => SemanticTableV3_5}
+import org.neo4j.cypher.internal.v3_5.{ast => astV3_5}
+import org.neo4j.cypher.internal.v3_5.util.symbols.{TypeSpec => TypeSpecV3_5}
+import org.neo4j.cypher.internal.v3_5.util.{InputPosition => InputPositionV3_5}
+import org.neo4j.cypher.internal.v3_5.{expressions => expressionsV3_5}
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.v4_0.{expressions => expressionsv4_0, util => utilv4_0}
 

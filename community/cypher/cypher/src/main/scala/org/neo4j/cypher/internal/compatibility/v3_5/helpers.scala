@@ -52,15 +52,15 @@ import org.neo4j.cypher.internal.v4_0.{ast => astV4_0}
 import org.neo4j.cypher.internal.v4_0.{util => nfV4_0}
 import org.neo4j.kernel.impl.query.QueryExecutionMonitor
 import org.neo4j.kernel.impl.query.TransactionalContext
-import org.opencypher.v9_0.expressions.{Expression => ExpressionV3_5}
-import org.opencypher.v9_0.frontend.phases.CompilationPhaseTracer.{CompilationPhase => v3_5Phase}
-import org.opencypher.v9_0.frontend.phases.{CompilationPhaseTracer => CompilationPhaseTracerV3_5}
-import org.opencypher.v9_0.frontend.{PlannerName => PlannerNameV3_5}
-import org.opencypher.v9_0.util.attribution.{Id => IdV3_5}
-import org.opencypher.v9_0.util.{InputPosition => InputPositionV3_5}
-import org.opencypher.v9_0.util.{Cardinality => CardinalityV3_5}
-import org.opencypher.v9_0.{ast => astV3_5}
-import org.opencypher.v9_0.{util => nfV3_5}
+import org.neo4j.cypher.internal.v3_5.expressions.{Expression => ExpressionV3_5}
+import org.neo4j.cypher.internal.v3_5.frontend.phases.CompilationPhaseTracer.{CompilationPhase => v3_5Phase}
+import org.neo4j.cypher.internal.v3_5.frontend.phases.{CompilationPhaseTracer => CompilationPhaseTracerV3_5}
+import org.neo4j.cypher.internal.v3_5.frontend.{PlannerName => PlannerNameV3_5}
+import org.neo4j.cypher.internal.v3_5.util.attribution.{Id => IdV3_5}
+import org.neo4j.cypher.internal.v3_5.util.{InputPosition => InputPositionV3_5}
+import org.neo4j.cypher.internal.v3_5.util.{Cardinality => CardinalityV3_5}
+import org.neo4j.cypher.internal.v3_5.{ast => astV3_5}
+import org.neo4j.cypher.internal.v3_5.{util => nfV3_5}
 
 object helpers {
   implicit def monitorFailure(t: Throwable)(implicit monitor: QueryExecutionMonitor, tc: TransactionalContext): Unit = {
