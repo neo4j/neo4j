@@ -168,6 +168,21 @@ public class RecordStorageReader implements StorageReader
     @Override
     public long nodesGetCount()
     {
+        if ( counts != null )
+        {
+            try
+            {
+                return counts.nodeCount( StatementConstants.ANY_LABEL, newDoubleLongRegister() ).readSecond();
+            }
+            catch ( IllegalStateException e )
+            {
+                // This can happen if requesting nodes count before the store has been fully recovered.
+                // Counts store cannot return values until then, so we'll just have to return an estimate.
+                // The only use case here at the time of writing this is index population progress during recovery.
+            }
+        }
+        // else this reader was instantiated as a simpler reader only over a NeoStores
+
         return nodeStore.getNumberOfIdsInUse();
     }
 

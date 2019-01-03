@@ -40,7 +40,7 @@ import static org.neo4j.test.mockito.matcher.Neo4jMatchers.getPropertyKeys;
 public class RecordStorageReaderLabelTest extends RecordStorageReaderTestBase
 {
     @Test
-    public void shouldBeAbleToListLabelsForNode() throws Exception
+    public void shouldBeAbleToListLabelsForNode()
     {
         // GIVEN
         long nodeId;
@@ -71,5 +71,36 @@ public class RecordStorageReaderLabelTest extends RecordStorageReaderTestBase
 
         // WHEN THEN
         assertThat( getPropertyKeys( db, node ), containsOnly( "name" ) );
+    }
+
+    @Test
+    public void shouldCountAllNodes()
+    {
+        // given
+        int nodeCountPerLabel = 5;
+        Node[] label2Nodes = new Node[nodeCountPerLabel];
+        try ( Transaction tx = db.beginTx() )
+        {
+            for ( int i = 0; i < nodeCountPerLabel; i++ )
+            {
+                db.createNode( label1 );
+                label2Nodes[i] = db.createNode( label2 );
+            }
+            tx.success();
+        }
+        try ( Transaction tx = db.beginTx() )
+        {
+            for ( Node label2Node : label2Nodes )
+            {
+                label2Node.delete();
+            }
+            tx.success();
+        }
+
+        // when
+        long count = storageReader.nodesGetCount();
+
+        // then
+        assertEquals( nodeCountPerLabel, count );
     }
 }
