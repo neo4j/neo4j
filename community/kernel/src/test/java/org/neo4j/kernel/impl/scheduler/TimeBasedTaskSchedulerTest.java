@@ -205,7 +205,7 @@ class TimeBasedTaskSchedulerTest
     }
 
     @Test
-    void delayedTasksMustNotRunIfCancelledFirst() throws Exception
+    void delayedTasksMustNotRunIfCancelledFirst()
     {
         List<Boolean> cancelListener = new ArrayList<>();
         JobHandle handle = scheduler.submit( Group.STORAGE_MAINTENANCE, counter::incrementAndGet, 100, 0 );
@@ -249,27 +249,28 @@ class TimeBasedTaskSchedulerTest
     }
 
     @Test
-    void cleanupCanceledHandles() throws InterruptedException
+    void cleanupCanceledHandles()
     {
-        Runnable recurring = () ->
-        {
-            counter.incrementAndGet();
-        };
+        Runnable recurring = () -> counter.incrementAndGet();
         JobHandle handle = scheduler.submit( Group.STORAGE_MAINTENANCE, recurring, 0, 100 );
-        clock.forward( 100, TimeUnit.NANOSECONDS );
+        // initial delay is 0 so this task will be scheduled right away
         scheduler.tick();
-
+        // after the call to tick we know that we've scheduled the task and the thread pool will now race with this test to execute it.
+        // wait until the task has been run (and re-enqueued since it's recurring).
         while ( scheduler.tasksLeft() == 0 )
         {
             Thread.yield();
         }
+        assertThat( counter.get(), is( 1 ) );
 
         handle.cancel( false );
+        // cancelling doesn't remove from queued tasks
         assertEquals( 1, scheduler.tasksLeft() );
 
-        clock.forward( 1, TimeUnit.NANOSECONDS );
+        clock.forward( 100, TimeUnit.NANOSECONDS );
+        // enough time has passed that this task, if not cancelled, would have been queued again
         scheduler.tick();
-
+        // tick will remove cancelled tasks
         assertEquals( 0, scheduler.tasksLeft() );
 
         pools.getThreadPool( Group.STORAGE_MAINTENANCE ).shutDown();
