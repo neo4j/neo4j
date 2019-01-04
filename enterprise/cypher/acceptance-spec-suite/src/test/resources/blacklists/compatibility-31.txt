@@ -6,6 +6,7 @@ Feature "CaseExpression": Scenario "Shorthand case with filter should work as ex
 Feature "ListComprehensionAcceptance": Scenario "Should find all the variables in list comprehension"
 Feature "MatchAcceptance": Scenario "equality with boolean lists"
 Feature "OptionalMatchAcceptance": Scenario "optional equality with boolean lists"
+Feature "OptionalMatchAcceptance": Scenario "optional match with OR where clause"
 Feature "OrderByAcceptance": Scenario "ORDER BY nodes should return null results last in ascending order"
 Feature "OrderByAcceptance": Scenario "ORDER BY relationships should return null results last in ascending order"
 Feature "OrderByAcceptance": Scenario "Ordering is well defined across all types, ascending"
