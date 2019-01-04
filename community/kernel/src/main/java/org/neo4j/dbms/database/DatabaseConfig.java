@@ -19,13 +19,13 @@
  */
 package org.neo4j.dbms.database;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import javax.annotation.Nonnull;
 
 import org.neo4j.configuration.ConfigValue;
@@ -122,7 +122,7 @@ public class DatabaseConfig extends Config implements Lifecycle
     @Override
     public <V> void registerDynamicUpdateListener( Setting<V> setting, SettingChangeListener<V> listener )
     {
-        registeredListeners.computeIfAbsent( setting, v -> new ArrayList<>() ).add( listener );
+        registeredListeners.computeIfAbsent( setting, v -> new ConcurrentLinkedQueue<>() ).add( listener );
         globalConfig.registerDynamicUpdateListener( setting, listener );
     }
 
@@ -199,7 +199,7 @@ public class DatabaseConfig extends Config implements Lifecycle
     }
 
     @Override
-    public void init() throws Throwable
+    public void init()
     {
 
     }
@@ -226,7 +226,7 @@ public class DatabaseConfig extends Config implements Lifecycle
     }
 
     @Override
-    public void shutdown() throws Throwable
+    public void shutdown()
     {
 
     }
