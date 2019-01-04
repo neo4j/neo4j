@@ -19,21 +19,15 @@
  */
 package org.neo4j.cypher.internal.compatibility.v4_0
 
-import java.time.Clock
-import java.time.Instant
-import java.time.ZoneOffset
+import java.time.{Clock, Instant, ZoneOffset}
 
 import org.neo4j.cypher
 import org.neo4j.cypher._
 import org.neo4j.cypher.internal.QueryCache.ParameterTypeMap
 import org.neo4j.cypher.internal._
-import org.neo4j.cypher.internal.compatibility.CommunityRuntimeContextCreator
-import org.neo4j.cypher.internal.compatibility.CypherCurrentCompiler
-import org.neo4j.cypher.internal.compatibility.CypherPlanner
-import org.neo4j.cypher.internal.compatibility.RuntimeContext
+import org.neo4j.cypher.internal.compatibility.{CommunityRuntimeContextCreator, CypherCurrentCompiler, CypherPlanner, RuntimeContext}
 import org.neo4j.cypher.internal.compatibility.v3_5.Cypher3_5Planner
-import org.neo4j.cypher.internal.compiler.v4_0.CypherPlannerConfiguration
-import org.neo4j.cypher.internal.compiler.v4_0.StatsDivergenceCalculator
+import org.neo4j.cypher.internal.compiler.v4_0.{CypherPlannerConfiguration, StatsDivergenceCalculator}
 import org.neo4j.cypher.internal.runtime.interpreted.CSVResources
 import org.neo4j.cypher.internal.v4_0.frontend.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.v4_0.util.DummyPosition
@@ -43,11 +37,8 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.helpers.collection.Pair
 import org.neo4j.kernel.configuration.Config
 import org.neo4j.kernel.impl.util.ValueUtils
-import org.neo4j.logging.AssertableLogProvider
 import org.neo4j.logging.AssertableLogProvider.inLog
-import org.neo4j.logging.Log
-import org.neo4j.logging.NullLog
-import org.neo4j.logging.NullLogProvider
+import org.neo4j.logging.{AssertableLogProvider, Log, NullLog, NullLogProvider}
 
 import scala.collection.Map
 
@@ -154,6 +145,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
       val context = graph.transactionalContext(query = query -> params)
       cypherCompiler.compile(PreParsedQuery(query, DummyPosition(0), query,
         isPeriodicCommit = false,
+        isLoadCSV = false,
         CypherVersion.default,
         CypherExecutionMode.default,
         CypherPlannerOption.default,

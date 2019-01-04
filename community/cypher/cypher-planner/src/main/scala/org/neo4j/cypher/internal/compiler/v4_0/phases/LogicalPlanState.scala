@@ -22,11 +22,11 @@ package org.neo4j.cypher.internal.compiler.v4_0.phases
 import org.neo4j.cypher.internal.ir.v4_0.{PeriodicCommit, UnionQuery}
 import org.neo4j.cypher.internal.planner.v4_0.spi.PlanningAttributes
 import org.neo4j.cypher.internal.planner.v4_0.spi.PlanningAttributes.{Cardinalities, ProvidedOrders, Solveds}
-import org.neo4j.cypher.internal.v4_0.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.v4_0.ast.semantics.{SemanticState, SemanticTable}
 import org.neo4j.cypher.internal.v4_0.ast.{Query, Statement}
 import org.neo4j.cypher.internal.v4_0.frontend.PlannerName
 import org.neo4j.cypher.internal.v4_0.frontend.phases.{BaseState, Condition}
+import org.neo4j.cypher.internal.v4_0.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.v4_0.util.InputPosition
 import org.neo4j.cypher.internal.v4_0.util.symbols.CypherType
 
@@ -49,7 +49,8 @@ case class LogicalPlanState(queryText: String,
                             maybeLogicalPlan: Option[LogicalPlan] = None,
                             maybePeriodicCommit: Option[Option[PeriodicCommit]] = None,
                             accumulatedConditions: Set[Condition] = Set.empty,
-                            initialFields: Map[String, CypherType] = Map.empty) extends BaseState {
+                            initialFields: Map[String, CypherType] = Map.empty,
+                            hasLoadCSV: Boolean = false) extends BaseState {
 
   def unionQuery: UnionQuery = maybeUnionQuery getOrElse fail("Union query")
   def logicalPlan: LogicalPlan = maybeLogicalPlan getOrElse fail("Logical plan")

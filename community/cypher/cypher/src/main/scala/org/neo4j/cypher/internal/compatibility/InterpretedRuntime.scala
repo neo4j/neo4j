@@ -21,19 +21,13 @@ package org.neo4j.cypher.internal.compatibility
 
 import org.neo4j.cypher.internal.compatibility.v4_0.runtime._
 import org.neo4j.cypher.internal.compatibility.v4_0.runtime.executionplan._
-import org.neo4j.cypher.internal.compatibility.v4_0.runtime.profiler.InterpretedProfileInformation
-import org.neo4j.cypher.internal.compatibility.v4_0.runtime.profiler.Profiler
-import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.CommunityExpressionConverter
-import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.ExpressionConverters
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.NestedPipeExpressions
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.PipeTreeBuilder
-import org.neo4j.cypher.internal.runtime.interpreted.InterpretedPipeMapper
-import org.neo4j.cypher.internal.runtime.interpreted.UpdateCountingQueryContext
+import org.neo4j.cypher.internal.compatibility.v4_0.runtime.profiler.{InterpretedProfileInformation, Profiler}
+import org.neo4j.cypher.internal.runtime.{QueryContext, QueryIndexes}
+import org.neo4j.cypher.internal.runtime.interpreted.{InterpretedPipeMapper, UpdateCountingQueryContext}
+import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.{NestedPipeExpressions, PipeTreeBuilder}
 import org.neo4j.cypher.internal.runtime.planDescription.Argument
-import org.neo4j.cypher.internal.runtime.QueryContext
-import org.neo4j.cypher.internal.runtime.QueryIndexes
-import org.neo4j.cypher.internal.v4_0.util.InternalNotification
-import org.neo4j.cypher.internal.v4_0.util.PeriodicCommitInOpenTransactionException
+import org.neo4j.cypher.internal.v4_0.util.{InternalNotification, PeriodicCommitInOpenTransactionException}
 import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.values.virtual.MapValue
 
@@ -54,7 +48,8 @@ object InterpretedRuntime extends CypherRuntime[RuntimeContext] {
                                                                         query.readOnly,
                                                                         columns,
                                                                         logicalPlan,
-                                                                        context.config.lenientCreateRelationship)
+                                                                        context.config.lenientCreateRelationship,
+                                                                        state.hasLoadCSV)
 
     new InterpretedExecutionPlan(query.periodicCommitInfo,
                                  resultBuilderFactory,

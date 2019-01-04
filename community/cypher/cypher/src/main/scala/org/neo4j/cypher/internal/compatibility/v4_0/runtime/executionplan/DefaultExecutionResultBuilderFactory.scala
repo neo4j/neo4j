@@ -23,18 +23,19 @@ import org.neo4j.cypher.internal.compatibility.v4_0.runtime._
 import org.neo4j.cypher.internal.runtime.{ExecutionContext, _}
 import org.neo4j.cypher.internal.runtime.interpreted.CSVResources
 import org.neo4j.cypher.internal.runtime.interpreted.pipes._
-import org.neo4j.cypher.internal.v4_0.logical.plans.{LoadCSV, LogicalPlan}
+import org.neo4j.cypher.internal.v4_0.logical.plans.LogicalPlan
 import org.neo4j.cypher.result.{QueryProfile, RuntimeResult}
 import org.neo4j.values.virtual.MapValue
 
 abstract class BaseExecutionResultBuilderFactory(pipe: Pipe,
                                                  readOnly: Boolean,
                                                  columns: Seq[String],
-                                                 logicalPlan: LogicalPlan) extends ExecutionResultBuilderFactory {
+                                                 logicalPlan: LogicalPlan,
+                                                 hasLoadCSV: Boolean) extends ExecutionResultBuilderFactory {
 
   abstract class BaseExecutionResultBuilder() extends ExecutionResultBuilder {
     protected var externalResource: ExternalCSVResource = new CSVResources(queryContext.resources)
-    protected var pipeDecorator: PipeDecorator = if (logicalPlan.hasLoadCSV) new LinenumberPipeDecorator() else NullPipeDecorator
+    protected var pipeDecorator: PipeDecorator = if (hasLoadCSV) new LinenumberPipeDecorator() else NullPipeDecorator
 
     protected def createQueryState(params: MapValue, prePopulateResults: Boolean): QueryState
 
@@ -69,8 +70,9 @@ case class InterpretedExecutionResultBuilderFactory(pipe: Pipe,
                                                     readOnly: Boolean,
                                                     columns: Seq[String],
                                                     logicalPlan: LogicalPlan,
-                                                    lenientCreateRelationship: Boolean)
-  extends BaseExecutionResultBuilderFactory(pipe, readOnly, columns, logicalPlan) {
+                                                    lenientCreateRelationship: Boolean,
+                                                    hasLoadCSV: Boolean = false)
+  extends BaseExecutionResultBuilderFactory(pipe, readOnly, columns, logicalPlan, hasLoadCSV) {
 
   override def create(queryContext: QueryContext): ExecutionResultBuilder = InterpretedExecutionResultBuilder(queryContext: QueryContext)
 

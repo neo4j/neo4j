@@ -127,12 +127,15 @@ class PreParser(configuredVersion: CypherVersion,
     if (runtime.isSelected && expressionEngine.isSelected && ILLEGAL_EXPRESSION_ENGINE_RUNTIME_COMBINATIONS((expressionEngine.pick, runtime.pick)))
       throw new InvalidPreparserOption(s"Cannot combine EXPRESSION ENGINE '${expressionEngine.pick.name}' with RUNTIME '${runtime.pick.name}'")
 
-    val isPeriodicCommit = PeriodicCommitHint.r.findFirstIn(preParsedStatement.statement.toUpperCase).nonEmpty
+    val statement = preParsedStatement.statement
+    val isPeriodicCommit = LoadCSVHint.periodicCommit.findFirstIn(statement.toUpperCase).nonEmpty
+    val isLoadCSV = LoadCSVHint.loadCsv.findFirstIn(statement.toUpperCase).nonEmpty
 
-    PreParsedQuery(preParsedStatement.statement,
+    PreParsedQuery(statement,
                    preParsedStatement.offset,
                    queryText,
                    isPeriodicCommit,
+                   isLoadCSV,
                    version.pick,
                    executionMode.pick,
                    planner.pick,
@@ -157,6 +160,7 @@ class PreParser(configuredVersion: CypherVersion,
   class InvalidPreparserOption(msg: String) extends InvalidArgumentException(msg)
 }
 
-object PeriodicCommitHint {
-  val r: Regex = "^\\s*USING\\s+PERIODIC\\s+COMMIT.*".r
+object LoadCSVHint {
+  val periodicCommit: Regex = "^\\s*USING\\s+PERIODIC\\s+COMMIT.*".r
+  val loadCsv: Regex = "LOAD\\s+CSV".r
 }
