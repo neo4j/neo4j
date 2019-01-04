@@ -146,13 +146,12 @@ function Get-Java
     $javaVersion = Get-JavaVersion -Path $javaCMD
     if (-not $javaVersion.isValid) { Write-Error "This instance of Java is not supported"; return $null }
 
-    # Shell arguments for the Neo4jServer and Arbiter classes
+    # Shell arguments for the Neo4jServer
     $ShellArgs = @()
     if ($PsCmdlet.ParameterSetName -eq 'ServerInvoke')
     {
       $serverMainClass = ''
       if ($Neo4jServer.ServerType -eq 'Community') { $serverMainClass = 'org.neo4j.server.CommunityEntryPoint' }
-      if ($Neo4jServer.DatabaseMode.ToUpper() -eq 'ARBITER') { $serverMainClass = 'org.neo4j.server.enterprise.ArbiterEntryPoint' }
 
       if ($serverMainClass -eq '') { Write-Error "Unable to determine the Server Main Class from the server information"; return $null }
 

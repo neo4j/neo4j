@@ -59,7 +59,7 @@ InModuleScope Neo4j-Management {
     }
 
     Context "Valid Enterprise Neo4j installation" {
-      $mockServer = global:New-MockNeo4jInstall -ServerType 'Enterprise' -ServerVersion '99.99' -DatabaseMode 'Arbiter'
+      $mockServer = global:New-MockNeo4jInstall -ServerType 'Enterprise' -ServerVersion '99.99' -DatabaseMode 'Single'
 
       $neoServer = Get-Neo4jServer -Neo4jHome $mockServer.Home -ErrorAction Stop
 
@@ -70,7 +70,7 @@ InModuleScope Neo4j-Management {
         $neoServer.ServerVersion | Should Be "99.99"
       }
       It "detects correct database mode" {
-        $neoServer.DatabaseMode | Should Be "Arbiter"
+        $neoServer.DatabaseMode | Should Be "Single"
       }
     }
 

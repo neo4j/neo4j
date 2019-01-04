@@ -298,63 +298,47 @@ print_active_database() {
 }
 
 
-setup_arbiter_options() {
-  is_arbiter() {
-    compgen -G "${NEO4J_LIB}/neo4j-server-enterprise-*.jar" >/dev/null && \
-      [[ "$(echo "${dbms_mode:-}" | tr [:lower:] [:upper:])" == "ARBITER" ]]
+setup_options() {
+  SHUTDOWN_TIMEOUT="${NEO4J_SHUTDOWN_TIMEOUT:-120}"
+  MIN_ALLOWED_OPEN_FILES=40000
+  MAIN_CLASS="#{neo4j.mainClass}"
+
+  print_start_message() {
+    # Global default
+    NEO4J_DEFAULT_ADDRESS="${dbms_connectors_default_listen_address:-localhost}"
+
+    if [[ "${dbms_connector_http_enabled:-true}" == "false" ]]; then
+      # Only HTTPS connector enabled
+      # First read deprecated 'address' setting
+      NEO4J_SERVER_ADDRESS="${dbms_connector_https_address:-:7473}"
+      # Overridden by newer 'listen_address' if specified
+      NEO4J_SERVER_ADDRESS="${dbms_connector_https_listen_address:-${NEO4J_SERVER_ADDRESS}}"
+      # If it's only a port we need to add the address (it starts with a colon in that case)
+      case ${NEO4J_SERVER_ADDRESS} in
+        :*)
+          NEO4J_SERVER_ADDRESS="${NEO4J_DEFAULT_ADDRESS}${NEO4J_SERVER_ADDRESS}";;
+      esac
+      # Add protocol
+      NEO4J_SERVER_ADDRESS="https://${NEO4J_SERVER_ADDRESS}"
+    else
+      # HTTP connector enabled - same as https but different settings
+      NEO4J_SERVER_ADDRESS="${dbms_connector_http_address:-:7474}"
+      NEO4J_SERVER_ADDRESS="${dbms_connector_http_listen_address:-${NEO4J_SERVER_ADDRESS}}"
+      case ${NEO4J_SERVER_ADDRESS} in
+        :*)
+          NEO4J_SERVER_ADDRESS="${NEO4J_DEFAULT_ADDRESS}${NEO4J_SERVER_ADDRESS}";;
+      esac
+      NEO4J_SERVER_ADDRESS="http://${NEO4J_SERVER_ADDRESS}"
+    fi
+
+    echo "Started neo4j (pid ${NEO4J_PID}). It is available at ${NEO4J_SERVER_ADDRESS}/"
+
+    if [[ "$(echo "${dbms_mode:-}" | tr [:lower:] [:upper:])" == "HA" ]]; then
+      echo "This HA instance will be operational once it has joined the cluster."
+    else
+      echo "There may be a short delay until the server is ready."
+    fi
   }
-
-  if is_arbiter; then
-    SHUTDOWN_TIMEOUT=20
-    MIN_ALLOWED_OPEN_FILES=1
-    MAIN_CLASS="org.neo4j.server.enterprise.ArbiterEntryPoint"
-
-    print_start_message() {
-      echo "Started in ARBITER mode."
-      echo "This instance is now joining the cluster."
-    }
-  else
-    SHUTDOWN_TIMEOUT="${NEO4J_SHUTDOWN_TIMEOUT:-120}"
-    MIN_ALLOWED_OPEN_FILES=40000
-    MAIN_CLASS="#{neo4j.mainClass}"
-
-    print_start_message() {
-      # Global default
-      NEO4J_DEFAULT_ADDRESS="${dbms_connectors_default_listen_address:-localhost}"
-
-      if [[ "${dbms_connector_http_enabled:-true}" == "false" ]]; then
-        # Only HTTPS connector enabled
-        # First read deprecated 'address' setting
-        NEO4J_SERVER_ADDRESS="${dbms_connector_https_address:-:7473}"
-        # Overridden by newer 'listen_address' if specified
-        NEO4J_SERVER_ADDRESS="${dbms_connector_https_listen_address:-${NEO4J_SERVER_ADDRESS}}"
-        # If it's only a port we need to add the address (it starts with a colon in that case)
-        case ${NEO4J_SERVER_ADDRESS} in
-          :*)
-            NEO4J_SERVER_ADDRESS="${NEO4J_DEFAULT_ADDRESS}${NEO4J_SERVER_ADDRESS}";;
-        esac
-        # Add protocol
-        NEO4J_SERVER_ADDRESS="https://${NEO4J_SERVER_ADDRESS}"
-      else
-        # HTTP connector enabled - same as https but different settings
-        NEO4J_SERVER_ADDRESS="${dbms_connector_http_address:-:7474}"
-        NEO4J_SERVER_ADDRESS="${dbms_connector_http_listen_address:-${NEO4J_SERVER_ADDRESS}}"
-        case ${NEO4J_SERVER_ADDRESS} in
-          :*)
-            NEO4J_SERVER_ADDRESS="${NEO4J_DEFAULT_ADDRESS}${NEO4J_SERVER_ADDRESS}";;
-        esac
-        NEO4J_SERVER_ADDRESS="http://${NEO4J_SERVER_ADDRESS}"
-      fi
-
-      echo "Started neo4j (pid ${NEO4J_PID}). It is available at ${NEO4J_SERVER_ADDRESS}/"
-
-      if [[ "$(echo "${dbms_mode:-}" | tr [:lower:] [:upper:])" == "HA" ]]; then
-        echo "This HA instance will be operational once it has joined the cluster."
-      else
-        echo "There may be a short delay until the server is ready."
-      fi
-    }
-  fi
 }
 
 check_status() {
@@ -527,7 +511,7 @@ do_version() {
 setup_java () {
   check_java
   setup_java_opts
-  setup_arbiter_options
+  setup_options
 }
 
 main() {
@@ -552,7 +536,7 @@ main() {
       ;;
 
     stop)
-      setup_arbiter_options
+      setup_options
       do_stop
       ;;
 
