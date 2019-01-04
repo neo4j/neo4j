@@ -146,7 +146,8 @@ public class MemoryRecommendationsCommand implements AdminCommand
         double gibi1 = ONE_GIBI_BYTE;
         double mebi1 = ONE_MEBI_BYTE;
         double mebi100 = 100 * mebi1;
-        long kibi100 = 100 * ONE_KIBI_BYTE;
+        double kibi1 = ONE_KIBI_BYTE;
+        double kibi100 = 100 * kibi1;
         if ( bytes >= gibi1 )
         {
             double gibibytes = bytes / gibi1;
@@ -175,7 +176,9 @@ public class MemoryRecommendationsCommand implements AdminCommand
         }
         else
         {
-            return String.valueOf( bytes );
+            // For kilobytes there's no need to bother with decimals, just print a rough figure rounded upwards
+            double kibiBytes = bytes / kibi1;
+            return format( Locale.ROOT, "%dk", (long) Math.ceil( kibiBytes ) );
         }
     }
 
