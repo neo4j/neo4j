@@ -46,6 +46,4 @@ case class LoadCSV(source: LogicalPlan,
   override def rhs = None
 
   override def strictness: StrictnessMode = source.strictness
-
-  hasLoadCSV = true
 }

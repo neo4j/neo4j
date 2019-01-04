@@ -421,18 +421,6 @@ class LogicalPlanConverterTest extends CypherFunSuite {
       }
   }
 
-  test("should convert ProduceResult and keep hasLoadCSV flag") {
-    val s3_5 = plansV3_5.LoadCSV(plansV3_5.Argument(), null, null, null, None, legacyCsvQuoteEscaping = false, 0)
-    val p3_5 = plansV3_5.ProduceResult(s3_5, Seq("a"))
-
-    val s4_0 = plansV4_0.LoadCSV(plansV4_0.Argument(), null, null, null, None, legacyCsvQuoteEscaping = false, 0)
-    val p4_0 = plansV4_0.ProduceResult(s4_0, Seq("a"))
-
-    val rewrittenPlan = convert[plansV4_0.ProduceResult](p3_5)
-    rewrittenPlan should be(p4_0)
-    rewrittenPlan.hasLoadCSV should be(true)
-  }
-
   /**
     * While enumerating all expressions and logical plans with reflection, we need to be able
     * to instantiate the old types and thus need to provide them with the correct constructor arguments.

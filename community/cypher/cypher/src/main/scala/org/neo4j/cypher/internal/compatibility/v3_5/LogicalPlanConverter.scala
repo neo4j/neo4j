@@ -255,7 +255,6 @@ object LogicalPlanConverter {
           if (planningAttributes3_5.providedOrders.isDefinedAt(plan.id)) {
             planningAttributes4_0.providedOrders.set(plan4_0.id, helpers.as4_0(planningAttributes3_5.providedOrders.get(plan.id)))
           }
-          plan4_0.propagateHasLoadCSV()
         // Save Mapping from 3.5 expression to 4.0 expression
         case e: ExpressionV3_5 if seenBySemanticTable(e) => expressionMap += (((e, e.position), rewritten.asInstanceOf[ExpressionV4_0]))
         case _ =>

@@ -83,7 +83,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
       planner.parseAndPlan(preParsedQuery, tracer, transactionalContext, params)
 
     val oldState = logicalPlanResult.logicalPlanState
-    val planState = oldState.copy(hasLoadCSV = preParsedQuery.isLoadCSV || oldState.hasLoadCSV) //TODO is oldState.hasLoadCSV ever needed?
+    val planState = oldState.copy(hasLoadCSV = preParsedQuery.isLoadCSV)
     val logicalPlan = planState.logicalPlan
     val queryType = getQueryType(planState)
 

@@ -24,9 +24,9 @@ import java.lang.reflect.Method
 import org.neo4j.cypher.internal.ir.v4_0.{PlannerQuery, Strictness}
 import org.neo4j.cypher.internal.v4_0.expressions._
 import org.neo4j.cypher.internal.v4_0.util.Foldable._
+import org.neo4j.cypher.internal.v4_0.util.{Foldable, InternalException, Rewritable}
 import org.neo4j.cypher.internal.v4_0.util.Rewritable._
 import org.neo4j.cypher.internal.v4_0.util.attribution.{Id, IdGen, SameId}
-import org.neo4j.cypher.internal.v4_0.util.{Foldable, InternalException, Rewritable}
 
 import scala.collection.mutable
 import scala.util.hashing.MurmurHash3
@@ -62,20 +62,6 @@ abstract class LogicalPlan(idGen: IdGen)
   }
 
   val id: Id = idGen.id()
-
-  var hasLoadCSV: Boolean = false
-
-  /*
-   * We need to propagate the hasLoadCSV flag up the stack
-   * to be able to chose the linenumberPipeDecorator when we have a LOAD CSV
-   */
-  def propagateHasLoadCSV(): Unit = {
-    (lhs, rhs) match {
-      case (Some(l), None) => hasLoadCSV = hasLoadCSV || l.hasLoadCSV
-      case (Some(l), Some(r)) => hasLoadCSV = hasLoadCSV || l.hasLoadCSV || r.hasLoadCSV
-      case _ =>
-    }
-  }
 
   override val hashCode: Int = MurmurHash3.productHash(self)
 
@@ -119,9 +105,7 @@ abstract class LogicalPlan(idGen: IdGen)
   def copyPlanWithIdGen(idGen: IdGen): LogicalPlan = {
     try {
       val arguments = this.children.toList :+ idGen
-      val plan = copyConstructor.invoke(this, arguments: _*).asInstanceOf[this.type]
-      plan.hasLoadCSV = this.hasLoadCSV
-      plan
+      copyConstructor.invoke(this, arguments: _*).asInstanceOf[this.type]
     } catch {
       case e: IllegalArgumentException if e.getMessage.startsWith("wrong number of arguments") =>
         throw new InternalException("Logical plans need to be case classes, and have the IdGen in a separate constructor", e)
@@ -147,7 +131,6 @@ abstract class LogicalPlan(idGen: IdGen)
           constructor.invoke(this, args :+ SameId(this.id): _*).asInstanceOf[this.type]
         else
           constructor.invoke(this, args: _*).asInstanceOf[this.type]
-      resultingPlan.propagateHasLoadCSV()
       resultingPlan
     }
 

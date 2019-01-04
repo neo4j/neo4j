@@ -20,10 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v4_0.planner.logical.plans
 
 import org.neo4j.cypher.internal.compiler.v4_0.planner.LogicalPlanningTestSupport
-import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
-import org.neo4j.cypher.internal.v4_0.logical.plans.{Apply, Argument, Expand, LoadCSV}
-import org.neo4j.cypher.internal.v4_0.util.attribution.SameId
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v4_0.logical.plans.{Apply, Argument}
 
 class LogicalPlanTest extends CypherFunSuite with LogicalPlanningTestSupport  {
 
@@ -51,85 +49,5 @@ class LogicalPlanTest extends CypherFunSuite with LogicalPlanningTestSupport  {
     val metaApply = Apply(apply1, apply2)
 
     metaApply.leaves should equal(Seq(argument1, argument2, argument3, argument4))
-  }
-
-  test("should propagate hasLoadCSV correctly up the plans") {
-    val argument = Argument(Set("a"))
-    val loadCsv = LoadCSV(argument, null, null, null, None, legacyCsvQuoteEscaping = false, 0)
-    loadCsv.propagateHasLoadCSV()
-    val apply = Apply(argument, loadCsv)
-    apply.propagateHasLoadCSV()
-
-    argument.hasLoadCSV should be(false)
-    loadCsv.hasLoadCSV should be(true)
-    apply.hasLoadCSV should be(true)
-  }
-
-  test("should propagate hasLoadCSV correctly up the plans for longer chain after LOAD CSV") {
-    val argument = Argument(Set("a"))
-    val loadCsv = LoadCSV(argument, null, null, null, None, legacyCsvQuoteEscaping = false, 0)
-    loadCsv.propagateHasLoadCSV()
-    val apply = Apply(loadCsv, argument)
-    apply.propagateHasLoadCSV()
-    val expand = Expand(apply, null, SemanticDirection.INCOMING, null, null, null)
-    expand.propagateHasLoadCSV()
-
-    argument.hasLoadCSV should be(false)
-    loadCsv.hasLoadCSV should be(true)
-    apply.hasLoadCSV should be(true)
-    expand.hasLoadCSV should be(true)
-  }
-
-  test("should propagate hasLoadCSV correctly up the plans for longer chain before LOAD CSV") {
-    val argument1 = Argument(Set("a"))
-    val expand = Expand(argument1, null, SemanticDirection.INCOMING, null, null, null)
-    expand.propagateHasLoadCSV()
-    val argument2 = Argument()
-    val apply = Apply(expand, argument2)
-    apply.propagateHasLoadCSV()
-    val loadCsv = LoadCSV(apply, null, null, null, None, legacyCsvQuoteEscaping = false, 0)
-    loadCsv.propagateHasLoadCSV()
-
-    argument1.hasLoadCSV should be(false)
-    expand.hasLoadCSV should be(false)
-    argument2.hasLoadCSV should be(false)
-    apply.hasLoadCSV should be(false)
-    loadCsv.hasLoadCSV should be(true)
-  }
-
-  test("should propagate hasLoadCSV correctly up the plans without LOAD CSV") {
-    val argument1 = Argument(Set("a"))
-    val argument2 = Argument()
-    val apply = Apply(argument2, argument1)
-    apply.propagateHasLoadCSV()
-    val expand = Expand(apply, null, SemanticDirection.INCOMING, null, null, null)
-    expand.propagateHasLoadCSV()
-
-    argument1.hasLoadCSV should be(false)
-    argument2.hasLoadCSV should be(false)
-    apply.hasLoadCSV should be(false)
-    expand.hasLoadCSV should be(false)
-  }
-
-  test("should propagate hasLoadCSV correctly in dup method") {
-    val argument = Argument(Set("a"))
-    val apply = Apply(argument, argument)
-
-    apply.hasLoadCSV = true
-    apply.hasLoadCSV should equal(apply.dup(Seq(argument, argument)).hasLoadCSV)
-
-    apply.hasLoadCSV = false
-    apply.hasLoadCSV should equal(apply.dup(Seq(argument, argument)).hasLoadCSV)
-  }
-
-  test("should propagate hasLoadCSV correctly in copyPlanWithIdGen method") {
-    val argument = Argument(Set("a"))
-    val apply = Apply(argument, argument)
-
-    apply.hasLoadCSV = true
-    apply.hasLoadCSV should equal(apply.copyPlanWithIdGen(SameId(apply.id)).hasLoadCSV)
-
-    apply.hasLoadCSV = false
-    apply.hasLoadCSV should equal(apply.copyPlanWithIdGen(SameId(apply.id)).hasLoadCSV)
   }
 }
