@@ -36,6 +36,7 @@ import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.OpenMode;
+import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.impl.transaction.log.FlushableChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalFlushableChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadAheadChannel;
@@ -54,7 +55,7 @@ import static org.neo4j.io.ByteUnit.mebiBytes;
  */
 public class LabelScanWriteMonitor implements NativeLabelScanWriter.WriteMonitor
 {
-    // config for this thing
+    // configuration for this monitor
     static final boolean ENABLED = FeatureToggles.flag( LabelScanWriteMonitor.class, "enabled", false );
     private static final long ROTATION_SIZE_THRESHOLD = FeatureToggles.getLong( LabelScanWriteMonitor.class, "rotationThreshold", mebiBytes( 200 ) );
     private static final long PRUNE_THRESHOLD = FeatureToggles.getLong( LabelScanWriteMonitor.class, "pruneThreshold", TimeUnit.DAYS.toMillis( 2 ) );
@@ -67,6 +68,9 @@ public class LabelScanWriteMonitor implements NativeLabelScanWriter.WriteMonitor
     private static final byte TYPE_RANGE = 4;
     private static final byte TYPE_FLUSH = 5;
     private static final byte TYPE_SESSION_END = 6;
+
+    private static final String ARG_TOFILE = "tofile";
+    private static final String ARG_TXFILTER = "txfilter";
 
     private final FileSystemAbstraction fs;
     private final File storeDir;
@@ -299,66 +303,75 @@ public class LabelScanWriteMonitor implements NativeLabelScanWriter.WriteMonitor
         return new File( storeDir, NAME + "-" + currentTimeMillis() );
     }
 
-    private static final String ARG_TOFILE = "tofile";
-    private static final String ARG_TXFILTER = "txfilter";
-
-    public interface Dumper
-    {
-        void file( File file );
-
-        void prepare( boolean add, long session, long flush, long txId, long nodeId, int labelId );
-
-        void merge( boolean add, long session, long flush, long range, int labelId, long existingBits, long newBits );
-    }
-
-    public static class PrintStreamDumper implements Dumper
-    {
-        private final PrintStream out;
-        private final char[] bitsAsChars = new char[64 + 7/*separators*/];
-
-        PrintStreamDumper( PrintStream out )
-        {
-            this.out = out;
-            Arrays.fill( bitsAsChars, ' ' );
-        }
-
-        @Override
-        public void file( File file )
-        {
-            out.println( "=== " + file.getAbsolutePath() + " ===" );
-        }
-
-        @Override
-        public void prepare( boolean add, long session, long flush, long txId, long nodeId, int labelId )
-        {
-            out.println( format( "[%d,%d]%stx:%d,node:%d,label:%d", session, flush, add ? '+' : '-', txId, nodeId, labelId ) );
-        }
-
-        @Override
-        public void merge( boolean add, long session, long flush, long range, int labelId, long existingBits, long newBits )
-        {
-            out.println( format( "[%d,%d]%srange:%d,labelId:%d%n [%s]%n [%s]", session, flush, add ? '+' : '-', range, labelId,
-                    bits( existingBits, bitsAsChars ), bits( newBits, bitsAsChars ) ) );
-        }
-
-        private static String bits( long bits, char[] bitsAsChars )
-        {
-            long mask = 1;
-            for ( int i = 0, c = 0; i < 64; i++, c++ )
-            {
-                if ( i % 8 == 0 )
-                {
-                    c++;
-                }
-                boolean set = (bits & mask) != 0;
-                bitsAsChars[bitsAsChars.length - c] = set ? '1' : '0';
-                mask <<= 1;
-            }
-            return String.valueOf( bitsAsChars );
-        }
-    }
-
-    // Dump
+    /**
+     * Dumps a label scan write log as plain text. Arguments:
+     * <ul>
+     *     <li>{@value #ARG_TOFILE}: dumps to a .txt file next to the writelog</li>
+     *     <li>{@value #ARG_TXFILTER}: filter for which tx ids to include in the dump.
+     *     <p>
+     *     Consists of one more more groups separated by comma.
+     *     <p>
+     *     Each group is either a txId, or a txId range, e.g. 123-456
+     *     </li>
+     * </ul>
+     * <p>
+     * How to interpret the dump, e.g:
+     * <pre>
+     * === ..../neostore.labelscanstore.db.writelog ===
+     * [1,1]+tx:6,node:0,label:0
+     * [1,1]+tx:3,node:20,label:0
+     * [1,1]+tx:4,node:40,label:0
+     * [1,1]+tx:5,node:60,label:0
+     * [2,1]+tx:8,node:80,label:1
+     * [3,1]+tx:10,node:41,label:1
+     * [4,1]+tx:9,node:21,label:1
+     * [4,1]+tx:11,node:61,label:1
+     * [4,1]+range:0,labelId:1
+     *  [00000000 00000000 00000010 00000000 00000000 00000000 00000000 00000000]
+     *  [00100000 00000000 00000000 00000000 00000000 00100000 00000000 00000000]
+     * [5,1]+tx:12,node:81,label:1
+     * [5,1]+range:1,labelId:1
+     *  [00000000 00000000 00000000 00000000 00000000 00000001 00000000 00000000]
+     *  [00000000 00000000 00000000 00000000 00000000 00000010 00000000 00000000]
+     * [6,1]+tx:13,node:1,label:1
+     * [6,1]+range:0,labelId:1
+     *  [00100000 00000000 00000010 00000000 00000000 00100000 00000000 00000000]
+     *  [00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000010]
+     * [7,1]+tx:14,node:62,label:1
+     * [7,1]+range:0,labelId:1
+     * </pre>
+     * How to interpret a message like:
+     * <pre>
+     * [1,1]+tx:6,node:0,label:0
+     *  ▲ ▲ ▲   ▲      ▲       ▲
+     *  │ │ │   │      │       └──── label id of the change
+     *  │ │ │   │      └──────────── node id of the change
+     *  │ │ │   └─────────────────── id of transaction making this particular change
+     *  │ │ └─────────────────────── addition, a minus means removal
+     *  │ └───────────────────────── flush, local to each write session, incremented when a batch of changes is flushed internally in a writer session
+     *  └─────────────────────────── write session, incremented for each {@link LabelScanStore#newWriter()}
+     * </pre>
+     * How to interpret a message like:
+     * <pre>
+     * [4,1]+range:0,labelId:1
+     *  [00000000 00000000 00000010 00000000 00000000 00000000 00000000 00000000]
+     *  [00100000 00000000 00000000 00000000 00000000 00100000 00000000 00000000]
+     * </pre>
+     * First the first line (parts within bracket same as above):
+     * <pre>
+     * [4,1]+range:0,labelId:1
+     *             ▲         ▲
+     *             │         └── label id of the changed bitset to apply
+     *             └──────────── range, i.e. which bitset to apply this change for
+     * </pre>
+     * Then the bitsets are printed
+     * <pre>
+     *  [00000000 00000000 00000010 00000000 00000000 00000000 00000000 00000000] : state of the bitset for this label id before the change
+     *  [00100000 00000000 00000000 00000000 00000000 00100000 00000000 00000000] : bits that applied to this bitset
+     *                                                                              for addition the 1-bits denotes bits to be added
+     *                                                                              for removal the 1-bits denotes bits to be removed
+     * </pre>
+     */
     public static void main( String[] args ) throws IOException
     {
         Args arguments = Args.withFlags( ARG_TOFILE ).parse( args );
@@ -530,6 +543,62 @@ public class LabelScanWriteMonitor implements NativeLabelScanWriter.WriteMonitor
         boolean contains()
         {
             return contains;
+        }
+    }
+
+    public interface Dumper
+    {
+        void file( File file );
+
+        void prepare( boolean add, long session, long flush, long txId, long nodeId, int labelId );
+
+        void merge( boolean add, long session, long flush, long range, int labelId, long existingBits, long newBits );
+    }
+
+    public static class PrintStreamDumper implements Dumper
+    {
+        private final PrintStream out;
+        private final char[] bitsAsChars = new char[64 + 7/*separators*/];
+
+        PrintStreamDumper( PrintStream out )
+        {
+            this.out = out;
+            Arrays.fill( bitsAsChars, ' ' );
+        }
+
+        @Override
+        public void file( File file )
+        {
+            out.println( "=== " + file.getAbsolutePath() + " ===" );
+        }
+
+        @Override
+        public void prepare( boolean add, long session, long flush, long txId, long nodeId, int labelId )
+        {
+            out.println( format( "[%d,%d]%stx:%d,node:%d,label:%d", session, flush, add ? '+' : '-', txId, nodeId, labelId ) );
+        }
+
+        @Override
+        public void merge( boolean add, long session, long flush, long range, int labelId, long existingBits, long newBits )
+        {
+            out.println( format( "[%d,%d]%srange:%d,labelId:%d%n [%s]%n [%s]", session, flush, add ? '+' : '-', range, labelId,
+                    bits( existingBits, bitsAsChars ), bits( newBits, bitsAsChars ) ) );
+        }
+
+        private static String bits( long bits, char[] bitsAsChars )
+        {
+            long mask = 1;
+            for ( int i = 0, c = 0; i < 64; i++, c++ )
+            {
+                if ( i % 8 == 0 )
+                {
+                    c++;
+                }
+                boolean set = (bits & mask) != 0;
+                bitsAsChars[bitsAsChars.length - c] = set ? '1' : '0';
+                mask <<= 1;
+            }
+            return String.valueOf( bitsAsChars );
         }
     }
 }

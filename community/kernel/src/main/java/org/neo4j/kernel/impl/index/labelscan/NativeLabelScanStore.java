@@ -124,7 +124,14 @@ public class NativeLabelScanStore implements LabelScanStore
      */
     private final FullStoreChangeStream fullStoreChangeStream;
 
+    /**
+     * {@link FileSystemAbstraction} the backing file lives on.
+     */
     private final FileSystemAbstraction fs;
+
+    /**
+     * Directory of the store to place the backing file in.
+     */
     private final File storeDir;
 
     /**
@@ -159,6 +166,9 @@ public class NativeLabelScanStore implements LabelScanStore
      */
     private NativeLabelScanWriter singleWriter;
 
+    /**
+     * Monitor for all writes going into this label scan store.
+     */
     private NativeLabelScanWriter.WriteMonitor writeMonitor;
 
     /**

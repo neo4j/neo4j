@@ -113,6 +113,9 @@ public class LabelScanStoreTxApplyRaceIT
                     {
                         for ( int i = 0; i < LARGE_TX_SIZE; i++ )
                         {
+                            // Nodes are created with properties here. Whereas the properties don't have a functional
+                            // impact on this test they do affect timings so that the issue is (was) triggered more often
+                            // and therefore have a positive effect on this test.
                             db.createNode( randomLabels() ).setProperty( "name", randomUUID().toString() );
                         }
                         tx.success();
@@ -125,7 +128,6 @@ public class LabelScanStoreTxApplyRaceIT
                     try ( Transaction tx = db.beginTx() )
                     {
                         node = db.createNode( randomLabels() );
-                        // TODO set before or after commit?
                         nodeHeads.set( guy, node );
                         tx.success();
                     }
