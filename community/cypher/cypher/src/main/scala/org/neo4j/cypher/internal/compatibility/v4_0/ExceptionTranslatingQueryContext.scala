@@ -339,5 +339,7 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
 
   override def indexReference(label: Int, properties: Int*): IndexReference =
     translateException(inner.indexReference(label, properties:_*))
+
+  override def singleRelationship(id: Long): RelationshipScanCursor = translateException(inner.singleRelationship(id))
 }
 

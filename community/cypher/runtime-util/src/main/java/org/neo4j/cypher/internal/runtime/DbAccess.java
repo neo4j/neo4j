@@ -81,6 +81,8 @@ public interface DbAccess
 
     NodeValue relationshipGetEndNode( RelationshipValue relationship );
 
+    RelationshipScanCursor singleRelationship( long id );
+
     ListValue getLabelsForNode( long id, NodeCursor nodeCursor );
 
     boolean isLabelSetOnNode( int label, long id, NodeCursor nodeCursor );

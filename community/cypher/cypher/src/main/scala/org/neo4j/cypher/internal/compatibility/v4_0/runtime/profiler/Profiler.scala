@@ -120,7 +120,7 @@ final class ProfilingPipeQueryContext(inner: QueryContext, val p: Pipe)
     }
   }
 
-  override protected def manyDbHits[A](value: LongIterator): LongIterator = {
+  override protected def manyDbHits(value: LongIterator): LongIterator = {
     increment()
     PrimitiveLongHelper.mapPrimitive(value, { x =>
       increment()
@@ -128,7 +128,7 @@ final class ProfilingPipeQueryContext(inner: QueryContext, val p: Pipe)
     })
   }
 
-  override protected def manyDbHits[A](inner: RelationshipIterator): RelationshipIterator = new RelationshipIterator {
+  override protected def manyDbHits(inner: RelationshipIterator): RelationshipIterator = new RelationshipIterator {
     increment()
     override def relationshipVisit[EXCEPTION <: Exception](relationshipId: Long, visitor: RelationshipVisitor[EXCEPTION]): Boolean =
       inner.relationshipVisit(relationshipId, visitor)
@@ -141,7 +141,34 @@ final class ProfilingPipeQueryContext(inner: QueryContext, val p: Pipe)
     override def hasNext: Boolean = inner.hasNext
   }
 
-  override protected def manyDbHits[A](inner: RelationshipSelectionCursor): RelationshipSelectionCursor = new RelationshipSelectionCursor {
+  override protected def manyDbHits(inner: RelationshipScanCursor): RelationshipScanCursor = new RelationshipScanCursor {
+    override def relationshipReference(): Long = inner.relationshipReference()
+
+    override def `type`(): Int = inner.`type`()
+
+    override def source(cursor: NodeCursor): Unit = inner.source(cursor)
+
+    override def target(cursor: NodeCursor): Unit = inner.target(cursor)
+
+    override def properties(cursor: PropertyCursor): Unit = inner.properties(cursor)
+
+    override def sourceNodeReference(): Long = inner.sourceNodeReference()
+
+    override def targetNodeReference(): Long = inner.targetNodeReference()
+
+    override def propertiesReference(): Long = inner.propertiesReference()
+
+    override def next(): Boolean = {
+      increment()
+      inner.next()
+    }
+
+    override def close(): Unit = inner.close()
+
+    override def isClosed: Boolean = inner.isClosed
+  }
+
+  override protected def manyDbHits(inner: RelationshipSelectionCursor): RelationshipSelectionCursor = new RelationshipSelectionCursor {
     override def next(): Boolean = {
       increment()
       inner.next()
@@ -162,7 +189,7 @@ final class ProfilingPipeQueryContext(inner: QueryContext, val p: Pipe)
     override def propertiesReference(): Long = inner.propertiesReference()
   }
 
-  override protected def manyDbHits[A](inner: NodeValueIndexCursor): NodeValueIndexCursor = new NodeValueIndexCursor {
+  override protected def manyDbHits(inner: NodeValueIndexCursor): NodeValueIndexCursor = new NodeValueIndexCursor {
 
     override def numberOfProperties(): Int = inner.numberOfProperties()
 
