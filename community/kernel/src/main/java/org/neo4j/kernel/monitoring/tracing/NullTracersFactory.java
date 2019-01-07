@@ -31,12 +31,15 @@ import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.lock.LockTracer;
 import org.neo4j.time.SystemNanoClock;
 
-public class EmptyTracersFactory implements TracerFactory
+public class NullTracersFactory implements TracerFactory
 {
+
+    static final String NULL_TRACERS_NAME = "null";
+
     @Override
     public String getImplementationName()
     {
-        return "empty";
+        return NULL_TRACERS_NAME;
     }
 
     @Override

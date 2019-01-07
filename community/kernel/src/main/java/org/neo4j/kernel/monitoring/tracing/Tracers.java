@@ -31,6 +31,7 @@ import org.neo4j.storageengine.api.lock.LockTracer;
 import org.neo4j.time.SystemNanoClock;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
+import static org.neo4j.kernel.monitoring.tracing.NullTracersFactory.NULL_TRACERS_NAME;
 
 /**
  * <h1>Tracers</h1>
@@ -155,9 +156,9 @@ public class Tracers
 
     private static TracerFactory createTracersFactory( String desiredImplementationName, Log msgLog )
     {
-        if ( "null".equalsIgnoreCase( desiredImplementationName ) )
+        if ( NULL_TRACERS_NAME.equalsIgnoreCase( desiredImplementationName ) )
         {
-            return new EmptyTracersFactory();
+            return new NullTracersFactory();
         }
         else
         {
