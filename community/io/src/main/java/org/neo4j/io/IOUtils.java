@@ -20,6 +20,7 @@
 package org.neo4j.io;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.lang.reflect.Constructor;
 import java.util.Collection;
 
@@ -137,6 +138,25 @@ public final class IOUtils
         if ( closeThrowable != null )
         {
             throw newThrowable( throwableClass, "Exception closing multiple resources", closeThrowable );
+        }
+    }
+
+    /**
+     * Close all the provided {@link AutoCloseable closeables}, chaining exceptions, if any, into a single {@link UncheckedIOException}.
+     *
+     * @param closeables to call close on.
+     * @param <T> the type of closeable.
+     * @throws UncheckedIOException if any exception is thrown from any of the {@code closeables}.
+     */
+    public static <T extends AutoCloseable> void closeAllUnchecked( Collection<T> closeables ) throws UncheckedIOException
+    {
+        try
+        {
+            closeAll( closeables );
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
         }
     }
 

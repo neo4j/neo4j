@@ -27,7 +27,7 @@ import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.storageengine.api.schema.IndexReader;
 
-import static org.neo4j.io.IOUtils.closeAllSilently;
+import static org.neo4j.io.IOUtils.closeAllUnchecked;
 
 class IndexReaders implements Closeable
 {
@@ -51,6 +51,6 @@ class IndexReaders implements Closeable
     @Override
     public void close()
     {
-        closeAllSilently( indexReaders );
+        closeAllUnchecked( indexReaders );
     }
 }
