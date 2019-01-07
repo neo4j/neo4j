@@ -46,6 +46,7 @@ import org.neo4j.cypher.internal.v4_0.ast.Statement
 import org.neo4j.cypher.internal.v4_0.expressions.Parameter
 import org.neo4j.cypher.internal.v4_0.frontend.PlannerName
 import org.neo4j.cypher.internal.v4_0.frontend.phases._
+import org.neo4j.cypher.internal.v4_0.logical.plans.{LoadCSV, LogicalPlan}
 import org.neo4j.cypher.internal.v4_0.rewriting.RewriterStepSequencer
 import org.neo4j.cypher.internal.v4_0.util.InputPosition
 import org.neo4j.cypher.internal.v4_0.util.attribution.SequentialIdGen
@@ -149,7 +150,11 @@ case class Cypher4_0Planner(config: CypherPlannerConfiguration,
 
       // If the query is not cached we want to do the full planning
       def createPlan(shouldBeCached: Boolean, missingParameterNames: Seq[String] = Seq.empty): CacheableLogicalPlan = {
-        val logicalPlanState = planner.planPreparedQuery(preparedQuery, context)
+        val logicalPlanStateOld = planner.planPreparedQuery(preparedQuery, context)
+        val hasLoadCsv = logicalPlanStateOld.logicalPlan.treeFind[LogicalPlan] {
+          case _: LoadCSV => true
+        }.nonEmpty
+        val logicalPlanState = logicalPlanStateOld.copy(hasLoadCSV = hasLoadCsv)
         notification.LogicalPlanNotifications
           .checkForNotifications(logicalPlanState.maybeLogicalPlan.get, planContext, config)
           .foreach(notificationLogger.log)

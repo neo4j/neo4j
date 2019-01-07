@@ -145,7 +145,6 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
       val context = graph.transactionalContext(query = query -> params)
       cypherCompiler.compile(PreParsedQuery(query, DummyPosition(0), query,
         isPeriodicCommit = false,
-        isLoadCSV = false,
         CypherVersion.default,
         CypherExecutionMode.default,
         CypherPlannerOption.default,

@@ -56,6 +56,7 @@ import org.neo4j.cypher.internal.v4_0.util.attribution.SequentialIdGen
 import org.neo4j.cypher.CypherPlannerOption
 import org.neo4j.cypher.CypherUpdateStrategy
 import org.neo4j.cypher.CypherVersion
+import org.neo4j.cypher.internal.v4_0.logical.plans.{LoadCSV, LogicalPlan}
 import org.neo4j.helpers.collection.Pair
 import org.neo4j.kernel.impl.api.SchemaStateKey
 import org.neo4j.kernel.impl.query.TransactionalContext
@@ -215,7 +216,11 @@ case class Cypher3_5Planner(configv4_0: CypherPlannerConfiguration,
       // If the query is not cached we do full planning + creating of executable plan
       def createPlan(): CacheableLogicalPlan = {
         val logicalPlanStateV3_5 = compiler.planPreparedQuery(preparedQuery, contextV3_5)
-        val logicalPlanStatev4_0 = helpers.as4_0(logicalPlanStateV3_5) // Here we switch from 3.5 to 4.0
+        val logicalPlanStatev4_0Old = helpers.as4_0(logicalPlanStateV3_5) // Here we switch from 3.5 to 4.0
+        val hasLoadCsv = logicalPlanStatev4_0Old.logicalPlan.treeFind[LogicalPlan] {
+          case _: LoadCSV => true
+        }.nonEmpty
+        val logicalPlanStatev4_0 = logicalPlanStatev4_0Old.copy(hasLoadCSV = hasLoadCsv)
         LogicalPlanNotifications
           .checkForNotifications(logicalPlanStatev4_0.maybeLogicalPlan.get, planContextv4_0, configv4_0)
           .foreach(notificationLoggerv4_0.log)
