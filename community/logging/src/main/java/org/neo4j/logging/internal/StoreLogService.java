@@ -153,6 +153,8 @@ public class StoreLogService extends AbstractLogService implements Lifecycle
 
     private final Closeable closeable;
     private final SimpleLogService logService;
+    // keep a (somewhat redundant) reference to the internal log provider, although more strongly typed
+    private final FormattedLogProvider internalLogProvider;
 
     private StoreLogService( LogProvider userLogProvider,
             FileSystemAbstraction fileSystem,
@@ -214,6 +216,7 @@ public class StoreLogService extends AbstractLogService implements Lifecycle
             this.closeable = rotatingSupplier;
         }
         this.logService = new SimpleLogService( userLogProvider, internalLogProvider );
+        this.internalLogProvider = internalLogProvider;
     }
 
     @Override
@@ -246,16 +249,16 @@ public class StoreLogService extends AbstractLogService implements Lifecycle
     @Override
     public LogProvider getInternalLogProvider()
     {
-        return logService.getInternalLogProvider();
+        return internalLogProvider;
     }
 
     public void setDefaultLogLevel( Level newLevel )
     {
-        ((FormattedLogProvider) logService.getInternalLogProvider()).setDefaultLevel( newLevel );
+        internalLogProvider.setDefaultLevel( newLevel );
     }
 
     public void setContextLogLevels( Map<String,Level> newLevels )
     {
-        ((FormattedLogProvider) logService.getInternalLogProvider()).setContextLogLevels( newLevels );
+        internalLogProvider.setContextLogLevels( newLevels );
     }
 }
