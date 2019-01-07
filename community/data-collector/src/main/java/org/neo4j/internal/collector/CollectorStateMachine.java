@@ -19,6 +19,10 @@
  */
 package org.neo4j.internal.collector;
 
+import java.util.Map;
+
+import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
+
 /**
  * Base class for managing state transitions of data-collector daemons.
  */
@@ -82,13 +86,13 @@ abstract class CollectorStateMachine<DATA>
         }
     }
 
-    public synchronized Result collect()
+    public synchronized Result collect( Map<String,Object> config ) throws InvalidArgumentsException
     {
         switch ( state )
         {
         case IDLE:
             state = State.COLLECTING;
-            return doCollect();
+            return doCollect( config );
         case COLLECTING:
             return success( "Collection is already ongoing." );
         default:
@@ -136,7 +140,7 @@ abstract class CollectorStateMachine<DATA>
         }
     }
 
-    abstract Result doCollect();
+    abstract Result doCollect( Map<String,Object> config ) throws InvalidArgumentsException;
     abstract Result doStop();
     abstract Result doClear();
     abstract DATA doGetData();

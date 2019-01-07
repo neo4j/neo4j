@@ -20,11 +20,16 @@
 package org.neo4j.internal.collector;
 
 import java.util.Iterator;
+import java.util.Map;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.TimeUnit;
 
+import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.api.query.QuerySnapshot;
 import org.neo4j.kernel.impl.query.QueryExecutionMonitor;
+import org.neo4j.scheduler.Group;
+import org.neo4j.scheduler.JobScheduler;
 
 /**
  * Simple Thread-safe query collector.
@@ -41,9 +46,11 @@ class QueryCollector extends CollectorStateMachine<Iterator<QuerySnapshot>> impl
 {
     private volatile boolean isCollecting;
     private final ConcurrentLinkedQueue<QuerySnapshot> queries;
+    private final JobScheduler jobScheduler;
 
-    QueryCollector()
+    QueryCollector( JobScheduler jobScheduler )
     {
+        this.jobScheduler = jobScheduler;
         isCollecting = false;
         queries = new ConcurrentLinkedQueue<>();
     }
@@ -51,8 +58,10 @@ class QueryCollector extends CollectorStateMachine<Iterator<QuerySnapshot>> impl
     // CollectorStateMachine
 
     @Override
-    Result doCollect()
+    Result doCollect( Map<String,Object> config ) throws InvalidArgumentsException
     {
+        int collectSeconds = QueryCollectorConfig.of( config ).collectSeconds;
+        jobScheduler.schedule( Group.DATA_COLLECTOR, QueryCollector.this::stop, collectSeconds, TimeUnit.SECONDS );
         isCollecting = true;
         return success( "Collection started." );
     }

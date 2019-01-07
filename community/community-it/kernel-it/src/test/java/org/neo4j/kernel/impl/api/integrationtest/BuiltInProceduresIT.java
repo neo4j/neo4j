@@ -249,7 +249,7 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
                       "Retrieve all available statistical data about the current database, in an anonymized form.", "READ" ),
                 proc( "db.stats.status", "() :: (section :: STRING?, status :: STRING?, data :: MAP?)",
                       "Retrieve the status of all available collector daemons, for this database.", "READ" ),
-                proc( "db.stats.collect", "(section :: STRING?) :: (section :: STRING?, success :: BOOLEAN?, message :: STRING?)",
+                proc( "db.stats.collect", "(section :: STRING?, config = {} :: MAP?) :: (section :: STRING?, success :: BOOLEAN?, message :: STRING?)",
                       "Start data collection of a given data section. Valid sections are 'QUERIES'", "READ" ),
                 proc( "db.stats.stop", "(section :: STRING?) :: (section :: STRING?, success :: BOOLEAN?, message :: STRING?)",
                       "Stop data collection of a given data section. Valid sections are 'QUERIES'", "READ" ),

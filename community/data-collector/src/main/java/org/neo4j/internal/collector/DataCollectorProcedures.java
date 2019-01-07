@@ -105,9 +105,10 @@ public class DataCollectorProcedures
     @Admin
     @Description( "Start data collection of a given data section. Valid sections are '" + Sections.QUERIES + "'" )
     @Procedure( name = "db.stats.collect", mode = Mode.READ )
-    public Stream<ActionResult> collect( @Name( value = "section" ) String section ) throws InvalidArgumentsException
+    public Stream<ActionResult> collect( @Name( value = "section" ) String section,
+                                         @Name( value = "config", defaultValue = "" ) Map<String, Object> config ) throws InvalidArgumentsException
     {
-        CollectorStateMachine.Result result = collectorStateMachine( section ).collect();
+        CollectorStateMachine.Result result = collectorStateMachine( section ).collect( config );
         return Stream.of( new ActionResult( section, result.success, result.message ) );
     }
 
