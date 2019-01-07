@@ -20,7 +20,6 @@
 package org.neo4j.test.rule;
 
 import org.apache.commons.lang3.StringUtils;
-import org.junit.rules.TestRule;
 import org.junit.rules.Timeout;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
@@ -39,7 +38,7 @@ import java.util.function.Function;
 import org.neo4j.diagnostics.utils.DumpUtils;
 
 /**
- * Timeout rule implementation that print out stack traces of all thread
+ * Timeout rule implementation that print out stack traces of all threads
  * instead of just one suspect, as default implementation does.
  * <p>
  * In addition provide possibility to describe provided custom entities on timeout failure.
@@ -52,10 +51,17 @@ import org.neo4j.diagnostics.utils.DumpUtils;
  *                                               .describeOnFailure( locks )
  *                                               .build()};
  * </pre>
+ * Another way to use this is to not provide a specific timeout and let normal means of specifying junit test timeout take its course, e.g:
+ * <pre> {@code
+ * public VerboseTimeout timeout = VerboseTimeout.builder().build();
+ *  ...
+ * @literal @Test( timeout = 20_000 )
+ *  public void shouldTestSomething()}
+ * </pre>
  *
  * @see Timeout
  */
-public class VerboseTimeout extends Timeout implements TestRule
+public class VerboseTimeout extends Timeout
 {
     private VerboseTimeoutBuilder timeoutBuilder;
     private Description currentTestDescription;
