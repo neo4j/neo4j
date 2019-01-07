@@ -332,12 +332,7 @@ setup_options() {
     fi
 
     echo "Started neo4j (pid ${NEO4J_PID}). It is available at ${NEO4J_SERVER_ADDRESS}/"
-
-    if [[ "$(echo "${dbms_mode:-}" | tr [:lower:] [:upper:])" == "HA" ]]; then
-      echo "This HA instance will be operational once it has joined the cluster."
-    else
-      echo "There may be a short delay until the server is ready."
-    fi
+    echo "There may be a short delay until the server is ready."
   }
 }
 
