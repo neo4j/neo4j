@@ -42,11 +42,11 @@ final case class NodePathStep(node: Expression, next: PathStep) extends PathStep
   val dependencies = next.dependencies + node
 }
 
-final case class SingleRelationshipPathStep(rel: Expression, direction: SemanticDirection, next: PathStep) extends PathStep {
+final case class SingleRelationshipPathStep(rel: Expression, direction: SemanticDirection, toNode: Option[LogicalVariable], next: PathStep) extends PathStep {
   val dependencies = next.dependencies + rel
 }
 
-final case class MultiRelationshipPathStep(rel: Expression, direction: SemanticDirection, next: PathStep) extends PathStep {
+final case class MultiRelationshipPathStep(rel: Expression, direction: SemanticDirection, toNode: Option[LogicalVariable], next: PathStep) extends PathStep {
   val dependencies = next.dependencies + rel
 }
 

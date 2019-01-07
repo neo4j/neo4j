@@ -171,8 +171,9 @@ class LogicalPlanConverterTest extends CypherFunSuite {
 
     val var4_0 = expressionsV4_0.Variable("n")(pos4_0)
     val psv4_0a = expressionsV4_0.NilPathStep
-    val psv4_0b = expressionsV4_0.MultiRelationshipPathStep(var4_0, expressionsV4_0.SemanticDirection.BOTH, psv4_0a)
-    val psv4_0c = expressionsV4_0.SingleRelationshipPathStep(var4_0, expressionsV4_0.SemanticDirection.OUTGOING, psv4_0b)
+
+    val psv4_0b = expressionsV4_0.MultiRelationshipPathStep(var4_0, expressionsV4_0.SemanticDirection.BOTH, None, psv4_0a)
+    val psv4_0c = expressionsV4_0.SingleRelationshipPathStep(var4_0, expressionsV4_0.SemanticDirection.OUTGOING, None, psv4_0b)
     val psv4_0d = expressionsV4_0.NodePathStep(var4_0, psv4_0c)
     val pexpv4_0 = expressionsV4_0.PathExpression(psv4_0d)(pos4_0)
 

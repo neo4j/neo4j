@@ -158,7 +158,7 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
     val returns = parseReturnedExpr("MATCH p = (a)-[r]->(b) RETURN p")
 
     val expected = PathExpression(
-      NodePathStep(Variable("a")_, SingleRelationshipPathStep(Variable("r")_, SemanticDirection.OUTGOING, NilPathStep))
+      NodePathStep(Variable("a")_, SingleRelationshipPathStep(Variable("r")_, SemanticDirection.OUTGOING, Some(Variable("b")_), NilPathStep))
     )_
 
     returns should equal(expected: PathExpression)
@@ -168,7 +168,7 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
     val returns = parseReturnedExpr("MATCH p = (b)<-[r]-(a) RETURN p")
 
     val expected = PathExpression(
-      NodePathStep(Variable("b")_, SingleRelationshipPathStep(Variable("r")_, SemanticDirection.INCOMING, NilPathStep))
+      NodePathStep(Variable("b")_, SingleRelationshipPathStep(Variable("r")_, SemanticDirection.INCOMING, Some(Variable("a")_), NilPathStep))
     )_
 
     returns should equal(expected: PathExpression)
@@ -178,7 +178,7 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
     val returns = parseReturnedExpr("MATCH p = (a)-[r*]->(b) RETURN p")
 
     val expected = PathExpression(
-      NodePathStep(Variable("a")_, MultiRelationshipPathStep(Variable("r")_, SemanticDirection.OUTGOING, NilPathStep))
+      NodePathStep(Variable("a")_, MultiRelationshipPathStep(Variable("r")_, SemanticDirection.OUTGOING, Some(Variable("b")_), NilPathStep))
     )_
 
     returns should equal(expected: PathExpression)
@@ -188,7 +188,7 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
     val returns = parseReturnedExpr("MATCH p = (b)<-[r*]-(a) RETURN p AS p")
 
     val expected = PathExpression(
-      NodePathStep(Variable("b")_, MultiRelationshipPathStep(Variable("r")_, SemanticDirection.INCOMING, NilPathStep))
+      NodePathStep(Variable("b")_, MultiRelationshipPathStep(Variable("r")_, SemanticDirection.INCOMING, Some(Variable("a")_), NilPathStep))
     )_
 
     returns should equal(expected: PathExpression)
@@ -216,7 +216,7 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
     val RETURN =
       Return(distinct = false,
         ReturnItems(includeExisting = false, Seq(
-          AliasedReturnItem(PathExpression(NodePathStep(aId, SingleRelationshipPathStep(rId, SemanticDirection.OUTGOING, NilPathStep)))(pos), pId)(pos),
+          AliasedReturnItem(PathExpression(NodePathStep(aId, SingleRelationshipPathStep(rId, SemanticDirection.OUTGOING, Some(Variable("b")_), NilPathStep)))(pos), pId)(pos),
           AliasedReturnItem(SignedDecimalIntegerLiteral("42")(pos), orderId)(pos)
         ))(pos),
         Some(OrderBy(List(AscSortItem(orderId)(pos)))(pos)),
@@ -238,7 +238,7 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
     val WHERE =
       Where(
         GreaterThan(
-          FunctionInvocation(FunctionName("length")(pos), PathExpression(NodePathStep(aId, SingleRelationshipPathStep(rId, SemanticDirection.OUTGOING, NilPathStep)))(pos))(pos),
+          FunctionInvocation(FunctionName("length")(pos), PathExpression(NodePathStep(aId, SingleRelationshipPathStep(rId, SemanticDirection.OUTGOING, Some(Variable("b")_), NilPathStep)))(pos))(pos),
           SignedDecimalIntegerLiteral("10")(pos)
         )(pos)
       )(pos)

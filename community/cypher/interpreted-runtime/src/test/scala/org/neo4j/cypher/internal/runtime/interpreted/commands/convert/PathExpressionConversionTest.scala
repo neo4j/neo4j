@@ -47,7 +47,7 @@ class PathExpressionConversionTest extends CypherFunSuite {
   }
 
   test("p = (b)<-[r]-(a)") {
-    val expr = PathExpression(NodePathStep(Variable("b")_, SingleRelationshipPathStep(Variable("r")_, SemanticDirection.INCOMING, NilPathStep)))_
+    val expr = PathExpression(NodePathStep(Variable("b")_, SingleRelationshipPathStep(Variable("r")_, SemanticDirection.INCOMING, Some(Variable("a")_), NilPathStep)))_
 
     converters.toCommandProjectedPath(expr) should equal(
       ProjectedPath(
@@ -60,7 +60,7 @@ class PathExpressionConversionTest extends CypherFunSuite {
   }
 
   test("p = (a)-[r]->(b)") {
-    val expr = PathExpression(NodePathStep(Variable("a")_, SingleRelationshipPathStep(Variable("r")_, SemanticDirection.OUTGOING, NilPathStep)))_
+    val expr = PathExpression(NodePathStep(Variable("a")_, SingleRelationshipPathStep(Variable("r")_, SemanticDirection.OUTGOING, Some(Variable("b")_), NilPathStep)))_
 
     converters.toCommandProjectedPath(expr) should equal(
       ProjectedPath(
@@ -73,7 +73,7 @@ class PathExpressionConversionTest extends CypherFunSuite {
   }
 
   test("p = (b)<-[r*1..]-(a)") {
-    val expr = PathExpression(NodePathStep(Variable("b")_, MultiRelationshipPathStep(Variable("r")_, SemanticDirection.INCOMING, NilPathStep)))_
+    val expr = PathExpression(NodePathStep(Variable("b")_, MultiRelationshipPathStep(Variable("r")_, SemanticDirection.INCOMING, Some(Variable("a")_), NilPathStep)))_
 
     converters.toCommandProjectedPath(expr) should equal(
       ProjectedPath(
@@ -86,7 +86,7 @@ class PathExpressionConversionTest extends CypherFunSuite {
   }
 
   test("p = (a)-[r*1..]->(b)") {
-    val expr = PathExpression(NodePathStep(Variable("a")_, MultiRelationshipPathStep(Variable("r")_, SemanticDirection.OUTGOING, NilPathStep)))_
+    val expr = PathExpression(NodePathStep(Variable("a")_, MultiRelationshipPathStep(Variable("r")_, SemanticDirection.OUTGOING, Some(Variable("b")_), NilPathStep)))_
 
     converters.toCommandProjectedPath(expr) should equal(
       ProjectedPath(
@@ -101,8 +101,8 @@ class PathExpressionConversionTest extends CypherFunSuite {
   test("p = (a)-[r1*1..2]->(b)<-[r2]-c") {
     val expr = PathExpression(
       NodePathStep(Variable("a")_,
-      MultiRelationshipPathStep(Variable("r1")_, SemanticDirection.OUTGOING,
-      SingleRelationshipPathStep(Variable("r2")_, SemanticDirection.INCOMING,
+      MultiRelationshipPathStep(Variable("r1")_, SemanticDirection.OUTGOING, Some(Variable("b")_),
+      SingleRelationshipPathStep(Variable("r2")_, SemanticDirection.INCOMING, Some(Variable("c")_),
       NilPathStep
     ))))_
 
@@ -121,8 +121,8 @@ class PathExpressionConversionTest extends CypherFunSuite {
   test("p = (a)-[r1]->(b)<-[r2*1..2]-c") {
     val expr = PathExpression(
       NodePathStep(Variable("a")_,
-      MultiRelationshipPathStep(Variable("r1")_, SemanticDirection.OUTGOING,
-      SingleRelationshipPathStep(Variable("r2")_, SemanticDirection.INCOMING,
+      MultiRelationshipPathStep(Variable("r1")_, SemanticDirection.OUTGOING, Some(Variable("b")_),
+      SingleRelationshipPathStep(Variable("r2")_, SemanticDirection.INCOMING, Some(Variable("c")_),
       NilPathStep
     ))))_
 
