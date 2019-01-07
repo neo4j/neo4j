@@ -22,11 +22,14 @@ package org.neo4j.cypher.operations;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.neo4j.cypher.internal.runtime.DbAccess;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.virtual.ListValue;
 import org.neo4j.values.virtual.NodeValue;
 import org.neo4j.values.virtual.RelationshipValue;
 
+import static org.neo4j.cypher.operations.CypherFunctions.endNode;
+import static org.neo4j.cypher.operations.CypherFunctions.startNode;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 import static org.neo4j.values.virtual.VirtualValues.path;
 
@@ -41,7 +44,13 @@ public class PathValueBuilder
 {
     private final List<NodeValue> nodes = new ArrayList<>();
     private final List<RelationshipValue> rels = new ArrayList<>();
+    private final DbAccess dbAccess;
     private boolean seenNoValue;
+
+    public PathValueBuilder( DbAccess dbAccess )
+    {
+        this.dbAccess = dbAccess;
+    }
 
     /**
      * Creates a PathValue or NO_VALUE if any NO_VALUES has been encountered.
@@ -97,7 +106,7 @@ public class PathValueBuilder
      */
     public void addIncoming( RelationshipValue relationship )
     {
-        nodes.add( relationship.startNode() );
+        nodes.add( startNode( relationship, dbAccess ) );
         rels.add( relationship );
     }
 
@@ -121,7 +130,7 @@ public class PathValueBuilder
      */
     public void addOutgoing( RelationshipValue relationship )
     {
-        nodes.add( relationship.endNode() );
+        nodes.add( endNode(relationship, dbAccess ));
         rels.add( relationship );
     }
 
@@ -146,11 +155,11 @@ public class PathValueBuilder
     public void addUndirected( RelationshipValue relationship )
     {
         long previous = nodes.get( nodes.size() - 1 ).id();
-        if ( previous == relationship.startNode().id() )
+        if ( previous == startNode( relationship, dbAccess ).id() )
         {
             addOutgoing( relationship );
         }
-        else if ( previous == relationship.endNode().id() )
+        else if ( previous == endNode( relationship, dbAccess ).id() )
         {
             addIncoming( relationship );
         }

@@ -30,7 +30,10 @@ import org.neo4j.cypher.internal.runtime._
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.DirectionConverter.toGraphDb
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{OnlyDirectionExpander, TypeAndDirectionExpander}
+import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
+import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection.{BOTH, INCOMING, OUTGOING}
 import org.neo4j.cypher.internal.v4_0.logical.plans.{IndexOrder, _}
+import org.neo4j.cypher.internal.v4_0.util.{EntityNotFoundException, FailedIndexException}
 import org.neo4j.graphalgo.impl.path.ShortestPath
 import org.neo4j.graphalgo.impl.path.ShortestPath.ShortestPathPredicate
 import org.neo4j.graphdb._
@@ -40,26 +43,20 @@ import org.neo4j.internal.kernel.api
 import org.neo4j.internal.kernel.api.IndexQuery.ExactPredicate
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelections.{allCursor, incomingCursor, outgoingCursor}
 import org.neo4j.internal.kernel.api.helpers._
+import org.neo4j.internal.kernel.api.procs.QualifiedName
 import org.neo4j.internal.kernel.api.{IndexQuery, IndexReadSession, IndexReference, InternalIndexState, NodeCursor, NodeValueIndexCursor, PropertyCursor, Read, RelationshipScanCursor, TokenRead, IndexOrder => KernelIndexOrder}
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.exceptions.schema.{AlreadyConstrainedException, AlreadyIndexedException}
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory
 import org.neo4j.kernel.api.schema.constraints.ConstraintDescriptorFactory
 import org.neo4j.kernel.api.{ResourceManager => _, _}
-import org.neo4j.kernel.impl.core.{EmbeddedProxySPI, ThreadToStatementContextBridge}
-import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker
-import org.neo4j.kernel.impl.query.Neo4jTransactionalContext
+import org.neo4j.kernel.impl.core.EmbeddedProxySPI
 import org.neo4j.kernel.impl.util.ValueUtils.{fromNodeProxy, fromRelationshipProxy}
 import org.neo4j.kernel.impl.util.{DefaultValueMapper, ValueUtils}
 import org.neo4j.storageengine.api.RelationshipVisitor
 import org.neo4j.values.storable.{TextValue, Value, Values, _}
 import org.neo4j.values.virtual._
 import org.neo4j.values.{AnyValue, ValueMapper}
-import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
-import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection.{BOTH, INCOMING, OUTGOING}
-import org.neo4j.cypher.internal.v4_0.util.{EntityNotFoundException, FailedIndexException}
-import org.neo4j.internal.kernel.api.procs.QualifiedName
-
 
 import scala.collection.Iterator
 import scala.collection.JavaConverters._
@@ -784,10 +781,6 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
         case error: URLAccessValidationError => Left(error.getMessage)
       }
   }
-
-  override def relationshipGetStartNode(relationship: RelationshipValue) = relationship.startNode()
-
-  override def relationshipGetEndNode(relationship: RelationshipValue) = relationship.endNode()
 
   private lazy val tokenNameLookup = new SilentTokenNameLookup(transactionalContext.kernelTransaction.tokenRead())
 

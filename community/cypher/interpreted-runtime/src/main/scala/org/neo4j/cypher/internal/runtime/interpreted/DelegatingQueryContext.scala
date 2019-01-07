@@ -24,9 +24,11 @@ import java.net.URL
 import org.eclipse.collections.api.iterator.LongIterator
 import org.neo4j.cypher.internal.planner.v4_0.spi.{IdempotentResult, KernelStatisticProvider}
 import org.neo4j.cypher.internal.runtime._
+import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
 import org.neo4j.cypher.internal.v4_0.logical.plans.IndexOrder
 import org.neo4j.graphdb.{Path, PropertyContainer}
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelectionCursor
+import org.neo4j.internal.kernel.api.procs.QualifiedName
 import org.neo4j.internal.kernel.api.{QueryContext => _, _}
 import org.neo4j.kernel.api.dbms.DbmsOperations
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI
@@ -34,9 +36,6 @@ import org.neo4j.kernel.impl.factory.DatabaseInfo
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.{TextValue, Value}
 import org.neo4j.values.virtual.{ListValue, MapValue, NodeValue, RelationshipValue}
-import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
-import org.neo4j.internal.kernel.api.procs.QualifiedName
-
 
 import scala.collection.Iterator
 
@@ -196,11 +195,6 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
   override def getRelTypeName(id: Int): String = singleDbHit(inner.getRelTypeName(id))
 
   override def getImportURL(url: URL): Either[String,URL] = inner.getImportURL(url)
-
-  override def relationshipGetStartNode(relationship: RelationshipValue) = inner.relationshipGetStartNode(relationship)
-
-  override def relationshipGetEndNode(relationship: RelationshipValue) = inner.relationshipGetEndNode(relationship)
-
 
   override def nodeGetOutgoingDegree(node: Long, nodeCursor: NodeCursor): Int = singleDbHit(inner.nodeGetOutgoingDegree(node, nodeCursor))
 

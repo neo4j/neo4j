@@ -22,6 +22,7 @@ package org.neo4j.cypher.operations;
 import java.math.BigDecimal;
 import java.util.concurrent.ThreadLocalRandom;
 
+import org.neo4j.cypher.EntityNotFoundException;
 import org.neo4j.cypher.internal.runtime.DbAccess;
 import org.neo4j.cypher.internal.runtime.ExpressionCursors;
 import org.neo4j.cypher.internal.v4_0.util.CypherTypeException;
@@ -387,13 +388,25 @@ public final class CypherFunctions
     public static NodeValue startNode( AnyValue anyValue, DbAccess access )
     {
         assert anyValue != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        if ( anyValue instanceof RelationshipValue )
+        if ( anyValue instanceof VirtualRelationshipValue )
         {
-            return access.relationshipGetStartNode( (RelationshipValue) anyValue );
+            return startNode( (VirtualRelationshipValue) anyValue, access );
         }
         else
         {
             throw new CypherTypeException( format( "Expected %s to be a RelationshipValue", anyValue), null );
+        }
+    }
+
+    public static NodeValue startNode( VirtualRelationshipValue relationship, DbAccess access )
+    {
+        try ( RelationshipScanCursor cursor = access.singleRelationship( relationship.id() ) )
+        {
+            if ( !cursor.next() )
+            {
+                throw new EntityNotFoundException( relationship + " was not found", null );
+            }
+            return access.nodeById( cursor.sourceNodeReference() );
         }
     }
 
@@ -402,11 +415,55 @@ public final class CypherFunctions
         assert anyValue != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         if ( anyValue instanceof RelationshipValue )
         {
-            return access.relationshipGetEndNode( (RelationshipValue) anyValue );
+            return endNode( (VirtualRelationshipValue) anyValue, access );
         }
         else
         {
             throw new CypherTypeException( format( "Expected %s to be a RelationshipValue", anyValue), null );
+        }
+    }
+
+    public static NodeValue endNode( VirtualRelationshipValue relationship, DbAccess access )
+    {
+        try ( RelationshipScanCursor cursor = access.singleRelationship( relationship.id() ) )
+        {
+            if ( !cursor.next() )
+            {
+                throw new EntityNotFoundException( relationship + " was not found", null );
+            }
+            return access.nodeById( cursor.targetNodeReference() );
+        }
+    }
+
+    public static NodeValue otherNode( AnyValue anyValue, DbAccess access, VirtualNodeValue node )
+    {
+        assert anyValue != NO_VALUE : "NO_VALUE checks need to happen outside this call";
+        if ( anyValue instanceof RelationshipValue )
+        {
+            return otherNode( (VirtualRelationshipValue) anyValue, access, node );
+        }
+        else
+        {
+            throw new CypherTypeException( format( "Expected %s to be a RelationshipValue", anyValue ), null );
+        }
+    }
+
+    public static NodeValue otherNode( VirtualRelationshipValue relationship, DbAccess access, VirtualNodeValue node )
+    {
+        try ( RelationshipScanCursor cursor = access.singleRelationship( relationship.id() ) )
+        {
+            if ( node.id() == cursor.sourceNodeReference() )
+            {
+                return access.nodeById( cursor.targetNodeReference() );
+            }
+            else if ( node.id() == cursor.targetNodeReference() )
+            {
+                return access.nodeById( cursor.sourceNodeReference() );
+            }
+            else
+            {
+                throw new IllegalArgumentException( "Invalid argument, node is not member of relationship" );
+            }
         }
     }
 

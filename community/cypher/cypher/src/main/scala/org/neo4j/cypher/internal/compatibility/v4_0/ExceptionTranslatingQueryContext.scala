@@ -25,17 +25,16 @@ import org.eclipse.collections.api.iterator.LongIterator
 import org.neo4j.cypher.internal.planner.v4_0.spi.IdempotentResult
 import org.neo4j.cypher.internal.runtime._
 import org.neo4j.cypher.internal.runtime.interpreted.{DelegatingOperations, DelegatingQueryTransactionalContext}
+import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
 import org.neo4j.cypher.internal.v4_0.logical.plans.IndexOrder
 import org.neo4j.graphdb.{Path, PropertyContainer}
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelectionCursor
+import org.neo4j.internal.kernel.api.procs.QualifiedName
 import org.neo4j.internal.kernel.api.{QueryContext => _, _}
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.{TextValue, Value}
 import org.neo4j.values.virtual.{ListValue, MapValue, NodeValue, RelationshipValue}
-import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
-import org.neo4j.internal.kernel.api.procs.QualifiedName
-
 
 import scala.collection.Iterator
 
@@ -215,12 +214,6 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
 
   override def getImportURL(url: URL) =
     translateException(inner.getImportURL(url))
-
-  override def relationshipGetStartNode(relationships: RelationshipValue) =
-    translateException(inner.relationshipGetStartNode(relationships))
-
-  override def relationshipGetEndNode(relationships: RelationshipValue) =
-    translateException(inner.relationshipGetEndNode(relationships))
 
   override def createRelationship(start: Long, end: Long, relType: Int) =
     translateException(inner.createRelationship(start, end, relType))
