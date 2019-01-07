@@ -20,6 +20,7 @@
 package org.neo4j.internal.collector
 
 import org.neo4j.cypher._
+import org.scalatest.matchers.{MatchResult, Matcher}
 
 class DataCollectorQueriesAcceptanceTest extends ExecutionEngineFunSuite {
 
@@ -196,6 +197,32 @@ class DataCollectorQueriesAcceptanceTest extends ExecutionEngineFunSuite {
             )
           )
         )
+      )
+    )
+  }
+
+  test("should retrieve invocation summary of query") {
+    // given
+    execute("CALL db.stats.collect('QUERIES')").single
+    execute("MATCH (n {p: $param}) RETURN count(n)", Map("param" -> "BrassLeg"))
+    execute("MATCH (n {p: $param}) RETURN count(n)", Map("param" -> 2))
+    execute("WITH 42 AS x RETURN x")
+    execute("MATCH (n {p: $param}) RETURN count(n)", Map("param" -> List(3.1, 3.2)))
+    execute("WITH 42 AS x RETURN x")
+    execute("CALL db.stats.stop('QUERIES')").single
+
+    // when
+    val res = execute("CALL db.stats.retrieve('QUERIES')").toList
+
+    // then
+    res should beListWithoutOrder(
+      beMapContaining(
+        "section" -> "QUERIES",
+        "data" -> QueryWithInvocationSummary("MATCH (n {p: $param}) RETURN count(n)")
+      ),
+      beMapContaining(
+        "section" -> "QUERIES",
+        "data" -> QueryWithInvocationSummary("WITH 42 AS x RETURN x")
       )
     )
   }
@@ -383,6 +410,38 @@ class DataCollectorQueriesAcceptanceTest extends ExecutionEngineFunSuite {
         e.status should be(org.neo4j.kernel.api.exceptions.Status.General.InvalidArguments)
       case x =>
         x shouldBe a[CypherExecutionException]
+    }
+  }
+
+  case class QueryWithInvocationSummary(expectedQuery: String) extends Matcher[AnyRef] {
+    override def apply(left: AnyRef): MatchResult = {
+      left match {
+        case m: Map[String, AnyRef] =>
+          val query = m("query")
+          if (query != expectedQuery)
+            return MatchResult(matches = false,
+              s"""Expected query
+                 |  $expectedQuery
+                 |got
+                 |  $query""".stripMargin, "")
+
+          val invocations = m("invocations").asInstanceOf[Seq[Map[String, AnyRef]]]
+          val compileTimes = invocations.map(inv => inv("elapsedCompileTimeInUs").asInstanceOf[Long])
+          val executionTimes = invocations.map(inv => inv("elapsedExecutionTimeInUs").asInstanceOf[Long])
+
+          beMapContaining(
+            "compileTimeInUsMin" -> compileTimes.min,
+            "compileTimeInUsMax" -> compileTimes.max,
+            "compileTimeInUsAvg" -> (compileTimes.sum / compileTimes.size),
+            "executionTimeInUsMin" -> executionTimes.min,
+            "executionTimeInUsMax" -> executionTimes.max,
+            "executionTimeInUsAvg" -> (executionTimes.sum / executionTimes.size),
+            "invocationCount" -> invocations.size
+          ).apply(m("invocationSummary"))
+
+        case _ =>
+          MatchResult(matches = false, s"Expected map, got $left", "")
+      }
     }
   }
 }

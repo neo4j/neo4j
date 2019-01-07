@@ -76,6 +76,7 @@ object QueriesSection {
         data.put("estimatedRows", estimatedRows)
 
         data.put("invocations", invocations(queryData.invocations.take(maxInvocations), anonymizer))
+        data.put("invocationSummary", invocationSummary(queryData.invocations))
         new RetrieveResult(Sections.QUERIES, data)
     }))
   }
@@ -121,8 +122,46 @@ object QueriesSection {
     result
   }
 
+  private def invocationSummary(invocations: ArrayBuffer[QueriesSection.SingleInvocation]
+                               ): util.Map[String, AnyRef] = {
+    val result = new util.HashMap[String, AnyRef]()
+    var compileTime = new Stats
+    var executionTime = new Stats
+    for (invocation <- invocations) {
+      compileTime.onValue(invocation.compilationTimeMicros)
+      executionTime.onValue(invocation.elapsedTimeMicros - invocation.compilationTimeMicros)
+    }
+
+    result.put("compileTimeInUsMin", java.lang.Long.valueOf(compileTime.min))
+    result.put("compileTimeInUsMax", java.lang.Long.valueOf(compileTime.max))
+    result.put("compileTimeInUsAvg", java.lang.Long.valueOf(compileTime.avg))
+    result.put("executionTimeInUsMin", java.lang.Long.valueOf(executionTime.min))
+    result.put("executionTimeInUsMax", java.lang.Long.valueOf(executionTime.max))
+    result.put("executionTimeInUsAvg", java.lang.Long.valueOf(executionTime.avg))
+    result.put("invocationCount", java.lang.Long.valueOf(invocations.size))
+    result
+  }
+
   private def asRetrieveStream(iterator: Iterator[RetrieveResult]): Stream[RetrieveResult] = {
     import scala.collection.JavaConverters._
     StreamSupport.stream(Spliterators.spliterator(iterator.asJava, 0L, Spliterator.NONNULL), false)
+  }
+
+  class Stats {
+    private var _min = Long.MaxValue
+    private var _max = Long.MinValue
+    private var sum = 0L
+    private var count = 0L
+
+    def onValue(x: Long): Unit = {
+      _min = math.min(x, _min)
+      _max = math.max(x, _max)
+      sum += x
+      count += 1
+    }
+
+    def avg: Long = sum / count
+    def min: Long = _min
+    def max: Long = _max
   }
 }
