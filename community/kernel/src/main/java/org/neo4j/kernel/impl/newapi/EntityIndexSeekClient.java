@@ -23,15 +23,15 @@ import org.neo4j.graphdb.Resource;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.index.IndexProgressor;
-import org.neo4j.kernel.impl.index.schema.IndexDescriptor;
+import org.neo4j.storageengine.api.schema.IndexDescriptor;
 
 /**
  * Similar to an {@link IndexProgressor.EntityValueClient}, but will be given a {@link Read} instance, and possibly a {@link Resource}, prior to its
- * {@link #initialize(IndexDescriptor, IndexProgressor, IndexQuery[], IndexOrder, boolean, boolean) initialization}.
+ * {@link #initialize(IndexDescriptor, IndexProgressor, IndexQuery[], IndexOrder, boolean, boolean)}  initialization}.
  * <p>
  * This is useful if the entity references needs to be processed further.
  */
 public interface EntityIndexSeekClient extends IndexProgressor.EntityValueClient
 {
-    void setRead( Read read, Resource resource );
+    void setRead( Read read );
 }

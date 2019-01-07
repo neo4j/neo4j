@@ -93,7 +93,7 @@ abstract class Read implements TxStateHolder,
 
     @Override
     public final void nodeIndexSeek( IndexReadSession index, NodeValueIndexCursor cursor, IndexOrder indexOrder, boolean needsValues, IndexQuery... query )
-            throws IndexNotApplicableKernelException, IndexNotFoundKernelException
+            throws IndexNotApplicableKernelException
     {
         ktx.assertOpen();
         DefaultIndexReadSession indexSession = (DefaultIndexReadSession) index;
@@ -108,7 +108,7 @@ abstract class Read implements TxStateHolder,
         }
 
         EntityIndexSeekClient client = (EntityIndexSeekClient) cursor;
-        client.setRead( this, null );
+        client.setRead( this );
         IndexProgressor.EntityValueClient withFullPrecision = injectFullValuePrecision( client, query, indexSession.reader );
         indexSession.reader.query( this, withFullPrecision, indexOrder, needsValues, query );
     }
@@ -130,7 +130,7 @@ abstract class Read implements TxStateHolder,
 
         EntityIndexSeekClient client = (EntityIndexSeekClient) cursor;
         IndexReader reader = indexReader( index, false );
-        client.setRead( this, null );
+        client.setRead( this );
         IndexProgressor.EntityValueClient withFullPrecision = injectFullValuePrecision( client, query, reader );
         reader.query( this, withFullPrecision, IndexOrder.NONE, false, query );
     }
@@ -212,20 +212,19 @@ abstract class Read implements TxStateHolder,
         Locks.Client locks = ktx.statementLocks().optimistic();
         LockTracer lockTracer = ktx.lockTracer();
 
-        return LockingNodeUniqueIndexSeek.apply( locks, lockTracer, (DefaultNodeValueIndexCursor)cursor, this, index, predicates );
+        return LockingNodeUniqueIndexSeek.apply( locks, lockTracer, (DefaultNodeValueIndexCursor)cursor, this, this, index, predicates );
     }
 
     @Override // UniqueNodeIndexSeeker
     public void nodeIndexSeekWithFreshIndexReader(
-            IndexReference index,
             DefaultNodeValueIndexCursor cursor,
-            IndexQuery.ExactPredicate... query ) throws IndexNotFoundKernelException, IndexNotApplicableKernelException
+            IndexReader indexReader,
+            IndexQuery.ExactPredicate... query ) throws IndexNotApplicableKernelException
     {
-        IndexReader reader = indexReader( index, true );
-        cursor.setRead( this, reader );
-        IndexProgressor.EntityValueClient target = injectFullValuePrecision( cursor, query, reader );
+        cursor.setRead( this );
+        IndexProgressor.EntityValueClient target = injectFullValuePrecision( cursor, query, indexReader );
         // we never need values for exact predicates
-        reader.query( this, target, IndexOrder.NONE, false, query );
+        indexReader.query( this, target, IndexOrder.NONE, false, query );
     }
 
     @Override
@@ -246,7 +245,7 @@ abstract class Read implements TxStateHolder,
         int firstProperty = indexSession.reference.properties()[0];
 
         DefaultNodeValueIndexCursor cursorImpl = (DefaultNodeValueIndexCursor) cursor;
-        cursorImpl.setRead( this, null );
+        cursorImpl.setRead( this );
         indexSession.reader.query( this, cursorImpl, indexOrder, needsValues, IndexQuery.exists( firstProperty ) );
     }
 

@@ -55,14 +55,14 @@ public class LockingNodeUniqueIndexSeekTest
     private final long resourceId = indexEntryResourceId( labelId, predicate );
     private UniqueNodeIndexSeeker<NodeValueIndexCursor> uniqueNodeIndexSeeker = mock( UniqueNodeIndexSeeker.class );
 
-    private Locks.Client locks;
+    private final Locks.Client locks = mock( Locks.Client.class );
+    private final Read read = mock( Read.class );
     private InOrder order;
 
     @Before
     public void setup()
     {
-         locks = mock( Locks.Client.class );
-         order = inOrder( locks );
+        order = inOrder( locks );
     }
 
     @Test
@@ -78,6 +78,7 @@ public class LockingNodeUniqueIndexSeekTest
                                                         LockTracer.NONE,
                                                         cursor,
                                                         uniqueNodeIndexSeeker,
+                                                        read,
                                                         index,
                                                         predicate );
 
@@ -100,6 +101,7 @@ public class LockingNodeUniqueIndexSeekTest
                                                         LockTracer.NONE,
                                                         cursor,
                                                         uniqueNodeIndexSeeker,
+                                                        read,
                                                         index,
                                                         predicate );
 
@@ -126,6 +128,7 @@ public class LockingNodeUniqueIndexSeekTest
                                                         LockTracer.NONE,
                                                         cursor,
                                                         uniqueNodeIndexSeeker,
+                                                        read,
                                                         index,
                                                         predicate );
 
