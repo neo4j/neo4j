@@ -53,8 +53,7 @@ public class IndexEntryConflictException extends KernelException
 
     public IndexEntryConflictException( long existingNodeId, long addedNodeId, ValueTuple propertyValues )
     {
-        super( Status.Schema.ConstraintViolation, format( "Both node %d and node %d share the property value %s",
-                existingNodeId, addedNodeId, propertyValues ) );
+        super( Status.Schema.ConstraintViolation, "Both node %d and node %d share the property value %s", existingNodeId, addedNodeId, propertyValues );
         this.existingNodeId = existingNodeId;
         this.addedNodeId = addedNodeId;
         this.propertyValues = propertyValues;
