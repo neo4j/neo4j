@@ -81,6 +81,7 @@ public class ReplicatedTokenStateMachine<TOKEN extends Token> implements StateMa
     {
         if ( commandIndex <= lastCommittedIndex )
         {
+            log.warn( format( "Ignored %s because already committed (%d <= %d).", tokenRequest, commandIndex, lastCommittedIndex ) );
             return;
         }
 
@@ -91,6 +92,7 @@ public class ReplicatedTokenStateMachine<TOKEN extends Token> implements StateMa
 
         if ( existingTokenId == null )
         {
+            log.info( format( "Applying %s with newTokenId=%d", tokenRequest, newTokenId ) );
             applyToStore( commands, commandIndex );
             tokenRegistry.addToken( tokenFactory.newToken( tokenRequest.tokenName(), newTokenId ) );
             callback.accept( Result.of( newTokenId ) );
