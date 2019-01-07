@@ -402,6 +402,12 @@ public class GraphDatabaseSettings implements LoadableConfig
     public static final Setting<Integer> cypher_worker_count =
             setting( "unsupported.cypher.number_of_workers", INTEGER, "0" );
 
+    @Description( "The scheduler to use to coordinate Cypher workers in the morsel runtime. " +
+            "Allowed values: 'simple', 'single_threaded', 'lock_free'." )
+    @Internal
+    public static final Setting<String> cypher_morsel_runtime_scheduler =
+            setting( "unsupported.cypher.morsel_runtime_scheduler", STRING, "simple" );
+
     @Description( "The maximum amount of time to wait for the database to become available, when " +
                   "starting a new transaction." )
     @Internal

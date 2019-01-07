@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compatibility
 
 import java.time.Clock
 
+import org.neo4j.cypher.CypherMorselRuntimeSchedulerOption
 import org.neo4j.cypher.internal.compatibility.v4_0.runtime.executionplan.{DelegatingExecutionPlan, ExecutionPlan}
 import org.neo4j.cypher.internal.compiler.v4_0.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.v4_0.planner.CantCompileQueryException
@@ -130,6 +131,7 @@ class FallbackRuntime[CONTEXT <: RuntimeContext](runtimes: Seq[CypherRuntime[CON
 }
 
 case class CypherRuntimeConfiguration(workers: Int,
+                                      scheduler: CypherMorselRuntimeSchedulerOption,
                                       morselSize: Int,
                                       doSchedulerTracing: Boolean,
                                       waitTimeout: Duration)
