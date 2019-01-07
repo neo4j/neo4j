@@ -454,9 +454,11 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
             IndexQuery.ExactPredicate[] propertyValues, long modifiedNode
     ) throws UniquePropertyValueValidationException, UnableToValidateConstraintException
     {
-        try ( DefaultNodeValueIndexCursor valueCursor = cursors.allocateNodeValueIndexCursor() )
+        IndexDescriptor schemaIndexDescriptor = constraint.ownedIndexDescriptor();
+        IndexReference indexReference = allStoreHolder.indexGetCapability( schemaIndexDescriptor );
+        try ( DefaultNodeValueIndexCursor valueCursor = cursors.allocateNodeValueIndexCursor();
+              IndexReaders indexReaders = new IndexReaders( indexReference, allStoreHolder ) )
         {
-            IndexDescriptor schemaIndexDescriptor = constraint.ownedIndexDescriptor();
             assertIndexOnline( schemaIndexDescriptor );
             int labelId = schemaIndexDescriptor.schema().keyId();
 
@@ -466,8 +468,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
                     indexEntryResourceId( labelId, propertyValues )
             );
 
-            allStoreHolder.nodeIndexSeekWithFreshIndexReader(
-                    allStoreHolder.indexGetCapability( schemaIndexDescriptor ), valueCursor, propertyValues );
+            allStoreHolder.nodeIndexSeekWithFreshIndexReader( valueCursor, indexReaders.createReader(), propertyValues );
             if ( valueCursor.next() && valueCursor.nodeReference() != modifiedNode )
             {
                 throw new UniquePropertyValueValidationException( constraint, VALIDATION,

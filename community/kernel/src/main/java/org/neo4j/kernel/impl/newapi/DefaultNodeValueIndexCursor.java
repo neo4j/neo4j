@@ -58,7 +58,6 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
         implements NodeValueIndexCursor, NodeValueClient, SortedMergeJoin.Sink
 {
     private Read read;
-    private Resource resource;
     private long node;
     private IndexQuery[] query;
     private Value[] values;
@@ -232,10 +231,9 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
         this.values = values;
     }
 
-    public void setRead( Read read, Resource resource )
+    public void setRead( Read read )
     {
         this.read = read;
-        this.resource = resource;
     }
 
     @Override
@@ -288,18 +286,7 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
             this.addedWithValues = Collections.emptyIterator();
             this.removed = LongSets.immutable.empty();
 
-            try
-            {
-                if ( resource != null )
-                {
-                    resource.close();
-                    resource = null;
-                }
-            }
-            finally
-            {
-                pool.accept( this );
-            }
+            pool.accept( this );
         }
     }
 
