@@ -189,6 +189,7 @@ object LogicalPlanConverter {
 
         case (expressionsV3_5.NilPathStep, _) => expressionsV4_0.NilPathStep
 
+
         // ---------------- OTHER CLASSES ----------------
         // This comes after case objects, since we match also match on traits extended by case objects
 
@@ -218,6 +219,16 @@ object LogicalPlanConverter {
         case (spp: irV3_5.ShortestPathPattern, children: Seq[AnyRef]) =>
           val sp3_5 = convertASTNode[expressionsV4_0.ShortestPaths](spp.expr, expressionMap, planningAttributes3_5, planningAttributes4_0, ids, seenBySemanticTable)
           irV4_0.ShortestPathPattern(children(0).asInstanceOf[Option[String]], children(1).asInstanceOf[irV4_0.PatternRelationship], children(2).asInstanceOf[Boolean])(sp3_5)
+
+        case (_: expressionsV3_5.SingleRelationshipPathStep, children: Seq[AnyRef]) =>
+          expressionsV4_0.SingleRelationshipPathStep(children(0).asInstanceOf[ExpressionV4_0],
+                                                     children(1).asInstanceOf[expressionsV4_0.SemanticDirection],
+                                                     None, children(2).asInstanceOf[expressionsV4_0.PathStep])
+
+        case (_: expressionsV3_5.MultiRelationshipPathStep, children: Seq[AnyRef]) =>
+          expressionsV4_0.MultiRelationshipPathStep(children(0).asInstanceOf[ExpressionV4_0],
+                                                     children(1).asInstanceOf[expressionsV4_0.SemanticDirection],
+                                                     None, children(2).asInstanceOf[expressionsV4_0.PathStep])
 
         case (item@(_: expressionsV3_5.PathStep | _: expressionsV3_5.NameToken[_]), children: Seq[AnyRef]) =>
           convertVersion(oldExpressionPackage, newExpressionPackage, item, children)
