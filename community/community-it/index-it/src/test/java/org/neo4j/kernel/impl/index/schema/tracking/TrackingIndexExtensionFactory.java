@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.index.schema.tracking;
 
 import org.neo4j.kernel.api.impl.schema.NativeLuceneFusionIndexProviderFactory20;
 import org.neo4j.kernel.api.index.IndexProvider;
+import org.neo4j.kernel.extension.ExtensionType;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.spi.KernelContext;
 
@@ -30,7 +31,7 @@ public class TrackingIndexExtensionFactory extends KernelExtensionFactory<Tracki
 
     public TrackingIndexExtensionFactory()
     {
-        super( "trackingIndex" );
+        super( ExtensionType.DATABASE, "trackingIndex" );
     }
 
     public interface Dependencies extends NativeLuceneFusionIndexProviderFactory20.Dependencies

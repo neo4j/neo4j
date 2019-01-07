@@ -21,13 +21,13 @@ package org.neo4j.kernel.impl.index.schema.tracking;
 
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
-import org.neo4j.storageengine.api.schema.IndexProgressor;
-import org.neo4j.storageengine.api.schema.IndexReader;
-import org.neo4j.storageengine.api.schema.IndexSampler;
+import org.neo4j.kernel.api.index.IndexProgressor;
+import org.neo4j.kernel.api.index.IndexReader;
+import org.neo4j.kernel.api.index.IndexSampler;
 import org.neo4j.values.storable.Value;
 
 public class TrackingIndexReader implements IndexReader
@@ -54,16 +54,10 @@ public class TrackingIndexReader implements IndexReader
     }
 
     @Override
-    public PrimitiveLongResourceIterator query( IndexQuery... predicates ) throws IndexNotApplicableKernelException
-    {
-        return delegate.query( predicates );
-    }
-
-    @Override
-    public void query( IndexProgressor.NodeValueClient client, IndexOrder indexOrder, boolean needsValues, IndexQuery... query )
+    public void query( QueryContext context, IndexProgressor.EntityValueClient client, IndexOrder indexOrder, boolean needsValues, IndexQuery... query )
             throws IndexNotApplicableKernelException
     {
-        delegate.query( client, indexOrder, needsValues, query );
+        delegate.query( context, client, indexOrder, needsValues, query );
     }
 
     @Override

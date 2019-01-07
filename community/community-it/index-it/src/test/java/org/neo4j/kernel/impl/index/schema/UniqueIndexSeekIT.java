@@ -19,46 +19,48 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexReference;
+import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.TokenRead;
-import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.index.schema.tracking.TrackingIndexExtensionFactory;
 import org.neo4j.kernel.impl.index.schema.tracking.TrackingReadersIndexAccessor;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.extension.DefaultFileSystemExtension;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static java.util.Collections.singletonList;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.default_schema_provider;
 import static org.neo4j.kernel.api.impl.schema.NativeLuceneFusionIndexProviderFactory20.DESCRIPTOR;
 
-public class UniqueIndexSeekIT
+@ExtendWith( {DefaultFileSystemExtension.class, TestDirectoryExtension.class} )
+class UniqueIndexSeekIT
 {
-    @Rule
-    public final DefaultFileSystemRule fs = new DefaultFileSystemRule();
-    @Rule
-    public final TestDirectory directory = TestDirectory.testDirectory( fs );
+    @Inject
+    private TestDirectory directory;
 
     @Test
-    public void uniqueIndexSeekDoNotLeakIndexReaders() throws KernelException
+    void uniqueIndexSeekDoNotLeakIndexReaders() throws KernelException
     {
         TrackingIndexExtensionFactory indexExtensionFactory = new TrackingIndexExtensionFactory();
         GraphDatabaseAPI database = createDatabase( indexExtensionFactory );
@@ -105,7 +107,10 @@ public class UniqueIndexSeekIT
             int labelId = tokenRead.nodeLabel( label.name() );
             int propertyId = tokenRead.propertyKey( nameProperty );
             IndexReference indexReference = kernelTransaction.schemaRead().index( labelId, propertyId );
-            dataRead.lockingNodeUniqueIndexSeek( indexReference, IndexQuery.ExactPredicate.exact( propertyId, "value" ) );
+            try ( NodeValueIndexCursor cursor = kernelTransaction.cursors().allocateNodeValueIndexCursor()  )
+            {
+                dataRead.lockingNodeUniqueIndexSeek( indexReference, cursor, IndexQuery.ExactPredicate.exact( propertyId, "value" ) );
+            }
             transaction.success();
         }
     }

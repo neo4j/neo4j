@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import org.neo4j.graphdb.Resource;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.helpers.NodeValueIndexCursorAdapter;
@@ -30,7 +29,7 @@ import org.neo4j.values.storable.Value;
 public class ExtendedNodeValueIndexCursorAdapter extends NodeValueIndexCursorAdapter implements EntityIndexSeekClient
 {
     @Override
-    public void setRead( Read read, Resource resource )
+    public void setRead( Read read )
     {
     }
 

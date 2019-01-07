@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import org.neo4j.graphdb.Resource;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.NodeCursor;
@@ -36,7 +35,6 @@ final class DefaultRelationshipIndexCursor extends IndexCursor<IndexProgressor> 
 {
     private final CursorPool<DefaultRelationshipIndexCursor> pool;
     private Read read;
-    private Resource resource;
     private long relationship;
     private float score;
 
@@ -48,10 +46,9 @@ final class DefaultRelationshipIndexCursor extends IndexCursor<IndexProgressor> 
     }
 
     @Override
-    public void setRead( Read read, Resource resource )
+    public void setRead( Read read )
     {
         this.read = read;
-        this.resource = resource;
     }
 
     @Override
@@ -158,14 +155,7 @@ final class DefaultRelationshipIndexCursor extends IndexCursor<IndexProgressor> 
         {
             this.relationship = NO_ID;
             this.score = Float.NaN;
-            try ( Resource ignore = resource )
-            {
-                super.close();
-            }
-            finally
-            {
-                pool.accept( this );
-            }
+            pool.accept( this );
         }
     }
 
