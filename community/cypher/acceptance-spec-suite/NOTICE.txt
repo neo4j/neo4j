@@ -35,6 +35,7 @@ Apache Software License, Version 2.0
   org.opentest4j:opentest4j
   parboiled-core
   parboiled-scala
+  scalatest
 
 BSD - Scala License
   Scala Library
@@ -45,9 +46,10 @@ BSD License
   asm-tree
   asm-util
   Scala Compiler
-  scala-parser-combinators
   scala-xml
+  scalacheck
   Scalap
+  test-interface
 
 Bouncy Castle License
   Bouncy Castle PKIX, CMS, EAC, TSP, PKCS, OCSP, CMP, and CRMF APIs

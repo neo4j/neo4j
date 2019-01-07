@@ -15,6 +15,7 @@ Apache Software License, Version 2.0
   json4s-ast
   json4s-core
   json4s-native
+  json4s-scalap
   nscala-time
   openCypher TCK API
   openCypher TCK Features and Graphs
@@ -277,6 +278,7 @@ BSD License
   ANTLR 4 Runtime
   ParaNamer Core
   Scala Compiler
+  scala-xml
 ------------------------------------------------------------------------------
 
 Copyright (c) <year>, <copyright holder>

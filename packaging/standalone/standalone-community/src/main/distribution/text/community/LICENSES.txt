@@ -76,6 +76,7 @@ Apache Software License, Version 2.0
   protobufjs
   request
   rxjs
+  scalatest
   tslib
   tunnel-agent
   WMI4Java
@@ -350,7 +351,10 @@ BSD License
   react-dnd
   react-dnd-html5-backend
   Scala Compiler
+  scala-xml
+  scalacheck
   sntp
+  test-interface
   tough-cookie
 ------------------------------------------------------------------------------
 
