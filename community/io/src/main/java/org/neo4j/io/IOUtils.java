@@ -53,6 +53,18 @@ public final class IOUtils
      * @param <T> the type of closeable.
      * @throws UncheckedIOException if any exception is thrown from any of the {@code closeables}.
      */
+    public static <T extends AutoCloseable> void closeAllUnchecked( Collection<T> closeables ) throws UncheckedIOException
+    {
+        closeAllUnchecked( closeables.toArray( new AutoCloseable[0] ) );
+    }
+
+    /**
+     * Close all the provided {@link AutoCloseable closeables}, chaining exceptions, if any, into a single {@link UncheckedIOException}.
+     *
+     * @param closeables to call close on.
+     * @param <T> the type of closeable.
+     * @throws UncheckedIOException if any exception is thrown from any of the {@code closeables}.
+     */
     @SafeVarargs
     public static <T extends AutoCloseable> void closeAllUnchecked( T... closeables ) throws UncheckedIOException
     {

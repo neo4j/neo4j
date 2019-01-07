@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.newapi;
 
 import java.util.function.Supplier;
 
-import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
@@ -29,6 +28,7 @@ import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelE
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.storageengine.api.lock.LockTracer;
+import org.neo4j.storageengine.api.schema.IndexReader;
 
 import static org.neo4j.kernel.impl.locking.ResourceTypes.INDEX_ENTRY;
 import static org.neo4j.kernel.impl.locking.ResourceTypes.indexEntryResourceId;
@@ -39,6 +39,7 @@ public class LockingNodeUniqueIndexSeek
                                                                     LockTracer lockTracer,
                                                                     Supplier<CURSOR> cursors,
                                                                     UniqueNodeIndexSeeker<CURSOR> nodeIndexSeeker,
+                                                                    Read read,
                                                                     IndexReference index,
                                                                     IndexQuery.ExactPredicate... predicates )
             throws IndexNotApplicableKernelException, IndexNotFoundKernelException
@@ -53,14 +54,15 @@ public class LockingNodeUniqueIndexSeek
         //First try to find node under a shared lock
         //if not found upgrade to exclusive and try again
         locks.acquireShared( lockTracer, INDEX_ENTRY, indexEntryId );
-        try ( CURSOR cursor = cursors.get() )
+        try ( CURSOR cursor = cursors.get();
+              IndexReaders readers = new IndexReaders( index, read ) )
         {
-            nodeIndexSeeker.nodeIndexSeekWithFreshIndexReader( index, cursor, predicates );
+            nodeIndexSeeker.nodeIndexSeekWithFreshIndexReader( cursor, readers.createReader(), predicates );
             if ( !cursor.next() )
             {
                 locks.releaseShared( INDEX_ENTRY, indexEntryId );
                 locks.acquireExclusive( lockTracer, INDEX_ENTRY, indexEntryId );
-                nodeIndexSeeker.nodeIndexSeekWithFreshIndexReader( index, cursor, predicates );
+                nodeIndexSeeker.nodeIndexSeekWithFreshIndexReader( cursor, readers.createReader(), predicates );
                 if ( cursor.next() ) // we found it under the exclusive lock
                 {
                     // downgrade to a shared lock
@@ -73,11 +75,11 @@ public class LockingNodeUniqueIndexSeek
         }
     }
 
+    @FunctionalInterface
     interface UniqueNodeIndexSeeker<CURSOR extends NodeValueIndexCursor>
     {
-        void nodeIndexSeekWithFreshIndexReader( IndexReference index,
-                                                CURSOR cursor,
-                                                IndexQuery.ExactPredicate... predicates )
-                throws IndexNotFoundKernelException, IndexNotApplicableKernelException;
+        void nodeIndexSeekWithFreshIndexReader( CURSOR cursor,
+                                                IndexReader indexReader,
+                                                IndexQuery.ExactPredicate... predicates ) throws IndexNotApplicableKernelException;
     }
 }
