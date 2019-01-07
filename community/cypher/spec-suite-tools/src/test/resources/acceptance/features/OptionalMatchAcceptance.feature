@@ -81,3 +81,25 @@ Feature: OptionalMatchAcceptance
       | labels(b) |
       | ['B']     |
     And no side effects
+
+  Scenario: optional match with OR where clause
+    Given an empty graph
+    And having executed:
+    # Setup: (a)<->(b)->(c)
+    """
+    CREATE (b {prop: 'b'})-[:REL]->({prop: 'c'})
+    CREATE (b)-[:REL]->({prop: 'a'})-[:REL]->(b)
+    """
+    When executing query:
+    """
+    MATCH (n1)-->(n2)
+    OPTIONAL MATCH (n2)-->(n3)
+    WHERE n3 IS NULL OR n3 <> n1
+    RETURN n1.prop, n2.prop, n3.prop
+    """
+    Then the result should be:
+      | n1.prop | n2.prop | n3.prop |
+      | 'a'     | 'b'     | 'c'     |
+      | 'b'     | 'c'     | null    |
+      | 'b'     | 'a'     | null    |
+    And no side effects
