@@ -40,6 +40,13 @@ final class PathValueBuilder {
     this
   }
 
+  def previousNode: NodeValue = nodes.last
+
+  def addNoValue(): PathValueBuilder = {
+    nulled = true
+    this
+  }
+
   def addNode(nodeOrNull: AnyValue): PathValueBuilder = nullCheck(nodeOrNull) {
     val node = nodeOrNull.asInstanceOf[NodeValue]
     nodes += node
