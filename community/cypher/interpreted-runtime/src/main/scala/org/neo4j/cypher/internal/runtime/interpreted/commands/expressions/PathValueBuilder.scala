@@ -54,7 +54,10 @@ final class PathValueBuilder {
   }
 
   def addRelationship(relOrNull: AnyValue): PathValueBuilder = nullCheck(relOrNull) {
-    val rel = relOrNull.asInstanceOf[RelationshipValue]
+    addRelationship(relOrNull.asInstanceOf[RelationshipValue])
+  }
+
+  def addRelationship(rel: RelationshipValue): PathValueBuilder  = {
     rels += rel
     this
   }
