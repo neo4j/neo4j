@@ -26,6 +26,8 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.neo4j.internal.kernel.api.NamedToken;
 
+import static java.util.Collections.unmodifiableCollection;
+
 /**
  * Token registry provide id -> TOKEN and name -> id mappings.
  * Name -> id mapping will be updated last since it's used to check if the token already exists.
@@ -101,7 +103,7 @@ public class TokenRegistry
 
     public Iterable<NamedToken> allTokens()
     {
-        return idToToken.values();
+        return unmodifiableCollection( idToToken.values() );
     }
 
     public int size()
