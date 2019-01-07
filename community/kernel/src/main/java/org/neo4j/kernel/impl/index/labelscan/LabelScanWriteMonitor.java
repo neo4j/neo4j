@@ -309,7 +309,7 @@ public class LabelScanWriteMonitor implements NativeLabelScanWriter.WriteMonitor
      *     <li>{@value #ARG_TOFILE}: dumps to a .txt file next to the writelog</li>
      *     <li>{@value #ARG_TXFILTER}: filter for which tx ids to include in the dump.
      *     <p>
-     *     Consists of one more more groups separated by comma.
+     *     Consists of one or more groups separated by comma.
      *     <p>
      *     Each group is either a txId, or a txId range, e.g. 123-456
      *     </li>
