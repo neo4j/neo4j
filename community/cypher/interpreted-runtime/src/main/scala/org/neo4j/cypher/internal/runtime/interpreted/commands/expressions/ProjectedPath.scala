@@ -32,6 +32,7 @@ object ProjectedPath {
 
   case class singleNodeProjector(node: String, tailProjector: Projector) extends Projector {
     def apply(ctx: ExecutionContext, builder: PathValueBuilder) = {
+
       tailProjector(ctx, builder.addNode(ctx.getByName(node)))
     }
   }
@@ -39,6 +40,11 @@ object ProjectedPath {
   case class singleIncomingRelationshipProjector(rel: String, tailProjector: Projector) extends Projector {
     def apply(ctx: ExecutionContext, builder: PathValueBuilder) =
       tailProjector(ctx, builder.addIncomingRelationship(ctx.getByName(rel)))
+  }
+
+  case class singleRelationshipWithKnownTargetProjector(rel: String, target: String, tailProjector: Projector) extends Projector {
+    def apply(ctx: ExecutionContext, builder: PathValueBuilder) =
+      tailProjector(ctx, builder.addRelationship(ctx.getByName(rel)).addNode(ctx.getByName(target)))
   }
 
   case class singleOutgoingRelationshipProjector(rel: String, tailProjector: Projector) extends Projector {
@@ -49,6 +55,11 @@ object ProjectedPath {
   case class singleUndirectedRelationshipProjector(rel: String, tailProjector: Projector) extends Projector {
     def apply(ctx: ExecutionContext, builder: PathValueBuilder) =
       tailProjector(ctx, builder.addUndirectedRelationship(ctx.getByName(rel)))
+  }
+
+  case class multiRelationshipWithKnownTargetProjector(rels: String, target: String, tailProjector: Projector) extends Projector {
+    def apply(ctx: ExecutionContext, builder: PathValueBuilder) =
+      tailProjector(ctx, builder.addIncomingRelationships(ctx.getByName(rels)))
   }
 
   case class multiIncomingRelationshipProjector(rels: String, tailProjector: Projector) extends Projector {

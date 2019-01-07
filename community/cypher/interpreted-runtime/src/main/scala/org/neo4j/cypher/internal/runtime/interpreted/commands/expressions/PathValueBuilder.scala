@@ -31,7 +31,6 @@ final class PathValueBuilder {
   private val nodes = ArrayBuffer.empty[NodeValue]
   private val rels = ArrayBuffer.empty[RelationshipValue]
   private var nulled = false
-  private var previousNode: NodeValue = null
   def result(): AnyValue = if (nulled) Values.NO_VALUE else VirtualValues.path(nodes.toArray, rels.toArray)
 
   def clear(): PathValueBuilder =  {
@@ -43,29 +42,33 @@ final class PathValueBuilder {
 
   def addNode(nodeOrNull: AnyValue): PathValueBuilder = nullCheck(nodeOrNull) {
     val node = nodeOrNull.asInstanceOf[NodeValue]
-    previousNode = node
     nodes += node
+    this
+  }
+
+  def addRelationship(relOrNull: AnyValue): PathValueBuilder = nullCheck(relOrNull) {
+    val rel = relOrNull.asInstanceOf[RelationshipValue]
+    rels += rel
     this
   }
 
   def addIncomingRelationship(relOrNull: AnyValue): PathValueBuilder = nullCheck(relOrNull) {
     val rel = relOrNull.asInstanceOf[RelationshipValue]
     rels += rel
-    previousNode = rel.startNode()
-    nodes += previousNode
+    nodes +=  rel.startNode()
     this
   }
 
   def addOutgoingRelationship(relOrNull: AnyValue): PathValueBuilder = nullCheck(relOrNull) {
     val rel = relOrNull.asInstanceOf[RelationshipValue]
     rels += rel
-    previousNode = rel.endNode()
-    nodes += previousNode
+    nodes += rel.endNode()
     this
   }
 
   def addUndirectedRelationship(relOrNull: AnyValue): PathValueBuilder = nullCheck(relOrNull) {
     val rel = relOrNull.asInstanceOf[RelationshipValue]
+    val previousNode = nodes.last
     if (rel.startNode() == previousNode) addOutgoingRelationship(rel)
     else if (rel.endNode() == previousNode) addIncomingRelationship(rel)
     else throw new IllegalArgumentException(s"Invalid usage of PathValueBuilder, $previousNode must be a node in $rel")
@@ -98,6 +101,7 @@ final class PathValueBuilder {
 
     if (relIterator.hasNext) {
       val first = relIterator.next().asInstanceOf[RelationshipValue]
+      val previousNode = nodes.last
       val rightDirection = first.startNode() == previousNode || first.endNode() == previousNode
 
       if (rightDirection) {

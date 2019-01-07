@@ -110,10 +110,13 @@ class ExpressionConverters(converters: ExpressionConverter*) {
       case ast.NodePathStep(ast.Variable(node), next) =>
         singleNodeProjector(node, project(next))
 
+      case ast.SingleRelationshipPathStep(ast.Variable(rel), _, Some(ast.Variable(target)), next) =>
+        singleRelationshipWithKnownTargetProjector(rel, target, project(next))
+
       case ast.SingleRelationshipPathStep(ast.Variable(rel), SemanticDirection.INCOMING, _, next) =>
         singleIncomingRelationshipProjector(rel, project(next))
 
-      case ast.SingleRelationshipPathStep(ast.Variable(rel), SemanticDirection.OUTGOING, _,next) =>
+      case ast.SingleRelationshipPathStep(ast.Variable(rel), SemanticDirection.OUTGOING, _, next) =>
         singleOutgoingRelationshipProjector(rel, project(next))
 
       case ast.SingleRelationshipPathStep(ast.Variable(rel), SemanticDirection.BOTH, _, next) =>
