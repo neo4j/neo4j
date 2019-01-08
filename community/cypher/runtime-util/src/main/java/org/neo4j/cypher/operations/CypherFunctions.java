@@ -22,7 +22,6 @@ package org.neo4j.cypher.operations;
 import java.math.BigDecimal;
 import java.util.concurrent.ThreadLocalRandom;
 
-import org.neo4j.cypher.EntityNotFoundException;
 import org.neo4j.cypher.internal.runtime.DbAccess;
 import org.neo4j.cypher.internal.runtime.ExpressionCursors;
 import org.neo4j.cypher.internal.v4_0.util.CypherTypeException;
@@ -402,10 +401,8 @@ public final class CypherFunctions
     {
         try ( RelationshipScanCursor cursor = access.singleRelationship( relationship.id() ) )
         {
-            if ( !cursor.next() )
-            {
-                throw new EntityNotFoundException( relationship + " was not found", null );
-            }
+            //at this point we don't care if it is there or not just load what we got
+            cursor.next();
             return access.nodeById( cursor.sourceNodeReference() );
         }
     }
@@ -427,10 +424,8 @@ public final class CypherFunctions
     {
         try ( RelationshipScanCursor cursor = access.singleRelationship( relationship.id() ) )
         {
-            if ( !cursor.next() )
-            {
-                throw new EntityNotFoundException( relationship + " was not found", null );
-            }
+            //at this point we don't care if it is there or not just load what we got
+            cursor.next();
             return access.nodeById( cursor.targetNodeReference() );
         }
     }
@@ -452,10 +447,8 @@ public final class CypherFunctions
     {
         try ( RelationshipScanCursor cursor = access.singleRelationship( relationship.id() ) )
         {
-            if ( !cursor.next() )
-            {
-                throw new EntityNotFoundException( relationship + " was not found", null );
-            }
+            //at this point we don't care if it is there or not just load what we got
+            cursor.next();
             if ( node.id() == cursor.sourceNodeReference() )
             {
                 return access.nodeById( cursor.targetNodeReference() );
