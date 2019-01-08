@@ -43,6 +43,7 @@ import org.neo4j.kernel.impl.store.id.BufferingIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdReuseEligibility;
 import org.neo4j.kernel.impl.store.id.configuration.CommunityIdTypeConfigurationProvider;
+import org.neo4j.kernel.impl.transaction.command.IndexActivator;
 import org.neo4j.kernel.impl.transaction.state.DefaultIndexProviderMap;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.internal.DatabaseEventHandlers;
@@ -89,7 +90,8 @@ public class RecordStorageEngineRule extends ExternalResource
     private RecordStorageEngine get( FileSystemAbstraction fs, PageCache pageCache,
                                      IndexProvider indexProvider, DatabaseHealth databaseHealth, DatabaseLayout databaseLayout,
                                      Function<BatchTransactionApplierFacade, BatchTransactionApplierFacade> transactionApplierTransformer,
-                                     IndexUpdateListener indexUpdateListener, NodeLabelUpdateListener nodeLabelUpdateListener )
+                                     IndexUpdateListener indexUpdateListener, NodeLabelUpdateListener nodeLabelUpdateListener,
+                                     LockService lockService )
     {
         IdGeneratorFactory idGeneratorFactory = new EphemeralIdGenerator.Factory();
         JobScheduler scheduler = life.add( createScheduler() );
@@ -107,8 +109,7 @@ public class RecordStorageEngineRule extends ExternalResource
         RecordStorageEngine engine = life.add( new ExtendedRecordStorageEngine( databaseLayout, config, pageCache, fs,
                 nullLogProvider, mockedTokenHolders(),
                 mock( SchemaState.class ), new StandardConstraintSemantics(),
-                new ReentrantLockService(),
-                databaseHealth, idGeneratorFactory,
+                lockService, databaseHealth, idGeneratorFactory,
                 new BufferedIdController( bufferingIdGeneratorFactory, scheduler ), transactionApplierTransformer ) );
         engine.addIndexUpdateListener( indexUpdateListener );
         engine.addNodeLabelUpdateListener( nodeLabelUpdateListener );
@@ -135,6 +136,7 @@ public class RecordStorageEngineRule extends ExternalResource
         private IndexProvider indexProvider = IndexProvider.EMPTY;
         private IndexUpdateListener indexUpdateListener = new IndexUpdateListener.Adapter();
         private NodeLabelUpdateListener nodeLabelUpdateListener = new NodeLabelUpdateListener.Adapter();
+        private LockService lockService = new ReentrantLockService();
 
         public Builder( FileSystemAbstraction fs, PageCache pageCache, DatabaseLayout databaseLayout )
         {
@@ -174,10 +176,16 @@ public class RecordStorageEngineRule extends ExternalResource
             return this;
         }
 
+        public Builder lockService( LockService lockService )
+        {
+            this.lockService = lockService;
+            return this;
+        }
+
         public RecordStorageEngine build()
         {
             return get( fs, pageCache, indexProvider, databaseHealth, databaseLayout,
-                    transactionApplierTransformer, indexUpdateListener, nodeLabelUpdateListener );
+                    transactionApplierTransformer, indexUpdateListener, nodeLabelUpdateListener, lockService );
         }
     }
 
@@ -199,9 +207,9 @@ public class RecordStorageEngineRule extends ExternalResource
         }
 
         @Override
-        protected BatchTransactionApplierFacade applier( TransactionApplicationMode mode )
+        protected BatchTransactionApplierFacade applier( TransactionApplicationMode mode, IndexActivator indexActivator )
         {
-            BatchTransactionApplierFacade recordEngineApplier = super.applier( mode );
+            BatchTransactionApplierFacade recordEngineApplier = super.applier( mode, indexActivator );
             return transactionApplierTransformer.apply( recordEngineApplier );
         }
     }

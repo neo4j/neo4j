@@ -30,12 +30,14 @@ public class NodeLabelUpdate
     private final long nodeId;
     private final long[] labelsBefore;
     private final long[] labelsAfter;
+    private final long txId;
 
-    private NodeLabelUpdate( long nodeId, long[] labelsBefore, long[] labelsAfter )
+    private NodeLabelUpdate( long nodeId, long[] labelsBefore, long[] labelsAfter, long txId )
     {
         this.nodeId = nodeId;
         this.labelsBefore = labelsBefore;
         this.labelsAfter = labelsAfter;
+        this.txId = txId;
     }
 
     public long getNodeId()
@@ -53,6 +55,11 @@ public class NodeLabelUpdate
         return labelsAfter;
     }
 
+    public long getTxId()
+    {
+        return txId;
+    }
+
     @Override
     public String toString()
     {
@@ -62,7 +69,12 @@ public class NodeLabelUpdate
 
     public static NodeLabelUpdate labelChanges( long nodeId, long[] labelsBeforeChange, long[] labelsAfterChange )
     {
-        return new NodeLabelUpdate( nodeId, labelsBeforeChange, labelsAfterChange );
+        return labelChanges( nodeId, labelsBeforeChange, labelsAfterChange, -1 );
+    }
+
+    public static NodeLabelUpdate labelChanges( long nodeId, long[] labelsBeforeChange, long[] labelsAfterChange, long txId )
+    {
+        return new NodeLabelUpdate( nodeId, labelsBeforeChange, labelsAfterChange, txId );
     }
 
     @Override

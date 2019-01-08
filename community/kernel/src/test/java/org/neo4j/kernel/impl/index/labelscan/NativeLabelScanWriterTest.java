@@ -63,7 +63,7 @@ public class NativeLabelScanWriterTest
         // GIVEN
         ControlledInserter inserter = new ControlledInserter();
         long[] expected = new long[NODE_COUNT];
-        try ( NativeLabelScanWriter writer = new NativeLabelScanWriter( max( 5, NODE_COUNT / 100 ) ) )
+        try ( NativeLabelScanWriter writer = new NativeLabelScanWriter( max( 5, NODE_COUNT / 100 ), NativeLabelScanWriter.EMPTY ) )
         {
             writer.initialize( inserter );
 
@@ -90,7 +90,7 @@ public class NativeLabelScanWriterTest
         // GIVEN
         ControlledInserter inserter = new ControlledInserter();
         boolean failed = false;
-        try ( NativeLabelScanWriter writer = new NativeLabelScanWriter( 1 ) )
+        try ( NativeLabelScanWriter writer = new NativeLabelScanWriter( 1, NativeLabelScanWriter.EMPTY ) )
         {
             writer.initialize( inserter );
 

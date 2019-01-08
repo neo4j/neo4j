@@ -24,7 +24,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
-import org.neo4j.exceptions.KernelException;
 import org.neo4j.kernel.impl.api.BatchTransactionApplier;
 import org.neo4j.kernel.impl.api.TransactionApplier;
 import org.neo4j.kernel.impl.api.index.PropertyCommandsExtractor;
@@ -58,19 +57,21 @@ public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapte
     private final WorkSync<NodeLabelUpdateListener,LabelUpdateWork> labelScanStoreSync;
     private final WorkSync<IndexUpdateListener,IndexUpdatesWork> indexUpdatesSync;
     private final SingleTransactionApplier transactionApplier;
+    private final IndexActivator indexActivator;
     private final PropertyPhysicalToLogicalConverter indexUpdateConverter;
     private final StorageEngine storageEngine;
     private final SchemaCache schemaCache;
 
     private List<NodeLabelUpdate> labelUpdates;
     private IndexUpdates indexUpdates;
+    private long txId;
 
     public IndexBatchTransactionApplier( IndexUpdateListener indexUpdateListener,
             WorkSync<NodeLabelUpdateListener,LabelUpdateWork> labelScanStoreSync,
             WorkSync<IndexUpdateListener,IndexUpdatesWork> indexUpdatesSync,
             NodeStore nodeStore, RelationshipStore relationshipStore,
             PropertyPhysicalToLogicalConverter indexUpdateConverter, StorageEngine storageEngine,
-            SchemaCache schemaCache )
+            SchemaCache schemaCache, IndexActivator indexActivator )
     {
         this.indexUpdateListener = indexUpdateListener;
         this.labelScanStoreSync = labelScanStoreSync;
@@ -79,11 +80,13 @@ public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapte
         this.storageEngine = storageEngine;
         this.schemaCache = schemaCache;
         this.transactionApplier = new SingleTransactionApplier( nodeStore, relationshipStore );
+        this.indexActivator = indexActivator;
     }
 
     @Override
     public TransactionApplier startTx( CommandsToApply transaction )
     {
+        txId = transaction.transactionId();
         return transactionApplier;
     }
 
@@ -200,7 +203,7 @@ public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapte
                     {
                         labelUpdates = new ArrayList<>();
                     }
-                    labelUpdates.add( NodeLabelUpdate.labelChanges( command.getKey(), labelsBefore, labelsAfter ) );
+                    labelUpdates.add( NodeLabelUpdate.labelChanges( command.getKey(), labelsBefore, labelsAfter, txId ) );
                 }
             }
 
@@ -209,7 +212,7 @@ public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapte
         }
 
         @Override
-        public boolean visitRelationshipCommand( Command.RelationshipCommand command ) throws IOException
+        public boolean visitRelationshipCommand( Command.RelationshipCommand command )
         {
             return indexUpdatesExtractor.visitRelationshipCommand( command );
         }
@@ -241,14 +244,10 @@ public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapte
                     // right now we just assume that an update to index records means wait for it to be online.
                     if ( ((StorageIndexReference) command.getSchemaRule()).isUnique() )
                     {
-                        try
-                        {
-                            indexUpdateListener.activateIndex( (StorageIndexReference) command.getSchemaRule() );
-                        }
-                        catch ( KernelException e )
-                        {
-                            throw new IllegalStateException( "Unable to enable constraint, backing index is not online.", e );
-                        }
+                        // Register activations into the IndexActivator instead of IndexingService to avoid deadlock
+                        // that could insue for applying batches of transactions where a previous transaction in the same
+                        // batch acquires a low-level commit lock that prevents the very same index population to complete.
+                        indexActivator.activateIndex( (StorageIndexReference) command.getSchemaRule() );
                     }
                     break;
                 case CREATE:
@@ -258,6 +257,7 @@ public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapte
                     break;
                 case DELETE:
                     indexUpdateListener.dropIndex( (StorageIndexReference) command.getSchemaRule() );
+                    indexActivator.indexDropped( (StorageIndexReference) command.getSchemaRule() );
                     break;
                 default:
                     throw new IllegalStateException( command.getMode().name() );
