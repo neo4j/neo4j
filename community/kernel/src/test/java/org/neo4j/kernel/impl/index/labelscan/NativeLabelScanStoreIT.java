@@ -29,7 +29,6 @@ import java.util.BitSet;
 import java.util.Random;
 
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
@@ -40,6 +39,7 @@ import org.neo4j.storageengine.api.schema.LabelScanReader;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.rules.RuleChain.outerRule;
@@ -49,11 +49,12 @@ import static org.neo4j.kernel.api.labelscan.NodeLabelUpdate.labelChanges;
 public class NativeLabelScanStoreIT
 {
     private final TestDirectory directory = TestDirectory.testDirectory();
+    private final DefaultFileSystemRule fileSystem = new DefaultFileSystemRule();
     private final PageCacheRule pageCacheRule = new PageCacheRule();
     private final LifeRule life = new LifeRule( true );
     private final RandomRule random = new RandomRule();
     @Rule
-    public final RuleChain rules = outerRule( directory ).around( pageCacheRule ).around( life ).around( random );
+    public final RuleChain rules = outerRule( fileSystem ).around( directory ).around( pageCacheRule ).around( life ).around( random );
     private NativeLabelScanStore store;
 
     private static final int NODE_COUNT = 10_000;
@@ -62,7 +63,6 @@ public class NativeLabelScanStoreIT
     @Before
     public void before()
     {
-        DefaultFileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
         PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
         store = life.add( new NativeLabelScanStore( pageCache, directory.databaseLayout(), fileSystem, FullStoreChangeStream.EMPTY,
                 false, new Monitors(), RecoveryCleanupWorkCollector.immediate(),

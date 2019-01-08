@@ -19,13 +19,14 @@
  */
 package org.neo4j.storageengine.api;
 
+import java.io.Closeable;
 import java.io.IOException;
 
 /**
  * Represents a channel from where primitive values can be read. Mirrors {@link WritableChannel} in
  * data types that can be read.
  */
-public interface ReadableChannel
+public interface ReadableChannel extends Closeable
 {
     /**
      * @return the next {@code byte} in this channel.

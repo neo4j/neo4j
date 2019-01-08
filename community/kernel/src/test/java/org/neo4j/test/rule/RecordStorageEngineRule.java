@@ -51,6 +51,7 @@ import org.neo4j.kernel.impl.store.id.BufferingIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdReuseEligibility;
 import org.neo4j.kernel.impl.store.id.configuration.CommunityIdTypeConfigurationProvider;
+import org.neo4j.kernel.impl.transaction.command.IndexActivator;
 import org.neo4j.kernel.impl.transaction.state.DefaultIndexProviderMap;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.IdOrderingQueue;
@@ -99,7 +100,7 @@ public class RecordStorageEngineRule extends ExternalResource
     private RecordStorageEngine get( FileSystemAbstraction fs, PageCache pageCache,
                                      IndexProvider indexProvider, DatabaseHealth databaseHealth, DatabaseLayout databaseLayout,
                                      Function<BatchTransactionApplierFacade, BatchTransactionApplierFacade> transactionApplierTransformer,
-                                     Monitors monitors )
+                                     Monitors monitors, LockService lockService )
     {
         IdGeneratorFactory idGeneratorFactory = new EphemeralIdGenerator.Factory();
         ExplicitIndexProvider explicitIndexProviderLookup = mock( ExplicitIndexProvider.class );
@@ -120,7 +121,7 @@ public class RecordStorageEngineRule extends ExternalResource
         return life.add( new ExtendedRecordStorageEngine( databaseLayout, config, pageCache, fs,
                 nullLogProvider, nullLogProvider, mockedTokenHolders(),
                 mock( SchemaState.class ), new StandardConstraintSemantics(),
-                scheduler, mock( TokenNameLookup.class ), new ReentrantLockService(), indexProviderMap,
+                scheduler, mock( TokenNameLookup.class ), lockService, indexProviderMap,
                 IndexingService.NO_MONITOR, databaseHealth, explicitIndexProviderLookup, indexConfigStore,
                 new SynchronizedArrayIdOrderingQueue(), idGeneratorFactory,
                 new BufferedIdController( bufferingIdGeneratorFactory, scheduler ), transactionApplierTransformer, monitors,
@@ -146,6 +147,7 @@ public class RecordStorageEngineRule extends ExternalResource
                 applierFacade -> applierFacade;
         private IndexProvider indexProvider = IndexProvider.EMPTY;
         private Monitors monitors = new Monitors();
+        private LockService lockService = new ReentrantLockService();
 
         public Builder( FileSystemAbstraction fs, PageCache pageCache, DatabaseLayout databaseLayout )
         {
@@ -179,10 +181,16 @@ public class RecordStorageEngineRule extends ExternalResource
             return this;
         }
 
+        public Builder lockService( LockService lockService )
+        {
+            this.lockService = lockService;
+            return this;
+        }
+
         public RecordStorageEngine build()
         {
             return get( fs, pageCache, indexProvider, databaseHealth, databaseLayout,
-                    transactionApplierTransformer, monitors );
+                    transactionApplierTransformer, monitors, lockService );
         }
     }
 
@@ -210,9 +218,9 @@ public class RecordStorageEngineRule extends ExternalResource
         }
 
         @Override
-        protected BatchTransactionApplierFacade applier( TransactionApplicationMode mode )
+        protected BatchTransactionApplierFacade applier( TransactionApplicationMode mode, IndexActivator indexActivator )
         {
-            BatchTransactionApplierFacade recordEngineApplier = super.applier( mode );
+            BatchTransactionApplierFacade recordEngineApplier = super.applier( mode, indexActivator );
             return transactionApplierTransformer.apply( recordEngineApplier );
         }
     }
