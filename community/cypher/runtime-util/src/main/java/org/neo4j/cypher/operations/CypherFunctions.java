@@ -452,6 +452,10 @@ public final class CypherFunctions
     {
         try ( RelationshipScanCursor cursor = access.singleRelationship( relationship.id() ) )
         {
+            if ( !cursor.next() )
+            {
+                throw new EntityNotFoundException( relationship + " was not found", null );
+            }
             if ( node.id() == cursor.sourceNodeReference() )
             {
                 return access.nodeById( cursor.targetNodeReference() );
