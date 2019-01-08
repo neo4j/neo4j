@@ -100,7 +100,7 @@ public class ProcedureConfig
         }
     }
 
-    String[] rolesFor( String procedureName )
+    public String[] rolesFor( String procedureName )
     {
         String[] wildCardRoles = matchers.stream().filter( matcher -> matcher.matches( procedureName ) )
                 .map( ProcMatcher::roles ).reduce( new String[0],
@@ -115,12 +115,12 @@ public class ProcedureConfig
         }
     }
 
-    boolean fullAccessFor( String procedureName )
+    public boolean fullAccessFor( String procedureName )
     {
         return accessPatterns.stream().anyMatch( pattern -> pattern.matcher( procedureName ).matches() );
     }
 
-    boolean isWhitelisted( String procedureName )
+    public boolean isWhitelisted( String procedureName )
     {
         return whiteList.stream().anyMatch( pattern -> pattern.matcher( procedureName ).matches() );
     }
