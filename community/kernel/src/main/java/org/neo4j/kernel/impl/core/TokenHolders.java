@@ -68,6 +68,13 @@ public class TokenHolders
         return new TokenHolders( propertyKeyTokens, labelTokens, relationshipTypeTokens );
     }
 
+    public static TokenHolders initializedReadOnlyTokenHolders( NeoStores neoStores )
+    {
+        TokenHolders tokenHolders = readOnlyTokenHolders();
+        tokenHolders.setInitialTokens( neoStores );
+        return tokenHolders;
+    }
+
     public static TokenHolder createReadOnlyTokenHolder( String tokenType )
     {
         return new DelegatingTokenHolder( new ReadOnlyTokenCreator(), tokenType );

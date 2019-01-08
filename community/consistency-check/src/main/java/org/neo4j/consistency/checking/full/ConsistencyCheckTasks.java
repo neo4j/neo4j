@@ -174,8 +174,7 @@ public class ConsistencyCheckTasks
         // PASS 1: Dynamic record chains
         tasks.add( create( "SchemaStore", nativeStores.getSchemaStore(), ROUND_ROBIN ) );
         // PASS 2: Rule integrity and obligation build up
-        TokenHolders tokenHolders = TokenHolders.readOnlyTokenHolders();
-        tokenHolders.setInitialTokens( nativeStores.getRawNeoStores() );
+        TokenHolders tokenHolders = TokenHolders.initializedReadOnlyTokenHolders( nativeStores.getRawNeoStores() );
         final SchemaRecordCheck schemaCheck =
                 new SchemaRecordCheck( SchemaRuleAccess.getSchemaRuleAccess( nativeStores.getSchemaStore(), tokenHolders ), indexes );
         tasks.add( new SchemaStoreProcessorTask<>( "SchemaStoreProcessor-check_rules", statistics, numberOfThreads,

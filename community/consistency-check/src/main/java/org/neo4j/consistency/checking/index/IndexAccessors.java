@@ -49,8 +49,7 @@ public class IndexAccessors implements Closeable
                            StoreAccess storeAccess,
                            IndexSamplingConfig samplingConfig ) throws IOException
     {
-        TokenHolders tokenHolders = TokenHolders.readOnlyTokenHolders();
-        tokenHolders.setInitialTokens( storeAccess.getRawNeoStores() );
+        TokenHolders tokenHolders = TokenHolders.initializedReadOnlyTokenHolders( storeAccess.getRawNeoStores() );
         Iterator<StoreIndexDescriptor> indexes = SchemaRuleAccess.getSchemaRuleAccess( storeAccess.getSchemaStore(), tokenHolders ).indexesGetAll();
         for (; ; )
         {
