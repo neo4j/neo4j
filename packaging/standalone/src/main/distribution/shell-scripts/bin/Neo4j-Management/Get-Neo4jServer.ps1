@@ -113,8 +113,8 @@ function Get-Neo4jServer
     # Scan the lib dir...
     Get-ChildItem (Join-Path -Path $Neo4jHome -ChildPath 'lib') | Where-Object { $_.Name -like 'neo4j-server-*.jar' } | ForEach-Object -Process `
        {
-      # if neo4j-server-enterprise-<version>.jar exists then this is the enterprise version
-      if ($_.Name -like 'neo4j-server-enterprise-*.jar') { $serverProperties.ServerType = 'Enterprise' }
+      # if neo4j-server-commercial-<version>.jar exists then this is the enterprise version
+      if ($_.Name -like 'neo4j-server-commercial-*.jar') { $serverProperties.ServerType = 'Enterprise' }
 
       # Get the server version from the name of the neo4j-server-<version>.jar file
       if ($matches -ne $null) { $matches.Clear() }
