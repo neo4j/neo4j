@@ -23,6 +23,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.mockito.ArgumentCaptor;
+import org.mockito.InOrder;
 
 import java.io.File;
 import java.io.IOException;
@@ -31,10 +32,12 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.neo4j.helpers.Exceptions;
+import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -45,15 +48,22 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.api.BatchTransactionApplier;
 import org.neo4j.kernel.impl.api.BatchTransactionApplierFacade;
 import org.neo4j.kernel.impl.api.CountsAccessor;
+import org.neo4j.kernel.impl.api.TransactionApplier;
 import org.neo4j.kernel.impl.api.TransactionToApply;
+import org.neo4j.kernel.impl.locking.Lock;
+import org.neo4j.kernel.impl.locking.LockGroup;
+import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
+import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.log.FakeCommitment;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.storageengine.api.CommandsToApply;
+import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StoreFileMetadata;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.test.rule.PageCacheRule;
@@ -71,7 +81,9 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -200,12 +212,52 @@ public class RecordStorageEngineTest
         assertEquals( currentFiles, allPossibleFiles );
     }
 
+    @Test
+    public void shouldCloseLockGroupAfterAppliers() throws Exception
+    {
+        // given
+        long nodeId = 5;
+        LockService lockService = mock( LockService.class );
+        Lock nodeLock = mock( Lock.class );
+        when( lockService.acquireNodeLock( nodeId, LockService.LockType.WRITE_LOCK ) ).thenReturn( nodeLock );
+        Consumer<Boolean> applierCloseCall = mock( Consumer.class ); // <-- simply so that we can use InOrder mockito construct
+        CapturingBatchTransactionApplierFacade applier = new CapturingBatchTransactionApplierFacade( applierCloseCall );
+        RecordStorageEngine engine = recordStorageEngineBuilder()
+                .lockService( lockService )
+                .transactionApplierTransformer( applier::wrapAroundActualApplier )
+                .build();
+        CommandsToApply commandsToApply = mock( CommandsToApply.class );
+        when( commandsToApply.accept( any() ) ).thenAnswer( invocationOnMock ->
+        {
+            // Visit one node command
+            Visitor<StorageCommand,IOException> visitor = invocationOnMock.getArgument( 0 );
+            NodeRecord after = new NodeRecord( nodeId );
+            after.setInUse( true );
+            visitor.visit( new Command.NodeCommand( new NodeRecord( nodeId ), after ) );
+            return null;
+        } );
+
+        // when
+        engine.apply( commandsToApply, TransactionApplicationMode.INTERNAL );
+
+        // then
+        InOrder inOrder = inOrder( lockService, applierCloseCall, nodeLock );
+        inOrder.verify( lockService ).acquireNodeLock( nodeId, LockService.LockType.WRITE_LOCK );
+        inOrder.verify( applierCloseCall ).accept( true );
+        inOrder.verify( nodeLock, times( 1 ) ).release();
+        inOrder.verifyNoMoreInteractions();
+    }
+
     private RecordStorageEngine buildRecordStorageEngine()
+    {
+        return recordStorageEngineBuilder().build();
+    }
+
+    private RecordStorageEngineRule.Builder recordStorageEngineBuilder()
     {
         return storageEngineRule
                 .getWith( fsRule.get(), pageCacheRule.getPageCache( fsRule.get() ), testDirectory.databaseLayout() )
-                .databaseHealth( databaseHealth )
-                .build();
+                .databaseHealth( databaseHealth );
     }
 
     private static Exception executeFailingTransaction( RecordStorageEngine engine ) throws IOException
@@ -256,4 +308,39 @@ public class RecordStorageEngineTest
         }
     }
 
+    private class CapturingBatchTransactionApplierFacade extends BatchTransactionApplierFacade
+    {
+        private final Consumer<Boolean> applierCloseCall;
+        private BatchTransactionApplierFacade actual;
+
+        CapturingBatchTransactionApplierFacade( Consumer<Boolean> applierCloseCall )
+        {
+            this.applierCloseCall = applierCloseCall;
+        }
+
+        CapturingBatchTransactionApplierFacade wrapAroundActualApplier( BatchTransactionApplierFacade actual )
+        {
+            this.actual = actual;
+            return this;
+        }
+
+        @Override
+        public TransactionApplier startTx( CommandsToApply transaction ) throws IOException
+        {
+            return actual.startTx( transaction );
+        }
+
+        @Override
+        public TransactionApplier startTx( CommandsToApply transaction, LockGroup lockGroup ) throws IOException
+        {
+            return actual.startTx( transaction, lockGroup );
+        }
+
+        @Override
+        public void close() throws Exception
+        {
+            applierCloseCall.accept( true );
+            actual.close();
+        }
+    }
 }

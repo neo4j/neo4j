@@ -61,12 +61,6 @@ public class NeoStoreTransactionApplier extends TransactionApplier.Adapter
     }
 
     @Override
-    public void close()
-    {
-        lockGroup.close();
-    }
-
-    @Override
     public boolean visitNodeCommand( Command.NodeCommand command )
     {
         // acquire lock

@@ -118,6 +118,11 @@ public class NativeLabelScanStore implements LabelScanStore
     private final FullStoreChangeStream fullStoreChangeStream;
 
     /**
+     * {@link FileSystemAbstraction} the backing file lives on.
+     */
+    private final FileSystemAbstraction fs;
+
+    /**
      * Page size to use for each tree node in {@link GBPTree}. Passed to {@link GBPTree}.
      */
     private final int pageSize;
@@ -126,6 +131,11 @@ public class NativeLabelScanStore implements LabelScanStore
      * Used for all file operations on the gbpTree file.
      */
     private final FileSystemAbstraction fileSystem;
+
+    /**
+     * Layout of the database.
+     */
+    private final DatabaseLayout directoryStructure;
 
     /**
      * The index which backs this label scan store. Instantiated in {@link #init()} and considered
@@ -147,7 +157,12 @@ public class NativeLabelScanStore implements LabelScanStore
     /**
      * The single instance of {@link NativeLabelScanWriter} used for updates.
      */
-    private final NativeLabelScanWriter singleWriter;
+    private NativeLabelScanWriter singleWriter;
+
+    /**
+     * Monitor for all writes going into this label scan store.
+     */
+    private NativeLabelScanWriter.WriteMonitor writeMonitor;
 
     /**
      * Write rebuilding bit to header.
@@ -175,10 +190,11 @@ public class NativeLabelScanStore implements LabelScanStore
                 RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, int pageSize )
     {
         this.pageCache = pageCache;
+        this.fs = fs;
         this.pageSize = pageSize;
         this.fullStoreChangeStream = fullStoreChangeStream;
+        this.directoryStructure = directoryStructure;
         this.storeFile = getLabelScanStoreFile( directoryStructure );
-        this.singleWriter = new NativeLabelScanWriter( 1_000 );
         this.readOnly = readOnly;
         this.monitors = monitors;
         this.monitor = monitors.newMonitor( Monitor.class );
@@ -246,6 +262,7 @@ public class NativeLabelScanStore implements LabelScanStore
     public void force( IOLimiter limiter )
     {
         index.checkpoint( limiter );
+        writeMonitor.force();
     }
 
     @Override
@@ -318,6 +335,9 @@ public class NativeLabelScanStore implements LabelScanStore
             // GBPTree is corrupt. Try to rebuild.
             isDirty = true;
         }
+
+        writeMonitor = LabelScanWriteMonitor.ENABLED ? new LabelScanWriteMonitor( fs, directoryStructure ) : NativeLabelScanWriter.EMPTY;
+        singleWriter = new NativeLabelScanWriter( 1_000, writeMonitor );
 
         if ( isDirty )
         {
@@ -446,6 +466,7 @@ public class NativeLabelScanStore implements LabelScanStore
         {
             index.close();
             index = null;
+            writeMonitor.close();
         }
     }
 

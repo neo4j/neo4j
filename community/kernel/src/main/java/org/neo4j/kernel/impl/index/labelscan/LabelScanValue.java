@@ -37,10 +37,11 @@ class LabelScanValue
      *
      * @param index index into the bit set of the bit to set.
      */
-    void set( int index )
+    LabelScanValue set( int index )
     {
         long mask = 1L << index;
         bits |= mask;
+        return this;
     }
 
     /**

@@ -303,6 +303,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         storeIndexStoreView = new NeoStoreIndexStoreView( NO_LOCK_SERVICE, neoStores );
         Dependencies deps = new Dependencies();
         Monitors monitors = new Monitors();
+//<<<<<<< HEAD
         deps.satisfyDependencies( fileSystem, config, logService, storeIndexStoreView, pageCache, monitors, RecoveryCleanupWorkCollector.immediate() );
 
         DatabaseKernelExtensions extensions = life.add( new DatabaseKernelExtensions(
