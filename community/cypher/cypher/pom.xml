@@ -155,10 +155,10 @@
                     <groupId>org.parboiled</groupId>
                     <artifactId>parboiled-scala_2.10</artifactId>
                 </exclusion>
-                <exclusion>
+                <!--exclusion>
                     <groupId>org.parboiled</groupId>
           <artifactId>parboiled-scala_2.11</artifactId>
-        </exclusion>
+        </exclusion-->
         <exclusion>
           <groupId>net.sf.opencsv</groupId>
                     <artifactId>opencsv</artifactId>
