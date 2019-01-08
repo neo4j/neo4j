@@ -344,22 +344,22 @@ public class PathValueBuilder
         long previous = nodes.get( nodes.size() - 1 ).id();
         RelationshipValue first = (RelationshipValue) relationships.head();
         boolean correctDirection =
-                first.startNode().id() == previous ||
-                first.endNode().id() == previous;
+                startNode( first, dbAccess ).id() == previous ||
+                endNode(first, dbAccess ).id() == previous;
 
         int i;
         if ( correctDirection )
         {
             for ( i = 0; i < relationships.size() - 1; i++ )
             {
-                addIncoming( relationships.value( i ) );
+                addUndirected( relationships.value( i ) );
             }
         }
         else
         {
             for ( i = relationships.size() - 1; i > 0; i-- )
             {
-                addIncoming( relationships.value( i ) );
+                addUndirected( relationships.value( i ) );
             }
         }
         AnyValue last = relationships.value( i );
@@ -398,8 +398,8 @@ public class PathValueBuilder
         long previous = nodes.get( nodes.size() - 1 ).id();
         RelationshipValue first = (RelationshipValue) relationships.head();
         boolean correctDirection =
-                first.startNode().id() == previous ||
-                first.endNode().id() == previous;
+                startNode( first, dbAccess ).id() == previous ||
+                endNode( first, dbAccess ).id() == previous;
 
         if ( correctDirection )
         {
