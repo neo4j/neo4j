@@ -21,8 +21,8 @@ package org.neo4j.cypher.internal.compiler.v4_0.planner.logical.idp
 
 import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.ir.v4_0._
-import org.neo4j.cypher.internal.v4_0.logical.plans.{ExpandAll, ExpandInto, LogicalPlan}
 import org.neo4j.cypher.internal.v4_0.expressions.{Ands, Expression, LogicalVariable}
+import org.neo4j.cypher.internal.v4_0.logical.plans.{ExpandAll, ExpandInto, LogicalPlan}
 
 case class expandSolverStep(qg: QueryGraph) extends IDPSolverStep[PatternRelationship, LogicalPlan, LogicalPlanningContext] {
 
@@ -87,7 +87,7 @@ object expandSolverStep {
 
       case _: VarPatternLength =>
         val availablePredicates: Seq[Expression] =
-          qg.selections.predicatesGiven(availableSymbols + patternRel.name)
+          qg.selections.predicatesGiven(availableSymbols + patternRel.name + otherSide)
         val tempNode = patternRel.name + "_NODES"
         val tempEdge = patternRel.name + "_RELS"
         val (nodePredicates: Seq[Expression], edgePredicates: Seq[Expression], legacyPredicates: Seq[(LogicalVariable,Expression)], solvedPredicates: Seq[Expression]) =
