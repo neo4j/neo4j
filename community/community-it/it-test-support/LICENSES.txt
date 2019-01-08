@@ -20,7 +20,6 @@ Apache Software License, Version 2.0
   org.opentest4j:opentest4j
   parboiled-core
   parboiled-scala
-  scalatest
   WMI4Java
 ------------------------------------------------------------------------------
 
@@ -278,9 +277,6 @@ BSD License
   asm-tree
   asm-util
   Scala Compiler
-  scala-xml
-  scalacheck
-  test-interface
 ------------------------------------------------------------------------------
 
 Copyright (c) <year>, <copyright holder>

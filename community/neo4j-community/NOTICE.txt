@@ -40,7 +40,6 @@ Apache Software License, Version 2.0
   Netty/All-in-One
   parboiled-core
   parboiled-scala
-  scalatest
   WMI4Java
 
 BSD - Scala License
@@ -52,9 +51,6 @@ BSD License
   asm-tree
   asm-util
   Scala Compiler
-  scala-xml
-  scalacheck
-  test-interface
 
 Bouncy Castle License
   Bouncy Castle PKIX, CMS, EAC, TSP, PKCS, OCSP, CMP, and CRMF APIs

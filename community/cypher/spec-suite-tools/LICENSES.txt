@@ -278,7 +278,6 @@ BSD License
   ANTLR 4 Runtime
   ParaNamer Core
   Scala Compiler
-  scala-xml
 ------------------------------------------------------------------------------
 
 Copyright (c) <year>, <copyright holder>

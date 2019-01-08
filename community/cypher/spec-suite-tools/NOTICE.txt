@@ -54,7 +54,6 @@ BSD License
   ANTLR 4 Runtime
   ParaNamer Core
   Scala Compiler
-  scala-xml
 
 Eclipse Distribution License - v 1.0
   Eclipse Collections API
