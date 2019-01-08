@@ -23,7 +23,7 @@ import org.neo4j.kernel.api.impl.schema.NativeLuceneFusionIndexProviderFactory20
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.extension.ExtensionType;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
-import org.neo4j.kernel.impl.spi.KernelContext;
+import org.neo4j.kernel.extension.context.ExtensionContext;
 
 public class TrackingIndexExtensionFactory extends KernelExtensionFactory<TrackingIndexExtensionFactory.Dependencies>
 {
@@ -39,7 +39,7 @@ public class TrackingIndexExtensionFactory extends KernelExtensionFactory<Tracki
     }
 
     @Override
-    public synchronized IndexProvider newInstance( KernelContext context, Dependencies dependencies )
+    public synchronized IndexProvider newInstance( ExtensionContext context, Dependencies dependencies )
     {
         if ( indexProvider == null )
         {
