@@ -21,6 +21,7 @@ package org.neo4j.test.rule;
 
 import org.apache.commons.lang3.StringUtils;
 import org.junit.rules.Timeout;
+import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 import org.junit.runners.model.TestTimedOutException;
 
@@ -37,7 +38,7 @@ import java.util.function.Function;
 import org.neo4j.diagnostics.utils.DumpUtils;
 
 /**
- * Timeout rule implementation that print out stack traces of all thread
+ * Timeout rule implementation that print out stack traces of all threads
  * instead of just one suspect, as default implementation does.
  * <p>
  * In addition provide possibility to describe provided custom entities on timeout failure.
@@ -50,12 +51,20 @@ import org.neo4j.diagnostics.utils.DumpUtils;
  *                                               .describeOnFailure( locks )
  *                                               .build()};
  * </pre>
+ * Another way to use this is to not provide a specific timeout and let normal means of specifying junit test timeout take its course, e.g:
+ * <pre> {@code
+ * public VerboseTimeout timeout = VerboseTimeout.builder().build();
+ *  ...
+ * @literal @Test( timeout = 20_000 )
+ *  public void shouldTestSomething()}
+ * </pre>
  *
  * @see Timeout
  */
 public class VerboseTimeout extends Timeout
 {
     private VerboseTimeoutBuilder timeoutBuilder;
+    private Description currentTestDescription;
 
     private VerboseTimeout( VerboseTimeoutBuilder timeoutBuilder )
     {
@@ -66,6 +75,14 @@ public class VerboseTimeout extends Timeout
     public static VerboseTimeoutBuilder builder()
     {
         return new VerboseTimeoutBuilder();
+    }
+
+    @Override
+    public Statement apply( Statement base, Description description )
+    {
+        // Just pick up on which test we're currently running
+        currentTestDescription = description;
+        return super.apply( base, description );
     }
 
     @Override
@@ -125,14 +142,13 @@ public class VerboseTimeout extends Timeout
             return timeUnit;
         }
 
-        public List<FailureParameter<?>> getAdditionalParameters()
+        List<FailureParameter<?>> getAdditionalParameters()
         {
             return additionalParameters;
         }
 
         private class FailureParameter<T>
         {
-
             private final T entity;
             private final Function<T,String> descriptor;
 
@@ -188,14 +204,14 @@ public class VerboseTimeout extends Timeout
         {
             try
             {
-                if ( timeout > 0 )
+                Throwable potentialException = timeout > 0 ? task.get( timeout, timeUnit ) : task.get();
+                if ( potentialException instanceof TestTimedOutException )
                 {
-                    return task.get( timeout, timeUnit );
+                    // This allows this rule to be used without a specific timeout and instead use whatever
+                    // timeout the test annotation specifies itself.
+                    printThreadDump();
                 }
-                else
-                {
-                    return task.get();
-                }
+                return potentialException;
             }
             catch ( ExecutionException e )
             {
@@ -204,15 +220,6 @@ public class VerboseTimeout extends Timeout
             }
             catch ( TimeoutException e )
             {
-                if ( !additionalParameters.isEmpty() )
-                {
-                    System.err.println( "==== Requested additional parameters: ====" );
-                    for ( VerboseTimeoutBuilder.FailureParameter<?> additionalParameter : additionalParameters )
-                    {
-                        System.err.println( additionalParameter.describe() );
-                    }
-                }
-                System.err.println( "=== Thread dump ===" );
                 printThreadDump();
                 return buildTimeoutException( thread );
             }
@@ -245,15 +252,25 @@ public class VerboseTimeout extends Timeout
                 return null;
             }
 
-            public void awaitStarted() throws InterruptedException
+            void awaitStarted() throws InterruptedException
             {
                 startLatch.await();
             }
         }
-    }
 
-    private static void printThreadDump()
-    {
-        System.err.println( DumpUtils.threadDump() );
+        private void printThreadDump()
+        {
+            System.err.println( String.format( "=== Test %s timed out, dumping more information ===", currentTestDescription.getDisplayName() ) );
+            if ( !additionalParameters.isEmpty() )
+            {
+                System.err.println( "=== Requested additional parameters: ===" );
+                for ( VerboseTimeoutBuilder.FailureParameter<?> additionalParameter : additionalParameters )
+                {
+                    System.err.println( additionalParameter.describe() );
+                }
+            }
+            System.err.println( "=== Thread dump ===" );
+            System.err.println( DumpUtils.threadDump() );
+        }
     }
 }
