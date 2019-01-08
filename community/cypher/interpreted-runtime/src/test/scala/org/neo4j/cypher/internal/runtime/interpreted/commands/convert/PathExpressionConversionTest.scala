@@ -20,11 +20,11 @@
 package org.neo4j.cypher.internal.runtime.interpreted.commands.convert
 
 import org.neo4j.cypher.internal.planner.v4_0.spi.TokenContext
-import org.neo4j.cypher.internal.v4_0.util.{DummyPosition, InputPosition}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.ProjectedPath
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.ProjectedPath._
-import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.v4_0.expressions._
+import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v4_0.util.{DummyPosition, InputPosition}
 
 class PathExpressionConversionTest extends CypherFunSuite {
 
@@ -53,7 +53,7 @@ class PathExpressionConversionTest extends CypherFunSuite {
       ProjectedPath(
         Set("r", "b"),
         singleNodeProjector("b",
-          singleIncomingRelationshipProjector("r", nilProjector)
+              singleRelationshipWithKnownTargetProjector("r", "a", nilProjector)
         )
       )
     )
@@ -66,7 +66,7 @@ class PathExpressionConversionTest extends CypherFunSuite {
       ProjectedPath(
         Set("r", "a"),
         singleNodeProjector("a",
-          singleOutgoingRelationshipProjector("r", nilProjector)
+                singleRelationshipWithKnownTargetProjector("r", "b", nilProjector)
         )
       )
     )
@@ -111,7 +111,7 @@ class PathExpressionConversionTest extends CypherFunSuite {
         Set("a", "r1", "r2"),
         singleNodeProjector("a",
           multiOutgoingRelationshipProjector("r1",
-            singleIncomingRelationshipProjector("r2", nilProjector)
+            singleRelationshipWithKnownTargetProjector("r2", "c", nilProjector)
           )
         )
       )
@@ -131,7 +131,7 @@ class PathExpressionConversionTest extends CypherFunSuite {
         Set("a", "r1", "r2"),
         singleNodeProjector("a",
           multiOutgoingRelationshipProjector("r1",
-            singleIncomingRelationshipProjector("r2", nilProjector)
+            singleRelationshipWithKnownTargetProjector("r2", "c", nilProjector)
           )
         )
       )

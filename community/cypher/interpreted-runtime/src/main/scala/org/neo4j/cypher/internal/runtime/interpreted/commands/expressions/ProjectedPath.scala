@@ -57,11 +57,6 @@ object ProjectedPath {
       tailProjector(ctx, builder.addUndirectedRelationship(ctx.getByName(rel)))
   }
 
-  case class multiRelationshipWithKnownTargetProjector(rels: String, target: String, tailProjector: Projector) extends Projector {
-    def apply(ctx: ExecutionContext, builder: PathValueBuilder) =
-      tailProjector(ctx, builder.addIncomingRelationships(ctx.getByName(rels)))
-  }
-
   case class multiIncomingRelationshipProjector(rels: String, tailProjector: Projector) extends Projector {
     def apply(ctx: ExecutionContext, builder: PathValueBuilder) =
       tailProjector(ctx, builder.addIncomingRelationships(ctx.getByName(rels)))
