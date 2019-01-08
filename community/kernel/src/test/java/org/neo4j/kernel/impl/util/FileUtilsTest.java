@@ -20,50 +20,51 @@
 package org.neo4j.kernel.impl.util;
 
 import org.apache.commons.lang3.SystemUtils;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.rules.RuleChain;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Paths;
 
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
+import org.neo4j.test.extension.DefaultFileSystemExtension;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.neo4j.io.fs.FileUtils.pathToFileAfterMove;
 import static org.neo4j.io.fs.FileUtils.size;
 
-public class FileUtilsTest
+@ExtendWith( {DefaultFileSystemExtension.class, TestDirectoryExtension.class} )
+class FileUtilsTest
 {
-    public final TestDirectory testDirectory = TestDirectory.testDirectory();
-    public final ExpectedException expected = ExpectedException.none();
-    public final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
-
-    @Rule
-    public RuleChain chain = RuleChain.outerRule( testDirectory ).around( expected );
+    @Inject
+    private FileSystemAbstraction fs;
+    @Inject
+    private TestDirectory testDirectory;
 
     private File path;
 
-    @Before
-    public void doBefore()
+    @BeforeEach
+    void beforeEach()
     {
         path = testDirectory.directory( "path" );
     }
 
     @Test
-    public void moveFileToDirectory() throws Exception
+    void moveFileToDirectory() throws Exception
     {
         File file = touchFile( "source" );
         File targetDir = directory( "dir" );
@@ -71,11 +72,13 @@ public class FileUtilsTest
         File newLocationOfFile = FileUtils.moveFileToDirectory( file, targetDir );
         assertTrue( newLocationOfFile.exists() );
         assertFalse( file.exists() );
-        assertEquals( newLocationOfFile, targetDir.listFiles()[0] );
+        File[] files = targetDir.listFiles();
+        assertNotNull( files );
+        assertEquals( newLocationOfFile, files[0] );
     }
 
     @Test
-    public void moveFile() throws Exception
+    void moveFile() throws Exception
     {
         File file = touchFile( "source" );
         File targetDir = directory( "dir" );
@@ -84,70 +87,68 @@ public class FileUtilsTest
         FileUtils.moveFile( file, newLocationOfFile );
         assertTrue( newLocationOfFile.exists() );
         assertFalse( file.exists() );
-        assertEquals( newLocationOfFile, targetDir.listFiles()[0] );
+        File[] files = targetDir.listFiles();
+        assertNotNull( files );
+        assertEquals( newLocationOfFile, files[0] );
     }
 
     @Test
-    public void testEmptyDirectory() throws IOException
+    void testEmptyDirectory() throws IOException
     {
         File emptyDir = directory( "emptyDir" );
 
         File nonEmptyDir = directory( "nonEmptyDir" );
         File directoryContent = new File( nonEmptyDir, "somefile" );
-        assert directoryContent.createNewFile();
+        assertTrue( directoryContent.createNewFile() );
 
-        assertTrue( FileUtils.isEmptyDirectory( emptyDir ) );
-        assertFalse( FileUtils.isEmptyDirectory( nonEmptyDir ) );
+        assertTrue( FileUtils.isEmptyDirectory( fs, emptyDir ) );
+        assertFalse( FileUtils.isEmptyDirectory( fs, nonEmptyDir ) );
     }
 
     @Test
-    public void pathToFileAfterMoveMustThrowIfFileNotSubPathToFromShorter()
+    void pathToFileAfterMoveMustThrowIfFileNotSubPathToFromShorter()
     {
         File file = new File( "/a" );
         File from = new File( "/a/b" );
         File to   = new File( "/a/c" );
 
-        expected.expect( IllegalArgumentException.class );
-        pathToFileAfterMove( from, to, file );
+        assertThrows( IllegalArgumentException.class, () -> pathToFileAfterMove( from, to, file ) );
     }
 
     // INVALID
     @Test
-    public void pathToFileAfterMoveMustThrowIfFileNotSubPathToFromSameLength()
+    void pathToFileAfterMoveMustThrowIfFileNotSubPathToFromSameLength()
     {
         File file = new File( "/a/f" );
         File from = new File( "/a/b" );
         File to   = new File( "/a/c" );
 
-        expected.expect( IllegalArgumentException.class );
-        pathToFileAfterMove( from, to, file );
+        assertThrows( IllegalArgumentException.class, () -> pathToFileAfterMove( from, to, file ) );
     }
 
     @Test
-    public void pathToFileAfterMoveMustThrowIfFileNotSubPathToFromLonger()
+    void pathToFileAfterMoveMustThrowIfFileNotSubPathToFromLonger()
     {
         File file = new File( "/a/c/f" );
         File from = new File( "/a/b" );
         File to   = new File( "/a/c" );
 
-        expected.expect( IllegalArgumentException.class );
-        pathToFileAfterMove( from, to, file );
+        assertThrows( IllegalArgumentException.class, () -> pathToFileAfterMove( from, to, file ) );
     }
 
     @Test
-    public void pathToFileAfterMoveMustThrowIfFromDirIsCompletePathToFile()
+    void pathToFileAfterMoveMustThrowIfFromDirIsCompletePathToFile()
     {
         File file = new File( "/a/b/f" );
         File from = new File( "/a/b/f" );
         File to   = new File( "/a/c" );
 
-        expected.expect( IllegalArgumentException.class );
-        pathToFileAfterMove( from, to, file );
+        assertThrows( IllegalArgumentException.class, () -> pathToFileAfterMove( from, to, file ) );
     }
 
     // SIBLING
     @Test
-    public void pathToFileAfterMoveMustWorkIfMovingToSibling()
+    void pathToFileAfterMoveMustWorkIfMovingToSibling()
     {
         File file = new File( "/a/b/f" );
         File from = new File( "/a/b" );
@@ -157,7 +158,7 @@ public class FileUtilsTest
     }
 
     @Test
-    public void pathToFileAfterMoveMustWorkIfMovingToSiblingAndFileHasSubDir()
+    void pathToFileAfterMoveMustWorkIfMovingToSiblingAndFileHasSubDir()
     {
         File file = new File( "/a/b/d/f" );
         File from = new File( "/a/b" );
@@ -168,7 +169,7 @@ public class FileUtilsTest
 
     // DEEPER
     @Test
-    public void pathToFileAfterMoveMustWorkIfMovingToSubDir()
+    void pathToFileAfterMoveMustWorkIfMovingToSubDir()
     {
         File file = new File( "/a/b/f" );
         File from = new File( "/a/b" );
@@ -178,7 +179,7 @@ public class FileUtilsTest
     }
 
     @Test
-    public void pathToFileAfterMoveMustWorkIfMovingToSubDirAndFileHasSubDir()
+    void pathToFileAfterMoveMustWorkIfMovingToSubDirAndFileHasSubDir()
     {
         File file = new File( "/a/b/d/f" );
         File from = new File( "/a/b" );
@@ -188,7 +189,7 @@ public class FileUtilsTest
     }
 
     @Test
-    public void pathToFileAfterMoveMustWorkIfMovingOutOfDir()
+    void pathToFileAfterMoveMustWorkIfMovingOutOfDir()
     {
         File file = new File( "/a/b/f" );
         File from = new File( "/a/b" );
@@ -198,7 +199,7 @@ public class FileUtilsTest
     }
 
     @Test
-    public void pathToFileAfterMoveMustWorkIfMovingOutOfDirAndFileHasSubDir()
+    void pathToFileAfterMoveMustWorkIfMovingOutOfDirAndFileHasSubDir()
     {
         File file = new File( "/a/b/d/f" );
         File from = new File( "/a/b" );
@@ -208,7 +209,7 @@ public class FileUtilsTest
     }
 
     @Test
-    public void pathToFileAfterMoveMustWorkIfNotMovingAtAll()
+    void pathToFileAfterMoveMustWorkIfNotMovingAtAll()
     {
         File file = new File( "/a/b/f" );
         File from = new File( "/a/b" );
@@ -218,7 +219,7 @@ public class FileUtilsTest
     }
 
     @Test
-    public void pathToFileAfterMoveMustWorkIfNotMovingAtAllAndFileHasSubDir()
+    void pathToFileAfterMoveMustWorkIfNotMovingAtAllAndFileHasSubDir()
     {
         File file = new File( "/a/b/d/f" );
         File from = new File( "/a/b" );
@@ -228,14 +229,14 @@ public class FileUtilsTest
     }
 
     @Test
-    public void allMacsHaveHighIO()
+    void allMacsHaveHighIO()
     {
         assumeTrue( SystemUtils.IS_OS_MAC );
         assertTrue( FileUtils.highIODevice( Paths.get( "." ), false ) );
     }
 
     @Test
-    public void windowsNeverHaveHighIO()
+    void windowsNeverHaveHighIO()
     {
         // Future work: Maybe we should do like on Mac and assume true on Windows as well?
         assumeTrue( SystemUtils.IS_OS_WINDOWS );
@@ -243,14 +244,14 @@ public class FileUtilsTest
     }
 
     @Test
-    public void onLinuxDevShmHasHighIO()
+    void onLinuxDevShmHasHighIO()
     {
         assumeTrue( SystemUtils.IS_OS_LINUX );
         assertTrue( FileUtils.highIODevice( Paths.get( "/dev/shm" ), false ) );
     }
 
     @Test
-    public void sizeOfFile() throws Exception
+    void sizeOfFile() throws Exception
     {
         File file = touchFile( "a" );
 
@@ -263,7 +264,7 @@ public class FileUtilsTest
     }
 
     @Test
-    public void sizeOfDirector() throws Exception
+    void sizeOfDirector() throws Exception
     {
         File dir = directory( "dir" );
         File file1 = new File( dir, "file1" );
@@ -282,13 +283,13 @@ public class FileUtilsTest
     }
 
     @Test
-    public void mustCountDirectoryContents() throws Exception
+    void mustCountDirectoryContents() throws Exception
     {
         File dir = directory( "dir" );
         File file = new File( dir, "file" );
         File subdir = new File( dir, "subdir" );
-        file.createNewFile();
-        subdir.mkdirs();
+        assertTrue( file.createNewFile() );
+        assertTrue( subdir.mkdirs() );
 
         assertThat( FileUtils.countFilesInDirectoryPath( dir.toPath() ), is( 2L ) );
     }
@@ -296,14 +297,14 @@ public class FileUtilsTest
     private File directory( String name )
     {
         File dir = new File( path, name );
-        dir.mkdirs();
+        assertTrue( dir.mkdirs() );
         return dir;
     }
 
     private File touchFile( String name ) throws IOException
     {
         File file = new File( path, name );
-        file.createNewFile();
+        assertTrue( file.createNewFile() );
         return file;
     }
 

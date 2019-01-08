@@ -19,6 +19,7 @@
  */
 package org.neo4j.io.fs;
 
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.SystemUtils;
 
 import java.io.BufferedReader;
@@ -43,7 +44,6 @@ import java.nio.channels.SeekableByteChannel;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.CopyOption;
-import java.nio.file.DirectoryStream;
 import java.nio.file.FileStore;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
@@ -665,26 +665,17 @@ public class FileUtils
     /**
      * Check if directory is empty.
      *
-     * @param directory - directory to check
+     * @param fs file system to use
+     * @param directory directory to check
      * @return false if directory exists and empty, true otherwise.
      * @throws IllegalArgumentException if specified directory represent a file
-     * @throws IOException if some problem encountered during reading directory content
      */
-    public static boolean isEmptyDirectory( File directory ) throws IOException
+    public static boolean isEmptyDirectory( FileSystemAbstraction fs, File directory )
     {
-        if ( directory.exists() )
+        if ( fs.isDirectory( directory ) )
         {
-            if ( !directory.isDirectory() )
-            {
-                throw new IllegalArgumentException( "Expected directory, but was file: " + directory );
-            }
-            else
-            {
-                try ( DirectoryStream<Path> directoryStream = Files.newDirectoryStream( directory.toPath() ) )
-                {
-                    return !directoryStream.iterator().hasNext();
-                }
-            }
+            File[] files = fs.listFiles( directory );
+            return ArrayUtils.isEmpty( files );
         }
         return true;
     }
