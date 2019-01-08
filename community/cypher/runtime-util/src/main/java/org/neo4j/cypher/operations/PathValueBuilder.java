@@ -204,6 +204,11 @@ public class PathValueBuilder
      */
     public void addMultipleIncoming( ListValue relationships, NodeValue target )
     {
+        if ( relationships.isEmpty() )
+        {
+            //nothing to do here
+            return;
+        }
         int i;
         for ( i = 0; i < relationships.size() - 1; i++ )
         {
@@ -265,6 +270,11 @@ public class PathValueBuilder
      */
     public void addMultipleOutgoing( ListValue relationships, NodeValue target )
     {
+        if ( relationships.isEmpty() )
+        {
+            //nothing to do here
+            return;
+        }
         int i;
         for ( i = 0; i < relationships.size() - 1; i++ )
         {
