@@ -153,6 +153,25 @@ class PathValueBuilderTest
         assertEquals( NO_VALUE, builder.build() );
     }
 
+    @Test
+    void shouldHandleLongerPathWithMultiRelWhereEndNodeIsKnown()
+    {
+        // Given  (n1)<--(n2)-->(n3)
+        NodeValue n1 = node( 42 );
+        NodeValue n2 = node( 43 );
+        NodeValue n3 = node( 44 );
+        RelationshipValue r1 = relationship( 1337, n2, n1 );
+        RelationshipValue r2 = relationship( 1338, n2, n3 );
+        PathValueBuilder builder = new PathValueBuilder( dbAccess( n1, n2, n3, r1, r2 ) );
+
+        // When (n1)<--(n2)--(n3)
+        builder.addNode( n1 );
+        builder.addMultipleUndirected( list( r1, r2 ), n3 );
+
+        // Then
+        assertEquals( path( n1, r1, n2, r2, n3 ), builder.build() );
+    }
+
     private NodeValue node( long id )
     {
         return VirtualValues.nodeValue( id, EMPTY_TEXT_ARRAY, EMPTY_MAP );

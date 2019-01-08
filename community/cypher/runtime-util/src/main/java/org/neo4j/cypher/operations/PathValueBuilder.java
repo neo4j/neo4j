@@ -76,6 +76,19 @@ public class PathValueBuilder
         }
     }
 
+    public void addRelationship( AnyValue value )
+    {
+        if ( notNoValue( value ) )
+        {
+            addRelationship( (RelationshipValue) value );
+        }
+    }
+
+    public void addRelationship( RelationshipValue value )
+    {
+        rels.add( value );
+    }
+
     /**
      * Adds node to the path
      *
@@ -173,6 +186,41 @@ public class PathValueBuilder
      * Adds multiple incoming relationships to the path
      *
      * @param value the incoming relationships to add
+     * @param target the final target node of the path
+     */
+    public void addMultipleIncoming( AnyValue value, NodeValue target )
+    {
+        if ( notNoValue( value ) )
+        {
+            addMultipleIncoming( (ListValue) value, target );
+        }
+    }
+
+    /**
+     * Adds multiple incoming relationships to the path
+     *
+     * @param relationships the incoming relationships to add
+     * @param target the final target node of the path
+     */
+    public void addMultipleIncoming( ListValue relationships, NodeValue target )
+    {
+        int i;
+        for ( i = 0; i < relationships.size() - 1; i++ )
+        {
+            addIncoming( relationships.value( i ) );
+        }
+        AnyValue last = relationships.value( i );
+        if ( notNoValue( last ) )
+        {
+            rels.add( (RelationshipValue) last );
+            nodes.add( target );
+        }
+    }
+
+    /**
+     * Adds multiple incoming relationships to the path
+     *
+     * @param value the incoming relationships to add
      */
     public void addMultipleIncoming( AnyValue value )
     {
@@ -199,6 +247,41 @@ public class PathValueBuilder
      * Adds multiple outgoing relationships to the path
      *
      * @param value the outgoing relationships to add
+     * @param target the final target node of the path
+     */
+    public void addMultipleOutgoing( AnyValue value, AnyValue target )
+    {
+        if ( notNoValue( value ) && notNoValue( target ) )
+        {
+            addMultipleOutgoing( (ListValue) value, (NodeValue) target );
+        }
+    }
+
+    /**
+     * Adds multiple outgoing relationships to the path
+     *
+     * @param relationships the outgoing relationships to add
+     * @param target the final target node of the path
+     */
+    public void addMultipleOutgoing( ListValue relationships, NodeValue target )
+    {
+        int i;
+        for ( i = 0; i < relationships.size() - 1; i++ )
+        {
+            addOutgoing( relationships.value( i ) );
+        }
+        AnyValue last = relationships.value( i );
+        if ( notNoValue( last ) )
+        {
+            rels.add( (RelationshipValue) last );
+            nodes.add( target );
+        }
+    }
+
+    /**
+     * Adds multiple outgoing relationships to the path
+     *
+     * @param value the outgoing relationships to add
      */
     public void addMultipleOutgoing( AnyValue value )
     {
@@ -218,6 +301,62 @@ public class PathValueBuilder
         for ( AnyValue rel : relationships )
         {
             addOutgoing( rel );
+        }
+    }
+
+    /**
+     * Adds multiple undirected relationships to the path
+     *
+     * @param value the undirected relationships to add
+     * @param target the final target node of the path
+     */
+    public void addMultipleUndirected( AnyValue value, AnyValue target )
+    {
+        if ( notNoValue( value ) && notNoValue( target ) )
+        {
+            addMultipleUndirected( (ListValue) value, (NodeValue) target );
+        }
+    }
+
+    /**
+     * Adds multiple undirected relationships to the path
+     *
+     * @param relationships the undirected relationships to add
+     * @param target the final target node of the path
+     */
+    public void addMultipleUndirected( ListValue relationships, NodeValue target )
+    {
+        if ( relationships.isEmpty() )
+        {
+            //nothing to add
+            return;
+        }
+        long previous = nodes.get( nodes.size() - 1 ).id();
+        RelationshipValue first = (RelationshipValue) relationships.head();
+        boolean correctDirection =
+                first.startNode().id() == previous ||
+                first.endNode().id() == previous;
+
+        int i;
+        if ( correctDirection )
+        {
+            for ( i = 0; i < relationships.size() - 1; i++ )
+            {
+                addIncoming( relationships.value( i ) );
+            }
+        }
+        else
+        {
+            for ( i = relationships.size() - 1; i > 0; i-- )
+            {
+                addIncoming( relationships.value( i ) );
+            }
+        }
+        AnyValue last = relationships.value( i );
+        if ( notNoValue( last ) )
+        {
+            rels.add( (RelationshipValue) last );
+            nodes.add( target );
         }
     }
 
