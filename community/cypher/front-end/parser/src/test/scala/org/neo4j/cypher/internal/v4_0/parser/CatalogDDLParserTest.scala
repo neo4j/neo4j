@@ -24,6 +24,7 @@ import org.parboiled.scala.Rule1
 class CatalogDDLParserTest
   extends ParserAstTest[ast.Statement] with Statement with AstConstructionTestSupport {
 
+
   implicit val parser: Rule1[ast.Statement] = Statement
 
   private val singleQuery = ast.SingleQuery(Seq(ast.ConstructGraph()(pos)))(pos)
