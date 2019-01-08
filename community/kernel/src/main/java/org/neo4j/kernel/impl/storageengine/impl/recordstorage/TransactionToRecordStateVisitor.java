@@ -173,16 +173,7 @@ class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
         if ( name.isPresent() )
         {
             String indexName = name.get();
-            Iterator<StoreIndexDescriptor> itr = schemaStorage.indexesGetAll();
-            while ( itr.hasNext() )
-            {
-                StoreIndexDescriptor sid = itr.next();
-                if ( sid.getUserSuppliedName().map( n -> n.equals( indexName ) ).orElse( false ) )
-                {
-                    rule = sid;
-                    break;
-                }
-            }
+            rule = schemaStorage.indexGetForName( indexName );
         }
         else
         {
