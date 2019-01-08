@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.core;
 
+import org.neo4j.kernel.impl.store.NeoStores;
+
 /**
  * Holds onto all available {@link TokenHolder} for easily passing all those around
  * and for easily extending available instances in one place.
@@ -49,5 +51,25 @@ public class TokenHolders
     public TokenHolder relationshipTypeTokens()
     {
         return relationshipTypeTokens;
+    }
+
+    public void setInitialTokens( NeoStores neoStores )
+    {
+        propertyKeyTokens().setInitialTokens( neoStores.getPropertyKeyTokenStore().getTokens() );
+        labelTokens().setInitialTokens( neoStores.getLabelTokenStore().getTokens() );
+        relationshipTypeTokens().setInitialTokens( neoStores.getRelationshipTypeTokenStore().getTokens() );
+    }
+
+    public static TokenHolders readOnlyTokenHolders()
+    {
+        TokenHolder propertyKeyTokens = createReadOnlyTokenHolder( TokenHolder.TYPE_PROPERTY_KEY );
+        TokenHolder labelTokens = createReadOnlyTokenHolder( TokenHolder.TYPE_LABEL );
+        TokenHolder relationshipTypeTokens = createReadOnlyTokenHolder( TokenHolder.TYPE_RELATIONSHIP_TYPE );
+        return new TokenHolders( propertyKeyTokens, labelTokens, relationshipTypeTokens );
+    }
+
+    public static TokenHolder createReadOnlyTokenHolder( String tokenType )
+    {
+        return new DelegatingTokenHolder( new ReadOnlyTokenCreator(), tokenType );
     }
 }

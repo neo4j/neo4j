@@ -78,6 +78,7 @@ import org.neo4j.kernel.impl.api.index.EntityUpdates;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.kernel.impl.core.TokenHolders;
 import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.store.AbstractDynamicStore;
 import org.neo4j.kernel.impl.store.DynamicRecordAllocator;
@@ -448,7 +449,7 @@ public class FullCheckIntegrationTest
         DirectStoreAccess storeAccess = fixture.directStoreAccess();
 
         // fail all indexes
-        Iterator<StoreIndexDescriptor> rules = SchemaRuleAccess.getSchemaRuleAccess( storeAccess.nativeStores().getSchemaStore() ).indexesGetAll();
+        Iterator<StoreIndexDescriptor> rules = getIndexDescriptors();
         while ( rules.hasNext() )
         {
             StoreIndexDescriptor rule = rules.next();
@@ -555,8 +556,7 @@ public class FullCheckIntegrationTest
     {
         // given
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.defaults() );
-        Iterator<StoreIndexDescriptor> indexDescriptorIterator =
-                SchemaRuleAccess.getSchemaRuleAccess( fixture.directStoreAccess().nativeStores().getSchemaStore() ).indexesGetAll();
+        Iterator<StoreIndexDescriptor> indexDescriptorIterator = getIndexDescriptors();
         while ( indexDescriptorIterator.hasNext() )
         {
             StoreIndexDescriptor indexDescriptor = indexDescriptorIterator.next();
@@ -590,8 +590,7 @@ public class FullCheckIntegrationTest
     {
         // given
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.defaults() );
-        Iterator<StoreIndexDescriptor> indexRuleIterator =
-                SchemaRuleAccess.getSchemaRuleAccess( fixture.directStoreAccess().nativeStores().getSchemaStore() ).indexesGetAll();
+        Iterator<StoreIndexDescriptor> indexRuleIterator = getIndexDescriptors();
         while ( indexRuleIterator.hasNext() )
         {
             StoreIndexDescriptor indexRule = indexRuleIterator.next();
@@ -2378,6 +2377,14 @@ public class FullCheckIntegrationTest
         {
             schemaStore.updateRecord( record );
         }
+    }
+
+    private Iterator<StoreIndexDescriptor> getIndexDescriptors()
+    {
+        TokenHolders tokenHolders = TokenHolders.readOnlyTokenHolders();
+        tokenHolders.setInitialTokens( fixture.directStoreAccess().nativeStores().getRawNeoStores() );
+        SchemaRuleAccess schema = SchemaRuleAccess.getSchemaRuleAccess( fixture.directStoreAccess().nativeStores().getSchemaStore(), tokenHolders );
+        return schema.indexesGetAll();
     }
 
     private static KernelTransaction transactionOn( GraphDatabaseService db )

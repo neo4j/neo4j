@@ -167,7 +167,7 @@ public class IndexDefinitionImpl implements IndexDefinition
         {
             if ( this.isConstraintIndex() )
             {
-                throw new IllegalStateException( "Constraint indexes cannot be dropped directly, " + "instead drop the owning uniqueness constraint.", e );
+                throw new IllegalStateException( "Constraint indexes cannot be dropped directly, instead drop the owning uniqueness constraint.", e );
             }
             throw e;
         }

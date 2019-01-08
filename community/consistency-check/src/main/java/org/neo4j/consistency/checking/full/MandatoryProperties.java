@@ -31,6 +31,7 @@ import java.util.function.Function;
 import org.neo4j.consistency.RecordType;
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.report.ConsistencyReporter;
+import org.neo4j.kernel.impl.core.TokenHolders;
 import org.neo4j.kernel.impl.store.SchemaRuleAccess;
 import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.store.record.ConstraintRule;
@@ -53,7 +54,9 @@ public class MandatoryProperties
     public MandatoryProperties( StoreAccess storeAccess )
     {
         this.storeAccess = storeAccess;
-        SchemaRuleAccess schemaRuleAccess = SchemaRuleAccess.getSchemaRuleAccess( storeAccess.getSchemaStore() );
+        TokenHolders tokenHolders = TokenHolders.readOnlyTokenHolders();
+        tokenHolders.setInitialTokens( storeAccess.getRawNeoStores() );
+        SchemaRuleAccess schemaRuleAccess = SchemaRuleAccess.getSchemaRuleAccess( storeAccess.getSchemaStore(), tokenHolders );
         for ( ConstraintRule rule : constraintsIgnoringMalformed( schemaRuleAccess ) )
         {
             if ( rule.getConstraintDescriptor().enforcesPropertyExistence() )

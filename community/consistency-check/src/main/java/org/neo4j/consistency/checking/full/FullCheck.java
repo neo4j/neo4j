@@ -133,8 +133,7 @@ public class FullCheck
         ProgressMonitorFactory.MultiPartBuilder progress = progressFactory.multipleParts(
                 "Full Consistency Check" );
         final StoreAccess nativeStores = directStoreAccess.nativeStores();
-        try ( IndexAccessors indexes =
-                      new IndexAccessors( directStoreAccess.indexes(), nativeStores.getSchemaStore(), samplingConfig ) )
+        try ( IndexAccessors indexes = new IndexAccessors( directStoreAccess.indexes(), nativeStores, samplingConfig ) )
         {
             MultiPassStore.Factory multiPass = new MultiPassStore.Factory(
                     decorator, recordAccess, cacheAccess, report, reportMonitor );

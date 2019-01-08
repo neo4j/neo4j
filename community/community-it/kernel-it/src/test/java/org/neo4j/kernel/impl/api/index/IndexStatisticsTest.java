@@ -57,6 +57,7 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.kernel.impl.core.TokenHolders;
 import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -215,7 +216,7 @@ public class IndexStatisticsTest
         IndexReference index = createPersonNameIndex();
         awaitIndexesOnline();
 
-        SchemaRuleAccess schemaRuleAccess = SchemaRuleAccess.getSchemaRuleAccess( neoStores().getSchemaStore() );
+        SchemaRuleAccess schemaRuleAccess = SchemaRuleAccess.getSchemaRuleAccess( neoStores().getSchemaStore(), resolveDependency( TokenHolders.class ) );
         long indexId = schemaRuleAccess.indexGetForSchema( index ).getId();
 
         // when
@@ -393,8 +394,7 @@ public class IndexStatisticsTest
         Label label = Label.label( PERSON_LABEL );
         try ( Transaction tx = db.beginTx() )
         {
-            KernelTransaction ktx = ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency(
-                    ThreadToStatementContextBridge.class ).getKernelTransactionBoundToThisThread( true );
+            KernelTransaction ktx = resolveDependency( ThreadToStatementContextBridge.class ).getKernelTransactionBoundToThisThread( true );
             List<String> mismatches = new ArrayList<>();
             int labelId = ktx.tokenRead().nodeLabel( PERSON_LABEL );
             int propertyKeyId = ktx.tokenRead().propertyKey( NAME_PROPERTY );
@@ -554,16 +554,12 @@ public class IndexStatisticsTest
 
     private long indexSize( IndexReference reference ) throws IndexNotFoundKernelException
     {
-        return ((GraphDatabaseAPI) db).getDependencyResolver()
-                                      .resolveDependency( IndexingService.class )
-                                      .indexUpdatesAndSize( reference.schema() ).readSecond();
+        return resolveDependency( IndexingService.class ).indexUpdatesAndSize( reference.schema() ).readSecond();
     }
 
     private long indexUpdates( IndexReference reference  ) throws IndexNotFoundKernelException
     {
-        return ((GraphDatabaseAPI) db).getDependencyResolver()
-                                      .resolveDependency( IndexingService.class )
-                                      .indexUpdatesAndSize( reference.schema() ).readFirst();
+        return resolveDependency( IndexingService.class ).indexUpdatesAndSize( reference.schema() ).readFirst();
     }
 
     private double indexSelectivity( IndexReference reference ) throws KernelException
@@ -583,7 +579,7 @@ public class IndexStatisticsTest
 
     private IndexStatisticsStore getIndexingStatisticsStore()
     {
-        return ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency( IndexStatisticsStore.class );
+        return resolveDependency( IndexStatisticsStore.class );
     }
 
     private void createSomePersons() throws KernelException
@@ -630,8 +626,12 @@ public class IndexStatisticsTest
 
     private NeoStores neoStores()
     {
-        return ( (GraphDatabaseAPI) db ).getDependencyResolver().resolveDependency( RecordStorageEngine.class )
-                .testAccessNeoStores();
+        return resolveDependency( RecordStorageEngine.class ).testAccessNeoStores();
+    }
+
+    private <T> T resolveDependency( Class<T> clazz )
+    {
+        return ( (GraphDatabaseAPI) db ).getDependencyResolver().resolveDependency( clazz );
     }
 
     private void awaitIndexesOnline()

@@ -38,6 +38,7 @@ import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingController;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.kernel.impl.core.TokenHolders;
 import org.neo4j.kernel.impl.index.schema.IndexDescriptor;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -97,7 +98,7 @@ public class IndexStatisticsIT
 
         // where ALIEN and SPECIMEN are both the first ids of their kind
         IndexDescriptor index = TestIndexDescriptorFactory.forLabel( labelId( ALIEN ), pkId( SPECIMEN ) );
-        SchemaRuleAccess schemaRuleAccess = SchemaRuleAccess.getSchemaRuleAccess( neoStores().getSchemaStore() );
+        SchemaRuleAccess schemaRuleAccess = SchemaRuleAccess.getSchemaRuleAccess( neoStores().getSchemaStore(), resolveDependency( TokenHolders.class ) );
         long indexId = schemaRuleAccess.indexGetForSchema( index ).getId();
 
         // for which we don't have index counts
@@ -151,13 +152,6 @@ public class IndexStatisticsIT
         }
     }
 
-    private KernelTransaction ktx()
-    {
-        return ((GraphDatabaseAPI) db).getDependencyResolver()
-                .resolveDependency( ThreadToStatementContextBridge.class )
-                .getKernelTransactionBoundToThisThread( true );
-    }
-
     private void createAliens()
     {
         try ( Transaction tx = db.beginTx() )
@@ -195,10 +189,19 @@ public class IndexStatisticsIT
         indexStatistics().replaceIndexCounts( indexId, 0, 0, 0 );
     }
 
+    private <T> T resolveDependency( Class<T> clazz )
+    {
+        return ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency( clazz );
+    }
+
+    private KernelTransaction ktx()
+    {
+        return resolveDependency( ThreadToStatementContextBridge.class ).getKernelTransactionBoundToThisThread( true );
+    }
+
     private NeoStores neoStores()
     {
-        return ( (GraphDatabaseAPI) db ).getDependencyResolver().resolveDependency( RecordStorageEngine.class )
-                .testAccessNeoStores();
+        return resolveDependency( RecordStorageEngine.class ).testAccessNeoStores();
     }
 
     private CountsTracker counts()

@@ -161,7 +161,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         {
             indexUpdatesConverter = new PropertyPhysicalToLogicalConverter( neoStores.getPropertyStore() );
             schemaCache = new SchemaCache( constraintSemantics, Collections.emptyList() );
-            schemaRuleAccess = SchemaRuleAccess.getSchemaRuleAccess( neoStores.getSchemaStore() );
+            schemaRuleAccess = SchemaRuleAccess.getSchemaRuleAccess( neoStores.getSchemaStore(), tokenHolders );
 
             countsStore = openCountsStore( fs, pageCache, databaseLayout, config, logProvider, versionContextSupplier );
 
@@ -340,7 +340,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
 
         // Perform the application
         return new BatchTransactionApplierFacade(
-                appliers.toArray( new BatchTransactionApplier[appliers.size()] ) );
+                appliers.toArray( new BatchTransactionApplier[0] ) );
     }
 
     private LockService lockService( TransactionApplicationMode mode )

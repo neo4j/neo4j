@@ -34,10 +34,10 @@ import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
+import org.neo4j.kernel.impl.core.TokenHolders;
 import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
-import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.SchemaRuleAccess;
-import org.neo4j.kernel.impl.store.record.DynamicRecord;
+import org.neo4j.kernel.impl.store.StoreAccess;
 
 public class IndexAccessors implements Closeable
 {
@@ -46,10 +46,12 @@ public class IndexAccessors implements Closeable
     private final List<StoreIndexDescriptor> notOnlineIndexRules = new ArrayList<>();
 
     public IndexAccessors( IndexProviderMap providers,
-                           RecordStore<DynamicRecord> schemaStore,
+                           StoreAccess storeAccess,
                            IndexSamplingConfig samplingConfig ) throws IOException
     {
-        Iterator<StoreIndexDescriptor> indexes = SchemaRuleAccess.getSchemaRuleAccess( schemaStore ).indexesGetAll();
+        TokenHolders tokenHolders = TokenHolders.readOnlyTokenHolders();
+        tokenHolders.setInitialTokens( storeAccess.getRawNeoStores() );
+        Iterator<StoreIndexDescriptor> indexes = SchemaRuleAccess.getSchemaRuleAccess( storeAccess.getSchemaStore(), tokenHolders ).indexesGetAll();
         for (; ; )
         {
             try

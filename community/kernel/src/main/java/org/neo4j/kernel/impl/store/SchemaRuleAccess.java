@@ -25,6 +25,7 @@ import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.exceptions.schema.MalformedSchemaRuleException;
 import org.neo4j.kernel.api.exceptions.schema.DuplicateSchemaRuleException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
+import org.neo4j.kernel.impl.core.TokenHolders;
 import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.ConstraintRule;
@@ -36,7 +37,8 @@ import org.neo4j.storageengine.api.schema.SchemaDescriptorSupplier;
 public interface SchemaRuleAccess
 {
     @SuppressWarnings( "unchecked" )
-    static SchemaRuleAccess getSchemaRuleAccess( RecordStore<?> store )
+    static SchemaRuleAccess getSchemaRuleAccess( RecordStore<?> store,
+            @SuppressWarnings( "unused" ) TokenHolders tokenHolders /* we'll need this for a future schema store refactoring */ )
     {
         AbstractBaseRecord record = store.newRecord();
         if ( record instanceof DynamicRecord )
@@ -77,8 +79,7 @@ public interface SchemaRuleAccess
      * @throws SchemaRuleNotFoundException if no ConstraintRule matches the given descriptor
      * @throws DuplicateSchemaRuleException if two or more ConstraintRules match the given descriptor
      */
-    ConstraintRule constraintsGetSingle( ConstraintDescriptor descriptor )
-    throws SchemaRuleNotFoundException, DuplicateSchemaRuleException;
+    ConstraintRule constraintsGetSingle( ConstraintDescriptor descriptor ) throws SchemaRuleNotFoundException, DuplicateSchemaRuleException;
 
     Iterator<ConstraintRule> constraintsGetAllIgnoreMalformed();
 }
