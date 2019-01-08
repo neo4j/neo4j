@@ -78,7 +78,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
     final File storageFile;
     private final File idFile;
     private final String typeDescriptor;
-    protected volatile PagedFile pagedFile;
+    protected PagedFile pagedFile;
     protected int recordSize;
     private IdGenerator idGenerator;
     private boolean storeOk = true;
@@ -829,19 +829,6 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
         catch ( IOException e )
         {
             throw new UnderlyingStorageException( "Failed to flush", e );
-        }
-    }
-
-    /**
-     * Checks if this store is closed and throws exception if it is.
-     *
-     * @throws StoreFileClosedException if the store is closed
-     */
-    void assertNotClosed()
-    {
-        if ( pagedFile == null )
-        {
-            throw new StoreFileClosedException( this, storageFile );
         }
     }
 

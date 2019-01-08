@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.store;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InOrder;
 
 import java.io.File;
@@ -52,9 +51,7 @@ import org.neo4j.kernel.impl.store.id.validation.ReservedIdException;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.test.extension.DefaultFileSystemExtension;
 import org.neo4j.test.extension.Inject;
-import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.rule.TestDirectory;
 
@@ -174,19 +171,6 @@ class CommonAbstractStoreTest
         TheRecord record = newRecord( IdGeneratorImpl.INTEGER_MINUS_ONE );
 
         assertThrows( ReservedIdException.class, () -> store.updateRecord( record ) );
-    }
-
-    @Test
-    void throwsStoreFileClosedExceptionOnAssertIfStoreHasClosed()
-    {
-        // GIVEN
-        TheStore store = newStore();
-
-        // WHEN
-        store.close();
-
-        // THEN
-        assertThrows( StoreFileClosedException.class, store::assertNotClosed );
     }
 
     @Test

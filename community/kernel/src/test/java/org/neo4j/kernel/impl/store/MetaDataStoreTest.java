@@ -659,6 +659,16 @@ class MetaDataStoreTest
         }
     }
 
+    @Test
+    void throwsWhenClosed()
+    {
+        MetaDataStore store = newMetaDataStore();
+
+        store.close();
+
+        assertThrows( StoreFileClosedException.class, store::getLastCommittedTransactionId );
+    }
+
     private MetaDataStore newMetaDataStore()
     {
         LogProvider logProvider = NullLogProvider.getInstance();

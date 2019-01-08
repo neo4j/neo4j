@@ -147,6 +147,8 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
     private final Object transactionCommittedLock = new Object();
     private final Object transactionClosedLock = new Object();
 
+    private volatile boolean closed;
+
     MetaDataStore( File file, File idFile, Config conf,
             IdGeneratorFactory idGeneratorFactory,
             PageCache pageCache, LogProvider logProvider, RecordFormat<MetaDataRecord> recordFormat,
@@ -886,5 +888,26 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
     @Override
     public void prepareForCommit( MetaDataRecord record, IdSequence idSequence )
     {   // No need to do anything with these records before commit
+    }
+
+    @Override
+    public void close()
+    {
+        try
+        {
+            super.close();
+        }
+        finally
+        {
+            closed = true;
+        }
+    }
+
+    private void assertNotClosed()
+    {
+        if ( closed )
+        {
+            throw new StoreFileClosedException( this, storageFile );
+        }
     }
 }
