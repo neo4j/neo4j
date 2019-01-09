@@ -28,23 +28,57 @@ class CypherIsolationIntegrationTest extends ExecutionEngineFunSuite {
   val THREADS = 50
   val UPDATES = 100
 
-  test("Should work around read isolation limitations using multiple set") {
+  test("Should work around read isolation limitation for simple incremental query") {
     // Given
-    val n = createNode("x" -> 0L, "y" -> 0L, "z" -> 0L)
+    val n = createNode("x" -> 0L)
 
     // When
-    val unlocked = updateAndCount(n, "x", "MATCH (n) SET n.x = n.x + 1")
-    val locked1 = updateAndCount(n, "y", "MATCH (n) SET n._LOCK_ = true SET n.y = n.y + 1")
-    val locked2 = updateAndCount(n, "z", "MATCH (n) SET n._LOCK_ = true SET n.z = n.z + 1 REMOVE n._LOCK_")
+    race("MATCH (n) SET n.x = n.x + 1")
 
     // Then
-    unlocked should equal(THREADS * UPDATES)
-    locked1 should equal(THREADS * UPDATES)
-    locked2 should equal(THREADS * UPDATES)
+    nodeGetProperty(n, "x") should equal(THREADS * UPDATES)
   }
 
-  def updateAndCount(node: Node, property: String, query: String): Long = {
+  test("Should work around read isolation limitation using explicit lock") {
+    // Given
+    val n = createLabeledNode(Map("x" -> 0L), "L")
 
+    val query =
+      """MATCH (n:L) WHERE exists(n.x)
+        |SET n._LOCK_ = true
+        |WITH n, n.x AS x
+        |SET n.x = x + 1
+        |REMOVE n._LOCK_""".stripMargin
+
+
+    // When
+    race(query)
+
+    // Then
+    nodeGetProperty(n, "x") should equal(THREADS * UPDATES)
+  }
+
+  test("Should work around read isolation limitations using explicit lock for cached node properties") {
+    // Given
+    val n = createLabeledNode(Map("x" -> 0L), "L")
+    graph.createIndex("L", "x")
+
+    val query =
+      """MATCH (n:L) WHERE exists(n.x)
+        |SET n._LOCK_ = true
+        |WITH n, n.x AS x
+        |SET n.x = x + 1
+        |REMOVE n._LOCK_""".stripMargin
+
+
+    // When
+    race(query)
+
+    // Then
+    nodeGetProperty(n, "x") should equal(THREADS * UPDATES)
+  }
+
+  private def race(query: String): Unit = {
     val executor = Executors.newFixedThreadPool(THREADS)
 
     val futures = (1 to THREADS) map { x =>
@@ -59,7 +93,9 @@ class CypherIsolationIntegrationTest extends ExecutionEngineFunSuite {
     try {
       futures.foreach(_.get())
     } finally executor.shutdown()
+  }
 
+  private def nodeGetProperty(node: Node, property: String): Long = {
     graph.inTx {
       node.getProperty(property).asInstanceOf[Long]
     }

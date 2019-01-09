@@ -51,7 +51,12 @@ abstract class AbstractCachedNodeProperty extends Expression {
           val maybeTxStateValue = state.query.nodeOps.getTxStateProperty(nodeId, propId)
           maybeTxStateValue match {
             case Some(txStateValue) => txStateValue
-            case None => getCachedProperty(ctx)
+            case None =>
+              val cached = getCachedProperty(ctx)
+              if (cached == null)
+                state.query.nodeProperty(nodeId, propId)
+              else
+                cached
           }
       }
     }

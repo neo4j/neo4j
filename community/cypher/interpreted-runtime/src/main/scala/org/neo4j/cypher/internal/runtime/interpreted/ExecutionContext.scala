@@ -61,6 +61,7 @@ trait ExecutionContext extends MutableMap[String, AnyValue] {
   def setCachedPropertyAt(offset: Int, value: Value): Unit
   def getCachedProperty(key: CachedNodeProperty): Value
   def getCachedPropertyAt(offset: Int): Value
+  def invalidateCachedProperties(node: Long): Unit
 
   def copyWith(key: String, value: AnyValue): ExecutionContext
   def copyWith(key1: String, value1: AnyValue, key2: String, value2: AnyValue): ExecutionContext
@@ -216,6 +217,13 @@ class MapExecutionContext(private val m: MutableMap[String, AnyValue], private v
   }
 
   override def getCachedPropertyAt(offset: Int): Value = fail()
+
+  override def invalidateCachedProperties(node: Long): Unit = {
+    cachedProperties.keys.filter(cnp => apply(cnp.nodeVariableName) match {
+      case n: VirtualNodeValue => n.id() == node
+      case _ => false
+    }).foreach(cnp => setCachedProperty(cnp, null))
+  }
 
   private def cloneFromMap(newMap: MutableMap[String, AnyValue]): ExecutionContext = {
     val newCachedProperties = if (cachedProperties == null) null else cachedProperties.clone()
