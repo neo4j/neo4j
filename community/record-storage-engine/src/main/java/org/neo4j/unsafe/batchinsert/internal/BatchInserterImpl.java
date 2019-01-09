@@ -118,6 +118,7 @@ import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.RelationshipTypeTokenStore;
+import org.neo4j.kernel.impl.store.SchemaRuleAccess;
 import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
@@ -322,7 +323,8 @@ public class BatchInserterImpl implements BatchInserter
         labelTokenHolder.setInitialTokens( labelTokenStore.getTokens() );
         tokenHolders = new TokenHolders( propertyKeyTokenHolder, labelTokenHolder, relationshipTypeTokenHolder );
 
-        schemaCache = new SchemaCache( getConstraintSemantics(), schemaStore );
+        schemaCache = new SchemaCache( getConstraintSemantics(), SchemaRuleAccess.getSchemaRuleAccess( schemaStore, tokenHolders ) );
+        schemaCache.loadAllRules();
 
         actions = new BatchSchemaActions();
 

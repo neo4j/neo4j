@@ -27,6 +27,7 @@ import org.eclipse.collections.api.set.primitive.IntSet;
 import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
 import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -42,6 +43,7 @@ import org.neo4j.common.EntityType;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptorPredicates;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
+import org.neo4j.kernel.impl.store.SchemaRuleAccess;
 import org.neo4j.kernel.impl.store.record.ConstraintRule;
 import org.neo4j.storageengine.api.SchemaRule;
 import org.neo4j.storageengine.api.StorageIndexReference;
@@ -58,11 +60,13 @@ import static java.util.Collections.emptyIterator;
 public class SchemaCache
 {
     private final Lock cacheUpdateLock = new StampedLock().asWriteLock();
+    private final SchemaRuleAccess schemaRuleAccess;
     private volatile SchemaCacheState schemaCacheState;
 
-    public SchemaCache( ConstraintSemantics constraintSemantics, Iterable<SchemaRule> initialRules )
+    public SchemaCache( ConstraintSemantics constraintSemantics, SchemaRuleAccess schemaRuleAccess )
     {
-        this.schemaCacheState = new SchemaCacheState( constraintSemantics, initialRules );
+        this.schemaRuleAccess = schemaRuleAccess;
+        this.schemaCacheState = new SchemaCacheState( constraintSemantics, Collections.emptyList() );
     }
 
     public Iterable<StorageIndexReference> indexDescriptors()
@@ -115,13 +119,13 @@ public class SchemaCache
         return schemaCacheState.getOrCreateDependantState( type, factory, parameter );
     }
 
-    public void load( Iterable<SchemaRule> rules )
+    public void loadAllRules()
     {
         cacheUpdateLock.lock();
         try
         {
             ConstraintSemantics constraintSemantics = schemaCacheState.constraintSemantics;
-            this.schemaCacheState = new SchemaCacheState( constraintSemantics, rules );
+            this.schemaCacheState = new SchemaCacheState( constraintSemantics, schemaRuleAccess.getAll() );
         }
         finally
         {

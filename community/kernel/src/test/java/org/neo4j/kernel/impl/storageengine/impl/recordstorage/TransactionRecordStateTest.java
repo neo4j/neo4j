@@ -51,6 +51,7 @@ import org.neo4j.kernel.impl.store.DynamicArrayStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.RecordStore;
+import org.neo4j.kernel.impl.store.StubSchemaRuleAccess;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -106,7 +107,6 @@ import static org.neo4j.graphdb.Direction.INCOMING;
 import static org.neo4j.graphdb.Direction.OUTGOING;
 import static org.neo4j.helpers.collection.Iterables.asSet;
 import static org.neo4j.helpers.collection.Iterables.count;
-import static org.neo4j.helpers.collection.Iterables.empty;
 import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.helpers.collection.Iterables.single;
 import static org.neo4j.helpers.collection.Iterators.array;
@@ -140,7 +140,7 @@ public class TransactionRecordStateTest
     private final long[] bothLabelIds = new long[]{labeIdOne, labeIdSecond};
     private final IntegrityValidator integrityValidator = mock( IntegrityValidator.class );
     private RecordChangeSet recordChangeSet;
-    private final SchemaCache schemaCache = new SchemaCache( new StandardConstraintSemantics(), empty() );
+    private final SchemaCache schemaCache = new SchemaCache( new StandardConstraintSemantics(), new StubSchemaRuleAccess() );
     private long nextRuleId = 1;
 
     private static void assertRelationshipGroupDoesNotExist( RecordChangeSet recordChangeSet, NodeRecord node, int type )

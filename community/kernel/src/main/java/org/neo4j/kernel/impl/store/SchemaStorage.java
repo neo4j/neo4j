@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.store;
 
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.List;
 import java.util.function.Predicate;
 
 import org.neo4j.function.Predicates;
@@ -49,6 +50,12 @@ public class SchemaStorage implements SchemaRuleAccess
     public long newRuleId()
     {
         return schemaStore.nextId();
+    }
+
+    @Override
+    public Iterable<SchemaRule> getAll()
+    {
+        return this::loadAllSchemaRules;
     }
 
     @Override
@@ -132,6 +139,41 @@ public class SchemaStorage implements SchemaRuleAccess
     public Iterator<ConstraintRule> constraintsGetAllIgnoreMalformed()
     {
         return loadAllSchemaRules( Predicates.alwaysTrue(), ConstraintRule.class, true );
+    }
+
+    @Override
+    public void writeSchemaRule( SchemaRule rule )
+    {
+        SchemaStore store = (SchemaStore) schemaStore;
+        List<DynamicRecord> records = store.allocateFrom( rule );
+        records.forEach( store::prepareForCommit );
+        records.forEach( store::updateRecord );
+    }
+
+    @Override
+    public void deleteSchemaRule( SchemaRule rule )
+    {
+        long id = rule.getId();
+        DynamicRecord record = schemaStore.newRecord();
+        schemaStore.getRecord( id, record, RecordLoad.FORCE );
+        if ( record.inUse() && record.isStartRecord() )
+        {
+            try
+            {
+                Collection<DynamicRecord> records = schemaStore.getRecords( id, RecordLoad.NORMAL );
+                record.setInUse( false );
+                schemaStore.updateRecord( record );
+                for ( DynamicRecord dynamicRecord : records )
+                {
+                    dynamicRecord.setInUse( false );
+                    schemaStore.updateRecord( dynamicRecord );
+                }
+            }
+            catch ( InvalidRecordException e )
+            {
+                // This may have been due to a concurrent drop of this rule.
+            }
+        }
     }
 
     Iterator<SchemaRule> loadAllSchemaRules()

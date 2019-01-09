@@ -24,8 +24,6 @@ import org.eclipse.collections.impl.factory.primitive.IntSets;
 import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
 import org.junit.Test;
 
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Set;
 
@@ -37,6 +35,8 @@ import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.index.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
+import org.neo4j.kernel.impl.store.SchemaRuleAccess;
+import org.neo4j.kernel.impl.store.StubSchemaRuleAccess;
 import org.neo4j.kernel.impl.store.record.ConstraintRule;
 import org.neo4j.storageengine.api.SchemaRule;
 import org.neo4j.storageengine.api.StorageIndexReference;
@@ -81,8 +81,7 @@ public class SchemaCacheTest
     public void should_construct_schema_cache()
     {
         // GIVEN
-        Collection<SchemaRule> rules = asList( hans, witch, gretel, robot );
-        SchemaCache cache = new SchemaCache( new ConstraintSemantics(), rules );
+        SchemaCache cache = newSchemaCache( hans, witch, gretel, robot );
 
         // THEN
         assertEquals( asSet( hans, gretel ), Iterables.asSet( cache.indexDescriptors() ) );
@@ -92,8 +91,7 @@ public class SchemaCacheTest
     @Test
     public void addRemoveIndexes()
     {
-        Collection<SchemaRule> rules = asList( hans, witch, gretel, robot );
-        SchemaCache cache = new SchemaCache( new ConstraintSemantics(), rules );
+        SchemaCache cache = newSchemaCache( hans, witch, gretel, robot );
 
         StoreIndexDescriptor rule1 = newIndexRule( 10, 11, 12 );
         StoreIndexDescriptor rule2 = newIndexRule( 13, 14, 15 );
@@ -493,8 +491,17 @@ public class SchemaCacheTest
 
     private static SchemaCache newSchemaCache( SchemaRule... rules )
     {
-        return new SchemaCache( new ConstraintSemantics(), (rules == null || rules.length == 0)
-                                                           ? Collections.emptyList() : Arrays.asList( rules ) );
+        SchemaRuleAccess access = new StubSchemaRuleAccess()
+        {
+            @Override
+            public Iterable<SchemaRule> getAll()
+            {
+                return (rules == null || rules.length == 0) ? Collections.emptyList() : asList( rules );
+            }
+        };
+        SchemaCache cache = new SchemaCache( new ConstraintSemantics(), access );
+        cache.loadAllRules();
+        return cache;
     }
 
     private SchemaCache newSchemaCacheWithRulesForRelatedToCalls()

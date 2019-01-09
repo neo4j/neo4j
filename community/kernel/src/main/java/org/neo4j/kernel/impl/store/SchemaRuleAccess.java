@@ -33,6 +33,7 @@ import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.storageengine.api.SchemaRule;
 import org.neo4j.storageengine.api.schema.ConstraintDescriptor;
 import org.neo4j.storageengine.api.schema.SchemaDescriptorSupplier;
+import org.neo4j.util.VisibleForTesting;
 
 public interface SchemaRuleAccess
 {
@@ -50,6 +51,8 @@ public interface SchemaRuleAccess
     }
 
     long newRuleId();
+
+    Iterable<SchemaRule> getAll();
 
     SchemaRule loadSingleSchemaRule( long ruleId ) throws MalformedSchemaRuleException;
 
@@ -82,4 +85,17 @@ public interface SchemaRuleAccess
     ConstraintRule constraintsGetSingle( ConstraintDescriptor descriptor ) throws SchemaRuleNotFoundException, DuplicateSchemaRuleException;
 
     Iterator<ConstraintRule> constraintsGetAllIgnoreMalformed();
+
+    /**
+     * Write the given schema rule at the location given by its persistent id, overwriting any data that might be at that location already.
+     * This is a non-transactional operation that is used during schema store migration.
+     */
+    void writeSchemaRule( SchemaRule rule );
+
+    /**
+     * Deletes the schema rule at the location given by the persistent id of the schema rule given as an argument.
+     * This is a non-transactional opetation that is primarily used for testing.
+     */
+    @VisibleForTesting
+    void deleteSchemaRule( SchemaRule rule );
 }

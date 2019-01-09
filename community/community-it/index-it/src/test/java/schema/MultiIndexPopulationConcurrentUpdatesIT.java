@@ -73,7 +73,8 @@ import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.SchemaCache;
-import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.store.SchemaRuleAccess;
+import org.neo4j.kernel.impl.store.StubSchemaRuleAccess;
 import org.neo4j.kernel.impl.transaction.state.storeview.DynamicIndexStoreView;
 import org.neo4j.kernel.impl.transaction.state.storeview.EntityIdIterator;
 import org.neo4j.kernel.impl.transaction.state.storeview.LabelScanViewNodeStoreScan;
@@ -82,6 +83,7 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.NodeLabelUpdate;
+import org.neo4j.storageengine.api.SchemaRule;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.schema.LabelSchemaDescriptor;
@@ -95,7 +97,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
-import static org.neo4j.helpers.collection.Iterables.cast;
 import static org.neo4j.helpers.collection.Iterables.iterable;
 import static org.neo4j.kernel.database.Database.initialSchemaRulesLoader;
 
@@ -330,7 +331,16 @@ public class MultiIndexPopulationConcurrentUpdatesIT
             indexService.start();
 
             rules = createIndexRules( labelNameIdMap, propertyId );
-            schemaCache = new SchemaCache( new StandardConstraintSemantics(), cast( iterable( rules ) ) );
+            SchemaRuleAccess schemaRuleAccess = new StubSchemaRuleAccess()
+            {
+                @Override
+                public Iterable<SchemaRule> getAll()
+                {
+                    return iterable( rules );
+                }
+            };
+            schemaCache = new SchemaCache( new StandardConstraintSemantics(), schemaRuleAccess );
+            schemaCache.loadAllRules();
 
             indexService.createIndexes( rules );
             transaction.success();
@@ -460,11 +470,6 @@ public class MultiIndexPopulationConcurrentUpdatesIT
     private LabelScanStore getLabelScanStore()
     {
         return embeddedDatabase.resolveDependency( LabelScanStore.class );
-    }
-
-    private NeoStores getNeoStores()
-    {
-        return getStorageEngine().testAccessNeoStores();
     }
 
     private RecordStorageEngine getStorageEngine()
