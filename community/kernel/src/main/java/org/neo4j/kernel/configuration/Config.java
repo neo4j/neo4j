@@ -28,6 +28,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -47,10 +48,12 @@ import org.neo4j.configuration.ConfigOptions;
 import org.neo4j.configuration.ConfigValue;
 import org.neo4j.configuration.ExternalSettings;
 import org.neo4j.configuration.LoadableConfig;
+import org.neo4j.configuration.Secret;
 import org.neo4j.graphdb.config.BaseSetting;
 import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.graphdb.config.InvalidSettingException;
 import org.neo4j.graphdb.config.Setting;
+import org.neo4j.graphdb.config.SettingGroup;
 import org.neo4j.graphdb.config.SettingValidator;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.HttpConnector.Encryption;
@@ -650,9 +653,12 @@ public class Config implements Configuration
                 }
                 newValue = update;
             }
+
+            String oldValueForLog = obsfucateIfSecret( setting, oldValue );
+            String newValueForLog = obsfucateIfSecret( setting, newValue );
             log.info( "Setting changed: '%s' changed from '%s' to '%s' via '%s'",
-                    setting, oldValueIsDefault ? "default (" + oldValue + ")" : oldValue,
-                    newValueIsDefault ? "default (" + newValue + ")" : newValue, origin );
+                    setting, oldValueIsDefault ? "default (" + oldValueForLog + ")" : oldValueForLog,
+                    newValueIsDefault ? "default (" + newValueForLog + ")" : newValueForLog, origin );
             parsedParams.remove( setting );
             updateListeners.getOrDefault( setting, emptyList() ).forEach( l -> l.accept( oldValue, newValue ) );
         }
@@ -741,6 +747,22 @@ public class Config implements Configuration
                 } ) );
     }
 
+    private String obsfucateIfSecret( Map.Entry<String,String> param )
+    {
+        return obsfucateIfSecret( param.getKey(), param.getValue() );
+    }
+
+    private String obsfucateIfSecret( String key, String value )
+    {
+        if ( settingsMap.containsKey( key ) && settingsMap.get( key ).secret() )
+        {
+            return Secret.OBSFUCATED;
+        }
+        else
+        {
+            return value;
+        }
+    }
     /**
      * Migrates and validates all string values in the provided <code>settings</code> map.
      *
@@ -972,7 +994,7 @@ public class Config implements Configuration
     {
         return params.entrySet().stream()
                 .sorted( Comparator.comparing( Map.Entry::getKey ) )
-                .map( entry -> entry.getKey() + "=" + entry.getValue() )
+                .map( entry -> entry.getKey() + "=" + obsfucateIfSecret( entry ) )
                 .collect( Collectors.joining( ", ") );
     }
 

@@ -28,7 +28,7 @@ public class ConfigDiagnostics extends NamedDiagnosticsProvider
 {
     private final Config config;
 
-    ConfigDiagnostics( Config config )
+    public ConfigDiagnostics( Config config )
     {
         super( "DBMS config" );
         this.config = config;

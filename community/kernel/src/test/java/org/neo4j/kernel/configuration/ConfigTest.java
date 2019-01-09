@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.configuration;
 
+import org.hamcrest.CoreMatchers;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -43,6 +44,7 @@ import org.neo4j.configuration.ExternalSettings;
 import org.neo4j.configuration.Internal;
 import org.neo4j.configuration.LoadableConfig;
 import org.neo4j.configuration.ReplacedBy;
+import org.neo4j.configuration.Secret;
 import org.neo4j.graphdb.config.InvalidSettingException;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -55,6 +57,7 @@ import static java.util.Collections.singletonList;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -281,14 +284,33 @@ class ConfigTest
     {
         // Given
         Config config = Config.builder()
-                              .withSetting( MySettingsWithDefaults.secretSetting, "false" )
-                              .withSetting( MySettingsWithDefaults.hello, "ABC" )
-                              .withConfigClasses( Arrays.asList( mySettingsWithDefaults, myMigratingSettings ) )
-                              .build();
+                .withSetting( MySettingsWithDefaults.secretSetting, "false" )
+                .withSetting( MySettingsWithDefaults.hello, "ABC" )
+                .withConfigClasses( Arrays.asList( mySettingsWithDefaults, myMigratingSettings ) )
+                .build();
 
         // Then
         assertTrue( config.getConfigValues().get( MySettingsWithDefaults.secretSetting.name() ).internal() );
         assertFalse( config.getConfigValues().get( MySettingsWithDefaults.hello.name() ).internal() );
+    }
+
+    @Test
+    public void shouldSetSecretParameter()
+    {
+        // Given
+        Config config = Config.builder()
+                .withSetting( MySettingsWithDefaults.password, "this should not be visible" )
+                .withSetting( MySettingsWithDefaults.hello, "ABC" )
+                .withConfigClasses( Arrays.asList( mySettingsWithDefaults, myMigratingSettings ) )
+                .build();
+
+        // Then
+        assertTrue( config.getConfigValues().get( MySettingsWithDefaults.password.name() ).secret() );
+        assertFalse( config.getConfigValues().get( MySettingsWithDefaults.hello.name() ).secret() );
+        String configText = config.toString();
+        assertTrue( configText.contains( Secret.OBSFUCATED ) );
+        assertFalse( configText.contains( "this should not be visible" ) );
+        assertFalse( configText.contains( config.get( MySettingsWithDefaults.password ) ) );
     }
 
     @Test
@@ -496,6 +518,41 @@ class ConfigTest
     }
 
     @Test
+    public void updateDynamicShouldWorkWithSecret() throws Exception
+    {
+        // Given a secret dynamic setting with a registered update listener
+        String settingName = MyDynamicSettings.secretSetting.name();
+        String changedMessage = "Setting changed: '%s' changed from '%s' to '%s' via '%s'";
+        Config config = Config.builder().withConfigClasses( singletonList( new MyDynamicSettings() ) ).build();
+
+        Log log = mock( Log.class );
+        config.setLogger( log );
+
+        AtomicInteger counter = new AtomicInteger( 0 );
+        config.registerDynamicUpdateListener( MyDynamicSettings.secretSetting, ( previous, update ) ->
+        {
+            counter.getAndIncrement();
+            assertThat( "Update listener should not see obsfucated secret", previous, not( CoreMatchers.equalTo( Secret.OBSFUCATED ) ) );
+            assertThat( "Update listener should not see obsfucated secret", update, not( CoreMatchers.equalTo( Secret.OBSFUCATED ) ) );
+        } );
+
+        // When changing secret settings three times
+        config.updateDynamicSetting( settingName, "another", ORIGIN );
+        config.updateDynamicSetting( settingName, "secret2", ORIGIN );
+        config.updateDynamicSetting( settingName, "", ORIGIN );
+
+        // Then we should see obsfucated log messages
+        InOrder order = inOrder( log );
+        order.verify( log ).info( changedMessage, settingName, "default (" + Secret.OBSFUCATED + ")", Secret.OBSFUCATED, ORIGIN );
+        order.verify( log ).info( changedMessage, settingName, Secret.OBSFUCATED, Secret.OBSFUCATED, ORIGIN );
+        order.verify( log ).info( changedMessage, settingName, Secret.OBSFUCATED, "default (" + Secret.OBSFUCATED + ")", ORIGIN );
+        verifyNoMoreInteractions( log );
+
+        // And see 3 calls to the update listener
+        assertThat( counter.get(), is( 3 ) );
+    }
+
+    @Test
     void removeRegisteredSettingChangeListener()
     {
         Config config = Config.builder().withConfigClasses( singletonList( new MyDynamicSettings() ) ).build();
@@ -560,6 +617,9 @@ class ConfigTest
 
         @Deprecated
         public static final Setting<String> oldSetting = setting( "some_setting", STRING, "Has no replacement" );
+
+        @Secret
+        public static final Setting<String> password = setting( "password", STRING, "This text should not appear in logs or toString" );
     }
 
     private static class HelloHasToBeNeo4jConfigurationValidator implements ConfigurationValidator
@@ -580,6 +640,10 @@ class ConfigTest
     {
         @Dynamic
         public static final Setting<Boolean> boolSetting = setting( "bool_setting", BOOLEAN, Settings.TRUE );
+
+        @Dynamic
+        @Secret
+        public static final Setting<String> secretSetting = setting( "password", STRING, "secret" );
     }
 
     public static class ParseCounterSettings implements LoadableConfig

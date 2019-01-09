@@ -231,6 +231,12 @@ public abstract class ConnectorValidator implements SettingGroup<Object>
     }
 
     @Override
+    public boolean secret()
+    {
+        return false;
+    }
+
+    @Override
     public Optional<String> documentedDefaultValue()
     {
         return Optional.empty();
