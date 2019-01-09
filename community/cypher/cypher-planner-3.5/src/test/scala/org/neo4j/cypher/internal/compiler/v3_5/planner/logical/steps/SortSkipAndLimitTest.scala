@@ -159,6 +159,41 @@ class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSuppor
     context.planningAttributes.solveds.get(result.id).horizon should equal(RegularQueryProjection(Map(mVar.name -> mExpr), QueryShuffle(sortItems = Seq(sortItem))))
   }
 
+  test("should sort aliased and unaliased columns in the right order") {
+    // [WITH n] WITH n + 10 AS m, 5 AS notSortColumn ORDER BY m + 5 ASCENDING
+    // [WITH p] WITH p, EXISTS(p.born) AS bday ORDER BY p.name, bday
+    val p = Variable("p")(pos)
+    val bday = Variable("bday")(pos)
+    val pname = Property(p, PropertyKeyName("name")(pos))(pos)
+    val bdayExp = FunctionInvocation(Property(p, PropertyKeyName("born")(pos))(pos), FunctionName("exists")(pos))
+
+    val sortItems = Seq(ast.AscSortItem(pname)(pos), ast.AscSortItem(bday)(pos))
+    val (query, context, startPlan) = queryGraphWithRegularProjection(
+      // The requirement to sort by p.name, bday
+      sortItems = sortItems,
+      projectionsMap = Map(
+        // an already solved projection
+        p.name -> p,
+        // a projection necessary for the sorting
+        bday.name -> bdayExp),
+      patternNodesInQG = Set("p"),
+      solved = RegularPlannerQuery(QueryGraph.empty.addPatternNodes("p")))
+
+    // when
+    val result = sortSkipAndLimit(startPlan, query, query.interestingOrder, context)
+
+    // then
+    result should equal(
+      Sort(
+        Projection(
+          Projection(startPlan, Map(
+            bday.name -> bdayExp)),
+          Map("  FRESHID0" -> pname)),
+        Seq(Ascending("  FRESHID0"), Ascending("bday"))))
+
+    context.planningAttributes.solveds.get(result.id).horizon should equal(RegularQueryProjection(Map(p.name -> p, bday.name -> bdayExp), QueryShuffle(sortItems)))
+  }
+
   test("should add sort without pre-projection for DistinctQueryProjection") {
     // [WITH DISTINCT n, m] WITH n AS n, m AS m, 5 AS notSortColumn ORDER BY m
     val mSortVar = Variable("m")(pos)
