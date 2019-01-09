@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import org.neo4j.internal.kernel.api.LargeNodeCursorTestBase;
-
 public class LargeNodeCursorTest extends LargeNodeCursorTestBase<ReadTestSupport>
 {
     @Override

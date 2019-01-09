@@ -21,13 +21,74 @@ package org.neo4j.kernel.impl.newapi;
 
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
-import org.neo4j.internal.kernel.api.helpers.NodeValueIndexCursorAdapter;
+import org.neo4j.internal.kernel.api.NodeCursor;
+import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
 import org.neo4j.values.storable.Value;
 
-public class ExtendedNodeValueIndexCursorAdapter extends NodeValueIndexCursorAdapter implements EntityIndexSeekClient
+public class ExtendedNodeValueIndexCursorAdapter implements NodeValueIndexCursor, EntityIndexSeekClient
 {
+    @Override
+    public void close()
+    {
+
+    }
+
+    @Override
+    public boolean isClosed()
+    {
+        return false;
+    }
+
+    @Override
+    public boolean next()
+    {
+        return false;
+    }
+
+    @Override
+    public void node( NodeCursor cursor )
+    {
+
+    }
+
+    @Override
+    public long nodeReference()
+    {
+        return 0;
+    }
+
+    @Override
+    public int numberOfProperties()
+    {
+        return 0;
+    }
+
+    @Override
+    public int propertyKey( int offset )
+    {
+        return 0;
+    }
+
+    @Override
+    public boolean hasValue()
+    {
+        return false;
+    }
+
+    @Override
+    public Value propertyValue( int offset )
+    {
+        return null;
+    }
+
+    @Override
+    public float score()
+    {
+        return 0;
+    }
+
     @Override
     public void setRead( Read read )
     {

@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import org.neo4j.internal.kernel.api.ParallelNodeCursorTransactionStateTestBase;
-
 public class ParallelNodeCursorTransactionStateTest extends ParallelNodeCursorTransactionStateTestBase<WriteTestSupport>
 {
     @Override

@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.newapi;
 
 import org.neo4j.gis.spatial.index.curves.SpaceFillingCurve;
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.internal.kernel.api.NodeValueIndexCursorTestBase;
 import org.neo4j.internal.kernel.api.SchemaWrite;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.kernel.api.KernelTransaction;

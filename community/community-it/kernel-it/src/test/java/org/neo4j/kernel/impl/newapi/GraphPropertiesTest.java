@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import org.neo4j.internal.kernel.api.GraphPropertiesTestBase;
-
 public class GraphPropertiesTest extends GraphPropertiesTestBase<WriteTestSupport>
 {
     @Override

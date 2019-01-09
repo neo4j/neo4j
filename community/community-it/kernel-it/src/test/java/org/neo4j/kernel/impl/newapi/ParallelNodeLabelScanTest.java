@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import org.neo4j.internal.kernel.api.ParallelNodeLabelScanTestBase;
-
 public class ParallelNodeLabelScanTest extends ParallelNodeLabelScanTestBase<ReadTestSupport>
 {
     @Override

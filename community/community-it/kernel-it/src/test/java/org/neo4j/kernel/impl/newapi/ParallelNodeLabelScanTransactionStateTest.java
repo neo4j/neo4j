@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import org.neo4j.internal.kernel.api.ParallelNodeLabelScanTransactionStateTestBase;
-
 public class ParallelNodeLabelScanTransactionStateTest extends ParallelNodeLabelScanTransactionStateTestBase<WriteTestSupport>
 {
     @Override
