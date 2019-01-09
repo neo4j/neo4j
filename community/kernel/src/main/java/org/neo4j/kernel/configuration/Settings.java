@@ -1204,6 +1204,12 @@ public class Settings
             }
 
             @Override
+            public boolean secret()
+            {
+                return newSetting.secret();
+            }
+
+            @Override
             public Optional<String> documentedDefaultValue()
             {
                 return newSetting.documentedDefaultValue();
