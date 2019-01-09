@@ -54,7 +54,7 @@ public class MandatoryProperties
     public MandatoryProperties( StoreAccess storeAccess )
     {
         this.storeAccess = storeAccess;
-        TokenHolders tokenHolders = TokenHolders.initializedReadOnlyTokenHolders( storeAccess.getRawNeoStores() );
+        TokenHolders tokenHolders = TokenHolders.readOnlyTokenHolders( storeAccess.getRawNeoStores() );
         SchemaRuleAccess schemaRuleAccess = SchemaRuleAccess.getSchemaRuleAccess( storeAccess.getSchemaStore(), tokenHolders );
         for ( ConstraintRule rule : constraintsIgnoringMalformed( schemaRuleAccess ) )
         {

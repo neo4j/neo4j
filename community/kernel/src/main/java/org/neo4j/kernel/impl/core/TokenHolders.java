@@ -53,29 +53,24 @@ public class TokenHolders
         return relationshipTypeTokens;
     }
 
-    public void setInitialTokens( NeoStores neoStores )
+    private void setInitialTokens( NeoStores neoStores )
     {
         propertyKeyTokens().setInitialTokens( neoStores.getPropertyKeyTokenStore().getTokens() );
         labelTokens().setInitialTokens( neoStores.getLabelTokenStore().getTokens() );
         relationshipTypeTokens().setInitialTokens( neoStores.getRelationshipTypeTokenStore().getTokens() );
     }
 
-    public static TokenHolders readOnlyTokenHolders()
+    public static TokenHolders readOnlyTokenHolders( NeoStores neoStores )
     {
-        TokenHolder propertyKeyTokens = createReadOnlyTokenHolder( TokenHolder.TYPE_PROPERTY_KEY );
-        TokenHolder labelTokens = createReadOnlyTokenHolder( TokenHolder.TYPE_LABEL );
-        TokenHolder relationshipTypeTokens = createReadOnlyTokenHolder( TokenHolder.TYPE_RELATIONSHIP_TYPE );
-        return new TokenHolders( propertyKeyTokens, labelTokens, relationshipTypeTokens );
-    }
-
-    public static TokenHolders initializedReadOnlyTokenHolders( NeoStores neoStores )
-    {
-        TokenHolders tokenHolders = readOnlyTokenHolders();
+        TokenHolder propertyKeyTokens1 = createReadOnlyTokenHolder( TokenHolder.TYPE_PROPERTY_KEY );
+        TokenHolder labelTokens1 = createReadOnlyTokenHolder( TokenHolder.TYPE_LABEL );
+        TokenHolder relationshipTypeTokens1 = createReadOnlyTokenHolder( TokenHolder.TYPE_RELATIONSHIP_TYPE );
+        TokenHolders tokenHolders = new TokenHolders( propertyKeyTokens1, labelTokens1, relationshipTypeTokens1 );
         tokenHolders.setInitialTokens( neoStores );
         return tokenHolders;
     }
 
-    public static TokenHolder createReadOnlyTokenHolder( String tokenType )
+    private static TokenHolder createReadOnlyTokenHolder( String tokenType )
     {
         return new DelegatingTokenHolder( new ReadOnlyTokenCreator(), tokenType );
     }

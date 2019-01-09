@@ -2381,8 +2381,9 @@ public class FullCheckIntegrationTest
 
     private Iterator<StoreIndexDescriptor> getIndexDescriptors()
     {
-        TokenHolders tokenHolders = TokenHolders.initializedReadOnlyTokenHolders( fixture.directStoreAccess().nativeStores().getRawNeoStores() );
-        SchemaRuleAccess schema = SchemaRuleAccess.getSchemaRuleAccess( fixture.directStoreAccess().nativeStores().getSchemaStore(), tokenHolders );
+        StoreAccess storeAccess = fixture.directStoreAccess().nativeStores();
+        TokenHolders tokenHolders = TokenHolders.readOnlyTokenHolders( storeAccess.getRawNeoStores() );
+        SchemaRuleAccess schema = SchemaRuleAccess.getSchemaRuleAccess( storeAccess.getSchemaStore(), tokenHolders );
         return schema.indexesGetAll();
     }
 
