@@ -637,7 +637,7 @@ public class Config implements DiagnosticsProvider, Configuration
                 }
                 newValue = update;
             }
-            //TODO: check if this is correct
+
             String oldValueForLog = obsfucateIfSecret( setting, oldValue );
             String newValueForLog = obsfucateIfSecret( setting, newValue );
             log.info( "Setting changed: '%s' changed from '%s' to '%s' via '%s'",
