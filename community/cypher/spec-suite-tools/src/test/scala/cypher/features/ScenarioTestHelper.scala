@@ -32,7 +32,9 @@ import org.opencypher.tools.tck.api.Scenario
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 import scala.io.Source
-import scala.util.{Failure, Success, Try}
+import scala.util.Failure
+import scala.util.Success
+import scala.util.Try
 
 object ScenarioTestHelper {
   def createTests(scenarios: Seq[Scenario],
@@ -60,7 +62,21 @@ object ScenarioTestHelper {
             case Success(_) =>
               if (!blacklist.exists(_.isFlaky(scenario)))
                 throw new IllegalStateException("Unexpectedly succeeded in the following blacklisted scenario:\n" + name)
-            case Failure(e) => // failed as expected
+            case Failure(e) =>
+              e.getCause match {
+                case cause@Neo4jExecutionFailed(_, phase, _, _) =>
+                  if (phase == Phase.runtime) {
+                    // That's not OK
+                    //throw cause
+                    throw new Exception(
+                      s"""Failed at $phase in scenario $name for query
+                         |(NOTE: This test is marked as expected to fail, but failing at $phase is not ok)
+                         |""".stripMargin, cause.cause)
+                  }
+                  // else failed as expected
+                case cause =>
+                  throw new IllegalStateException("Unexpected type of exception", cause)
+              }
           }
         }
       }

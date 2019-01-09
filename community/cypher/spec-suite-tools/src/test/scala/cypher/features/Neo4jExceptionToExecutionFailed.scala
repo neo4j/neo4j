@@ -28,6 +28,8 @@ object Phase {
   val compile = "compile time"
 }
 
+case class Neo4jExecutionFailed(errorType: String, phase: String, detail: String, cause: Throwable) extends Exception
+
 object Neo4jExceptionToExecutionFailed {
 
   def convert(phase: String, t: Throwable): ExecutionFailed = {
@@ -36,12 +38,14 @@ object Neo4jExceptionToExecutionFailed {
       case _ => throw t
     }
     val errorType = Status.statusCodeOf(neo4jException)
+    val errorTypeStr = if (errorType != null) errorType.toString else ""
     val msg = neo4jException.getMessage
     val detail = phase match {
       case Phase.compile => compileTimeDetail(msg)
       case Phase.runtime => runtimeDetail(msg)
     }
-    ExecutionFailed(if(errorType != null) errorType.toString else "", phase, detail, Some(t))
+    val neo4jexception = Neo4jExecutionFailed(errorTypeStr, phase, detail, t)
+    ExecutionFailed(errorTypeStr, phase, detail, Some(neo4jexception))
   }
 
   private def runtimeDetail(msg: String): String = {
