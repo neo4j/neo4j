@@ -322,6 +322,21 @@
                   <justification>This is necessary for listAvailableAnalyzers to show a description,
                     and is extremely unlikely to conflict adversely with any code in the wild.</justification>
                 </item>
+                <item>
+                  <code>java.method.added</code>
+                  <new>method boolean org.neo4j.graphdb.config.BaseSetting&lt;T&gt;::secret()</new>
+                  <justification>This is necessary for obsfucate the system password in the debug log. Only additive change.</justification>
+                </item>
+                <item>
+                  <code>java.method.added</code>
+                  <new>method void org.neo4j.graphdb.config.BaseSetting&lt;T&gt;::setSecret(boolean)</new>
+                  <justification>This is necessary for obsfucate the system password in the debug log. Only additive change.</justification>
+                </item>
+                <item>
+                  <code>java.method.defaultMethodAddedToInterface</code>
+                  <new>method boolean org.neo4j.graphdb.config.SettingGroup&lt;T&gt;::secret()</new>
+                  <justification>This is necessary for obsfucate the system password in the debug log. Only additive change.</justification>
+                </item>
               </revapi.ignore>
               <revapi.semver.ignore>
                 <enabled>true</enabled>
