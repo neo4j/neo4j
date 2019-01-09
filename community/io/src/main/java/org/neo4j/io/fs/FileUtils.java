@@ -19,7 +19,6 @@
  */
 package org.neo4j.io.fs;
 
-import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.SystemUtils;
 
 import java.io.BufferedReader;
@@ -66,6 +65,13 @@ import static java.nio.file.StandardOpenOption.READ;
 import static java.nio.file.StandardOpenOption.SYNC;
 import static java.nio.file.StandardOpenOption.WRITE;
 
+/**
+ * Set of utility methods to work with {@link File} and {@link Path} using the {@link DefaultFileSystemAbstraction default file system}.
+ * This class is used by {@link DefaultFileSystemAbstraction} and its methods should not take {@link FileSystemAbstraction} as a parameter.
+ * Consider using {@link FileSystemUtils} when a helper method needs to work with different file systems.
+ *
+ * @see FileSystemUtils
+ */
 public class FileUtils
 {
     private static final int NUMBER_OF_RETRIES = 5;
@@ -662,24 +668,6 @@ public class FileUtils
         return Files.newInputStream( path, READ );
     }
 
-    /**
-     * Check if directory is empty.
-     *
-     * @param fs file system to use
-     * @param directory directory to check
-     * @return false if directory exists and empty, true otherwise.
-     * @throws IllegalArgumentException if specified directory represent a file
-     */
-    public static boolean isEmptyDirectory( FileSystemAbstraction fs, File directory )
-    {
-        if ( fs.isDirectory( directory ) )
-        {
-            File[] files = fs.listFiles( directory );
-            return ArrayUtils.isEmpty( files );
-        }
-        return true;
-    }
-
     public static OutputStream openAsOutputStream( Path path, boolean append ) throws IOException
     {
         OpenOption[] options;
@@ -692,35 +680,5 @@ public class FileUtils
             options = new OpenOption[]{CREATE, WRITE};
         }
         return Files.newOutputStream( path, options );
-    }
-
-    /**
-     * Calculates the size of a given directory or file given the provided abstract filesystem.
-     *
-     * @param fs the filesystem abstraction to use
-     * @param file to the file or directory.
-     * @return the size, in bytes, of the file or the total size of the content in the directory, including
-     * subdirectories.
-     */
-    public static long size( FileSystemAbstraction fs, File file )
-    {
-        if ( fs.isDirectory( file ) )
-        {
-            long size = 0L;
-            File[] files = fs.listFiles( file );
-            if ( files == null )
-            {
-                return 0L;
-            }
-            for ( File child : files )
-            {
-                size += size( fs, child );
-            }
-            return size;
-        }
-        else
-        {
-            return fs.getFileSize( file );
-        }
     }
 }

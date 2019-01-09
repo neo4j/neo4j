@@ -33,7 +33,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.fs.FileUtils;
+import org.neo4j.io.fs.FileSystemUtils;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.FlushablePositionAwareChannel;
@@ -94,7 +94,7 @@ class CorruptedLogsTruncatorTest
     void doNotPruneEmptyLogs() throws IOException
     {
         logPruner.truncate( LogPosition.start( 0 ) );
-        assertTrue( FileUtils.isEmptyDirectory( fs, databaseDirectory ) );
+        assertTrue( FileSystemUtils.isEmptyOrNonExistingDirectory( fs, databaseDirectory ) );
     }
 
     @Test

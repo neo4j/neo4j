@@ -27,7 +27,7 @@ import java.time.Clock;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.Service;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.fs.FileUtils;
+import org.neo4j.io.fs.FileSystemUtils;
 import org.neo4j.io.layout.DatabaseFile;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.jmx.StoreSize;
@@ -257,14 +257,14 @@ public final class StoreSizeBean extends ManagementBeanProvider
                 File rootDirectory = provider.directoryStructure().rootDirectory();
                 if ( rootDirectory != null )
                 {
-                    schemaSize.add( FileUtils.size( fs, rootDirectory ) );
+                    schemaSize.add( FileSystemUtils.size( fs, rootDirectory ) );
                 }
                 // else this provider didn't have any persistent storage
             } );
             size += schemaSize.longValue();
 
             // Add label index
-            size += FileUtils.size( fs, labelScanStore.getLabelScanStoreFile() );
+            size += FileSystemUtils.size( fs, labelScanStore.getLabelScanStoreFile() );
 
             return size;
         }
@@ -272,12 +272,12 @@ public final class StoreSizeBean extends ManagementBeanProvider
         @Override
         public long getTotalStoreSize()
         {
-            return FileUtils.size( fs, databaseLayout.databaseDirectory() );
+            return FileSystemUtils.size( fs, databaseLayout.databaseDirectory() );
         }
 
         private long sizeOf( File file )
         {
-            return FileUtils.size( fs, file );
+            return FileSystemUtils.size( fs, file );
         }
 
         private class TotalSizeVersionVisitor implements LogVersionVisitor
@@ -292,7 +292,7 @@ public final class StoreSizeBean extends ManagementBeanProvider
             @Override
             public void visit( File file, long logVersion )
             {
-                totalSize += FileUtils.size( fs, file );
+                totalSize += FileSystemUtils.size( fs, file );
             }
         }
 

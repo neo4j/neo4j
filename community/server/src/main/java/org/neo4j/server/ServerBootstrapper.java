@@ -40,21 +40,21 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ConfigurationValidator;
 import org.neo4j.kernel.configuration.HttpConnector.Encryption;
+import org.neo4j.kernel.impl.scheduler.BufferingExecutor;
 import org.neo4j.kernel.info.JvmChecker;
 import org.neo4j.kernel.info.JvmMetadataRepository;
-import org.neo4j.kernel.impl.scheduler.BufferingExecutor;
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.server.database.GraphFactory;
 import org.neo4j.logging.RotatingFileOutputStreamSupplier;
 import org.neo4j.scheduler.Group;
+import org.neo4j.server.database.GraphFactory;
 import org.neo4j.server.logging.JULBridge;
 import org.neo4j.server.logging.JettyLogBridge;
 
 import static java.lang.String.format;
 import static org.neo4j.commandline.Util.neo4jVersion;
-import static org.neo4j.io.file.Files.createOrOpenAsOutputStream;
+import static org.neo4j.io.fs.FileSystemUtils.createOrOpenAsOutputStream;
 
 public abstract class ServerBootstrapper implements Bootstrapper
 {

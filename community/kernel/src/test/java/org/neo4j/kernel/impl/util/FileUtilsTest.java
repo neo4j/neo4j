@@ -25,13 +25,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Paths;
 
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
-import org.neo4j.test.extension.DefaultFileSystemExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
@@ -45,13 +42,10 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.neo4j.io.fs.FileUtils.pathToFileAfterMove;
-import static org.neo4j.io.fs.FileUtils.size;
 
-@ExtendWith( {DefaultFileSystemExtension.class, TestDirectoryExtension.class} )
+@ExtendWith( TestDirectoryExtension.class )
 class FileUtilsTest
 {
-    @Inject
-    private FileSystemAbstraction fs;
     @Inject
     private TestDirectory testDirectory;
 
@@ -90,19 +84,6 @@ class FileUtilsTest
         File[] files = targetDir.listFiles();
         assertNotNull( files );
         assertEquals( newLocationOfFile, files[0] );
-    }
-
-    @Test
-    void testEmptyDirectory() throws IOException
-    {
-        File emptyDir = directory( "emptyDir" );
-
-        File nonEmptyDir = directory( "nonEmptyDir" );
-        File directoryContent = new File( nonEmptyDir, "somefile" );
-        assertTrue( directoryContent.createNewFile() );
-
-        assertTrue( FileUtils.isEmptyDirectory( fs, emptyDir ) );
-        assertFalse( FileUtils.isEmptyDirectory( fs, nonEmptyDir ) );
     }
 
     @Test
@@ -248,38 +229,6 @@ class FileUtilsTest
     {
         assumeTrue( SystemUtils.IS_OS_LINUX );
         assertTrue( FileUtils.highIODevice( Paths.get( "/dev/shm" ), false ) );
-    }
-
-    @Test
-    void sizeOfFile() throws Exception
-    {
-        File file = touchFile( "a" );
-
-        try ( FileWriter fileWriter = new FileWriter( file ) )
-        {
-            fileWriter.append( 'a' );
-        }
-
-        assertThat( size( fs, file ), is( 1L )  );
-    }
-
-    @Test
-    void sizeOfDirector() throws Exception
-    {
-        File dir = directory( "dir" );
-        File file1 = new File( dir, "file1" );
-        File file2 = new File( dir, "file2" );
-
-        try ( FileWriter fileWriter = new FileWriter( file1 ) )
-        {
-            fileWriter.append( 'a' ).append( 'b' );
-        }
-        try ( FileWriter fileWriter = new FileWriter( file2 ) )
-        {
-            fileWriter.append( 'a' );
-        }
-
-        assertThat( size( fs, dir ), is( 3L ) );
     }
 
     @Test

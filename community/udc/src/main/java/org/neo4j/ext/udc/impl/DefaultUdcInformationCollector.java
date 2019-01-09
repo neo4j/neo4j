@@ -37,7 +37,7 @@ import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.ext.udc.UdcSettings;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.fs.FileUtils;
+import org.neo4j.io.fs.FileSystemUtils;
 import org.neo4j.io.os.OsBeanUtil;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.database.Database;
@@ -163,7 +163,7 @@ public class DefaultUdcInformationCollector implements UdcInformationCollector
 
     private void addStoreFileSizes( Database database, FileSystemAbstraction fileSystem, Map<String,String> udcFields )
     {
-        long databaseSize = FileUtils.size( fileSystem, database.getDatabaseLayout().databaseDirectory() );
+        long databaseSize = FileSystemUtils.size( fileSystem, database.getDatabaseLayout().databaseDirectory() );
         add( udcFields, STORE_SIZE, databaseSize );
     }
 
