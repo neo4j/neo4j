@@ -349,8 +349,7 @@ public class TransactionRecordState implements RecordState
      * Removes the given property identified by its index from the relationship
      * with the given id.
      *
-     * @param relId The id of the relationship that is to have the property
-     *            removed.
+     * @param relId The id of the relationship that is to have the property removed.
      * @param propertyKey The index key of the property.
      */
     void relRemoveProperty( long relId, int propertyKey )
@@ -375,8 +374,7 @@ public class TransactionRecordState implements RecordState
     /**
      * Changes an existing property's value of the given relationship, with the
      * given index to the passed value
-     *  @param relId The id of the relationship which holds the property to
-     *            change.
+     * @param relId The id of the relationship which holds the property to change.
      * @param propertyKey The index of the key of the property to change.
      * @param value The new value of the property.
      */
@@ -389,7 +387,7 @@ public class TransactionRecordState implements RecordState
     /**
      * Changes an existing property of the given node, with the given index to
      * the passed value
-     *  @param nodeId The id of the node which holds the property to change.
+     * @param nodeId The id of the node which holds the property to change.
      * @param propertyKey The index of the key of the property to change.
      * @param value The new value of the property.
      */
@@ -402,7 +400,7 @@ public class TransactionRecordState implements RecordState
     /**
      * Adds a property to the given relationship, with the given index and
      * value.
-     *  @param relId The id of the relationship to which to add the property.
+     * @param relId The id of the relationship to which to add the property.
      * @param propertyKey The index of the key of the property to add.
      * @param value The value of the property.
      */
@@ -414,7 +412,7 @@ public class TransactionRecordState implements RecordState
 
     /**
      * Adds a property to the given node, with the given index and value.
-     *  @param nodeId The id of the node to which to add the property.
+     * @param nodeId The id of the node to which to add the property.
      * @param propertyKey The index of the key of the property to add.
      * @param value The value of the property.
      */
@@ -422,6 +420,18 @@ public class TransactionRecordState implements RecordState
     {
         RecordProxy<NodeRecord, Void> node = recordChangeSet.getNodeRecords().getOrLoad( nodeId, null );
         propertyCreator.primitiveSetProperty( node, propertyKey, value, recordChangeSet.getPropertyRecords() );
+    }
+
+    void addLabelToNode( long labelId, long nodeId )
+    {
+        NodeRecord nodeRecord = recordChangeSet.getNodeRecords().getOrLoad( nodeId, null ).forChangingData();
+        parseLabelsField( nodeRecord ).add( labelId, nodeStore, nodeStore.getDynamicLabelStore() );
+    }
+
+    void removeLabelFromNode( long labelId, long nodeId )
+    {
+        NodeRecord nodeRecord = recordChangeSet.getNodeRecords().getOrLoad( nodeId, null ).forChangingData();
+        parseLabelsField( nodeRecord ).remove( labelId, nodeStore );
     }
 
     /**
@@ -594,18 +604,6 @@ public class TransactionRecordState implements RecordState
 
         //Update the record
         dynamicRecords.setDynamicRecords( schemaStore.allocateFrom( updatedRule ) );
-    }
-
-    void addLabelToNode( long labelId, long nodeId )
-    {
-        NodeRecord nodeRecord = recordChangeSet.getNodeRecords().getOrLoad( nodeId, null ).forChangingData();
-        parseLabelsField( nodeRecord ).add( labelId, nodeStore, nodeStore.getDynamicLabelStore() );
-    }
-
-    void removeLabelFromNode( long labelId, long nodeId )
-    {
-        NodeRecord nodeRecord = recordChangeSet.getNodeRecords().getOrLoad( nodeId, null ).forChangingData();
-        parseLabelsField( nodeRecord ).remove( labelId, nodeStore );
     }
 
     void setConstraintIndexOwner( StoreIndexDescriptor storeIndex, long constraintId )
