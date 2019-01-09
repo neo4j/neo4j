@@ -55,11 +55,20 @@ public class TokenHolders
 
     private void setInitialTokens( NeoStores neoStores )
     {
-        propertyKeyTokens().setInitialTokens( neoStores.getPropertyKeyTokenStore().getTokens() );
-        labelTokens().setInitialTokens( neoStores.getLabelTokenStore().getTokens() );
-        relationshipTypeTokens().setInitialTokens( neoStores.getRelationshipTypeTokenStore().getTokens() );
+        propertyKeyTokens().setInitialTokens( neoStores.getPropertyKeyTokenStore().getAllReadableTokens() );
+        labelTokens().setInitialTokens( neoStores.getLabelTokenStore().getAllReadableTokens() );
+        relationshipTypeTokens().setInitialTokens( neoStores.getRelationshipTypeTokenStore().getAllReadableTokens() );
     }
 
+    /**
+     * Create read-only token holders initialised with the tokens from the given {@link NeoStores}.
+     * <p>
+     * Note that this call will ignore tokens that cannot be loaded due to inconsistencies, rather than throwing an exception.
+     * The reason for this is that the read-only token holders are primarily used by tools, such as the consistency checker.
+     *
+     * @param neoStores The {@link NeoStores} from which to load the initial tokens.
+     * @return TokenHolders that can be used for reading tokens, but cannot create new ones.
+     */
     public static TokenHolders readOnlyTokenHolders( NeoStores neoStores )
     {
         TokenHolder propertyKeyTokens1 = createReadOnlyTokenHolder( TokenHolder.TYPE_PROPERTY_KEY );

@@ -24,7 +24,6 @@ import java.nio.file.OpenOption;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 
 import org.neo4j.internal.kernel.api.NamedToken;
@@ -82,24 +81,48 @@ public abstract class TokenStore<RECORD extends TokenRecord>
 
     public List<NamedToken> getTokens()
     {
-        LinkedList<NamedToken> records = new LinkedList<>();
-        long maxIdInUse = getHighestPossibleIdInUse();
-        int found = 0;
+        return readAllTokens( false );
+    }
+
+    /**
+     * Same as {@link #getTokens()}, except tokens that cannot be read due to inconsistencies will just be ignored, while {@link #getTokens()} would throw an
+     * exception in such cases.
+     * @return All tokens that could be read without any apparent problems.
+     */
+    public List<NamedToken> getAllReadableTokens()
+    {
+        return readAllTokens( true );
+    }
+
+    private List<NamedToken> readAllTokens( boolean ignoreInconsistentTokens )
+    {
+        long highId = getHighId();
+        ArrayList<NamedToken> records = new ArrayList<>();
+        records.ensureCapacity( Math.toIntExact( highId ) );
         RECORD record = newRecord();
-        for ( int i = 0; i <= maxIdInUse; i++ )
+        for ( int i = 0; i < highId; i++ )
         {
             if ( !getRecord( i, record, RecordLoad.CHECK ).inUse() )
             {
                 continue;
             }
 
-            found++;
             if ( record != null && record.inUse() && record.getNameId() != Record.RESERVED.intValue() )
             {
-                records.add( new NamedToken( getStringFor( record ), i ) );
+                try
+                {
+                    String name = getStringFor( record );
+                    records.add( new NamedToken( name, i ) );
+                }
+                catch ( Exception e )
+                {
+                    if ( !ignoreInconsistentTokens )
+                    {
+                        throw e;
+                    }
+                }
             }
         }
-
         return records;
     }
 
