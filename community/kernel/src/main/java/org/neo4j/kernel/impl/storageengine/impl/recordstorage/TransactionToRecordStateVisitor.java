@@ -34,6 +34,7 @@ import org.neo4j.kernel.impl.api.SchemaState;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.store.SchemaRuleAccess;
+import org.neo4j.kernel.impl.store.record.ConstraintRule;
 import org.neo4j.storageengine.api.SchemaRule;
 import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.storageengine.api.schema.ConstraintDescriptor;
@@ -46,6 +47,7 @@ class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
     private final TransactionRecordState recordState;
     private final SchemaState schemaState;
     private final SchemaRuleAccess schemaStorage;
+    private final SchemaRecordChangeTranslator schemaStateChanger;
     private final ConstraintSemantics constraintSemantics;
 
     TransactionToRecordStateVisitor( TransactionRecordState recordState, SchemaState schemaState, SchemaRuleAccess schemaRuleAccess,
@@ -54,6 +56,7 @@ class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
         this.recordState = recordState;
         this.schemaState = schemaState;
         this.schemaStorage = schemaRuleAccess;
+        this.schemaStateChanger = schemaRuleAccess.getSchemaRecordChangeTranslator();
         this.constraintSemantics = constraintSemantics;
     }
 
@@ -162,7 +165,7 @@ class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
     public void visitAddedIndex( IndexDescriptor index )
     {
         SchemaRule rule = ((org.neo4j.kernel.impl.index.schema.IndexDescriptor) index).withId( schemaStorage.newRuleId() );
-        recordState.createSchemaRule( rule );
+        schemaStateChanger.createSchemaRule( recordState, rule );
     }
 
     @Override
@@ -180,7 +183,7 @@ class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
         }
         if ( rule != null )
         {
-            recordState.dropSchemaRule( rule );
+            schemaStateChanger.dropSchemaRule( recordState, rule );
         }
     }
 
@@ -201,8 +204,8 @@ class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
             break;
 
         case EXISTS:
-            recordState.createSchemaRule(
-                    constraintSemantics.createExistenceConstraint( schemaStorage.newRuleId(), constraint ) );
+            ConstraintRule rule = constraintSemantics.createExistenceConstraint( schemaStorage.newRuleId(), constraint );
+            schemaStateChanger.createSchemaRule( recordState, rule );
             break;
 
         default:
@@ -213,18 +216,18 @@ class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
     private void visitAddedUniquenessConstraint( UniquenessConstraintDescriptor uniqueConstraint, long constraintId )
     {
         StoreIndexDescriptor indexRule = schemaStorage.indexGetForSchema( uniqueConstraint.ownedIndexDescriptor() );
-        recordState.createSchemaRule( constraintSemantics.createUniquenessConstraintRule(
-                constraintId, uniqueConstraint, indexRule.getId() ) );
-        recordState.setConstraintIndexOwner( indexRule, constraintId );
+        ConstraintRule constraintRule = constraintSemantics.createUniquenessConstraintRule( constraintId, uniqueConstraint, indexRule.getId() );
+        schemaStateChanger.createSchemaRule( recordState, constraintRule );
+        schemaStateChanger.setConstraintIndexOwner( recordState, indexRule, constraintId );
     }
 
     private void visitAddedNodeKeyConstraint( NodeKeyConstraintDescriptor uniqueConstraint, long constraintId )
             throws CreateConstraintFailureException
     {
         StoreIndexDescriptor indexRule = schemaStorage.indexGetForSchema( uniqueConstraint.ownedIndexDescriptor() );
-        recordState.createSchemaRule( constraintSemantics.createNodeKeyConstraintRule(
-                constraintId, uniqueConstraint, indexRule.getId() ) );
-        recordState.setConstraintIndexOwner( indexRule, constraintId );
+        ConstraintRule constraintRule = constraintSemantics.createNodeKeyConstraintRule( constraintId, uniqueConstraint, indexRule.getId() );
+        schemaStateChanger.createSchemaRule( recordState, constraintRule );
+        schemaStateChanger.setConstraintIndexOwner( recordState, indexRule, constraintId );
     }
 
     @Override
@@ -233,7 +236,8 @@ class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
         clearSchemaState = true;
         try
         {
-            recordState.dropSchemaRule( schemaStorage.constraintsGetSingle( constraint ) );
+            ConstraintRule rule = schemaStorage.constraintsGetSingle( constraint );
+            schemaStateChanger.dropSchemaRule( recordState, rule );
         }
         catch ( SchemaRuleNotFoundException e )
         {

@@ -23,6 +23,7 @@ import java.util.Collections;
 import java.util.Iterator;
 
 import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.SchemaRecordChangeTranslator;
 import org.neo4j.kernel.impl.store.record.ConstraintRule;
 import org.neo4j.storageengine.api.SchemaRule;
 import org.neo4j.storageengine.api.schema.ConstraintDescriptor;
@@ -74,6 +75,12 @@ public class StubSchemaRuleAccess implements SchemaRuleAccess
 
     @Override
     public Iterator<ConstraintRule> constraintsGetAllIgnoreMalformed()
+    {
+        return null;
+    }
+
+    @Override
+    public SchemaRecordChangeTranslator getSchemaRecordChangeTranslator()
     {
         return null;
     }

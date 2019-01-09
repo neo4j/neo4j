@@ -26,6 +26,7 @@ import org.neo4j.internal.kernel.api.exceptions.schema.MalformedSchemaRuleExcept
 import org.neo4j.kernel.api.exceptions.schema.DuplicateSchemaRuleException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.impl.core.TokenHolders;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.SchemaRecordChangeTranslator;
 import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.ConstraintRule;
@@ -85,6 +86,8 @@ public interface SchemaRuleAccess
     ConstraintRule constraintsGetSingle( ConstraintDescriptor descriptor ) throws SchemaRuleNotFoundException, DuplicateSchemaRuleException;
 
     Iterator<ConstraintRule> constraintsGetAllIgnoreMalformed();
+
+    SchemaRecordChangeTranslator getSchemaRecordChangeTranslator();
 
     /**
      * Write the given schema rule at the location given by its persistent id, overwriting any data that might be at that location already.

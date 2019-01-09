@@ -29,6 +29,8 @@ import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.internal.kernel.api.exceptions.schema.MalformedSchemaRuleException;
 import org.neo4j.kernel.api.exceptions.schema.DuplicateSchemaRuleException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.LegacySchemaRecordChangeTranslator;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.SchemaRecordChangeTranslator;
 import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.store.record.ConstraintRule;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -142,6 +144,12 @@ public class SchemaStorage implements SchemaRuleAccess
     }
 
     @Override
+    public SchemaRecordChangeTranslator getSchemaRecordChangeTranslator()
+    {
+        return new LegacySchemaRecordChangeTranslator();
+    }
+
+    @Override
     public void writeSchemaRule( SchemaRule rule )
     {
         SchemaStore store = (SchemaStore) schemaStore;
@@ -160,7 +168,7 @@ public class SchemaStorage implements SchemaRuleAccess
         {
             try
             {
-                Collection<DynamicRecord> records = schemaStore.getRecords( id, RecordLoad.NORMAL );
+                Collection<DynamicRecord> records = schemaStore.getRecords( id, RecordLoad.NORMAL, false );
                 record.setInUse( false );
                 schemaStore.updateRecord( record );
                 for ( DynamicRecord dynamicRecord : records )
