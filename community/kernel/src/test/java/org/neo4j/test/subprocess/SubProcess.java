@@ -477,7 +477,7 @@ public abstract class SubProcess<T, P> implements Serializable
 
         Dispatcher get( @SuppressWarnings( "hiding" ) Process process )
         {
-            while ( dispatcher == null )
+            while ( dispatcher == null && process.isAlive() )
             {
                 try
                 {
@@ -487,15 +487,6 @@ public abstract class SubProcess<T, P> implements Serializable
                 {
                     Thread.currentThread().interrupt();
                 }
-                try
-                {
-                    process.exitValue();
-                }
-                catch ( IllegalThreadStateException e )
-                {
-                    continue;
-                }
-                return null;
             }
             return dispatcher;
         }
