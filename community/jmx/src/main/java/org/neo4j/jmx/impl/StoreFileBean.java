@@ -20,8 +20,7 @@
 package org.neo4j.jmx.impl;
 
 import java.io.File;
-import java.io.IOException;
-import javax.management.NotCompliantMBeanException;
+import java.time.Clock;
 
 import org.neo4j.helpers.Service;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -32,6 +31,8 @@ import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 
+import static org.neo4j.jmx.impl.StoreSizeBean.resolveStorePath;
+import static org.neo4j.jmx.impl.ThrottlingBeanSnapshotProxy.newThrottlingBeanSnapshotProxy;
 import static org.neo4j.kernel.impl.store.StoreFactory.NODE_STORE_NAME;
 import static org.neo4j.kernel.impl.store.StoreFactory.PROPERTY_ARRAYS_STORE_NAME;
 import static org.neo4j.kernel.impl.store.StoreFactory.PROPERTY_STORE_NAME;
@@ -41,19 +42,137 @@ import static org.neo4j.kernel.impl.store.StoreFactory.RELATIONSHIP_STORE_NAME;
 @Service.Implementation( ManagementBeanProvider.class )
 public final class StoreFileBean extends ManagementBeanProvider
 {
-    @SuppressWarnings( "WeakerAccess" ) // Bean needs public constructor
+    private static final long UPDATE_INTERVAL = 60000;
+    private static final StoreFile NO_STORE_FILE = new StoreFile()
+    {
+        @Override
+        public long getLogicalLogSize()
+        {
+            return 0;
+        }
+
+        @Override
+        public long getTotalStoreSize()
+        {
+            return 0;
+        }
+
+        @Override
+        public long getNodeStoreSize()
+        {
+            return 0;
+        }
+
+        @Override
+        public long getRelationshipStoreSize()
+        {
+            return 0;
+        }
+
+        @Override
+        public long getPropertyStoreSize()
+        {
+            return 0;
+        }
+
+        @Override
+        public long getStringStoreSize()
+        {
+            return 0;
+        }
+
+        @Override
+        public long getArrayStoreSize()
+        {
+            return 0;
+        }
+    };
+
     public StoreFileBean()
     {
         super( StoreFile.class );
     }
 
     @Override
-    protected Neo4jMBean createMBean( ManagementData management ) throws NotCompliantMBeanException
+    protected Neo4jMBean createMBean( ManagementData management )
     {
-        return new StoreFileImpl( management );
+        final StoreFileMBean bean = new StoreFileMBean( management );
+        final DataSourceManager dataSourceManager = management.resolveDependency( DataSourceManager.class );
+        dataSourceManager.addListener( bean );
+        return bean;
     }
 
-    static class StoreFileImpl extends Neo4jMBean implements StoreFile
+    static class StoreFileMBean extends Neo4jMBean implements StoreFile, DataSourceManager.Listener
+    {
+        private final FileSystemAbstraction fs;
+        private final File storePath;
+        private volatile StoreFile delegate = NO_STORE_FILE;
+
+        StoreFileMBean( ManagementData management )
+        {
+            super( management, false );
+            this.fs = management.getKernelData().getFilesystemAbstraction();
+            this.storePath = resolveStorePath( management );
+        }
+
+        @Override
+        public void registered( NeoStoreDataSource ds )
+        {
+            final LogFiles logFiles = ds.getDependencyResolver().resolveDependency( LogFiles.class );
+            final StoreFileImpl dataProvider = new StoreFileImpl( fs, storePath, logFiles );
+            this.delegate = newThrottlingBeanSnapshotProxy( StoreFile.class, dataProvider, UPDATE_INTERVAL, Clock.systemUTC() );
+        }
+
+        @Override
+        public void unregistered( NeoStoreDataSource ds )
+        {
+            this.delegate = NO_STORE_FILE;
+        }
+
+        @Override
+        public long getLogicalLogSize()
+        {
+            return delegate.getLogicalLogSize();
+        }
+
+        @Override
+        public long getTotalStoreSize()
+        {
+            return delegate.getTotalStoreSize();
+        }
+
+        @Override
+        public long getNodeStoreSize()
+        {
+            return delegate.getNodeStoreSize();
+        }
+
+        @Override
+        public long getRelationshipStoreSize()
+        {
+            return delegate.getRelationshipStoreSize();
+        }
+
+        @Override
+        public long getPropertyStoreSize()
+        {
+            return delegate.getPropertyStoreSize();
+        }
+
+        @Override
+        public long getStringStoreSize()
+        {
+            return delegate.getStringStoreSize();
+        }
+
+        @Override
+        public long getArrayStoreSize()
+        {
+            return delegate.getArrayStoreSize();
+        }
+    }
+
+    static class StoreFileImpl implements StoreFile
     {
         private static final String NODE_STORE = MetaDataStore.DEFAULT_NAME + NODE_STORE_NAME;
         private static final String RELATIONSHIP_STORE = MetaDataStore.DEFAULT_NAME +  RELATIONSHIP_STORE_NAME;
@@ -61,50 +180,15 @@ public final class StoreFileBean extends ManagementBeanProvider
         private static final String ARRAY_STORE = MetaDataStore.DEFAULT_NAME + PROPERTY_ARRAYS_STORE_NAME;
         private static final String STRING_STORE = MetaDataStore.DEFAULT_NAME + PROPERTY_STRINGS_STORE_NAME;
 
-        private File storePath;
-        private LogFiles logFiles;
-        private FileSystemAbstraction fs;
+        private final File storePath;
+        private final LogFiles logFiles;
+        private final FileSystemAbstraction fs;
 
-        StoreFileImpl( ManagementData management ) throws NotCompliantMBeanException
+        StoreFileImpl( FileSystemAbstraction fs, File storePath, LogFiles logFiles )
         {
-            super( management );
-
-            fs = management.getKernelData().getFilesystemAbstraction();
-
-            DataSourceManager dataSourceManager = management.resolveDependency( DataSourceManager.class );
-            dataSourceManager.addListener( new DataSourceManager.Listener()
-            {
-                @Override
-                public void registered( NeoStoreDataSource ds )
-                {
-                    logFiles = resolveDependency( ds, LogFiles.class );
-                    storePath = resolvePath( ds );
-                }
-
-                private <T> T resolveDependency( NeoStoreDataSource ds, Class<T> clazz )
-                {
-                    return ds.getDependencyResolver().resolveDependency( clazz );
-                }
-
-                @Override
-                public void unregistered( NeoStoreDataSource ds )
-                {
-                    logFiles = null;
-                    storePath = null;
-                }
-
-                private File resolvePath( NeoStoreDataSource ds )
-                {
-                    try
-                    {
-                        return ds.getStoreDir().getCanonicalFile().getAbsoluteFile();
-                    }
-                    catch ( IOException e )
-                    {
-                        return ds.getStoreDir().getAbsoluteFile();
-                    }
-                }
-            } );
+            this.fs = fs;
+            this.storePath = storePath;
+            this.logFiles = logFiles;
         }
 
         @Override

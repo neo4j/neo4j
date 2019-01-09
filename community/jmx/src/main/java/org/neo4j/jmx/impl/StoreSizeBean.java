@@ -257,18 +257,18 @@ public final class StoreSizeBean extends ManagementBeanProvider
         {
             return delegate.getTotalStoreSize();
         }
+    }
 
-        private static File resolveStorePath( ManagementData management )
+    static File resolveStorePath( ManagementData management )
+    {
+        File storeDir = management.getKernelData().getStoreDir();
+        try
         {
-            File storeDir = management.getKernelData().getStoreDir();
-            try
-            {
-                return storeDir.getCanonicalFile().getAbsoluteFile();
-            }
-            catch ( IOException e )
-            {
-                return storeDir.getAbsoluteFile();
-            }
+            return storeDir.getCanonicalFile().getAbsoluteFile();
+        }
+        catch ( IOException e )
+        {
+            return storeDir.getAbsoluteFile();
         }
     }
 
