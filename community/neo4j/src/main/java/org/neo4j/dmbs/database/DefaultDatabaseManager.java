@@ -19,6 +19,8 @@
  */
 package org.neo4j.dmbs.database;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 
 import org.neo4j.dbms.database.DatabaseManager;
@@ -41,6 +43,7 @@ public final class DefaultDatabaseManager extends LifecycleAdapter implements Da
     private final Procedures procedures;
     private final Logger log;
     private final GraphDatabaseFacade graphDatabaseFacade;
+    private String databaseName;
 
     public DefaultDatabaseManager( PlatformModule platform, AbstractEditionModule edition, Procedures procedures,
             Logger log, GraphDatabaseFacade graphDatabaseFacade )
@@ -68,6 +71,7 @@ public final class DefaultDatabaseManager extends LifecycleAdapter implements Da
         graphDatabaseFacade.init( spi, edition.getThreadToTransactionBridge(), platform.config, dataSource.neoStoreDataSource.getTokenHolders() );
         platform.dataSourceManager.register( dataSource.neoStoreDataSource );
         database = graphDatabaseFacade;
+        this.databaseName = databaseName;
         return database;
     }
 
@@ -90,5 +94,11 @@ public final class DefaultDatabaseManager extends LifecycleAdapter implements Da
             log.log( "Shutting down '%s' database.", database.databaseLayout().getDatabaseName() );
             database.shutdown();
         }
+    }
+
+    @Override
+    public List<String> listDatabases()
+    {
+        return databaseName == null ? Collections.emptyList() : Collections.singletonList( databaseName );
     }
 }

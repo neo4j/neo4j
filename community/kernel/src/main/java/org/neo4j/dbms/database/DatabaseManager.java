@@ -19,6 +19,7 @@
  */
 package org.neo4j.dbms.database;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
@@ -36,4 +37,10 @@ public interface DatabaseManager extends Lifecycle
      * @param name database name to shutdown
      */
     void shutdownDatabase( String name );
+
+    /**
+     * Return sorted list of known database names
+     * @return sorted list of known database names
+     */
+    List<String> listDatabases();
 }
