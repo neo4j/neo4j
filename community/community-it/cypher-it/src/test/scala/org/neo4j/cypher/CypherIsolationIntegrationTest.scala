@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher
 
+import java.util.concurrent.{Callable, Executors}
+
 import org.neo4j.graphdb.Node
 
 class CypherIsolationIntegrationTest extends ExecutionEngineFunSuite {
@@ -36,25 +38,28 @@ class CypherIsolationIntegrationTest extends ExecutionEngineFunSuite {
     val locked2 = updateAndCount(n, "z", "MATCH (n) SET n._LOCK_ = true SET n.z = n.z + 1 REMOVE n._LOCK_")
 
     // Then
+    unlocked should equal(THREADS * UPDATES)
     locked1 should equal(THREADS * UPDATES)
     locked2 should equal(THREADS * UPDATES)
-
-    unlocked should equal(locked1)
   }
 
   def updateAndCount(node: Node, property: String, query: String): Long = {
 
-    val threads = (1 to THREADS) map { x =>
-      new Thread(new Runnable {
-        override def run() =
-          (1 to UPDATES) foreach { x =>
+    val executor = Executors.newFixedThreadPool(THREADS)
+
+    val futures = (1 to THREADS) map { x =>
+      executor.submit(new Callable[Unit] {
+        override def call(): Unit = {
+          for (x <- 1 to UPDATES) {
             execute(query)
           }
-      })
-    }
+        }})
+      }
 
-    threads.foreach(_.start())
-    threads.foreach(_.join())
+    try {
+      futures.foreach(_.get())
+    } finally executor.shutdown()
+
     graph.inTx {
       node.getProperty(property).asInstanceOf[Long]
     }
