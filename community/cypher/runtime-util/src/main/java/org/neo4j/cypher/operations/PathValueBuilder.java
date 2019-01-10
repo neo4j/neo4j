@@ -216,7 +216,7 @@ public class PathValueBuilder
         for ( i = 0; i < relationships.size() - 1; i++ )
         {
             AnyValue value = relationships.value( i );
-            if ( notNoValue( value ))
+            if ( notNoValue( value ) )
             {
                 RelationshipValue relationship = (RelationshipValue) value;
                 nodes.add( relationship.startNode() );
@@ -253,7 +253,7 @@ public class PathValueBuilder
     {
         for ( AnyValue value : relationships )
         {
-            if ( notNoValue( value ))
+            if ( notNoValue( value ) )
             {
                 //we know these relationships have already loaded start and end relationship
                 //so we should not use CypherFunctions::[start,end]Node to look them up
@@ -295,7 +295,7 @@ public class PathValueBuilder
         for ( i = 0; i < relationships.size() - 1; i++ )
         {
             AnyValue value = relationships.value( i );
-            if ( notNoValue( value ))
+            if ( notNoValue( value ) )
             {
                 //we know these relationships have already loaded start and end relationship
                 //so we should not use CypherFunctions::[start,end]Node to look them up
@@ -334,7 +334,7 @@ public class PathValueBuilder
     {
         for ( AnyValue value : relationships )
         {
-            if ( notNoValue( value ))
+            if ( notNoValue( value ) )
             {
                 //we know these relationships have already loaded start and end relationship
                 //so we should not use CypherFunctions::[start,end]Node to look them up
