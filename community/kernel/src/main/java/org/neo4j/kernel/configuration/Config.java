@@ -747,7 +747,7 @@ public class Config implements Configuration
                 } ) );
     }
 
-    private String obsfucateIfSecret( Map.Entry<String,String> param )
+    public String obsfucateIfSecret( Map.Entry<String,String> param )
     {
         return obsfucateIfSecret( param.getKey(), param.getValue() );
     }
