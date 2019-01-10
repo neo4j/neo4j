@@ -21,7 +21,6 @@ package org.neo4j.server.plugins;
 
 import org.hamcrest.CoreMatchers;
 import org.hamcrest.Description;
-import org.hamcrest.Factory;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
 
@@ -167,7 +166,6 @@ public class PluginFunctionalTestHelper
             this.type = type;
         }
 
-        @Factory
         public static Matcher<String> endsWith( String pattern )
         {
             return new RegExp( pattern, MatchType.end );

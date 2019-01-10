@@ -78,7 +78,7 @@ the relevant Commercial Agreement.
         </dependency>
         <dependency>
             <groupId>org.hamcrest</groupId>
-            <artifactId>hamcrest-core</artifactId>
+            <artifactId>hamcrest</artifactId>
         </dependency>
 
         <dependency>

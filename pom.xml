@@ -804,7 +804,7 @@
           <dependency>
             <groupId>com.puppycrawl.tools</groupId>
             <artifactId>checkstyle</artifactId>
-            <version>8.14</version>
+            <version>8.16</version>
           </dependency>
           <dependency>
             <groupId>org.neo4j.build</groupId>
@@ -1071,7 +1071,7 @@
       <dependency>
         <groupId>org.neo4j.driver</groupId>
         <artifactId>neo4j-java-driver</artifactId>
-        <version>1.7.0</version>
+        <version>1.7.2</version>
         <scope>test</scope>
       </dependency>
       <dependency>
@@ -1083,7 +1083,7 @@
       <dependency>
         <groupId>com.google.guava</groupId>
         <artifactId>guava-testlib</artifactId>
-        <version>27.0-jre</version>
+        <version>27.0.1-jre</version>
         <scope>test</scope>
       </dependency>
 
@@ -1138,21 +1138,21 @@
 
       <dependency>
           <groupId>org.hamcrest</groupId>
-          <artifactId>hamcrest-core</artifactId>
-          <version>1.3</version>
+          <artifactId>hamcrest</artifactId>
+          <version>2.1</version>
           <scope>test</scope>
       </dependency>
       <dependency>
-          <groupId>org.hamcrest</groupId>
-          <artifactId>hamcrest-library</artifactId>
-          <version>1.3</version>
-          <scope>test</scope>
-      </dependency>
-      <dependency>
-        <groupId>org.hamcrest</groupId>
-        <artifactId>hamcrest-all</artifactId>
-        <version>1.3</version>
+        <groupId>co.unruly</groupId>
+        <artifactId>java-8-matchers</artifactId>
+        <version>1.6</version>
         <scope>test</scope>
+        <exclusions>
+          <exclusion>
+            <groupId>org.hamcrest</groupId>
+            <artifactId>*</artifactId>
+          </exclusion>
+        </exclusions>
       </dependency>
 
       <dependency>
@@ -1481,6 +1481,12 @@
         <artifactId>junit</artifactId>
         <version>4.12</version>
         <scope>provided</scope>
+        <exclusions>
+          <exclusion>
+            <groupId>org.hamcrest</groupId>
+            <artifactId>*</artifactId>
+          </exclusion>
+        </exclusions>
       </dependency>
       <dependency>
         <groupId>com.google.testing.compile</groupId>
