@@ -168,10 +168,14 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequen
      *
      * @param firstId record id of the first record to start loading from.
      * @param mode {@link RecordLoad} mode.
+     * @param guardForCycles Set to {@code true} if we need to take extra care in guarding for cycles in the chain.
+     * When a cycle is found, a {@link RecordChainCycleDetectedException} will be thrown.
+     * If {@code false}, then chain cycles will likely end up causing an {@link OutOfMemoryError}.
+     * A cycle would only occur if the store is inconsistent, though.
      * @return {@link Collection} of records in the loaded chain.
      * @throws InvalidRecordException if some record not in use and the {@code mode} is allows for throwing.
      */
-    List<RECORD> getRecords( long firstId, RecordLoad mode ) throws InvalidRecordException;
+    List<RECORD> getRecords( long firstId, RecordLoad mode, boolean guardForCycles ) throws InvalidRecordException;
 
     /**
      * Returns another record id which the given {@code record} references, if it exists in a chain of records.
@@ -322,9 +326,9 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequen
         }
 
         @Override
-        public List<R> getRecords( long firstId, RecordLoad mode ) throws InvalidRecordException
+        public List<R> getRecords( long firstId, RecordLoad mode, boolean guardForCycles ) throws InvalidRecordException
         {
-            return actual.getRecords( firstId, mode );
+            return actual.getRecords( firstId, mode, guardForCycles );
         }
 
         @Override

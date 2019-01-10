@@ -29,6 +29,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.locks.LockSupport;
 import java.util.function.BooleanSupplier;
 import java.util.function.IntPredicate;
+import java.util.function.LongPredicate;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import javax.annotation.Nonnull;
@@ -43,6 +44,7 @@ public class Predicates
 {
     public static final IntPredicate ALWAYS_TRUE_INT = v -> true;
     public static final IntPredicate ALWAYS_FALSE_INT = v -> false;
+    public static final LongPredicate ALWAYS_FALSE_LONG = v -> false;
 
     private static final int DEFAULT_POLL_INTERVAL = 20;
 

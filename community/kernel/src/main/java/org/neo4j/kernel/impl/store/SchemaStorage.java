@@ -57,7 +57,7 @@ public class SchemaStorage implements SchemaRuleAccess
         Collection<DynamicRecord> records;
         try
         {
-            records = schemaStore.getRecords( ruleId, RecordLoad.NORMAL );
+            records = schemaStore.getRecords( ruleId, RecordLoad.NORMAL, false );
         }
         catch ( Exception e )
         {
@@ -176,7 +176,7 @@ public class SchemaStorage implements SchemaRuleAccess
                             Collection<DynamicRecord> records;
                             try
                             {
-                                records = schemaStore.getRecords( id, RecordLoad.NORMAL );
+                                records = schemaStore.getRecords( id, RecordLoad.NORMAL, false );
                             }
                             catch ( InvalidRecordException e )
                             {

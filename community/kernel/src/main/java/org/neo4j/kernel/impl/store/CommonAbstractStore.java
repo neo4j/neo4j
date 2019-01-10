@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.impl.store;
 
+import org.eclipse.collections.api.set.primitive.MutableLongSet;
+import org.eclipse.collections.impl.factory.primitive.LongSets;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.NoSuchFileException;
@@ -27,7 +30,10 @@ import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.LongConsumer;
+import java.util.function.LongPredicate;
 
+import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.pagecache.PageCache;
@@ -1068,8 +1074,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
         }
     }
 
-    private void readRecordFromPage( long id, RECORD record, RecordLoad mode, PageCursor cursor )
-            throws IOException
+    private void readRecordFromPage( long id, RECORD record, RecordLoad mode, PageCursor cursor ) throws IOException
     {
         cursor.mark();
         do
@@ -1149,12 +1154,13 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
     }
 
     @Override
-    public List<RECORD> getRecords( long firstId, RecordLoad mode )
+    public List<RECORD> getRecords( long firstId, RecordLoad mode, boolean guardForCycles )
     {
         if ( Record.NULL_REFERENCE.is( firstId ) )
         {
             return Collections.emptyList();
         }
+        LongPredicate cycleGuard = guardForCycles ? createRecordCycleGuard() : Predicates.ALWAYS_FALSE_LONG;
 
         List<RECORD> records = new ArrayList<>();
         long id = firstId;
@@ -1164,6 +1170,10 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
             do
             {
                 record = newRecord();
+                if ( cycleGuard.test( id ) )
+                {
+                    throw newCycleDetectedException( firstId, id, record );
+                }
                 getRecordByCursor( id, record, mode, cursor );
                 // Even unused records gets added and returned
                 records.add( record );
@@ -1172,6 +1182,18 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
             while ( !Record.NULL_REFERENCE.is( id ) );
         }
         return records;
+    }
+
+    private LongPredicate createRecordCycleGuard()
+    {
+        MutableLongSet observedSet = LongSets.mutable.empty();
+        return id -> !observedSet.add( id );
+    }
+
+    private RecordChainCycleDetectedException newCycleDetectedException( long firstId, long conflictingId, RECORD record )
+    {
+        return new RecordChainCycleDetectedException( "Cycle detected in " + record.getClass().getSimpleName() + " chain starting at id " +
+                firstId + ", and finding id " + conflictingId + " twice in the chain." );
     }
 
     private void verifyAfterNotRead( RECORD record, RecordLoad mode )

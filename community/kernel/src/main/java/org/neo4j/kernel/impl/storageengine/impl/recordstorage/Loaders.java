@@ -277,7 +277,7 @@ public class Loaders
             @Override
             public SchemaRecord load( long key, SchemaRule additionalData )
             {
-                return new SchemaRecord( store.getRecords( key, RecordLoad.NORMAL ) );
+                return new SchemaRecord( store.getRecords( key, RecordLoad.NORMAL, false ) );
             }
 
             @Override

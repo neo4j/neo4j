@@ -160,7 +160,9 @@ public abstract class TokenStore<RECORD extends TokenRecord>
             return;
         }
 
-        record.addNameRecords( nameStore.getRecords( record.getNameId(), NORMAL ) );
+        // Guard for cycles in the name chain, since this might be called by the consistency checker on an inconsistent store.
+        // This will throw an exception if there's a cycle, and we'll just ignore those tokens at this point.
+        record.addNameRecords( nameStore.getRecords( record.getNameId(), NORMAL, true ) );
     }
 
     public String getStringFor( RECORD nameRecord )
@@ -175,7 +177,6 @@ public abstract class TokenStore<RECORD extends TokenRecord>
             if ( record.inUse() && record.getId() == recordToFind )
             {
                 recordToFind = (int) record.getNextBlock();
-                // TODO: optimize here, high chance next is right one
                 relevantRecords.add( record );
                 records = nameRecord.getNameRecords().iterator();
             }

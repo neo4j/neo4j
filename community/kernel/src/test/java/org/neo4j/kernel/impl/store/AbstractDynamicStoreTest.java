@@ -92,7 +92,7 @@ public class AbstractDynamicStoreTest
             second.setNextBlock( third.getId() );
             store.updateRecord( second );
 
-            Iterator<DynamicRecord> records = store.getRecords( 1, NORMAL ).iterator();
+            Iterator<DynamicRecord> records = store.getRecords( 1, NORMAL, false ).iterator();
             assertTrue( records.hasNext() );
             assertEquals( first, records.next() );
             assertTrue( records.hasNext() );
@@ -120,7 +120,7 @@ public class AbstractDynamicStoreTest
             second.setInUse( false );
             store.updateRecord( second );
 
-            Iterator<DynamicRecord> records = store.getRecords( 1, FORCE ).iterator();
+            Iterator<DynamicRecord> records = store.getRecords( 1, FORCE, false ).iterator();
             assertTrue( records.hasNext() );
             assertEquals( first, records.next() );
             assertTrue( records.hasNext() );
