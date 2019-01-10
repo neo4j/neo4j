@@ -215,7 +215,13 @@ public class PathValueBuilder
         int i;
         for ( i = 0; i < relationships.size() - 1; i++ )
         {
-            addIncoming( relationships.value( i ) );
+            AnyValue value = relationships.value( i );
+            if ( notNoValue( value ))
+            {
+                RelationshipValue relationship = (RelationshipValue) value;
+                nodes.add( relationship.startNode() );
+                rels.add( relationship );
+            }
         }
         AnyValue last = relationships.value( i );
         if ( notNoValue( last ) )
@@ -245,9 +251,16 @@ public class PathValueBuilder
      */
     public void addMultipleIncoming( ListValue relationships )
     {
-        for ( AnyValue rel : relationships )
+        for ( AnyValue value : relationships )
         {
-            addIncoming( rel );
+            if ( notNoValue( value ))
+            {
+                //we know these relationships have already loaded start and end relationship
+                //so we should not use CypherFunctions::[start,end]Node to look them up
+                RelationshipValue relationship = (RelationshipValue) value;
+                nodes.add( relationship.startNode() );
+                rels.add( relationship );
+            }
         }
     }
 
@@ -281,7 +294,15 @@ public class PathValueBuilder
         int i;
         for ( i = 0; i < relationships.size() - 1; i++ )
         {
-            addOutgoing( relationships.value( i ) );
+            AnyValue value = relationships.value( i );
+            if ( notNoValue( value ))
+            {
+                //we know these relationships have already loaded start and end relationship
+                //so we should not use CypherFunctions::[start,end]Node to look them up
+                RelationshipValue relationship = (RelationshipValue) value;
+                nodes.add( relationship.endNode() );
+                rels.add( relationship );
+            }
         }
         AnyValue last = relationships.value( i );
         if ( notNoValue( last ) )
@@ -311,9 +332,16 @@ public class PathValueBuilder
      */
     public void addMultipleOutgoing( ListValue relationships )
     {
-        for ( AnyValue rel : relationships )
+        for ( AnyValue value : relationships )
         {
-            addOutgoing( rel );
+            if ( notNoValue( value ))
+            {
+                //we know these relationships have already loaded start and end relationship
+                //so we should not use CypherFunctions::[start,end]Node to look them up
+                RelationshipValue relationship = (RelationshipValue) value;
+                nodes.add( relationship.endNode() );
+                rels.add( relationship );
+            }
         }
     }
 
@@ -355,14 +383,26 @@ public class PathValueBuilder
         {
             for ( i = 0; i < relationships.size() - 1; i++ )
             {
-                addUndirected( relationships.value( i ) );
+                AnyValue value = relationships.value( i );
+                if ( notNoValue( value ) )
+                {
+                    //we know these relationships have already loaded start and end relationship
+                    //so we should not use CypherFunctions::[start,end]Node to look them up
+                    addUndirectedWhenRelationshipsAreFullyLoaded( (RelationshipValue) value );
+                }
             }
         }
         else
         {
             for ( i = relationships.size() - 1; i > 0; i-- )
             {
-                addUndirected( relationships.value( i ) );
+                AnyValue value = relationships.value( i );
+                if ( notNoValue( value ) )
+                {
+                    //we know these relationships have already loaded start and end relationship
+                    //so we should not use CypherFunctions::[start,end]Node to look them up
+                    addUndirectedWhenRelationshipsAreFullyLoaded( (RelationshipValue) relationships.value( i ) );
+                }
             }
         }
         AnyValue last = relationships.value( i );
@@ -406,9 +446,12 @@ public class PathValueBuilder
 
         if ( correctDirection )
         {
-            for ( AnyValue rel : relationships )
+            for ( AnyValue value : relationships )
             {
-                addUndirected( rel );
+                if ( notNoValue( value ) )
+                {
+                    addUndirectedWhenRelationshipsAreFullyLoaded( (RelationshipValue) value );
+                }
             }
         }
         else
@@ -416,7 +459,10 @@ public class PathValueBuilder
             ListValue reversed = relationships.reverse();
             for ( AnyValue rel : reversed )
             {
-                addUndirected( rel );
+                if ( notNoValue( rel ) )
+                {
+                    addUndirectedWhenRelationshipsAreFullyLoaded( (RelationshipValue) rel );
+                }
             }
         }
     }
@@ -428,6 +474,26 @@ public class PathValueBuilder
             seenNoValue = true;
         }
         return !seenNoValue;
+    }
+
+    /*
+     * If we know that relationship has loaded start and end node we can use this method instead
+     */
+    private void addUndirectedWhenRelationshipsAreFullyLoaded( RelationshipValue relationship )
+    {
+        long previous = nodes.get( nodes.size() - 1 ).id();
+        if ( previous == relationship.startNode().id() )
+        {
+            addOutgoing( relationship );
+        }
+        else if ( previous == relationship.endNode().id() )
+        {
+            addIncoming( relationship );
+        }
+        else
+        {
+            throw new IllegalArgumentException();
+        }
     }
 }
 
