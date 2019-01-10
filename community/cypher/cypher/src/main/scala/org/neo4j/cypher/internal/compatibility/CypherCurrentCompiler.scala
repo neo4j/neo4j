@@ -90,7 +90,6 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
                                                transactionalContext.kernelTransaction().schemaRead(),
                                                logicalPlanResult.plannerContext.clock,
                                                logicalPlanResult.plannerContext.debugOptions,
-                                               queryType == READ_ONLY,
                                                preParsedQuery.useCompiledExpressions)
 
     val logicalQuery = LogicalQuery(planState.logicalPlan,
@@ -105,7 +104,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
 
     new CypherExecutableQuery(
       logicalPlan,
-      runtimeContext.readOnly,
+      logicalQuery.readOnly,
       logicalPlanResult.logicalPlanState.planningAttributes.cardinalities,
       logicalPlanResult.logicalPlanState.planningAttributes.providedOrders,
       executionPlan4_0,

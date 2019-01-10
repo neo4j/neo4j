@@ -42,7 +42,7 @@ object InterpretedRuntime extends CypherRuntime[RuntimeContext] {
     val logicalPlan = query.logicalPlan
     val converters = new ExpressionConverters(CommunityExpressionConverter(context.tokenContext))
     val queryIndexes = new QueryIndexes(context.schemaRead)
-    val pipeMapper = InterpretedPipeMapper(context.readOnly, converters, context.tokenContext, queryIndexes)(query.semanticTable)
+    val pipeMapper = InterpretedPipeMapper(query.readOnly, converters, context.tokenContext, queryIndexes)(query.semanticTable)
     val pipeTreeBuilder = PipeTreeBuilder(pipeMapper)
     val logicalPlanWithConvertedNestedPlans = NestedPipeExpressions.build(pipeTreeBuilder, logicalPlan)
     val pipe = pipeTreeBuilder.build(logicalPlanWithConvertedNestedPlans)
@@ -50,7 +50,7 @@ object InterpretedRuntime extends CypherRuntime[RuntimeContext] {
     val columns = query.resultColumns
     val resultBuilderFactory = InterpretedExecutionResultBuilderFactory(pipe,
                                                                         queryIndexes,
-                                                                        context.readOnly,
+                                                                        query.readOnly,
                                                                         columns,
                                                                         logicalPlan,
                                                                         context.config.lenientCreateRelationship)
@@ -58,7 +58,7 @@ object InterpretedRuntime extends CypherRuntime[RuntimeContext] {
     new InterpretedExecutionPlan(periodicCommitInfo,
                                  resultBuilderFactory,
                                  InterpretedRuntimeName,
-                                 context.readOnly)
+                                 query.readOnly)
   }
 
   /**

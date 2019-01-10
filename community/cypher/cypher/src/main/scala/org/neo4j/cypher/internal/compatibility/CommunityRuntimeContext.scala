@@ -30,7 +30,6 @@ import org.neo4j.internal.kernel.api.SchemaRead
   */
 case class CommunityRuntimeContext(tokenContext: TokenContext,
                                    schemaRead: SchemaRead,
-                                   readOnly: Boolean,
                                    config: CypherPlannerConfiguration) extends RuntimeContext {
 
   override def compileExpressions: Boolean = false
@@ -41,8 +40,7 @@ case class CommunityRuntimeContextCreator(config: CypherPlannerConfiguration) ex
                       schemaRead: SchemaRead,
                       clock: Clock,
                       debugOptions: Set[String],
-                      readOnly: Boolean,
                       ignore: Boolean
                      ): RuntimeContext =
-    CommunityRuntimeContext(tokenContext, schemaRead, readOnly, config)
+    CommunityRuntimeContext(tokenContext, schemaRead, config)
 }

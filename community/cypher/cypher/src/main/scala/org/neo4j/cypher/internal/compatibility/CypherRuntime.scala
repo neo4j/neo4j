@@ -83,7 +83,6 @@ case class LogicalQuery(logicalPlan: LogicalPlan,
 abstract class RuntimeContext {
   def tokenContext: TokenContext
   def schemaRead: SchemaRead
-  def readOnly: Boolean
   def config: CypherPlannerConfiguration
   def compileExpressions: Boolean
 }
@@ -98,7 +97,6 @@ trait RuntimeContextCreator[CONTEXT <: RuntimeContext] {
              schemaRead: SchemaRead,
              clock: Clock,
              debugOptions: Set[String],
-             readOnly: Boolean,
              compileExpressions: Boolean
             ): CONTEXT
 }
