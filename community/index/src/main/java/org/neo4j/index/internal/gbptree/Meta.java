@@ -24,6 +24,7 @@ import java.io.IOException;
 import org.neo4j.index.internal.gbptree.TreeNodeSelector.Factory;
 import org.neo4j.io.pagecache.CursorException;
 import org.neo4j.io.pagecache.PageCursor;
+
 import static org.neo4j.index.internal.gbptree.PageCursorUtil.checkOutOfBounds;
 
 /**
@@ -198,7 +199,7 @@ class Meta
 
     private int allVersionsCombined()
     {
-        return formatIdentifier >>> SHIFT_FORMAT_IDENTIFIER | formatVersion >>> SHIFT_FORMAT_VERSION;
+        return formatIdentifier << SHIFT_FORMAT_IDENTIFIER | formatVersion << SHIFT_FORMAT_VERSION;
     }
 
     int getPageSize()
