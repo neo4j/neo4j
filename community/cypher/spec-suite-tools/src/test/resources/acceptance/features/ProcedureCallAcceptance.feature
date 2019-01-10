@@ -414,7 +414,7 @@ Feature: ProcedureCallAcceptance
     """
     CALL test.my.proc
     """
-    Then a ParameterMissing should be raised at compile time: MissingParameter
+    Then a ParameterMissing should be raised at runtime: MissingParameter
 
   Scenario: In-query call to procedure that has outputs fails if no outputs are yielded
     And there exists a procedure test.my.proc(in :: INTEGER?) :: (out :: INTEGER?):
