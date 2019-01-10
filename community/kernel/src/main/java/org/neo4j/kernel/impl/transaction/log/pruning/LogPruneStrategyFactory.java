@@ -25,6 +25,7 @@ import java.util.stream.LongStream;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.pruning.ThresholdConfigParser.ThresholdConfigValue;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.util.VisibleForTesting;
 
 import static java.util.concurrent.TimeUnit.DAYS;
@@ -67,8 +68,8 @@ public class LogPruneStrategyFactory
      *   <li>1k hours - For keeping last 1000 hours worth of log data</li>
      * </ul>
      */
-    public LogPruneStrategy strategyFromConfigValue( FileSystemAbstraction fileSystem, LogFiles logFiles,
-            Clock clock, String configValue )
+    LogPruneStrategy strategyFromConfigValue( FileSystemAbstraction fileSystem, LogFiles logFiles, LogProvider logProvider, Clock clock,
+            String configValue )
     {
         ThresholdConfigValue value = parse( configValue );
 
@@ -77,12 +78,12 @@ public class LogPruneStrategyFactory
             return NO_PRUNING;
         }
 
-        Threshold thresholdToUse = getThresholdByType( fileSystem, clock, value, configValue );
-        return new ThresholdBasedPruneStrategy( fileSystem, logFiles, thresholdToUse );
+        Threshold thresholdToUse = getThresholdByType( fileSystem, logProvider, clock, value, configValue );
+        return new ThresholdBasedPruneStrategy( logFiles, thresholdToUse );
     }
 
     @VisibleForTesting
-    static Threshold getThresholdByType( FileSystemAbstraction fileSystem, Clock clock, ThresholdConfigValue value,
+    static Threshold getThresholdByType( FileSystemAbstraction fileSystem, LogProvider logProvider, Clock clock, ThresholdConfigValue value,
             String originalConfigValue )
     {
         long thresholdValue = value.value;
@@ -95,11 +96,11 @@ public class LogPruneStrategyFactory
                 return new FileSizeThreshold( fileSystem, thresholdValue );
             case "txs":
             case "entries": // txs and entries are synonyms
-                return new EntryCountThreshold( thresholdValue );
+                return new EntryCountThreshold( logProvider, thresholdValue );
             case "hours":
-                return new EntryTimespanThreshold( clock, HOURS, thresholdValue );
+                return new EntryTimespanThreshold( logProvider, clock, HOURS, thresholdValue );
             case "days":
-                return new EntryTimespanThreshold( clock, DAYS, thresholdValue );
+                return new EntryTimespanThreshold( logProvider, clock, DAYS, thresholdValue );
             default:
                 throw new IllegalArgumentException( "Invalid log pruning configuration value '" + originalConfigValue +
                         "'. Invalid type '" + value.type + "', valid are files, size, txs, entries, hours, days." );

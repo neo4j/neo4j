@@ -23,9 +23,21 @@ import java.io.File;
 
 import org.neo4j.kernel.impl.transaction.log.LogFileInformation;
 
+/**
+ * Determines transaction log pruning point bellow which it should be safe to prune log files.
+ */
 public interface Threshold
 {
     void init();
 
+    /**
+     * Check if threshold is reached for provided version of transaction log file.
+     * Even if file can't be read or some condition can't be evaluated threshold should not throw exception and make any assumptions about presence or
+     * absence of file, correctness of information, etc. Instead threshold should not be reached as result.
+     * @param file transaction log file
+     * @param version version of log file
+     * @param source meta information about particular transaction file
+     * @return true if reached, false otherwise
+     */
     boolean reached( File file, long version, LogFileInformation source );
 }

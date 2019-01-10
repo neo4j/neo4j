@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.impl.transaction.log.pruning;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 
 import java.io.File;
@@ -33,8 +33,8 @@ import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -44,7 +44,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
-public class LogPruningTest
+class LogPruningTest
 {
     private final Config config = Config.defaults();
     private FileSystemAbstraction fs;
@@ -53,8 +53,8 @@ public class LogPruningTest
     private Clock clock;
     private LogPruneStrategyFactory factory;
 
-    @Before
-    public void setUp()
+    @BeforeEach
+    void setUp()
     {
         fs = mock( FileSystemAbstraction.class );
         logFiles = mock( LogFiles.class );
@@ -66,9 +66,9 @@ public class LogPruningTest
     }
 
     @Test
-    public void mustDeleteLogFilesThatCanBePruned()
+    void mustDeleteLogFilesThatCanBePruned()
     {
-        when( factory.strategyFromConfigValue( eq( fs ), eq( logFiles ), eq( clock ), anyString() ) )
+        when( factory.strategyFromConfigValue( eq( fs ), eq( logFiles ), eq( logProvider ), eq( clock ), anyString() ) )
                 .thenReturn( upTo -> LongStream.range( 3, upTo ) );
         LogPruning pruning = new LogPruningImpl( fs, logFiles,logProvider,factory, clock, config );
         pruning.pruneLogs( 5 );
@@ -80,9 +80,9 @@ public class LogPruningTest
     }
 
     @Test
-    public void mustHaveLogFilesToPruneIfStrategyFindsFiles()
+    void mustHaveLogFilesToPruneIfStrategyFindsFiles()
     {
-        when( factory.strategyFromConfigValue( eq( fs ), eq( logFiles ), eq( clock ), anyString() ) )
+        when( factory.strategyFromConfigValue( eq( fs ), eq( logFiles ), eq( logProvider ), eq( clock ), anyString() ) )
                 .thenReturn(  upTo -> LongStream.range( 3, upTo ) );
         when( logFiles.getHighestLogVersion() ).thenReturn( 4L );
         LogPruning pruning = new LogPruningImpl( fs, logFiles, logProvider, factory, clock, config );
@@ -90,9 +90,9 @@ public class LogPruningTest
     }
 
     @Test
-    public void mustNotHaveLogsFilesToPruneIfStrategyFindsNoFiles()
+    void mustNotHaveLogsFilesToPruneIfStrategyFindsNoFiles()
     {
-        when( factory.strategyFromConfigValue( eq( fs ), eq( logFiles ), eq( clock ), anyString() ) )
+        when( factory.strategyFromConfigValue( eq( fs ), eq( logFiles ), eq( logProvider ), eq( clock ), anyString() ) )
                 .thenReturn(  x -> LongStream.empty() );
         LogPruning pruning = new LogPruningImpl( fs, logFiles, logProvider, factory, clock, config );
         assertFalse( pruning.mightHaveLogsToPrune() );

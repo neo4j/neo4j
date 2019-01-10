@@ -19,51 +19,44 @@
  */
 package org.neo4j.kernel.impl.transaction.log.pruning;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.neo4j.kernel.impl.transaction.log.pruning.ThresholdConfigParser.parse;
 
-public class ThresholdConfigValueTest
+class ThresholdConfigValueTest
 {
     @Test
-    public void shouldParseCorrectly()
+    void shouldParseCorrectly()
     {
-        ThresholdConfigParser.ThresholdConfigValue value = ThresholdConfigParser.parse( "25 files" );
+        ThresholdConfigParser.ThresholdConfigValue value = parse( "25 files" );
         assertEquals( "files", value.type );
         assertEquals( 25, value.value );
 
-        value = ThresholdConfigParser.parse( "4g size" );
+        value = parse( "4g size" );
         assertEquals( "size", value.type );
         assertEquals( 1L << 32, value.value );
     }
 
     @Test
-    public void shouldThrowExceptionOnUnknownType()
+    void shouldThrowExceptionOnUnknownType()
     {
-        try
-        {
-            ThresholdConfigParser.parse( "more than one spaces is invalid" );
-            fail("Should not parse unknown types");
-        }
-        catch ( IllegalArgumentException e )
-        {
-            // good
-        }
+        assertThrows( IllegalArgumentException.class, () -> parse( "more than one spaces is invalid" ) );
     }
 
     @Test
-    public void shouldReturnNoPruningForTrue()
+    void shouldReturnNoPruningForTrue()
     {
-        ThresholdConfigParser.ThresholdConfigValue value = ThresholdConfigParser.parse( "true" );
+        ThresholdConfigParser.ThresholdConfigValue value = parse( "true" );
         assertSame( ThresholdConfigParser.ThresholdConfigValue.NO_PRUNING, value );
     }
 
     @Test
-    public void shouldReturnKeepOneEntryForFalse()
+    void shouldReturnKeepOneEntryForFalse()
     {
-        ThresholdConfigParser.ThresholdConfigValue value = ThresholdConfigParser.parse( "false" );
+        ThresholdConfigParser.ThresholdConfigValue value = parse( "false" );
         assertEquals( "entries", value.type );
         assertEquals( 1, value.value );
     }

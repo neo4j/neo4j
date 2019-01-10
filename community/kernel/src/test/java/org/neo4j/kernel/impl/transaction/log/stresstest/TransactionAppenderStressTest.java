@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.impl.transaction.log.stresstest;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.io.IOException;
@@ -43,19 +43,22 @@ import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.impl.transaction.log.stresstest.workload.Runner;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.function.Suppliers.untilTimeExpired;
 
+@ExtendWith( TestDirectoryExtension.class )
 public class TransactionAppenderStressTest
 {
-    @Rule
-    public final TestDirectory directory = TestDirectory.testDirectory( );
+    @Inject
+    private TestDirectory directory;
 
     @Test
-    public void concurrentTransactionAppendingTest() throws Exception
+    void concurrentTransactionAppendingTest() throws Exception
     {
         int threads = 10;
         Callable<Long> runner = new Builder()

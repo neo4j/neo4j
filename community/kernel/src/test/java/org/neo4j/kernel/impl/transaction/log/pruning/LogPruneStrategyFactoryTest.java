@@ -19,38 +19,40 @@
  */
 package org.neo4j.kernel.impl.transaction.log.pruning;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import java.time.Clock;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.log.pruning.ThresholdConfigParser.ThresholdConfigValue;
+import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.time.Clocks;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.Assert.assertThat;
 import static org.neo4j.kernel.impl.transaction.log.pruning.LogPruneStrategyFactory.getThresholdByType;
 
-public class LogPruneStrategyFactoryTest
+class LogPruneStrategyFactoryTest
 {
     @Test
-    public void testLogPruneThresholdsByType()
+    void testLogPruneThresholdsByType()
     {
         FileSystemAbstraction fsa = Mockito.mock( FileSystemAbstraction.class );
         Clock clock = Clocks.systemClock();
+        AssertableLogProvider logProvider = new AssertableLogProvider();
 
-        assertThat( getThresholdByType( fsa, clock, new ThresholdConfigValue( "files", 25 ), "" ),
+        assertThat( getThresholdByType( fsa, logProvider, clock, new ThresholdConfigValue( "files", 25 ), "" ),
                 instanceOf( FileCountThreshold.class ) );
-        assertThat( getThresholdByType( fsa, clock, new ThresholdConfigValue( "size", 16000 ), "" ),
+        assertThat( getThresholdByType( fsa, logProvider, clock, new ThresholdConfigValue( "size", 16000 ), "" ),
                 instanceOf( FileSizeThreshold.class ) );
-        assertThat( getThresholdByType( fsa, clock, new ThresholdConfigValue( "txs", 4000 ), "" ),
+        assertThat( getThresholdByType( fsa, logProvider, clock, new ThresholdConfigValue( "txs", 4000 ), "" ),
                 instanceOf( EntryCountThreshold.class ) );
-        assertThat( getThresholdByType( fsa, clock, new ThresholdConfigValue( "entries", 4000 ), "" ),
+        assertThat( getThresholdByType( fsa, logProvider, clock, new ThresholdConfigValue( "entries", 4000 ), "" ),
                 instanceOf( EntryCountThreshold.class ) );
-        assertThat( getThresholdByType( fsa, clock, new ThresholdConfigValue( "hours", 100 ), "" ),
+        assertThat( getThresholdByType( fsa, logProvider, clock, new ThresholdConfigValue( "hours", 100 ), "" ),
                 instanceOf( EntryTimespanThreshold.class ) );
-        assertThat( getThresholdByType( fsa, clock, new ThresholdConfigValue( "days", 100_000 ), "" ),
+        assertThat( getThresholdByType( fsa, logProvider, clock, new ThresholdConfigValue( "days", 100_000 ), "" ),
                 instanceOf( EntryTimespanThreshold.class) );
     }
 }

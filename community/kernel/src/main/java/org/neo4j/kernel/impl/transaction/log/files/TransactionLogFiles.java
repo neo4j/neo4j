@@ -188,7 +188,7 @@ public class TransactionLogFiles extends LifecycleAdapter implements LogFiles
     {
         final File fileToOpen = getLogFileForVersion( version );
 
-        if ( !versionExists( version ) )
+        if ( !fileSystem.fileExists( fileToOpen ) )
         {
             throw new FileNotFoundException( format( "File does not exist [%s]", fileToOpen.getCanonicalPath() ) );
         }

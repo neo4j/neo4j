@@ -43,6 +43,7 @@ public class LogPruningImpl implements LogPruning
     private final Log msgLog;
     private final LogPruneStrategyFactory strategyFactory;
     private final Clock clock;
+    private final LogProvider logProvider;
     private volatile LogPruneStrategy pruneStrategy;
 
     public LogPruningImpl( FileSystemAbstraction fs,
@@ -54,14 +55,47 @@ public class LogPruningImpl implements LogPruning
     {
         this.fs = fs;
         this.logFiles = logFiles;
+        this.logProvider = logProvider;
         this.msgLog = logProvider.getLog( getClass() );
         this.strategyFactory = strategyFactory;
         this.clock = clock;
-        this.pruneStrategy = strategyFactory.strategyFromConfigValue( fs, logFiles, clock, config.get( GraphDatabaseSettings.keep_logical_logs ) );
+        this.pruneStrategy = strategyFactory.strategyFromConfigValue( fs, logFiles, logProvider, clock, config.get( GraphDatabaseSettings.keep_logical_logs ) );
 
         // Register listener for updates
         config.registerDynamicUpdateListener( GraphDatabaseSettings.keep_logical_logs,
                 ( prev, update ) -> updateConfiguration( update ) );
+    }
+
+    private void updateConfiguration( String pruningConf )
+    {
+        this.pruneStrategy = strategyFactory.strategyFromConfigValue( fs, logFiles, logProvider, clock, pruningConf );
+        msgLog.info( "Retention policy updated, value will take effect during the next evaluation." );
+    }
+
+    @Override
+    public void pruneLogs( long upToVersion )
+    {
+        // Only one is allowed to do pruning at any given time,
+        // and it's OK to skip pruning if another one is doing so right now.
+        if ( pruneLock.tryLock() )
+        {
+            try
+            {
+                CountingDeleter deleter = new CountingDeleter( logFiles, fs, upToVersion );
+                pruneStrategy.findLogVersionsToDelete( upToVersion ).forEachOrdered( deleter );
+                msgLog.info( deleter.describeResult() );
+            }
+            finally
+            {
+                pruneLock.unlock();
+            }
+        }
+    }
+
+    @Override
+    public boolean mightHaveLogsToPrune()
+    {
+        return pruneStrategy.findLogVersionsToDelete( logFiles.getHighestLogVersion() ).count() > 0;
     }
 
     private static class CountingDeleter implements LongConsumer
@@ -91,7 +125,7 @@ public class LogPruningImpl implements LogPruning
             fs.deleteFile( logFile );
         }
 
-        public String describeResult()
+        String describeResult()
         {
             if ( fromVersion == NO_VERSION )
             {
@@ -100,40 +134,8 @@ public class LogPruningImpl implements LogPruning
             else
             {
                 return "Pruned log versions " + fromVersion + "-" + toVersion +
-                       ", last checkpoint was made in version " + upToVersion;
+                        ", last checkpoint was made in version " + upToVersion;
             }
         }
-    }
-
-    private void updateConfiguration( String pruningConf )
-    {
-        this.pruneStrategy = strategyFactory.strategyFromConfigValue( fs, logFiles, clock, pruningConf );
-        msgLog.info( "Retention policy updated, value will take effect during the next evaluation." );
-    }
-
-    @Override
-    public void pruneLogs( long upToVersion )
-    {
-        // Only one is allowed to do pruning at any given time,
-        // and it's OK to skip pruning if another one is doing so right now.
-        if ( pruneLock.tryLock() )
-        {
-            try
-            {
-                CountingDeleter deleter = new CountingDeleter( logFiles, fs, upToVersion );
-                pruneStrategy.findLogVersionsToDelete( upToVersion ).forEachOrdered( deleter );
-                msgLog.info( deleter.describeResult() );
-            }
-            finally
-            {
-                pruneLock.unlock();
-            }
-        }
-    }
-
-    @Override
-    public boolean mightHaveLogsToPrune()
-    {
-        return pruneStrategy.findLogVersionsToDelete( logFiles.getHighestLogVersion() ).count() > 0;
     }
 }

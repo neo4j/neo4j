@@ -19,58 +19,53 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.storageengine.migration.UpgradeNotAllowedException;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion;
 import org.neo4j.kernel.recovery.LogTailScanner;
+import org.neo4j.storageengine.migration.UpgradeNotAllowedException;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.kernel.impl.transaction.log.LogVersionUpgradeChecker.check;
 
-public class LogVersionUpgradeCheckerTest
+class LogVersionUpgradeCheckerTest
 {
     private LogTailScanner tailScanner = mock( LogTailScanner.class );
 
-    @Rule
-    public ExpectedException expect = ExpectedException.none();
-
     @Test
-    public void noThrowWhenLatestVersionAndUpgradeIsNotAllowed()
+    void noThrowWhenLatestVersionAndUpgradeIsNotAllowed()
     {
         when( tailScanner.getTailInformation() ).thenReturn( new OnlyVersionTailInformation( LogEntryVersion.CURRENT ) );
 
-        LogVersionUpgradeChecker.check( tailScanner, Config.defaults( GraphDatabaseSettings.allow_upgrade, "false") );
+        check( tailScanner, Config.defaults( GraphDatabaseSettings.allow_upgrade, "false") );
     }
 
     @Test
-    public void throwWhenVersionIsOlderAndUpgradeIsNotAllowed()
+    void throwWhenVersionIsOlderAndUpgradeIsNotAllowed()
     {
         when( tailScanner.getTailInformation() ).thenReturn( new OnlyVersionTailInformation( LogEntryVersion.V2_3 ) );
 
-        expect.expect( UpgradeNotAllowedException.class );
-
-        LogVersionUpgradeChecker.check( tailScanner, Config.defaults( GraphDatabaseSettings.allow_upgrade, "false") );
+        assertThrows( UpgradeNotAllowedException.class, () -> check( tailScanner, Config.defaults( GraphDatabaseSettings.allow_upgrade, "false" ) ) );
     }
 
     @Test
-    public void stillAcceptLatestVersionWhenUpgradeIsAllowed()
+    void stillAcceptLatestVersionWhenUpgradeIsAllowed()
     {
         when( tailScanner.getTailInformation() ).thenReturn( new OnlyVersionTailInformation( LogEntryVersion.CURRENT ) );
 
-        LogVersionUpgradeChecker.check( tailScanner, Config.defaults( GraphDatabaseSettings.allow_upgrade, "true") );
+        check( tailScanner, Config.defaults( GraphDatabaseSettings.allow_upgrade, "true") );
     }
 
     @Test
-    public void acceptOlderLogsWhenUpgradeIsAllowed()
+    void acceptOlderLogsWhenUpgradeIsAllowed()
     {
         when( tailScanner.getTailInformation() ).thenReturn( new OnlyVersionTailInformation( LogEntryVersion.V2_3 ) );
 
-        LogVersionUpgradeChecker.check( tailScanner, Config.defaults( GraphDatabaseSettings.allow_upgrade, "true") );
+        check( tailScanner, Config.defaults( GraphDatabaseSettings.allow_upgrade, "true") );
     }
 
     private static class OnlyVersionTailInformation extends LogTailScanner.LogTailInformation
