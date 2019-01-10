@@ -46,7 +46,7 @@ public class ConfigDiagnostics extends NamedDiagnosticsProvider
         logger.log( "DBMS provided settings:" );
         for ( Map.Entry<String,String> param : configRaw.entrySet() )
         {
-            logger.log( "%s=%s", param.getKey(), config.obsfucateIfSecret( param ) );
+            logger.log( "%s=%s", param.getKey(), config.obfuscateIfSecret( param ) );
         }
     }
 }

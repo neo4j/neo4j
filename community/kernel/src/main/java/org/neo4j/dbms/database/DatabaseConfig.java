@@ -144,9 +144,9 @@ public class DatabaseConfig extends Config implements Lifecycle
     }
 
     @Override
-    public String obsfucateIfSecret( Map.Entry<String,String> param )
+    public String obfuscateIfSecret( Map.Entry<String,String> param )
     {
-        return globalConfig.obsfucateIfSecret( param );
+        return globalConfig.obfuscateIfSecret( param );
     }
 
     @Override

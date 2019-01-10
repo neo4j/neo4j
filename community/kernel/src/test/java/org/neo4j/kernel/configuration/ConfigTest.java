@@ -308,7 +308,7 @@ class ConfigTest
         assertTrue( config.getConfigValues().get( MySettingsWithDefaults.password.name() ).secret() );
         assertFalse( config.getConfigValues().get( MySettingsWithDefaults.hello.name() ).secret() );
         String configText = config.toString();
-        assertTrue( configText.contains( Secret.OBSFUCATED ) );
+        assertTrue( configText.contains( Secret.OBFUSCATED ) );
         assertFalse( configText.contains( "this should not be visible" ) );
         assertFalse( configText.contains( config.get( MySettingsWithDefaults.password ) ) );
     }
@@ -532,8 +532,8 @@ class ConfigTest
         config.registerDynamicUpdateListener( MyDynamicSettings.secretSetting, ( previous, update ) ->
         {
             counter.getAndIncrement();
-            assertThat( "Update listener should not see obsfucated secret", previous, not( CoreMatchers.equalTo( Secret.OBSFUCATED ) ) );
-            assertThat( "Update listener should not see obsfucated secret", update, not( CoreMatchers.equalTo( Secret.OBSFUCATED ) ) );
+            assertThat( "Update listener should not see obfuscated secret", previous, not( CoreMatchers.equalTo( Secret.OBFUSCATED ) ) );
+            assertThat( "Update listener should not see obfuscated secret", update, not( CoreMatchers.equalTo( Secret.OBFUSCATED ) ) );
         } );
 
         // When changing secret settings three times
@@ -541,11 +541,11 @@ class ConfigTest
         config.updateDynamicSetting( settingName, "secret2", ORIGIN );
         config.updateDynamicSetting( settingName, "", ORIGIN );
 
-        // Then we should see obsfucated log messages
+        // Then we should see obfuscated log messages
         InOrder order = inOrder( log );
-        order.verify( log ).info( changedMessage, settingName, "default (" + Secret.OBSFUCATED + ")", Secret.OBSFUCATED, ORIGIN );
-        order.verify( log ).info( changedMessage, settingName, Secret.OBSFUCATED, Secret.OBSFUCATED, ORIGIN );
-        order.verify( log ).info( changedMessage, settingName, Secret.OBSFUCATED, "default (" + Secret.OBSFUCATED + ")", ORIGIN );
+        order.verify( log ).info( changedMessage, settingName, "default (" + Secret.OBFUSCATED + ")", Secret.OBFUSCATED, ORIGIN );
+        order.verify( log ).info( changedMessage, settingName, Secret.OBFUSCATED, Secret.OBFUSCATED, ORIGIN );
+        order.verify( log ).info( changedMessage, settingName, Secret.OBFUSCATED, "default (" + Secret.OBFUSCATED + ")", ORIGIN );
         verifyNoMoreInteractions( log );
 
         // And see 3 calls to the update listener

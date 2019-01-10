@@ -28,7 +28,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -53,7 +52,6 @@ import org.neo4j.graphdb.config.BaseSetting;
 import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.graphdb.config.InvalidSettingException;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.graphdb.config.SettingGroup;
 import org.neo4j.graphdb.config.SettingValidator;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.HttpConnector.Encryption;
@@ -654,8 +652,8 @@ public class Config implements Configuration
                 newValue = update;
             }
 
-            String oldValueForLog = obsfucateIfSecret( setting, oldValue );
-            String newValueForLog = obsfucateIfSecret( setting, newValue );
+            String oldValueForLog = obfuscateIfSecret( setting, oldValue );
+            String newValueForLog = obfuscateIfSecret( setting, newValue );
             log.info( "Setting changed: '%s' changed from '%s' to '%s' via '%s'",
                     setting, oldValueIsDefault ? "default (" + oldValueForLog + ")" : oldValueForLog,
                     newValueIsDefault ? "default (" + newValueForLog + ")" : newValueForLog, origin );
@@ -747,16 +745,16 @@ public class Config implements Configuration
                 } ) );
     }
 
-    public String obsfucateIfSecret( Map.Entry<String,String> param )
+    public String obfuscateIfSecret( Map.Entry<String,String> param )
     {
-        return obsfucateIfSecret( param.getKey(), param.getValue() );
+        return obfuscateIfSecret( param.getKey(), param.getValue() );
     }
 
-    private String obsfucateIfSecret( String key, String value )
+    private String obfuscateIfSecret( String key, String value )
     {
         if ( settingsMap.containsKey( key ) && settingsMap.get( key ).secret() )
         {
-            return Secret.OBSFUCATED;
+            return Secret.OBFUSCATED;
         }
         else
         {
@@ -994,7 +992,7 @@ public class Config implements Configuration
     {
         return params.entrySet().stream()
                 .sorted( Comparator.comparing( Map.Entry::getKey ) )
-                .map( entry -> entry.getKey() + "=" + obsfucateIfSecret( entry ) )
+                .map( entry -> entry.getKey() + "=" + obfuscateIfSecret( entry ) )
                 .collect( Collectors.joining( ", ") );
     }
 

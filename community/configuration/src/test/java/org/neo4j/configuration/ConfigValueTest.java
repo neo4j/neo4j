@@ -105,7 +105,7 @@ class ConfigValueTest
                 "description", false, false, false, Optional.empty(), true );
 
         assertEquals( Optional.of( "secret" ), value.value() );
-        assertEquals( Secret.OBSFUCATED, value.toString() );
+        assertEquals( Secret.OBFUSCATED, value.toString() );
         assertFalse( value.deprecated() );
         assertEquals( Optional.empty(), value.replacement() );
         assertFalse( value.internal() );
