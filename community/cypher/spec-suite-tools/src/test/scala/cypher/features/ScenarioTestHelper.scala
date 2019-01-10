@@ -27,7 +27,7 @@ import java.util
 import org.junit.jupiter.api.DynamicTest
 import org.junit.jupiter.api.function.Executable
 import org.neo4j.test.TestGraphDatabaseFactory
-import org.opencypher.tools.tck.api.Scenario
+import org.opencypher.tools.tck.api.{ExpectError, Scenario}
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
@@ -54,6 +54,7 @@ object ScenarioTestHelper {
 
     val expectFailTests: Seq[DynamicTest] = expectFail.map { scenario =>
       val name = scenario.toString()
+      val scenarioExpectsError: Boolean = scenario.steps.exists(_.isInstanceOf[ExpectError])
       val executable = new Executable {
         override def execute(): Unit = {
           Try {
@@ -65,9 +66,12 @@ object ScenarioTestHelper {
             case Failure(e) =>
               e.getCause match {
                 case cause@Neo4jExecutionFailed(_, phase, _, _) =>
-                  if (phase == Phase.runtime) {
+                  // If the scenario expects an error (e.g. at compile time), but we throw it at runtime instead
+                  // That is not critical. Therefore, if the test is blacklisted, we allow it to fail at runtime.
+                  // If, on the other hand, the scenario expects results and the test is blacklisted, only compile
+                  // time failures are acceptable.
+                  if (phase == Phase.runtime && !scenarioExpectsError) {
                     // That's not OK
-                    //throw cause
                     throw new Exception(
                       s"""Failed at $phase in scenario $name for query
                          |(NOTE: This test is marked as expected to fail, but failing at $phase is not ok)
