@@ -259,7 +259,7 @@ class IndexRecoveryIT
         // Then
         assertThat( getIndexes( db, myLabel ), inTx( db, hasSize( 1 ) ) );
         assertThat( getIndexes( db, myLabel ), inTx( db, haveState( db, Schema.IndexState.ONLINE ) ) );
-        verify( mockedIndexProvider, times( 1 ) )
+        verify( mockedIndexProvider )
                 .getPopulator( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ) );
         int onlineAccessorInvocationCount = 3; // once when we create the index, and once when we restart the db
         verify( mockedIndexProvider, times( onlineAccessorInvocationCount ) )

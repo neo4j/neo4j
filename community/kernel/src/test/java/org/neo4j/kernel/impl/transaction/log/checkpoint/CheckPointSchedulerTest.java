@@ -96,7 +96,7 @@ class CheckPointSchedulerTest
 
         // then
         assertNotNull( jobScheduler.getJob() );
-        verify( jobScheduler, times( 1 ) ).schedule( eq( Group.CHECKPOINT ), any( Runnable.class ),
+        verify( jobScheduler ).schedule( eq( Group.CHECKPOINT ), any( Runnable.class ),
                 eq( 20L ), eq( TimeUnit.MILLISECONDS ) );
     }
 
@@ -119,7 +119,7 @@ class CheckPointSchedulerTest
         // then
         verify( jobScheduler, times( 2 ) ).schedule( eq( Group.CHECKPOINT ), any( Runnable.class ),
                 eq( 20L ), eq( TimeUnit.MILLISECONDS ) );
-        verify( checkPointer, times( 1 ) ).checkPointIfNeeded( any( TriggerInfo.class ) );
+        verify( checkPointer ).checkPointIfNeeded( any( TriggerInfo.class ) );
         assertEquals( scheduledJob, jobScheduler.getJob() );
     }
 

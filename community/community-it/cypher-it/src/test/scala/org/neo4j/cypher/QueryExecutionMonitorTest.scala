@@ -24,13 +24,13 @@ import org.mockito.Mockito._
 import org.neo4j.cypher.ExecutionEngineHelper.createEngine
 import org.neo4j.cypher.internal.ExecutionEngine
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
+import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.Result
 import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.query.ExecutingQuery
 import org.neo4j.kernel.impl.query.{QueryExecutionMonitor, TransactionalContext}
 import org.neo4j.test.TestGraphDatabaseFactory
-import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 
 import scala.collection.JavaConverters._
 import scala.collection.immutable.Map
@@ -63,7 +63,7 @@ class QueryExecutionMonitorTest extends CypherFunSuite with GraphIcing with Grap
     }
 
     // then
-    verify(monitor, times(1)).endSuccess(query)
+    verify(monitor).endSuccess(query)
   }
 
   test("monitor is called when using dumpToString") {
@@ -74,7 +74,7 @@ class QueryExecutionMonitorTest extends CypherFunSuite with GraphIcing with Grap
     val textResult = result.resultAsString()
 
     // then
-    verify(monitor, times(1)).endSuccess(query)
+    verify(monitor).endSuccess(query)
   }
 
   test("monitor is called when using columnAs[]") {
@@ -85,7 +85,7 @@ class QueryExecutionMonitorTest extends CypherFunSuite with GraphIcing with Grap
     result.columnAs[Number]("x").asScala.toSeq
 
     // then
-    verify(monitor, times(1)).endSuccess(query)
+    verify(monitor).endSuccess(query)
   }
 
   test("monitor is called when using columnAs[] from Java and explicitly closing") {
@@ -97,7 +97,7 @@ class QueryExecutionMonitorTest extends CypherFunSuite with GraphIcing with Grap
     res.close()
 
     // then
-    verify(monitor, times(1)).endSuccess(query)
+    verify(monitor).endSuccess(query)
   }
 
   test("monitor is called when using columnAs[] from Java and emptying") {
@@ -109,14 +109,14 @@ class QueryExecutionMonitorTest extends CypherFunSuite with GraphIcing with Grap
     while(res.hasNext) res.next()
 
     // then
-    verify(monitor, times(1)).endSuccess(query)
+    verify(monitor).endSuccess(query)
   }
 
   test("monitor is called directly when return is empty") {
     val (context, result) = runQuery("CREATE ()")
 
     // then
-    verify(monitor, times(1)).endSuccess(context)
+    verify(monitor).endSuccess(context)
   }
 
   test("monitor is not called multiple times even if result is closed multiple times") {
@@ -125,7 +125,7 @@ class QueryExecutionMonitorTest extends CypherFunSuite with GraphIcing with Grap
     result.close()
 
     // then
-    verify(monitor, times(1)).endSuccess(context)
+    verify(monitor).endSuccess(context)
   }
 
   test("monitor is called directly when proc return is void") {
@@ -134,7 +134,7 @@ class QueryExecutionMonitorTest extends CypherFunSuite with GraphIcing with Grap
     val (context, result) = runQuery("CALL db.awaitIndex(':Person(name)')")
 
     // then
-    verify(monitor, times(1)).endSuccess(context)
+    verify(monitor).endSuccess(context)
   }
 
   test("monitor is called when iterator closes") {
@@ -145,7 +145,7 @@ class QueryExecutionMonitorTest extends CypherFunSuite with GraphIcing with Grap
     result.close()
 
     // then
-    verify(monitor, times(1)).endSuccess(context)
+    verify(monitor).endSuccess(context)
   }
 
   test("monitor is not called when next on empty iterator") {
@@ -158,7 +158,7 @@ class QueryExecutionMonitorTest extends CypherFunSuite with GraphIcing with Grap
     intercept[Throwable](result.next())
 
     // then, since the result was successfully emptied
-    verify(monitor, times(1)).endSuccess(context)
+    verify(monitor).endSuccess(context)
     verify(monitor, never()).endFailure(any(classOf[ExecutingQuery]), any(classOf[Throwable]))
   }
 
@@ -171,7 +171,7 @@ class QueryExecutionMonitorTest extends CypherFunSuite with GraphIcing with Grap
       verify(monitor, never).endSuccess(context)
       result.next()
     }
-    verify(monitor, times(1)).endSuccess(context)
+    verify(monitor).endSuccess(context)
   }
 
   test("check that monitoring is correctly done when using visitor") {
@@ -183,7 +183,7 @@ class QueryExecutionMonitorTest extends CypherFunSuite with GraphIcing with Grap
       override def visit(row: ResultRow): Boolean = true
     })
 
-    verify(monitor, times(1)).endSuccess(context)
+    verify(monitor).endSuccess(context)
   }
 
   var db: GraphDatabaseQueryService = _

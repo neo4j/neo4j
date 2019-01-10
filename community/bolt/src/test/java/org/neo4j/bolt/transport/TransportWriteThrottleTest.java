@@ -62,7 +62,6 @@ import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -115,7 +114,7 @@ public class TransportWriteThrottleTest
 
         // expect
         ArgumentCaptor<WriteBufferWaterMark> argument = ArgumentCaptor.forClass( WriteBufferWaterMark.class );
-        verify( config, times( 1 ) ).setWriteBufferWaterMark( argument.capture() );
+        verify( config ).setWriteBufferWaterMark( argument.capture() );
 
         assertEquals( 64, argument.getValue().low() );
         assertEquals( 256, argument.getValue().high() );

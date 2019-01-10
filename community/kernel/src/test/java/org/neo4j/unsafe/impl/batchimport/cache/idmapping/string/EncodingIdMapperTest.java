@@ -206,7 +206,7 @@ public class EncodingIdMapperTest
         mapper.prepare( values, collector, NONE );
 
         // THEN
-        verify( collector, times( 1 ) ).collectDuplicateNode( "10", 2, GLOBAL.name() );
+        verify( collector ).collectDuplicateNode( "10", 2, GLOBAL.name() );
         verifyNoMoreInteractions( collector );
     }
 

@@ -154,7 +154,7 @@ public class IndexTxStateUpdaterTest
 
         // THEN
         verifyIndexUpdate( uniqueOn2_2_3.schema(), node.nodeReference(), values( "hi2", "hi3" ), null );
-        verify( txState, times( 1 ) ).indexDoUpdateEntry( any(), anyLong(), any(), isNull() );
+        verify( txState ).indexDoUpdateEntry( any(), anyLong(), any(), isNull() );
     }
 
     @Test

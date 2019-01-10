@@ -111,7 +111,7 @@ public class Neo4jJsonCodecTest extends TxStateCheckerTestSupport
         }
 
         //Then
-        verify( jsonGenerator, times( 1 ) ).writeEndObject();
+        verify( jsonGenerator ).writeEndObject();
     }
 
     @Test
@@ -132,7 +132,7 @@ public class Neo4jJsonCodecTest extends TxStateCheckerTestSupport
         }
 
         //Then
-        verify( jsonGenerator, times( 1 ) ).writeEndObject();
+        verify( jsonGenerator ).writeEndObject();
     }
 
     @Test
@@ -155,7 +155,7 @@ public class Neo4jJsonCodecTest extends TxStateCheckerTestSupport
         }
 
         //Then
-        verify( jsonGenerator, times( 1 ) ).writeEndArray();
+        verify( jsonGenerator ).writeEndArray();
     }
 
     @Test
@@ -176,7 +176,7 @@ public class Neo4jJsonCodecTest extends TxStateCheckerTestSupport
         }
 
         //Then
-        verify( jsonGenerator, times( 1 ) ).writeEndArray();
+        verify( jsonGenerator ).writeEndArray();
     }
 
     @Test
@@ -197,7 +197,7 @@ public class Neo4jJsonCodecTest extends TxStateCheckerTestSupport
         }
 
         //Then
-        verify( jsonGenerator, times( 1 ) ).writeEndArray();
+        verify( jsonGenerator ).writeEndArray();
     }
 
     @Test
@@ -217,7 +217,7 @@ public class Neo4jJsonCodecTest extends TxStateCheckerTestSupport
         }
 
         //Then
-        verify( jsonGenerator, times( 1 ) ).writeEndObject();
+        verify( jsonGenerator ).writeEndObject();
     }
 
     @Test
@@ -231,7 +231,7 @@ public class Neo4jJsonCodecTest extends TxStateCheckerTestSupport
         jsonCodec.writeValue( jsonGenerator, map );
 
         // then
-        verify( jsonGenerator, times( 1 ) ).writeFieldName( "null" );
+        verify( jsonGenerator ).writeFieldName( "null" );
     }
 
     @Test

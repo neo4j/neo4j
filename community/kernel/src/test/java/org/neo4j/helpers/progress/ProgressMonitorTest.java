@@ -41,7 +41,6 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.when;
 
 @ExtendWith( SuppressOutputExtension.class )
@@ -170,7 +169,7 @@ class ProgressMonitorTest
 
         // then
         InOrder order = inOrder( indicator );
-        order.verify( indicator, times( 1 ) ).startProcess( 16 );
+        order.verify( indicator ).startProcess( 16 );
         for ( int i = 0; i < 10; i++ )
         {
             order.verify( indicator ).progress( i, i + 1 );

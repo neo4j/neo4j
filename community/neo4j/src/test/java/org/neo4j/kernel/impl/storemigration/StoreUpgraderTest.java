@@ -248,11 +248,11 @@ public class StoreUpgraderTest
             // THEN
             verify( observingParticipant, Mockito.never() ).migrate( any( DatabaseLayout.class ), any( DatabaseLayout.class ),
                     any( ProgressReporter.class ), eq( versionToMigrateFrom ), eq( versionToMigrateTo ) );
-            verify( observingParticipant, Mockito.times( 1 ) ).
+            verify( observingParticipant ).
                     moveMigratedFiles( any( DatabaseLayout.class ), any( DatabaseLayout.class ), eq( versionToMigrateFrom ),
                             eq( versionToMigrateTo ) );
 
-            verify( observingParticipant, Mockito.times( 1 ) ).cleanup( any( DatabaseLayout.class ) );
+            verify( observingParticipant ).cleanup( any( DatabaseLayout.class ) );
         }
     }
 

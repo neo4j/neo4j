@@ -35,7 +35,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -69,7 +68,7 @@ public class TransactionPositionLocatorTest
         // then
         assertFalse( result );
         assertEquals( startPosition, position );
-        verify( metadataCache, times( 1 ) ).cacheTransactionMetadata(
+        verify( metadataCache ).cacheTransactionMetadata(
                 txId,
                 startPosition,
                 start.getMasterId(),

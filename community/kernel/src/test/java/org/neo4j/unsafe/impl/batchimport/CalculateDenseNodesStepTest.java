@@ -59,11 +59,11 @@ public class CalculateDenseNodesStepTest
 
             // THEN
             verify( cache, times( 2 ) ).incrementCount( eq( 1L ) );
-            verify( cache, times( 1 ) ).incrementCount( eq( 2L ) );
-            verify( cache, times( 1 ) ).incrementCount( eq( 3L ) );
-            verify( cache, times( 1 ) ).incrementCount( eq( 4L ) );
-            verify( cache, times( 1 ) ).incrementCount( eq( 5L ) );
-            verify( cache, times( 1 ) ).incrementCount( eq( 10L ) );
+            verify( cache ).incrementCount( eq( 2L ) );
+            verify( cache ).incrementCount( eq( 3L ) );
+            verify( cache ).incrementCount( eq( 4L ) );
+            verify( cache ).incrementCount( eq( 5L ) );
+            verify( cache ).incrementCount( eq( 10L ) );
         }
     }
 

@@ -219,9 +219,9 @@ class TransactionStateMachineTest
         assertNull( stateMachine.ctx.currentResult );
         assertNull( stateMachine.ctx.currentResultHandle );
 
-        verify( transaction, times( 1 ) ).getReasonIfTerminated();
-        verify( transaction, times( 1 ) ).failure();
-        verify( transaction, times( 1 ) ).close();
+        verify( transaction ).getReasonIfTerminated();
+        verify( transaction ).failure();
+        verify( transaction ).close();
     }
 
     @Test
@@ -244,9 +244,9 @@ class TransactionStateMachineTest
         assertNull( stateMachine.ctx.currentResult );
         assertNull( stateMachine.ctx.currentResultHandle );
 
-        verify( transaction, times( 1 ) ).getReasonIfTerminated();
-        verify( transaction, times( 1 ) ).failure();
-        verify( transaction, times( 1 ) ).close();
+        verify( transaction ).getReasonIfTerminated();
+        verify( transaction ).failure();
+        verify( transaction ).close();
     }
 
     @Test
@@ -271,9 +271,9 @@ class TransactionStateMachineTest
         assertNull( stateMachine.ctx.currentResult );
         assertNull( stateMachine.ctx.currentResultHandle );
 
-        verify( transaction, times( 1 ) ).getReasonIfTerminated();
-        verify( transaction, times( 1 ) ).failure();
-        verify( transaction, times( 1 ) ).close();
+        verify( transaction ).getReasonIfTerminated();
+        verify( transaction ).failure();
+        verify( transaction ).close();
     }
 
     @Test
@@ -285,7 +285,7 @@ class TransactionStateMachineTest
 
         stateMachine.run( "SOME STATEMENT", null );
 
-        verify( stateMachineSPI, times( 1 ) ).unbindTransactionFromCurrentThread();
+        verify( stateMachineSPI ).unbindTransactionFromCurrentThread();
     }
 
     @Test

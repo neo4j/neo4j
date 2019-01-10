@@ -54,15 +54,15 @@ public class LazyInstanceSelectorTest
                 // then
                 if ( candidate.ordinal() < slot.ordinal() )
                 {
-                    verify( factory, times( 1 ) ).apply( candidate );
+                    verify( factory ).apply( candidate );
                     selector.select( candidate );
-                    verify( factory, times( 1 ) ).apply( candidate );
+                    verify( factory ).apply( candidate );
                 }
                 else if ( candidate == slot )
                 {
                     verify( factory, times( 0 ) ).apply( candidate );
                     selector.select( candidate );
-                    verify( factory, times( 1 ) ).apply( candidate );
+                    verify( factory ).apply( candidate );
                 }
                 else
                 {
@@ -87,7 +87,7 @@ public class LazyInstanceSelectorTest
         // then
         for ( IndexSlot slot : IndexSlot.values() )
         {
-            verify( consumer, times( 1 ) ).accept( String.valueOf( slot ) );
+            verify( consumer ).accept( String.valueOf( slot ) );
         }
         verifyNoMoreInteractions( consumer );
     }
@@ -106,8 +106,8 @@ public class LazyInstanceSelectorTest
         selector.close( consumer );
 
         // then
-        verify( consumer, times( 1 ) ).accept( String.valueOf( NUMBER ) );
-        verify( consumer, times( 1 ) ).accept( String.valueOf( STRING ) );
+        verify( consumer ).accept( String.valueOf( NUMBER ) );
+        verify( consumer ).accept( String.valueOf( STRING ) );
         verifyNoMoreInteractions( consumer );
     }
 

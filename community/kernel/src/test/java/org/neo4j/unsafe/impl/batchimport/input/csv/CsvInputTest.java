@@ -72,7 +72,6 @@ import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.csv.reader.Readables.wrap;
 import static org.neo4j.helpers.ArrayUtil.union;
@@ -1040,9 +1039,9 @@ public class CsvInputTest
             assertNextNode( nodes, 2L, properties( "one", "test" ), labels() );
             assertFalse( readNext( nodes ) );
         }
-        verify( collector, times( 1 ) ).collectExtraColumns( anyString(), eq( 1L ), eq( null ) );
-        verify( collector, times( 1 ) ).collectExtraColumns( anyString(), eq( 2L ), eq( null ) );
-        verify( collector, times( 1 ) ).collectExtraColumns( anyString(), eq( 2L ), eq( "additional" ) );
+        verify( collector ).collectExtraColumns( anyString(), eq( 1L ), eq( null ) );
+        verify( collector ).collectExtraColumns( anyString(), eq( 2L ), eq( null ) );
+        verify( collector ).collectExtraColumns( anyString(), eq( 2L ), eq( "additional" ) );
     }
 
     @Test

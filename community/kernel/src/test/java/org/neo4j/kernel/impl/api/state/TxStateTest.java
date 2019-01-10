@@ -982,7 +982,7 @@ public class TxStateTest
         nodeState.changeProperty( 4, stringValue( "bar" ) );
 
         verify( collectionsFactory, times( 2 ) ).newValuesMap();
-        verify( collectionsFactory, times( 1 ) ).newLongSet();
+        verify( collectionsFactory ).newLongSet();
         verifyNoMoreInteractions( collectionsFactory );
     }
 
@@ -996,7 +996,7 @@ public class TxStateTest
         graphState.changeProperty( 4, stringValue( "bar" ) );
 
         verify( collectionsFactory, times( 2 ) ).newValuesMap();
-        verify( collectionsFactory, times( 1 ) ).newLongSet();
+        verify( collectionsFactory ).newLongSet();
 
         verifyNoMoreInteractions( collectionsFactory );
     }

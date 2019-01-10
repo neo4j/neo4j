@@ -53,7 +53,6 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.impl.store.kvstore.DataProvider.EMPTY_DATA_PROVIDER;
@@ -111,8 +110,8 @@ public class AbstractKeyValueStoreTest
         assertEquals( "New state contains stored value", "value", store.lookup( "test", stringReader( "value" ) ) );
 
         // Should have 2 invocations: first throws exception, second re-read value.
-        verify( staleState, times( 1 ) ).lookup( any(), any() );
-        verify( workingState, times( 1 ) ).lookup( any(), any() );
+        verify( staleState ).lookup( any(), any() );
+        verify( workingState ).lookup( any(), any() );
     }
 
     @Test

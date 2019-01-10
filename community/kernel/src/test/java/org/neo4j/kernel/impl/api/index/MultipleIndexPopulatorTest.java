@@ -361,7 +361,7 @@ public class MultipleIndexPopulatorTest
         multipleIndexPopulator.flipAfterPopulation( false );
 
         verify( indexPopulator1 ).close( false );
-        verify( failedIndexProxyFactory, times( 1 ) ).create( any( RuntimeException.class ) );
+        verify( failedIndexProxyFactory ).create( any( RuntimeException.class ) );
 
         verify( indexPopulator2 ).close( true );
         verify( indexPopulator2 ).sampleResult();

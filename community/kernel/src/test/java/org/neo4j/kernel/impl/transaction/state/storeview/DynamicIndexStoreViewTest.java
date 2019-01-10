@@ -136,7 +136,7 @@ public class DynamicIndexStoreViewTest
 
         storeScan.run();
 
-        Mockito.verify( nodeStore, times( 1 ) )
+        Mockito.verify( nodeStore )
                 .getRecordByCursor( anyLong(), any( NodeRecord.class ), any( RecordLoad.class ), any( PageCursor.class ) );
         Mockito.verify( nodeStore, times( 200 ) )
                 .nextRecordByCursor( any( NodeRecord.class ), any( RecordLoad.class ), any( PageCursor.class ) );

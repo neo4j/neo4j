@@ -62,7 +62,6 @@ import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
-import static org.mockito.internal.verification.VerificationModeFactory.times;
 import static org.neo4j.helpers.ArrayUtil.without;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexTestHelp.fill;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexTestHelp.verifyFusionCloseThrowIfAllThrow;
@@ -164,7 +163,7 @@ public class FusionIndexAccessorTest
         // then
         for ( IndexAccessor accessor : aliveAccessors )
         {
-            verify( accessor, times( 1 ) ).drop();
+            verify( accessor ).drop();
         }
         verify( dropAction ).drop( indexId );
     }
@@ -248,7 +247,7 @@ public class FusionIndexAccessorTest
         // then
         for ( IndexAccessor accessor : aliveAccessors )
         {
-            verify( accessor, times( 1 ) ).close();
+            verify( accessor ).close();
         }
     }
 
@@ -363,7 +362,7 @@ public class FusionIndexAccessorTest
         // then
         for ( BoundedIterable<Long> allEntriesReader : allEntriesReaders )
         {
-            verify( allEntriesReader, times( 1 ) ).close();
+            verify( allEntriesReader ).close();
         }
     }
 

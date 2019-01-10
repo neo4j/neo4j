@@ -50,7 +50,7 @@ class LoadCsvPeriodicCommitObserverTest extends CypherFunSuite {
     iterator.next() should equal(Array("Row1"))
     verify(transactionalContext, never()).commitAndRestartTx()
     iterator.next() should equal(Array("Row2"))
-    verify(transactionalContext, times(1)).commitAndRestartTx()
+    verify(transactionalContext).commitAndRestartTx()
   }
 
   test("headers should not count") {
@@ -73,7 +73,7 @@ class LoadCsvPeriodicCommitObserverTest extends CypherFunSuite {
     verify(transactionalContext, never()).commitAndRestartTx()
 
     iterator.next() should equal(Array("Row2"))
-    verify(transactionalContext, times(1)).commitAndRestartTx()
+    verify(transactionalContext).commitAndRestartTx()
 
     iterator.next() should equal(Array("Row3"))
     verify(transactionalContext, times(2)).commitAndRestartTx()
@@ -98,7 +98,7 @@ class LoadCsvPeriodicCommitObserverTest extends CypherFunSuite {
     verify(transactionalContext, never()).commitAndRestartTx()
 
     iterator1.next()
-    verify(transactionalContext, times(1)).commitAndRestartTx()
+    verify(transactionalContext).commitAndRestartTx()
   }
 
   test("if a custom separator is specified it should be passed to the wrapped resource") {
@@ -106,7 +106,7 @@ class LoadCsvPeriodicCommitObserverTest extends CypherFunSuite {
     resourceUnderTest.getCsvIterator(url, Some(";"), legacyCsvQuoteEscaping = false,  DEFAULT_BUFFER_SIZE)
 
     // When
-    verify(resource, times(1)).getCsvIterator(url, Some(";"), legacyCsvQuoteEscaping = false,
+    verify(resource).getCsvIterator(url, Some(";"), legacyCsvQuoteEscaping = false,
                                               DEFAULT_BUFFER_SIZE, false)
   }
 

@@ -64,7 +64,6 @@ import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
@@ -483,7 +482,7 @@ public class TransactionHandleTest
         handle.terminate();
 
         // then
-        verify( tx, times( 1 ) ).terminate();
+        verify( tx ).terminate();
     }
 
     @Test

@@ -78,7 +78,6 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
@@ -154,7 +153,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
         }
 
         // THEN
-        verify( transactionMonitor, times( 1 ) ).transactionFinished( true, isWriteTx );
+        verify( transactionMonitor ).transactionFinished( true, isWriteTx );
         verifyExtraInteractionWithTheMonitor( transactionMonitor, isWriteTx );
     }
 
@@ -169,7 +168,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
         }
 
         // THEN
-        verify( transactionMonitor, times( 1 ) ).transactionFinished( false, isWriteTx );
+        verify( transactionMonitor ).transactionFinished( false, isWriteTx );
         verifyExtraInteractionWithTheMonitor( transactionMonitor, isWriteTx );
     }
 
@@ -185,7 +184,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
         }
 
         // THEN
-        verify( transactionMonitor, times( 1 ) ).transactionFinished( false, isWriteTx );
+        verify( transactionMonitor ).transactionFinished( false, isWriteTx );
         verifyExtraInteractionWithTheMonitor( transactionMonitor, isWriteTx );
     }
 
@@ -209,7 +208,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
 
         // THEN
         assertTrue( exceptionReceived );
-        verify( transactionMonitor, times( 1 ) ).transactionFinished( false, isWriteTx );
+        verify( transactionMonitor ).transactionFinished( false, isWriteTx );
         verifyExtraInteractionWithTheMonitor( transactionMonitor, isWriteTx );
     }
 
@@ -235,8 +234,8 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
         }
 
         // THEN
-        verify( transactionMonitor, times( 1 ) ).transactionFinished( false, isWriteTx );
-        verify( transactionMonitor, times( 1 ) ).transactionTerminated( isWriteTx );
+        verify( transactionMonitor ).transactionFinished( false, isWriteTx );
+        verify( transactionMonitor ).transactionTerminated( isWriteTx );
         verifyExtraInteractionWithTheMonitor( transactionMonitor, isWriteTx );
     }
 
@@ -252,8 +251,8 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
         }
 
         // THEN
-        verify( transactionMonitor, times( 1 ) ).transactionFinished( false, isWriteTx );
-        verify( transactionMonitor, times( 1 ) ).transactionTerminated( isWriteTx );
+        verify( transactionMonitor ).transactionFinished( false, isWriteTx );
+        verify( transactionMonitor ).transactionTerminated( isWriteTx );
         verifyExtraInteractionWithTheMonitor( transactionMonitor, isWriteTx );
     }
 
@@ -280,8 +279,8 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
         }
 
         // THEN
-        verify( transactionMonitor, times( 1 ) ).transactionFinished( false, isWriteTx );
-        verify( transactionMonitor, times( 1 ) ).transactionTerminated( isWriteTx );
+        verify( transactionMonitor ).transactionFinished( false, isWriteTx );
+        verify( transactionMonitor ).transactionTerminated( isWriteTx );
         verifyExtraInteractionWithTheMonitor( transactionMonitor, isWriteTx );
     }
 
@@ -298,8 +297,8 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
         }
 
         // THEN
-        verify( transactionMonitor, times( 1 ) ).transactionFinished( false, isWriteTx );
-        verify( transactionMonitor, times( 1 ) ).transactionTerminated( isWriteTx );
+        verify( transactionMonitor ).transactionFinished( false, isWriteTx );
+        verify( transactionMonitor ).transactionTerminated( isWriteTx );
         verifyExtraInteractionWithTheMonitor( transactionMonitor, isWriteTx );
     }
 
@@ -313,7 +312,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
         transaction.markForTermination( Status.General.UnknownError );
 
         // THEN
-        verify( transactionMonitor, times( 1 ) ).transactionFinished( true, isWriteTx );
+        verify( transactionMonitor ).transactionFinished( true, isWriteTx );
         verifyExtraInteractionWithTheMonitor( transactionMonitor, isWriteTx );
     }
 
@@ -326,7 +325,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
         transaction.markForTermination( Status.General.UnknownError );
 
         // THEN
-        verify( transactionMonitor, times( 1 ) ).transactionFinished( false, isWriteTx );
+        verify( transactionMonitor ).transactionFinished( false, isWriteTx );
         verifyExtraInteractionWithTheMonitor( transactionMonitor, isWriteTx );
     }
 
@@ -350,8 +349,8 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
         transaction.close();
 
         // THEN
-        verify( transactionMonitor, times( 1 ) ).transactionFinished( false, isWriteTx );
-        verify( transactionMonitor, times( 1 ) ).transactionTerminated( isWriteTx );
+        verify( transactionMonitor ).transactionFinished( false, isWriteTx );
+        verify( transactionMonitor ).transactionTerminated( isWriteTx );
         verifyExtraInteractionWithTheMonitor( transactionMonitor, isWriteTx );
     }
 
@@ -387,8 +386,8 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
         }
 
         // THEN
-        verify( transactionMonitor, times( 1 ) ).transactionFinished( false, isWriteTx );
-        verify( transactionMonitor, times( 1 ) ).transactionTerminated( isWriteTx );
+        verify( transactionMonitor ).transactionFinished( false, isWriteTx );
+        verify( transactionMonitor ).transactionTerminated( isWriteTx );
         verifyExtraInteractionWithTheMonitor( transactionMonitor, isWriteTx );
     }
 
@@ -457,7 +456,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
     {
         if ( isWriteTx )
         {
-            verify( this.transactionMonitor, times( 1 ) ).upgradeToWriteTransaction();
+            verify( this.transactionMonitor ).upgradeToWriteTransaction();
         }
         verifyNoMoreInteractions( transactionMonitor );
     }

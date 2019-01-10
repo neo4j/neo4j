@@ -75,7 +75,6 @@ import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter.writeLogHeader;
@@ -217,8 +216,8 @@ class RecoveryTest
             life.start();
 
             InOrder order = inOrder( monitor );
-            order.verify( monitor, times( 1 ) ).recoveryRequired( any( LogPosition.class ) );
-            order.verify( monitor, times( 1 ) ).recoveryCompleted( 2 );
+            order.verify( monitor ).recoveryRequired( any( LogPosition.class ) );
+            order.verify( monitor ).recoveryCompleted( 2 );
             assertTrue( recoveryRequired.get() );
         }
         finally

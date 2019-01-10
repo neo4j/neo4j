@@ -33,7 +33,6 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.times;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.unsafe.impl.batchimport.input.InputEntity.NO_LABELS;
 import static org.neo4j.unsafe.impl.batchimport.input.InputEntity.NO_PROPERTIES;
@@ -152,8 +151,8 @@ public class InputEntityDecoratorsTest
 
         // THEN
         InOrder order = inOrder( decorator1, decorator2 );
-        order.verify( decorator1, times( 1 ) ).apply( node );
-        order.verify( decorator2, times( 1 ) ).apply( node );
+        order.verify( decorator1 ).apply( node );
+        order.verify( decorator2 ).apply( node );
         order.verifyNoMoreInteractions();
     }
 

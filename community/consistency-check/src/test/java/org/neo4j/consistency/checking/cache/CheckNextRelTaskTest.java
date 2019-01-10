@@ -34,7 +34,6 @@ import org.neo4j.kernel.impl.store.record.RecordLoad;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -61,6 +60,6 @@ class CheckNextRelTaskTest
 
         cacheTask.processCache();
 
-        verify( nodeStore, times( 1 ) ).getHighId();
+        verify( nodeStore ).getHighId();
     }
 }

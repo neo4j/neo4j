@@ -389,7 +389,7 @@ public class IndexPopulationJobTest
         runFuture.get();
 
         // THEN
-        verify( populator, times( 1 ) ).close( false );
+        verify( populator ).close( false );
         verify( index, never() ).flip( any(), any() );
     }
 

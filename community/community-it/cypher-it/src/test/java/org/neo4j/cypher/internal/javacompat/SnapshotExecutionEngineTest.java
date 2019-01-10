@@ -85,8 +85,8 @@ public class SnapshotExecutionEngineTest
     {
         executionEngine.executeWithRetries( "query", Collections.emptyMap(), transactionalContext, executor, false );
 
-        verify( executor, times( 1 ) ).execute( any(), anyMap(), any(), anyBoolean() );
-        verify( versionContext, times( 1 ) ).initRead();
+        verify( executor ).execute( any(), anyMap(), any(), anyBoolean() );
+        verify( versionContext ).initRead();
     }
 
     @Test

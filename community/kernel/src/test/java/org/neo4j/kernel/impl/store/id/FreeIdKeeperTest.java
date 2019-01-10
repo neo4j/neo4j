@@ -43,7 +43,6 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.neo4j.kernel.impl.store.id.IdContainer.NO_RESULT;
@@ -315,7 +314,7 @@ public class FreeIdKeeperTest
 
         // then
         // stuff must have been written to disk
-        verify( channel, times( 1 ) ).write( any( ByteBuffer.class ) );
+        verify( channel ).write( any( ByteBuffer.class ) );
         // and no ids can be returned
         assertEquals( NO_RESULT, keeper.getId() );
     }

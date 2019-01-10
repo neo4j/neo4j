@@ -50,11 +50,11 @@ public class ThrottlingBeanSnapshotProxyTest
         when( clock.millis() ).thenReturn( 100L );
         proxy.getLong();
         proxy.getLong();
-        verify( target, times( 1 ) ).getLong();
+        verify( target ).getLong();
 
         when( clock.millis() ).thenReturn( 199L );
         proxy.getLong();
-        verify( target, times( 1 ) ).getLong();
+        verify( target ).getLong();
 
         when( clock.millis() ).thenReturn( 200L );
         proxy.getLong();

@@ -37,7 +37,6 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.only;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.server.rest.discovery.DiscoverableURIs.Precedence.HIGH;
 import static org.neo4j.server.rest.discovery.DiscoverableURIs.Precedence.HIGHEST;
@@ -71,9 +70,9 @@ public class DiscoverableURIsTest
 
         discoverables.forEach( consumer );
 
-        verify( consumer, times( 1 ) ).accept( "a", new URI( "/test" ) );
-        verify( consumer, times( 1 ) ).accept( "b", new URI( "/data" ) );
-        verify( consumer, times( 1 ) ).accept( "c", new URI( "http://www.example.com" ) );
+        verify( consumer ).accept( "a", new URI( "/test" ) );
+        verify( consumer ).accept( "b", new URI( "/data" ) );
+        verify( consumer ).accept( "c", new URI( "http://www.example.com" ) );
     }
 
     @Test
@@ -111,9 +110,9 @@ public class DiscoverableURIsTest
 
         discoverables.forEach( consumer );
 
-        verify( consumer, times( 1 ) ).accept( "a", new URI( "/test2" ) );
-        verify( consumer, times( 1 ) ).accept( "b", new URI( "/data" ) );
-        verify( consumer, times( 1 ) ).accept( "c", new URI( "bolt://localhost:7687" ) );
+        verify( consumer ).accept( "a", new URI( "/test2" ) );
+        verify( consumer ).accept( "b", new URI( "/data" ) );
+        verify( consumer ).accept( "c", new URI( "bolt://localhost:7687" ) );
     }
 
     @Test
@@ -142,7 +141,7 @@ public class DiscoverableURIsTest
 
         empty.forEach( consumer );
 
-        verify( consumer, times( 1 ) ).accept( "a", new URI( "bolt://localhost:7687" ) );
+        verify( consumer ).accept( "a", new URI( "bolt://localhost:7687" ) );
     }
 
     @Test
@@ -154,7 +153,7 @@ public class DiscoverableURIsTest
 
         empty.forEach( consumer );
 
-        verify( consumer, times( 1 ) ).accept( "a", new URI( "bolt://www.example.com:8888" ) );
+        verify( consumer ).accept( "a", new URI( "bolt://www.example.com:8888" ) );
     }
 
     @Test
@@ -168,7 +167,7 @@ public class DiscoverableURIsTest
 
         empty.forEach( consumer );
 
-        verify( consumer, times( 1 ) ).accept( "a", uri );
+        verify( consumer ).accept( "a", uri );
     }
 
     @Test
@@ -182,7 +181,7 @@ public class DiscoverableURIsTest
 
         empty.forEach( consumer );
 
-        verify( consumer, times( 1 ) ).accept( "a", new URI( "bolt://www.example.com:8989" ) );
+        verify( consumer ).accept( "a", new URI( "bolt://www.example.com:8989" ) );
     }
 
     @Test
@@ -199,9 +198,9 @@ public class DiscoverableURIsTest
 
         empty.forEach( consumer );
 
-        verify( consumer, times( 1 ) ).accept( "a", new URI( "bolt://localhost:8989" ) );
-        verify( consumer, times( 1 ) ).accept( "b", new URI( "bolt://localhost:8990" ) );
-        verify( consumer, times( 1 ) ).accept( "c", new URI( "bolt://localhost:8991" ) );
-        verify( consumer, times( 1 ) ).accept( "d", new URI( "bolt://localhost:8992" ) );
+        verify( consumer ).accept( "a", new URI( "bolt://localhost:8989" ) );
+        verify( consumer ).accept( "b", new URI( "bolt://localhost:8990" ) );
+        verify( consumer ).accept( "c", new URI( "bolt://localhost:8991" ) );
+        verify( consumer ).accept( "d", new URI( "bolt://localhost:8992" ) );
     }
 }

@@ -107,7 +107,7 @@ class MonitorsTest
         monitorTag1.aVoid();
         verifyZeroInteractions( listener );
         monitorTag2.aVoid();
-        verify( listener, times(1) ).aVoid();
+        verify( listener ).aVoid();
         verifyNoMoreInteractions( listener );
     }
 
@@ -125,13 +125,13 @@ class MonitorsTest
         // Calls on monitors from parent should not reach child listeners
         MyMonitor parentMonitor = parent.newMonitor( MyMonitor.class );
         parentMonitor.aVoid();
-        verify( parentListener, times( 1 ) ).aVoid();
+        verify( parentListener ).aVoid();
         verifyZeroInteractions( childListener );
 
         // Calls on monitors from child should reach both listeners
         MyMonitor childMonitor = child.newMonitor( MyMonitor.class );
         childMonitor.aVoid();
         verify( parentListener, times( 2 ) ).aVoid();
-        verify( childListener, times( 1 ) ).aVoid();
+        verify( childListener ).aVoid();
     }
 }

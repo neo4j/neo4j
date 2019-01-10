@@ -58,7 +58,7 @@ public class SocketConnectionTest
         connection.recv( 4 );
 
         // THEN
-        verify(stream, times(1)).read(  any(byte[].class), anyInt(), anyInt() );
+        verify( stream ).read( any( byte[].class ), anyInt(), anyInt() );
     }
 
     @Test

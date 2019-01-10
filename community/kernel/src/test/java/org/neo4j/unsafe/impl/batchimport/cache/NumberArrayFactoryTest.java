@@ -34,7 +34,6 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.helpers.collection.Iterables.single;
 import static org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory.NO_MONITOR;
@@ -71,7 +70,7 @@ public class NumberArrayFactoryTest
         array.set( KILO - 10, 12345 );
 
         // THEN
-        verify( lowMemoryFactory, times( 1 ) ).newLongArray( KILO, -1, 0 );
+        verify( lowMemoryFactory ).newLongArray( KILO, -1, 0 );
         assertTrue( array instanceof HeapLongArray );
         assertEquals( 12345, array.get( KILO - 10 ) );
     }
@@ -129,7 +128,7 @@ public class NumberArrayFactoryTest
         array.set( KILO - 10, 12345 );
 
         // THEN
-        verify( lowMemoryFactory, times( 1 ) ).newIntArray( KILO, -1, 0 );
+        verify( lowMemoryFactory ).newIntArray( KILO, -1, 0 );
         assertTrue( array instanceof HeapIntArray );
         assertEquals( 12345, array.get( KILO - 10 ) );
     }
@@ -150,7 +149,7 @@ public class NumberArrayFactoryTest
         array.setInt( KILO - 10, 0, 12345 );
 
         // THEN
-        verify( throwingMemoryFactory, times( 1 ) ).newByteArray( eq( KILO ), any( byte[].class ), eq( 0L ) );
+        verify( throwingMemoryFactory ).newByteArray( eq( KILO ), any( byte[].class ), eq( 0L ) );
         assertTrue( array instanceof HeapByteArray );
         assertEquals( 12345, array.getInt( KILO - 10, 0 ) );
         assertEquals( KILO * itemSize, monitor.memory );

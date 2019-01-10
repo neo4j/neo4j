@@ -48,7 +48,6 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.reset;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexTestHelp.add;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexTestHelp.fill;
@@ -142,7 +141,7 @@ public class FusionIndexPopulatorTest
         // then
         for ( IndexPopulator alivePopulator : alivePopulators )
         {
-            verify( alivePopulator, times( 1 ) ).create();
+            verify( alivePopulator ).create();
         }
     }
 
@@ -185,7 +184,7 @@ public class FusionIndexPopulatorTest
         // then
         for ( IndexPopulator alivePopulator : alivePopulators )
         {
-            verify( alivePopulator, times( 1 ) ).drop();
+            verify( alivePopulator ).drop();
         }
         verify( dropAction ).drop( indexId );
     }
@@ -242,7 +241,7 @@ public class FusionIndexPopulatorTest
     {
         Collection<IndexEntryUpdate<LabelSchemaDescriptor>> update = Collections.singletonList( add( numberValues ) );
         fusionIndexPopulator.add( update );
-        verify( correctPopulator, times( 1 ) ).add( update );
+        verify( correctPopulator ).add( update );
         for ( IndexPopulator alivePopulator : alivePopulators )
         {
             if ( alivePopulator != correctPopulator )
@@ -295,7 +294,7 @@ public class FusionIndexPopulatorTest
         // then
         for ( IndexPopulator alivePopulator : alivePopulators )
         {
-            verify( alivePopulator, times( 1 ) ).close( populationCompletedSuccessfully );
+            verify( alivePopulator ).close( populationCompletedSuccessfully );
         }
     }
 
@@ -337,7 +336,7 @@ public class FusionIndexPopulatorTest
         // then
         for ( IndexPopulator alivePopulator : alivePopulators )
         {
-            verify( alivePopulator, times( 1 ) ).close( true );
+            verify( alivePopulator ).close( true );
         }
     }
 
@@ -390,7 +389,7 @@ public class FusionIndexPopulatorTest
         // then
         for ( IndexPopulator alivePopulator : alivePopulators )
         {
-            verify( alivePopulator, times( 1 ) ).markAsFailed( failureMessage );
+            verify( alivePopulator ).markAsFailed( failureMessage );
         }
     }
 

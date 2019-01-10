@@ -30,7 +30,6 @@ import org.neo4j.storageengine.api.TransactionApplicationMode;
 
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -53,6 +52,6 @@ public class CountsStoreTransactionApplierTest
         }
 
         // THEN
-        verify( updater, times( 1 ) ).incrementNodeCount( StatementConstants.ANY_LABEL, 1 );
+        verify( updater ).incrementNodeCount( StatementConstants.ANY_LABEL, 1 );
     }
 }

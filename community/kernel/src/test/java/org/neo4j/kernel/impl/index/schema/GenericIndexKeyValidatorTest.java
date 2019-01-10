@@ -38,7 +38,6 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.values.storable.DateValue.epochDate;
@@ -82,7 +81,7 @@ public class GenericIndexKeyValidatorTest
         {
             // then good
             assertThat( e.getMessage(), containsString( "abcdefghijklmnopqrstuvw" ) );
-            verify( layout, times( 1 ) ).newKey();
+            verify( layout ).newKey();
         }
     }
 

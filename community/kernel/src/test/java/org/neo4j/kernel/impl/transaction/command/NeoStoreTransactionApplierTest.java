@@ -81,7 +81,6 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forLabel;
@@ -157,8 +156,8 @@ public class NeoStoreTransactionApplierTest
         // then
         assertFalse( result );
 
-        verify( lockService, times( 1 ) ).acquireNodeLock( command.getKey(), LockService.LockType.WRITE_LOCK );
-        verify( nodeStore, times( 1 ) ).updateRecord( after );
+        verify( lockService ).acquireNodeLock( command.getKey(), LockService.LockType.WRITE_LOCK );
+        verify( nodeStore ).updateRecord( after );
     }
 
     @Test
@@ -179,8 +178,8 @@ public class NeoStoreTransactionApplierTest
         // then
         assertFalse( result );
 
-        verify( lockService, times( 1 ) ).acquireNodeLock( command.getKey(), LockService.LockType.WRITE_LOCK );
-        verify( nodeStore, times( 1 ) ).updateRecord( after );
+        verify( lockService ).acquireNodeLock( command.getKey(), LockService.LockType.WRITE_LOCK );
+        verify( nodeStore ).updateRecord( after );
     }
 
     @Test
@@ -201,10 +200,10 @@ public class NeoStoreTransactionApplierTest
         // then
         assertFalse( result );
 
-        verify( lockService, times( 1 ) ).acquireNodeLock( command.getKey(), LockService.LockType.WRITE_LOCK );
-        verify( nodeStore, times( 1 ) ).setHighestPossibleIdInUse( after.getId() );
-        verify( nodeStore, times( 1 ) ).updateRecord( after );
-        verify( dynamicLabelStore, times( 1 ) ).setHighestPossibleIdInUse( three.getId() );
+        verify( lockService ).acquireNodeLock( command.getKey(), LockService.LockType.WRITE_LOCK );
+        verify( nodeStore ).setHighestPossibleIdInUse( after.getId() );
+        verify( nodeStore ).updateRecord( after );
+        verify( dynamicLabelStore ).setHighestPossibleIdInUse( three.getId() );
     }
 
     @Test
@@ -228,8 +227,8 @@ public class NeoStoreTransactionApplierTest
         // then
         assertFalse( result );
 
-        verify( lockService, times( 1 ) ).acquireNodeLock( command.getKey(), LockService.LockType.WRITE_LOCK );
-        verify( nodeStore, times( 1 ) ).updateRecord( after );
+        verify( lockService ).acquireNodeLock( command.getKey(), LockService.LockType.WRITE_LOCK );
+        verify( nodeStore ).updateRecord( after );
     }
 
     // RELATIONSHIP COMMAND
@@ -250,7 +249,7 @@ public class NeoStoreTransactionApplierTest
         // then
         assertFalse( result );
 
-        verify( relationshipStore, times( 1 ) ).updateRecord( record );
+        verify( relationshipStore ).updateRecord( record );
     }
 
     @Test
@@ -270,7 +269,7 @@ public class NeoStoreTransactionApplierTest
         // then
         assertFalse( result );
 
-        verify( relationshipStore, times( 1 ) ).updateRecord( record );
+        verify( relationshipStore ).updateRecord( record );
     }
 
     @Test
@@ -289,8 +288,8 @@ public class NeoStoreTransactionApplierTest
         // then
         assertFalse( result );
 
-        verify( relationshipStore, times( 1 ) ).setHighestPossibleIdInUse( record.getId() );
-        verify( relationshipStore, times( 1 ) ).updateRecord( record );
+        verify( relationshipStore ).setHighestPossibleIdInUse( record.getId() );
+        verify( relationshipStore ).updateRecord( record );
     }
 
     // PROPERTY COMMAND
@@ -311,8 +310,8 @@ public class NeoStoreTransactionApplierTest
         // then
         assertFalse( result );
 
-        verify( lockService, times( 1 ) ).acquireNodeLock( 42, LockService.LockType.WRITE_LOCK );
-        verify( propertyStore, times( 1 ) ).updateRecord( after );
+        verify( lockService ).acquireNodeLock( 42, LockService.LockType.WRITE_LOCK );
+        verify( propertyStore ).updateRecord( after );
     }
 
     @Test
@@ -331,9 +330,9 @@ public class NeoStoreTransactionApplierTest
         // then
         assertFalse( result );
 
-        verify( lockService, times( 1 ) ).acquireNodeLock( 42, LockService.LockType.WRITE_LOCK );
-        verify( propertyStore, times( 1 ) ).setHighestPossibleIdInUse( after.getId() );
-        verify( propertyStore, times( 1 ) ).updateRecord( after );
+        verify( lockService ).acquireNodeLock( 42, LockService.LockType.WRITE_LOCK );
+        verify( propertyStore ).setHighestPossibleIdInUse( after.getId() );
+        verify( propertyStore ).updateRecord( after );
     }
 
     @Test
@@ -352,7 +351,7 @@ public class NeoStoreTransactionApplierTest
         // then
         assertFalse( result );
 
-        verify( propertyStore, times( 1 ) ).updateRecord( after );
+        verify( propertyStore ).updateRecord( after );
     }
 
     @Test
@@ -371,8 +370,8 @@ public class NeoStoreTransactionApplierTest
         // then
         assertFalse( result );
 
-        verify( propertyStore, times( 1 ) ).setHighestPossibleIdInUse( 12 );
-        verify( propertyStore, times( 1 ) ).updateRecord( after );
+        verify( propertyStore ).setHighestPossibleIdInUse( 12 );
+        verify( propertyStore ).updateRecord( after );
     }
 
     // RELATIONSHIP GROUP COMMAND
@@ -391,7 +390,7 @@ public class NeoStoreTransactionApplierTest
         // then
         assertFalse( result );
 
-        verify( relationshipGroupStore, times( 1 ) ).updateRecord( after );
+        verify( relationshipGroupStore ).updateRecord( after );
     }
 
     @Test
@@ -409,8 +408,8 @@ public class NeoStoreTransactionApplierTest
         // then
         assertFalse( result );
 
-        verify( relationshipGroupStore, times( 1 ) ).setHighestPossibleIdInUse( after.getId() );
-        verify( relationshipGroupStore, times( 1 ) ).updateRecord( after );
+        verify( relationshipGroupStore ).setHighestPossibleIdInUse( after.getId() );
+        verify( relationshipGroupStore ).updateRecord( after );
     }
 
     // RELATIONSHIP TYPE TOKEN COMMAND
@@ -432,7 +431,7 @@ public class NeoStoreTransactionApplierTest
         // then
         assertFalse( result );
 
-        verify( relationshipTypeTokenStore, times( 1 ) ).updateRecord( after );
+        verify( relationshipTypeTokenStore ).updateRecord( after );
     }
 
     @Test
@@ -456,9 +455,9 @@ public class NeoStoreTransactionApplierTest
         // then
         assertFalse( result );
 
-        verify( relationshipTypeTokenStore, times( 1 ) ).setHighestPossibleIdInUse( after.getId() );
-        verify( relationshipTypeTokenStore, times( 1 ) ).updateRecord( after );
-        verify( cacheAccess, times( 1 ) ).addRelationshipTypeToken( token );
+        verify( relationshipTypeTokenStore ).setHighestPossibleIdInUse( after.getId() );
+        verify( relationshipTypeTokenStore ).updateRecord( after );
+        verify( cacheAccess ).addRelationshipTypeToken( token );
     }
 
     // LABEL TOKEN COMMAND
@@ -480,7 +479,7 @@ public class NeoStoreTransactionApplierTest
         // then
         assertFalse( result );
 
-        verify( labelTokenStore, times( 1 ) ).updateRecord( after );
+        verify( labelTokenStore ).updateRecord( after );
     }
 
     @Test
@@ -503,9 +502,9 @@ public class NeoStoreTransactionApplierTest
         // then
         assertFalse( result );
 
-        verify( labelTokenStore, times( 1 ) ).setHighestPossibleIdInUse( after.getId() );
-        verify( labelTokenStore, times( 1 ) ).updateRecord( after );
-        verify( cacheAccess, times( 1 ) ).addLabelToken( token );
+        verify( labelTokenStore ).setHighestPossibleIdInUse( after.getId() );
+        verify( labelTokenStore ).updateRecord( after );
+        verify( cacheAccess ).addLabelToken( token );
     }
 
     // PROPERTY KEY TOKEN COMMAND
@@ -527,7 +526,7 @@ public class NeoStoreTransactionApplierTest
         // then
         assertFalse( result );
 
-        verify( propertyKeyTokenStore, times( 1 ) ).updateRecord( after );
+        verify( propertyKeyTokenStore ).updateRecord( after );
     }
 
     @Test
@@ -551,9 +550,9 @@ public class NeoStoreTransactionApplierTest
         // then
         assertFalse( result );
 
-        verify( propertyKeyTokenStore, times( 1 ) ).setHighestPossibleIdInUse( after.getId() );
-        verify( propertyKeyTokenStore, times( 1 ) ).updateRecord( after );
-        verify( cacheAccess, times( 1 ) ).addPropertyKeyToken( token );
+        verify( propertyKeyTokenStore ).setHighestPossibleIdInUse( after.getId() );
+        verify( propertyKeyTokenStore ).updateRecord( after );
+        verify( cacheAccess ).addPropertyKeyToken( token );
     }
 
     @Test
@@ -573,9 +572,9 @@ public class NeoStoreTransactionApplierTest
         // then
         assertFalse( result );
 
-        verify( schemaStore, times( 1 ) ).updateRecord( record );
-        verify( indexingService, times( 1 ) ).createIndexes( rule );
-        verify( cacheAccess, times( 1 ) ).addSchemaRule( rule );
+        verify( schemaStore ).updateRecord( record );
+        verify( indexingService ).createIndexes( rule );
+        verify( cacheAccess ).addSchemaRule( rule );
     }
 
     @Test
@@ -595,10 +594,10 @@ public class NeoStoreTransactionApplierTest
         // then
         assertFalse( result );
 
-        verify( schemaStore, times( 1 ) ).setHighestPossibleIdInUse( record.getId() );
-        verify( schemaStore, times( 1 ) ).updateRecord( record );
-        verify( indexingService, times( 1 ) ).createIndexes( rule );
-        verify( cacheAccess, times( 1 ) ).addSchemaRule( rule );
+        verify( schemaStore ).setHighestPossibleIdInUse( record.getId() );
+        verify( schemaStore ).updateRecord( record );
+        verify( indexingService ).createIndexes( rule );
+        verify( cacheAccess ).addSchemaRule( rule );
     }
 
     @Test
@@ -617,9 +616,9 @@ public class NeoStoreTransactionApplierTest
         // then
         assertFalse( result );
 
-        verify( schemaStore, times( 1 ) ).updateRecord( record );
-        verify( indexingService, times( 1 ) ).activateIndex( rule );
-        verify( cacheAccess, times( 1 ) ).addSchemaRule( rule );
+        verify( schemaStore ).updateRecord( record );
+        verify( indexingService ).activateIndex( rule );
+        verify( cacheAccess ).addSchemaRule( rule );
     }
 
     @Test
@@ -638,10 +637,10 @@ public class NeoStoreTransactionApplierTest
         // then
         assertFalse( result );
 
-        verify( schemaStore, times( 1 ) ).setHighestPossibleIdInUse( record.getId() );
-        verify( schemaStore, times( 1 ) ).updateRecord( record );
-        verify( indexingService, times( 1 ) ).activateIndex( rule );
-        verify( cacheAccess, times( 1 ) ).addSchemaRule( rule );
+        verify( schemaStore ).setHighestPossibleIdInUse( record.getId() );
+        verify( schemaStore ).updateRecord( record );
+        verify( indexingService ).activateIndex( rule );
+        verify( cacheAccess ).addSchemaRule( rule );
     }
 
     @Test
@@ -690,9 +689,9 @@ public class NeoStoreTransactionApplierTest
         // then
         assertFalse( result );
 
-        verify( schemaStore, times( 1 ) ).updateRecord( record );
-        verify( indexingService, times( 1 ) ).dropIndex( rule );
-        verify( cacheAccess, times( 1 ) ).removeSchemaRuleFromCache( command.getKey() );
+        verify( schemaStore ).updateRecord( record );
+        verify( indexingService ).dropIndex( rule );
+        verify( cacheAccess ).removeSchemaRuleFromCache( command.getKey() );
     }
 
     @Test
@@ -712,10 +711,10 @@ public class NeoStoreTransactionApplierTest
         // then
         assertFalse( result );
 
-        verify( schemaStore, times( 1 ) ).setHighestPossibleIdInUse( record.getId() );
-        verify( schemaStore, times( 1 ) ).updateRecord( record );
-        verify( indexingService, times( 1 ) ).dropIndex( rule );
-        verify( cacheAccess, times( 1 ) ).removeSchemaRuleFromCache( command.getKey() );
+        verify( schemaStore ).setHighestPossibleIdInUse( record.getId() );
+        verify( schemaStore ).updateRecord( record );
+        verify( indexingService ).dropIndex( rule );
+        verify( cacheAccess ).removeSchemaRuleFromCache( command.getKey() );
     }
 
     @Test
@@ -735,9 +734,9 @@ public class NeoStoreTransactionApplierTest
         // then
         assertFalse( result );
 
-        verify( schemaStore, times( 1 ) ).updateRecord( record );
-        verify( metaDataStore, times( 1 ) ).setLatestConstraintIntroducingTx( transactionId );
-        verify( cacheAccess, times( 1 ) ).addSchemaRule( rule );
+        verify( schemaStore ).updateRecord( record );
+        verify( metaDataStore ).setLatestConstraintIntroducingTx( transactionId );
+        verify( cacheAccess ).addSchemaRule( rule );
     }
 
     @Test
@@ -757,10 +756,10 @@ public class NeoStoreTransactionApplierTest
         // then
         assertFalse( result );
 
-        verify( schemaStore, times( 1 ) ).setHighestPossibleIdInUse( record.getId() );
-        verify( schemaStore, times( 1 ) ).updateRecord( record );
-        verify( metaDataStore, times( 1 ) ).setLatestConstraintIntroducingTx( transactionId );
-        verify( cacheAccess, times( 1 ) ).addSchemaRule( rule );
+        verify( schemaStore ).setHighestPossibleIdInUse( record.getId() );
+        verify( schemaStore ).updateRecord( record );
+        verify( metaDataStore ).setLatestConstraintIntroducingTx( transactionId );
+        verify( cacheAccess ).addSchemaRule( rule );
     }
 
     @Test
@@ -779,9 +778,9 @@ public class NeoStoreTransactionApplierTest
         // then
         assertFalse( result );
 
-        verify( schemaStore, times( 1 ) ).updateRecord( record );
-        verify( metaDataStore, times( 1 ) ).setLatestConstraintIntroducingTx( transactionId );
-        verify( cacheAccess, times( 1 ) ).addSchemaRule( rule );
+        verify( schemaStore ).updateRecord( record );
+        verify( metaDataStore ).setLatestConstraintIntroducingTx( transactionId );
+        verify( cacheAccess ).addSchemaRule( rule );
     }
 
     @Test
@@ -800,10 +799,10 @@ public class NeoStoreTransactionApplierTest
         // then
         assertFalse( result );
 
-        verify( schemaStore, times( 1 ) ).setHighestPossibleIdInUse( record.getId() );
-        verify( schemaStore, times( 1 ) ).updateRecord( record );
-        verify( metaDataStore, times( 1 ) ).setLatestConstraintIntroducingTx( transactionId );
-        verify( cacheAccess, times( 1 ) ).addSchemaRule( rule );
+        verify( schemaStore ).setHighestPossibleIdInUse( record.getId() );
+        verify( schemaStore ).updateRecord( record );
+        verify( metaDataStore ).setLatestConstraintIntroducingTx( transactionId );
+        verify( cacheAccess ).addSchemaRule( rule );
     }
 
     @Test
@@ -823,9 +822,9 @@ public class NeoStoreTransactionApplierTest
         // then
         assertFalse( result );
 
-        verify( schemaStore, times( 1 ) ).updateRecord( record );
+        verify( schemaStore ).updateRecord( record );
         verify( metaDataStore, never() ).setLatestConstraintIntroducingTx( transactionId );
-        verify( cacheAccess, times( 1 ) ).removeSchemaRuleFromCache( command.getKey() );
+        verify( cacheAccess ).removeSchemaRuleFromCache( command.getKey() );
     }
 
     @Test
@@ -845,10 +844,10 @@ public class NeoStoreTransactionApplierTest
         // then
         assertFalse( result );
 
-        verify( schemaStore, times( 1 ) ).setHighestPossibleIdInUse( record.getId() );
-        verify( schemaStore, times( 1 ) ).updateRecord( record );
+        verify( schemaStore ).setHighestPossibleIdInUse( record.getId() );
+        verify( schemaStore ).updateRecord( record );
         verify( metaDataStore, never() ).setLatestConstraintIntroducingTx( transactionId );
-        verify( cacheAccess, times( 1 ) ).removeSchemaRuleFromCache( command.getKey() );
+        verify( cacheAccess ).removeSchemaRuleFromCache( command.getKey() );
     }
 
     // NEO STORE COMMAND
@@ -869,7 +868,7 @@ public class NeoStoreTransactionApplierTest
         // then
         assertFalse( result );
 
-        verify( metaDataStore, times( 1 ) ).setGraphNextProp( after.getNextProp() );
+        verify( metaDataStore ).setGraphNextProp( after.getNextProp() );
     }
 
     @Test
@@ -888,7 +887,7 @@ public class NeoStoreTransactionApplierTest
         // then
         assertFalse( result );
 
-        verify( metaDataStore, times( 1 ) ).setGraphNextProp( after.getNextProp() );
+        verify( metaDataStore ).setGraphNextProp( after.getNextProp() );
     }
 
     private BatchTransactionApplier newApplier( boolean recovery )

@@ -91,8 +91,8 @@ class MarshlandPoolTest
         pool.close();
 
         // Then
-        verify( delegatePool, times( 1 ) ).acquire();
-        verify( delegatePool, times( 1 ) ).release( any() );
+        verify( delegatePool ).acquire();
+        verify( delegatePool ).release( any() );
         verifyNoMoreInteractions( delegatePool );
     }
 

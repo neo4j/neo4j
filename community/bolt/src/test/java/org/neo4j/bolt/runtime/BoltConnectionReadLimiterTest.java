@@ -44,7 +44,6 @@ import static org.mockito.Matchers.contains;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.bolt.testing.NullResponseHandler.nullResponseHandler;
@@ -115,7 +114,7 @@ public class BoltConnectionReadLimiterTest
         limiter.enqueued( connection, job );
 
         assertFalse( channel.config().isAutoRead() );
-        verify( log, times( 1 ) ).warn( contains( "disabled" ), eq( channel.remoteAddress() ), eq( 3 ) );
+        verify( log ).warn( contains( "disabled" ), eq( channel.remoteAddress() ), eq( 3 ) );
     }
 
     @Test
@@ -131,8 +130,8 @@ public class BoltConnectionReadLimiterTest
         limiter.drained( connection, Arrays.asList( job, job  ) );
 
         assertTrue( channel.config().isAutoRead() );
-        verify( log, times( 1 ) ).warn( contains( "disabled" ), eq( channel.remoteAddress() ), eq( 3 ) );
-        verify( log, times( 1 ) ).warn( contains( "enabled" ), eq( channel.remoteAddress() ), eq( 1 ) );
+        verify( log ).warn( contains( "disabled" ), eq( channel.remoteAddress() ), eq( 3 ) );
+        verify( log ).warn( contains( "enabled" ), eq( channel.remoteAddress() ), eq( 1 ) );
     }
 
     @Test
@@ -148,8 +147,8 @@ public class BoltConnectionReadLimiterTest
         limiter.drained( connection, Arrays.asList( job, job, job ) );
 
         assertTrue( channel.config().isAutoRead() );
-        verify( log, times( 1 ) ).warn( contains( "disabled" ), eq( channel.remoteAddress() ), eq( 3 ) );
-        verify( log, times( 1 ) ).warn( contains( "enabled" ), eq( channel.remoteAddress() ), eq( 1 ) );
+        verify( log ).warn( contains( "disabled" ), eq( channel.remoteAddress() ), eq( 3 ) );
+        verify( log ).warn( contains( "enabled" ), eq( channel.remoteAddress() ), eq( 1 ) );
     }
 
     @Test

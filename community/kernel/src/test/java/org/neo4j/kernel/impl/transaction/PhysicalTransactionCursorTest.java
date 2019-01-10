@@ -43,7 +43,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -73,7 +72,7 @@ public class PhysicalTransactionCursorTest
         cursor.close();
 
         // then
-        verify( channel, times( 1 ) ).close();
+        verify( channel ).close();
     }
 
     @Test

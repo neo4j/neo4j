@@ -30,10 +30,7 @@ import org.neo4j.cypher.internal.v4_0.util.symbols._
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.{Node, Relationship}
 import org.neo4j.kernel.impl.util.ValueUtils.{fromNodeProxy, fromRelationshipProxy}
-import org.neo4j.values.AnyValue
 import org.neo4j.values.virtual.RelationshipValue
-
-import scala.collection.immutable
 
 class ExpandIntoPipeTest extends CypherFunSuite with PipeTestSupport {
 
@@ -224,7 +221,7 @@ class ExpandIntoPipeTest extends CypherFunSuite with PipeTestSupport {
       Map("n" -> fromNodeProxy(node0), "k" -> fromNodeProxy(node1), "r1" -> fromRelationshipProxy(rel0), "r2" -> fromRelationshipProxy(rel0)))
 
     // relationships should be cached after the first call
-    verify(query, times(1)).getRelationshipsForIds(any(), mockEq(SemanticDirection.BOTH), mockEq(None))
+    verify(query).getRelationshipsForIds(any(), mockEq(SemanticDirection.BOTH), mockEq(None))
   }
 
   private def setUpRelMockingInQueryContext(rels: Relationship*) {

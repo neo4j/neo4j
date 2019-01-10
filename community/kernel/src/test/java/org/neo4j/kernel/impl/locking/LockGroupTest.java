@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.locking;
 import org.junit.Test;
 
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 public class LockGroupTest
@@ -44,8 +43,8 @@ public class LockGroupTest
         }
 
         // then
-        verify( lock1, times( 1 ) ).release();
-        verify( lock2, times( 1 ) ).release();
-        verify( lock3, times( 1 ) ).release();
+        verify( lock1 ).release();
+        verify( lock2 ).release();
+        verify( lock3 ).release();
     }
 }

@@ -101,7 +101,7 @@ public class ExecutorBoltSchedulerTest
         scheduler.start();
 
         verify( jobScheduler ).threadFactory( Group.BOLT_WORKER );
-        verify( mockExecutorFactory, times( 1 ) ).create( anyInt(), anyInt(), any( Duration.class ), anyInt(), anyBoolean(), any( ThreadFactory.class ) );
+        verify( mockExecutorFactory ).create( anyInt(), anyInt(), any( Duration.class ), anyInt(), anyBoolean(), any( ThreadFactory.class ) );
     }
 
     @Test

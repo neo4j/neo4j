@@ -65,7 +65,6 @@ import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.test.matchers.ByteArrayMatcher.byteArray;
@@ -650,7 +649,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
         try
         {
             // then
-            verify( fs, times( 1 ) ).open( eq( file ), any( OpenMode.class ) );
+            verify( fs ).open( eq( file ), any( OpenMode.class ) );
         }
         finally
         {

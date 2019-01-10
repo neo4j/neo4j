@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.index.schema.fusion;
 
 import org.hamcrest.Matcher;
-import org.mockito.Mockito;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -212,7 +211,7 @@ class FusionIndexTestHelp
         // then
         for ( AutoCloseable successfulCloseable : successfulCloseables )
         {
-            verify( successfulCloseable, Mockito.times( 1 ) ).close();
+            verify( successfulCloseable ).close();
         }
     }
 

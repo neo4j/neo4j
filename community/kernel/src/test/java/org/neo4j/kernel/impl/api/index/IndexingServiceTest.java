@@ -1247,10 +1247,10 @@ public class IndexingServiceTest
         IndexingService indexingService = createIndexServiceWithCustomIndexMap( indexMapReference );
 
         indexingService.forceAll( IOLimiter.UNLIMITED );
-        verify( validIndex1, times( 1 ) ).force( IOLimiter.UNLIMITED );
-        verify( validIndex2, times( 1 ) ).force( IOLimiter.UNLIMITED );
-        verify( validIndex3, times( 1 ) ).force( IOLimiter.UNLIMITED );
-        verify( validIndex4, times( 1 ) ).force( IOLimiter.UNLIMITED );
+        verify( validIndex1 ).force( IOLimiter.UNLIMITED );
+        verify( validIndex2 ).force( IOLimiter.UNLIMITED );
+        verify( validIndex3 ).force( IOLimiter.UNLIMITED );
+        verify( validIndex4 ).force( IOLimiter.UNLIMITED );
     }
 
     @Test
@@ -1297,7 +1297,7 @@ public class IndexingServiceTest
         life.start();
 
         // Then
-        verify( accessor, times( 1 ) ).refresh();
+        verify( accessor ).refresh();
     }
 
     @Test

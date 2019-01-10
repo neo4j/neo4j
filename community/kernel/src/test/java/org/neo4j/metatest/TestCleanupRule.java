@@ -28,7 +28,6 @@ import org.neo4j.test.rule.CleanupRule;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 public class TestCleanupRule
@@ -74,8 +73,8 @@ public class TestCleanupRule
 
         // THEN
         InOrder inOrder = inOrder( dirt, closeable );
-        inOrder.verify( dirt, times( 1 ) ).shutdown();
-        inOrder.verify( closeable, times( 1 ) ).close();
+        inOrder.verify( dirt ).shutdown();
+        inOrder.verify( closeable ).close();
     }
 
     @Test

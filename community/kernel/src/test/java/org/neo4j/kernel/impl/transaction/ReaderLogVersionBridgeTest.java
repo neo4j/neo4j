@@ -44,7 +44,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
@@ -93,7 +92,7 @@ public class ReaderLogVersionBridgeTest
         PhysicalLogVersionedStoreChannel expected =
                 new PhysicalLogVersionedStoreChannel( newStoreChannel, version + 1, CURRENT_LOG_VERSION );
         assertEquals( expected, result );
-        verify( channel, times( 1 ) ).close();
+        verify( channel ).close();
     }
 
     @Test

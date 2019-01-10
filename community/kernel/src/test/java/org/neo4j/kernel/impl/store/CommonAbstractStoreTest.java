@@ -66,7 +66,6 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.when;
 
 @PageCacheExtension
@@ -116,8 +115,8 @@ class CommonAbstractStoreTest
         store.close();
 
         // then
-        inOrder.verify( pageFile, times( 1 ) ).close();
-        inOrder.verify( idGenerator, times( 1 ) ).close();
+        inOrder.verify( pageFile ).close();
+        inOrder.verify( idGenerator ).close();
     }
 
     @Test

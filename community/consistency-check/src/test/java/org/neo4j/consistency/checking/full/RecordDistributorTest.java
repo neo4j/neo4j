@@ -27,7 +27,6 @@ import org.neo4j.consistency.checking.full.RecordDistributor.RecordConsumer;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 class RecordDistributorTest
@@ -42,17 +41,17 @@ class RecordDistributorTest
         // WHEN/THEN
         RelationshipRecord relationship = relationship( 0, 0, 1 );
         distributor.distribute( relationship, consumer );
-        verify( consumer, times( 1 ) ).accept( relationship, 0 );
+        verify( consumer ).accept( relationship, 0 );
 
         relationship = relationship( 1, 0, 7 );
         distributor.distribute( relationship, consumer );
-        verify( consumer, times( 1 ) ).accept( relationship, 0 );
-        verify( consumer, times( 1 ) ).accept( relationship, 1 );
+        verify( consumer ).accept( relationship, 0 );
+        verify( consumer ).accept( relationship, 1 );
 
         relationship = relationship( 3, 26, 11 );
         distributor.distribute( relationship, consumer );
-        verify( consumer, times( 1 ) ).accept( relationship, 5 );
-        verify( consumer, times( 1 ) ).accept( relationship, 2 );
+        verify( consumer ).accept( relationship, 5 );
+        verify( consumer ).accept( relationship, 2 );
     }
 
     private static RelationshipRecord relationship( long id, long startNodeId, long endNodeId )

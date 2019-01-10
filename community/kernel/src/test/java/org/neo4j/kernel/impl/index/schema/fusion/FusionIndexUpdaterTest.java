@@ -242,7 +242,7 @@ public class FusionIndexUpdaterTest
     {
         IndexEntryUpdate<LabelSchemaDescriptor> update = add( numberValues );
         fusionIndexUpdater.process( update );
-        verify( correctPopulator, times( 1 ) ).process( update );
+        verify( correctPopulator ).process( update );
         for ( IndexUpdater populator : aliveUpdaters )
         {
             if ( populator != correctPopulator )
@@ -257,7 +257,7 @@ public class FusionIndexUpdaterTest
     {
         IndexEntryUpdate<LabelSchemaDescriptor> update = FusionIndexTestHelp.remove( numberValues );
         fusionIndexUpdater.process( update );
-        verify( correctPopulator, times( 1 ) ).process( update );
+        verify( correctPopulator ).process( update );
         for ( IndexUpdater populator : aliveUpdaters )
         {
             if ( populator != correctPopulator )
@@ -272,7 +272,7 @@ public class FusionIndexUpdaterTest
     {
         IndexEntryUpdate<LabelSchemaDescriptor> update = FusionIndexTestHelp.change( before, after );
         fusionIndexUpdater.process( update );
-        verify( correctPopulator, times( 1 ) ).process( update );
+        verify( correctPopulator ).process( update );
         for ( IndexUpdater populator : aliveUpdaters )
         {
             if ( populator != correctPopulator )
@@ -313,7 +313,7 @@ public class FusionIndexUpdaterTest
                 }
                 else
                 {
-                    verify( expectRemoveFrom, times( 1 ) ).process( change( before, after ) );
+                    verify( expectRemoveFrom ).process( change( before, after ) );
                 }
             }
         }
@@ -330,7 +330,7 @@ public class FusionIndexUpdaterTest
         // then
         for ( IndexUpdater updater : aliveUpdaters )
         {
-            verify( updater, times( 1 ) ).close();
+            verify( updater ).close();
         }
     }
 

@@ -162,7 +162,7 @@ public class SetInitialPasswordCommandIT
 
         // Then
         assertNoAuthIniFile();
-        verify( out, times( 1 ) )
+        verify( out )
                 .stdErrLine( "command failed: the provided initial password was not set because existing Neo4j users were " +
                         "detected at `" + authFile.getAbsolutePath() + "`. Please remove the existing `auth` file if you " +
                         "want to reset your database to only have a default user with the provided password." );
@@ -186,7 +186,7 @@ public class SetInitialPasswordCommandIT
 
         // Then
         assertNoAuthIniFile();
-        verify( out, times( 1 ) )
+        verify( out )
                 .stdErrLine( "command failed: the provided initial password was not set because existing Neo4j users were " +
                         "detected at `" + authFile.getAbsolutePath() + "`. Please remove the existing `auth` and `roles` files if you " +
                         "want to reset your database to only have a default user with the provided password." );
@@ -208,13 +208,13 @@ public class SetInitialPasswordCommandIT
 
         // Then
         assertNoAuthIniFile();
-        verify( out, times( 1 ) )
+        verify( out )
                 .stdErrLine( "command failed: the provided initial password was not set because existing Neo4j users were " +
                         "detected at `" + authFile.getAbsolutePath() + "`. Please remove the existing `auth` file if you " +
                         "want to reset your database to only have a default user with the provided password." );
         verify( out ).exit( 1 );
 
-        verify( out, times( 1 ) ).stdOutLine( "Changed password for user 'neo4j'." ); // This is from the initial setup
+        verify( out ).stdOutLine( "Changed password for user 'neo4j'." ); // This is from the initial setup
     }
 
     @Test

@@ -46,7 +46,6 @@ import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.function.ThrowingAction.noop;
 import static org.neo4j.test.Race.throwing;
@@ -137,13 +136,13 @@ public class StoreCopyCheckPointMutexTest
         ThrowingAction<IOException> action = mock( ThrowingAction.class );
         try ( Resource lock = mutex.storeCopy( action ) )
         {
-            verify( action, times( 1 ) ).apply();
+            verify( action ).apply();
 
             // WHEN
             try ( Resource otherLock = mutex.storeCopy( action ) )
             {
                 // THEN good
-                verify( action, times( 1 ) ).apply();
+                verify( action ).apply();
             }
         }
     }

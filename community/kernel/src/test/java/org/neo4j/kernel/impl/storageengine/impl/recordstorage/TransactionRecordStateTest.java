@@ -846,17 +846,17 @@ public class TransactionRecordStateTest
 
         // then
         // create node, NodeCommand == 1 update
-        verify( locks, times( 1 ) ).acquireNodeLock( nodes[0], LockService.LockType.WRITE_LOCK );
+        verify( locks ).acquireNodeLock( nodes[0], LockService.LockType.WRITE_LOCK );
         // add label, NodeCommand == 1 update
-        verify( locks, times( 1 ) ).acquireNodeLock( nodes[1], LockService.LockType.WRITE_LOCK );
+        verify( locks ).acquireNodeLock( nodes[1], LockService.LockType.WRITE_LOCK );
         // add property, NodeCommand and PropertyCommand == 2 updates
         verify( locks, times( 2 ) ).acquireNodeLock( nodes[2], LockService.LockType.WRITE_LOCK );
         // update property, in place, PropertyCommand == 1 update
-        verify( locks, times( 1 ) ).acquireNodeLock( nodes[3], LockService.LockType.WRITE_LOCK );
+        verify( locks ).acquireNodeLock( nodes[3], LockService.LockType.WRITE_LOCK );
         // remove property, updates the Node and the Property == 2 updates
         verify( locks, times( 2 ) ).acquireNodeLock( nodes[4], LockService.LockType.WRITE_LOCK );
         // delete node, single NodeCommand == 1 update
-        verify( locks, times( 1 ) ).acquireNodeLock( nodes[5], LockService.LockType.WRITE_LOCK );
+        verify( locks ).acquireNodeLock( nodes[5], LockService.LockType.WRITE_LOCK );
         // create and add-label goes into the NodeCommand, add property is a PropertyCommand == 2 updates
         verify( locks, times( 2 ) ).acquireNodeLock( nodes[6], LockService.LockType.WRITE_LOCK );
     }

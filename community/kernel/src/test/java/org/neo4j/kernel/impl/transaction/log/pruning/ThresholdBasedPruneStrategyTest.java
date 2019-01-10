@@ -34,7 +34,6 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
@@ -84,7 +83,7 @@ public class ThresholdBasedPruneStrategyTest
                 v -> fileSystem.deleteFile( files.getLogFileForVersion( v ) ) );
 
         // Then
-        verify( threshold, times( 1 ) ).init();
+        verify( threshold ).init();
         verify( fileSystem, never() ).deleteFile( any() );
     }
 
@@ -132,10 +131,10 @@ public class ThresholdBasedPruneStrategyTest
 
         // Then
         InOrder order = inOrder( threshold, fileSystem );
-        order.verify( threshold, times( 1 ) ).init();
-        order.verify( fileSystem, times( 1 ) ).deleteFile( fileName1 );
-        order.verify( fileSystem, times( 1 ) ).deleteFile( fileName2 );
-        order.verify( fileSystem, times( 1 ) ).deleteFile( fileName3 );
+        order.verify( threshold ).init();
+        order.verify( fileSystem ).deleteFile( fileName1 );
+        order.verify( fileSystem ).deleteFile( fileName2 );
+        order.verify( fileSystem ).deleteFile( fileName3 );
         verify( fileSystem, never() ).deleteFile( fileName4 );
         verify( fileSystem, never() ).deleteFile( fileName5 );
         verify( fileSystem, never() ).deleteFile( fileName6 );

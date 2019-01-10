@@ -117,14 +117,14 @@ class CheckPointerImplTest
 
         // Then
         assertEquals( transactionId, txId );
-        verify( forceOperation, times( 1 ) ).flushAndForce( limiter );
+        verify( forceOperation ).flushAndForce( limiter );
         verify( health, times( 2 ) ).assertHealthy( IOException.class );
-        verify( appender, times( 1 ) ).checkPoint( eq( logPosition ), any( LogCheckPointEvent.class ) );
-        verify( threshold, times( 1 ) ).initialize( initialTransactionId );
-        verify( threshold, times( 1 ) ).checkPointHappened( transactionId );
-        verify( threshold, times( 1 ) ).isCheckPointingNeeded( transactionId, INFO );
-        verify( logPruning, times( 1 ) ).pruneLogs( logPosition.getLogVersion() );
-        verify( tracer, times( 1 ) ).beginCheckPoint();
+        verify( appender ).checkPoint( eq( logPosition ), any( LogCheckPointEvent.class ) );
+        verify( threshold ).initialize( initialTransactionId );
+        verify( threshold ).checkPointHappened( transactionId );
+        verify( threshold ).isCheckPointingNeeded( transactionId, INFO );
+        verify( logPruning ).pruneLogs( logPosition.getLogVersion() );
+        verify( tracer ).beginCheckPoint();
         verifyNoMoreInteractions( forceOperation, health, appender, threshold, tracer );
     }
 
@@ -143,13 +143,13 @@ class CheckPointerImplTest
 
         // Then
         assertEquals( transactionId, txId );
-        verify( forceOperation, times( 1 ) ).flushAndForce( limiter );
+        verify( forceOperation ).flushAndForce( limiter );
         verify( health, times( 2 ) ).assertHealthy( IOException.class );
-        verify( appender, times( 1 ) ).checkPoint( eq( logPosition ), any( LogCheckPointEvent.class ) );
-        verify( threshold, times( 1 ) ).initialize( initialTransactionId );
-        verify( threshold, times( 1 ) ).checkPointHappened( transactionId );
+        verify( appender ).checkPoint( eq( logPosition ), any( LogCheckPointEvent.class ) );
+        verify( threshold ).initialize( initialTransactionId );
+        verify( threshold ).checkPointHappened( transactionId );
         verify( threshold, never() ).isCheckPointingNeeded( transactionId, INFO );
-        verify( logPruning, times( 1 ) ).pruneLogs( logPosition.getLogVersion() );
+        verify( logPruning ).pruneLogs( logPosition.getLogVersion() );
         verifyNoMoreInteractions( forceOperation, health, appender, threshold );
     }
 
@@ -168,13 +168,13 @@ class CheckPointerImplTest
 
         // Then
         assertEquals( transactionId, txId );
-        verify( forceOperation, times( 1 ) ).flushAndForce( limiter );
+        verify( forceOperation ).flushAndForce( limiter );
         verify( health, times( 2 ) ).assertHealthy( IOException.class );
-        verify( appender, times( 1 ) ).checkPoint( eq( logPosition ), any( LogCheckPointEvent.class ) );
-        verify( threshold, times( 1 ) ).initialize( initialTransactionId );
-        verify( threshold, times( 1 ) ).checkPointHappened( transactionId );
+        verify( appender ).checkPoint( eq( logPosition ), any( LogCheckPointEvent.class ) );
+        verify( threshold ).initialize( initialTransactionId );
+        verify( threshold ).checkPointHappened( transactionId );
         verify( threshold, never() ).isCheckPointingNeeded( transactionId, INFO );
-        verify( logPruning, times( 1 ) ).pruneLogs( logPosition.getLogVersion() );
+        verify( logPruning ).pruneLogs( logPosition.getLogVersion() );
         verifyNoMoreInteractions( forceOperation, health, appender, threshold );
     }
 
@@ -193,13 +193,13 @@ class CheckPointerImplTest
 
         // Then
         assertEquals( transactionId, txId );
-        verify( forceOperation, times( 1 ) ).flushAndForce( limiter );
+        verify( forceOperation ).flushAndForce( limiter );
         verify( health, times( 2 ) ).assertHealthy( IOException.class );
-        verify( appender, times( 1 ) ).checkPoint( eq( logPosition ), any( LogCheckPointEvent.class ) );
-        verify( threshold, times( 1 ) ).initialize( initialTransactionId );
-        verify( threshold, times( 1 ) ).checkPointHappened( transactionId );
+        verify( appender ).checkPoint( eq( logPosition ), any( LogCheckPointEvent.class ) );
+        verify( threshold ).initialize( initialTransactionId );
+        verify( threshold ).checkPointHappened( transactionId );
         verify( threshold, never() ).isCheckPointingNeeded( transactionId, INFO );
-        verify( logPruning, times( 1 ) ).pruneLogs( logPosition.getLogVersion() );
+        verify( logPruning ).pruneLogs( logPosition.getLogVersion() );
         verifyNoMoreInteractions( forceOperation, health, appender, threshold );
     }
 

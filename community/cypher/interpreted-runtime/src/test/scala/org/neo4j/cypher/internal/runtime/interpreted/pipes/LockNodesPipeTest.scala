@@ -46,16 +46,16 @@ class LockNodesPipeTest extends CypherFunSuite {
 
     // then
     result.next()
-    verify(queryContext, times(1)).lockNodes(1)
+    verify(queryContext).lockNodes(1)
 
     result.next()
-    verify(queryContext, times(1)).lockNodes(1)
+    verify(queryContext).lockNodes(1)
 
     result.next()
-    verify(queryContext, times(1)).lockNodes(2)
+    verify(queryContext).lockNodes(2)
 
     result.next()
-    verify(queryContext, times(1)).lockNodes(2)
+    verify(queryContext).lockNodes(2)
   }
 
   test("should crash with CypherTypeException on illegal value types") {

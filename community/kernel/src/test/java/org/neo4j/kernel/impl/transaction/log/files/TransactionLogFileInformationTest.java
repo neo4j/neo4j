@@ -26,7 +26,6 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -51,7 +50,7 @@ class TransactionLogFileInformationTest
 
         long firstCommittedTxId = info.getFirstEntryId( version );
         assertEquals( expected, firstCommittedTxId );
-        verify( logHeaderCache, times( 1 ) ).putHeader( version, expected - 1 );
+        verify( logHeaderCache ).putHeader( version, expected - 1 );
     }
 
     @Test
@@ -84,7 +83,7 @@ class TransactionLogFileInformationTest
 
         long firstCommittedTxId = info.getFirstExistingEntryId();
         assertEquals( expected, firstCommittedTxId );
-        verify( logHeaderCache, times( 1 ) ).putHeader( version, expected - 1 );
+        verify( logHeaderCache ).putHeader( version, expected - 1 );
     }
 
     @Test

@@ -28,7 +28,6 @@ import org.neo4j.unsafe.impl.batchimport.Configuration;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.unsafe.impl.batchimport.staging.ControlledStep.stepWithStats;
 import static org.neo4j.unsafe.impl.batchimport.staging.Step.ORDER_SEND_DOWNSTREAM;
@@ -79,7 +78,7 @@ public class DynamicProcessorAssignerTest
         assigner.check( execution );
 
         // THEN one processor should be removed from the fast step
-        verify( fastStep, times( 1 ) ).processors( -1 );
+        verify( fastStep ).processors( -1 );
     }
 
     @Test

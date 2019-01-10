@@ -96,7 +96,7 @@ public class IndexSamplingControllerTest
         controller.sampleIndexes( BACKGROUND_REBUILD_UPDATED );
 
         // then
-        verify( tracker, times( 1 ) ).canExecuteMoreSamplingJobs();
+        verify( tracker ).canExecuteMoreSamplingJobs();
         verifyNoMoreInteractions( jobFactory, tracker );
     }
 
@@ -316,12 +316,12 @@ public class IndexSamplingControllerTest
         controller.sampleIndex( indexId, TRIGGER_REBUILD_UPDATED );
 
         // then
-        verify( jobFactory, times(1) ).create( indexId, indexProxy );
-        verify( tracker, times(1) ).scheduleSamplingJob( job );
+        verify( jobFactory ).create( indexId, indexProxy );
+        verify( tracker ).scheduleSamplingJob( job );
         verify( jobFactory, never() ).create( anotherIndexId, anotherIndexProxy );
         verify( tracker, never() ).scheduleSamplingJob( anotherJob );
 
-        verify( tracker, times( 1 ) ).waitUntilCanExecuteMoreSamplingJobs();
+        verify( tracker ).waitUntilCanExecuteMoreSamplingJobs();
         verifyNoMoreInteractions( jobFactory, tracker );
     }
 
@@ -337,7 +337,7 @@ public class IndexSamplingControllerTest
         controller.sampleIndex( indexId, BACKGROUND_REBUILD_UPDATED );
 
         // then
-        verify( tracker, times( 1 ) ).canExecuteMoreSamplingJobs();
+        verify( tracker ).canExecuteMoreSamplingJobs();
         verifyNoMoreInteractions( jobFactory, tracker );
     }
 

@@ -36,7 +36,6 @@ import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
@@ -218,7 +217,7 @@ public class TransactionHandleRegistryTest
         registry.terminate( id );
 
         // Then
-        verify( handle, times( 1 ) ).terminate();
+        verify( handle ).terminate();
         verifyNoMoreInteractions( handle );
     }
 
@@ -241,7 +240,7 @@ public class TransactionHandleRegistryTest
         registry.terminate( id );
 
         // Then
-        verify( handle, times( 1 ) ).terminate();
+        verify( handle ).terminate();
         verifyNoMoreInteractions( handle );
     }
 

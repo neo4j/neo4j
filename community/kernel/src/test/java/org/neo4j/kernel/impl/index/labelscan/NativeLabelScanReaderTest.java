@@ -33,7 +33,6 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.collection.PrimitiveLongCollections.asArray;
@@ -102,13 +101,13 @@ public class NativeLabelScanReaderTest
 
             // exhausting the first one should have closed only the first one
             exhaust( first );
-            verify( cursor1, times( 1 ) ).close();
+            verify( cursor1 ).close();
             verify( cursor2, never() ).close();
 
             // exhausting the second one should close it
             exhaust( second );
-            verify( cursor1, times( 1 ) ).close();
-            verify( cursor2, times( 1 ) ).close();
+            verify( cursor1 ).close();
+            verify( cursor2 ).close();
         }
     }
 
@@ -136,8 +135,8 @@ public class NativeLabelScanReaderTest
         }
 
         // THEN
-        verify( cursor1, times( 1 ) ).close();
-        verify( cursor2, times( 1 ) ).close();
+        verify( cursor1 ).close();
+        verify( cursor2 ).close();
     }
 
     @Test

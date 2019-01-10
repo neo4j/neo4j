@@ -55,7 +55,6 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.neo4j.internal.kernel.api.QueryContext.NULL_CONTEXT;
@@ -156,7 +155,7 @@ public class FusionIndexReaderTest
         // then
         for ( IndexReader reader : aliveReaders )
         {
-            verify( reader, times( 1 ) ).close();
+            verify( reader ).close();
         }
     }
 
@@ -190,7 +189,7 @@ public class FusionIndexReaderTest
         // then
         for ( IndexProgressor progressor : progressors )
         {
-            verify( progressor, times( 1 ) ).close();
+            verify( progressor ).close();
         }
     }
 
@@ -224,7 +223,7 @@ public class FusionIndexReaderTest
     private void verifyCountIndexedNodesWithCorrectReader( IndexReader correct, Value... nativeValue )
     {
         fusionIndexReader.countIndexedNodes( 0, new int[] {PROP_KEY}, nativeValue );
-        verify( correct, times( 1 ) ).countIndexedNodes( 0, new int[] {PROP_KEY}, nativeValue );
+        verify( correct ).countIndexedNodes( 0, new int[] {PROP_KEY}, nativeValue );
         for ( IndexReader reader : aliveReaders )
         {
             if ( reader != correct )
@@ -449,11 +448,11 @@ public class FusionIndexReaderTest
         // Strange mockito inconsistency regarding varargs
         if ( indexQuery.length == 1 )
         {
-            verify( expectedReader, times( 1 ) ).query( any(), any(), any(), anyBoolean(), eq( indexQuery[0] ) );
+            verify( expectedReader ).query( any(), any(), any(), anyBoolean(), eq( indexQuery[0] ) );
         }
         else
         {
-            verify( expectedReader, times( 1 ) ).query( any(), any(), any(), anyBoolean(), eq( indexQuery[0] ), eq( indexQuery[1] ) );
+            verify( expectedReader ).query( any(), any(), any(), anyBoolean(), eq( indexQuery[0] ), eq( indexQuery[1] ) );
         }
         for ( IndexReader reader : aliveReaders )
         {

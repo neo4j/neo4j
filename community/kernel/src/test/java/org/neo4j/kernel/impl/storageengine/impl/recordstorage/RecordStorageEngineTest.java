@@ -79,7 +79,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -235,7 +234,7 @@ public class RecordStorageEngineTest
         InOrder inOrder = inOrder( lockService, applierCloseCall, nodeLock );
         inOrder.verify( lockService ).acquireNodeLock( nodeId, LockService.LockType.WRITE_LOCK );
         inOrder.verify( applierCloseCall ).accept( true );
-        inOrder.verify( nodeLock, times( 1 ) ).release();
+        inOrder.verify( nodeLock ).release();
         inOrder.verifyNoMoreInteractions();
     }
 

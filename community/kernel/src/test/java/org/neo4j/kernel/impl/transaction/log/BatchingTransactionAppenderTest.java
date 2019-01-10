@@ -66,7 +66,6 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
@@ -264,7 +263,7 @@ public class BatchingTransactionAppenderTest
         {
             // THEN
             assertSame( failure, e );
-            verify( transactionIdStore, times( 1 ) ).nextCommittingTransactionId();
+            verify( transactionIdStore ).nextCommittingTransactionId();
             verify( transactionIdStore, never() ).transactionClosed( eq( txId ), anyLong(), anyLong() );
             verify( databaseHealth ).panic( failure );
         }
@@ -305,7 +304,7 @@ public class BatchingTransactionAppenderTest
         {
             // THEN
             assertSame( failure, e );
-            verify( transactionIdStore, times( 1 ) ).nextCommittingTransactionId();
+            verify( transactionIdStore ).nextCommittingTransactionId();
             verify( transactionIdStore, never() ).transactionClosed( eq( txId ), anyLong(), anyLong() );
             verify( databaseHealth ).panic( failure );
         }
@@ -326,10 +325,10 @@ public class BatchingTransactionAppenderTest
         appender.checkPoint( new LogPosition( 1L, 2L ), LogCheckPointEvent.NULL );
 
         // Then
-        verify( channel, times( 1 ) ).putLong( 1L );
-        verify( channel, times( 1 ) ).putLong( 2L );
-        verify( channel, times( 1 ) ).prepareForFlush();
-        verify( flushable, times( 1 ) ).flush();
+        verify( channel ).putLong( 1L );
+        verify( channel ).putLong( 2L );
+        verify( channel ).prepareForFlush();
+        verify( flushable ).flush();
         verifyZeroInteractions( databaseHealth );
     }
 
@@ -357,7 +356,7 @@ public class BatchingTransactionAppenderTest
         }
 
         // Then
-        verify( databaseHealth, times( 1 ) ).panic( ioex );
+        verify( databaseHealth ).panic( ioex );
     }
 
     @Test
@@ -377,7 +376,7 @@ public class BatchingTransactionAppenderTest
         catch ( IllegalStateException ex )
         {
             // Then
-            verify( databaseHealth, times( 1 ) ).panic( ex );
+            verify( databaseHealth ).panic( ex );
         }
 
     }

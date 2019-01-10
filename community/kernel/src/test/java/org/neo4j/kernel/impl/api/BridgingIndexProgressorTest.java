@@ -28,7 +28,6 @@ import org.neo4j.kernel.impl.api.schema.BridgingIndexProgressor;
 import org.neo4j.kernel.impl.index.schema.IndexDescriptor;
 
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 public class BridgingIndexProgressorTest
@@ -53,7 +52,7 @@ public class BridgingIndexProgressorTest
         // Then
         for ( IndexProgressor part : parts )
         {
-            verify( part, times( 1 ) ).close();
+            verify( part ).close();
         }
     }
 }
