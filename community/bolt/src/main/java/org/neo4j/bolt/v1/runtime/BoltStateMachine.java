@@ -195,10 +195,8 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
         before( handler );
         try
         {
-            if ( ctx.canProcessMessage() )
-            {
-                state = state.reset( this );
-            }
+            // it should always be fine to RESET thus no canProcessMessage check
+            state = state.reset( this );
         }
         finally
         {
@@ -703,6 +701,7 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
         {
             try
             {
+                machine.ctx.resetPendingFailedAndIgnored();
                 machine.ctx.statementProcessor.reset();
                 return READY;
             }

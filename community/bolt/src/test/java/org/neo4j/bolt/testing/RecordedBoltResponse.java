@@ -86,4 +86,10 @@ public class RecordedBoltResponse
         QueryResult.Record[] recordArray = new QueryResult.Record[records.size()];
         return records.toArray( recordArray );
     }
+
+    @Override
+    public String toString()
+    {
+        return "RecordedBoltResponse{" + "records=" + records + ", response=" + response + ", metadata=" + metadata + '}';
+    }
 }

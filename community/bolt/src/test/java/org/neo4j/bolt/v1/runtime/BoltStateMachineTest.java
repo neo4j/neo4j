@@ -585,28 +585,13 @@ public class BoltStateMachineTest
     @Test
     public void shouldInvokeResponseHandlerOnNextResetMessageOnMarkFailedIfNoHandler() throws Exception
     {
-        testMarkFailedOnNextMessage( ( machine, handler ) -> machine.reset( handler ) );
+        testReadyStateAfterMarkFailedOnNextMessage( ( machine, handler ) -> machine.reset( handler ) );
     }
 
     @Test
     public void shouldGotoReadyStateOnNextAckFailureMessageOnMarkFailedIfNoHandler() throws Exception
     {
-        // Given
-        BoltStateMachine machine = newMachine( BoltStateMachine.State.READY );
-        BoltResponseHandler responseHandler = mock( BoltResponseHandler.class );
-
-        Neo4jError error = Neo4jError.from( Status.Request.NoThreadsAvailable, "no threads" );
-        machine.markFailed( error );
-
-        // When
-        machine.ackFailure( responseHandler );
-
-        // Expect
-        assertNull( machine.ctx.pendingError );
-        assertFalse( machine.ctx.pendingIgnore );
-        assertEquals( BoltStateMachine.State.READY, machine.state );
-        verify( responseHandler, never() ).markFailed( any() );
-        verify( responseHandler, never() ).markIgnored();
+        testReadyStateAfterMarkFailedOnNextMessage( ( machine, handler ) -> machine.ackFailure( handler ) );
     }
 
     @Test
@@ -656,28 +641,13 @@ public class BoltStateMachineTest
     @Test
     public void shouldInvokeResponseHandlerOnNextResetMessageOnMarkFailedIfAlreadyFailedAndNoHandler() throws Exception
     {
-        testMarkFailedShouldYieldIgnoredIfAlreadyFailed( ( machine, handler ) -> machine.reset( handler ) );
+        testMarkFailedShouldYieldSuccessIfAlreadyFailed( ( machine, handler ) -> machine.reset( handler ) );
     }
 
     @Test
     public void shouldInvokeResponseHandlerOnNextAckFailureMessageOnMarkFailedIfAlreadyFailedAndNoHandler() throws Exception
     {
-        // Given
-        BoltStateMachine machine = newMachine( BoltStateMachine.State.FAILED );
-        BoltResponseHandler responseHandler = mock( BoltResponseHandler.class );
-
-        Neo4jError error = Neo4jError.from( Status.Request.NoThreadsAvailable, "no threads" );
-        machine.markFailed( error );
-
-        // When
-        machine.ackFailure( responseHandler );
-
-        // Expect
-        assertNull( machine.ctx.pendingError );
-        assertFalse( machine.ctx.pendingIgnore );
-        assertEquals( BoltStateMachine.State.READY, machine.state );
-        verify( responseHandler, never() ).markIgnored();
-        verify( responseHandler, never() ).markFailed( any() );
+        testMarkFailedShouldYieldSuccessIfAlreadyFailed( ( machine, handler ) -> machine.ackFailure( handler ) );
     }
 
     @Test
@@ -738,6 +708,27 @@ public class BoltStateMachineTest
         verify( responseHandler ).markFailed( error );
     }
 
+    private static void testReadyStateAfterMarkFailedOnNextMessage( ThrowingBiConsumer<BoltStateMachine,BoltResponseHandler,BoltConnectionFatality> action )
+            throws Exception
+    {
+        // Given
+        BoltStateMachine machine = newMachine( BoltStateMachine.State.READY );
+        BoltResponseHandler responseHandler = mock( BoltResponseHandler.class );
+
+        Neo4jError error = Neo4jError.from( Status.Request.NoThreadsAvailable, "no threads" );
+        machine.markFailed( error );
+
+        // When
+        action.accept( machine, responseHandler );
+
+        // Expect
+        assertNull( machine.ctx.pendingError );
+        assertFalse( machine.ctx.pendingIgnore );
+        assertEquals( BoltStateMachine.State.READY, machine.state );
+        verify( responseHandler, never() ).markFailed( any() );
+        verify( responseHandler, never() ).markIgnored();
+    }
+
     private static void testMarkFailedShouldYieldIgnoredIfAlreadyFailed(
             ThrowingBiConsumer<BoltStateMachine,BoltResponseHandler,BoltConnectionFatality> action ) throws Exception
     {
@@ -756,5 +747,26 @@ public class BoltStateMachineTest
         assertFalse( machine.ctx.pendingIgnore );
         assertEquals( BoltStateMachine.State.FAILED, machine.state );
         verify( responseHandler ).markIgnored();
+    }
+
+    private static void testMarkFailedShouldYieldSuccessIfAlreadyFailed(
+            ThrowingBiConsumer<BoltStateMachine,BoltResponseHandler,BoltConnectionFatality> action ) throws Exception
+    {
+        // Given
+        BoltStateMachine machine = newMachine( BoltStateMachine.State.FAILED );
+        BoltResponseHandler responseHandler = mock( BoltResponseHandler.class );
+
+        Neo4jError error = Neo4jError.from( Status.Request.NoThreadsAvailable, "no threads" );
+        machine.markFailed( error );
+
+        // When
+        action.accept( machine, responseHandler );
+
+        // Expect
+        assertNull( machine.ctx.pendingError );
+        assertFalse( machine.ctx.pendingIgnore );
+        assertEquals( BoltStateMachine.State.READY, machine.state );
+        verify( responseHandler, never() ).markIgnored();
+        verify( responseHandler, never() ).markFailed( any() );
     }
 }
