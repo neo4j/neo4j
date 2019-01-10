@@ -116,12 +116,12 @@ object PlannerHelper {
       }
 
       val sortItems: Seq[(ColumnOrder, SortItem, Map[String, Expression], Option[(String, Expression)])] = interestingOrder.requiredOrderCandidate.order.map {
-        case InterestingOrder.Asc(_, v@Variable(key), projection) => (Ascending(key), AscSortItem(v)(v.position), projection, None)
-        case InterestingOrder.Desc(_, v@Variable(key), projection) => (Descending(key), DescSortItem(v)(v.position), projection, None)
-        case InterestingOrder.Asc(_, expression, projection) =>
+        case InterestingOrder.Asc(v@Variable(key), projection) => (Ascending(key), AscSortItem(v)(v.position), projection, None)
+        case InterestingOrder.Desc(v@Variable(key), projection) => (Descending(key), DescSortItem(v)(v.position), projection, None)
+        case InterestingOrder.Asc(expression, projection) =>
           val columnId = idFrom(expression, projection)
           (Ascending(columnId), AscSortItem(expression)(expression.position), projection, Some(columnId -> expression))
-        case InterestingOrder.Desc(_, expression, projection) =>
+        case InterestingOrder.Desc(expression, projection) =>
           val columnId = idFrom(expression, projection)
           (Descending(columnId), DescSortItem(expression)(expression.position), projection, Some(columnId -> expression))
       }

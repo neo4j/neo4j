@@ -68,22 +68,22 @@ class ProvidedOrderTest extends CypherFunSuite {
   }
 
   test("Single property required order satisfied by matching provided order") {
-    InterestingOrder.required(RequiredOrderCandidate.asc("x", varFor("x"))).satisfiedBy(ProvidedOrder.asc("x")) should be(true)
+    InterestingOrder.required(RequiredOrderCandidate.asc(varFor("x"))).satisfiedBy(ProvidedOrder.asc("x")) should be(true)
   }
 
   test("Single property required order satisfied by longer provided order") {
-    InterestingOrder.required(RequiredOrderCandidate.asc("x", varFor("x"))).satisfiedBy(ProvidedOrder.asc("x").asc("y")) should be(true)
-    InterestingOrder.required(RequiredOrderCandidate.asc("x", varFor("x"))).satisfiedBy(ProvidedOrder.asc("x").desc("y")) should be(true)
+    InterestingOrder.required(RequiredOrderCandidate.asc(varFor("x"))).satisfiedBy(ProvidedOrder.asc("x").asc("y")) should be(true)
+    InterestingOrder.required(RequiredOrderCandidate.asc(varFor("x"))).satisfiedBy(ProvidedOrder.asc("x").desc("y")) should be(true)
   }
 
   test("Single property required order not satisfied by mismatching provided order") {
-    InterestingOrder.required(RequiredOrderCandidate.asc("x", varFor("x"))).satisfiedBy(ProvidedOrder.asc("y")) should be(false)
-    InterestingOrder.required(RequiredOrderCandidate.asc("x", varFor("x"))).satisfiedBy(ProvidedOrder.desc("x")) should be(false)
-    InterestingOrder.required(RequiredOrderCandidate.asc("x", varFor("x"))).satisfiedBy(ProvidedOrder.asc("y").asc("x")) should be(false)
+    InterestingOrder.required(RequiredOrderCandidate.asc(varFor("x"))).satisfiedBy(ProvidedOrder.asc("y")) should be(false)
+    InterestingOrder.required(RequiredOrderCandidate.asc(varFor("x"))).satisfiedBy(ProvidedOrder.desc("x")) should be(false)
+    InterestingOrder.required(RequiredOrderCandidate.asc(varFor("x"))).satisfiedBy(ProvidedOrder.asc("y").asc("x")) should be(false)
   }
 
   test("Multi property required order satisfied only be matching provided order") {
-    val interestingOrder = InterestingOrder.required(RequiredOrderCandidate.asc("x", varFor("x")).desc("y", varFor("y")).asc("z", varFor("z")))
+    val interestingOrder = InterestingOrder.required(RequiredOrderCandidate.asc(varFor("x")).desc(varFor("y")).asc(varFor("z")))
 
     interestingOrder.satisfiedBy(ProvidedOrder.asc("x")) should be(false)
     interestingOrder.satisfiedBy(ProvidedOrder.asc("x").desc("y")) should be(false)

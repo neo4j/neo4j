@@ -33,7 +33,7 @@ class InterestingOrderStatementConvertersTest extends CypherFunSuite with Logica
 
     val expectation = RegularPlannerQuery(
       queryGraph = QueryGraph(patternNodes = Set("n")),
-      interestingOrder = InterestingOrder.required(RequiredOrderCandidate.asc("n.prop", varFor("n.prop"), Map("n.prop" -> prop("n", "prop")))),
+      interestingOrder = InterestingOrder.required(RequiredOrderCandidate.asc(varFor("n.prop"), Map("n.prop" -> prop("n", "prop")))),
       horizon = RegularQueryProjection(Map("n.prop" -> prop("n", "prop")))
     )
 
@@ -45,7 +45,7 @@ class InterestingOrderStatementConvertersTest extends CypherFunSuite with Logica
 
     val expectation = RegularPlannerQuery(
       queryGraph = QueryGraph(patternNodes = Set("n")),
-      interestingOrder = InterestingOrder.required(RequiredOrderCandidate.asc("n.prop", varFor("n.prop"), Map("n.prop" -> prop("n", "prop")))),
+      interestingOrder = InterestingOrder.required(RequiredOrderCandidate.asc(varFor("n.prop"), Map("n.prop" -> prop("n", "prop")))),
       horizon = DistinctQueryProjection(Map("n.prop" -> prop("n", "prop")))
     )
 
@@ -57,7 +57,7 @@ class InterestingOrderStatementConvertersTest extends CypherFunSuite with Logica
 
     val expectation = RegularPlannerQuery(
       queryGraph = QueryGraph(patternNodes = Set("n")),
-      interestingOrder = InterestingOrder.required(RequiredOrderCandidate.asc("n.prop", varFor("n.prop"), Map("n.prop" -> prop("n", "prop")))),
+      interestingOrder = InterestingOrder.required(RequiredOrderCandidate.asc(varFor("n.prop"), Map("n.prop" -> prop("n", "prop")))),
       horizon = AggregatingQueryProjection(Map("n.prop" -> prop("n", "prop")), Map("count(*)" -> CountStar()(pos)))
     )
 
@@ -68,7 +68,7 @@ class InterestingOrderStatementConvertersTest extends CypherFunSuite with Logica
     val result = buildPlannerQuery("MATCH (n) RETURN min(n.prop)")
 
     val func = FunctionInvocation(Namespace(List())(pos), FunctionName("min")(pos), distinct = false, Vector(prop("n", "prop")))(pos)
-    val interestingOrderCandidate = InterestingOrderCandidate(Seq(Asc("n.prop", prop("n", "prop"))))
+    val interestingOrderCandidate = InterestingOrderCandidate(Seq(Asc(prop("n", "prop"))))
     val interestingOrder = new InterestingOrder(RequiredOrderCandidate.empty, Seq(interestingOrderCandidate))
     val expectation = RegularPlannerQuery(
       queryGraph = QueryGraph(patternNodes = Set("n")),
@@ -84,7 +84,7 @@ class InterestingOrderStatementConvertersTest extends CypherFunSuite with Logica
     val result = buildPlannerQuery("MATCH (n) RETURN max(n.prop)")
 
     val func = FunctionInvocation(Namespace(List())(pos), FunctionName("max")(pos), distinct = false, Vector(prop("n", "prop")))(pos)
-    val interestingOrderCandidate = InterestingOrderCandidate(Seq(Desc("n.prop", prop("n", "prop"))))
+    val interestingOrderCandidate = InterestingOrderCandidate(Seq(Desc(prop("n", "prop"))))
     val interestingOrder = new InterestingOrder(RequiredOrderCandidate.empty, Seq(interestingOrderCandidate))
     val expectation = RegularPlannerQuery(
       queryGraph = QueryGraph(patternNodes = Set("n")),
@@ -100,8 +100,8 @@ class InterestingOrderStatementConvertersTest extends CypherFunSuite with Logica
     val result = buildPlannerQuery("MATCH (n) RETURN min(n.prop) ORDER BY min(n.prop)")
 
     val func = FunctionInvocation(Namespace(List())(pos), FunctionName("min")(pos), distinct = false, Vector(prop("n", "prop")))(pos)
-    val interestingOrderCandidate = InterestingOrderCandidate(Seq(Asc("n.prop", prop("n", "prop"))))
-    val interestingOrder = new InterestingOrder(RequiredOrderCandidate(Seq(Asc("min(n.prop)", varFor("min(n.prop)")))), Seq(interestingOrderCandidate))
+    val interestingOrderCandidate = InterestingOrderCandidate(Seq(Asc(prop("n", "prop"))))
+    val interestingOrder = new InterestingOrder(RequiredOrderCandidate(Seq(Asc(varFor("min(n.prop)")))), Seq(interestingOrderCandidate))
     val expectation = RegularPlannerQuery(
       queryGraph = QueryGraph(patternNodes = Set("n")),
       interestingOrder = interestingOrder,
@@ -121,8 +121,8 @@ class InterestingOrderStatementConvertersTest extends CypherFunSuite with Logica
          |ORDER BY min""".stripMargin)
 
     interestingOrders(result).take(2) should be(List(
-      InterestingOrder.interested(InterestingOrderCandidate.asc("n.prop", prop("n", "prop"))),
-      InterestingOrder.required(RequiredOrderCandidate.asc("min", varFor("min"), Map("min" -> varFor("min"))))
+      InterestingOrder.interested(InterestingOrderCandidate.asc(prop("n", "prop"))),
+      InterestingOrder.required(RequiredOrderCandidate.asc(varFor("min"), Map("min" -> varFor("min"))))
     ))
   }
 
@@ -131,7 +131,7 @@ class InterestingOrderStatementConvertersTest extends CypherFunSuite with Logica
 
     val expectation = RegularPlannerQuery(
       queryGraph = QueryGraph(patternNodes = Set("n")),
-      interestingOrder = InterestingOrder.required(RequiredOrderCandidate.asc("n.prop", prop("n", "prop"))),
+      interestingOrder = InterestingOrder.required(RequiredOrderCandidate.asc(prop("n", "prop"))),
       horizon = RegularQueryProjection(Map("n.prop2" -> prop("n", "prop2")))
     )
 
@@ -143,7 +143,7 @@ class InterestingOrderStatementConvertersTest extends CypherFunSuite with Logica
 
     val expectation = RegularPlannerQuery(
       queryGraph = QueryGraph(patternNodes = Set("n")),
-      interestingOrder = InterestingOrder.required(RequiredOrderCandidate.desc("n.prop2", prop("n", "prop2"))),
+      interestingOrder = InterestingOrder.required(RequiredOrderCandidate.desc(prop("n", "prop2"))),
       horizon = RegularQueryProjection(projections = Map("n.prop" -> Property(Variable("n")(pos), PropertyKeyName("prop")(pos))(pos)))
     )
 
@@ -155,7 +155,7 @@ class InterestingOrderStatementConvertersTest extends CypherFunSuite with Logica
 
     val expectation = RegularPlannerQuery(
       queryGraph = QueryGraph(patternNodes = Set("n")),
-      interestingOrder = InterestingOrder.required(RequiredOrderCandidate.desc("n.prop", varFor("n.prop"), Map("n.prop" -> prop("n", "prop")))),
+      interestingOrder = InterestingOrder.required(RequiredOrderCandidate.desc(varFor("n.prop"), Map("n.prop" -> prop("n", "prop")))),
       horizon = RegularQueryProjection(Map("n.prop" -> prop("n", "prop")))
     )
 
@@ -167,7 +167,7 @@ class InterestingOrderStatementConvertersTest extends CypherFunSuite with Logica
 
     val expectation = RegularPlannerQuery(
       queryGraph = QueryGraph(patternNodes = Set("n")),
-      interestingOrder = InterestingOrder.required(RequiredOrderCandidate.asc("n.prop", prop("n", "prop"), Map("n" -> varFor("n")))),
+      interestingOrder = InterestingOrder.required(RequiredOrderCandidate.asc(prop("n", "prop"), Map("n" -> varFor("n")))),
       horizon = RegularQueryProjection(Map("n" -> varFor("n")))
     )
 
@@ -178,8 +178,8 @@ class InterestingOrderStatementConvertersTest extends CypherFunSuite with Logica
     val result = buildPlannerQuery("MATCH (n) WITH n AS secretN MATCH (m) RETURN m, secretN ORDER BY secretN.prop")
 
     interestingOrders(result).take(2) should be(List(
-      InterestingOrder.interested(InterestingOrderCandidate.asc("secretN.prop", prop("secretN", "prop"), Map("secretN" -> varFor("n")))),
-      InterestingOrder.required(RequiredOrderCandidate.asc("secretN.prop", prop("secretN", "prop"), Map("secretN" -> varFor("secretN"))))
+      InterestingOrder.interested(InterestingOrderCandidate.asc(prop("secretN", "prop"), Map("secretN" -> varFor("n")))),
+      InterestingOrder.required(RequiredOrderCandidate.asc(prop("secretN", "prop"), Map("secretN" -> varFor("secretN"))))
     ))
   }
 
@@ -188,7 +188,7 @@ class InterestingOrderStatementConvertersTest extends CypherFunSuite with Logica
 
     interestingOrders(result).take(2) should be(List(
       InterestingOrder.empty,
-      InterestingOrder.required(RequiredOrderCandidate.asc("m.prop", prop("m", "prop"), Map("m" -> varFor("m"))))
+      InterestingOrder.required(RequiredOrderCandidate.asc(prop("m", "prop"), Map("m" -> varFor("m"))))
     ))
   }
 
@@ -202,10 +202,10 @@ class InterestingOrderStatementConvertersTest extends CypherFunSuite with Logica
         |MATCH (d) RETURN d, c2, b2, a2 ORDER BY c2.prop""".stripMargin)
 
     interestingOrders(result).take(4) should be(List(
-      InterestingOrder.interested(InterestingOrderCandidate.asc("a2.prop", prop("a2", "prop"), Map("a2" -> varFor("a")))),
-      InterestingOrder.required(RequiredOrderCandidate.asc("a2.prop", prop("a2", "prop"), Map("a2" -> varFor("a2")))),
-      InterestingOrder.interested(InterestingOrderCandidate.asc("c2.prop", prop("c2", "prop"), Map("c2" -> varFor("c")))),
-      InterestingOrder.required(RequiredOrderCandidate.asc("c2.prop", prop("c2", "prop"), Map("c2" -> varFor("c2"))))
+      InterestingOrder.interested(InterestingOrderCandidate.asc(prop("a2", "prop"), Map("a2" -> varFor("a")))),
+      InterestingOrder.required(RequiredOrderCandidate.asc(prop("a2", "prop"), Map("a2" -> varFor("a2")))),
+      InterestingOrder.interested(InterestingOrderCandidate.asc(prop("c2", "prop"), Map("c2" -> varFor("c")))),
+      InterestingOrder.required(RequiredOrderCandidate.asc(prop("c2", "prop"), Map("c2" -> varFor("c2"))))
     ))
   }
 
@@ -217,13 +217,13 @@ class InterestingOrderStatementConvertersTest extends CypherFunSuite with Logica
         |MATCH (d) RETURN d, c2, b2, a2 ORDER BY a2.prop, b2.prop""".stripMargin)
 
     interestingOrders(result).take(4) should be(List(
-      InterestingOrder.interested(InterestingOrderCandidate.asc("a2.prop", prop("a2", "prop"), Map("a2" -> varFor("a")))),
-      InterestingOrder.required(RequiredOrderCandidate.asc("a2.prop", prop("a2", "prop"), Map("a2" -> varFor("a2"))))
-        .interested(InterestingOrderCandidate.asc("b2.prop", prop("b2", "prop"), Map("b2" -> varFor("b")))),
+      InterestingOrder.interested(InterestingOrderCandidate.asc(prop("a2", "prop"), Map("a2" -> varFor("a")))),
+      InterestingOrder.required(RequiredOrderCandidate.asc(prop("a2", "prop"), Map("a2" -> varFor("a2"))))
+        .interested(InterestingOrderCandidate.asc(prop("b2", "prop"), Map("b2" -> varFor("b")))),
       InterestingOrder.interested(InterestingOrderCandidate
-        .asc("a2.prop", prop("a2", "prop"), Map("a2" -> varFor("a2"))).asc("b2.prop", prop("b2", "prop"), Map("b2" -> varFor("b2")))),
+        .asc(prop("a2", "prop"), Map("a2" -> varFor("a2"))).asc(prop("b2", "prop"), Map("b2" -> varFor("b2")))),
       InterestingOrder.required(RequiredOrderCandidate
-        .asc("a2.prop", prop("a2", "prop"), Map("a2" -> varFor("a2"))).asc("b2.prop", prop("b2", "prop"), Map("b2" -> varFor("b2"))))
+        .asc(prop("a2", "prop"), Map("a2" -> varFor("a2"))).asc(prop("b2", "prop"), Map("b2" -> varFor("b2"))))
     ))
   }
 
@@ -233,8 +233,8 @@ class InterestingOrderStatementConvertersTest extends CypherFunSuite with Logica
     val expectation = RegularPlannerQuery(
       queryGraph = QueryGraph(patternNodes = Set("n")),
       InterestingOrder.required(RequiredOrderCandidate
-        .asc("n.foo", varFor("n.foo"), Map("n.foo" -> prop("n", "foo")))
-        .desc("n.prop", varFor("n.prop"), Map("n.prop" -> prop("n", "prop")))),
+        .asc(varFor("n.foo"), Map("n.foo" -> prop("n", "foo")))
+        .desc(varFor("n.prop"), Map("n.prop" -> prop("n", "prop")))),
       horizon = RegularQueryProjection(Map("n.prop" -> prop("n", "prop"), "n.foo" -> prop("n", "foo")))
     )
 
@@ -247,8 +247,8 @@ class InterestingOrderStatementConvertersTest extends CypherFunSuite with Logica
     val expectation = RegularPlannerQuery(
       queryGraph = QueryGraph(patternNodes = Set("n")),
       interestingOrder = InterestingOrder.required(RequiredOrderCandidate
-        .asc("n.foo", prop("n", "foo"), Map("n" -> varFor("n")))
-        .desc("n.prop", prop("n", "prop"), Map("n" -> varFor("n")))),
+        .asc(prop("n", "foo"), Map("n" -> varFor("n")))
+        .desc(prop("n", "prop"), Map("n" -> varFor("n")))),
       horizon = RegularQueryProjection(Map("n" -> varFor("n")))
     )
 
@@ -261,8 +261,8 @@ class InterestingOrderStatementConvertersTest extends CypherFunSuite with Logica
     val expectation = RegularPlannerQuery(
       queryGraph = QueryGraph(patternNodes = Set("n")),
       interestingOrder = InterestingOrder.required(RequiredOrderCandidate
-        .asc("n.foo", prop("n", "foo"), Map("n" -> varFor("n")))
-        .desc("n.prop", varFor("n.prop"), Map("n.prop" -> prop("n", "prop")))),
+        .asc(prop("n", "foo"), Map("n" -> varFor("n")))
+        .desc(varFor("n.prop"), Map("n.prop" -> prop("n", "prop")))),
       horizon = RegularQueryProjection(Map("n" -> varFor("n"), "n.prop" -> prop("n", "prop")))
     )
 
@@ -274,11 +274,11 @@ class InterestingOrderStatementConvertersTest extends CypherFunSuite with Logica
 
     val expectation = RegularPlannerQuery(
       queryGraph = QueryGraph(patternNodes = Set("n")),
-      interestingOrder = InterestingOrder.required(RequiredOrderCandidate.asc("n.prop", prop("foo", "prop"), Map("foo" -> varFor("n")))),
+      interestingOrder = InterestingOrder.required(RequiredOrderCandidate.asc(prop("foo", "prop"), Map("foo" -> varFor("n")))),
       horizon = RegularQueryProjection(Map("foo" -> varFor("n"))),
       tail = Some(RegularPlannerQuery(
         queryGraph = QueryGraph(argumentIds = Set("foo")),
-        interestingOrder = InterestingOrder.required(RequiredOrderCandidate.asc("foo.bar", varFor("foo.bar"), Map("foo.bar" -> prop("foo", "bar")))),
+        interestingOrder = InterestingOrder.required(RequiredOrderCandidate.asc(varFor("foo.bar"), Map("foo.bar" -> prop("foo", "bar")))),
         horizon = RegularQueryProjection(Map("foo.bar" -> prop("foo", "bar")))
       ))
     )
@@ -291,11 +291,11 @@ class InterestingOrderStatementConvertersTest extends CypherFunSuite with Logica
 
     val expectation = RegularPlannerQuery(
       queryGraph = QueryGraph(patternNodes = Set("n")),
-      interestingOrder = InterestingOrder.required(RequiredOrderCandidate.asc("n.prop", varFor("foo"), Map("foo" -> prop("n", "prop")))),
+      interestingOrder = InterestingOrder.required(RequiredOrderCandidate.asc(varFor("foo"), Map("foo" -> prop("n", "prop")))),
       horizon = RegularQueryProjection(Map("n" -> varFor("n"), "foo" -> prop("n", "prop"))),
       tail = Some(RegularPlannerQuery(
         queryGraph = QueryGraph(argumentIds = Set("foo", "n")),
-        interestingOrder = InterestingOrder.required(RequiredOrderCandidate.asc("foo", varFor("foo"), Map("foo" -> varFor("foo")))),
+        interestingOrder = InterestingOrder.required(RequiredOrderCandidate.asc(varFor("foo"), Map("foo" -> varFor("foo")))),
         horizon = RegularQueryProjection(Map("n.bar" -> prop("n", "bar"), "foo" -> varFor("foo")))
       ))
     )
@@ -308,11 +308,11 @@ class InterestingOrderStatementConvertersTest extends CypherFunSuite with Logica
 
     val expectation = RegularPlannerQuery(
       queryGraph = QueryGraph(patternNodes = Set("n")),
-      interestingOrder = InterestingOrder.required(RequiredOrderCandidate.asc("n.prop", varFor("foo"), Map("foo" -> prop("n", "prop")))),
+      interestingOrder = InterestingOrder.required(RequiredOrderCandidate.asc(varFor("foo"), Map("foo" -> prop("n", "prop")))),
       horizon = RegularQueryProjection(Map("n" -> varFor("n"), "foo" -> prop("n", "prop"))),
       tail = Some(RegularPlannerQuery(
         queryGraph = QueryGraph(argumentIds = Set("foo", "n")),
-        interestingOrder = InterestingOrder.required(RequiredOrderCandidate.asc("foo", varFor("foo"))),
+        interestingOrder = InterestingOrder.required(RequiredOrderCandidate.asc(varFor("foo"))),
         horizon = RegularQueryProjection(Map("n.bar" -> prop("n", "bar")))
       ))
     )
@@ -326,7 +326,7 @@ class InterestingOrderStatementConvertersTest extends CypherFunSuite with Logica
     val expectation = RegularPlannerQuery(
       queryGraph = QueryGraph(patternNodes = Set("n")),
       interestingOrder = InterestingOrder.required(
-        RequiredOrderCandidate.asc("n.prop * 2",
+        RequiredOrderCandidate.asc(
           Multiply(varFor("n.prop"), SignedDecimalIntegerLiteral("2")(pos))(pos),
           Map("n.prop" -> prop("n", "prop"))
         )
@@ -343,7 +343,7 @@ class InterestingOrderStatementConvertersTest extends CypherFunSuite with Logica
     val expectation = RegularPlannerQuery(
       queryGraph = QueryGraph(patternNodes = Set("n")),
       interestingOrder = InterestingOrder.required(
-        RequiredOrderCandidate.asc("n.prop * 2", varFor("n.prop * 2"),
+        RequiredOrderCandidate.asc(varFor("n.prop * 2"),
           Map("n.prop * 2" -> Multiply(prop("n", "prop"), SignedDecimalIntegerLiteral("2")(pos))(pos))
         )
       ),
@@ -359,8 +359,8 @@ class InterestingOrderStatementConvertersTest extends CypherFunSuite with Logica
     val expectation = RegularPlannerQuery(
       queryGraph = QueryGraph(patternNodes = Set("n")),
       interestingOrder = InterestingOrder.required(RequiredOrderCandidate
-        .asc("n.foo", prop("n", "foo"), Map("n" -> varFor("n")))
-        .desc("n.prop * 2", Multiply(varFor("n.prop"), SignedDecimalIntegerLiteral("2")(pos))(pos), Map("n.prop" -> prop("n", "prop")))
+        .asc(prop("n", "foo"), Map("n" -> varFor("n")))
+        .desc(Multiply(varFor("n.prop"), SignedDecimalIntegerLiteral("2")(pos))(pos), Map("n.prop" -> prop("n", "prop")))
       ),
       horizon = RegularQueryProjection(Map("n" -> varFor("n"), "n.prop" -> prop("n", "prop")))
     )
@@ -376,7 +376,7 @@ class InterestingOrderStatementConvertersTest extends CypherFunSuite with Logica
       horizon = RegularQueryProjection(Map("d" -> ResolvedFunctionInvocation(QualifiedName(Seq.empty, "date"), None, IndexedSeq.empty)(pos))),
       tail = Some(RegularPlannerQuery(
         queryGraph = QueryGraph(argumentIds = Set("d")),
-        interestingOrder = InterestingOrder.required(RequiredOrderCandidate.asc("d.year", varFor("d.year"), Map("d.year" -> prop("d", "year")))),
+        interestingOrder = InterestingOrder.required(RequiredOrderCandidate.asc(varFor("d.year"), Map("d.year" -> prop("d", "year")))),
         horizon = RegularQueryProjection(Map("d.year" -> prop("d", "year")))
       ))
     )

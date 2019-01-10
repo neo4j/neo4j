@@ -48,12 +48,12 @@ class StatisticsBackedCardinalityModel(queryGraphCardinalityModel: QueryGraphCar
 
   private def calculateCardinalityForQueryHorizon(in: Cardinality, horizon: QueryHorizon, semanticTable: SemanticTable): Cardinality = horizon match {
     // Normal projection with LIMIT integer literal
-    case RegularQueryProjection(_, QueryShuffle(_, _, Some(limit: IntegerLiteral)), where) =>
+    case RegularQueryProjection(_, QueryShuffle(_, Some(limit: IntegerLiteral)), where) =>
       val cardinalityBeforeSelection = Cardinality.min(in, limit.value.toDouble)
       horizonCardinalityWithSelections(cardinalityBeforeSelection, where, semanticTable)
 
     // Normal projection with LIMIT
-    case RegularQueryProjection(_, QueryShuffle(_, _, Some(limit)), where) =>
+    case RegularQueryProjection(_, QueryShuffle(_, Some(limit)), where) =>
       val cannotEvaluateStableValue =
         simpleExpressionEvaluator.hasParameters(limit) ||
           !simpleExpressionEvaluator.isDeterministic(limit)

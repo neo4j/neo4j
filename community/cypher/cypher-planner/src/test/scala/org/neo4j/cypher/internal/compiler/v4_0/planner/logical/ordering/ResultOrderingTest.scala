@@ -36,24 +36,24 @@ class ResultOrderingTest extends CypherFunSuite with LogicalPlanningTestSupport2
 
   test("Single property required DESC still results in provided ASC if index is not capable of DESC") {
     val properties = Seq(("x.foo", CTInteger))
-    ResultOrdering.withIndexOrderCapability(InterestingOrder.required(RequiredOrderCandidate.desc("ignored", prop("x", "foo"))), properties, capability(ASC)) should be(ProvidedOrder.asc("x.foo"))
+    ResultOrdering.withIndexOrderCapability(InterestingOrder.required(RequiredOrderCandidate.desc(prop("x", "foo"))), properties, capability(ASC)) should be(ProvidedOrder.asc("x.foo"))
   }
 
   test("Single property required ASC results in provided DESC if index is not capable of ASC") {
     val properties = Seq(("x.foo", CTInteger))
-    ResultOrdering.withIndexOrderCapability(InterestingOrder.required(RequiredOrderCandidate.asc("ignored", prop("x", "foo"))), properties, capability(DESC)) should be(ProvidedOrder.desc("x.foo"))
+    ResultOrdering.withIndexOrderCapability(InterestingOrder.required(RequiredOrderCandidate.asc(prop("x", "foo"))), properties, capability(DESC)) should be(ProvidedOrder.desc("x.foo"))
   }
 
   test("Single property no capability results in empty provided order") {
     val properties = Seq(("x.foo", CTInteger))
     ResultOrdering.withIndexOrderCapability(InterestingOrder.empty, properties, capability(NONE)) should be(ProvidedOrder.empty)
-    ResultOrdering.withIndexOrderCapability(InterestingOrder.required(RequiredOrderCandidate.desc("ignored", prop("y", "foo"))), properties, capability(NONE)) should be(ProvidedOrder.empty)
+    ResultOrdering.withIndexOrderCapability(InterestingOrder.required(RequiredOrderCandidate.desc(prop("y", "foo"))), properties, capability(NONE)) should be(ProvidedOrder.empty)
   }
 
   test("Single property required order results in matching provided order for compatible index capability") {
     val properties = Seq(("x.foo", CTInteger))
-    ResultOrdering.withIndexOrderCapability(InterestingOrder.required(RequiredOrderCandidate.asc("ignored", prop("x", "foo"))), properties, capability(ASC)) should be(ProvidedOrder.asc("x.foo"))
-    ResultOrdering.withIndexOrderCapability(InterestingOrder.required(RequiredOrderCandidate.desc("ignored", prop("x", "foo"))), properties, capability(DESC)) should be(ProvidedOrder.desc("x.foo"))
+    ResultOrdering.withIndexOrderCapability(InterestingOrder.required(RequiredOrderCandidate.asc(prop("x", "foo"))), properties, capability(ASC)) should be(ProvidedOrder.asc("x.foo"))
+    ResultOrdering.withIndexOrderCapability(InterestingOrder.required(RequiredOrderCandidate.desc(prop("x", "foo"))), properties, capability(DESC)) should be(ProvidedOrder.desc("x.foo"))
   }
 
   test("Multi property required order results in matching provided order for compatible index capability") {
@@ -62,7 +62,7 @@ class ResultOrderingTest extends CypherFunSuite with LogicalPlanningTestSupport2
       ("y.foo", CTInteger),
       ("z.foo", CTInteger)
     )
-    val interestingOrder = InterestingOrder.required(RequiredOrderCandidate.asc("ignored", prop("x", "foo")).asc("ignored", prop("y", "foo")).asc("ignored", prop("z", "foo")))
+    val interestingOrder = InterestingOrder.required(RequiredOrderCandidate.asc(prop("x", "foo")).asc(prop("y", "foo")).asc(prop("z", "foo")))
 
     ResultOrdering.withIndexOrderCapability(interestingOrder, properties, capability(ASC)) should be(ProvidedOrder.asc("x.foo").asc("y.foo").asc("z.foo"))
   }
@@ -73,7 +73,7 @@ class ResultOrderingTest extends CypherFunSuite with LogicalPlanningTestSupport2
       ("x.foo", CTInteger),
       ("z.foo", CTInteger)
     )
-    val interestingOrder = InterestingOrder.required(RequiredOrderCandidate.asc("ignored", prop("x", "foo")).asc("ignored", prop("y", "foo")).asc("ignored", prop("z", "foo")))
+    val interestingOrder = InterestingOrder.required(RequiredOrderCandidate.asc(prop("x", "foo")).asc(prop("y", "foo")).asc(prop("z", "foo")))
 
     ResultOrdering.withIndexOrderCapability(interestingOrder, properties, capability(ASC)) should be(ProvidedOrder.asc("y.foo").asc("x.foo").asc("z.foo"))
   }
@@ -84,7 +84,7 @@ class ResultOrderingTest extends CypherFunSuite with LogicalPlanningTestSupport2
       ("z.foo", CTInteger),
       ("y.foo", CTInteger)
     )
-    val interestingOrder = InterestingOrder.required(RequiredOrderCandidate.asc("ignored", prop("x", "foo")).asc("ignored", prop("y", "foo")).asc("ignored", prop("z", "foo")))
+    val interestingOrder = InterestingOrder.required(RequiredOrderCandidate.asc(prop("x", "foo")).asc(prop("y", "foo")).asc(prop("z", "foo")))
 
     ResultOrdering.withIndexOrderCapability(interestingOrder, properties, capability(ASC)) should be(ProvidedOrder.asc("x.foo").asc("z.foo").asc("y.foo"))
   }
@@ -96,7 +96,7 @@ class ResultOrderingTest extends CypherFunSuite with LogicalPlanningTestSupport2
       ("z.foo", CTInteger),
       ("w.foo", CTInteger)
     )
-    val interestingOrder = InterestingOrder.required(RequiredOrderCandidate.asc("ignored", prop("x", "foo")).asc("ignored", prop("y", "foo")).desc("ignored", prop("z", "foo")).asc("ignored", prop("w", "foo")))
+    val interestingOrder = InterestingOrder.required(RequiredOrderCandidate.asc(prop("x", "foo")).asc(prop("y", "foo")).desc(prop("z", "foo")).asc(prop("w", "foo")))
 
     // Index can only give full ascending or descending, not a mixture. Therefore we follow the first required order
     ResultOrdering.withIndexOrderCapability(interestingOrder, properties, capability(BOTH)) should be(ProvidedOrder.asc("x.foo").asc("y.foo").asc("z.foo").asc("w.foo"))
@@ -109,7 +109,7 @@ class ResultOrderingTest extends CypherFunSuite with LogicalPlanningTestSupport2
       ("z.foo", CTInteger),
       ("w.foo", CTInteger)
     )
-    val interestingOrder = InterestingOrder.required(RequiredOrderCandidate.asc("ignored", prop("x", "foo")).asc("ignored", prop("y", "foo")))
+    val interestingOrder = InterestingOrder.required(RequiredOrderCandidate.asc(prop("x", "foo")).asc(prop("y", "foo")))
 
     ResultOrdering.withIndexOrderCapability(interestingOrder, properties, capability(ASC)) should be(ProvidedOrder.asc("x.foo").asc("y.foo").asc("z.foo").asc("w.foo"))
   }
@@ -119,7 +119,7 @@ class ResultOrderingTest extends CypherFunSuite with LogicalPlanningTestSupport2
       ("x.foo", CTInteger),
       ("y.foo", CTInteger)
     )
-    val interestingOrder = InterestingOrder.required(RequiredOrderCandidate.asc("ignored", prop("x", "foo")).asc("ignored", prop("y", "foo")).asc("ignored", prop("z", "foo")).asc("ignored", prop("w", "foo")))
+    val interestingOrder = InterestingOrder.required(RequiredOrderCandidate.asc(prop("x", "foo")).asc(prop("y", "foo")).asc(prop("z", "foo")).asc(prop("w", "foo")))
 
     val capabilities: Seq[CypherType] => IndexOrderCapability = _ => ASC
     ResultOrdering.withIndexOrderCapability(interestingOrder, properties, capabilities) should be(ProvidedOrder.asc("x.foo").asc("y.foo"))
@@ -130,42 +130,42 @@ class ResultOrderingTest extends CypherFunSuite with LogicalPlanningTestSupport2
   test("Single property interesting order results in provided order when required can't be fulfilled or is empty") {
     val properties = Seq(("x.foo", CTInteger))
 
-    ResultOrdering.withIndexOrderCapability(InterestingOrder.interested(InterestingOrderCandidate.asc("ignored", prop("x", "foo"))),
+    ResultOrdering.withIndexOrderCapability(InterestingOrder.interested(InterestingOrderCandidate.asc(prop("x", "foo"))),
       properties, capability(ASC)) should be(ProvidedOrder.asc("x.foo"))
-    ResultOrdering.withIndexOrderCapability(InterestingOrder.interested(InterestingOrderCandidate.desc("ignored", prop("x", "foo"))),
+    ResultOrdering.withIndexOrderCapability(InterestingOrder.interested(InterestingOrderCandidate.desc(prop("x", "foo"))),
       properties, capability(DESC)) should be(ProvidedOrder.desc("x.foo"))
 
-    ResultOrdering.withIndexOrderCapability(InterestingOrder.required(RequiredOrderCandidate.desc("ignored", prop("x", "foo"))).interested(InterestingOrderCandidate.asc("ignored", prop("x", "foo"))),
+    ResultOrdering.withIndexOrderCapability(InterestingOrder.required(RequiredOrderCandidate.desc(prop("x", "foo"))).interested(InterestingOrderCandidate.asc(prop("x", "foo"))),
       properties, capability(ASC)) should be(ProvidedOrder.asc("x.foo"))
-    ResultOrdering.withIndexOrderCapability(InterestingOrder.required(RequiredOrderCandidate.asc("ignored", prop("x", "foo"))).interested(InterestingOrderCandidate.desc("ignored", prop("x", "foo"))),
+    ResultOrdering.withIndexOrderCapability(InterestingOrder.required(RequiredOrderCandidate.asc(prop("x", "foo"))).interested(InterestingOrderCandidate.desc(prop("x", "foo"))),
       properties, capability(DESC)) should be(ProvidedOrder.desc("x.foo"))
   }
 
   test("Single property capability results in default provided order when neither required nor interesting can be fulfilled or are empty") {
     val properties = Seq(("x.foo", CTInteger))
 
-    ResultOrdering.withIndexOrderCapability(InterestingOrder.interested(InterestingOrderCandidate.desc("ignored", prop("x", "foo"))),
+    ResultOrdering.withIndexOrderCapability(InterestingOrder.interested(InterestingOrderCandidate.desc(prop("x", "foo"))),
       properties, capability(ASC)) should be(ProvidedOrder.asc("x.foo"))
-    ResultOrdering.withIndexOrderCapability(InterestingOrder.interested(InterestingOrderCandidate.asc("ignored", prop("x", "foo"))),
+    ResultOrdering.withIndexOrderCapability(InterestingOrder.interested(InterestingOrderCandidate.asc(prop("x", "foo"))),
       properties, capability(DESC)) should be(ProvidedOrder.desc("x.foo"))
 
-    ResultOrdering.withIndexOrderCapability(InterestingOrder.required(RequiredOrderCandidate.desc("ignored", prop("x", "foo"))).interested(InterestingOrderCandidate.desc("ignored", prop("x", "foo"))),
+    ResultOrdering.withIndexOrderCapability(InterestingOrder.required(RequiredOrderCandidate.desc(prop("x", "foo"))).interested(InterestingOrderCandidate.desc(prop("x", "foo"))),
       properties, capability(ASC)) should be(ProvidedOrder.asc("x.foo"))
-    ResultOrdering.withIndexOrderCapability(InterestingOrder.required(RequiredOrderCandidate.asc("ignored", prop("x", "foo"))).interested(InterestingOrderCandidate.asc("ignored", prop("x", "foo"))),
+    ResultOrdering.withIndexOrderCapability(InterestingOrder.required(RequiredOrderCandidate.asc(prop("x", "foo"))).interested(InterestingOrderCandidate.asc(prop("x", "foo"))),
       properties, capability(DESC)) should be(ProvidedOrder.desc("x.foo"))
   }
 
   test("Single property empty provided order when there is no capability") {
     val properties = Seq(("x.foo", CTInteger))
 
-    ResultOrdering.withIndexOrderCapability(InterestingOrder.interested(InterestingOrderCandidate.asc("ignored", prop("x", "foo"))),
+    ResultOrdering.withIndexOrderCapability(InterestingOrder.interested(InterestingOrderCandidate.asc(prop("x", "foo"))),
       properties, capability(NONE)) should be(ProvidedOrder.empty)
-    ResultOrdering.withIndexOrderCapability(InterestingOrder.interested(InterestingOrderCandidate.desc("ignored", prop("x", "foo"))),
+    ResultOrdering.withIndexOrderCapability(InterestingOrder.interested(InterestingOrderCandidate.desc(prop("x", "foo"))),
       properties, capability(NONE)) should be(ProvidedOrder.empty)
 
-    ResultOrdering.withIndexOrderCapability(InterestingOrder.required(RequiredOrderCandidate.desc("ignored", prop("x", "foo"))).interested(InterestingOrderCandidate.asc("ignored", prop("x", "foo"))),
+    ResultOrdering.withIndexOrderCapability(InterestingOrder.required(RequiredOrderCandidate.desc(prop("x", "foo"))).interested(InterestingOrderCandidate.asc(prop("x", "foo"))),
       properties, capability(NONE)) should be(ProvidedOrder.empty)
-    ResultOrdering.withIndexOrderCapability(InterestingOrder.required(RequiredOrderCandidate.asc("ignored", prop("x", "foo"))).interested(InterestingOrderCandidate.desc("ignored", prop("x", "foo"))),
+    ResultOrdering.withIndexOrderCapability(InterestingOrder.required(RequiredOrderCandidate.asc(prop("x", "foo"))).interested(InterestingOrderCandidate.desc(prop("x", "foo"))),
       properties, capability(NONE)) should be(ProvidedOrder.empty)
   }
 
@@ -176,15 +176,15 @@ class ResultOrderingTest extends CypherFunSuite with LogicalPlanningTestSupport2
     )
 
     // can't fulfill first interesting so falls back on second interesting
-    ResultOrdering.withIndexOrderCapability(InterestingOrder.interested(InterestingOrderCandidate.desc("ignored", prop("x", "foo")).desc("ignored", prop("y", "foo"))).interested(InterestingOrderCandidate.asc("ignored", prop("x", "foo")).asc("ignored", prop("y", "foo"))),
+    ResultOrdering.withIndexOrderCapability(InterestingOrder.interested(InterestingOrderCandidate.desc(prop("x", "foo")).desc(prop("y", "foo"))).interested(InterestingOrderCandidate.asc(prop("x", "foo")).asc(prop("y", "foo"))),
       properties, capability(ASC)) should be(ProvidedOrder.asc("x.foo").asc("y.foo"))
-    ResultOrdering.withIndexOrderCapability(InterestingOrder.interested(InterestingOrderCandidate.asc("ignored", prop("x", "foo")).asc("ignored", prop("y", "foo"))).interested(InterestingOrderCandidate.desc("ignored", prop("x", "foo")).desc("ignored", prop("y", "foo"))),
+    ResultOrdering.withIndexOrderCapability(InterestingOrder.interested(InterestingOrderCandidate.asc(prop("x", "foo")).asc(prop("y", "foo"))).interested(InterestingOrderCandidate.desc(prop("x", "foo")).desc(prop("y", "foo"))),
       properties, capability(DESC)) should be(ProvidedOrder.desc("x.foo").desc("y.foo"))
 
     // can't fulfill required so falls back on interesting
-    ResultOrdering.withIndexOrderCapability(InterestingOrder.required(RequiredOrderCandidate.desc("ignored", prop("x", "foo")).desc("ignored", prop("y", "foo"))).interested(InterestingOrderCandidate.asc("ignored", prop("x", "foo")).asc("ignored", prop("y", "foo"))),
+    ResultOrdering.withIndexOrderCapability(InterestingOrder.required(RequiredOrderCandidate.desc(prop("x", "foo")).desc(prop("y", "foo"))).interested(InterestingOrderCandidate.asc(prop("x", "foo")).asc(prop("y", "foo"))),
       properties, capability(ASC)) should be(ProvidedOrder.asc("x.foo").asc("y.foo"))
-    ResultOrdering.withIndexOrderCapability(InterestingOrder.required(RequiredOrderCandidate.asc("ignored", prop("x", "foo")).asc("ignored", prop("y", "foo"))).interested(InterestingOrderCandidate.desc("ignored", prop("x", "foo")).desc("ignored", prop("y", "foo"))),
+    ResultOrdering.withIndexOrderCapability(InterestingOrder.required(RequiredOrderCandidate.asc(prop("x", "foo")).asc(prop("y", "foo"))).interested(InterestingOrderCandidate.desc(prop("x", "foo")).desc(prop("y", "foo"))),
       properties, capability(DESC)) should be(ProvidedOrder.desc("x.foo").desc("y.foo"))
   }
 
@@ -194,14 +194,14 @@ class ResultOrderingTest extends CypherFunSuite with LogicalPlanningTestSupport2
       ("y.foo", CTInteger)
     )
 
-    ResultOrdering.withIndexOrderCapability(InterestingOrder.required(RequiredOrderCandidate.desc("ignored", prop("x", "foo")).desc("ignored", prop("y", "foo"))).interested(InterestingOrderCandidate.desc("ignored", prop("x", "foo")).desc("ignored", prop("y", "foo"))),
+    ResultOrdering.withIndexOrderCapability(InterestingOrder.required(RequiredOrderCandidate.desc(prop("x", "foo")).desc(prop("y", "foo"))).interested(InterestingOrderCandidate.desc(prop("x", "foo")).desc(prop("y", "foo"))),
       properties, capability(ASC)) should be(ProvidedOrder.asc("x.foo").asc("y.foo"))
-    ResultOrdering.withIndexOrderCapability(InterestingOrder.required(RequiredOrderCandidate.asc("ignored", prop("x", "foo")).asc("ignored", prop("y", "foo"))).interested(InterestingOrderCandidate.asc("ignored", prop("x", "foo")).asc("ignored", prop("y", "foo"))),
+    ResultOrdering.withIndexOrderCapability(InterestingOrder.required(RequiredOrderCandidate.asc(prop("x", "foo")).asc(prop("y", "foo"))).interested(InterestingOrderCandidate.asc(prop("x", "foo")).asc(prop("y", "foo"))),
       properties, capability(DESC)) should be(ProvidedOrder.desc("x.foo").desc("y.foo"))
 
-    ResultOrdering.withIndexOrderCapability(InterestingOrder.interested(InterestingOrderCandidate.desc("ignored", prop("x", "foo")).desc("ignored", prop("y", "foo"))).interested(InterestingOrderCandidate.desc("ignored", prop("x", "foo")).desc("ignored", prop("y", "foo"))),
+    ResultOrdering.withIndexOrderCapability(InterestingOrder.interested(InterestingOrderCandidate.desc(prop("x", "foo")).desc(prop("y", "foo"))).interested(InterestingOrderCandidate.desc(prop("x", "foo")).desc(prop("y", "foo"))),
       properties, capability(ASC)) should be(ProvidedOrder.asc("x.foo").asc("y.foo"))
-    ResultOrdering.withIndexOrderCapability(InterestingOrder.interested(InterestingOrderCandidate.asc("ignored", prop("x", "foo"))).interested(InterestingOrderCandidate.asc("ignored", prop("y", "foo"))),
+    ResultOrdering.withIndexOrderCapability(InterestingOrder.interested(InterestingOrderCandidate.asc(prop("x", "foo"))).interested(InterestingOrderCandidate.asc(prop("y", "foo"))),
       properties, capability(DESC)) should be(ProvidedOrder.desc("x.foo").desc("y.foo"))
   }
 
@@ -211,10 +211,10 @@ class ResultOrderingTest extends CypherFunSuite with LogicalPlanningTestSupport2
       ("y.foo", CTInteger)
     )
 
-    ResultOrdering.withIndexOrderCapability(InterestingOrder.interested(InterestingOrderCandidate.desc("ignored", prop("x", "foo")).desc("ignored", prop("y", "foo"))).interested(InterestingOrderCandidate.asc("ignored", prop("x", "foo")).asc("ignored", prop("y", "foo"))),
+    ResultOrdering.withIndexOrderCapability(InterestingOrder.interested(InterestingOrderCandidate.desc(prop("x", "foo")).desc(prop("y", "foo"))).interested(InterestingOrderCandidate.asc(prop("x", "foo")).asc(prop("y", "foo"))),
       properties, capability(NONE)) should be(ProvidedOrder.empty)
 
-    ResultOrdering.withIndexOrderCapability(InterestingOrder.interested(InterestingOrderCandidate.asc("ignored", prop("x", "foo")).asc("ignored", prop("y", "foo"))).interested(InterestingOrderCandidate.desc("ignored", prop("x", "foo")).desc("ignored", prop("y", "foo"))),
+    ResultOrdering.withIndexOrderCapability(InterestingOrder.interested(InterestingOrderCandidate.asc(prop("x", "foo")).asc(prop("y", "foo"))).interested(InterestingOrderCandidate.desc(prop("x", "foo")).desc(prop("y", "foo"))),
       properties, capability(NONE)) should be(ProvidedOrder.empty)
   }
 
@@ -225,7 +225,7 @@ class ResultOrderingTest extends CypherFunSuite with LogicalPlanningTestSupport2
       ("z.foo", CTInteger)
     )
 
-    ResultOrdering.withIndexOrderCapability(InterestingOrder.interested(InterestingOrderCandidate.desc("ignored", prop("x", "foo")).asc("ignored", prop("y", "foo")).desc("ignored", prop("z", "foo"))),
+    ResultOrdering.withIndexOrderCapability(InterestingOrder.interested(InterestingOrderCandidate.desc(prop("x", "foo")).asc(prop("y", "foo")).desc(prop("z", "foo"))),
       properties, capability(BOTH)) should be(ProvidedOrder.desc("x.foo").desc("y.foo").desc("z.foo"))
   }
 
@@ -237,7 +237,7 @@ class ResultOrderingTest extends CypherFunSuite with LogicalPlanningTestSupport2
       ("w.foo", CTInteger)
     )
 
-    ResultOrdering.withIndexOrderCapability(InterestingOrder.interested(InterestingOrderCandidate.asc("ignored", prop("x", "foo")).asc("ignored", prop("y", "foo"))),
+    ResultOrdering.withIndexOrderCapability(InterestingOrder.interested(InterestingOrderCandidate.asc(prop("x", "foo")).asc(prop("y", "foo"))),
       properties, capability(ASC)) should be(ProvidedOrder.asc("x.foo").asc("y.foo").asc("z.foo").asc("w.foo"))
   }
 
@@ -247,7 +247,7 @@ class ResultOrderingTest extends CypherFunSuite with LogicalPlanningTestSupport2
       ("y.foo", CTInteger)
     )
 
-    ResultOrdering.withIndexOrderCapability(InterestingOrder.interested(InterestingOrderCandidate.asc("ignored", prop("x", "foo")).asc("ignored", prop("y", "foo")).asc("ignored", prop("z", "foo")).asc("ignored", prop("w", "foo"))),
+    ResultOrdering.withIndexOrderCapability(InterestingOrder.interested(InterestingOrderCandidate.asc(prop("x", "foo")).asc(prop("y", "foo")).asc(prop("z", "foo")).asc(prop("w", "foo"))),
       properties, capability(ASC)) should be(ProvidedOrder.asc("x.foo").asc("y.foo"))
   }
 

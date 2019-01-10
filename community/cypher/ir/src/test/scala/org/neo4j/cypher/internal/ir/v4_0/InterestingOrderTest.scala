@@ -33,7 +33,7 @@ class InterestingOrderTest extends CypherFunSuite {
   private val propertyYfoo: Property = Property(variableY, PropertyKeyName("foo")(pos))(pos)
 
   test("should reverse project property to variable") {
-    val io = InterestingOrder.required(RequiredOrderCandidate.asc("ignored", variableXfoo))
+    val io = InterestingOrder.required(RequiredOrderCandidate.asc(variableXfoo))
     // projection
     val projections = Map("xfoo" -> propertyXfoo)
 
@@ -41,11 +41,11 @@ class InterestingOrderTest extends CypherFunSuite {
     val result = io.withReverseProjectedColumns(projections, Set.empty)
 
     // then
-    result should be(InterestingOrder.required(RequiredOrderCandidate.asc("ignored", variableXfoo, projections)))
+    result should be(InterestingOrder.required(RequiredOrderCandidate.asc(variableXfoo, projections)))
   }
 
   test("should reverse project property to variable (descending)") {
-    val io = InterestingOrder.required(RequiredOrderCandidate.desc("ignored", variableXfoo))
+    val io = InterestingOrder.required(RequiredOrderCandidate.desc(variableXfoo))
     // projection
     val projections = Map("xfoo" -> propertyXfoo)
 
@@ -53,12 +53,12 @@ class InterestingOrderTest extends CypherFunSuite {
     val result = io.withReverseProjectedColumns(projections, Set.empty)
 
     // then
-    result should be(InterestingOrder.required(RequiredOrderCandidate.desc("ignored", variableXfoo, projections)))
+    result should be(InterestingOrder.required(RequiredOrderCandidate.desc(variableXfoo, projections)))
   }
 
 
   test("should reverse project property to property") {
-    val io = InterestingOrder.required(RequiredOrderCandidate.asc("ignored", propertyYfoo))
+    val io = InterestingOrder.required(RequiredOrderCandidate.asc(propertyYfoo))
     // projection
     val projections = Map("y" -> variableX)
 
@@ -66,11 +66,11 @@ class InterestingOrderTest extends CypherFunSuite {
     val result = io.withReverseProjectedColumns(projections, Set.empty)
 
     // then
-    result should be(InterestingOrder.required(RequiredOrderCandidate.asc("ignored", propertyYfoo, projections)))
+    result should be(InterestingOrder.required(RequiredOrderCandidate.asc(propertyYfoo, projections)))
   }
 
   test("should reverse project variable to variable") {
-    val io = InterestingOrder.required(RequiredOrderCandidate.asc("ignored", variableY))
+    val io = InterestingOrder.required(RequiredOrderCandidate.asc(variableY))
     // projection
     val projections = Map("y" -> variableX)
 
@@ -78,11 +78,11 @@ class InterestingOrderTest extends CypherFunSuite {
     val result = io.withReverseProjectedColumns(projections, Set.empty)
 
     // then
-    result should be(InterestingOrder.required(RequiredOrderCandidate.asc("ignored", variableY, projections)))
+    result should be(InterestingOrder.required(RequiredOrderCandidate.asc(variableY, projections)))
   }
 
   test("should reverse project variable to variable and then to another variable") {
-    val io = InterestingOrder.required(RequiredOrderCandidate.asc("ignored", variableY))
+    val io = InterestingOrder.required(RequiredOrderCandidate.asc(variableY))
     // projections
     val projection1 = Map("y" -> variableX)
     val projection2 = Map("x" -> Variable("z")(pos))
@@ -91,17 +91,17 @@ class InterestingOrderTest extends CypherFunSuite {
     val result1 = io.withReverseProjectedColumns(projection1, Set.empty)
 
     // then
-    result1 should be(InterestingOrder.required(RequiredOrderCandidate.asc("ignored", variableY, projection1)))
+    result1 should be(InterestingOrder.required(RequiredOrderCandidate.asc(variableY, projection1)))
 
     // and when
     val result2 = result1.withReverseProjectedColumns(projection2, Set.empty)
 
     // then
-    result2 should be(InterestingOrder.required(RequiredOrderCandidate.asc("ignored", variableX, projection2)))
+    result2 should be(InterestingOrder.required(RequiredOrderCandidate.asc(variableX, projection2)))
   }
 
   test("should reverse project variable and property in multiple steps") {
-    val io = InterestingOrder.required(RequiredOrderCandidate.asc("ignored", variableXfoo))
+    val io = InterestingOrder.required(RequiredOrderCandidate.asc(variableXfoo))
     // projections ... WITH z AS y ... WITH y AS x ... WITH x.foo AS xfoo ORDER BY xfoo
     val projection1 = Map("xfoo" -> propertyXfoo)
     val projection2 = Map("x" -> variableY)
@@ -111,23 +111,23 @@ class InterestingOrderTest extends CypherFunSuite {
     val result1 = io.withReverseProjectedColumns(projection1, Set.empty)
 
     // then
-    result1 should be(InterestingOrder.required(RequiredOrderCandidate.asc("ignored", variableXfoo, projection1)))
+    result1 should be(InterestingOrder.required(RequiredOrderCandidate.asc(variableXfoo, projection1)))
 
     // and when
     val result2 = result1.withReverseProjectedColumns(projection2, Set.empty)
 
     // then
-    result2 should be(InterestingOrder.required(RequiredOrderCandidate.asc("ignored", propertyXfoo, projection2)))
+    result2 should be(InterestingOrder.required(RequiredOrderCandidate.asc(propertyXfoo, projection2)))
 
     // and when
     val result3 = result2.withReverseProjectedColumns(projection3, Set.empty)
 
     // then
-    result3 should be(InterestingOrder.required(RequiredOrderCandidate.asc("ignored", propertyYfoo, projection3)))
+    result3 should be(InterestingOrder.required(RequiredOrderCandidate.asc(propertyYfoo, projection3)))
   }
 
   test("should only keep relevant projections") {
-    val io = InterestingOrder.required(RequiredOrderCandidate.asc("ignored", variableY))
+    val io = InterestingOrder.required(RequiredOrderCandidate.asc(variableY))
     // projection
     val projections = Map("y" -> variableX, "bar" -> Variable("baz")(pos))
 
@@ -135,17 +135,17 @@ class InterestingOrderTest extends CypherFunSuite {
     val result = io.withReverseProjectedColumns(projections, Set.empty)
 
     // then
-    result should be(InterestingOrder.required(RequiredOrderCandidate.asc("ignored", variableY, Map("y" -> variableX))))
+    result should be(InterestingOrder.required(RequiredOrderCandidate.asc(variableY, Map("y" -> variableX))))
   }
 
   test("should not reverse project variable to variable if not argument") {
-    val result = InterestingOrder.required(RequiredOrderCandidate.asc("ignored", variableY)).withReverseProjectedColumns(Map.empty, Set.empty)
+    val result = InterestingOrder.required(RequiredOrderCandidate.asc(variableY)).withReverseProjectedColumns(Map.empty, Set.empty)
     result should be(InterestingOrder.empty)
   }
 
   test("should reverse project variable to variable if is argument") {
-    val result = InterestingOrder.required(RequiredOrderCandidate.asc("ignored", variableY)).withReverseProjectedColumns(Map.empty, Set("y"))
-    result should be(InterestingOrder.required(RequiredOrderCandidate.asc("ignored", variableY)))
+    val result = InterestingOrder.required(RequiredOrderCandidate.asc(variableY)).withReverseProjectedColumns(Map.empty, Set("y"))
+    result should be(InterestingOrder.required(RequiredOrderCandidate.asc(variableY)))
   }
 
   // test the interesting part of the InterestingOrder
@@ -154,32 +154,32 @@ class InterestingOrderTest extends CypherFunSuite {
     // projection
     val projections = Map("xfoo" -> propertyXfoo)
 
-    val ioAsc = InterestingOrder.interested(InterestingOrderCandidate.asc("ignored", variableXfoo))
-    val ioDesc = InterestingOrder.interested(InterestingOrderCandidate.desc("ignored", variableXfoo))
+    val ioAsc = InterestingOrder.interested(InterestingOrderCandidate.asc(variableXfoo))
+    val ioDesc = InterestingOrder.interested(InterestingOrderCandidate.desc(variableXfoo))
 
     // when
     val resultAsc = ioAsc.withReverseProjectedColumns(projections, Set.empty)
     val resultDesc = ioDesc.withReverseProjectedColumns(projections, Set.empty)
 
     // then
-    resultAsc should be(InterestingOrder.interested(InterestingOrderCandidate.asc("ignored", variableXfoo, projections)))
-    resultDesc should be(InterestingOrder.interested(InterestingOrderCandidate.desc("ignored", variableXfoo, projections)))
+    resultAsc should be(InterestingOrder.interested(InterestingOrderCandidate.asc(variableXfoo, projections)))
+    resultDesc should be(InterestingOrder.interested(InterestingOrderCandidate.desc(variableXfoo, projections)))
   }
 
   test("should reverse project property to property and variable to variable (for interesting)") {
     // projection
     val projections = Map("y" -> variableX)
 
-    val ioProp = InterestingOrder.interested(InterestingOrderCandidate.asc("ignored", propertyYfoo))
-    val ioVar = InterestingOrder.interested(InterestingOrderCandidate.asc("ignored", variableY))
+    val ioProp = InterestingOrder.interested(InterestingOrderCandidate.asc(propertyYfoo))
+    val ioVar = InterestingOrder.interested(InterestingOrderCandidate.asc(variableY))
 
     // when
     val resultProp = ioProp.withReverseProjectedColumns(projections, Set.empty)
     val resultVar = ioVar.withReverseProjectedColumns(projections, Set.empty)
 
     // then
-    resultProp should be(InterestingOrder.interested(InterestingOrderCandidate.asc("ignored", propertyYfoo, projections)))
-    resultVar should be(InterestingOrder.interested(InterestingOrderCandidate.asc("ignored", variableY, projections)))
+    resultProp should be(InterestingOrder.interested(InterestingOrderCandidate.asc(propertyYfoo, projections)))
+    resultVar should be(InterestingOrder.interested(InterestingOrderCandidate.asc(variableY, projections)))
   }
 
   test("should filter out empty interesting orders when reverse projecting") {
@@ -187,17 +187,17 @@ class InterestingOrderTest extends CypherFunSuite {
     val projections = Map("y" -> variableX)
 
     val io = InterestingOrder.interested(InterestingOrderCandidate.empty)
-      .interested(InterestingOrderCandidate.asc("ignored", propertyYfoo)).interested(InterestingOrderCandidate.empty)
+      .interested(InterestingOrderCandidate.asc(propertyYfoo)).interested(InterestingOrderCandidate.empty)
 
     // when
     val result = io.withReverseProjectedColumns(projections, Set.empty)
 
     //then
-    result should be(InterestingOrder.interested(InterestingOrderCandidate.asc("ignored", propertyYfoo, projections)))
+    result should be(InterestingOrder.interested(InterestingOrderCandidate.asc(propertyYfoo, projections)))
   }
 
   test("should reverse project variable to variable and then to another variable (for interesting)") {
-    val io = InterestingOrder.interested(InterestingOrderCandidate.asc("ignored", variableY))
+    val io = InterestingOrder.interested(InterestingOrderCandidate.asc(variableY))
     // projections ... WITH x.foo AS xfoo ... WITH xfoo AS y
     val projection1 = Map("y" -> variableXfoo)
     val projection2 = Map("xfoo" -> propertyXfoo)
@@ -206,22 +206,22 @@ class InterestingOrderTest extends CypherFunSuite {
     val result1 = io.withReverseProjectedColumns(projection1, Set.empty)
 
     // then
-    result1 should be(InterestingOrder.interested(InterestingOrderCandidate.asc("ignored", variableY, projection1)))
+    result1 should be(InterestingOrder.interested(InterestingOrderCandidate.asc(variableY, projection1)))
 
     // and when
     val result2 = result1.withReverseProjectedColumns(projection2, Set.empty)
 
     // then
-    result2 should be(InterestingOrder.interested(InterestingOrderCandidate.asc("ignored", variableXfoo, projection2)))
+    result2 should be(InterestingOrder.interested(InterestingOrderCandidate.asc(variableXfoo, projection2)))
   }
 
   test("should not reverse project variable to variable if not argument (for interesting)") {
-    val result = InterestingOrder.interested(InterestingOrderCandidate.asc("ignored", variableY)).withReverseProjectedColumns(Map.empty, Set.empty)
+    val result = InterestingOrder.interested(InterestingOrderCandidate.asc(variableY)).withReverseProjectedColumns(Map.empty, Set.empty)
     result should be(InterestingOrder.empty)
   }
 
   test("should reverse project variable to variable if is argument (for interesting)") {
-    val result = InterestingOrder.interested(InterestingOrderCandidate.asc("ignored", variableY)).withReverseProjectedColumns(Map.empty, Set("y"))
-    result should be(InterestingOrder.interested(InterestingOrderCandidate.asc("ignored", variableY)))
+    val result = InterestingOrder.interested(InterestingOrderCandidate.asc(variableY)).withReverseProjectedColumns(Map.empty, Set("y"))
+    result should be(InterestingOrder.interested(InterestingOrderCandidate.asc(variableY)))
   }
 }

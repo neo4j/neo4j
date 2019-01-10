@@ -63,10 +63,10 @@ object ResultOrdering {
 
     val candidates = interestingOrder.requiredOrderCandidate +: interestingOrder.interestingOrderCandidates
     val maybeProvidedOrder = candidates.map(_.headOption).collectFirst {
-      case Some(Desc(_, expression, projection)) if indexOrderCapability.desc && satisfies(properties, expression, projection) =>
+      case Some(Desc(expression, projection)) if indexOrderCapability.desc && satisfies(properties, expression, projection) =>
         ProvidedOrder(properties.map {case (name, _) => ProvidedOrder.Desc(name)})
 
-      case Some(Asc(_, expression, projection)) if indexOrderCapability.asc && satisfies(properties, expression, projection) =>
+      case Some(Asc(expression, projection)) if indexOrderCapability.asc && satisfies(properties, expression, projection) =>
         ProvidedOrder(properties.map {case (name, _) => ProvidedOrder.Asc(name)})
     }
 

@@ -190,7 +190,7 @@ class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSuppor
         p.name -> p,
         // a projection necessary for the sorting
         bday.name -> bdayExp)),
-      interestingOrder = InterestingOrder.required(RequiredOrderCandidate.asc("ignored", pname).asc("ignored", bdayExp, Map(bday.name -> bdayExp)))
+      interestingOrder = InterestingOrder.required(RequiredOrderCandidate.asc(pname).asc(bdayExp, Map(bday.name -> bdayExp)))
     )
 
     // when
@@ -224,7 +224,7 @@ class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSuppor
         p.name -> p,
         // a projection necessary for the sorting
         bday.name -> bdayExp)),
-      interestingOrder = InterestingOrder.required(RequiredOrderCandidate.asc("ignored", bdayExp, Map(bday.name -> bdayExp)).asc("ignored", pname))
+      interestingOrder = InterestingOrder.required(RequiredOrderCandidate.asc(bdayExp, Map(bday.name -> bdayExp)).asc(pname))
     )
 
     // when
@@ -295,7 +295,7 @@ class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSuppor
       patternNodesInQG = Set("n", "m", "o"),
       projection = projection,
       solved = RegularPlannerQuery(QueryGraph.empty.addPatternNodes("n"), InterestingOrder.empty, AggregatingQueryProjection(Map(mSortVar.name -> mSortVar), Map(oSortVar.name -> oSortVar))),
-      interestingOrder = InterestingOrder.required(RequiredOrderCandidate.asc("ignored", mSortVar, Map(mSortVar.name -> mSortVar)).asc("ignored", oSortVar))
+      interestingOrder = InterestingOrder.required(RequiredOrderCandidate.asc(mSortVar, Map(mSortVar.name -> mSortVar)).asc(oSortVar))
     )
 
     // when
@@ -379,7 +379,7 @@ class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSuppor
   }
 
   private def orderBy(sortExpression: Expression, projections: Map[String, Expression] = Map.empty): InterestingOrder =
-    InterestingOrder.required(RequiredOrderCandidate.asc("ignored", sortExpression, projections))
+    InterestingOrder.required(RequiredOrderCandidate.asc(sortExpression, projections))
 
   private def regularProjection(skip: Option[Expression] = None, limit: Option[Expression] = None, projectionsMap: Map[String, Expression] = projectionsMap) = {
     val projection = RegularQueryProjection(

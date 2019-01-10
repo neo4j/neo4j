@@ -118,7 +118,7 @@ object ClauseConverters {
           if (groupingExpressions.isEmpty && aggregationExpressions.size == 1) {
             // just checked that there is only one key
             val value = aggregationExpressions(aggregationExpressions.keys.head)
-            AggregationHelper.checkMinOrMax(value, (x, e) => Seq(Asc(x, e)), (x, e) => Seq(Desc(x, e)), Seq.empty)
+            AggregationHelper.checkMinOrMax(value, e => Seq(Asc(e)), e => Seq(Desc(e)), Seq.empty)
           } else {
             Seq.empty
           }
@@ -142,33 +142,33 @@ object ClauseConverters {
     // TODO: Keep all sortItems (filter for index-backed order-by elsewhere)
     sortItems.map {
       // RETURN a AS b ORDER BY b.prop
-      case AscSortItem(e@Property(LogicalVariable(varName), propName)) =>
+      case AscSortItem(e@Property(LogicalVariable(varName), _)) =>
         projections.get(varName) match {
-          case Some(v@LogicalVariable(originalVarName)) => Asc(s"$originalVarName.${propName.name}", e, Map(varName -> v))
+          case Some(v: LogicalVariable) => Asc(e, Map(varName -> v))
           case Some(_) => throw new IllegalStateException("Cannot sort on property lookup of non-variable property container")
-          case None => Asc(s"$varName.${propName.name}", e)
+          case None => Asc(e)
         }
-      case DescSortItem(e@Property(LogicalVariable(varName), propName)) =>
+      case DescSortItem(e@Property(LogicalVariable(varName), _)) =>
         projections.get(varName) match {
-          case Some(v@LogicalVariable(originalVarName)) => Desc(s"$originalVarName.${propName.name}", e, Map(varName -> v))
+          case Some(v: LogicalVariable) => Desc(e, Map(varName -> v))
           case Some(_) => throw new IllegalStateException("Cannot sort on property lookup of non-variable property container")
-          case None => Desc(s"$varName.${propName.name}", e)
+          case None => Desc(e)
         }
 
       // RETURN n.prop as foo ORDER BY foo
       case AscSortItem(e@LogicalVariable(name)) =>
         projections.get(name) match {
-          case Some(prop@Property(LogicalVariable(varName), propName)) => Asc(s"$varName.${propName.name}", e, Map(name -> prop))
-          case Some(v@Variable(oldName)) => Asc(oldName, e, Map(name -> v))
-          case Some(expression) => Asc(name, e, Map(name -> expression))
-          case None => Asc(name, e)
+          case Some(prop: Property) => Asc(e, Map(name -> prop))
+          case Some(v: Variable) => Asc(e, Map(name -> v))
+          case Some(expression) => Asc(e, Map(name -> expression))
+          case None => Asc(e)
         }
       case DescSortItem(e@LogicalVariable(name)) =>
         projections.get(name) match {
-          case Some(prop@Property(LogicalVariable(varName), propName)) => Desc(s"$varName.${propName.name}", e, Map(name -> prop))
-          case Some(v@Variable(oldName)) => Desc(oldName, e, Map(name -> v))
-          case Some(expression) => Desc(name, e, Map(name -> expression))
-          case None => Desc(name, e)
+          case Some(prop: Property) => Desc(e, Map(name -> prop))
+          case Some(v: Variable) => Desc(e, Map(name -> v))
+          case Some(expression) => Desc(e, Map(name -> expression))
+          case None => Desc(e)
         }
 
       //  RETURN n.prop AS foo ORDER BY foo * 2
@@ -176,11 +176,11 @@ object ClauseConverters {
       case AscSortItem(expression) =>
         val depNames = expression.dependencies.map(_.name)
         val orderProjections = projections.filter(p => depNames.contains(p._1))
-        Asc(expression.asCanonicalStringVal, expression, orderProjections)
+        Asc(expression, orderProjections)
       case DescSortItem(expression) =>
         val depNames = expression.dependencies.map(_.name)
         val orderProjections = projections.filter(p => depNames.contains(p._1))
-        Desc(expression.asCanonicalStringVal, expression, orderProjections)
+        Desc(expression, orderProjections)
 
       case sortItem => throw new IllegalStateException("Cannot sort on something that is not Ascending or Descending: " + sortItem)
     }

@@ -39,7 +39,10 @@ object ProvidedOrder {
       * ordered column is a property lookup.
       */
     def unapply(arg: Column): Option[(String, String)] = {
-      StringPropertyLookup.unapply(arg.id)
+      arg.id.split("\\.", 2) match {
+        case Array(varName, propName) => Some((varName, propName))
+        case _ => None
+      }
     }
   }
 
