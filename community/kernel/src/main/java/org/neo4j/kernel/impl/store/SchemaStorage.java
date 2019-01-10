@@ -74,6 +74,26 @@ public class SchemaStorage implements SchemaRuleAccess
         return foundRule;
     }
 
+    /**
+     * Find the IndexRule that has the given user supplied name.
+     *
+     * @param indexName the user supplied index name to look for.
+     * @return the matching IndexRule, or null if no matching index rule was found.
+     */
+    public StoreIndexDescriptor indexGetForName( String indexName )
+    {
+        Iterator<StoreIndexDescriptor> itr = indexesGetAll();
+        while ( itr.hasNext() )
+        {
+            StoreIndexDescriptor sid = itr.next();
+            if ( sid.getUserSuppliedName().map( n -> n.equals( indexName ) ).orElse( false ) )
+            {
+                return sid;
+            }
+        }
+        return null;
+    }
+
     public Iterator<StoreIndexDescriptor> indexesGetAll()
     {
         return loadAllSchemaRules( Predicates.alwaysTrue(), StoreIndexDescriptor.class, false );

@@ -23,6 +23,7 @@ import org.eclipse.collections.api.IntIterable;
 import org.eclipse.collections.api.set.primitive.LongSet;
 
 import java.util.Iterator;
+import java.util.Optional;
 
 import org.neo4j.internal.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
@@ -167,7 +168,17 @@ class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
     @Override
     public void visitRemovedIndex( IndexDescriptor index )
     {
-        StoreIndexDescriptor rule = schemaStorage.indexGetForSchema( index );
+        StoreIndexDescriptor rule = null;
+        Optional<String> name = index.getUserSuppliedName();
+        if ( name.isPresent() )
+        {
+            String indexName = name.get();
+            rule = schemaStorage.indexGetForName( indexName );
+        }
+        else
+        {
+            rule = schemaStorage.indexGetForSchema( index );
+        }
         if ( rule != null )
         {
             recordState.dropSchemaRule( rule );
