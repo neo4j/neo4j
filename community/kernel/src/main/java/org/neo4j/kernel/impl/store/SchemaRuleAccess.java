@@ -63,6 +63,14 @@ public interface SchemaRuleAccess
     StoreIndexDescriptor indexGetForSchema( SchemaDescriptorSupplier index );
 
     /**
+     * Find the IndexRule that has the given user supplied name.
+     *
+     * @param indexName the user supplied index name to look for.
+     * @return the matching IndexRule, or null if no matching index rule was found.
+     */
+    StoreIndexDescriptor indexGetForName( String indexName );
+
+    /**
      * Get the constraint rule that matches the given ConstraintDescriptor
      * @param descriptor the ConstraintDescriptor to match
      * @return the matching ConstrainRule

@@ -94,6 +94,21 @@ public class SchemaStorage implements SchemaRuleAccess
     }
 
     @Override
+    public StoreIndexDescriptor indexGetForName( String indexName )
+    {
+        Iterator<StoreIndexDescriptor> itr = indexesGetAll();
+        while ( itr.hasNext() )
+        {
+            StoreIndexDescriptor sid = itr.next();
+            if ( sid.hasUserSuppliedName() && sid.name().equals( indexName ) )
+            {
+                return sid;
+            }
+        }
+        return null;
+    }
+
+    @Override
     public ConstraintRule constraintsGetSingle( final ConstraintDescriptor descriptor )
             throws SchemaRuleNotFoundException, DuplicateSchemaRuleException
     {
