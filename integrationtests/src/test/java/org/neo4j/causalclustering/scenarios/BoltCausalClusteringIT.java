@@ -767,7 +767,7 @@ public class BoltCausalClusteringIT
             {
                 return op.apply( session );
             }
-            catch ( SessionExpiredException e )
+            catch ( SessionExpiredException | ClientException e )
             {
                 // role might have changed; try again;
             }
