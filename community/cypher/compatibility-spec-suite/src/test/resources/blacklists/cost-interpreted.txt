@@ -5,4 +5,3 @@ Feature "ProcedureCallAcceptance": Scenario "In-query call to procedure that tak
 Feature "ProcedureCallAcceptance": Scenario "In-query call to procedure with explicit arguments that drops all result fields"
 Feature "ProcedureCallAcceptance": Scenario "Standalone call to procedure with argument of type INTEGER accepts value of type FLOAT"
 Feature "ProcedureCallAcceptance": Scenario "In-query call to procedure with argument of type INTEGER accepts value of type FLOAT"
-Feature "ProcedureCallAcceptance": Scenario "Standalone call to procedure should fail if implicit argument is missing"
