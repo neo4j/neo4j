@@ -21,6 +21,10 @@
     <url>https://github.com/openCypher/front-end</url>
   </scm>
 
+  <properties>
+    <moduleName>org.neo4j.cypher.internal.v4_0.parser</moduleName>
+  </properties>
+
   <licenses>
     <license>
       <name>Apache License, Version 2.0</name>
@@ -33,7 +37,6 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-jar-plugin</artifactId>
-        <version>2.2</version>
         <executions>
           <execution>
             <goals>

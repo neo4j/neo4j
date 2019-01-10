@@ -87,7 +87,7 @@
 
     <license-text.header>headers/AGPL-3-header.txt</license-text.header>
 
-    <scala-maven-plugin.version>3.4.2</scala-maven-plugin.version>
+    <scala-maven-plugin.version>3.4.4</scala-maven-plugin.version>
     <scala.version>2.11.12</scala.version>
     <scala.binary.version>2.11</scala.binary.version>
     <asm.version>7.0</asm.version>
@@ -471,7 +471,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-jar-plugin</artifactId>
-          <version>3.1.0</version>
+          <version>3.1.1</version>
           <executions>
             <!-- Augment default jar with url -->
             <execution>
@@ -741,12 +741,12 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-shade-plugin</artifactId>
-          <version>3.2.0</version>
+          <version>3.2.1</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-assembly-plugin</artifactId>
-          <version>3.1.0</version>
+          <version>3.1.1</version>
           <configuration>
             <tarLongFileMode>gnu</tarLongFileMode>
           </configuration>
