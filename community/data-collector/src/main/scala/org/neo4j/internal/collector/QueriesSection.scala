@@ -112,10 +112,10 @@ object QueriesSection {
       val compileTime = compilationTimeMicros
       val elapsed = elapsedTimeMicros
       if (compileTime > 0) {
-        data.put("elapsedCompileTimeInUs", java.lang.Long.valueOf(compileTime))
-        data.put("elapsedExecutionTimeInUs", java.lang.Long.valueOf(elapsed - compileTime))
+        data.put("elapsedCompileTimeInUs", Long.box(compileTime))
+        data.put("elapsedExecutionTimeInUs", Long.box(elapsed - compileTime))
       } else
-        data.put("elapsedExecutionTimeInUs", java.lang.Long.valueOf(elapsed))
+        data.put("elapsedExecutionTimeInUs", Long.box(elapsed))
       result.add(data)
     }
 
@@ -125,20 +125,20 @@ object QueriesSection {
   private def invocationSummary(invocations: ArrayBuffer[QueriesSection.SingleInvocation]
                                ): util.Map[String, AnyRef] = {
     val result = new util.HashMap[String, AnyRef]()
-    var compileTime = new Stats
-    var executionTime = new Stats
+    val compileTime = new Stats
+    val executionTime = new Stats
     for (invocation <- invocations) {
       compileTime.onValue(invocation.compilationTimeMicros)
       executionTime.onValue(invocation.elapsedTimeMicros - invocation.compilationTimeMicros)
     }
 
-    result.put("compileTimeInUsMin", java.lang.Long.valueOf(compileTime.min))
-    result.put("compileTimeInUsMax", java.lang.Long.valueOf(compileTime.max))
-    result.put("compileTimeInUsAvg", java.lang.Long.valueOf(compileTime.avg))
-    result.put("executionTimeInUsMin", java.lang.Long.valueOf(executionTime.min))
-    result.put("executionTimeInUsMax", java.lang.Long.valueOf(executionTime.max))
-    result.put("executionTimeInUsAvg", java.lang.Long.valueOf(executionTime.avg))
-    result.put("invocationCount", java.lang.Long.valueOf(invocations.size))
+    result.put("compileTimeInUsMin", Long.box(compileTime.min))
+    result.put("compileTimeInUsMax", Long.box(compileTime.max))
+    result.put("compileTimeInUsAvg", Long.box(compileTime.avg))
+    result.put("executionTimeInUsMin", Long.box(executionTime.min))
+    result.put("executionTimeInUsMax", Long.box(executionTime.max))
+    result.put("executionTimeInUsAvg", Long.box(executionTime.avg))
+    result.put("invocationCount", Long.box(invocations.size))
     result
   }
 

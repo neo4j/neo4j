@@ -422,14 +422,8 @@ class DataCollectorQueriesAcceptanceTest extends ExecutionEngineFunSuite {
     )
 
   private def assertInvalidArgument(query: String): Unit = {
-    try {
-      execute(query)
-    } catch {
-      case e: CypherExecutionException =>
-        e.status should be(org.neo4j.kernel.api.exceptions.Status.General.InvalidArguments)
-      case x =>
-        x shouldBe a[CypherExecutionException]
-    }
+    val e = intercept[CypherExecutionException](execute(query))
+    e.status should be(org.neo4j.kernel.api.exceptions.Status.General.InvalidArguments)
   }
 
   case class QueryWithInvocationSummary(expectedQuery: String) extends Matcher[AnyRef] {

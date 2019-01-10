@@ -77,21 +77,12 @@ class DataCollectorOptions
 
         private int asInteger( Object value ) throws InvalidArgumentsException
         {
-            if ( value instanceof Integer )
+            if ( value instanceof Byte ||
+                 value instanceof Short ||
+                 value instanceof Integer ||
+                 value instanceof Long )
             {
-                return (Integer) value;
-            }
-            if ( value instanceof Long )
-            {
-                return ((Long) value).intValue();
-            }
-            if ( value instanceof Short )
-            {
-                return ((Short) value).intValue();
-            }
-            if ( value instanceof Byte )
-            {
-                return ((Byte) value).intValue();
+                return ((Number)value).intValue();
             }
             throw new InvalidArgumentsException(
                     String.format( "Option `%s` requires integer argument, got `%s`", name, value ) );
