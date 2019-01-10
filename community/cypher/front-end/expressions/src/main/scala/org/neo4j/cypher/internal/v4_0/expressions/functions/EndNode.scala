@@ -16,9 +16,8 @@
  */
 package org.neo4j.cypher.internal.v4_0.expressions.functions
 
-import org.neo4j.cypher.internal.v4_0.expressions.TypeSignatures
-import org.neo4j.cypher.internal.v4_0.util.symbols._
 import org.neo4j.cypher.internal.v4_0.expressions.{TypeSignature, TypeSignatures}
+import org.neo4j.cypher.internal.v4_0.util.symbols._
 
 case object EndNode extends Function with TypeSignatures {
   def name = "endNode"
@@ -26,4 +25,8 @@ case object EndNode extends Function with TypeSignatures {
   override val signatures = Vector(
     TypeSignature(argumentTypes = Vector(CTRelationship), outputType = CTNode)
   )
+
+  override def getSignatureAsString: String = name + "(relationship :: RELATIONSHIP?) :: (NODE?)"
+
+  override def getDescription: String = "Returns the end node of a relationship."
 }

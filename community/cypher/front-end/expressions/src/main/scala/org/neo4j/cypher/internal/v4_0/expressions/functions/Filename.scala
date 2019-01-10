@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2019 "Neo4j,"
+ * Copyright (c) 2002-2018 "Neo4j,"
  * Neo4j Sweden AB [http://neo4j.com]
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,16 +17,15 @@
 package org.neo4j.cypher.internal.v4_0.expressions.functions
 
 import org.neo4j.cypher.internal.v4_0.expressions.{TypeSignature, TypeSignatures}
-import org.neo4j.cypher.internal.v4_0.util.symbols._
+import org.neo4j.cypher.internal.v4_0.util.symbols.CTString
 
-case object RTrim extends Function with TypeSignatures {
-  def name = "rtrim"
-
+case object Filename extends Function with TypeSignatures {
+  def name = "filename"
   override val signatures = Vector(
-    TypeSignature(argumentTypes = Vector(CTString), outputType = CTString)
+    TypeSignature(argumentTypes = Vector(), outputType = CTString)
   )
 
-  override def getSignatureAsString: String = name + "(input :: STRING?) :: (STRING?)"
+  override def getSignatureAsString: String = name + "() :: (STRING?)"
 
-  override def getDescription: String = "Returns the original string with trailing whitespace removed."
+  override def getDescription: String = "Returns the name of the file that LOAD CSV is using."
 }

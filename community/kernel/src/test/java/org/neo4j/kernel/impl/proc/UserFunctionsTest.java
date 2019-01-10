@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.proc;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.helpers.collection.Iterables;
@@ -42,10 +43,11 @@ import org.neo4j.values.storable.Values;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.nullValue;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
+import static org.hamcrest.Matchers.empty;
+import static org.junit.Assert.assertThat;
 import static org.neo4j.internal.kernel.api.procs.UserFunctionSignature.functionSignature;
 import static org.neo4j.kernel.api.proc.BasicContext.buildContext;
 import static org.neo4j.values.storable.Values.numberValue;
@@ -80,11 +82,15 @@ class UserFunctionsTest
         procs.register( function( functionSignature( "org", "myproc3" ).out(Neo4jTypes.NTAny).build() ) );
 
         // Then
-        List<UserFunctionSignature> signatures = Iterables.asList( procs.getAllFunctions() );
+        List<UserFunctionSignature> signatures = Iterables.asList( procs.getAllFunctions().collect( Collectors.toSet()) );
         assertThat( signatures, containsInAnyOrder(
                 functionSignature( "org", "myproc1" ).out(Neo4jTypes.NTAny).build(),
                 functionSignature( "org", "myproc2" ).out(Neo4jTypes.NTAny).build(),
                 functionSignature( "org", "myproc3" ).out(Neo4jTypes.NTAny).build() ) );
+
+        // And
+        signatures = Iterables.asList( procs.getAllAggregatingFunctions().collect( Collectors.toSet()) );
+        assertThat( signatures, empty() );
     }
 
     @Test
@@ -96,10 +102,14 @@ class UserFunctionsTest
         procs.register( aggregationFunction( functionSignature( "org", "myaggrfunc1" ).out(Neo4jTypes.NTAny).build() ) );
 
         // Then
-        List<UserFunctionSignature> signatures = Iterables.asList( procs.getAllFunctions() );
+        List<UserFunctionSignature> signatures = Iterables.asList( procs.getAllFunctions().collect( Collectors.toSet()) );
         assertThat( signatures, containsInAnyOrder(
                 functionSignature( "org", "myfunc1" ).out(Neo4jTypes.NTAny).build(),
-                functionSignature( "org", "myfunc2" ).out(Neo4jTypes.NTAny).build(),
+                functionSignature( "org", "myfunc2" ).out(Neo4jTypes.NTAny).build() ) );
+
+        // And
+        signatures = Iterables.asList( procs.getAllAggregatingFunctions().collect( Collectors.toSet()) );
+        assertThat( signatures, containsInAnyOrder(
                 functionSignature( "org", "myaggrfunc1" ).out(Neo4jTypes.NTAny).build() ) );
     }
 

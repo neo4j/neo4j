@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.javacompat;
 
 import java.time.Clock;
+import java.util.List;
 
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.cypher.CypherException;
@@ -32,6 +33,7 @@ import org.neo4j.cypher.internal.tracing.TimingCompilationTracer;
 import org.neo4j.graphdb.Result;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.query.FunctionInformation;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
 import org.neo4j.kernel.impl.query.TransactionalContext;
@@ -112,5 +114,11 @@ public class ExecutionEngine implements QueryExecutionEngine
     public long clearQueryCaches()
     {
         return inner.clearQueryCaches();
+    }
+
+    @Override
+    public List<FunctionInformation> getProvidedCypherFunctions()
+    {
+        return inner.getCypherFunctions();
     }
 }

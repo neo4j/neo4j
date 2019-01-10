@@ -18,4 +18,8 @@ package org.neo4j.cypher.internal.v4_0.expressions.functions
 
 case object UnresolvedFunction extends Function {
   def name = "UNKNOWN"
+
+  override def getSignatureAsString: String = throw new UnsupportedOperationException("This is not an actual user-facing function")
+
+  override def getDescription: String = throw new UnsupportedOperationException("This is not an actual user-facing function")
 }

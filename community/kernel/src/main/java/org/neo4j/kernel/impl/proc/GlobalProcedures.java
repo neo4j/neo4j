@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.proc;
 
 import java.io.File;
 import java.util.Set;
+import java.util.stream.Stream;
 
 import org.neo4j.collection.RawIterator;
 import org.neo4j.exceptions.KernelException;
@@ -269,11 +270,18 @@ public class GlobalProcedures extends LifecycleAdapter
         return registry.getAllProcedures();
     }
 
-    public Set<UserFunctionSignature> getAllFunctions()
+    /*
+    This gets you all non-aggregating functions
+     */
+    public Stream<UserFunctionSignature> getAllFunctions()
     {
         return registry.getAllFunctions();
     }
 
+    public Stream<UserFunctionSignature> getAllAggregatingFunctions()
+    {
+        return registry.getAllAggregatingFunctions();
+    }
     public RawIterator<AnyValue[], ProcedureException> callProcedure( Context ctx, int id,
             AnyValue[] input, ResourceTracker resourceTracker ) throws ProcedureException
     {

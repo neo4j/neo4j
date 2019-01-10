@@ -16,9 +16,8 @@
  */
 package org.neo4j.cypher.internal.v4_0.expressions.functions
 
-import org.neo4j.cypher.internal.v4_0.expressions.TypeSignatures
-import org.neo4j.cypher.internal.v4_0.util.symbols._
 import org.neo4j.cypher.internal.v4_0.expressions.{TypeSignature, TypeSignatures}
+import org.neo4j.cypher.internal.v4_0.util.symbols._
 
 case object Left extends Function with TypeSignatures {
   def name = "left"
@@ -26,4 +25,8 @@ case object Left extends Function with TypeSignatures {
   override val signatures = Vector(
     TypeSignature(argumentTypes = Vector(CTString, CTInteger), outputType = CTString)
   )
+
+  override def getSignatureAsString: String = name + "(original :: STRING?, length :: INTEGER) :: (STRING?)"
+
+  override def getDescription: String = "Returns a string containing the specified number of leftmost characters of the original string."
 }

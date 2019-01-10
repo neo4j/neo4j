@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2019 "Neo4j,"
+ * Copyright (c) 2002-2018 "Neo4j,"
  * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
@@ -19,23 +19,13 @@
  */
 package org.neo4j.kernel.impl.query;
 
-import java.util.List;
-
-import org.neo4j.graphdb.Result;
-import org.neo4j.values.virtual.MapValue;
-
-public interface QueryExecutionEngine
+public interface FunctionInformation
 {
-    Result executeQuery( String query, MapValue parameters, TransactionalContext context, boolean prePopulate )
-            throws QueryExecutionKernelException;
+    String getFunctionName();
 
-    Result profileQuery( String query, MapValue parameters, TransactionalContext context, boolean prePopulate )
-            throws QueryExecutionKernelException;
+    String getDescription();
 
-    boolean isPeriodicCommit( String query );
+    String getSignature();
 
-    long clearQueryCaches();
-
-    List<FunctionInformation> getProvidedCypherFunctions();
+    java.lang.Boolean isAggregationFunction();
 }
-

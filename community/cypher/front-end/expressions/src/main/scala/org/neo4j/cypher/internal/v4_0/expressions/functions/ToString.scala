@@ -16,9 +16,8 @@
  */
 package org.neo4j.cypher.internal.v4_0.expressions.functions
 
-import org.neo4j.cypher.internal.v4_0.expressions.TypeSignatures
-import org.neo4j.cypher.internal.v4_0.util.symbols._
 import org.neo4j.cypher.internal.v4_0.expressions.{TypeSignature, TypeSignatures}
+import org.neo4j.cypher.internal.v4_0.util.symbols._
 
 case object ToString extends Function with TypeSignatures {
   override def name = "toString"
@@ -36,4 +35,9 @@ case object ToString extends Function with TypeSignatures {
     TypeSignature(argumentTypes = Vector(CTLocalDateTime), outputType = CTString),
     TypeSignature(argumentTypes = Vector(CTPoint), outputType = CTString)
   )
+
+  override def getSignatureAsString: String = name + "(input :: ANY?) :: (STRING?)"
+
+  override def getDescription: String =
+    "Converts an integer, float, boolean or temporal type (i.e. Date, Time, LocalTime, DateTime, LocalDateTime or Duration) value to a string."
 }

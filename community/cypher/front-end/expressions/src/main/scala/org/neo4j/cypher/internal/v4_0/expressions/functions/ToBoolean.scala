@@ -18,4 +18,8 @@ package org.neo4j.cypher.internal.v4_0.expressions.functions
 
 case object ToBoolean extends Function {
   def name = "toBoolean"
+
+  override def getSignatureAsString: String = name + "(input :: ANY?) :: (BOOLEAN?)"
+
+  override def getDescription: String = "Converts a string value to a boolean value."
 }

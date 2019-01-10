@@ -18,7 +18,7 @@ package org.neo4j.cypher.internal.v4_0.expressions.functions
 
 import org.neo4j.cypher.internal.v4_0.expressions.{Expression, FunctionInvocation, FunctionName}
 import org.neo4j.cypher.internal.v4_0.util.InputPosition
-
+import org.neo4j.kernel.impl.query.FunctionInformation
 
 object Function {
   private val knownFunctions: Seq[Function] = Vector(
@@ -96,6 +96,25 @@ object Function {
   )
 
   val lookup: Map[String, Function] = knownFunctions.map { f => (f.name.toLowerCase, f) }.toMap
+
+  val functionInfo: List[FunctionInformation] = {
+    lookup.values.map { f => FunctionInfo(f) }.toList
+  }
+}
+
+case class FunctionInfo(f: Function) extends FunctionInformation {
+  override def getFunctionName: String = f.name
+
+  override def isAggregationFunction: java.lang.Boolean = f match {
+      case (_: AggregatingFunction) => true
+      case _ => false
+    }
+
+  override def getDescription: String = f.getDescription
+
+  override def getSignature: String = f.getSignatureAsString
+
+  override def toString: String = f.name + " || " + getSignature + " || " + getDescription + " || " + isAggregationFunction
 }
 
 abstract class Function {
@@ -108,6 +127,10 @@ abstract class Function {
 
   def asInvocation(lhs: Expression, rhs: Expression)(implicit position: InputPosition): FunctionInvocation =
     FunctionInvocation(asFunctionName, distinct = false, IndexedSeq(lhs, rhs))(position)
+
+  def getSignatureAsString : String
+
+  def getDescription : String
 }
 
 abstract class AggregatingFunction extends Function

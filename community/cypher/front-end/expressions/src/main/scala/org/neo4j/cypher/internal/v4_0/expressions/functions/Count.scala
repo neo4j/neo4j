@@ -25,4 +25,8 @@ case object Count extends AggregatingFunction with TypeSignatures {
   override val signatures = Vector(
     TypeSignature(argumentTypes = Vector(CTAny), outputType = CTInteger)
   )
+
+  override def getSignatureAsString: String = name + "(input :: ANY?) :: (INTEGER)"
+
+  override def getDescription: String = "Returns the number of values or rows."
 }

@@ -16,9 +16,8 @@
  */
 package org.neo4j.cypher.internal.v4_0.expressions.functions
 
-import org.neo4j.cypher.internal.v4_0.expressions.TypeSignatures
-import org.neo4j.cypher.internal.v4_0.util.symbols._
 import org.neo4j.cypher.internal.v4_0.expressions.{TypeSignature, TypeSignatures}
+import org.neo4j.cypher.internal.v4_0.util.symbols._
 
 case object Size extends Function with TypeSignatures {
   def name = "size"
@@ -27,4 +26,9 @@ case object Size extends Function with TypeSignatures {
     TypeSignature(argumentTypes = Vector(CTList(CTAny)), outputType = CTInteger),
     TypeSignature(argumentTypes = Vector(CTString), outputType = CTInteger)
   )
+
+  override def getSignatureAsString: String = name + "(input :: ANY?) :: (INTEGER?)"
+
+  override def getDescription: String =
+    "Returns the number of items in a list or the number of sub-graphs matching the pattern expression or the number of Unicode characters in a string."
 }

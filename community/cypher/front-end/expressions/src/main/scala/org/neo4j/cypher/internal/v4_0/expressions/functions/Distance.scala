@@ -30,4 +30,8 @@ case object Distance extends Function with TypeSignatures {
     // Will return null:
     TypeSignature(argumentTypes = Vector(CTAny, CTAny), outputType = CTFloat)
   )
+
+  override def getSignatureAsString: String = name + "(from :: POINT?, to :: POINT?) :: (FLOAT?)"
+
+  override def getDescription: String = "Returns a floating point number representing the geodesic distance between any two points in the same CRS."
 }

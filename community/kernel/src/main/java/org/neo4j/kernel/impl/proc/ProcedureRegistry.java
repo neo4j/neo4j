@@ -261,10 +261,13 @@ public class ProcedureRegistry
         return procedures.all().stream().map( CallableProcedure::signature ).collect( Collectors.toSet());
     }
 
-    public Set<UserFunctionSignature> getAllFunctions()
+    public Stream<UserFunctionSignature> getAllFunctions()
     {
-        return Stream.concat(functions.all().stream().map( CallableUserFunction::signature ),
-                aggregationFunctions.all().stream().map( CallableUserAggregationFunction::signature ))
-                .collect( Collectors.toSet() );
+        return functions.all().stream().map( CallableUserFunction::signature );
+    }
+
+    public Stream<UserFunctionSignature> getAllAggregatingFunctions()
+    {
+        return aggregationFunctions.all().stream().map( CallableUserAggregationFunction::signature );
     }
 }

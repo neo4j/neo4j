@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2019 "Neo4j,"
+ * Copyright (c) 2002-2018 "Neo4j,"
  * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
@@ -17,25 +17,26 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.query;
+package org.neo4j.kernel.impl.util;
 
-import java.util.List;
-
-import org.neo4j.graphdb.Result;
-import org.neo4j.values.virtual.MapValue;
-
-public interface QueryExecutionEngine
+public class FunctionInfo
 {
-    Result executeQuery( String query, MapValue parameters, TransactionalContext context, boolean prePopulate )
-            throws QueryExecutionKernelException;
+    private String functionName;
+    private boolean isAggregatingFunction;
 
-    Result profileQuery( String query, MapValue parameters, TransactionalContext context, boolean prePopulate )
-            throws QueryExecutionKernelException;
+    public FunctionInfo( String name, boolean isAggregatingFunction )
+    {
+        this.functionName = name;
+        this.isAggregatingFunction = isAggregatingFunction;
+    }
 
-    boolean isPeriodicCommit( String query );
+    public String getFunctionName()
+    {
+        return functionName;
+    }
 
-    long clearQueryCaches();
-
-    List<FunctionInformation> getProvidedCypherFunctions();
+    public boolean isAggregatingFunction()
+    {
+        return isAggregatingFunction;
+    }
 }
-

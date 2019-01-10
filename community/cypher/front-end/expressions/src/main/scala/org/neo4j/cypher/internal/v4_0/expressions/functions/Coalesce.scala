@@ -18,4 +18,8 @@ package org.neo4j.cypher.internal.v4_0.expressions.functions
 
 case object Coalesce extends Function {
   def name = "coalesce"
+
+  override def getSignatureAsString: String = name + "(input :: ANY?) :: (ANY?)"
+
+  override def getDescription: String = "Returns the first non-null value in a list of expressions."
 }

@@ -16,9 +16,8 @@
  */
 package org.neo4j.cypher.internal.v4_0.expressions.functions
 
-import org.neo4j.cypher.internal.v4_0.expressions.TypeSignatures
-import org.neo4j.cypher.internal.v4_0.util.symbols._
 import org.neo4j.cypher.internal.v4_0.expressions.{TypeSignature, TypeSignatures}
+import org.neo4j.cypher.internal.v4_0.util.symbols._
 
 case object Properties extends Function with TypeSignatures {
   override def name = "properties"
@@ -28,4 +27,8 @@ case object Properties extends Function with TypeSignatures {
     TypeSignature(argumentTypes = Vector(CTRelationship), outputType = CTMap),
     TypeSignature(argumentTypes = Vector(CTMap), outputType = CTMap)
   )
+
+  override def getSignatureAsString: String = name + "(input :: ANY?) :: (MAP?)"
+
+  override def getDescription: String = "Returns a map containing all the properties of a node or relationship."
 }

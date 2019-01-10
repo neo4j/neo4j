@@ -20,4 +20,9 @@ package org.neo4j.cypher.internal.v4_0.expressions.functions
 // rather than a ReduceExpression
 case object Reduce extends Function {
   def name = "reduce"
+
+  override def getSignatureAsString: String =
+    name + "(accumulator :: VARIABLE = initial :: ANY, variable :: VARIABLE IN list :: LIST OF ANY? | expression :: ANY) :: (ANY?)"
+
+  override def getDescription: String = "Runs an expression against individual elements of a list, storing the result of the expression in an accumulator."
 }

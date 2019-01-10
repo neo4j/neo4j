@@ -16,9 +16,8 @@
  */
 package org.neo4j.cypher.internal.v4_0.expressions.functions
 
-import org.neo4j.cypher.internal.v4_0.expressions.TypeSignatures
-import org.neo4j.cypher.internal.v4_0.util.symbols._
 import org.neo4j.cypher.internal.v4_0.expressions.{TypeSignature, TypeSignatures}
+import org.neo4j.cypher.internal.v4_0.util.symbols._
 
 case object Point extends Function with TypeSignatures {
   override def name = "point"
@@ -26,4 +25,9 @@ case object Point extends Function with TypeSignatures {
   override val signatures = Vector(
     TypeSignature(argumentTypes = Vector(CTMap), outputType = CTPoint)
   )
+
+  override def getSignatureAsString: String = name + "(input :: MAP?) :: (POINT?)"
+
+  override def getDescription: String =
+    "Returns a 2D or 3D point object, given two or respectively three coordinate values in the Cartesian coordinate system or WGS 84 geographic coordinate system."
 }

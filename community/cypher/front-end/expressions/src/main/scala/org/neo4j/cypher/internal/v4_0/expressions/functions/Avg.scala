@@ -16,9 +16,8 @@
  */
 package org.neo4j.cypher.internal.v4_0.expressions.functions
 
-import org.neo4j.cypher.internal.v4_0.expressions.TypeSignatures
-import org.neo4j.cypher.internal.v4_0.util.symbols._
 import org.neo4j.cypher.internal.v4_0.expressions.{TypeSignature, TypeSignatures}
+import org.neo4j.cypher.internal.v4_0.util.symbols._
 
 case object Avg extends AggregatingFunction with TypeSignatures {
   def name = "avg"
@@ -28,4 +27,8 @@ case object Avg extends AggregatingFunction with TypeSignatures {
     TypeSignature(argumentTypes = Vector(CTFloat), outputType = CTFloat),
     TypeSignature(argumentTypes = Vector(CTDuration), outputType = CTDuration)
   )
+
+  override def getSignatureAsString: String = name + "(input :: ANY?) :: (ANY?)"
+
+  override def getDescription: String = "Returns the average of a set of numeric values or the average of a set of Durations."
 }

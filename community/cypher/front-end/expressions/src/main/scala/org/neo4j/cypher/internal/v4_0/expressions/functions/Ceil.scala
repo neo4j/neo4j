@@ -16,9 +16,8 @@
  */
 package org.neo4j.cypher.internal.v4_0.expressions.functions
 
-import org.neo4j.cypher.internal.v4_0.expressions.TypeSignatures
-import org.neo4j.cypher.internal.v4_0.util.symbols._
 import org.neo4j.cypher.internal.v4_0.expressions.{TypeSignature, TypeSignatures}
+import org.neo4j.cypher.internal.v4_0.util.symbols._
 
 case object Ceil extends Function with TypeSignatures {
   def name = "ceil"
@@ -26,4 +25,9 @@ case object Ceil extends Function with TypeSignatures {
   override val signatures = Vector(
     TypeSignature(argumentTypes = Vector(CTFloat), outputType = CTFloat)
   )
+
+  override def getSignatureAsString: String = name + "(input :: NUMBER?) :: (FLOAT?)"
+
+  override def getDescription: String =
+    "Returns the smallest floating point number that is greater than or equal to a number and equal to a mathematical integer."
 }

@@ -16,9 +16,8 @@
  */
 package org.neo4j.cypher.internal.v4_0.expressions.functions
 
-import org.neo4j.cypher.internal.v4_0.expressions.TypeSignatures
-import org.neo4j.cypher.internal.v4_0.util.symbols._
 import org.neo4j.cypher.internal.v4_0.expressions.{TypeSignature, TypeSignatures}
+import org.neo4j.cypher.internal.v4_0.util.symbols._
 
 case object Rand extends Function with TypeSignatures {
   val name = "rand"
@@ -26,4 +25,8 @@ case object Rand extends Function with TypeSignatures {
   override val signatures = Vector(
     TypeSignature(argumentTypes = Vector(), outputType = CTFloat)
   )
+
+  override def getSignatureAsString: String = name + "() :: (FLOAT)"
+
+  override def getDescription: String = "Returns a random floating point number in the range from 0 (inclusive) to 1 (exclusive); i.e. [0,1)."
 }

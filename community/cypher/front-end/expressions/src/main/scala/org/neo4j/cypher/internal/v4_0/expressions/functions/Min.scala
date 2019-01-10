@@ -16,9 +16,8 @@
  */
 package org.neo4j.cypher.internal.v4_0.expressions.functions
 
+import org.neo4j.cypher.internal.v4_0.expressions.{TypeSignature, TypeSignatures}
 import org.neo4j.cypher.internal.v4_0.util.symbols.CTAny
-import org.neo4j.cypher.internal.v4_0.expressions.TypeSignature
-import org.neo4j.cypher.internal.v4_0.expressions.TypeSignatures
 
 case object Min extends AggregatingFunction with TypeSignatures {
   override def name = "min"
@@ -26,4 +25,8 @@ case object Min extends AggregatingFunction with TypeSignatures {
   override val signatures: Vector[TypeSignature] = Vector(
     TypeSignature(Vector(CTAny), CTAny)
   )
+
+  override def getSignatureAsString: String = name + "(input :: ANY?) :: (ANY?)"
+
+  override def getDescription: String = "Returns the minimum value in a set of values."
 }

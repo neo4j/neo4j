@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal
 
 import java.time.Clock
+import java.util
 import java.util.function.Supplier
 
 import org.neo4j.cypher.internal.ExecutionEngine.{JitCompilation, NEVER_COMPILE, QueryCompilation}
@@ -32,10 +33,12 @@ import org.neo4j.graphdb.Result
 import org.neo4j.helpers.collection.Pair
 import org.neo4j.internal.kernel.api.security.AccessMode
 import org.neo4j.kernel.GraphDatabaseQueryService
-import org.neo4j.kernel.impl.query.TransactionalContext
+import org.neo4j.kernel.impl.query.{FunctionInformation, TransactionalContext}
 import org.neo4j.kernel.monitoring.Monitors
 import org.neo4j.logging.LogProvider
 import org.neo4j.values.virtual.MapValue
+
+import scala.collection.JavaConverters._
 
 trait StringCacheMonitor extends CypherCacheMonitor[Pair[String, ParameterTypeMap]]
 
@@ -187,6 +190,9 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
 
   def isPeriodicCommit(query: String): Boolean =
     preParser.preParseQuery(query, profile = false).isPeriodicCommit
+
+  def getCypherFunctions: util.List[FunctionInformation] =
+    org.neo4j.cypher.internal.v4_0.expressions.functions.Function.functionInfo.asJava
 
   // HELPERS
 
