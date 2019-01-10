@@ -53,7 +53,7 @@ abstract class AbstractCachedNodeProperty extends Expression {
             case Some(txStateValue) => txStateValue
             case None =>
               val cached = getCachedProperty(ctx)
-              if (cached == null)
+              if (cached == null) // if the cached node property has been invalidated
                 state.query.nodeProperty(nodeId, propId)
               else
                 cached
