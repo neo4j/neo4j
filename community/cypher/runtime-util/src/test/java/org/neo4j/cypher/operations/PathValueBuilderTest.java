@@ -20,6 +20,11 @@
 package org.neo4j.cypher.operations;
 
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+import org.mockito.stubbing.Answer;
+
+import java.util.HashMap;
+import java.util.Map;
 
 import org.neo4j.cypher.internal.runtime.DbAccess;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
@@ -31,6 +36,8 @@ import org.neo4j.values.virtual.VirtualValues;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.values.storable.Values.EMPTY_TEXT_ARRAY;
@@ -45,7 +52,8 @@ class PathValueBuilderTest
     @Test
     void shouldComplainOnEmptyPath()
     {
-        assertThrows( IllegalArgumentException.class, () -> new PathValueBuilder( dbAccess() ).build() );
+        assertThrows( IllegalArgumentException.class,
+                () -> new PathValueBuilder( mock( DbAccess.class ), mock( RelationshipScanCursor.class ) ).build() );
     }
 
     @Test
@@ -53,7 +61,7 @@ class PathValueBuilderTest
     {
         // Given
         NodeValue node = node( 42 );
-        PathValueBuilder builder = new PathValueBuilder( dbAccess( node ) );
+        PathValueBuilder builder = builder(  node );
 
         // When
         builder.addNode( node );
@@ -71,7 +79,7 @@ class PathValueBuilderTest
         NodeValue n3 = node( 44 );
         RelationshipValue r1 = relationship( 1337, n2, n1 );
         RelationshipValue r2 = relationship( 1338, n2, n3 );
-        PathValueBuilder builder = new PathValueBuilder( dbAccess( n1, n2, n3, r1, r2 ) );
+        PathValueBuilder builder = builder( n1, n2, n3, r1, r2 );
 
         // When (n1)<--(n2)--(n3)
         builder.addNode( n1 );
@@ -87,7 +95,7 @@ class PathValueBuilderTest
     {
         // Given  (n1)<--(n2)-->(n3)
         NodeValue n1 = node( 42 );
-        PathValueBuilder builder = new PathValueBuilder( dbAccess( n1 ) );
+        PathValueBuilder builder = builder( n1 );
 
         // When (n1)<--(n2)--(n3)
         builder.addNode( n1 );
@@ -106,7 +114,7 @@ class PathValueBuilderTest
         NodeValue n3 = node( 44 );
         RelationshipValue r1 = relationship( 1337, n2, n1 );
         RelationshipValue r2 = relationship( 1338, n2, n3 );
-        PathValueBuilder builder = new PathValueBuilder( dbAccess( n1, n2, n3, r1, r2 ) );
+        PathValueBuilder builder = builder( n1, n2, n3, r1, r2 );
 
         // When (n1)<--(n2)--(n3)
         builder.addNode( n1 );
@@ -122,7 +130,7 @@ class PathValueBuilderTest
         // Given  (n1)<--(n2)-->(n3)
         NodeValue node = node( 42 );
         RelationshipValue relationship = relationship( 1337, node( 43 ), node );
-        PathValueBuilder builder = new PathValueBuilder( dbAccess( node, relationship ) );
+        PathValueBuilder builder = builder( node, relationship );
 
         // When (n1)<--(n2)--(n3)
         builder.addNode( node );
@@ -143,7 +151,7 @@ class PathValueBuilderTest
         RelationshipValue relationship1 = relationship( 1337, node2, node1 );
         RelationshipValue relationship2 = relationship( 1338, node2, node3 );
         PathValueBuilder builder =
-                new PathValueBuilder( dbAccess( node1, node2, node3, relationship1, relationship2 ) );
+                builder( node1, node2, node3, relationship1, relationship2 );
 
         // When (n1)<--(n2)--(n3)
         builder.addNode( node1 );
@@ -162,7 +170,7 @@ class PathValueBuilderTest
         NodeValue n3 = node( 44 );
         RelationshipValue r1 = relationship( 1337, n2, n1 );
         RelationshipValue r2 = relationship( 1338, n2, n3 );
-        PathValueBuilder builder = new PathValueBuilder( dbAccess( n1, n2, n3, r1, r2 ) );
+        PathValueBuilder builder = builder( n1, n2, n3, r1, r2 );
 
         // When (n1)<--(n2)--(n3)
         builder.addNode( n1 );
@@ -200,9 +208,11 @@ class PathValueBuilderTest
         return VirtualValues.path( nodes, rels );
     }
 
-    private DbAccess dbAccess( AnyValue... values )
+    private PathValueBuilder builder( AnyValue... values )
     {
         DbAccess dbAccess = mock( DbAccess.class );
+        RelationshipScanCursor cursors = mock( RelationshipScanCursor.class );
+        Map<Long, RelationshipValue> relMap = new HashMap<>(  );
         for ( AnyValue value : values )
         {
             if ( value instanceof NodeValue )
@@ -213,17 +223,22 @@ class PathValueBuilderTest
             else if ( value instanceof RelationshipValue )
             {
                 RelationshipValue relationshipValue = (RelationshipValue) value;
-                RelationshipScanCursor cursor = mock( RelationshipScanCursor.class );
-                when( cursor.next() ).thenReturn( true );
-                when( cursor.sourceNodeReference() ).thenReturn( relationshipValue.startNode().id() );
-                when( cursor.targetNodeReference() ).thenReturn( relationshipValue.endNode().id() );
-                when( dbAccess.singleRelationship( relationshipValue.id() ) ).thenReturn( cursor );
+                relMap.put( relationshipValue.id(), relationshipValue );
             }
             else
             {
                 throw new AssertionError( "invalid input" );
             }
+
+            Mockito.doAnswer( (Answer<Void>) invocationOnMock -> {
+                long id = invocationOnMock.getArgument( 0 );
+                RelationshipScanCursor cursor = invocationOnMock.getArgument( 1 );
+                RelationshipValue rel = relMap.get( id );
+                when(cursor.sourceNodeReference()).thenReturn( rel.startNode().id() );
+                when(cursor.targetNodeReference()).thenReturn( rel.endNode().id() );
+                return null;
+            } ).when( dbAccess ).singleRelationship( anyLong(), any( RelationshipScanCursor.class ) );
         }
-        return dbAccess;
+        return new PathValueBuilder( dbAccess, cursors );
     }
 }

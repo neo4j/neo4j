@@ -384,12 +384,12 @@ public final class CypherFunctions
         }
     }
 
-    public static NodeValue startNode( AnyValue anyValue, DbAccess access )
+    public static NodeValue startNode( AnyValue anyValue, DbAccess access, RelationshipScanCursor cursor )
     {
         assert anyValue != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         if ( anyValue instanceof VirtualRelationshipValue )
         {
-            return startNode( (VirtualRelationshipValue) anyValue, access );
+            return startNode( (VirtualRelationshipValue) anyValue, access, cursor );
         }
         else
         {
@@ -397,22 +397,22 @@ public final class CypherFunctions
         }
     }
 
-    public static NodeValue startNode( VirtualRelationshipValue relationship, DbAccess access )
+    public static NodeValue startNode( VirtualRelationshipValue relationship, DbAccess access,
+            RelationshipScanCursor cursor )
     {
-        try ( RelationshipScanCursor cursor = access.singleRelationship( relationship.id() ) )
-        {
-            //at this point we don't care if it is there or not just load what we got
-            cursor.next();
-            return access.nodeById( cursor.sourceNodeReference() );
-        }
+
+        access.singleRelationship( relationship.id(), cursor );
+        //at this point we don't care if it is there or not just load what we got
+        cursor.next();
+        return access.nodeById( cursor.sourceNodeReference() );
     }
 
-    public static NodeValue endNode( AnyValue anyValue, DbAccess access )
+    public static NodeValue endNode( AnyValue anyValue, DbAccess access, RelationshipScanCursor cursor )
     {
         assert anyValue != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         if ( anyValue instanceof RelationshipValue )
         {
-            return endNode( (VirtualRelationshipValue) anyValue, access );
+            return endNode( (VirtualRelationshipValue) anyValue, access, cursor );
         }
         else
         {
@@ -420,22 +420,21 @@ public final class CypherFunctions
         }
     }
 
-    public static NodeValue endNode( VirtualRelationshipValue relationship, DbAccess access )
+    public static NodeValue endNode( VirtualRelationshipValue relationship, DbAccess access,
+            RelationshipScanCursor cursor )
     {
-        try ( RelationshipScanCursor cursor = access.singleRelationship( relationship.id() ) )
-        {
-            //at this point we don't care if it is there or not just load what we got
-            cursor.next();
-            return access.nodeById( cursor.targetNodeReference() );
-        }
+        access.singleRelationship( relationship.id(), cursor );
+        //at this point we don't care if it is there or not just load what we got
+        cursor.next();
+        return access.nodeById( cursor.targetNodeReference() );
     }
 
-    public static NodeValue otherNode( AnyValue anyValue, DbAccess access, VirtualNodeValue node )
+    public static NodeValue otherNode( AnyValue anyValue, DbAccess access, VirtualNodeValue node, RelationshipScanCursor cursor )
     {
         assert anyValue != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         if ( anyValue instanceof RelationshipValue )
         {
-            return otherNode( (VirtualRelationshipValue) anyValue, access, node );
+            return otherNode( (VirtualRelationshipValue) anyValue, access, node, cursor );
         }
         else
         {
@@ -443,24 +442,24 @@ public final class CypherFunctions
         }
     }
 
-    public static NodeValue otherNode( VirtualRelationshipValue relationship, DbAccess access, VirtualNodeValue node )
+    public static NodeValue otherNode( VirtualRelationshipValue relationship, DbAccess access, VirtualNodeValue node,
+            RelationshipScanCursor cursor )
     {
-        try ( RelationshipScanCursor cursor = access.singleRelationship( relationship.id() ) )
+
+        access.singleRelationship( relationship.id(), cursor );
+        //at this point we don't care if it is there or not just load what we got
+        cursor.next();
+        if ( node.id() == cursor.sourceNodeReference() )
         {
-            //at this point we don't care if it is there or not just load what we got
-            cursor.next();
-            if ( node.id() == cursor.sourceNodeReference() )
-            {
-                return access.nodeById( cursor.targetNodeReference() );
-            }
-            else if ( node.id() == cursor.targetNodeReference() )
-            {
-                return access.nodeById( cursor.sourceNodeReference() );
-            }
-            else
-            {
-                throw new IllegalArgumentException( "Invalid argument, node is not member of relationship" );
-            }
+            return access.nodeById( cursor.targetNodeReference() );
+        }
+        else if ( node.id() == cursor.targetNodeReference() )
+        {
+            return access.nodeById( cursor.sourceNodeReference() );
+        }
+        else
+        {
+            throw new IllegalArgumentException( "Invalid argument, node is not member of relationship" );
         }
     }
 

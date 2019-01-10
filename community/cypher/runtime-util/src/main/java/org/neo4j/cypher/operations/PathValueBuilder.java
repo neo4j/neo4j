@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.neo4j.cypher.internal.runtime.DbAccess;
+import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.virtual.ListValue;
 import org.neo4j.values.virtual.NodeValue;
@@ -45,11 +46,13 @@ public class PathValueBuilder
     private final List<NodeValue> nodes = new ArrayList<>();
     private final List<RelationshipValue> rels = new ArrayList<>();
     private final DbAccess dbAccess;
+    private final RelationshipScanCursor cursor;
     private boolean seenNoValue;
 
-    public PathValueBuilder( DbAccess dbAccess )
+    public PathValueBuilder( DbAccess dbAccess, RelationshipScanCursor cursor )
     {
         this.dbAccess = dbAccess;
+        this.cursor = cursor;
     }
 
     /**
@@ -119,7 +122,7 @@ public class PathValueBuilder
      */
     public void addIncoming( RelationshipValue relationship )
     {
-        nodes.add( startNode( relationship, dbAccess ) );
+        nodes.add( startNode( relationship, dbAccess, cursor ) );
         rels.add( relationship );
     }
 
@@ -143,7 +146,7 @@ public class PathValueBuilder
      */
     public void addOutgoing( RelationshipValue relationship )
     {
-        nodes.add( endNode(relationship, dbAccess ));
+        nodes.add( endNode(relationship, dbAccess, cursor ));
         rels.add( relationship );
     }
 
@@ -168,11 +171,11 @@ public class PathValueBuilder
     public void addUndirected( RelationshipValue relationship )
     {
         long previous = nodes.get( nodes.size() - 1 ).id();
-        if ( previous == startNode( relationship, dbAccess ).id() )
+        if ( previous == startNode( relationship, dbAccess, cursor ).id() )
         {
             addOutgoing( relationship );
         }
-        else if ( previous == endNode( relationship, dbAccess ).id() )
+        else if ( previous == endNode( relationship, dbAccess, cursor ).id() )
         {
             addIncoming( relationship );
         }
@@ -344,8 +347,8 @@ public class PathValueBuilder
         long previous = nodes.get( nodes.size() - 1 ).id();
         RelationshipValue first = (RelationshipValue) relationships.head();
         boolean correctDirection =
-                startNode( first, dbAccess ).id() == previous ||
-                endNode(first, dbAccess ).id() == previous;
+                startNode( first, dbAccess, cursor ).id() == previous ||
+                endNode(first, dbAccess, cursor ).id() == previous;
 
         int i;
         if ( correctDirection )
@@ -398,8 +401,8 @@ public class PathValueBuilder
         long previous = nodes.get( nodes.size() - 1 ).id();
         RelationshipValue first = (RelationshipValue) relationships.head();
         boolean correctDirection =
-                startNode( first, dbAccess ).id() == previous ||
-                endNode( first, dbAccess ).id() == previous;
+                startNode( first, dbAccess, cursor ).id() == previous ||
+                endNode( first, dbAccess, cursor ).id() == previous;
 
         if ( correctDirection )
         {

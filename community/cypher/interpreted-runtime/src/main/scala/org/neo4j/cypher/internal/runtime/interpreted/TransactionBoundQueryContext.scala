@@ -102,10 +102,8 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     fromRelationshipProxy(entityAccessor.newRelationshipProxy(relId, start, relType, end))
   }
 
-  override def singleRelationship(id: Long): RelationshipScanCursor = {
-    val cursor = allocateRelationshipScanCursor()
+  override def singleRelationship(id: Long, cursor: RelationshipScanCursor): Unit = {
     reads().singleRelationship(id, cursor)
-    cursor
   }
 
   override def getOrCreateRelTypeId(relTypeName: String): Int =

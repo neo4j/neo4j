@@ -77,7 +77,7 @@ public interface DbAccess
 
     int nodeGetTotalDegree( long node, int relationship, NodeCursor nodeCursor );
 
-    RelationshipScanCursor singleRelationship( long id );
+    void singleRelationship( long id, RelationshipScanCursor cursor );
 
     ListValue getLabelsForNode( long id, NodeCursor nodeCursor );
 

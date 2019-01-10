@@ -47,7 +47,6 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
   protected def manyDbHits(value: LongIterator): LongIterator = value
   protected def manyDbHits(value: RelationshipIterator): RelationshipIterator = value
   protected def manyDbHits(value: RelationshipSelectionCursor): RelationshipSelectionCursor = value
-  protected def manyDbHits(value: RelationshipScanCursor): RelationshipScanCursor = value
   protected def manyDbHits(value: NodeValueIndexCursor): NodeValueIndexCursor = value
   protected def manyDbHits(count: Int): Int = count
 
@@ -88,7 +87,7 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
   override def getRelationshipsCursor(node: Long, dir: SemanticDirection, types: Option[Array[Int]]): RelationshipSelectionCursor =
     manyDbHits(inner.getRelationshipsCursor(node, dir, types))
 
-  override def singleRelationship(id: Long): RelationshipScanCursor =  manyDbHits(inner.singleRelationship(id))
+  override def singleRelationship(id: Long, cursor: RelationshipScanCursor): Unit =  singleDbHit(inner.singleRelationship(id, cursor))
 
   override def getRelationshipFor(relationshipId: Long, typeId: Int, startNodeId: Long, endNodeId: Long): RelationshipValue =
     inner.getRelationshipFor(relationshipId, typeId, startNodeId, endNodeId)
