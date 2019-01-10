@@ -73,8 +73,7 @@ sealed abstract class QueryProjection extends QueryHorizon {
   def withAddedProjections(projections: Map[String, Expression]): QueryProjection
   def withShuffle(shuffle: QueryShuffle): QueryProjection
 
-  // TODO shuffle.sortItems should not be used anymore
-  override def dependingExpressions: Seq[Expression] = shuffle.sortItems.map(_.expression)
+  override def dependingExpressions: Seq[Expression] = projections.values.toSeq
   override def preferredStrictness(sorted: Boolean): Option[StrictnessMode] =
     if (shuffle.limit.isDefined && !sorted) Some(LazyMode) else None
 
@@ -122,8 +121,6 @@ final case class RegularQueryProjection(projections: Map[String, Expression] = M
 
   override def exposedSymbols(coveredIds: Set[String]): Set[String] = projections.keySet
 
-  override def dependingExpressions = super.dependingExpressions ++ projections.values
-
   override def withSelection(selections: Selections): QueryProjection = copy(selections = selections)
 }
 
@@ -141,7 +138,7 @@ final case class AggregatingQueryProjection(groupingExpressions: Map[String, Exp
 
   override def keySet: Set[String] = groupingExpressions.keySet ++ aggregationExpressions.keySet
 
-  override def dependingExpressions = super.dependingExpressions ++ groupingExpressions.values ++ aggregationExpressions.values
+  override def dependingExpressions = super.dependingExpressions ++ aggregationExpressions.values
 
   override def withAddedProjections(groupingKeys: Map[String, Expression]): AggregatingQueryProjection =
     copy(groupingExpressions = this.groupingExpressions ++ groupingKeys)
@@ -162,8 +159,6 @@ final case class DistinctQueryProjection(groupingKeys: Map[String, Expression] =
   def projections: Map[String, Expression] = groupingKeys
 
   def keySet: Set[String] = groupingKeys.keySet
-
-  override def dependingExpressions: Seq[Expression] = super.dependingExpressions ++ groupingKeys.values
 
   override def withAddedProjections(groupingKeys: Map[String, Expression]): DistinctQueryProjection =
     copy(groupingKeys = this.groupingKeys ++ groupingKeys)

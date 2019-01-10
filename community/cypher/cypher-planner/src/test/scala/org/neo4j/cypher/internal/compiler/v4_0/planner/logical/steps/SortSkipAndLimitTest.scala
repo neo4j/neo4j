@@ -384,7 +384,7 @@ class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSuppor
   private def regularProjection(skip: Option[Expression] = None, limit: Option[Expression] = None, projectionsMap: Map[String, Expression] = projectionsMap) = {
     val projection = RegularQueryProjection(
       projections = projectionsMap,
-      shuffle = QueryShuffle(Seq.empty, skip, limit)
+      shuffle = QueryShuffle(skip, limit)
     )
     projection
   }
