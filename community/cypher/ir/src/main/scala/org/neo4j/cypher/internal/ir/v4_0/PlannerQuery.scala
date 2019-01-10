@@ -53,7 +53,7 @@ trait PlannerQuery {
   def readOnly: Boolean = (queryGraph.readOnly && horizon.readOnly) && tail.forall(_.readOnly)
 
   def preferredStrictness: Option[StrictnessMode] =
-    horizon.preferredStrictness orElse tail.flatMap(_.preferredStrictness)
+    horizon.preferredStrictness(interestingOrder.requiredOrderCandidate.nonEmpty) orElse tail.flatMap(_.preferredStrictness)
 
   def last: PlannerQuery = tail.map(_.last).getOrElse(this)
 

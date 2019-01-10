@@ -27,7 +27,7 @@ case class ProcedureCallProjection(call: ResolvedCall) extends QueryHorizon {
 
   override def dependingExpressions = call.callArguments
 
-  override def preferredStrictness = call.signature.accessMode match {
+  override def preferredStrictness(sorted: Boolean) = call.signature.accessMode match {
     case _:ProcedureReadOnlyAccess => Some(LazyMode)
     case _ => Some(EagerMode)
   }

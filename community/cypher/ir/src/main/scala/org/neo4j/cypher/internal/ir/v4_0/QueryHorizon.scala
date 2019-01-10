@@ -30,7 +30,7 @@ trait QueryHorizon {
 
   def dependingExpressions: Seq[Expression]
 
-  def preferredStrictness: Option[StrictnessMode]
+  def preferredStrictness(sorted: Boolean): Option[StrictnessMode]
 
   def dependencies: Set[String] = dependingExpressions.treeFold(Set.empty[String]) {
     case id: Variable =>
@@ -45,7 +45,7 @@ final case class PassthroughAllHorizon() extends QueryHorizon {
 
   override def dependingExpressions = Seq.empty
 
-  override def preferredStrictness = None
+  override def preferredStrictness(sorted: Boolean) = None
 }
 
 case class UnwindProjection(variable: String, exp: Expression) extends QueryHorizon {
@@ -53,7 +53,7 @@ case class UnwindProjection(variable: String, exp: Expression) extends QueryHori
 
   override def dependingExpressions = Seq(exp)
 
-  override def preferredStrictness = None
+  override def preferredStrictness(sorted: Boolean) = None
 }
 
 case class LoadCSVProjection(variable: String, url: Expression, format: CSVFormat, fieldTerminator: Option[StringLiteral]) extends QueryHorizon {
@@ -61,7 +61,7 @@ case class LoadCSVProjection(variable: String, url: Expression, format: CSVForma
 
   override def dependingExpressions = Seq(url)
 
-  override def preferredStrictness = None
+  override def preferredStrictness(sorted: Boolean) = None
 }
 
 sealed abstract class QueryProjection extends QueryHorizon {
@@ -75,8 +75,8 @@ sealed abstract class QueryProjection extends QueryHorizon {
 
   // TODO shuffle.sortItems should not be used anymore
   override def dependingExpressions: Seq[Expression] = shuffle.sortItems.map(_.expression)
-  override def preferredStrictness: Option[StrictnessMode] =
-    if (shuffle.limit.isDefined && shuffle.sortItems.isEmpty) Some(LazyMode) else None
+  override def preferredStrictness(sorted: Boolean): Option[StrictnessMode] =
+    if (shuffle.limit.isDefined && !sorted) Some(LazyMode) else None
 
   def updateShuffle(f: QueryShuffle => QueryShuffle) = withShuffle(f(shuffle))
 

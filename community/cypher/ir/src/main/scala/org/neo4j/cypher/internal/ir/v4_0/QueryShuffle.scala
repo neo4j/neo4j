@@ -23,11 +23,11 @@ import org.neo4j.cypher.internal.v4_0.util.InternalException
 import org.neo4j.cypher.internal.v4_0.ast.{Limit, Skip, SortItem}
 import org.neo4j.cypher.internal.v4_0.expressions.Expression
 
+// TODO: Remove sortItems and consider renaming this class to something more appropriate like QueryPagination
 final case class QueryShuffle(sortItems: Seq[SortItem] = Seq.empty,
                               skip: Option[Expression] = None,
                               limit: Option[Expression] = None) {
 
-  def withSortItems(sortItems: Seq[SortItem]): QueryShuffle = copy(sortItems = sortItems)
   def withSkip(skip: Option[Skip]): QueryShuffle = copy(skip = skip.map(_.expression))
   def withSkipExpression(skip: Expression): QueryShuffle = copy(skip = Some(skip))
   def withLimit(limit: Option[Limit]): QueryShuffle = copy(limit = limit.map(_.expression))

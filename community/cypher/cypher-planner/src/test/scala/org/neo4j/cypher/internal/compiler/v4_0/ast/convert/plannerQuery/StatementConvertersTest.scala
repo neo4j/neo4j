@@ -526,7 +526,6 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
       RegularQueryProjection(
         projections = Map("n"->varFor("n")),
         QueryShuffle(
-          sortItems = Seq.empty,
           skip = None,
           limit = Some(SignedDecimalIntegerLiteral("10")(pos)))))
   }
@@ -542,7 +541,6 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
       RegularQueryProjection(
         projections = Map("n"->varFor("n")),
         QueryShuffle(
-          sortItems = Seq.empty,
           skip = Some(SignedDecimalIntegerLiteral("10")(pos)),
           limit = None)))
   }
@@ -566,7 +564,6 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
       RegularQueryProjection(
         projections = Map("a" -> Variable("a")_),
         QueryShuffle(
-          sortItems = Seq.empty,
           skip = None,
           limit = Some(SignedDecimalIntegerLiteral("1")(pos)))))
 

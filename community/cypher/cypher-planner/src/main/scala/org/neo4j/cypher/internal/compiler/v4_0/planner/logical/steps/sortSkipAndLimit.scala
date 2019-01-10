@@ -38,93 +38,13 @@ object sortSkipAndLimit extends PlanTransformerWithRequiredOrder {
     query.horizon match {
       case p: QueryProjection =>
         val shuffle = p.shuffle
-        (shuffle.sortItems.toList, shuffle.skip, shuffle.limit) match {
-          case (_, skip, limit) =>
+        (shuffle.skip, shuffle.limit) match {
+          case (skip, limit) =>
             addLimit(limit, addSkip(skip, plan, context), context)
         }
 
       case _ => plan
     }
-  }
-
-  // TODO: This method should be removed once the key parts are ported into the IDP Sort work
-  private def planSort(p: QueryProjection, plan: LogicalPlan, queryInterestingOrder: InterestingOrder, interestingOrder: InterestingOrder, context: LogicalPlanningContext, sortItems: List[SortItem]) = {
-          /* Collect stuff while examining the sort items.
-           * For the query `WITH a, a.foo AS x ORDER BY x, a.bar` we will collect:
-           *
-           * projectItemsForAliased:   (x -> a.foo)
-           * projectItemsForUnaliased: (a.bar -> Var01)
-           * newSortItems:             x, Var01
-           */
-          val (projectItemsForAliased, projectItemsForUnaliased, newSortItems) =
-            sortItems.foldLeft((Map.empty[String, Expression], Map.empty[String, Expression], Seq.empty[SortItem])) {
-              case ((_piForAliased, _piForUnaliased, _newSortItems), sortItem) =>
-                sortItem.expression match {
-                  case Variable(name) =>
-                    extractProjectItem(p, name) match {
-                      // Aliased
-                      case Some((projectItem, fromRegularProjection)) =>
-                        if (fromRegularProjection) {
-                          // Possibly the expression has not been projected yet.
-                          // We add it to the map and pass it to projection. This class will make sure not to project anything
-                          // twice if it was part of a previous RegularProjection
-                          (_piForAliased + projectItem, _piForUnaliased, _newSortItems :+ sortItem)
-                        } else {
-                          // AggregatingQueryProjection or DistinctQueryProjection definitely took care of projecting that variable already. Cool!
-                          (_piForAliased, _piForUnaliased, _newSortItems :+ sortItem)
-                        }
-                      case None =>
-                        // If the variable we're sorting by is not part of the current projections list,
-                        // it must have been part of the previous horizon. Thus, it will already be projected.
-                        // If the variable is unknown, semantic analysis should have caught it and we would not get here
-                        (_piForAliased, _piForUnaliased, _newSortItems :+ sortItem)
-                    }
-                  // Unaliased
-                  case _ =>
-                    // find dependencies and add them to projectItems
-                    val referencedProjectItems: Set[(String, Expression)] =
-                      sortItem.expression.dependencies.flatMap { logvar =>
-                        extractProjectItem(p, logvar.name).collect {
-                          case (projectItem, true /* fromRegularProjection*/ ) => projectItem
-                        }
-                      }
-                    // Create a new variable that we can sort by
-                    val newVariable = Variable(FreshIdNameGenerator.name(sortItem.expression.position))(sortItem.expression.position)
-                    // The project item for an unaliased sort item
-                    val projectItemForUnaliasedSortItem = newVariable.name -> sortItem.expression
-                    // We made an aliased SortItem out of the unaliased SortItem
-                    val newSortItem = sortItem.mapExpression(_ => newVariable)
-
-                    (_piForAliased ++ referencedProjectItems, _piForUnaliased + projectItemForUnaliasedSortItem, _newSortItems :+ newSortItem)
-                }
-            }
-
-          // plan the actual sort
-          val columnOrders = newSortItems.map(columnOrder)
-
-            // The interestingOrder.requiredOrderCandidate.nonEmpty check is only here because we do not recognize more complex required orders
-            // at the moment and do not want to abort sorting only because an empty required order is satisfied by anything.
-            if (interestingOrder.requiredOrderCandidate.nonEmpty && interestingOrder.satisfiedBy(context.planningAttributes.providedOrders.get(plan.id))) {
-              // We can't override solved, but right now we want to set it such that it solves ORDER BY
-              // on a plan that has already assigned solved.
-              // Use query.interestingOrder to mark the original required order as solved.
-              context.logicalPlanProducer.updateSolvedForSortedItems(plan, queryInterestingOrder, context)
-            } else {
-              // Project all variables needed for sort in two steps
-              // First the ones that are part of projection list and may introduce variables that are needed for the second projection
-              val preProjected1 = projection(plan, projectItemsForAliased, projectItemsForAliased, interestingOrder, context)
-              // And then all the ones from unaliased sort items that may refer to newly introduced variables
-              val preProjected2 = projection(preProjected1, projectItemsForUnaliased, Map.empty, interestingOrder, context)
-
-      // Use query.interestingOrder to mark the original required order as solved.
-      context.logicalPlanProducer.planSort(preProjected2, columnOrders, sortItems, queryInterestingOrder, context)
-    }
-  }
-
-  private def columnOrder(in: SortItem): ColumnOrder = in match {
-    case AscSortItem(Variable(key)) => Ascending(key)
-    case DescSortItem(Variable(key)) => Descending(key)
-    case _ => throw new InternalException("Sort items expected to only use single variable expression")
   }
 
   private def addSkip(s: Option[Expression], plan: LogicalPlan, context: LogicalPlanningContext) =
@@ -133,16 +53,4 @@ object sortSkipAndLimit extends PlanTransformerWithRequiredOrder {
   private def addLimit(s: Option[Expression], plan: LogicalPlan, context: LogicalPlanningContext) =
     s.fold(plan)(x => context.logicalPlanProducer.planLimit(plan, x, context = context))
 
-  /**
-    * Finds the project item that is referred to by its alias. Also returns whether it came from a RegularQueryProjection (`true`)
-    * or from DistinctQueryProjection or AggregatingQueryProjection (`false`).
-    */
-  private def extractProjectItem(projection: QueryProjection, name: String): Option[((String, Expression), Boolean)] = {
-    projection match {
-      case RegularQueryProjection(projections, _, _) => projections.get(name).map(exp => (name -> exp, true))
-      case DistinctQueryProjection(projections, _, _) => projections.get(name).map(exp => (name -> exp, false))
-      case AggregatingQueryProjection(groupingExpressions, aggregationExpressions, _, _) =>
-        (groupingExpressions ++ aggregationExpressions).get(name).map(exp => (name -> exp, false))
-    }
-  }
 }

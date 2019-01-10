@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v4_0.planner.logical.idp
 
 import org.neo4j.cypher.internal.compiler.v4_0.planner.logical._
 import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.steps.planShortestPaths
-import org.neo4j.cypher.internal.ir.v4_0.{InterestingOrder, QueryGraph, RequiredOrderCandidate}
+import org.neo4j.cypher.internal.ir.v4_0.{QueryGraph, InterestingOrder}
 import org.neo4j.cypher.internal.v4_0.logical.plans.LogicalPlan
 
 import scala.annotation.tailrec

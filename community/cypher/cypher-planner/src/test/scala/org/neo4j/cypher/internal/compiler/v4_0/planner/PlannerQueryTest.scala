@@ -25,6 +25,9 @@ import org.neo4j.cypher.internal.ir.v4_0._
 import org.neo4j.cypher.internal.v4_0.expressions.UnsignedDecimalIntegerLiteral
 
 class PlannerQueryTest extends CypherFunSuite with AstConstructionTestSupport {
+
+  private val mockInterestingOrder = InterestingOrder.required(RequiredOrderCandidate.asc(null, null))
+
   test("pair map") {
 
     val qg1 = QueryGraph.empty
@@ -84,22 +87,21 @@ class PlannerQueryTest extends CypherFunSuite with AstConstructionTestSupport {
     noLimit.preferredStrictness should equal(None)
 
     val shuffleWithLimit = QueryProjection.empty.withShuffle(QueryShuffle(limit = Some(UnsignedDecimalIntegerLiteral("42")(pos))))
-    val hasLimit = RegularPlannerQuery(horizon = shuffleWithLimit)
+    val hasLimit = RegularPlannerQuery(horizon = shuffleWithLimit, interestingOrder = InterestingOrder.empty)
     hasLimit.preferredStrictness should equal(Some(LazyMode))
 
-    val shuffleWithLimitAndSort = QueryProjection.empty.withShuffle(QueryShuffle(sortItems = Seq(mock[SortItem]), limit = Some(UnsignedDecimalIntegerLiteral("42")(pos))))
-    val hasLimitAndSort = RegularPlannerQuery(horizon = shuffleWithLimitAndSort)
+    val shuffleWithLimitAndSort = QueryProjection.empty.withShuffle(QueryShuffle(limit = Some(UnsignedDecimalIntegerLiteral("42")(pos))))
+    val hasLimitAndSort = RegularPlannerQuery(horizon = shuffleWithLimitAndSort, interestingOrder = mockInterestingOrder)
     hasLimitAndSort.preferredStrictness should equal(None)
   }
 
   test("should consider planner query tails when computing laziness preference") {
     val shuffleWithLimit = QueryProjection.empty.withShuffle(QueryShuffle(limit = Some(UnsignedDecimalIntegerLiteral("42")(pos))))
-    val shuffleWithLimitAndSort = QueryProjection.empty.withShuffle(QueryShuffle(sortItems = Seq(mock[SortItem]), limit = Some(UnsignedDecimalIntegerLiteral("42")(pos))))
 
     // pq -> pqWithLimit -> pqWithLimitAndSort
 
-    val pqWithLimitAndSort: PlannerQuery = RegularPlannerQuery(horizon = shuffleWithLimitAndSort)
-    val pqWithLimit = RegularPlannerQuery(horizon = shuffleWithLimit, tail = Some(pqWithLimitAndSort))
+    val pqWithLimitAndSort: PlannerQuery = RegularPlannerQuery(horizon = shuffleWithLimit, interestingOrder = mockInterestingOrder)
+    val pqWithLimit = RegularPlannerQuery(horizon = shuffleWithLimit, tail = Some(pqWithLimitAndSort), interestingOrder = InterestingOrder.empty)
     val pq = RegularPlannerQuery(tail = Some(pqWithLimit))
 
     pq.preferredStrictness should equal(Some(LazyMode))

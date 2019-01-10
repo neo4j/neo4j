@@ -129,6 +129,7 @@ case object planPart extends PartPlanner {
 
   // TODO probably not be needed if returning sorted and unsorted
   // If the required order has dependency on argument, then it should not solve the ordering here
+  // If we have a mutating pattern that depends on the sorting variables, we cannot solve ordering here
   private def interestingInterestingOrderForPart(query: PlannerQuery, rhsPart: Boolean) = {
     val interestingOrder = query.interestingOrder
     if (rhsPart)
@@ -140,8 +141,9 @@ case object planPart extends PartPlanner {
 
         case _ =>
           val orderCandidate = interestingOrder.requiredOrderCandidate.order
-          val dependencies = orderCandidate.flatMap(_.projections).flatMap(_._2.dependencies) ++ orderCandidate.flatMap(_.expression.dependencies)
-          if (dependencies.exists(dep => query.queryGraph.argumentIds.contains(dep.name)))
+          val orderingDependencies = orderCandidate.flatMap(_.projections).flatMap(_._2.dependencies) ++ orderCandidate.flatMap(_.expression.dependencies)
+          val mutatingDependencies = query.queryGraph.mutatingPatterns.flatMap(_.dependencies)
+          if (orderingDependencies.exists(dep => query.queryGraph.argumentIds.contains(dep.name) || mutatingDependencies.contains(dep.name)))
             interestingOrder.asInteresting
           else
             interestingOrder

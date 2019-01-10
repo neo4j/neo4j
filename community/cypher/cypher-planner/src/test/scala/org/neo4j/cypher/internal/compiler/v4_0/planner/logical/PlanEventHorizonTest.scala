@@ -71,9 +71,8 @@ class PlanEventHorizonTest extends CypherFunSuite with LogicalPlanningTestSuppor
     // Given
     new given().withLogicalPlanningContext { (_, context) =>
       val literal = SignedDecimalIntegerLiteral("42")(pos)
-      val sortItems = Seq(AscSortItem(varFor("a"))(pos))
       val interestingOrder = InterestingOrder.required(RequiredOrderCandidate.asc("a", varFor("a"), Map("a" -> varFor("a"))))
-      val horizon = RegularQueryProjection(Map("a" -> varFor("a"), "b" -> literal, "c" -> literal), QueryShuffle(sortItems))
+      val horizon = RegularQueryProjection(Map("a" -> varFor("a"), "b" -> literal, "c" -> literal), QueryShuffle())
       val pq = RegularPlannerQuery(interestingOrder = interestingOrder, horizon = horizon)
       val inputPlan = fakeLogicalPlanFor(context.planningAttributes, "a")
       context.planningAttributes.solveds.set(inputPlan.id, PlannerQuery.empty)
@@ -90,9 +89,8 @@ class PlanEventHorizonTest extends CypherFunSuite with LogicalPlanningTestSuppor
     // Given
     new given().withLogicalPlanningContext { (_, context) =>
       val literal = SignedDecimalIntegerLiteral("42")(pos)
-      val sortItems = Seq(AscSortItem(varFor("a"))(pos))
       val interestingOrder = InterestingOrder.required(RequiredOrderCandidate.asc("a", varFor("a"), Map("a" -> literal)))
-      val horizon = RegularQueryProjection(Map("a" -> literal, "b" -> literal, "c" -> literal), QueryShuffle(sortItems))
+      val horizon = RegularQueryProjection(Map("a" -> literal, "b" -> literal, "c" -> literal), QueryShuffle())
       val pq = RegularPlannerQuery(interestingOrder = interestingOrder, horizon = horizon)
       val inputPlan = fakeLogicalPlanFor(context.planningAttributes)
       context.planningAttributes.solveds.set(inputPlan.id, PlannerQuery.empty)
