@@ -21,26 +21,25 @@ package org.neo4j.cypher.internal.compatibility
 
 import org.neo4j.cypher.internal.compatibility.v4_0.runtime.executionplan.ExecutionPlan
 import org.neo4j.cypher.internal.compatibility.v4_0.runtime.executionplan.procs.{ProcedureCallExecutionPlan, SchemaWriteExecutionPlan}
-import org.neo4j.cypher.internal.compiler.v4_0.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.v4_0.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
 import org.neo4j.cypher.internal.runtime.{InternalQueryType, ProcedureCallMode, QueryContext, SCHEMA_WRITE}
-import org.neo4j.cypher.internal.v4_0.logical.plans._
 import org.neo4j.cypher.internal.v4_0.expressions.{LabelName, PropertyKeyName, RelTypeName}
+import org.neo4j.cypher.internal.v4_0.logical.plans._
 import org.neo4j.cypher.internal.v4_0.util.{LabelId, PropertyKeyId}
 
 /**
   * This runtime takes on queries that require no planning, such as procedures and schema commands
   */
 object ProcedureCallOrSchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
-  override def compileToExecutable(state: LogicalPlanState, context: RuntimeContext): ExecutionPlan = {
+  override def compileToExecutable(state: LogicalQuery, context: RuntimeContext): ExecutionPlan = {
 
     def throwCantCompile(unknownPlan: LogicalPlan): Nothing = {
       throw new CantCompileQueryException(
         s"Plan is not a procedure call or schema command: ${unknownPlan.getClass.getSimpleName}")
     }
 
-    logicalToExecutable.applyOrElse(state.maybeLogicalPlan.get, throwCantCompile).apply(context)
+    logicalToExecutable.applyOrElse(state.logicalPlan, throwCantCompile).apply(context)
   }
 
   def queryType(logicalPlan: LogicalPlan): Option[InternalQueryType] =

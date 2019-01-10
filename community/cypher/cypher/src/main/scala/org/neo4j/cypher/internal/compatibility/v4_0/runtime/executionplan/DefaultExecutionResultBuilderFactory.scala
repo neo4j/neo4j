@@ -29,7 +29,7 @@ import org.neo4j.values.virtual.MapValue
 
 abstract class BaseExecutionResultBuilderFactory(pipe: Pipe,
                                                  readOnly: Boolean,
-                                                 columns: List[String],
+                                                 columns: Seq[String],
                                                  logicalPlan: LogicalPlan) extends ExecutionResultBuilderFactory {
 
   abstract class BaseExecutionResultBuilder() extends ExecutionResultBuilder {
@@ -69,7 +69,7 @@ abstract class BaseExecutionResultBuilderFactory(pipe: Pipe,
 case class InterpretedExecutionResultBuilderFactory(pipe: Pipe,
                                                     queryIndexes: QueryIndexes,
                                                     readOnly: Boolean,
-                                                    columns: List[String],
+                                                    columns: Seq[String],
                                                     logicalPlan: LogicalPlan,
                                                     lenientCreateRelationship: Boolean)
   extends BaseExecutionResultBuilderFactory(pipe, readOnly, columns, logicalPlan) {

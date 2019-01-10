@@ -93,7 +93,15 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
                                                queryType == READ_ONLY,
                                                preParsedQuery.useCompiledExpressions)
 
-    val executionPlan4_0: ExecutionPlan_v4_0 = runtime.compileToExecutable(planState, runtimeContext)
+    val logicalQuery = LogicalQuery(planState.logicalPlan,
+                                    planState.queryText,
+                                    queryType == READ_ONLY,
+                                    planState.statement().returnColumns.toArray,
+                                    planState.semanticTable(),
+                                    planState.planningAttributes.cardinalities,
+                                    planState.periodicCommit)
+
+    val executionPlan4_0: ExecutionPlan_v4_0 = runtime.compileToExecutable(logicalQuery, runtimeContext)
 
     new CypherExecutableQuery(
       logicalPlan,

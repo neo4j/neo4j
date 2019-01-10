@@ -24,13 +24,16 @@ import java.time.Clock
 
 import org.neo4j.cypher.CypherMorselRuntimeSchedulerOption
 import org.neo4j.cypher.internal.compatibility.v4_0.runtime.executionplan.{DelegatingExecutionPlan, ExecutionPlan}
-import org.neo4j.cypher.internal.compiler.v4_0.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.v4_0.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.compiler.v4_0.{CypherPlannerConfiguration, RuntimeUnsupportedNotification}
+import org.neo4j.cypher.internal.ir.v4_0.PeriodicCommit
+import org.neo4j.cypher.internal.planner.v4_0.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.planner.v4_0.spi.TokenContext
+import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
 import org.neo4j.cypher.{CypherRuntimeOption, RuntimeUnsupportedException, exceptionHandler}
 import org.neo4j.internal.kernel.api.SchemaRead
 import org.neo4j.cypher.internal.v4_0.frontend.phases.RecordingNotificationLogger
+import org.neo4j.cypher.internal.v4_0.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.v4_0.util.InternalNotification
 
 import scala.concurrent.duration.Duration
@@ -47,12 +50,32 @@ trait CypherRuntime[-CONTEXT <: RuntimeContext] {
     *
     * WARNING: This code path is in the middle of a refactor and will be modified, changed and reworked.
     *
-    * @param logicalPlan the logical plan to compile
+    * @param logicalQuery the logical query to compile
     * @param context the compilation context
     * @return the executable plan
     */
-  def compileToExecutable(logicalPlan: LogicalPlanState, context: CONTEXT): ExecutionPlan
+  def compileToExecutable(logicalQuery: LogicalQuery, context: CONTEXT): ExecutionPlan
 }
+
+/**
+  * LogicalQuery contains all information about a planned query that is need for a runtime
+  * to compile it to a ExecutionPlan.
+  *
+  * @param logicalPlan the logical plan
+  * @param queryText the text representation of the query (only for debugging)
+  * @param readOnly true if the query is read only
+  * @param resultColumns names of the returned result columns
+  * @param semanticTable semantic table with type information on the expressions in the query
+  * @param cardinalities cardinalities (estimated rows) of all operators in the logical plan tree
+  * @param periodicCommit periodic commit info if relevant
+  */
+case class LogicalQuery(logicalPlan: LogicalPlan,
+                        queryText: String,
+                        readOnly: Boolean,
+                        resultColumns: Array[String],
+                        semanticTable: SemanticTable,
+                        cardinalities: Cardinalities,
+                        periodicCommit: Option[PeriodicCommit])
 
 /**
   * Context in which the Runtime performs physical planning
@@ -84,7 +107,7 @@ trait RuntimeContextCreator[CONTEXT <: RuntimeContext] {
   * Cypher runtime representing a user-selected runtime which is not supported.
   */
 object UnknownRuntime extends CypherRuntime[RuntimeContext] {
-  def compileToExecutable(logicalPlan: LogicalPlanState, context: RuntimeContext): ExecutionPlan =
+  def compileToExecutable(logicalQuery: LogicalQuery, context: RuntimeContext): ExecutionPlan =
     throw new CantCompileQueryException()
 }
 
@@ -106,14 +129,14 @@ class FallbackRuntime[CONTEXT <: RuntimeContext](runtimes: Seq[CypherRuntime[CON
     throw new RuntimeUnsupportedException(message, originalException)
   }
 
-  override def compileToExecutable(logicalPlan: LogicalPlanState, context: CONTEXT): ExecutionPlan = {
-    var executionPlan: Try[ExecutionPlan] = Try(ProcedureCallOrSchemaCommandRuntime.compileToExecutable(logicalPlan, context))
+  override def compileToExecutable(logicalQuery: LogicalQuery, context: CONTEXT): ExecutionPlan = {
+    var executionPlan: Try[ExecutionPlan] = Try(ProcedureCallOrSchemaCommandRuntime.compileToExecutable(logicalQuery, context))
     val logger = new RecordingNotificationLogger()
     for (runtime <- runtimes if executionPlan.isFailure) {
       executionPlan =
         Try(
           exceptionHandler.runSafely(
-            runtime.compileToExecutable(logicalPlan, context)
+            runtime.compileToExecutable(logicalQuery, context)
           )
         )
 

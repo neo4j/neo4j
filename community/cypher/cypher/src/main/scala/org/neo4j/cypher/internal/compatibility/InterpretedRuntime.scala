@@ -23,7 +23,6 @@ import org.neo4j.cypher.internal.compatibility.v4_0.runtime._
 import org.neo4j.cypher.internal.compatibility.v4_0.runtime.executionplan._
 import org.neo4j.cypher.internal.compatibility.v4_0.runtime.profiler.InterpretedProfileInformation
 import org.neo4j.cypher.internal.compatibility.v4_0.runtime.profiler.Profiler
-import org.neo4j.cypher.internal.compiler.v4_0.phases.LogicalPlanState
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.CommunityExpressionConverter
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.ExpressionConverters
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.NestedPipeExpressions
@@ -39,16 +38,16 @@ import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.values.virtual.MapValue
 
 object InterpretedRuntime extends CypherRuntime[RuntimeContext] {
-  override def compileToExecutable(state: LogicalPlanState, context: RuntimeContext): ExecutionPlan = {
-    val logicalPlan = state.logicalPlan
+  override def compileToExecutable(query: LogicalQuery, context: RuntimeContext): ExecutionPlan = {
+    val logicalPlan = query.logicalPlan
     val converters = new ExpressionConverters(CommunityExpressionConverter(context.tokenContext))
     val queryIndexes = new QueryIndexes(context.schemaRead)
-    val pipeMapper = InterpretedPipeMapper(context.readOnly, converters, context.tokenContext, queryIndexes)(state.semanticTable)
+    val pipeMapper = InterpretedPipeMapper(context.readOnly, converters, context.tokenContext, queryIndexes)(query.semanticTable)
     val pipeTreeBuilder = PipeTreeBuilder(pipeMapper)
     val logicalPlanWithConvertedNestedPlans = NestedPipeExpressions.build(pipeTreeBuilder, logicalPlan)
     val pipe = pipeTreeBuilder.build(logicalPlanWithConvertedNestedPlans)
-    val periodicCommitInfo = state.periodicCommit.map(x => PeriodicCommitInfo(x.batchSize))
-    val columns = state.statement().returnColumns
+    val periodicCommitInfo = query.periodicCommit.map(x => PeriodicCommitInfo(x.batchSize))
+    val columns = query.resultColumns
     val resultBuilderFactory = InterpretedExecutionResultBuilderFactory(pipe,
                                                                         queryIndexes,
                                                                         context.readOnly,
