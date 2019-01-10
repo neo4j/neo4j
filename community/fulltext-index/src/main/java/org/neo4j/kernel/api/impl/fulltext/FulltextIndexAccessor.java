@@ -29,8 +29,6 @@ import org.neo4j.kernel.api.impl.index.AbstractLuceneIndexAccessor;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyAccessor;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
-import org.neo4j.logging.Log;
-import org.neo4j.logging.NullLog;
 import org.neo4j.values.storable.Value;
 
 import static org.neo4j.kernel.api.impl.fulltext.LuceneFulltextDocumentStructure.documentRepresentingProperties;
@@ -38,8 +36,6 @@ import static org.neo4j.kernel.api.impl.fulltext.LuceneFulltextDocumentStructure
 
 public class FulltextIndexAccessor extends AbstractLuceneIndexAccessor<FulltextIndexReader,DatabaseFulltextIndex>
 {
-    static Log TRACE_LOG = NullLog.getInstance();
-
     private final IndexUpdateSink indexUpdateSink;
     private final FulltextIndexDescriptor descriptor;
     private final Runnable onClose;
@@ -123,10 +119,6 @@ public class FulltextIndexAccessor extends AbstractLuceneIndexAccessor<FulltextI
             try
             {
                 Document document = documentRepresentingProperties( entityId, descriptor.propertyNames(), values );
-                if ( TRACE_LOG.isDebugEnabled() )
-                {
-                    TRACE_LOG.debug( "updater add idempotent: %s", document.toString() );
-                }
                 writer.updateDocument( newTermForChangeOrRemove( entityId ), document );
             }
             catch ( IOException e )
@@ -141,10 +133,6 @@ public class FulltextIndexAccessor extends AbstractLuceneIndexAccessor<FulltextI
             try
             {
                 Document document = documentRepresentingProperties( entityId, descriptor.propertyNames(), values );
-                if ( TRACE_LOG.isDebugEnabled() )
-                {
-                    TRACE_LOG.debug( "updater add: %s", document.toString() );
-                }
                 writer.addDocument( document );
             }
             catch ( IOException e )
