@@ -351,8 +351,11 @@ public class GraphDatabaseSettings implements LoadableConfig
                   + "value to `false` will cause Neo4j to fail `LOAD CSV` clauses that load data from the file system." )
     public static final Setting<Boolean> allow_file_urls = setting( "dbms.security.allow_csv_import_from_file_urls", BOOLEAN, TRUE );
 
-    @Description( "Sets the root directory for file URLs used with the Cypher `LOAD CSV` clause. This must be set to a single "
-                  + "directory, restricting access to only those files within that directory and its subdirectories." )
+    @Description( "Sets the root directory for file URLs used with the Cypher `LOAD CSV` clause. This should be set to a " +
+                  "directory relative to the Neo4j installation path, restricting access to only those files within that directory " +
+                  "and its subdirectories. For example the value \"import\" will only enable access to files within the 'import' folder. " +
+                  "Removing this setting will disable the security feature, allowing all files in the local system to be imported. " +
+                  "Setting this to an empty field will allow access to all files within the Neo4j installation folder." )
     public static final Setting<File> load_csv_file_url_root = pathSetting( "dbms.directories.import", NO_DEFAULT );
 
     @Description( "Selects whether to conform to the standard https://tools.ietf.org/html/rfc4180 for interpreting " +
