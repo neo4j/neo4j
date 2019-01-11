@@ -127,7 +127,6 @@ case object planPart extends PartPlanner {
     ctx.strategy.plan(query.queryGraph, interestingInterestingOrderForPart(query, rhsPart), ctx)
   }
 
-  // TODO probably not be needed if returning sorted and unsorted
   // If the required order has dependency on argument, then it should not solve the ordering here
   // If we have a mutating pattern that depends on the sorting variables, we cannot solve ordering here
   private def interestingInterestingOrderForPart(query: PlannerQuery, rhsPart: Boolean) = {

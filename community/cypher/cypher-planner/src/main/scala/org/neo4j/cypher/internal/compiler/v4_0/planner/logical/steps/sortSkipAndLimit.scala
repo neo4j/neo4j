@@ -34,7 +34,7 @@ object sortSkipAndLimit extends PlanTransformerWithRequiredOrder {
     *                         will be used to check if we need to sort.
     */
   def apply(in: LogicalPlan, query: PlannerQuery, interestingOrder: InterestingOrder, context: LogicalPlanningContext): LogicalPlan = {
-    val plan = PlannerHelper.sortedPlanWithSolved(in, interestingOrder, context)
+    val plan = SortPlanner.sortedPlanWithSolved(in, interestingOrder, context)
     query.horizon match {
       case p: QueryProjection =>
         val queryPagination = p.queryPagination

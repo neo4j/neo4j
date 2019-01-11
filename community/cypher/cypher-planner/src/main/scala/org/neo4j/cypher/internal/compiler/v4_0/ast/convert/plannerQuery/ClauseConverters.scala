@@ -112,7 +112,7 @@ object ClauseConverters {
     val sortItems = if(optOrderBy.isDefined) optOrderBy.get.sortItems else Seq.empty
     val (requiredOrderColumns, interestingOrderColumns) = horizon match {
       case RegularQueryProjection(projections, _, _) =>
-        (extractColumnsFromHorizon(sortItems, projections), Seq.empty)
+        (extractColumnOrderFromOrderBy(sortItems, projections), Seq.empty)
       case AggregatingQueryProjection(groupingExpressions, aggregationExpressions, _, _) =>
         val interestingColumnOrders: Seq[ColumnOrder] =
           if (groupingExpressions.isEmpty && aggregationExpressions.size == 1) {
@@ -123,9 +123,9 @@ object ClauseConverters {
             Seq.empty
           }
 
-        (extractColumnsFromHorizon(sortItems, groupingExpressions), interestingColumnOrders)
+        (extractColumnOrderFromOrderBy(sortItems, groupingExpressions), interestingColumnOrders)
       case DistinctQueryProjection(groupingExpressions, _, _) =>
-        (extractColumnsFromHorizon(sortItems, groupingExpressions), Seq.empty)
+        (extractColumnOrderFromOrderBy(sortItems, groupingExpressions), Seq.empty)
       case _ => (Seq.empty, Seq.empty)
     }
 
@@ -135,11 +135,10 @@ object ClauseConverters {
       InterestingOrder(RequiredOrderCandidate(requiredOrderColumns), Seq(InterestingOrderCandidate(interestingOrderColumns)))
   }
 
-  private def extractColumnsFromHorizon(sortItems: Seq[SortItem], projections: Map[String, Expression]): Seq[InterestingOrder.ColumnOrder] = {
+  private def extractColumnOrderFromOrderBy(sortItems: Seq[SortItem], projections: Map[String, Expression]): Seq[InterestingOrder.ColumnOrder] = {
 
     import InterestingOrder._
 
-    // TODO: Keep all sortItems (filter for index-backed order-by elsewhere)
     sortItems.map {
       // RETURN a AS b ORDER BY b.prop
       case AscSortItem(e@Property(LogicalVariable(varName), _)) =>

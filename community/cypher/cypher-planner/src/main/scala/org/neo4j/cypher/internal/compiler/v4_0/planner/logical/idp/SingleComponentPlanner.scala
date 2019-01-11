@@ -45,7 +45,7 @@ case class SingleComponentPlanner(monitor: IDPQueryGraphSolverMonitor,
   override def planComponent(qg: QueryGraph, context: LogicalPlanningContext, kit: QueryPlannerKit, interestingOrder: InterestingOrder): LogicalPlan = {
     val leavesWithoutSorting = leafPlanFinder(context.config, qg, interestingOrder, context)
     val leaves = if (interestingOrder.requiredOrderCandidate.nonEmpty)
-      leavesWithoutSorting ++ leavesWithoutSorting.flatMap(plan => PlannerHelper.maybeSortedPlan(plan, interestingOrder, context))
+      leavesWithoutSorting ++ leavesWithoutSorting.flatMap(plan => SortPlanner.maybeSortedPlan(plan, interestingOrder, context))
     else leavesWithoutSorting
 
     val bestPlan =
@@ -53,7 +53,7 @@ case class SingleComponentPlanner(monitor: IDPQueryGraphSolverMonitor,
 
         val generators = solverConfig.solvers(qg).map(_ (qg))
         val selectingGenerators = generators.map(_.map(plan => kit.select(plan, qg)))
-        val sortingGenerators = selectingGenerators.map(_.flatMap(plan => PlannerHelper.maybeSortedPlan(plan, interestingOrder, context)))
+        val sortingGenerators = selectingGenerators.map(_.flatMap(plan => SortPlanner.maybeSortedPlan(plan, interestingOrder, context)))
         val generator = (selectingGenerators ++ sortingGenerators).foldLeft(IDPSolverStep.empty[PatternRelationship, InterestingOrder, LogicalPlan, LogicalPlanningContext])(_ ++ _)
         val orderRequirement = new ExtraRequirement[InterestingOrder, LogicalPlan]() {
           override def none: InterestingOrder = InterestingOrder.empty
@@ -96,6 +96,7 @@ case class SingleComponentPlanner(monitor: IDPQueryGraphSolverMonitor,
       println(s"Result (picked best plan):\n\tPlan #${bestPlan.debugId}\n\t${bestPlan.toString}\n\n")
 
     // TODO this is updated in the last step of planSingleQuery now... I think?
+    //   Try just returning bestPlan and confirm that it doesn't break any tests
     if (interestingOrder.requiredOrderCandidate.nonEmpty && interestingOrder.satisfiedBy(context.planningAttributes.providedOrders.get(bestPlan.id)))
       context.logicalPlanProducer.updateSolvedForSortedItems(bestPlan, interestingOrder, context)
     else
@@ -110,7 +111,7 @@ case class SingleComponentPlanner(monitor: IDPQueryGraphSolverMonitor,
       yield {
         val input = planSinglePattern(qg, pattern, leaves, context).map(plan => kit.select(plan, qg))
         val plans = if (interestingOrder.requiredOrderCandidate.nonEmpty)
-          input ++ input.flatMap(plan => PlannerHelper.maybeSortedPlan(plan, interestingOrder, context))
+          input ++ input.flatMap(plan => SortPlanner.maybeSortedPlan(plan, interestingOrder, context))
         else input
 
         val ordered = plans.filter(plan => interestingOrder.satisfiedBy(context.planningAttributes.providedOrders.get(plan.id)))
@@ -138,7 +139,6 @@ object SingleComponentPlanner {
   def DEFAULT_SOLVERS: Seq[QueryGraph => IDPSolverStep[PatternRelationship, InterestingOrder, LogicalPlan, LogicalPlanningContext]] =
     Seq(joinSolverStep(_), expandSolverStep(_))
 
-  // TODO Also provided solutions that plan sorts before the expands
   def planSinglePattern(qg: QueryGraph,
                         pattern: PatternRelationship,
                         leaves: Set[LogicalPlan],

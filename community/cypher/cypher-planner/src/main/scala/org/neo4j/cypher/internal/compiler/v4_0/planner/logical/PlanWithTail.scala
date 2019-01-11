@@ -35,7 +35,7 @@ case class PlanWithTail(planEventHorizon: EventHorizonPlanner = PlanEventHorizon
 
   override def apply(lhs: LogicalPlan, in: PlannerQuery, context: LogicalPlanningContext, idGen: IdGen): (LogicalPlan, LogicalPlanningContext) = {
     // TODO this is needed while still comparing id for solved interestingOrder
-    val sortedLhs = PlannerHelper.maybeSortedPlanWithSolved(lhs, in.interestingOrder, context)
+    val sortedLhs = SortPlanner.sortedPlanWithSolved(lhs, in.interestingOrder, context, () => lhs)
     in.tail match {
       case Some(plannerQuery) =>
         val attributes = context.planningAttributes.asAttributes(idGen)

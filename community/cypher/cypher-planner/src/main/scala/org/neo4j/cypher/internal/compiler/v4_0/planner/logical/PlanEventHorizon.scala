@@ -79,19 +79,19 @@ case object PlanEventHorizon extends EventHorizonPlanner {
       case UnwindProjection(variable, expression) =>
         val (inner, projectionsMap) = PatternExpressionSolver()(selectedPlan, Seq(expression), query.interestingOrder, context)
         val projected = context.logicalPlanProducer.planUnwind(inner, variable, projectionsMap.head, expression, context)
-        PlannerHelper.sortedPlanWithSolved(projected, query.interestingOrder, context)
+        SortPlanner.sortedPlanWithSolved(projected, query.interestingOrder, context)
 
       case ProcedureCallProjection(call) =>
         val projected = context.logicalPlanProducer.planCallProcedure(plan, call, call, context)
-        PlannerHelper.sortedPlanWithSolved(projected, query.interestingOrder, context)
+        SortPlanner.sortedPlanWithSolved(projected, query.interestingOrder, context)
 
       case LoadCSVProjection(variableName, url, format, fieldTerminator) =>
         val projected = context.logicalPlanProducer.planLoadCSV(plan, variableName, url, format, fieldTerminator, context)
-        PlannerHelper.sortedPlanWithSolved(projected, query.interestingOrder, context)
+        SortPlanner.sortedPlanWithSolved(projected, query.interestingOrder, context)
 
       case PassthroughAllHorizon() =>
         val projected = context.logicalPlanProducer.planPassAll(plan, context)
-        PlannerHelper.sortedPlanWithSolved(projected, query.interestingOrder, context)
+        SortPlanner.sortedPlanWithSolved(projected, query.interestingOrder, context)
 
       case _ =>
         throw new InternalException(s"Received QG with unknown horizon type: ${query.horizon}")
