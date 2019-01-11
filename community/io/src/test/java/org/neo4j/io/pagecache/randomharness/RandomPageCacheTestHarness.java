@@ -54,7 +54,8 @@ import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.linear.LinearHistoryPageCacheTracerTest;
 import org.neo4j.io.pagecache.tracing.linear.LinearTracers;
-import org.neo4j.test.extension.SamplingProfilerExtension;
+import org.neo4j.test.rule.Profiler;
+import org.neo4j.test.rule.SamplingProfilerRule;
 
 /**
  * The RandomPageCacheTestHarness can plan and run random page cache tests, repeatably if necessary, and verify that
@@ -99,7 +100,7 @@ public class RandomPageCacheTestHarness implements Closeable
     private Phase preparation;
     private Phase verification;
     private RecordFormat recordFormat;
-    private SamplingProfilerExtension.Profiler profiler;
+    private Profiler profiler;
 
     public RandomPageCacheTestHarness()
     {
@@ -126,7 +127,7 @@ public class RandomPageCacheTestHarness implements Closeable
         fs = new EphemeralFileSystemAbstraction();
         useAdversarialIO = true;
         recordFormat = new StandardRecordFormat();
-        profiler = SamplingProfilerExtension.Profiler.NULL;
+        profiler = Profiler.nullProfiler();
     }
 
     /**
@@ -301,7 +302,7 @@ public class RandomPageCacheTestHarness implements Closeable
         this.fs = fileSystem;
     }
 
-    public void useProfiler( SamplingProfilerExtension.Profiler profiler )
+    public void useProfiler( Profiler profiler )
     {
         this.profiler = profiler;
     }

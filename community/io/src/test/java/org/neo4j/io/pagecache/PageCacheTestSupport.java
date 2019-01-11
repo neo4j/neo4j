@@ -47,6 +47,7 @@ import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.test.rule.RepeatRule;
+import org.neo4j.test.rule.SamplingProfilerRule;
 
 import static org.junit.Assert.assertThat;
 import static org.neo4j.test.matchers.ByteArrayMatcher.byteArray;
@@ -71,9 +72,10 @@ public abstract class PageCacheTestSupport<T extends PageCache>
     }
 
     public RepeatRule repeatRule = new RepeatRule();
+    public SamplingProfilerRule profiler = new SamplingProfilerRule();
     public ExpectedException expectedException = ExpectedException.none();
     @Rule
-    public RuleChain rules = RuleChain.outerRule( repeatRule ).around( expectedException );
+    public RuleChain rules = RuleChain.outerRule( repeatRule ).around( profiler ).around( expectedException );
 
     protected int recordSize = 9;
     protected int maxPages = 20;

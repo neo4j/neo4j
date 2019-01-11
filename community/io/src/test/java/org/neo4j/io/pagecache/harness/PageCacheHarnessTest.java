@@ -23,7 +23,6 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.io.fs.StoreChannel;
@@ -37,7 +36,7 @@ import org.neo4j.io.pagecache.randomharness.RandomPageCacheTestHarness;
 import org.neo4j.io.pagecache.randomharness.RecordFormat;
 import org.neo4j.io.pagecache.randomharness.StandardRecordFormat;
 import org.neo4j.test.rule.RepeatRule;
-import org.neo4j.test.extension.SamplingProfilerExtension;
+import org.neo4j.test.rule.SamplingProfilerRule;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
@@ -53,8 +52,6 @@ import static org.neo4j.io.pagecache.randomharness.Command.WriteRecord;
 
 abstract class PageCacheHarnessTest<T extends PageCache> extends PageCacheTestSupport<T>
 {
-    @Rule
-    public SamplingProfilerExtension profiler = new SamplingProfilerExtension();
 
     @RepeatRule.Repeat( times = 10 )
     @Test( timeout = SEMI_LONG_TIMEOUT_MILLIS )
@@ -93,6 +90,7 @@ abstract class PageCacheHarnessTest<T extends PageCache> extends PageCacheTestSu
             harness.setCommandCount( 10000 );
             harness.setRecordFormat( recordFormat );
             harness.setFileSystem( fs );
+            harness.useProfiler( profiler );
             harness.disableCommands( FlushCache, FlushFile, MapFile, UnmapFile, WriteRecord, WriteMulti );
             harness.setPreparation( ( pageCache1, fs1, filesTouched ) ->
             {
