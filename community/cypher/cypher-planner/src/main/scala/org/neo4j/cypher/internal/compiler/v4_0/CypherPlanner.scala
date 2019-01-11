@@ -112,5 +112,4 @@ case class CypherPlannerConfiguration(queryCacheSize: Int,
                                       legacyCsvQuoteEscaping: Boolean,
                                       csvBufferSize: Int,
                                       nonIndexedLabelWarningThreshold: Long,
-                                      planWithMinimumCardinalityEstimates: Boolean,
-                                      lenientCreateRelationship: Boolean)
+                                      planWithMinimumCardinalityEstimates: Boolean)

@@ -105,7 +105,8 @@ case class CypherConfiguration(version: CypherVersion,
       scheduler = scheduler,
       morselSize = morselSize,
       schedulerTracing = toSchedulerTracingConfiguration(doSchedulerTracing, schedulerTracingFile),
-      waitTimeout = Duration(waitTimeout, TimeUnit.MILLISECONDS)
+      waitTimeout = Duration(waitTimeout, TimeUnit.MILLISECONDS),
+      lenientCreateRelationship = lenientCreateRelationship
     )
 
   def toSchedulerTracingConfiguration(doSchedulerTracing: Boolean,
@@ -127,7 +128,6 @@ case class CypherConfiguration(version: CypherVersion,
       legacyCsvQuoteEscaping = legacyCsvQuoteEscaping,
       csvBufferSize = csvBufferSize,
       nonIndexedLabelWarningThreshold = config.get(GraphDatabaseSettings.query_non_indexed_label_warning_threshold).longValue(),
-      planWithMinimumCardinalityEstimates = planWithMinimumCardinalityEstimates,
-      lenientCreateRelationship = lenientCreateRelationship
+      planWithMinimumCardinalityEstimates = planWithMinimumCardinalityEstimates
     )
 }

@@ -80,7 +80,7 @@ object helpers {
       config.csvBufferSize,
       config.nonIndexedLabelWarningThreshold,
       config.planWithMinimumCardinalityEstimates,
-      config.lenientCreateRelationship)
+      lenientCreateRelationship = false)
 
   /** This is awful but needed until 3_0 is updated no to send in the tracer here */
   def as3_5(tracer: CompilationPhaseTracer): CompilationPhaseTracerV3_5 = {

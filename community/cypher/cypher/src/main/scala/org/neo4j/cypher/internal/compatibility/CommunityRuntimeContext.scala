@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.compatibility
 
 import java.time.Clock
 
-import org.neo4j.cypher.internal.compiler.v4_0.CypherPlannerConfiguration
 import org.neo4j.cypher.internal.planner.v4_0.spi.TokenContext
 import org.neo4j.internal.kernel.api.SchemaRead
 
@@ -30,12 +29,12 @@ import org.neo4j.internal.kernel.api.SchemaRead
   */
 case class CommunityRuntimeContext(tokenContext: TokenContext,
                                    schemaRead: SchemaRead,
-                                   config: CypherPlannerConfiguration) extends RuntimeContext {
+                                   config: CypherRuntimeConfiguration) extends RuntimeContext {
 
   override def compileExpressions: Boolean = false
 }
 
-case class CommunityRuntimeContextCreator(config: CypherPlannerConfiguration) extends RuntimeContextCreator[RuntimeContext] {
+case class CommunityRuntimeContextCreator(config: CypherRuntimeConfiguration) extends RuntimeContextCreator[RuntimeContext] {
   override def create(tokenContext: TokenContext,
                       schemaRead: SchemaRead,
                       clock: Clock,

@@ -83,7 +83,7 @@ case class LogicalQuery(logicalPlan: LogicalPlan,
 abstract class RuntimeContext {
   def tokenContext: TokenContext
   def schemaRead: SchemaRead
-  def config: CypherPlannerConfiguration
+  def config: CypherRuntimeConfiguration
   def compileExpressions: Boolean
 }
 
@@ -156,7 +156,8 @@ case class CypherRuntimeConfiguration(workers: Int,
                                       scheduler: CypherMorselRuntimeSchedulerOption,
                                       morselSize: Int,
                                       schedulerTracing: SchedulerTracingConfiguration,
-                                      waitTimeout: Duration)
+                                      waitTimeout: Duration,
+                                      lenientCreateRelationship: Boolean)
 
 sealed trait SchedulerTracingConfiguration
 case object NoSchedulerTracing extends SchedulerTracingConfiguration

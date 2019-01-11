@@ -57,7 +57,7 @@ class CommunityCompilerFactory(graph: GraphDatabaseQueryService,
           Cypher3_5Planner(plannerConfig, MasterCompiler.CLOCK, kernelMonitors, log,
             cypherPlanner, cypherUpdateStrategy, LastCommittedTxIdProvider(graph)),
           CommunityRuntimeFactory.getRuntime(cypherRuntime, plannerConfig.useErrorsOverWarnings),
-          CommunityRuntimeContextCreator(plannerConfig),
+          CommunityRuntimeContextCreator(runtimeConfig),
           kernelMonitors
         )
 
@@ -67,7 +67,7 @@ class CommunityCompilerFactory(graph: GraphDatabaseQueryService,
           Cypher4_0Planner(plannerConfig, MasterCompiler.CLOCK, kernelMonitors, log,
                           cypherPlanner, cypherUpdateStrategy, LastCommittedTxIdProvider(graph)),
           CommunityRuntimeFactory.getRuntime(cypherRuntime, plannerConfig.useErrorsOverWarnings),
-          CommunityRuntimeContextCreator(plannerConfig),
+          CommunityRuntimeContextCreator(runtimeConfig),
           kernelMonitors
         )
     }
