@@ -119,6 +119,8 @@ abstract class SetEntityPropertyOperation[T, CURSOR](itemName: String,
       val cursor = entityCursor(state.cursors)
       if (needsExclusiveLock) ops.acquireExclusiveLock(itemId)
 
+      invalidateCachedProperties(executionContext, itemId)
+
       try {
         setProperty[T, CURSOR](executionContext, state, cursor, ops, itemId, propertyKey, expression)
       } finally if (needsExclusiveLock) ops.releaseExclusiveLock(itemId)
@@ -130,6 +132,8 @@ abstract class SetEntityPropertyOperation[T, CURSOR](itemName: String,
   protected def operations(qtx: QueryContext): Operations[T, CURSOR]
 
   protected def entityCursor(cursors: ExpressionCursors): CURSOR
+
+  protected def invalidateCachedProperties(executionContext: ExecutionContext, id: Long): Unit
 }
 
 case class SetNodePropertyOperation(nodeName: String, propertyKey: LazyPropertyKey,
@@ -143,6 +147,9 @@ case class SetNodePropertyOperation(nodeName: String, propertyKey: LazyPropertyK
   override protected def operations(qtx: QueryContext) = qtx.nodeOps
 
   override protected def entityCursor(cursors: ExpressionCursors): NodeCursor = cursors.nodeCursor
+
+  override protected def invalidateCachedProperties(executionContext: ExecutionContext, id: Long): Unit =
+    executionContext.invalidateCachedProperties(id)
 }
 
 case class SetRelationshipPropertyOperation(relName: String, propertyKey: LazyPropertyKey,
@@ -156,6 +163,8 @@ case class SetRelationshipPropertyOperation(relName: String, propertyKey: LazyPr
   override protected def operations(qtx: QueryContext) = qtx.relationshipOps
 
   override protected def entityCursor(cursors: ExpressionCursors): RelationshipScanCursor = cursors.relationshipScanCursor
+
+  override protected def invalidateCachedProperties(executionContext: ExecutionContext, id: Long): Unit = {} // we do not cache relationships
 }
 
 case class SetPropertyOperation(entityExpr: Expression, propertyKey: LazyPropertyKey, expression: Expression)
