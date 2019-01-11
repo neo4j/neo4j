@@ -102,7 +102,7 @@ public enum DatabaseFile
         return names.get( 0 );
     }
 
-    boolean hasIdFile()
+    public boolean hasIdFile()
     {
         return hasIdFile;
     }
