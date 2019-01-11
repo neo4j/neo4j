@@ -54,7 +54,7 @@ public class BasicContext implements Context
         case DEPENDENCY_RESOLVER_NAME:
             return throwIfNull( key, resolver );
         case DATABASE_API_NAME:
-            return throwIfNull( key, resolver.resolveTypeDependencies( GraphDatabaseAPI.class ) );
+            return throwIfNull( key, resolver, r -> (T) r.resolveDependency( GraphDatabaseAPI.class ) );
         case KERNEL_TRANSACTION_NAME:
             return throwIfNull( key, kernelTransaction );
         case SECURITY_CONTEXT_NAME:
@@ -81,7 +81,7 @@ public class BasicContext implements Context
         case DEPENDENCY_RESOLVER_NAME:
             return getOrElse( resolver, orElse );
         case DATABASE_API_NAME:
-            return getOrElse( resolver.resolveTypeDependencies( GraphDatabaseAPI.class ), orElse );
+            return getOrElse( resolver, orElse, r -> (T) r.resolveTypeDependencies( GraphDatabaseAPI.class ) );
         case KERNEL_TRANSACTION_NAME:
             return getOrElse( kernelTransaction, orElse );
         case SECURITY_CONTEXT_NAME:
