@@ -22,19 +22,17 @@ package org.neo4j.cypher.internal.compatibility
 import java.io.File
 import java.time.Clock
 
-import org.neo4j.cypher.CypherMorselRuntimeSchedulerOption
-import org.neo4j.cypher.internal.compatibility.v4_0.runtime.executionplan.{DelegatingExecutionPlan, ExecutionPlan}
+import org.neo4j.cypher.internal.compatibility.v4_0.runtime.executionplan.{DelegatingExecutionPlan, ExecutionPlan, PeriodicCommitInfo}
+import org.neo4j.cypher.internal.compiler.v4_0.RuntimeUnsupportedNotification
 import org.neo4j.cypher.internal.compiler.v4_0.planner.CantCompileQueryException
-import org.neo4j.cypher.internal.compiler.v4_0.{CypherPlannerConfiguration, RuntimeUnsupportedNotification}
-import org.neo4j.cypher.internal.ir.v4_0.PeriodicCommit
 import org.neo4j.cypher.internal.planner.v4_0.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.planner.v4_0.spi.TokenContext
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
-import org.neo4j.cypher.{CypherRuntimeOption, RuntimeUnsupportedException, exceptionHandler}
-import org.neo4j.internal.kernel.api.SchemaRead
 import org.neo4j.cypher.internal.v4_0.frontend.phases.RecordingNotificationLogger
 import org.neo4j.cypher.internal.v4_0.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.v4_0.util.InternalNotification
+import org.neo4j.cypher.{CypherMorselRuntimeSchedulerOption, CypherRuntimeOption, RuntimeUnsupportedException, exceptionHandler}
+import org.neo4j.internal.kernel.api.SchemaRead
 
 import scala.concurrent.duration.Duration
 import scala.util.Try
@@ -75,7 +73,7 @@ case class LogicalQuery(logicalPlan: LogicalPlan,
                         resultColumns: Array[String],
                         semanticTable: SemanticTable,
                         cardinalities: Cardinalities,
-                        periodicCommit: Option[PeriodicCommit])
+                        periodicCommitInfo: Option[PeriodicCommitInfo])
 
 /**
   * Context in which the Runtime performs physical planning

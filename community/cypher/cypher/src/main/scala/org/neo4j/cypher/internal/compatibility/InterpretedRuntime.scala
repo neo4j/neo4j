@@ -46,7 +46,6 @@ object InterpretedRuntime extends CypherRuntime[RuntimeContext] {
     val pipeTreeBuilder = PipeTreeBuilder(pipeMapper)
     val logicalPlanWithConvertedNestedPlans = NestedPipeExpressions.build(pipeTreeBuilder, logicalPlan)
     val pipe = pipeTreeBuilder.build(logicalPlanWithConvertedNestedPlans)
-    val periodicCommitInfo = query.periodicCommit.map(x => PeriodicCommitInfo(x.batchSize))
     val columns = query.resultColumns
     val resultBuilderFactory = InterpretedExecutionResultBuilderFactory(pipe,
                                                                         queryIndexes,
@@ -55,7 +54,7 @@ object InterpretedRuntime extends CypherRuntime[RuntimeContext] {
                                                                         logicalPlan,
                                                                         context.config.lenientCreateRelationship)
 
-    new InterpretedExecutionPlan(periodicCommitInfo,
+    new InterpretedExecutionPlan(query.periodicCommitInfo,
                                  resultBuilderFactory,
                                  InterpretedRuntimeName,
                                  query.readOnly)

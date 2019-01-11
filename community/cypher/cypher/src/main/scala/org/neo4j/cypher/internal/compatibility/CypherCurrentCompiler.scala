@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compatibility
 import org.neo4j.cypher.exceptionHandler.runSafely
 import org.neo4j.cypher.internal._
 import org.neo4j.cypher.internal.compatibility.v4_0.ExceptionTranslatingQueryContext
-import org.neo4j.cypher.internal.compatibility.v4_0.runtime.executionplan.{StandardInternalExecutionResult, ExecutionPlan => ExecutionPlan_v4_0}
+import org.neo4j.cypher.internal.compatibility.v4_0.runtime.executionplan.{PeriodicCommitInfo, StandardInternalExecutionResult, ExecutionPlan => ExecutionPlan_v4_0}
 import org.neo4j.cypher.internal.compatibility.v4_0.runtime.helpers.InternalWrapping.asKernelNotification
 import org.neo4j.cypher.internal.compatibility.v4_0.runtime.profiler.PlanDescriptionBuilder
 import org.neo4j.cypher.internal.compatibility.v4_0.runtime.{ExplainExecutionResult, RuntimeName}
@@ -98,7 +98,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
                                     planState.statement().returnColumns.toArray,
                                     planState.semanticTable(),
                                     planState.planningAttributes.cardinalities,
-                                    planState.periodicCommit)
+                                    planState.maybePeriodicCommit.flatMap(_.map(x => PeriodicCommitInfo(x.batchSize))))
 
     val executionPlan4_0: ExecutionPlan_v4_0 = runtime.compileToExecutable(logicalQuery, runtimeContext)
 
