@@ -111,6 +111,8 @@ abstract class SetEntityPropertyOperation[T](itemName: String, propertyKey: Lazy
       val ops = operations(state.query)
       if (needsExclusiveLock) ops.acquireExclusiveLock(itemId)
 
+      invalidateCachedProperties(executionContext, itemId)
+
       try {
         setProperty[T](executionContext, state, ops, itemId, propertyKey, expression)
       } finally if (needsExclusiveLock) ops.releaseExclusiveLock(itemId)
@@ -120,6 +122,8 @@ abstract class SetEntityPropertyOperation[T](itemName: String, propertyKey: Lazy
   protected def id(item: Any): Long
 
   protected def operations(qtx: QueryContext): Operations[T]
+
+  protected def invalidateCachedProperties(executionContext: ExecutionContext, id: Long): Unit
 }
 
 case class SetNodePropertyOperation(nodeName: String, propertyKey: LazyPropertyKey,
@@ -131,6 +135,9 @@ case class SetNodePropertyOperation(nodeName: String, propertyKey: LazyPropertyK
   override protected def id(item: Any) = CastSupport.castOrFail[VirtualNodeValue](item).id()
 
   override protected def operations(qtx: QueryContext) = qtx.nodeOps
+
+  override protected def invalidateCachedProperties(executionContext: ExecutionContext, id: Long): Unit =
+    executionContext.invalidateCachedProperties(id)
 }
 
 case class SetRelationshipPropertyOperation(relName: String, propertyKey: LazyPropertyKey,
@@ -142,6 +149,8 @@ case class SetRelationshipPropertyOperation(relName: String, propertyKey: LazyPr
   override protected def id(item: Any) = CastSupport.castOrFail[VirtualRelationshipValue](item).id()
 
   override protected def operations(qtx: QueryContext) = qtx.relationshipOps
+
+  override protected def invalidateCachedProperties(executionContext: ExecutionContext, id: Long): Unit = {} // we do not cache relationships
 }
 
 case class SetPropertyOperation(entityExpr: Expression, propertyKey: LazyPropertyKey, expression: Expression)
