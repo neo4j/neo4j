@@ -53,9 +53,7 @@ import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.StubResourceManager;
 import org.neo4j.kernel.api.index.IndexProviderDescriptor;
-import org.neo4j.kernel.api.proc.BasicContext;
 import org.neo4j.kernel.api.proc.Context;
-import org.neo4j.kernel.api.proc.Key;
 import org.neo4j.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -84,16 +82,14 @@ import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTPath;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTRelationship;
 import static org.neo4j.kernel.api.index.IndexProvider.EMPTY;
 import static org.neo4j.kernel.api.proc.BasicContext.buildContext;
+import static org.neo4j.kernel.api.proc.Context.DATABASE_API;
+import static org.neo4j.kernel.api.proc.Context.DEPENDENCY_RESOLVER;
 import static org.neo4j.kernel.api.proc.Context.KERNEL_TRANSACTION;
 import static org.neo4j.kernel.api.proc.Context.SECURITY_CONTEXT;
-import static org.neo4j.kernel.api.proc.Key.key;
 import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forLabel;
 
 public class BuiltInProceduresTest
 {
-    private static final Key<DependencyResolver> DEPENDENCY_RESOLVER = key( "DependencyResolver", DependencyResolver.class );
-    private static final Key<GraphDatabaseAPI> GRAPHDATABASEAPI = key( "GraphDatabaseAPI", GraphDatabaseAPI.class );
-
     private final List<IndexReference> indexes = new LinkedList<>();
     private final List<IndexReference> uniqueIndexes = new LinkedList<>();
     private final List<ConstraintDescriptor> constraints = new LinkedList<>();
@@ -109,6 +105,7 @@ public class BuiltInProceduresTest
     private final DependencyResolver resolver = mock( DependencyResolver.class );
     private final GraphDatabaseAPI graphDatabaseAPI = mock( GraphDatabaseAPI.class );
     private final IndexingService indexingService = mock( IndexingService.class );
+    private final Log log = mock( Log.class );
 
     private final Procedures procs = new Procedures();
     private final ResourceTracker resourceTracker = new StubResourceManager();
@@ -118,9 +115,10 @@ public class BuiltInProceduresTest
     {
         procs.registerComponent( KernelTransaction.class, ctx -> ctx.get( KERNEL_TRANSACTION ), false );
         procs.registerComponent( DependencyResolver.class, ctx -> ctx.get( DEPENDENCY_RESOLVER ), false );
-        procs.registerComponent( GraphDatabaseAPI.class, ctx -> ctx.get( GRAPHDATABASEAPI ), false );
+        procs.registerComponent( GraphDatabaseAPI.class, ctx -> ctx.get( DATABASE_API ), false );
         procs.registerComponent( SecurityContext.class, ctx -> ctx.get( SECURITY_CONTEXT ), true );
 
+        procs.registerComponent( Log.class, ctx -> log, false );
         procs.registerType( Node.class, NTNode );
         procs.registerType( Relationship.class, NTRelationship );
         procs.registerType( Path.class, NTPath );
@@ -531,6 +529,7 @@ public class BuiltInProceduresTest
                         .context();
 
         when( graphDatabaseAPI.getDependencyResolver() ).thenReturn( resolver );
+        when( resolver.resolveDependency( GraphDatabaseAPI.class ) ).thenReturn( graphDatabaseAPI );
         when( resolver.resolveDependency( Procedures.class ) ).thenReturn( procs );
         when( resolver.resolveDependency( IndexingService.class ) ).thenReturn( indexingService );
         when( schemaRead.indexGetPopulationProgress( any( IndexReference.class) ) ).thenReturn( PopulationProgress.DONE );
