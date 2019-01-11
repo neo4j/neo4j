@@ -28,8 +28,8 @@ import org.neo4j.cypher.internal.v4_0.logical.plans.{Ascending, ColumnOrder, Des
 object SortPlanner {
   def maybeSortedPlan(plan: LogicalPlan, interestingOrder: InterestingOrder, context: LogicalPlanningContext): Option[LogicalPlan] = {
     if (interestingOrder.requiredOrderCandidate.nonEmpty && !interestingOrder.satisfiedBy(context.planningAttributes.providedOrders.get(plan.id))) {
-      def idFrom(expression:Expression, projection : Map[String,Expression]): String = {
-        projection.find(_._2==expression).map(_._1).getOrElse(expression.asCanonicalStringVal)
+      def idFrom(expression: Expression, projection: Map[String, Expression]): String = {
+        projection.find(_._2 == expression).map(_._1).getOrElse(expression.asCanonicalStringVal)
       }
 
       def projected(plan: LogicalPlan, projections: Map[String, Expression], updateSolved: Boolean = true): LogicalPlan = {
@@ -67,7 +67,7 @@ object SortPlanner {
   }
 
   def sortedPlanWithSolved(plan: LogicalPlan, interestingOrder: InterestingOrder, context: LogicalPlanningContext,
-                           unsolvable: () => LogicalPlan = throw new AssertionError("Expected a sorted plan")): LogicalPlan = {
+                           unsolvable: () => LogicalPlan = () => throw new AssertionError("Expected a sorted plan")): LogicalPlan = {
     maybeSortedPlan(plan, interestingOrder, context) match {
       case Some(sortedPlan) => sortedPlan
       case _ if interestingOrder.requiredOrderCandidate.nonEmpty =>
