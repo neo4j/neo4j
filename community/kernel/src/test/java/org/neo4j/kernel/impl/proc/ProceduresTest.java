@@ -48,6 +48,7 @@ import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTAny;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTInteger;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTString;
 import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureSignature;
+import static org.neo4j.kernel.api.proc.BasicContext.buildContext;
 import static org.neo4j.kernel.api.proc.Key.key;
 
 public class ProceduresTest
@@ -94,7 +95,7 @@ public class ProceduresTest
 
         // When
         RawIterator<Object[], ProcedureException> result =
-                procs.callProcedure( new BasicContext(), signature.name(), new Object[]{1337}, resourceTracker );
+                procs.callProcedure( buildContext().context(), signature.name(), new Object[]{1337}, resourceTracker );
 
         // Then
         assertThat( asList( result ), contains( equalTo( new Object[]{1337} ) ) );
@@ -110,7 +111,7 @@ public class ProceduresTest
                                  "procedure name correctly and that the procedure is properly deployed." );
 
         // When
-        procs.callProcedure( new BasicContext(), signature.name(), new Object[]{1337}, resourceTracker );
+        procs.callProcedure( buildContext().context(), signature.name(), new Object[]{1337}, resourceTracker );
     }
 
     @Test
@@ -170,25 +171,25 @@ public class ProceduresTest
     public void shouldMakeContextAvailable() throws Throwable
     {
         // Given
-        Key<String> someKey = key("someKey", String.class);
 
         procs.register( new CallableProcedure.BasicProcedure( signature )
         {
             @Override
             public RawIterator<Object[], ProcedureException> apply( Context ctx, Object[] input, ResourceTracker resourceTracker ) throws ProcedureException
             {
-                return RawIterator.<Object[], ProcedureException>of( new Object[]{ctx.get( someKey )} );
+                return RawIterator.<Object[], ProcedureException>of( new Object[]{ctx.get( Context.THREAD )} );
             }
         } );
 
-        BasicContext ctx = new BasicContext();
-        ctx.put( someKey, "hello, world" );
+        Context ctx = buildContext()
+                .withThread( Thread.currentThread() )
+                .context();
 
         // When
         RawIterator<Object[], ProcedureException> result = procs.callProcedure( ctx, signature.name(), new Object[0], resourceTracker );
 
         // Then
-        assertThat( asList( result ), contains( equalTo( new Object[]{ "hello, world" } ) ) );
+        assertThat( asList( result ), contains( equalTo( new Object[]{ Thread.currentThread() } ) ) );
     }
 
     @Test

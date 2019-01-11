@@ -19,44 +19,157 @@
  */
 package org.neo4j.kernel.api.proc;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.function.Function;
 
+import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.kernel.api.security.SecurityContext;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 
-/**
- * Not thread safe. Basic context backed by a map.
- */
 public class BasicContext implements Context
 {
-    private final Map<String, Object> values = new HashMap<>();
+    private final DependencyResolver resolver;
+    private final KernelTransaction kernelTransaction;
+    private final SecurityContext securityContext;
+    private final Thread thread;
 
+    private BasicContext( DependencyResolver resolver,
+            KernelTransaction kernelTransaction,
+            SecurityContext securityContext, Thread thread )
+    {
+        this.resolver = resolver;
+        this.kernelTransaction = kernelTransaction;
+        this.securityContext = securityContext;
+        this.thread = thread;
+    }
+
+    @SuppressWarnings( "unchecked" )
     @Override
     public <T> T get( Key<T> key ) throws ProcedureException
     {
-        Object o = values.get( key.name() );
-        if ( o == null )
+        switch ( key.name() )
+        {
+        case DEPENDENCY_RESOLVER_NAME:
+            return throwIfNull( key, resolver );
+        case DATABASE_API_NAME:
+            return throwIfNull( key, resolver.resolveTypeDependencies( GraphDatabaseAPI.class ) );
+        case KERNEL_TRANSACTION_NAME:
+            return throwIfNull( key, kernelTransaction );
+        case SECURITY_CONTEXT_NAME:
+            return throwIfNull( key, securityContext );
+        case THREAD_NAME:
+            return throwIfNull( key, thread );
+        case SYSTEM_CLOCK_NAME:
+            return throwIfNull( key, kernelTransaction, t -> (T)t.clocks().systemClock() );
+        case STATEMENT_CLOCK_NAME:
+            return throwIfNull( key, kernelTransaction,  t -> (T)t.clocks().statementClock());
+        case TRANSACTION_CLOCK_NAME:
+            return throwIfNull( key, kernelTransaction,  t -> (T)t.clocks().transactionClock() );
+        default:
+            throw new ProcedureException( Status.Procedure.ProcedureCallFailed,
+                    "There is no `%s` in the current procedure call context.", key.name() );
+        }
+    }
+    @SuppressWarnings( "unchecked" )
+    @Override
+    public <T> T getOrElse( Key<T> key, T orElse )
+    {
+        switch ( key.name() )
+        {
+        case DEPENDENCY_RESOLVER_NAME:
+            return getOrElse( resolver, orElse );
+        case DATABASE_API_NAME:
+            return getOrElse( resolver.resolveTypeDependencies( GraphDatabaseAPI.class ), orElse );
+        case KERNEL_TRANSACTION_NAME:
+            return getOrElse( kernelTransaction, orElse );
+        case SECURITY_CONTEXT_NAME:
+            return getOrElse( securityContext, orElse );
+        case THREAD_NAME:
+            return getOrElse( thread, orElse );
+        case SYSTEM_CLOCK_NAME:
+            return getOrElse( kernelTransaction, orElse, t -> (T)t.clocks().systemClock() );
+        case STATEMENT_CLOCK_NAME:
+            return getOrElse( kernelTransaction, orElse, t -> (T)t.clocks().statementClock() );
+        case TRANSACTION_CLOCK_NAME:
+            return getOrElse( kernelTransaction, orElse, t -> (T)t.clocks().transactionClock() );
+        default:
+            return orElse;
+        }
+    }
+
+    public static ContextBuilder buildContext()
+    {
+        return new ContextBuilder();
+    }
+
+    @SuppressWarnings( "unchecked" )
+    private <T, U> T throwIfNull( Key<T> key, U value ) throws ProcedureException
+    {
+        return throwIfNull( key, value, v -> (T) v );
+    }
+
+    private <T, U> T throwIfNull( Key<T> key, U value, Function<U,T> producer ) throws ProcedureException
+    {
+        if ( value == null )
         {
             throw new ProcedureException( Status.Procedure.ProcedureCallFailed,
                     "There is no `%s` in the current procedure call context.", key.name() );
         }
-        return (T) o;
+        return producer.apply( value );
     }
 
-    @Override
-    public <T> T getOrElse( Key<T> key, T orElse )
+    @SuppressWarnings( "unchecked" )
+    private <T,U> T getOrElse( U value, T orElse )
     {
-        Object o = values.get( key.name() );
-        if ( o == null )
+        return getOrElse( value, orElse, v -> (T)v );
+    }
+
+    private <T,U> T getOrElse( U value, T orElse, Function<U,T> producer )
+    {
+        if ( value == null )
         {
             return orElse;
         }
-        return (T) o;
+        return producer.apply( value );
     }
 
-    public <T> void put( Key<T> key, T value )
+    public static class ContextBuilder
     {
-        values.put( key.name(), value );
+        private DependencyResolver resolver;
+        private KernelTransaction kernelTransaction;
+        private SecurityContext securityContext = SecurityContext.AUTH_DISABLED;
+        private Thread thread;
+
+        public ContextBuilder withResolver( DependencyResolver resolver )
+        {
+            this.resolver = resolver;
+            return this;
+        }
+
+        public ContextBuilder withKernelTransaction( KernelTransaction kernelTransaction )
+        {
+            this.kernelTransaction = kernelTransaction;
+            return this;
+        }
+
+        public ContextBuilder withSecurityContext( SecurityContext securityContext )
+        {
+            this.securityContext = securityContext;
+            return this;
+        }
+
+        public ContextBuilder withThread( Thread thread )
+        {
+            this.thread = thread;
+            return this;
+        }
+
+        public Context context()
+        {
+            return new BasicContext( resolver, kernelTransaction, securityContext, thread );
+        }
+
     }
 }

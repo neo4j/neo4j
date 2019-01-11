@@ -27,9 +27,11 @@ import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.dbms.DbmsOperations;
 import org.neo4j.kernel.api.proc.BasicContext;
+import org.neo4j.kernel.api.proc.Context;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 
+import static org.neo4j.kernel.api.proc.BasicContext.buildContext;
 import static org.neo4j.kernel.api.proc.Context.DATABASE_API;
 import static org.neo4j.kernel.api.proc.Context.DEPENDENCY_RESOLVER;
 import static org.neo4j.kernel.api.proc.Context.SECURITY_CONTEXT;
@@ -48,7 +50,7 @@ public class NonTransactionalDbmsOperations implements DbmsOperations
     public RawIterator<Object[],ProcedureException> procedureCallDbms( QualifiedName name, Object[] input, DependencyResolver dependencyResolver,
             SecurityContext securityContext, ResourceTracker resourceTracker ) throws ProcedureException
     {
-        BasicContext ctx = createContext( securityContext, dependencyResolver );
+        Context ctx = createContext( securityContext, dependencyResolver );
         return procedures.callProcedure( ctx, name, input, resourceTracker );
     }
 
@@ -56,16 +58,15 @@ public class NonTransactionalDbmsOperations implements DbmsOperations
     public RawIterator<Object[],ProcedureException> procedureCallDbms( int id, Object[] input, DependencyResolver dependencyResolver,
             SecurityContext securityContext, ResourceTracker resourceTracker ) throws ProcedureException
     {
-        BasicContext ctx = createContext( securityContext, dependencyResolver );
+        Context ctx = createContext( securityContext, dependencyResolver );
         return procedures.callProcedure( ctx, id, input, resourceTracker );
     }
 
-    private static BasicContext createContext( SecurityContext securityContext, DependencyResolver dependencyResolver )
+    private static Context createContext( SecurityContext securityContext, DependencyResolver dependencyResolver )
     {
-        BasicContext ctx = new BasicContext();
-        ctx.put( SECURITY_CONTEXT, securityContext );
-        ctx.put( DEPENDENCY_RESOLVER, dependencyResolver );
-        ctx.put( DATABASE_API, dependencyResolver.resolveDependency( GraphDatabaseAPI.class ) );
-        return ctx;
+        return buildContext()
+                .withSecurityContext( securityContext )
+                .withResolver( dependencyResolver )
+                .context();
     }
 }

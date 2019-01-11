@@ -90,6 +90,7 @@ import static org.neo4j.helpers.collection.Iterators.filter;
 import static org.neo4j.helpers.collection.Iterators.iterator;
 import static org.neo4j.helpers.collection.Iterators.singleOrNull;
 import static org.neo4j.internal.kernel.api.schema.SchemaDescriptorPredicates.hasProperty;
+import static org.neo4j.kernel.api.proc.BasicContext.buildContext;
 import static org.neo4j.register.Registers.newDoubleLongRegister;
 import static org.neo4j.storageengine.api.txstate.TxStateVisitor.EMPTY;
 
@@ -1105,19 +1106,14 @@ public class AllStoreHolder extends Read
         }
     }
 
-    private BasicContext prepareContext( SecurityContext securityContext )
+    private Context prepareContext( SecurityContext securityContext )
     {
-        BasicContext ctx = new BasicContext();
-        ctx.put( Context.KERNEL_TRANSACTION, ktx );
-        ctx.put( Context.DATABASE_API, databaseDependencies.resolveDependency( GraphDatabaseAPI.class ) );
-        ctx.put( Context.DEPENDENCY_RESOLVER, databaseDependencies );
-        ctx.put( Context.THREAD, Thread.currentThread() );
         ClockContext clocks = ktx.clocks();
-        ctx.put( Context.SYSTEM_CLOCK, clocks.systemClock() );
-        ctx.put( Context.STATEMENT_CLOCK, clocks.statementClock() );
-        ctx.put( Context.TRANSACTION_CLOCK, clocks.transactionClock() );
-        ctx.put( Context.SECURITY_CONTEXT, securityContext );
-        return ctx;
+        return buildContext()
+                .withKernelTransaction( ktx )
+                .withThread( Thread.currentThread() )
+                .withSecurityContext( securityContext )
+                .context();
     }
 
     private static void assertValidIndex( IndexReference index ) throws IndexNotFoundKernelException

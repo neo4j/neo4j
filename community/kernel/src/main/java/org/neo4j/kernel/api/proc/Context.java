@@ -37,14 +37,23 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
  */
 public interface Context
 {
-    Key<DependencyResolver> DEPENDENCY_RESOLVER = Key.key( "DependencyResolver", DependencyResolver.class );
-    Key<GraphDatabaseAPI> DATABASE_API = Key.key( "DatabaseAPI", GraphDatabaseAPI.class );
-    Key<KernelTransaction> KERNEL_TRANSACTION = Key.key( "KernelTransaction", KernelTransaction.class );
-    Key<SecurityContext> SECURITY_CONTEXT = Key.key( "SecurityContext", SecurityContext.class );
-    Key<Thread> THREAD = Key.key( "Thread", Thread.class );
-    Key<Clock> SYSTEM_CLOCK = Key.key( "SystemClock", Clock.class );
-    Key<Clock> STATEMENT_CLOCK = Key.key( "StatementClock", Clock.class );
-    Key<Clock> TRANSACTION_CLOCK = Key.key( "TransactionClock", Clock.class );
+    String DEPENDENCY_RESOLVER_NAME = "DependencyResolver";
+    String DATABASE_API_NAME = "DatabaseAPI";
+    String KERNEL_TRANSACTION_NAME = "KernelTransaction";
+    String SECURITY_CONTEXT_NAME = "SecurityContext";
+    String THREAD_NAME = "Thread";
+    String SYSTEM_CLOCK_NAME = "SystemClock";
+    String STATEMENT_CLOCK_NAME = "StatementClock";
+    String TRANSACTION_CLOCK_NAME = "TransactionClock";
+
+    Key<DependencyResolver> DEPENDENCY_RESOLVER = Key.key( DEPENDENCY_RESOLVER_NAME, DependencyResolver.class );
+    Key<GraphDatabaseAPI> DATABASE_API = Key.key( DATABASE_API_NAME, GraphDatabaseAPI.class );
+    Key<KernelTransaction> KERNEL_TRANSACTION = Key.key( KERNEL_TRANSACTION_NAME, KernelTransaction.class );
+    Key<SecurityContext> SECURITY_CONTEXT = Key.key( SECURITY_CONTEXT_NAME, SecurityContext.class );
+    Key<Thread> THREAD = Key.key( THREAD_NAME, Thread.class );
+    Key<Clock> SYSTEM_CLOCK = Key.key( SYSTEM_CLOCK_NAME, Clock.class );
+    Key<Clock> STATEMENT_CLOCK = Key.key( STATEMENT_CLOCK_NAME, Clock.class );
+    Key<Clock> TRANSACTION_CLOCK = Key.key( TRANSACTION_CLOCK_NAME, Clock.class );
 
     <T> T get( Key<T> key ) throws ProcedureException;
     <T> T getOrElse( Key<T> key, T orElse );

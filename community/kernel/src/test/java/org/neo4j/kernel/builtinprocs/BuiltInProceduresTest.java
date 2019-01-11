@@ -54,6 +54,7 @@ import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.StubResourceManager;
 import org.neo4j.kernel.api.index.IndexProviderDescriptor;
 import org.neo4j.kernel.api.proc.BasicContext;
+import org.neo4j.kernel.api.proc.Context;
 import org.neo4j.kernel.api.proc.Key;
 import org.neo4j.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constraints.ConstraintDescriptorFactory;
@@ -82,6 +83,7 @@ import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTNode;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTPath;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTRelationship;
 import static org.neo4j.kernel.api.index.IndexProvider.EMPTY;
+import static org.neo4j.kernel.api.proc.BasicContext.buildContext;
 import static org.neo4j.kernel.api.proc.Context.KERNEL_TRANSACTION;
 import static org.neo4j.kernel.api.proc.Context.SECURITY_CONTEXT;
 import static org.neo4j.kernel.api.proc.Key.key;
@@ -91,7 +93,6 @@ public class BuiltInProceduresTest
 {
     private static final Key<DependencyResolver> DEPENDENCY_RESOLVER = key( "DependencyResolver", DependencyResolver.class );
     private static final Key<GraphDatabaseAPI> GRAPHDATABASEAPI = key( "GraphDatabaseAPI", GraphDatabaseAPI.class );
-    private static final Key<Log> LOG = key( "Log", Log.class );
 
     private final List<IndexReference> indexes = new LinkedList<>();
     private final List<IndexReference> uniqueIndexes = new LinkedList<>();
@@ -108,7 +109,6 @@ public class BuiltInProceduresTest
     private final DependencyResolver resolver = mock( DependencyResolver.class );
     private final GraphDatabaseAPI graphDatabaseAPI = mock( GraphDatabaseAPI.class );
     private final IndexingService indexingService = mock( IndexingService.class );
-    private final Log log = mock( Log.class );
 
     private final Procedures procs = new Procedures();
     private final ResourceTracker resourceTracker = new StubResourceManager();
@@ -121,7 +121,6 @@ public class BuiltInProceduresTest
         procs.registerComponent( GraphDatabaseAPI.class, ctx -> ctx.get( GRAPHDATABASEAPI ), false );
         procs.registerComponent( SecurityContext.class, ctx -> ctx.get( SECURITY_CONTEXT ), true );
 
-        procs.registerComponent( Log.class, ctx -> ctx.get( LOG), false );
         procs.registerType( Node.class, NTNode );
         procs.registerType( Relationship.class, NTRelationship );
         procs.registerType( Path.class, NTPath );
@@ -525,12 +524,12 @@ public class BuiltInProceduresTest
 
     private List<Object[]> call( String name, Object... args ) throws ProcedureException, IndexNotFoundKernelException
     {
-        BasicContext ctx = new BasicContext();
-        ctx.put( KERNEL_TRANSACTION, tx );
-        ctx.put( DEPENDENCY_RESOLVER, resolver );
-        ctx.put( GRAPHDATABASEAPI, graphDatabaseAPI );
-        ctx.put( SECURITY_CONTEXT, SecurityContext.AUTH_DISABLED );
-        ctx.put( LOG, log );
+        Context ctx =
+                buildContext()
+                        .withResolver( resolver )
+                        .withKernelTransaction( tx )
+                        .context();
+
         when( graphDatabaseAPI.getDependencyResolver() ).thenReturn( resolver );
         when( resolver.resolveDependency( Procedures.class ) ).thenReturn( procs );
         when( resolver.resolveDependency( IndexingService.class ) ).thenReturn( indexingService );

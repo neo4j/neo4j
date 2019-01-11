@@ -30,11 +30,9 @@ import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.Neo4jTypes;
 import org.neo4j.internal.kernel.api.procs.UserAggregator;
 import org.neo4j.internal.kernel.api.procs.UserFunctionSignature;
-import org.neo4j.kernel.api.proc.BasicContext;
 import org.neo4j.kernel.api.proc.CallableUserAggregationFunction;
 import org.neo4j.kernel.api.proc.CallableUserFunction;
 import org.neo4j.kernel.api.proc.Context;
-import org.neo4j.kernel.api.proc.Key;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.Values;
 
@@ -43,7 +41,7 @@ import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.internal.kernel.api.procs.UserFunctionSignature.functionSignature;
-import static org.neo4j.kernel.api.proc.Key.key;
+import static org.neo4j.kernel.api.proc.BasicContext.buildContext;
 import static org.neo4j.values.storable.Values.numberValue;
 
 public class UserFunctionsTest
@@ -107,7 +105,7 @@ public class UserFunctionsTest
         procs.register( function );
 
         // When
-        Object result = procs.callFunction( new BasicContext(), signature.name(), new AnyValue[] {numberValue( 1337 )} );
+        Object result = procs.callFunction( buildContext().context(), signature.name(), new AnyValue[] {numberValue( 1337 )} );
 
         // Then
         assertThat( result , equalTo( Values.of(1337) ) );
@@ -123,7 +121,7 @@ public class UserFunctionsTest
                                  "function name correctly and that the function is properly deployed." );
 
         // When
-        procs.callFunction( new BasicContext(), signature.name(), new AnyValue[] {numberValue( 1337 )} );
+        procs.callFunction( buildContext().context(), signature.name(), new AnyValue[] {numberValue( 1337 )} );
     }
 
     @Test
@@ -151,25 +149,24 @@ public class UserFunctionsTest
     public void shouldMakeContextAvailable() throws Throwable
     {
         // Given
-        Key<String> someKey = key("someKey", String.class);
-
         procs.register( new CallableUserFunction.BasicUserFunction( signature )
         {
             @Override
             public AnyValue apply( Context ctx, AnyValue[] input ) throws ProcedureException
             {
-                return Values.stringValue( ctx.get( someKey ) );
+                return Values.stringValue( ctx.get( Context.THREAD ).getName() );
             }
         } );
 
-        BasicContext ctx = new BasicContext();
-        ctx.put( someKey, "hello, world" );
+        Context ctx = buildContext()
+                .withThread( Thread.currentThread() )
+                .context();
 
         // When
         Object result = procs.callFunction( ctx, signature.name(), new AnyValue[0] );
 
         // Then
-        assertThat( result, equalTo(Values.of("hello, world") ) );
+        assertThat( result, equalTo( Values.stringValue( Thread.currentThread().getName()) ) );
     }
 
     private CallableUserFunction function( UserFunctionSignature signature )

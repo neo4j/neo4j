@@ -61,6 +61,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.procedure_whitelist;
 import static org.neo4j.helpers.collection.Iterators.asList;
 import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureSignature;
+import static org.neo4j.kernel.api.proc.BasicContext.buildContext;
 
 @SuppressWarnings( "WeakerAccess" )
 public class ReflectiveProcedureTest
@@ -90,7 +91,7 @@ public class ReflectiveProcedureTest
                 procedureCompiler.compileProcedure( LoggingProcedure.class, null, true ).get( 0 );
 
         // When
-        procedure.apply( new BasicContext(), new Object[0], resourceTracker );
+        procedure.apply( buildContext().context(), new Object[0], resourceTracker );
 
         // Then
         verify( log ).debug( "1" );
@@ -120,7 +121,7 @@ public class ReflectiveProcedureTest
         CallableProcedure proc = compile( SingleReadOnlyProcedure.class ).get( 0 );
 
         // When
-        RawIterator<Object[],ProcedureException> out = proc.apply( new BasicContext(), new Object[0], resourceTracker );
+        RawIterator<Object[],ProcedureException> out = proc.apply( buildContext().context(), new Object[0], resourceTracker );
 
         // Then
         assertThat( asList( out ), contains(
@@ -148,8 +149,8 @@ public class ReflectiveProcedureTest
         CallableProcedure coolPeople = compiled.get( 1 );
 
         // When
-        RawIterator<Object[],ProcedureException> coolOut = coolPeople.apply( new BasicContext(), new Object[0], resourceTracker );
-        RawIterator<Object[],ProcedureException> bananaOut = bananaPeople.apply( new BasicContext(), new Object[0], resourceTracker );
+        RawIterator<Object[],ProcedureException> coolOut = coolPeople.apply( buildContext().context(), new Object[0], resourceTracker );
+        RawIterator<Object[],ProcedureException> bananaOut = bananaPeople.apply( buildContext().context(), new Object[0], resourceTracker );
 
         // Then
         assertThat( asList( coolOut ), contains(
@@ -275,7 +276,7 @@ public class ReflectiveProcedureTest
                                  "Caused by: java.lang.IndexOutOfBoundsException" );
 
         // When
-        proc.apply( new BasicContext(), new Object[0], resourceTracker );
+        proc.apply( buildContext().context(), new Object[0], resourceTracker );
     }
 
     @Test
@@ -319,7 +320,7 @@ public class ReflectiveProcedureTest
 
         // When
         RawIterator<Object[],ProcedureException> stream =
-                proc.apply( new BasicContext(), new Object[0], resourceTracker );
+                proc.apply( buildContext().context(), new Object[0], resourceTracker );
         if ( stream.hasNext() )
         {
             stream.next();
@@ -344,7 +345,7 @@ public class ReflectiveProcedureTest
         for ( CallableProcedure proc : procs )
         {
             String name = proc.signature().name().name();
-            proc.apply( new BasicContext(), new Object[0], resourceTracker );
+            proc.apply( buildContext().context(), new Object[0], resourceTracker );
             switch ( name )
             {
             case "newProc":
@@ -376,7 +377,7 @@ public class ReflectiveProcedureTest
         CallableProcedure proc =
                 procedureCompiler.compileProcedure( SingleReadOnlyProcedure.class, null, false ).get( 0 );
         // When
-        RawIterator<Object[],ProcedureException> result = proc.apply( new BasicContext(), new Object[0], resourceTracker );
+        RawIterator<Object[],ProcedureException> result = proc.apply( buildContext().context(), new Object[0], resourceTracker );
 
         // Then
         assertEquals( result.next()[0], "Bonnie" );
@@ -415,7 +416,7 @@ public class ReflectiveProcedureTest
         CallableProcedure proc =
                 procedureCompiler.compileProcedure( SingleReadOnlyProcedure.class, null, true ).get( 0 );
         // Then
-        RawIterator<Object[],ProcedureException> result = proc.apply( new BasicContext(), new Object[0], resourceTracker );
+        RawIterator<Object[],ProcedureException> result = proc.apply( buildContext().context(), new Object[0], resourceTracker );
         assertEquals( result.next()[0], "Bonnie" );
     }
 

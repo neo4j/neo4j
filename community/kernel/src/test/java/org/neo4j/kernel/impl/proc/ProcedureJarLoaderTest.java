@@ -64,6 +64,7 @@ import static org.neo4j.graphdb.factory.GraphDatabaseSettings.procedure_unrestri
 import static org.neo4j.helpers.collection.Iterators.asList;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTInteger;
 import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureSignature;
+import static org.neo4j.kernel.api.proc.BasicContext.buildContext;
 
 
 @SuppressWarnings( "WeakerAccess" )
@@ -94,7 +95,7 @@ public class ProcedureJarLoaderTest
         assertThat( signatures, contains(
                 procedureSignature( "org","neo4j", "kernel", "impl", "proc", "myProcedure" ).out( "someNumber", NTInteger ).build() ));
 
-        assertThat( asList( procedures.get( 0 ).apply( new BasicContext(), new Object[0], resourceTracker ) ),
+        assertThat( asList( procedures.get( 0 ).apply( buildContext().context(), new Object[0], resourceTracker ) ),
                 contains( IsEqual.equalTo( new Object[]{1337L} )) );
     }
 
@@ -113,7 +114,7 @@ public class ProcedureJarLoaderTest
         assertThat( signatures,
                 contains( procedureSignature( "org", "neo4j", "kernel", "impl", "proc", "myProcedure" ).out( "someNumber", NTInteger ).build() ) );
 
-        assertThat( asList( procedures.get( 0 ).apply( new BasicContext(), new Object[0], resourceTracker ) ),
+        assertThat( asList( procedures.get( 0 ).apply( buildContext().context(), new Object[0], resourceTracker ) ),
                 contains( IsEqual.equalTo( new Object[]{1337L} ) ) );
     }
 
@@ -134,7 +135,7 @@ public class ProcedureJarLoaderTest
                         .out( "someNumber", NTInteger )
                         .build() ));
 
-        assertThat( asList(procedures.get( 0 ).apply( new BasicContext(), new Object[]{42L}, resourceTracker ) ),
+        assertThat( asList(procedures.get( 0 ).apply( buildContext().context(), new Object[]{42L}, resourceTracker ) ),
                 contains( IsEqual.equalTo( new Object[]{42L} )) );
     }
 

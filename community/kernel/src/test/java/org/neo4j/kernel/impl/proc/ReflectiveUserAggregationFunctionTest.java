@@ -60,6 +60,7 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.neo4j.internal.kernel.api.procs.UserFunctionSignature.functionSignature;
+import static org.neo4j.kernel.api.proc.BasicContext.buildContext;
 
 public class ReflectiveUserAggregationFunctionTest
 {
@@ -99,7 +100,7 @@ public class ReflectiveUserAggregationFunctionTest
         CallableUserAggregationFunction func = compile( SingleAggregationFunction.class ).get( 0 );
 
         // When
-        UserAggregator aggregator = func.create( new BasicContext() );
+        UserAggregator aggregator = func.create( buildContext().context() );
 
         aggregator.update( new Object[]{"Harry"} );
         aggregator.update( new Object[]{"Bonnie"} );
@@ -120,7 +121,7 @@ public class ReflectiveUserAggregationFunctionTest
                 function = procedureCompiler.compileAggregationFunction( LoggingFunction.class ).get( 0 );
 
         // When
-        UserAggregator aggregator = function.create( new BasicContext() );
+        UserAggregator aggregator = function.create( buildContext().context() );
         aggregator.update( new Object[]{} );
         aggregator.result();
 
@@ -150,10 +151,10 @@ public class ReflectiveUserAggregationFunctionTest
         CallableUserAggregationFunction f2 = compiled.get( 1 );
 
         // When
-        UserAggregator f1Aggregator = f1.create( new BasicContext() );
+        UserAggregator f1Aggregator = f1.create( buildContext().context() );
         f1Aggregator.update( new Object[]{"Bonnie"} );
         f1Aggregator.update( new Object[]{"Clyde"} );
-        UserAggregator f2Aggregator = f2.create( new BasicContext() );
+        UserAggregator f2Aggregator = f2.create( buildContext().context() );
         f2Aggregator.update( new Object[]{"Bonnie", 1337L} );
         f2Aggregator.update( new Object[]{"Bonnie", 42L} );
 
@@ -344,7 +345,7 @@ public class ReflectiveUserAggregationFunctionTest
                                  "Caused by: java.lang.IndexOutOfBoundsException" );
 
         // When
-        method.create( new BasicContext()).update( new Object[] {});
+        method.create( buildContext().context()).update( new Object[] {});
     }
 
     @Test
@@ -358,7 +359,7 @@ public class ReflectiveUserAggregationFunctionTest
         CallableUserAggregationFunction method = compile( SingleAggregationFunction.class ).get( 0 );
 
         // Expect
-        UserAggregator created = method.create( new BasicContext() );
+        UserAggregator created = method.create( buildContext().context() );
         created.update( new Object[]{"Bonnie"} );
         assertThat(created.result(), equalTo( Collections.singletonList( "Bonnie" ) ) );
     }
@@ -406,7 +407,7 @@ public class ReflectiveUserAggregationFunctionTest
         for ( CallableUserAggregationFunction func : funcs )
         {
             String name = func.signature().name().name();
-            func.create( new BasicContext());
+            func.create(buildContext().context());
             switch ( name )
             {
             case "newFunc":

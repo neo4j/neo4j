@@ -56,6 +56,7 @@ import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.hamcrest.MockitoHamcrest.argThat;
+import static org.neo4j.kernel.api.proc.BasicContext.buildContext;
 
 @SuppressWarnings( "WeakerAccess" )
 public class ResourceInjectionTest
@@ -99,7 +100,7 @@ public class ResourceInjectionTest
                 compiler.compileProcedure( ProcedureWithInjectedAPI.class, null, true ).get( 0 );
 
         // Then
-        List<Object[]> out = Iterators.asList( proc.apply( new BasicContext(), new Object[0], resourceTracker ) );
+        List<Object[]> out = Iterators.asList( proc.apply( buildContext().context(), new Object[0], resourceTracker ) );
 
         // Then
         assertThat( out.get( 0 ), equalTo( new Object[]{"Bonnie"} ) );
@@ -127,7 +128,7 @@ public class ResourceInjectionTest
                 compiler.compileProcedure( ProcedureWithUnsafeAPI.class, null, true ).get( 0 );
 
         // Then
-        List<Object[]> out = Iterators.asList( proc.apply( new BasicContext(), new Object[0], resourceTracker ) );
+        List<Object[]> out = Iterators.asList( proc.apply( buildContext().context(), new Object[0], resourceTracker ) );
 
         // Then
         assertThat( out.get( 0 ), equalTo( new Object[]{"Morpheus"} ) );
@@ -147,7 +148,7 @@ public class ResourceInjectionTest
         assertThat( procList.size(), equalTo( 1 ) );
         try
         {
-            procList.get( 0 ).apply( new BasicContext(), new Object[0], resourceTracker );
+            procList.get( 0 ).apply( buildContext().context(), new Object[0], resourceTracker );
             fail();
         }
         catch ( ProcedureException e )
@@ -164,7 +165,7 @@ public class ResourceInjectionTest
                 compiler.compileFunction( FunctionWithInjectedAPI.class).get( 0 );
 
         // When
-        Object out = proc.apply( new BasicContext(), new AnyValue[0] );
+        Object out = proc.apply( buildContext().context(), new AnyValue[0] );
 
         // Then
         assertThat( out, equalTo( Values.of("[Bonnie, Clyde]") ) );
@@ -194,7 +195,7 @@ public class ResourceInjectionTest
         assertThat( procList.size(), equalTo( 1 ) );
         try
         {
-            procList.get( 0 ).apply( new BasicContext(), new AnyValue[0] );
+            procList.get( 0 ).apply( buildContext().context(), new AnyValue[0] );
             fail();
         }
         catch ( ProcedureException e )
@@ -210,8 +211,8 @@ public class ResourceInjectionTest
         CallableUserAggregationFunction proc =
                 compiler.compileAggregationFunction( AggregationFunctionWithInjectedAPI.class).get( 0 );
         // When
-        proc.create( new BasicContext() ).update( new Object[]{} );
-        Object out = proc.create( new BasicContext() ).result();
+        proc.create( buildContext().context() ).update( new Object[]{} );
+        Object out = proc.create( buildContext().context() ).result();
 
         // Then
         assertThat( out, equalTo( "[Bonnie, Clyde]" ) );
@@ -241,8 +242,8 @@ public class ResourceInjectionTest
         assertThat( procList.size(), equalTo( 1 ) );
         try
         {
-            procList.get(0).create( new BasicContext() ).update( new Object[]{} );
-            Object out = procList.get(0).create( new BasicContext() ).result();
+            procList.get(0).create( buildContext().context() ).update( new Object[]{} );
+            Object out = procList.get(0).create( buildContext().context() ).result();
             fail();
         }
         catch ( ProcedureException e )

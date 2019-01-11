@@ -46,6 +46,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.helpers.collection.Iterators.asList;
 import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureSignature;
+import static org.neo4j.kernel.api.proc.BasicContext.buildContext;
 
 public class ReflectiveProcedureWithArgumentsTest
 {
@@ -77,7 +78,7 @@ public class ReflectiveProcedureWithArgumentsTest
         CallableProcedure procedure = compile( ClassWithProcedureWithSimpleArgs.class ).get( 0 );
 
         // When
-        RawIterator<Object[],ProcedureException> out = procedure.apply( new BasicContext(), new Object[]{"Pontus", 35L}, resourceTracker );
+        RawIterator<Object[],ProcedureException> out = procedure.apply( buildContext().context(), new Object[]{"Pontus", 35L}, resourceTracker );
 
         // Then
         List<Object[]> collect = asList( out );
@@ -91,7 +92,7 @@ public class ReflectiveProcedureWithArgumentsTest
         CallableProcedure procedure = compile( ClassWithProcedureWithGenericArgs.class ).get( 0 );
 
         // When
-        RawIterator<Object[],ProcedureException> out = procedure.apply( new BasicContext(), new Object[]{
+        RawIterator<Object[],ProcedureException> out = procedure.apply( buildContext().context(), new Object[]{
                 Arrays.asList( "Roland", "Eddie", "Susan", "Jake" ),
                 Arrays.asList( 1000L, 23L, 29L, 12L )}, resourceTracker );
 

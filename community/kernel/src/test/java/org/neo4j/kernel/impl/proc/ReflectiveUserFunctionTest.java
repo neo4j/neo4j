@@ -57,6 +57,7 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.neo4j.internal.kernel.api.procs.UserFunctionSignature.functionSignature;
+import static org.neo4j.kernel.api.proc.BasicContext.buildContext;
 
 public class ReflectiveUserFunctionTest
 {
@@ -83,7 +84,7 @@ public class ReflectiveUserFunctionTest
         CallableUserFunction function = procedureCompiler.compileFunction( LoggingFunction.class ).get( 0 );
 
         // When
-        function.apply( new BasicContext(), new AnyValue[0] );
+        function.apply( buildContext().context(), new AnyValue[0] );
 
         // Then
         verify( log ).debug( "1" );
@@ -113,7 +114,7 @@ public class ReflectiveUserFunctionTest
         CallableUserFunction func = compile( SingleReadOnlyFunction.class ).get( 0 );
 
         // When
-        Object out = func.apply( new BasicContext(), new AnyValue[0] );
+        Object out = func.apply( buildContext().context(), new AnyValue[0] );
 
         // Then
         assertThat(out, equalTo( ValueUtils.of( Arrays.asList("Bonnie", "Clyde") ) ) );
@@ -138,8 +139,8 @@ public class ReflectiveUserFunctionTest
         CallableUserFunction coolPeople = compiled.get( 1 );
 
         // When
-        Object coolOut = coolPeople.apply( new BasicContext(), new AnyValue[0] );
-        Object bananaOut = bananaPeople.apply( new BasicContext(), new AnyValue[0] );
+        Object coolOut = coolPeople.apply( buildContext().context(), new AnyValue[0] );
+        Object bananaOut = bananaPeople.apply( buildContext().context(), new AnyValue[0] );
 
         // Then
         assertThat( coolOut , equalTo(ValueUtils.of( Arrays.asList("Bonnie", "Clyde") ) ) );
@@ -249,7 +250,7 @@ public class ReflectiveUserFunctionTest
                                  "Caused by: java.lang.IndexOutOfBoundsException" );
 
         // When
-        proc.apply( new BasicContext(), new AnyValue[0] );
+        proc.apply( buildContext().context(), new AnyValue[0] );
     }
 
     @Test
@@ -263,7 +264,7 @@ public class ReflectiveUserFunctionTest
         CallableUserFunction method = compile( SingleReadOnlyFunction.class ).get( 0 );
 
         // Expect
-        Object out = method.apply( new BasicContext(), new AnyValue[0] );
+        Object out = method.apply( buildContext().context(), new AnyValue[0] );
         assertThat(out, equalTo( ValueUtils.of( Arrays.asList("Bonnie", "Clyde") ) ) );
     }
 
@@ -310,7 +311,7 @@ public class ReflectiveUserFunctionTest
         for ( CallableUserFunction func : funcs )
         {
             String name = func.signature().name().name();
-            func.apply( new BasicContext(), new AnyValue[0] );
+            func.apply( buildContext().context(), new AnyValue[0] );
             switch ( name )
             {
             case "newFunc":
