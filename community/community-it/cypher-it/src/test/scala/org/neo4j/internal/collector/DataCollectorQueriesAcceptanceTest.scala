@@ -443,12 +443,16 @@ class DataCollectorQueriesAcceptanceTest extends ExecutionEngineFunSuite {
           val executionTimes = invocations.map(inv => inv("elapsedExecutionTimeInUs").asInstanceOf[Long])
 
           beMapContaining(
-            "compileTimeInUsMin" -> compileTimes.min,
-            "compileTimeInUsMax" -> compileTimes.max,
-            "compileTimeInUsAvg" -> (compileTimes.sum / compileTimes.size),
-            "executionTimeInUsMin" -> executionTimes.min,
-            "executionTimeInUsMax" -> executionTimes.max,
-            "executionTimeInUsAvg" -> (executionTimes.sum / executionTimes.size),
+            "compileTimeInUs" -> beMapContaining(
+              "min" -> compileTimes.min,
+              "max" -> compileTimes.max,
+              "avg" -> (compileTimes.sum / compileTimes.size)
+            ),
+            "executionTimeInUs" -> beMapContaining(
+              "min" -> executionTimes.min,
+              "max" -> executionTimes.max,
+              "avg" -> (executionTimes.sum / executionTimes.size)
+            ),
             "invocationCount" -> invocations.size
           ).apply(m("invocationSummary"))
 

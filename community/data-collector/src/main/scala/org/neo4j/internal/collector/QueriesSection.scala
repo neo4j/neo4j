@@ -132,12 +132,8 @@ object QueriesSection {
       executionTime.onValue(invocation.elapsedTimeMicros - invocation.compilationTimeMicros)
     }
 
-    result.put("compileTimeInUsMin", Long.box(compileTime.min))
-    result.put("compileTimeInUsMax", Long.box(compileTime.max))
-    result.put("compileTimeInUsAvg", Long.box(compileTime.avg))
-    result.put("executionTimeInUsMin", Long.box(executionTime.min))
-    result.put("executionTimeInUsMax", Long.box(executionTime.max))
-    result.put("executionTimeInUsAvg", Long.box(executionTime.avg))
+    result.put("compileTimeInUs", compileTime.asMap())
+    result.put("executionTimeInUs", executionTime.asMap())
     result.put("invocationCount", Long.box(invocations.size))
     result
   }
@@ -148,20 +144,24 @@ object QueriesSection {
   }
 
   class Stats {
-    private var _min = Long.MaxValue
-    private var _max = Long.MinValue
+    private var min = Long.MaxValue
+    private var max = Long.MinValue
     private var sum = 0L
     private var count = 0L
 
     def onValue(x: Long): Unit = {
-      _min = math.min(x, _min)
-      _max = math.max(x, _max)
+      min = math.min(x, min)
+      max = math.max(x, max)
       sum += x
       count += 1
     }
 
-    def avg: Long = sum / count
-    def min: Long = _min
-    def max: Long = _max
+    def asMap(): util.HashMap[String, AnyRef] = {
+      val data = new util.HashMap[String, AnyRef]()
+      data.put("min", Long.box(min))
+      data.put("max", Long.box(max))
+      data.put("avg", Long.box(sum / count))
+      data
+    }
   }
 }
