@@ -26,11 +26,11 @@ import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.{LeafPlanFromExpression, LeafPlanner, LeafPlansForVariable, LogicalPlanningContext}
 import org.neo4j.cypher.internal.ir.v4_0.{InterestingOrder, ProvidedOrder, QueryGraph}
 import org.neo4j.cypher.internal.planner.v4_0.spi.IndexDescriptor
-import org.neo4j.cypher.internal.v4_0.logical.plans
-import org.neo4j.cypher.internal.v4_0.logical.plans._
 import org.neo4j.cypher.internal.v4_0.ast._
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.v4_0.expressions._
+import org.neo4j.cypher.internal.v4_0.logical.plans
+import org.neo4j.cypher.internal.v4_0.logical.plans._
 import org.neo4j.cypher.internal.v4_0.util.LabelId
 import org.neo4j.cypher.internal.v4_0.util.symbols._
 
@@ -179,8 +179,7 @@ object indexScanLeafPlanner extends LeafPlanner with LeafPlanFromExpression {
     // Index scan is always on just one property
     val getValueBehavior = indexDescriptor.valueCapability(Seq(propertyType)).head
     val indexProperty = plans.IndexedProperty(PropertyKeyToken(property.propertyKey, semanticTable.id(property.propertyKey).head), getValueBehavior)
-    val orderColumnName = s"$variableName.${property.propertyKey.name}"
-    val providedOrder = ResultOrdering.withIndexOrderCapability(interestingOrder, Seq((orderColumnName, propertyType)), indexDescriptor.orderCapability)
+    val providedOrder = ResultOrdering.withIndexOrderCapability(interestingOrder, Seq((variableName, property.propertyKey.name)), Seq(propertyType), indexDescriptor.orderCapability)
 
     val labelToken = LabelToken(labelName, labelId)
     val predicates = Seq(predicate, labelPredicate)

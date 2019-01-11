@@ -58,6 +58,20 @@ object ProvidedOrder {
     override val isAscending: Boolean = false
   }
 
+  // TODO: Remove
+  object Asc {
+    def apply(element: String, property:String): Asc = {
+      Asc(s"$element.$property")
+    }
+  }
+
+  // TODO: Remove
+  object Desc {
+    def apply(element: String, property:String): Desc = {
+      Desc(s"$element.$property")
+    }
+  }
+
   val empty: ProvidedOrder = ProvidedOrder(Seq.empty[Column])
 
   def asc(id: String): ProvidedOrder = empty.asc(id)

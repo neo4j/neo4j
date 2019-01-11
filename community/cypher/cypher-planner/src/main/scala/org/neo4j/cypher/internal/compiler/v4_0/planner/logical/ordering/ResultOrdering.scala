@@ -40,41 +40,44 @@ object ResultOrdering {
     * @return the order that the index guarantees, if possible in accordance with the given required order.
     */
   def withIndexOrderCapability(interestingOrder: InterestingOrder,
-                               properties: Seq[(String, CypherType)],
+                               properties: Seq[(String, String)],
+                               orderTypes: Seq[CypherType],
                                capabilityLookup: Seq[CypherType] => IndexOrderCapability): ProvidedOrder = {
 
     import InterestingOrder._
 
-    def satisfies(properties: Seq[(String, CypherType)], expression: Expression, projections: Map[String, Expression]): Boolean = {
-      val reverseProjected: String = expression match {
-        case Property(v@Variable(varName), propertyKeyName) => s"${projections.getOrElse(varName, v).asCanonicalStringVal}.${propertyKeyName.name}"
-        case Variable(varName) if projections.contains(varName) => projections(varName).asCanonicalStringVal
-        case _ => ""
-      }
+    def findProperty(expression: Expression, projections: Map[String, Expression]): Option[(String, String)] = expression match {
+      case Property(v@Variable(varName), propertyKeyName) => Some(projections.getOrElse(varName, v).asCanonicalStringVal, propertyKeyName.name)
+      case Variable(varName) if projections.contains(varName) => findProperty(projections(varName), projections)
+      case _ => None
+    }
 
-      properties.headOption match {
-        case Some((propertyId, _)) => reverseProjected == propertyId
-        case _ => false
+    def satisfies(properties: Seq[(String, String)], expression: Expression, projections: Map[String, Expression]): Boolean = {
+      findProperty(expression, projections).exists {
+        case (element, property) =>
+          properties.headOption.exists {
+            case (entity, prop) if entity == element && prop == property => true
+            case _ => false
+          }
       }
     }
 
-    val orderTypes: Seq[CypherType] = properties.map(_._2)
     val indexOrderCapability: IndexOrderCapability = capabilityLookup(orderTypes)
 
     val candidates = interestingOrder.requiredOrderCandidate +: interestingOrder.interestingOrderCandidates
     val maybeProvidedOrder = candidates.map(_.headOption).collectFirst {
       case Some(Desc(expression, projection)) if indexOrderCapability.desc && satisfies(properties, expression, projection) =>
-        ProvidedOrder(properties.map {case (name, _) => ProvidedOrder.Desc(name)})
+        ProvidedOrder(properties.map { case (element, property) => ProvidedOrder.Desc(element, property) })
 
       case Some(Asc(expression, projection)) if indexOrderCapability.asc && satisfies(properties, expression, projection) =>
-        ProvidedOrder(properties.map {case (name, _) => ProvidedOrder.Asc(name)})
+        ProvidedOrder(properties.map { case (element, property) => ProvidedOrder.Asc(element, property) })
     }
 
     maybeProvidedOrder.getOrElse {
       if (indexOrderCapability.asc)
-        ProvidedOrder(properties.map { case (name, _) => ProvidedOrder.Asc(name) })
+        ProvidedOrder(properties.map { case (element, property) => ProvidedOrder.Asc(element, property) })
       else if (indexOrderCapability.desc)
-        ProvidedOrder(properties.map { case (name, _) => ProvidedOrder.Desc(name) })
+        ProvidedOrder(properties.map { case (element, property) => ProvidedOrder.Desc(element, property) })
       else ProvidedOrder.empty
     }
   }
