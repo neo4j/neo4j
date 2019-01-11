@@ -117,7 +117,7 @@ public class DataCollectorProcedures
     @Procedure( name = "db.stats.stop", mode = Mode.READ )
     public Stream<ActionResult> stop( @Name( value = "section" ) String section ) throws InvalidArgumentsException
     {
-        CollectorStateMachine.Result result = collectorStateMachine( section ).stop();
+        CollectorStateMachine.Result result = collectorStateMachine( section ).stop( Long.MAX_VALUE );
         return Stream.of( new ActionResult( section, result.success, result.message ) );
     }
 

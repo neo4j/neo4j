@@ -112,6 +112,21 @@ class DataCollectorQueriesAcceptanceTest extends ExecutionEngineFunSuite {
     execute("CALL db.stats.retrieve('QUERIES')").toList should have size 1
   }
 
+  test("should not stop later collection event after initial timeout") {
+    // given
+    execute("CALL db.stats.collect('QUERIES', {durationSeconds: 3})").single
+    execute("MATCH (n) RETURN count(n)")
+    execute("CALL db.stats.stop('QUERIES')").single
+    execute("CALL db.stats.collect('QUERIES')").single
+    Thread.sleep(4000)
+
+    // then
+    execute("CALL db.stats.status()").single should beMapContaining(
+      "status" -> "collecting",
+      "section" -> "QUERIES"
+    )
+  }
+
   test("should retrieve query execution plan and estimated rows") {
     // given
     execute("CREATE (a), (b), (c)")

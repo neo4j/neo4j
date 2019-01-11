@@ -66,6 +66,7 @@ abstract class CollectorStateMachine<DATA>
     }
 
     private State state;
+    private long collectionId;
 
     CollectorStateMachine()
     {
@@ -92,7 +93,8 @@ abstract class CollectorStateMachine<DATA>
         {
         case IDLE:
             state = State.COLLECTING;
-            return doCollect( config );
+            collectionId++;
+            return doCollect( config, collectionId );
         case COLLECTING:
             return success( "Collection is already ongoing." );
         default:
@@ -100,15 +102,19 @@ abstract class CollectorStateMachine<DATA>
         }
     }
 
-    public synchronized Result stop()
+    public synchronized Result stop( long collectionIdToStop )
     {
         switch ( state )
         {
         case IDLE:
             return success( "Collector is idle, no collection ongoing." );
         case COLLECTING:
-            state = State.IDLE;
-            return doStop();
+            if ( this.collectionId <= collectionIdToStop )
+            {
+                state = State.IDLE;
+                return doStop();
+            }
+            return success( String.format( "Collection event %d has already been stopped, a new collection event is ongoing.", collectionIdToStop ) );
         default:
             throw new IllegalStateException( "Unknown state " + state );
         }
@@ -140,7 +146,7 @@ abstract class CollectorStateMachine<DATA>
         }
     }
 
-    abstract Result doCollect( Map<String,Object> config ) throws InvalidArgumentsException;
+    abstract Result doCollect( Map<String,Object> config, long collectionId ) throws InvalidArgumentsException;
     abstract Result doStop();
     abstract Result doClear();
     abstract DATA doGetData();

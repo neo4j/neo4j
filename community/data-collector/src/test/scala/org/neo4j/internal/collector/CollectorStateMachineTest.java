@@ -45,7 +45,7 @@ class CollectorStateMachineTest
 
         // when
         Future<?> collect = executor.submit( stress( n, () -> collect( stateMachine ) ) );
-        Future<?> stop = executor.submit( stress( n, stateMachine::stop ) );
+        Future<?> stop = executor.submit( stress( n, () -> stateMachine.stop( Long.MAX_VALUE ) ) );
         Future<?> clear = executor.submit( stress( n, stateMachine::clear ) );
         Future<?> status = executor.submit( stress( n, stateMachine::status ) );
 
@@ -90,7 +90,7 @@ class CollectorStateMachineTest
         volatile State state = State.IDLE;
 
         @Override
-        Result doCollect( Map<String,Object> config )
+        Result doCollect( Map<String,Object> config, long collectionId )
         {
             assertSame( state, State.IDLE );
             state = State.COLLECTING;

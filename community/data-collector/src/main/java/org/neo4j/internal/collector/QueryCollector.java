@@ -58,10 +58,10 @@ class QueryCollector extends CollectorStateMachine<Iterator<QuerySnapshot>> impl
     // CollectorStateMachine
 
     @Override
-    Result doCollect( Map<String,Object> config ) throws InvalidArgumentsException
+    Result doCollect( Map<String,Object> config, long collectionId ) throws InvalidArgumentsException
     {
         int collectSeconds = QueryCollectorConfig.of( config ).collectSeconds;
-        jobScheduler.schedule( Group.DATA_COLLECTOR, QueryCollector.this::stop, collectSeconds, TimeUnit.SECONDS );
+        jobScheduler.schedule( Group.DATA_COLLECTOR, () -> QueryCollector.this.stop( collectionId ), collectSeconds, TimeUnit.SECONDS );
         isCollecting = true;
         return success( "Collection started." );
     }
