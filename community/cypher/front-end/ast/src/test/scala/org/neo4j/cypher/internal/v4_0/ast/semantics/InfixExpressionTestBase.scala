@@ -39,7 +39,12 @@ abstract class InfixExpressionTestBase(ctr: (Expression, Expression) => Expressi
 
     val expression = ctr(lhs, rhs)
 
-    val state = SemanticExpressionCheck.simple(Seq(lhs, rhs))(SemanticState.clean.withCypher9ComparabilitySemantics(useCypher9ComparisonSemantics)).state
+    val initialState = if (useCypher9ComparisonSemantics)
+      SemanticState.clean.withFeature(SemanticFeature.Cypher9Comparability)
+    else
+      SemanticState.clean
+
+    val state = SemanticExpressionCheck.simple(Seq(lhs, rhs))(initialState).state
     (SemanticExpressionCheck.simple(expression)(state), expression)
   }
 }

@@ -36,7 +36,7 @@ import org.neo4j.cypher.internal.planner.v4_0.spi.PlanningAttributes.{Cardinalit
 import org.neo4j.cypher.internal.planner.v4_0.spi.{CostBasedPlannerName, GraphStatistics, PlanContext, PlanningAttributes}
 import org.neo4j.cypher.internal.v4_0.logical.plans._
 import org.neo4j.cypher.internal.v4_0.ast._
-import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
+import org.neo4j.cypher.internal.v4_0.ast.semantics.{SemanticFeature, SemanticTable}
 import org.neo4j.cypher.internal.v4_0.expressions._
 import org.neo4j.cypher.internal.v4_0.frontend.phases._
 import org.neo4j.cypher.internal.v4_0.parser.CypherParser
@@ -246,7 +246,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
   val pipeLine =
     Parsing andThen
     PreparatoryRewriting(Deprecations.V1) andThen
-    SemanticAnalysis(warn = true) andThen
+    SemanticAnalysis(warn = true, SemanticFeature.Cypher9Comparability) andThen
     AstRewriting(newPlain, literalExtraction = Never) andThen
     RewriteProcedureCalls andThen
     Namespacer andThen

@@ -33,9 +33,8 @@ import org.neo4j.cypher.internal.ir.v4_0.UnionQuery
 import org.neo4j.cypher.internal.planner.v4_0.spi.IDPPlannerName
 import org.neo4j.cypher.internal.planner.v4_0.spi.PlannerNameFor
 import org.neo4j.cypher.internal.v4_0.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.v4_0.frontend.phases.CompilationPhaseTracer
-import org.neo4j.cypher.internal.v4_0.frontend.phases._
-import org.neo4j.cypher.internal.v4_0.rewriting.{Deprecations, RewriterStepSequencer}
+import org.neo4j.cypher.internal.v4_0.frontend.phases.{CompilationPhases => _, _}
+import org.neo4j.cypher.internal.v4_0.rewriting.RewriterStepSequencer
 import org.neo4j.cypher.internal.v4_0.util.InputPosition
 
 case class CypherPlanner[Context <: PlannerContext](monitors: Monitors,
@@ -69,7 +68,7 @@ case class CypherPlanner[Context <: PlannerContext](monitors: Monitors,
     //TODO: these nulls are a short cut
     val context = contextCreation.create(tracer, notificationLogger, planContext = null, rawQueryText, debugOptions,
       offset, monitors, metricsFactory, null, config, updateStrategy, clock, logicalPlanIdGen = null, evaluator = null)
-    CompilationPhases.parsing(sequencer, deprecations = Deprecations.V2).transform(startState, context)
+    CompilationPhases.parsing(sequencer).transform(startState, context)
   }
 
   val prepareForCaching: Transformer[PlannerContext, BaseState, BaseState] =

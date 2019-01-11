@@ -43,7 +43,7 @@ import org.neo4j.cypher.internal.v4_0.logical.plans._
 import org.neo4j.helpers.collection.Visitable
 import org.neo4j.kernel.impl.util.dbstructure.DbStructureVisitor
 import org.neo4j.cypher.internal.v4_0.ast._
-import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
+import org.neo4j.cypher.internal.v4_0.ast.semantics.{SemanticFeature, SemanticTable}
 import org.neo4j.cypher.internal.v4_0.expressions.PatternExpression
 import org.neo4j.cypher.internal.v4_0.frontend.phases._
 import org.neo4j.cypher.internal.v4_0.parser.CypherParser
@@ -164,7 +164,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
     def pipeLine(): Transformer[PlannerContext, BaseState, LogicalPlanState] =
       Parsing andThen
       PreparatoryRewriting(Deprecations.V1) andThen
-      SemanticAnalysis(warn = true) andThen
+      SemanticAnalysis(warn = true, SemanticFeature.Cypher9Comparability) andThen
       AstRewriting(newPlain, literalExtraction = Never) andThen
       RewriteProcedureCalls andThen
       Namespacer andThen
