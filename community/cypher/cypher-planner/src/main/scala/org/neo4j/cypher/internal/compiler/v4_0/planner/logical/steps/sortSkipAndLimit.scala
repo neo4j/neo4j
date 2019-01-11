@@ -37,8 +37,8 @@ object sortSkipAndLimit extends PlanTransformerWithRequiredOrder {
     val plan = PlannerHelper.sortedPlanWithSolved(in, interestingOrder, context)
     query.horizon match {
       case p: QueryProjection =>
-        val shuffle = p.shuffle
-        (shuffle.skip, shuffle.limit) match {
+        val queryPagination = p.queryPagination
+        (queryPagination.skip, queryPagination.limit) match {
           case (skip, limit) =>
             addLimit(limit, addSkip(skip, plan, context), context)
         }

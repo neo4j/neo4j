@@ -89,9 +89,9 @@ object ClauseConverters {
                                           clause: Return): PlannerQueryBuilder = clause match {
     case Return(distinct, ReturnItems(star, items), optOrderBy, skip, limit, _) if !star =>
 
-      val shuffle = QueryShuffle().withSkip(skip).withLimit(limit)
+      val queryPagination = QueryPagination().withSkip(skip).withLimit(limit)
 
-      val projection = asQueryProjection(distinct, items).withShuffle(shuffle)
+      val projection = asQueryProjection(distinct, items).withPagination(queryPagination)
       val returns = items.collect {
         case AliasedReturnItem(_, variable) => variable.name
       }
@@ -113,7 +113,7 @@ object ClauseConverters {
     val (requiredOrderColumns, interestingOrderColumns) = horizon match {
       case RegularQueryProjection(projections, _, _) =>
         (extractColumnsFromHorizon(sortItems, projections), Seq.empty)
-      case AggregatingQueryProjection(groupingExpressions, aggregationExpressions, shuffle, _) =>
+      case AggregatingQueryProjection(groupingExpressions, aggregationExpressions, _, _) =>
         val interestingColumnOrders: Seq[ColumnOrder] =
           if (groupingExpressions.isEmpty && aggregationExpressions.size == 1) {
             // just checked that there is only one key
@@ -124,7 +124,7 @@ object ClauseConverters {
           }
 
         (extractColumnsFromHorizon(sortItems, groupingExpressions), interestingColumnOrders)
-      case DistinctQueryProjection(groupingExpressions, shuffle, _) =>
+      case DistinctQueryProjection(groupingExpressions, _, _) =>
         (extractColumnsFromHorizon(sortItems, groupingExpressions), Seq.empty)
       case _ => (Seq.empty, Seq.empty)
     }
@@ -480,11 +480,11 @@ object ClauseConverters {
       val selections = asSelections(where)
       val returnItems = asReturnItems(builder.currentQueryGraph, projection)
 
-      val shuffle = QueryShuffle().withLimit(limit).withSkip(skip)
+      val queryPagination = QueryPagination().withLimit(limit).withSkip(skip)
 
       val queryProjection =
         asQueryProjection(distinct, returnItems).
-          withShuffle(shuffle).
+          withPagination(queryPagination).
           withSelection(selections)
 
       val requiredOrder = findRequiredOrder(queryProjection, orderBy)

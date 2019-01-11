@@ -49,7 +49,7 @@ class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSuppor
 
     // then
     result should equal(Skip(startPlan, x))
-    context.planningAttributes.solveds.get(result.id).horizon should equal(RegularQueryProjection(Map.empty, QueryShuffle(skip = Some(x))))
+    context.planningAttributes.solveds.get(result.id).horizon should equal(RegularQueryProjection(Map.empty, QueryPagination(skip = Some(x))))
   }
 
   test("should add limit if query graph contains limit") {
@@ -64,7 +64,7 @@ class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSuppor
 
     // then
     result should equal(Limit(startPlan, x, DoNotIncludeTies))
-    context.planningAttributes.solveds.get(result.id).horizon should equal(RegularQueryProjection(Map.empty, QueryShuffle(limit = Some(x))))
+    context.planningAttributes.solveds.get(result.id).horizon should equal(RegularQueryProjection(Map.empty, QueryPagination(limit = Some(x))))
   }
 
   test("should add skip first and then limit if the query graph contains both") {
@@ -79,7 +79,7 @@ class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSuppor
 
     // then
     result should equal(Limit(Skip(startPlan, y), x, DoNotIncludeTies))
-    context.planningAttributes.solveds.get(result.id).horizon should equal(RegularQueryProjection(Map.empty, QueryShuffle(limit = Some(x), skip = Some(y))))
+    context.planningAttributes.solveds.get(result.id).horizon should equal(RegularQueryProjection(Map.empty, QueryPagination(limit = Some(x), skip = Some(y))))
   }
 
   test("should add sort if query graph contains sort items") {
@@ -253,7 +253,7 @@ class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSuppor
       "notSortColumn" -> UnsignedDecimalIntegerLiteral("5")(pos))
     val projection = DistinctQueryProjection(
       groupingKeys = projectionsMap,
-      shuffle = QueryShuffle(skip = None, limit = None)
+      queryPagination = QueryPagination(skip = None, limit = None)
     )
 
     val (query, context, startPlan) = queryGraphWith(
@@ -288,7 +288,7 @@ class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSuppor
     val projection = AggregatingQueryProjection(
       groupingExpressions = grouping,
       aggregationExpressions = aggregating,
-      shuffle = QueryShuffle(skip = None, limit = None)
+      queryPagination = QueryPagination(skip = None, limit = None)
     )
 
     val (query, context, startPlan) = queryGraphWith(
@@ -384,7 +384,7 @@ class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSuppor
   private def regularProjection(skip: Option[Expression] = None, limit: Option[Expression] = None, projectionsMap: Map[String, Expression] = projectionsMap) = {
     val projection = RegularQueryProjection(
       projections = projectionsMap,
-      shuffle = QueryShuffle(skip, limit)
+      queryPagination = QueryPagination(skip, limit)
     )
     projection
   }

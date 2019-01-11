@@ -86,22 +86,21 @@ class PlannerQueryTest extends CypherFunSuite with AstConstructionTestSupport {
     val noLimit = RegularPlannerQuery(horizon = QueryProjection.empty)
     noLimit.preferredStrictness should equal(None)
 
-    val shuffleWithLimit = QueryProjection.empty.withShuffle(QueryShuffle(limit = Some(UnsignedDecimalIntegerLiteral("42")(pos))))
-    val hasLimit = RegularPlannerQuery(horizon = shuffleWithLimit, interestingOrder = InterestingOrder.empty)
+    val paginationWithLimit = QueryProjection.empty.withPagination(QueryPagination(limit = Some(UnsignedDecimalIntegerLiteral("42")(pos))))
+    val hasLimit = RegularPlannerQuery(horizon = paginationWithLimit, interestingOrder = InterestingOrder.empty)
     hasLimit.preferredStrictness should equal(Some(LazyMode))
 
-    val shuffleWithLimitAndSort = QueryProjection.empty.withShuffle(QueryShuffle(limit = Some(UnsignedDecimalIntegerLiteral("42")(pos))))
-    val hasLimitAndSort = RegularPlannerQuery(horizon = shuffleWithLimitAndSort, interestingOrder = mockInterestingOrder)
+    val hasLimitAndSort = RegularPlannerQuery(horizon = paginationWithLimit, interestingOrder = mockInterestingOrder)
     hasLimitAndSort.preferredStrictness should equal(None)
   }
 
   test("should consider planner query tails when computing laziness preference") {
-    val shuffleWithLimit = QueryProjection.empty.withShuffle(QueryShuffle(limit = Some(UnsignedDecimalIntegerLiteral("42")(pos))))
+    val paginationWithLimit = QueryProjection.empty.withPagination(QueryPagination(limit = Some(UnsignedDecimalIntegerLiteral("42")(pos))))
 
     // pq -> pqWithLimit -> pqWithLimitAndSort
 
-    val pqWithLimitAndSort: PlannerQuery = RegularPlannerQuery(horizon = shuffleWithLimit, interestingOrder = mockInterestingOrder)
-    val pqWithLimit = RegularPlannerQuery(horizon = shuffleWithLimit, tail = Some(pqWithLimitAndSort), interestingOrder = InterestingOrder.empty)
+    val pqWithLimitAndSort: PlannerQuery = RegularPlannerQuery(horizon = paginationWithLimit, interestingOrder = mockInterestingOrder)
+    val pqWithLimit = RegularPlannerQuery(horizon = paginationWithLimit, tail = Some(pqWithLimitAndSort), interestingOrder = InterestingOrder.empty)
     val pq = RegularPlannerQuery(tail = Some(pqWithLimit))
 
     pq.preferredStrictness should equal(Some(LazyMode))

@@ -511,7 +511,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
   }
 
   def planSkip(inner: LogicalPlan, count: Expression, context: LogicalPlanningContext): LogicalPlan = {
-    val solved = solveds.get(inner.id).updateTailOrSelf(_.updateQueryProjection(_.updateShuffle(_.withSkipExpression(count))))
+    val solved = solveds.get(inner.id).updateTailOrSelf(_.updateQueryProjection(_.updatePagination(_.withSkipExpression(count))))
     annotate(SkipPlan(inner, count), solved, providedOrders.get(inner.id), context)
   }
 
@@ -540,7 +540,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
   }
 
   def planLimit(inner: LogicalPlan, count: Expression, ties: Ties = DoNotIncludeTies, context: LogicalPlanningContext): LogicalPlan = {
-    val solved = solveds.get(inner.id).updateTailOrSelf(_.updateQueryProjection(_.updateShuffle(_.withLimitExpression(count))))
+    val solved = solveds.get(inner.id).updateTailOrSelf(_.updateQueryProjection(_.updatePagination(_.withLimitExpression(count))))
     annotate(LimitPlan(inner, count, ties), solved, providedOrders.get(inner.id), context)
   }
 

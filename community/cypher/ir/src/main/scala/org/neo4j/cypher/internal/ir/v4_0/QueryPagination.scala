@@ -24,27 +24,27 @@ import org.neo4j.cypher.internal.v4_0.ast.{Limit, Skip, SortItem}
 import org.neo4j.cypher.internal.v4_0.expressions.Expression
 
 // TODO: Consider renaming this class to something more appropriate like QueryPagination
-final case class QueryShuffle(skip: Option[Expression] = None,
-                              limit: Option[Expression] = None) {
+final case class QueryPagination(skip: Option[Expression] = None,
+                                 limit: Option[Expression] = None) {
 
-  def withSkip(skip: Option[Skip]): QueryShuffle = copy(skip = skip.map(_.expression))
-  def withSkipExpression(skip: Expression): QueryShuffle = copy(skip = Some(skip))
-  def withLimit(limit: Option[Limit]): QueryShuffle = copy(limit = limit.map(_.expression))
-  def withLimitExpression(limit: Expression): QueryShuffle = copy(limit = Some(limit))
+  def withSkip(skip: Option[Skip]): QueryPagination = copy(skip = skip.map(_.expression))
+  def withSkipExpression(skip: Expression): QueryPagination = copy(skip = Some(skip))
+  def withLimit(limit: Option[Limit]): QueryPagination = copy(limit = limit.map(_.expression))
+  def withLimitExpression(limit: Expression): QueryPagination = copy(limit = Some(limit))
 
-  def ++(other: QueryShuffle): QueryShuffle =
+  def ++(other: QueryPagination): QueryPagination =
     copy(
       limit = either("LIMIT", limit, other.limit),
       skip = either("SKIP", skip, other.skip)
     )
 
   private def either[T](what: String, a: Option[T], b: Option[T]): Option[T] = (a, b) match {
-    case (Some(_), Some(_)) => throw new InternalException(s"Can't join two query shuffles with different $what")
+    case (Some(_), Some(_)) => throw new InternalException(s"Can't join two query pagination with different $what")
     case (s@Some(_), None)  => s
     case (None, s)          => s
   }
 }
 
-object QueryShuffle {
-  val empty = QueryShuffle()
+object QueryPagination {
+  val empty = QueryPagination()
 }

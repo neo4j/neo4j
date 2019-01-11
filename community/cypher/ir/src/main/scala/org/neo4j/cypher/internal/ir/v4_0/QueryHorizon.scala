@@ -43,41 +43,41 @@ trait QueryHorizon {
 final case class PassthroughAllHorizon() extends QueryHorizon {
   override def exposedSymbols(coveredIds: Set[String]): Set[String] = coveredIds
 
-  override def dependingExpressions = Seq.empty
+  override def dependingExpressions: Seq[Expression] = Seq.empty
 
-  override def preferredStrictness(sorted: Boolean) = None
+  override def preferredStrictness(sorted: Boolean): Option[StrictnessMode] = None
 }
 
 case class UnwindProjection(variable: String, exp: Expression) extends QueryHorizon {
   override def exposedSymbols(coveredIds: Set[String]): Set[String] = coveredIds + variable
 
-  override def dependingExpressions = Seq(exp)
+  override def dependingExpressions: Seq[Expression] = Seq(exp)
 
-  override def preferredStrictness(sorted: Boolean) = None
+  override def preferredStrictness(sorted: Boolean): Option[StrictnessMode] = None
 }
 
 case class LoadCSVProjection(variable: String, url: Expression, format: CSVFormat, fieldTerminator: Option[StringLiteral]) extends QueryHorizon {
   override def exposedSymbols(coveredIds: Set[String]): Set[String] = coveredIds + variable
 
-  override def dependingExpressions = Seq(url)
+  override def dependingExpressions: Seq[Expression] = Seq(url)
 
-  override def preferredStrictness(sorted: Boolean) = None
+  override def preferredStrictness(sorted: Boolean): Option[StrictnessMode] = None
 }
 
 sealed abstract class QueryProjection extends QueryHorizon {
   def selections: Selections
   def projections: Map[String, Expression]
-  def shuffle: QueryShuffle
+  def queryPagination: QueryPagination
   def keySet: Set[String]
   def withSelection(selections: Selections): QueryProjection
   def withAddedProjections(projections: Map[String, Expression]): QueryProjection
-  def withShuffle(shuffle: QueryShuffle): QueryProjection
+  def withPagination(queryPagination: QueryPagination): QueryProjection
 
   override def dependingExpressions: Seq[Expression] = projections.values.toSeq
   override def preferredStrictness(sorted: Boolean): Option[StrictnessMode] =
-    if (shuffle.limit.isDefined && !sorted) Some(LazyMode) else None
+    if (queryPagination.limit.isDefined && !sorted) Some(LazyMode) else None
 
-  def updateShuffle(f: QueryShuffle => QueryShuffle) = withShuffle(f(shuffle))
+  def updatePagination(f: QueryPagination => QueryPagination): QueryProjection = withPagination(f(queryPagination))
 
   def addPredicates(predicates: Expression*): QueryProjection = {
     val newSelections = Selections(predicates.flatMap(_.asPredicates).toSet)
@@ -102,22 +102,22 @@ object QueryProjection {
 }
 
 final case class RegularQueryProjection(projections: Map[String, Expression] = Map.empty,
-                                        shuffle: QueryShuffle = QueryShuffle.empty,
+                                        queryPagination: QueryPagination = QueryPagination.empty,
                                         selections: Selections = Selections()) extends QueryProjection {
   def keySet: Set[String] = projections.keySet
 
   def ++(other: RegularQueryProjection) =
     RegularQueryProjection(
       projections = projections ++ other.projections,
-      shuffle = shuffle ++ other.shuffle,
+      queryPagination = queryPagination ++ other.queryPagination,
       selections = selections ++ other.selections
     )
 
   override def withAddedProjections(projections: Map[String, Expression]): RegularQueryProjection =
     copy(projections = this.projections ++ projections)
 
-  def withShuffle(shuffle: QueryShuffle) =
-    copy(shuffle = shuffle)
+  def withPagination(queryPagination: QueryPagination): RegularQueryProjection =
+    copy(queryPagination = queryPagination)
 
   override def exposedSymbols(coveredIds: Set[String]): Set[String] = projections.keySet
 
@@ -126,7 +126,7 @@ final case class RegularQueryProjection(projections: Map[String, Expression] = M
 
 final case class AggregatingQueryProjection(groupingExpressions: Map[String, Expression] = Map.empty,
                                             aggregationExpressions: Map[String, Expression] = Map.empty,
-                                            shuffle: QueryShuffle = QueryShuffle.empty,
+                                            queryPagination: QueryPagination = QueryPagination.empty,
                                             selections: Selections = Selections()) extends QueryProjection {
 
   assert(
@@ -138,13 +138,13 @@ final case class AggregatingQueryProjection(groupingExpressions: Map[String, Exp
 
   override def keySet: Set[String] = groupingExpressions.keySet ++ aggregationExpressions.keySet
 
-  override def dependingExpressions = super.dependingExpressions ++ aggregationExpressions.values
+  override def dependingExpressions: Seq[Expression] = super.dependingExpressions ++ aggregationExpressions.values
 
   override def withAddedProjections(groupingKeys: Map[String, Expression]): AggregatingQueryProjection =
     copy(groupingExpressions = this.groupingExpressions ++ groupingKeys)
 
-  override def withShuffle(shuffle: QueryShuffle) =
-    copy(shuffle = shuffle)
+  override def withPagination(queryPagination: QueryPagination): AggregatingQueryProjection =
+    copy(queryPagination = queryPagination)
 
   override def exposedSymbols(coveredIds: Set[String]): Set[String] = groupingExpressions
     .keySet ++ aggregationExpressions.keySet
@@ -153,7 +153,7 @@ final case class AggregatingQueryProjection(groupingExpressions: Map[String, Exp
 }
 
 final case class DistinctQueryProjection(groupingKeys: Map[String, Expression] = Map.empty,
-                                         shuffle: QueryShuffle = QueryShuffle.empty,
+                                         queryPagination: QueryPagination = QueryPagination.empty,
                                          selections: Selections = Selections()) extends QueryProjection {
 
   def projections: Map[String, Expression] = groupingKeys
@@ -163,8 +163,8 @@ final case class DistinctQueryProjection(groupingKeys: Map[String, Expression] =
   override def withAddedProjections(groupingKeys: Map[String, Expression]): DistinctQueryProjection =
     copy(groupingKeys = this.groupingKeys ++ groupingKeys)
 
-  override def withShuffle(shuffle: QueryShuffle): DistinctQueryProjection =
-    copy(shuffle = shuffle)
+  override def withPagination(queryPagination: QueryPagination): DistinctQueryProjection =
+    copy(queryPagination = queryPagination)
 
   override def exposedSymbols(coveredIds: Set[String]): Set[String] = groupingKeys.keySet
 
