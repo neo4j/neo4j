@@ -31,6 +31,7 @@ import javax.annotation.Nullable;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Service;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
@@ -43,9 +44,11 @@ import org.neo4j.kernel.impl.store.format.standard.StandardV4_0;
 import org.neo4j.logging.LogProvider;
 
 import static java.util.Arrays.asList;
+import static java.util.Comparator.comparingInt;
 import static org.neo4j.helpers.collection.Iterables.concat;
 import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.STORE_VERSION;
+import static org.neo4j.kernel.impl.store.format.FormatFamily.isSameFamily;
 
 /**
  * Selects record format that will be used in a database.
@@ -261,24 +264,27 @@ public class RecordFormatSelector
         }
         else
         {
-            RecordFormats result = selectForStore( databaseLayout, fs, pageCache, logProvider );
+            final RecordFormats result = selectForStore( databaseLayout, fs, pageCache, logProvider );
             if ( result == null )
             {
                 // format was not explicitly configured and store does not exist, select default format
                 info( logProvider, "Selected format '" + DEFAULT_FORMAT + "' for the new store" );
-                result = DEFAULT_FORMAT;
+                return DEFAULT_FORMAT;
             }
-            else if ( FormatFamily.isHigherFamilyFormat( DEFAULT_FORMAT, result ) ||
-                      (FormatFamily.isSameFamily( result, DEFAULT_FORMAT ) && (result.generation() < DEFAULT_FORMAT.generation())) )
-            {
-                // format was not explicitly configured and store has lower format
-                // select default format, upgrade is intended
-                info( logProvider,
-                        "Selected format '" + DEFAULT_FORMAT + "' for existing store with format '" + result + "'" );
-                result = DEFAULT_FORMAT;
-            }
-            return result;
+            Optional<RecordFormats> newestFormatInFamily = findLatestFormatInFamily( result );
+            RecordFormats newestFormat = newestFormatInFamily.orElse( result );
+            // format was not explicitly configured and store has lower format
+            // select default format, upgrade is intended
+            info( logProvider, "Selected format '" + newestFormat + "' for existing store with format '" + result + "'" );
+            return newestFormat;
         }
+    }
+
+    private static Optional<RecordFormats> findLatestFormatInFamily( RecordFormats result )
+    {
+        return Iterables.stream( allFormats() )
+                .filter( format -> isSameFamily( result, format ) )
+                .max( comparingInt( RecordFormats::generation ) );
     }
 
     /**
@@ -291,7 +297,7 @@ public class RecordFormatSelector
     public static Optional<RecordFormats> findSuccessor( @Nonnull final RecordFormats format )
     {
         return StreamSupport.stream( RecordFormatSelector.allFormats().spliterator(), false )
-                .filter( candidate -> FormatFamily.isSameFamily( format, candidate ) )
+                .filter( candidate -> isSameFamily( format, candidate ) )
                 .filter( candidate -> candidate.generation() > format.generation() )
                 .reduce( ( a, b ) -> a.generation() < b.generation() ? a : b );
     }

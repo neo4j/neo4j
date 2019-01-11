@@ -19,16 +19,18 @@
  */
 package org.neo4j.graphdb.internal;
 
+import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.graphdb.DependencyResolver;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.layout.StoreLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.storemigration.DatabaseMigratorImpl;
+import org.neo4j.kernel.impl.storemigration.LegacyTransactionLogsLocator;
 import org.neo4j.kernel.impl.transaction.log.LogVersionUpgradeChecker;
 import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
@@ -41,6 +43,8 @@ import org.neo4j.kernel.recovery.LogTailScanner;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.migration.DatabaseMigrator;
+
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.fail_on_corrupted_log_files;
 
 public class DatabaseMigratorFactoryImpl implements org.neo4j.storageengine.migration.DatabaseMigratorFactory
 {
@@ -66,10 +70,15 @@ public class DatabaseMigratorFactoryImpl implements org.neo4j.storageengine.migr
         final Monitors monitors = dependencyResolver.resolveDependency( Monitors.class );
         final LogFileCreationMonitor logFileCreationMonitor = monitors.newMonitor( LogFileCreationMonitor.class );
         final LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader = new VersionAwareLogEntryReader<>();
+        final LegacyTransactionLogsLocator logsLocator = new LegacyTransactionLogsLocator( config, databaseLayout.databaseDirectory() );
         final LogFiles logFiles;
         try
         {
-            logFiles = LogFilesBuilder.builder( databaseLayout, fs )
+            // we should not use provided database layout here since transaction log location is different compare to previous versions
+            // and that's why we need to use custom transaction logs locator and database layout
+            DatabaseLayout oldDatabaseLayout = new LegacyDatabaseLayout( databaseLayout.getStoreLayout().storeDirectory(), databaseLayout.getDatabaseName(),
+                    logsLocator );
+            logFiles = LogFilesBuilder.builder( oldDatabaseLayout,fs )
                 .withLogEntryReader( logEntryReader )
                 .withLogFileMonitor( logFileCreationMonitor )
                 .withConfig( config )
@@ -80,9 +89,26 @@ public class DatabaseMigratorFactoryImpl implements org.neo4j.storageengine.migr
             throw new RuntimeException( e );
         }
         final LogTailScanner tailScanner = new LogTailScanner(
-            logFiles, logEntryReader, monitors, config.get( GraphDatabaseSettings.fail_on_corrupted_log_files ) );
+            logFiles, logEntryReader, monitors, config.get( fail_on_corrupted_log_files ) );
         LogVersionUpgradeChecker.check( tailScanner, config );
         return new DatabaseMigratorImpl(
-            fs, config, logService, indexProviderMap, pageCache, tailScanner, jobScheduler, databaseLayout );
+            fs, config, logService, indexProviderMap, pageCache, tailScanner, jobScheduler, databaseLayout, logsLocator );
+    }
+
+    private static class LegacyDatabaseLayout extends DatabaseLayout
+    {
+        private final LegacyTransactionLogsLocator logsLocator;
+
+        LegacyDatabaseLayout( File storeDirectory, String databaseName, LegacyTransactionLogsLocator logsLocator )
+        {
+            super( StoreLayout.of( storeDirectory ), databaseName );
+            this.logsLocator = logsLocator;
+        }
+
+        @Override
+        public File getTransactionLogsDirectory()
+        {
+            return logsLocator.getTransactionLogsDirectory();
+        }
     }
 }

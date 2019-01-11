@@ -76,7 +76,7 @@ public class DatabaseLayout
         return new DatabaseLayout( StoreLayout.of( rootDirectory, config ), databaseName );
     }
 
-    private DatabaseLayout( StoreLayout storeLayout, String databaseName )
+    protected DatabaseLayout( StoreLayout storeLayout, String databaseName )
     {
         this.storeLayout = storeLayout;
         this.databaseDirectory = new File( storeLayout.storeDirectory(), databaseName );

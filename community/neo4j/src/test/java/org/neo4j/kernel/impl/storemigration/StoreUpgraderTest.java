@@ -89,6 +89,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.removeCheckPointFromTxLog;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.verifyFilesHaveSameContent;
+import static org.neo4j.storageengine.migration.StoreMigrationParticipant.NOT_PARTICIPATING;
 
 @RunWith( Parameterized.class )
 public class StoreUpgraderTest
@@ -111,6 +112,7 @@ public class StoreUpgraderTest
     private final RecordFormats formats;
 
     private final Config allowMigrateConfig = Config.defaults( GraphDatabaseSettings.allow_upgrade, Settings.TRUE );
+    private LegacyTransactionLogsLocator legacyTransactionLogsLocator;
 
     public StoreUpgraderTest( RecordFormats formats )
     {
@@ -131,6 +133,7 @@ public class StoreUpgraderTest
         databaseLayout = directory.databaseLayout( "db_" + version );
         File prepareDirectory = directory.directory( "prepare_" + version );
         prepareSampleDatabase( version, fileSystem, databaseLayout, prepareDirectory );
+        legacyTransactionLogsLocator = new LegacyTransactionLogsLocator( allowMigrateConfig, databaseLayout.databaseDirectory() );
     }
 
     @After
@@ -409,12 +412,12 @@ public class StoreUpgraderTest
         SchemaIndexMigrator indexMigrator = new SchemaIndexMigrator( fileSystem, IndexProvider.EMPTY );
 
         StoreUpgrader upgrader = new StoreUpgrader( upgradableDatabase, progressMonitor, config, fileSystem, pageCache,
-                NullLogProvider.getInstance() );
+                NullLogProvider.getInstance(), legacyTransactionLogsLocator );
         upgrader.addParticipant( indexMigrator );
-        upgrader.addParticipant( AbstractStoreMigrationParticipant.NOT_PARTICIPATING );
-        upgrader.addParticipant( AbstractStoreMigrationParticipant.NOT_PARTICIPATING );
-        upgrader.addParticipant( AbstractStoreMigrationParticipant.NOT_PARTICIPATING );
-        upgrader.addParticipant( AbstractStoreMigrationParticipant.NOT_PARTICIPATING );
+        upgrader.addParticipant( NOT_PARTICIPATING );
+        upgrader.addParticipant( NOT_PARTICIPATING );
+        upgrader.addParticipant( NOT_PARTICIPATING );
+        upgrader.addParticipant( NOT_PARTICIPATING );
         upgrader.addParticipant( defaultMigrator );
         return upgrader;
     }

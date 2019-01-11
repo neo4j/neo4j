@@ -44,6 +44,7 @@ import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_4;
+import org.neo4j.kernel.impl.storemigration.LegacyTransactionLogsLocator;
 import org.neo4j.kernel.impl.storemigration.MigrationTestUtils;
 import org.neo4j.kernel.impl.storemigration.RecordStoreVersionCheck;
 import org.neo4j.kernel.impl.storemigration.SchemaIndexMigrator;
@@ -98,6 +99,7 @@ public class StoreUpgraderInterruptionTestIT
     private JobScheduler jobScheduler;
     private DatabaseLayout workingDatabaseLayout;
     private File prepareDirectory;
+    private LegacyTransactionLogsLocator legacyTransactionLogsLocator;
 
     @Before
     public void setUpLabelScanStore()
@@ -105,7 +107,7 @@ public class StoreUpgraderInterruptionTestIT
         jobScheduler = new ThreadPoolJobScheduler();
         workingDatabaseLayout = directory.databaseLayout();
         prepareDirectory = directory.directory( "prepare" );
-
+        legacyTransactionLogsLocator = new LegacyTransactionLogsLocator( Config.defaults(), workingDatabaseLayout.databaseDirectory() );
     }
 
     @After
@@ -225,7 +227,7 @@ public class StoreUpgraderInterruptionTestIT
         Config allowUpgrade = Config.defaults( GraphDatabaseSettings.allow_upgrade, "true" );
 
         StoreUpgrader upgrader = new StoreUpgrader( upgradableDatabase, progressMonitor, allowUpgrade, fs, pageCache,
-                NullLogProvider.getInstance() );
+                NullLogProvider.getInstance(), legacyTransactionLogsLocator );
         upgrader.addParticipant( indexMigrator );
         upgrader.addParticipant( migrator );
         return upgrader;

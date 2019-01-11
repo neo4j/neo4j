@@ -51,9 +51,10 @@ public class DatabaseMigratorImpl implements DatabaseMigrator
     private final LogTailScanner tailScanner;
     private final JobScheduler jobScheduler;
     private final DatabaseLayout databaseLayout;
+    private final LegacyTransactionLogsLocator legacyLogsLocator;
 
     public DatabaseMigratorImpl( FileSystemAbstraction fs, Config config, LogService logService, IndexProviderMap indexProviderMap, PageCache pageCache,
-        LogTailScanner tailScanner, JobScheduler jobScheduler, DatabaseLayout databaseLayout )
+            LogTailScanner tailScanner, JobScheduler jobScheduler, DatabaseLayout databaseLayout, LegacyTransactionLogsLocator legacyLogsLocator )
     {
         this.fs = fs;
         this.config = config;
@@ -63,6 +64,7 @@ public class DatabaseMigratorImpl implements DatabaseMigrator
         this.tailScanner = tailScanner;
         this.jobScheduler = jobScheduler;
         this.databaseLayout = databaseLayout;
+        this.legacyLogsLocator = legacyLogsLocator;
     }
 
     /**
@@ -76,10 +78,10 @@ public class DatabaseMigratorImpl implements DatabaseMigrator
 
         RecordFormats format = RecordFormatSelector.selectNewestFormat( config, databaseLayout, fs, pageCache, logProvider );
         configureRecordFormat( format, config );
-        UpgradableDatabase upgradableDatabase = new UpgradableDatabase( new RecordStoreVersionCheck( pageCache ), format, this.tailScanner );
+        UpgradableDatabase upgradableDatabase = new UpgradableDatabase( new RecordStoreVersionCheck( pageCache ), format, tailScanner );
 
-        StoreUpgrader storeUpgrader = new StoreUpgrader( upgradableDatabase,
-            new VisibleMigrationProgressMonitor( logService.getUserLog( DatabaseMigratorImpl.class ) ), config, fs, pageCache, logProvider );
+        VisibleMigrationProgressMonitor progressMonitor = new VisibleMigrationProgressMonitor( logService.getUserLog( DatabaseMigratorImpl.class ) );
+        StoreUpgrader storeUpgrader = new StoreUpgrader( upgradableDatabase, progressMonitor, config, fs, pageCache, logProvider, legacyLogsLocator );
 
         StoreMigrator storeMigrator = new StoreMigrator( fs, pageCache, config, logService, jobScheduler );
         NativeLabelScanStoreMigrator nativeLabelScanStoreMigrator = new NativeLabelScanStoreMigrator( fs, pageCache, config );

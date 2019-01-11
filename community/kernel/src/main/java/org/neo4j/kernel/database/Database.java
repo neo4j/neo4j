@@ -330,6 +330,9 @@ public class Database extends LifecycleAdapter
             life.add( watcherService );
             databaseDependencies.satisfyDependency( watcherService );
 
+            // Upgrade the store before we begin
+            upgradeStore();
+
             // Check the tail of transaction logs and validate version
             final LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader = new VersionAwareLogEntryReader<>();
 
@@ -344,9 +347,6 @@ public class Database extends LifecycleAdapter
             LogTailScanner tailScanner =
                     new LogTailScanner( logFiles, logEntryReader, databaseMonitors, config.get( GraphDatabaseSettings.fail_on_corrupted_log_files ) );
             LogVersionUpgradeChecker.check( tailScanner, config );
-
-            // Upgrade the store before we begin
-            upgradeStore();
 
             performRecovery( fs, databasePageCache, config, databaseLayout, logProvider, databaseMonitors, extensionFactories,
                     Optional.of( tailScanner ) );

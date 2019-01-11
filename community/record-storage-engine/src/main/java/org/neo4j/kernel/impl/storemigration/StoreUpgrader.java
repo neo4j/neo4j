@@ -26,19 +26,24 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
 
+import org.neo4j.common.ProgressReporter;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
-import org.neo4j.storageengine.migration.MigrationProgressMonitor;
-import org.neo4j.common.ProgressReporter;
+import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.internal.Version;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.storageengine.migration.MigrationProgressMonitor;
 import org.neo4j.storageengine.migration.StoreMigrationParticipant;
 import org.neo4j.storageengine.migration.UpgradeNotAllowedException;
+
+import static org.neo4j.kernel.impl.storemigration.ExistingTargetStrategy.FAIL;
+import static org.neo4j.kernel.impl.storemigration.FileOperation.COPY;
+import static org.neo4j.kernel.impl.storemigration.FileOperation.DELETE;
 
 /**
  * A migration process to migrate {@link StoreMigrationParticipant migration participants}, if there's
@@ -78,9 +83,10 @@ public class StoreUpgrader
     private final PageCache pageCache;
     private final Log log;
     private final LogProvider logProvider;
+    private final LegacyTransactionLogsLocator legacyLogsLocator;
 
     public StoreUpgrader( UpgradableDatabase upgradableDatabase, MigrationProgressMonitor progressMonitor, Config
-            config, FileSystemAbstraction fileSystem, PageCache pageCache, LogProvider logProvider )
+            config, FileSystemAbstraction fileSystem, PageCache pageCache, LogProvider logProvider, LegacyTransactionLogsLocator legacyLogsLocator )
     {
         this.upgradableDatabase = upgradableDatabase;
         this.progressMonitor = progressMonitor;
@@ -88,6 +94,7 @@ public class StoreUpgrader
         this.config = config;
         this.pageCache = pageCache;
         this.logProvider = logProvider;
+        this.legacyLogsLocator = legacyLogsLocator;
         this.log = logProvider.getLog( getClass() );
     }
 
@@ -121,7 +128,7 @@ public class StoreUpgrader
 
         if ( isUpgradeAllowed() )
         {
-            migrateStore( layout, migrationStructure, migrationStateFile );
+            migrate( layout, migrationStructure, migrationStateFile );
         }
         else if ( !RecordFormatSelector.isStoreAndConfigFormatsCompatible( config, layout, fileSystem, pageCache, logProvider ) )
         {
@@ -129,7 +136,7 @@ public class StoreUpgrader
         }
     }
 
-    private void migrateStore( DatabaseLayout dbDirectoryLayout, DatabaseLayout migrationLayout, File migrationStateFile )
+    private void migrate( DatabaseLayout dbDirectoryLayout, DatabaseLayout migrationLayout, File migrationStateFile )
     {
         // One or more participants would like to do migration
         progressMonitor.started( participants.size() );
@@ -155,9 +162,41 @@ public class StoreUpgrader
                     versionToMigrateFrom, upgradableDatabase.currentVersion() );
         }
 
+        migrateTransactionLogs( dbDirectoryLayout, legacyLogsLocator );
+
         cleanup( participants, migrationLayout );
 
         progressMonitor.completed();
+    }
+
+    private void migrateTransactionLogs( DatabaseLayout dbDirectoryLayout, LegacyTransactionLogsLocator transactionLogsLocator )
+    {
+        try
+        {
+            File transactionLogsDirectory = dbDirectoryLayout.getTransactionLogsDirectory();
+            File legacyLogsDirectory = transactionLogsLocator.getTransactionLogsDirectory();
+            if ( transactionLogsDirectory.equals( legacyLogsDirectory ) )
+            {
+                // directories are the same - no need to move log files
+                return;
+            }
+            File[] legacyFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( legacyLogsDirectory, fileSystem ).build().logFiles();
+            if ( legacyFiles != null )
+            {
+                for ( File legacyFile : legacyFiles )
+                {
+                    COPY.perform( fileSystem, legacyFile.getName(), legacyFile.getParentFile(), false, transactionLogsDirectory, FAIL );
+                }
+                for ( File legacyFile : legacyFiles )
+                {
+                    DELETE.perform( fileSystem, legacyFile.getName(), legacyFile.getParentFile(), false, transactionLogsDirectory, FAIL );
+                }
+            }
+        }
+        catch ( IOException ioException )
+        {
+            throw new TransactionLogsRelocationException( "Failure on attempt to move transaction logs into new location.", ioException );
+        }
     }
 
     List<StoreMigrationParticipant> getParticipants()
@@ -258,6 +297,19 @@ public class StoreUpgrader
         catch ( IOException e )
         {
             log.error( "Unable to delete directory: " + dir, e );
+        }
+    }
+
+    public static class TransactionLogsRelocationException extends RuntimeException
+    {
+        public TransactionLogsRelocationException( String message, Throwable cause )
+        {
+            super( message, cause );
+        }
+
+        TransactionLogsRelocationException( String message )
+        {
+            super( message );
         }
     }
 
