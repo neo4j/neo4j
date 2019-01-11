@@ -50,7 +50,8 @@ public class ThresholdBasedPruneStrategy implements LogPruneStrategy
         }
 
         threshold.init();
-        ThresholdEvaluationResult thresholdResult = pruneThresholdReached( upToVersion );
+        long lowestLogVersion = logFiles.getLowestLogVersion();
+        ThresholdEvaluationResult thresholdResult = pruneThresholdReached( upToVersion, lowestLogVersion );
         if ( !thresholdResult.reached() )
         {
             return LongStream.empty();
@@ -68,12 +69,12 @@ public class ThresholdBasedPruneStrategy implements LogPruneStrategy
          * This if statement does nothing more complicated than checking if the next-to-last log would be pruned
          * and simply skipping it if so.
          */
-        return LongStream.rangeClosed( logFiles.getLowestLogVersion(), min( thresholdResult.logVersion(), upToVersion - 2 ) );
+        return LongStream.rangeClosed( lowestLogVersion, min( thresholdResult.logVersion(), upToVersion - 2 ) );
     }
 
-    private ThresholdEvaluationResult pruneThresholdReached( long upToVersion )
+    private ThresholdEvaluationResult pruneThresholdReached( long upToVersion, long lowestLogVersion )
     {
-        for ( long version = upToVersion - 1; version >= logFiles.getLowestLogVersion(); version-- )
+        for ( long version = upToVersion - 1; version >= lowestLogVersion; version-- )
         {
             if ( threshold.reached( logFiles.getLogFileForVersion( version ), version, logFileInformation ) )
             {

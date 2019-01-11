@@ -24,7 +24,7 @@ import java.io.File;
 import org.neo4j.kernel.impl.transaction.log.LogFileInformation;
 
 /**
- * Determines transaction log pruning point bellow which it should be safe to prune log files.
+ * Determines transaction log pruning point below which it should be safe to prune log files.
  */
 public interface Threshold
 {
