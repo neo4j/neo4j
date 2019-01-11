@@ -19,25 +19,31 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.EnumSet;
 
+import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.helpers.collection.BoundedIterable;
 import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
+import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyAccessor;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.extension.ExtensionType;
 import org.neo4j.kernel.extension.context.ExtensionContext;
+import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
@@ -68,7 +74,8 @@ public class FailingGenericNativeIndexProviderFactory extends ExtensionFactory<G
     public enum FailureType
     {
         POPULATION,
-        INITIAL_STATE
+        INITIAL_STATE,
+        SKIP_ONLINE_UPDATES
     }
 
     private final GenericNativeIndexProviderFactory actual;
@@ -165,7 +172,86 @@ public class FailingGenericNativeIndexProviderFactory extends ExtensionFactory<G
             @Override
             public IndexAccessor getOnlineAccessor( StorageIndexReference descriptor, IndexSamplingConfig samplingConfig ) throws IOException
             {
-                return actualProvider.getOnlineAccessor( descriptor, samplingConfig );
+                IndexAccessor actualAccessor = actualProvider.getOnlineAccessor( descriptor, samplingConfig );
+                return new IndexAccessor()
+                {
+                    @Override
+                    public void drop()
+                    {
+                        actualAccessor.drop();
+                    }
+
+                    @Override
+                    public IndexUpdater newUpdater( IndexUpdateMode mode )
+                    {
+                        IndexUpdater actualUpdater = actualAccessor.newUpdater( mode );
+                        return new IndexUpdater()
+                        {
+                            @Override
+                            public void process( IndexEntryUpdate<?> update ) throws IndexEntryConflictException
+                            {
+                                if ( !failureTypes.contains( FailureType.SKIP_ONLINE_UPDATES ) )
+                                {
+                                    actualUpdater.process( update );
+                                }
+                            }
+
+                            @Override
+                            public void close() throws IndexEntryConflictException
+                            {
+                                actualUpdater.close();
+                            }
+                        };
+                    }
+
+                    @Override
+                    public void force( IOLimiter ioLimiter )
+                    {
+                        actualAccessor.force( ioLimiter );
+                    }
+
+                    @Override
+                    public void refresh()
+                    {
+                        actualAccessor.refresh();
+                    }
+
+                    @Override
+                    public void close()
+                    {
+                        actualAccessor.close();
+                    }
+
+                    @Override
+                    public IndexReader newReader()
+                    {
+                        return actualAccessor.newReader();
+                    }
+
+                    @Override
+                    public BoundedIterable<Long> newAllEntriesReader()
+                    {
+                        return actualAccessor.newAllEntriesReader();
+                    }
+
+                    @Override
+                    public ResourceIterator<File> snapshotFiles()
+                    {
+                        return actualAccessor.snapshotFiles();
+                    }
+
+                    @Override
+                    public void verifyDeferredConstraints( NodePropertyAccessor nodePropertyAccessor ) throws IndexEntryConflictException
+                    {
+                        actualAccessor.verifyDeferredConstraints( nodePropertyAccessor );
+                    }
+
+                    @Override
+                    public boolean isDirty()
+                    {
+                        return actualAccessor.isDirty();
+                    }
+                };
             }
 
             @Override

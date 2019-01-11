@@ -57,17 +57,18 @@ import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
+import org.neo4j.kernel.impl.index.schema.FailingGenericNativeIndexProviderFactory;
 import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
-import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
+import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.CleanupRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
@@ -81,6 +82,8 @@ import static org.neo4j.helpers.collection.Iterables.first;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextProceduresTest.NODE_CREATE;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextProceduresTest.RELATIONSHIP_CREATE;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextProceduresTest.array;
+import static org.neo4j.kernel.impl.index.schema.FailingGenericNativeIndexProviderFactory.FailureType.SKIP_ONLINE_UPDATES;
+import static org.neo4j.test.TestGraphDatabaseFactory.INDEX_PROVIDERS_FILTER;
 
 public class FulltextIndexConsistencyCheckIT
 {
@@ -504,8 +507,8 @@ public class FulltextIndexConsistencyCheckIT
         assertFalse( result.isSuccessful() );
     }
 
-    @Ignore( "Turns out that this is not something that the consistency checker actually looks for, currently. " +
-            "The test is disabled until the consistency checker is extended with checks that will discover this sort of inconsistency." )
+//    @Ignore( "Turns out that this is not something that the consistency checker actually looks for, currently. " +
+//            "The test is disabled until the consistency checker is extended with checks that will discover this sort of inconsistency." )
     @Test
     public void mustDiscoverNodeInIndexMissingFromStore() throws Exception
     {
@@ -524,15 +527,18 @@ public class FulltextIndexConsistencyCheckIT
             node.setProperty( "prop", "value" );
             tx.success();
         }
-        NeoStores stores = getNeoStores( db );
-        NodeRecord record = stores.getNodeStore().newRecord();
-        record = stores.getNodeStore().getRecord( nodeId, record, RecordLoad.NORMAL );
-        long propId = record.getNextProp();
-        record.setNextProp( AbstractBaseRecord.NO_ID );
-        stores.getNodeStore().updateRecord( record );
-        PropertyRecord propRecord = stores.getPropertyStore().getRecord( propId, stores.getPropertyStore().newRecord(), RecordLoad.NORMAL );
-        propRecord.setInUse( false );
-        stores.getPropertyStore().updateRecord( propRecord );
+
+        // Remove the property without updating the index
+        db.shutdown();
+        db = new TestGraphDatabaseFactory( NullLogProvider.getInstance() ).setFileSystem( fs )
+                .removeKernelExtensions( INDEX_PROVIDERS_FILTER )
+                .addKernelExtension( new FailingGenericNativeIndexProviderFactory( SKIP_ONLINE_UPDATES ) )
+                .newEmbeddedDatabase( testDirectory.databaseDir() );
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.getNodeById( nodeId ).removeProperty( "prop" );
+            tx.success();
+        }
         db.shutdown();
 
         ConsistencyCheckService.Result result = checkConsistency();
