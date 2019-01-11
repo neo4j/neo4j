@@ -370,6 +370,12 @@
                   <new>field org.neo4j.graphdb.factory.GraphDatabaseSettings.load_csv_file_url_root</new>
                   <justification>The description annotation contained text that was not strictly correct, and this is therefor an important documentation correction.</justification>
                 </item>
+                <item>
+                  <code>java.annotation.attributeValueChanged</code>
+                  <old>field org.neo4j.graphdb.factory.GraphDatabaseSettings.load_csv_file_url_root</old>
+                  <new>field org.neo4j.graphdb.factory.GraphDatabaseSettings.load_csv_file_url_root</new>
+                  <justification>The description annotation contained text that was not strictly correct, and this is therefor an important documentation correction.</justification>
+                </item>
               </revapi.ignore>
               <revapi.semver.ignore>
                 <enabled>true</enabled>
