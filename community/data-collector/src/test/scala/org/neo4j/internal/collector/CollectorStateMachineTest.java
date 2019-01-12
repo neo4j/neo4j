@@ -21,11 +21,15 @@ package org.neo4j.internal.collector;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.Collections;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.function.Supplier;
+
+import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -40,8 +44,8 @@ class CollectorStateMachineTest
         ExecutorService executor = Executors.newFixedThreadPool( 3 );
 
         // when
-        Future<?> collect = executor.submit( stress( n, stateMachine::collect ) );
-        Future<?> stop = executor.submit( stress( n, stateMachine::stop ) );
+        Future<?> collect = executor.submit( stress( n, () -> collect( stateMachine ) ) );
+        Future<?> stop = executor.submit( stress( n, () -> stateMachine.stop( Long.MAX_VALUE ) ) );
         Future<?> clear = executor.submit( stress( n, stateMachine::clear ) );
         Future<?> status = executor.submit( stress( n, stateMachine::status ) );
 
@@ -63,6 +67,18 @@ class CollectorStateMachineTest
         };
     }
 
+    public CollectorStateMachine.Result collect( CollectorStateMachine stateMachine )
+    {
+        try
+        {
+            return stateMachine.collect( Collections.emptyMap() );
+        }
+        catch ( InvalidArgumentsException e )
+        {
+            throw new IllegalStateException( e );
+        }
+    }
+
     static class TestStateMachine extends CollectorStateMachine<String>
     {
         enum State
@@ -74,7 +90,7 @@ class CollectorStateMachineTest
         volatile State state = State.IDLE;
 
         @Override
-        Result doCollect()
+        Result doCollect( Map<String,Object> config, long collectionId )
         {
             assertSame( state, State.IDLE );
             state = State.COLLECTING;

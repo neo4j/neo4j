@@ -52,7 +52,8 @@ object QueriesSection {
   }
 
   def retrieve(querySnapshots: java.util.Iterator[QuerySnapshot],
-               anonymizer: QueryAnonymizer): Stream[RetrieveResult] = {
+               anonymizer: QueryAnonymizer,
+               maxInvocations: Int): Stream[RetrieveResult] = {
     val queries = new mutable.HashMap[QueryKey, QueryData]()
     while (querySnapshots.hasNext) {
       val snapshot = querySnapshots.next()
@@ -74,7 +75,8 @@ object QueriesSection {
         data.put("queryExecutionPlan", planToMap(queryKey.plan, estimatedRows))
         data.put("estimatedRows", estimatedRows)
 
-        data.put("invocations", invocations(queryData.invocations, anonymizer))
+        data.put("invocations", invocations(queryData.invocations.take(maxInvocations), anonymizer))
+        data.put("invocationSummary", invocationSummary(queryData.invocations))
         new RetrieveResult(Sections.QUERIES, data)
     }))
   }
@@ -102,29 +104,64 @@ object QueriesSection {
                           anonymizer: QueryAnonymizer
                          ): util.ArrayList[util.Map[String, AnyRef]] = {
     val result = new util.ArrayList[util.Map[String, AnyRef]]()
-    for (invocationData <- invocations) {
-      invocationData match {
-        case SingleInvocation(queryParameters, elapsedTimeMicros, compilationTimeMicros) =>
-          val data = new util.HashMap[String, AnyRef]()
-          if (queryParameters.size() > 0)
-            data.put("params", anonymizer.queryParams(queryParameters))
+    for (SingleInvocation(queryParameters, elapsedTimeMicros, compilationTimeMicros) <- invocations) {
+      val data = new util.HashMap[String, AnyRef]()
+      if (queryParameters.size() > 0)
+        data.put("params", anonymizer.queryParams(queryParameters))
 
-          val compileTime = compilationTimeMicros
-          val elapsed = elapsedTimeMicros
-          if (compileTime > 0) {
-            data.put("elapsedCompileTimeInUs", java.lang.Long.valueOf(compileTime))
-            data.put("elapsedExecutionTimeInUs", java.lang.Long.valueOf(elapsed - compileTime))
-          } else
-            data.put("elapsedExecutionTimeInUs", java.lang.Long.valueOf(elapsed))
-          result.add(data)
-      }
+      val compileTime = compilationTimeMicros
+      val elapsed = elapsedTimeMicros
+      if (compileTime > 0) {
+        data.put("elapsedCompileTimeInUs", Long.box(compileTime))
+        data.put("elapsedExecutionTimeInUs", Long.box(elapsed - compileTime))
+      } else
+        data.put("elapsedExecutionTimeInUs", Long.box(elapsed))
+      result.add(data)
     }
 
+    result
+  }
+
+  private def invocationSummary(invocations: ArrayBuffer[QueriesSection.SingleInvocation]
+                               ): util.Map[String, AnyRef] = {
+    val result = new util.HashMap[String, AnyRef]()
+    val compileTime = new Stats
+    val executionTime = new Stats
+    for (invocation <- invocations) {
+      compileTime.onValue(invocation.compilationTimeMicros)
+      executionTime.onValue(invocation.elapsedTimeMicros - invocation.compilationTimeMicros)
+    }
+
+    result.put("compileTimeInUs", compileTime.asMap())
+    result.put("executionTimeInUs", executionTime.asMap())
+    result.put("invocationCount", Long.box(invocations.size))
     result
   }
 
   private def asRetrieveStream(iterator: Iterator[RetrieveResult]): Stream[RetrieveResult] = {
     import scala.collection.JavaConverters._
     StreamSupport.stream(Spliterators.spliterator(iterator.asJava, 0L, Spliterator.NONNULL), false)
+  }
+
+  class Stats {
+    private var min = Long.MaxValue
+    private var max = Long.MinValue
+    private var sum = 0L
+    private var count = 0L
+
+    def onValue(x: Long): Unit = {
+      min = math.min(x, min)
+      max = math.max(x, max)
+      sum += x
+      count += 1
+    }
+
+    def asMap(): util.HashMap[String, AnyRef] = {
+      val data = new util.HashMap[String, AnyRef]()
+      data.put("min", Long.box(min))
+      data.put("max", Long.box(max))
+      data.put("avg", Long.box(sum / count))
+      data
+    }
   }
 }

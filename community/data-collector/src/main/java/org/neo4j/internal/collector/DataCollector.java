@@ -47,7 +47,7 @@ public class DataCollector implements AutoCloseable
         this.databaseManager = databaseManager;
         this.config = config;
         this.jobScheduler = jobScheduler;
-        this.queryCollector = new QueryCollector();
+        this.queryCollector = new QueryCollector( jobScheduler );
         monitors.addMonitorListener( queryCollector );
     }
 
