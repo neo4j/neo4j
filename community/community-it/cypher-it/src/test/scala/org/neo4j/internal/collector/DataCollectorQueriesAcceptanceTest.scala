@@ -20,6 +20,7 @@
 package org.neo4j.internal.collector
 
 import org.neo4j.cypher._
+import org.scalatest.matchers.{MatchResult, Matcher}
 
 class DataCollectorQueriesAcceptanceTest extends ExecutionEngineFunSuite {
 
@@ -90,6 +91,40 @@ class DataCollectorQueriesAcceptanceTest extends ExecutionEngineFunSuite {
     execute("CALL db.stats.stop('QUERIES')").single
 
     execute("CALL db.stats.retrieve('QUERIES')").toList should have size 2
+  }
+
+  test("should stop collection after specified time") {
+    // given
+    execute("CALL db.stats.collect('QUERIES', {durationSeconds: 3})").single
+    execute("MATCH (n) RETURN count(n)")
+    Thread.sleep(4000)
+
+    // then
+    execute("CALL db.stats.status()").single should beMapContaining(
+      "status" -> "idle",
+      "section" -> "QUERIES"
+    )
+
+    // and when
+    execute("RETURN 'late query'")
+
+    // then
+    execute("CALL db.stats.retrieve('QUERIES')").toList should have size 1
+  }
+
+  test("should not stop later collection event after initial timeout") {
+    // given
+    execute("CALL db.stats.collect('QUERIES', {durationSeconds: 3})").single
+    execute("MATCH (n) RETURN count(n)")
+    execute("CALL db.stats.stop('QUERIES')").single
+    execute("CALL db.stats.collect('QUERIES')").single
+    Thread.sleep(4000)
+
+    // then
+    execute("CALL db.stats.status()").single should beMapContaining(
+      "status" -> "collecting",
+      "section" -> "QUERIES"
+    )
   }
 
   test("should retrieve query execution plan and estimated rows") {
@@ -198,6 +233,83 @@ class DataCollectorQueriesAcceptanceTest extends ExecutionEngineFunSuite {
         )
       )
     )
+  }
+
+  test("should retrieve invocation summary of query") {
+    // given
+    execute("CALL db.stats.collect('QUERIES')").single
+    execute("MATCH (n {p: $param}) RETURN count(n)", Map("param" -> "BrassLeg"))
+    execute("MATCH (n {p: $param}) RETURN count(n)", Map("param" -> 2))
+    execute("WITH 42 AS x RETURN x")
+    execute("MATCH (n {p: $param}) RETURN count(n)", Map("param" -> List(3.1, 3.2)))
+    execute("WITH 42 AS x RETURN x")
+    execute("CALL db.stats.stop('QUERIES')").single
+
+    // when
+    val res = execute("CALL db.stats.retrieve('QUERIES')").toList
+
+    // then
+    res should beListWithoutOrder(
+      beMapContaining(
+        "section" -> "QUERIES",
+        "data" -> QueryWithInvocationSummary("MATCH (n {p: $param}) RETURN count(n)")
+      ),
+      beMapContaining(
+        "section" -> "QUERIES",
+        "data" -> QueryWithInvocationSummary("WITH 42 AS x RETURN x")
+      )
+    )
+  }
+
+  test("should limit number of retrieved invocations of query") {
+    // given
+    execute("CALL db.stats.collect('QUERIES')").single
+    execute("MATCH (n {p: $param}) RETURN count(n)", Map("param" -> "BrassLeg"))
+    execute("MATCH (n {p: $param}) RETURN count(n)", Map("param" -> 2))
+    execute("WITH 42 AS x RETURN x")
+    execute("MATCH (n {p: $param}) RETURN count(n)", Map("param" -> List(3.1, 3.2)))
+    execute("WITH 42 AS x RETURN x")
+    execute("WITH 42 AS x RETURN x")
+    execute("WITH 42 AS x RETURN x")
+    execute("CALL db.stats.stop('QUERIES')").single
+
+    // when
+    val res = execute("CALL db.stats.retrieve('QUERIES', {maxInvocations: 2})").toList
+
+    // then
+    res should beListWithoutOrder(
+      beMapContaining(
+        "section" -> "QUERIES",
+        "data" -> beMapContaining(
+          "query" -> "MATCH (n {p: $param}) RETURN count(n)",
+          "invocations" -> beListInOrder(
+            beMapContaining(
+              "params" -> Map("param" -> "BrassLeg")
+            ),
+            beMapContaining(
+              "params" -> Map("param" -> 2)
+            )
+          )
+        )
+      ),
+      beMapContaining(
+        "section" -> "QUERIES",
+        "data" -> beMapContaining(
+          "query" -> "WITH 42 AS x RETURN x",
+          "invocations" -> beListInOrder(
+            beMapContaining(),
+            beMapContaining()
+          )
+        )
+      )
+    )
+  }
+
+  test("should fail on incorrect maxInvocations") {
+    execute("CALL db.stats.retrieve('QUERIES', {})").toList // missing maxInvocations argument is fine
+    execute("CALL db.stats.retrieve('QUERIES', {maxIndications: -1})").toList // non-related arguments is fine
+    assertInvalidArgument("CALL db.stats.retrieve('QUERIES', {maxInvocations: 'non-integer'})") // non-integer is not fine
+    assertInvalidArgument("CALL db.stats.retrieve('QUERIES', {maxInvocations: -1})") // negative integer is not fine
   }
 
   test("[retrieveAllAnonymized] should anonymize tokens inside queries") {
@@ -323,4 +435,45 @@ class DataCollectorQueriesAcceptanceTest extends ExecutionEngineFunSuite {
         "query" -> beCypher(queryText)
       )
     )
+
+  private def assertInvalidArgument(query: String): Unit = {
+    val e = intercept[CypherExecutionException](execute(query))
+    e.status should be(org.neo4j.kernel.api.exceptions.Status.General.InvalidArguments)
+  }
+
+  case class QueryWithInvocationSummary(expectedQuery: String) extends Matcher[AnyRef] {
+    override def apply(left: AnyRef): MatchResult = {
+      left match {
+        case m: Map[String, AnyRef] =>
+          val query = m("query")
+          if (query != expectedQuery)
+            return MatchResult(matches = false,
+              s"""Expected query
+                 |  $expectedQuery
+                 |got
+                 |  $query""".stripMargin, "")
+
+          val invocations = m("invocations").asInstanceOf[Seq[Map[String, AnyRef]]]
+          val compileTimes = invocations.map(inv => inv("elapsedCompileTimeInUs").asInstanceOf[Long])
+          val executionTimes = invocations.map(inv => inv("elapsedExecutionTimeInUs").asInstanceOf[Long])
+
+          beMapContaining(
+            "compileTimeInUs" -> beMapContaining(
+              "min" -> compileTimes.min,
+              "max" -> compileTimes.max,
+              "avg" -> (compileTimes.sum / compileTimes.size)
+            ),
+            "executionTimeInUs" -> beMapContaining(
+              "min" -> executionTimes.min,
+              "max" -> executionTimes.max,
+              "avg" -> (executionTimes.sum / executionTimes.size)
+            ),
+            "invocationCount" -> invocations.size
+          ).apply(m("invocationSummary"))
+
+        case _ =>
+          MatchResult(matches = false, s"Expected map, got $left", "")
+      }
+    }
+  }
 }

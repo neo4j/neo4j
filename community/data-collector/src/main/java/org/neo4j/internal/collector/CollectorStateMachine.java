@@ -19,6 +19,10 @@
  */
 package org.neo4j.internal.collector;
 
+import java.util.Map;
+
+import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
+
 /**
  * Base class for managing state transitions of data-collector daemons.
  */
@@ -62,6 +66,7 @@ abstract class CollectorStateMachine<DATA>
     }
 
     private State state;
+    private long collectionId;
 
     CollectorStateMachine()
     {
@@ -82,13 +87,14 @@ abstract class CollectorStateMachine<DATA>
         }
     }
 
-    public synchronized Result collect()
+    public synchronized Result collect( Map<String,Object> config ) throws InvalidArgumentsException
     {
         switch ( state )
         {
         case IDLE:
             state = State.COLLECTING;
-            return doCollect();
+            collectionId++;
+            return doCollect( config, collectionId );
         case COLLECTING:
             return success( "Collection is already ongoing." );
         default:
@@ -96,15 +102,19 @@ abstract class CollectorStateMachine<DATA>
         }
     }
 
-    public synchronized Result stop()
+    public synchronized Result stop( long collectionIdToStop )
     {
         switch ( state )
         {
         case IDLE:
             return success( "Collector is idle, no collection ongoing." );
         case COLLECTING:
-            state = State.IDLE;
-            return doStop();
+            if ( this.collectionId <= collectionIdToStop )
+            {
+                state = State.IDLE;
+                return doStop();
+            }
+            return success( String.format( "Collection event %d has already been stopped, a new collection event is ongoing.", collectionIdToStop ) );
         default:
             throw new IllegalStateException( "Unknown state " + state );
         }
@@ -136,7 +146,7 @@ abstract class CollectorStateMachine<DATA>
         }
     }
 
-    abstract Result doCollect();
+    abstract Result doCollect( Map<String,Object> config, long collectionId ) throws InvalidArgumentsException;
     abstract Result doStop();
     abstract Result doClear();
     abstract DATA doGetData();

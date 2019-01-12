@@ -39,7 +39,7 @@ public class DataCollector implements AutoCloseable
         this.kernel = kernel;
         this.jobScheduler = jobScheduler;
         this.valueMapper = valueMapper;
-        this.queryCollector = new QueryCollector();
+        this.queryCollector = new QueryCollector( jobScheduler );
         monitors.addMonitorListener( queryCollector );
     }
 
