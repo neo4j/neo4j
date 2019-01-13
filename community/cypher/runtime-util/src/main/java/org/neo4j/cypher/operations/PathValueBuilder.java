@@ -191,11 +191,11 @@ public class PathValueBuilder
      * @param value the incoming relationships to add
      * @param target the final target node of the path
      */
-    public void addMultipleIncoming( AnyValue value, NodeValue target )
+    public void addMultipleIncoming( AnyValue value, AnyValue target )
     {
-        if ( notNoValue( value ) )
+        if ( notNoValue( value ) && notNoValue( target ) )
         {
-            addMultipleIncoming( (ListValue) value, target );
+            addMultipleIncoming( (ListValue) value, (NodeValue) target );
         }
     }
 
