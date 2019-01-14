@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
-import org.neo4j.kernel.impl.transaction.state.RecordAccess.RecordProxy;
+import org.neo4j.internal.recordstorage.RecordAccess.RecordProxy;
 import org.neo4j.kernel.impl.transaction.state.RelationshipCreatorTest.Tracker;
 
 public class TrackingRecordProxy<RECORD, ADDITIONAL> implements RecordProxy<RECORD, ADDITIONAL>

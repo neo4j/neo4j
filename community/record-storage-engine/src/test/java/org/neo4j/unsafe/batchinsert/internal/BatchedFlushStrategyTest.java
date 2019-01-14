@@ -22,7 +22,7 @@ package org.neo4j.unsafe.batchinsert.internal;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
-import org.neo4j.kernel.impl.store.record.DirectRecordAccessSet;
+import org.neo4j.internal.recordstorage.DirectRecordAccessSet;
 
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.verify;

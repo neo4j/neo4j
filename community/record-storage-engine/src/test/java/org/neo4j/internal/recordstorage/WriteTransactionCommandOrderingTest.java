@@ -27,6 +27,8 @@ import java.util.LinkedList;
 import java.util.List;
 
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.internal.recordstorage.RecordAccess.RecordProxy;
+import org.neo4j.internal.recordstorage.RecordChanges.RecordChange;
 import org.neo4j.kernel.impl.api.CommandVisitor;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
@@ -46,10 +48,6 @@ import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.state.IntegrityValidator;
-import org.neo4j.kernel.impl.transaction.state.RecordAccess.RecordProxy;
-import org.neo4j.kernel.impl.transaction.state.RecordChangeSet;
-import org.neo4j.kernel.impl.transaction.state.RecordChanges;
-import org.neo4j.kernel.impl.transaction.state.RecordChanges.RecordChange;
 import org.neo4j.storageengine.api.SchemaRule;
 import org.neo4j.storageengine.api.StorageCommand;
 
