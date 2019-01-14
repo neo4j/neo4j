@@ -59,9 +59,6 @@ import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
 import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
-import org.neo4j.kernel.impl.store.id.DefaultIdController;
-import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.transaction.log.BatchingTransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.LogVersionRepository;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
@@ -102,7 +99,6 @@ import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toList;
 import static org.neo4j.helpers.collection.Iterables.stream;
 import static org.neo4j.kernel.configuration.Config.defaults;
-import static org.neo4j.kernel.impl.constraints.ConstraintSemantics.getConstraintSemantics;
 import static org.neo4j.kernel.impl.core.TokenHolder.TYPE_LABEL;
 import static org.neo4j.kernel.impl.core.TokenHolder.TYPE_PROPERTY_KEY;
 import static org.neo4j.kernel.impl.core.TokenHolder.TYPE_RELATIONSHIP_TYPE;
@@ -254,10 +250,12 @@ public final class Recovery
                 recoveryCleanupCollector, DatabaseInfo.TOOL, monitors, tokenHolders, recoveryCleanupCollector, extensionFactories );
         DefaultIndexProviderMap indexProviderMap = new DefaultIndexProviderMap( extensions, config );
 
-        RecordStorageEngine storageEngine =
-                new RecordStorageEngine( databaseLayout, config, pageCache, fs, logProvider, tokenHolders, schemaState,
-                        getConstraintSemantics(), LockService.NO_LOCK_SERVICE,
-                        databaseHealth, new DefaultIdGeneratorFactory( fs ), new DefaultIdController(), EmptyVersionContextSupplier.EMPTY );
+        // TODO this will simply need to wait until we flip the relationship between kernel and record-storage
+        StorageEngine storageEngine = null;
+//        RecordStorageEngine storageEngine =
+//                new RecordStorageEngine( databaseLayout, config, pageCache, fs, logProvider, tokenHolders, schemaState,
+//                        getConstraintSemantics(), LockService.NO_LOCK_SERVICE,
+//                        databaseHealth, new DefaultIdGeneratorFactory( fs ), new DefaultIdController(), EmptyVersionContextSupplier.EMPTY );
 
         // Label index
         NeoStoreIndexStoreView neoStoreIndexStoreView = new NeoStoreIndexStoreView( LockService.NO_LOCK_SERVICE, storageEngine::newReader );
@@ -272,7 +270,7 @@ public final class Recovery
                 config, scheduler, indexProviderMap, tokenNameLookup, logProvider, logProvider, monitors.newMonitor( IndexingService.Monitor.class ) );
 
         Dependencies recoveryDependencies = new Dependencies();
-        storageEngine.satisfyDependencies( recoveryDependencies );
+//        storageEngine.satisfyDependencies( recoveryDependencies );
 
         LogFiles logFiles = LogFilesBuilder.builder( databaseLayout, fs )
                 .withLogEntryReader( logEntryReader )
@@ -306,7 +304,7 @@ public final class Recovery
         recoveryLife.add( recoveryCleanupCollector );
         recoveryLife.add( extensions );
         recoveryLife.add( indexProviderMap );
-        recoveryLife.add( storageEngine );
+//        recoveryLife.add( storageEngine );
         recoveryLife.add( labelScanStore );
         recoveryLife.add( indexingService );
         recoveryLife.add( transactionLogsRecovery );

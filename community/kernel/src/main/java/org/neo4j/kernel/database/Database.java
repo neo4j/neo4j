@@ -91,7 +91,6 @@ import org.neo4j.kernel.impl.pagecache.PageCacheLifecycle;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.query.QueryEngineProvider;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.id.IdController;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.stats.IdBasedStoreEntityCounters;
@@ -485,19 +484,23 @@ public class Database extends LifecycleAdapter
 
     private StorageEngine buildStorageEngine( PageCache pageCache, SchemaState schemaState, VersionContextSupplier versionContextSupplier )
     {
-        RecordStorageEngine storageEngine =
-                new RecordStorageEngine( databaseLayout, config, pageCache, fs, logProvider, tokenHolders,
-                        schemaState, constraintSemantics,
-                        lockService, databaseHealth,
-                        idGeneratorFactory, idController,
-                        versionContextSupplier );
+        // TODO this will simply need to wait until we flip the relationship between kernel and record-storage
+        StorageEngine storageEngine = null;
+        return storageEngine;
 
-        // We pretend that the storage engine abstract hides all details within it. Whereas that's mostly
-        // true it's not entirely true for the time being. As long as we need this call below, which
-        // makes available one or more internal things to the outside world, there are leaks to plug.
-        storageEngine.satisfyDependencies( databaseDependencies );
-
-        return life.add( storageEngine );
+//        RecordStorageEngine storageEngine =
+//                new RecordStorageEngine( databaseLayout, config, pageCache, fs, logProvider, tokenHolders,
+//                        schemaState, constraintSemantics,
+//                        lockService, databaseHealth,
+//                        idGeneratorFactory, idController,
+//                        versionContextSupplier );
+//
+//        // We pretend that the storage engine abstract hides all details within it. Whereas that's mostly
+//        // true it's not entirely true for the time being. As long as we need this call below, which
+//        // makes available one or more internal things to the outside world, there are leaks to plug.
+//        storageEngine.satisfyDependencies( databaseDependencies );
+//
+//        return life.add( storageEngine );
     }
 
     /**
