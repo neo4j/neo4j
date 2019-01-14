@@ -908,7 +908,7 @@ public class NeoStoreTransactionApplierTest
                 mock( StorageEngine.class ), schemaCache, indexActivator );
     }
 
-    private boolean apply( BatchTransactionApplier applier, ApplyFunction function, TransactionToApply transactionToApply ) throws Exception
+    private boolean apply( BatchTransactionApplier applier, ApplyFunction function, TransactionToApply transactionToApply )
     {
         try
         {

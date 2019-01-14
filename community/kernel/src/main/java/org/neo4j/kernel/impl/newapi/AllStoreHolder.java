@@ -56,7 +56,7 @@ import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.txstate.TransactionCountingStateVisitor;
 import org.neo4j.kernel.api.txstate.TransactionState;
-import org.neo4j.kernel.impl.api.CountsRecordState;
+import org.neo4j.kernel.impl.api.CountsDelta;
 import org.neo4j.kernel.impl.api.IndexReaderCache;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.SchemaState;
@@ -171,12 +171,11 @@ public class AllStoreHolder extends Read
         long count = countsForNodeWithoutTxState( labelId );
         if ( ktx.hasTxStateWithChanges() )
         {
-            CountsRecordState counts = new CountsRecordState();
+            CountsDelta counts = new CountsDelta();
             try
             {
                 TransactionState txState = ktx.txState();
-                txState.accept( new TransactionCountingStateVisitor( EMPTY, storageReader,
-                        txState, counts ) );
+                txState.accept( new TransactionCountingStateVisitor( EMPTY, storageReader, txState, counts ) );
                 if ( counts.hasChanges() )
                 {
                     count += counts.nodeCount( labelId, newDoubleLongRegister() ).readSecond();
@@ -202,16 +201,14 @@ public class AllStoreHolder extends Read
         long count = countsForRelationshipWithoutTxState( startLabelId, typeId, endLabelId );
         if ( ktx.hasTxStateWithChanges() )
         {
-            CountsRecordState counts = new CountsRecordState();
+            CountsDelta counts = new CountsDelta();
             try
             {
                 TransactionState txState = ktx.txState();
-                txState.accept( new TransactionCountingStateVisitor( EMPTY, storageReader,
-                        txState, counts ) );
+                txState.accept( new TransactionCountingStateVisitor( EMPTY, storageReader, txState, counts ) );
                 if ( counts.hasChanges() )
                 {
-                    count += counts.relationshipCount( startLabelId, typeId, endLabelId, newDoubleLongRegister() )
-                            .readSecond();
+                    count += counts.relationshipCount( startLabelId, typeId, endLabelId, newDoubleLongRegister() ).readSecond();
                 }
             }
             catch ( ConstraintValidationException | CreateConstraintFailureException e )

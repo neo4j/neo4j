@@ -20,17 +20,13 @@
 package org.neo4j.kernel.impl.api;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordState;
 import org.neo4j.kernel.impl.store.counts.keys.CountsKey;
-import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.register.Registers;
-import org.neo4j.storageengine.api.StorageCommand;
 
 import static java.util.Objects.requireNonNull;
 import static org.neo4j.kernel.api.StatementConstants.ANY_LABEL;
@@ -38,7 +34,7 @@ import static org.neo4j.kernel.api.StatementConstants.ANY_RELATIONSHIP_TYPE;
 import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.nodeKey;
 import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.relationshipKey;
 
-public class CountsRecordState implements CountsAccessor, RecordState, CountsAccessor.Updater
+public class CountsDelta implements CountsAccessor, CountsAccessor.Updater
 {
     private static final long DEFAULT_FIRST_VALUE = 0;
     private static final long DEFAULT_SECOND_VALUE = 0;
@@ -90,10 +86,9 @@ public class CountsRecordState implements CountsAccessor, RecordState, CountsAcc
         }
     }
 
-    @Override
-    public void extractCommands( Collection<StorageCommand> target )
+    public boolean hasChanges()
     {
-        accept( new CommandCollector( target ) );
+        return !counts.isEmpty();
     }
 
     public List<Difference> verify( CountsVisitor.Visitable visitable )
@@ -101,12 +96,6 @@ public class CountsRecordState implements CountsAccessor, RecordState, CountsAcc
         Verifier verifier = new Verifier( counts );
         visitable.accept( verifier );
         return verifier.differences();
-    }
-
-    @Override
-    public boolean hasChanges()
-    {
-        return !counts.isEmpty();
     }
 
     public static final class Difference
@@ -196,34 +185,6 @@ public class CountsRecordState implements CountsAccessor, RecordState, CountsAcc
     {
         return counts.computeIfAbsent( key,
                 k -> Registers.newDoubleLongRegister( DEFAULT_FIRST_VALUE, DEFAULT_SECOND_VALUE ) );
-    }
-
-    private static class CommandCollector extends CountsVisitor.Adapter
-    {
-        private final Collection<StorageCommand> commands;
-
-        CommandCollector( Collection<StorageCommand> commands )
-        {
-            this.commands = commands;
-        }
-
-        @Override
-        public void visitNodeCount( int labelId, long count )
-        {
-            if ( count != 0 )
-            {   // Only add commands for counts that actually change
-                commands.add( new Command.NodeCountsCommand( labelId, count ) );
-            }
-        }
-
-        @Override
-        public void visitRelationshipCount( int startLabelId, int typeId, int endLabelId, long count )
-        {
-            if ( count != 0 )
-            {   // Only add commands for counts that actually change
-                commands.add( new Command.RelationshipCountsCommand( startLabelId, typeId, endLabelId, count ) );
-            }
-        }
     }
 
     private static class Verifier implements CountsVisitor

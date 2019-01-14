@@ -25,7 +25,7 @@ import java.util.function.LongConsumer;
 
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.io.IOUtils;
-import org.neo4j.kernel.impl.api.CountsRecordState;
+import org.neo4j.kernel.impl.api.CountsDelta;
 import org.neo4j.kernel.impl.api.DegreeVisitor;
 import org.neo4j.storageengine.api.StorageNodeCursor;
 import org.neo4j.storageengine.api.StorageReader;
@@ -40,14 +40,14 @@ import static org.neo4j.kernel.api.StatementConstants.ANY_RELATIONSHIP_TYPE;
 
 public class TransactionCountingStateVisitor extends TxStateVisitor.Delegator
 {
-    private final CountsRecordState counts;
+    private final CountsDelta counts;
     private final ReadableTransactionState txState;
     private final StorageNodeCursor nodeCursor;
     private final StorageRelationshipGroupCursor groupCursor;
     private final StorageRelationshipScanCursor relationshipCursor;
 
     public TransactionCountingStateVisitor( TxStateVisitor next, StorageReader storageReader,
-            ReadableTransactionState txState, CountsRecordState counts )
+            ReadableTransactionState txState, CountsDelta counts )
     {
         super( next );
         this.txState = txState;

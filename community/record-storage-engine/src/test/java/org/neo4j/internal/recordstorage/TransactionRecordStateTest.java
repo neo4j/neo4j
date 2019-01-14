@@ -1360,7 +1360,7 @@ public class TransactionRecordStateTest
         return recordState;
     }
 
-    private void apply( BatchTransactionApplier applier, TransactionRepresentation transaction ) throws Exception
+    private void apply( BatchTransactionApplier applier, TransactionRepresentation transaction )
     {
         CommandHandlerContract.apply( applier, new TransactionToApply( transaction ) );
     }
