@@ -225,7 +225,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
         }
     }
 
-    private void instantiateKernelExtensions()
+    private void instantiateExtensions()
     {
         life = new LifeSupport();
         life.start();
@@ -247,7 +247,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
         relationshipTypeRepository = new BatchingRelationshipTypeTokenRepository(
                 neoStores.getRelationshipTypeTokenStore() );
         temporaryNeoStores = instantiateTempStores();
-        instantiateKernelExtensions();
+        instantiateExtensions();
 
         // Delete the id generators because makeStoreOk isn't atomic in the sense that there's a possibility of an unlucky timing such
         // that if the process is killed at the right time some store may end up with a .id file that looks to be CLEAN and has highId=0,

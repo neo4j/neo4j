@@ -39,7 +39,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.database.DatabaseCreationContext;
 import org.neo4j.kernel.diagnostics.providers.DbmsDiagnosticsManager;
-import org.neo4j.kernel.extension.KernelExtensionFactory;
+import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
@@ -227,7 +227,7 @@ public class DatabaseRule extends ExternalResource
         private final DatabaseInfo databaseInfo;
         private final VersionContextSupplier versionContextSupplier;
         private final CollectionsFactorySupplier collectionsFactorySupplier;
-        private final Iterable<KernelExtensionFactory<?>> kernelExtensionFactories;
+        private final Iterable<ExtensionFactory<?>> extensionFactories;
         private final Function<DatabaseLayout,DatabaseLayoutWatcher> watcherServiceFactory;
         private final GraphDatabaseFacade facade;
         private final Iterable<QueryEngineProvider> engineProviders;
@@ -246,7 +246,7 @@ public class DatabaseRule extends ExternalResource
                 Monitors monitors, Tracers tracers, Procedures procedures, IOLimiter ioLimiter, DatabaseAvailabilityGuard databaseAvailabilityGuard,
                 SystemNanoClock clock, AccessCapability accessCapability, StoreCopyCheckPointMutex storeCopyCheckPointMutex, IdController idController,
                 DatabaseInfo databaseInfo, VersionContextSupplier versionContextSupplier, CollectionsFactorySupplier collectionsFactorySupplier,
-                Iterable<KernelExtensionFactory<?>> kernelExtensionFactories, Function<DatabaseLayout,DatabaseLayoutWatcher> watcherServiceFactory,
+                Iterable<ExtensionFactory<?>> extensionFactories, Function<DatabaseLayout,DatabaseLayoutWatcher> watcherServiceFactory,
             GraphDatabaseFacade facade, Iterable<QueryEngineProvider> engineProviders, DatabaseMigratorFactory databaseMigratorFactory )
         {
             this.databaseName = databaseName;
@@ -280,7 +280,7 @@ public class DatabaseRule extends ExternalResource
             this.databaseInfo = databaseInfo;
             this.versionContextSupplier = versionContextSupplier;
             this.collectionsFactorySupplier = collectionsFactorySupplier;
-            this.kernelExtensionFactories = kernelExtensionFactories;
+            this.extensionFactories = extensionFactories;
             this.watcherServiceFactory = watcherServiceFactory;
             this.facade = facade;
             this.engineProviders = engineProviders;
@@ -493,9 +493,9 @@ public class DatabaseRule extends ExternalResource
         }
 
         @Override
-        public Iterable<KernelExtensionFactory<?>> getKernelExtensionFactories()
+        public Iterable<ExtensionFactory<?>> getExtensionFactories()
         {
-            return kernelExtensionFactories;
+            return extensionFactories;
         }
 
         @Override

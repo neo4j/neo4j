@@ -35,7 +35,7 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
 @Deprecated
-public class JmxKernelExtension extends LifecycleAdapter
+public class JmxExtension extends LifecycleAdapter
 {
     private final KernelData kernelData;
     private final Database database;
@@ -44,7 +44,7 @@ public class JmxKernelExtension extends LifecycleAdapter
     private MBeanServer mbs;
     private ManagementSupport support;
 
-    public JmxKernelExtension( KernelData kernelData, Database database, LogProvider logProvider )
+    public JmxExtension( KernelData kernelData, Database database, LogProvider logProvider )
     {
         this.kernelData = kernelData;
         this.database = database;

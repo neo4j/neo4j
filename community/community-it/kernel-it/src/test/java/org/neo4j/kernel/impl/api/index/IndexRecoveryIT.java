@@ -48,7 +48,7 @@ import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
-import org.neo4j.kernel.extension.KernelExtensionFactory;
+import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.index.updater.SwallowingIndexUpdater;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
@@ -103,7 +103,7 @@ class IndexRecoveryIT
     private TestDirectory testDirectory;
     private GraphDatabaseAPI db;
     private final IndexProvider mockedIndexProvider = mock( IndexProvider.class );
-    private final KernelExtensionFactory<?> mockedIndexProviderFactory =
+    private final ExtensionFactory<?> mockedIndexProviderFactory =
             singleInstanceIndexProviderFactory( PROVIDER_DESCRIPTOR.getKey(), mockedIndexProvider );
     private final String key = "number_of_bananas_owned";
     private final Label myLabel = label( "MyLabel" );
@@ -305,7 +305,7 @@ class IndexRecoveryIT
 
         TestGraphDatabaseFactory factory = new TestGraphDatabaseFactory();
         factory.setFileSystem( fs );
-        factory.setKernelExtensions( singletonList( mockedIndexProviderFactory ) );
+        factory.setExtensions( singletonList( mockedIndexProviderFactory ) );
         factory.setMonitors( monitors );
         db = (GraphDatabaseAPI) factory.newImpermanentDatabaseBuilder( testDirectory.databaseDir() )
                 .setConfig( default_schema_provider, PROVIDER_DESCRIPTOR.name() ).newGraphDatabase();

@@ -69,7 +69,7 @@ import org.neo4j.kernel.api.index.NodePropertyAccessor;
 import org.neo4j.kernel.api.labelscan.LabelScanReader;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
-import org.neo4j.kernel.extension.KernelExtensionFactory;
+import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.impl.api.index.TestIndexProviderDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
@@ -1398,7 +1398,7 @@ public class BatchInsertTest
         return BatchInserters.inserter( localTestDirectory.databaseDir(), fileSystemRule.get(), configuration() );
     }
 
-    private BatchInserter newBatchInserterWithIndexProvider( KernelExtensionFactory<?> provider, IndexProviderDescriptor providerDescriptor ) throws Exception
+    private BatchInserter newBatchInserterWithIndexProvider( ExtensionFactory<?> provider, IndexProviderDescriptor providerDescriptor ) throws Exception
     {
         Map<String,String> configuration = configuration();
         configuration.put( GraphDatabaseSettings.default_schema_provider.name(), providerDescriptor.name() );

@@ -108,8 +108,8 @@ class IndexOpAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistics
     // Build a properly failing index provider which is a wrapper around the default provider, but which throws exception
     // in its populator when trying to add updates to it
     val providerFactory = new FailingGenericNativeIndexProviderFactory(POPULATION)
-    dbFactory.removeKernelExtensions(TestGraphDatabaseFactory.INDEX_PROVIDERS_FILTER)
-    dbFactory.addKernelExtension(providerFactory)
+    dbFactory.removeExtensions(TestGraphDatabaseFactory.INDEX_PROVIDERS_FILTER)
+    dbFactory.addExtension(providerFactory)
     graph = new GraphDatabaseCypherService(dbFactory.newEmbeddedDatabase(storeDir))
     eengine = createEngine(graph)
     execute("create (:Person {name:42})")

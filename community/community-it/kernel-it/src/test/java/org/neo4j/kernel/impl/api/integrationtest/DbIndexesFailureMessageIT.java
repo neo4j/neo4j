@@ -106,7 +106,7 @@ public class DbIndexesFailureMessageIT extends KernelIntegrationTest
     protected TestGraphDatabaseFactory createGraphDatabaseFactory()
     {
         return super.createGraphDatabaseFactory()
-                .removeKernelExtensions( INDEX_PROVIDERS_FILTER )
-                .addKernelExtension( new FailingGenericNativeIndexProviderFactory( POPULATION ) );
+                .removeExtensions( INDEX_PROVIDERS_FILTER )
+                .addExtension( new FailingGenericNativeIndexProviderFactory( POPULATION ) );
     }
 }

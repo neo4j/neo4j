@@ -27,8 +27,8 @@ import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.extension.ExtensionType;
-import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.extension.context.ExtensionContext;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.recovery.RecoveryExtension;
@@ -42,7 +42,7 @@ public class SchemaIndexTestHelper
     {
     }
 
-    public static KernelExtensionFactory<SingleInstanceIndexProviderFactoryDependencies> singleInstanceIndexProviderFactory(
+    public static ExtensionFactory<SingleInstanceIndexProviderFactoryDependencies> singleInstanceIndexProviderFactory(
             String key, final IndexProvider provider )
     {
         return new SingleInstanceIndexProviderFactory( key, provider );
@@ -55,7 +55,7 @@ public class SchemaIndexTestHelper
 
     @RecoveryExtension
     private static class SingleInstanceIndexProviderFactory
-        extends KernelExtensionFactory<SingleInstanceIndexProviderFactoryDependencies>
+        extends ExtensionFactory<SingleInstanceIndexProviderFactoryDependencies>
     {
         private final IndexProvider provider;
 

@@ -32,7 +32,7 @@ import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.availability.DatabaseAvailability;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.extension.KernelExtensionFactory;
+import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
@@ -129,7 +129,7 @@ public interface DatabaseCreationContext
 
     CollectionsFactorySupplier getCollectionsFactorySupplier();
 
-    Iterable<KernelExtensionFactory<?>> getKernelExtensionFactories();
+    Iterable<ExtensionFactory<?>> getExtensionFactories();
 
     Function<DatabaseLayout,DatabaseLayoutWatcher> getWatcherServiceFactory();
 

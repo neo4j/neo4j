@@ -41,7 +41,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
 import org.neo4j.jmx.Kernel;
-import org.neo4j.jmx.impl.JmxKernelExtension;
+import org.neo4j.jmx.impl.JmxExtension;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
@@ -183,7 +183,7 @@ public class JmxService implements AdvertisableService
     @Path( KERNEL_NAME_PATH )
     public Response currentKernelInstance( @Context Database database )
     {
-        Kernel kernelBean = database.getGraph().getDependencyResolver().resolveDependency( JmxKernelExtension.class )
+        Kernel kernelBean = database.getGraph().getDependencyResolver().resolveDependency( JmxExtension.class )
                 .getSingleManagementBean( Kernel.class );
         return Response.ok( "\"" + kernelBean.getMBeanQuery()
                 .toString() + "\"" )

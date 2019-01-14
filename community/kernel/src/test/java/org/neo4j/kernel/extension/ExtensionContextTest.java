@@ -55,10 +55,10 @@ class ExtensionContextTest
     void shouldConsultUnsatisfiedDependencyHandlerOnMissingDependencies()
     {
         GlobalExtensionContext context = mock( GlobalExtensionContext.class );
-        KernelExtensionFailureStrategy handler = mock( KernelExtensionFailureStrategy.class );
+        ExtensionFailureStrategy handler = mock( ExtensionFailureStrategy.class );
         Dependencies dependencies = new Dependencies(); // that hasn't got anything.
         TestingExtensionFactory extensionFactory = new TestingExtensionFactory();
-        GlobalKernelExtensions extensions = new GlobalKernelExtensions( context, iterable( extensionFactory ), dependencies, handler );
+        GlobalExtensions extensions = new GlobalExtensions( context, iterable( extensionFactory ), dependencies, handler );
 
         try ( Lifespan ignored = new Lifespan( extensions ) )
         {
@@ -70,10 +70,10 @@ class ExtensionContextTest
     void shouldConsultUnsatisfiedDependencyHandlerOnFailingDependencyClasses()
     {
         GlobalExtensionContext context = mock( GlobalExtensionContext.class );
-        KernelExtensionFailureStrategy handler = mock( KernelExtensionFailureStrategy.class );
+        ExtensionFailureStrategy handler = mock( ExtensionFailureStrategy.class );
         Dependencies dependencies = new Dependencies(); // that hasn't got anything.
-        UninitializableKernelExtensionFactory extensionFactory = new UninitializableKernelExtensionFactory();
-        GlobalKernelExtensions extensions = new GlobalKernelExtensions( context, iterable( extensionFactory ), dependencies, handler );
+        UninitializableExtensionFactory extensionFactory = new UninitializableExtensionFactory();
+        GlobalExtensions extensions = new GlobalExtensions( context, iterable( extensionFactory ), dependencies, handler );
 
         try ( Lifespan ignored = new Lifespan( extensions ) )
         {
@@ -103,7 +103,7 @@ class ExtensionContextTest
         JobScheduler jobScheduler();
     }
 
-    private static class TestingExtensionFactory extends KernelExtensionFactory<TestingDependencies>
+    private static class TestingExtensionFactory extends ExtensionFactory<TestingDependencies>
     {
         TestingExtensionFactory()
         {

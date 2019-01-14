@@ -44,8 +44,8 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
+import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.extension.ExtensionType;
-import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.extension.context.ExtensionContext;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.locking.Lock;
@@ -134,7 +134,7 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
     public void setUp()
     {
         TestGraphDatabaseFactory dbFactory = new TestGraphDatabaseFactory();
-        dbFactory.setKernelExtensions( Collections.singletonList( new PredefinedIndexProviderFactory( indexProvider ) ) );
+        dbFactory.setExtensions( Collections.singletonList( new PredefinedIndexProviderFactory( indexProvider ) ) );
         db = dbFactory.newImpermanentDatabaseBuilder( graphDbDir )
                       .setConfig( default_schema_provider, indexProvider.getProviderDescriptor().name() )
                       .newGraphDatabase();
@@ -994,7 +994,7 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
         }
     }
 
-    private static class PredefinedIndexProviderFactory extends KernelExtensionFactory<PredefinedIndexProviderFactory.NoDeps>
+    private static class PredefinedIndexProviderFactory extends ExtensionFactory<PredefinedIndexProviderFactory.NoDeps>
     {
         private final IndexProvider indexProvider;
 

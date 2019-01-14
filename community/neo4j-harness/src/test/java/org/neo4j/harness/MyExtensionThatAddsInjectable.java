@@ -19,7 +19,7 @@
  */
 package org.neo4j.harness;
 
-import org.neo4j.kernel.extension.KernelExtensionFactory;
+import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.extension.context.ExtensionContext;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -31,7 +31,7 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 // and is in place as an approach that should either eventually be made
 // public, or the relevant use cases addressed in other ways.
 public class MyExtensionThatAddsInjectable
-        extends KernelExtensionFactory<MyExtensionThatAddsInjectable.Dependencies>
+        extends ExtensionFactory<MyExtensionThatAddsInjectable.Dependencies>
 {
     public MyExtensionThatAddsInjectable()
     {

@@ -17,14 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.extension;
+package org.neo4j.ext.udc.impl;
 
-import org.neo4j.exceptions.UnsatisfiedDependencyException;
+import org.neo4j.kernel.extension.ExtensionFactoryContractTest;
 
-
-public interface KernelExtensionFailureStrategy
+public class TestUdcExtensionFactory extends ExtensionFactoryContractTest
 {
-    void handle( KernelExtensionFactory kernelExtensionFactory, UnsatisfiedDependencyException e );
-
-    void handle( KernelExtensionFactory kernelExtensionFactory, Throwable e );
+    public TestUdcExtensionFactory()
+    {
+        super( UdcExtensionFactory.KEY, UdcExtensionFactory.class );
+    }
 }

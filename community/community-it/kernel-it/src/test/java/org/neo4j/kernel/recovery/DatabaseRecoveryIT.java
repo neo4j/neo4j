@@ -74,8 +74,8 @@ import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyAccessor;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.extension.ExtensionType;
-import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.extension.context.ExtensionContext;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
@@ -810,7 +810,7 @@ class DatabaseRecoveryIT
     {
         return (GraphDatabaseAPI) new TestGraphDatabaseFactory()
                 .setFileSystem( fs )
-                .setKernelExtensions( singletonList( new IndexExtensionFactory( indexProvider ) ) )
+                .setExtensions( singletonList( new IndexExtensionFactory( indexProvider ) ) )
                 .newImpermanentDatabaseBuilder( storeDir )
                 .setConfig( default_schema_provider, indexProvider.getProviderDescriptor().name() )
                 .newGraphDatabase();
@@ -991,7 +991,7 @@ class DatabaseRecoveryIT
     }
 
     @RecoveryExtension
-    private static class IndexExtensionFactory extends KernelExtensionFactory<IndexExtensionFactory.Dependencies>
+    private static class IndexExtensionFactory extends ExtensionFactory<IndexExtensionFactory.Dependencies>
     {
         private final IndexProvider indexProvider;
 

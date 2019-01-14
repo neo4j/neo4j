@@ -21,7 +21,7 @@ package org.neo4j.jmx.impl;
 
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.database.Database;
-import org.neo4j.kernel.extension.KernelExtensionFactory;
+import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.extension.context.ExtensionContext;
 import org.neo4j.kernel.internal.KernelData;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -29,9 +29,9 @@ import org.neo4j.logging.internal.LogService;
 
 import static org.neo4j.kernel.extension.ExtensionType.DATABASE;
 
-@Service.Implementation( KernelExtensionFactory.class )
+@Service.Implementation( ExtensionFactory.class )
 @Deprecated
-public final class JmxExtensionFactory extends KernelExtensionFactory<JmxExtensionFactory.Dependencies>
+public final class JmxExtensionFactory extends ExtensionFactory<JmxExtensionFactory.Dependencies>
 {
     public interface Dependencies
     {
@@ -52,7 +52,7 @@ public final class JmxExtensionFactory extends KernelExtensionFactory<JmxExtensi
     @Override
     public Lifecycle newInstance( ExtensionContext context, Dependencies dependencies )
     {
-        return new JmxKernelExtension( dependencies.getKernelData(),
+        return new JmxExtension( dependencies.getKernelData(),
                 dependencies.getDatabase(),
                 dependencies.getLogService().getInternalLogProvider() );
     }

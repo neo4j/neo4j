@@ -34,42 +34,42 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import static java.util.stream.Collectors.toList;
 import static org.neo4j.helpers.collection.Iterables.stream;
 
-public abstract class AbstractKernelExtensions extends DependencyResolver.Adapter implements Lifecycle
+public abstract class AbstractExtensions extends DependencyResolver.Adapter implements Lifecycle
 {
     private final ExtensionContext extensionContext;
-    private final List<KernelExtensionFactory<?>> kernelExtensionFactories;
+    private final List<ExtensionFactory<?>> extensionFactories;
     private final Dependencies dependencies;
     private final LifeSupport life = new LifeSupport();
-    private final KernelExtensionFailureStrategy kernelExtensionFailureStrategy;
+    private final ExtensionFailureStrategy extensionFailureStrategy;
 
-    AbstractKernelExtensions( ExtensionContext extensionContext, Iterable<KernelExtensionFactory<?>> kernelExtensionFactories, Dependencies dependencies,
-            KernelExtensionFailureStrategy kernelExtensionFailureStrategy, ExtensionType extensionType )
+    AbstractExtensions( ExtensionContext extensionContext, Iterable<ExtensionFactory<?>> extensionFactories, Dependencies dependencies,
+            ExtensionFailureStrategy extensionFailureStrategy, ExtensionType extensionType )
     {
         this.extensionContext = extensionContext;
-        this.kernelExtensionFailureStrategy = kernelExtensionFailureStrategy;
-        this.kernelExtensionFactories = stream( kernelExtensionFactories ).filter( e -> e.getExtensionType() == extensionType ).collect( toList() );
+        this.extensionFailureStrategy = extensionFailureStrategy;
+        this.extensionFactories = stream( extensionFactories ).filter( e -> e.getExtensionType() == extensionType ).collect( toList() );
         this.dependencies = dependencies;
     }
 
     @Override
     public void init()
     {
-        for ( KernelExtensionFactory<?> kernelExtensionFactory : kernelExtensionFactories )
+        for ( ExtensionFactory<?> extensionFactory : extensionFactories )
         {
             try
             {
-                Object kernelExtensionDependencies = getKernelExtensionDependencies( kernelExtensionFactory );
-                Lifecycle dependency = newInstance( extensionContext, kernelExtensionFactory, kernelExtensionDependencies );
-                Objects.requireNonNull( dependency, kernelExtensionFactory.toString() + " returned a null KernelExtension" );
+                Object extensionDependencies = getExtensionDependencies( extensionFactory );
+                Lifecycle dependency = newInstance( extensionContext, extensionFactory, extensionDependencies );
+                Objects.requireNonNull( dependency, extensionFactory.toString() + " returned a null extension." );
                 life.add( dependencies.satisfyDependency( dependency ) );
             }
             catch ( UnsatisfiedDependencyException exception )
             {
-                kernelExtensionFailureStrategy.handle( kernelExtensionFactory, exception );
+                extensionFailureStrategy.handle( extensionFactory, exception );
             }
             catch ( Throwable throwable )
             {
-                kernelExtensionFailureStrategy.handle( kernelExtensionFactory, throwable );
+                extensionFailureStrategy.handle( extensionFactory, throwable );
             }
         }
 
@@ -107,7 +107,7 @@ public abstract class AbstractKernelExtensions extends DependencyResolver.Adapte
         return life.getLifecycleInstances().stream().filter( type::isInstance ).map( type::cast ).collect( toList() );
     }
 
-    private Object getKernelExtensionDependencies( KernelExtensionFactory<?> factory )
+    private Object getExtensionDependencies( ExtensionFactory<?> factory )
     {
         Class<?> configurationClass = (Class<?>) ((ParameterizedType) factory.getClass().getGenericSuperclass())
                 .getActualTypeArguments()[0];
@@ -115,7 +115,7 @@ public abstract class AbstractKernelExtensions extends DependencyResolver.Adapte
     }
 
     @SuppressWarnings( "unchecked" )
-    private static <T> Lifecycle newInstance( ExtensionContext extensionContext, KernelExtensionFactory<T> factory, Object dependencies )
+    private static <T> Lifecycle newInstance( ExtensionContext extensionContext, ExtensionFactory<T> factory, Object dependencies )
     {
         return factory.newInstance( extensionContext, (T)dependencies );
     }

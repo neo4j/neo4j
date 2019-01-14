@@ -29,7 +29,7 @@ import javax.management.MBeanInfo;
 import javax.management.ObjectName;
 
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.jmx.impl.JmxKernelExtension;
+import org.neo4j.jmx.impl.JmxExtension;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
@@ -84,7 +84,7 @@ public class DescriptionTest
 
     private MBeanInfo kernelMBeanInfo() throws Exception
     {
-        Kernel kernel = ((GraphDatabaseAPI) graphdb).getDependencyResolver().resolveDependency( JmxKernelExtension
+        Kernel kernel = ((GraphDatabaseAPI) graphdb).getDependencyResolver().resolveDependency( JmxExtension
                 .class ).getSingleManagementBean( Kernel.class );
         ObjectName query = kernel.getMBeanQuery();
         Hashtable<String, String> properties = new Hashtable<>( query.getKeyPropertyList() );

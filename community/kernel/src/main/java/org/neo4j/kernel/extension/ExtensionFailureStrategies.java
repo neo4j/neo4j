@@ -23,21 +23,21 @@ import java.io.PrintStream;
 
 import org.neo4j.exceptions.UnsatisfiedDependencyException;
 
-public class KernelExtensionFailureStrategies
+public class ExtensionFailureStrategies
 {
-    private KernelExtensionFailureStrategies()
+    private ExtensionFailureStrategies()
     {
     }
 
-    private static FailedToBuildKernelExtensionException wrap( KernelExtensionFactory kernelExtensionFactory, UnsatisfiedDependencyException e )
+    private static FailedToBuildExtensionException wrap( ExtensionFactory extensionFactory, UnsatisfiedDependencyException e )
     {
-        return new FailedToBuildKernelExtensionException(
-                "Failed to build kernel extension " + kernelExtensionFactory + " due to a missing dependency: " + e.getMessage(), e );
+        return new FailedToBuildExtensionException(
+                "Failed to build kernel extension " + extensionFactory + " due to a missing dependency: " + e.getMessage(), e );
     }
 
-    private static FailedToBuildKernelExtensionException wrap( KernelExtensionFactory kernelExtensionFactory, Throwable e )
+    private static FailedToBuildExtensionException wrap( ExtensionFactory extensionFactory, Throwable e )
     {
-        StringBuilder message = new StringBuilder( "Failed to build kernel extension " ).append( kernelExtensionFactory );
+        StringBuilder message = new StringBuilder( "Failed to build kernel extension " ).append( extensionFactory );
         if ( e instanceof LinkageError || e instanceof ReflectiveOperationException )
         {
             if ( e instanceof LinkageError )
@@ -57,39 +57,39 @@ public class KernelExtensionFailureStrategies
         {
             message.append( " because of an unanticipated error: '" ).append( e.getMessage() ).append( "'." );
         }
-        return new FailedToBuildKernelExtensionException( message.toString(), e );
+        return new FailedToBuildExtensionException( message.toString(), e );
     }
 
-    public static KernelExtensionFailureStrategy fail()
+    public static ExtensionFailureStrategy fail()
     {
-        return new KernelExtensionFailureStrategy()
+        return new ExtensionFailureStrategy()
         {
             @Override
-            public void handle( KernelExtensionFactory kernelExtensionFactory, UnsatisfiedDependencyException e )
+            public void handle( ExtensionFactory extensionFactory, UnsatisfiedDependencyException e )
             {
-                throw wrap( kernelExtensionFactory, e );
+                throw wrap( extensionFactory, e );
             }
 
             @Override
-            public void handle( KernelExtensionFactory kernelExtensionFactory, Throwable e )
+            public void handle( ExtensionFactory extensionFactory, Throwable e )
             {
-                throw wrap( kernelExtensionFactory, e );
+                throw wrap( extensionFactory, e );
             }
         };
     }
 
-    public static KernelExtensionFailureStrategy ignore()
+    public static ExtensionFailureStrategy ignore()
     {
-        return new KernelExtensionFailureStrategy()
+        return new ExtensionFailureStrategy()
         {
             @Override
-            public void handle( KernelExtensionFactory kernelExtensionFactory, UnsatisfiedDependencyException e )
+            public void handle( ExtensionFactory extensionFactory, UnsatisfiedDependencyException e )
             {
                 // Just ignore.
             }
 
             @Override
-            public void handle( KernelExtensionFactory kernelExtensionFactory, Throwable e )
+            public void handle( ExtensionFactory extensionFactory, Throwable e )
             {
                 // Just ignore.
             }
@@ -97,20 +97,20 @@ public class KernelExtensionFailureStrategies
     }
 
     // Perhaps not used, but very useful for debugging kernel extension loading problems
-    public static KernelExtensionFailureStrategy print( PrintStream out )
+    public static ExtensionFailureStrategy print( PrintStream out )
     {
-        return new KernelExtensionFailureStrategy()
+        return new ExtensionFailureStrategy()
         {
             @Override
-            public void handle( KernelExtensionFactory kernelExtensionFactory, UnsatisfiedDependencyException e )
+            public void handle( ExtensionFactory extensionFactory, UnsatisfiedDependencyException e )
             {
-                wrap( kernelExtensionFactory, e ).printStackTrace( out );
+                wrap( extensionFactory, e ).printStackTrace( out );
             }
 
             @Override
-            public void handle( KernelExtensionFactory kernelExtensionFactory, Throwable e )
+            public void handle( ExtensionFactory extensionFactory, Throwable e )
             {
-                wrap( kernelExtensionFactory, e ).printStackTrace( out );
+                wrap( extensionFactory, e ).printStackTrace( out );
             }
         };
     }

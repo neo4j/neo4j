@@ -26,9 +26,9 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.extension.DatabaseKernelExtensions;
-import org.neo4j.kernel.extension.KernelExtensionFactory;
-import org.neo4j.kernel.extension.KernelExtensionFailureStrategies;
+import org.neo4j.kernel.extension.DatabaseExtensions;
+import org.neo4j.kernel.extension.ExtensionFactory;
+import org.neo4j.kernel.extension.ExtensionFailureStrategies;
 import org.neo4j.kernel.extension.context.DatabaseExtensionContext;
 import org.neo4j.kernel.impl.core.TokenHolders;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
@@ -38,21 +38,21 @@ import org.neo4j.logging.internal.LogService;
 import org.neo4j.scheduler.JobScheduler;
 
 /**
- * Utility for loading {@link IndexProvider} instances from {@link DatabaseKernelExtensions}.
+ * Utility for loading {@link IndexProvider} instances from {@link DatabaseExtensions}.
  */
 public class SchemaIndexExtensionLoader
 {
 
     @SuppressWarnings( "unchecked" )
-    public static DatabaseKernelExtensions instantiateKernelExtensions( DatabaseLayout databaseLayout, FileSystemAbstraction fileSystem, Config config,
+    public static DatabaseExtensions instantiateExtensions( DatabaseLayout databaseLayout, FileSystemAbstraction fileSystem, Config config,
             LogService logService, PageCache pageCache, JobScheduler jobScheduler, RecoveryCleanupWorkCollector recoveryCollector, DatabaseInfo databaseInfo,
             Monitors monitors, TokenHolders tokenHolders )
     {
         Dependencies deps = new Dependencies();
         deps.satisfyDependencies( fileSystem, config, logService, pageCache, recoveryCollector, monitors, jobScheduler, tokenHolders );
         @SuppressWarnings( "rawtypes" )
-        Iterable kernelExtensions = Service.load( KernelExtensionFactory.class );
+        Iterable extensions = Service.load( ExtensionFactory.class );
         DatabaseExtensionContext extensionContext = new DatabaseExtensionContext( databaseLayout, databaseInfo, deps );
-        return new DatabaseKernelExtensions( extensionContext, kernelExtensions, deps, KernelExtensionFailureStrategies.ignore() );
+        return new DatabaseExtensions( extensionContext, extensions, deps, ExtensionFailureStrategies.ignore() );
     }
 }

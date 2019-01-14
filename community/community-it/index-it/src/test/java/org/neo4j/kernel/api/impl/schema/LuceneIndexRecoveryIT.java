@@ -38,8 +38,8 @@ import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.index.IndexProvider;
+import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.extension.ExtensionType;
-import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.extension.context.ExtensionContext;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
@@ -218,7 +218,7 @@ class LuceneIndexRecoveryIT
         assertEquals( 1, doIndexLookup( myLabel, 14 ).size() );
     }
 
-    private void startDb( KernelExtensionFactory<?> indexProviderFactory )
+    private void startDb( ExtensionFactory<?> indexProviderFactory )
     {
         if ( db != null )
         {
@@ -227,7 +227,7 @@ class LuceneIndexRecoveryIT
 
         TestGraphDatabaseFactory factory = new TestGraphDatabaseFactory();
         factory.setFileSystem( fs );
-        factory.setKernelExtensions( Collections.singletonList( indexProviderFactory ) );
+        factory.setExtensions( Collections.singletonList( indexProviderFactory ) );
         db = (GraphDatabaseAPI) factory.newImpermanentDatabaseBuilder()
                 .setConfig( default_schema_provider, PROVIDER_DESCRIPTOR.name() ).newGraphDatabase();
     }
@@ -310,19 +310,19 @@ class LuceneIndexRecoveryIT
         }
     }
 
-    private KernelExtensionFactory<LuceneIndexProviderFactory.Dependencies> createAlwaysInitiallyPopulatingLuceneIndexFactory()
+    private ExtensionFactory<LuceneIndexProviderFactory.Dependencies> createAlwaysInitiallyPopulatingLuceneIndexFactory()
     {
         return new PopulatingTestLuceneIndexExtension();
     }
 
     // Creates a lucene index factory with the shared in-memory directory
-    private KernelExtensionFactory<LuceneIndexProviderFactory.Dependencies> createLuceneIndexFactory()
+    private ExtensionFactory<LuceneIndexProviderFactory.Dependencies> createLuceneIndexFactory()
     {
         return new TestLuceneIndexExtension();
     }
 
     @RecoveryExtension
-    private class TestLuceneIndexExtension extends KernelExtensionFactory<LuceneIndexProviderFactory.Dependencies>
+    private class TestLuceneIndexExtension extends ExtensionFactory<LuceneIndexProviderFactory.Dependencies>
     {
 
         TestLuceneIndexExtension()
@@ -339,7 +339,7 @@ class LuceneIndexRecoveryIT
     }
 
     @RecoveryExtension
-    private class PopulatingTestLuceneIndexExtension extends KernelExtensionFactory<LuceneIndexProviderFactory.Dependencies>
+    private class PopulatingTestLuceneIndexExtension extends ExtensionFactory<LuceneIndexProviderFactory.Dependencies>
     {
         PopulatingTestLuceneIndexExtension()
         {

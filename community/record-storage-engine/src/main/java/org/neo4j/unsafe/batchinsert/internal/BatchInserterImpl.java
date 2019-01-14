@@ -67,9 +67,9 @@ import org.neo4j.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema.constraints.IndexBackedConstraintDescriptor;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.extension.DatabaseKernelExtensions;
-import org.neo4j.kernel.extension.KernelExtensionFactory;
-import org.neo4j.kernel.extension.KernelExtensionFailureStrategies;
+import org.neo4j.kernel.extension.DatabaseExtensions;
+import org.neo4j.kernel.extension.ExtensionFactory;
+import org.neo4j.kernel.extension.ExtensionFailureStrategies;
 import org.neo4j.kernel.extension.context.DatabaseExtensionContext;
 import org.neo4j.kernel.impl.api.DatabaseSchemaState;
 import org.neo4j.kernel.impl.api.NonTransactionalTokenNameLookup;
@@ -242,7 +242,7 @@ public class BatchInserterImpl implements BatchInserter
     private final long maxNodeId;
 
     public BatchInserterImpl( final File databaseDirectory, final FileSystemAbstraction fileSystem,
-                       Map<String, String> stringParams, Iterable<KernelExtensionFactory<?>> kernelExtensions ) throws IOException
+                       Map<String, String> stringParams, Iterable<ExtensionFactory<?>> extensions ) throws IOException
     {
         rejectAutoUpgrade( stringParams );
         Map<String, String> params = getDefaultParams();
@@ -306,14 +306,13 @@ public class BatchInserterImpl implements BatchInserter
         storeIndexStoreView = new NeoStoreIndexStoreView( NO_LOCK_SERVICE, () -> new RecordStorageReader( neoStores ) );
         Dependencies deps = new Dependencies();
         Monitors monitors = new Monitors();
-//<<<<<<< HEAD
         deps.satisfyDependencies( fileSystem, config, logService, storeIndexStoreView, pageCache, monitors, RecoveryCleanupWorkCollector.immediate() );
 
-        DatabaseKernelExtensions extensions = life.add( new DatabaseKernelExtensions(
+        DatabaseExtensions databaseExtensions = life.add( new DatabaseExtensions(
                 new DatabaseExtensionContext( databaseLayout, DatabaseInfo.TOOL, deps ),
-                kernelExtensions, deps, KernelExtensionFailureStrategies.ignore() ) );
+                extensions, deps, ExtensionFailureStrategies.ignore() ) );
 
-        indexProviderMap = life.add( new DefaultIndexProviderMap( extensions, config ) );
+        indexProviderMap = life.add( new DefaultIndexProviderMap( databaseExtensions, config ) );
 
         TokenHolder propertyKeyTokenHolder = new DelegatingTokenHolder( this::createNewPropertyKeyId, TokenHolder.TYPE_PROPERTY_KEY );
         propertyKeyTokenHolder.setInitialTokens( propertyKeyTokenStore.getTokens() );

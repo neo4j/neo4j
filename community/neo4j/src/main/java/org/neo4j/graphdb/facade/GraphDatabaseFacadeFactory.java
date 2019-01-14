@@ -45,7 +45,7 @@ import org.neo4j.kernel.api.security.provider.SecurityProvider;
 import org.neo4j.kernel.availability.StartupWaiter;
 import org.neo4j.kernel.builtinprocs.SpecialBuiltInProcedures;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.extension.KernelExtensionFactory;
+import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.impl.api.dbms.NonTransactionalDbmsOperations;
 import org.neo4j.kernel.impl.cache.VmPauseMonitorComponent;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
@@ -100,7 +100,7 @@ public class GraphDatabaseFacadeFactory
 
         Iterable<Class<?>> settingsClasses();
 
-        Iterable<KernelExtensionFactory<?>> kernelExtensions();
+        Iterable<ExtensionFactory<?>> extensions();
 
         Map<String,URLAccessRule> urlAccessRules();
 
@@ -188,7 +188,7 @@ public class GraphDatabaseFacadeFactory
         platform.dependencies.satisfyDependencies( securityProvider.authManager() );
         platform.dependencies.satisfyDependencies( securityProvider.userManagerSupplier() );
 
-        platform.life.add( platform.globalKernelExtensions );
+        platform.life.add( platform.globalExtensions );
         platform.life.add( createBoltServer( platform, edition, databaseManager ) );
         platform.dependencies.satisfyDependency( edition.globalTransactionCounter() );
         platform.life.add( new PublishPageCacheTracerMetricsAfterStart( platform.tracers.getPageCursorTracerSupplier() ) );

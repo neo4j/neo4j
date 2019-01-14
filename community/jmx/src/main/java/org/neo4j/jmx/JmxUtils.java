@@ -25,7 +25,7 @@ import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
 
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.jmx.impl.JmxKernelExtension;
+import org.neo4j.jmx.impl.JmxExtension;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 
 import static java.lang.String.format;
@@ -42,7 +42,7 @@ public class JmxUtils
             throw new IllegalArgumentException( "Can only resolve object names for embedded Neo4j database " +
                     "instances, eg. instances created by GraphDatabaseFactory or HighlyAvailableGraphDatabaseFactory." );
         }
-        ObjectName neoQuery = ((GraphDatabaseAPI)db).getDependencyResolver().resolveDependency( JmxKernelExtension.class )
+        ObjectName neoQuery = ((GraphDatabaseAPI)db).getDependencyResolver().resolveDependency( JmxExtension.class )
                 .getSingleManagementBean( Kernel.class ).getMBeanQuery();
 
         String instance = neoQuery.getKeyProperty( "instance" );

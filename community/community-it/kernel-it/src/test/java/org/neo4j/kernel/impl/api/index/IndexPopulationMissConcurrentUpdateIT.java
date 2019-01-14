@@ -49,8 +49,8 @@ import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyAccessor;
 import org.neo4j.kernel.api.labelscan.LabelScanReader;
 import org.neo4j.kernel.configuration.Settings;
+import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.extension.ExtensionType;
-import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.extension.context.ExtensionContext;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.id.IdController;
@@ -94,7 +94,7 @@ public class IndexPopulationMissConcurrentUpdateIT
         protected GraphDatabaseFactory newFactory()
         {
             TestGraphDatabaseFactory factory = new TestGraphDatabaseFactory();
-            return factory.addKernelExtension( index );
+            return factory.addExtension( index );
         }
     }.withSetting( GraphDatabaseSettings.multi_threaded_schema_index_population_enabled, Settings.FALSE )
      .withSetting( GraphDatabaseSettings.default_schema_provider, ControlledSchemaIndexProvider.INDEX_PROVIDER.name() );
@@ -198,7 +198,7 @@ public class IndexPopulationMissConcurrentUpdateIT
     /**
      * A very specific {@link IndexProvider} which can be paused and continued at juuust the right places.
      */
-    private static class ControlledSchemaIndexProvider extends KernelExtensionFactory<Supplier>
+    private static class ControlledSchemaIndexProvider extends ExtensionFactory<Supplier>
     {
         private final Barrier.Control barrier = new Barrier.Control();
         private final Set<Long> entitiesByScan = new ConcurrentSkipListSet<>();

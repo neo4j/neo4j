@@ -21,11 +21,11 @@ package org.neo4j.kernel.impl.index.schema.tracking;
 
 import org.neo4j.kernel.api.impl.schema.NativeLuceneFusionIndexProviderFactory20;
 import org.neo4j.kernel.api.index.IndexProvider;
+import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.extension.ExtensionType;
-import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.extension.context.ExtensionContext;
 
-public class TrackingIndexExtensionFactory extends KernelExtensionFactory<TrackingIndexExtensionFactory.Dependencies>
+public class TrackingIndexExtensionFactory extends ExtensionFactory<TrackingIndexExtensionFactory.Dependencies>
 {
     private TrackingReadersIndexProvider indexProvider;
 

@@ -37,7 +37,7 @@ import org.neo4j.kernel.availability.DatabaseAvailability;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.database.DatabaseCreationContext;
-import org.neo4j.kernel.extension.KernelExtensionFactory;
+import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.api.NonTransactionalTokenNameLookup;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
@@ -103,7 +103,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     private final DatabaseInfo databaseInfo;
     private final VersionContextSupplier versionContextSupplier;
     private final CollectionsFactorySupplier collectionsFactorySupplier;
-    private final Iterable<KernelExtensionFactory<?>> kernelExtensionFactories;
+    private final Iterable<ExtensionFactory<?>> extensionFactories;
     private final Function<DatabaseLayout,DatabaseLayoutWatcher> watcherServiceFactory;
     private final GraphDatabaseFacade facade;
     private final Iterable<QueryEngineProvider> engineProviders;
@@ -152,7 +152,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
         this.databaseInfo = platformModule.databaseInfo;
         this.versionContextSupplier = platformModule.versionContextSupplier;
         this.collectionsFactorySupplier = platformModule.collectionsFactorySupplier;
-        this.kernelExtensionFactories = platformModule.kernelExtensionFactories;
+        this.extensionFactories = platformModule.extensionFactories;
         this.watcherServiceFactory = editionContext.getWatcherServiceFactory();
         this.facade = facade;
         this.engineProviders = platformModule.engineProviders;
@@ -358,9 +358,9 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     }
 
     @Override
-    public Iterable<KernelExtensionFactory<?>> getKernelExtensionFactories()
+    public Iterable<ExtensionFactory<?>> getExtensionFactories()
     {
-        return kernelExtensionFactories;
+        return extensionFactories;
     }
 
     @Override

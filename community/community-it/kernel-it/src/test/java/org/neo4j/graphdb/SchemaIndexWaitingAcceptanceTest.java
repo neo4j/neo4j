@@ -28,7 +28,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.schema.IndexDefinition;
-import org.neo4j.kernel.extension.KernelExtensionFactory;
+import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.impl.api.index.ControlledPopulationIndexProvider;
 import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -52,8 +52,8 @@ public class SchemaIndexWaitingAcceptanceTest
         protected void configure( GraphDatabaseFactory databaseFactory )
         {
             super.configure( databaseFactory );
-            List<KernelExtensionFactory<?>> extensions = Collections.singletonList( singleInstanceIndexProviderFactory( "test", provider ) );
-            ((TestGraphDatabaseFactory) databaseFactory).setKernelExtensions( extensions );
+            List<ExtensionFactory<?>> extensions = Collections.singletonList( singleInstanceIndexProviderFactory( "test", provider ) );
+            ((TestGraphDatabaseFactory) databaseFactory).setExtensions( extensions );
         }
     }.withSetting( default_schema_provider, provider.getProviderDescriptor().name() );
 

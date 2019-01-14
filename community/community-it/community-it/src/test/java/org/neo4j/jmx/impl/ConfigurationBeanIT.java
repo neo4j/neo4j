@@ -58,7 +58,7 @@ public class ConfigurationBeanIT
     {
         ConfigurationBean configurationBean =
                 ( (GraphDatabaseAPI) graphdb ).getDependencyResolver().resolveDependency(
-                        JmxKernelExtension.class ).getSingleManagementBean( ConfigurationBean.class );
+                        JmxExtension.class ).getSingleManagementBean( ConfigurationBean.class );
 
         Object v = configurationBean.getAttribute( GraphDatabaseSettings.log_queries_threshold.name() );
         assertEquals( "0ms", v );

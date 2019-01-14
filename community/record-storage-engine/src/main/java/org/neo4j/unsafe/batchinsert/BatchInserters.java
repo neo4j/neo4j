@@ -26,7 +26,7 @@ import java.util.Map;
 import org.neo4j.helpers.Service;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.extension.KernelExtensionFactory;
+import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.unsafe.batchinsert.internal.BatchInserterImpl;
 import org.neo4j.unsafe.batchinsert.internal.FileSystemClosingBatchInserter;
 
@@ -53,33 +53,33 @@ public final class BatchInserters
 
     public static BatchInserter inserter( File databaseDirectory, FileSystemAbstraction fs ) throws IOException
     {
-        return inserter( databaseDirectory, fs, stringMap(), loadKernelExtension() );
+        return inserter( databaseDirectory, fs, stringMap(), loadExtension() );
     }
 
     public static BatchInserter inserter( File databaseDirectory, Map<String,String> config ) throws IOException
     {
         DefaultFileSystemAbstraction fileSystem = createFileSystem();
-        BatchInserter inserter = inserter( databaseDirectory, fileSystem, config, loadKernelExtension() );
+        BatchInserter inserter = inserter( databaseDirectory, fileSystem, config, loadExtension() );
         return new FileSystemClosingBatchInserter( inserter, fileSystem );
     }
 
     public static BatchInserter inserter( File databaseDirectory, FileSystemAbstraction fs, Map<String,String> config ) throws IOException
     {
-        return inserter( databaseDirectory, fs, config, loadKernelExtension() );
+        return inserter( databaseDirectory, fs, config, loadExtension() );
     }
 
     public static BatchInserter inserter( File databaseDirectory,
-            Map<String, String> config, Iterable<KernelExtensionFactory<?>> kernelExtensions ) throws IOException
+            Map<String, String> config, Iterable<ExtensionFactory<?>> extensions ) throws IOException
     {
         DefaultFileSystemAbstraction fileSystem = createFileSystem();
-        BatchInserterImpl inserter = new BatchInserterImpl( databaseDirectory, fileSystem, config, kernelExtensions );
+        BatchInserterImpl inserter = new BatchInserterImpl( databaseDirectory, fileSystem, config, extensions );
         return new FileSystemClosingBatchInserter( inserter, fileSystem );
     }
 
     public static BatchInserter inserter( File databaseDirectory, FileSystemAbstraction fileSystem, Map<String,String> config,
-            Iterable<KernelExtensionFactory<?>> kernelExtensions ) throws IOException
+            Iterable<ExtensionFactory<?>> extensions ) throws IOException
     {
-        return new BatchInserterImpl( databaseDirectory, fileSystem, config, kernelExtensions );
+        return new BatchInserterImpl( databaseDirectory, fileSystem, config, extensions );
     }
 
     private static DefaultFileSystemAbstraction createFileSystem()
@@ -87,8 +87,8 @@ public final class BatchInserters
         return new DefaultFileSystemAbstraction();
     }
 
-    private static Iterable loadKernelExtension()
+    private static Iterable loadExtension()
     {
-        return Service.load( KernelExtensionFactory.class );
+        return Service.load( ExtensionFactory.class );
     }
 }

@@ -43,9 +43,9 @@ import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.database.DefaultForceOperation;
-import org.neo4j.kernel.extension.DatabaseKernelExtensions;
-import org.neo4j.kernel.extension.KernelExtensionFactory;
-import org.neo4j.kernel.extension.KernelExtensionFailureStrategies;
+import org.neo4j.kernel.extension.DatabaseExtensions;
+import org.neo4j.kernel.extension.ExtensionFactory;
+import org.neo4j.kernel.extension.ExtensionFailureStrategies;
 import org.neo4j.kernel.extension.context.DatabaseExtensionContext;
 import org.neo4j.kernel.impl.api.DatabaseSchemaState;
 import org.neo4j.kernel.impl.api.NonTransactionalTokenNameLookup;
@@ -225,7 +225,7 @@ public final class Recovery
      * @throws IOException
      */
     public static void performRecovery( FileSystemAbstraction fs, PageCache pageCache, Config config, DatabaseLayout databaseLayout, LogProvider logProvider,
-            Monitors globalMonitors, Iterable<KernelExtensionFactory<?>> extensionFactories, Optional<LogTailScanner> providedLogScanner )
+            Monitors globalMonitors, Iterable<ExtensionFactory<?>> extensionFactories, Optional<LogTailScanner> providedLogScanner )
             throws IOException
     {
         Log recoveryLog = logProvider.getLog( Recovery.class );
@@ -250,7 +250,7 @@ public final class Recovery
         TokenNameLookup tokenNameLookup = new NonTransactionalTokenNameLookup( tokenHolders );
 
         RecoveryCleanupWorkCollector recoveryCleanupCollector = new GroupingRecoveryCleanupWorkCollector( scheduler );
-        DatabaseKernelExtensions extensions = instantiateRecoveryExtensions( databaseLayout, fs, config, logService, pageCache, scheduler,
+        DatabaseExtensions extensions = instantiateRecoveryExtensions( databaseLayout, fs, config, logService, pageCache, scheduler,
                 recoveryCleanupCollector, DatabaseInfo.TOOL, monitors, tokenHolders, recoveryCleanupCollector, extensionFactories );
         DefaultIndexProviderMap indexProviderMap = new DefaultIndexProviderMap( extensions, config );
 
@@ -334,17 +334,17 @@ public final class Recovery
         return new TransactionLogsRecovery( recoveryService, logsTruncator, recoveryMonitor, progressReporter, failOnCorruptedLogFiles );
     }
 
-    private static Iterable<KernelExtensionFactory<?>> loadExtensions()
+    private static Iterable<ExtensionFactory<?>> loadExtensions()
     {
-        return Iterables.cast( Service.load( KernelExtensionFactory.class ) );
+        return Iterables.cast( Service.load( ExtensionFactory.class ) );
     }
 
-    private static DatabaseKernelExtensions instantiateRecoveryExtensions( DatabaseLayout databaseLayout, FileSystemAbstraction fileSystem, Config config,
+    private static DatabaseExtensions instantiateRecoveryExtensions( DatabaseLayout databaseLayout, FileSystemAbstraction fileSystem, Config config,
             LogService logService, PageCache pageCache, JobScheduler jobScheduler, RecoveryCleanupWorkCollector recoveryCollector, DatabaseInfo databaseInfo,
             Monitors monitors, TokenHolders tokenHolders, RecoveryCleanupWorkCollector recoveryCleanupCollector,
-            Iterable<KernelExtensionFactory<?>> kernelExtensions )
+            Iterable<ExtensionFactory<?>> extensionFactories )
     {
-        List<KernelExtensionFactory<?>> recoveryExtensions = stream( kernelExtensions )
+        List<ExtensionFactory<?>> recoveryExtensions = stream( extensionFactories )
                         .filter( extension -> extension.getClass().isAnnotationPresent( RecoveryExtension.class ) )
                         .collect( toList() );
 
@@ -353,7 +353,7 @@ public final class Recovery
         deps.satisfyDependencies( fileSystem, config, logService, pageCache, recoveryCollector, nonListenableMonitors, jobScheduler,
                 tokenHolders, recoveryCleanupCollector );
         DatabaseExtensionContext extensionContext = new DatabaseExtensionContext( databaseLayout, databaseInfo, deps );
-        return new DatabaseKernelExtensions( extensionContext, recoveryExtensions, deps, KernelExtensionFailureStrategies.fail() );
+        return new DatabaseExtensions( extensionContext, recoveryExtensions, deps, ExtensionFailureStrategies.fail() );
     }
 
     private static boolean isRecoveryRequired( FileSystemAbstraction fs, PageCache pageCache, DatabaseLayout databaseLayout, Config config,

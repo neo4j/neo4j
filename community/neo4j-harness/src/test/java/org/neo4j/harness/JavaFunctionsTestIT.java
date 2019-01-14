@@ -136,7 +136,7 @@ public class JavaFunctionsTestIT
     }
 
     @Test
-    public void shouldWorkWithInjectableFromKernelExtension() throws Throwable
+    public void shouldWorkWithInjectableFromExtension() throws Throwable
     {
         // When
         try ( ServerControls server = createServer( MyFunctionsUsingMyService.class ).newServer() )
@@ -153,7 +153,7 @@ public class JavaFunctionsTestIT
     }
 
     @Test
-    public void shouldWorkWithInjectableFromKernelExtensionWithMorePower() throws Throwable
+    public void shouldWorkWithInjectableFromExtensionWithMorePower() throws Throwable
     {
         // When
         try ( ServerControls server = createServer( MyFunctionsUsingMyCoreAPI.class ).newServer() )

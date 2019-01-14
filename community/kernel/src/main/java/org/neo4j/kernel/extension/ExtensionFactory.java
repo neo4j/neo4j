@@ -23,16 +23,16 @@ import org.neo4j.helpers.Service;
 import org.neo4j.kernel.extension.context.ExtensionContext;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
-public abstract class KernelExtensionFactory<DEPENDENCIES> extends Service
+public abstract class ExtensionFactory<DEPENDENCIES> extends Service
 {
     private final ExtensionType extensionType;
 
-    protected KernelExtensionFactory( String key )
+    protected ExtensionFactory( String key )
     {
         this( ExtensionType.GLOBAL, key );
     }
 
-    protected KernelExtensionFactory( ExtensionType extensionType, String key )
+    protected ExtensionFactory( ExtensionType extensionType, String key )
     {
         super( key );
         this.extensionType = extensionType;
@@ -50,7 +50,7 @@ public abstract class KernelExtensionFactory<DEPENDENCIES> extends Service
     @Override
     public String toString()
     {
-        return "KernelExtension:" + getClass().getSimpleName() + getKeys();
+        return "Extension:" + getClass().getSimpleName() + getKeys();
     }
 
     ExtensionType getExtensionType()

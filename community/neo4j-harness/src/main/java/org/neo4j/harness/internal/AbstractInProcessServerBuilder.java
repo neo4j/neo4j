@@ -45,8 +45,8 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.HttpConnector;
 import org.neo4j.kernel.configuration.HttpConnector.Encryption;
 import org.neo4j.kernel.configuration.Settings;
+import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.extension.ExtensionType;
-import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.extension.context.ExtensionContext;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -156,9 +156,9 @@ public abstract class AbstractInProcessServerBuilder implements TestServerBuilde
             LogProvider userLogProvider = FormattedLogProvider.withZoneId( logZoneIdFrom( config ) ).toOutputStream( logOutputStream );
             GraphDatabaseDependencies dependencies = GraphDatabaseDependencies.newDependencies()
                     .userLogProvider( userLogProvider );
-            Iterable<KernelExtensionFactory<?>> kernelExtensions =
-                    append( new Neo4jHarnessExtensions( procedures ), dependencies.kernelExtensions() );
-            dependencies = dependencies.kernelExtensions( kernelExtensions );
+            Iterable<ExtensionFactory<?>> extensions =
+                    append( new Neo4jHarnessExtensions( procedures ), dependencies.extensions() );
+            dependencies = dependencies.extensions( extensions );
 
             Config dbConfig = Config.defaults( config );
             GraphFactory graphFactory = createGraphFactory( dbConfig );
@@ -306,7 +306,7 @@ public abstract class AbstractInProcessServerBuilder implements TestServerBuilde
      * after other kernel extensions have initialized, since kernel extensions
      * can add custom injectables that procedures need.
      */
-    private static class Neo4jHarnessExtensions extends KernelExtensionFactory<Neo4jHarnessExtensions.Dependencies>
+    private static class Neo4jHarnessExtensions extends ExtensionFactory<Neo4jHarnessExtensions.Dependencies>
     {
         interface Dependencies
         {

@@ -32,16 +32,16 @@ import static org.neo4j.helpers.collection.Iterables.count;
 class GraphDatabaseFactoryStateTest
 {
     @Test
-    void mustBeAbleToRemoveAddedKernelExtensions()
+    void mustBeAbleToRemoveAddedExtensions()
     {
         DummyExtensionFactory extensionFactory = new DummyExtensionFactory();
         GraphDatabaseFactoryState state = new GraphDatabaseFactoryState();
-        long initialCount = count( state.getKernelExtension() );
+        long initialCount = count( state.getExtension() );
 
-        state.addKernelExtensions( Collections.singleton( extensionFactory ) );
-        assertThat( count( state.getKernelExtension() ), is( initialCount + 1 ) );
+        state.addExtensions( Collections.singleton( extensionFactory ) );
+        assertThat( count( state.getExtension() ), is( initialCount + 1 ) );
 
-        state.removeKernelExtensions( e -> e == extensionFactory );
-        assertThat( count( state.getKernelExtension() ), is( initialCount ) );
+        state.removeExtensions( e -> e == extensionFactory );
+        assertThat( count( state.getExtension() ), is( initialCount ) );
     }
 }

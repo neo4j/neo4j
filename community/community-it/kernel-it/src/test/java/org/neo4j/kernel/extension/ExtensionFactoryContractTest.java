@@ -37,18 +37,18 @@ import static org.junit.Assert.assertSame;
 import static org.junit.Assert.fail;
 
 /**
- * Base class for testing a {@link org.neo4j.kernel.extension.KernelExtensionFactory}. The base test cases in this
- * class verifies that a extension upholds the {@link org.neo4j.kernel.extension.KernelExtensionFactory} contract.
+ * Base class for testing a {@link ExtensionFactory}. The base test cases in this
+ * class verifies that a extension upholds the {@link ExtensionFactory} contract.
  */
-public abstract class KernelExtensionFactoryContractTest
+public abstract class ExtensionFactoryContractTest
 {
-    private final Class<? extends KernelExtensionFactory<?>> extClass;
+    private final Class<? extends ExtensionFactory<?>> extClass;
     private final String key;
 
     @Rule
     public final TestDirectory target = TestDirectory.testDirectory();
 
-    public KernelExtensionFactoryContractTest( String key, Class<? extends KernelExtensionFactory<?>> extClass )
+    public ExtensionFactoryContractTest( String key, Class<? extends ExtensionFactory<?>> extClass )
     {
         this.extClass = extClass;
         this.key = key;
@@ -61,7 +61,7 @@ public abstract class KernelExtensionFactoryContractTest
     }
 
     /**
-     * Override to create default configuration for the {@link org.neo4j.kernel.extension.KernelExtensionFactory}
+     * Override to create default configuration for the {@link ExtensionFactory}
      * under test.
      *
      * @param instance   used for differentiating multiple instances that will run
@@ -76,7 +76,7 @@ public abstract class KernelExtensionFactoryContractTest
     @Test
     public void extensionShouldHavePublicNoArgConstructor()
     {
-        KernelExtensionFactory<?> instance = null;
+        ExtensionFactory<?> instance = null;
         try
         {
             instance = newInstance();
@@ -92,7 +92,7 @@ public abstract class KernelExtensionFactoryContractTest
     @Test
     public void shouldBeAbleToLoadExtensionAsAServiceProvider()
     {
-        KernelExtensionFactory<?> instance = null;
+        ExtensionFactory<?> instance = null;
         try
         {
             instance = loadInstance();
@@ -110,8 +110,8 @@ public abstract class KernelExtensionFactoryContractTest
     @Test
     public void differentInstancesShouldHaveEqualHashCodesAndBeEqual()
     {
-        KernelExtensionFactory<?> one = newInstance();
-        KernelExtensionFactory<?> two = newInstance();
+        ExtensionFactory<?> one = newInstance();
+        ExtensionFactory<?> two = newInstance();
         assertEquals( "new instances have different hash codes", one.hashCode(), two.hashCode() );
         assertEquals( "new instances are not equals", one, two );
 
@@ -126,7 +126,7 @@ public abstract class KernelExtensionFactoryContractTest
         assertEquals( "loaded instance and new instance are not equals", one, two );
     }
 
-    private KernelExtensionFactory<?> newInstance()
+    private ExtensionFactory<?> newInstance()
     {
         try
         {
@@ -138,8 +138,8 @@ public abstract class KernelExtensionFactoryContractTest
         }
     }
 
-    private KernelExtensionFactory<?> loadInstance()
+    private ExtensionFactory<?> loadInstance()
     {
-        return extClass.cast( Service.load( KernelExtensionFactory.class, key ) );
+        return extClass.cast( Service.load( ExtensionFactory.class, key ) );
     }
 }

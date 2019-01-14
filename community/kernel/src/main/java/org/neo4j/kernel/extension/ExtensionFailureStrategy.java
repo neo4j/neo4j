@@ -19,20 +19,11 @@
  */
 package org.neo4j.kernel.extension;
 
-public class FailedToBuildKernelExtensionException extends RuntimeException
+import org.neo4j.exceptions.UnsatisfiedDependencyException;
+
+public interface ExtensionFailureStrategy
 {
-    public FailedToBuildKernelExtensionException( String message )
-    {
-        super( message );
-    }
+    void handle( ExtensionFactory extensionFactory, UnsatisfiedDependencyException e );
 
-    public FailedToBuildKernelExtensionException( String message, Throwable cause )
-    {
-        super( message, cause );
-    }
-
-    public FailedToBuildKernelExtensionException( Throwable cause )
-    {
-        super( cause );
-    }
+    void handle( ExtensionFactory extensionFactory, Throwable e );
 }

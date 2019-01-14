@@ -17,14 +17,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.ext.udc.impl;
+package org.neo4j.kernel.extension;
 
-import org.neo4j.kernel.extension.KernelExtensionFactoryContractTest;
+import org.neo4j.kernel.extension.context.DatabaseExtensionContext;
+import org.neo4j.kernel.impl.util.Dependencies;
 
-public class TestUdcKernelExtensionFactory extends KernelExtensionFactoryContractTest
+public class DatabaseExtensions extends AbstractExtensions
 {
-    public TestUdcKernelExtensionFactory()
+    public DatabaseExtensions( DatabaseExtensionContext extensionContext, Iterable<ExtensionFactory<?>> extensionFactories,
+                             Dependencies dependencies, ExtensionFailureStrategy extensionFailureStrategy )
     {
-        super( UdcKernelExtensionFactory.KEY, UdcKernelExtensionFactory.class );
+        super( extensionContext, extensionFactories, dependencies, extensionFailureStrategy, ExtensionType.DATABASE );
     }
 }

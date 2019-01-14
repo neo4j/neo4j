@@ -30,7 +30,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.kernel.extension.KernelExtensionFactory;
+import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProviderFactory;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
@@ -55,7 +55,7 @@ public class BatchInsertersTest
     {
         verifyInserterFileSystemClose( inserter( getStoreDir() ) );
         verifyInserterFileSystemClose( inserter( getStoreDir(), getConfig() ) );
-        verifyInserterFileSystemClose( inserter( getStoreDir(), getConfig(), getKernelExtensions() ) );
+        verifyInserterFileSystemClose( inserter( getStoreDir(), getConfig(), getExtensions() ) );
     }
 
     @Test
@@ -64,10 +64,10 @@ public class BatchInsertersTest
         EphemeralFileSystemAbstraction fs = fileSystemRule.get();
         verifyProvidedFileSystemOpenAfterShutdown( inserter( getStoreDir(), fs ), fs );
         verifyProvidedFileSystemOpenAfterShutdown( inserter( getStoreDir(), fs, getConfig() ), fs );
-        verifyProvidedFileSystemOpenAfterShutdown( inserter( getStoreDir(), fs, getConfig(), getKernelExtensions() ), fs );
+        verifyProvidedFileSystemOpenAfterShutdown( inserter( getStoreDir(), fs, getConfig(), getExtensions() ), fs );
     }
 
-    private static Iterable<KernelExtensionFactory<?>> getKernelExtensions()
+    private static Iterable<ExtensionFactory<?>> getExtensions()
     {
         return Iterables.asIterable( new GenericNativeIndexProviderFactory() );
     }

@@ -38,9 +38,9 @@ import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ConnectorPortRegister;
 import org.neo4j.kernel.diagnostics.providers.DbmsDiagnosticsManager;
-import org.neo4j.kernel.extension.GlobalKernelExtensions;
-import org.neo4j.kernel.extension.KernelExtensionFactory;
-import org.neo4j.kernel.extension.KernelExtensionFailureStrategies;
+import org.neo4j.kernel.extension.ExtensionFactory;
+import org.neo4j.kernel.extension.ExtensionFailureStrategies;
+import org.neo4j.kernel.extension.GlobalExtensions;
 import org.neo4j.kernel.extension.context.GlobalExtensionContext;
 import org.neo4j.kernel.impl.context.TransactionVersionContextSupplier;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
@@ -113,8 +113,8 @@ public class PlatformModule
 
     public final FileSystemAbstraction fileSystem;
 
-    public final GlobalKernelExtensions globalKernelExtensions;
-    public final Iterable<KernelExtensionFactory<?>> kernelExtensionFactories;
+    public final GlobalExtensions globalExtensions;
+    public final Iterable<ExtensionFactory<?>> extensionFactories;
     public final Iterable<QueryEngineProvider> engineProviders;
 
     public final URLAccessRule urlAccessRule;
@@ -199,11 +199,11 @@ public class PlatformModule
         life.add( fileSystemWatcher );
         dependencies.satisfyDependency( fileSystemWatcher );
 
-        kernelExtensionFactories = externalDependencies.kernelExtensions();
+        extensionFactories = externalDependencies.extensions();
         engineProviders = externalDependencies.executionEngines();
-        globalKernelExtensions = dependencies.satisfyDependency(
-                new GlobalKernelExtensions( new GlobalExtensionContext( storeLayout, databaseInfo, dependencies ),
-                        kernelExtensionFactories, dependencies, KernelExtensionFailureStrategies.fail() ) );
+        globalExtensions = dependencies.satisfyDependency(
+                new GlobalExtensions( new GlobalExtensionContext( storeLayout, databaseInfo, dependencies ), extensionFactories, dependencies,
+                        ExtensionFailureStrategies.fail() ) );
 
         urlAccessRule = dependencies.satisfyDependency( URLAccessRules.combined( externalDependencies.urlAccessRules() ) );
 

@@ -19,8 +19,8 @@
  */
 package org.neo4j.harness;
 
+import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.extension.ExtensionType;
-import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.extension.context.ExtensionContext;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.proc.Procedures;
@@ -34,7 +34,7 @@ import org.neo4j.logging.internal.LogService;
 // case the goal is to provide alternative Core API's and as such it wraps
 // the old Core API.
 public class MyExtensionThatAddsAlternativeCoreAPI
-        extends KernelExtensionFactory<MyExtensionThatAddsAlternativeCoreAPI.Dependencies>
+        extends ExtensionFactory<MyExtensionThatAddsAlternativeCoreAPI.Dependencies>
 {
     public MyExtensionThatAddsAlternativeCoreAPI()
     {

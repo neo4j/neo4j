@@ -22,8 +22,9 @@ package org.neo4j.kernel;
 import org.junit.Test;
 
 import org.neo4j.dbms.database.DatabaseManager;
-import org.neo4j.kernel.extension.GlobalKernelExtensions;
-import org.neo4j.kernel.extension.KernelExtensionFactoryContractTest;
+import org.neo4j.kernel.extension.ExtensionFactory;
+import org.neo4j.kernel.extension.ExtensionFactoryContractTest;
+import org.neo4j.kernel.extension.GlobalExtensions;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.LifecycleStatus;
 
@@ -31,16 +32,16 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
 /**
- * Test the implementation of the {@link org.neo4j.kernel.extension.KernelExtensionFactory} framework. Treats the
+ * Test the implementation of the {@link ExtensionFactory} framework. Treats the
  * framework as a black box and takes the perspective of the extension, making
  * sure that the framework fulfills its part of the contract. The parent class (
- * {@link KernelExtensionFactoryContractTest}) takes the opposite approach, it treats
+ * {@link ExtensionFactoryContractTest}) takes the opposite approach, it treats
  * the extension implementation as a black box to assert that it fulfills the
  * requirements stipulated by the framework.
  */
-public final class TestKernelExtension extends KernelExtensionFactoryContractTest
+public final class TestExtension extends ExtensionFactoryContractTest
 {
-    public TestKernelExtension()
+    public TestExtension()
     {
         super( DummyExtensionFactory.EXTENSION_ID, DummyExtensionFactory.class );
     }
@@ -55,7 +56,7 @@ public final class TestKernelExtension extends KernelExtensionFactoryContractTes
         try
         {
             assertEquals( LifecycleStatus.STARTED, graphdb.getDependencyResolver().resolveDependency(
-                    GlobalKernelExtensions.class ).resolveDependency( DummyExtension.class ).getStatus() );
+                    GlobalExtensions.class ).resolveDependency( DummyExtension.class ).getStatus() );
         }
         finally
         {
@@ -72,10 +73,10 @@ public final class TestKernelExtension extends KernelExtensionFactoryContractTes
         GraphDatabaseAPI graphdb = graphDb( 0 );
         try
         {
-            GlobalKernelExtensions globalKernelExtensions = graphdb.getDependencyResolver().resolveDependency( GlobalKernelExtensions.class );
-            assertNotNull( globalKernelExtensions.resolveDependency( DummyExtension.class ).getDependencies().getConfig() );
+            GlobalExtensions globalExtensions = graphdb.getDependencyResolver().resolveDependency( GlobalExtensions.class );
+            assertNotNull( globalExtensions.resolveDependency( DummyExtension.class ).getDependencies().getConfig() );
             assertEquals( graphdb.getDependencyResolver().resolveDependency( DatabaseManager.class ),
-                    globalKernelExtensions.resolveDependency( DummyExtension.class ).getDependencies().getDatabaseManager() );
+                    globalExtensions.resolveDependency( DummyExtension.class ).getDependencies().getDatabaseManager() );
         }
         finally
         {
@@ -92,7 +93,7 @@ public final class TestKernelExtension extends KernelExtensionFactoryContractTes
         GraphDatabaseAPI graphdb = graphDb( 0 );
         graphdb.shutdown();
 
-        assertEquals( LifecycleStatus.SHUTDOWN, graphdb.getDependencyResolver().resolveDependency( GlobalKernelExtensions
+        assertEquals( LifecycleStatus.SHUTDOWN, graphdb.getDependencyResolver().resolveDependency( GlobalExtensions
                 .class ).resolveDependency( DummyExtension.class ).getStatus() );
     }
 }

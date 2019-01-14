@@ -72,8 +72,8 @@ public class ConstraintIndexFailureIT
         // Remove the indexes offline and start up with an index provider which reports FAILED as initial state. An ordeal, I know right...
         FileUtils.deleteRecursively( IndexDirectoryStructure.baseSchemaIndexFolder( dir ) );
         db = new TestGraphDatabaseFactory()
-                .removeKernelExtensions( INDEX_PROVIDERS_FILTER )
-                .addKernelExtension( new FailingGenericNativeIndexProviderFactory( INITIAL_STATE ) )
+                .removeExtensions( INDEX_PROVIDERS_FILTER )
+                .addExtension( new FailingGenericNativeIndexProviderFactory( INITIAL_STATE ) )
                 .newEmbeddedDatabase( dir );
         // when
         try ( Transaction tx = db.beginTx() )

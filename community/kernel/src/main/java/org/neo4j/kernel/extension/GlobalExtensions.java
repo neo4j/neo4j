@@ -22,11 +22,11 @@ package org.neo4j.kernel.extension;
 import org.neo4j.kernel.extension.context.GlobalExtensionContext;
 import org.neo4j.kernel.impl.util.Dependencies;
 
-public class GlobalKernelExtensions extends AbstractKernelExtensions
+public class GlobalExtensions extends AbstractExtensions
 {
-    public GlobalKernelExtensions( GlobalExtensionContext extensionContext, Iterable<KernelExtensionFactory<?>> kernelExtensionFactories,
-                             Dependencies dependencies, KernelExtensionFailureStrategy kernelExtensionFailureStrategy )
+    public GlobalExtensions( GlobalExtensionContext extensionContext, Iterable<ExtensionFactory<?>> extensionFactories,
+                             Dependencies dependencies, ExtensionFailureStrategy extensionFailureStrategy )
     {
-        super( extensionContext, kernelExtensionFactories, dependencies, kernelExtensionFailureStrategy, ExtensionType.GLOBAL );
+        super( extensionContext, extensionFactories, dependencies, extensionFailureStrategy, ExtensionType.GLOBAL );
     }
 }

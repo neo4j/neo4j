@@ -162,7 +162,7 @@ public class JavaProceduresTest
     }
 
     @Test
-    public void shouldWorkWithInjectableFromKernelExtension() throws Throwable
+    public void shouldWorkWithInjectableFromExtension() throws Throwable
     {
         // When
         try ( ServerControls server = createServer( MyProceduresUsingMyService.class ).newServer() )
@@ -179,7 +179,7 @@ public class JavaProceduresTest
     }
 
     @Test
-    public void shouldWorkWithInjectableFromKernelExtensionWithMorePower() throws Throwable
+    public void shouldWorkWithInjectableFromExtensionWithMorePower() throws Throwable
     {
         // When
         try ( ServerControls server = createServer( MyProceduresUsingMyCoreAPI.class )

@@ -19,22 +19,10 @@
  */
 package org.neo4j.kernel.extension;
 
-import org.neo4j.kernel.extension.context.ExtensionContext;
-import org.neo4j.kernel.lifecycle.Lifecycle;
-
-/**
- * This kernel extension cannot be initialised, because an exception will be thrown we the machinery tries to create a proxy of the UnproxyableDepencies class.
- */
-public class UninitializableKernelExtensionFactory extends KernelExtensionFactory<UnproxyableDependencies>
+class FailedToBuildExtensionException extends RuntimeException
 {
-    public UninitializableKernelExtensionFactory()
+    FailedToBuildExtensionException( String message, Throwable cause )
     {
-        super( "uninitializable" );
-    }
-
-    @Override
-    public Lifecycle newInstance( ExtensionContext context, UnproxyableDependencies dependencies )
-    {
-        return null;
+        super( message, cause );
     }
 }

@@ -53,8 +53,8 @@ import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.SettingChangeListener;
 import org.neo4j.kernel.diagnostics.providers.DbmsDiagnosticsManager;
-import org.neo4j.kernel.extension.DatabaseKernelExtensions;
-import org.neo4j.kernel.extension.KernelExtensionFactory;
+import org.neo4j.kernel.extension.DatabaseExtensions;
+import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.extension.context.DatabaseExtensionContext;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.api.DatabaseSchemaState;
@@ -161,7 +161,7 @@ import org.neo4j.util.VisibleForTesting;
 import static java.lang.String.format;
 import static org.neo4j.helpers.Exceptions.throwIfUnchecked;
 import static org.neo4j.helpers.collection.Iterators.asList;
-import static org.neo4j.kernel.extension.KernelExtensionFailureStrategies.fail;
+import static org.neo4j.kernel.extension.ExtensionFailureStrategies.fail;
 import static org.neo4j.kernel.recovery.Recovery.performRecovery;
 
 public class Database extends LifecycleAdapter
@@ -216,7 +216,7 @@ public class Database extends LifecycleAdapter
     private StorageEngine storageEngine;
     private QueryExecutionEngine executionEngine;
     private DatabaseKernelModule kernelModule;
-    private final Iterable<KernelExtensionFactory<?>> kernelExtensionFactories;
+    private final Iterable<ExtensionFactory<?>> extensionFactories;
     private final Function<DatabaseLayout,DatabaseLayoutWatcher> watcherServiceFactory;
     private final GraphDatabaseFacade facade;
     private final Iterable<QueryEngineProvider> engineProviders;
@@ -262,7 +262,7 @@ public class Database extends LifecycleAdapter
         this.idController = context.getIdController();
         this.databaseInfo = context.getDatabaseInfo();
         this.versionContextSupplier = context.getVersionContextSupplier();
-        this.kernelExtensionFactories = context.getKernelExtensionFactories();
+        this.extensionFactories = context.getExtensionFactories();
         this.watcherServiceFactory = context.getWatcherServiceFactory();
         this.facade = context.getFacade();
         this.engineProviders = context.getEngineProviders();
@@ -348,7 +348,7 @@ public class Database extends LifecycleAdapter
             // Upgrade the store before we begin
             upgradeStore();
 
-            performRecovery( fs, databasePageCache, config, databaseLayout, logProvider, databaseMonitors, kernelExtensionFactories,
+            performRecovery( fs, databasePageCache, config, databaseLayout, logProvider, databaseMonitors, extensionFactories,
                     Optional.of( tailScanner ) );
 
             // Build all modules and their services
@@ -468,8 +468,8 @@ public class Database extends LifecycleAdapter
     {
         LifeSupport extensionsLife = new LifeSupport();
 
-        extensionsLife.add( new DatabaseKernelExtensions( new DatabaseExtensionContext( databaseLayout, databaseInfo, dependencies ),
-                kernelExtensionFactories, dependencies, fail() ) );
+        extensionsLife.add( new DatabaseExtensions( new DatabaseExtensionContext( databaseLayout, databaseInfo, dependencies ), extensionFactories,
+                dependencies, fail() ) );
 
         indexProviderMap = extensionsLife.add( new DefaultIndexProviderMap( dependencies, config ) );
         dependencies.satisfyDependency( indexProviderMap );

@@ -29,7 +29,7 @@ import org.neo4j.configuration.LoadableConfig;
 import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory;
 import org.neo4j.graphdb.security.URLAccessRule;
 import org.neo4j.helpers.Service;
-import org.neo4j.kernel.extension.KernelExtensionFactory;
+import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
 
@@ -45,7 +45,7 @@ public class GraphDatabaseFactoryState
     // - one thread creates a GraphDatabaseFactory (including state)
     // - this factory will potentially be handed over to other threads, which will create databases
     private final List<Class<?>> settingsClasses;
-    private final List<KernelExtensionFactory<?>> kernelExtensions;
+    private final List<ExtensionFactory<?>> extensions;
     private volatile Monitors monitors;
     private volatile LogProvider userLogProvider;
     private final Map<String,URLAccessRule> urlAccessRules;
@@ -54,10 +54,10 @@ public class GraphDatabaseFactoryState
     {
         settingsClasses = new CopyOnWriteArrayList<>();
         settingsClasses.add( GraphDatabaseSettings.class );
-        kernelExtensions = new CopyOnWriteArrayList<>();
-        for ( KernelExtensionFactory<?> factory : Service.load( KernelExtensionFactory.class ) )
+        extensions = new CopyOnWriteArrayList<>();
+        for ( ExtensionFactory<?> factory : Service.load( ExtensionFactory.class ) )
         {
-            kernelExtensions.add( factory );
+            extensions.add( factory );
         }
         urlAccessRules = new ConcurrentHashMap<>();
     }
@@ -65,33 +65,33 @@ public class GraphDatabaseFactoryState
     public GraphDatabaseFactoryState( GraphDatabaseFactoryState previous )
     {
         settingsClasses = new CopyOnWriteArrayList<>( previous.settingsClasses );
-        kernelExtensions = new CopyOnWriteArrayList<>( previous.kernelExtensions );
+        extensions = new CopyOnWriteArrayList<>( previous.extensions );
         urlAccessRules = new ConcurrentHashMap<>( previous.urlAccessRules );
         monitors = previous.monitors;
         userLogProvider = previous.userLogProvider;
     }
 
-    public Iterable<KernelExtensionFactory<?>> getKernelExtension()
+    public Iterable<ExtensionFactory<?>> getExtension()
     {
-        return kernelExtensions;
+        return extensions;
     }
 
-    public void removeKernelExtensions( Predicate<KernelExtensionFactory<?>> toRemove )
+    public void removeExtensions( Predicate<ExtensionFactory<?>> toRemove )
     {
-        kernelExtensions.removeIf( toRemove );
+        extensions.removeIf( toRemove );
     }
 
-    public void setKernelExtensions( Iterable<KernelExtensionFactory<?>> newKernelExtensions )
+    public void setExtensions( Iterable<ExtensionFactory<?>> newExtensions )
     {
-        kernelExtensions.clear();
-        addKernelExtensions( newKernelExtensions );
+        extensions.clear();
+        addExtensions( newExtensions );
     }
 
-    public void addKernelExtensions( Iterable<KernelExtensionFactory<?>> newKernelExtensions )
+    public void addExtensions( Iterable<ExtensionFactory<?>> extensions )
     {
-        for ( KernelExtensionFactory<?> newKernelExtension : newKernelExtensions )
+        for ( ExtensionFactory<?> extension : extensions )
         {
-            kernelExtensions.add( newKernelExtension );
+            this.extensions.add( extension );
         }
     }
 
@@ -131,6 +131,6 @@ public class GraphDatabaseFactoryState
                 userLogProvider( userLogProvider ).
                 settingsClasses( settingsClasses ).
                 urlAccessRules( urlAccessRules ).
-                kernelExtensions( kernelExtensions );
+                extensions( extensions );
     }
 }

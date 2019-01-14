@@ -35,8 +35,8 @@ import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyAccessor;
+import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.extension.ExtensionType;
-import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.extension.context.ExtensionContext;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -55,12 +55,12 @@ import static java.util.Arrays.copyOfRange;
  * To be sure to use this provider in your test please do something like:
  * <pre>
  * db = new TestGraphDatabaseFactory()
- *     .removeKernelExtensions( TestGraphDatabaseFactory.INDEX_PROVIDERS_FILTER )
- *     .addKernelExtension( new FailingGenericNativeIndexProviderFactory( FailureType.INITIAL_STATE ) )
+ *     .removeExtensions( TestGraphDatabaseFactory.INDEX_PROVIDERS_FILTER )
+ *     .addExtension( new FailingGenericNativeIndexProviderFactory( FailureType.INITIAL_STATE ) )
  *     .newEmbeddedDatabase( dir );
  * </pre>
  */
-public class FailingGenericNativeIndexProviderFactory extends KernelExtensionFactory<GenericNativeIndexProviderFactory.Dependencies>
+public class FailingGenericNativeIndexProviderFactory extends ExtensionFactory<GenericNativeIndexProviderFactory.Dependencies>
 {
     public static final String INITIAL_STATE_FAILURE_MESSAGE = "Override initial state as failed";
     public static final String POPULATION_FAILURE_MESSAGE = "Fail on update during population";

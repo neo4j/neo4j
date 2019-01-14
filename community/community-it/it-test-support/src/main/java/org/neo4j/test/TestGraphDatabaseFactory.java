@@ -43,7 +43,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
-import org.neo4j.kernel.extension.KernelExtensionFactory;
+import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.index.schema.AbstractIndexProviderFactory;
 import org.neo4j.kernel.internal.locker.StoreLocker;
@@ -66,7 +66,7 @@ import static org.neo4j.kernel.configuration.Settings.TRUE;
  */
 public class TestGraphDatabaseFactory extends GraphDatabaseFactory
 {
-    public static final Predicate<KernelExtensionFactory<?>> INDEX_PROVIDERS_FILTER = extension -> extension instanceof AbstractIndexProviderFactory;
+    public static final Predicate<ExtensionFactory<?>> INDEX_PROVIDERS_FILTER = extension -> extension instanceof AbstractIndexProviderFactory;
 
     public TestGraphDatabaseFactory()
     {
@@ -187,26 +187,26 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
         return this;
     }
 
-    public TestGraphDatabaseFactory addKernelExtensions( Iterable<KernelExtensionFactory<?>> newKernelExtensions )
+    public TestGraphDatabaseFactory addExtensions( Iterable<ExtensionFactory<?>> extensions )
     {
-        getCurrentState().addKernelExtensions( newKernelExtensions );
+        getCurrentState().addExtensions( extensions );
         return this;
     }
 
-    public TestGraphDatabaseFactory addKernelExtension( KernelExtensionFactory<?> newKernelExtension )
+    public TestGraphDatabaseFactory addExtension( ExtensionFactory<?> extensions )
     {
-        return addKernelExtensions( Collections.singletonList( newKernelExtension ) );
+        return addExtensions( Collections.singletonList( extensions ) );
     }
 
-    public TestGraphDatabaseFactory setKernelExtensions( Iterable<KernelExtensionFactory<?>> newKernelExtensions )
+    public TestGraphDatabaseFactory setExtensions( Iterable<ExtensionFactory<?>> extensions )
     {
-        getCurrentState().setKernelExtensions( newKernelExtensions );
+        getCurrentState().setExtensions( extensions );
         return this;
     }
 
-    public TestGraphDatabaseFactory removeKernelExtensions( Predicate<KernelExtensionFactory<?>> filter )
+    public TestGraphDatabaseFactory removeExtensions( Predicate<ExtensionFactory<?>> filter )
     {
-        getCurrentState().removeKernelExtensions( filter );
+        getCurrentState().removeExtensions( filter );
         return this;
     }
 

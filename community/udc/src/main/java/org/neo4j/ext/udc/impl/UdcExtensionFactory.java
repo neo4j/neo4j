@@ -24,7 +24,7 @@ import java.util.Timer;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.extension.KernelExtensionFactory;
+import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.extension.context.ExtensionContext;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.udc.UsageData;
@@ -38,10 +38,10 @@ import org.neo4j.udc.UsageData;
  * testing and short-run applications. Subsequent updates are made at regular
  * intervals. Both times are specified in milliseconds.
  */
-@Service.Implementation( KernelExtensionFactory.class )
-public class UdcKernelExtensionFactory extends KernelExtensionFactory<UdcKernelExtensionFactory.Dependencies>
+@Service.Implementation( ExtensionFactory.class )
+public class UdcExtensionFactory extends ExtensionFactory<UdcExtensionFactory.Dependencies>
 {
-    static final String KEY = "kernel udc";
+    static final String KEY = "udc";
 
     public interface Dependencies
     {
@@ -50,16 +50,16 @@ public class UdcKernelExtensionFactory extends KernelExtensionFactory<UdcKernelE
         UsageData usageData();
     }
 
-    public UdcKernelExtensionFactory()
+    public UdcExtensionFactory()
     {
         super( KEY );
     }
 
     @Override
-    public Lifecycle newInstance( ExtensionContext extensionContext, UdcKernelExtensionFactory.Dependencies dependencies )
+    public Lifecycle newInstance( ExtensionContext extensionContext, UdcExtensionFactory.Dependencies dependencies )
     {
         Config config = dependencies.config();
-        return new UdcKernelExtension(
+        return new UdcExtension(
                 config,
                 dependencies.databaseManager(),
                 dependencies.usageData(),

@@ -48,7 +48,7 @@ import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.api.direct.DirectStoreAccess;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.extension.DatabaseKernelExtensions;
+import org.neo4j.kernel.extension.DatabaseExtensions;
 import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.index.EntityUpdates;
@@ -105,7 +105,7 @@ import org.neo4j.test.rule.TestDirectory;
 
 import static java.lang.System.currentTimeMillis;
 import static org.neo4j.consistency.ConsistencyCheckService.defaultConsistencyCheckThreadsNumber;
-import static org.neo4j.consistency.internal.SchemaIndexExtensionLoader.instantiateKernelExtensions;
+import static org.neo4j.consistency.internal.SchemaIndexExtensionLoader.instantiateExtensions;
 
 public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implements TestRule
 {
@@ -240,7 +240,7 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
                 new DelegatingTokenHolder( new ReadOnlyTokenCreator(), TokenHolder.TYPE_PROPERTY_KEY ),
                 new DelegatingTokenHolder( new ReadOnlyTokenCreator(), TokenHolder.TYPE_LABEL ),
                 new DelegatingTokenHolder( new ReadOnlyTokenCreator(), TokenHolder.TYPE_RELATIONSHIP_TYPE ) );
-        DatabaseKernelExtensions extensions = fixtureLife.add( instantiateKernelExtensions( databaseLayout, fileSystem, config, logService,
+        DatabaseExtensions extensions = fixtureLife.add( instantiateExtensions( databaseLayout, fileSystem, config, logService,
                 pageCache, scheduler, RecoveryCleanupWorkCollector.ignore(), DatabaseInfo.COMMUNITY, monitors, tokenHolders ) );
         return fixtureLife.add( new DefaultIndexProviderMap( extensions, config ) );
     }

@@ -37,14 +37,14 @@ import org.neo4j.udc.UsageData;
  * testing and short-run applications. Subsequent updates are made at regular
  * intervals. Both times are specified in milliseconds.
  */
-public class UdcKernelExtension extends LifecycleAdapter
+public class UdcExtension extends LifecycleAdapter
 {
     private Timer timer;
     private final UsageData usageData;
     private final Config config;
     private final DatabaseManager databaseManager;
 
-    UdcKernelExtension( Config config, DatabaseManager databaseManager, UsageData usageData, Timer timer )
+    UdcExtension( Config config, DatabaseManager databaseManager, UsageData usageData, Timer timer )
     {
         this.config = config;
         this.databaseManager = databaseManager;

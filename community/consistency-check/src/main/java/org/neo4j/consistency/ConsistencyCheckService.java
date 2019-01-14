@@ -49,7 +49,7 @@ import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier
 import org.neo4j.kernel.api.direct.DirectStoreAccess;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.extension.DatabaseKernelExtensions;
+import org.neo4j.kernel.extension.DatabaseExtensions;
 import org.neo4j.kernel.impl.api.scan.FullStoreChangeStream;
 import org.neo4j.kernel.impl.core.DelegatingTokenHolder;
 import org.neo4j.kernel.impl.core.ReadOnlyTokenCreator;
@@ -73,7 +73,7 @@ import org.neo4j.logging.internal.SimpleLogService;
 import org.neo4j.scheduler.JobScheduler;
 
 import static java.lang.String.format;
-import static org.neo4j.consistency.internal.SchemaIndexExtensionLoader.instantiateKernelExtensions;
+import static org.neo4j.consistency.internal.SchemaIndexExtensionLoader.instantiateExtensions;
 import static org.neo4j.io.fs.FileSystemUtils.createOrOpenAsOutputStream;
 import static org.neo4j.kernel.configuration.Settings.FALSE;
 import static org.neo4j.kernel.configuration.Settings.TRUE;
@@ -246,7 +246,7 @@ public class ConsistencyCheckService
         TokenHolders tokenHolders = new TokenHolders( new DelegatingTokenHolder( new ReadOnlyTokenCreator(), TokenHolder.TYPE_PROPERTY_KEY ),
                 new DelegatingTokenHolder( new ReadOnlyTokenCreator(), TokenHolder.TYPE_LABEL ),
                 new DelegatingTokenHolder( new ReadOnlyTokenCreator(), TokenHolder.TYPE_RELATIONSHIP_TYPE ) );
-        DatabaseKernelExtensions extensions = life.add( instantiateKernelExtensions( databaseLayout,
+        DatabaseExtensions extensions = life.add( instantiateExtensions( databaseLayout,
                 fileSystem, config, new SimpleLogService( logProvider, logProvider ), pageCache, jobScheduler,
                 RecoveryCleanupWorkCollector.ignore(),
                 TOOL, // We use TOOL context because it's true, and also because it uses the 'single' operational mode, which is important.
