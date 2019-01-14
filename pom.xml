@@ -97,7 +97,7 @@
     <jersey.version>2.27</jersey.version>
     <junit.version>5.2.0</junit.version>
     <junit.platform.version>1.2.0</junit.platform.version>
-    <currentYear>2018</currentYear>
+    <currentYear>2019</currentYear>
     <cypher.compatibility.35>3.5.1</cypher.compatibility.35>
     <opencypher.version>1.0.0-M12</opencypher.version>
     <caffeine.version>2.6.2</caffeine.version>
