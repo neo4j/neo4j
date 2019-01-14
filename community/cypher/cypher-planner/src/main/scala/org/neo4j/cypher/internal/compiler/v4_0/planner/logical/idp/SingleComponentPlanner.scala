@@ -95,12 +95,7 @@ case class SingleComponentPlanner(monitor: IDPQueryGraphSolverMonitor,
     if (IDPQueryGraphSolver.VERBOSE)
       println(s"Result (picked best plan):\n\tPlan #${bestPlan.debugId}\n\t${bestPlan.toString}\n\n")
 
-    // TODO this is updated in the last step of planSingleQuery now... I think?
-    //   Try just returning bestPlan and confirm that it doesn't break any tests
-    if (interestingOrder.requiredOrderCandidate.nonEmpty && interestingOrder.satisfiedBy(context.planningAttributes.providedOrders.get(bestPlan.id)))
-      context.logicalPlanProducer.updateSolvedForSortedItems(bestPlan, interestingOrder, context)
-    else
-      bestPlan
+    bestPlan
   }
 
   private def planFullyCoversQG(qg: QueryGraph, plan: LogicalPlan, interestingOrder: InterestingOrder, context: LogicalPlanningContext) =

@@ -180,8 +180,6 @@ object ClauseConverters {
         val depNames = expression.dependencies.map(_.name)
         val orderProjections = projections.filter(p => depNames.contains(p._1))
         Desc(expression, orderProjections)
-
-      case sortItem => throw new IllegalStateException("Cannot sort on something that is not Ascending or Descending: " + sortItem)
     }
   }
 

@@ -23,7 +23,6 @@ import org.neo4j.cypher.internal.v4_0.util.InternalException
 import org.neo4j.cypher.internal.v4_0.ast.{Limit, Skip, SortItem}
 import org.neo4j.cypher.internal.v4_0.expressions.Expression
 
-// TODO: Consider renaming this class to something more appropriate like QueryPagination
 final case class QueryPagination(skip: Option[Expression] = None,
                                  limit: Option[Expression] = None) {
 

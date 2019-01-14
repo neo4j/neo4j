@@ -141,8 +141,6 @@ case class InterestingOrder(requiredOrderCandidate: RequiredOrderCandidate,
   }
 }
 
-// TODO put this somewhere else
-// remove the import InterestingOrder.{Asc, ColumnOrder, Desc} since it is only for this part
 trait OrderCandidate {
   def order: Seq[ColumnOrder]
 

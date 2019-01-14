@@ -193,8 +193,6 @@ class InterestingOrderStatementConvertersTest extends CypherFunSuite with Logica
   }
 
   test("Do not propagate interesting order over required order") {
-    // TODO: See if we can push the required order for a2.prop back to the first index, and maintain the order through the cartesian product
-    // This might require the required order to have id="a.prop" instead of "a2.prop"
     val result = buildPlannerQuery(
       """MATCH (a) WITH a AS a2
         |MATCH (b) WITH b AS b2, a2 ORDER BY a2.prop

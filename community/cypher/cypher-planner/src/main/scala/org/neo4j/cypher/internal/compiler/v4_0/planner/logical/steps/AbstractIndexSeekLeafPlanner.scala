@@ -242,7 +242,7 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
 
     // Ask the index for its order capabilities for the types in prefix/subset defined by the interesting order
     val indexNames = matchingPredicates.map(mp => (mp.name, mp.propertyKeyName.name)).slice(0, types.length)
-    val providedOrder= ResultOrdering.withIndexOrderCapability(interestingOrder, indexNames, types, indexDescriptor.orderCapability)
+    val providedOrder = ResultOrdering.withIndexOrderCapability(interestingOrder, indexNames, types, indexDescriptor.orderCapability)
 
     // Return a tuple of matching predicates(plannables), an equal length seq of property behaviours and a single index ordering capability
     (matchingPredicates, propertyBehaviours, providedOrder)

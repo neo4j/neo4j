@@ -34,19 +34,17 @@ case class PlanWithTail(planEventHorizon: EventHorizonPlanner = PlanEventHorizon
   extends TailPlanner {
 
   override def apply(lhs: LogicalPlan, in: PlannerQuery, context: LogicalPlanningContext, idGen: IdGen): (LogicalPlan, LogicalPlanningContext) = {
-    // TODO this is needed while still comparing id for solved interestingOrder
-    val sortedLhs = SortPlanner.sortedPlanWithSolved(lhs, in.interestingOrder, context, () => lhs)
     in.tail match {
       case Some(plannerQuery) =>
         val attributes = context.planningAttributes.asAttributes(idGen)
-        val lhsContext = context.withUpdatedCardinalityInformation(sortedLhs)
+        val lhsContext = context.withUpdatedCardinalityInformation(lhs)
 
         val partPlan = planPart(plannerQuery, lhsContext, rhsPart = true)
         val (planWithUpdates, newContext) = planUpdates(plannerQuery, partPlan, firstPlannerQuery = false, lhsContext)
 
         // Mark properties from indexes to be fetched, if the properties are used later in the query
         val alignedPlan = alignGetValueFromIndexBehavior(plannerQuery, planWithUpdates, context.logicalPlanProducer, context.planningAttributes.solveds, attributes)
-        val applyPlan = newContext.logicalPlanProducer.planTailApply(sortedLhs, alignedPlan, context)
+        val applyPlan = newContext.logicalPlanProducer.planTailApply(lhs, alignedPlan, context)
 
         val applyContext = newContext.withUpdatedCardinalityInformation(applyPlan)
         val projectedPlan = planEventHorizon(plannerQuery, applyPlan, applyContext)
@@ -56,7 +54,7 @@ case class PlanWithTail(planEventHorizon: EventHorizonPlanner = PlanEventHorizon
 
       case None =>
         val attributes = Attributes(idGen, context.planningAttributes.cardinalities, context.planningAttributes.providedOrders)
-        (sortedLhs.endoRewrite(Eagerness.unnestEager(context.planningAttributes.solveds, attributes)), context)
+        (lhs.endoRewrite(Eagerness.unnestEager(context.planningAttributes.solveds, attributes)), context)
     }
   }
 }

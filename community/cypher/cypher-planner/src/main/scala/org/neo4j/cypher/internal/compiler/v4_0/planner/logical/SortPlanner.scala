@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2018 "Neo4j,"
+ * Copyright (c) 2002-2019 "Neo4j,"
  * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
@@ -40,25 +40,25 @@ object SortPlanner {
           plan
       }
 
-      val sortItems: Seq[(ColumnOrder, SortItem, Map[String, Expression], Option[(String, Expression)])] = interestingOrder.requiredOrderCandidate.order.map {
-        case InterestingOrder.Asc(v@Variable(key), projection) => (Ascending(key), AscSortItem(v)(v.position), projection, None)
-        case InterestingOrder.Desc(v@Variable(key), projection) => (Descending(key), DescSortItem(v)(v.position), projection, None)
+      val sortItems: Seq[(ColumnOrder, Map[String, Expression], Option[(String, Expression)])] = interestingOrder.requiredOrderCandidate.order.map {
+        case InterestingOrder.Asc(v@Variable(key), projection) => (Ascending(key), projection, None)
+        case InterestingOrder.Desc(v@Variable(key), projection) => (Descending(key), projection, None)
         case InterestingOrder.Asc(expression, projection) =>
           val columnId = idFrom(expression, projection)
-          (Ascending(columnId), AscSortItem(expression)(expression.position), projection, Some(columnId -> expression))
+          (Ascending(columnId), projection, Some(columnId -> expression))
         case InterestingOrder.Desc(expression, projection) =>
           val columnId = idFrom(expression, projection)
-          (Descending(columnId), DescSortItem(expression)(expression.position), projection, Some(columnId -> expression))
+          (Descending(columnId), projection, Some(columnId -> expression))
       }
 
-      val projections = sortItems.foldLeft(Map.empty[String, Expression])((acc, i) => acc ++ i._3)
+      val projections = sortItems.foldLeft(Map.empty[String, Expression])((acc, i) => acc ++ i._2)
       val projected1 = projected(plan, projections)
-      val unaliasedProjections = sortItems.foldLeft(Map.empty[String, Expression])((acc, i) => acc ++ i._4)
+      val unaliasedProjections = sortItems.foldLeft(Map.empty[String, Expression])((acc, i) => acc ++ i._3)
       val projected2 = projected(projected1, unaliasedProjections, updateSolved = false)
 
       val sortColumns = sortItems.map(_._1)
       if (sortColumns.forall(column => projected2.availableSymbols.contains(column.id)))
-        Some(context.logicalPlanProducer.planSort(projected2, sortColumns, sortItems.map(_._2), interestingOrder, context))
+        Some(context.logicalPlanProducer.planSort(projected2, sortColumns, interestingOrder, context))
       else
         None
     } else {
