@@ -26,12 +26,12 @@ import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
+import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.unsafe.impl.batchimport.staging.LonelyProcessingStep;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
 
-import static org.neo4j.kernel.impl.storageengine.impl.recordstorage.PropertyDeleter.deletePropertyRecordIncludingValueRecords;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
 public class DeleteDuplicateNodesStep extends LonelyProcessingStep
@@ -93,6 +93,21 @@ public class DeleteDuplicateNodesStep extends LonelyProcessingStep
                 nodesRemoved++;
             }
         }
+    }
+
+    private static void deletePropertyRecordIncludingValueRecords( PropertyRecord record )
+    {
+        for ( PropertyBlock block : record )
+        {
+            for ( DynamicRecord valueRecord : block.getValueRecords() )
+            {
+                assert valueRecord.inUse();
+                valueRecord.setInUse( false );
+                record.addDeletedRecord( valueRecord );
+            }
+        }
+        record.clearPropertyBlocks();
+        record.setInUse( false );
     }
 
     @Override
