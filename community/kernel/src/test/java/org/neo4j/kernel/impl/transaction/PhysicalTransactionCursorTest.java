@@ -24,8 +24,7 @@ import org.junit.Test;
 
 import java.io.IOException;
 
-import org.neo4j.kernel.impl.store.record.NodeRecord;
-import org.neo4j.kernel.impl.transaction.command.Command;
+import org.neo4j.kernel.impl.api.TestCommand;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionCursor;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
@@ -55,8 +54,7 @@ public class PhysicalTransactionCursorTest
     private static final CheckPoint A_CHECK_POINT_ENTRY = new CheckPoint( LogPosition.UNSPECIFIED );
     private static final LogEntryStart A_START_ENTRY = new LogEntryStart( 0, 0, 0L, 0L, null, LogPosition.UNSPECIFIED );
     private static final LogEntryCommit A_COMMIT_ENTRY = new LogEntryCommit( 42, 0 );
-    private static final LogEntryCommand A_COMMAND_ENTRY = new LogEntryCommand(
-            new Command.NodeCommand( new NodeRecord( 42 ), new NodeRecord( 42 ) ) );
+    private static final LogEntryCommand A_COMMAND_ENTRY = new LogEntryCommand( new TestCommand() );
     private PhysicalTransactionCursor<ReadableLogChannel> cursor;
 
     @Before

@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction.state;
+package org.neo4j.internal.recordstorage;
 
 import org.eclipse.collections.impl.map.mutable.primitive.ObjectIntHashMap;
 import org.junit.Test;
@@ -29,14 +29,14 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.internal.recordstorage.Command.NodeCountsCommand;
+import org.neo4j.internal.recordstorage.Command.RelationshipCountsCommand;
+import org.neo4j.internal.recordstorage.IndexCommand.AddNodeCommand;
+import org.neo4j.internal.recordstorage.IndexCommand.AddRelationshipCommand;
+import org.neo4j.internal.recordstorage.IndexCommand.CreateCommand;
+import org.neo4j.internal.recordstorage.IndexCommand.DeleteCommand;
+import org.neo4j.internal.recordstorage.IndexCommand.RemoveCommand;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
-import org.neo4j.kernel.impl.index.IndexCommand;
-import org.neo4j.kernel.impl.index.IndexCommand.AddNodeCommand;
-import org.neo4j.kernel.impl.index.IndexCommand.AddRelationshipCommand;
-import org.neo4j.kernel.impl.index.IndexCommand.CreateCommand;
-import org.neo4j.kernel.impl.index.IndexCommand.DeleteCommand;
-import org.neo4j.kernel.impl.index.IndexCommand.RemoveCommand;
-import org.neo4j.kernel.impl.index.IndexDefineCommand;
 import org.neo4j.kernel.impl.index.IndexEntityType;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
@@ -46,9 +46,6 @@ import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
-import org.neo4j.kernel.impl.transaction.command.Command;
-import org.neo4j.kernel.impl.transaction.command.Command.NodeCountsCommand;
-import org.neo4j.kernel.impl.transaction.command.Command.RelationshipCountsCommand;
 import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;

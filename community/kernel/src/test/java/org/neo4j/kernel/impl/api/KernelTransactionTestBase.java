@@ -52,7 +52,6 @@ import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionTracer;
@@ -117,8 +116,7 @@ public class KernelTransactionTestBase
         when( neoStores.getMetaDataStore() ).thenReturn( metaDataStore );
         when( storageEngine.newReader() ).thenReturn( storageReader );
         when( storageEngine.newCommandCreationContext() ).thenReturn( commandCreationContext );
-        doAnswer( invocation -> ((Collection<StorageCommand>) invocation.getArgument(0) ).add( new Command
-                .RelationshipCountsCommand( 1, 2,3, 4L ) ) )
+        doAnswer( invocation -> ((Collection<StorageCommand>) invocation.getArgument(0) ).add( new TestCommand() ) )
             .when( storageEngine ).createCommands(
                     anyCollection(),
                     any( ReadableTransactionState.class ),

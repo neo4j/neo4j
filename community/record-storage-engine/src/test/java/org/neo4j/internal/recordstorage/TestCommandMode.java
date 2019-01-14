@@ -17,19 +17,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction.state;
+package org.neo4j.internal.recordstorage;
 
 import org.junit.Test;
 
-import org.neo4j.kernel.impl.transaction.command.Command;
-
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
-import static org.neo4j.kernel.impl.transaction.command.Command.Mode.fromRecordState;
+import static org.junit.Assert.assertThat;
+import static org.neo4j.internal.recordstorage.Command.Mode.fromRecordState;
 
 public class TestCommandMode
 {
-
     @Test
     public void shouldInferCorrectModes()
     {
@@ -39,5 +36,4 @@ public class TestCommandMode
         assertThat( fromRecordState( false, false ), equalTo( Command.Mode.DELETE ) );
         assertThat( fromRecordState( true, false ), equalTo( Command.Mode.DELETE ) );
     }
-
 }

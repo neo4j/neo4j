@@ -51,7 +51,6 @@ import org.neo4j.kernel.impl.locking.NoOpClient;
 import org.neo4j.kernel.impl.locking.SimpleStatementLocks;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.resources.CpuClock;
 import org.neo4j.resources.HeapAllocation;
 import org.neo4j.storageengine.api.CommandCreationContext;
@@ -401,7 +400,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
         {
             @SuppressWarnings( "unchecked" )
             Collection<StorageCommand> commands = invocation.getArgument( 0 );
-            commands.add( mock( Command.class ) );
+            commands.add( mock( StorageCommand.class ) );
             return null;
         } ).when( storageEngine ).createCommands(
                 any( Collection.class ),

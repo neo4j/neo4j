@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction.state;
+package org.neo4j.internal.recordstorage;
 
 import org.junit.After;
 import org.junit.Before;
@@ -40,8 +40,6 @@ import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
-import org.neo4j.kernel.impl.transaction.command.Command;
-import org.neo4j.kernel.impl.transaction.command.PhysicalLogCommandReaderV3_0;
 import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.CommandReader;
@@ -214,7 +212,7 @@ public class NodeCommandTest
         assertThat( result.getAfter().getDynamicLabelRecords(), equalTo( cmd.getAfter().getDynamicLabelRecords() ) );
     }
 
-    private void assertSerializationWorksFor( org.neo4j.kernel.impl.transaction.command.Command.NodeCommand cmd )
+    private void assertSerializationWorksFor( Command.NodeCommand cmd )
             throws IOException
     {
         channel.reset();
