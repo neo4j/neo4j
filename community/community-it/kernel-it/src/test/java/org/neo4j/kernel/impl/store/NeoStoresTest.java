@@ -42,6 +42,8 @@ import org.neo4j.graphdb.mockfs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.internal.kernel.api.NamedToken;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.internal.recordstorage.RecordStorageEngine;
+import org.neo4j.internal.recordstorage.TransactionRecordState.PropertyReceiver;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.StoreChannel;
@@ -59,8 +61,6 @@ import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.core.DelegatingTokenHolder;
 import org.neo4j.kernel.impl.core.TokenHolder;
 import org.neo4j.kernel.impl.core.TokenNotFoundException;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.TransactionRecordState.PropertyReceiver;
 import org.neo4j.kernel.impl.store.MetaDataStore.Position;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
@@ -748,7 +748,7 @@ public class NeoStoresTest
     }
 
     @Test
-    public void shouldCloseAllTheStoreEvenIfExceptionsAreThrown() throws Exception
+    public void shouldCloseAllTheStoreEvenIfExceptionsAreThrown()
     {
         // given
         Config defaults = Config.defaults( counts_store_rotation_timeout, "60m" );
@@ -825,7 +825,7 @@ public class NeoStoresTest
                 EmptyVersionContextSupplier.EMPTY );
     }
 
-    private void initializeStores( DatabaseLayout databaseLayout, Map<String,String> additionalConfig ) throws IOException
+    private void initializeStores( DatabaseLayout databaseLayout, Map<String,String> additionalConfig )
     {
         Dependencies dependencies = new Dependencies();
         dependencies.satisfyDependency( Config.defaults( additionalConfig ) );

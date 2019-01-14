@@ -24,7 +24,7 @@ import org.junit.Test;
 
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
+import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.SchemaRuleAccess;
 import org.neo4j.test.rule.DbmsRule;
 import org.neo4j.test.rule.EmbeddedDbmsRule;

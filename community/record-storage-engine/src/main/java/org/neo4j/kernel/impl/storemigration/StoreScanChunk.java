@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.storemigration;
 
 import java.io.IOException;
 
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageReader;
+import org.neo4j.internal.recordstorage.RecordStorageReader;
 import org.neo4j.storageengine.api.StorageEntityCursor;
 import org.neo4j.storageengine.api.StoragePropertyCursor;
 import org.neo4j.unsafe.impl.batchimport.input.InputChunk;

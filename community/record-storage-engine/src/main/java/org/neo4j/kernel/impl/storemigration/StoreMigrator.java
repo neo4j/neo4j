@@ -35,6 +35,8 @@ import java.util.Collection;
 
 import org.neo4j.common.ProgressReporter;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.internal.recordstorage.RecordNodeCursor;
+import org.neo4j.internal.recordstorage.RecordStorageReader;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.layout.DatabaseFile;
@@ -42,8 +44,6 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordNodeCursor;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageReader;
 import org.neo4j.kernel.impl.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.MetaDataStore.Position;

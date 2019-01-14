@@ -23,8 +23,8 @@ import java.util.Iterator;
 
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.helpers.collection.PrefetchingIterator;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordNodeCursor;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageReader;
+import org.neo4j.internal.recordstorage.RecordNodeCursor;
+import org.neo4j.internal.recordstorage.RecordStorageReader;
 import org.neo4j.storageengine.api.StorageRelationshipTraversalCursor;
 
 abstract class BatchRelationshipIterable<T> implements Iterable<T>
