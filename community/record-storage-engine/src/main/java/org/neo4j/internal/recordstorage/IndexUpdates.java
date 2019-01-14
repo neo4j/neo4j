@@ -17,11 +17,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction.state;
+package org.neo4j.internal.recordstorage;
 
 import org.eclipse.collections.api.map.primitive.LongObjectMap;
 
-import java.util.Iterator;
 import java.util.List;
 
 import org.neo4j.kernel.impl.transaction.command.Command;
@@ -31,39 +30,22 @@ import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.schema.SchemaDescriptor;
 
 /**
- * Provides direct access to updates.
+ * Set of updates ({@link IndexEntryUpdate}) to apply to indexes.
  */
-public class DirectIndexUpdates implements IndexUpdates
+public interface IndexUpdates extends Iterable<IndexEntryUpdate<SchemaDescriptor>>, AutoCloseable
 {
-    private final Iterable<IndexEntryUpdate<SchemaDescriptor>> updates;
+    /**
+     * Feeds updates raw material in the form of node/property commands, to create updates from.
+     * @param propCommandsByNodeId {@link PropertyCommand} grouped by node id.
+     * @param propCommandsByRelationshipId
+     * @param nodeCommands {@link NodeCommand} by node id.
+     * @param relationshipCommandPrimitiveLongObjectMap
+     */
+    void feed( LongObjectMap<List<PropertyCommand>> propCommandsByNodeId, LongObjectMap<List<PropertyCommand>> propCommandsByRelationshipId,
+            LongObjectMap<NodeCommand> nodeCommands, LongObjectMap<Command.RelationshipCommand> relationshipCommandPrimitiveLongObjectMap );
 
-    public DirectIndexUpdates( Iterable<IndexEntryUpdate<SchemaDescriptor>> updates )
-    {
-        this.updates = updates;
-    }
-
-    @Override
-    public Iterator<IndexEntryUpdate<SchemaDescriptor>> iterator()
-    {
-        return updates.iterator();
-    }
-
-    @Override
-    public void feed( LongObjectMap<List<PropertyCommand>> propCommandsByNodeId, LongObjectMap<List<PropertyCommand>> propCommandsByRelationshipId,
-            LongObjectMap<NodeCommand> nodeCommands, LongObjectMap<Command.RelationshipCommand> relationshipCommandPrimitiveLongObjectMap )
-    {
-        throw new UnsupportedOperationException();
-    }
+    boolean hasUpdates();
 
     @Override
-    public boolean hasUpdates()
-    {
-        return true;
-    }
-
-    @Override
-    public void close()
-    {
-        // Nothing to close
-    }
+    void close();
 }

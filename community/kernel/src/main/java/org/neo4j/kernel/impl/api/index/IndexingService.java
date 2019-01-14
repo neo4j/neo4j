@@ -71,7 +71,6 @@ import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.index.schema.IndexDescriptor;
 import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
-import org.neo4j.kernel.impl.transaction.state.IndexUpdates;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -511,18 +510,11 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
     }
 
     /**
-     * Applies updates from the given {@link IndexUpdates}, which may contain updates for one or more indexes.
-     * As long as index updates are derived from physical commands and store state there's special treatment
-     * during recovery since we cannot read from an unrecovered store, so in that case the nodes ids are simply
-     * noted and reindexed after recovery of the store has completed. That is also why {@link IndexUpdates}
-     * has one additional accessor method for getting the node ids.
+     * Applies the given updates, which may contain updates for one or more indexes.
      *
-     * As far as {@link IndexingService} is concerned recovery happens between calls to {@link #init()} and
-     * {@link #start()}.
-     *
-     * @param updates {@link IndexUpdates} to apply.
+     * @param updates {@link IndexEntryUpdate updates} to apply.
      * @throws UncheckedIOException potentially thrown from index updating.
-     * @throws IndexEntryConflictException potentially thrown from index updating.
+     * @throws KernelException potentially thrown from index updating.
      */
     @Override
     public void applyUpdates( Iterable<IndexEntryUpdate<SchemaDescriptor>> updates ) throws KernelException

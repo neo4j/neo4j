@@ -27,7 +27,6 @@ import java.util.List;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.helpers.collection.NestingIterator;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
-import org.neo4j.kernel.impl.transaction.state.IndexUpdates;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.IndexUpdateListener;
 import org.neo4j.storageengine.api.schema.SchemaDescriptor;
