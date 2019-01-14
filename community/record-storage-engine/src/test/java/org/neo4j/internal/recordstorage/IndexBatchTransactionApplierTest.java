@@ -26,8 +26,8 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
+import org.neo4j.internal.recordstorage.Command.NodeCommand;
 import org.neo4j.kernel.api.index.IndexProviderDescriptor;
-import org.neo4j.kernel.impl.api.TransactionApplier;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
@@ -36,8 +36,6 @@ import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
-import org.neo4j.kernel.impl.transaction.command.Command;
-import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
 import org.neo4j.storageengine.api.IndexUpdateListener;
 import org.neo4j.storageengine.api.NodeLabelUpdate;
 import org.neo4j.storageengine.api.NodeLabelUpdateListener;

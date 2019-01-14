@@ -17,14 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction.command;
+package org.neo4j.internal.recordstorage;
 
 import java.io.IOException;
 import java.util.Collection;
 
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.impl.api.CommandVisitor;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.PropertyRecordChange;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;

@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.index;
+package org.neo4j.internal.recordstorage;
 
 import org.eclipse.collections.api.map.primitive.MutableObjectIntMap;
 import org.eclipse.collections.impl.map.mutable.primitive.ObjectIntHashMap;
@@ -25,7 +25,6 @@ import org.junit.Test;
 
 import java.io.IOException;
 
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.ServiceLoadingCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion;
 import org.neo4j.storageengine.api.CommandReader;

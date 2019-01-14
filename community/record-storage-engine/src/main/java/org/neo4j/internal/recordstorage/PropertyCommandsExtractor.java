@@ -26,13 +26,10 @@ import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.neo4j.kernel.impl.api.BatchTransactionApplier;
-import org.neo4j.kernel.impl.api.TransactionApplier;
+import org.neo4j.internal.recordstorage.Command.NodeCommand;
+import org.neo4j.internal.recordstorage.Command.PropertyCommand;
 import org.neo4j.kernel.impl.api.index.EntityUpdates;
 import org.neo4j.kernel.impl.locking.LockGroup;
-import org.neo4j.kernel.impl.transaction.command.Command;
-import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
-import org.neo4j.kernel.impl.transaction.command.Command.PropertyCommand;
 import org.neo4j.storageengine.api.CommandsToApply;
 
 import static org.neo4j.kernel.impl.store.NodeLabelsField.fieldPointsToDynamicRecordOfLabels;

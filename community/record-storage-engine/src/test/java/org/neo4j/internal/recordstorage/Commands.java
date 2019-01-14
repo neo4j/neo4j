@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction.command;
+package org.neo4j.internal.recordstorage;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -25,6 +25,14 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
+import org.neo4j.internal.recordstorage.Command.LabelTokenCommand;
+import org.neo4j.internal.recordstorage.Command.NodeCommand;
+import org.neo4j.internal.recordstorage.Command.PropertyCommand;
+import org.neo4j.internal.recordstorage.Command.PropertyKeyTokenCommand;
+import org.neo4j.internal.recordstorage.Command.RelationshipCommand;
+import org.neo4j.internal.recordstorage.Command.RelationshipGroupCommand;
+import org.neo4j.internal.recordstorage.Command.RelationshipTypeTokenCommand;
+import org.neo4j.internal.recordstorage.Command.SchemaRuleCommand;
 import org.neo4j.kernel.api.index.IndexProviderDescriptor;
 import org.neo4j.kernel.impl.index.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.store.DynamicNodeLabels;
@@ -42,14 +50,6 @@ import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRuleSerialization;
 import org.neo4j.kernel.impl.store.record.TokenRecord;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.command.Command.LabelTokenCommand;
-import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
-import org.neo4j.kernel.impl.transaction.command.Command.PropertyCommand;
-import org.neo4j.kernel.impl.transaction.command.Command.PropertyKeyTokenCommand;
-import org.neo4j.kernel.impl.transaction.command.Command.RelationshipCommand;
-import org.neo4j.kernel.impl.transaction.command.Command.RelationshipGroupCommand;
-import org.neo4j.kernel.impl.transaction.command.Command.RelationshipTypeTokenCommand;
-import org.neo4j.kernel.impl.transaction.command.Command.SchemaRuleCommand;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.storageengine.api.SchemaRule;
 import org.neo4j.storageengine.api.StorageCommand;

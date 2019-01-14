@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.index;
+package org.neo4j.internal.recordstorage;
 
 import org.eclipse.collections.api.map.primitive.IntObjectMap;
 import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
@@ -31,9 +31,6 @@ import java.io.UncheckedIOException;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.neo4j.kernel.impl.api.CommandVisitor;
-import org.neo4j.kernel.impl.transaction.command.Command;
-import org.neo4j.kernel.impl.transaction.command.NeoCommandType;
 import org.neo4j.storageengine.api.WritableChannel;
 import org.neo4j.util.VisibleForTesting;
 

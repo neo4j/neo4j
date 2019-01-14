@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction.command;
+package org.neo4j.internal.recordstorage;
 
 import org.eclipse.collections.api.map.primitive.MutableObjectIntMap;
 import org.eclipse.collections.impl.map.mutable.primitive.ObjectIntHashMap;
@@ -30,13 +30,12 @@ import java.util.Map;
 
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.internal.kernel.api.exceptions.schema.MalformedSchemaRuleException;
-import org.neo4j.kernel.impl.index.IndexCommand;
-import org.neo4j.kernel.impl.index.IndexCommand.AddNodeCommand;
-import org.neo4j.kernel.impl.index.IndexCommand.AddRelationshipCommand;
-import org.neo4j.kernel.impl.index.IndexCommand.CreateCommand;
-import org.neo4j.kernel.impl.index.IndexCommand.DeleteCommand;
-import org.neo4j.kernel.impl.index.IndexCommand.RemoveCommand;
-import org.neo4j.kernel.impl.index.IndexDefineCommand;
+import org.neo4j.internal.recordstorage.CommandReading.DynamicRecordAdder;
+import org.neo4j.internal.recordstorage.IndexCommand.AddNodeCommand;
+import org.neo4j.internal.recordstorage.IndexCommand.AddRelationshipCommand;
+import org.neo4j.internal.recordstorage.IndexCommand.CreateCommand;
+import org.neo4j.internal.recordstorage.IndexCommand.DeleteCommand;
+import org.neo4j.internal.recordstorage.IndexCommand.RemoveCommand;
 import org.neo4j.kernel.impl.store.AbstractDynamicStore;
 import org.neo4j.kernel.impl.store.PropertyType;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -51,28 +50,26 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRuleSerialization;
-import org.neo4j.kernel.impl.transaction.command.CommandReading.DynamicRecordAdder;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion;
 import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.SchemaRule;
 
 import static org.neo4j.helpers.Numbers.unsignedShortToInt;
-import static org.neo4j.kernel.impl.transaction.command.CommandReading.COLLECTION_DYNAMIC_RECORD_ADDER;
-import static org.neo4j.kernel.impl.transaction.command.CommandReading.PROPERTY_BLOCK_DYNAMIC_RECORD_ADDER;
-import static org.neo4j.kernel.impl.transaction.command.CommandReading.PROPERTY_DELETED_DYNAMIC_RECORD_ADDER;
-import static org.neo4j.kernel.impl.transaction.command.CommandReading.PROPERTY_INDEX_DYNAMIC_RECORD_ADDER;
+import static org.neo4j.internal.recordstorage.CommandReading.COLLECTION_DYNAMIC_RECORD_ADDER;
+import static org.neo4j.internal.recordstorage.CommandReading.PROPERTY_BLOCK_DYNAMIC_RECORD_ADDER;
+import static org.neo4j.internal.recordstorage.CommandReading.PROPERTY_DELETED_DYNAMIC_RECORD_ADDER;
+import static org.neo4j.internal.recordstorage.CommandReading.PROPERTY_INDEX_DYNAMIC_RECORD_ADDER;
 import static org.neo4j.kernel.impl.util.Bits.bitFlag;
-import static org.neo4j.kernel.impl.util.Bits.notFlag;
 import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.read2bLengthAndString;
 import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.read2bMap;
 import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.read3bLengthAndString;
 
-public class PhysicalLogCommandReaderV2_2_4 extends BaseCommandReader
+public class PhysicalLogCommandReaderV3_0_2 extends BaseCommandReader
 {
     @Override
     public int getFormatId()
     {
-        return LogEntryVersion.V2_3.byteCode();
+        return LogEntryVersion.V3_0_2.byteCode();
     }
 
     @Override
@@ -165,40 +162,24 @@ public class PhysicalLogCommandReaderV2_2_4 extends BaseCommandReader
     private Command visitRelationshipCommand( ReadableChannel channel ) throws IOException
     {
         long id = channel.getLong();
-        byte flags = channel.get();
-        boolean inUse = false;
-        if ( notFlag( notFlag( flags, Record.IN_USE.byteValue() ), Record.CREATED_IN_TX ) != 0 )
+
+        RelationshipRecord before = readRelationshipRecord( id, channel );
+        if ( before == null )
         {
-            throw new IOException( "Illegal in use flag: " + flags );
+            return null;
         }
-        if ( bitFlag( flags, Record.IN_USE.byteValue() ) )
+
+        RelationshipRecord after = readRelationshipRecord( id, channel );
+        if ( after == null )
         {
-            inUse = true;
+            return null;
         }
-        RelationshipRecord record;
-        if ( inUse )
+
+        if ( !before.inUse() && after.inUse() )
         {
-            record = new RelationshipRecord( id, channel.getLong(), channel.getLong(), channel.getInt() );
-            record.setInUse( true );
-            record.setFirstPrevRel( channel.getLong() );
-            record.setFirstNextRel( channel.getLong() );
-            record.setSecondPrevRel( channel.getLong() );
-            record.setSecondNextRel( channel.getLong() );
-            record.setNextProp( channel.getLong() );
-            byte extraByte = channel.get();
-            record.setFirstInFirstChain( (extraByte & 0x1) > 0 );
-            record.setFirstInSecondChain( (extraByte & 0x2) > 0 );
+            after.setCreated();
         }
-        else
-        {
-            record = new RelationshipRecord( id, -1, -1, channel.getInt() );
-            record.setInUse( false );
-        }
-        if ( bitFlag( flags, Record.CREATED_IN_TX ) )
-        {
-            record.setCreated();
-        }
-        return new Command.RelationshipCommand( null, record );
+        return new Command.RelationshipCommand( before, after );
     }
 
     private Command visitPropertyCommand( ReadableChannel channel ) throws IOException
@@ -223,12 +204,20 @@ public class PhysicalLogCommandReaderV2_2_4 extends BaseCommandReader
     private Command visitRelationshipGroupCommand( ReadableChannel channel ) throws IOException
     {
         long id = channel.getLong();
-        byte inUseByte = channel.get();
-        boolean inUse = inUseByte == Record.IN_USE.byteValue();
-        if ( inUseByte != Record.IN_USE.byteValue() && inUseByte != Record.NOT_IN_USE.byteValue() )
-        {
-            throw new IOException( "Illegal in use flag: " + inUseByte );
-        }
+        RelationshipGroupRecord before = readRelationshipGroupRecord( id, channel );
+        RelationshipGroupRecord after = readRelationshipGroupRecord( id, channel );
+        return new Command.RelationshipGroupCommand( before, after );
+    }
+
+    private RelationshipGroupRecord readRelationshipGroupRecord( long id, ReadableChannel channel )
+            throws IOException
+    {
+        byte flags = channel.get();
+        boolean inUse = bitFlag( flags, Record.IN_USE.byteValue() );
+        boolean requireSecondaryUnit = bitFlag( flags, Record.REQUIRE_SECONDARY_UNIT );
+        boolean hasSecondaryUnit = bitFlag( flags, Record.HAS_SECONDARY_UNIT );
+        boolean usesFixedReferenceFormat = bitFlag( flags, Record.USES_FIXED_REFERENCE_FORMAT );
+
         int type = unsignedShortToInt( channel.getShort() );
         RelationshipGroupRecord record = new RelationshipGroupRecord( id, type );
         record.setInUse( inUse );
@@ -237,14 +226,37 @@ public class PhysicalLogCommandReaderV2_2_4 extends BaseCommandReader
         record.setFirstIn( channel.getLong() );
         record.setFirstLoop( channel.getLong() );
         record.setOwningNode( channel.getLong() );
-
-        return new Command.RelationshipGroupCommand( null, record );
+        record.setRequiresSecondaryUnit( requireSecondaryUnit );
+        if ( hasSecondaryUnit )
+        {
+            record.setSecondaryUnitId( channel.getLong() );
+        }
+        record.setUseFixedReferences( usesFixedReferenceFormat );
+        return record;
     }
 
     private Command visitRelationshipTypeTokenCommand( ReadableChannel channel ) throws IOException
     {
-        // id+in_use(byte)+type_blockId(int)+nr_type_records(int)
         int id = channel.getInt();
+        RelationshipTypeTokenRecord before = readRelationshipTypeTokenRecord( id, channel );
+        if ( before == null )
+        {
+            return null;
+        }
+
+        RelationshipTypeTokenRecord after = readRelationshipTypeTokenRecord( id, channel );
+        if ( after == null )
+        {
+            return null;
+        }
+
+        return new Command.RelationshipTypeTokenCommand( before, after );
+    }
+
+    private RelationshipTypeTokenRecord readRelationshipTypeTokenRecord( int id, ReadableChannel channel )
+            throws IOException
+    {
+        // in_use(byte)+type_blockId(int)+nr_type_records(int)
         byte inUseFlag = channel.get();
         boolean inUse = false;
         if ( (inUseFlag & Record.IN_USE.byteValue()) == Record.IN_USE.byteValue() )
@@ -268,13 +280,30 @@ public class PhysicalLogCommandReaderV2_2_4 extends BaseCommandReader
             }
             record.addNameRecord( dr );
         }
-        return new Command.RelationshipTypeTokenCommand( null, record );
+        return record;
     }
 
     private Command visitLabelTokenCommand( ReadableChannel channel ) throws IOException
     {
-        // id+in_use(byte)+type_blockId(int)+nr_type_records(int)
         int id = channel.getInt();
+        LabelTokenRecord before = readLabelTokenRecord( id, channel );
+        if ( before == null )
+        {
+            return null;
+        }
+
+        LabelTokenRecord after = readLabelTokenRecord( id, channel );
+        if ( after == null )
+        {
+            return null;
+        }
+
+        return new Command.LabelTokenCommand( before, after );
+    }
+
+    private LabelTokenRecord readLabelTokenRecord( int id, ReadableChannel channel ) throws IOException
+    {
+        // in_use(byte)+type_blockId(int)+nr_type_records(int)
         byte inUseFlag = channel.get();
         boolean inUse = false;
         if ( (inUseFlag & Record.IN_USE.byteValue()) == Record.IN_USE.byteValue() )
@@ -298,13 +327,30 @@ public class PhysicalLogCommandReaderV2_2_4 extends BaseCommandReader
             }
             record.addNameRecord( dr );
         }
-        return new Command.LabelTokenCommand( null, record );
+        return record;
     }
 
     private Command visitPropertyKeyTokenCommand( ReadableChannel channel ) throws IOException
     {
-        // id+in_use(byte)+count(int)+key_blockId(int)
         int id = channel.getInt();
+        PropertyKeyTokenRecord before = readPropertyKeyTokenRecord( id, channel );
+        if ( before == null )
+        {
+            return null;
+        }
+
+        PropertyKeyTokenRecord after = readPropertyKeyTokenRecord( id, channel );
+        if ( after == null )
+        {
+            return null;
+        }
+
+        return new Command.PropertyKeyTokenCommand( before, after );
+    }
+
+    private PropertyKeyTokenRecord readPropertyKeyTokenRecord( int id, ReadableChannel channel ) throws IOException
+    {
+        // in_use(byte)+count(int)+key_blockId(int)
         byte inUseFlag = channel.get();
         boolean inUse = false;
         if ( (inUseFlag & Record.IN_USE.byteValue()) == Record.IN_USE.byteValue() )
@@ -323,7 +369,7 @@ public class PhysicalLogCommandReaderV2_2_4 extends BaseCommandReader
         {
             return null;
         }
-        return new Command.PropertyKeyTokenCommand( null, record );
+        return record;
     }
 
     private Command visitSchemaRuleCommand( ReadableChannel channel ) throws IOException
@@ -348,24 +394,27 @@ public class PhysicalLogCommandReaderV2_2_4 extends BaseCommandReader
 
     private Command visitNeoStoreCommand( ReadableChannel channel ) throws IOException
     {
+        NeoStoreRecord before = readNeoStoreRecord( channel );
+        NeoStoreRecord after = readNeoStoreRecord( channel );
+        return new Command.NeoStoreCommand( before, after );
+    }
+
+    private NeoStoreRecord readNeoStoreRecord( ReadableChannel channel ) throws IOException
+    {
         long nextProp = channel.getLong();
         NeoStoreRecord record = new NeoStoreRecord();
         record.setNextProp( nextProp );
-        return new Command.NeoStoreCommand( null, record );
+        return record;
     }
 
     private NodeRecord readNodeRecord( long id, ReadableChannel channel ) throws IOException
     {
-        byte inUseFlag = channel.get();
-        boolean inUse = false;
-        if ( inUseFlag == Record.IN_USE.byteValue() )
-        {
-            inUse = true;
-        }
-        else if ( inUseFlag != Record.NOT_IN_USE.byteValue() )
-        {
-            throw new IOException( "Illegal in use flag: " + inUseFlag );
-        }
+        byte flags = channel.get();
+        boolean inUse = bitFlag( flags, Record.IN_USE.byteValue() );
+        boolean requiresSecondaryUnit = bitFlag( flags, Record.REQUIRE_SECONDARY_UNIT );
+        boolean hasSecondaryUnit = bitFlag( flags, Record.HAS_SECONDARY_UNIT );
+        boolean usesFixedReferenceFormat = bitFlag( flags, Record.USES_FIXED_REFERENCE_FORMAT );
+
         NodeRecord record;
         Collection<DynamicRecord> dynamicLabelRecords = new ArrayList<>();
         long labelField = Record.NO_LABELS_FIELD.intValue();
@@ -375,6 +424,12 @@ public class PhysicalLogCommandReaderV2_2_4 extends BaseCommandReader
             record = new NodeRecord( id, dense, channel.getLong(), channel.getLong() );
             // labels
             labelField = channel.getLong();
+            record.setRequiresSecondaryUnit( requiresSecondaryUnit );
+            if ( hasSecondaryUnit )
+            {
+                record.setSecondaryUnitId( channel.getLong() );
+            }
+            record.setUseFixedReferences( usesFixedReferenceFormat );
         }
         else
         {
@@ -383,6 +438,47 @@ public class PhysicalLogCommandReaderV2_2_4 extends BaseCommandReader
         readDynamicRecords( channel, dynamicLabelRecords, COLLECTION_DYNAMIC_RECORD_ADDER );
         record.setLabelField( labelField, dynamicLabelRecords );
         record.setInUse( inUse );
+        return record;
+    }
+
+    private RelationshipRecord readRelationshipRecord( long id, ReadableChannel channel ) throws IOException
+    {
+        byte flags = channel.get();
+        boolean inUse = bitFlag( flags, Record.IN_USE.byteValue() );
+        boolean requiresSecondaryUnit = bitFlag( flags, Record.REQUIRE_SECONDARY_UNIT );
+        boolean hasSecondaryUnit = bitFlag( flags, Record.HAS_SECONDARY_UNIT );
+        boolean usesFixedReferenceFormat = bitFlag( flags, Record.USES_FIXED_REFERENCE_FORMAT );
+
+        RelationshipRecord record;
+        if ( inUse )
+        {
+            record = new RelationshipRecord( id, channel.getLong(), channel.getLong(), channel.getInt() );
+            record.setInUse( true );
+            record.setRequiresSecondaryUnit( requiresSecondaryUnit );
+            record.setFirstPrevRel( channel.getLong() );
+            record.setFirstNextRel( channel.getLong() );
+            record.setSecondPrevRel( channel.getLong() );
+            record.setSecondNextRel( channel.getLong() );
+            record.setNextProp( channel.getLong() );
+            byte extraByte = channel.get();
+            record.setFirstInFirstChain( (extraByte & 0x1) > 0 );
+            record.setFirstInSecondChain( (extraByte & 0x2) > 0 );
+            if ( hasSecondaryUnit )
+            {
+                record.setSecondaryUnitId( channel.getLong() );
+            }
+            record.setUseFixedReferences( usesFixedReferenceFormat );
+        }
+        else
+        {
+            record = new RelationshipRecord( id, -1, -1, channel.getInt() );
+            record.setInUse( false );
+        }
+        if ( bitFlag( flags, Record.CREATED_IN_TX ) )
+        {
+            record.setCreated();
+        }
+
         return record;
     }
 
@@ -401,11 +497,11 @@ public class PhysicalLogCommandReaderV2_2_4 extends BaseCommandReader
             record.setStartRecord( (inUseFlag & Record.FIRST_IN_CHAIN.byteValue()) != 0 );
             int nrOfBytes = channel.getInt();
             assert nrOfBytes >= 0 && nrOfBytes < ((1 << 24) - 1) : nrOfBytes
-                    + " is not valid for a number of bytes field of " + "a dynamic record";
+                                                                   + " is not valid for a number of bytes field of " + "a dynamic record";
             long nextBlock = channel.getLong();
             assert (nextBlock >= 0 && nextBlock <= (1L << 36 - 1))
-                    || (nextBlock == Record.NO_NEXT_BLOCK.intValue()) : nextBlock
-                            + " is not valid for a next record field of " + "a dynamic record";
+                   || (nextBlock == Record.NO_NEXT_BLOCK.intValue()) : nextBlock
+                                                                       + " is not valid for a next record field of " + "a dynamic record";
             record.setNextBlock( nextBlock );
             byte[] data = new byte[nrOfBytes];
             channel.get( data, nrOfBytes );
@@ -437,21 +533,22 @@ public class PhysicalLogCommandReaderV2_2_4 extends BaseCommandReader
         // in_use(byte)+type(int)+key_indexId(int)+prop_blockId(long)+
         // prev_prop_id(long)+next_prop_id(long)
         PropertyRecord record = new PropertyRecord( id );
-        byte inUseFlag = channel.get(); // 1
+        byte flags = channel.get(); // 1
+
+        boolean inUse = bitFlag( flags, Record.IN_USE.byteValue() );
+        boolean nodeProperty = !bitFlag( flags, Record.REL_PROPERTY.byteValue() );
+        boolean requireSecondaryUnit = bitFlag( flags, Record.REQUIRE_SECONDARY_UNIT );
+        boolean hasSecondaryUnit = bitFlag( flags, Record.HAS_SECONDARY_UNIT );
+        boolean usesFixedReferenceFormat = bitFlag( flags, Record.USES_FIXED_REFERENCE_FORMAT );
+
+        record.setRequiresSecondaryUnit( requireSecondaryUnit );
+        record.setUseFixedReferences( usesFixedReferenceFormat );
+
         long nextProp = channel.getLong(); // 8
         long prevProp = channel.getLong(); // 8
         record.setNextProp( nextProp );
         record.setPrevProp( prevProp );
-        boolean inUse = false;
-        if ( (inUseFlag & Record.IN_USE.byteValue()) == Record.IN_USE.byteValue() )
-        {
-            inUse = true;
-        }
-        boolean nodeProperty = true;
-        if ( (inUseFlag & Record.REL_PROPERTY.byteValue()) == Record.REL_PROPERTY.byteValue() )
-        {
-            nodeProperty = false;
-        }
+
         long primitiveId = channel.getLong(); // 8
         if ( primitiveId != -1 && nodeProperty )
         {
@@ -460,6 +557,10 @@ public class PhysicalLogCommandReaderV2_2_4 extends BaseCommandReader
         else if ( primitiveId != -1 )
         {
             record.setRelId( primitiveId );
+        }
+        if ( hasSecondaryUnit )
+        {
+            record.setSecondaryUnitId( channel.getLong() );
         }
         int nrPropBlocks = channel.get();
         assert nrPropBlocks >= 0;
@@ -506,7 +607,8 @@ public class PhysicalLogCommandReaderV2_2_4 extends BaseCommandReader
         // Read in blocks
         long[] blocks = readLongs( channel, blockSize / 8 );
         assert blocks.length == blockSize / 8 : blocks.length
-                + " longs were read in while i asked for what corresponds to " + blockSize;
+                                                + " longs were read in while i asked for what corresponds to " + blockSize;
+
         assert PropertyType.getPropertyTypeOrThrow( blocks[0] ).calculateNumberOfBlocksUsed(
                 blocks[0] ) == blocks.length : blocks.length + " is not a valid number of blocks for type "
                                                + PropertyType.getPropertyTypeOrThrow( blocks[0] );
@@ -632,8 +734,8 @@ public class PhysicalLogCommandReaderV2_2_4 extends BaseCommandReader
 
     private MutableObjectIntMap<String> readMap( ReadableChannel channel ) throws IOException
     {
-        final byte size = channel.get();
-        final MutableObjectIntMap<String> result = new ObjectIntHashMap<>( size );
+        int size = getUnsignedShort( channel );
+        MutableObjectIntMap<String> result = new ObjectIntHashMap<>( size );
         for ( int i = 0; i < size; i++ )
         {
             String key = read2bLengthAndString( channel );

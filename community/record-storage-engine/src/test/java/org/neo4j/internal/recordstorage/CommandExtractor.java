@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction.command;
+package org.neo4j.internal.recordstorage;
 
 import java.io.IOException;
 import java.util.ArrayList;

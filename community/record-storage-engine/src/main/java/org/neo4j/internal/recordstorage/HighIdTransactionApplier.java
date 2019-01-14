@@ -23,7 +23,16 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.kernel.impl.api.TransactionApplier;
+import org.neo4j.internal.recordstorage.Command.BaseCommand;
+import org.neo4j.internal.recordstorage.Command.LabelTokenCommand;
+import org.neo4j.internal.recordstorage.Command.NodeCommand;
+import org.neo4j.internal.recordstorage.Command.PropertyCommand;
+import org.neo4j.internal.recordstorage.Command.PropertyKeyTokenCommand;
+import org.neo4j.internal.recordstorage.Command.RelationshipCommand;
+import org.neo4j.internal.recordstorage.Command.RelationshipGroupCommand;
+import org.neo4j.internal.recordstorage.Command.RelationshipTypeTokenCommand;
+import org.neo4j.internal.recordstorage.Command.SchemaRuleCommand;
+import org.neo4j.internal.recordstorage.Command.TokenCommand;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
@@ -34,16 +43,6 @@ import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.TokenRecord;
-import org.neo4j.kernel.impl.transaction.command.Command.BaseCommand;
-import org.neo4j.kernel.impl.transaction.command.Command.LabelTokenCommand;
-import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
-import org.neo4j.kernel.impl.transaction.command.Command.PropertyCommand;
-import org.neo4j.kernel.impl.transaction.command.Command.PropertyKeyTokenCommand;
-import org.neo4j.kernel.impl.transaction.command.Command.RelationshipCommand;
-import org.neo4j.kernel.impl.transaction.command.Command.RelationshipGroupCommand;
-import org.neo4j.kernel.impl.transaction.command.Command.RelationshipTypeTokenCommand;
-import org.neo4j.kernel.impl.transaction.command.Command.SchemaRuleCommand;
-import org.neo4j.kernel.impl.transaction.command.Command.TokenCommand;
 
 import static java.lang.Math.max;
 

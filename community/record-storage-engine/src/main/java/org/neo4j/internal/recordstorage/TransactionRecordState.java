@@ -26,6 +26,7 @@ import java.util.Comparator;
 import java.util.List;
 
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.internal.recordstorage.Command.Mode;
 import org.neo4j.internal.recordstorage.RecordAccess.RecordProxy;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
@@ -49,8 +50,6 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
-import org.neo4j.kernel.impl.transaction.command.Command;
-import org.neo4j.kernel.impl.transaction.command.Command.Mode;
 import org.neo4j.kernel.impl.transaction.state.IntegrityValidator;
 import org.neo4j.kernel.impl.util.statistics.IntCounter;
 import org.neo4j.storageengine.api.SchemaRule;
@@ -63,7 +62,7 @@ import static java.lang.String.format;
 import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
 
 /**
- * Transaction containing {@link org.neo4j.kernel.impl.transaction.command.Command commands} reflecting the operations
+ * Transaction containing {@link Command commands} reflecting the operations
  * performed in the transaction.
  *
  * This class currently has a symbiotic relationship with {@link KernelTransaction}, with which it always has a 1-1

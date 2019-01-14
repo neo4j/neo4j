@@ -32,11 +32,11 @@ import java.util.List;
 
 import org.neo4j.common.EntityType;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.internal.recordstorage.Command.NodeCommand;
+import org.neo4j.internal.recordstorage.Command.PropertyCommand;
+import org.neo4j.internal.recordstorage.Command.RelationshipCommand;
 import org.neo4j.kernel.impl.api.index.EntityUpdates;
 import org.neo4j.kernel.impl.store.NodeStore;
-import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
-import org.neo4j.kernel.impl.transaction.command.Command.PropertyCommand;
-import org.neo4j.kernel.impl.transaction.command.Command.RelationshipCommand;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.StorageNodeCursor;
 import org.neo4j.storageengine.api.StorageReader;

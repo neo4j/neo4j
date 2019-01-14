@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction.command;
+package org.neo4j.internal.recordstorage;
 
 import org.eclipse.collections.api.map.primitive.MutableObjectIntMap;
 import org.eclipse.collections.impl.map.mutable.primitive.ObjectIntHashMap;
@@ -30,13 +30,12 @@ import java.util.Map;
 
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.internal.kernel.api.exceptions.schema.MalformedSchemaRuleException;
-import org.neo4j.kernel.impl.index.IndexCommand;
-import org.neo4j.kernel.impl.index.IndexCommand.AddNodeCommand;
-import org.neo4j.kernel.impl.index.IndexCommand.AddRelationshipCommand;
-import org.neo4j.kernel.impl.index.IndexCommand.CreateCommand;
-import org.neo4j.kernel.impl.index.IndexCommand.DeleteCommand;
-import org.neo4j.kernel.impl.index.IndexCommand.RemoveCommand;
-import org.neo4j.kernel.impl.index.IndexDefineCommand;
+import org.neo4j.internal.recordstorage.CommandReading.DynamicRecordAdder;
+import org.neo4j.internal.recordstorage.IndexCommand.AddNodeCommand;
+import org.neo4j.internal.recordstorage.IndexCommand.AddRelationshipCommand;
+import org.neo4j.internal.recordstorage.IndexCommand.CreateCommand;
+import org.neo4j.internal.recordstorage.IndexCommand.DeleteCommand;
+import org.neo4j.internal.recordstorage.IndexCommand.RemoveCommand;
 import org.neo4j.kernel.impl.store.AbstractDynamicStore;
 import org.neo4j.kernel.impl.store.PropertyType;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -51,28 +50,27 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRuleSerialization;
-import org.neo4j.kernel.impl.transaction.command.CommandReading.DynamicRecordAdder;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion;
 import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.SchemaRule;
 
 import static org.neo4j.helpers.Numbers.unsignedShortToInt;
-import static org.neo4j.kernel.impl.transaction.command.CommandReading.COLLECTION_DYNAMIC_RECORD_ADDER;
-import static org.neo4j.kernel.impl.transaction.command.CommandReading.PROPERTY_BLOCK_DYNAMIC_RECORD_ADDER;
-import static org.neo4j.kernel.impl.transaction.command.CommandReading.PROPERTY_DELETED_DYNAMIC_RECORD_ADDER;
-import static org.neo4j.kernel.impl.transaction.command.CommandReading.PROPERTY_INDEX_DYNAMIC_RECORD_ADDER;
+import static org.neo4j.internal.recordstorage.CommandReading.COLLECTION_DYNAMIC_RECORD_ADDER;
+import static org.neo4j.internal.recordstorage.CommandReading.PROPERTY_BLOCK_DYNAMIC_RECORD_ADDER;
+import static org.neo4j.internal.recordstorage.CommandReading.PROPERTY_DELETED_DYNAMIC_RECORD_ADDER;
+import static org.neo4j.internal.recordstorage.CommandReading.PROPERTY_INDEX_DYNAMIC_RECORD_ADDER;
 import static org.neo4j.kernel.impl.util.Bits.bitFlag;
 import static org.neo4j.kernel.impl.util.Bits.notFlag;
 import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.read2bLengthAndString;
 import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.read2bMap;
 import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.read3bLengthAndString;
 
-public class PhysicalLogCommandReaderV2_2_10 extends BaseCommandReader
+public class PhysicalLogCommandReaderV2_2_4 extends BaseCommandReader
 {
     @Override
     public int getFormatId()
     {
-        return LogEntryVersion.V2_3_5.byteCode();
+        return LogEntryVersion.V2_3.byteCode();
     }
 
     @Override
@@ -632,7 +630,7 @@ public class PhysicalLogCommandReaderV2_2_10 extends BaseCommandReader
 
     private MutableObjectIntMap<String> readMap( ReadableChannel channel ) throws IOException
     {
-        int size = getUnsignedShort( channel );
+        final byte size = channel.get();
         final MutableObjectIntMap<String> result = new ObjectIntHashMap<>( size );
         for ( int i = 0; i < size; i++ )
         {

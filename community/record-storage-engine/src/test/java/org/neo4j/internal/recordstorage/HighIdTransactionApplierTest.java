@@ -22,16 +22,15 @@ package org.neo4j.internal.recordstorage;
 import org.junit.Rule;
 import org.junit.Test;
 
+import org.neo4j.internal.recordstorage.Command.NodeCommand;
+import org.neo4j.internal.recordstorage.Command.RelationshipCommand;
+import org.neo4j.internal.recordstorage.Command.RelationshipGroupCommand;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.PropertyType;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
-import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
-import org.neo4j.kernel.impl.transaction.command.Command.RelationshipCommand;
-import org.neo4j.kernel.impl.transaction.command.Command.RelationshipGroupCommand;
-import org.neo4j.kernel.impl.transaction.command.Commands;
 import org.neo4j.test.rule.NeoStoresRule;
 
 import static org.junit.Assert.assertEquals;

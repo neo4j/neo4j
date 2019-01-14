@@ -1,6 +1,6 @@
-org.neo4j.kernel.impl.transaction.command.PhysicalLogCommandReaderV2_2_10
-org.neo4j.kernel.impl.transaction.command.PhysicalLogCommandReaderV2_2_4
-org.neo4j.kernel.impl.transaction.command.PhysicalLogCommandReaderV3_0_2
-org.neo4j.kernel.impl.transaction.command.PhysicalLogCommandReaderV3_0
-org.neo4j.kernel.impl.transaction.command.PhysicalLogCommandReaderV3_0_10
-org.neo4j.kernel.impl.transaction.command.PhysicalLogCommandReaderV4_0
+org.neo4j.internal.recordstorage.PhysicalLogCommandReaderV2_2_10
+org.neo4j.internal.recordstorage.PhysicalLogCommandReaderV2_2_4
+org.neo4j.internal.recordstorage.PhysicalLogCommandReaderV3_0_2
+org.neo4j.internal.recordstorage.PhysicalLogCommandReaderV3_0
+org.neo4j.internal.recordstorage.PhysicalLogCommandReaderV3_0_10
+org.neo4j.internal.recordstorage.PhysicalLogCommandReaderV4_0

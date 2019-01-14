@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction.command;
+package org.neo4j.internal.recordstorage;
 
 import org.eclipse.collections.api.map.primitive.MutableObjectIntMap;
 import org.eclipse.collections.impl.map.mutable.primitive.ObjectIntHashMap;
@@ -30,13 +30,6 @@ import java.util.Map;
 
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.internal.kernel.api.exceptions.schema.MalformedSchemaRuleException;
-import org.neo4j.kernel.impl.index.IndexCommand;
-import org.neo4j.kernel.impl.index.IndexCommand.AddNodeCommand;
-import org.neo4j.kernel.impl.index.IndexCommand.AddRelationshipCommand;
-import org.neo4j.kernel.impl.index.IndexCommand.CreateCommand;
-import org.neo4j.kernel.impl.index.IndexCommand.DeleteCommand;
-import org.neo4j.kernel.impl.index.IndexCommand.RemoveCommand;
-import org.neo4j.kernel.impl.index.IndexDefineCommand;
 import org.neo4j.kernel.impl.store.AbstractDynamicStore;
 import org.neo4j.kernel.impl.store.PropertyType;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -51,27 +44,26 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRuleSerialization;
-import org.neo4j.kernel.impl.transaction.command.CommandReading.DynamicRecordAdder;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion;
 import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.SchemaRule;
 
 import static org.neo4j.helpers.Numbers.unsignedShortToInt;
-import static org.neo4j.kernel.impl.transaction.command.CommandReading.COLLECTION_DYNAMIC_RECORD_ADDER;
-import static org.neo4j.kernel.impl.transaction.command.CommandReading.PROPERTY_BLOCK_DYNAMIC_RECORD_ADDER;
-import static org.neo4j.kernel.impl.transaction.command.CommandReading.PROPERTY_DELETED_DYNAMIC_RECORD_ADDER;
-import static org.neo4j.kernel.impl.transaction.command.CommandReading.PROPERTY_INDEX_DYNAMIC_RECORD_ADDER;
+import static org.neo4j.internal.recordstorage.CommandReading.COLLECTION_DYNAMIC_RECORD_ADDER;
+import static org.neo4j.internal.recordstorage.CommandReading.PROPERTY_BLOCK_DYNAMIC_RECORD_ADDER;
+import static org.neo4j.internal.recordstorage.CommandReading.PROPERTY_DELETED_DYNAMIC_RECORD_ADDER;
+import static org.neo4j.internal.recordstorage.CommandReading.PROPERTY_INDEX_DYNAMIC_RECORD_ADDER;
 import static org.neo4j.kernel.impl.util.Bits.bitFlag;
 import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.read2bLengthAndString;
 import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.read2bMap;
 import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.read3bLengthAndString;
 
-public class PhysicalLogCommandReaderV3_0 extends BaseCommandReader
+public class PhysicalLogCommandReaderV4_0 extends BaseCommandReader
 {
     @Override
     public int getFormatId()
     {
-        return LogEntryVersion.V3_0.byteCode();
+        return LogEntryVersion.V4_0.byteCode();
     }
 
     @Override
@@ -499,11 +491,11 @@ public class PhysicalLogCommandReaderV3_0 extends BaseCommandReader
             record.setStartRecord( (inUseFlag & Record.FIRST_IN_CHAIN.byteValue()) != 0 );
             int nrOfBytes = channel.getInt();
             assert nrOfBytes >= 0 && nrOfBytes < ((1 << 24) - 1) : nrOfBytes
-                                                                   + " is not valid for a number of bytes field of " + "a dynamic record";
+                    + " is not valid for a number of bytes field of " + "a dynamic record";
             long nextBlock = channel.getLong();
             assert (nextBlock >= 0 && nextBlock <= (1L << 36 - 1))
-                   || (nextBlock == Record.NO_NEXT_BLOCK.intValue()) : nextBlock
-                                                                       + " is not valid for a next record field of " + "a dynamic record";
+                    || (nextBlock == Record.NO_NEXT_BLOCK.intValue()) : nextBlock
+                    + " is not valid for a next record field of " + "a dynamic record";
             record.setNextBlock( nextBlock );
             byte[] data = new byte[nrOfBytes];
             channel.get( data, nrOfBytes );
@@ -512,7 +504,7 @@ public class PhysicalLogCommandReaderV3_0 extends BaseCommandReader
         return record;
     }
 
-    private <T> int readDynamicRecords( ReadableChannel channel, T target, DynamicRecordAdder<T> adder )
+    private <T> int readDynamicRecords( ReadableChannel channel, T target, CommandReading.DynamicRecordAdder<T> adder )
             throws IOException
     {
         int numberOfRecords = channel.getInt();
@@ -609,11 +601,11 @@ public class PhysicalLogCommandReaderV3_0 extends BaseCommandReader
         // Read in blocks
         long[] blocks = readLongs( channel, blockSize / 8 );
         assert blocks.length == blockSize / 8 : blocks.length
-                                                + " longs were read in while i asked for what corresponds to " + blockSize;
+                + " longs were read in while i asked for what corresponds to " + blockSize;
 
         assert PropertyType.getPropertyTypeOrThrow( blocks[0] ).calculateNumberOfBlocksUsed(
                 blocks[0] ) == blocks.length : blocks.length + " is not a valid number of blocks for type "
-                                               + PropertyType.getPropertyTypeOrThrow( blocks[0] );
+                + PropertyType.getPropertyTypeOrThrow( blocks[0] );
         /*
          *  Ok, now we may be ready to return, if there are no DynamicRecords. So
          *  we start building the Object
@@ -642,9 +634,6 @@ public class PhysicalLogCommandReaderV3_0 extends BaseCommandReader
 
     private SchemaRule readSchemaRule( Collection<DynamicRecord> recordsBefore )
     {
-        // TODO: Why was this assertion here?
-        //            assert first(recordsBefore).inUse() : "Asked to deserialize schema records that were not in
-        // use.";
         SchemaRule rule;
         ByteBuffer deserialized = AbstractDynamicStore.concatData( recordsBefore, new byte[100] );
         try
@@ -663,7 +652,7 @@ public class PhysicalLogCommandReaderV3_0 extends BaseCommandReader
         IndexCommandHeader header = readIndexCommandHeader( channel );
         Number entityId = header.entityIdNeedsLong ? channel.getLong() : channel.getInt();
         Object value = readIndexValue( header.valueType, channel );
-        AddNodeCommand command = new AddNodeCommand();
+        IndexCommand.AddNodeCommand command = new IndexCommand.AddNodeCommand();
         command.init( header.indexNameId, entityId.longValue(), header.keyId, value );
         return command;
     }
@@ -675,7 +664,7 @@ public class PhysicalLogCommandReaderV3_0 extends BaseCommandReader
         Object value = readIndexValue( header.valueType, channel );
         Number startNode = header.startNodeNeedsLong ? channel.getLong() : channel.getInt();
         Number endNode = header.endNodeNeedsLong ? channel.getLong() : channel.getInt();
-        AddRelationshipCommand command = new AddRelationshipCommand();
+        IndexCommand.AddRelationshipCommand command = new IndexCommand.AddRelationshipCommand();
         command.init( header.indexNameId, entityId.longValue(), header.keyId, value, startNode.longValue(),
                 endNode.longValue() );
         return command;
@@ -686,7 +675,7 @@ public class PhysicalLogCommandReaderV3_0 extends BaseCommandReader
         IndexCommandHeader header = readIndexCommandHeader( channel );
         Number entityId = header.entityIdNeedsLong ? channel.getLong() : channel.getInt();
         Object value = readIndexValue( header.valueType, channel );
-        RemoveCommand command = new RemoveCommand();
+        IndexCommand.RemoveCommand command = new IndexCommand.RemoveCommand();
         command.init( header.indexNameId, header.entityType, entityId.longValue(), header.keyId, value );
         return command;
     }
@@ -694,7 +683,7 @@ public class PhysicalLogCommandReaderV3_0 extends BaseCommandReader
     private Command visitIndexDeleteCommand( ReadableChannel channel ) throws IOException
     {
         IndexCommandHeader header = readIndexCommandHeader( channel );
-        DeleteCommand command = new DeleteCommand();
+        IndexCommand.DeleteCommand command = new IndexCommand.DeleteCommand();
         command.init( header.indexNameId, header.entityType );
         return command;
     }
@@ -703,7 +692,7 @@ public class PhysicalLogCommandReaderV3_0 extends BaseCommandReader
     {
         IndexCommandHeader header = readIndexCommandHeader( channel );
         Map<String,String> config = read2bMap( channel );
-        CreateCommand command = new CreateCommand();
+        IndexCommand.CreateCommand command = new IndexCommand.CreateCommand();
         command.init( header.indexNameId, header.entityType, config );
         return command;
     }
@@ -736,7 +725,7 @@ public class PhysicalLogCommandReaderV3_0 extends BaseCommandReader
 
     private MutableObjectIntMap<String> readMap( ReadableChannel channel ) throws IOException
     {
-        byte size = channel.get();
+        int size = getUnsignedShort( channel );
         MutableObjectIntMap<String> result = new ObjectIntHashMap<>( size );
         for ( int i = 0; i < size; i++ )
         {

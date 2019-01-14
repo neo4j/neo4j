@@ -17,28 +17,27 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api;
-
+package org.neo4j.internal.recordstorage;
 
 import java.io.IOException;
 
-import org.neo4j.kernel.impl.index.IndexCommand.AddNodeCommand;
-import org.neo4j.kernel.impl.index.IndexCommand.AddRelationshipCommand;
-import org.neo4j.kernel.impl.index.IndexCommand.CreateCommand;
-import org.neo4j.kernel.impl.index.IndexCommand.DeleteCommand;
-import org.neo4j.kernel.impl.index.IndexCommand.RemoveCommand;
-import org.neo4j.kernel.impl.index.IndexDefineCommand;
-import org.neo4j.kernel.impl.transaction.command.Command.LabelTokenCommand;
-import org.neo4j.kernel.impl.transaction.command.Command.NeoStoreCommand;
-import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
-import org.neo4j.kernel.impl.transaction.command.Command.NodeCountsCommand;
-import org.neo4j.kernel.impl.transaction.command.Command.PropertyCommand;
-import org.neo4j.kernel.impl.transaction.command.Command.PropertyKeyTokenCommand;
-import org.neo4j.kernel.impl.transaction.command.Command.RelationshipCommand;
-import org.neo4j.kernel.impl.transaction.command.Command.RelationshipCountsCommand;
-import org.neo4j.kernel.impl.transaction.command.Command.RelationshipGroupCommand;
-import org.neo4j.kernel.impl.transaction.command.Command.RelationshipTypeTokenCommand;
-import org.neo4j.kernel.impl.transaction.command.Command.SchemaRuleCommand;
+import org.neo4j.internal.recordstorage.Command.LabelTokenCommand;
+import org.neo4j.internal.recordstorage.Command.NeoStoreCommand;
+import org.neo4j.internal.recordstorage.Command.NodeCommand;
+import org.neo4j.internal.recordstorage.Command.NodeCountsCommand;
+import org.neo4j.internal.recordstorage.Command.PropertyCommand;
+import org.neo4j.internal.recordstorage.Command.PropertyKeyTokenCommand;
+import org.neo4j.internal.recordstorage.Command.RelationshipCommand;
+import org.neo4j.internal.recordstorage.Command.RelationshipCountsCommand;
+import org.neo4j.internal.recordstorage.Command.RelationshipGroupCommand;
+import org.neo4j.internal.recordstorage.Command.RelationshipTypeTokenCommand;
+import org.neo4j.internal.recordstorage.Command.SchemaRuleCommand;
+import org.neo4j.internal.recordstorage.IndexCommand.AddNodeCommand;
+import org.neo4j.internal.recordstorage.IndexCommand.AddRelationshipCommand;
+import org.neo4j.internal.recordstorage.IndexCommand.CreateCommand;
+import org.neo4j.internal.recordstorage.IndexCommand.DeleteCommand;
+import org.neo4j.internal.recordstorage.IndexCommand.RemoveCommand;
+import org.neo4j.kernel.impl.api.TransactionApplier;
 
 /**
  * An interface for dealing with commands, either reading or writing them. See also {@link TransactionApplier}. The
@@ -91,103 +90,103 @@ public interface CommandVisitor
     {
 
         @Override
-        public boolean visitNodeCommand( NodeCommand command ) throws IOException
+        public boolean visitNodeCommand( NodeCommand command )
         {
             return false;
         }
 
         @Override
-        public boolean visitRelationshipCommand( RelationshipCommand command ) throws IOException
+        public boolean visitRelationshipCommand( RelationshipCommand command )
         {
             return false;
         }
 
         @Override
-        public boolean visitPropertyCommand( PropertyCommand command ) throws IOException
+        public boolean visitPropertyCommand( PropertyCommand command )
         {
             return false;
         }
 
         @Override
-        public boolean visitRelationshipGroupCommand( RelationshipGroupCommand command ) throws IOException
+        public boolean visitRelationshipGroupCommand( RelationshipGroupCommand command )
         {
             return false;
         }
 
         @Override
-        public boolean visitRelationshipTypeTokenCommand( RelationshipTypeTokenCommand command ) throws IOException
+        public boolean visitRelationshipTypeTokenCommand( RelationshipTypeTokenCommand command )
         {
             return false;
         }
 
         @Override
-        public boolean visitLabelTokenCommand( LabelTokenCommand command ) throws IOException
+        public boolean visitLabelTokenCommand( LabelTokenCommand command )
         {
             return false;
         }
 
         @Override
-        public boolean visitPropertyKeyTokenCommand( PropertyKeyTokenCommand command ) throws IOException
+        public boolean visitPropertyKeyTokenCommand( PropertyKeyTokenCommand command )
         {
             return false;
         }
 
         @Override
-        public boolean visitSchemaRuleCommand( SchemaRuleCommand command ) throws IOException
+        public boolean visitSchemaRuleCommand( SchemaRuleCommand command )
         {
             return false;
         }
 
         @Override
-        public boolean visitNeoStoreCommand( NeoStoreCommand command ) throws IOException
+        public boolean visitNeoStoreCommand( NeoStoreCommand command )
         {
             return false;
         }
 
         @Override
-        public boolean visitIndexAddNodeCommand( AddNodeCommand command ) throws IOException
+        public boolean visitIndexAddNodeCommand( AddNodeCommand command )
         {
             return false;
         }
 
         @Override
-        public boolean visitIndexAddRelationshipCommand( AddRelationshipCommand command ) throws IOException
+        public boolean visitIndexAddRelationshipCommand( AddRelationshipCommand command )
         {
             return false;
         }
 
         @Override
-        public boolean visitIndexRemoveCommand( RemoveCommand command ) throws IOException
+        public boolean visitIndexRemoveCommand( RemoveCommand command )
         {
             return false;
         }
 
         @Override
-        public boolean visitIndexDeleteCommand( DeleteCommand command ) throws IOException
+        public boolean visitIndexDeleteCommand( DeleteCommand command )
         {
             return false;
         }
 
         @Override
-        public boolean visitIndexCreateCommand( CreateCommand command ) throws IOException
+        public boolean visitIndexCreateCommand( CreateCommand command )
         {
             return false;
         }
 
         @Override
-        public boolean visitIndexDefineCommand( IndexDefineCommand command ) throws IOException
+        public boolean visitIndexDefineCommand( IndexDefineCommand command )
         {
             return false;
         }
 
         @Override
-        public boolean visitNodeCountsCommand( NodeCountsCommand command ) throws IOException
+        public boolean visitNodeCountsCommand( NodeCountsCommand command )
         {
             return false;
         }
 
         @Override
-        public boolean visitRelationshipCountsCommand( RelationshipCountsCommand command ) throws IOException
+        public boolean visitRelationshipCountsCommand( RelationshipCountsCommand command )
         {
             return false;
         }
