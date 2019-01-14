@@ -228,12 +228,17 @@ public class PropertyRecord extends AbstractBaseRecord implements Iterable<Prope
     public void addPropertyBlock( PropertyBlock block )
     {
         ensureBlocksLoaded();
-        assert size() + block.getSize() <= PropertyType.getPayloadSize() :
+        assert hasSpaceFor( block ) :
                 "Exceeded capacity of property record " + this
                 + ". My current size is reported as " + size() + "The added block was " + block +
                 " (note that size is " + block.getSize() + ")";
 
         blockRecords[blockRecordsCursor++] = block;
+    }
+
+    public boolean hasSpaceFor( PropertyBlock block )
+    {
+        return size() + block.getSize() <= PropertyType.getPayloadSize();
     }
 
     /**

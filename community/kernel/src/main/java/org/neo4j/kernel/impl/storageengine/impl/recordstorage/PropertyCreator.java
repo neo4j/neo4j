@@ -59,13 +59,12 @@ public class PropertyCreator
     }
 
     public <P extends PrimitiveRecord> void primitiveSetProperty(
-            RecordProxy<P, Void> primitiveRecordChange, int propertyKey, Value value,
+            RecordProxy<P, ?> primitiveRecordChange, int propertyKey, Value value,
             RecordAccess<PropertyRecord, PrimitiveRecord> propertyRecords )
     {
         PropertyBlock block = encodePropertyValue( propertyKey, value );
         P primitive = primitiveRecordChange.forReadingLinkage();
         assert traverser.assertPropertyChain( primitive, propertyRecords );
-        int newBlockSizeInBytes = block.getSize();
 
         // Traverse the existing property chain. Tracking two things along the way:
         // - (a) Free space for this block (candidateHost)
@@ -86,7 +85,7 @@ public class PropertyCreator
             assert propRecord.inUse() : propRecord;
 
             // (a) search for free space
-            if ( propertyFitsInside( newBlockSizeInBytes, propRecord ) )
+            if ( propRecord.hasSpaceFor( block ) )
             {
                 freeHostProxy = proxy;
                 if ( existingHostProxy != null )
@@ -111,8 +110,8 @@ public class PropertyCreator
                 removeProperty( primitive, existingHost, existingBlock );
 
                 // Now see if we at this point can add the new block
-                if ( newBlockSizeInBytes <= existingBlock.getSize() || // cheap check
-                     propertyFitsInside( newBlockSizeInBytes, existingHost ) ) // fallback check
+                if ( block.getSize() <= existingBlock.getSize() || // cheap check
+                     existingHost.hasSpaceFor( block ) ) // fallback check
                 {
                     // (1) yes we could add it right into the host of the existing block
                     existingHost.addPropertyBlock( block );
@@ -179,13 +178,6 @@ public class PropertyCreator
             record.setInUse( false, block.getType().intValue() );
             host.addDeletedRecord( record );
         }
-    }
-
-    private boolean propertyFitsInside( int newBlockSizeInBytes, PropertyRecord propRecord )
-    {
-        int propSize = propRecord.size();
-        assert propSize >= 0 : propRecord;
-        return propSize + newBlockSizeInBytes <= PropertyType.getPayloadSize();
     }
 
     public PropertyBlock encodePropertyValue( int propertyKey, Value value )

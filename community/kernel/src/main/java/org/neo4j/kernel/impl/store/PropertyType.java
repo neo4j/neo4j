@@ -314,7 +314,8 @@ public enum PropertyType
         PropertyType type = getPropertyTypeOrNull( propBlock );
         if ( type == null )
         {
-            throw new InvalidRecordException( "Unknown property type for type " + typeIdentifier( propBlock ) );
+            throw new InvalidRecordException( "Unknown property type: " + typeIdentifier( propBlock ) +
+                    " (from property block " + Long.toHexString( propBlock ) + ")." );
         }
         return type;
     }

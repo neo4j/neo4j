@@ -340,9 +340,9 @@ public class TransactionRecordState implements RecordState
         return dynamicLabelRecords;
     }
 
-    private void getAndDeletePropertyChain( NodeRecord nodeRecord )
+    private void getAndDeletePropertyChain( PrimitiveRecord record )
     {
-        propertyDeleter.deletePropertyChain( nodeRecord, recordChangeSet.getPropertyRecords() );
+        propertyDeleter.deletePropertyChain( record, recordChangeSet.getPropertyRecords() );
     }
 
     /**
