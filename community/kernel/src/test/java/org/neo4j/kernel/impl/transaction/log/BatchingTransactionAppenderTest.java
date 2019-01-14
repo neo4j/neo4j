@@ -27,14 +27,13 @@ import org.mockito.Mockito;
 import java.io.Flushable;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 
+import org.neo4j.kernel.impl.api.TestCommand;
 import org.neo4j.kernel.impl.api.TransactionToApply;
-import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
@@ -103,7 +102,7 @@ public class BatchingTransactionAppenderTest
         TransactionAppender appender = life.add( createTransactionAppender() );
 
         // WHEN
-        TransactionRepresentation transaction = transaction( singleCreateNodeCommand( 0 ),
+        TransactionRepresentation transaction = transaction( singleTestCommand(),
                 new byte[]{1, 2, 5}, 2, 1, 12345, 4545, 12345 + 10 );
 
         appender.append( new TransactionToApply( transaction ), logAppendEvent );
@@ -132,9 +131,9 @@ public class BatchingTransactionAppenderTest
         TransactionAppender appender = life.add( createTransactionAppender() );
         when( transactionIdStore.nextCommittingTransactionId() ).thenReturn( 2L, 3L, 4L );
         TransactionToApply batch = batchOf(
-                transaction( singleCreateNodeCommand( 0 ), new byte[0], 0, 0, 0, 1, 0 ),
-                transaction( singleCreateNodeCommand( 1 ), new byte[0], 0, 0, 0, 1, 0 ),
-                transaction( singleCreateNodeCommand( 2 ), new byte[0], 0, 0, 0, 1, 0 ) );
+                transaction( singleTestCommand(), new byte[0], 0, 0, 0, 1, 0 ),
+                transaction( singleTestCommand(), new byte[0], 0, 0, 0, 1, 0 ),
+                transaction( singleTestCommand(), new byte[0], 0, 0, 0, 1, 0 ) );
 
         // WHEN
         appender.append( batch, logAppendEvent );
@@ -167,7 +166,7 @@ public class BatchingTransactionAppenderTest
         long latestCommittedTxWhenStarted = nextTxId - 5;
         long timeCommitted = timeStarted + 10;
         PhysicalTransactionRepresentation transactionRepresentation = new PhysicalTransactionRepresentation(
-                singleCreateNodeCommand( 0 ) );
+                singleTestCommand() );
         transactionRepresentation.setHeader( additionalHeader, masterId, authorId, timeStarted,
                 latestCommittedTxWhenStarted, timeCommitted, -1 );
 
@@ -212,7 +211,7 @@ public class BatchingTransactionAppenderTest
         long latestCommittedTxWhenStarted = 4545;
         long timeCommitted = timeStarted + 10;
         PhysicalTransactionRepresentation transactionRepresentation = new PhysicalTransactionRepresentation(
-                singleCreateNodeCommand( 0 ) );
+                singleTestCommand() );
         transactionRepresentation.setHeader( additionalHeader, masterId, authorId, timeStarted,
                 latestCommittedTxWhenStarted, timeCommitted, -1 );
 
@@ -395,14 +394,9 @@ public class BatchingTransactionAppenderTest
         return tx;
     }
 
-    private Collection<StorageCommand> singleCreateNodeCommand( long id )
+    private Collection<StorageCommand> singleTestCommand()
     {
-        Collection<StorageCommand> commands = new ArrayList<>();
-        NodeRecord before = new NodeRecord( id );
-        NodeRecord after = new NodeRecord( id );
-        after.setInUse( true );
-        commands.add( new NodeCommand( before, after ) );
-        return commands;
+        return Collections.singletonList( new TestCommand() );
     }
 
     private TransactionToApply batchOf( TransactionRepresentation... transactions )

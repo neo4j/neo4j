@@ -27,6 +27,9 @@ import java.io.IOException;
  */
 public interface CommandReader
 {
+    // Type of command = 0, means the first byte of the command record was only written but second
+    // (saying what type) did not get written but the file still got expanded
+    byte NONE = (byte) 0;
 
     /**
      * @return unique identifier of log entry format that this class can read

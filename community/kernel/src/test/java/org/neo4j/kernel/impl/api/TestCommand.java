@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import java.io.IOException;
+import java.util.Arrays;
+
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.WritableChannel;
 
@@ -27,9 +30,47 @@ import org.neo4j.storageengine.api.WritableChannel;
  */
 public class TestCommand implements StorageCommand
 {
-    @Override
-    public void serialize( WritableChannel channel )
+    private final byte[] bytes;
+
+    public TestCommand()
     {
-        // TODO not sure it's OK to not write anything here...
+        this( 50 /* roughly the size of a NodeCommand */ );
+    }
+
+    public TestCommand( int size )
+    {
+        this( new byte[size] );
+    }
+
+    public TestCommand( byte[] bytes )
+    {
+        this.bytes = bytes;
+    }
+
+    @Override
+    public void serialize( WritableChannel channel ) throws IOException
+    {
+        channel.put( bytes, bytes.length );
+    }
+
+    @Override
+    public boolean equals( Object o )
+    {
+        if ( this == o )
+        {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() )
+        {
+            return false;
+        }
+        TestCommand that = (TestCommand) o;
+        return Arrays.equals( bytes, that.bytes );
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return Arrays.hashCode( bytes );
     }
 }

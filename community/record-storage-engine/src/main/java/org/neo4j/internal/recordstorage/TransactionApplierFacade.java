@@ -29,9 +29,8 @@ import org.neo4j.storageengine.api.StorageCommand;
  * {@link #close()},
  * the appliers are closed in reversed order.
  */
-public class TransactionApplierFacade extends TransactionApplier.Adapter
+public class TransactionApplierFacade implements TransactionApplier
 {
-
     final TransactionApplier[] appliers;
 
     public TransactionApplierFacade( TransactionApplier... appliers )

@@ -23,10 +23,8 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.ServiceLoadingCommandReaderFactory;
-import org.neo4j.kernel.impl.store.record.NodeRecord;
-import org.neo4j.kernel.impl.transaction.command.Command;
-import org.neo4j.kernel.impl.transaction.command.NeoCommandType;
+import org.neo4j.kernel.impl.api.TestCommand;
+import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogPositionMarker;
@@ -39,7 +37,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 class LogEntryParserDispatcherV6Test
 {
     private final LogEntryVersion version = LogEntryVersion.CURRENT;
-    private final CommandReaderFactory commandReader = new ServiceLoadingCommandReaderFactory();
+    private final CommandReaderFactory commandReader = new TestCommandReaderFactory();
     private final LogPositionMarker marker = new LogPositionMarker();
     private final LogPosition position = new LogPosition( 0, 29 );
 
@@ -94,22 +92,10 @@ class LogEntryParserDispatcherV6Test
     {
         // given
         // The record, it will be used as before and after
-        NodeRecord theRecord = new NodeRecord( 1 );
-        Command.NodeCommand nodeCommand = new Command.NodeCommand( theRecord, theRecord );
-
-        final LogEntryCommand command = new LogEntryCommand( version, nodeCommand );
+        TestCommand testCommand = new TestCommand( new byte[] {1, 2, 3, 4, 5, 6, 7, 8, 9} );
+        final LogEntryCommand command = new LogEntryCommand( version, testCommand );
         final InMemoryClosableChannel channel = new InMemoryClosableChannel();
-
-        channel.put( NeoCommandType.NODE_COMMAND );
-        channel.putLong( theRecord.getId() );
-
-        // record image before
-        channel.put( (byte) 0 ); // not in use
-        channel.putInt( 0 ); // number of dynamic records in use
-        // record image after
-        channel.put( (byte) 0 ); // not in use
-        channel.putInt( 0 ); // number of dynamic records in use
-
+        testCommand.serialize( channel );
         channel.getCurrentPosition( marker );
 
         // when

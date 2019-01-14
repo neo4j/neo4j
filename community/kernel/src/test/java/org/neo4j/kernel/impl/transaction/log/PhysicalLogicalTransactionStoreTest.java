@@ -26,18 +26,17 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.common.ProgressReporter;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.kernel.impl.api.TestCommand;
 import org.neo4j.kernel.impl.api.TransactionToApply;
-import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache.TransactionMetadata;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
@@ -292,7 +291,7 @@ class PhysicalLogicalTransactionStoreTest
     }
 
     @Test
-    void shouldThrowNoSuchTransactionExceptionIfMetadataNotFound() throws Exception
+    void shouldThrowNoSuchTransactionExceptionIfMetadataNotFound()
     {
         // GIVEN
         LogFiles logFiles = mock( LogFiles.class );
@@ -356,22 +355,15 @@ class PhysicalLogicalTransactionStoreTest
         TransactionAppender appender = life.add( new BatchingTransactionAppender( logFiles, NO_ROTATION, positionCache,
                 transactionIdStore, DATABASE_HEALTH ) );
         PhysicalTransactionRepresentation transaction =
-                new PhysicalTransactionRepresentation( singleCreateNodeCommand() );
+                new PhysicalTransactionRepresentation( singleTestCommand() );
         transaction.setHeader( additionalHeader, masterId, authorId, timeStarted, latestCommittedTxWhenStarted,
                 timeCommitted, -1 );
         appender.append( new TransactionToApply( transaction ), LogAppendEvent.NULL );
     }
 
-    private Collection<StorageCommand> singleCreateNodeCommand()
+    private Collection<StorageCommand> singleTestCommand()
     {
-        Collection<StorageCommand> commands = new ArrayList<>();
-
-        long id = 0;
-        NodeRecord before = new NodeRecord( id );
-        NodeRecord after = new NodeRecord( id );
-        after.setInUse( true );
-        commands.add( new Command.NodeCommand( before, after ) );
-        return commands;
+        return Collections.singletonList( new TestCommand() );
     }
 
     private void verifyTransaction( TransactionIdStore transactionIdStore, TransactionMetadataCache positionCache,

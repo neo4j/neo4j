@@ -27,12 +27,11 @@ import java.io.IOException;
 import java.time.Clock;
 import java.util.List;
 
+import org.neo4j.kernel.impl.api.TestCommand;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.core.DatabasePanicEventGenerator;
-import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
-import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
@@ -105,7 +104,7 @@ public class BatchingTransactionAppenderRotationIT
 
     private static List<StorageCommand> createCommands()
     {
-        return singletonList( new Command.NodeCommand( new NodeRecord( 1L ), new NodeRecord( 2L ) ) );
+        return singletonList( new TestCommand() );
     }
 
     private LogFiles getLogFiles( SimpleLogVersionRepository logVersionRepository,

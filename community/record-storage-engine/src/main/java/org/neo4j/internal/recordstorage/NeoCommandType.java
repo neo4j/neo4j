@@ -21,10 +21,6 @@ package org.neo4j.internal.recordstorage;
 
 public interface NeoCommandType
 {
-    // means the first byte of the command record was only written but second
-    // (saying what type) did not get written but the file still got expanded
-    byte NONE = (byte) 0;
-
     byte NODE_COMMAND = (byte) 1;
     byte PROP_COMMAND = (byte) 2;
     byte REL_COMMAND = (byte) 3;

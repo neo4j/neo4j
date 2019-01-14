@@ -45,12 +45,11 @@ import org.neo4j.adversaries.fs.AdversarialFileSystemAbstraction;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemLifecycleAdapter;
+import org.neo4j.kernel.impl.api.TestCommand;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.core.DatabasePanicEventGenerator;
-import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
-import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
@@ -270,11 +269,7 @@ public class BatchingTransactionAppenderConcurrencyTest
 
     protected TransactionToApply tx()
     {
-        NodeRecord before = new NodeRecord( 0 );
-        NodeRecord after = new NodeRecord( 0 );
-        after.setInUse( true );
-        Command.NodeCommand nodeCommand = new Command.NodeCommand( before, after );
-        PhysicalTransactionRepresentation tx = new PhysicalTransactionRepresentation( singletonList( nodeCommand ) );
+        PhysicalTransactionRepresentation tx = new PhysicalTransactionRepresentation( singletonList( new TestCommand() ) );
         tx.setHeader( new byte[0], 0, 0, 0, 0, 0, 0 );
         return new TransactionToApply( tx );
     }

@@ -32,9 +32,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.io.ByteUnit;
+import org.neo4j.kernel.impl.api.TestCommand;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.core.DatabasePanicEventGenerator;
-import org.neo4j.kernel.impl.store.PropertyType;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
@@ -67,8 +67,6 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.rules.RuleChain.outerRule;
 import static org.mockito.Mockito.mock;
-import static org.neo4j.kernel.impl.transaction.command.Commands.createNode;
-import static org.neo4j.kernel.impl.transaction.command.Commands.createProperty;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
 import static org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent.NULL;
 
@@ -177,8 +175,8 @@ public class TransactionLogAppendAndRotateIT
         for ( int i = 0; i < size; i++ )
         {
             // The actual data isn't super important
-            commands.add( createNode( i ) );
-            commands.add( createProperty( i, PropertyType.INT, 0 ) );
+            commands.add( new TestCommand( 30 ) );
+            commands.add( new TestCommand( 60 ) );
         }
         PhysicalTransactionRepresentation tx = new PhysicalTransactionRepresentation( commands );
         tx.setHeader( new byte[0], 0, 0, 0, 0, 0, 0 );

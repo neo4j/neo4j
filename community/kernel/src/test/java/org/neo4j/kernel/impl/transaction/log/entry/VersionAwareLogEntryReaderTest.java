@@ -23,13 +23,12 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.ServiceLoadingCommandReaderFactory;
-import org.neo4j.kernel.impl.store.record.NodeRecord;
-import org.neo4j.kernel.impl.transaction.command.Command;
-import org.neo4j.kernel.impl.transaction.command.NeoCommandType;
+import org.neo4j.kernel.impl.api.TestCommand;
+import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
+import org.neo4j.storageengine.api.CommandReader;
 
 import static java.lang.System.currentTimeMillis;
 import static java.util.Collections.singletonList;
@@ -89,13 +88,13 @@ class VersionAwareLogEntryReaderTest
     {
         // given
         LogEntryVersion version = LogEntryVersion.CURRENT;
-        Command.NodeCommand nodeCommand = new Command.NodeCommand( new NodeRecord( 11 ), new NodeRecord( 11 ) );
-        final LogEntryCommand command = new LogEntryCommand( version, nodeCommand );
+        TestCommand testCommand = new TestCommand( new byte[] {100, 101, 102} );
+        final LogEntryCommand command = new LogEntryCommand( version, testCommand );
         final InMemoryClosableChannel channel = new InMemoryClosableChannel();
 
         channel.put( version.byteCode() );
         channel.put( LogEntryByteCodes.COMMAND );
-        nodeCommand.serialize( channel );
+        testCommand.serialize( channel );
 
         // when
         final LogEntry logEntry = logEntryReader.readLogEntry( channel );
@@ -134,7 +133,7 @@ class VersionAwareLogEntryReaderTest
 
         channel.put( version.byteCode() );
         channel.put( LogEntryByteCodes.COMMAND );
-        channel.put( NeoCommandType.NONE );
+        channel.put( CommandReader.NONE );
 
         // when
         final LogEntry logEntry = logEntryReader.readLogEntry( channel );
@@ -162,7 +161,7 @@ class VersionAwareLogEntryReaderTest
         // GIVEN
         AcceptingInvalidLogEntryHandler invalidLogEntryHandler = new AcceptingInvalidLogEntryHandler();
         VersionAwareLogEntryReader<ReadableClosablePositionAwareChannel> reader = new VersionAwareLogEntryReader<>(
-                new ServiceLoadingCommandReaderFactory(), invalidLogEntryHandler );
+                new TestCommandReaderFactory(), invalidLogEntryHandler );
         InMemoryClosableChannel channel = new InMemoryClosableChannel( 1_000 );
         LogEntryWriter writer = new LogEntryWriter( channel.writer() );
         long startTime = currentTimeMillis();
@@ -202,7 +201,7 @@ class VersionAwareLogEntryReaderTest
         // GIVEN
         AcceptingInvalidLogEntryHandler invalidLogEntryHandler = new AcceptingInvalidLogEntryHandler();
         VersionAwareLogEntryReader<ReadableClosablePositionAwareChannel> reader = new VersionAwareLogEntryReader<>(
-                new ServiceLoadingCommandReaderFactory(), invalidLogEntryHandler );
+                new TestCommandReaderFactory(), invalidLogEntryHandler );
         InMemoryClosableChannel channel = new InMemoryClosableChannel( 1_000 );
         LogEntryWriter writer = new LogEntryWriter( channel.writer() );
         long startTime = currentTimeMillis();
@@ -211,8 +210,7 @@ class VersionAwareLogEntryReaderTest
 
         // Write command ...
         int posBefore = channel.writerPosition();
-        writer.serialize( singletonList( new Command.NodeCommand( new NodeRecord( 1 ),
-                new NodeRecord( 1 ).initialize( true, 1, false, 2, 0 ) ) ) );
+        writer.serialize( singletonList( new TestCommand() ) );
         int posAfter = channel.writerPosition();
         // ... which then gets overwritten with invalid data
         channel.positionWriter( posBefore );

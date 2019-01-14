@@ -26,27 +26,19 @@ import org.junit.rules.RuleChain;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Iterator;
 import java.util.List;
 
 import org.neo4j.collection.PrimitiveLongCollections;
-import org.neo4j.helpers.collection.PrefetchingIterator;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.Loaders;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.PropertyCreator;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.PropertyTraverser;
 import org.neo4j.kernel.impl.store.AbstractDynamicStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
-import org.neo4j.kernel.impl.store.record.DirectRecordAccess;
+import org.neo4j.kernel.impl.store.PropertyType;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
-import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
-import org.neo4j.kernel.impl.store.record.Record;
-import org.neo4j.kernel.impl.transaction.state.RecordAccess;
 import org.neo4j.test.rule.NeoStoresRule;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.RepeatRule;
@@ -191,56 +183,52 @@ public class DeleteDuplicateNodesStepTest
     private Ids createNode( DataImporter.Monitor monitor, NeoStores neoStores, int propertyCount, int labelCount )
     {
         PropertyStore propertyStore = neoStores.getPropertyStore();
-        RecordAccess<PropertyRecord,PrimitiveRecord> propertyRecordAccess =
-                new DirectRecordAccess<>( propertyStore, new Loaders( neoStores ).propertyLoader() );
         NodeStore nodeStore = neoStores.getNodeStore();
         NodeRecord nodeRecord = nodeStore.newRecord();
         nodeRecord.setId( nodeStore.nextId() );
         nodeRecord.setInUse( true );
         NodeLabelsField.parseLabelsField( nodeRecord ).put( labelIds( labelCount ), nodeStore, nodeStore.getDynamicLabelStore() );
-        long nextProp = new PropertyCreator( propertyStore, new PropertyTraverser() )
-                .createPropertyChain( nodeRecord, properties( propertyStore, propertyCount ), propertyRecordAccess );
-        nodeRecord.setNextProp( nextProp );
+        PropertyRecord[] propertyRecords = createPropertyChain( nodeRecord, propertyCount, propertyStore );
+        if ( propertyRecords.length > 0 )
+        {
+            nodeRecord.setNextProp( propertyRecords[0].getId() );
+        }
         nodeStore.updateRecord( nodeRecord );
-        PropertyRecord[] propertyRecords = extractPropertyRecords( propertyRecordAccess, nextProp );
-        propertyRecordAccess.close();
         monitor.nodesImported( 1 );
         monitor.propertiesImported( propertyCount );
         return new Ids( nodeRecord, propertyRecords );
     }
 
-    private static PropertyRecord[] extractPropertyRecords( RecordAccess<PropertyRecord,PrimitiveRecord> propertyRecordAccess,
-            long nextProp )
+    // A slight duplication of PropertyCreator logic, please try and remove in favor of that utility later on
+    private PropertyRecord[] createPropertyChain( NodeRecord nodeRecord, int numberOfProperties, PropertyStore propertyStore )
     {
-        List<PropertyRecord> result = new ArrayList<>();
-        while ( !Record.NULL_REFERENCE.is( nextProp ) )
+        List<PropertyRecord> records = new ArrayList<>();
+        PropertyRecord current = null;
+        int space = PropertyType.getPayloadSizeLongs();
+        for ( int i = 0; i < numberOfProperties; i++ )
         {
-            PropertyRecord record = propertyRecordAccess.getIfLoaded( nextProp ).forReadingLinkage();
-            result.add( record );
-            nextProp = record.getNextProp();
-        }
-        return result.toArray( new PropertyRecord[result.size()] );
-    }
-
-    private Iterator<PropertyBlock> properties( PropertyStore propertyStore, int propertyCount )
-    {
-        return new PrefetchingIterator<PropertyBlock>()
-        {
-            private int i;
-
-            @Override
-            protected PropertyBlock fetchNextOrNull()
+            PropertyBlock block = new PropertyBlock();
+            propertyStore.encodeValue( block, i, random.nextValue() );
+            if ( current == null || block.getValueBlocks().length > space )
             {
-                if ( i >= propertyCount )
+                PropertyRecord next = propertyStore.newRecord();
+                nodeRecord.setIdTo( next );
+                next.setId( propertyStore.nextId() );
+                if ( current != null )
                 {
-                    return null;
+                    next.setPrevProp( current.getId() );
+                    current.setNextProp( next.getId() );
                 }
-                PropertyBlock block = new PropertyBlock();
-                propertyStore.encodeValue( block, i, random.nextValue() );
-                i++;
-                return block;
+                next.setInUse( true );
+                current = next;
+                space = PropertyType.getPayloadSizeLongs();
+                records.add( current );
             }
-        };
+            current.addPropertyBlock( block );
+            space -= block.getValueBlocks().length;
+        }
+        records.forEach( propertyStore::updateRecord );
+        return records.toArray( new PropertyRecord[0] );
     }
 
     private static long[] labelIds( int labelCount )

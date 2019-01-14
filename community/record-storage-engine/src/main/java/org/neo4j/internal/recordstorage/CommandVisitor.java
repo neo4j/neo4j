@@ -87,7 +87,6 @@ public interface CommandVisitor
      */
     class Adapter implements CommandVisitor
     {
-
         @Override
         public boolean visitNodeCommand( NodeCommand command )
         {
@@ -131,7 +130,7 @@ public interface CommandVisitor
         }
 
         @Override
-        public boolean visitSchemaRuleCommand( SchemaRuleCommand command )
+        public boolean visitSchemaRuleCommand( SchemaRuleCommand command ) throws IOException
         {
             return false;
         }

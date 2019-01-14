@@ -43,7 +43,7 @@ public abstract class BaseCommandReader implements CommandReader
         {
             commandType = channel.get();
         }
-        while ( commandType == NeoCommandType.NONE );
+        while ( commandType == CommandReader.NONE );
 
         return read( commandType, channel );
     }

@@ -29,12 +29,11 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 
-import org.neo4j.kernel.impl.store.record.NodeRecord;
+import org.neo4j.kernel.impl.api.TestCommand;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.log.FlushableChannel;
 import org.neo4j.kernel.impl.transaction.log.FlushablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.LogVersionRepository;
@@ -60,7 +59,6 @@ import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-import static org.neo4j.kernel.impl.store.record.Record.NO_LABELS_FIELD;
 import static org.neo4j.kernel.impl.transaction.log.GivenTransactionCursor.exhaust;
 import static org.neo4j.kernel.impl.transaction.log.LogPosition.start;
 import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
@@ -261,9 +259,7 @@ public class ReversedSingleFileTransactionCursorTest
         for ( int i = 0; i < size; i++ )
         {
             // The type of command doesn't matter here
-            commands.add( new Command.NodeCommand(
-                    new NodeRecord( i ),
-                    new NodeRecord( i ).initialize( true, i, false, i, NO_LABELS_FIELD.longValue() ) ) );
+            commands.add( new TestCommand() );
         }
         PhysicalTransactionRepresentation tx = new PhysicalTransactionRepresentation( commands );
         tx.setHeader( new byte[0], 0, 0, 0, 0, 0, 0 );
@@ -272,7 +268,6 @@ public class ReversedSingleFileTransactionCursorTest
 
     private static class CorruptedLogEntryWriter extends LogEntryWriter
     {
-
         CorruptedLogEntryWriter( FlushableChannel channel )
         {
             super( channel );

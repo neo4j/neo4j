@@ -22,32 +22,32 @@ package org.neo4j.kernel.recovery;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.graphdb.mockfs.UncloseableDelegatingFileSystemAbstraction;
-import org.neo4j.internal.recordstorage.Command.NodeCommand;
-import org.neo4j.internal.recordstorage.Command.NodeCountsCommand;
+import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.api.StatementConstants;
-import org.neo4j.kernel.impl.transaction.log.LogPosition;
-import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
+import org.neo4j.kernel.impl.api.TransactionCommitProcess;
+import org.neo4j.kernel.impl.api.TransactionToApply;
+import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
+import org.neo4j.kernel.impl.transaction.log.TransactionCursor;
+import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.extension.EphemeralFileSystemExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.neo4j.test.mockito.matcher.LogMatchers.checkPoint;
-import static org.neo4j.test.mockito.matcher.LogMatchers.commandEntry;
-import static org.neo4j.test.mockito.matcher.LogMatchers.commitEntry;
-import static org.neo4j.test.mockito.matcher.LogMatchers.containsExactly;
-import static org.neo4j.test.mockito.matcher.LogMatchers.logEntries;
-import static org.neo4j.test.mockito.matcher.LogMatchers.startEntry;
+import static org.junit.Assert.assertEquals;
 
 @ExtendWith( {EphemeralFileSystemExtension.class, TestDirectoryExtension.class} )
 class KernelRecoveryTest
@@ -61,53 +61,67 @@ class KernelRecoveryTest
     void shouldHandleWritesProperlyAfterRecovery() throws Exception
     {
         // Given
-        GraphDatabaseService db = newDB( fileSystem );
-
-        long node1 = createNode( db );
+        GraphDatabaseService db = newDB( fileSystem, "main" );
+        long node1 = createNode( db, "k", "v1" );
 
         // And given the power goes out
+        List<TransactionRepresentation> transactions = new ArrayList<>();
+        long node2;
         try ( EphemeralFileSystemAbstraction crashedFs = fileSystem.snapshot() )
         {
             db.shutdown();
-            db = newDB( crashedFs );
-            LogFiles logFiles = ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency( LogFiles.class );
-            File logFile = logFiles.getHighestLogFile();
-            long node2 = createNode( db );
+            db = newDB( crashedFs, "main" );
+            node2 = createNode( db, "k", "v2" );
+            extractTransactions( (GraphDatabaseAPI) db, transactions );
             db.shutdown();
+        }
 
-            // Then the logical log should be in sync
-            assertThat( logEntries( crashedFs, logFile ), containsExactly(
-                    // Tx before recovery
-                    startEntry( -1, -1 ), commandEntry( node1, NodeCommand.class ),
-                    commandEntry( StatementConstants.ANY_LABEL, NodeCountsCommand.class ), commitEntry( 2 ),
-
-                    // checkpoint after recovery
-                    checkPoint( new LogPosition( 0, 133 ) ),
-
-                    // Tx after recovery
-                    startEntry( -1, -1 ), commandEntry( node2, NodeCommand.class ),
-                    commandEntry( StatementConstants.ANY_LABEL, NodeCountsCommand.class ), commitEntry( 3 ),
-
-                    // checkpoint
-                    checkPoint( new LogPosition( 0, 268 ) ) ) );
+        // Then both those nodes should be there, i.e. they are properly there in the log
+        GraphDatabaseService rebuilt = newDB( fileSystem, "rebuilt" );
+        applyTransactions( transactions, (GraphDatabaseAPI) rebuilt );
+        try ( Transaction tx = rebuilt.beginTx() )
+        {
+            assertEquals( "v1", rebuilt.getNodeById( node1 ).getProperty( "k" ) );
+            assertEquals( "v2", rebuilt.getNodeById( node2 ).getProperty( "k" ) );
+            tx.success();
         }
     }
 
-    private GraphDatabaseService newDB( FileSystemAbstraction fs )
+    private void applyTransactions( List<TransactionRepresentation> transactions, GraphDatabaseAPI rebuilt ) throws TransactionFailureException
+    {
+        TransactionCommitProcess commitProcess = rebuilt.getDependencyResolver().resolveDependency( TransactionCommitProcess.class );
+        for ( TransactionRepresentation transaction : transactions )
+        {
+            commitProcess.commit( new TransactionToApply( transaction ), CommitEvent.NULL, TransactionApplicationMode.EXTERNAL );
+        }
+    }
+
+    private static void extractTransactions( GraphDatabaseAPI db, List<TransactionRepresentation> transactions ) throws java.io.IOException
+    {
+        LogicalTransactionStore txStore = db.getDependencyResolver().resolveDependency( LogicalTransactionStore.class );
+        try ( TransactionCursor cursor = txStore.getTransactions( TransactionIdStore.BASE_TX_ID + 1 ) )
+        {
+            cursor.forAll( tx -> transactions.add( tx.getTransactionRepresentation() ) );
+        }
+    }
+
+    private GraphDatabaseService newDB( FileSystemAbstraction fs, String name )
     {
         return new TestGraphDatabaseFactory()
                 .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs ) )
-                .newImpermanentDatabase( testDirectory.databaseDir() );
+                .newImpermanentDatabase( testDirectory.directory( name ) );
     }
 
-    private static long createNode( GraphDatabaseService db )
+    private static long createNode( GraphDatabaseService db, String key, Object value )
     {
-        long node1;
+        long nodeId;
         try ( Transaction tx = db.beginTx() )
         {
-            node1 = db.createNode().getId();
+            Node node = db.createNode();
+            node.setProperty( key, value );
+            nodeId = node.getId();
             tx.success();
         }
-        return node1;
+        return nodeId;
     }
 }
