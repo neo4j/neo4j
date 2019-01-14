@@ -17,13 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.storageengine.impl.recordstorage.id;
+package org.neo4j.kernel.impl.store.id;
 
 
 import java.util.function.Supplier;
 
 import org.neo4j.kernel.impl.api.KernelTransactionsSnapshot;
-import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 /**
