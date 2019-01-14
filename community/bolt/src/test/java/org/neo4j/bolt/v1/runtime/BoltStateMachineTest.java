@@ -689,6 +689,52 @@ public class BoltStateMachineTest
         assertNotEquals( FAILED, machine.state );
     }
 
+    @Test
+    public void shouldSucceedOnResetOnFailedState() throws Exception
+    {
+        // Given
+        BoltResponseRecorder recorder = new BoltResponseRecorder();
+        BoltStateMachine machine = init( newMachine() );
+
+        // Fail machine on PULLALL
+        machine.markFailed( Neo4jError.from( Status.Request.NoThreadsAvailable, "No Threads Available" ) );
+        machine.pullAll( recorder );
+
+        // When I RESET...
+        machine.interrupt();
+        machine.markFailed( Neo4jError.from( Status.Request.NoThreadsAvailable, "No Threads Available" ) );
+        machine.reset( recorder );
+
+        assertThat( recorder.nextResponse(), failedWithStatus( Status.Request.NoThreadsAvailable ) );
+        assertThat( recorder.nextResponse(), succeeded() );
+    }
+
+    @Test
+    public void shouldSucceedOnConsecutiveResetsOnFailedState() throws Exception
+    {
+        // Given
+        BoltResponseRecorder recorder = new BoltResponseRecorder();
+        BoltStateMachine machine = init( newMachine() );
+
+        // Fail machine on PULLALL
+        machine.markFailed( Neo4jError.from( Status.Request.NoThreadsAvailable, "No Threads Available" ) );
+        machine.pullAll( recorder );
+
+        // When I RESET twice...
+        machine.interrupt();
+        machine.interrupt();
+        // First RESET fails to be scheduled
+        machine.markFailed( Neo4jError.from( Status.Request.NoThreadsAvailable, "No Threads Available" ) );
+        machine.reset( recorder );
+        // Second RESET fails as well
+        machine.markFailed( Neo4jError.from( Status.Request.NoThreadsAvailable, "No Threads Available" ) );
+        machine.reset( recorder );
+
+        assertThat( recorder.nextResponse(), failedWithStatus( Status.Request.NoThreadsAvailable ) );
+        assertThat( recorder.nextResponse(), wasIgnored() );
+        assertThat( recorder.nextResponse(), succeeded() );
+    }
+
     private static void testMarkFailedOnNextMessage( ThrowingBiConsumer<BoltStateMachine,BoltResponseHandler,BoltConnectionFatality> action ) throws Exception
     {
         // Given
