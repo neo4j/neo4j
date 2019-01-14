@@ -323,10 +323,12 @@ public class TransactionEventsIT
 
     private void runTransaction( LoginContext loginContext, Map<String,Object> metaData )
     {
-        try ( Transaction transaction = db.beginTransaction( KernelTransaction.Type.explicit, loginContext );
-              Statement statement = db.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class ).get() )
+        try ( Transaction transaction = db.beginTransaction( KernelTransaction.Type.explicit, loginContext ) )
         {
-            statement.queryRegistration().setMetaData( metaData );
+            KernelTransaction kernelTransaction =
+                    db.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class )
+                            .getKernelTransactionBoundToThisThread( true );
+            kernelTransaction.setMetaData( metaData );
             db.createNode();
             transaction.success();
         }

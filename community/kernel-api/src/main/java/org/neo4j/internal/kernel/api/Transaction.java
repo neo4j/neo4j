@@ -19,6 +19,7 @@
  */
 package org.neo4j.internal.kernel.api;
 
+import java.util.Map;
 import java.util.Optional;
 
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
@@ -189,4 +190,17 @@ public interface Transaction extends AutoCloseable
      * point where {@link #close()} will be invoked.
      */
     void markForTermination( Status reason );
+
+    /**
+     * Sets the user defined meta data to be associated with started queries.
+     * @param data the meta data
+     */
+    void setMetaData( Map<String,Object> data );
+
+    /**
+     * Gets associated meta data.
+     *
+     * @return the meta data
+     */
+    Map<String,Object> getMetaData();
 }

@@ -401,11 +401,14 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     @Override
     public void setMetaData( Map<String, Object> data )
     {
+        assertOpen();
         this.userMetaData = data;
     }
 
+    @Override
     public Map<String, Object> getMetaData()
     {
+        assertOpen();
         return userMetaData;
     }
 

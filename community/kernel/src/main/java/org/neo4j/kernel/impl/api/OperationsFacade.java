@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import java.util.Map;
 import java.util.stream.Stream;
 
 import org.neo4j.kernel.api.QueryRegistryOperations;
@@ -45,20 +44,6 @@ public class OperationsFacade implements QueryRegistryOperations
     }
 
     // query monitoring
-
-    @Override
-    public void setMetaData( Map<String,Object> data )
-    {
-        statement.assertOpen();
-        statement.getTransaction().setMetaData( data );
-    }
-
-    @Override
-    public Map<String,Object> getMetaData()
-    {
-        statement.assertOpen();
-        return statement.getTransaction().getMetaData();
-    }
 
     @Override
     public Stream<ExecutingQuery> executingQueries()
