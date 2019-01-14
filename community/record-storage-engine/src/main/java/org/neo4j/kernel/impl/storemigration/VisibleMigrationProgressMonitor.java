@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.impl.storemigration;
 
-import org.neo4j.kernel.impl.util.monitoring.LogProgressReporter;
 import org.neo4j.common.ProgressReporter;
+import org.neo4j.kernel.impl.util.monitoring.LogProgressReporter;
 import org.neo4j.logging.Log;
 import org.neo4j.storageengine.migration.MigrationProgressMonitor;
 
@@ -30,6 +30,8 @@ class VisibleMigrationProgressMonitor implements MigrationProgressMonitor
 {
     static final String MESSAGE_STARTED = "Starting upgrade of database";
     static final String MESSAGE_COMPLETED = "Successfully finished upgrade of database";
+    static final String TX_LOGS_MIGRATION_STARTED = "Starting transaction logs migration.";
+    static final String TX_LOGS_MIGRATION_COMPLETED = "Transaction logs migration completed.";
 
     private final Log log;
     private int numStages;
@@ -60,4 +62,15 @@ class VisibleMigrationProgressMonitor implements MigrationProgressMonitor
         log.info( MESSAGE_COMPLETED );
     }
 
+    @Override
+    public void startTransactionLogsMigration()
+    {
+        log.info( TX_LOGS_MIGRATION_STARTED );
+    }
+
+    @Override
+    public void completeTransactionLogsMigration()
+    {
+        log.info( TX_LOGS_MIGRATION_COMPLETED );
+    }
 }

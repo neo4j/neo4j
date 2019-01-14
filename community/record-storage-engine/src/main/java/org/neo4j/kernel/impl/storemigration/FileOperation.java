@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.storemigration;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.FileAlreadyExistsException;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 
@@ -117,7 +118,7 @@ enum FileOperation
     }
 
     private static File toFile( FileSystemAbstraction fs, File directory, String name,
-            ExistingTargetStrategy existingTargetStrategy )
+            ExistingTargetStrategy existingTargetStrategy ) throws FileAlreadyExistsException
     {
         File file = new File( directory, name );
         if ( fs.fileExists( file ) )
@@ -125,7 +126,7 @@ enum FileOperation
             switch ( existingTargetStrategy )
             {
             case FAIL:
-                // Let the copy operation fail. Is this a good idea? This is how we did before this switch case
+                throw new FileAlreadyExistsException( file.getAbsolutePath() );
             case OVERWRITE:
                 fs.deleteFile( file );
                 return file;

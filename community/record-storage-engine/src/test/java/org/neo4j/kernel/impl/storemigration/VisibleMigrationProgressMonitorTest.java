@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.storemigration;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.common.ProgressReporter;
 import org.neo4j.logging.AssertableLogProvider;
@@ -27,10 +27,10 @@ import org.neo4j.logging.Log;
 
 import static org.hamcrest.Matchers.containsString;
 
-public class VisibleMigrationProgressMonitorTest
+class VisibleMigrationProgressMonitorTest
 {
     @Test
-    public void shouldReportAllPercentageSteps()
+    void shouldReportAllPercentageSteps()
     {
         // GIVEN
         AssertableLogProvider logProvider = new AssertableLogProvider();
@@ -47,7 +47,7 @@ public class VisibleMigrationProgressMonitorTest
     }
 
     @Test
-    public void progressNeverReportMoreThenHundredPercent()
+    void progressNeverReportMoreThenHundredPercent()
     {
         AssertableLogProvider logProvider = new AssertableLogProvider();
         Log log = logProvider.getLog( getClass() );
@@ -58,6 +58,20 @@ public class VisibleMigrationProgressMonitorTest
         monitor.completed();
 
         verifySectionReportedCorrectly( logProvider );
+    }
+
+    @Test
+    void reportStartStopOftransactionLogsMigration()
+    {
+        AssertableLogProvider logProvider = new AssertableLogProvider();
+        Log log = logProvider.getLog( getClass() );
+        VisibleMigrationProgressMonitor monitor = new VisibleMigrationProgressMonitor( log );
+
+        monitor.startTransactionLogsMigration();
+        monitor.completeTransactionLogsMigration();
+
+        logProvider.assertContainsMessageContaining( VisibleMigrationProgressMonitor.TX_LOGS_MIGRATION_STARTED );
+        logProvider.assertContainsMessageContaining( VisibleMigrationProgressMonitor.TX_LOGS_MIGRATION_COMPLETED );
     }
 
     private void verifySectionReportedCorrectly( AssertableLogProvider logProvider )

@@ -64,7 +64,6 @@ import static org.neo4j.kernel.impl.storemigration.FileOperation.DELETE;
  * <li>Migration is completed and participant resources are closed</li>
  * </ol>
  * <p/>
- * TODO walk through crash scenarios and how they are handled.
  *
  * @see StoreMigrationParticipant
  */
@@ -162,7 +161,9 @@ public class StoreUpgrader
                     versionToMigrateFrom, upgradableDatabase.currentVersion() );
         }
 
+        progressMonitor.startTransactionLogsMigration();
         migrateTransactionLogs( dbDirectoryLayout, legacyLogsLocator );
+        progressMonitor.completeTransactionLogsMigration();
 
         cleanup( participants, migrationLayout );
 
@@ -302,14 +303,9 @@ public class StoreUpgrader
 
     public static class TransactionLogsRelocationException extends RuntimeException
     {
-        public TransactionLogsRelocationException( String message, Throwable cause )
+        TransactionLogsRelocationException( String message, Throwable cause )
         {
             super( message, cause );
-        }
-
-        TransactionLogsRelocationException( String message )
-        {
-            super( message );
         }
     }
 
@@ -350,7 +346,7 @@ public class StoreUpgrader
 
     public static class UnexpectedUpgradingStoreVersionException extends UnableToUpgradeException
     {
-        public static final String MESSAGE =
+        static final String MESSAGE =
                 "Not possible to upgrade a store with version '%s' to current store version `%s` (Neo4j %s).";
 
         UnexpectedUpgradingStoreVersionException( String fileVersion, String currentVersion )
@@ -371,7 +367,7 @@ public class StoreUpgrader
 
     public static class UnexpectedUpgradingStoreFormatException extends UnableToUpgradeException
     {
-        public static final String MESSAGE =
+        static final String MESSAGE =
                 "This is an enterprise-only store. Please configure '%s' to open.";
 
         UnexpectedUpgradingStoreFormatException()

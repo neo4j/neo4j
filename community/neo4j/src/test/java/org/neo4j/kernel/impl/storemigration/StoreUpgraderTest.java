@@ -35,6 +35,8 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.neo4j.common.ProgressReporter;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -44,6 +46,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.LayoutConfig;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -73,6 +76,8 @@ import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
+import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.emptyArray;
 import static org.hamcrest.Matchers.emptyCollectionOf;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
@@ -112,7 +117,7 @@ public class StoreUpgraderTest
     private final RecordFormats formats;
 
     private final Config allowMigrateConfig = Config.defaults( GraphDatabaseSettings.allow_upgrade, Settings.TRUE );
-    private LegacyTransactionLogsLocator legacyTransactionLogsLocator;
+    private File prepareDatabaseDirectory;
 
     public StoreUpgraderTest( RecordFormats formats )
     {
@@ -131,9 +136,8 @@ public class StoreUpgraderTest
         jobScheduler = new ThreadPoolJobScheduler();
         String version = formats.storeVersion();
         databaseLayout = directory.databaseLayout( "db_" + version );
-        File prepareDirectory = directory.directory( "prepare_" + version );
-        prepareSampleDatabase( version, fileSystem, databaseLayout, prepareDirectory );
-        legacyTransactionLogsLocator = new LegacyTransactionLogsLocator( allowMigrateConfig, databaseLayout.databaseDirectory() );
+        prepareDatabaseDirectory = directory.directory( "prepare_" + version );
+        prepareSampleDatabase( version, fileSystem, databaseLayout, prepareDatabaseDirectory );
     }
 
     @After
@@ -340,12 +344,88 @@ public class StoreUpgraderTest
     }
 
     @Test
+    public void upgradeMoveTransactionLogs() throws IOException
+    {
+        File txRoot = directory.directory( "customTxRoot" );
+        AssertableLogProvider logProvider = new AssertableLogProvider();
+        PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
+        UpgradableDatabase upgradableDatabase = getUpgradableDatabase( pageCache );
+
+        Config config = Config.builder().withSettings( allowMigrateConfig.getRaw() )
+                    .withSetting( GraphDatabaseSettings.transaction_logs_root_path, txRoot.getAbsolutePath() ).build();
+        DatabaseLayout migrationLayout = DatabaseLayout.of( databaseLayout.databaseDirectory(), LayoutConfig.of( config ) );
+        newUpgrader( upgradableDatabase, pageCache, config, new VisibleMigrationProgressMonitor( logProvider.getLog( "test" ) ) )
+                .migrateIfNeeded( migrationLayout );
+
+        logProvider.assertContainsLogCallContaining( "Starting transaction logs migration." );
+        logProvider.assertContainsLogCallContaining( "Transaction logs migration completed." );
+        assertThat( getLogFiles( migrationLayout.databaseDirectory() ), emptyArray() );
+        File databaseTransactionLogsHome = new File( txRoot, migrationLayout.getDatabaseName() );
+        assertTrue( fileSystem.fileExists( databaseTransactionLogsHome ) );
+
+        Set<String> logFileNames = getLogFileNames( databaseTransactionLogsHome );
+        assertThat( logFileNames, not( empty() ) );
+        assertEquals( getLogFileNames( prepareDatabaseDirectory ), logFileNames );
+    }
+
+    @Test
+    public void failToMoveTransactionLogsIfTheyAlreadyExist() throws IOException
+    {
+        File txRoot = directory.directory( "customTxRoot" );
+        AssertableLogProvider logProvider = new AssertableLogProvider();
+        PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
+        UpgradableDatabase upgradableDatabase = getUpgradableDatabase( pageCache );
+
+        Config config = Config.builder().withSettings( allowMigrateConfig.getRaw() )
+                .withSetting( GraphDatabaseSettings.transaction_logs_root_path, txRoot.getAbsolutePath() ).build();
+        DatabaseLayout migrationLayout = DatabaseLayout.of( databaseLayout.databaseDirectory(), LayoutConfig.of( config ) );
+
+        File databaseTransactionLogsHome = new File( txRoot, migrationLayout.getDatabaseName() );
+        assertTrue( fileSystem.mkdir( databaseTransactionLogsHome ) );
+        createDummyTxLogFiles( databaseTransactionLogsHome );
+
+        try
+        {
+            newUpgrader( upgradableDatabase, pageCache, config, new VisibleMigrationProgressMonitor( logProvider.getLog( "test" ) ) )
+                    .migrateIfNeeded( migrationLayout );
+            fail( "Should fail during transaction logs move" );
+        }
+        catch ( StoreUpgrader.TransactionLogsRelocationException e )
+        {
+            // expected
+        }
+    }
+
+    @Test
     public void notParticipatingParticipantsAreNotPartOfMigration() throws IOException
     {
         PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
         UpgradableDatabase upgradableDatabase = getUpgradableDatabase( pageCache );
         StoreUpgrader storeUpgrader = newUpgrader( upgradableDatabase, pageCache );
         assertThat( storeUpgrader.getParticipants(), hasSize( 2 ) );
+    }
+
+    private void createDummyTxLogFiles( File databaseTransactionLogsHome ) throws IOException
+    {
+        Set<String> preparedLogFiles = getLogFileNames( prepareDatabaseDirectory );
+        assertThat( preparedLogFiles, not( empty() ) );
+        for ( String preparedLogFile : preparedLogFiles )
+        {
+            fileSystem.create( new File( databaseTransactionLogsHome, preparedLogFile ) ).close();
+        }
+    }
+
+    private File[] getLogFiles( File directory ) throws IOException
+    {
+        return LogFilesBuilder.logFilesBasedOnlyBuilder( directory, fileSystem ).build().logFiles();
+    }
+
+    private Set<String> getLogFileNames( File directory ) throws IOException
+    {
+        return Arrays.stream( LogFilesBuilder.logFilesBasedOnlyBuilder( directory, fileSystem )
+                .build()
+                .logFiles() )
+                .map( File::getName ).collect( Collectors.toSet() );
     }
 
     protected void prepareSampleDatabase( String version, FileSystemAbstraction fileSystem, DatabaseLayout databaseLayout,
@@ -411,8 +491,8 @@ public class StoreUpgraderTest
         StoreMigrator defaultMigrator = new StoreMigrator( fileSystem, pageCache, getTuningConfig(), instance, jobScheduler );
         SchemaIndexMigrator indexMigrator = new SchemaIndexMigrator( fileSystem, IndexProvider.EMPTY );
 
-        StoreUpgrader upgrader = new StoreUpgrader( upgradableDatabase, progressMonitor, config, fileSystem, pageCache,
-                NullLogProvider.getInstance(), legacyTransactionLogsLocator );
+        StoreUpgrader upgrader = new StoreUpgrader( upgradableDatabase, progressMonitor, config, fileSystem, pageCache, NullLogProvider.getInstance(),
+                new LegacyTransactionLogsLocator( config, databaseLayout.databaseDirectory() ) );
         upgrader.addParticipant( indexMigrator );
         upgrader.addParticipant( NOT_PARTICIPATING );
         upgrader.addParticipant( NOT_PARTICIPATING );

@@ -42,12 +42,22 @@ public interface MigrationProgressMonitor
      */
     void completed();
 
+    /**
+     * Signal that migration starting transaction logs migration.
+     */
+    void startTransactionLogsMigration();
+
+    /**
+     * Signal that migration completed transaction logs migration.
+     */
+    void completeTransactionLogsMigration();
+
     MigrationProgressMonitor SILENT = new MigrationProgressMonitor()
     {
         @Override
         public void started( int numStages )
         {
-
+            // empty
         }
 
         @Override
@@ -61,6 +71,17 @@ public interface MigrationProgressMonitor
         {
 
         }
-    };
 
+        @Override
+        public void startTransactionLogsMigration()
+        {
+            // empty
+        }
+
+        @Override
+        public void completeTransactionLogsMigration()
+        {
+            // empty
+        }
+    };
 }
