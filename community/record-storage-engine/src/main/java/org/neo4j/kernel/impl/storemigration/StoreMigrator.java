@@ -33,6 +33,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 
+import org.neo4j.common.ProgressReporter;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
@@ -64,7 +65,6 @@ import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
-import org.neo4j.common.ProgressReporter;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.scheduler.JobScheduler;
@@ -433,7 +433,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
         if ( newFormat.dynamic().equals( oldFormat.dynamic() ) )
         {
             fileOperation( COPY, fileSystem, sourceDirectoryStructure, migrationStrcuture,
-                    Arrays.asList( storesFilesToMigrate ), true, ExistingTargetStrategy.FAIL);
+                    Arrays.asList( storesFilesToMigrate ), true, ExistingTargetStrategy.OVERWRITE);
         }
         else
         {
