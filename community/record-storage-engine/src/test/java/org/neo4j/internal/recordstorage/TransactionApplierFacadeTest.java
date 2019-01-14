@@ -17,15 +17,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api;
+package org.neo4j.internal.recordstorage;
 
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InOrder;
-
-import org.neo4j.kernel.impl.index.IndexCommand;
-import org.neo4j.kernel.impl.index.IndexDefineCommand;
-import org.neo4j.kernel.impl.transaction.command.Command;
 
 import static org.junit.Assert.assertFalse;
 import static org.mockito.ArgumentMatchers.any;

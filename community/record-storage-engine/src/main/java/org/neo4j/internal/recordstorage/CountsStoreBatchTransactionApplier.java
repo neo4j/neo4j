@@ -21,9 +21,7 @@ package org.neo4j.internal.recordstorage;
 
 import java.util.Optional;
 
-import org.neo4j.kernel.impl.api.BatchTransactionApplier;
 import org.neo4j.kernel.impl.api.CountsAccessor;
-import org.neo4j.kernel.impl.api.TransactionApplier;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.storageengine.api.CommandsToApply;
 import org.neo4j.storageengine.api.TransactionApplicationMode;

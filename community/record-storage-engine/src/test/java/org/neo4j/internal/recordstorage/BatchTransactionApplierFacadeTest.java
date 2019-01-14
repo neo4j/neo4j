@@ -17,12 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api;
+package org.neo4j.internal.recordstorage;
 
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InOrder;
 
+import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.locking.LockGroup;
 
 import static org.junit.Assert.assertEquals;

@@ -19,8 +19,6 @@
  */
 package org.neo4j.internal.recordstorage;
 
-import org.neo4j.kernel.impl.api.BatchTransactionApplier;
-import org.neo4j.kernel.impl.api.TransactionApplier;
 import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.NeoStores;

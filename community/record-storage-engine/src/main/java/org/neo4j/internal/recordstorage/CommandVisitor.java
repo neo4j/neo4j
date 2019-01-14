@@ -37,7 +37,6 @@ import org.neo4j.internal.recordstorage.IndexCommand.AddRelationshipCommand;
 import org.neo4j.internal.recordstorage.IndexCommand.CreateCommand;
 import org.neo4j.internal.recordstorage.IndexCommand.DeleteCommand;
 import org.neo4j.internal.recordstorage.IndexCommand.RemoveCommand;
-import org.neo4j.kernel.impl.api.TransactionApplier;
 
 /**
  * An interface for dealing with commands, either reading or writing them. See also {@link TransactionApplier}. The
