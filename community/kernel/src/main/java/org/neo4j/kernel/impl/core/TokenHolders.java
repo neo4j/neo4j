@@ -71,10 +71,10 @@ public class TokenHolders
      */
     public static TokenHolders readOnlyTokenHolders( NeoStores neoStores )
     {
-        TokenHolder propertyKeyTokens1 = createReadOnlyTokenHolder( TokenHolder.TYPE_PROPERTY_KEY );
-        TokenHolder labelTokens1 = createReadOnlyTokenHolder( TokenHolder.TYPE_LABEL );
-        TokenHolder relationshipTypeTokens1 = createReadOnlyTokenHolder( TokenHolder.TYPE_RELATIONSHIP_TYPE );
-        TokenHolders tokenHolders = new TokenHolders( propertyKeyTokens1, labelTokens1, relationshipTypeTokens1 );
+        TokenHolder propertyKeyTokens = createReadOnlyTokenHolder( TokenHolder.TYPE_PROPERTY_KEY );
+        TokenHolder labelTokens = createReadOnlyTokenHolder( TokenHolder.TYPE_LABEL );
+        TokenHolder relationshipTypeTokens = createReadOnlyTokenHolder( TokenHolder.TYPE_RELATIONSHIP_TYPE );
+        TokenHolders tokenHolders = new TokenHolders( propertyKeyTokens, labelTokens, relationshipTypeTokens );
         tokenHolders.setInitialTokens( neoStores );
         return tokenHolders;
     }
