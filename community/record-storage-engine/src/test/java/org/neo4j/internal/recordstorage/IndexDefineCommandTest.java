@@ -26,6 +26,7 @@ import org.junit.Test;
 import java.io.IOException;
 
 import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
+import org.neo4j.kernel.impl.transaction.log.ServiceLoadingCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion;
 import org.neo4j.storageengine.api.CommandReader;
 
