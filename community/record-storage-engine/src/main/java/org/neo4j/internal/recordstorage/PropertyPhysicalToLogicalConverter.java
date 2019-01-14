@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api.index;
+package org.neo4j.internal.recordstorage;
 
 import org.eclipse.collections.api.iterator.IntIterator;
 import org.eclipse.collections.api.map.primitive.IntObjectMap;
@@ -26,7 +26,7 @@ import org.eclipse.collections.api.set.primitive.MutableIntSet;
 import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
 import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
 
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.PropertyRecordChange;
+import org.neo4j.kernel.impl.api.index.EntityUpdates;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
