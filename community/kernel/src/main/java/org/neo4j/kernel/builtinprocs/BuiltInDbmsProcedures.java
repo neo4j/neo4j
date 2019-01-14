@@ -24,14 +24,11 @@ import java.util.List;
 import java.util.stream.Stream;
 
 import org.neo4j.common.DependencyResolver;
-import org.neo4j.graphdb.DependencyResolver;
-import org.neo4j.internal.kernel.api.Procedures;
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
 import org.neo4j.internal.kernel.api.procs.UserFunctionSignature;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.proc.GlobalProcedures;
-import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.query.FunctionInformation;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -80,7 +77,7 @@ public class BuiltInDbmsProcedures
                 .map( ProcedureResult::new );
     }
 
-    @Description( "List all user functions in the DBMS." )
+    @Description( "List all functions in the DBMS." )
     @Procedure( name = "dbms.functions", mode = DBMS )
     public Stream<FunctionResult> listFunctions()
     {
@@ -95,11 +92,11 @@ public class BuiltInDbmsProcedures
                 providedCypherFunctions.stream().map( FunctionResult::new );
 
         // gets you all non-aggregating functions that are registered in the db (incl. those from libs like apoc)
-        Stream<FunctionResult> loadedFunctions = resolver.resolveDependency( Procedures.class ).getAllFunctions()
+        Stream<FunctionResult> loadedFunctions = resolver.resolveDependency( GlobalProcedures.class ).getAllFunctions()
                 .map( f -> new FunctionResult( f, false ) );
 
         // gets you all aggregation functions that are registered in the db (incl. those from libs like apoc)
-        Stream<FunctionResult> loadedAggregationFunctions = resolver.resolveDependency( Procedures.class ).getAllAggregatingFunctions()
+        Stream<FunctionResult> loadedAggregationFunctions = resolver.resolveDependency( GlobalProcedures.class ).getAllAggregatingFunctions()
                 .map( f -> new FunctionResult( f, true ) );
 
         return Stream.concat( Stream.concat( cypherFunctions, loadedFunctions ), loadedAggregationFunctions )
