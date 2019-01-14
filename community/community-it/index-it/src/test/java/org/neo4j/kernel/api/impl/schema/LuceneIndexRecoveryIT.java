@@ -19,10 +19,10 @@
  */
 package org.neo4j.kernel.api.impl.schema;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -33,6 +33,7 @@ import java.util.concurrent.TimeUnit;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
@@ -48,34 +49,36 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.recovery.RecoveryExtension;
 import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
+import org.neo4j.test.extension.EphemeralFileSystemExtension;
+import org.neo4j.test.extension.Inject;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.default_schema_provider;
 import static org.neo4j.helpers.collection.Iterators.asUniqueSet;
 import static org.neo4j.kernel.api.impl.schema.LuceneIndexProvider.defaultDirectoryStructure;
 import static org.neo4j.kernel.api.impl.schema.LuceneIndexProviderFactory.PROVIDER_DESCRIPTOR;
 
-public class LuceneIndexRecoveryIT
+@ExtendWith( EphemeralFileSystemExtension.class )
+class LuceneIndexRecoveryIT
 {
-    @Rule
-    public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
-
-    private final String NUM_BANANAS_KEY = "number_of_bananas_owned";
+    private static final String NUM_BANANAS_KEY = "number_of_bananas_owned";
     private static final Label myLabel = label( "MyLabel" );
+
+    @Inject
+    private EphemeralFileSystemAbstraction fs;
     private GraphDatabaseAPI db;
     private DirectoryFactory directoryFactory;
 
-    @Before
-    public void before()
+    @BeforeEach
+    void before()
     {
         directoryFactory = new DirectoryFactory.InMemoryDirectoryFactory();
     }
 
-    @After
-    public void after() throws Exception
+    @AfterEach
+    void after() throws Exception
     {
         if ( db != null )
         {
@@ -85,7 +88,7 @@ public class LuceneIndexRecoveryIT
     }
 
     @Test
-    public void addShouldBeIdempotentWhenDoingRecovery() throws Exception
+    void addShouldBeIdempotentWhenDoingRecovery()
     {
         // Given
         startDb( createLuceneIndexFactory() );
@@ -115,7 +118,7 @@ public class LuceneIndexRecoveryIT
     }
 
     @Test
-    public void changeShouldBeIdempotentWhenDoingRecovery() throws Exception
+    void changeShouldBeIdempotentWhenDoingRecovery() throws Exception
     {
         // Given
         startDb( createLuceneIndexFactory() );
@@ -140,7 +143,7 @@ public class LuceneIndexRecoveryIT
     }
 
     @Test
-    public void removeShouldBeIdempotentWhenDoingRecovery() throws Exception
+    void removeShouldBeIdempotentWhenDoingRecovery() throws Exception
     {
         // Given
         startDb( createLuceneIndexFactory() );
@@ -164,7 +167,7 @@ public class LuceneIndexRecoveryIT
     }
 
     @Test
-    public void shouldNotAddTwiceDuringRecoveryIfCrashedDuringPopulation() throws Exception
+    void shouldNotAddTwiceDuringRecoveryIfCrashedDuringPopulation()
     {
         // Given
         startDb( createAlwaysInitiallyPopulatingLuceneIndexFactory() );
@@ -193,7 +196,7 @@ public class LuceneIndexRecoveryIT
     }
 
     @Test
-    public void shouldNotUpdateTwiceDuringRecovery() throws Exception
+    void shouldNotUpdateTwiceDuringRecovery()
     {
         // Given
         startDb( createLuceneIndexFactory() );
@@ -223,21 +226,18 @@ public class LuceneIndexRecoveryIT
         }
 
         TestGraphDatabaseFactory factory = new TestGraphDatabaseFactory();
-        factory.setFileSystem( fs.get() );
+        factory.setFileSystem( fs );
         factory.setKernelExtensions( Collections.singletonList( indexProviderFactory ) );
         db = (GraphDatabaseAPI) factory.newImpermanentDatabaseBuilder()
                 .setConfig( default_schema_provider, PROVIDER_DESCRIPTOR.name() ).newGraphDatabase();
     }
 
-    private void killDb() throws Exception
+    private void killDb()
     {
         if ( db != null )
         {
-            fs.snapshot( () ->
-            {
-                db.shutdown();
-                db = null;
-            } );
+            fs = fs.snapshot();
+            db.shutdown();
         }
     }
 
@@ -262,7 +262,7 @@ public class LuceneIndexRecoveryIT
     {
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().awaitIndexOnline( definition, 10, TimeUnit.SECONDS );
+            db.schema().awaitIndexOnline( definition, 10, TimeUnit.MINUTES );
             tx.success();
         }
     }
@@ -333,7 +333,7 @@ public class LuceneIndexRecoveryIT
         @Override
         public Lifecycle newInstance( ExtensionContext context, LuceneIndexProviderFactory.Dependencies dependencies )
         {
-            return new LuceneIndexProvider( fs.get(), directoryFactory, defaultDirectoryStructure( context.directory() ), IndexProvider.Monitor.EMPTY,
+            return new LuceneIndexProvider( fs, directoryFactory, defaultDirectoryStructure( context.directory() ), IndexProvider.Monitor.EMPTY,
                     dependencies.getConfig(), context.databaseInfo().operationalMode );
         }
     }
@@ -349,7 +349,7 @@ public class LuceneIndexRecoveryIT
         @Override
         public Lifecycle newInstance( ExtensionContext context, LuceneIndexProviderFactory.Dependencies dependencies )
         {
-            return new LuceneIndexProvider( fs.get(), directoryFactory, defaultDirectoryStructure( context.directory() ),
+            return new LuceneIndexProvider( fs, directoryFactory, defaultDirectoryStructure( context.directory() ),
                     IndexProvider.Monitor.EMPTY, dependencies.getConfig(), context.databaseInfo().operationalMode )
             {
                 @Override
