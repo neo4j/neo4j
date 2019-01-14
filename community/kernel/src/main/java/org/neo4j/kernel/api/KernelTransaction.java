@@ -27,6 +27,7 @@ import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.Transaction;
+import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.LoginContext;
@@ -66,7 +67,7 @@ public interface KernelTransaction extends Transaction, AssertOpen
      * @param provider index provider identifier
      * @return IndexDescriptor for the index to be created.
      */
-    IndexDescriptor indexUniqueCreate( SchemaDescriptor schema, String provider );
+    IndexDescriptor indexUniqueCreate( SchemaDescriptor schema, String provider ) throws SchemaKernelException;
 
     /**
      * @return the security context this transaction is currently executing in.

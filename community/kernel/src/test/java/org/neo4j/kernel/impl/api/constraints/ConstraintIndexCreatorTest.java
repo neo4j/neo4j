@@ -399,6 +399,10 @@ public class ConstraintIndexCreatorTest
         {
             fail( "Expected write transaction" );
         }
+        catch ( SchemaKernelException e )
+        {
+            throw new RuntimeException( e );
+        }
         return transaction;
     }
 
