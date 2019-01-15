@@ -26,11 +26,13 @@ import org.neo4j.cypher.internal.v4_0.util.test_helpers.{CypherFunSuite, CypherT
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.internal.kernel.api.helpers.Indexes
-import org.neo4j.internal.kernel.api.procs.{ProcedureSignature, UserFunctionSignature}
+import org.neo4j.internal.kernel.api.procs.{ProcedureSignature, QualifiedName, UserFunctionSignature}
 import org.neo4j.internal.kernel.api.security.LoginContext
-import org.neo4j.internal.kernel.api.{Kernel, Transaction => KernelTransaction}
+import org.neo4j.internal.kernel.api.{Kernel, TokenRead, Transaction => KernelTransaction}
 import org.neo4j.kernel.api.InwardKernel
 import org.neo4j.kernel.api.proc._
+import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
+import org.neo4j.kernel.impl.proc.Procedures
 import org.neo4j.kernel.monitoring.Monitors
 import org.neo4j.kernel.{GraphDatabaseQueryService, monitoring}
 import org.neo4j.test.TestGraphDatabaseFactory
@@ -112,6 +114,12 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
       ktx.success()
       ktx.close()
     }
+  }
+
+  def tokenReader[T](f: TokenRead => T): T = {
+    val bridge = graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge])
+    val transaction = bridge.getKernelTransactionBoundToThisThread(true)
+    f(transaction.tokenRead())
   }
 
   def nodeId(n: Node) = graph.inTx {
@@ -287,6 +295,14 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
     val func = f(builder)
     kernelAPI.registerUserAggregationFunction(func)
     func
+  }
+
+  def getUserFunctionHandle(qualifiedName: String) = {
+    val parts = qualifiedName.split('.')
+    val namespace = parts.reverse.tail.reverse
+    val name = parts.last
+    val procs = graph.getDependencyResolver.resolveDependency(classOf[Procedures])
+    procs.function(new QualifiedName(namespace, name))
   }
 
   def kernelMonitors: Monitors = graph.getDependencyResolver.resolveDependency(classOf[monitoring.Monitors])
