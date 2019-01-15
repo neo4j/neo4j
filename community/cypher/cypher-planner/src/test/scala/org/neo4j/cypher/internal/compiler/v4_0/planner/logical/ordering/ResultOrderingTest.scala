@@ -28,7 +28,6 @@ import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 
 class ResultOrderingTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
-  // TODO tests with projections
   test("Empty required order results in provided order of index order capability ascending") {
     ResultOrdering.withIndexOrderCapability(InterestingOrder.empty, Seq("x" -> "foo"), Seq(CTInteger), capability(ASC)) should be(ProvidedOrder.asc("x.foo"))
   }
@@ -49,6 +48,20 @@ class ResultOrderingTest extends CypherFunSuite with LogicalPlanningTestSupport2
   test("Single property required order results in matching provided order for compatible index capability") {
     ResultOrdering.withIndexOrderCapability(InterestingOrder.required(RequiredOrderCandidate.asc(prop("x", "foo"))), Seq("x" -> "foo"), Seq(CTInteger), capability(ASC)) should be(ProvidedOrder.asc("x.foo"))
     ResultOrdering.withIndexOrderCapability(InterestingOrder.required(RequiredOrderCandidate.desc(prop("x", "foo"))), Seq("x" -> "foo"), Seq(CTInteger), capability(DESC)) should be(ProvidedOrder.desc("x.foo"))
+  }
+
+  test("Single property required order with projected property results in matching provided order for compatible index capability") {
+    ResultOrdering.withIndexOrderCapability(InterestingOrder.required(RequiredOrderCandidate.asc(varFor("xfoo"), Map("xfoo" -> prop("x", "foo")))),
+      Seq("x" -> "foo"), Seq(CTInteger), capability(BOTH)) should be(ProvidedOrder.asc("x.foo"))
+    ResultOrdering.withIndexOrderCapability(InterestingOrder.required(RequiredOrderCandidate.desc(varFor("xfoo"), Map("xfoo" -> prop("x", "foo")))),
+      Seq("x" -> "foo"), Seq(CTInteger), capability(BOTH)) should be(ProvidedOrder.desc("x.foo"))
+  }
+
+  test("Single property required order with projected node results in matching provided order for compatible index capability") {
+    ResultOrdering.withIndexOrderCapability(InterestingOrder.required(RequiredOrderCandidate.asc(prop("y", "foo"), Map("y" -> varFor("x")))),
+      Seq("x" -> "foo"), Seq(CTInteger), capability(BOTH)) should be(ProvidedOrder.asc("x.foo"))
+    ResultOrdering.withIndexOrderCapability(InterestingOrder.required(RequiredOrderCandidate.desc(prop("y", "foo"), Map("y" -> varFor("x")))),
+      Seq("x" -> "foo"), Seq(CTInteger), capability(BOTH)) should be(ProvidedOrder.desc("x.foo"))
   }
 
   test("Multi property required order results in matching provided order for compatible index capability") {
@@ -107,6 +120,18 @@ class ResultOrderingTest extends CypherFunSuite with LogicalPlanningTestSupport2
       Seq("x" -> "foo"), Seq(CTInteger), capability(ASC)) should be(ProvidedOrder.asc("x.foo"))
     ResultOrdering.withIndexOrderCapability(InterestingOrder.required(RequiredOrderCandidate.asc(prop("x", "foo"))).interested(InterestingOrderCandidate.desc(prop("x", "foo"))),
       Seq("x" -> "foo"), Seq(CTInteger), capability(DESC)) should be(ProvidedOrder.desc("x.foo"))
+  }
+
+  test("Single property interesting order with projection results in matching provided order for compatible index capability") {
+    ResultOrdering.withIndexOrderCapability(InterestingOrder.interested(InterestingOrderCandidate.asc(varFor("xfoo"),
+      Map("xfoo" -> prop("x", "foo")))), Seq("x" -> "foo"), Seq(CTInteger), capability(BOTH)) should be(ProvidedOrder.asc("x.foo"))
+    ResultOrdering.withIndexOrderCapability(InterestingOrder.interested(InterestingOrderCandidate.desc(varFor("xfoo"),
+      Map("xfoo" -> prop("x", "foo")))), Seq("x" -> "foo"), Seq(CTInteger), capability(BOTH)) should be(ProvidedOrder.desc("x.foo"))
+
+    ResultOrdering.withIndexOrderCapability(InterestingOrder.interested(InterestingOrderCandidate.asc(prop("y", "foo"), Map("y" -> varFor("x")))),
+      Seq("x" -> "foo"), Seq(CTInteger), capability(BOTH)) should be(ProvidedOrder.asc("x.foo"))
+    ResultOrdering.withIndexOrderCapability(InterestingOrder.interested(InterestingOrderCandidate.desc(prop("y", "foo"), Map("y" -> varFor("x")))),
+      Seq("x" -> "foo"), Seq(CTInteger), capability(BOTH)) should be(ProvidedOrder.desc("x.foo"))
   }
 
   test("Single property capability results in default provided order when neither required nor interesting can be fulfilled or are empty") {

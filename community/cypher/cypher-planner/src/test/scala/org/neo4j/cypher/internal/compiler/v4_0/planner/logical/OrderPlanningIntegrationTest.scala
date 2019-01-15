@@ -19,7 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v4_0.planner.logical
 
+import org.neo4j.cypher.internal.compiler.v4_0.planner.BeLikeMatcher.beLike
 import org.neo4j.cypher.internal.compiler.v4_0.planner.LogicalPlanningTestSupport2
+import org.neo4j.cypher.internal.ir.v4_0.RegularPlannerQuery
 import org.neo4j.cypher.internal.v4_0.logical.plans._
 import org.neo4j.cypher.internal.v4_0.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.v4_0.expressions._
@@ -293,5 +295,242 @@ class OrderPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
     val sort = Sort(projection, Seq(Ascending("a.foo")))
 
     plan should equal(sort)
+  }
+
+  private val idpGiven = new given {
+    cardinality = mapCardinality {
+      case RegularPlannerQuery(queryGraph, _, _, _) if queryGraph.patternNodes == Set("u") => 2.0
+      case RegularPlannerQuery(queryGraph, _, _, _) if queryGraph.patternNodes == Set("p") => 10.0
+      case RegularPlannerQuery(queryGraph, _, _, _) if queryGraph.patternNodes == Set("b") => 10.0
+      case RegularPlannerQuery(queryGraph, _, _, _) if queryGraph.patternNodes == Set("u", "p") => 20.0
+      case RegularPlannerQuery(queryGraph, _, _, _) if queryGraph.patternNodes == Set("p", "b") => 100.0
+      case RegularPlannerQuery(queryGraph, _, _, _) if queryGraph.patternNodes == Set("u", "p", "b") => 200.0
+      case _ => throw new IllegalStateException("Unexpected PlannerQuery")
+    }
+  }
+
+  test("Should plan sort before first expand when sorting on property") {
+    val query =
+      """MATCH (u:Person)-[f:FRIEND]->(p:Person)-[r:READ]->(b:Book)
+        |WHERE u.name STARTS WITH 'Joe'
+        |RETURN u.name, b.title
+        |ORDER BY u.name""".stripMargin
+    val plan = idpGiven.getLogicalPlanFor(query)._2
+
+    plan should beLike {
+      case Projection(
+        Selection(_,
+          Expand(
+            Selection(_,
+              Expand(
+                Sort(_,Seq(Ascending("u.name"))), _, _, _, _, _, _
+              )
+            ), _, _, _, _, _, _
+          )
+        ), _
+      ) => ()
+    }
+  }
+
+  test("Should plan sort before first expand when sorting on node") {
+    val query =
+      """MATCH (u:Person)-[f:FRIEND]->(p:Person)-[r:READ]->(b:Book)
+        |WHERE u.name STARTS WITH 'Joe'
+        |RETURN u.name, b.title
+        |ORDER BY u""".stripMargin
+    val plan = idpGiven.getLogicalPlanFor(query)._2
+
+    plan should beLike {
+      case Projection(
+        Selection(_,
+          Expand(
+            Selection(_,
+              Expand(
+                Sort(_,Seq(Ascending("u"))), _, _, _, _, _, _
+              )
+            ), _, _, _, _, _, _
+          )
+        ), _
+      ) => ()
+    }
+  }
+
+  test("Should plan sort before first expand when sorting on renamed property") {
+    val query =
+      """MATCH (u:Person)-[f:FRIEND]->(p:Person)-[r:READ]->(b:Book)
+        |WHERE u.name STARTS WITH 'Joe'
+        |RETURN u.name AS name, b.title
+        |ORDER BY name""".stripMargin
+    val plan = idpGiven.getLogicalPlanFor(query)._2
+
+    plan should beLike {
+      case Projection(
+        Selection(_,
+          Expand(
+            Selection(_,
+              Expand(
+                Sort(_,Seq(Ascending("name"))), _, _, _, _, _, _
+              )
+            ), _, _, _, _, _, _
+          )
+        ), _
+      ) => ()
+    }
+  }
+
+  test("Should plan sort before first expand when sorting on the old name of a renamed property") {
+    val query =
+      """MATCH (u:Person)-[f:FRIEND]->(p:Person)-[r:READ]->(b:Book)
+        |WHERE u.name STARTS WITH 'Joe'
+        |RETURN u.name AS name, b.title
+        |ORDER BY u.name""".stripMargin
+    val plan = idpGiven.getLogicalPlanFor(query)._2
+
+    plan should beLike {
+      case Projection(
+        Selection(_,
+          Expand(
+            Selection(_,
+              Expand(
+                Sort(_,Seq(Ascending("name"))), _, _, _, _, _, _
+              )
+            ), _, _, _, _, _, _
+          )
+        ), _
+      ) => ()
+    }
+  }
+
+  test("Should plan sort before first expand when sorting on a property of a renamed node") {
+    val query =
+      """MATCH (u:Person)-[f:FRIEND]->(p:Person)-[r:READ]->(b:Book)
+        |WHERE u.name STARTS WITH 'Joe'
+        |RETURN u AS v, b.title
+        |ORDER BY v.name""".stripMargin
+    val plan = idpGiven.getLogicalPlanFor(query)._2
+
+    plan should beLike {
+      case Projection(
+        Selection(_,
+          Expand(
+            Selection(_,
+              Expand(
+                Sort(_,Seq(Ascending("v.name"))), _, _, _, _, _, _
+              )
+            ), _, _, _, _, _, _
+          )
+        ), _
+      ) => ()
+    }
+  }
+
+  test("Should plan sort after expand if lower cardinality") {
+    val query =
+      """MATCH (u:Person)-[f:FRIEND]->(p:Person)-[r:READ]->(b:Book)
+        |WHERE u.name STARTS WITH 'Joe'
+        |RETURN u.name, b.title
+        |ORDER BY u.name""".stripMargin
+    val plan = new given {
+      cardinality = mapCardinality {
+        case RegularPlannerQuery(queryGraph, _, _, _) if queryGraph.patternNodes == Set("u") => 10.0
+        case RegularPlannerQuery(queryGraph, _, _, _) if queryGraph.patternNodes == Set("p") => 10.0
+        case RegularPlannerQuery(queryGraph, _, _, _) if queryGraph.patternNodes == Set("b") => 10.0
+        case RegularPlannerQuery(queryGraph, _, _, _) if queryGraph.patternNodes == Set("u", "p") => 5.0
+        case RegularPlannerQuery(queryGraph, _, _, _) if queryGraph.patternNodes == Set("p", "b") => 100.0
+        case RegularPlannerQuery(queryGraph, _, _, _) if queryGraph.patternNodes == Set("u", "p", "b") => 50.0
+        case _ => throw new IllegalStateException("Unexpected PlannerQuery")
+      }
+    }.getLogicalPlanFor(query)._2
+
+    plan should beLike {
+      case Projection(
+        Selection(_,
+          Expand(
+            Sort(_,Seq(Ascending("u.name"))), _, _, _, _, _, _
+          )
+        ), _
+      ) => ()
+    }
+  }
+
+  test("Should plan sort last when sorting on a property in last node in the expand") {
+    val query =
+      """MATCH (u:Person)-[f:FRIEND]->(p:Person)-[r:READ]->(b:Book)
+        |WHERE u.name STARTS WITH 'Joe'
+        |RETURN u.name, b.title
+        |ORDER BY b.title""".stripMargin
+    val plan = new given().getLogicalPlanFor(query)._2
+
+    plan should beLike {
+      case Projection(
+        Sort(_,Seq(Ascending("b.title"))), _
+      ) => ()
+    }
+  }
+
+  test("Should plan sort last when sorting on the last node in the expand") {
+    val query =
+      """MATCH (u:Person)-[f:FRIEND]->(p:Person)-[r:READ]->(b:Book)
+        |WHERE u.name STARTS WITH 'Joe'
+        |RETURN u.name, b.title
+        |ORDER BY b""".stripMargin
+    val plan = new given().getLogicalPlanFor(query)._2
+
+    plan should beLike {
+      case Projection(
+        Sort(_,Seq(Ascending("b"))), _
+      ) => ()
+    }
+  }
+
+  test("Should plan sort between the expands when ordering by functions of both nodes in first expand and included in return") {
+    val query =
+      """MATCH (u:Person)-[f:FRIEND]->(p:Person)-[r:READ]->(b:Book)
+        |WHERE u.name STARTS WITH 'Joe'
+        |RETURN u.name + p.name AS add, b.title
+        |ORDER BY add""".stripMargin
+    val plan = idpGiven.getLogicalPlanFor(query)._2
+
+    plan should beLike {
+      case Projection(
+        Selection(_,
+          Expand(
+            Sort(_,Seq(Ascending("add"))), _, _, _, _, _, _
+          )
+        ), _
+      ) => ()
+    }
+  }
+
+  test("Should plan sort between the expands when ordering by functions of both nodes in first expand and not included in the return") {
+    val query =
+      """MATCH (u:Person)-[f:FRIEND]->(p:Person)-[r:READ]->(b:Book)
+        |WHERE u.name STARTS WITH 'Joe'
+        |RETURN u.name AS uname, p.name AS pname, b.title
+        |ORDER BY uname + pname""".stripMargin
+    val plan = idpGiven.getLogicalPlanFor(query)._2
+
+    plan should beLike {
+      case Projection(
+        Selection(_,
+          Expand(
+            Sort(_,Seq(Ascending("uname + pname"))), _, _, _, _, _, _
+          )
+        ), _
+      ) => ()
+    }
+  }
+
+  test("Should plan sort last when ordering by functions of node in last expand") {
+    val query =
+      """MATCH (u:Person)-[f:FRIEND]->(p:Person)-[r:READ]->(b:Book)
+        |WHERE u.name STARTS WITH 'Joe'
+        |RETURN u, b.title
+        |ORDER BY u.name + b.title""".stripMargin
+    val plan = new given().getLogicalPlanFor(query)._2
+
+    plan should beLike {
+      case Sort(_,Seq(Ascending("u.name + b.title"))) => ()
+    }
   }
 }
