@@ -60,7 +60,12 @@ public class FailedState implements BoltStateMachineState
         }
         if ( message instanceof ResetMessage )
         {
-            return processResetMessage( context );
+            context.connectionState().resetPendingFailedAndIgnored();
+            if ( context.resetMachine() )
+            {
+                return readyState;
+            }
+            return this;
         }
         if ( message instanceof InterruptSignal )
         {
