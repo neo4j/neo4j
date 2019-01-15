@@ -28,8 +28,9 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.Supplier;
 
+import org.neo4j.common.DependencyResolver;
+import org.neo4j.common.DependencySatisfier;
 import org.neo4j.exceptions.UnsatisfiedDependencyException;
-import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.collection.Iterables;
 
 import static org.apache.commons.lang3.ClassUtils.getAllInterfaces;

@@ -19,7 +19,7 @@
  */
 package org.neo4j.storageengine.migration;
 
-import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.common.DependencyResolver;
 import org.neo4j.io.layout.DatabaseLayout;
 
 public interface DatabaseMigratorFactory

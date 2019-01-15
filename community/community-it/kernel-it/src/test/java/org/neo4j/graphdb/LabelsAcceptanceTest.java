@@ -33,6 +33,7 @@ import java.util.function.LongSupplier;
 import java.util.stream.Stream;
 import javax.annotation.Nonnull;
 
+import org.neo4j.common.DependencyResolver;
 import org.neo4j.graphdb.facade.GraphDatabaseDependencies;
 import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
@@ -562,7 +563,7 @@ public class LabelsAcceptanceTest
     }
 
     @Test
-    public void shouldAllowManyLabelsAndPropertyCursor() throws Exception
+    public void shouldAllowManyLabelsAndPropertyCursor()
     {
         int propertyCount = 10;
         int labelCount = 15;

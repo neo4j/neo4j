@@ -22,7 +22,7 @@ package org.neo4j.graphdb.internal;
 import java.io.File;
 import java.io.IOException;
 
-import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.common.DependencyResolver;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.StoreLayout;

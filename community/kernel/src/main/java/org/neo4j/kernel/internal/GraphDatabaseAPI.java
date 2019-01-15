@@ -22,7 +22,7 @@ package org.neo4j.kernel.internal;
 import java.net.URL;
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.common.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.security.URLAccessValidationError;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;

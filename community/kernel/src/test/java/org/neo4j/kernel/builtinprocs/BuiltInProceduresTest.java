@@ -31,7 +31,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.IntSupplier;
 
-import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.common.DependencyResolver;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;

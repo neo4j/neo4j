@@ -33,7 +33,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.LongFunction;
 
-import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.common.DependencyResolver;
 import org.neo4j.helpers.Format;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.io.os.OsBeanUtil;

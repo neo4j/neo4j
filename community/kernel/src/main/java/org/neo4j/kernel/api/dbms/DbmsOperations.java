@@ -20,7 +20,7 @@
 package org.neo4j.kernel.api.dbms;
 
 import org.neo4j.collection.RawIterator;
-import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.common.DependencyResolver;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.QualifiedName;
 import org.neo4j.internal.kernel.api.security.SecurityContext;

@@ -21,8 +21,8 @@ package org.neo4j.kernel.database;
 
 import java.util.function.Function;
 
+import org.neo4j.common.DependencyResolver;
 import org.neo4j.common.TokenNameLookup;
-import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.watcher.DatabaseLayoutWatcher;
 import org.neo4j.io.layout.DatabaseLayout;

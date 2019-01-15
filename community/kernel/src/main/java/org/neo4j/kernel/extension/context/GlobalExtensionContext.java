@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.extension.context;
 
+import org.neo4j.common.DependencySatisfier;
 import org.neo4j.io.layout.StoreLayout;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
-import org.neo4j.kernel.impl.util.DependencySatisfier;
 
 public class GlobalExtensionContext extends BaseExtensionContext
 {

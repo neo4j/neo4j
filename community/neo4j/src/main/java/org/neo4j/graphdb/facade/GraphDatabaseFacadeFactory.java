@@ -24,9 +24,9 @@ import java.util.Map;
 import java.util.function.Function;
 
 import org.neo4j.bolt.BoltServer;
+import org.neo4j.common.DependencyResolver;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.exceptions.KernelException;
-import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;

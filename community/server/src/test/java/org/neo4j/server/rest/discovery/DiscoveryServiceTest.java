@@ -26,7 +26,6 @@ import org.junit.runners.Parameterized;
 import org.mockito.Answers;
 
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -34,7 +33,7 @@ import java.util.function.Consumer;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 
-import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.common.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.HostnamePort;
@@ -150,7 +149,7 @@ public class DiscoveryServiceTest
     }
 
     @Before
-    public void setUp() throws URISyntaxException
+    public void setUp()
     {
         if ( portRegistryOverrider != null )
         {
@@ -185,7 +184,7 @@ public class DiscoveryServiceTest
         return config;
     }
 
-    private DiscoveryService testDiscoveryService() throws URISyntaxException
+    private DiscoveryService testDiscoveryService()
     {
         Config config = mockConfig();
         return new DiscoveryService( config, new EntityOutputFormat( new JsonFormat(), baseUri, null ), communityDiscoverableURIs( config, portRegistry ) );

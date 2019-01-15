@@ -32,7 +32,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.function.LongSupplier;
 
-import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.common.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;

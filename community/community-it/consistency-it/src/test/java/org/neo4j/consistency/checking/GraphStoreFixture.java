@@ -28,12 +28,12 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Collection;
 
+import org.neo4j.common.DependencyResolver;
 import org.neo4j.consistency.statistics.AccessStatistics;
 import org.neo4j.consistency.statistics.AccessStatsKeepingStoreAccess;
 import org.neo4j.consistency.statistics.DefaultCounts;
 import org.neo4j.consistency.statistics.Statistics;
 import org.neo4j.consistency.statistics.VerboseStatistics;
-import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;

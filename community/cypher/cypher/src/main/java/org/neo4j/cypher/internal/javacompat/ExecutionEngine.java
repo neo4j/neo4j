@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.javacompat;
 
 import java.time.Clock;
 
+import org.neo4j.common.DependencyResolver;
 import org.neo4j.cypher.CypherException;
 import org.neo4j.cypher.internal.CacheTracer;
 import org.neo4j.cypher.internal.CompilerFactory;
@@ -28,7 +29,6 @@ import org.neo4j.cypher.internal.CypherConfiguration;
 import org.neo4j.cypher.internal.StringCacheMonitor;
 import org.neo4j.cypher.internal.tracing.CompilationTracer;
 import org.neo4j.cypher.internal.tracing.TimingCompilationTracer;
-import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.Result;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.configuration.Config;

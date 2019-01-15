@@ -22,7 +22,7 @@ package org.neo4j.unsafe.impl.batchimport.staging;
 import java.time.Clock;
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.common.DependencyResolver;
 import org.neo4j.time.Clocks;
 
 /**

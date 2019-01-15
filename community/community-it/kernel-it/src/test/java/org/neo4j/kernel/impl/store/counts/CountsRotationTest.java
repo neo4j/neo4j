@@ -38,8 +38,8 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.adversaries.ClassGuardedAdversary;
 import org.neo4j.adversaries.CountingAdversary;
+import org.neo4j.common.DependencyResolver;
 import org.neo4j.function.ThrowingFunction;
-import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;

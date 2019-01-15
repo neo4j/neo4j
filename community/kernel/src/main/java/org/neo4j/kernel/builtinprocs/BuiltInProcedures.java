@@ -32,8 +32,9 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.neo4j.collection.PrimitiveLongResourceIterator;
+import org.neo4j.common.DependencyResolver;
+import org.neo4j.common.EntityType;
 import org.neo4j.common.TokenNameLookup;
-import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -63,7 +64,6 @@ import org.neo4j.procedure.Description;
 import org.neo4j.procedure.Mode;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
-import org.neo4j.common.EntityType;
 import org.neo4j.storageengine.api.schema.SchemaDescriptor;
 
 import static org.neo4j.helpers.collection.Iterators.asList;

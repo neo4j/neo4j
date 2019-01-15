@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.codegen;
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.common.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.Kernel;

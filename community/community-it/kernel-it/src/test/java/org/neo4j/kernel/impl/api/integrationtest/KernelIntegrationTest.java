@@ -26,8 +26,8 @@ import org.junit.rules.RuleChain;
 
 import java.util.Iterator;
 
+import org.neo4j.common.DependencyResolver;
 import org.neo4j.exceptions.KernelException;
-import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;

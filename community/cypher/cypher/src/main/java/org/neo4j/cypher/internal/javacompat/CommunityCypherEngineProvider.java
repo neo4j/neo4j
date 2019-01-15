@@ -19,11 +19,11 @@
  */
 package org.neo4j.cypher.internal.javacompat;
 
+import org.neo4j.common.DependencyResolver;
 import org.neo4j.cypher.internal.CommunityCompilerFactory;
 import org.neo4j.cypher.internal.CypherConfiguration;
 import org.neo4j.cypher.internal.compatibility.CypherRuntimeConfiguration;
 import org.neo4j.cypher.internal.compiler.v4_0.CypherPlannerConfiguration;
-import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.configuration.Config;

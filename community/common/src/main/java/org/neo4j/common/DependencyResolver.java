@@ -17,12 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.graphdb;
+package org.neo4j.common;
 
 import java.util.Iterator;
 import java.util.function.Supplier;
 
-import static org.neo4j.graphdb.DependencyResolver.SelectionStrategy.SINGLE;
+import static org.neo4j.common.DependencyResolver.SelectionStrategy.SINGLE;
 
 /**
  * Find a dependency given a type.

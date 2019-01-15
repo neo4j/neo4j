@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.query;
 
 import java.util.function.Supplier;
 
-import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.common.DependencyResolver;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.query.ExecutingQuery;

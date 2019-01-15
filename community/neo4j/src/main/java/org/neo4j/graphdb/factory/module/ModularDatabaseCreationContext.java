@@ -21,8 +21,8 @@ package org.neo4j.graphdb.factory.module;
 
 import java.util.function.Function;
 
+import org.neo4j.common.DependencyResolver;
 import org.neo4j.common.TokenNameLookup;
-import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.factory.module.edition.context.EditionDatabaseContext;
 import org.neo4j.graphdb.factory.module.id.DatabaseIdContext;

@@ -28,7 +28,7 @@ import org.mockito.internal.stubbing.defaultanswers.ReturnsDeepStubs;
 
 import java.util.Optional;
 
-import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.common.DependencyResolver;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.internal.kernel.api.ExecutionStatistics;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;

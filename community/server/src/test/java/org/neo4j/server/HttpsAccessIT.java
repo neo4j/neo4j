@@ -31,7 +31,7 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManager;
 
-import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.common.DependencyResolver;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.configuration.ConnectorPortRegister;
 import org.neo4j.server.helpers.CommunityServerBuilder;

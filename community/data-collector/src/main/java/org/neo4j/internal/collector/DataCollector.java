@@ -19,9 +19,9 @@
  */
 package org.neo4j.internal.collector;
 
+import org.neo4j.common.DependencyResolver;
 import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseManager;
-import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.kernel.configuration.Config;

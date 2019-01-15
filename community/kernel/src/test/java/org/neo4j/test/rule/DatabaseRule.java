@@ -22,9 +22,9 @@ package org.neo4j.test.rule;
 import java.util.Collections;
 import java.util.function.Function;
 
+import org.neo4j.common.DependencyResolver;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.exceptions.UnsatisfiedDependencyException;
-import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.watcher.DatabaseLayoutWatcher;

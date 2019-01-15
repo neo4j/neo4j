@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api.security;
 
+import org.neo4j.common.DependencySatisfier;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.helpers.Service;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -26,7 +27,6 @@ import org.neo4j.kernel.api.security.provider.SecurityProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.AccessCapability;
 import org.neo4j.kernel.impl.proc.Procedures;
-import org.neo4j.kernel.impl.util.DependencySatisfier;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.internal.LogService;
@@ -44,7 +44,7 @@ public abstract class SecurityModule extends Service implements Lifecycle, Secur
     public abstract void setup( Dependencies dependencies ) throws KernelException;
 
     @Override
-    public void init() throws Throwable
+    public void init()
     {
         life.init();
     }
@@ -62,7 +62,7 @@ public abstract class SecurityModule extends Service implements Lifecycle, Secur
     }
 
     @Override
-    public void shutdown() throws Throwable
+    public void shutdown()
     {
         life.shutdown();
     }

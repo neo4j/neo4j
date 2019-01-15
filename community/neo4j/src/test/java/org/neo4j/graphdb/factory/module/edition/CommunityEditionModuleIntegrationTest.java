@@ -24,7 +24,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.function.Predicate;
 
-import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.common.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.impl.store.id.BufferedIdController;

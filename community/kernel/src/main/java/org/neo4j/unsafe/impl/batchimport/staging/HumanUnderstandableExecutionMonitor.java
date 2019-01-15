@@ -21,7 +21,7 @@ package org.neo4j.unsafe.impl.batchimport.staging;
 
 import java.util.TimeZone;
 
-import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.common.DependencyResolver;
 import org.neo4j.unsafe.impl.batchimport.CountGroupsStage;
 import org.neo4j.unsafe.impl.batchimport.DataImporter;
 import org.neo4j.unsafe.impl.batchimport.DataStatistics;

@@ -24,7 +24,7 @@ import org.apache.commons.lang3.mutable.MutableLong;
 import java.io.File;
 import java.time.Clock;
 
-import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.common.DependencyResolver;
 import org.neo4j.helpers.Service;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemUtils;

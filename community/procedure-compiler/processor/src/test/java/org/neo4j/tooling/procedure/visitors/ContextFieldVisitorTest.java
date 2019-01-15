@@ -29,8 +29,12 @@ import javax.lang.model.element.ElementVisitor;
 import javax.lang.model.element.VariableElement;
 import javax.tools.Diagnostic;
 
+import org.neo4j.common.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
+import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.security.UserManager;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.Log;
 import org.neo4j.procedure.ProcedureTransaction;
 import org.neo4j.procedure.TerminationGuard;
@@ -38,8 +42,8 @@ import org.neo4j.tooling.procedure.messages.CompilationMessage;
 import org.neo4j.tooling.procedure.testutils.ElementTestUtils;
 import org.neo4j.tooling.procedure.visitors.examples.FinalContextMisuse;
 import org.neo4j.tooling.procedure.visitors.examples.NonPublicContextMisuse;
-import org.neo4j.tooling.procedure.visitors.examples.StaticContextMisuse;
 import org.neo4j.tooling.procedure.visitors.examples.RestrictedContextTypes;
+import org.neo4j.tooling.procedure.visitors.examples.StaticContextMisuse;
 import org.neo4j.tooling.procedure.visitors.examples.UnknownContextType;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -117,13 +121,13 @@ public class ContextFieldVisitorTest
 
         assertThat( result ).extracting( CompilationMessage::getCategory, CompilationMessage::getContents )
                 .containsExactlyInAnyOrder( tuple( Diagnostic.Kind.WARNING,
-                        warning( "org.neo4j.kernel.internal.GraphDatabaseAPI",
+                        warning( GraphDatabaseAPI.class.getName(),
                                 "RestrictedContextTypes#graphDatabaseAPI" ) ), tuple( Diagnostic.Kind.WARNING,
-                        warning( "org.neo4j.kernel.api.KernelTransaction",
+                        warning( KernelTransaction.class.getName(),
                                 "RestrictedContextTypes#kernelTransaction" ) ), tuple( Diagnostic.Kind.WARNING,
-                        warning( "org.neo4j.graphdb.DependencyResolver",
+                        warning( DependencyResolver.class.getName(),
                                 "RestrictedContextTypes#dependencyResolver" ) ), tuple( Diagnostic.Kind.WARNING,
-                        warning( "org.neo4j.kernel.api.security.UserManager", "RestrictedContextTypes#userManager" ) ) );
+                        warning( UserManager.class.getName(), "RestrictedContextTypes#userManager" ) ) );
     }
 
     @Test
