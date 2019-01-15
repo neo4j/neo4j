@@ -36,7 +36,6 @@ import org.neo4j.logging.Log;
 import org.neo4j.memory.GlobalMemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
 
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.mapped_memory_page_size;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_swapper;
 import static org.neo4j.kernel.configuration.Settings.BYTES;
@@ -89,7 +88,6 @@ public class ConfiguringPageCacheFactory
 
     protected PageCache createPageCache()
     {
-        checkPageSize( config );
         MemoryAllocator memoryAllocator = buildMemoryAllocator( config );
         return new MuninnPageCache( swapperFactory, memoryAllocator, pageCacheTracer, pageCursorTracerSupplier,
                 versionContextSupplier, scheduler );
@@ -157,18 +155,8 @@ public class ConfiguringPageCacheFactory
         return ByteUnit.gibiBytes( 2 );
     }
 
-    public void checkPageSize( Config config )
-    {
-        if ( config.get( mapped_memory_page_size ).intValue() != 0 )
-        {
-            log.warn( "The setting unsupported.dbms.memory.pagecache.pagesize does not have any effect. It is " +
-                    "deprecated and will be removed in a future version." );
-        }
-    }
-
     public void dumpConfiguration()
     {
-        checkPageSize( config );
         String pageCacheMemory = config.get( pagecache_memory );
         long totalPhysicalMemory = OsBeanUtil.getTotalPhysicalMemory();
         String totalPhysicalMemMb = (totalPhysicalMemory == OsBeanUtil.VALUE_UNAVAILABLE)

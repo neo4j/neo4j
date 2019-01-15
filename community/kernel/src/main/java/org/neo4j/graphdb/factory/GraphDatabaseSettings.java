@@ -29,7 +29,6 @@ import org.neo4j.configuration.Description;
 import org.neo4j.configuration.Dynamic;
 import org.neo4j.configuration.Internal;
 import org.neo4j.configuration.LoadableConfig;
-import org.neo4j.configuration.ReplacedBy;
 import org.neo4j.csv.reader.Configuration;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.io.ByteUnit;
@@ -143,17 +142,6 @@ public class GraphDatabaseSettings implements LoadableConfig
     @Internal
     public static final Setting<String> editionName = setting( "unsupported.dbms.edition", STRING, Edition.UNKNOWN.toString() );
 
-    /**
-     * @deprecated This setting is deprecated and will be removed in 4.0.
-     * Please use connector configuration {@link org.neo4j.kernel.configuration.Connector#enabled} instead.
-     */
-    @Title( "Disconnected" )
-    @Internal
-    @Description( "Disable all Bolt protocol connectors. This setting is deprecated and will be removed in 4.0. Please use connector configuration instead." )
-    @Deprecated
-    @ReplacedBy( "dbms.connector.X.enabled" )
-    public static final Setting<Boolean> disconnected = setting( "unsupported.dbms.disconnected", BOOLEAN, FALSE );
-
     @Description( "Print out the effective Neo4j configuration after startup." )
     @Internal
     public static final Setting<Boolean> dump_configuration = setting( "unsupported.dbms.report_configuration",
@@ -164,14 +152,6 @@ public class GraphDatabaseSettings implements LoadableConfig
             "This is currently false by default but will be true by default in 4.0." )
     public static final Setting<Boolean> strict_config_validation =
             setting( "dbms.config.strict_validation", BOOLEAN, FALSE );
-
-    @Description( "Whether to allow a store upgrade in case the current version of the database starts against an " +
-            "older store version. " +
-            "Setting this to `true` does not guarantee successful upgrade, it just " +
-            "allows an upgrade to be performed." )
-    @Deprecated
-    @ReplacedBy( "dbms.allow_upgrade" )
-    public static final Setting<Boolean> allow_store_upgrade = setting( "dbms.allow_format_migration", BOOLEAN, FALSE );
 
     @Description( "Whether to allow an upgrade in case the current version of the database starts against an older version." )
     public static final Setting<Boolean> allow_upgrade = setting( "dbms.allow_upgrade", BOOLEAN, FALSE );
@@ -421,13 +401,6 @@ public class GraphDatabaseSettings implements LoadableConfig
     @Description( "The maximum number of concurrently running transactions. If set to 0, limit is disabled." )
     public static final Setting<Integer> max_concurrent_transactions = setting( "dbms.transaction.concurrent.maximum", INTEGER, "1000" );
 
-    @Internal
-    @Description( "Please use dbms.transaction.timeout instead." )
-    @Deprecated
-    @ReplacedBy( "dbms.transaction.timeout" )
-    public static final Setting<Boolean> execution_guard_enabled =
-            setting( "unsupported.dbms.executiontime_limit.enabled", BOOLEAN, FALSE );
-
     @Description( "Transaction creation tracing level." )
     @Dynamic
     public static final Setting<TransactionTracingLevel> transaction_tracing_level =
@@ -483,12 +456,6 @@ public class GraphDatabaseSettings implements LoadableConfig
     @Description( "Database timezone. Among other things, this setting influences which timezone the logs and monitoring procedures use." )
     public static final Setting<LogTimeZone> db_timezone =
             setting( "dbms.db.timezone", optionsObeyCase( LogTimeZone.class ), LogTimeZone.UTC.name() );
-
-    @Description( "Database logs timezone." )
-    @Deprecated
-    @ReplacedBy( "dbms.db.timezone" )
-    public static final Setting<LogTimeZone> log_timezone =
-            setting( "dbms.logs.timezone", optionsObeyCase( LogTimeZone.class ), LogTimeZone.UTC.name() );
 
     @Description( "Database timezone for temporal functions. All Time and DateTime values that are created without " +
             "an explicit timezone will use this configured default timezone." )
@@ -569,14 +536,6 @@ public class GraphDatabaseSettings implements LoadableConfig
     public static final Setting<Boolean> index_background_sampling_enabled =
             setting( "dbms.index_sampling.background_enabled", BOOLEAN, TRUE );
 
-    @Description( "Size of buffer used by index sampling. " +
-                 "This configuration setting is no longer applicable as from Neo4j 3.0.3. " +
-                 "Please use dbms.index_sampling.sample_size_limit instead." )
-    @Deprecated
-    @ReplacedBy( "dbms.index_sampling.sample_size_limit" )
-    public static final Setting<Long> index_sampling_buffer_size = buildSetting( "dbms.index_sampling.buffer_size",
-            BYTES, "64m" ).constraint( range( /* 1m */ 1048576L, (long) Integer.MAX_VALUE ) ).build();
-
     @Description( "Index sampling chunk size limit" )
     public static final Setting<Integer> index_sample_size_limit = buildSetting( "dbms.index_sampling.sample_size_limit",
             INTEGER, String.valueOf( ByteUnit.mebiBytes( 8 ) ) ).constraint( range( (int) ByteUnit.mebiBytes( 1 ),
@@ -596,12 +555,6 @@ public class GraphDatabaseSettings implements LoadableConfig
     @Internal
     public static final Setting<Boolean> multi_threaded_schema_index_population_enabled =
             setting( "unsupported.dbms.multi_threaded_schema_index_population_enabled", BOOLEAN, TRUE );
-
-    @Deprecated
-    @ReplacedBy( "dbms.index.default_schema_provider" )
-    @Internal
-    public static final Setting<Boolean> enable_native_schema_index =
-            setting( "unsupported.dbms.enable_native_schema_index", BOOLEAN, TRUE );
 
     public enum SchemaIndex
     {
@@ -662,11 +615,6 @@ public class GraphDatabaseSettings implements LoadableConfig
             "Reduced performance of CONTAINS and ENDS WITH string index queries, compared to a Lucene index." )
     public static final Setting<String> default_schema_provider = setting( "dbms.index.default_schema_provider", STRING, NATIVE_BTREE10.providerName() );
 
-    // Should not be used. Here only for auto migration purposes.
-    @Deprecated
-    @Description( "Location where Neo4j keeps the logical transaction logs." )
-    public static final Setting<File> logical_logs_location = pathSetting( "dbms.directories.tx_log", "", database_path );
-
     // Store settings
     @Description( "Make Neo4j keep the logical transaction logs for being able to backup the database. " +
             "Can be used for specifying the threshold to prune logical logs after. For example \"10 days\" will " +
@@ -710,14 +658,6 @@ public class GraphDatabaseSettings implements LoadableConfig
     @Internal
     public static final Setting<Integer> snapshot_query_retries = buildSetting( "unsupported.dbms.query.snapshot.retries",
             INTEGER, "5" ).constraint( range( 1, Integer.MAX_VALUE ) ).build();
-
-    // Store memory settings
-    @Description( "Target size for pages of mapped memory. If set to 0, then a reasonable default is chosen, " +
-                 "depending on the storage device used." )
-    @Internal
-    @Deprecated
-    public static final Setting<Long> mapped_memory_page_size =
-            setting( "unsupported.dbms.memory.pagecache.pagesize", BYTES, "0" );
 
     @SuppressWarnings( "unchecked" )
     @Description( "The amount of memory to use for mapping the store files, in bytes (or kilobytes with the 'k' " +
@@ -932,12 +872,6 @@ public class GraphDatabaseSettings implements LoadableConfig
     @Description( "Specifies whether or not dbms.killQueries produces a verbose output, with information about which queries were not found" )
     public static final Setting<Boolean> kill_query_verbose =
             setting( "dbms.procedures.kill_query_verbose", BOOLEAN, TRUE );
-
-    @Deprecated
-    @Description( "Whether or not to release the exclusive schema lock is while building uniqueness constraints index" )
-    @Internal
-    public static final Setting<Boolean> release_schema_lock_while_building_constraint = setting(
-            "unsupported.dbms.schema.release_lock_while_building_constraint", BOOLEAN, FALSE );
 
     @Description( "A list of procedures (comma separated) that are to be loaded. " +
             "The list may contain both fully-qualified procedure names, and partial names with the wildcard '*'. " +

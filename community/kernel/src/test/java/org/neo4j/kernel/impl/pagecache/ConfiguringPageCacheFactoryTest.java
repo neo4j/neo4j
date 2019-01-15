@@ -24,7 +24,6 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -86,29 +85,6 @@ public class ConfiguringPageCacheFactoryTest
         {
             assertThat( cache.pageSize(), equalTo( PageCache.PAGE_SIZE ) );
             assertThat( cache.maxCachedPages(), equalTo( pageCount ) );
-        }
-    }
-
-    @Test
-    public void shouldWarnWhenCreatedWithConfiguredPageCache()
-    {
-        // Given
-        Config config = Config.defaults( stringMap(
-                GraphDatabaseSettings.mapped_memory_page_size.name(), "4096",
-                pagecache_swapper.name(), TEST_PAGESWAPPER_NAME ) );
-        AssertableLogProvider logProvider = new AssertableLogProvider();
-        Log log = logProvider.getLog( PageCache.class );
-
-        // When
-        ConfiguringPageCacheFactory pageCacheFactory = new ConfiguringPageCacheFactory( fsRule.get(), config,
-                PageCacheTracer.NULL, PageCursorTracerSupplier.NULL, log, EmptyVersionContextSupplier.EMPTY, jobScheduler );
-
-        // Then
-        try ( PageCache ignore = pageCacheFactory.getOrCreatePageCache() )
-        {
-            logProvider.assertContainsLogCallContaining(
-                    "The setting unsupported.dbms.memory.pagecache.pagesize does not have any effect. It is " +
-                            "deprecated and will be removed in a future version." );
         }
     }
 
