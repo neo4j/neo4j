@@ -30,13 +30,13 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.neo4j.internal.kernel.api.InternalIndexState;
+import org.neo4j.internal.recordstorage.SchemaRuleAccess;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.core.TokenHolders;
 import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
-import org.neo4j.kernel.impl.store.SchemaRuleAccess;
 import org.neo4j.kernel.impl.store.StoreAccess;
 
 public class IndexAccessors implements Closeable
@@ -118,7 +118,7 @@ public class IndexAccessors implements Closeable
     }
 
     @Override
-    public void close() throws IOException
+    public void close()
     {
         for ( IndexAccessor accessor : accessors )
         {

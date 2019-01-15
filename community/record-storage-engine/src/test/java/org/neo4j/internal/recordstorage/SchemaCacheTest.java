@@ -35,8 +35,6 @@ import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.index.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
-import org.neo4j.kernel.impl.store.SchemaRuleAccess;
-import org.neo4j.kernel.impl.store.StubSchemaRuleAccess;
 import org.neo4j.kernel.impl.store.record.ConstraintRule;
 import org.neo4j.storageengine.api.SchemaRule;
 import org.neo4j.storageengine.api.StorageIndexReference;

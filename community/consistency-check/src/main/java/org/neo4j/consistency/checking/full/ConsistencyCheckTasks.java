@@ -44,13 +44,13 @@ import org.neo4j.consistency.store.synthetic.LabelScanIndex;
 import org.neo4j.helpers.collection.BoundedIterable;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
+import org.neo4j.internal.recordstorage.SchemaRuleAccess;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.impl.core.TokenHolders;
 import org.neo4j.kernel.impl.index.labelscan.NativeLabelScanStore;
 import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.Scanner;
-import org.neo4j.kernel.impl.store.SchemaRuleAccess;
 import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 

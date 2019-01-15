@@ -531,8 +531,8 @@ public class FulltextIndexConsistencyCheckIT
         // Remove the property without updating the index
         db.shutdown();
         db = new TestGraphDatabaseFactory( NullLogProvider.getInstance() ).setFileSystem( fs )
-                .removeKernelExtensions( INDEX_PROVIDERS_FILTER )
-                .addKernelExtension( new FailingGenericNativeIndexProviderFactory( SKIP_ONLINE_UPDATES ) )
+                .removeExtensions( INDEX_PROVIDERS_FILTER )
+                .addExtension( new FailingGenericNativeIndexProviderFactory( SKIP_ONLINE_UPDATES ) )
                 .newEmbeddedDatabase( testDirectory.databaseDir() );
         try ( Transaction tx = db.beginTx() )
         {

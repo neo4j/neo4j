@@ -26,31 +26,21 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.stream.IntStream;
 
 import org.neo4j.common.EntityType;
-import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
-import org.neo4j.kernel.api.index.IndexProviderDescriptor;
-import org.neo4j.kernel.api.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.index.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
-import org.neo4j.kernel.impl.store.record.ConstraintRule;
-import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRuleSerialization;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.storageengine.api.SchemaRule;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static java.nio.ByteBuffer.wrap;
 import static org.junit.Assert.assertEquals;
-import static org.neo4j.helpers.collection.Iterators.asCollection;
 import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forLabel;
 import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.multiToken;
 import static org.neo4j.kernel.impl.api.index.TestIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
@@ -196,61 +186,5 @@ public class SchemaStoreTest
         assertEquals( indexRule.schema(), readIndexRule.schema() );
         assertEquals( indexRule, readIndexRule );
         assertEquals( indexRule.providerDescriptor(), readIndexRule.providerDescriptor() );
-    }
-
-    @Test
-    public void storeAndLoadAllRules()
-    {
-        // GIVEN
-        long indexId = store.nextId();
-        long constraintId = store.nextId();
-        Collection<SchemaRule> rules = Arrays.asList(
-                uniqueIndexRule( indexId, constraintId, PROVIDER_DESCRIPTOR, 2, 5, 3 ),
-                constraintUniqueRule( constraintId, indexId, 2, 5, 3 ),
-                indexRule( store.nextId(), PROVIDER_DESCRIPTOR, 0, 5 ),
-                indexRule( store.nextId(), PROVIDER_DESCRIPTOR, 1, 6, 10, 99 ),
-                constraintExistsRule( store.nextId(), 5, 1 )
-            );
-
-        for ( SchemaRule rule : rules )
-        {
-            storeRule( rule );
-        }
-
-        // WHEN
-        Collection<SchemaRule> readRules = asCollection( store.loadAllSchemaRules() );
-
-        // THEN
-        assertEquals( rules, readRules );
-    }
-
-    private long storeRule( SchemaRule rule )
-    {
-        Collection<DynamicRecord> records = store.allocateFrom( rule );
-        for ( DynamicRecord record : records )
-        {
-            store.updateRecord( record );
-        }
-        return Iterables.first( records ).getId();
-    }
-
-    private StoreIndexDescriptor indexRule( long ruleId, IndexProviderDescriptor descriptor, int labelId, int... propertyIds )
-    {
-        return IndexDescriptorFactory.forSchema( forLabel( labelId, propertyIds ), descriptor ).withId( ruleId );
-    }
-
-    private StoreIndexDescriptor uniqueIndexRule( long ruleId, long owningConstraint, IndexProviderDescriptor descriptor, int labelId, int... propertyIds )
-    {
-        return IndexDescriptorFactory.uniqueForSchema( forLabel( labelId, propertyIds ), descriptor ).withIds( ruleId, owningConstraint );
-    }
-
-    private ConstraintRule constraintUniqueRule( long ruleId, long ownedIndexId, int labelId, int... propertyIds )
-    {
-        return ConstraintRule.constraintRule( ruleId, ConstraintDescriptorFactory.uniqueForLabel( labelId, propertyIds ), ownedIndexId );
-    }
-
-    private ConstraintRule constraintExistsRule( long ruleId, int labelId, int... propertyIds )
-    {
-        return ConstraintRule.constraintRule( ruleId, ConstraintDescriptorFactory.existsForLabel( labelId, propertyIds ) );
     }
 }

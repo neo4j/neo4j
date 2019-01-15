@@ -17,13 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.store;
+package org.neo4j.internal.recordstorage;
 
 import java.util.Collections;
 import java.util.Iterator;
 
 import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.SchemaRecordChangeTranslator;
 import org.neo4j.kernel.impl.store.record.ConstraintRule;
 import org.neo4j.storageengine.api.SchemaRule;
 import org.neo4j.storageengine.api.schema.ConstraintDescriptor;

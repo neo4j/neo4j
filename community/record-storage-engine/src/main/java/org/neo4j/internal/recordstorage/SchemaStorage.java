@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.store;
+package org.neo4j.internal.recordstorage;
 
 import java.util.Collection;
 import java.util.Iterator;
@@ -29,9 +29,10 @@ import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.internal.kernel.api.exceptions.schema.MalformedSchemaRuleException;
 import org.neo4j.kernel.api.exceptions.schema.DuplicateSchemaRuleException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.LegacySchemaRecordChangeTranslator;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.SchemaRecordChangeTranslator;
 import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
+import org.neo4j.kernel.impl.store.InvalidRecordException;
+import org.neo4j.kernel.impl.store.RecordStore;
+import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.record.ConstraintRule;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
