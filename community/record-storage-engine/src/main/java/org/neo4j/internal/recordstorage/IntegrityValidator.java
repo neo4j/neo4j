@@ -17,14 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction.state;
+package org.neo4j.internal.recordstorage;
 
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.ConstraintViolationTransactionFailureException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.api.index.TentativeConstraintIndexProxy;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.TransactionRecordState;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.record.ConstraintRule;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -36,24 +35,24 @@ import org.neo4j.util.Preconditions;
 /**
  * Validates data integrity during the prepare phase of {@link TransactionRecordState}.
  */
-public class IntegrityValidator
+class IntegrityValidator
 {
     private final NeoStores neoStores;
     private IndexUpdateListener indexValidator;
 
-    public IntegrityValidator( NeoStores neoStores )
+    IntegrityValidator( NeoStores neoStores )
     {
         this.neoStores = neoStores;
     }
 
-    public void setIndexValidator( IndexUpdateListener validator )
+    void setIndexValidator( IndexUpdateListener validator )
     {
         Preconditions.checkState( this.indexValidator == null,
                 "Only supports a single validator. Tried to add " + validator + ", but " + this.indexValidator + " has already been added" );
         this.indexValidator = validator;
     }
 
-    public void validateNodeRecord( NodeRecord record ) throws TransactionFailureException
+    void validateNodeRecord( NodeRecord record ) throws TransactionFailureException
     {
         if ( !record.inUse() && record.getNextRel() != Record.NO_NEXT_RELATIONSHIP.intValue() )
         {
@@ -63,7 +62,7 @@ public class IntegrityValidator
         }
     }
 
-    public void validateTransactionStartKnowledge( long lastCommittedTxWhenTransactionStarted )
+    void validateTransactionStartKnowledge( long lastCommittedTxWhenTransactionStarted )
             throws TransactionFailureException
     {
         long latestConstraintIntroducingTx = neoStores.getMetaDataStore().getLatestConstraintIntroducingTx();
@@ -86,7 +85,7 @@ public class IntegrityValidator
     /**
      * @see TentativeConstraintIndexProxy
      */
-    public void validateSchemaRule( SchemaRule schemaRule ) throws TransactionFailureException
+    void validateSchemaRule( SchemaRule schemaRule ) throws TransactionFailureException
     {
         Preconditions.checkState( indexValidator != null, "No index validator installed" );
         if ( schemaRule instanceof ConstraintRule )

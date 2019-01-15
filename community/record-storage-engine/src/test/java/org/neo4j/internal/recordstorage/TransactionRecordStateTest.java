@@ -72,7 +72,6 @@ import org.neo4j.kernel.impl.transaction.log.TransactionLogWriter;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
-import org.neo4j.kernel.impl.transaction.state.IntegrityValidator;
 import org.neo4j.kernel.impl.transaction.state.PrepareTrackingRecordFormats;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.SchemaRule;
@@ -1365,7 +1364,7 @@ public class TransactionRecordStateTest
         CommandHandlerContract.apply( applier, new TransactionToApply( transaction ) );
     }
 
-    private void apply( NeoStores neoStores, TransactionRepresentation transaction ) throws Exception
+    private void apply( NeoStores neoStores, TransactionRepresentation transaction )
     {
         BatchTransactionApplier applier = new NeoStoreBatchTransactionApplier( neoStores, mock( CacheAccessBackDoor.class ),
                 LockService.NO_LOCK_SERVICE );

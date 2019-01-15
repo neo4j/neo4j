@@ -23,7 +23,6 @@ import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StandardDynamicRecordAllocator;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.id.RenewableBatchIdSequences;
-import org.neo4j.kernel.impl.transaction.state.IntegrityValidator;
 import org.neo4j.storageengine.api.CommandCreationContext;
 import org.neo4j.storageengine.api.lock.ResourceLocker;
 

@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.log.entry;
 
-import org.neo4j.kernel.impl.transaction.command.PhysicalLogCommandReaderV3_0_2;
+import org.neo4j.storageengine.api.CommandReader;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.WritableChannel;
 
@@ -56,7 +56,7 @@ import static java.lang.String.format;
  * the log entry version will be bumped.
  * The process of making an update to log entry or command format is to:
  * <ol>
- * <li>Copy {@link PhysicalLogCommandReaderV3_0_2} or similar and modify the new copy</li>
+ * <li>Copy the latest {@link CommandReader} or similar and modify the new copy</li>
  * <li>Copy {@link LogEntryParsersV2_3} or similar and modify the new copy if entry layout has changed</li>
  * <li>Add an entry in this enum, like {@link #V3_0_10} pointing to the above new classes, version needs to be negative
  * to detect log files from older versions of neo4j</li>
