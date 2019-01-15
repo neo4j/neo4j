@@ -21,6 +21,7 @@ package org.neo4j.test.rule;
 
 import java.util.function.Function;
 
+import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.internal.recordstorage.BatchTransactionApplierFacade;
 import org.neo4j.internal.recordstorage.IndexActivator;
@@ -40,6 +41,7 @@ import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.locking.ReentrantLockService;
 import org.neo4j.kernel.impl.store.id.BufferedIdController;
 import org.neo4j.kernel.impl.store.id.BufferingIdGeneratorFactory;
+import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdController;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdReuseEligibility;
@@ -56,11 +58,10 @@ import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.IndexUpdateListener;
 import org.neo4j.storageengine.api.NodeLabelUpdateListener;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
-import org.neo4j.test.impl.EphemeralIdGenerator;
+import org.neo4j.test.MockedNeoStores;
 
 import static org.mockito.Mockito.mock;
 import static org.neo4j.kernel.impl.scheduler.JobSchedulerFactory.createScheduler;
-import static org.neo4j.test.MockedNeoStores.mockedTokenHolders;
 
 /**
  * Conveniently manages a {@link RecordStorageEngine} in a test. Needs {@link FileSystemAbstraction} and
@@ -87,30 +88,27 @@ public class RecordStorageEngineRule extends ExternalResource
         return new Builder( fs, pageCache, databaseLayout );
     }
 
-    private RecordStorageEngine get( FileSystemAbstraction fs, PageCache pageCache,
-                                     IndexProvider indexProvider, DatabaseHealth databaseHealth, DatabaseLayout databaseLayout,
-                                     Function<BatchTransactionApplierFacade, BatchTransactionApplierFacade> transactionApplierTransformer,
-                                     IndexUpdateListener indexUpdateListener, NodeLabelUpdateListener nodeLabelUpdateListener,
-                                     LockService lockService )
+    private RecordStorageEngine get( FileSystemAbstraction fs, PageCache pageCache, IndexProvider indexProvider, DatabaseHealth databaseHealth,
+            DatabaseLayout databaseLayout, Function<BatchTransactionApplierFacade,BatchTransactionApplierFacade> transactionApplierTransformer,
+            IndexUpdateListener indexUpdateListener, NodeLabelUpdateListener nodeLabelUpdateListener, LockService lockService, TokenHolders tokenHolders,
+            Config config, ConstraintSemantics constraintSemantics )
     {
-        IdGeneratorFactory idGeneratorFactory = new EphemeralIdGenerator.Factory();
+        IdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs );
         JobScheduler scheduler = life.add( createScheduler() );
-        Config config = Config.defaults( GraphDatabaseSettings.default_schema_provider, indexProvider.getProviderDescriptor().name() );
+        config.augment( GraphDatabaseSettings.default_schema_provider, indexProvider.getProviderDescriptor().name() );
 
         Dependencies dependencies = new Dependencies();
         dependencies.satisfyDependency( indexProvider );
 
         BufferingIdGeneratorFactory bufferingIdGeneratorFactory =
-                new BufferingIdGeneratorFactory( idGeneratorFactory, IdReuseEligibility.ALWAYS,
-                        new CommunityIdTypeConfigurationProvider() );
+                new BufferingIdGeneratorFactory( idGeneratorFactory, IdReuseEligibility.ALWAYS, new CommunityIdTypeConfigurationProvider() );
         DefaultIndexProviderMap indexProviderMap = new DefaultIndexProviderMap( dependencies, config );
         NullLogProvider nullLogProvider = NullLogProvider.getInstance();
         life.add( indexProviderMap );
-        RecordStorageEngine engine = life.add( new ExtendedRecordStorageEngine( databaseLayout, config, pageCache, fs,
-                nullLogProvider, mockedTokenHolders(),
-                mock( SchemaState.class ), new StandardConstraintSemantics(),
-                lockService, databaseHealth, idGeneratorFactory,
-                new BufferedIdController( bufferingIdGeneratorFactory, scheduler ), transactionApplierTransformer ) );
+        RecordStorageEngine engine = life.add(
+                new ExtendedRecordStorageEngine( databaseLayout, config, pageCache, fs, nullLogProvider, tokenHolders, mock( SchemaState.class ),
+                        constraintSemantics, lockService, databaseHealth, idGeneratorFactory,
+                        new BufferedIdController( bufferingIdGeneratorFactory, scheduler ), transactionApplierTransformer ) );
         engine.addIndexUpdateListener( indexUpdateListener );
         engine.addNodeLabelUpdateListener( nodeLabelUpdateListener );
         return engine;
@@ -137,6 +135,9 @@ public class RecordStorageEngineRule extends ExternalResource
         private IndexUpdateListener indexUpdateListener = new IndexUpdateListener.Adapter();
         private NodeLabelUpdateListener nodeLabelUpdateListener = new NodeLabelUpdateListener.Adapter();
         private LockService lockService = new ReentrantLockService();
+        private TokenHolders tokenHolders = MockedNeoStores.mockedTokenHolders();
+        private Config config = Config.defaults();
+        private ConstraintSemantics constraintSemantics = new StandardConstraintSemantics();
 
         public Builder( FileSystemAbstraction fs, PageCache pageCache, DatabaseLayout databaseLayout )
         {
@@ -182,10 +183,28 @@ public class RecordStorageEngineRule extends ExternalResource
             return this;
         }
 
+        public Builder tokenHolders( TokenHolders tokenHolders )
+        {
+            this.tokenHolders = tokenHolders;
+            return this;
+        }
+
+        public Builder setting( Setting<?> setting, String value )
+        {
+            config.augment( setting, value );
+            return this;
+        }
+
+        public Builder constraintSemantics( ConstraintSemantics constraintSemantics )
+        {
+            this.constraintSemantics = constraintSemantics;
+            return this;
+        }
+
         public RecordStorageEngine build()
         {
-            return get( fs, pageCache, indexProvider, databaseHealth, databaseLayout,
-                    transactionApplierTransformer, indexUpdateListener, nodeLabelUpdateListener, lockService );
+            return get( fs, pageCache, indexProvider, databaseHealth, databaseLayout, transactionApplierTransformer, indexUpdateListener,
+                    nodeLabelUpdateListener, lockService, tokenHolders, config, constraintSemantics );
         }
     }
 

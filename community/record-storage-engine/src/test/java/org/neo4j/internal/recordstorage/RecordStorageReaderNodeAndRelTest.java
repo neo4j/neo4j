@@ -17,11 +17,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.storageengine.impl.recordstorage;
+package org.neo4j.internal.recordstorage;
 
 import org.junit.Test;
 
-import org.neo4j.graphdb.Transaction;
 import org.neo4j.storageengine.api.StorageNodeCursor;
 import org.neo4j.storageengine.api.StorageRelationshipScanCursor;
 
@@ -36,18 +35,14 @@ import static org.neo4j.helpers.collection.MapUtil.map;
 public class RecordStorageReaderNodeAndRelTest extends RecordStorageReaderTestBase
 {
     @Test
-    public void shouldTellIfNodeExists()
+    public void shouldTellIfNodeExists() throws Exception
     {
         // Given
-        long created = createLabeledNode( db, map() ).getId();
-        long createdAndRemoved = createLabeledNode( db, map() ).getId();
+        long created = createNode( map() );
+        long createdAndRemoved = createNode( map() );
         long neverExisted = createdAndRemoved + 99;
 
-        try ( Transaction tx = db.beginTx() )
-        {
-            db.getNodeById( createdAndRemoved ).delete();
-            tx.success();
-        }
+        deleteNode( createdAndRemoved );
 
         // When & then
         assertTrue(  nodeExists( created ));
@@ -56,28 +51,15 @@ public class RecordStorageReaderNodeAndRelTest extends RecordStorageReaderTestBa
     }
 
     @Test
-    public void shouldTellIfRelExists()
+    public void shouldTellIfRelExists() throws Exception
     {
         // Given
-        long node = createLabeledNode( db, map() ).getId();
-        long created;
-        long createdAndRemoved;
-        long neverExisted;
+        long node = createNode( map() );
+        long created = createRelationship( createNode( map() ), createNode( map() ), withName( "Banana" ) );
+        long createdAndRemoved = createRelationship( createNode( map() ), createNode( map() ), withName( "Banana" ) );
+        long neverExisted = created + 99;
 
-        try ( Transaction tx = db.beginTx() )
-        {
-            created = db.createNode().createRelationshipTo( db.createNode(), withName( "Banana" ) ).getId();
-            createdAndRemoved = db.createNode().createRelationshipTo( db.createNode(), withName( "Banana" ) ).getId();
-            tx.success();
-        }
-
-        try ( Transaction tx = db.beginTx() )
-        {
-            db.getRelationshipById( createdAndRemoved ).delete();
-            tx.success();
-        }
-
-        neverExisted = created + 99;
+        deleteRelationship( createdAndRemoved );
 
         // When & then
         assertTrue(  relationshipExists( node ));

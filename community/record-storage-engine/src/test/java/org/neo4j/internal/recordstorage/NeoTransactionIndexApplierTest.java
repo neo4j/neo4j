@@ -69,7 +69,7 @@ public class NeoTransactionIndexApplierTest
     }
 
     @Test
-    public void shouldUpdateLabelStoreScanOnNodeCommands()
+    public void shouldUpdateLabelStoreScanOnNodeCommands() throws Exception
     {
         // given
         final IndexBatchTransactionApplier applier = newIndexTransactionApplier();
@@ -98,7 +98,7 @@ public class NeoTransactionIndexApplierTest
     }
 
     @Test
-    public void shouldCreateIndexGivenCreateSchemaRuleCommand()
+    public void shouldCreateIndexGivenCreateSchemaRuleCommand() throws Exception
     {
         // Given
         final StoreIndexDescriptor indexRule = indexRule( 1, 42, 42, INDEX_DESCRIPTOR );
@@ -126,7 +126,7 @@ public class NeoTransactionIndexApplierTest
     }
 
     @Test
-    public void shouldDropIndexGivenDropSchemaRuleCommand()
+    public void shouldDropIndexGivenDropSchemaRuleCommand() throws Exception
     {
         // Given
         final StoreIndexDescriptor indexRule = indexRule( 1, 42, 42, INDEX_DESCRIPTOR );

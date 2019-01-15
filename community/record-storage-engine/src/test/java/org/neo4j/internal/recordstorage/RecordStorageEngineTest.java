@@ -310,19 +310,19 @@ public class RecordStorageEngineTest
         }
 
         @Override
-        public TransactionApplier startTx( CommandsToApply transaction )
+        public TransactionApplier startTx( CommandsToApply transaction ) throws IOException
         {
             return actual.startTx( transaction );
         }
 
         @Override
-        public TransactionApplier startTx( CommandsToApply transaction, LockGroup lockGroup )
+        public TransactionApplier startTx( CommandsToApply transaction, LockGroup lockGroup ) throws IOException
         {
             return actual.startTx( transaction, lockGroup );
         }
 
         @Override
-        public void close()
+        public void close() throws Exception
         {
             applierCloseCall.accept( true );
             actual.close();

@@ -21,8 +21,10 @@ package org.neo4j.internal.recordstorage;
 
 import org.junit.Test;
 
-import org.neo4j.kernel.impl.index.IndexCommand.AddRelationshipCommand;
+import org.neo4j.internal.recordstorage.IndexCommand.AddRelationshipCommand;
 import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
+
+import static org.junit.Assert.assertEquals;
 
 public class PhysicalLogNeoCommandReaderV2Test
 {

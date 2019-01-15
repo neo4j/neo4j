@@ -52,10 +52,9 @@ class RecordNodeCursorTest
         } ).when( nodeStore ).getRecordByCursor( anyLong(), any(), any(), any() );
         doAnswer( invocationOnMock ->
         {
-            long id = invocationOnMock.getArgument( 0 );
-            NodeRecord record = invocationOnMock.getArgument( 1 );
+            NodeRecord record = invocationOnMock.getArgument( 0 );
             record.setId( record.getId() + 1 );
-            record.initialize( id == 200, 1L, false, 1L, 0L );
+            record.initialize( record.getId() == 200, 1L, false, 1L, 0L );
             return null;
         } ).when( nodeStore ).nextRecordByCursor( any(), any(), any() );
         RecordNodeCursor cursor = new RecordNodeCursor( nodeStore );

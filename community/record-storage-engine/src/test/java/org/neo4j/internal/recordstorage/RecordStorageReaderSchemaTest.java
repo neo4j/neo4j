@@ -17,14 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.storageengine.impl.recordstorage;
+package org.neo4j.internal.recordstorage;
 
 import org.junit.Test;
 
 import java.util.Set;
 
 import org.neo4j.graphdb.Label;
-import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.api.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.storageengine.api.schema.ConstraintDescriptor;
 
@@ -34,7 +33,7 @@ import static org.neo4j.helpers.collection.Iterators.asSet;
 public class RecordStorageReaderSchemaTest extends RecordStorageReaderTestBase
 {
     @Test
-    public void shouldListAllConstraints()
+    public void shouldListAllConstraints() throws Exception
     {
         // Given
         createUniquenessConstraint( label1, propertyKey );
@@ -52,7 +51,7 @@ public class RecordStorageReaderSchemaTest extends RecordStorageReaderTestBase
     }
 
     @Test
-    public void shouldListAllConstraintsForLabel()
+    public void shouldListAllConstraintsForLabel() throws Exception
     {
         // Given
         createUniquenessConstraint( label1, propertyKey );
@@ -68,7 +67,7 @@ public class RecordStorageReaderSchemaTest extends RecordStorageReaderTestBase
     }
 
     @Test
-    public void shouldListAllConstraintsForLabelAndProperty()
+    public void shouldListAllConstraintsForLabelAndProperty() throws Exception
     {
         // Given
         createUniquenessConstraint( label1, propertyKey );
@@ -83,15 +82,6 @@ public class RecordStorageReaderSchemaTest extends RecordStorageReaderTestBase
                 uniqueConstraintDescriptor( label1, propertyKey ) );
 
         assertEquals( expectedConstraints, constraints );
-    }
-
-    private void createUniquenessConstraint( Label label, String propertyKey )
-    {
-        try ( Transaction tx = db.beginTx() )
-        {
-            db.schema().constraintFor( label ).assertPropertyIsUnique( propertyKey ).create();
-            tx.success();
-        }
     }
 
     private ConstraintDescriptor uniqueConstraintDescriptor( Label label, String propertyKey )

@@ -50,6 +50,13 @@ public class PhysicalTransactionRepresentation implements TransactionRepresentat
         this.commands = commands;
     }
 
+    public PhysicalTransactionRepresentation( Collection<StorageCommand> commands,
+            byte[] additionalHeader, int masterId, int authorId, long timeStarted, long latestCommittedTxWhenStarted, long timeCommitted, int lockSession )
+    {
+        this( commands );
+        setHeader( additionalHeader, masterId, authorId, timeStarted, latestCommittedTxWhenStarted, timeCommitted, lockSession );
+    }
+
     public void setHeader( byte[] additionalHeader, int masterId, int authorId, long timeStarted,
                            long latestCommittedTxWhenStarted, long timeCommitted, int lockSession )
     {

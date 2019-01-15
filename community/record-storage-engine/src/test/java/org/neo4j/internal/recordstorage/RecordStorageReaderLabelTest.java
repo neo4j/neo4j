@@ -17,22 +17,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.storageengine.impl.recordstorage;
+package org.neo4j.internal.recordstorage;
 
 import org.junit.Test;
 
-import org.neo4j.graphdb.Label;
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Transaction;
 import org.neo4j.storageengine.api.StorageNodeCursor;
+import org.neo4j.storageengine.api.StoragePropertyCursor;
 
 import static org.eclipse.collections.impl.set.mutable.primitive.LongHashSet.newSetWith;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.helpers.collection.MapUtil.map;
-import static org.neo4j.test.mockito.matcher.Neo4jMatchers.containsOnly;
-import static org.neo4j.test.mockito.matcher.Neo4jMatchers.getPropertyKeys;
 
 /**
  * Test read access to committed label data.
@@ -40,21 +36,13 @@ import static org.neo4j.test.mockito.matcher.Neo4jMatchers.getPropertyKeys;
 public class RecordStorageReaderLabelTest extends RecordStorageReaderTestBase
 {
     @Test
-    public void shouldBeAbleToListLabelsForNode()
+    public void shouldBeAbleToListLabelsForNode() throws Exception
     {
         // GIVEN
         long nodeId;
-        int labelId1;
-        int labelId2;
-        try ( Transaction tx = db.beginTx() )
-        {
-            nodeId = db.createNode( label1, label2 ).getId();
-            String labelName1 = label1.name();
-            String labelName2 = label2.name();
-            labelId1 = labelId( Label.label( labelName1 ) );
-            labelId2 = labelId( Label.label( labelName2 ) );
-            tx.success();
-        }
+        nodeId = createNode( map(), label1, label2 );
+        int labelId1 = labelId( label1 );
+        int labelId2 = labelId( label2 );
 
         // THEN
         StorageNodeCursor nodeCursor = storageReader.allocateNodeCursor();
@@ -64,37 +52,37 @@ public class RecordStorageReaderLabelTest extends RecordStorageReaderTestBase
     }
 
     @Test
-    public void labelsShouldNotLeakOutAsProperties()
+    public void labelsShouldNotLeakOutAsProperties() throws Exception
     {
         // GIVEN
-        Node node = createLabeledNode( db, map( "name", "Node" ), label1 );
+        long nodeId = createNode( map( "name", "Node" ), label1 );
+        int namePropertyKeyId = propertyKeyId( "name" );
 
         // WHEN THEN
-        assertThat( getPropertyKeys( db, node ), containsOnly( "name" ) );
+        StorageNodeCursor nodeCursor = storageReader.allocateNodeCursor();
+        StoragePropertyCursor propertyCursor = storageReader.allocatePropertyCursor();
+        nodeCursor.single( nodeId );
+        assertTrue( nodeCursor.next() );
+        nodeCursor.properties( propertyCursor );
+        assertTrue( propertyCursor.next() );
+        assertEquals( namePropertyKeyId, propertyCursor.propertyKey() );
+        assertFalse( propertyCursor.next() );
     }
 
     @Test
-    public void shouldCountAllNodes()
+    public void shouldCountAllNodes() throws Exception
     {
         // given
         int nodeCountPerLabel = 5;
-        Node[] label2Nodes = new Node[nodeCountPerLabel];
-        try ( Transaction tx = db.beginTx() )
+        long[] label2Nodes = new long[nodeCountPerLabel];
+        for ( int i = 0; i < nodeCountPerLabel; i++ )
         {
-            for ( int i = 0; i < nodeCountPerLabel; i++ )
-            {
-                db.createNode( label1 );
-                label2Nodes[i] = db.createNode( label2 );
-            }
-            tx.success();
+            createNode( map(), label1 );
+            label2Nodes[i] = createNode( map(), label2 );
         }
-        try ( Transaction tx = db.beginTx() )
+        for ( long label2Node : label2Nodes )
         {
-            for ( Node label2Node : label2Nodes )
-            {
-                label2Node.delete();
-            }
-            tx.success();
+            deleteNode( label2Node );
         }
 
         // when

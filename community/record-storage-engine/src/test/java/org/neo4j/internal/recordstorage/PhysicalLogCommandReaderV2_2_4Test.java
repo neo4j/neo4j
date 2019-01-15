@@ -22,10 +22,11 @@ package org.neo4j.internal.recordstorage;
 import org.eclipse.collections.impl.map.mutable.primitive.ObjectIntHashMap;
 import org.junit.Test;
 
-import org.neo4j.kernel.impl.index.IndexCommand.RemoveCommand;
+import org.neo4j.internal.recordstorage.IndexCommand.RemoveCommand;
 import org.neo4j.kernel.impl.index.IndexEntityType;
 import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 

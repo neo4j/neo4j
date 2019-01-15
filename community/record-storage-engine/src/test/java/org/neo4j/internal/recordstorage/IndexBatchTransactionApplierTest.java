@@ -57,7 +57,7 @@ import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
 public class IndexBatchTransactionApplierTest
 {
     @Test
-    public void shouldProvideLabelScanStoreUpdatesSortedByNodeId()
+    public void shouldProvideLabelScanStoreUpdatesSortedByNodeId() throws Exception
     {
         // GIVEN
         IndexUpdateListener indexUpdateListener = mock( IndexUpdateListener.class );

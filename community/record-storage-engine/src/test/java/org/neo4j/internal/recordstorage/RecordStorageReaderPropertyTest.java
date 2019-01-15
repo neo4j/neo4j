@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.storageengine.impl.recordstorage;
+package org.neo4j.internal.recordstorage;
 
 import org.junit.Test;
 
@@ -38,7 +38,7 @@ import static org.junit.Assert.fail;
 public class RecordStorageReaderPropertyTest extends RecordStorageReaderTestBase
 {
     @Test
-    public void shouldGetAllNodeProperties()
+    public void shouldGetAllNodeProperties() throws Exception
     {
         // GIVEN
         String longString =
@@ -86,7 +86,7 @@ public class RecordStorageReaderPropertyTest extends RecordStorageReaderTestBase
         for ( Object value : properties )
         {
             // given
-            long nodeId = createLabeledNode( db, singletonMap( "prop", value ), label1 ).getId();
+            long nodeId = createNode( singletonMap( "prop", value ), label1 );
 
             // when
             try ( StorageNodeCursor node = storageReader.allocateNodeCursor() )

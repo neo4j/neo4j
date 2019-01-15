@@ -19,26 +19,17 @@
  */
 package org.neo4j.internal.recordstorage;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
-import org.neo4j.helpers.collection.Visitor;
-import org.neo4j.storageengine.api.StorageCommand;
+import org.neo4j.kernel.impl.core.TokenCreator;
 
-public class CommandExtractor implements Visitor<StorageCommand,IOException>
+class SimpleTokenCreator implements TokenCreator
 {
-    private final List<StorageCommand> commands = new ArrayList<>();
+    private final AtomicInteger highId = new AtomicInteger( 1 );
 
     @Override
-    public boolean visit( StorageCommand element )
+    public int createToken( String name )
     {
-        commands.add( element );
-        return false;
-    }
-
-    public List<StorageCommand> getCommands()
-    {
-        return commands;
+        return highId.incrementAndGet();
     }
 }

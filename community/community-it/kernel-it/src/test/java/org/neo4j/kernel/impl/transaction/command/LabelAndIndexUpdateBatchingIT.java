@@ -29,6 +29,7 @@ import java.util.List;
 
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.internal.recordstorage.Command.NodeCommand;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionToApply;
@@ -138,8 +139,7 @@ public class LabelAndIndexUpdateBatchingIT
             TransactionRepresentation tx = iterator.next();
             CommandExtractor extractor = new CommandExtractor();
             tx.accept( extractor );
-            List<StorageCommand> commands = extractor.getCommands();
-            List<StorageCommand> nodeCommands = commands.stream()
+            List<StorageCommand> nodeCommands = extractor.commands.stream()
                     .filter( command -> command instanceof NodeCommand ).collect( toList() );
             if ( nodeCommands.size() == 1 )
             {
@@ -179,5 +179,17 @@ public class LabelAndIndexUpdateBatchingIT
             cursor.forAll( tx -> transactions.add( tx.getTransactionRepresentation() ) );
         }
         return transactions;
+    }
+
+    private static class CommandExtractor implements Visitor<StorageCommand,IOException>
+    {
+        private final List<StorageCommand> commands = new ArrayList<>();
+
+        @Override
+        public boolean visit( StorageCommand element )
+        {
+            commands.add( element );
+            return false;
+        }
     }
 }

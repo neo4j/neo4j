@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction.command;
+package org.neo4j.internal.recordstorage;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -34,10 +34,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.recordstorage.Command.NodeCommand;
-import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.api.impl.schema.NativeLuceneFusionIndexProviderFactory20;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.txstate.TransactionState;
@@ -46,7 +44,8 @@ import org.neo4j.kernel.impl.api.TransactionQueue;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.kernel.impl.factory.OperationalMode;
-import org.neo4j.kernel.impl.index.schema.fusion.FusionIndexProvider;
+import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProvider;
+import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProviderFactory;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.storageengine.api.CommandCreationContext;
@@ -54,7 +53,6 @@ import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.IndexUpdateListener;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageReader;
-import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.storageengine.api.UpdateMode;
 import org.neo4j.storageengine.api.schema.LabelSchemaDescriptor;
 import org.neo4j.storageengine.api.schema.SchemaDescriptor;
@@ -70,10 +68,10 @@ import static java.util.Collections.emptySet;
 import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.helpers.TimeUtil.parseTimeMillis;
-import static org.neo4j.kernel.api.impl.schema.NativeLuceneFusionIndexProviderFactory20.DESCRIPTOR;
-import static org.neo4j.kernel.impl.transaction.command.Commands.createIndexRule;
-import static org.neo4j.kernel.impl.transaction.command.Commands.transactionRepresentation;
+import static org.neo4j.internal.recordstorage.Commands.createIndexRule;
+import static org.neo4j.internal.recordstorage.Commands.transactionRepresentation;
 import static org.neo4j.kernel.impl.transaction.log.Commitment.NO_COMMITMENT;
+import static org.neo4j.storageengine.api.TransactionApplicationMode.EXTERNAL;
 import static org.neo4j.storageengine.api.txstate.TxStateVisitor.NO_DECORATION;
 
 public class IndexWorkSyncTransactionApplicationStressIT
@@ -100,7 +98,7 @@ public class IndexWorkSyncTransactionApplicationStressIT
                 Runtime.getRuntime().availableProcessors() );
         DefaultFileSystemAbstraction fs = fileSystemRule.get();
         PageCache pageCache = pageCacheRule.getPageCache( fs );
-        FusionIndexProvider indexProvider = NativeLuceneFusionIndexProviderFactory20.create( pageCache, directory.databaseDir(), fs,
+        IndexProvider indexProvider = GenericNativeIndexProviderFactory.create( pageCache, directory.databaseDir(), fs,
                 IndexProvider.Monitor.EMPTY, Config.defaults(), OperationalMode.SINGLE, RecoveryCleanupWorkCollector.immediate() );
         CollectingIndexUpdateListener index = new CollectingIndexUpdateListener();
         RecordStorageEngine storageEngine = storageEngineRule
@@ -108,7 +106,7 @@ public class IndexWorkSyncTransactionApplicationStressIT
                 .indexProvider( indexProvider )
                 .indexUpdateListener( index )
                 .build();
-        storageEngine.apply( tx( singletonList( createIndexRule( DESCRIPTOR, 1, descriptor ) ) ), TransactionApplicationMode.EXTERNAL );
+        storageEngine.apply( tx( singletonList( createIndexRule( GenericNativeIndexProvider.DESCRIPTOR, 1, descriptor ) ) ), EXTERNAL );
 
         // WHEN
         Workers<Worker> workers = new Workers<>( getClass().getSimpleName() );
@@ -171,7 +169,7 @@ public class IndexWorkSyncTransactionApplicationStressIT
                 TransactionQueue queue = new TransactionQueue( batchSize, ( tx, last ) ->
                 {
                     // Apply
-                    storageEngine.apply( tx, TransactionApplicationMode.EXTERNAL );
+                    storageEngine.apply( tx, EXTERNAL );
 
                     // And verify that all nodes are in the index
                     verifyIndex( tx );

@@ -1359,12 +1359,12 @@ public class TransactionRecordStateTest
         return recordState;
     }
 
-    private void apply( BatchTransactionApplier applier, TransactionRepresentation transaction )
+    private void apply( BatchTransactionApplier applier, TransactionRepresentation transaction ) throws Exception
     {
         CommandHandlerContract.apply( applier, new TransactionToApply( transaction ) );
     }
 
-    private void apply( NeoStores neoStores, TransactionRepresentation transaction )
+    private void apply( NeoStores neoStores, TransactionRepresentation transaction ) throws Exception
     {
         BatchTransactionApplier applier = new NeoStoreBatchTransactionApplier( neoStores, mock( CacheAccessBackDoor.class ),
                 LockService.NO_LOCK_SERVICE );

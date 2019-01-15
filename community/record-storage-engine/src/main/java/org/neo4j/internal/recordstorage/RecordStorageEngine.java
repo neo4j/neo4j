@@ -198,7 +198,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     }
 
     @Override
-    public StorageReader newReader()
+    public RecordStorageReader newReader()
     {
         return new RecordStorageReader( tokenHolders, neoStores, countsStore, schemaCache );
     }
