@@ -30,7 +30,6 @@ import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChanne
 import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.TransactionCursor;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
-import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 
@@ -62,19 +61,19 @@ public class ReversedMultiFileTransactionCursor implements TransactionCursor
      * Utility method for creating a {@link ReversedMultiFileTransactionCursor} with a {@link LogFile} as the source of
      * {@link TransactionCursor} for each log version.
      *
+     * @param logFiles accessor of log files.
      * @param logFile {@link LogFile} to supply log entries forming transactions.
      * @param backToPosition {@link LogPosition} to read backwards to.
+     * @param logEntryReader {@link LogEntryReader} to use.
      * @param failOnCorruptedLogFiles fail reading from log files as soon as first error is encountered
      * @param monitor reverse transaction cursor monitor
      * @return a {@link TransactionCursor} which returns transactions from the end of the log stream and backwards to
      * and including transaction starting at {@link LogPosition}.
-     * @throws IOException on I/O error.
      */
     public static TransactionCursor fromLogFile( LogFiles logFiles, LogFile logFile, LogPosition backToPosition,
-            boolean failOnCorruptedLogFiles, ReversedTransactionCursorMonitor monitor )
+            LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader, boolean failOnCorruptedLogFiles, ReversedTransactionCursorMonitor monitor )
     {
         long highestVersion = logFiles.getHighestLogVersion();
-        LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader = new VersionAwareLogEntryReader<>();
         ThrowingFunction<LogPosition,TransactionCursor,IOException> factory = position ->
         {
             ReadableLogChannel channel = logFile.getReader( position, NO_MORE_CHANNELS );

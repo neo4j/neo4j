@@ -52,6 +52,7 @@ import org.neo4j.test.rule.TestDirectory;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.kernel.impl.api.TestCommandReaderFactory.logEntryReader;
 
 @ExtendWith( {DefaultFileSystemExtension.class, TestDirectoryExtension.class,} )
 class CorruptedLogsTruncatorTest
@@ -79,7 +80,9 @@ class CorruptedLogsTruncatorTest
         logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( databaseDirectory, fs )
                 .withRotationThreshold( LogHeader.LOG_HEADER_SIZE + 9L )
                 .withLogVersionRepository( logVersionRepository )
-                .withTransactionIdStore( transactionIdStore ).build();
+                .withTransactionIdStore( transactionIdStore )
+                .withLogEntryReader( logEntryReader() )
+                .build();
         life.add( logFiles );
         logPruner = new CorruptedLogsTruncator( databaseDirectory, logFiles, fs );
     }

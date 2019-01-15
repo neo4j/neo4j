@@ -77,7 +77,12 @@ public class DynamicIndexStoreViewTest
         when( labelScanReader.nodesWithAnyOfLabels( new int[] {2, 6} ) ).thenReturn( labeledNodesIterator );
         for ( long nodeId : nodeIds )
         {
-            cursors.withNode( nodeId ).propertyId( 1 ).relationship( 1 );
+            cursors.withNode( nodeId ).propertyId( 1 ).relationship( 1 ).labels( 2, 6 );
+        }
+        // Create a couple of more nodes, just lying around
+        for ( long i = 0, id = nodeIds[nodeIds.length - 1] + 1; i < 10; i++ )
+        {
+            cursors.withNode( id );
         }
 
         mockLabelNodeCount( countStore, 2 );

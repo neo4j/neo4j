@@ -39,7 +39,6 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryByteCodes;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
-import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.impl.transaction.log.stresstest.workload.Runner;
@@ -50,6 +49,7 @@ import org.neo4j.test.rule.TestDirectory;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.function.Suppliers.untilTimeExpired;
+import static org.neo4j.kernel.impl.api.TestCommandReaderFactory.logEntryReader;
 
 @ExtendWith( TestDirectoryExtension.class )
 public class TransactionAppenderStressTest
@@ -123,7 +123,7 @@ public class TransactionAppenderStressTest
             try ( FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
                   ReadableLogChannel channel = openLogFile( fs, 0 ) )
             {
-                LogEntryReader<ReadableLogChannel> reader = new VersionAwareLogEntryReader<>();
+                LogEntryReader<ReadableLogChannel> reader = logEntryReader();
                 LogEntry logEntry = reader.readLogEntry( channel );
                 for ( ; logEntry != null; logEntry = reader.readLogEntry( channel ) )
                 {
@@ -138,7 +138,9 @@ public class TransactionAppenderStressTest
 
         private ReadableLogChannel openLogFile( FileSystemAbstraction fs, int version ) throws IOException
         {
-            LogFiles logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( workingDirectory, fs ).build();
+            LogFiles logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( workingDirectory, fs )
+                    .withLogEntryReader( logEntryReader() )
+                    .build();
             PhysicalLogVersionedStoreChannel channel = logFiles.openForVersion( version );
             return new ReadAheadLogChannel( channel, new ReaderLogVersionBridge( logFiles ) );
         }

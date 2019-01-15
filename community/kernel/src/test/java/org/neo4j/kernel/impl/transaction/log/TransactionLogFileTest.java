@@ -52,6 +52,7 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.kernel.impl.api.TestCommandReaderFactory.logEntryReader;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.readLogHeader;
 
@@ -74,7 +75,9 @@ public class TransactionLogFileTest
         FileSystemAbstraction fs = fileSystemRule.get();
         LogFiles logFiles = LogFilesBuilder.builder( directory.databaseLayout(), fs )
                                            .withTransactionIdStore( transactionIdStore )
-                                           .withLogVersionRepository( logVersionRepository ).build();
+                                           .withLogVersionRepository( logVersionRepository )
+                                           .withLogEntryReader( logEntryReader() )
+                                           .build();
         life.add( logFiles );
         life.start();
 
@@ -98,7 +101,9 @@ public class TransactionLogFileTest
         FileSystemAbstraction fs = fileSystemRule.get();
         LogFiles logFiles = LogFilesBuilder.builder( directory.databaseLayout(), fs )
                 .withTransactionIdStore( transactionIdStore )
-                .withLogVersionRepository( logVersionRepository ).build();
+                .withLogVersionRepository( logVersionRepository )
+                .withLogEntryReader( logEntryReader() )
+                .build();
 
         // WHEN
         life.start();
@@ -106,7 +111,9 @@ public class TransactionLogFileTest
         life.shutdown();
 
         // THEN
-        File file =  LogFilesBuilder.logFilesBasedOnlyBuilder( directory.databaseDir(), fs ).build().getLogFileForVersion( 1L );
+        File file =  LogFilesBuilder.logFilesBasedOnlyBuilder( directory.databaseDir(), fs )
+                .withLogEntryReader( logEntryReader() )
+                .build().getLogFileForVersion( 1L );
         LogHeader header = readLogHeader( fs, file );
         assertEquals( 1L, header.logVersion );
         assertEquals( 2L, header.lastCommittedTxId );
@@ -120,7 +127,9 @@ public class TransactionLogFileTest
         FileSystemAbstraction fs = fileSystemRule.get();
         LogFiles logFiles = LogFilesBuilder.builder( directory.databaseLayout(), fs )
                 .withTransactionIdStore( transactionIdStore )
-                .withLogVersionRepository( logVersionRepository ).build();
+                .withLogVersionRepository( logVersionRepository )
+                .withLogEntryReader( logEntryReader() )
+                .build();
         life.start();
         life.add( logFiles );
 
@@ -149,7 +158,9 @@ public class TransactionLogFileTest
         FileSystemAbstraction fs = fileSystemRule.get();
         LogFiles logFiles = LogFilesBuilder.builder( directory.databaseLayout(), fs )
                 .withTransactionIdStore( transactionIdStore )
-                .withLogVersionRepository( logVersionRepository ).build();
+                .withLogVersionRepository( logVersionRepository )
+                .withLogEntryReader( logEntryReader() )
+                .build();
         life.start();
         life.add( logFiles );
 
@@ -195,7 +206,9 @@ public class TransactionLogFileTest
         FileSystemAbstraction fs = fileSystemRule.get();
         LogFiles logFiles = LogFilesBuilder.builder( directory.databaseLayout(), fs )
                 .withTransactionIdStore( transactionIdStore )
-                .withLogVersionRepository( logVersionRepository ).build();
+                .withLogVersionRepository( logVersionRepository )
+                .withLogEntryReader( logEntryReader() )
+                .build();
         life.start();
         life.add( logFiles );
 
@@ -230,7 +243,9 @@ public class TransactionLogFileTest
         FileSystemAbstraction fs = mock( FileSystemAbstraction.class );
         LogFiles logFiles = LogFilesBuilder.builder( directory.databaseLayout(), fs )
                 .withTransactionIdStore( transactionIdStore )
-                .withLogVersionRepository( logVersionRepository ).build();
+                .withLogVersionRepository( logVersionRepository )
+                .withLogEntryReader( logEntryReader() )
+                .build();
         int logVersion = 0;
         File logFile = logFiles.getLogFileForVersion( logVersion );
         StoreChannel channel = mock( StoreChannel.class );
@@ -258,7 +273,9 @@ public class TransactionLogFileTest
         FileSystemAbstraction fs = mock( FileSystemAbstraction.class );
         LogFiles logFiles = LogFilesBuilder.builder( directory.databaseLayout(), fs )
                 .withTransactionIdStore( transactionIdStore )
-                .withLogVersionRepository( logVersionRepository ).build();
+                .withLogVersionRepository( logVersionRepository )
+                .withLogEntryReader( logEntryReader() )
+                .build();
         int logVersion = 0;
         File logFile = logFiles.getLogFileForVersion( logVersion );
         StoreChannel channel = mock( StoreChannel.class );

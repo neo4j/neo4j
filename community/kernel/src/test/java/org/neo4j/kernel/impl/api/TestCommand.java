@@ -50,6 +50,7 @@ public class TestCommand implements StorageCommand
     @Override
     public void serialize( WritableChannel channel ) throws IOException
     {
+        channel.putInt( bytes.length );
         channel.put( bytes, bytes.length );
     }
 

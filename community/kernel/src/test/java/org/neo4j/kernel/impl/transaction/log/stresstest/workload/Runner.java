@@ -30,6 +30,7 @@ import java.util.function.BooleanSupplier;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
 import org.neo4j.kernel.impl.core.DatabasePanicEventGenerator;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
@@ -37,6 +38,7 @@ import org.neo4j.kernel.impl.transaction.log.BatchingTransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache;
+import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotationImpl;
@@ -46,6 +48,8 @@ import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLog;
+
+import static org.neo4j.kernel.impl.transaction.log.entry.InvalidLogEntryHandler.STRICT;
 
 public class Runner implements Callable<Long>
 {
@@ -122,6 +126,7 @@ public class Runner implements Callable<Long>
         return LogFilesBuilder.builder( databaseLayout, fileSystemAbstraction )
                                                       .withTransactionIdStore(transactionIdStore)
                                                       .withLogVersionRepository( logVersionRepository )
+                                                      .withLogEntryReader( new VersionAwareLogEntryReader( new TestCommandReaderFactory(), STRICT ) )
                                                       .build();
     }
 }

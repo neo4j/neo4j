@@ -38,7 +38,6 @@ import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache.TransactionMetadata;
-import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
@@ -66,6 +65,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.kernel.impl.api.TestCommandReaderFactory.logEntryReader;
 import static org.neo4j.kernel.impl.transaction.log.rotation.LogRotation.NO_ROTATION;
 
 @ExtendWith( {DefaultFileSystemExtension.class, TestDirectoryExtension.class} )
@@ -99,8 +99,10 @@ class PhysicalLogicalTransactionStoreTest
         long timeCommitted = timeStarted + 10;
         LifeSupport life = new LifeSupport();
         final LogFiles logFiles = LogFilesBuilder.builder( directory.databaseLayout(), fileSystem )
-                                                 .withTransactionIdStore( transactionIdStore )
-                                                 .withLogVersionRepository( mock( LogVersionRepository.class ) ).build();
+                .withTransactionIdStore( transactionIdStore )
+                .withLogVersionRepository( mock( LogVersionRepository.class ) )
+                .withLogEntryReader( logEntryReader() )
+                .build();
         life.add( logFiles );
         life.start();
         try
@@ -117,8 +119,7 @@ class PhysicalLogicalTransactionStoreTest
         fileSystem.create( logFiles.getLogFileForVersion( logFiles.getHighestLogVersion() + 1 ) ).close();
         positionCache.clear();
 
-        final LogicalTransactionStore store = new PhysicalLogicalTransactionStore( logFiles, positionCache,
-                new VersionAwareLogEntryReader<>(), monitors, true );
+        final LogicalTransactionStore store = new PhysicalLogicalTransactionStore( logFiles, positionCache, logEntryReader(), monitors, true );
         verifyTransaction( transactionIdStore, positionCache, additionalHeader, masterId, authorId, timeStarted,
                 latestCommittedTxWhenStarted, timeCommitted, store );
     }
@@ -133,7 +134,9 @@ class PhysicalLogicalTransactionStoreTest
         LifeSupport life = new LifeSupport();
         final LogFiles logFiles = LogFilesBuilder.builder( directory.databaseLayout(), fileSystem )
                 .withTransactionIdStore( transactionIdStore )
-                .withLogVersionRepository( mock( LogVersionRepository.class ) ).build();
+                .withLogVersionRepository( mock( LogVersionRepository.class ) )
+                .withLogEntryReader( logEntryReader() )
+                .build();
         life.add( logFiles );
 
         life.add( new BatchingTransactionAppender( logFiles, NO_ROTATION, positionCache, transactionIdStore, DATABASE_HEALTH ) );
@@ -164,7 +167,9 @@ class PhysicalLogicalTransactionStoreTest
         LifeSupport life = new LifeSupport();
         final LogFiles logFiles = LogFilesBuilder.builder( directory.databaseLayout(), fileSystem )
                 .withTransactionIdStore( transactionIdStore )
-                .withLogVersionRepository( mock( LogVersionRepository.class ) ).build();
+                .withLogVersionRepository( mock( LogVersionRepository.class ) )
+                .withLogEntryReader( logEntryReader() )
+                .build();
 
         life.start();
         life.add( logFiles );
@@ -185,7 +190,7 @@ class PhysicalLogicalTransactionStoreTest
                 authorId, timeStarted, timeCommitted, latestCommittedTxWhenStarted );
 
         LogicalTransactionStore txStore = new PhysicalLogicalTransactionStore( logFiles, positionCache,
-                new VersionAwareLogEntryReader<>(), monitors, true );
+                logEntryReader(), monitors, true );
 
         life.add( new BatchingTransactionAppender( logFiles, NO_ROTATION, positionCache,
                 transactionIdStore, DATABASE_HEALTH ) );
@@ -259,7 +264,9 @@ class PhysicalLogicalTransactionStoreTest
         LifeSupport life = new LifeSupport();
         final LogFiles logFiles = LogFilesBuilder.builder( directory.databaseLayout(), fileSystem )
                 .withTransactionIdStore( transactionIdStore )
-                .withLogVersionRepository( mock( LogVersionRepository.class ) ).build();
+                .withLogVersionRepository( mock( LogVersionRepository.class ) )
+                .withLogEntryReader( logEntryReader() )
+                .build();
         life.start();
         life.add( logFiles );
         try
@@ -274,8 +281,7 @@ class PhysicalLogicalTransactionStoreTest
 
         life = new LifeSupport();
         life.add( logFiles );
-        final LogicalTransactionStore store = new PhysicalLogicalTransactionStore( logFiles, positionCache,
-                new VersionAwareLogEntryReader<>(), monitors, true );
+        final LogicalTransactionStore store = new PhysicalLogicalTransactionStore( logFiles, positionCache, logEntryReader(), monitors, true );
 
         // WHEN
         life.start();
@@ -299,8 +305,7 @@ class PhysicalLogicalTransactionStoreTest
 
         LifeSupport life = new LifeSupport();
 
-        final LogicalTransactionStore txStore = new PhysicalLogicalTransactionStore( logFiles, cache,
-                new VersionAwareLogEntryReader<>(), monitors, true );
+        final LogicalTransactionStore txStore = new PhysicalLogicalTransactionStore( logFiles, cache, logEntryReader(), monitors, true );
 
         try
         {
@@ -328,8 +333,7 @@ class PhysicalLogicalTransactionStoreTest
 
         LifeSupport life = new LifeSupport();
 
-        final LogicalTransactionStore txStore = new PhysicalLogicalTransactionStore( logFiles, cache,
-                new VersionAwareLogEntryReader<>(), monitors, true );
+        final LogicalTransactionStore txStore = new PhysicalLogicalTransactionStore( logFiles, cache, logEntryReader(), monitors, true );
 
         try
         {

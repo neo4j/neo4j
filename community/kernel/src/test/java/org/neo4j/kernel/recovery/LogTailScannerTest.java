@@ -46,7 +46,6 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
-import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
@@ -58,6 +57,7 @@ import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static org.junit.Assert.assertEquals;
+import static org.neo4j.kernel.impl.api.TestCommandReaderFactory.logEntryReader;
 import static org.neo4j.kernel.recovery.LogTailScanner.NO_TRANSACTION_ID;
 
 @RunWith( Parameterized.class )
@@ -70,7 +70,8 @@ public class LogTailScannerTest
     @Rule
     public final RuleChain ruleChain = RuleChain.outerRule( fsRule ).around( testDirectory ).around( pageCacheRule );
 
-    private final LogEntryReader<ReadableClosablePositionAwareChannel> reader = new VersionAwareLogEntryReader<>();
+    private final LogEntryReader<ReadableClosablePositionAwareChannel> reader = logEntryReader();
+
     private LogTailScanner tailScanner;
 
     private final Monitors monitors = new Monitors();
@@ -99,6 +100,7 @@ public class LogTailScannerTest
         logFiles = LogFilesBuilder
                 .activeFilesBuilder( testDirectory.databaseLayout(), fsRule, pageCacheRule.getPageCache( fsRule ) )
                 .withLogVersionRepository( logVersionRepository )
+                .withLogEntryReader( logEntryReader() )
                 .build();
         tailScanner = new LogTailScanner( logFiles, reader, monitors );
     }

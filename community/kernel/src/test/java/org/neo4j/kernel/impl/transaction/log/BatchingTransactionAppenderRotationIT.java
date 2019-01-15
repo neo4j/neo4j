@@ -28,12 +28,15 @@ import java.time.Clock;
 import java.util.List;
 
 import org.neo4j.kernel.impl.api.TestCommand;
+import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.core.DatabasePanicEventGenerator;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
+import org.neo4j.kernel.impl.transaction.log.entry.InvalidLogEntryHandler;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader;
+import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotationImpl;
@@ -111,7 +114,10 @@ public class BatchingTransactionAppenderRotationIT
             SimpleTransactionIdStore transactionIdStore ) throws IOException
     {
         return LogFilesBuilder.builder( testDirectory.databaseLayout(), fileSystem.get() )
-                .withLogVersionRepository( logVersionRepository ).withTransactionIdStore( transactionIdStore ).build();
+                .withLogVersionRepository( logVersionRepository )
+                .withTransactionIdStore( transactionIdStore )
+                .withLogEntryReader( new VersionAwareLogEntryReader( new TestCommandReaderFactory(), InvalidLogEntryHandler.STRICT ) )
+                .build();
     }
 
     private static DatabaseHealth getDatabaseHealth()

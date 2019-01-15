@@ -60,6 +60,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.default_schema_provider;
+import static org.neo4j.kernel.impl.api.TestCommandReaderFactory.logEntryReader;
 
 @ExtendWith( {EphemeralFileSystemExtension.class, TestDirectoryExtension.class} )
 class StoreSizeBeanTest
@@ -78,7 +79,10 @@ class StoreSizeBeanTest
     @BeforeEach
     void setUp() throws IOException
     {
-        logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( testDirectory.databaseDir(), fs ).build();
+        logFiles = LogFilesBuilder
+                .logFilesBasedOnlyBuilder( testDirectory.databaseDir(), fs )
+                .withLogEntryReader( logEntryReader() )
+                .build();
 
         Dependencies dependencies = new Dependencies();
         Config config = Config.defaults( default_schema_provider, indexProvider.getProviderDescriptor().name() );

@@ -43,7 +43,6 @@ import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionLogWriter;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
 import org.neo4j.kernel.impl.transaction.log.entry.UnsupportedLogVersionException;
-import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
@@ -59,6 +58,7 @@ import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
+import static org.neo4j.kernel.impl.api.TestCommandReaderFactory.logEntryReader;
 import static org.neo4j.kernel.impl.transaction.log.GivenTransactionCursor.exhaust;
 import static org.neo4j.kernel.impl.transaction.log.LogPosition.start;
 import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
@@ -90,6 +90,7 @@ public class ReversedSingleFileTransactionCursorTest
         LogFiles logFiles = LogFilesBuilder.builder( directory.databaseLayout(), fs )
                                            .withLogVersionRepository( logVersionRepository )
                                            .withTransactionIdStore( transactionIdStore )
+                                           .withLogEntryReader( logEntryReader() )
                                            .build();
         life.add( logFiles );
         logFile = logFiles.getLogFile();
@@ -157,8 +158,7 @@ public class ReversedSingleFileTransactionCursorTest
         // when
         try ( ReadAheadLogChannel channel = (ReadAheadLogChannel) logFile.getReader( start( 0 ) ) )
         {
-            new ReversedSingleFileTransactionCursor( channel, new VersionAwareLogEntryReader<>(),
-                    false, monitor );
+            new ReversedSingleFileTransactionCursor( channel, logEntryReader(), false, monitor );
             fail( "Should've failed" );
         }
         catch ( IllegalArgumentException e )
@@ -225,7 +225,7 @@ public class ReversedSingleFileTransactionCursorTest
         ReadAheadLogChannel fileReader = (ReadAheadLogChannel) logFile.getReader( start( 0 ), NO_MORE_CHANNELS );
         try
         {
-            return new ReversedSingleFileTransactionCursor( fileReader, new VersionAwareLogEntryReader<>(), failOnCorruptedLogFiles, monitor );
+            return new ReversedSingleFileTransactionCursor( fileReader, logEntryReader(), failOnCorruptedLogFiles, monitor );
         }
         catch ( UnsupportedLogVersionException e )
         {

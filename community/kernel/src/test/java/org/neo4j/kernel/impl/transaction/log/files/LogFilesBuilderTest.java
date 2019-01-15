@@ -44,6 +44,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.transaction_logs_root_path;
 import static org.neo4j.kernel.configuration.LayoutConfig.of;
+import static org.neo4j.kernel.impl.api.TestCommandReaderFactory.logEntryReader;
 import static org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder.activeFilesBuilder;
 import static org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder.builder;
 import static org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder.logFilesBasedOnlyBuilder;
@@ -69,7 +70,8 @@ class LogFilesBuilderTest
     @Test
     void buildActiveFilesOnlyContext() throws IOException
     {
-        TransactionLogFilesContext context = activeFilesBuilder( testDirectory.databaseLayout(), fileSystem, pageCache ).buildContext();
+        TransactionLogFilesContext context =
+                activeFilesBuilder( testDirectory.databaseLayout(), fileSystem, pageCache ).withLogEntryReader( logEntryReader() ).buildContext();
 
         assertEquals( fileSystem, context.getFileSystem() );
         assertNotNull( context.getLogEntryReader() );
@@ -82,7 +84,9 @@ class LogFilesBuilderTest
     @Test
     void buildFilesBasedContext() throws IOException
     {
-        TransactionLogFilesContext context = logFilesBasedOnlyBuilder( storeDirectory, fileSystem ).buildContext();
+        TransactionLogFilesContext context = logFilesBasedOnlyBuilder( storeDirectory, fileSystem )
+                .withLogEntryReader( logEntryReader() )
+                .buildContext();
         assertEquals( fileSystem, context.getFileSystem() );
         assertSame( LogFileCreationMonitor.NO_MONITOR, context.getLogFileCreationMonitor() );
     }
@@ -91,8 +95,10 @@ class LogFilesBuilderTest
     void buildDefaultContext() throws IOException
     {
         TransactionLogFilesContext context = builder( testDirectory.databaseLayout(), fileSystem )
-                        .withLogVersionRepository( new SimpleLogVersionRepository( 2 ) )
-                        .withTransactionIdStore( new SimpleTransactionIdStore() ).buildContext();
+                .withLogVersionRepository( new SimpleLogVersionRepository( 2 ) )
+                .withTransactionIdStore( new SimpleTransactionIdStore() )
+                .withLogEntryReader( logEntryReader() )
+                .buildContext();
         assertEquals( fileSystem, context.getFileSystem() );
         assertNotNull( context.getLogEntryReader() );
         assertSame( LogFileCreationMonitor.NO_MONITOR, context.getLogFileCreationMonitor() );
@@ -110,8 +116,10 @@ class LogFilesBuilderTest
         dependencies.satisfyDependency( logVersionRepository );
         dependencies.satisfyDependency( transactionIdStore );
 
-        TransactionLogFilesContext context =
-                builder( testDirectory.databaseLayout(), fileSystem ).withDependencies( dependencies ).buildContext();
+        TransactionLogFilesContext context = builder( testDirectory.databaseLayout(), fileSystem )
+                .withDependencies( dependencies )
+                .withLogEntryReader( logEntryReader() )
+                .buildContext();
 
         assertEquals( fileSystem, context.getFileSystem() );
         assertNotNull( context.getLogEntryReader() );
@@ -122,7 +130,7 @@ class LogFilesBuilderTest
     }
 
     @Test
-    void buildContextWithCustomLogFilesLocations() throws Throwable
+    void buildContextWithCustomLogFilesLocations()
     {
         String customLogLocation = "customLogLocation";
         assertThrows( InvalidSettingException.class, () ->
@@ -142,7 +150,9 @@ class LogFilesBuilderTest
         Config customLogLocationConfig = Config.defaults( transaction_logs_root_path, customLogDirectory.getAbsolutePath() );
         LogFiles logFiles = builder( testDirectory.databaseLayout( of( customLogLocationConfig ) ), fileSystem )
                 .withLogVersionRepository( new SimpleLogVersionRepository() )
-                .withTransactionIdStore( new SimpleTransactionIdStore() ).build();
+                .withTransactionIdStore( new SimpleTransactionIdStore() )
+                .withLogEntryReader( logEntryReader() )
+                .build();
         logFiles.init();
         logFiles.start();
 
@@ -153,28 +163,33 @@ class LogFilesBuilderTest
     @Test
     void failToBuildFullContextWithoutLogVersionRepo()
     {
-        assertThrows( NullPointerException.class,
-                () -> builder( testDirectory.databaseLayout(), fileSystem ).withTransactionIdStore( new SimpleTransactionIdStore() ).buildContext() );
+        assertThrows( NullPointerException.class, () -> builderWithTestLogReader( testDirectory.databaseLayout(), fileSystem ).withTransactionIdStore(
+                new SimpleTransactionIdStore() ).buildContext() );
     }
 
     @Test
     void failToBuildFullContextWithoutTransactionIdStore()
     {
-        assertThrows( NullPointerException.class,
-                () -> builder( testDirectory.databaseLayout(), fileSystem ).withLogVersionRepository( new SimpleLogVersionRepository( 2 ) ).buildContext() );
+        assertThrows( NullPointerException.class, () -> builderWithTestLogReader( testDirectory.databaseLayout(), fileSystem ).withLogVersionRepository(
+                new SimpleLogVersionRepository( 2 ) ).buildContext() );
     }
 
     @Test
     void fileBasedOperationsContextFailOnLastCommittedTransactionIdAccess()
     {
-        assertThrows( UnsupportedOperationException.class,
-                () -> logFilesBasedOnlyBuilder( storeDirectory, fileSystem ).buildContext().getLastCommittedTransactionId() );
+        assertThrows( UnsupportedOperationException.class, () -> logFilesBasedOnlyBuilder( storeDirectory, fileSystem ).withLogEntryReader(
+                logEntryReader() ).buildContext().getLastCommittedTransactionId() );
     }
 
     @Test
     void fileBasedOperationsContextFailOnLogVersionRepositoryAccess()
     {
         assertThrows( UnsupportedOperationException.class,
-                () -> logFilesBasedOnlyBuilder( storeDirectory, fileSystem ).buildContext().getLogVersionRepository() );
+                () -> logFilesBasedOnlyBuilder( storeDirectory, fileSystem ).withLogEntryReader( logEntryReader() ).buildContext().getLogVersionRepository() );
+    }
+
+    private LogFilesBuilder builderWithTestLogReader( DatabaseLayout databaseLayout, FileSystemAbstraction fileSystem )
+    {
+        return builder( databaseLayout, fileSystem ).withLogEntryReader( logEntryReader() );
     }
 }

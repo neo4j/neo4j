@@ -178,7 +178,7 @@ public class StubStorageCursors implements StorageReader
     @Override
     public long nodesGetCount()
     {
-        throw new UnsupportedOperationException( "Not implemented yet" );
+        return nodeData.size();
     }
 
     @Override

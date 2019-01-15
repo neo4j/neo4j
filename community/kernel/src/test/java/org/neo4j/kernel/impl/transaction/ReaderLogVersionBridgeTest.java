@@ -32,9 +32,12 @@ import java.nio.ByteBuffer;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.log.LogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.ReaderLogVersionBridge;
+import org.neo4j.kernel.impl.transaction.log.entry.InvalidLogEntryHandler;
+import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.test.rule.TestDirectory;
@@ -134,6 +137,8 @@ public class ReaderLogVersionBridgeTest
 
     private LogFiles prepareLogFiles() throws IOException
     {
-        return LogFilesBuilder.logFilesBasedOnlyBuilder( testDirectory.directory(), fs ).build();
+        return LogFilesBuilder.logFilesBasedOnlyBuilder( testDirectory.directory(), fs )
+                .withLogEntryReader( new VersionAwareLogEntryReader( new TestCommandReaderFactory(), InvalidLogEntryHandler.STRICT ) )
+                .build();
     }
 }

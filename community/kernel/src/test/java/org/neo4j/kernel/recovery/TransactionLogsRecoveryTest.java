@@ -57,7 +57,6 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
-import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -76,6 +75,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.neo4j.kernel.impl.api.TestCommandReaderFactory.logEntryReader;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter.writeLogHeader;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_LOG_VERSION;
@@ -111,6 +111,7 @@ class RecoveryTest
         logFiles = LogFilesBuilder.builder( directory.databaseLayout(), fileSystem )
                 .withLogVersionRepository( logVersionRepository )
                 .withTransactionIdStore( transactionIdStore )
+                .withLogEntryReader( logEntryReader() )
                 .build();
     }
 
@@ -154,7 +155,7 @@ class RecoveryTest
         try
         {
             StorageEngine storageEngine = mock( StorageEngine.class );
-            final LogEntryReader<ReadableClosablePositionAwareChannel> reader = new VersionAwareLogEntryReader<>();
+            final LogEntryReader<ReadableClosablePositionAwareChannel> reader = logEntryReader();
             LogTailScanner tailScanner = getTailScanner( logFiles, reader );
 
             TransactionMetadataCache metadataCache = new TransactionMetadataCache();
@@ -254,7 +255,7 @@ class RecoveryTest
         try
         {
             StorageEngine storageEngine = mock( StorageEngine.class );
-            final LogEntryReader<ReadableClosablePositionAwareChannel> reader = new VersionAwareLogEntryReader<>();
+            final LogEntryReader<ReadableClosablePositionAwareChannel> reader = logEntryReader();
             LogTailScanner tailScanner = getTailScanner( logFiles, reader );
 
             TransactionMetadataCache metadataCache = new TransactionMetadataCache();
@@ -409,7 +410,7 @@ class RecoveryTest
         try
         {
             StorageEngine storageEngine = mock( StorageEngine.class );
-            final LogEntryReader<ReadableClosablePositionAwareChannel> reader = new VersionAwareLogEntryReader<>();
+            final LogEntryReader<ReadableClosablePositionAwareChannel> reader = logEntryReader();
             LogTailScanner tailScanner = getTailScanner( logFiles, reader );
 
             TransactionMetadataCache metadataCache = new TransactionMetadataCache();

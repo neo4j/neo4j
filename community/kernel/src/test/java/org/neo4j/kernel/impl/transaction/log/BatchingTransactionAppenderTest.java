@@ -37,7 +37,6 @@ import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
-import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFiles;
@@ -68,6 +67,7 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
+import static org.neo4j.kernel.impl.api.TestCommandReaderFactory.logEntryReader;
 import static org.neo4j.kernel.impl.transaction.log.rotation.LogRotation.NO_ROTATION;
 
 public class BatchingTransactionAppenderTest
@@ -108,7 +108,7 @@ public class BatchingTransactionAppenderTest
         appender.append( new TransactionToApply( transaction ), logAppendEvent );
 
         // THEN
-        final LogEntryReader<ReadableLogChannel> logEntryReader = new VersionAwareLogEntryReader<>();
+        final LogEntryReader<ReadableLogChannel> logEntryReader = logEntryReader();
         try ( PhysicalTransactionCursor<ReadableLogChannel> reader =
                       new PhysicalTransactionCursor<>( channel, logEntryReader ) )
         {
@@ -180,7 +180,7 @@ public class BatchingTransactionAppenderTest
                 logAppendEvent );
 
         // THEN
-        LogEntryReader<ReadableLogChannel> logEntryReader = new VersionAwareLogEntryReader<>();
+        LogEntryReader<ReadableLogChannel> logEntryReader = logEntryReader();
         try ( PhysicalTransactionCursor<ReadableLogChannel> reader =
                       new PhysicalTransactionCursor<>( channel, logEntryReader ) )
         {

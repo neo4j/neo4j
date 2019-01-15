@@ -37,7 +37,8 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 
 class VersionAwareLogEntryReaderTest
 {
-    private final LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader = new VersionAwareLogEntryReader<>();
+    private final LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader =
+            new VersionAwareLogEntryReader<>( new TestCommandReaderFactory(), InvalidLogEntryHandler.STRICT );
 
     @Test
     void shouldReadAStartLogEntry() throws IOException

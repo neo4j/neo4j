@@ -41,8 +41,8 @@ import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommand;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
-import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFileCreationMonitor;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
@@ -67,6 +67,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.rules.RuleChain.outerRule;
 import static org.mockito.Mockito.mock;
+import static org.neo4j.kernel.impl.api.TestCommandReaderFactory.logEntryReader;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
 import static org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent.NULL;
 
@@ -87,7 +88,9 @@ public class TransactionLogAppendAndRotateIT
         LogFiles logFiles = LogFilesBuilder.builder( directory.databaseLayout(), fileSystemRule.get() )
                 .withLogVersionRepository( logVersionRepository )
                 .withRotationThreshold( ByteUnit.mebiBytes( 1 ) )
-                .withTransactionIdStore( new SimpleTransactionIdStore() ).build();
+                .withTransactionIdStore( new SimpleTransactionIdStore() )
+                .withLogEntryReader( logEntryReader() )
+                .build();
         life.add( logFiles );
         final AtomicBoolean end = new AtomicBoolean();
         AllTheMonitoring monitoring = new AllTheMonitoring( end, 100 );
@@ -143,7 +146,7 @@ public class TransactionLogAppendAndRotateIT
     {
         try ( ReadableLogChannel reader = logFile.getReader( new LogPosition( logVersion, LOG_HEADER_SIZE ) ) )
         {
-            VersionAwareLogEntryReader<ReadableLogChannel> entryReader = new VersionAwareLogEntryReader<>();
+            LogEntryReader<ReadableLogChannel> entryReader = logEntryReader();
             LogEntry entry;
             boolean inTx = false;
             int transactions = 0;
