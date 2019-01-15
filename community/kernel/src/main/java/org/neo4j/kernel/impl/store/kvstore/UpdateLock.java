@@ -17,41 +17,27 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.locking;
+package org.neo4j.kernel.impl.store.kvstore;
 
-import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-public class LockWrapper implements AutoCloseable
+class UpdateLock extends ReentrantReadWriteLock
 {
-    public static LockWrapper readLock( java.util.concurrent.locks.ReadWriteLock lock )
+    UpdateLock()
     {
-        return new LockWrapper( lock.readLock() );
-    }
-
-    public static LockWrapper writeLock( java.util.concurrent.locks.ReadWriteLock lock )
-    {
-        return new LockWrapper( lock.writeLock() );
-    }
-
-    private java.util.concurrent.locks.Lock lock;
-
-    public LockWrapper( java.util.concurrent.locks.Lock lock )
-    {
-        (this.lock = lock).lock();
+        super( true /* always fair */ );
     }
 
     @Override
-    public void close()
+    public String toString()
     {
-        if ( lock != null )
-        {
-            lock.unlock();
-            lock = null;
-        }
-    }
-
-    public Lock get()
-    {
-        return lock;
+        return "AbstractKeyValyeStore-UpdateLock[owner = " + getOwner() +
+                ", is write locked = " + isWriteLocked() +
+                ", writer holds count = " + getWriteHoldCount() +
+                ", read holds count = " + getReadHoldCount() +
+                ", readers count = " + getReadLockCount() +
+                ", threads waiting for write lock = " + getQueuedWriterThreads() +
+                ", threads waiting for read lock = " + getQueuedReaderThreads() +
+                "] " + super.toString();
     }
 }
