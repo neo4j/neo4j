@@ -34,7 +34,6 @@ import org.neo4j.kernel.impl.store.format.standard.StandardV3_4;
 import org.neo4j.kernel.impl.store.format.standard.StandardV4_0;
 
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
@@ -50,7 +49,7 @@ class SchemaIndexMigratorTest
     private final SchemaIndexMigrator migrator = new SchemaIndexMigrator( fs, indexProvider );
 
     @Test
-    void schemaAndLabelIndexesNotRemovedAfterSuccessfulMigration() throws IOException
+    void schemaAndLabelIndexesRemovedAfterSuccessfulMigration() throws IOException
     {
         IndexDirectoryStructure directoryStructure = mock( IndexDirectoryStructure.class );
         File indexProviderRootDirectory = databaseLayout.file( "just-some-directory" );
@@ -64,6 +63,6 @@ class SchemaIndexMigratorTest
 
         migrator.moveMigratedFiles( migrationLayout, databaseLayout, StandardV3_4.STORE_VERSION, StandardV4_0.STORE_VERSION );
 
-        verify( fs, never() ).deleteRecursively( indexProviderRootDirectory );
+        verify( fs ).deleteRecursively( indexProviderRootDirectory );
     }
 }

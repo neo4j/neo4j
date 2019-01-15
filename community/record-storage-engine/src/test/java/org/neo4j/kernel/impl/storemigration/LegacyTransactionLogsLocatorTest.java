@@ -24,6 +24,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.TestDirectoryExtension;
@@ -42,8 +43,8 @@ class LegacyTransactionLogsLocatorTest
     @Test
     void transactionLogsDirectoryEqualsToDatabaseDirectoryWithDefaultConfiguration()
     {
-        LegacyTransactionLogsLocator logsLocator = new LegacyTransactionLogsLocator( Config.defaults(), testDirectory.directory() );
-        assertEquals( testDirectory.directory(), logsLocator.getTransactionLogsDirectory() );
+        LegacyTransactionLogsLocator logsLocator = new LegacyTransactionLogsLocator( Config.defaults(), testDirectory.databaseLayout() );
+        assertEquals( testDirectory.databaseDir(), logsLocator.getTransactionLogsDirectory() );
     }
 
     @Test
@@ -51,7 +52,18 @@ class LegacyTransactionLogsLocatorTest
     {
         File customDirectory = testDirectory.directory( "customDirectory" );
         Config config = Config.defaults( stringMap( LEGACY_TX_LOGS_LOCATION_SETTING, customDirectory.getAbsolutePath() ) );
-        LegacyTransactionLogsLocator logsLocator = new LegacyTransactionLogsLocator( config, testDirectory.directory() );
+        LegacyTransactionLogsLocator logsLocator = new LegacyTransactionLogsLocator( config, testDirectory.databaseLayout() );
         assertEquals( customDirectory, logsLocator.getTransactionLogsDirectory() );
     }
+
+    @Test
+    void transactionLogsDirectoryEqualsToDatabaseDirectoryForNonDefaultDatabase()
+    {
+        File customDirectory = testDirectory.directory( "customDirectory" );
+        Config config = Config.defaults( stringMap( LEGACY_TX_LOGS_LOCATION_SETTING, customDirectory.getAbsolutePath() ) );
+        DatabaseLayout systemDbLayout = testDirectory.databaseLayout( "system" );
+        LegacyTransactionLogsLocator logsLocator = new LegacyTransactionLogsLocator( config, systemDbLayout );
+        assertEquals( systemDbLayout.databaseDirectory(), logsLocator.getTransactionLogsDirectory() );
+    }
+
 }

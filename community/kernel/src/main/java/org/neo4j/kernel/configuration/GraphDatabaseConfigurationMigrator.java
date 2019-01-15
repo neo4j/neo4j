@@ -41,6 +41,8 @@ public class GraphDatabaseConfigurationMigrator extends BaseConfigurationMigrato
             @Override
             public void setValueWithOldSetting( String value, Map<String,String> rawConfiguration )
             {
+                // we set back into the map since our auto migration will try to use old value for automatic migration
+                rawConfiguration.putIfAbsent( "dbms.directories.tx_log", value );
             }
         } );
     }

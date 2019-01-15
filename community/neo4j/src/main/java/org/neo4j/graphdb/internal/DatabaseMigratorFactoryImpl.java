@@ -70,7 +70,7 @@ public class DatabaseMigratorFactoryImpl implements org.neo4j.storageengine.migr
         final Monitors monitors = dependencyResolver.resolveDependency( Monitors.class );
         final LogFileCreationMonitor logFileCreationMonitor = monitors.newMonitor( LogFileCreationMonitor.class );
         final LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader = new VersionAwareLogEntryReader<>();
-        final LegacyTransactionLogsLocator logsLocator = new LegacyTransactionLogsLocator( config, databaseLayout.databaseDirectory() );
+        final LegacyTransactionLogsLocator logsLocator = new LegacyTransactionLogsLocator( config, databaseLayout );
         final LogFiles logFiles;
         try
         {

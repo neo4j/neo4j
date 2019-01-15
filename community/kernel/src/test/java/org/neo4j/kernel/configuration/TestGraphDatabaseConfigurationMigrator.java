@@ -23,7 +23,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.util.Collections;
 import java.util.Map;
 
 import org.neo4j.logging.AssertableLogProvider;
@@ -57,8 +56,9 @@ class TestGraphDatabaseConfigurationMigrator
     @Test
     void migrateOldTransactionLogsDirectories()
     {
-        Map<String,String> migratedProperties = migrator.apply( stringMap( "dbms.directories.tx_log", "C:/" ), getLog() );
-        assertEquals( migratedProperties, Collections.emptyMap() );
+        Map<String,String> oldConfigMap = stringMap( "dbms.directories.tx_log", "C:/" );
+        Map<String,String> migratedProperties = migrator.apply( oldConfigMap, getLog() );
+        assertEquals( migratedProperties, oldConfigMap );
 
         assertContainsWarningMessage("WARNING! Deprecated configuration options used. See manual for details");
         assertContainsWarningMessage("dbms.directories.tx_log is not supported anymore. " +

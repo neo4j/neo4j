@@ -89,6 +89,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
@@ -344,6 +345,17 @@ public class StoreUpgraderTest
     }
 
     @Test
+    public void upgradeFailsIfMigrationIsNotAllowed() throws Exception
+    {
+        PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
+        UpgradableDatabase upgradableDatabase = getUpgradableDatabase( pageCache );
+
+        AssertableLogProvider logProvider = new AssertableLogProvider();
+        assertThrows( UpgradeNotAllowedException.class, () -> newUpgrader( upgradableDatabase, pageCache, Config.defaults(),
+                new VisibleMigrationProgressMonitor( logProvider.getLog( "test" ) ) ).migrateIfNeeded( databaseLayout ) );
+    }
+
+    @Test
     public void upgradeMoveTransactionLogs() throws IOException
     {
         File txRoot = directory.directory( "customTxRoot" );
@@ -492,7 +504,7 @@ public class StoreUpgraderTest
         SchemaIndexMigrator indexMigrator = new SchemaIndexMigrator( fileSystem, IndexProvider.EMPTY );
 
         StoreUpgrader upgrader = new StoreUpgrader( upgradableDatabase, progressMonitor, config, fileSystem, pageCache, NullLogProvider.getInstance(),
-                new LegacyTransactionLogsLocator( config, databaseLayout.databaseDirectory() ) );
+                new LegacyTransactionLogsLocator( config, databaseLayout ) );
         upgrader.addParticipant( indexMigrator );
         upgrader.addParticipant( NOT_PARTICIPATING );
         upgrader.addParticipant( NOT_PARTICIPATING );

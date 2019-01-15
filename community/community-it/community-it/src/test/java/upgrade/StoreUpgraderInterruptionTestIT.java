@@ -107,7 +107,7 @@ public class StoreUpgraderInterruptionTestIT
         jobScheduler = new ThreadPoolJobScheduler();
         workingDatabaseLayout = directory.databaseLayout();
         prepareDirectory = directory.directory( "prepare" );
-        legacyTransactionLogsLocator = new LegacyTransactionLogsLocator( Config.defaults(), workingDatabaseLayout.databaseDirectory() );
+        legacyTransactionLogsLocator = new LegacyTransactionLogsLocator( Config.defaults(), workingDatabaseLayout );
     }
 
     @After

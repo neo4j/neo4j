@@ -32,7 +32,9 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.store.format.Capability;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
+import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.internal.Version;
 import org.neo4j.logging.Log;
@@ -129,10 +131,20 @@ public class StoreUpgrader
         {
             migrate( layout, migrationStructure, migrationStateFile );
         }
-        else if ( !RecordFormatSelector.isStoreAndConfigFormatsCompatible( config, layout, fileSystem, pageCache, logProvider ) )
+        else if ( isUpgradeRequired( layout ) )
         {
             throw new UpgradeNotAllowedException();
         }
+    }
+
+    private boolean isUpgradeRequired( DatabaseLayout layout )
+    {
+        RecordFormats currentStoreFormat = RecordFormatSelector.selectForStore( layout, fileSystem, pageCache, logProvider );
+        if ( currentStoreFormat != null && currentStoreFormat.hasCapability( Capability.LUCENE_5 ) )
+        {
+            throw new UpgradeNotAllowedException( "Upgrade is required to migrate store to new major version." );
+        }
+        return !RecordFormatSelector.isStoreAndConfigFormatsCompatible( config, layout, fileSystem, pageCache, logProvider );
     }
 
     private void migrate( DatabaseLayout dbDirectoryLayout, DatabaseLayout migrationLayout, File migrationStateFile )

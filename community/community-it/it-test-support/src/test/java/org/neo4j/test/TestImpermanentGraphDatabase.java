@@ -19,9 +19,9 @@
  */
 package org.neo4j.test;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -30,47 +30,47 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.Iterables;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class TestImpermanentGraphDatabase
+class TestImpermanentGraphDatabase
 {
     private GraphDatabaseService db;
 
-    @Before
-    public void createDb()
+    @BeforeEach
+    void createDb()
     {
         db = new TestGraphDatabaseFactory().newImpermanentDatabase();
     }
 
-    @After
-    public void tearDown()
+    @AfterEach
+    void tearDown()
     {
         db.shutdown();
     }
 
     @Test
-    public void should_keep_data_between_start_and_shutdown()
+    void should_keep_data_between_start_and_shutdown()
     {
         createNode();
 
-        assertEquals( "Expected one new node", 1, nodeCount() );
+        assertEquals( 1, nodeCount(), "Expected one new node" );
     }
 
     @Test
-    public void data_should_not_survive_shutdown()
+    void data_should_not_survive_shutdown()
     {
         createNode();
         db.shutdown();
 
         createDb();
 
-        assertEquals( "Should not see anything.", 0, nodeCount() );
+        assertEquals( 0, nodeCount(), "Should not see anything." );
     }
 
     @Test
-    public void should_remove_all_data()
+    void should_remove_all_data()
     {
         try ( Transaction tx = db.beginTx() )
         {

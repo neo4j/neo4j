@@ -23,9 +23,11 @@ import java.io.File;
 import java.util.Optional;
 import java.util.function.Function;
 
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.configuration.Config;
 
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.database_path;
 import static org.neo4j.kernel.configuration.Settings.pathSetting;
 
@@ -33,19 +35,23 @@ public class LegacyTransactionLogsLocator
 {
     public static final String LEGACY_TX_LOGS_LOCATION_SETTING = "dbms.directories.tx_log";
     private final Config config;
-    private final File databaseDirectory;
+    private final DatabaseLayout databaseLayout;
 
-    public LegacyTransactionLogsLocator( Config config, File databaseDirectory )
+    public LegacyTransactionLogsLocator( Config config, DatabaseLayout databaseLayout )
     {
         this.config = config;
-        this.databaseDirectory = databaseDirectory;
+        this.databaseLayout = databaseLayout;
     }
 
     public File getTransactionLogsDirectory()
     {
+        File databaseDirectory = databaseLayout.databaseDirectory();
+        if ( !databaseLayout.getDatabaseName().equals( DEFAULT_DATABASE_NAME ) )
+        {
+            return databaseDirectory;
+        }
         Optional<String> customOldLogsLocation = config.getRaw( LEGACY_TX_LOGS_LOCATION_SETTING );
-        return customOldLogsLocation.map( mapLegacyLocationValue() )
-                .orElse( databaseDirectory );
+        return customOldLogsLocation.map( mapLegacyLocationValue() ).orElse( databaseDirectory );
     }
 
     private Function<String,File> mapLegacyLocationValue()

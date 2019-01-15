@@ -43,9 +43,9 @@ public enum Capability
     RELATIONSHIP_TYPE_3BYTES( CapabilityType.FORMAT, CapabilityType.STORE ),
 
     /**
-     * Lucene version 3.x
+     * Lucene version 7.x
      */
-    LUCENE_3( CapabilityType.INDEX ),
+    LUCENE_7( CapabilityType.INDEX ),
 
     /**
      * Lucene version 5.x
