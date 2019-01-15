@@ -97,7 +97,7 @@ public interface SchemaRuleAccess
 
     /**
      * Deletes the schema rule at the location given by the persistent id of the schema rule given as an argument.
-     * This is a non-transactional opetation that is primarily used for testing.
+     * This is a non-transactional operation that is primarily used for testing.
      */
     @VisibleForTesting
     void deleteSchemaRule( SchemaRule rule );
