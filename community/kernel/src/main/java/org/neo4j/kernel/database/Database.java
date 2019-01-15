@@ -35,6 +35,7 @@ import org.neo4j.dbms.database.DatabaseConfig;
 import org.neo4j.dbms.database.DatabasePageCache;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.Service;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -112,6 +113,7 @@ import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointerMonitor;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckpointerLifecycle;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.DefaultCheckPointMonitor;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.StoreCopyCheckPointMutex;
+import org.neo4j.kernel.impl.transaction.log.entry.InvalidLogEntryHandler;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFileCreationMonitor;
@@ -148,6 +150,7 @@ import org.neo4j.resources.CpuClock;
 import org.neo4j.resources.HeapAllocation;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.StorageEngine;
+import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.StoreFileMetadata;
@@ -333,7 +336,9 @@ public class Database extends LifecycleAdapter
             upgradeStore();
 
             // Check the tail of transaction logs and validate version
-            final LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader = new VersionAwareLogEntryReader<>();
+            StorageEngineFactory storageEngineFactory = selectStorageEngine();
+            final LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader =
+                    new VersionAwareLogEntryReader<>( storageEngineFactory.commandReader(), InvalidLogEntryHandler.STRICT );
 
             LogFiles logFiles =
                     LogFilesBuilder.builder( databaseLayout, fs ).withLogEntryReader( logEntryReader ).withLogFileMonitor( physicalLogMonitor ).withConfig(
@@ -356,7 +361,7 @@ public class Database extends LifecycleAdapter
             Supplier<KernelTransactionsSnapshot> transactionsSnapshotSupplier = () -> kernelModule.kernelTransactions().get();
             idController.initialize( transactionsSnapshotSupplier );
 
-            storageEngine = buildStorageEngine( databasePageCache, databaseSchemaState, versionContextSupplier );
+            storageEngine = buildStorageEngine( databasePageCache, databaseSchemaState, versionContextSupplier, storageEngineFactory );
             life.add( logFiles );
 
             // Label index
@@ -482,25 +487,33 @@ public class Database extends LifecycleAdapter
         databaseMigrator.migrate();
     }
 
-    private StorageEngine buildStorageEngine( PageCache pageCache, SchemaState schemaState, VersionContextSupplier versionContextSupplier )
+    private StorageEngine buildStorageEngine( PageCache pageCache, SchemaState schemaState, VersionContextSupplier versionContextSupplier,
+            StorageEngineFactory storageEngineFactory )
     {
-        // TODO this will simply need to wait until we flip the relationship between kernel and record-storage
-        StorageEngine storageEngine = null;
-        return storageEngine;
+        Dependencies storageEngineDependencies = new Dependencies();
+        storageEngineDependencies.satisfyDependencies( databaseLayout, config, pageCache, fs, logProvider, tokenHolders, schemaState, constraintSemantics,
+                lockService, databaseHealth, idGeneratorFactory, idController, versionContextSupplier );
 
-//        RecordStorageEngine storageEngine =
-//                new RecordStorageEngine( databaseLayout, config, pageCache, fs, logProvider, tokenHolders,
-//                        schemaState, constraintSemantics,
-//                        lockService, databaseHealth,
-//                        idGeneratorFactory, idController,
-//                        versionContextSupplier );
-//
-//        // We pretend that the storage engine abstract hides all details within it. Whereas that's mostly
-//        // true it's not entirely true for the time being. As long as we need this call below, which
-//        // makes available one or more internal things to the outside world, there are leaks to plug.
-//        storageEngine.satisfyDependencies( databaseDependencies );
-//
-//        return life.add( storageEngine );
+        StorageEngine storageEngine = storageEngineFactory.instantiate( storageEngineDependencies, databaseDependencies );
+        life.add( storageEngine );
+        return storageEngine;
+    }
+
+    public static StorageEngineFactory selectStorageEngine()
+    {
+        StorageEngineFactory highest = null;
+        for ( StorageEngineFactory engine : Service.load( StorageEngineFactory.class ) )
+        {
+            if ( highest == null || engine.priority() > highest.priority() )
+            {
+                highest = engine;
+            }
+        }
+        if ( highest == null )
+        {
+            throw new IllegalStateException( "No storage engines found" );
+        }
+        return highest;
     }
 
     /**
