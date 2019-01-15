@@ -16,7 +16,9 @@
  */
 package org.neo4j.cypher.internal.v4_0.ast
 
+import org.neo4j.cypher.internal.v4_0.expressions
 import org.neo4j.cypher.internal.v4_0.expressions._
+import org.neo4j.cypher.internal.v4_0.util.symbols.CypherType
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherTestSupport
 import org.neo4j.cypher.internal.v4_0.util.{DummyPosition, InputPosition}
 
@@ -75,4 +77,66 @@ trait AstConstructionTestSupport extends CypherTestSupport {
 
   def function(name: String, args: Expression*): FunctionInvocation =  FunctionInvocation(FunctionName(name)(pos),
                                                                                           distinct = false, args.toIndexedSeq)(pos)
+
+  def literalMap(keyValues: (String,Expression)*): MapExpression =
+    MapExpression(keyValues.map(kv => (PropertyKeyName(kv._1)(pos), kv._2)))(pos)
+
+  def lessThan(lhs: Expression, rhs: Expression): LessThan = LessThan(lhs, rhs)(pos)
+
+  def lessThanOrEqual(lhs: Expression, rhs: Expression): LessThanOrEqual = LessThanOrEqual(lhs, rhs)(pos)
+
+  def greaterThan(lhs: Expression, rhs: Expression): GreaterThan = GreaterThan(lhs, rhs)(pos)
+
+  def greaterThanOrEqual(lhs: Expression, rhs: Expression): GreaterThanOrEqual = GreaterThanOrEqual(lhs, rhs)(pos)
+
+  def regex(lhs: Expression, rhs: Expression): RegexMatch = RegexMatch(lhs, rhs)(pos)
+
+  def startsWith(lhs: Expression, rhs: Expression): StartsWith = StartsWith(lhs, rhs)(pos)
+
+  def endsWith(lhs: Expression, rhs: Expression): EndsWith = EndsWith(lhs, rhs)(pos)
+
+  def contains(lhs: Expression, rhs: Expression): Contains = Contains(lhs, rhs)(pos)
+
+  def in(lhs: Expression, rhs: Expression): In = In(lhs, rhs)(pos)
+
+  def coerceTo(expression: Expression, typ: CypherType): CoerceTo = CoerceTo(expression, typ)
+
+  def isNull(expression: Expression): IsNull = expressions.IsNull(expression)(pos)
+
+  def isNotNull(expression: Expression): IsNotNull = expressions.IsNotNull(expression)(pos)
+
+  def sliceFrom(list: Expression, from: Expression): ListSlice = ListSlice(list, Some(from), None)(pos)
+
+  def sliceTo(list: Expression, to: Expression): ListSlice = ListSlice(list, None, Some(to))(pos)
+
+  def sliceFull(list: Expression, from: Expression, to: Expression): ListSlice = ListSlice(list, Some(from), Some(to))(pos)
+
+  def singleInList(variable: String, collection: Expression, predicate: Expression): SingleIterablePredicate =
+    SingleIterablePredicate(varFor(variable), collection, Some(predicate) )(pos)
+
+  def noneInList(variable: String, collection: Expression, predicate: Expression): NoneIterablePredicate =
+    NoneIterablePredicate(varFor(variable), collection, Some(predicate) )(pos)
+
+  def anyInList(variable: String, collection: Expression, predicate: Expression): AnyIterablePredicate =
+    AnyIterablePredicate(varFor(variable), collection, Some(predicate) )(pos)
+
+  def allInList(variable: String, collection: Expression, predicate: Expression): AllIterablePredicate =
+    AllIterablePredicate(varFor(variable), collection, Some(predicate) )(pos)
+
+  def filter(variable: String, collection: Expression, predicate: Expression): FilterExpression =
+    FilterExpression(varFor(variable), collection, Some(predicate) )(pos)
+
+  def extract(variable: String, collection: Expression, extract: Expression): ExtractExpression =
+    ExtractExpression(varFor(variable), collection, None, Some(extract) )(pos)
+
+  def reduce(accumulator: LogicalVariable, init: Expression, variable: LogicalVariable, collection: Expression, expression: Expression): ReduceExpression =
+    ReduceExpression(ReduceScope(accumulator, variable, expression)(pos), init,
+                     collection)(pos)
+
+  def listComprehension(variable: String,
+                                collection: Expression,
+                                predicate: Option[Expression],
+                                extractExpression: Option[Expression]): ListComprehension =
+    ListComprehension(varFor(variable), collection, predicate, extractExpression)(pos)
+
 }
