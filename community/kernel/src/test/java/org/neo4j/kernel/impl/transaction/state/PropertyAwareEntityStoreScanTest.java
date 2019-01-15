@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
+import org.apache.commons.lang3.mutable.MutableInt;
 import org.eclipse.collections.impl.block.factory.primitive.IntPredicates;
-import org.junit.Before;
 import org.junit.Test;
 
 import java.util.function.Supplier;
@@ -28,54 +28,43 @@ import java.util.function.Supplier;
 import org.neo4j.internal.kernel.api.PopulationProgress;
 import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.kernel.impl.locking.LockService;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageReader;
-import org.neo4j.kernel.impl.store.NeoStores;
-import org.neo4j.kernel.impl.store.NodeStore;
-import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.transaction.state.storeview.PropertyAwareEntityStoreScan;
 import org.neo4j.storageengine.api.StorageNodeCursor;
 import org.neo4j.storageengine.api.StorageReader;
+import org.neo4j.storageengine.api.StubStorageCursors;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 public class PropertyAwareEntityStoreScanTest
 {
     private final LockService locks = mock( LockService.class, RETURNS_MOCKS );
-    private final NodeStore nodeStore = mock( NodeStore.class );
-    private final PropertyStore propertyStore = mock( PropertyStore.class );
-    private final NeoStores neoStores = mock( NeoStores.class );
-
-    @Before
-    public void before()
-    {
-        when( neoStores.getNodeStore() ).thenReturn( nodeStore );
-        when( neoStores.getPropertyStore() ).thenReturn( propertyStore );
-    }
+    private final StubStorageCursors cursors = new StubStorageCursors();
 
     @Test
     public void shouldGiveBackCompletionPercentage()
     {
         // given
         long total = 10;
-        when( nodeStore.getHighId() ).thenReturn( total );
+        for ( long i = 0; i < total; i++ )
+        {
+            cursors.withNode( i );
+        }
 
+        MutableInt read = new MutableInt();
         final PercentageSupplier percentageSupplier = new PercentageSupplier();
         final PropertyAwareEntityStoreScan<StorageNodeCursor,RuntimeException> scan =
-                new PropertyAwareEntityStoreScan<StorageNodeCursor,RuntimeException>( new RecordStorageReader( neoStores ), total, IntPredicates.alwaysTrue(),
+                new PropertyAwareEntityStoreScan<StorageNodeCursor,RuntimeException>( cursors, total, IntPredicates.alwaysTrue(),
                         id -> locks.acquireNodeLock( id, LockService.LockType.READ_LOCK ) )
                 {
-                    private int read;
-
                     @Override
                     public boolean process( StorageNodeCursor node )
                     {
                         // then
-                        read++;
-                        float expected = (float) read / total;
+                        read.incrementAndGet();
+                        float expected = (float) read.intValue() / total;
                         float actual = percentageSupplier.get();
                         assertEquals( String.format( "%f==%f", expected, actual ), expected, actual, 0.0 );
                         return false;
@@ -91,6 +80,9 @@ public class PropertyAwareEntityStoreScanTest
 
         // when
         scan.run();
+
+        // then
+        assertEquals( total, read.intValue() );
     }
 
     private static class PercentageSupplier implements Supplier<Float>

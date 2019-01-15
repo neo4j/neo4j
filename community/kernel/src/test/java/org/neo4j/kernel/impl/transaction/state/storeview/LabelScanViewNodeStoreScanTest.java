@@ -34,10 +34,8 @@ import org.neo4j.kernel.api.labelscan.LabelScanReader;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.impl.api.index.EntityUpdates;
 import org.neo4j.kernel.impl.locking.LockService;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageReader;
-import org.neo4j.kernel.impl.store.NeoStores;
-import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.storageengine.api.NodeLabelUpdate;
+import org.neo4j.storageengine.api.StubStorageCursors;
 
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
@@ -45,19 +43,17 @@ import static org.mockito.Mockito.when;
 
 public class LabelScanViewNodeStoreScanTest
 {
-    private NodeStore nodeStore = mock( NodeStore.class );
-    private NeoStores neoStores = mock( NeoStores.class );
-    private LabelScanStore labelScanStore = mock( LabelScanStore.class );
-    private LabelScanReader labelScanReader = mock( LabelScanReader.class );
-    private IntPredicate propertyKeyIdFilter = mock( IntPredicate.class );
-    private Visitor<NodeLabelUpdate,Exception> labelUpdateVisitor = mock( Visitor.class );
-    private Visitor<EntityUpdates,Exception> propertyUpdateVisitor = mock( Visitor.class );
+    private final StubStorageCursors cursors = new StubStorageCursors();
+    private final LabelScanStore labelScanStore = mock( LabelScanStore.class );
+    private final LabelScanReader labelScanReader = mock( LabelScanReader.class );
+    private final IntPredicate propertyKeyIdFilter = mock( IntPredicate.class );
+    private final Visitor<NodeLabelUpdate,Exception> labelUpdateVisitor = mock( Visitor.class );
+    private final Visitor<EntityUpdates,Exception> propertyUpdateVisitor = mock( Visitor.class );
 
     @Before
     public void setUp()
     {
         when( labelScanStore.newReader() ).thenReturn( labelScanReader );
-        when( neoStores.getNodeStore() ).thenReturn( nodeStore );
     }
 
     @Test
@@ -65,7 +61,11 @@ public class LabelScanViewNodeStoreScanTest
     {
         PrimitiveLongResourceIterator labeledNodes = PrimitiveLongResourceCollections.iterator( null, 1, 2, 4, 8 );
 
-        when( nodeStore.getHighId() ).thenReturn( 15L );
+        long highId = 15L;
+        for ( long i = 0; i < highId; i++ )
+        {
+            cursors.withNode( i );
+        }
         int[] labelIds = new int[]{1, 2};
         when( labelScanReader.nodesWithAnyOfLabels( labelIds ) ).thenReturn( labeledNodes );
 
@@ -79,7 +79,7 @@ public class LabelScanViewNodeStoreScanTest
 
     private LabelScanViewNodeStoreScan<Exception> getLabelScanViewStoreScan( int[] labelIds )
     {
-        return new LabelScanViewNodeStoreScan<>( new RecordStorageReader( neoStores ), LockService.NO_LOCK_SERVICE,
+        return new LabelScanViewNodeStoreScan<>( cursors, LockService.NO_LOCK_SERVICE,
                 labelScanStore, labelUpdateVisitor, propertyUpdateVisitor, labelIds, propertyKeyIdFilter );
     }
 }
