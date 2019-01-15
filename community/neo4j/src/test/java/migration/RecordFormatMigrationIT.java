@@ -115,7 +115,7 @@ class RecordFormatMigrationIT
     }
 
     @Test
-    void skipMigrationIfStoreFormatNotSpecifiedButIsAvailableInRuntime()
+    void requestMigrationIfStoreFormatNotSpecifiedButIsAvailableInRuntime()
     {
         GraphDatabaseService database = startDatabaseWithFormatUnspecifiedUpgrade( storeDir, StandardV3_4.NAME );
         try ( Transaction transaction = database.beginTx() )
@@ -126,11 +126,7 @@ class RecordFormatMigrationIT
         }
         database.shutdown();
 
-        GraphDatabaseAPI nonUpgradedStore = (GraphDatabaseAPI) new GraphDatabaseFactory()
-                .newEmbeddedDatabase( storeDir );
-        RecordStorageEngine storageEngine = nonUpgradedStore.getDependencyResolver().resolveDependency( RecordStorageEngine.class );
-        assertEquals( StandardV3_4.NAME, storageEngine.testAccessNeoStores().getRecordFormats().name() );
-        nonUpgradedStore.shutdown();
+        assertThrows( RuntimeException.class, () -> new GraphDatabaseFactory().newEmbeddedDatabase( storeDir ) );
     }
 
     @Test
