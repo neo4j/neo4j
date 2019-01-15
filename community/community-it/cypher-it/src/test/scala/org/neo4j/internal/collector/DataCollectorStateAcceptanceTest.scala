@@ -118,7 +118,7 @@ class DataCollectorStateAcceptanceTest extends ExecutionEngineFunSuite {
      } catch {
        case e: CypherExecutionException =>
          e.status should be(org.neo4j.kernel.api.exceptions.Status.General.InvalidArguments)
-       case x =>
+       case x: Throwable =>
          x shouldBe a[CypherExecutionException]
      }
   }
