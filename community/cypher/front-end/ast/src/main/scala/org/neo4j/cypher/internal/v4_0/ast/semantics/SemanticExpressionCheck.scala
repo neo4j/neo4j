@@ -646,7 +646,7 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
       }
     }
 
-  private def checkComparison(x: Expression, signatures: Seq[TypeSignature]): SemanticCheck = (state: SemanticState) => {
+  private def checkComparison(x: Expression, signatures: Seq[ExpressionTypeSignature]): SemanticCheck = (state: SemanticState) => {
     //According to spec comparing unrelated types should yield null not error
     if (state.features(SemanticFeature.Cypher9Comparability)) {
       specifyType(CTBoolean, x)(state) match {

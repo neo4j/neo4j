@@ -23,10 +23,6 @@ case object Tan extends Function with TypeSignatures {
   def name = "tan"
 
   override val signatures = Vector(
-    TypeSignature(argumentTypes = Vector(CTFloat), outputType = CTFloat)
+    TypeSignature(CTFloat, CTFloat, "Returns the tangent of a number.")
   )
-
-  override def getSignatureAsString: String = name + "(input :: FLOAT?) :: (FLOAT?)"
-
-  override def getDescription: String = "Returns the tangent of a number."
 }

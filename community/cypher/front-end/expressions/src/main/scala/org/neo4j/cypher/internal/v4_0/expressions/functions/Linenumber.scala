@@ -22,10 +22,6 @@ import org.neo4j.cypher.internal.v4_0.util.symbols._
 case object Linenumber extends Function with TypeSignatures {
   def name = "linenumber"
   override val signatures = Vector(
-    TypeSignature(argumentTypes = Vector(), outputType = CTInteger)
+    TypeSignature.noArg(CTInteger, "Returns the line number that LOAD CSV is currently using")
   )
-
-  override def getSignatureAsString: String = name + "() :: (INTEGER?)"
-
-  override def getDescription: String = "Returns the line number that LOAD CSV is currently using"
 }

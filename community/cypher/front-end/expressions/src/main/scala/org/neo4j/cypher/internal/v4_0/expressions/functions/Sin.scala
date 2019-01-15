@@ -23,10 +23,6 @@ case object Sin extends Function with TypeSignatures {
   def name = "sin"
 
   override val signatures = Vector(
-    TypeSignature(argumentTypes = Vector(CTFloat), outputType = CTFloat)
+    TypeSignature(CTFloat, CTFloat, "Returns the sine of a number.")
   )
-
-  override def getSignatureAsString: String = name + "(input :: FLOAT?) :: (FLOAT?)"
-
-  override def getDescription: String = "Returns the sine of a number."
 }

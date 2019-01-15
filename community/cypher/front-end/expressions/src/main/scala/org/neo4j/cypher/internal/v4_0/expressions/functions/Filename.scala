@@ -22,10 +22,6 @@ import org.neo4j.cypher.internal.v4_0.util.symbols.CTString
 case object Filename extends Function with TypeSignatures {
   def name = "filename"
   override val signatures = Vector(
-    TypeSignature(argumentTypes = Vector(), outputType = CTString)
+    TypeSignature.noArg(CTString, "Returns the name of the file that LOAD CSV is using.")
   )
-
-  override def getSignatureAsString: String = name + "() :: (STRING?)"
-
-  override def getDescription: String = "Returns the name of the file that LOAD CSV is using."
 }

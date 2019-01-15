@@ -16,20 +16,8 @@
  */
 package org.neo4j.cypher.internal.v4_0.expressions.functions
 
-import org.neo4j.cypher.internal.v4_0.expressions.{TypeSignature, TypeSignatures}
-import org.neo4j.cypher.internal.v4_0.util.symbols._
-
-case object Distance extends Function with TypeSignatures {
+case object Distance extends Function with FunctionWithInfo {
   val name = "distance"
-
-  override val signatures = Vector(
-    TypeSignature(argumentTypes = Vector(CTGeometry, CTGeometry), outputType = CTFloat),
-    TypeSignature(argumentTypes = Vector(CTPoint, CTGeometry), outputType = CTFloat),
-    TypeSignature(argumentTypes = Vector(CTGeometry, CTPoint), outputType = CTFloat),
-    TypeSignature(argumentTypes = Vector(CTPoint, CTPoint), outputType = CTFloat),
-    // Will return null:
-    TypeSignature(argumentTypes = Vector(CTAny, CTAny), outputType = CTFloat)
-  )
 
   override def getSignatureAsString: String = name + "(from :: POINT?, to :: POINT?) :: (FLOAT?)"
 

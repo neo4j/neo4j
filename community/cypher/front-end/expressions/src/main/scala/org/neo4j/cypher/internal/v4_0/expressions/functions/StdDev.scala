@@ -23,10 +23,6 @@ case object StdDev extends AggregatingFunction with TypeSignatures {
   def name = "stdev"
 
   override val signatures = Vector(
-    TypeSignature(argumentTypes = Vector(CTFloat), outputType = CTFloat)
+    TypeSignature(CTFloat, CTFloat, "Returns the standard deviation for the given value over a group for a sample of a population.")
   )
-
-  override def getSignatureAsString: String = name + "(input :: FLOAT?) :: (FLOAT)"
-
-  override def getDescription: String = "Returns the standard deviation for the given value over a group for a sample of a population."
 }

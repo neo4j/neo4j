@@ -23,10 +23,6 @@ case object E extends Function with TypeSignatures {
   def name = "e"
 
   override val signatures = Vector(
-    TypeSignature(argumentTypes = Vector(), outputType = CTFloat)
+    TypeSignature.noArg(CTFloat, "Returns the base of the natural logarithm, e.")
   )
-
-  override def getSignatureAsString: String = name + "() :: (FLOAT)"
-
-  override def getDescription: String = "Returns the base of the natural logarithm, e."
 }

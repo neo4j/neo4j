@@ -23,10 +23,6 @@ case object Collect extends AggregatingFunction with TypeSignatures {
   def name = "collect"
 
   override val signatures: Vector[TypeSignature] = Vector(
-    TypeSignature(Vector(CTAny), CTList(CTAny))
+    TypeSignature(CTAny, CTAny, "Returns a list containing the values returned by an expression.")
   )
-
-  override def getSignatureAsString: String = name + "(input :: ANY?) :: (LIST OF ANY)"
-
-  override def getDescription: String = "Returns a list containing the values returned by an expression."
 }

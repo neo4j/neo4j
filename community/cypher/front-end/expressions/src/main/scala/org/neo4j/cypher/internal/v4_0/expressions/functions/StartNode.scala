@@ -23,10 +23,6 @@ case object StartNode extends Function with TypeSignatures {
   def name = "startNode"
 
   override val signatures = Vector(
-    TypeSignature(argumentTypes = Vector(CTRelationship), outputType = CTNode)
+    TypeSignature(CTRelationship, CTNode, "Returns the start node of a relationship.")
   )
-
-  override def getSignatureAsString: String = name + "(relationship :: RELATIONSHIP?) :: (NODE?)"
-
-  override def getDescription: String = "Returns the start node of a relationship."
 }

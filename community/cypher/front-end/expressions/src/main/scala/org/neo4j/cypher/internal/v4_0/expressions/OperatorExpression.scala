@@ -19,7 +19,7 @@ package org.neo4j.cypher.internal.v4_0.expressions
 trait OperatorExpression {
   self: Expression =>
 
-  def signatures: Seq[TypeSignature] = Seq.empty
+  def signatures: Seq[ExpressionTypeSignature] = Seq.empty
 
   def canonicalOperatorSymbol: String = self.productPrefix.toUpperCase
 }

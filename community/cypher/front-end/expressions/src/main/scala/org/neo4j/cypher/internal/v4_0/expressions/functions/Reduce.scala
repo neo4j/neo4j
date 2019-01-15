@@ -18,11 +18,12 @@ package org.neo4j.cypher.internal.v4_0.expressions.functions
 
 // this implementation exists only to handle the case where "reduce(x = 0, x in y : foo)" is parsed as a function invocation,
 // rather than a ReduceExpression
-case object Reduce extends Function {
+case object Reduce extends Function with FunctionWithInfo {
   def name = "reduce"
 
+  // TODO: Get specification formalized by CLG
   override def getSignatureAsString: String =
-    name + "(accumulator :: VARIABLE = initial :: ANY, variable :: VARIABLE IN list :: LIST OF ANY? | expression :: ANY) :: (ANY?)"
+    name + "(accumulator :: VARIABLE = initial :: ANY?, variable :: VARIABLE IN list :: LIST OF ANY? | expression :: ANY) :: (ANY?)"
 
   override def getDescription: String = "Runs an expression against individual elements of a list, storing the result of the expression in an accumulator."
 }

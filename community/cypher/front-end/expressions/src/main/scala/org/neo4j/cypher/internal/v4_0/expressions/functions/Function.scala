@@ -16,7 +16,7 @@
  */
 package org.neo4j.cypher.internal.v4_0.expressions.functions
 
-import org.neo4j.cypher.internal.v4_0.expressions.{Expression, FunctionInvocation, FunctionName}
+import org.neo4j.cypher.internal.v4_0.expressions._
 import org.neo4j.cypher.internal.v4_0.util.InputPosition
 import org.neo4j.kernel.impl.query.FunctionInformation
 
@@ -95,24 +95,37 @@ object Function {
     Type
   )
 
-  val lookup: Map[String, Function] = knownFunctions.map { f => (f.name.toLowerCase, f) }.toMap
+  lazy val lookup: Map[String, Function] = knownFunctions.map { f => (f.name.toLowerCase, f) }.toMap
 
-  val functionInfo: List[FunctionInformation] = {
-    lookup.values.map { f => FunctionInfo(f) }.toList
+  lazy val functionInfo: List[FunctionInformation] = {
+    lookup.values.flatMap {
+      case f: TypeSignatures =>
+        f.signatures.flatMap {
+          case signature: FunctionTypeSignature if !signature.deprecated =>
+            val info: FunctionInfo = new FunctionInfo(f) {
+              def getDescription: String = signature.toString
+
+              def getSignature: String = signature.toString
+            }
+            Seq(info)
+        }
+      case func: FunctionWithInfo =>
+        Seq(new FunctionInfo(func) {
+          def getDescription: String = func.getDescription
+
+          def getSignature: String = func.getSignatureAsString
+        })
+    }.toList
   }
 }
 
-case class FunctionInfo(f: Function) extends FunctionInformation {
+abstract case class FunctionInfo(f: Function) extends FunctionInformation {
   override def getFunctionName: String = f.name
 
   override def isAggregationFunction: java.lang.Boolean = f match {
-      case (_: AggregatingFunction) => true
+      case _: AggregatingFunction => true
       case _ => false
     }
-
-  override def getDescription: String = f.getDescription
-
-  override def getSignature: String = f.getSignatureAsString
 
   override def toString: String = f.name + " || " + getSignature + " || " + getDescription + " || " + isAggregationFunction
 }
@@ -127,10 +140,12 @@ abstract class Function {
 
   def asInvocation(lhs: Expression, rhs: Expression)(implicit position: InputPosition): FunctionInvocation =
     FunctionInvocation(asFunctionName, distinct = false, IndexedSeq(lhs, rhs))(position)
+}
 
-  def getSignatureAsString : String
+trait FunctionWithInfo {
+  def getSignatureAsString: String
 
-  def getDescription : String
+  def getDescription: String
 }
 
 abstract class AggregatingFunction extends Function

@@ -23,12 +23,6 @@ case object LTrim extends Function with TypeSignatures {
   def name = "ltrim"
 
   override val signatures = Vector(
-    TypeSignature(argumentTypes = Vector(CTString), outputType = CTString)
+    TypeSignature(CTString, CTString, "Returns the original string with leading whitespace removed.")
   )
-
-  override def getSignatureAsString: String = name + "(input :: STRING?) :: (STRING?)"
-
-  override def getDescription: String = "Returns the original string with leading whitespace removed."
-
-
 }

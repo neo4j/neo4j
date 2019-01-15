@@ -23,11 +23,7 @@ case object Id extends Function with TypeSignatures {
   def name = "id"
 
   override val signatures = Vector(
-    TypeSignature(argumentTypes = Vector(CTNode), outputType = CTInteger),
-    TypeSignature(argumentTypes = Vector(CTRelationship), outputType = CTInteger)
+    TypeSignature(CTNode, CTInteger, "Returns the id of a node."),
+    TypeSignature(CTRelationship, CTInteger, "Returns the id of a relationship.")
   )
-
-  override def getSignatureAsString: String = name + "(input :: ANY?) :: (INTEGER?)"
-
-  override def getDescription: String = "Returns the id of a relationship or node."
 }

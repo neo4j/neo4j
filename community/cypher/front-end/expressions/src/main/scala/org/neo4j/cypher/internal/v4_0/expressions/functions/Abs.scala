@@ -22,12 +22,8 @@ import org.neo4j.cypher.internal.v4_0.util.symbols._
 case object Abs extends Function with TypeSignatures {
   def name = "abs"
 
-  override val signatures = Vector(
-    TypeSignature(argumentTypes = Vector(CTInteger), outputType = CTInteger),
-    TypeSignature(argumentTypes = Vector(CTFloat), outputType = CTFloat)
+  override val signatures: IndexedSeq[TypeSignature] = Vector(
+    TypeSignature(CTInteger, CTInteger, "Returns the absolute value of an integer."),
+    TypeSignature(CTFloat, CTFloat, "Returns the absolute value of a floating point number.")
   )
-
-  override def getSignatureAsString: String = name + "(input :: NUMBER?) :: (NUMBER?)"
-
-  override def getDescription: String = "Returns the absolute value of a number."
 }

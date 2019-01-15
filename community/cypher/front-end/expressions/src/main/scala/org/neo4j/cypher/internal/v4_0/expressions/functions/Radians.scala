@@ -23,10 +23,6 @@ case object Radians extends Function with TypeSignatures {
   def name = "radians"
 
   override val signatures = Vector(
-    TypeSignature(argumentTypes = Vector(CTFloat), outputType = CTFloat)
+    TypeSignature(CTFloat, CTFloat, "Converts degrees to radians.")
   )
-
-  override def getSignatureAsString: String = name + "(input :: FLOAT?) :: (FLOAT?)"
-
-  override def getDescription: String = "Converts degrees to radians."
 }

@@ -23,10 +23,7 @@ case object Floor extends Function with TypeSignatures {
   def name = "floor"
 
   override val signatures = Vector(
-    TypeSignature(argumentTypes = Vector(CTFloat), outputType = CTFloat)
+    TypeSignature(CTFloat, CTFloat,
+      "Returns the largest floating point number that is less than or equal to a number and equal to a mathematical integer.")
   )
-
-  override def getSignatureAsString: String = name + "(input :: FLOAT?) :: (FLOAT?)"
-
-  override def getDescription: String = "Returns the largest floating point number that is less than or equal to a number and equal to a mathematical integer."
 }

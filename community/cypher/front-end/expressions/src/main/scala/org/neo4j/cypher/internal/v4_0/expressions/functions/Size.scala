@@ -23,12 +23,8 @@ case object Size extends Function with TypeSignatures {
   def name = "size"
 
   override val signatures = Vector(
-    TypeSignature(argumentTypes = Vector(CTList(CTAny)), outputType = CTInteger),
-    TypeSignature(argumentTypes = Vector(CTString), outputType = CTInteger)
+    TypeSignature(CTList(CTAny), CTInteger, "Returns the number of items in a list."),
+    TypeSignature(CTString, CTInteger, "Returns the number of Unicode characters in a string.")
   )
-
-  override def getSignatureAsString: String = name + "(input :: ANY?) :: (INTEGER?)"
-
-  override def getDescription: String =
-    "Returns the number of items in a list or the number of sub-graphs matching the pattern expression or the number of Unicode characters in a string."
+//TODO:  size() applied to pattern expression
 }

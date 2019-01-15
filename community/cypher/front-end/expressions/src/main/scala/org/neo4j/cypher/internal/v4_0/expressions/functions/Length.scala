@@ -24,12 +24,8 @@ case object Length extends Function with TypeSignatures {
 
   //NOTE using CTString and CTCollection here is deprecated
   override val signatures = Vector(
-    TypeSignature(Vector(CTString), CTInteger),
-    TypeSignature(Vector(CTList(CTAny)), CTInteger),
-    TypeSignature(Vector(CTPath), CTInteger)
+    TypeSignature.deprecated(CTString, CTInteger, "Returns the length of a string."),
+    TypeSignature.deprecated(CTList(CTAny), CTInteger, "Returns the length of a list."),
+    TypeSignature(CTPath, CTInteger, "Returns the length of a path.")
   )
-
-  override def getSignatureAsString: String = name + "(path :: PATH?) :: (INTEGER?)"
-
-  override def getDescription: String = "Returns the length of a path."
 }

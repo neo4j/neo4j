@@ -23,11 +23,7 @@ case object Sign extends Function with TypeSignatures {
   def name = "sign"
 
   override val signatures = Vector(
-    TypeSignature(argumentTypes = Vector(CTInteger), outputType = CTInteger),
-    TypeSignature(argumentTypes = Vector(CTFloat), outputType = CTInteger)
+    TypeSignature(CTInteger, CTInteger, "Returns the signum of a number: 0 if the number is 0, -1 for any negative number, and 1 for any positive number."),
+    TypeSignature(CTFloat, CTInteger, "Returns the signum of a number: 0 if the number is 0, -1 for any negative number, and 1 for any positive number.")
   )
-
-  override def getSignatureAsString: String = name + "(input :: NUMBER?) :: (INTEGER?)"
-
-  override def getDescription: String = "Returns the signum of a number: 0 if the number is 0, -1 for any negative number, and 1 for any positive number."
 }

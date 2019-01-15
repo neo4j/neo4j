@@ -16,18 +16,14 @@
  */
 package org.neo4j.cypher.internal.v4_0.expressions.functions
 
-import org.neo4j.cypher.internal.v4_0.expressions.{TypeSignature, TypeSignatures}
+import org.neo4j.cypher.internal.v4_0.expressions.{FunctionTypeSignature, TypeSignatures}
 import org.neo4j.cypher.internal.v4_0.util.symbols._
 
 case object Substring extends Function with TypeSignatures {
   def name = "substring"
 
   override val signatures = Vector(
-    TypeSignature(argumentTypes = Vector(CTString, CTInteger), outputType = CTString),
-    TypeSignature(argumentTypes = Vector(CTString, CTInteger, CTInteger), outputType = CTString)
+    FunctionTypeSignature(names = Vector("original","start", "length"), argumentTypes = Vector(CTString, CTInteger), outputType = CTString, description =  "Returns a substring of the original string, beginning with a 0-based index start."),
+    FunctionTypeSignature(names = Vector("original","start", "length"), argumentTypes = Vector(CTString, CTInteger, CTInteger), outputType = CTString, description = "Returns a substring of the original string, beginning with a 0-based index start and length.")
   )
-
-  override def getSignatureAsString: String = name + "(original :: STRING?, start :: INTEGER, length = null :: INTEGER) :: (STRING?)"
-
-  override def getDescription: String = "Returns a substring of the original string, beginning with a 0-based index start and optional length."
 }

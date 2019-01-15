@@ -16,24 +16,23 @@
  */
 package org.neo4j.cypher.internal.v4_0.expressions.functions
 
-import org.neo4j.cypher.internal.v4_0.expressions.{TypeSignature, TypeSignatures}
 import org.neo4j.cypher.internal.v4_0.util.symbols._
 
-case object ToString extends Function with TypeSignatures {
+case object ToString extends Function with FunctionWithInfo {
   override def name = "toString"
 
-  override val signatures = Vector(
-    TypeSignature(argumentTypes = Vector(CTFloat), outputType = CTString),
-    TypeSignature(argumentTypes = Vector(CTInteger), outputType = CTString),
-    TypeSignature(argumentTypes = Vector(CTBoolean), outputType = CTString),
-    TypeSignature(argumentTypes = Vector(CTString), outputType = CTString),
-    TypeSignature(argumentTypes = Vector(CTDuration), outputType = CTString),
-    TypeSignature(argumentTypes = Vector(CTDate), outputType = CTString),
-    TypeSignature(argumentTypes = Vector(CTTime), outputType = CTString),
-    TypeSignature(argumentTypes = Vector(CTDateTime), outputType = CTString),
-    TypeSignature(argumentTypes = Vector(CTLocalTime), outputType = CTString),
-    TypeSignature(argumentTypes = Vector(CTLocalDateTime), outputType = CTString),
-    TypeSignature(argumentTypes = Vector(CTPoint), outputType = CTString)
+  val validInputTypes = Seq(
+    CTFloat,
+    CTInteger,
+    CTBoolean,
+    CTString,
+    CTDuration,
+    CTDate,
+    CTTime,
+    CTDateTime,
+    CTLocalTime,
+    CTLocalDateTime,
+    CTPoint
   )
 
   override def getSignatureAsString: String = name + "(input :: ANY?) :: (STRING?)"

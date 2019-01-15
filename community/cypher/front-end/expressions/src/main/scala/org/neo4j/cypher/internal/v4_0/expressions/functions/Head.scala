@@ -16,7 +16,7 @@
  */
 package org.neo4j.cypher.internal.v4_0.expressions.functions
 
-case object Head extends Function {
+case object Head extends Function with FunctionWithInfo {
   def name = "head"
 
   override def getSignatureAsString: String = name + "(list :: LIST? OF ANY?) :: (ANY?)"

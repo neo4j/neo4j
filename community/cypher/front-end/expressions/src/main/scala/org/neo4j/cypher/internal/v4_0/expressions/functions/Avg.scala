@@ -23,12 +23,8 @@ case object Avg extends AggregatingFunction with TypeSignatures {
   def name = "avg"
 
   override val signatures = Vector(
-    TypeSignature(argumentTypes = Vector(CTInteger), outputType = CTInteger),
-    TypeSignature(argumentTypes = Vector(CTFloat), outputType = CTFloat),
-    TypeSignature(argumentTypes = Vector(CTDuration), outputType = CTDuration)
+    TypeSignature(CTInteger, CTInteger, "Returns the average of a set of integer values."),
+    TypeSignature(CTFloat, CTFloat, "Returns the average of a set of floating point values."),
+    TypeSignature(CTDuration, CTDuration, "Returns the average of a set of duration values.")
   )
-
-  override def getSignatureAsString: String = name + "(input :: ANY?) :: (ANY?)"
-
-  override def getDescription: String = "Returns the average of a set of numeric values or the average of a set of Durations."
 }

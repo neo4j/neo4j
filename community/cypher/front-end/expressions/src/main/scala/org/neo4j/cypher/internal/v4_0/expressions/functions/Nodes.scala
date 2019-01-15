@@ -23,10 +23,6 @@ case object Nodes extends Function with TypeSignatures {
   def name = "nodes"
 
   override val signatures = Vector(
-    TypeSignature(argumentTypes = Vector(CTPath), outputType = CTList(CTNode))
+    TypeSignature(CTPath, CTList(CTNode), "Returns a list containing all the nodes in a path.")
   )
-
-  override def getSignatureAsString: String = name + "(path :: PATH?) :: (LIST? OF NODE)"
-
-  override def getDescription: String = "Returns a list containing all the nodes in a path."
 }

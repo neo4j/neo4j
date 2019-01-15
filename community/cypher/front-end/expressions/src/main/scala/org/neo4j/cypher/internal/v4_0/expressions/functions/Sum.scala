@@ -16,19 +16,15 @@
  */
 package org.neo4j.cypher.internal.v4_0.expressions.functions
 
-import org.neo4j.cypher.internal.v4_0.expressions.{TypeSignature, TypeSignatures}
+import org.neo4j.cypher.internal.v4_0.expressions.{FunctionTypeSignature, TypeSignatures}
 import org.neo4j.cypher.internal.v4_0.util.symbols._
 
 case object Sum extends AggregatingFunction with TypeSignatures {
   def name = "sum"
 
-  override val signatures = Vector(
-    TypeSignature(argumentTypes = Vector(CTInteger), outputType = CTInteger),
-    TypeSignature(argumentTypes = Vector(CTFloat), outputType = CTFloat),
-    TypeSignature(argumentTypes = Vector(CTDuration), outputType = CTDuration)
+  override val signatures: Vector[FunctionTypeSignature] = Vector(
+    FunctionTypeSignature(names = Vector("input"), argumentTypes = Vector(CTInteger), outputType = CTInteger, description = "Returns the sum of a set of integers"),
+    FunctionTypeSignature(names = Vector("input"), argumentTypes = Vector(CTFloat), outputType = CTFloat, description = "Returns the sum of a set of floats"),
+    FunctionTypeSignature(names = Vector("input"), argumentTypes = Vector(CTDuration), outputType = CTDuration, description = "Returns the sum of a set of durations")
   )
-
-  override def getSignatureAsString: String = name + "(input :: ANY?) :: (ANY)"
-
-  override def getDescription: String = "Returns the sum of a set of numeric values or the sum of a set of Durations."
 }

@@ -23,11 +23,7 @@ case object Reverse extends Function with TypeSignatures {
   def name = "reverse"
 
   override val signatures = Vector(
-    TypeSignature(argumentTypes = Vector(CTString), outputType = CTString),
-    TypeSignature(argumentTypes = Vector(CTList(CTAny)), outputType = CTList(CTAny))
+    TypeSignature(CTString, CTString, "Returns a string in which the order of all characters in the original string have been reversed."),
+    TypeSignature(CTList(CTAny), CTList(CTAny), "Returns a list in which the order of all elements in the original list have been reversed.")
   )
-
-  override def getSignatureAsString: String = name + "(original :: STRING?) :: (STRING?)"
-
-  override def getDescription: String = "Returns a string in which the order of all characters in the original string have been reversed."
 }

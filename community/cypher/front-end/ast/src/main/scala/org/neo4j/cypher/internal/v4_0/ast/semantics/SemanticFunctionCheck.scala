@@ -18,11 +18,9 @@ package org.neo4j.cypher.internal.v4_0.ast.semantics
 
 import org.neo4j.cypher.internal.v4_0.expressions.Expression.SemanticContext
 import org.neo4j.cypher.internal.v4_0.expressions.functions._
-import org.neo4j.cypher.internal.v4_0.expressions.{Expression, FunctionInvocation, Property, _}
+import org.neo4j.cypher.internal.v4_0.expressions.{Expression, FunctionInvocation, PatternExpression, Property, PropertyKeyName, TypeSignatures, _}
 import org.neo4j.cypher.internal.v4_0.util.LengthOnNonPathNotification
 import org.neo4j.cypher.internal.v4_0.util.symbols._
-import org.neo4j.cypher.internal.v4_0.expressions.{PatternExpression, PropertyKeyName, TypeSignatures}
-import org.neo4j.cypher.internal.v4_0.expressions.functions._
 
 object SemanticFunctionCheck extends SemanticAnalysisTooling {
 
@@ -134,8 +132,14 @@ object SemanticFunctionCheck extends SemanticAnalysisTooling {
       case ToBoolean =>
         checkMinArgs(invocation, 1) ifOkChain
           checkMaxArgs(invocation, 1) ifOkChain
-          checkToBooleanTypeOfArgument(invocation) ifOkChain
+          checkToSpecifiedTypeOfArgument(invocation, Seq(CTString, CTBoolean, CTAny)) ifOkChain
           specifyType(CTBoolean, invocation)
+
+      case ToString =>
+        checkMinArgs(invocation, 1) ifOkChain
+          checkMaxArgs(invocation, 1) ifOkChain
+          checkToSpecifiedTypeOfArgument(invocation, ToString.validInputTypes) ifOkChain
+          specifyType(CTString, invocation)
 
       case UnresolvedFunction =>
         // We cannot do a full semantic check until we have resolved the function call.
@@ -221,12 +225,11 @@ object SemanticFunctionCheck extends SemanticAnalysisTooling {
 
   private def withKey(key: String)(kv: (PropertyKeyName, Expression)) = kv._1.name == key
 
-
-  private def checkToBooleanTypeOfArgument(invocation: FunctionInvocation): SemanticCheck =
+  private def checkToSpecifiedTypeOfArgument(invocation: FunctionInvocation, allowedTypes: Seq[CypherType]): SemanticCheck =
     (s: SemanticState) => {
       val argument = invocation.args.head
       val specifiedType = s.expressionType(argument).specified
-      val correctType = Seq(CTString, CTBoolean, CTAny).foldLeft(false) {
+      val correctType = allowedTypes.foldLeft(false) {
         case (acc, t) => acc || specifiedType.contains(t)
       }
 
