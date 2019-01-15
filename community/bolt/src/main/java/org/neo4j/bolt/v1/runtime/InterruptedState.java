@@ -55,9 +55,9 @@ public class InterruptedState implements BoltStateMachineState
                 return this;
             }
 
-            context.connectionState().resetPendingFailedAndIgnored();
             if ( context.resetMachine() )
             {
+                context.connectionState().resetPendingFailedAndIgnored();
                 return readyState;
             }
             return failedState;
