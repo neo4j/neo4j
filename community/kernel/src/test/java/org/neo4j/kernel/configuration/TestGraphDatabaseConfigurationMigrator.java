@@ -20,32 +20,50 @@
 package org.neo4j.kernel.configuration;
 
 import org.apache.commons.lang3.StringUtils;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import java.util.Collections;
+import java.util.Map;
 
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLog;
 
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
-/**
- * Test configuration migration rules
- */
-public class TestGraphDatabaseConfigurationMigrator
+class TestGraphDatabaseConfigurationMigrator
 {
     private final ConfigurationMigrator migrator = new GraphDatabaseConfigurationMigrator();
 
-    @Rule
-    public final AssertableLogProvider logProvider = new AssertableLogProvider( true );
+    private AssertableLogProvider logProvider;
+
+    @BeforeEach
+    void setUp()
+    {
+        logProvider = new AssertableLogProvider( true );
+    }
 
     @Test
-    public void testNoMigration()
+    void testNoMigration()
     {
         assertThat( migrator.apply( stringMap( "foo", "bar" ), NullLog.getInstance() ), equalTo( stringMap( "foo", "bar" ) ) );
         logProvider.assertNoLoggingOccurred();
+    }
+
+    @Test
+    void migrateOldTransactionLogsDirectories()
+    {
+        Map<String,String> migratedProperties = migrator.apply( stringMap( "dbms.directories.tx_log", "C:/" ), getLog() );
+        assertEquals( migratedProperties, Collections.emptyMap() );
+
+        assertContainsWarningMessage("WARNING! Deprecated configuration options used. See manual for details");
+        assertContainsWarningMessage("dbms.directories.tx_log is not supported anymore. " +
+                "Please use dbms.directories.transaction.logs.root to set root directory for databases transaction logs. " +
+                "Each individual database will place its logs into a separate subdirectory under configured root.");
     }
 
     private Log getLog()

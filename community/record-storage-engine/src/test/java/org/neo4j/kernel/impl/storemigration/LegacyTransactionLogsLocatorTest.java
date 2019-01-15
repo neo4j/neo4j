@@ -24,13 +24,14 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.impl.storemigration.LegacyTransactionLogsLocator.LEGACY_TX_LOGS_LOCATION_SETTING;
 
 @ExtendWith( TestDirectoryExtension.class )
 class LegacyTransactionLogsLocatorTest
@@ -49,7 +50,7 @@ class LegacyTransactionLogsLocatorTest
     void transactionLogsDirectoryEqualsToLogicalLogLegacySettingsWhenConfigured()
     {
         File customDirectory = testDirectory.directory( "customDirectory" );
-        Config config = Config.defaults( GraphDatabaseSettings.logical_logs_location, customDirectory.getAbsolutePath() );
+        Config config = Config.defaults( stringMap( LEGACY_TX_LOGS_LOCATION_SETTING, customDirectory.getAbsolutePath() ) );
         LegacyTransactionLogsLocator logsLocator = new LegacyTransactionLogsLocator( config, testDirectory.directory() );
         assertEquals( customDirectory, logsLocator.getTransactionLogsDirectory() );
     }

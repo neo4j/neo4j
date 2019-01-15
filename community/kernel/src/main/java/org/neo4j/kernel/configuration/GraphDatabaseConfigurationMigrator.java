@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.configuration;
 
+import java.util.Map;
+
 /**
  * Migrations of old graph database settings.
  */
@@ -31,6 +33,15 @@ public class GraphDatabaseConfigurationMigrator extends BaseConfigurationMigrato
 
     private void registerMigrations()
     {
-        // empty for now
+        add( new SpecificPropertyMigration( "dbms.directories.tx_log",
+                "dbms.directories.tx_log is not supported anymore. " +
+                        "Please use dbms.directories.transaction.logs.root to set root directory for databases transaction logs. " +
+                        "Each individual database will place its logs into a separate subdirectory under configured root." )
+        {
+            @Override
+            public void setValueWithOldSetting( String value, Map<String,String> rawConfiguration )
+            {
+            }
+        } );
     }
 }
