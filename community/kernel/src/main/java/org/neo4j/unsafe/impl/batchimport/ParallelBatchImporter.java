@@ -95,7 +95,7 @@ public class ParallelBatchImporter implements BatchImporter
             logic.defragmentRelationshipGroups();
             logic.buildCountsStore();
 
-            store.success();
+            logic.success();
         }
     }
 }
