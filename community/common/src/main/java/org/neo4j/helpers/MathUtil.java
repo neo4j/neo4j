@@ -112,12 +112,6 @@ public class MathUtil
         return Double.compare( lhs, rhs );
     }
 
-    // Tested by PropertyValueComparisonTest
-    public static int compareLongAgainstDouble( long lhs, double rhs )
-    {
-        return - compareDoubleAgainstLong( rhs, lhs );
-    }
-
     /**
      * Return an integer one less than the given integer, or throw {@link ArithmeticException} if the given integer is
      * zero.

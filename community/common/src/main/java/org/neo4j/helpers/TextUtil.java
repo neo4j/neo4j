@@ -37,8 +37,7 @@ public class TextUtil
     {
     }
 
-    public static String templateString( String templateString,
-            Map<String, ?> data )
+    public static String templateString( String templateString, Map<String, ?> data )
     {
         return templateString( templateString, "\\$", data );
     }
@@ -96,33 +95,6 @@ public class TextUtil
         }
 
         return result;
-    }
-
-    public static String lastWordOrQuoteOf( String text, boolean preserveQuotation )
-    {
-        String[] quoteParts = text.split( "\"" );
-        String lastPart = quoteParts[quoteParts.length - 1];
-        boolean isWithinQuotes = quoteParts.length % 2 == 0;
-        String lastWord;
-        if ( isWithinQuotes )
-        {
-            lastWord = lastPart;
-            if ( preserveQuotation )
-            {
-                lastWord = "\"" + lastWord + (text.endsWith( "\"" ) ? "\"" : "");
-            }
-        }
-        else
-        {
-            String[] lastPartParts = splitAndKeepEscapedSpaces( lastPart, preserveQuotation );
-            lastWord = lastPartParts[lastPartParts.length - 1];
-        }
-        return lastWord;
-    }
-
-    private static String[] splitAndKeepEscapedSpaces( String string, boolean preserveEscapes )
-    {
-        return splitAndKeepEscapedSpaces( string, preserveEscapes, preserveEscapes );
     }
 
     private static String[] splitAndKeepEscapedSpaces( String string, boolean preserveEscapes, boolean preserveSpaceEscapes )
