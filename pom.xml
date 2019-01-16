@@ -865,7 +865,6 @@
     <profile>
       <id>errorprone-1.8</id>
       <activation>
-        <jdk>1.8</jdk>
         <activeByDefault>false</activeByDefault>
       </activation>
       <build>
