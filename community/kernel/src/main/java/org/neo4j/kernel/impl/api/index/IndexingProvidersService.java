@@ -19,7 +19,9 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import org.neo4j.internal.kernel.api.exceptions.schema.MisconfiguredIndexException;
 import org.neo4j.kernel.api.index.IndexProviderDescriptor;
+import org.neo4j.kernel.impl.index.schema.IndexDescriptor;
 import org.neo4j.storageengine.api.schema.SchemaDescriptor;
 import org.neo4j.values.storable.Value;
 
@@ -40,4 +42,14 @@ public interface IndexingProvidersService
      * @param tuple value tuple to validate
      */
     void validateBeforeCommit( SchemaDescriptor schema, Value[] tuple );
+
+    /**
+     * Since indexes can now have provider-specific settings and configurations, the provider needs to have an opportunity to inspect and validate the index
+     * descriptor before an index is created. The return descriptor is a blessed version of the given descriptor, and is what must be used for creating an
+     * index.
+     * @param index The descriptor of an index that we are about to create, and we wish to be blessed by its chosen index provider.
+     * @return The blessed index descriptor.
+     * @throws MisconfiguredIndexException if the provider cannot be bless the given index descriptor.
+     */
+    IndexDescriptor getBlessedDescriptorFromProvider( IndexDescriptor index ) throws MisconfiguredIndexException;
 }

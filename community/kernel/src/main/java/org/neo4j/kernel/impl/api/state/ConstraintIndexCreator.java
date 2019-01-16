@@ -256,7 +256,7 @@ public class ConstraintIndexCreator
             transaction.success();
             return index;
         }
-        catch ( TransactionFailureException e )
+        catch ( TransactionFailureException | SchemaKernelException e )
         {
             throw new RuntimeException( e );
         }

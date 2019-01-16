@@ -31,6 +31,7 @@ import org.neo4j.common.EntityType;
 import org.neo4j.graphdb.index.fulltext.AnalyzerProvider;
 import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.InternalIndexState;
+import org.neo4j.internal.kernel.api.exceptions.schema.MisconfiguredIndexException;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.impl.index.DatabaseIndex;
@@ -49,13 +50,15 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.core.TokenHolders;
 import org.neo4j.kernel.impl.factory.OperationalMode;
-import org.neo4j.storageengine.migration.StoreMigrationParticipant;
+import org.neo4j.kernel.impl.index.schema.IndexDescriptor;
 import org.neo4j.kernel.impl.storemigration.SchemaIndexMigrator;
 import org.neo4j.logging.Log;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.storageengine.api.schema.SchemaDescriptor;
+import org.neo4j.storageengine.migration.StoreMigrationParticipant;
 
+import static org.neo4j.kernel.api.exceptions.Status.General.InvalidArguments;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexSettings.readOrInitialiseDescriptor;
 
 class FulltextIndexProvider extends IndexProvider implements FulltextAdapter
@@ -154,6 +157,18 @@ class FulltextIndexProvider extends IndexProvider implements FulltextAdapter
         fulltextIndexDescriptor = readOrInitialiseDescriptor( descriptor, defaultAnalyzerName, tokenHolders.propertyKeyTokens(),
                 indexStorage, fileSystem );
         return new FulltextIndexCapability( fulltextIndexDescriptor.isEventuallyConsistent() );
+    }
+
+    @Override
+    public IndexDescriptor bless( IndexDescriptor index ) throws MisconfiguredIndexException
+    {
+        if ( !(index.schema() instanceof FulltextSchemaDescriptor) )
+        {
+            // The fulltext index provider only support fulltext indexes.
+            throw new MisconfiguredIndexException( InvalidArguments, "The index provider '" + getProviderDescriptor() + "' only supports fulltext index " +
+                    "descriptors. Make sure that fulltext indexes are created using the relevant fulltext index procedures." );
+        }
+        return super.bless( index );
     }
 
     @Override

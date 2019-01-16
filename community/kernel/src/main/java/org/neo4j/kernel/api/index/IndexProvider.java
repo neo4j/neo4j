@@ -24,10 +24,12 @@ import java.io.IOException;
 
 import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.InternalIndexState;
+import org.neo4j.internal.kernel.api.exceptions.schema.MisconfiguredIndexException;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
+import org.neo4j.kernel.impl.index.schema.IndexDescriptor;
 import org.neo4j.storageengine.migration.StoreMigrationParticipant;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.storageengine.api.StorageIndexReference;
@@ -203,6 +205,22 @@ public abstract class IndexProvider extends LifecycleAdapter
         assert descriptor != null;
         this.providerDescriptor = descriptor;
         this.directoryStructure = directoryStructureFactory.forProvider( descriptor );
+    }
+
+    /**
+     * Before an index is created, the chosen index provider will be asked to bless the index descriptor by calling this method, giving the index descriptor
+     * as an argument. The returned index descriptor is then blessed, and will be used for creating the index. This gives the provider an opportunity to check
+     * the index configuration, and make sure that it is sensible and support by this provider.
+     *
+     * @param index The index descriptor to bless.
+     * @return The blessed index descriptor that will be used for creating the index.
+     * @throws MisconfiguredIndexException if the index descriptor cannot be blessed by this provider for some reason.
+     */
+    public IndexDescriptor bless( IndexDescriptor index ) throws MisconfiguredIndexException
+    {
+        // Normal schema indexes accept all configurations by default. More specialised or custom providers, such as the fulltext index provider,
+        // can override this method to do whatever checking suits their needs.
+        return index;
     }
 
     /**

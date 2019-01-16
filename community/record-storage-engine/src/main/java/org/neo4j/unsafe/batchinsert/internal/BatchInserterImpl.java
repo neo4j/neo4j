@@ -52,6 +52,7 @@ import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.NamedToken;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
+import org.neo4j.internal.kernel.api.exceptions.schema.MisconfiguredIndexException;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.IOLimiter;
@@ -94,6 +95,7 @@ import org.neo4j.kernel.impl.coreapi.schema.RelationshipPropertyExistenceConstra
 import org.neo4j.kernel.impl.coreapi.schema.UniquenessConstraintDefinition;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.index.labelscan.NativeLabelScanStore;
+import org.neo4j.kernel.impl.index.schema.IndexDescriptor;
 import org.neo4j.kernel.impl.index.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.locking.Locks;
@@ -489,8 +491,19 @@ public class BatchInserterImpl implements BatchInserter
     private IndexReference createIndex( int labelId, int[] propertyKeyIds, Optional<String> indexName )
     {
         LabelSchemaDescriptor schema = SchemaDescriptorFactory.forLabel( labelId, propertyKeyIds );
-        IndexProviderDescriptor providerDescriptor = indexProviderMap.getDefaultProvider().getProviderDescriptor();
-        StoreIndexDescriptor schemaRule = IndexDescriptorFactory.forSchema( schema, indexName, providerDescriptor ).withId( schemaStore.nextId() );
+        IndexProvider provider = indexProviderMap.getDefaultProvider();
+        IndexProviderDescriptor providerDescriptor = provider.getProviderDescriptor();
+        IndexDescriptor index = IndexDescriptorFactory.forSchema( schema, indexName, providerDescriptor );
+        StoreIndexDescriptor schemaRule;
+        try
+        {
+            schemaRule = provider.bless( index ).withId( schemaStore.nextId() );
+        }
+        catch ( MisconfiguredIndexException e )
+        {
+            throw new ConstraintViolationException(
+                    "Unable to create index. The index configuration was refused by the '" + providerDescriptor + "' index provider.", e );
+        }
 
         for ( DynamicRecord record : schemaStore.allocateFrom( schemaRule ) )
         {
@@ -585,8 +598,19 @@ public class BatchInserterImpl implements BatchInserter
         long indexId = schemaStore.nextId();
         long constraintRuleId = schemaStore.nextId();
 
-        IndexProviderDescriptor providerDescriptor = this.indexProviderMap.getDefaultProvider().getProviderDescriptor();
-        StoreIndexDescriptor storeIndexDescriptor = IndexDescriptorFactory.uniqueForSchema( schema, providerDescriptor ).withIds( indexId, constraintRuleId );
+        IndexProvider provider = indexProviderMap.getDefaultProvider();
+        IndexProviderDescriptor providerDescriptor = provider.getProviderDescriptor();
+        IndexDescriptor index = IndexDescriptorFactory.uniqueForSchema( schema, providerDescriptor );
+        StoreIndexDescriptor storeIndexDescriptor;
+        try
+        {
+            storeIndexDescriptor = provider.bless( index ).withIds( indexId, constraintRuleId );
+        }
+        catch ( MisconfiguredIndexException e )
+        {
+            throw new ConstraintViolationException(
+                    "Unable to create index. The index configuration was refused by the '" + providerDescriptor + "' index provider.", e );
+        }
 
         ConstraintRule constraintRule = ConstraintRule.constraintRule( constraintRuleId, constraintDescriptor, indexId );
 
