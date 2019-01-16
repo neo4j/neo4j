@@ -53,7 +53,7 @@ public interface ExecutionMonitor
     /**
      * Called after all {@link StageExecution stage executions} have run.
      */
-    void done( long totalTimeMillis, String additionalInformation );
+    void done( boolean successful, long totalTimeMillis, String additionalInformation );
 
     /**
      * @return next time stamp when this monitor would like to check that status of current execution.
@@ -101,7 +101,7 @@ public interface ExecutionMonitor
         }
 
         @Override
-        public void done( long totalTimeMillis, String additionalInformation )
+        public void done( boolean successful, long totalTimeMillis, String additionalInformation )
         {   // Do nothing by default
         }
     }

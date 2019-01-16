@@ -72,7 +72,7 @@ public class ExecutionMonitors
         }
 
         @Override
-        public void done( long totalTimeMillis, String additionalInformation )
+        public void done( boolean successful, long totalTimeMillis, String additionalInformation )
         {   // Do nothing
         }
     };

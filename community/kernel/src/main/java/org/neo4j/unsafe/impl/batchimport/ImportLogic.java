@@ -145,6 +145,7 @@ public class ImportLogic implements Closeable
     private final Dependencies dependencies = new Dependencies();
     private final Monitor monitor;
     private Input input;
+    private boolean successful;
 
     // This map contains additional state that gets populated, created and used throughout the stages.
     // The reason that this is a map is to allow for a uniform way of accessing and loading this stage
@@ -503,6 +504,12 @@ public class ImportLogic implements Closeable
         }
     }
 
+    public void success()
+    {
+        neoStore.success();
+        successful = true;
+    }
+
     @Override
     public void close() throws IOException
     {
@@ -510,7 +517,7 @@ public class ImportLogic implements Closeable
         long totalTimeMillis = currentTimeMillis() - startTime;
         DataStatistics state = getState( DataStatistics.class );
         String additionalInformation = Objects.toString( state, "Data statistics is not available." );
-        executionMonitor.done( totalTimeMillis, format( "%n%s%nPeak memory usage: %s", additionalInformation, bytes( peakMemoryUsage ) ) );
+        executionMonitor.done( successful, totalTimeMillis, format( "%n%s%nPeak memory usage: %s", additionalInformation, bytes( peakMemoryUsage ) ) );
         log.info( "Import completed successfully, took " + duration( totalTimeMillis ) + ". " + additionalInformation );
         closeAll( nodeRelationshipCache, nodeLabelsCache, idMapper );
     }
