@@ -1,87 +1,88 @@
 <?xml version="1.0"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
-  <parent>
-    <groupId>org.neo4j</groupId>
-    <artifactId>neo4j-front-end-parent-4.0</artifactId>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <parent>
+        <groupId>org.neo4j</groupId>
+        <artifactId>neo4j-front-end-parent-4.0</artifactId>
+        <version>4.0.0-SNAPSHOT</version>
+        <relativePath>../</relativePath>
+    </parent>
+
+    <modelVersion>4.0.0</modelVersion>
+    <artifactId>neo4j-ast-4.0</artifactId>
+    <packaging>jar</packaging>
     <version>4.0.0-SNAPSHOT</version>
-    <relativePath>../</relativePath>
-  </parent>
+    <name>openCypher AST for the Cypher Query Language</name>
 
-  <modelVersion>4.0.0</modelVersion>
-  <artifactId>neo4j-ast-4.0</artifactId>
-  <packaging>jar</packaging>
-  <version>4.0.0-SNAPSHOT</version>
-  <name>openCypher AST for the Cypher Query Language</name>
+    <description>Abstract Syntax Tree and semantic analysis for the Cypher query language</description>
 
-  <description>Abstract Syntax Tree and semantic analysis for the Cypher query language</description>
+    <scm>
+        <connection>scm:git:git://github.com/openCypher/front-end.git</connection>
+        <developerConnection>scm:git:git@github.com:openCypher/front-end.git</developerConnection>
+        <url>https://github.com/openCypher/front-end</url>
+    </scm>
 
-  <scm>
-    <connection>scm:git:git://github.com/openCypher/front-end.git</connection>
-    <developerConnection>scm:git:git@github.com:openCypher/front-end.git</developerConnection>
-    <url>https://github.com/openCypher/front-end</url>
-  </scm>
+    <properties>
+        <moduleName>org.neo4j.cypher.internal.v4_0.ast</moduleName>
+    </properties>
 
-  <properties>
-    <moduleName>org.neo4j.cypher.internal.v4_0.ast</moduleName>
-  </properties>
+    <licenses>
+        <license>
+            <name>Apache License, Version 2.0</name>
+            <url>http://www.apache.org/licenses/LICENSE-2.0</url>
+        </license>
+    </licenses>
 
-  <licenses>
-    <license>
-      <name>Apache License, Version 2.0</name>
-      <url>http://www.apache.org/licenses/LICENSE-2.0</url>
-    </license>
-  </licenses>
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>test-jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
 
-  <build>
-    <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-jar-plugin</artifactId>
-        <executions>
-          <execution>
-            <goals>
-              <goal>test-jar</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-    </plugins>
-  </build>
+    <dependencies>
 
-  <dependencies>
+        <!-- shared versions are defined in the parent pom -->
 
-    <!-- shared versions are defined in the parent pom -->
+        <dependency>
+            <groupId>org.neo4j</groupId>
+            <artifactId>neo4j-util-4.0</artifactId>
+            <version>${project.version}</version>
+        </dependency>
 
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-util-4.0</artifactId>
-      <version>${project.version}</version>
-    </dependency>
+        <dependency>
+            <groupId>org.neo4j</groupId>
+            <artifactId>neo4j-util-4.0</artifactId>
+            <version>${project.version}</version>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
 
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-util-4.0</artifactId>
-      <version>${project.version}</version>
-      <type>test-jar</type>
-      <scope>test</scope>
-    </dependency>
+        <dependency>
+            <groupId>org.neo4j</groupId>
+            <artifactId>neo4j-expressions-4.0</artifactId>
+            <version>${project.version}</version>
+        </dependency>
 
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-expressions-4.0</artifactId>
-      <version>${project.version}</version>
-    </dependency>
+        <dependency>
+            <groupId>org.neo4j</groupId>
+            <artifactId>neo4j-expressions-4.0</artifactId>
+            <version>${project.version}</version>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
 
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-expressions-4.0</artifactId>
-      <version>${project.version}</version>
-      <type>test-jar</type>
-      <scope>test</scope>
-    </dependency>
+        <!-- scala -->
 
-    <!-- scala -->
-
-  </dependencies>
+    </dependencies>
 
 </project>

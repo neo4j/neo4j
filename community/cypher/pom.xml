@@ -1,174 +1,174 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
                       http://maven.apache.org/xsd/maven-4.0.0.xsd">
-  <modelVersion>4.0.0</modelVersion>
+    <modelVersion>4.0.0</modelVersion>
 
-  <parent>
-    <groupId>org.neo4j</groupId>
-    <artifactId>parent</artifactId>
+    <parent>
+        <groupId>org.neo4j</groupId>
+        <artifactId>parent</artifactId>
+        <version>4.0.0-SNAPSHOT</version>
+        <relativePath>../..</relativePath>
+    </parent>
+
+    <artifactId>cypher-parent</artifactId>
     <version>4.0.0-SNAPSHOT</version>
-    <relativePath>../..</relativePath>
-  </parent>
+    <packaging>pom</packaging>
+    <name>Neo4j - Community Cypher Build</name>
+    <description>Project that builds the Neo4j Cypher modules as part of the Community distribution.</description>
+    <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
-  <artifactId>cypher-parent</artifactId>
-  <version>4.0.0-SNAPSHOT</version>
-  <packaging>pom</packaging>
-  <name>Neo4j - Community Cypher Build</name>
-  <description>Project that builds the Neo4j Cypher modules as part of the Community distribution.</description>
-  <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
+    <properties>
+        <licensing.prepend.text>licensing/notice-gpl-prefix.txt</licensing.prepend.text>
+        <license-text.header>headers/GPL-3-header.txt</license-text.header>
+    </properties>
 
-  <properties>
-    <licensing.prepend.text>licensing/notice-gpl-prefix.txt</licensing.prepend.text>
-    <license-text.header>headers/GPL-3-header.txt</license-text.header>
-  </properties>
+    <scm>
+        <connection>scm:git:git://github.com/neo4j/neo4j.git</connection>
+        <developerConnection>scm:git:git@github.com:neo4j/neo4j.git</developerConnection>
+        <url>https://github.com/neo4j/neo4j</url>
+    </scm>
 
-  <scm>
-    <connection>scm:git:git://github.com/neo4j/neo4j.git</connection>
-    <developerConnection>scm:git:git@github.com:neo4j/neo4j.git</developerConnection>
-    <url>https://github.com/neo4j/neo4j</url>
-  </scm>
+    <profiles>
+        <profile>
+            <id>include-cypher</id>
+            <activation>
+                <property>
+                    <name>!skipCypher</name>
+                </property>
+            </activation>
+            <modules>
+                <module>ir</module>
+                <module>cypher-planner</module>
+                <module>planner-spi</module>
+                <module>cypher</module>
+                <module>cypher-logical-plans</module>
+                <module>front-end</module>
+                <module>runtime-util</module>
+                <module>interpreted-runtime</module>
+                <module>acceptance-spec-suite</module>
+                <module>compatibility-spec-suite</module>
+                <module>spec-suite-tools</module>
+            </modules>
+        </profile>
+    </profiles>
 
-  <profiles>
-    <profile>
-      <id>include-cypher</id>
-      <activation>
-        <property>
-          <name>!skipCypher</name>
-        </property>
-      </activation>
-      <modules>
-        <module>ir</module>
-        <module>cypher-planner</module>
-        <module>planner-spi</module>
-        <module>cypher</module>
-        <module>cypher-logical-plans</module>
-        <module>front-end</module>
-        <module>runtime-util</module>
-        <module>interpreted-runtime</module>
-        <module>acceptance-spec-suite</module>
-        <module>compatibility-spec-suite</module>
-        <module>spec-suite-tools</module>
-      </modules>
-    </profile>
-  </profiles>
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>net.alchim31.maven</groupId>
+                <artifactId>scala-maven-plugin</artifactId>
+            </plugin>
 
-  <build>
-    <plugins>
-      <plugin>
-        <groupId>net.alchim31.maven</groupId>
-        <artifactId>scala-maven-plugin</artifactId>
-      </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-enforcer-plugin</artifactId>
+                <configuration>
+                    <rules combine.children="append">
+                        <requireFilesDontExist>
+                            <files>
+                                <file>cypher-planner-3.6</file>
+                                <file>cypher-planner-3.5</file>
+                                <file>cypher-compiler-3.4</file>
+                                <file>cypher-compiler-3.3</file>
+                                <file>cypher-compiler-3.2</file>
+                                <file>cypher-compiler-3.1</file>
+                                <file>cypher-compiler-3.0</file>
+                                <file>cypher-compiler-2.3</file>
+                            </files>
+                        </requireFilesDontExist>
+                    </rules>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
 
-      <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-enforcer-plugin</artifactId>
-          <configuration>
-              <rules combine.children="append">
-                  <requireFilesDontExist>
-                      <files>
-                          <file>cypher-planner-3.6</file>
-                          <file>cypher-planner-3.5</file>
-                          <file>cypher-compiler-3.4</file>
-                          <file>cypher-compiler-3.3</file>
-                          <file>cypher-compiler-3.2</file>
-                          <file>cypher-compiler-3.1</file>
-                          <file>cypher-compiler-3.0</file>
-                          <file>cypher-compiler-2.3</file>
-                      </files>
-                  </requireFilesDontExist>
-              </rules>
-          </configuration>
-      </plugin>
-    </plugins>
-  </build>
+    <!-- inherited dependencies, versions are set in dependencyManagement -->
 
-  <!-- inherited dependencies, versions are set in dependencyManagement -->
-
-  <dependencies>
-
-    <dependency>
-      <groupId>com.google.code.findbugs</groupId>
-      <artifactId>annotations</artifactId>
-    </dependency>
-
-    <!-- shared java test dependencies -->
-    <dependency>
-      <groupId>org.junit.jupiter</groupId>
-      <artifactId>junit-jupiter-migrationsupport</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.junit.vintage</groupId>
-      <artifactId>junit-vintage-engine</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.junit.jupiter</groupId>
-      <artifactId>junit-jupiter-engine</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.hamcrest</groupId>
-      <artifactId>hamcrest</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.mockito</groupId>
-      <artifactId>mockito-core</artifactId>
-    </dependency>
-
-  </dependencies>
-
-  <!-- Required versions for each dependency, inherited dependencies are set in dependencies -->
-
-  <dependencyManagement>
     <dependencies>
-      <!-- neo4j -->
-      <dependency>
-        <groupId>org.neo4j</groupId>
-        <artifactId>neo4j-kernel</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.neo4j</groupId>
-        <artifactId>neo4j-kernel</artifactId>
-        <version>${project.version}</version>
-        <type>test-jar</type>
-        <scope>test</scope>
-      </dependency>
-      <dependency>
-        <groupId>org.neo4j</groupId>
-        <artifactId>neo4j-common</artifactId>
-        <version>${project.version}</version>
-        <type>test-jar</type>
-        <scope>test</scope>
-      </dependency>
-      <dependency>
-        <groupId>org.neo4j</groupId>
-        <artifactId>neo4j-io</artifactId>
-        <version>${project.version}</version>
-        <type>test-jar</type>
-        <scope>test</scope>
-      </dependency>
-      <dependency>
-        <groupId>org.neo4j</groupId>
-        <artifactId>neo4j-lucene-index</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.neo4j</groupId>
-        <artifactId>neo4j-graph-algo</artifactId>
-        <version>${project.version}</version>
-      </dependency>
 
-      <!-- other -->
-      <dependency>
-        <groupId>org.parboiled</groupId>
-        <artifactId>parboiled-scala_${scala.binary.version}</artifactId>
-        <version>1.1.7</version>
-        <exclusions>
-          <exclusion>
-            <artifactId>scala-library</artifactId>
-            <groupId>org.scala-lang</groupId>
-          </exclusion>
-        </exclusions>
-      </dependency>
+        <dependency>
+            <groupId>com.google.code.findbugs</groupId>
+            <artifactId>annotations</artifactId>
+        </dependency>
+
+        <!-- shared java test dependencies -->
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-migrationsupport</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.vintage</groupId>
+            <artifactId>junit-vintage-engine</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-engine</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.hamcrest</groupId>
+            <artifactId>hamcrest</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-core</artifactId>
+        </dependency>
+
     </dependencies>
-  </dependencyManagement>
+
+    <!-- Required versions for each dependency, inherited dependencies are set in dependencies -->
+
+    <dependencyManagement>
+        <dependencies>
+            <!-- neo4j -->
+            <dependency>
+                <groupId>org.neo4j</groupId>
+                <artifactId>neo4j-kernel</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.neo4j</groupId>
+                <artifactId>neo4j-kernel</artifactId>
+                <version>${project.version}</version>
+                <type>test-jar</type>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.neo4j</groupId>
+                <artifactId>neo4j-common</artifactId>
+                <version>${project.version}</version>
+                <type>test-jar</type>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.neo4j</groupId>
+                <artifactId>neo4j-io</artifactId>
+                <version>${project.version}</version>
+                <type>test-jar</type>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.neo4j</groupId>
+                <artifactId>neo4j-lucene-index</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.neo4j</groupId>
+                <artifactId>neo4j-graph-algo</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <!-- other -->
+            <dependency>
+                <groupId>org.parboiled</groupId>
+                <artifactId>parboiled-scala_${scala.binary.version}</artifactId>
+                <version>1.1.7</version>
+                <exclusions>
+                    <exclusion>
+                        <artifactId>scala-library</artifactId>
+                        <groupId>org.scala-lang</groupId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 </project>

@@ -1,172 +1,175 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-  <modelVersion>4.0.0</modelVersion>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
 
-  <parent>
-    <groupId>org.neo4j</groupId>
-    <artifactId>parent</artifactId>
+    <parent>
+        <groupId>org.neo4j</groupId>
+        <artifactId>parent</artifactId>
+        <version>4.0.0-SNAPSHOT</version>
+
+        <relativePath>../..</relativePath>
+    </parent>
+
+    <groupId>org.neo4j.assembly</groupId>
+    <artifactId>neo4j-standalone</artifactId>
+    <packaging>pom</packaging>
+
+    <name>Neo4j - Server Assembler</name>
+
     <version>4.0.0-SNAPSHOT</version>
 
-    <relativePath>../..</relativePath>
-  </parent>
+    <description>This project assembles the Neo4j stand-alone distribution,
+        pulling together all the deliverable artifacts and packaging them
+        into a downloadable installer.
+    </description>
+    <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
-  <groupId>org.neo4j.assembly</groupId>
-  <artifactId>neo4j-standalone</artifactId>
-  <packaging>pom</packaging>
+    <scm>
+        <connection>scm:git:git://github.com/neo4j/neo4j.git</connection>
+        <developerConnection>scm:git:git@github.com:neo4j/neo4j.git</developerConnection>
+        <url>https://github.com/neo4j/neo4j</url>
+    </scm>
 
-  <name>Neo4j - Server Assembler</name>
+    <modules>
+        <module>standalone-community</module>
+    </modules>
 
-  <version>4.0.0-SNAPSHOT</version>
+    <properties>
+        <license-text.header>headers/AGPL-3-header.txt</license-text.header>
+        <!-- other filter properties -->
+        <neo4j.version>${project.version}</neo4j.version>
 
-  <description>This project assembles the Neo4j stand-alone distribution,
-    pulling together all the deliverable artifacts and packaging them
-    into a downloadable installer.</description>
-  <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
+        <!-- conf/neo4j.conf filter properties -->
+        <default.http.port>7474</default.http.port>
+        <default.https.port>7473</default.https.port>
 
-  <scm>
-    <connection>scm:git:git://github.com/neo4j/neo4j.git</connection>
-    <developerConnection>scm:git:git@github.com:neo4j/neo4j.git</developerConnection>
-    <url>https://github.com/neo4j/neo4j</url>
-  </scm>
+        <skip.shell.tests>false</skip.shell.tests>
+    </properties>
 
-  <modules>
-    <module>standalone-community</module>
-  </modules>
+    <licenses>
+        <license>
+            <name>GNU Affero General Public License, Version 3 with the Commons Clause</name>
+            <url>http://www.gnu.org/licenses/agpl-3.0-standalone.html</url>
+            <comments>
+                The software ("Software") developed and owned by Neo4j Sweden AB (referred to in this notice as "Neo4j") is
+                licensed under the GNU AFFERO GENERAL PUBLIC LICENSE Version 3 with the Commons Clause to all
+                third parties and that license is included below.
 
-  <properties>
-    <license-text.header>headers/AGPL-3-header.txt</license-text.header>
-    <!-- other filter properties -->
-    <neo4j.version>${project.version}</neo4j.version>
+                However, if you have executed an End User Software License and Services
+                Agreement or an OEM Software License and Support Services Agreement, or
+                another commercial license agreement with Neo4j or one of its
+                affiliates (each, a "Commercial Agreement"), the terms of the license in
+                such Commercial Agreement will supersede the GNU AFFERO GENERAL PUBLIC
+                LICENSE Version 3 and you may use the Software solely pursuant to the
+                terms of the relevant Commercial Agreement.
+            </comments>
+        </license>
+    </licenses>
 
-    <!-- conf/neo4j.conf filter properties -->
-    <default.http.port>7474</default.http.port>
-    <default.https.port>7473</default.https.port>
+    <build>
+        <plugins>
+            <plugin>
+                <inherited>false</inherited>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>copy-shell</id>
+                        <phase>process-resources</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <target>
+                                <ant antfile="${project.basedir}/build.xml" inheritRefs="true"/>
+                            </target>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
 
-    <skip.shell.tests>false</skip.shell.tests>
-  </properties>
+            <plugin>
+                <groupId>org.neo4j.build.plugins</groupId>
+                <artifactId>licensing-maven-plugin</artifactId>
+                <configuration>
+                    <prependText>licensing/notice-agpl-prefix.txt</prependText>
+                    <excludedGroups>^((org.neo4j){1}|(org.neo4j.app){1}|(org.neo4j.server.plugin){1}|(org.neo4j.assembly){1})$</excludedGroups>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>list-all-licenses</id>
+                        <configuration>
+                            <licensingRequirementFiles combine.children="append">
+                                <licensingRequirementFile>licensing/licensing-requirements-browser.xml</licensingRequirementFile>
+                            </licensingRequirementFiles>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
 
-  <licenses>
-    <license>
-      <name>GNU Affero General Public License, Version 3 with the Commons Clause</name>
-      <url>http://www.gnu.org/licenses/agpl-3.0-standalone.html</url>
-      <comments>The software ("Software") developed and owned by Neo4j Sweden AB (referred to in this notice as "Neo4j") is
-        licensed under the GNU AFFERO GENERAL PUBLIC LICENSE Version 3 with the Commons Clause to all
-        third parties and that license is included below.
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>shell-script-tests</id>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <inherited>false</inherited>
+                        <configuration>
+                            <skip>${skip.shell.tests}</skip>
+                            <executable>./run-tests.sh</executable>
+                            <workingDirectory>src/tests/shell-scripts</workingDirectory>
+                            <arguments>
+                                <argument>--verbose</argument>
+                            </arguments>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
 
-        However, if you have executed an End User Software License and Services
-        Agreement or an OEM Software License and Support Services Agreement, or
-        another commercial license agreement with Neo4j or one of its
-        affiliates (each, a "Commercial Agreement"), the terms of the license in
-        such Commercial Agreement will supersede the GNU AFFERO GENERAL PUBLIC
-        LICENSE Version 3 and you may use the Software solely pursuant to the
-        terms of the relevant Commercial Agreement.
-      </comments>
-    </license>
-  </licenses>
+    <dependencies>
+        <dependency>
+            <groupId>org.neo4j</groupId>
+            <artifactId>neo4j-import-tool</artifactId>
+            <version>${project.version}</version>
+        </dependency>
 
-  <build>
-    <plugins>
-      <plugin>
-        <inherited>false</inherited>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-antrun-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>copy-shell</id>
-            <phase>process-resources</phase>
-            <goals>
-              <goal>run</goal>
-            </goals>
-            <configuration>
-              <target>
-                <ant antfile="${project.basedir}/build.xml" inheritRefs="true"/>
-              </target>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
+        <!-- Defined to allow maven to calculate build order, it's used in the plugin above -->
+        <dependency>
+            <groupId>org.neo4j.build</groupId>
+            <artifactId>build-resources</artifactId>
+            <version>${project.version}</version>
+            <scope>provided</scope>
+        </dependency>
+    </dependencies>
 
-      <plugin>
-        <groupId>org.neo4j.build.plugins</groupId>
-        <artifactId>licensing-maven-plugin</artifactId>
-        <configuration>
-          <prependText>licensing/notice-agpl-prefix.txt</prependText>
-          <excludedGroups>^((org.neo4j){1}|(org.neo4j.app){1}|(org.neo4j.server.plugin){1}|(org.neo4j.assembly){1})$</excludedGroups>
-        </configuration>
-        <executions>
-          <execution>
-            <id>list-all-licenses</id>
-            <configuration>
-              <licensingRequirementFiles combine.children="append">
-                <licensingRequirementFile>licensing/licensing-requirements-browser.xml</licensingRequirementFile>
-              </licensingRequirementFiles>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>exec-maven-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>shell-script-tests</id>
-            <phase>test</phase>
-            <goals>
-              <goal>exec</goal>
-            </goals>
-            <inherited>false</inherited>
-            <configuration>
-              <skip>${skip.shell.tests}</skip>
-              <executable>./run-tests.sh</executable>
-              <workingDirectory>src/tests/shell-scripts</workingDirectory>
-              <arguments>
-                <argument>--verbose</argument>
-              </arguments>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-    </plugins>
-  </build>
-
-  <dependencies>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-import-tool</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-
-    <!-- Defined to allow maven to calculate build order, it's used in the plugin above -->
-    <dependency>
-      <groupId>org.neo4j.build</groupId>
-      <artifactId>build-resources</artifactId>
-      <version>${project.version}</version>
-      <scope>provided</scope>
-    </dependency>
-  </dependencies>
-
-  <profiles>
-    <profile>
-      <id>disable-shell-script-tests</id>
-      <activation>
-        <os>
-          <family>windows</family>
-        </os>
-      </activation>
-      <properties>
-        <skip.shell.tests>true</skip.shell.tests>
-      </properties>
-    </profile>
-    <profile>
-      <id>skip-shell-script-tests</id>
-      <activation>
-        <property>
-          <name>skipTests</name>
-        </property>
-      </activation>
-      <properties>
-        <skip.shell.tests>true</skip.shell.tests>
-      </properties>
-    </profile>
-  </profiles>
+    <profiles>
+        <profile>
+            <id>disable-shell-script-tests</id>
+            <activation>
+                <os>
+                    <family>windows</family>
+                </os>
+            </activation>
+            <properties>
+                <skip.shell.tests>true</skip.shell.tests>
+            </properties>
+        </profile>
+        <profile>
+            <id>skip-shell-script-tests</id>
+            <activation>
+                <property>
+                    <name>skipTests</name>
+                </property>
+            </activation>
+            <properties>
+                <skip.shell.tests>true</skip.shell.tests>
+            </properties>
+        </profile>
+    </profiles>
 </project>

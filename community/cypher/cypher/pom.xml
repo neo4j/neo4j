@@ -1,293 +1,295 @@
 <?xml version="1.0"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
-  <parent>
-    <groupId>org.neo4j</groupId>
-    <artifactId>cypher-parent</artifactId>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <parent>
+        <groupId>org.neo4j</groupId>
+        <artifactId>cypher-parent</artifactId>
+        <version>4.0.0-SNAPSHOT</version>
+        <relativePath>../</relativePath>
+    </parent>
+
+    <modelVersion>4.0.0</modelVersion>
+    <artifactId>neo4j-cypher</artifactId>
+    <packaging>jar</packaging>
     <version>4.0.0-SNAPSHOT</version>
-    <relativePath>../</relativePath>
-  </parent>
+    <name>Neo4j - Cypher</name>
+    <description>Neo4j query language</description>
+    <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
-  <modelVersion>4.0.0</modelVersion>
-  <artifactId>neo4j-cypher</artifactId>
-  <packaging>jar</packaging>
-  <version>4.0.0-SNAPSHOT</version>
-  <name>Neo4j - Cypher</name>
-  <description>Neo4j query language</description>
-  <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
+    <properties>
+        <moduleName>org.neo4j.cypher</moduleName>
+        <license-text.header>headers/GPL-3-header.txt</license-text.header>
+    </properties>
 
-  <properties>
-    <moduleName>org.neo4j.cypher</moduleName>
-    <license-text.header>headers/GPL-3-header.txt</license-text.header>
-  </properties>
+    <scm>
+        <connection>scm:git:git://github.com/neo4j/neo4j.git</connection>
+        <developerConnection>scm:git:git@github.com:neo4j/neo4j.git</developerConnection>
+        <url>https://github.com/neo4j/neo4j</url>
+    </scm>
 
-  <scm>
-    <connection>scm:git:git://github.com/neo4j/neo4j.git</connection>
-    <developerConnection>scm:git:git@github.com:neo4j/neo4j.git</developerConnection>
-    <url>https://github.com/neo4j/neo4j</url>
-  </scm>
+    <licenses>
+        <license>
+            <name>GNU General Public License, Version 3</name>
+            <url>http://www.gnu.org/licenses/gpl-3.0-standalone.html</url>
+            <comments>
+                The software ("Software") developed and owned by Neo4j Sweden AB (referred to in this notice as "Neo4j") is
+                licensed under the GNU GENERAL PUBLIC LICENSE Version 3 to all third
+                parties and that license is included below.
 
-  <licenses>
-    <license>
-      <name>GNU General Public License, Version 3</name>
-      <url>http://www.gnu.org/licenses/gpl-3.0-standalone.html</url>
-      <comments>The software ("Software") developed and owned by Neo4j Sweden AB (referred to in this notice as "Neo4j") is
-        licensed under the GNU GENERAL PUBLIC LICENSE Version 3 to all third
-        parties and that license is included below.
+                However, if you have executed an End User Software License and Services
+                Agreement or an OEM Software License and Support Services Agreement, or
+                another commercial license agreement with Neo4j or one of its
+                affiliates (each, a "Commercial Agreement"), the terms of the license in
+                such Commercial Agreement will supersede the GNU GENERAL PUBLIC LICENSE
+                Version 3 and you may use the Software solely pursuant to the terms of
+                the relevant Commercial Agreement.
+            </comments>
+        </license>
+    </licenses>
 
-        However, if you have executed an End User Software License and Services
-        Agreement or an OEM Software License and Support Services Agreement, or
-        another commercial license agreement with Neo4j or one of its
-        affiliates (each, a "Commercial Agreement"), the terms of the license in
-        such Commercial Agreement will supersede the GNU GENERAL PUBLIC LICENSE
-        Version 3 and you may use the Software solely pursuant to the terms of
-        the relevant Commercial Agreement.
-      </comments>
-    </license>
-  </licenses>
+    <build>
+        <plugins>
+            <!-- This module contains public API, run revapi -->
+            <plugin>
+                <groupId>org.revapi</groupId>
+                <artifactId>revapi-maven-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
 
-  <build>
-    <plugins>
-      <!-- This module contains public API, run revapi -->
-      <plugin>
-        <groupId>org.revapi</groupId>
-        <artifactId>revapi-maven-plugin</artifactId>
-      </plugin>
-    </plugins>
-  </build>
+    <dependencies>
+        <!-- scala -->
+        <dependency>
+            <groupId>org.scala-lang</groupId>
+            <artifactId>scala-library</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.scala-lang</groupId>
+            <artifactId>scala-reflect</artifactId>
+        </dependency>
 
-  <dependencies>
-    <!-- scala -->
-    <dependency>
-      <groupId>org.scala-lang</groupId>
-      <artifactId>scala-library</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.scala-lang</groupId>
-      <artifactId>scala-reflect</artifactId>
-    </dependency>
+        <!-- scala test dependencies -->
+        <dependency>
+            <groupId>org.scalatest</groupId>
+            <artifactId>scalatest_${scala.binary.version}</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.scalautils</groupId>
+            <artifactId>scalautils_${scala.binary.version}</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.scalacheck</groupId>
+            <artifactId>scalacheck_${scala.binary.version}</artifactId>
+        </dependency>
 
-    <!-- scala test dependencies -->
-    <dependency>
-      <groupId>org.scalatest</groupId>
-      <artifactId>scalatest_${scala.binary.version}</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.scalautils</groupId>
-      <artifactId>scalautils_${scala.binary.version}</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.scalacheck</groupId>
-      <artifactId>scalacheck_${scala.binary.version}</artifactId>
-    </dependency>
+        <!-- neo4j -->
+        <dependency>
+            <groupId>org.neo4j</groupId>
+            <artifactId>neo4j-kernel</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.neo4j</groupId>
+            <artifactId>neo4j-codegen</artifactId>
+            <version>${project.version}</version>
+        </dependency>
 
-    <!-- neo4j -->
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-kernel</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-codegen</artifactId>
-      <version>${project.version}</version>
-    </dependency>
+        <!-- neo4j testing -->
+        <dependency>
+            <groupId>org.neo4j</groupId>
+            <artifactId>neo4j-common</artifactId>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.neo4j</groupId>
+            <artifactId>neo4j-io</artifactId>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.neo4j</groupId>
+            <artifactId>neo4j-logging</artifactId>
+            <version>${project.version}</version>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.neo4j</groupId>
+            <artifactId>neo4j-kernel</artifactId>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-math3</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.reflections</groupId>
+            <artifactId>reflections</artifactId>
+            <scope>test</scope>
+            <version>0.9.11</version>
+        </dependency>
 
-    <!-- neo4j testing -->
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-common</artifactId>
-      <type>test-jar</type>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-io</artifactId>
-      <type>test-jar</type>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-logging</artifactId>
-      <version>${project.version}</version>
-      <type>test-jar</type>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-kernel</artifactId>
-      <type>test-jar</type>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.commons</groupId>
-      <artifactId>commons-math3</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.reflections</groupId>
-      <artifactId>reflections</artifactId>
-      <scope>test</scope>
-      <version>0.9.11</version>
-    </dependency>
+        <!-- neo4j-cypher -->
+        <dependency>
+            <groupId>org.neo4j</groupId>
+            <artifactId>neo4j-cypher-planner-3.5</artifactId>
+            <version>${cypher.compatibility.35}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.neo4j</groupId>
+                    <artifactId>neo4j-kernel</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.neo4j</groupId>
+                    <artifactId>neo4j-lucene-index</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.neo4j</groupId>
+                    <artifactId>neo4j-graph-algo</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.scala-lang</groupId>
+                    <artifactId>scala-library</artifactId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>scala-reflect</artifactId>
+                    <groupId>org.scala-lang</groupId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.parboiled</groupId>
+                    <artifactId>parboiled-scala_2.10</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>net.sf.opencsv</groupId>
+                    <artifactId>opencsv</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.googlecode.concurrentlinkedhashmap</groupId>
+                    <artifactId>concurrentlinkedhashmap-lru</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.neo4j</groupId>
+            <artifactId>neo4j-cypher-logical-plans-3.5</artifactId>
+            <version>${cypher.compatibility.35}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.neo4j</groupId>
+                    <artifactId>neo4j-graphdb-api</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
 
-    <!-- neo4j-cypher -->
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-cypher-planner-3.5</artifactId>
-      <version>${cypher.compatibility.35}</version>
-      <exclusions>
-        <exclusion>
-          <groupId>org.neo4j</groupId>
-          <artifactId>neo4j-kernel</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.neo4j</groupId>
-          <artifactId>neo4j-lucene-index</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.neo4j</groupId>
-          <artifactId>neo4j-graph-algo</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.scala-lang</groupId>
-          <artifactId>scala-library</artifactId>
-        </exclusion>
-        <exclusion>
-          <artifactId>scala-reflect</artifactId>
-          <groupId>org.scala-lang</groupId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.parboiled</groupId>
-          <artifactId>parboiled-scala_2.10</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>net.sf.opencsv</groupId>
-          <artifactId>opencsv</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>com.googlecode.concurrentlinkedhashmap</groupId>
-          <artifactId>concurrentlinkedhashmap-lru</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-cypher-logical-plans-3.5</artifactId>
-      <version>${cypher.compatibility.35}</version>
-      <exclusions>
-        <exclusion>
-          <groupId>org.neo4j</groupId>
-          <artifactId>neo4j-graphdb-api</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
+        <dependency>
+            <groupId>org.neo4j</groupId>
+            <artifactId>neo4j-legacy</artifactId>
+            <version>${project.version}</version>
+        </dependency>
 
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-legacy</artifactId>
-      <version>${project.version}</version>
-    </dependency>
+        <dependency>
+            <groupId>org.neo4j</groupId>
+            <artifactId>neo4j-util-4.0</artifactId>
+            <version>${project.version}</version>
+        </dependency>
 
-      <dependency>
-          <groupId>org.neo4j</groupId>
-          <artifactId>neo4j-util-4.0</artifactId>
-          <version>${project.version}</version>
-      </dependency>
+        <dependency>
+            <groupId>org.neo4j</groupId>
+            <artifactId>neo4j-cypher-planner-4.0</artifactId>
+            <version>${project.version}</version>
+        </dependency>
 
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-cypher-planner-4.0</artifactId>
-      <version>${project.version}</version>
-    </dependency>
+        <dependency>
+            <groupId>org.neo4j</groupId>
+            <artifactId>neo4j-cypher-planner-spi-4.0</artifactId>
+            <version>${project.version}</version>
+        </dependency>
 
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-cypher-planner-spi-4.0</artifactId>
-      <version>${project.version}</version>
-    </dependency>
+        <dependency>
+            <groupId>org.neo4j</groupId>
+            <artifactId>neo4j-cypher-runtime-util</artifactId>
+            <version>${project.version}</version>
+        </dependency>
 
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-cypher-runtime-util</artifactId>
-      <version>${project.version}</version>
-    </dependency>
+        <dependency>
+            <groupId>org.neo4j</groupId>
+            <artifactId>neo4j-cypher-interpreted-runtime</artifactId>
+            <version>${project.version}</version>
+        </dependency>
 
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-cypher-interpreted-runtime</artifactId>
-      <version>${project.version}</version>
-    </dependency>
+        <!-- neo4j-cypher test -->
 
-    <!-- neo4j-cypher test -->
+        <dependency>
+            <groupId>org.neo4j</groupId>
+            <artifactId>neo4j-cypher-planner-4.0</artifactId>
+            <version>${project.version}</version>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
 
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-cypher-planner-4.0</artifactId>
-      <version>${project.version}</version>
-      <type>test-jar</type>
-      <scope>test</scope>
-    </dependency>
+        <dependency>
+            <groupId>org.neo4j</groupId>
+            <artifactId>neo4j-cypher-runtime-util</artifactId>
+            <version>${project.version}</version>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
 
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-cypher-runtime-util</artifactId>
-      <version>${project.version}</version>
-      <type>test-jar</type>
-      <scope>test</scope>
-    </dependency>
+        <dependency>
+            <groupId>org.neo4j</groupId>
+            <artifactId>neo4j-cypher-interpreted-runtime</artifactId>
+            <version>${project.version}</version>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
 
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-cypher-interpreted-runtime</artifactId>
-      <version>${project.version}</version>
-      <type>test-jar</type>
-      <scope>test</scope>
-    </dependency>
+        <dependency>
+            <groupId>org.neo4j</groupId>
+            <artifactId>neo4j-util-4.0</artifactId>
+            <version>${project.version}</version>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
 
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-util-4.0</artifactId>
-      <version>${project.version}</version>
-      <type>test-jar</type>
-      <scope>test</scope>
-    </dependency>
+        <dependency>
+            <groupId>org.neo4j</groupId>
+            <artifactId>neo4j-ast-4.0</artifactId>
+            <version>${project.version}</version>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
 
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-ast-4.0</artifactId>
-      <version>${project.version}</version>
-      <type>test-jar</type>
-      <scope>test</scope>
-    </dependency>
+        <dependency>
+            <groupId>org.neo4j</groupId>
+            <artifactId>neo4j-parser-4.0</artifactId>
+            <version>${project.version}</version>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
 
-    <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-parser-4.0</artifactId>
-      <version>${project.version}</version>
-      <type>test-jar</type>
-      <scope>test</scope>
-    </dependency>
+        <!-- neo4j-cypher re-include excluded (with correct version) -->
 
-    <!-- neo4j-cypher re-include excluded (with correct version) -->
+        <dependency>
+            <groupId>org.parboiled</groupId>
+            <artifactId>parboiled-scala_${scala.binary.version}</artifactId>
+        </dependency>
 
-    <dependency>
-      <groupId>org.parboiled</groupId>
-      <artifactId>parboiled-scala_${scala.binary.version}</artifactId>
-    </dependency>
+        <!-- other -->
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+        </dependency>
 
-    <!-- other -->
-    <dependency>
-      <groupId>org.apache.commons</groupId>
-      <artifactId>commons-lang3</artifactId>
-    </dependency>
+        <dependency>
+            <groupId>com.novus</groupId>
+            <artifactId>salat-core_${scala.binary.version}</artifactId>
+        </dependency>
 
-    <dependency>
-        <groupId>com.novus</groupId>
-        <artifactId>salat-core_${scala.binary.version}</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>commons-codec</groupId>
-      <artifactId>commons-codec</artifactId>
-    </dependency>
-  </dependencies>
+        <dependency>
+            <groupId>commons-codec</groupId>
+            <artifactId>commons-codec</artifactId>
+        </dependency>
+    </dependencies>
 
 </project>
