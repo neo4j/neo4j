@@ -36,7 +36,7 @@ import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.harness.extensionpackage.MyUnmanagedExtension;
-import org.neo4j.harness.junit.Neo4jRule;
+import org.neo4j.harness.junit.rule.Neo4jRule;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ssl.LegacySslPolicyConfig;
@@ -78,7 +78,7 @@ public class JUnitRuleTestIT
                 }
                 return null;
             } )
-            .withExtension( "/test", MyUnmanagedExtension.class );
+            .withUnmanagedExtension( "/test", MyUnmanagedExtension.class );
 
     @Test
     public void shouldExtensionWork()

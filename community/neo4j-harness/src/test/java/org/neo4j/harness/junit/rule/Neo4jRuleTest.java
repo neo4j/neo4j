@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.harness.junit;
+package org.neo4j.harness.junit.rule;
 
 import org.junit.jupiter.api.Test;
 import org.junit.runners.model.Statement;
@@ -26,8 +26,8 @@ import java.net.URI;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.neo4j.harness.ServerControls;
-import org.neo4j.harness.TestServerBuilder;
+import org.neo4j.harness.internal.Neo4jBuilder;
+import org.neo4j.harness.internal.Neo4jControls;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -45,17 +45,17 @@ class Neo4jRuleTest
     }
 
     @Test
-    void shouldThrowWhenHttpsUriNotConfigured() throws Throwable
+    void shouldThrowWhenHttpsUriNotConfigured()
     {
         assertThrows( IllegalStateException.class, () -> getHttpsUriFromNeo4jRule( null ) );
     }
 
     private static URI getHttpsUriFromNeo4jRule( URI configuredHttpsUri ) throws Throwable
     {
-        ServerControls serverControls = mock( ServerControls.class );
-        when( serverControls.httpsURI() ).thenReturn( Optional.ofNullable( configuredHttpsUri ) );
-        TestServerBuilder serverBuilder = mock( TestServerBuilder.class );
-        when( serverBuilder.newServer() ).thenReturn( serverControls );
+        Neo4jControls neo4jControls = mock( Neo4jControls.class );
+        when( neo4jControls.httpsURI() ).thenReturn( Optional.ofNullable( configuredHttpsUri ) );
+        Neo4jBuilder serverBuilder = mock( Neo4jBuilder.class );
+        when( serverBuilder.build() ).thenReturn( neo4jControls );
 
         Neo4jRule rule = new Neo4jRule( serverBuilder );
 
@@ -63,7 +63,7 @@ class Neo4jRuleTest
         Statement statement = rule.apply( new Statement()
         {
             @Override
-            public void evaluate() throws Throwable
+            public void evaluate()
             {
                 uriRef.set( rule.httpsURI() );
             }

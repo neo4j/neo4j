@@ -193,9 +193,9 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
         return this;
     }
 
-    public TestGraphDatabaseFactory addExtension( ExtensionFactory<?> extensions )
+    public TestGraphDatabaseFactory addExtension( ExtensionFactory<?> extension )
     {
-        return addExtensions( Collections.singletonList( extensions ) );
+        return addExtensions( Collections.singletonList( extension ) );
     }
 
     public TestGraphDatabaseFactory setExtensions( Iterable<ExtensionFactory<?>> extensions )

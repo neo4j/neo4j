@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.harness.junit;
+package org.neo4j.harness.junit.rule;
 
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
@@ -31,37 +31,39 @@ import java.util.function.Function;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.harness.ServerControls;
-import org.neo4j.harness.TestServerBuilder;
-import org.neo4j.harness.TestServerBuilders;
+import org.neo4j.harness.internal.Neo4jBuilder;
+import org.neo4j.harness.internal.Neo4jControls;
+import org.neo4j.harness.internal.TestNeo4jBuilders;
+import org.neo4j.kernel.extension.ExtensionFactory;
 
 /**
- * A convenience wrapper around {@link org.neo4j.harness.TestServerBuilder}, exposing it as a JUnit
- * {@link org.junit.Rule rule}.
- *
- * Note that it will try to start the web server on the standard 7474 port, but if that is not available
- * (typically because you already have an instance of Neo4j running) it will try other ports. Therefore it is necessary
+ * Community Neo4j JUnit {@link org.junit.Rule rule}.
+ * Allows easily start neo4j instance for testing purposes with various user-provided options and configurations.
+ * <p>
+ * By default it will try to start neo4j with embedded web server on random ports. Therefore it is necessary
  * for the test code to use {@link #httpURI()} and then {@link java.net.URI#resolve(String)} to create the URIs to be invoked.
+ * <p>
+ * In case if starting embedded web server is not desirable it can be fully disabled by using {@link #withDisabledServer()} configuration option.
  */
-public class Neo4jRule implements TestRule, TestServerBuilder
+public class Neo4jRule implements TestRule
 {
-    private TestServerBuilder builder;
-    private ServerControls controls;
+    private Neo4jBuilder builder;
+    private Neo4jControls controls;
     private PrintStream dumpLogsOnFailureTarget;
 
-    protected Neo4jRule( TestServerBuilder builder )
+    protected Neo4jRule( Neo4jBuilder builder )
     {
         this.builder = builder;
     }
 
-    public Neo4jRule( )
+    public Neo4jRule()
     {
-        this( TestServerBuilders.newInProcessBuilder() );
+        this( TestNeo4jBuilders.newInProcessBuilder() );
     }
 
     public Neo4jRule( File workingDirectory )
     {
-        this( TestServerBuilders.newInProcessBuilder( workingDirectory ) );
+        this( TestNeo4jBuilders.newInProcessBuilder( workingDirectory ) );
     }
 
     @Override
@@ -72,7 +74,7 @@ public class Neo4jRule implements TestRule, TestServerBuilder
             @Override
             public void evaluate() throws Throwable
             {
-                try ( ServerControls sc = controls = builder.newServer() )
+                try ( Neo4jControls sc = controls = builder.build() )
                 {
                     try
                     {
@@ -92,83 +94,78 @@ public class Neo4jRule implements TestRule, TestServerBuilder
         };
     }
 
-    @Override
-    public ServerControls newServer()
-    {
-        throw new UnsupportedOperationException( "The server cannot be manually started via this class, it must be used as a JUnit rule." );
-    }
-
-    @Override
     public Neo4jRule withConfig( Setting<?> key, String value )
     {
         builder = builder.withConfig( key, value );
         return this;
     }
 
-    @Override
     public Neo4jRule withConfig( String key, String value )
     {
         builder = builder.withConfig( key, value );
         return this;
     }
 
-    @Override
-    public Neo4jRule withExtension( String mountPath, Class<?> extension )
+    public Neo4jRule withUnmanagedExtension( String mountPath, Class<?> extension )
     {
-        builder = builder.withExtension( mountPath, extension );
+        builder = builder.withUnmanagedExtension( mountPath, extension );
         return this;
     }
 
-    @Override
-    public Neo4jRule withExtension( String mountPath, String packageName )
+    public Neo4jRule withUnmanagedExtension( String mountPath, String packageName )
     {
-        builder = builder.withExtension( mountPath, packageName );
+        builder = builder.withUnmanagedExtension( mountPath, packageName );
         return this;
     }
 
-    @Override
+    public Neo4jRule withExtensionFactories( Iterable<ExtensionFactory<?>> extensionFactories )
+    {
+        builder = builder.withExtensionFactories( extensionFactories );
+        return this;
+    }
+
+    public Neo4jRule withDisabledServer()
+    {
+        builder = builder.withDisabledServer();
+        return this;
+    }
+
     public Neo4jRule withFixture( File cypherFileOrDirectory )
     {
         builder = builder.withFixture( cypherFileOrDirectory );
         return this;
     }
 
-    @Override
     public Neo4jRule withFixture( String fixtureStatement )
     {
         builder = builder.withFixture( fixtureStatement );
         return this;
     }
 
-    @Override
-    public Neo4jRule withFixture( Function<GraphDatabaseService, Void> fixtureFunction )
+    public Neo4jRule withFixture( Function<GraphDatabaseService,Void> fixtureFunction )
     {
         builder = builder.withFixture( fixtureFunction );
         return this;
     }
 
-    @Override
     public Neo4jRule copyFrom( File sourceDirectory )
     {
         builder = builder.copyFrom( sourceDirectory );
         return this;
     }
 
-    @Override
     public Neo4jRule withProcedure( Class<?> procedureClass )
     {
         builder = builder.withProcedure( procedureClass );
         return this;
     }
 
-    @Override
     public Neo4jRule withFunction( Class<?> functionClass )
     {
         builder = builder.withFunction( functionClass );
         return this;
     }
 
-    @Override
     public Neo4jRule withAggregationFunction( Class<?> functionClass )
     {
         builder = builder.withAggregationFunction( functionClass );

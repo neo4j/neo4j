@@ -23,6 +23,9 @@ import org.codehaus.jackson.JsonNode;
 import org.junit.Rule;
 import org.junit.Test;
 
+import org.neo4j.harness.internal.Neo4jBuilder;
+import org.neo4j.harness.internal.Neo4jControls;
+import org.neo4j.harness.internal.TestNeo4jBuilders;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.procedure.Context;
 import org.neo4j.procedure.UserFunction;
@@ -90,9 +93,9 @@ public class JavaFunctionsTestIT
         }
     }
 
-    private TestServerBuilder createServer( Class<?> functionClass )
+    private Neo4jBuilder createServer( Class<?> functionClass )
     {
-        return TestServerBuilders.newInProcessBuilder()
+        return TestNeo4jBuilders.newInProcessBuilder()
                                  .withFunction( functionClass );
     }
 
@@ -101,7 +104,7 @@ public class JavaFunctionsTestIT
     {
         // When
         Class<MyFunctions> functionClass = MyFunctions.class;
-        try ( ServerControls server = createServer( functionClass ).newServer() )
+        try ( Neo4jControls server = createServer( functionClass ).build() )
         {
             // Then
             HTTP.Response response = HTTP.POST( server.httpURI().resolve( "db/data/transaction/commit" ).toString(),
@@ -120,7 +123,7 @@ public class JavaFunctionsTestIT
     public void shouldGetHelpfulErrorOnProcedureThrowsException() throws Exception
     {
         // When
-        try ( ServerControls server = createServer( MyFunctions.class ).newServer() )
+        try ( Neo4jControls server = createServer( MyFunctions.class ).build() )
         {
             // Then
             HTTP.Response response = HTTP.POST( server.httpURI().resolve( "db/data/transaction/commit" ).toString(),
@@ -139,7 +142,7 @@ public class JavaFunctionsTestIT
     public void shouldWorkWithInjectableFromExtension() throws Throwable
     {
         // When
-        try ( ServerControls server = createServer( MyFunctionsUsingMyService.class ).newServer() )
+        try ( Neo4jControls server = createServer( MyFunctionsUsingMyService.class ).build() )
         {
             // Then
             HTTP.Response response = HTTP.POST( server.httpURI().resolve( "db/data/transaction/commit" ).toString(),
@@ -156,7 +159,7 @@ public class JavaFunctionsTestIT
     public void shouldWorkWithInjectableFromExtensionWithMorePower() throws Throwable
     {
         // When
-        try ( ServerControls server = createServer( MyFunctionsUsingMyCoreAPI.class ).newServer() )
+        try ( Neo4jControls server = createServer( MyFunctionsUsingMyCoreAPI.class ).build() )
         {
             HTTP.POST( server.httpURI().resolve( "db/data/transaction/commit" ).toString(),
                     quotedJson( "{ 'statements': [ { 'statement': 'CREATE (), (), ()' } ] }" ) );
@@ -167,7 +170,7 @@ public class JavaFunctionsTestIT
         }
     }
 
-    private void assertQueryGetsValue( ServerControls server, String query, long value ) throws Throwable
+    private void assertQueryGetsValue( Neo4jControls server, String query, long value ) throws Throwable
     {
         HTTP.Response response = HTTP.POST( server.httpURI().resolve( "db/data/transaction/commit" ).toString(),
                 quotedJson( "{ 'statements': [ { 'statement': '" + query + "' } ] }" ) );
@@ -178,7 +181,7 @@ public class JavaFunctionsTestIT
         assertEquals( value, result.get( "data" ).get( 0 ).get( "row" ).get( 0 ).asLong() );
     }
 
-    private void assertQueryGetsError( ServerControls server, String query, String error ) throws Throwable
+    private void assertQueryGetsError( Neo4jControls server, String query, String error ) throws Throwable
     {
         HTTP.Response response = HTTP.POST( server.httpURI().resolve( "db/data/transaction/commit" ).toString(),
                 quotedJson( "{ 'statements': [ { 'statement': '" + query + "' } ] }" ) );

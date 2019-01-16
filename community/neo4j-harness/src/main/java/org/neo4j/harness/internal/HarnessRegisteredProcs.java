@@ -25,29 +25,28 @@ import java.util.List;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.kernel.impl.proc.Procedures;
 
-public class HarnessRegisteredProcs
+class HarnessRegisteredProcs
 {
     private final List<Class<?>> procs = new LinkedList<>();
     private final List<Class<?>> functions = new LinkedList<>();
     private final List<Class<?>> aggregationFunctions = new LinkedList<>();
 
-    public void addProcedure( Class<?> procedureClass )
+    void addProcedure( Class<?> procedureClass )
     {
         this.procs.add( procedureClass );
     }
 
-    public void addFunction( Class<?> functionClass )
+    void addFunction( Class<?> functionClass )
     {
         this.functions.add( functionClass );
     }
 
-    public void addAggregationFunction( Class<?> functionClass )
+    void addAggregationFunction( Class<?> functionClass )
     {
         this.aggregationFunctions.add( functionClass );
     }
 
-    @SuppressWarnings( "deprecation" )
-    public void applyTo( Procedures procedures ) throws KernelException
+    void applyTo( Procedures procedures ) throws KernelException
     {
         for ( Class<?> cls : procs )
         {

@@ -30,14 +30,14 @@ import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.database.CommunityGraphFactory;
 import org.neo4j.server.database.GraphFactory;
 
-public class InProcessServerBuilder extends AbstractInProcessServerBuilder
+public class InProcessNeo4jBuilder extends AbstractInProcessNeo4jBuilder
 {
-    public InProcessServerBuilder()
+    public InProcessNeo4jBuilder()
     {
         this( SystemUtils.getJavaIoTmpDir() );
     }
 
-    public InProcessServerBuilder( File workingDir )
+    public InProcessNeo4jBuilder( File workingDir )
     {
         super( workingDir );
     }

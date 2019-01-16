@@ -31,7 +31,6 @@ import java.util.Optional;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Configuration;
-import org.neo4j.harness.ServerControls;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.configuration.BoltConnector;
@@ -42,7 +41,7 @@ import org.neo4j.server.NeoServer;
 
 import static org.neo4j.kernel.configuration.HttpConnector.Encryption;
 
-public class InProcessServerControls implements ServerControls
+public class InProcessNeo4jControls implements Neo4jControls
 {
     private static final String DEFAULT_BOLT_CONNECTOR_KEY = "bolt";
 
@@ -53,7 +52,7 @@ public class InProcessServerControls implements ServerControls
     private final Closeable additionalClosable;
     private ConnectorPortRegister connectorPortRegister;
 
-    public InProcessServerControls( File serverFolder, File userLogFile, File internalLogFile, NeoServer server, Closeable additionalClosable )
+    InProcessNeo4jControls( File serverFolder, File userLogFile, File internalLogFile, NeoServer server, Closeable additionalClosable )
     {
         this.serverFolder = serverFolder;
         this.userLogFile = userLogFile;
@@ -85,12 +84,12 @@ public class InProcessServerControls implements ServerControls
         if ( defaultConnector != null )
         {
             // bolt connector with default key is configured, return its address
-            return connectorUri( "bolt", defaultConnector );
+            return connectorUri( DEFAULT_BOLT_CONNECTOR_KEY, defaultConnector );
         }
         if ( firstConnector != null )
         {
             // some bolt connector is configured, return its address
-            return connectorUri( "bolt", firstConnector );
+            return connectorUri( DEFAULT_BOLT_CONNECTOR_KEY, firstConnector );
         }
 
         throw new IllegalStateException( "Bolt connector is not configured" );

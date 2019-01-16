@@ -23,6 +23,9 @@ import org.codehaus.jackson.JsonNode;
 import org.junit.Rule;
 import org.junit.Test;
 
+import org.neo4j.harness.internal.Neo4jBuilder;
+import org.neo4j.harness.internal.Neo4jControls;
+import org.neo4j.harness.internal.TestNeo4jBuilders;
 import org.neo4j.procedure.UserAggregationFunction;
 import org.neo4j.procedure.UserAggregationResult;
 import org.neo4j.procedure.UserAggregationUpdate;
@@ -75,7 +78,7 @@ public class JavaAggregationFunctionsTestIT
     public void shouldLaunchWithDeclaredFunctions() throws Exception
     {
         // When
-        try ( ServerControls server = createServer( MyFunctions.class ).newServer() )
+        try ( Neo4jControls server = createServer( MyFunctions.class ).build() )
         {
             // Then
             HTTP.Response response = HTTP.POST( server.httpURI().resolve( "db/data/transaction/commit" ).toString(),
@@ -90,9 +93,9 @@ public class JavaAggregationFunctionsTestIT
         }
     }
 
-    private TestServerBuilder createServer( Class<?> functionClass )
+    private Neo4jBuilder createServer( Class<?> functionClass )
     {
-        return TestServerBuilders.newInProcessBuilder()
+        return TestNeo4jBuilders.newInProcessBuilder()
                                  .withAggregationFunction( functionClass );
     }
 
@@ -100,7 +103,7 @@ public class JavaAggregationFunctionsTestIT
     public void shouldGetHelpfulErrorOnProcedureThrowsException() throws Exception
     {
         // When
-        try ( ServerControls server = createServer( MyFunctions.class ).newServer() )
+        try ( Neo4jControls server = createServer( MyFunctions.class ).build() )
         {
             // Then
             HTTP.Response response = HTTP.POST( server.httpURI().resolve( "db/data/transaction/commit" ).toString(),

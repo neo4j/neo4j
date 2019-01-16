@@ -17,33 +17,31 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.harness;
+package org.neo4j.harness.internal;
 
 import java.io.File;
 
-import org.neo4j.harness.internal.InProcessServerBuilder;
-
 /**
- * Factories for creating {@link org.neo4j.harness.TestServerBuilder} instances.
+ * Factories for creating {@link Neo4jBuilder} instances.
  */
-public final class TestServerBuilders
+public final class TestNeo4jBuilders
 {
     /**
      * Create a builder capable of starting an in-process Neo4j instance. This builder will use the standard java temp
      * directory (configured via the 'java.io.tmpdir' system property) as the location for the temporary Neo4j directory.
      */
-    public static TestServerBuilder newInProcessBuilder()
+    public static Neo4jBuilder newInProcessBuilder()
     {
-        return new InProcessServerBuilder();
+        return new InProcessNeo4jBuilder();
     }
 
     /**
      * Create a builder capable of starting an in-process Neo4j instance, running in a subdirectory of the specified directory.
      */
-    public static TestServerBuilder newInProcessBuilder( File workingDirectory )
+    public static Neo4jBuilder newInProcessBuilder( File workingDirectory )
     {
-        return new InProcessServerBuilder( workingDirectory );
+        return new InProcessNeo4jBuilder( workingDirectory );
     }
 
-    private TestServerBuilders(){}
+    private TestNeo4jBuilders(){}
 }

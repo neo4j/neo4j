@@ -58,9 +58,13 @@ public class Fixtures
         {
             if ( fixturePath.isDirectory() )
             {
-                for ( File file : fixturePath.listFiles( cypherFileOrDirectoryFilter ) )
+                File[] fixtureFiles = fixturePath.listFiles( cypherFileOrDirectoryFilter );
+                if ( fixtureFiles != null )
                 {
-                    add( file );
+                    for ( File file : fixtureFiles )
+                    {
+                        add( file );
+                    }
                 }
                 return;
             }
@@ -86,7 +90,7 @@ public class Fixtures
         fixtureFunctions.add( fixtureFunction );
     }
 
-    public void applyTo( InProcessServerControls controls )
+    void applyTo( InProcessNeo4jControls controls )
     {
         GraphDatabaseService db = controls.graph();
         for ( String fixtureStatement : fixtureStatements )

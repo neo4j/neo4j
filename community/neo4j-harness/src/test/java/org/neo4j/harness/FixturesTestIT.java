@@ -19,37 +19,39 @@
  */
 package org.neo4j.harness;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.harness.internal.Neo4jBuilder;
+import org.neo4j.harness.internal.Neo4jControls;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.configuration.ssl.LegacySslPolicyConfig;
 import org.neo4j.server.ServerTestUtils;
-import org.neo4j.test.rule.SuppressOutput;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.SuppressOutputExtension;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.server.HTTP;
 
 import static java.lang.System.lineSeparator;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.fail;
-import static org.neo4j.harness.TestServerBuilders.newInProcessBuilder;
+import static org.junit.jupiter.api.Assertions.fail;
+import static org.neo4j.harness.internal.TestNeo4jBuilders.newInProcessBuilder;
 import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
 
-public class FixturesTestIT
+@ExtendWith( {TestDirectoryExtension.class, SuppressOutputExtension.class} )
+class FixturesTestIT
 {
-    @Rule
-    public TestDirectory testDir = TestDirectory.testDirectory();
-
-    @Rule
-    public SuppressOutput suppressOutput = SuppressOutput.suppressAll();
+    @Inject
+    private TestDirectory testDir;
 
     @Test
-    public void shouldAccepSingleCypherFileAsFixture() throws Exception
+    void shouldAccepSingleCypherFileAsFixture() throws Exception
     {
         // Given
         File targetFolder = testDir.directory();
@@ -59,7 +61,7 @@ public class FixturesTestIT
                 "CREATE (a:OtherUser)", false);
 
         // When
-        try ( ServerControls server = getServerBuilder( targetFolder ).withFixture( fixture ).newServer() )
+        try ( Neo4jControls server = getServerBuilder( targetFolder ).withFixture( fixture ).build() )
         {
             // Then
             HTTP.Response response = HTTP.POST( server.httpURI().toString() + "db/data/transaction/commit",
@@ -71,7 +73,7 @@ public class FixturesTestIT
     }
 
     @Test
-    public void shouldAcceptFolderWithCypFilesAsFixtures() throws Exception
+    void shouldAcceptFolderWithCypFilesAsFixtures() throws Exception
     {
         // Given two files in the root folder
         File targetFolder = testDir.directory();
@@ -87,7 +89,7 @@ public class FixturesTestIT
                 false );
 
         // When
-        try ( ServerControls server = getServerBuilder( targetFolder ).withFixture( targetFolder ).newServer() )
+        try ( Neo4jControls server = getServerBuilder( targetFolder ).withFixture( targetFolder ).build() )
         {
             // Then
             HTTP.Response response = HTTP.POST( server.httpURI().toString() + "db/data/transaction/commit",
@@ -98,7 +100,7 @@ public class FixturesTestIT
     }
 
     @Test
-    public void shouldHandleMultipleFixtures() throws Exception
+    void shouldHandleMultipleFixtures() throws Exception
     {
         // Given two files in the root folder
         File targetFolder = testDir.directory();
@@ -112,10 +114,10 @@ public class FixturesTestIT
                 "CREATE (a:OtherUser)", false);
 
         // When
-        try ( ServerControls server = getServerBuilder( targetFolder )
+        try ( Neo4jControls server = getServerBuilder( targetFolder )
                 .withFixture( fixture1 )
                 .withFixture( fixture2 )
-                .newServer() )
+                .build() )
         {
             // Then
             HTTP.Response response = HTTP.POST( server.httpURI().toString() + "db/data/transaction/commit",
@@ -126,15 +128,15 @@ public class FixturesTestIT
     }
 
     @Test
-    public void shouldHandleStringFixtures() throws Exception
+    void shouldHandleStringFixtures() throws Exception
     {
         // Given two files in the root folder
         File targetFolder = testDir.directory();
 
         // When
-        try ( ServerControls server = getServerBuilder( targetFolder )
+        try ( Neo4jControls server = getServerBuilder( targetFolder )
                 .withFixture( "CREATE (a:User)" )
-                .newServer() )
+                .build() )
         {
             // Then
             HTTP.Response response = HTTP.POST( server.httpURI().toString() + "db/data/transaction/commit",
@@ -145,7 +147,7 @@ public class FixturesTestIT
     }
 
     @Test
-    public void shouldIgnoreEmptyFixtureFiles() throws Exception
+    void shouldIgnoreEmptyFixtureFiles() throws Exception
     {
         // Given two files in the root folder
         File targetFolder = testDir.directory();
@@ -154,8 +156,8 @@ public class FixturesTestIT
         FileUtils.writeToFile( new File( targetFolder, "fixture2.cyp" ), "", false );
 
         // When
-        try ( ServerControls server = getServerBuilder( targetFolder )
-                .withFixture( targetFolder ).newServer() )
+        try ( Neo4jControls server = getServerBuilder( targetFolder )
+                .withFixture( targetFolder ).build() )
         {
             // Then
             HTTP.Response response = HTTP.POST( server.httpURI().toString() + "db/data/transaction/commit",
@@ -166,17 +168,17 @@ public class FixturesTestIT
     }
 
     @Test
-    public void shouldHandleFixturesWithSyntaxErrorsGracefully() throws Exception
+    void shouldHandleFixturesWithSyntaxErrorsGracefully() throws Exception
     {
         // Given two files in the root folder
         File targetFolder = testDir.directory();
         FileUtils.writeToFile( new File( targetFolder, "fixture1.cyp" ), "this is not a valid cypher statement", false );
 
         // When
-        try ( ServerControls ignore = getServerBuilder( targetFolder )
-                .withFixture( targetFolder ).newServer() )
+        try ( Neo4jControls ignore = getServerBuilder( targetFolder )
+                .withFixture( targetFolder ).build() )
         {
-            fail("Should have thrown exception");
+            fail( "Should have thrown exception" );
         }
         catch ( RuntimeException e )
         {
@@ -187,13 +189,13 @@ public class FixturesTestIT
     }
 
     @Test
-    public void shouldHandleFunctionFixtures() throws Exception
+    void shouldHandleFunctionFixtures() throws Exception
     {
         // Given two files in the root folder
         File targetFolder = testDir.directory();
 
         // When
-        try ( ServerControls server = getServerBuilder( targetFolder )
+        try ( Neo4jControls server = getServerBuilder( targetFolder )
                 .withFixture( graphDatabaseService ->
                 {
                     try ( Transaction tx = graphDatabaseService.beginTx() )
@@ -203,7 +205,7 @@ public class FixturesTestIT
                     }
                     return null;
                 } )
-                .newServer() )
+                .build() )
         {
             // Then
             HTTP.Response response = HTTP.POST( server.httpURI().toString() + "db/data/transaction/commit",
@@ -213,12 +215,11 @@ public class FixturesTestIT
         }
     }
 
-    private TestServerBuilder getServerBuilder( File targetFolder )
+    private Neo4jBuilder getServerBuilder( File targetFolder )
     {
-        TestServerBuilder serverBuilder = newInProcessBuilder( targetFolder )
-                .withConfig( LegacySslPolicyConfig.certificates_directory.name(),
-                        ServerTestUtils.getRelativePath( testDir.directory(), LegacySslPolicyConfig.certificates_directory ) );
-        return serverBuilder;
+        String relativePath = ServerTestUtils.getRelativePath( testDir.directory(), LegacySslPolicyConfig.certificates_directory );
+        return newInProcessBuilder( targetFolder )
+                .withConfig( LegacySslPolicyConfig.certificates_directory.name(), relativePath );
     }
 
 }

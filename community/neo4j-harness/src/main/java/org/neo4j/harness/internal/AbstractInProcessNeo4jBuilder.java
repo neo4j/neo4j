@@ -21,11 +21,13 @@ package org.neo4j.harness.internal;
 
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -36,8 +38,6 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.facade.GraphDatabaseDependencies;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.harness.ServerControls;
-import org.neo4j.harness.TestServerBuilder;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.BoltConnector;
@@ -46,7 +46,6 @@ import org.neo4j.kernel.configuration.HttpConnector;
 import org.neo4j.kernel.configuration.HttpConnector.Encryption;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.extension.ExtensionFactory;
-import org.neo4j.kernel.extension.ExtensionType;
 import org.neo4j.kernel.extension.context.ExtensionContext;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -66,28 +65,27 @@ import static org.neo4j.graphdb.factory.GraphDatabaseSettings.auth_enabled;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.data_directory;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.db_timezone;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;
+import static org.neo4j.helpers.collection.Iterables.addAll;
 import static org.neo4j.helpers.collection.Iterables.append;
 import static org.neo4j.io.fs.FileSystemUtils.createOrOpenAsOutputStream;
 
-public abstract class AbstractInProcessServerBuilder implements TestServerBuilder
+public abstract class AbstractInProcessNeo4jBuilder implements Neo4jBuilder
 {
     private File serverFolder;
-    private final Extensions extensions = new Extensions();
+    private final Extensions unmanagedExtentions = new Extensions();
     private final HarnessRegisteredProcs procedures = new HarnessRegisteredProcs();
     private final Fixtures fixtures = new Fixtures();
-
-    /**
-     * Config options for both database and server.
-     */
+    private final List<ExtensionFactory<?>> extensionFactories = new ArrayList<>();
+    private boolean disabledServer;
     private final Map<String,String> config = new HashMap<>();
 
-    public AbstractInProcessServerBuilder( File workingDir )
+    public AbstractInProcessNeo4jBuilder( File workingDir )
     {
         File dataDir = new File( workingDir, randomFolderName() ).getAbsoluteFile();
         init( dataDir );
     }
 
-    public AbstractInProcessServerBuilder( File workingDir, String dataSubDir )
+    public AbstractInProcessNeo4jBuilder( File workingDir, String dataSubDir )
     {
         File dataDir = new File( workingDir, dataSubDir ).getAbsoluteFile();
         init( dataDir );
@@ -119,7 +117,7 @@ public abstract class AbstractInProcessServerBuilder implements TestServerBuilde
     }
 
     @Override
-    public TestServerBuilder copyFrom( File originalStoreDir )
+    public Neo4jBuilder copyFrom( File originalStoreDir )
     {
         try
         {
@@ -133,7 +131,7 @@ public abstract class AbstractInProcessServerBuilder implements TestServerBuilde
     }
 
     @Override
-    public ServerControls newServer()
+    public Neo4jControls build()
     {
         try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction() )
         {
@@ -150,25 +148,26 @@ public abstract class AbstractInProcessServerBuilder implements TestServerBuilde
                 throw new RuntimeException( "Unable to create log file", e );
             }
 
-            config.put( ServerSettings.third_party_packages.name(), toStringForThirdPartyPackageProperty( extensions.toList() ) );
+            config.put( ServerSettings.third_party_packages.name(), toStringForThirdPartyPackageProperty( unmanagedExtentions.toList() ) );
             config.put( GraphDatabaseSettings.store_internal_log_path.name(), internalLogFile.getAbsolutePath() );
 
+            if ( disabledServer )
+            {
+                config.put( "dbms.connector.http.enabled", Settings.FALSE );
+                config.put( "dbms.connector.https.enabled", Settings.FALSE );
+            }
+
             LogProvider userLogProvider = FormattedLogProvider.withZoneId( logZoneIdFrom( config ) ).toOutputStream( logOutputStream );
-            GraphDatabaseDependencies dependencies = GraphDatabaseDependencies.newDependencies()
-                    .userLogProvider( userLogProvider );
-            Iterable<ExtensionFactory<?>> extensions =
-                    append( new Neo4jHarnessExtensions( procedures ), dependencies.extensions() );
-            dependencies = dependencies.extensions( extensions );
+            GraphDatabaseDependencies dependencies = GraphDatabaseDependencies.newDependencies().userLogProvider( userLogProvider );
+            dependencies = dependencies.extensions( buildExtensionList( dependencies ) );
 
             Config dbConfig = Config.defaults( config );
             GraphFactory graphFactory = createGraphFactory( dbConfig );
             boolean httpAndHttpsDisabled = dbConfig.enabledHttpConnectors().isEmpty();
 
-            NeoServer server = httpAndHttpsDisabled
-                               ? new DisabledNeoServer( graphFactory, dependencies, dbConfig )
-                               : createNeoServer( graphFactory, dbConfig, dependencies );
+            NeoServer server = startNeo4jServer( dependencies, dbConfig, graphFactory, httpAndHttpsDisabled );
 
-            InProcessServerControls controls = new InProcessServerControls( serverFolder, userLogFile, internalLogFile, server, logOutputStream );
+            InProcessNeo4jControls controls = new InProcessNeo4jControls( serverFolder, userLogFile, internalLogFile, server, logOutputStream );
             controls.start();
 
             try
@@ -193,74 +192,99 @@ public abstract class AbstractInProcessServerBuilder implements TestServerBuilde
     protected abstract AbstractNeoServer createNeoServer( GraphFactory graphFactory, Config config, Dependencies dependencies );
 
     @Override
-    public TestServerBuilder withConfig( Setting<?> key, String value )
+    public Neo4jBuilder withConfig( Setting<?> key, String value )
     {
         return withConfig( key.name(), value );
     }
 
     @Override
-    public TestServerBuilder withConfig( String key, String value )
+    public Neo4jBuilder withConfig( String key, String value )
     {
         config.put( key, value );
         return this;
     }
 
     @Override
-    public TestServerBuilder withExtension( String mountPath, Class<?> extension )
+    public Neo4jBuilder withUnmanagedExtension( String mountPath, Class<?> extension )
     {
-        return withExtension( mountPath, extension.getPackage().getName() );
+        return withUnmanagedExtension( mountPath, extension.getPackage().getName() );
     }
 
     @Override
-    public TestServerBuilder withExtension( String mountPath, String packageName )
+    public Neo4jBuilder withUnmanagedExtension( String mountPath, String packageName )
     {
-        extensions.add( mountPath, packageName );
+        unmanagedExtentions.add( mountPath, packageName );
         return this;
     }
 
     @Override
-    public TestServerBuilder withFixture( File cypherFileOrDirectory )
+    public Neo4jBuilder withExtensionFactories( Iterable<ExtensionFactory<?>> extensionFactories )
+    {
+        addAll(this.extensionFactories, extensionFactories);
+        return this;
+    }
+
+    @Override
+    public Neo4jBuilder withDisabledServer()
+    {
+        this.disabledServer = true;
+        return this;
+    }
+
+    @Override
+    public Neo4jBuilder withFixture( File cypherFileOrDirectory )
     {
         fixtures.add( cypherFileOrDirectory );
         return this;
     }
 
     @Override
-    public TestServerBuilder withFixture( String fixtureStatement )
+    public Neo4jBuilder withFixture( String fixtureStatement )
     {
         fixtures.add( fixtureStatement );
         return this;
     }
 
     @Override
-    public TestServerBuilder withFixture( Function<GraphDatabaseService,Void> fixtureFunction )
+    public Neo4jBuilder withFixture( Function<GraphDatabaseService,Void> fixtureFunction )
     {
         fixtures.add( fixtureFunction );
         return this;
     }
 
     @Override
-    public TestServerBuilder withProcedure( Class<?> procedureClass )
+    public Neo4jBuilder withProcedure( Class<?> procedureClass )
     {
         procedures.addProcedure( procedureClass );
         return this;
     }
 
     @Override
-    public TestServerBuilder withFunction( Class<?> functionClass )
+    public Neo4jBuilder withFunction( Class<?> functionClass )
     {
         procedures.addFunction( functionClass );
         return this;
     }
 
     @Override
-    public TestServerBuilder withAggregationFunction( Class<?> functionClass )
+    public Neo4jBuilder withAggregationFunction( Class<?> functionClass )
     {
         procedures.addAggregationFunction( functionClass );
         return this;
     }
 
-    private TestServerBuilder setDirectory( File dir )
+    private NeoServer startNeo4jServer( GraphDatabaseDependencies dependencies, Config dbConfig, GraphFactory graphFactory, boolean httpAndHttpsDisabled )
+    {
+        return httpAndHttpsDisabled ? new DisabledNeoServer( graphFactory, dependencies, dbConfig ) : createNeoServer( graphFactory, dbConfig, dependencies );
+    }
+
+    private Iterable<ExtensionFactory<?>> buildExtensionList( GraphDatabaseDependencies dependencies )
+    {
+        Iterable<ExtensionFactory<?>> extensions = append( new Neo4jHarnessExtensions( procedures ), dependencies.extensions() );
+        return addAll( this.extensionFactories, extensions );
+    }
+
+    private Neo4jBuilder setDirectory( File dir )
     {
         this.serverFolder = dir;
         config.put( data_directory.name(), serverFolder.getAbsolutePath() );
@@ -274,25 +298,26 @@ public abstract class AbstractInProcessServerBuilder implements TestServerBuilde
 
     private static String toStringForThirdPartyPackageProperty( List<ThirdPartyJaxRsPackage> extensions )
     {
-        String propertyString = "";
         int packageCount = extensions.size();
-
         if ( packageCount == 0 )
         {
-            return propertyString;
+            return StringUtils.EMPTY;
         }
-        else
+        StringBuilder builder = new StringBuilder();
+        ThirdPartyJaxRsPackage jaxRsPackage;
+        for ( int i = 0; i < packageCount - 1; i++ )
         {
-            ThirdPartyJaxRsPackage jaxRsPackage;
-            for ( int i = 0; i < packageCount - 1; i++ )
-            {
-                jaxRsPackage = extensions.get( i );
-                propertyString += jaxRsPackage.getPackageName() + "=" + jaxRsPackage.getMountPoint() + Settings.SEPARATOR;
-            }
-            jaxRsPackage = extensions.get( packageCount - 1 );
-            propertyString += jaxRsPackage.getPackageName() + "=" + jaxRsPackage.getMountPoint();
-            return propertyString;
+            jaxRsPackage = extensions.get( i );
+            describeJaxRsPackage( builder, jaxRsPackage ).append( Settings.SEPARATOR );
         }
+        jaxRsPackage = extensions.get( packageCount - 1 );
+        describeJaxRsPackage( builder, jaxRsPackage );
+        return builder.toString();
+    }
+
+    private static StringBuilder describeJaxRsPackage( StringBuilder builder, ThirdPartyJaxRsPackage jaxRsPackage )
+    {
+        return builder.append( jaxRsPackage.getPackageName() ).append( "=" ).append( jaxRsPackage.getMountPoint() );
     }
 
     private static ZoneId logZoneIdFrom( Map<String,String> config )
@@ -317,7 +342,7 @@ public abstract class AbstractInProcessServerBuilder implements TestServerBuilde
 
         Neo4jHarnessExtensions( HarnessRegisteredProcs userProcs )
         {
-            super( ExtensionType.DATABASE, "harness" );
+            super( "harness" );
             this.userProcs = userProcs;
         }
 
@@ -333,6 +358,5 @@ public abstract class AbstractInProcessServerBuilder implements TestServerBuilde
                 }
             };
         }
-
     }
 }

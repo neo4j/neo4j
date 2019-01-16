@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.harness;
+package org.neo4j.harness.internal;
 
 import java.io.PrintStream;
 import java.net.URI;
@@ -29,7 +29,7 @@ import org.neo4j.graphdb.config.Configuration;
 /**
  * Control panel for a Neo4j test instance.
  */
-public interface ServerControls extends AutoCloseable
+public interface Neo4jControls extends AutoCloseable
 {
     /** Returns the URI to the Bolt Protocol connector of the instance. */
     URI boltURI();
