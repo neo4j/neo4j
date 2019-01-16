@@ -59,7 +59,7 @@ case class SingleComponentPlanner(monitor: IDPQueryGraphSolverMonitor,
           override def none: InterestingOrder = InterestingOrder.empty
 
           override def forResult(plan: LogicalPlan): InterestingOrder =
-            if (interestingOrder.satisfiedBy(context.planningAttributes.providedOrders.get(plan.id))) interestingOrder else InterestingOrder.empty
+            if (SortPlanner.satisfiesOrder(interestingOrder, context, plan)) interestingOrder else InterestingOrder.empty
 
           override def is(requirement: InterestingOrder): Boolean = requirement == interestingOrder
         }
@@ -109,7 +109,7 @@ case class SingleComponentPlanner(monitor: IDPQueryGraphSolverMonitor,
           input ++ input.flatMap(plan => SortPlanner.maybeSortedPlan(plan, interestingOrder, context))
         else input
 
-        val ordered = plans.filter(plan => interestingOrder.satisfiedBy(context.planningAttributes.providedOrders.get(plan.id)))
+        val ordered = plans.filter(plan => SortPlanner.satisfiesOrder(interestingOrder, context, plan))
 
         val best = kit.pickBest(plans)
         val bestWithSort = kit.pickBest(ordered)

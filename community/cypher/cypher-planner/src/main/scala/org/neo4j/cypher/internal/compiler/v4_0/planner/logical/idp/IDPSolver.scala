@@ -73,7 +73,6 @@ class IDPSolver[Solvable, Requirement, Result, Context](generator: IDPSolverStep
         while (keepGoing && goals.hasNext) {
           val goal = goals.next()
           if (table(goal).isEmpty) {
-            // TODO: Make sure the generator is NOT lazy and repetitive
             val candidates = LazyIterable(generator(registry, goal, table, context))
             val (baseCandidates, extraCandidates) = candidates.partition(candidate => extraRequirement.forResult(candidate) == extraRequirement.none)
             projectingSelector(baseCandidates).foreach { candidate =>
@@ -93,14 +92,15 @@ class IDPSolver[Solvable, Requirement, Result, Context](generator: IDPSolverStep
       largestFinishedIteration
     }
 
-    def findBestCandidateInBlock(blockSize: Int): ((Goal, Requirement), Result) = {
+    def findBestCandidateInBlock(blockSize: Int): Goal = {
       val blockCandidates: Iterable[((Goal, Requirement), Result)] = LazyIterable(table.plansOfSize(blockSize)).toIndexedSeq
       val bestInBlock: Option[((Goal, Requirement), Result)] = goalSelector(blockCandidates)
-      bestInBlock.getOrElse {
+      val ((goal, _), _) = bestInBlock.getOrElse {
         throw new IllegalStateException(
           s"""Found no solution for block with size $blockSize,
               |$blockCandidates were the selected candidates from the table $table""".stripMargin)
       }
+      goal
     }
 
     def compactBlock(original: Goal): Unit = {
@@ -121,13 +121,12 @@ class IDPSolver[Solvable, Requirement, Result, Context](generator: IDPSolverStep
       iterations += 1
       monitor.startIteration(iterations)
       val largestFinished = generateBestCandidates(toDo.size)
-      val (bestGoal, bestInBlock) = findBestCandidateInBlock(largestFinished)
+      val bestGoal = findBestCandidateInBlock(largestFinished)
       monitor.endIteration(iterations, largestFinished, table.size)
-      compactBlock(bestGoal._1)
+      compactBlock(bestGoal)
     }
     monitor.foundPlanAfter(iterations)
 
-    // TODO this can be solved better if we always return best sorted and best unsorted
     val maybeSorted = table.plans.collect { case ((k, o), v) if extraRequirement.is(o) => (registry.explode(k), o) -> v }
     if (maybeSorted.hasNext)
       maybeSorted

@@ -22,23 +22,21 @@ package org.neo4j.cypher.internal.ir.v4_0
 import org.neo4j.cypher.internal.ir.v4_0.InterestingOrder.{Asc, ColumnOrder, Desc}
 import org.neo4j.cypher.internal.v4_0.expressions._
 
+import scala.annotation.tailrec
+
 object InterestingOrder {
 
   sealed trait ColumnOrder {
+    // Expression to sort by
     def expression: Expression
 
-    def projected(newExpression: Expression, newProjections: Map[String, Expression]): ColumnOrder
-
+    // Projections needed to apply the sort of the expression
     def projections: Map[String, Expression]
   }
 
-  case class Asc(expression: Expression, projections: Map[String, Expression] = Map.empty) extends ColumnOrder {
-    override def projected(newExpression: Expression, newProjections: Map[String, Expression]): ColumnOrder = Asc(newExpression, newProjections)
-  }
+  case class Asc(expression: Expression, projections: Map[String, Expression] = Map.empty) extends ColumnOrder
 
-  case class Desc(expression: Expression, projections: Map[String, Expression] = Map.empty) extends ColumnOrder {
-    override def projected(newExpression: Expression, newProjections: Map[String, Expression]): ColumnOrder = Desc(newExpression, newProjections)
-  }
+  case class Desc(expression: Expression, projections: Map[String, Expression] = Map.empty) extends ColumnOrder
 
   val empty = InterestingOrder(RequiredOrderCandidate.empty, Seq.empty)
 
@@ -79,15 +77,20 @@ case class InterestingOrder(requiredOrderCandidate: RequiredOrderCandidate,
       if (argumentIds.contains(expression.asCanonicalStringVal)) Some(column) else None
     }
 
+    def projectedColumnOrder(column: ColumnOrder, projected: Expression, name: String) = {
+      column match {
+        case _: Asc => Some(Asc(projected, Map(name -> projectExpressions(name))))
+        case _: Desc => Some(Desc(projected, Map(name -> projectExpressions(name))))
+      }
+    }
+
     def rename(columns: Seq[ColumnOrder]): Seq[ColumnOrder] = {
       columns.flatMap { column: ColumnOrder =>
         // expression with all incoming projections applied
         val projected = projectExpression(column.expression, column.projections)
         projected match {
-          case Property(Variable(prevVarName), _) if projectExpressions.contains(prevVarName) =>
-            Some(column.projected(projected, Map(prevVarName -> projectExpressions(prevVarName))))
-          case Variable(prevVarName) if projectExpressions.contains(prevVarName) =>
-            Some(column.projected(projected, Map(prevVarName -> projectExpressions(prevVarName))))
+          case Property(Variable(prevVarName), _) if projectExpressions.contains(prevVarName) => projectedColumnOrder(column, projected, prevVarName)
+          case Variable(prevVarName) if projectExpressions.contains(prevVarName) => projectedColumnOrder(column, projected, prevVarName)
           case _ =>
             columnIfArgument(projected, column)
         }
@@ -112,7 +115,6 @@ case class InterestingOrder(requiredOrderCandidate: RequiredOrderCandidate,
         else
           expression
 
-      // TODO handle generic case e.g Add(a, b)
       case _ => expression
     }
   }
@@ -121,6 +123,7 @@ case class InterestingOrder(requiredOrderCandidate: RequiredOrderCandidate,
     * Checks if a RequiredOrder is satisfied by a ProvidedOrder
     */
   def satisfiedBy(providedOrder: ProvidedOrder): Boolean = {
+    @tailrec
     def satisfied(providedId: String, requiredOrder: Expression, projections: Map[String, Expression]): Boolean = {
       val projected = projectExpression(requiredOrder, projections)
       if (providedId == requiredOrder.asCanonicalStringVal || providedId == projected.asCanonicalStringVal)

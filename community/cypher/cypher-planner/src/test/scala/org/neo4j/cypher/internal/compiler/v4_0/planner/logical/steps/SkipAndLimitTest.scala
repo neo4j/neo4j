@@ -23,19 +23,16 @@ import org.neo4j.cypher.internal.compiler.v4_0.planner._
 import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.ir.v4_0._
 import org.neo4j.cypher.internal.v4_0.logical.plans._
-import org.neo4j.cypher.internal.v4_0.ast
 import org.neo4j.cypher.internal.v4_0.expressions._
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 
-class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSupport {
+class SkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
   val x: Expression = UnsignedDecimalIntegerLiteral("110") _
   val y: Expression = UnsignedDecimalIntegerLiteral("10") _
   val sortVariable: Variable = Variable("n")(pos)
   val columnOrder: ColumnOrder = Ascending("n")
   val projectionsMap: Map[String, Expression] = Map("n" -> sortVariable)
-
-  private val subQueryLookupTable = Map.empty[PatternExpression, QueryGraph]
 
   test("should add skip if query graph contains skip") {
     // given
@@ -45,7 +42,7 @@ class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSuppor
       projection = regularProjection(skip = Some(x)))
 
     // when
-    val result = sortSkipAndLimit(startPlan, query, query.interestingOrder, context)
+    val result = skipAndLimit(startPlan, query, context)
 
     // then
     result should equal(Skip(startPlan, x))
@@ -60,7 +57,7 @@ class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSuppor
       projection = regularProjection(limit = Some(x)))
 
     // when
-    val result = sortSkipAndLimit(startPlan, query, query.interestingOrder, context)
+    val result = skipAndLimit(startPlan, query, context)
 
     // then
     result should equal(Limit(startPlan, x, DoNotIncludeTies))
@@ -75,7 +72,7 @@ class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSuppor
       projection = regularProjection(skip = Some(y), limit = Some(x)))
 
     // when
-    val result = sortSkipAndLimit(startPlan, query, query.interestingOrder, context)
+    val result = skipAndLimit(startPlan, query, context)
 
     // then
     result should equal(Limit(Skip(startPlan, y), x, DoNotIncludeTies))
@@ -89,7 +86,7 @@ class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSuppor
       interestingOrder = orderBy(sortVariable, projectionsMap))
 
     // when
-    val result = sortSkipAndLimit(startPlan, query, query.interestingOrder, context)
+    val result = skipAndLimit(startPlan, query, context)
 
     // then
     result should equal(Sort(startPlan, Seq(columnOrder)))
@@ -114,7 +111,7 @@ class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSuppor
     )
 
     // when
-    val result = sortSkipAndLimit(startPlan, query, query.interestingOrder, context)
+    val result = skipAndLimit(startPlan, query, context)
 
     // then
     result should equal(Sort(startPlan, Seq(Ascending("m"))))
@@ -138,7 +135,7 @@ class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSuppor
     )
 
     // when
-    val result = sortSkipAndLimit(startPlan, query, query.interestingOrder, context)
+    val result = skipAndLimit(startPlan, query, context)
 
     // then
     result should equal(Sort(Projection(startPlan, Map("n + 5" -> sortExpression)), Seq(Ascending("n + 5"))))
@@ -166,7 +163,7 @@ class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSuppor
     )
 
     // when
-    val result = sortSkipAndLimit(startPlan, query, query.interestingOrder, context)
+    val result = skipAndLimit(startPlan, query, context)
 
     // then
     result should equal(Sort(Projection(Projection(startPlan, Map(mVar.name -> mExpr)), Map("m + 5" -> sortExpression)), Seq(Ascending("m + 5"))))
@@ -184,7 +181,7 @@ class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSuppor
     val (query, context, startPlan) = queryGraphWith(
       // The requirement to sort by p.name, bday
       patternNodesInQG = Set("p"),
-      solved = RegularPlannerQuery(QueryGraph.empty.addPatternNodes("p")),
+      solved = solved("p"),
       projection = regularProjection(projectionsMap = Map(
         // an already solved projection
         p.name -> p,
@@ -194,7 +191,7 @@ class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSuppor
     )
 
     // when
-    val result = sortSkipAndLimit(startPlan, query, query.interestingOrder, context)
+    val result = skipAndLimit(startPlan, query, context)
 
     // then
     result should equal(
@@ -218,7 +215,7 @@ class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSuppor
     val (query, context, startPlan) = queryGraphWith(
       // The requirement to sort by p.name, bday
       patternNodesInQG = Set("p"),
-      solved = RegularPlannerQuery(QueryGraph.empty.addPatternNodes("p")),
+      solved = solved("p"),
       projection = regularProjection(projectionsMap = Map(
         // an already solved projection
         p.name -> p,
@@ -228,7 +225,7 @@ class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSuppor
     )
 
     // when
-    val result = sortSkipAndLimit(startPlan, query, query.interestingOrder, context)
+    val result = skipAndLimit(startPlan, query, context)
 
     // then
     result should equal(
@@ -264,7 +261,7 @@ class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSuppor
     )
 
     // when
-    val result = sortSkipAndLimit(startPlan, query, query.interestingOrder, context)
+    val result = skipAndLimit(startPlan, query, context)
 
     // then
     result should equal(Sort(startPlan, Seq(Ascending("m"))))
@@ -299,7 +296,7 @@ class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSuppor
     )
 
     // when
-    val result = sortSkipAndLimit(startPlan, query, query.interestingOrder, context)
+    val result = skipAndLimit(startPlan, query, context)
 
     // then
     result should equal(Sort(startPlan, Seq(Ascending("m"), Ascending("o"))))
@@ -323,7 +320,7 @@ class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSuppor
     )
 
     // when
-    val result = sortSkipAndLimit(startPlan, query, query.interestingOrder, context)
+    val result = skipAndLimit(startPlan, query, context)
 
     // then
     result should equal(Sort(startPlan, Seq(Ascending("m"))))
@@ -350,7 +347,7 @@ class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSuppor
 
 
     // when
-    val result = sortSkipAndLimit(startPlan, query, query.interestingOrder, context)
+    val result = skipAndLimit(startPlan, query, context)
 
     // then
     result should equal(Sort(startPlan, Seq(columnOrder)))
@@ -368,7 +365,7 @@ class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSuppor
     )
 
     // when
-    val result = sortSkipAndLimit(startPlan, query, query.interestingOrder, context)
+    val result = skipAndLimit(startPlan, query, context)
 
     // then
     val sorted = Sort(startPlan, Seq(columnOrder))
@@ -381,13 +378,8 @@ class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSuppor
   private def orderBy(sortExpression: Expression, projections: Map[String, Expression] = Map.empty): InterestingOrder =
     InterestingOrder.required(RequiredOrderCandidate.asc(sortExpression, projections))
 
-  private def regularProjection(skip: Option[Expression] = None, limit: Option[Expression] = None, projectionsMap: Map[String, Expression] = projectionsMap) = {
-    val projection = RegularQueryProjection(
-      projections = projectionsMap,
-      queryPagination = QueryPagination(skip, limit)
-    )
-    projection
-  }
+  private def regularProjection(skip: Option[Expression] = None, limit: Option[Expression] = None, projectionsMap: Map[String, Expression] = projectionsMap) =
+    RegularQueryProjection(projections = projectionsMap, queryPagination = QueryPagination(skip, limit))
 
   private def solved(patternNodes: String*): PlannerQuery = RegularPlannerQuery(QueryGraph.empty.addPatternNodes(patternNodes: _*))
 

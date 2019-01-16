@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v4_0.planner.logical.ordering
 
+import org.neo4j.cypher.internal.compiler.v4_0.helpers.AggregationHelper
 import org.neo4j.cypher.internal.ir.v4_0._
 import org.neo4j.cypher.internal.planner.v4_0.spi.IndexOrderCapability
 import org.neo4j.cypher.internal.v4_0.expressions.{Expression, Property, Variable}
@@ -46,14 +47,8 @@ object ResultOrdering {
 
     import InterestingOrder._
 
-    def findProperty(expression: Expression, projections: Map[String, Expression]): Option[(String, String)] = expression match {
-      case Property(v@Variable(varName), propertyKeyName) => Some(projections.getOrElse(varName, v).asCanonicalStringVal, propertyKeyName.name)
-      case Variable(varName) if projections.contains(varName) => findProperty(projections(varName), projections)
-      case _ => None
-    }
-
     def satisfies(properties: Seq[(String, String)], expression: Expression, projections: Map[String, Expression]): Boolean = {
-      findProperty(expression, projections).exists {
+      AggregationHelper.extractPropertyForValue(expression, projections).exists {
         case (element, property) =>
           properties.headOption.exists {
             case (entity, prop) if entity == element && prop == property => true

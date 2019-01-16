@@ -124,14 +124,15 @@ case object planPart extends PartPlanner {
       case Some(mode) if !context.input.strictness.contains(mode) => context.withStrictness(mode)
       case _ => context
     }
-    ctx.strategy.plan(query.queryGraph, interestingInterestingOrderForPart(query, rhsPart), ctx)
+    ctx.strategy.plan(query.queryGraph, interestingOrderForPart(query, rhsPart), ctx)
   }
 
+  // Extract the interesting InterestingOrder for this part of the query
   // If the required order has dependency on argument, then it should not solve the ordering here
   // If we have a mutating pattern that depends on the sorting variables, we cannot solve ordering here
-  private def interestingInterestingOrderForPart(query: PlannerQuery, rhsPart: Boolean) = {
+  private def interestingOrderForPart(query: PlannerQuery, isRhs: Boolean) = {
     val interestingOrder = query.interestingOrder
-    if (rhsPart)
+    if (isRhs)
       interestingOrder.asInteresting
     else
       query.horizon match {

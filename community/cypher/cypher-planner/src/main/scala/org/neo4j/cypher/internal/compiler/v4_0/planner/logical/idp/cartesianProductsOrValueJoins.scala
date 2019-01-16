@@ -200,7 +200,7 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
     else {
       // Replan the RHS with the LHS arguments available. If good indexes exist, they can now be used
       val rhsQGWithLHSArguments = context.planningAttributes.solveds.get(rhsInputPlan.id).lastQueryGraph.addArgumentIds(lhsQG.idsWithoutOptionalMatchesOrUpdates.toIndexedSeq).addPredicates(predicate)
-      val rhsPlan = singleComponentPlanner.planComponent(rhsQGWithLHSArguments, context, kit, InterestingOrder.empty)
+      val rhsPlan = singleComponentPlanner.planComponent(rhsQGWithLHSArguments, context, kit, interestingOrder)
       val result = kit.select(context.logicalPlanProducer.planApply(lhsPlan, rhsPlan, context), fullQG)
 
       // If none of the leaf-plans leverages the data from the RHS to use an index, let's not use this plan at all

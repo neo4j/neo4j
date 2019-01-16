@@ -33,7 +33,6 @@ class IDPTable[P, O](private val map: mutable.Map[(Goal, O), P] = mutable.Map.em
 
   def apply(goal: Goal, o: O): Option[P] = map.get((goal, o))
 
-  // TODO: Verify this expensive method is not responsible for any regressions
   def apply(goal: Goal): Seq[(O, P)] = map.collect {
     case ((key, o), p) if key == goal => (o, p)
   }.toSeq

@@ -77,7 +77,7 @@ case class PlanSingleQuery(planPart: PartPlanner = planPart,
     currentQuery.horizon match {
       case aggr: AggregatingQueryProjection =>
         if (aggr.groupingExpressions.isEmpty) // needed here to not enter next case
-          AggregationHelper.extractProperties(aggr.aggregationExpressions, renamings) match {
+          AggregationHelper.extractProperties(aggr.aggregationExpressions, renamings.toMap) match {
             case properties: Set[(String, String)] if properties.nonEmpty => context.withAggregationProperties(properties)
             case _ => context
           }

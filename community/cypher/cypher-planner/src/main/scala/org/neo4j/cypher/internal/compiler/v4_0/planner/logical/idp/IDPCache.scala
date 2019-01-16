@@ -26,7 +26,6 @@ trait IDPCache[P,O] extends ((Goal, O) => Option[P]) {
 
   def apply(goal: Goal): Seq[(O, P)]
 
-  // TODO: Consider wrapping (Goal,O) in a single type with potentially more efficient hashcode implementation
   def contains(goal: Goal, o: O): Boolean
 
   def plansOfSize(k: Int): Iterator[((Goal, O), P)]

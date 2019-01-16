@@ -22,19 +22,11 @@ package org.neo4j.cypher.internal.compiler.v4_0.planner.logical.steps
 import org.neo4j.cypher.internal.compiler.v4_0.planner.logical._
 import org.neo4j.cypher.internal.ir.v4_0._
 import org.neo4j.cypher.internal.v4_0.logical.plans._
-import org.neo4j.cypher.internal.v4_0.ast.{AscSortItem, DescSortItem, SortItem}
-import org.neo4j.cypher.internal.v4_0.expressions.{Expression, Variable}
-import org.neo4j.cypher.internal.v4_0.util.{FreshIdNameGenerator, InternalException}
+import org.neo4j.cypher.internal.v4_0.expressions.Expression
 
-object sortSkipAndLimit extends PlanTransformerWithRequiredOrder {
+object skipAndLimit extends PlanTransformer {
 
-  /**
-    * @param query            query.interestingOrder will be the one marked as solved.
-    * @param interestingOrder this order can potentially be different from query.interestingOrder. It can contain renames and
-    *                         will be used to check if we need to sort.
-    */
-  def apply(in: LogicalPlan, query: PlannerQuery, interestingOrder: InterestingOrder, context: LogicalPlanningContext): LogicalPlan = {
-    val plan = SortPlanner.sortedPlanWithSolved(in, interestingOrder, context)
+  def apply(plan: LogicalPlan, query: PlannerQuery, context: LogicalPlanningContext): LogicalPlan = {
     query.horizon match {
       case p: QueryProjection =>
         val queryPagination = p.queryPagination

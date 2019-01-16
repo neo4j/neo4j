@@ -36,10 +36,6 @@ trait PlanTransformer {
   def apply(plan: LogicalPlan, query: PlannerQuery, context: LogicalPlanningContext): LogicalPlan
 }
 
-trait PlanTransformerWithRequiredOrder {
-  def apply(plan: LogicalPlan, query: PlannerQuery, interestingOrder: InterestingOrder, context: LogicalPlanningContext): LogicalPlan
-}
-
 trait CandidateSelector extends ProjectingSelector[LogicalPlan]
 
 trait LeafPlanner {

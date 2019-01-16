@@ -51,16 +51,16 @@ object AggregationHelper {
     }
   }
 
-  def extractProperties(aggregationExpressions: Map[String, Expression], renamings: mutable.Map[String, Expression]): Set[(String, String)] = {
+  def extractProperties(aggregationExpressions: Map[String, Expression], renamings: Map[String, Expression]): Set[(String, String)] = {
     aggregationExpressions.values.flatMap {
       extractPropertyForValue(_, renamings)
     }.toSet
   }
 
   @tailrec
-  private def extractPropertyForValue(expression: Expression,
-                                      renamings: mutable.Map[String, Expression],
-                                      property: Option[String] = None): Option[(String, String)] = {
+  def extractPropertyForValue(expression: Expression,
+                              renamings: Map[String, Expression],
+                              property: Option[String] = None): Option[(String, String)] = {
     expression match {
       case FunctionInvocation(_, _, _, Seq(expr, _*)) =>
         // Cannot handle a function inside an aggregation

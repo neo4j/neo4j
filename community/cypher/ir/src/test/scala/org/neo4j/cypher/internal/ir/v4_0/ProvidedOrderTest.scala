@@ -25,8 +25,6 @@ import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 
 class ProvidedOrderTest extends CypherFunSuite {
 
-  private val pos = DummyPosition(0)
-
   test("should append provided order") {
     val left = ProvidedOrder.asc("a").asc("b")
     val right = ProvidedOrder.asc("c").asc("d")
@@ -93,5 +91,5 @@ class ProvidedOrderTest extends CypherFunSuite {
     interestingOrder.satisfiedBy(ProvidedOrder.asc("x").asc("y").desc("z")) should be(false)
   }
 
-  private def varFor(name: String) = Variable(name)(pos)
+  private def varFor(name: String) = Variable(name)(DummyPosition(0))
 }

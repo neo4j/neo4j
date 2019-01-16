@@ -318,7 +318,7 @@ class InterestingOrderStatementConvertersTest extends CypherFunSuite with Logica
     result should equal(expectation)
   }
 
-  test("Does not extract required order if order column is part of a more complex expression and the property is returned") {
+  test("Extract required order if order column is part of a more complex expression and the property is returned") {
     val result = buildPlannerQuery("MATCH (n) RETURN n.prop ORDER BY n.prop * 2")
 
     val expectation = RegularPlannerQuery(
