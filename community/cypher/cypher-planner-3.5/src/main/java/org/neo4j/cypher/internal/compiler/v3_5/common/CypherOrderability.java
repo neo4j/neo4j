@@ -121,7 +121,7 @@ public class CypherOrderability
         }
         else if ( rhs instanceof AnyValue )
         {
-            AnyValue lhsValue = (lhs instanceof AnyValue) ? (AnyValue) lhs : ValueUtils.of( lhs );
+            AnyValue lhsValue = ValueUtils.of( lhs );
             return AnyValues.COMPARATOR.compare( lhsValue, (AnyValue) rhs );
         }
         // Compare the types
