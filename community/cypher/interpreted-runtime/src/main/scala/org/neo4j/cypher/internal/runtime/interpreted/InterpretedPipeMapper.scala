@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{Expressio
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{AggregationExpression, Expression, Literal, ShortestPathExpression}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.{Predicate, True}
 import org.neo4j.cypher.internal.runtime.interpreted.pipes._
-import org.neo4j.cypher.internal.runtime.{ExecutionContext, MapExecutionContext, ProcedureCallMode, QueryIndexes}
+import org.neo4j.cypher.internal.runtime.{ExecutionContext, ProcedureCallMode, QueryIndexes}
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.v4_0.expressions.{Equals => ASTEquals, Expression => ASTExpression, _}
 import org.neo4j.cypher.internal.v4_0.logical.plans
@@ -177,6 +177,9 @@ case class InterpretedPipeMapper(readOnly: Boolean,
 
       case Sort(_, sortItems) =>
         SortPipe(source, sortItems.map(translateColumnOrder))(id = id)
+
+      case PartialSort(_, alreadySortedPrefix, stillToSortSuffix) =>
+        PartialSortPipe(source, alreadySortedPrefix.map(translateColumnOrder), stillToSortSuffix.map(translateColumnOrder))(id = id)
 
       case SkipPlan(_, count) =>
         SkipPipe(source, buildExpression(count))(id = id)

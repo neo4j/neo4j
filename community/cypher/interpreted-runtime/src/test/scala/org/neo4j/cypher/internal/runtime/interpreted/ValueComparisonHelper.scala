@@ -30,9 +30,9 @@ import org.scalatest.matchers.{MatchResult, Matcher}
 
 object ValueComparisonHelper {
 
-  def beEquivalentTo(result: Seq[Map[String, Any]]) = new Matcher[Seq[ExecutionContext]] {
+  def beEquivalentTo(result: Seq[Map[String, Any]]): Matcher[Seq[ExecutionContext]] = new Matcher[Seq[ExecutionContext]] {
     override def apply(left: Seq[ExecutionContext]): MatchResult = MatchResult(
-      matches = left.indices.forall(i => {
+      matches = result.size == left.size && left.indices.forall(i => {
         val res = result(i)
         val row = left(i)
         res.size == row.numberOfColumns &&
@@ -45,7 +45,7 @@ object ValueComparisonHelper {
       rawNegatedFailureMessage = s"$left == $result")
   }
 
-  def beEquivalentTo(value: Any) = new Matcher[AnyValue] {
+  def beEquivalentTo(value: Any): Matcher[AnyValue] = new Matcher[AnyValue] {
     override def apply(left: AnyValue): MatchResult = MatchResult(
       matches = check(left, value),
       rawFailureMessage = s"$left != $value",

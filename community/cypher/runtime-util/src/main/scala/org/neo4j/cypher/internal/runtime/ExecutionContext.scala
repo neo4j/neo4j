@@ -270,4 +270,6 @@ class MapExecutionContext(private val m: MutableMap[String, AnyValue], private v
   }
 
   override def hashCode(): Int = m.hashCode()
+
+  override def toString: String = s"MapExecutionContext(m=$m, cached=$cachedProperties)"
 }
