@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.store.kvstore;
 import java.io.File;
 import java.io.IOException;
 import java.util.Optional;
-import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
@@ -32,13 +31,13 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.impl.FileIsNotMappedException;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
-import org.neo4j.kernel.impl.locking.LockWrapper;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.logging.Logger;
 import org.neo4j.util.FeatureToggles;
 
-import static org.neo4j.kernel.impl.locking.LockWrapper.readLock;
-import static org.neo4j.kernel.impl.locking.LockWrapper.writeLock;
+import static org.neo4j.kernel.impl.store.kvstore.LockWrapper.readLock;
+import static org.neo4j.kernel.impl.store.kvstore.LockWrapper.writeLock;
 
 /**
  * The base for building a key value store based on rotating immutable
@@ -51,10 +50,11 @@ public abstract class AbstractKeyValueStore<Key> extends LifecycleAdapter
 {
     static final long MAX_LOOKUP_RETRY_COUNT = FeatureToggles.getLong( AbstractKeyValueStore.class, "maxLookupRetryCount", 1024 );
 
-    private final ReadWriteLock updateLock = new ReentrantReadWriteLock( /*fair=*/true );
+    private final UpdateLock updateLock = new UpdateLock();
     private final Format format;
     final RotationStrategy rotationStrategy;
     private final RotationTimerFactory rotationTimerFactory;
+    private final Logger logger;
     volatile ProgressiveState<Key> state;
     private DataInitializer<EntryUpdater<Key>> stateInitializer;
     private final FileSystemAbstraction fs;
@@ -62,7 +62,7 @@ public abstract class AbstractKeyValueStore<Key> extends LifecycleAdapter
     final int valueSize;
     private volatile boolean stopped;
 
-    public AbstractKeyValueStore( FileSystemAbstraction fs, PageCache pages, DatabaseLayout databaseLayout, RotationMonitor monitor,
+    public AbstractKeyValueStore( FileSystemAbstraction fs, PageCache pages, DatabaseLayout databaseLayout, RotationMonitor monitor, Logger logger,
             RotationTimerFactory timerFactory, VersionContextSupplier versionContextSupplier, int keySize,
             int valueSize, HeaderField<?>... headerFields )
     {
@@ -75,6 +75,7 @@ public abstract class AbstractKeyValueStore<Key> extends LifecycleAdapter
             monitor = RotationMonitor.NONE;
         }
         this.format = new Format( headerFields );
+        this.logger = logger;
         this.rotationStrategy = rotation.value().create( fs, pages, format, monitor, databaseLayout );
         this.rotationTimerFactory = timerFactory;
         this.state = new DeadState.Stopped<>( format, getClass().getAnnotation( State.class ).value(),
@@ -179,7 +180,7 @@ public abstract class AbstractKeyValueStore<Key> extends LifecycleAdapter
     @Override
     public final void init() throws IOException
     {
-        try ( LockWrapper ignored = writeLock( updateLock ) )
+        try ( LockWrapper ignored = writeLock( updateLock, logger ) )
         {
             state = state.initialize( rotationStrategy );
         }
@@ -188,7 +189,7 @@ public abstract class AbstractKeyValueStore<Key> extends LifecycleAdapter
     @Override
     public final void start() throws IOException
     {
-        try ( LockWrapper ignored = writeLock( updateLock ) )
+        try ( LockWrapper ignored = writeLock( updateLock, logger ) )
         {
             state = state.start( stateInitializer );
         }
@@ -196,7 +197,7 @@ public abstract class AbstractKeyValueStore<Key> extends LifecycleAdapter
 
     protected final Optional<EntryUpdater<Key>> updater( final long version )
     {
-        try ( LockWrapper lock = readLock( updateLock ) )
+        try ( LockWrapper lock = readLock( updateLock, logger ) )
         {
             return state.optionalUpdater( version, lock.get() );
         }
@@ -204,7 +205,7 @@ public abstract class AbstractKeyValueStore<Key> extends LifecycleAdapter
 
     protected final EntryUpdater<Key> updater()
     {
-        try ( LockWrapper lock = readLock( updateLock ) )
+        try ( LockWrapper lock = readLock( updateLock, logger ) )
         {
             return state.unsafeUpdater( lock.get() );
         }
@@ -212,7 +213,7 @@ public abstract class AbstractKeyValueStore<Key> extends LifecycleAdapter
 
     protected final EntryUpdater<Key> resetter( long version )
     {
-        try ( LockWrapper lock = writeLock( updateLock ) )
+        try ( LockWrapper lock = writeLock( updateLock, logger ) )
         {
             ProgressiveState<Key> current = state;
             return current.resetter( lock.get(), new RotationTask( version ) );
@@ -233,7 +234,7 @@ public abstract class AbstractKeyValueStore<Key> extends LifecycleAdapter
      */
     protected final PreparedRotation prepareRotation( final long version )
     {
-        try ( LockWrapper ignored = writeLock( updateLock ) )
+        try ( LockWrapper ignored = writeLock( updateLock, logger ) )
         {
             ProgressiveState<Key> prior = state;
             if ( prior.storedVersion() == version && !prior.hasChanges() )
@@ -249,7 +250,7 @@ public abstract class AbstractKeyValueStore<Key> extends LifecycleAdapter
     @Override
     public final void shutdown() throws IOException
     {
-        try ( LockWrapper ignored = writeLock( updateLock ) )
+        try ( LockWrapper ignored = writeLock( updateLock, logger ) )
         {
             stopped = true;
             state = state.stop();
@@ -296,7 +297,7 @@ public abstract class AbstractKeyValueStore<Key> extends LifecycleAdapter
         @Override
         public void run()
         {
-            try ( LockWrapper ignored = writeLock( updateLock ) )
+            try ( LockWrapper ignored = writeLock( updateLock, logger ) )
             {
                 rotate( true );
             }
@@ -315,7 +316,7 @@ public abstract class AbstractKeyValueStore<Key> extends LifecycleAdapter
                     final long version = rotation.rotationVersion();
                     ProgressiveState<Key> next = rotation.rotate( force, rotationStrategy, rotationTimerFactory,
                             value -> updateHeaders( value, version ) );
-                    try ( LockWrapper ignored = writeLock( updateLock ) )
+                    try ( LockWrapper ignored = writeLock( updateLock, logger ) )
                     {
                         state = next;
                     }
@@ -325,7 +326,7 @@ public abstract class AbstractKeyValueStore<Key> extends LifecycleAdapter
                 {
                     // Rotation failed. Here we assume that rotation state remembers this so that closing it
                     // won't close the state as it was before rotation began, which we're reverting to right here.
-                    try ( LockWrapper ignored = writeLock( updateLock ) )
+                    try ( LockWrapper ignored = writeLock( updateLock, logger ) )
                     {
                         // Only mark as failed if we're still running.
                         // If shutdown has been called while being in rotation state then shutdown will fail
