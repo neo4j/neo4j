@@ -80,7 +80,6 @@ public class DefaultIndexProviderMap extends LifecycleAdapter implements IndexPr
         assertInit();
         IndexProvider provider = indexProvidersByDescriptor.get( providerDescriptor );
         assertProviderFound( provider, providerDescriptor.name() );
-
         return provider;
     }
 
@@ -90,7 +89,6 @@ public class DefaultIndexProviderMap extends LifecycleAdapter implements IndexPr
         assertInit();
         IndexProvider provider = indexProvidersByName.get( providerDescriptorName );
         assertProviderFound( provider, providerDescriptorName );
-
         return provider;
     }
 

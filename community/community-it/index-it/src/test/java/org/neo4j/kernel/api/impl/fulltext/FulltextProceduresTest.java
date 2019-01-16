@@ -2167,6 +2167,30 @@ public class FulltextProceduresTest
         }
     }
 
+    @Test
+    public void creatingNormalIndexWithFulltextProviderMustThrow()
+    {
+        db = createDatabase();
+        assertThat( FulltextIndexProviderFactory.DESCRIPTOR.name(), is( "fulltext-1.0" ) ); // Sanity check that this test is up to date.
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.execute( "call db.createIndex( \":User(searchableString)\", \"" + FulltextIndexProviderFactory.DESCRIPTOR.name() + "\" );" ).close();
+            tx.success();
+        }
+        catch ( QueryExecutionException e )
+        {
+            assertThat( e.getMessage(), containsString( "only supports fulltext index descriptors" ) );
+        }
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            long indexCount = db.execute( DB_INDEXES ).stream().count();
+            assertThat( indexCount, is( 0L ) );
+            tx.success();
+        }
+    }
+
     private void assertNoIndexSeeks( Result result )
     {
         assertThat( result.stream().count(), is( 1L ) );

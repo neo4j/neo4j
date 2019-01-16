@@ -937,18 +937,20 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
 
         IndexProviderDescriptor providerDescriptor = indexProviders.indexProviderByName( provider );
         IndexDescriptor index = IndexDescriptorFactory.forSchema( descriptor, name, providerDescriptor );
+        index = indexProviders.getBlessedDescriptorFromProvider( index );
         ktx.txState().indexDoAdd( index );
         return index;
     }
 
     // Note: this will be sneakily executed by an internal transaction, so no additional locking is required.
-    public IndexDescriptor indexUniqueCreate( SchemaDescriptor schema, String provider )
+    public IndexDescriptor indexUniqueCreate( SchemaDescriptor schema, String provider ) throws SchemaKernelException
     {
         IndexProviderDescriptor providerDescriptor = indexProviders.indexProviderByName( provider );
         IndexDescriptor index =
                 IndexDescriptorFactory.uniqueForSchema( schema,
                         Optional.empty(),
                         providerDescriptor );
+        index = indexProviders.getBlessedDescriptorFromProvider( index );
         ktx.txState().indexDoAdd( index );
         return index;
     }
