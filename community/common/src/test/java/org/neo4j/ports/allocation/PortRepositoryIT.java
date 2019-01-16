@@ -19,27 +19,21 @@
  */
 package org.neo4j.ports.allocation;
 
-import org.junit.Rule;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.migrationsupport.rules.EnableRuleMigrationSupport;
-import org.junit.rules.TemporaryFolder;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashSet;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.ports.allocation.PortConstants.EphemeralPortMinimum;
 
-@EnableRuleMigrationSupport
-public class PortRepositoryIT
+class PortRepositoryIT
 {
-    @Rule
-    public final TemporaryFolder temporaryFolder = new TemporaryFolder();
-
     @Test
     void shouldReservePorts() throws Exception
     {
@@ -77,20 +71,12 @@ public class PortRepositoryIT
         portRepository1.reserveNextPort( "foo" );
         portRepository1.reserveNextPort( "foo" );
 
-        try
-        {
-            portRepository1.reserveNextPort( "foo" );
-
-            fail( "Failure was expected" );
-        }
-        catch ( IllegalStateException e )
-        {
-            assertThat( e.getMessage(), is( "There are no more ports available" ) );
-        }
+        IllegalStateException exception = assertThrows( IllegalStateException.class, () -> portRepository1.reserveNextPort( "foo" ) );
+        assertThat( exception.getMessage(), is( "There are no more ports available" ) );
     }
 
     private Path temporaryDirectory() throws IOException
     {
-        return temporaryFolder.newFolder("port-repository").toPath();
+        return Files.createTempDirectory( "portRepo" );
     }
 }

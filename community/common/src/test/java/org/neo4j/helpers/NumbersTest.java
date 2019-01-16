@@ -19,12 +19,11 @@
  */
 package org.neo4j.helpers;
 
-import org.junit.Rule;
+
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.migrationsupport.rules.EnableRuleMigrationSupport;
-import org.junit.rules.ExpectedException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.helpers.Numbers.safeCastIntToShort;
 import static org.neo4j.helpers.Numbers.safeCastIntToUnsignedShort;
 import static org.neo4j.helpers.Numbers.safeCastLongToByte;
@@ -32,56 +31,41 @@ import static org.neo4j.helpers.Numbers.safeCastLongToInt;
 import static org.neo4j.helpers.Numbers.safeCastLongToShort;
 import static org.neo4j.helpers.Numbers.unsignedShortToInt;
 
-@EnableRuleMigrationSupport
-public class NumbersTest
+class NumbersTest
 {
-
-    @Rule
-    public ExpectedException expectedException = ExpectedException.none();
-
     @Test
     void failSafeCastLongToInt()
     {
-        expectedException.expect( ArithmeticException.class );
-        expectedException.expectMessage( "Value 2147483648 is too big to be represented as int" );
-
-        safeCastLongToInt( Integer.MAX_VALUE + 1L );
+        ArithmeticException exception = assertThrows( ArithmeticException.class, () -> safeCastLongToInt( Integer.MAX_VALUE + 1L ) );
+        assertEquals( "Value 2147483648 is too big to be represented as int", exception.getMessage() );
     }
 
     @Test
     void failSafeCastLongToShort()
     {
-        expectedException.expect( ArithmeticException.class );
-        expectedException.expectMessage( "Value 32768 is too big to be represented as short" );
-
-        safeCastLongToShort( Short.MAX_VALUE + 1L );
+        ArithmeticException exception = assertThrows( ArithmeticException.class, () -> safeCastLongToShort( Short.MAX_VALUE + 1L ) );
+        assertEquals( "Value 32768 is too big to be represented as short", exception.getMessage() );
     }
 
     @Test
     void failSafeCastIntToUnsignedShort()
     {
-        expectedException.expect( ArithmeticException.class );
-        expectedException.expectMessage( "Value 131068 is too big to be represented as unsigned short" );
-
-        safeCastIntToUnsignedShort( Short.MAX_VALUE << 2 );
+        ArithmeticException exception = assertThrows( ArithmeticException.class, () -> safeCastIntToUnsignedShort( Short.MAX_VALUE << 2 ) );
+        assertEquals( "Value 131068 is too big to be represented as unsigned short", exception.getMessage() );
     }
 
     @Test
     void failSafeCastLongToByte()
     {
-        expectedException.expect( ArithmeticException.class );
-        expectedException.expectMessage( "Value 128 is too big to be represented as byte" );
-
-        safeCastLongToByte( Byte.MAX_VALUE + 1 );
+        ArithmeticException exception = assertThrows( ArithmeticException.class, () -> safeCastLongToByte( Byte.MAX_VALUE + 1 ) );
+        assertEquals( "Value 128 is too big to be represented as byte", exception.getMessage() );
     }
 
     @Test
     void failSafeCastIntToShort()
     {
-        expectedException.expect( ArithmeticException.class );
-        expectedException.expectMessage( "Value 32768 is too big to be represented as short" );
-
-        safeCastIntToShort( Short.MAX_VALUE + 1 );
+        ArithmeticException exception = assertThrows( ArithmeticException.class, () -> safeCastIntToShort( Short.MAX_VALUE + 1 ) );
+        assertEquals( "Value 32768 is too big to be represented as short", exception.getMessage() );
     }
 
     @Test
