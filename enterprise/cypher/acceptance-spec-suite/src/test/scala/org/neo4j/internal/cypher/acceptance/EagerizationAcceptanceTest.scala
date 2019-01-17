@@ -2036,14 +2036,57 @@ class EagerizationAcceptanceTest
     assertStats(result, propertiesWritten = 2)
   }
 
-  test("matching on relationship property existence, writing same property should not be eager") {
+  test("matching on relationship property existence, writing same property doesn't have to be eager but still is") {
     relate(createNode(), createNode(), "prop" -> 42)
     relate(createNode(), createNode())
 
     val query = "MATCH ()-[r]-() WHERE exists(r.prop) SET r.prop = 'foo' RETURN count(*)"
 
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+
+    result.columnAs[Long]("count(*)").next shouldBe 2
+    assertStats(result, propertiesWritten = 2)
+  }
+
+  test("matching on relationship property existence, writing same property to null should be eager") {
+    relate(createNode(), createNode(), "prop" -> 42)
+    relate(createNode(), createNode())
+
+    val query = "MATCH ()-[r]-() WHERE exists(r.prop) SET r.prop = {null} RETURN count(*)"
+
+    val buggyVersions = Configs.Cost3_2  + Configs.Cost3_1 + Configs.DefaultRule + Configs.Rule3_1
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query, params = Map("null" -> null),
+                             expectedDifferentResults = buggyVersions,
+                             planComparisonStrategy = testEagerPlanComparisonStrategy(1, buggyVersions))
+
+    result.columnAs[Long]("count(*)").next shouldBe 2
+    //we are "smart" enough to only remove property once
+    assertStats(result, propertiesWritten = 1)
+  }
+
+  test("matching on relationship property existence, removing same property should be eager") {
+    relate(createNode(), createNode(), "prop" -> 42)
+    relate(createNode(), createNode())
+
+    val query = "MATCH ()-[r]-() WHERE exists(r.prop) REMOVE r.prop  RETURN count(*)"
+    val buggyVersions = Configs.Cost3_2  + Configs.Cost3_1 + Configs.DefaultRule + Configs.Rule3_1
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query, params = Map("null" -> null),
+                            expectedDifferentResults = buggyVersions,
+                             planComparisonStrategy = testEagerPlanComparisonStrategy(1, buggyVersions))
+
+    result.columnAs[Long]("count(*)").next shouldBe 2
+    //we are "smart" enough to only remove property once
+    assertStats(result, propertiesWritten = 1)
+  }
+
+  test("matching on relationship property with property predicate, writing same property should be eager") {
+    relate(createNode(), createNode(), "prop" -> 42)
+    relate(createNode(), createNode())
+
+    val query = "MATCH ()-[r]-() WHERE r.prop = 42 SET r.prop = 'foo' RETURN count(*)"
+
     val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
-      planComparisonStrategy = testEagerPlanComparisonStrategy(0, Configs.Rule2_3))
+                             planComparisonStrategy = testEagerPlanComparisonStrategy(1))
 
     result.columnAs[Long]("count(*)").next shouldBe 2
     assertStats(result, propertiesWritten = 2)
