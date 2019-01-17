@@ -54,7 +54,7 @@ import static org.neo4j.harness.internal.TestNeo4jBuilders.newInProcessBuilder;
  * <pre>
  *  <code>
  *    {@literal @}ExtendWith( Neo4jExtension.class )
- *    class TestExample {
+ *     class TestExample {
  *            {@literal @}Test
  *             void testExample( Neo4j neo4j, GraphDatabaseService databaseService )
  *             {
