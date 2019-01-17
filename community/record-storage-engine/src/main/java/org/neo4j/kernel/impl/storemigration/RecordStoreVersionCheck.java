@@ -21,89 +21,117 @@ package org.neo4j.kernel.impl.storemigration;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Optional;
 
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.MetaDataStore;
+import org.neo4j.kernel.impl.store.format.FormatFamily;
+import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
+import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat;
+import org.neo4j.logging.LogProvider;
+import org.neo4j.storageengine.api.StoreVersionCheck;
 
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.STORE_VERSION;
-import static org.neo4j.kernel.impl.storemigration.RecordStoreVersionCheck.Result.Outcome;
+import static org.neo4j.kernel.impl.store.format.RecordFormatPropertyConfigurator.configureRecordFormat;
 
-public class RecordStoreVersionCheck
+public class RecordStoreVersionCheck implements StoreVersionCheck
 {
     private final PageCache pageCache;
+    private final File metaDataFile;
+    private final RecordFormats configuredFormat;
+    private final Config config;
 
-    public RecordStoreVersionCheck( PageCache pageCache )
+    public RecordStoreVersionCheck( FileSystemAbstraction fs, PageCache pageCache, DatabaseLayout databaseLayout, LogProvider logProvider, Config config )
+    {
+        this( pageCache, databaseLayout, configuredVersion( config, databaseLayout, fs, pageCache, logProvider ), config );
+    }
+
+    RecordStoreVersionCheck( PageCache pageCache, DatabaseLayout databaseLayout, RecordFormats configuredFormat, Config config )
     {
         this.pageCache = pageCache;
+        this.metaDataFile = databaseLayout.metadataStore();
+        this.configuredFormat = configuredFormat;
+        this.config = config;
     }
 
-    public Optional<String> getVersion( File neostoreFile ) throws IOException
+    @Override
+    public String storeVersion() throws IOException
     {
-        long record = MetaDataStore.getRecord( pageCache, neostoreFile, STORE_VERSION );
+        long record = MetaDataStore.getRecord( pageCache, metaDataFile, STORE_VERSION );
         if ( record == MetaDataRecordFormat.FIELD_NOT_PRESENT )
         {
-            return Optional.empty();
+            throw new IllegalStateException( "Uninitialized version field in " + metaDataFile );
         }
-        return Optional.of( MetaDataStore.versionLongToString( record ) );
+        return MetaDataStore.versionLongToString( record );
     }
 
-    public Result hasVersion( File neostoreFile, String expectedVersion )
+    @Override
+    public String configuredVersion()
     {
-        Optional<String> storeVersion;
+        configureRecordFormat( configuredFormat, config );
+        return configuredFormat.storeVersion();
+    }
 
+    @Override
+    public Result checkUpgrade( String desiredVersion )
+    {
+        String version;
         try
         {
-            storeVersion = getVersion( neostoreFile );
+            version = storeVersion();
+        }
+        catch ( IllegalStateException e )
+        {
+            return new Result( Outcome.storeVersionNotFound, null, metaDataFile.getName() );
         }
         catch ( IOException e )
         {
             // since we cannot read let's assume the file is not there
-            return new Result( Outcome.missingStoreFile, null, neostoreFile.getName() );
+            return new Result( Outcome.missingStoreFile, null, metaDataFile.getName() );
         }
 
-        return storeVersion
-                .map( v ->
-                        expectedVersion.equals( v ) ?
-                        new Result( Outcome.ok, null, neostoreFile.getName() ) :
-                        new Result( Outcome.unexpectedStoreVersion, v, neostoreFile.getName() ) )
-                .orElseGet( () -> new Result( Outcome.storeVersionNotFound, null, neostoreFile.getName() ) );
+        if ( desiredVersion.equals( version ) )
+        {
+            return new Result( Outcome.ok, version, metaDataFile.getName() );
+        }
+        else
+        {
+            RecordFormats fromFormat;
+            try
+            {
+                RecordFormats format = RecordFormatSelector.selectForVersion( desiredVersion );
+                fromFormat = RecordFormatSelector.selectForVersion( version );
+
+                // If we are trying to open an enterprise store when configured to use community format, then inform the user
+                // of the config setting to change since downgrades aren't possible but the store can still be opened.
+                if ( FormatFamily.isLowerFamilyFormat( format, fromFormat ) )
+                {
+                    return new Result( Outcome.unexpectedUpgradingVersion, version, metaDataFile.getAbsolutePath() );
+                }
+
+                if ( FormatFamily.isSameFamily( fromFormat, format ) && (fromFormat.generation() > format.generation()) )
+                {
+                    // Tried to downgrade, that isn't supported
+                    return new Result( Outcome.attemptedStoreDowngrade, fromFormat.storeVersion(), metaDataFile.getAbsolutePath() );
+                }
+                else
+                {
+                    return new Result( Outcome.ok, version, metaDataFile.getAbsolutePath() );
+                }
+            }
+            catch ( IllegalArgumentException e )
+            {
+                return new Result( Outcome.unexpectedStoreVersion, version, metaDataFile.getAbsolutePath() );
+            }
+        }
     }
 
-    public static class Result
+    private static RecordFormats configuredVersion( Config config, DatabaseLayout databaseLayout, FileSystemAbstraction fs, PageCache pageCache,
+            LogProvider logProvider )
     {
-        public final Outcome outcome;
-        public final String actualVersion;
-        public final String storeFilename;
-
-        public Result( Outcome outcome, String actualVersion, String storeFilename )
-        {
-            this.outcome = outcome;
-            this.actualVersion = actualVersion;
-            this.storeFilename = storeFilename;
-        }
-
-        public enum Outcome
-        {
-            ok( true ),
-            missingStoreFile( false ),
-            storeVersionNotFound( false ),
-            unexpectedStoreVersion( false ),
-            attemptedStoreDowngrade( false ),
-            storeNotCleanlyShutDown( false );
-
-            private final boolean success;
-
-            Outcome( boolean success )
-            {
-                this.success = success;
-            }
-
-            public boolean isSuccessful()
-            {
-                return this.success;
-            }
-        }
+        return RecordFormatSelector.selectNewestFormat( config, databaseLayout, fs, pageCache, logProvider );
     }
 }

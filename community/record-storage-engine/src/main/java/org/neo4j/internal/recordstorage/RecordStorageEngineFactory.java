@@ -32,13 +32,38 @@ import org.neo4j.kernel.impl.core.TokenHolders;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.id.IdController;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
+import org.neo4j.kernel.impl.storemigration.RecordStorageMigrator;
+import org.neo4j.kernel.impl.storemigration.RecordStoreVersionCheck;
 import org.neo4j.kernel.internal.DatabaseHealth;
-import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.internal.LogService;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageEngineFactory;
+import org.neo4j.storageengine.api.StoreVersionCheck;
+import org.neo4j.storageengine.migration.StoreMigrationParticipant;
 
-public class RecordStorageEngineFactory implements StorageEngineFactory
+public class RecordStorageEngineFactory extends StorageEngineFactory
 {
+    @Override
+    public StoreVersionCheck versionCheck( DependencyResolver dependencyResolver )
+    {
+        return new RecordStoreVersionCheck(
+                dependencyResolver.resolveDependency( FileSystemAbstraction.class ),
+                dependencyResolver.resolveDependency( PageCache.class ),
+                dependencyResolver.resolveDependency( DatabaseLayout.class ), dependencyResolver.resolveDependency( LogService.class ).getInternalLogProvider(),
+                dependencyResolver.resolveDependency( Config.class ) );
+    }
+
+    @Override
+    public StoreMigrationParticipant migrationParticipant( DependencyResolver dependencyResolver )
+    {
+        return new RecordStorageMigrator(
+                dependencyResolver.resolveDependency( FileSystemAbstraction.class ),
+                dependencyResolver.resolveDependency( PageCache.class ),
+                dependencyResolver.resolveDependency( Config.class ),
+                dependencyResolver.resolveDependency( LogService.class ),
+                dependencyResolver.resolveDependency( JobScheduler.class ) );
+    }
     @Override
     public StorageEngine instantiate( DependencyResolver dependencyResolver, DependencySatisfier dependencySatisfier )
     {
@@ -47,7 +72,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
                 dependencyResolver.resolveDependency( Config.class ),
                 dependencyResolver.resolveDependency( PageCache.class ),
                 dependencyResolver.resolveDependency( FileSystemAbstraction.class ),
-                dependencyResolver.resolveDependency( LogProvider.class ),
+                dependencyResolver.resolveDependency( LogService.class ).getInternalLogProvider(),
                 dependencyResolver.resolveDependency( TokenHolders.class ),
                 dependencyResolver.resolveDependency( SchemaState.class ),
                 dependencyResolver.resolveDependency( ConstraintSemantics.class ),

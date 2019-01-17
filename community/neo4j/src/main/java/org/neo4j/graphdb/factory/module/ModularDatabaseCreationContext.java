@@ -27,7 +27,6 @@ import org.neo4j.dbms.database.DatabaseConfig;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.factory.module.edition.context.EditionDatabaseContext;
 import org.neo4j.graphdb.factory.module.id.DatabaseIdContext;
-import org.neo4j.graphdb.internal.DatabaseMigratorFactoryImpl;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.watcher.DatabaseLayoutWatcher;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -55,6 +54,7 @@ import org.neo4j.kernel.impl.proc.GlobalProcedures;
 import org.neo4j.kernel.impl.query.QueryEngineProvider;
 import org.neo4j.kernel.impl.store.id.IdController;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
+import org.neo4j.kernel.impl.storemigration.DatabaseMigratorFactory;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.StoreCopyCheckPointMutex;
@@ -67,7 +67,6 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.kernel.monitoring.tracing.Tracers;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.scheduler.JobScheduler;
-import org.neo4j.storageengine.migration.DatabaseMigratorFactory;
 import org.neo4j.time.SystemNanoClock;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Data;
 
@@ -160,7 +159,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
         this.watcherServiceFactory = editionContext.getWatcherServiceFactory();
         this.facade = facade;
         this.engineProviders = globalModule.getQueryEngineProviders();
-        this.databaseMigratorFactory = new DatabaseMigratorFactoryImpl( fs, globalConfig, logService, pageCache, scheduler );
+        this.databaseMigratorFactory = new DatabaseMigratorFactory( fs, globalConfig, logService, pageCache, scheduler );
     }
 
     @Override

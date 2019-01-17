@@ -33,40 +33,28 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.MetaDataStore;
-import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.StoreVersion;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
-import org.neo4j.kernel.impl.store.format.standard.StandardFormatFamily;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_4;
-import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
-import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
-import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
-import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
-import org.neo4j.kernel.internal.Version;
-import org.neo4j.kernel.monitoring.Monitors;
-import org.neo4j.kernel.recovery.LogTailScanner;
+import org.neo4j.storageengine.api.StoreVersionCheck;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.STORE_VERSION;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.changeVersionNumber;
-import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.removeCheckPointFromTxLog;
-import static org.neo4j.kernel.impl.storemigration.StoreUpgrader.UnexpectedUpgradingStoreVersionException.MESSAGE;
 
 @RunWith( Enclosed.class )
-public class UpgradableDatabaseTest
+public class RecordStoreVersionTest
 {
     @RunWith( Parameterized.class )
     public static class SupportedVersions
@@ -82,7 +70,6 @@ public class UpgradableDatabaseTest
 
         private DatabaseLayout databaseLayout;
         private FileSystemAbstraction fileSystem;
-        private LogTailScanner tailScanner;
 
         @Parameterized.Parameter( 0 )
         public String version;
@@ -99,67 +86,41 @@ public class UpgradableDatabaseTest
             fileSystem = fileSystemRule.get();
             databaseLayout = testDirectory.databaseLayout();
             MigrationTestUtils.findFormatStoreDirectoryForVersion( version, databaseLayout.databaseDirectory() );
-            VersionAwareLogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader = new VersionAwareLogEntryReader<>();
-            LogFiles logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( databaseLayout.databaseDirectory(), fileSystem ).build();
-            tailScanner = new LogTailScanner( logFiles, logEntryReader, new Monitors() );
         }
 
-        boolean storeFilesUpgradable( DatabaseLayout databaseLayout, UpgradableDatabase upgradableDatabase )
+        boolean storeFilesUpgradable( RecordStoreVersionCheck check )
         {
-            try
-            {
-                upgradableDatabase.checkUpgradable( databaseLayout );
-                return true;
-            }
-            catch ( StoreUpgrader.UnableToUpgradeException e )
-            {
-                return false;
-            }
+            return check.checkUpgrade( check.configuredVersion() ).outcome.isSuccessful();
         }
 
         @Test
         public void shouldAcceptTheStoresInTheSampleDatabaseAsBeingEligibleForUpgrade()
         {
             // given
-            final UpgradableDatabase upgradableDatabase = getUpgradableDatabase();
+            final RecordStoreVersionCheck check = getVersionCheck();
 
             // when
-            final boolean result = storeFilesUpgradable( databaseLayout, upgradableDatabase );
+            final boolean result = storeFilesUpgradable( check );
 
             // then
             assertTrue( result );
         }
 
         @Test
-        public void shouldDetectOldVersionAsDifferentFromCurrent()
+        public void shouldDetectOldVersionAsDifferentFromCurrent() throws IOException
         {
             // given
-            final UpgradableDatabase upgradableDatabase = getUpgradableDatabase();
+            final RecordStoreVersionCheck check = getVersionCheck();
             // when
-            boolean currentVersion = upgradableDatabase.hasCurrentVersion( databaseLayout );
+            boolean currentVersion = check.storeVersion().equalsIgnoreCase( check.configuredVersion() );
 
             // then
             assertFalse( currentVersion );
         }
 
-        @Test
-        public void shouldRejectStoresIfDBIsNotShutdownCleanly() throws IOException
+        private RecordStoreVersionCheck getVersionCheck()
         {
-            // given
-            removeCheckPointFromTxLog( fileSystem, databaseLayout.databaseDirectory() );
-            final UpgradableDatabase upgradableDatabase = getUpgradableDatabase();
-
-            // when
-            final boolean result = storeFilesUpgradable( databaseLayout, upgradableDatabase );
-
-            // then
-            assertFalse( result );
-        }
-
-        private UpgradableDatabase getUpgradableDatabase()
-        {
-            return new UpgradableDatabase( new RecordStoreVersionCheck( pageCacheRule.getPageCache( fileSystem ) ),
-                    getRecordFormat(), tailScanner );
+            return new RecordStoreVersionCheck( pageCacheRule.getPageCache( fileSystem ), databaseLayout, getRecordFormat(), Config.defaults() );
         }
     }
 
@@ -176,7 +137,6 @@ public class UpgradableDatabaseTest
 
         private DatabaseLayout databaseLayout;
         private FileSystemAbstraction fileSystem;
-        private LogTailScanner tailScanner;
 
         @Parameterized.Parameter( 0 )
         public String version;
@@ -198,19 +158,16 @@ public class UpgradableDatabaseTest
             File metadataStore = databaseLayout.metadataStore();
             PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
             MetaDataStore.setRecord( pageCache, metadataStore, STORE_VERSION, MetaDataStore.versionStringToLong( version ) );
-            VersionAwareLogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader = new VersionAwareLogEntryReader<>();
-            LogFiles logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( databaseLayout.databaseDirectory(), fileSystem ).build();
-            tailScanner = new LogTailScanner( logFiles, logEntryReader, new Monitors() );
         }
 
         @Test
-        public void shouldDetectOldVersionAsDifferentFromCurrent()
+        public void shouldDetectOldVersionAsDifferentFromCurrent() throws IOException
         {
             // given
-            final UpgradableDatabase upgradableDatabase = getUpgradableDatabase();
+            final RecordStoreVersionCheck check = getVersionCheck();
 
             // when
-            boolean currentVersion = upgradableDatabase.hasCurrentVersion( databaseLayout );
+            boolean currentVersion = check.storeVersion().equals( check.configuredVersion() );
 
             // then
             assertFalse( currentVersion );
@@ -220,33 +177,17 @@ public class UpgradableDatabaseTest
         public void shouldCommunicateWhatCausesInabilityToUpgrade()
         {
             // given
-            final UpgradableDatabase upgradableDatabase = getUpgradableDatabase();
-            try
-            {
-                // when
-                upgradableDatabase.checkUpgradable( databaseLayout );
-                fail( "should not have been able to upgrade" );
-            }
-            catch ( StoreUpgrader.UnexpectedUpgradingStoreVersionException e )
-            {
-                // then
-                assertEquals( String.format( MESSAGE, version, upgradableDatabase.currentVersion(),
-                        Version.getNeo4jVersion() ), e.getMessage() );
-            }
-            catch ( StoreUpgrader.UnexpectedUpgradingStoreFormatException e )
-            {
-                // then
-                assertNotSame( StandardFormatFamily.INSTANCE,
-                        RecordFormatSelector.selectForVersion( version ).getFormatFamily());
-                assertEquals( String.format( StoreUpgrader.UnexpectedUpgradingStoreFormatException.MESSAGE,
-                        GraphDatabaseSettings.record_format.name() ), e.getMessage() );
-            }
+            final RecordStoreVersionCheck check = getVersionCheck();
+
+            // when
+            StoreVersionCheck.Result result = check.checkUpgrade( check.configuredVersion() );
+            assertFalse( result.outcome.isSuccessful() );
+            assertSame( StoreVersionCheck.Outcome.unexpectedStoreVersion, result.outcome );
         }
 
-        private UpgradableDatabase getUpgradableDatabase()
+        private RecordStoreVersionCheck getVersionCheck()
         {
-            return new UpgradableDatabase( new RecordStoreVersionCheck( pageCacheRule.getPageCache( fileSystem ) ),
-                    getRecordFormat(), tailScanner );
+            return new RecordStoreVersionCheck( pageCacheRule.getPageCache( fileSystem ), databaseLayout, getRecordFormat(), Config.defaults() );
         }
     }
 

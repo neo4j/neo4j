@@ -67,6 +67,8 @@ import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdReuseEligibility;
 import org.neo4j.kernel.impl.store.id.configuration.CommunityIdTypeConfigurationProvider;
 import org.neo4j.kernel.impl.store.id.configuration.IdTypeConfigurationProvider;
+import org.neo4j.kernel.impl.storemigration.DatabaseMigrator;
+import org.neo4j.kernel.impl.storemigration.DatabaseMigratorFactory;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.StoreCopyCheckPointMutex;
@@ -84,11 +86,10 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.logging.internal.SimpleLogService;
 import org.neo4j.scheduler.JobScheduler;
-import org.neo4j.storageengine.migration.DatabaseMigrator;
-import org.neo4j.storageengine.migration.DatabaseMigratorFactory;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.SystemNanoClock;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -165,8 +166,15 @@ public class DatabaseRule extends ExternalResource
                 new BufferedIdController( new BufferingIdGeneratorFactory( idGeneratorFactory, IdReuseEligibility.ALWAYS, idConfigurationProvider ),
                         jobScheduler ), DatabaseInfo.COMMUNITY, new TransactionVersionContextSupplier(), ON_HEAP, Collections.emptyList(),
             file -> mock( DatabaseLayoutWatcher.class ), new GraphDatabaseFacade(), Iterables.empty(),
-            ( ignore1, ignore2 ) -> mock( DatabaseMigrator.class ) ) );
+            mockedDatabaseMigratorFactory() ) );
         return database;
+    }
+
+    private static DatabaseMigratorFactory mockedDatabaseMigratorFactory()
+    {
+        DatabaseMigratorFactory factory = mock( DatabaseMigratorFactory.class );
+        when( factory.createDatabaseMigrator( any(), any() ) ).thenReturn( mock( DatabaseMigrator.class ) );
+        return factory;
     }
 
     private static <T> T dependency( Dependencies dependencies, Class<T> type, Function<DependencyResolver,T> defaultSupplier )
@@ -543,5 +551,4 @@ public class DatabaseRule extends ExternalResource
             return databaseMigratorFactory;
         }
     }
-
 }

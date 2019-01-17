@@ -26,8 +26,13 @@ import java.io.IOException;
 import java.io.OutputStream;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.MetaDataStore;
+import org.neo4j.logging.NullLogProvider;
+import org.neo4j.storageengine.api.StoreVersionCheck;
+import org.neo4j.storageengine.api.StoreVersionCheck.Outcome;
 import org.neo4j.string.UTF8;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
@@ -52,15 +57,14 @@ class RecordStoreVersionCheckTest
     void shouldFailIfFileDoesNotExist()
     {
         // given
-        File missingFile = new File( testDirectory.directory(), "missing-file" );
-        RecordStoreVersionCheck storeVersionCheck = new RecordStoreVersionCheck( pageCache );
+        RecordStoreVersionCheck storeVersionCheck = newStoreVersionCheck();
 
         // when
-        RecordStoreVersionCheck.Result result = storeVersionCheck.hasVersion( missingFile, "version" );
+        StoreVersionCheck.Result result = storeVersionCheck.checkUpgrade( "version" );
 
         // then
         assertFalse( result.outcome.isSuccessful() );
-        assertEquals( RecordStoreVersionCheck.Result.Outcome.missingStoreFile, result.outcome );
+        assertEquals( Outcome.missingStoreFile, result.outcome );
         assertNull( result.actualVersion );
     }
 
@@ -68,15 +72,15 @@ class RecordStoreVersionCheckTest
     void shouldReportShortFileDoesNotHaveSpecifiedVersion() throws IOException
     {
         // given
-        File shortFile = fileContaining( fileSystem, "nothing interesting" );
-        RecordStoreVersionCheck storeVersionCheck = new RecordStoreVersionCheck( pageCache );
+        File shortFile = metaDataFileContaining( testDirectory.databaseLayout(), fileSystem, "nothing interesting" );
+        RecordStoreVersionCheck storeVersionCheck = newStoreVersionCheck();
 
         // when
-        RecordStoreVersionCheck.Result result = storeVersionCheck.hasVersion( shortFile, "version" );
+        StoreVersionCheck.Result result = storeVersionCheck.checkUpgrade( "version" );
 
         // then
         assertFalse( result.outcome.isSuccessful() );
-        assertEquals( RecordStoreVersionCheck.Result.Outcome.storeVersionNotFound, result.outcome );
+        assertEquals( Outcome.storeVersionNotFound, result.outcome );
         assertNull( result.actualVersion );
     }
 
@@ -87,14 +91,14 @@ class RecordStoreVersionCheckTest
         File neoStore = emptyFile( fileSystem );
         long v1 = MetaDataStore.versionStringToLong( "V1" );
         MetaDataStore.setRecord( pageCache, neoStore, MetaDataStore.Position.STORE_VERSION, v1 );
-        RecordStoreVersionCheck storeVersionCheck = new RecordStoreVersionCheck( pageCache );
+        RecordStoreVersionCheck storeVersionCheck = newStoreVersionCheck();
 
         // when
-        RecordStoreVersionCheck.Result result = storeVersionCheck.hasVersion( neoStore, "V2" );
+        StoreVersionCheck.Result result = storeVersionCheck.checkUpgrade( "V2" );
 
         // then
         assertFalse( result.outcome.isSuccessful() );
-        assertEquals( RecordStoreVersionCheck.Result.Outcome.unexpectedStoreVersion, result.outcome );
+        assertEquals( Outcome.unexpectedStoreVersion, result.outcome );
         assertEquals( "V1", result.actualVersion );
     }
 
@@ -105,33 +109,38 @@ class RecordStoreVersionCheckTest
         File neoStore = emptyFile( fileSystem );
         long v1 = MetaDataStore.versionStringToLong( "V1" );
         MetaDataStore.setRecord( pageCache, neoStore, MetaDataStore.Position.STORE_VERSION, v1 );
-        RecordStoreVersionCheck storeVersionCheck = new RecordStoreVersionCheck( pageCache );
+        RecordStoreVersionCheck storeVersionCheck = newStoreVersionCheck();
 
         // when
-        RecordStoreVersionCheck.Result result = storeVersionCheck.hasVersion( neoStore, "V1" );
+        StoreVersionCheck.Result result = storeVersionCheck.checkUpgrade( "V1" );
 
         // then
         assertTrue( result.outcome.isSuccessful() );
-        assertEquals( RecordStoreVersionCheck.Result.Outcome.ok, result.outcome );
+        assertEquals( Outcome.ok, result.outcome );
         assertNull( result.actualVersion );
     }
 
     private File emptyFile( FileSystemAbstraction fs ) throws IOException
     {
-        File shortFile = testDirectory.file( "empty" );
+        File shortFile = testDirectory.databaseLayout().metadataStore();
         fs.deleteFile( shortFile );
         fs.create( shortFile ).close();
         return shortFile;
     }
 
-    private File fileContaining( FileSystemAbstraction fs, String content ) throws IOException
+    private File metaDataFileContaining( DatabaseLayout layout, FileSystemAbstraction fs, String content ) throws IOException
     {
-        File shortFile = testDirectory.file( "file" );
+        File shortFile = layout.metadataStore();
         fs.deleteFile( shortFile );
         try ( OutputStream outputStream = fs.openAsOutputStream( shortFile, false ) )
         {
             outputStream.write( UTF8.encode( content ) );
             return shortFile;
         }
+    }
+
+    private RecordStoreVersionCheck newStoreVersionCheck()
+    {
+        return new RecordStoreVersionCheck( fileSystem, pageCache, testDirectory.databaseLayout(), NullLogProvider.getInstance(), Config.defaults() );
     }
 }

@@ -27,15 +27,18 @@ import org.neo4j.commandline.admin.CommandFailed;
 import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.commandline.arguments.Arguments;
 import org.neo4j.commandline.arguments.common.MandatoryCanonicalPath;
+import org.neo4j.helpers.Service;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
-import org.neo4j.kernel.impl.storemigration.RecordStoreVersionCheck;
+import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.Validators;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.storageengine.api.StorageEngineFactory;
+import org.neo4j.storageengine.api.StoreVersionCheck;
 
 import static org.neo4j.kernel.impl.scheduler.JobSchedulerFactory.createInitialisedScheduler;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.findSuccessor;
@@ -65,9 +68,19 @@ public class StoreInfoCommand implements AdminCommand
                 PageCache pageCache = StandalonePageCacheFactory.createPageCache( fileSystem, jobScheduler ) )
         {
             DatabaseLayout databaseLayout = DatabaseLayout.of( databaseDirectory.toFile() );
-            final String storeVersion = new RecordStoreVersionCheck( pageCache )
-                    .getVersion( databaseLayout.metadataStore() )
-                    .orElseThrow( () -> new CommandFailed( String.format( "Could not find version metadata in store '%s'", databaseDirectory ) ) );
+            StorageEngineFactory storageEngineFactory = StorageEngineFactory.selectStorageEngine( Service.load( StorageEngineFactory.class ) );
+            Dependencies dependencies = new Dependencies();
+            dependencies.satisfyDependencies( pageCache, databaseLayout );
+            StoreVersionCheck storeVersionCheck = storageEngineFactory.versionCheck( dependencies );
+            String storeVersion;
+            try
+            {
+                storeVersion = storeVersionCheck.storeVersion();
+            }
+            catch ( Exception e )
+            {
+                throw new CommandFailed( String.format( "Could not find version metadata in store '%s'", databaseDirectory ) );
+            }
 
             final String fmt = "%-30s%s";
             out.accept( String.format( fmt, "Store format version:", storeVersion ) );

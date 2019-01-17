@@ -39,9 +39,12 @@ import org.neo4j.helpers.Exceptions;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_4;
 import org.neo4j.kernel.impl.storemigration.RecordStoreVersionCheck;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
+import org.neo4j.logging.NullLogProvider;
+import org.neo4j.storageengine.api.StoreVersionCheck;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
@@ -71,7 +74,7 @@ public class StoreUpgradeOnStartupTest
 
     private FileSystemAbstraction fileSystem;
     private DatabaseLayout workingDatabaseLayout;
-    private RecordStoreVersionCheck check;
+    private StoreVersionCheck check;
     private File workingStoreDir;
 
     @Parameterized.Parameters( name = "{0}" )
@@ -87,7 +90,7 @@ public class StoreUpgradeOnStartupTest
         PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
         workingStoreDir = testDir.storeDir( "working_" + version );
         workingDatabaseLayout = testDir.databaseLayout( workingStoreDir );
-        check = new RecordStoreVersionCheck( pageCache );
+        check = new RecordStoreVersionCheck( fileSystem, pageCache, workingDatabaseLayout, NullLogProvider.getInstance(), Config.defaults() );
         File prepareDirectory = testDir.directory( "prepare_" + version );
         prepareSampleLegacyDatabase( version, fileSystem, workingDatabaseLayout.databaseDirectory(), prepareDirectory );
     }
@@ -101,7 +104,7 @@ public class StoreUpgradeOnStartupTest
 
         // then
         assertTrue( "Some store files did not have the correct version",
-                checkNeoStoreHasDefaultFormatVersion( check, workingDatabaseLayout ) );
+                checkNeoStoreHasDefaultFormatVersion( check ) );
         assertConsistentStore( workingDatabaseLayout );
     }
 

@@ -318,7 +318,6 @@ public class LogTailScanner
 
     public static class LogTailInformation
     {
-
         public final CheckPoint lastCheckPoint;
         public final long firstTxIdAfterLastCheckPoint;
         public final long oldestLogVersionFound;
@@ -350,5 +349,4 @@ public class LogTailScanner
             return recordAfterCheckpoint;
         }
     }
-
 }

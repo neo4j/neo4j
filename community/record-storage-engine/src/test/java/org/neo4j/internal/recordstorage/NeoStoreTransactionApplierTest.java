@@ -442,7 +442,7 @@ public class NeoStoreTransactionApplierTest
         final Command.RelationshipTypeTokenCommand command =
                 new Command.RelationshipTypeTokenCommand( before, after );
         final NamedToken token = new NamedToken( "token", 21 );
-        when( relationshipTypeTokenStore.getToken( (int) command.getKey() ) ).thenReturn( token );
+        when( relationshipTypeTokenStore.getToken( command.tokenId() ) ).thenReturn( token );
 
         // when
         boolean result = apply( applier, command::handle, transactionToApply );
@@ -489,7 +489,7 @@ public class NeoStoreTransactionApplierTest
         final Command.LabelTokenCommand command =
                 new Command.LabelTokenCommand( before, after );
         final NamedToken token = new NamedToken( "token", 21 );
-        when( labelTokenStore.getToken( (int) command.getKey() ) ).thenReturn( token );
+        when( labelTokenStore.getToken( command.tokenId() ) ).thenReturn( token );
 
         // when
         boolean result = apply( applier, command::handle, transactionToApply );
@@ -537,7 +537,7 @@ public class NeoStoreTransactionApplierTest
         final Command.PropertyKeyTokenCommand command =
                 new Command.PropertyKeyTokenCommand( before, after );
         final NamedToken token = new NamedToken( "token", 21 );
-        when( propertyKeyTokenStore.getToken( (int) command.getKey() ) ).thenReturn( token );
+        when( propertyKeyTokenStore.getToken( command.tokenId() ) ).thenReturn( token );
 
         // when
         boolean result = apply( applier, command::handle, transactionToApply );

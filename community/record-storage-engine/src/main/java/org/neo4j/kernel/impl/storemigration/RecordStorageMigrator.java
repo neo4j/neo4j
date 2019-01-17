@@ -36,6 +36,7 @@ import java.util.Collection;
 import org.neo4j.common.ProgressReporter;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.internal.recordstorage.RecordNodeCursor;
+import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.internal.recordstorage.RecordStorageReader;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
@@ -103,7 +104,7 @@ import static org.neo4j.unsafe.impl.batchimport.input.Inputs.knownEstimates;
 import static org.neo4j.unsafe.impl.batchimport.staging.ExecutionSupervisors.withDynamicProcessorAssignment;
 
 /**
- * Migrates a neo4j kernel database from one version to the next.
+ * Migrates a {@link RecordStorageEngine} store from one version to another.
  * <p>
  * Since only one store migration is supported at any given version (migration from the previous store version)
  * the migration code is specific for the current upgrade and changes with each store format version.
@@ -112,7 +113,7 @@ import static org.neo4j.unsafe.impl.batchimport.staging.ExecutionSupervisors.wit
  *
  * @see StoreUpgrader
  */
-public class StoreMigrator extends AbstractStoreMigrationParticipant
+public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
 {
     private static final char TX_LOG_COUNTERS_SEPARATOR = 'A';
 
@@ -122,7 +123,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
     private final PageCache pageCache;
     private final JobScheduler jobScheduler;
 
-    public StoreMigrator( FileSystemAbstraction fileSystem, PageCache pageCache, Config config,
+    public RecordStorageMigrator( FileSystemAbstraction fileSystem, PageCache pageCache, Config config,
             LogService logService, JobScheduler jobScheduler )
     {
         super( "Store files" );

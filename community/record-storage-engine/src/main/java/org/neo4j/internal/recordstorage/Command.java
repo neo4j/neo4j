@@ -41,6 +41,7 @@ import org.neo4j.storageengine.api.SchemaRule;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.WritableChannel;
 
+import static java.lang.Math.toIntExact;
 import static java.lang.String.format;
 import static org.neo4j.kernel.impl.util.Bits.bitFlag;
 import static org.neo4j.kernel.impl.util.Bits.bitFlags;
@@ -469,11 +470,17 @@ public abstract class Command implements StorageCommand
         }
     }
 
-    public abstract static class TokenCommand<RECORD extends TokenRecord> extends BaseCommand<RECORD>
+    public abstract static class TokenCommand<RECORD extends TokenRecord> extends BaseCommand<RECORD> implements StorageCommand.TokenCommand
     {
         public TokenCommand( RECORD before, RECORD after )
         {
             super( before, after );
+        }
+
+        @Override
+        public int tokenId()
+        {
+            return toIntExact( getKey() );
         }
 
         @Override

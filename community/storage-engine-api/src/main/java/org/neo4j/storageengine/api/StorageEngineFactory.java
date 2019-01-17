@@ -21,12 +21,30 @@ package org.neo4j.storageengine.api;
 
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.common.DependencySatisfier;
+import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.storageengine.migration.StoreMigrationParticipant;
 
 /**
  * A factory suitable for something like service-loading to load {@link StorageEngine} instances.
+ * Also migration logic is provided by this factory.
  */
-public interface StorageEngineFactory
+public abstract class StorageEngineFactory
 {
+    /**
+     * Returns a {@link StoreVersionCheck} which can provide both configured and existing store versions
+     * and means of checking upgradability between them.
+     * @param dependencyResolver {@link DependencyResolver} for all dependency needs.
+     * @return StoreVersionCheck to check store version as well as upgradability to other versions.
+     */
+    public abstract StoreVersionCheck versionCheck( DependencyResolver dependencyResolver );
+
+    /**
+     * Returns a {@link StoreMigrationParticipant} which will be able to participate in a store migration.
+     * @param dependencyResolver {@link DependencyResolver} for all dependency needs.
+     * @return StoreMigrationParticipant for migration.
+     */
+    public abstract StoreMigrationParticipant migrationParticipant( DependencyResolver dependencyResolver );
+
     /**
      * Instantiates a {@link StorageEngine} where all dependencies can be retrieved from the supplied {@code dependencyResolver}.
      *
@@ -35,5 +53,16 @@ public interface StorageEngineFactory
      * back to the instantiator. This is a hack with the goal to be removed completely when graph storage abstraction in kernel is properly in place.
      * @return the instantiated {@link StorageEngine}.
      */
-    StorageEngine instantiate( DependencyResolver dependencyResolver, DependencySatisfier dependencySatisfier );
+    public abstract StorageEngine instantiate( DependencyResolver dependencyResolver, DependencySatisfier dependencySatisfier );
+
+    /**
+     * Selects a {@link StorageEngineFactory} among the candidates. How it's done or which it selects isn't important a.t.m.
+     * @param candidates list of {@link StorageEngineFactory} to compare.
+     * @return the selected {@link StorageEngineFactory}.
+     * @throws IllegalStateException if there were no candidates.
+     */
+    public static StorageEngineFactory selectStorageEngine( Iterable<StorageEngineFactory> candidates )
+    {
+        return Iterables.single( candidates );
+    }
 }

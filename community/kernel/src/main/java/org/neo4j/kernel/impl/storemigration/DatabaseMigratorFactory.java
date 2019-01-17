@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.graphdb.internal;
+package org.neo4j.kernel.impl.storemigration;
 
 import java.io.File;
 import java.io.IOException;
@@ -30,8 +30,6 @@ import org.neo4j.io.layout.StoreLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
-import org.neo4j.kernel.impl.storemigration.DatabaseMigratorImpl;
-import org.neo4j.kernel.impl.storemigration.LegacyTransactionLogsLocator;
 import org.neo4j.kernel.impl.transaction.log.LogVersionUpgradeChecker;
 import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
@@ -43,11 +41,10 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.kernel.recovery.LogTailScanner;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.scheduler.JobScheduler;
-import org.neo4j.storageengine.migration.DatabaseMigrator;
 
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.fail_on_corrupted_log_files;
 
-public class DatabaseMigratorFactoryImpl implements org.neo4j.storageengine.migration.DatabaseMigratorFactory
+public class DatabaseMigratorFactory
 {
     private final FileSystemAbstraction fs;
     private final Config config;
@@ -55,7 +52,7 @@ public class DatabaseMigratorFactoryImpl implements org.neo4j.storageengine.migr
     private final PageCache pageCache;
     private final JobScheduler jobScheduler;
 
-    public DatabaseMigratorFactoryImpl( FileSystemAbstraction fs, Config config, LogService logService, PageCache pageCache, JobScheduler jobScheduler )
+    public DatabaseMigratorFactory( FileSystemAbstraction fs, Config config, LogService logService, PageCache pageCache, JobScheduler jobScheduler )
     {
         this.fs = fs;
         this.config = config;
@@ -64,7 +61,6 @@ public class DatabaseMigratorFactoryImpl implements org.neo4j.storageengine.migr
         this.jobScheduler = jobScheduler;
     }
 
-    @Override
     public DatabaseMigrator createDatabaseMigrator( DatabaseLayout databaseLayout, DependencyResolver dependencyResolver )
     {
         final DatabaseConfig dbConfig = DatabaseConfig.from( config, databaseLayout.getDatabaseName() );
@@ -90,11 +86,9 @@ public class DatabaseMigratorFactoryImpl implements org.neo4j.storageengine.migr
         {
             throw new RuntimeException( e );
         }
-        final LogTailScanner tailScanner = new LogTailScanner(
-            logFiles, logEntryReader, monitors, dbConfig.get( fail_on_corrupted_log_files ) );
+        final LogTailScanner tailScanner = new LogTailScanner( logFiles, logEntryReader, monitors, dbConfig.get( fail_on_corrupted_log_files ) );
         LogVersionUpgradeChecker.check( tailScanner, dbConfig );
-        return new DatabaseMigratorImpl(
-            fs, dbConfig, logService, indexProviderMap, pageCache, tailScanner, jobScheduler, databaseLayout, logsLocator );
+        return new DatabaseMigrator( fs, dbConfig, logService, indexProviderMap, pageCache, tailScanner, jobScheduler, databaseLayout, logsLocator );
     }
 
     private static class LegacyDatabaseLayout extends DatabaseLayout

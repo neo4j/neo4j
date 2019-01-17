@@ -21,20 +21,19 @@ package org.neo4j.kernel.impl.storemigration;
 
 import java.io.IOException;
 
+import org.neo4j.helpers.Service;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
-import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
-import org.neo4j.kernel.impl.store.format.RecordFormats;
+import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.recovery.LogTailScanner;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.scheduler.JobScheduler;
-import org.neo4j.storageengine.migration.DatabaseMigrator;
-
-import static org.neo4j.kernel.impl.store.format.RecordFormatPropertyConfigurator.configureRecordFormat;
+import org.neo4j.storageengine.api.StorageEngineFactory;
+import org.neo4j.storageengine.api.StoreVersionCheck;
 
 /**
  * DatabaseMigrator collects all dependencies required for store migration,
@@ -43,7 +42,7 @@ import static org.neo4j.kernel.impl.store.format.RecordFormatPropertyConfigurato
  *
  * @see StoreUpgrader
  */
-public class DatabaseMigratorImpl implements DatabaseMigrator
+public class DatabaseMigrator
 {
     private final FileSystemAbstraction fs;
     private final Config config;
@@ -55,7 +54,7 @@ public class DatabaseMigratorImpl implements DatabaseMigrator
     private final DatabaseLayout databaseLayout;
     private final LegacyTransactionLogsLocator legacyLogsLocator;
 
-    public DatabaseMigratorImpl( FileSystemAbstraction fs, Config config, LogService logService, IndexProviderMap indexProviderMap, PageCache pageCache,
+    public DatabaseMigrator( FileSystemAbstraction fs, Config config, LogService logService, IndexProviderMap indexProviderMap, PageCache pageCache,
             LogTailScanner tailScanner, JobScheduler jobScheduler, DatabaseLayout databaseLayout, LegacyTransactionLogsLocator legacyLogsLocator )
     {
         this.fs = fs;
@@ -73,25 +72,24 @@ public class DatabaseMigratorImpl implements DatabaseMigrator
      * Performs construction of {@link StoreUpgrader} and all of the necessary participants and performs store
      * migration if that is required.
      */
-    @Override
-    public void migrate()
+    public void migrate() throws IOException
     {
         LogProvider logProvider = logService.getInternalLogProvider();
 
-        RecordFormats format = RecordFormatSelector.selectNewestFormat( config, databaseLayout, fs, pageCache, logProvider );
-        configureRecordFormat( format, config );
-        UpgradableDatabase upgradableDatabase = new UpgradableDatabase( new RecordStoreVersionCheck( pageCache ), format, tailScanner );
+        StorageEngineFactory storageEngineFactory = StorageEngineFactory.selectStorageEngine( Service.load( StorageEngineFactory.class ) );
+        Dependencies dependencies = new Dependencies();
+        dependencies.satisfyDependencies( fs, pageCache, databaseLayout, config, jobScheduler, logService );
+        StoreVersionCheck storeVersionCheck = storageEngineFactory.versionCheck( dependencies );
 
-        VisibleMigrationProgressMonitor progressMonitor = new VisibleMigrationProgressMonitor( logService.getUserLog( DatabaseMigratorImpl.class ) );
-        StoreUpgrader storeUpgrader = new StoreUpgrader( upgradableDatabase, progressMonitor, config, fs, pageCache, logProvider, legacyLogsLocator );
-
-        StoreMigrator storeMigrator = new StoreMigrator( fs, pageCache, config, logService, jobScheduler );
-        NativeLabelScanStoreMigrator nativeLabelScanStoreMigrator = new NativeLabelScanStoreMigrator( fs, pageCache, config );
+        StoreUpgrader storeUpgrader = new StoreUpgrader( storeVersionCheck,
+                new VisibleMigrationProgressMonitor( logService.getUserLog( DatabaseMigrator.class ) ), config, fs, pageCache, logProvider,
+                tailScanner, legacyLogsLocator );
 
         this.indexProviderMap.accept(
             provider -> storeUpgrader.addParticipant( provider.storeMigrationParticipant( fs, pageCache ) ) );
-        storeUpgrader.addParticipant( storeMigrator );
-        storeUpgrader.addParticipant( nativeLabelScanStoreMigrator );
+        storeUpgrader.addParticipant( storageEngineFactory.migrationParticipant( dependencies ) );
+        storeUpgrader.addParticipant( new NativeLabelScanStoreMigrator( fs, pageCache, config,
+                () -> storageEngineFactory.instantiate( dependencies, dependencies ) ) );
         storeUpgrader.migrateIfNeeded( databaseLayout );
     }
 }

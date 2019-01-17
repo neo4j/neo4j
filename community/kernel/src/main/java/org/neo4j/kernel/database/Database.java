@@ -96,6 +96,7 @@ import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.store.id.IdController;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.stats.IdBasedStoreEntityCounters;
+import org.neo4j.kernel.impl.storemigration.DatabaseMigratorFactory;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.log.BatchingTransactionAppender;
@@ -156,8 +157,6 @@ import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.StoreFileMetadata;
 import org.neo4j.storageengine.api.StoreId;
-import org.neo4j.storageengine.migration.DatabaseMigrator;
-import org.neo4j.storageengine.migration.DatabaseMigratorFactory;
 import org.neo4j.time.SystemNanoClock;
 import org.neo4j.util.VisibleForTesting;
 
@@ -481,17 +480,16 @@ public class Database extends LifecycleAdapter
         return extensionsLife;
     }
 
-    private void upgradeStore()
+    private void upgradeStore() throws IOException
     {
-        final DatabaseMigrator databaseMigrator = databaseMigratorFactory.createDatabaseMigrator( databaseLayout, databaseDependencies );
-        databaseMigrator.migrate();
+        databaseMigratorFactory.createDatabaseMigrator( databaseLayout, databaseDependencies ).migrate();
     }
 
     private StorageEngine buildStorageEngine( PageCache pageCache, SchemaState schemaState, VersionContextSupplier versionContextSupplier,
             StorageEngineFactory storageEngineFactory )
     {
         Dependencies storageEngineDependencies = new Dependencies();
-        storageEngineDependencies.satisfyDependencies( databaseLayout, config, pageCache, fs, logProvider, tokenHolders, schemaState, constraintSemantics,
+        storageEngineDependencies.satisfyDependencies( databaseLayout, config, pageCache, fs, logService, tokenHolders, schemaState, constraintSemantics,
                 lockService, databaseHealth, idGeneratorFactory, idController, versionContextSupplier );
 
         StorageEngine storageEngine = storageEngineFactory.instantiate( storageEngineDependencies, databaseDependencies );
@@ -501,8 +499,7 @@ public class Database extends LifecycleAdapter
 
     public static StorageEngineFactory selectStorageEngine()
     {
-        // For now assume single available engine
-        return Iterables.single( Service.load( StorageEngineFactory.class ) );
+        return StorageEngineFactory.selectStorageEngine( Service.load( StorageEngineFactory.class ) );
     }
 
     /**

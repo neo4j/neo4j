@@ -26,7 +26,6 @@ import java.nio.ByteBuffer;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.StoreChannel;
-import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_4;
 import org.neo4j.kernel.impl.storemigration.legacystore.v34.Legacy34Store;
@@ -38,6 +37,7 @@ import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.kernel.recovery.LogTailScanner;
+import org.neo4j.storageengine.api.StoreVersionCheck;
 import org.neo4j.string.UTF8;
 import org.neo4j.test.Unzip;
 
@@ -93,10 +93,9 @@ public class MigrationTestUtils
         return Unzip.unzip( Legacy34Store.class, "upgradeTest34Db.zip", targetDir );
     }
 
-    public static boolean checkNeoStoreHasDefaultFormatVersion( RecordStoreVersionCheck check, DatabaseLayout databaseLayout )
+    public static boolean checkNeoStoreHasDefaultFormatVersion( StoreVersionCheck check )
     {
-        File metadataStore = databaseLayout.metadataStore();
-        return check.hasVersion( metadataStore, RecordFormatSelector.defaultFormat().storeVersion() ).outcome.isSuccessful();
+        return check.checkUpgrade( RecordFormatSelector.defaultFormat().storeVersion() ).outcome.isSuccessful();
     }
 
     public static void verifyFilesHaveSameContent( FileSystemAbstraction fileSystem, File original, File other )

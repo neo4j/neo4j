@@ -121,7 +121,7 @@ class StoreMigratorTest
         setRecord( pageCache, neoStore, LAST_TRANSACTION_COMMIT_TIMESTAMP, timestamp );
 
         // ... and with migrator
-        StoreMigrator migrator = new StoreMigrator( fileSystem, pageCache, config, logService, jobScheduler );
+        RecordStorageMigrator migrator = new RecordStorageMigrator( fileSystem, pageCache, config, logService, jobScheduler );
         TransactionId actual = migrator.extractTransactionIdInformation( neoStore, txId );
 
         // then
@@ -145,7 +145,7 @@ class StoreMigratorTest
         assertEquals( FIELD_NOT_PRESENT, getRecord( pageCache, neoStore, LAST_TRANSACTION_CHECKSUM ) );
         assertEquals( FIELD_NOT_PRESENT, getRecord( pageCache, neoStore, LAST_TRANSACTION_COMMIT_TIMESTAMP ) );
         // ... and with migrator
-        StoreMigrator migrator = new StoreMigrator( fileSystem, pageCache, config, logService, jobScheduler );
+        RecordStorageMigrator migrator = new RecordStorageMigrator( fileSystem, pageCache, config, logService, jobScheduler );
         TransactionId actual = migrator.extractTransactionIdInformation( neoStore, txId );
 
         // then
@@ -178,7 +178,7 @@ class StoreMigratorTest
         assertEquals( FIELD_NOT_PRESENT, getRecord( pageCache, neoStore, LAST_TRANSACTION_CHECKSUM ) );
         assertEquals( FIELD_NOT_PRESENT, getRecord( pageCache, neoStore, LAST_TRANSACTION_COMMIT_TIMESTAMP ) );
         // ... and with migrator
-        StoreMigrator migrator = new StoreMigrator( fileSystem, pageCache, config, logService, jobScheduler );
+        RecordStorageMigrator migrator = new RecordStorageMigrator( fileSystem, pageCache, config, logService, jobScheduler );
         TransactionId actual = migrator.extractTransactionIdInformation( neoStore, txId );
 
         // then
@@ -190,7 +190,7 @@ class StoreMigratorTest
     @Test
     void writeAndReadLastTxInformation() throws IOException
     {
-        StoreMigrator migrator = newStoreMigrator();
+        RecordStorageMigrator migrator = newStoreMigrator();
         TransactionId writtenTxId = new TransactionId( random.nextLong(), random.nextLong(), random.nextLong() );
 
         migrator.writeLastTxInformation( testDirectory.databaseLayout(), writtenTxId );
@@ -203,7 +203,7 @@ class StoreMigratorTest
     @Test
     void writeAndReadLastTxLogPosition() throws IOException
     {
-        StoreMigrator migrator = newStoreMigrator();
+        RecordStorageMigrator migrator = newStoreMigrator();
         LogPosition writtenLogPosition = new LogPosition( random.nextLong(), random.nextLong() );
 
         migrator.writeLastTxLogPosition( testDirectory.databaseLayout(), writtenLogPosition );
@@ -217,7 +217,7 @@ class StoreMigratorTest
     void shouldNotMigrateFilesForVersionsWithSameCapability() throws Exception
     {
         // Prepare migrator and file
-        StoreMigrator migrator = newStoreMigrator();
+        RecordStorageMigrator migrator = newStoreMigrator();
         DatabaseLayout dbLayout = testDirectory.databaseLayout();
         File neoStore = dbLayout.metadataStore();
         neoStore.createNewFile();
@@ -253,7 +253,7 @@ class StoreMigratorTest
 
         MetaDataStore.setRecord( pageCache, neoStore, MetaDataStore.Position.LAST_CLOSED_TRANSACTION_LOG_VERSION,
                 MetaDataRecordFormat.FIELD_NOT_PRESENT );
-        StoreMigrator migrator = new StoreMigrator( fileSystem, pageCache, config, logService, jobScheduler );
+        RecordStorageMigrator migrator = new RecordStorageMigrator( fileSystem, pageCache, config, logService, jobScheduler );
         LogPosition logPosition = migrator.extractTransactionLogPosition( neoStore, databaseLayout, 100 );
 
         LogFiles logFiles = LogFilesBuilder.activeFilesBuilder( databaseLayout, fileSystem, pageCache ).withConfig( config ).build();
@@ -261,9 +261,9 @@ class StoreMigratorTest
         assertEquals( logFiles.getHighestLogFile().length(), logPosition.getByteOffset() );
     }
 
-    private StoreMigrator newStoreMigrator()
+    private RecordStorageMigrator newStoreMigrator()
     {
-        return new StoreMigrator( fileSystem, pageCache, Config.defaults(), NullLogService.getInstance(), jobScheduler );
+        return new RecordStorageMigrator( fileSystem, pageCache, Config.defaults(), NullLogService.getInstance(), jobScheduler );
     }
 
     private static class MyProgressReporter implements ProgressReporter

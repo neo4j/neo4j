@@ -42,15 +42,13 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_4;
 import org.neo4j.kernel.impl.storemigration.LegacyTransactionLogsLocator;
 import org.neo4j.kernel.impl.storemigration.MigrationTestUtils;
+import org.neo4j.kernel.impl.storemigration.RecordStorageMigrator;
 import org.neo4j.kernel.impl.storemigration.RecordStoreVersionCheck;
 import org.neo4j.kernel.impl.storemigration.SchemaIndexMigrator;
-import org.neo4j.kernel.impl.storemigration.StoreMigrator;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
-import org.neo4j.kernel.impl.storemigration.UpgradableDatabase;
 import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
@@ -61,6 +59,7 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.storageengine.api.StoreVersionCheck;
 import org.neo4j.storageengine.migration.MigrationProgressMonitor;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.PageCacheRule;
@@ -122,11 +121,11 @@ public class StoreUpgraderInterruptionTestIT
     {
         MigrationTestUtils.prepareSampleLegacyDatabase( version, fs, workingDatabaseLayout.databaseDirectory(), prepareDirectory );
         PageCache pageCache = pageCacheRule.getPageCache( fs );
-        RecordStoreVersionCheck check = new RecordStoreVersionCheck( pageCache );
-        UpgradableDatabase upgradableDatabase = getUpgradableDatabase( check );
+        RecordStoreVersionCheck versionCheck = new RecordStoreVersionCheck( fs, pageCache, workingDatabaseLayout, NullLogProvider.getInstance(),
+                Config.defaults() );
         MigrationProgressMonitor progressMonitor = MigrationProgressMonitor.SILENT;
         LogService logService = NullLogService.getInstance();
-        StoreMigrator failingStoreMigrator = new StoreMigrator( fs, pageCache, CONFIG, logService, jobScheduler )
+        RecordStorageMigrator failingStoreMigrator = new RecordStorageMigrator( fs, pageCache, CONFIG, logService, jobScheduler )
         {
             @Override
             public void migrate( DatabaseLayout directoryLayout, DatabaseLayout migrationLayout,
@@ -141,7 +140,7 @@ public class StoreUpgraderInterruptionTestIT
 
         try
         {
-            newUpgrader( upgradableDatabase, pageCache, progressMonitor, createIndexMigrator(), failingStoreMigrator )
+            newUpgrader( versionCheck, pageCache, progressMonitor, createIndexMigrator(), failingStoreMigrator )
                     .migrateIfNeeded( workingDatabaseLayout );
             fail( "Should throw exception" );
         }
@@ -150,23 +149,15 @@ public class StoreUpgraderInterruptionTestIT
             assertEquals( "This upgrade is failing", e.getMessage() );
         }
 
-        StoreMigrator migrator = new StoreMigrator( fs, pageCache, CONFIG, logService, jobScheduler );
+        RecordStorageMigrator migrator = new RecordStorageMigrator( fs, pageCache, CONFIG, logService, jobScheduler );
         SchemaIndexMigrator indexMigrator = createIndexMigrator();
-        newUpgrader( upgradableDatabase, pageCache, progressMonitor, indexMigrator, migrator ).migrateIfNeeded( workingDatabaseLayout );
+        newUpgrader( versionCheck, pageCache, progressMonitor, indexMigrator, migrator ).migrateIfNeeded( workingDatabaseLayout );
 
-        assertTrue( checkNeoStoreHasDefaultFormatVersion( check, workingDatabaseLayout ) );
+        assertTrue( checkNeoStoreHasDefaultFormatVersion( versionCheck ) );
 
         // Since consistency checker is in read only mode we need to start/stop db to generate label scan store.
         startStopDatabase( workingDatabaseLayout.databaseDirectory() );
         assertConsistentStore( workingDatabaseLayout );
-    }
-
-    private UpgradableDatabase getUpgradableDatabase( RecordStoreVersionCheck check ) throws IOException
-    {
-        VersionAwareLogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader = new VersionAwareLogEntryReader<>();
-        LogFiles logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( workingDatabaseLayout.databaseDirectory(), fs ).build();
-        LogTailScanner tailScanner = new LogTailScanner( logFiles, logEntryReader, new Monitors() );
-        return new UpgradableDatabase( check, Standard.LATEST_RECORD_FORMATS, tailScanner );
     }
 
     private SchemaIndexMigrator createIndexMigrator()
@@ -180,11 +171,11 @@ public class StoreUpgraderInterruptionTestIT
     {
         MigrationTestUtils.prepareSampleLegacyDatabase( version, fs, workingDatabaseLayout.databaseDirectory(), prepareDirectory );
         PageCache pageCache = pageCacheRule.getPageCache( fs );
-        RecordStoreVersionCheck check = new RecordStoreVersionCheck( pageCache );
-        UpgradableDatabase upgradableDatabase = getUpgradableDatabase( check );
+        RecordStoreVersionCheck versionCheck = new RecordStoreVersionCheck( fs, pageCache, workingDatabaseLayout, NullLogProvider.getInstance(),
+                Config.defaults() );
         MigrationProgressMonitor progressMonitor = MigrationProgressMonitor.SILENT;
         LogService logService = NullLogService.getInstance();
-        StoreMigrator failingStoreMigrator = new StoreMigrator( fs, pageCache, CONFIG, logService, jobScheduler )
+        RecordStorageMigrator failingStoreMigrator = new RecordStorageMigrator( fs, pageCache, CONFIG, logService, jobScheduler )
         {
             @Override
             public void moveMigratedFiles( DatabaseLayout migrationLayout, DatabaseLayout directoryLayout, String versionToUpgradeFrom,
@@ -197,7 +188,7 @@ public class StoreUpgraderInterruptionTestIT
 
         try
         {
-            newUpgrader( upgradableDatabase, pageCache, progressMonitor, createIndexMigrator(), failingStoreMigrator )
+            newUpgrader( versionCheck, pageCache, progressMonitor, createIndexMigrator(), failingStoreMigrator )
                     .migrateIfNeeded( workingDatabaseLayout );
             fail( "Should throw exception" );
         }
@@ -206,13 +197,13 @@ public class StoreUpgraderInterruptionTestIT
             assertEquals( "This upgrade is failing", e.getMessage() );
         }
 
-        assertTrue( checkNeoStoreHasDefaultFormatVersion( check, workingDatabaseLayout ) );
+        assertTrue( checkNeoStoreHasDefaultFormatVersion( versionCheck ) );
 
-        StoreMigrator migrator = new StoreMigrator( fs, pageCache, CONFIG, logService, jobScheduler );
-        newUpgrader( upgradableDatabase, pageCache, progressMonitor, createIndexMigrator(), migrator )
+        RecordStorageMigrator migrator = new RecordStorageMigrator( fs, pageCache, CONFIG, logService, jobScheduler );
+        newUpgrader( versionCheck, pageCache, progressMonitor, createIndexMigrator(), migrator )
                 .migrateIfNeeded( workingDatabaseLayout );
 
-        assertTrue( checkNeoStoreHasDefaultFormatVersion( check, workingDatabaseLayout ) );
+        assertTrue( checkNeoStoreHasDefaultFormatVersion( versionCheck ) );
 
         pageCache.close();
 
@@ -221,13 +212,16 @@ public class StoreUpgraderInterruptionTestIT
         assertConsistentStore( workingDatabaseLayout );
     }
 
-    private StoreUpgrader newUpgrader( UpgradableDatabase upgradableDatabase, PageCache pageCache,
-            MigrationProgressMonitor progressMonitor, SchemaIndexMigrator indexMigrator, StoreMigrator migrator )
+    private StoreUpgrader newUpgrader( StoreVersionCheck versionCheck, PageCache pageCache,
+            MigrationProgressMonitor progressMonitor, SchemaIndexMigrator indexMigrator, RecordStorageMigrator migrator ) throws IOException
     {
         Config allowUpgrade = Config.defaults( GraphDatabaseSettings.allow_upgrade, "true" );
 
-        StoreUpgrader upgrader = new StoreUpgrader( upgradableDatabase, progressMonitor, allowUpgrade, fs, pageCache,
-                NullLogProvider.getInstance(), legacyTransactionLogsLocator );
+        VersionAwareLogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader = new VersionAwareLogEntryReader<>();
+        LogFiles logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( workingDatabaseLayout.databaseDirectory(), fs ).build();
+        LogTailScanner logTailScanner = new LogTailScanner( logFiles, logEntryReader, new Monitors() );
+        StoreUpgrader upgrader = new StoreUpgrader( versionCheck, progressMonitor, allowUpgrade, fs, pageCache, NullLogProvider.getInstance(), logTailScanner,
+                legacyTransactionLogsLocator );
         upgrader.addParticipant( indexMigrator );
         upgrader.addParticipant( migrator );
         return upgrader;

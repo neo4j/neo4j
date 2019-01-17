@@ -257,10 +257,9 @@ public final class Recovery
         Dependencies storageEngineDependencies = new Dependencies();
         storageEngineDependencies.satisfyDependencies( databaseLayout, config, pageCache, fs, logProvider, tokenHolders, schemaState, getConstraintSemantics(),
                 LockService.NO_LOCK_SERVICE, databaseHealth, new DefaultIdGeneratorFactory( fs ), new DefaultIdController(),
-                EmptyVersionContextSupplier.EMPTY );
+                EmptyVersionContextSupplier.EMPTY, logService );
 
-        Dependencies recoveryDependencies = new Dependencies();
-        StorageEngine storageEngine = selectStorageEngine().instantiate( storageEngineDependencies, recoveryDependencies );
+        StorageEngine storageEngine = selectStorageEngine().instantiate( storageEngineDependencies, storageEngineDependencies );
 
         // Label index
         NeoStoreIndexStoreView neoStoreIndexStoreView = new NeoStoreIndexStoreView( LockService.NO_LOCK_SERVICE, storageEngine::newReader );
@@ -277,11 +276,11 @@ public final class Recovery
         LogFiles logFiles = LogFilesBuilder.builder( databaseLayout, fs )
                 .withLogEntryReader( logEntryReader )
                 .withConfig( config )
-                .withDependencies( recoveryDependencies )
+                .withDependencies( storageEngineDependencies )
                 .build();
 
-        TransactionIdStore transactionIdStore = recoveryDependencies.resolveDependency( TransactionIdStore.class );
-        LogVersionRepository logVersionRepository = recoveryDependencies.resolveDependency( LogVersionRepository.class );
+        TransactionIdStore transactionIdStore = storageEngineDependencies.resolveDependency( TransactionIdStore.class );
+        LogVersionRepository logVersionRepository = storageEngineDependencies.resolveDependency( LogVersionRepository.class );
 
         Boolean failOnCorruptedLogFiles = config.get( GraphDatabaseSettings.fail_on_corrupted_log_files );
         LogTailScanner logTailScanner = providedLogScanner.orElseGet( () -> new LogTailScanner( logFiles, logEntryReader, monitors, failOnCorruptedLogFiles ) );

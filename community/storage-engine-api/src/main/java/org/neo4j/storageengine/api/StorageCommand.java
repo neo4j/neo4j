@@ -44,4 +44,12 @@ public interface StorageCommand
      * @throws IOException I/O error from channel.
      */
     void serialize( WritableChannel channel ) throws IOException;
+
+    interface TokenCommand extends StorageCommand
+    {
+        /**
+         * @return the token id in this command.
+         */
+        int tokenId();
+    }
 }

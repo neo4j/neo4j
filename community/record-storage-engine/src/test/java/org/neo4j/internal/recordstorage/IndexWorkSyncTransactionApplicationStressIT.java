@@ -226,7 +226,7 @@ public class IndexWorkSyncTransactionApplicationStressIT
         {
             if ( element instanceof NodeCommand )
             {
-                nodeId = ((NodeCommand)element).getKey();
+                nodeId = ((NodeCommand) element).getKey();
             }
             return false;
         }

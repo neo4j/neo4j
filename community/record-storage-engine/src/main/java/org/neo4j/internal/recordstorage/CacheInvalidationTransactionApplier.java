@@ -47,7 +47,7 @@ public class CacheInvalidationTransactionApplier extends TransactionApplier.Adap
     @Override
     public boolean visitRelationshipTypeTokenCommand( RelationshipTypeTokenCommand command )
     {
-        NamedToken type = relationshipTypeTokenStore.getToken( (int) command.getKey() );
+        NamedToken type = relationshipTypeTokenStore.getToken( command.tokenId() );
         cacheAccess.addRelationshipTypeToken( type );
 
         return false;
@@ -56,7 +56,7 @@ public class CacheInvalidationTransactionApplier extends TransactionApplier.Adap
     @Override
     public boolean visitLabelTokenCommand( LabelTokenCommand command )
     {
-        NamedToken labelId = labelTokenStore.getToken( (int) command.getKey() );
+        NamedToken labelId = labelTokenStore.getToken( command.tokenId() );
         cacheAccess.addLabelToken( labelId );
 
         return false;
@@ -65,7 +65,7 @@ public class CacheInvalidationTransactionApplier extends TransactionApplier.Adap
     @Override
     public boolean visitPropertyKeyTokenCommand( PropertyKeyTokenCommand command )
     {
-        NamedToken index = propertyKeyTokenStore.getToken( (int) command.getKey() );
+        NamedToken index = propertyKeyTokenStore.getToken( command.tokenId() );
         cacheAccess.addPropertyKeyToken( index );
 
         return false;
