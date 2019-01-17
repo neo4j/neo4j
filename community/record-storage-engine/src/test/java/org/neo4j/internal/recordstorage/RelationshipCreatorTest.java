@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.storageengine.impl.recordstorage;
+package org.neo4j.internal.recordstorage;
 
 import org.junit.Test;
 
@@ -25,30 +25,29 @@ import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.NoOpClient;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
-import org.neo4j.kernel.impl.transaction.state.RecordChangeSet;
 
 import static org.junit.Assert.assertThat;
-import static org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordBuilders.filterType;
-import static org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordBuilders.firstIn;
-import static org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordBuilders.firstOut;
-import static org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordBuilders.from;
-import static org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordBuilders.group;
-import static org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordBuilders.firstLoop;
-import static org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordBuilders.newChangeSet;
-import static org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordBuilders.newRelGroupGetter;
-import static org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordBuilders.nextRel;
-import static org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordBuilders.node;
-import static org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordBuilders.owningNode;
-import static org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordBuilders.rel;
-import static org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordBuilders.relGroup;
-import static org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordBuilders.sCount;
-import static org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordBuilders.sNext;
-import static org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordBuilders.sPrev;
-import static org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordBuilders.tCount;
-import static org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordBuilders.tNext;
-import static org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordBuilders.tPrev;
-import static org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordBuilders.to;
-import static org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordMatchers.containsChanges;
+import static org.neo4j.internal.recordstorage.RecordBuilders.filterType;
+import static org.neo4j.internal.recordstorage.RecordBuilders.firstIn;
+import static org.neo4j.internal.recordstorage.RecordBuilders.firstLoop;
+import static org.neo4j.internal.recordstorage.RecordBuilders.firstOut;
+import static org.neo4j.internal.recordstorage.RecordBuilders.from;
+import static org.neo4j.internal.recordstorage.RecordBuilders.group;
+import static org.neo4j.internal.recordstorage.RecordBuilders.newChangeSet;
+import static org.neo4j.internal.recordstorage.RecordBuilders.newRelGroupGetter;
+import static org.neo4j.internal.recordstorage.RecordBuilders.nextRel;
+import static org.neo4j.internal.recordstorage.RecordBuilders.node;
+import static org.neo4j.internal.recordstorage.RecordBuilders.owningNode;
+import static org.neo4j.internal.recordstorage.RecordBuilders.rel;
+import static org.neo4j.internal.recordstorage.RecordBuilders.relGroup;
+import static org.neo4j.internal.recordstorage.RecordBuilders.sCount;
+import static org.neo4j.internal.recordstorage.RecordBuilders.sNext;
+import static org.neo4j.internal.recordstorage.RecordBuilders.sPrev;
+import static org.neo4j.internal.recordstorage.RecordBuilders.tCount;
+import static org.neo4j.internal.recordstorage.RecordBuilders.tNext;
+import static org.neo4j.internal.recordstorage.RecordBuilders.tPrev;
+import static org.neo4j.internal.recordstorage.RecordBuilders.to;
+import static org.neo4j.internal.recordstorage.RecordMatchers.containsChanges;
 
 public class RelationshipCreatorTest
 {
@@ -57,7 +56,7 @@ public class RelationshipCreatorTest
     private int denseNodeThreshold = 10;
 
     @Test
-    public void newRelWithNoPriorRels() throws Exception
+    public void newRelWithNoPriorRels()
     {
         givenState(
                 node( 0 ),
@@ -74,7 +73,7 @@ public class RelationshipCreatorTest
     }
 
     @Test
-    public void selfRelWithNoPriorRels() throws Exception
+    public void selfRelWithNoPriorRels()
     {
         givenState(
                 node( 0 )
@@ -89,7 +88,7 @@ public class RelationshipCreatorTest
     }
 
     @Test
-    public void sourceHas1PriorRel() throws Exception
+    public void sourceHas1PriorRel()
     {
         givenState(
                 node( 0, nextRel( 0 ) ),
@@ -109,7 +108,7 @@ public class RelationshipCreatorTest
     }
 
     @Test
-    public void targetHas1PriorRel() throws Exception
+    public void targetHas1PriorRel()
     {
         givenState(
                 node( 0, nextRel( 0 ) ),
@@ -129,7 +128,7 @@ public class RelationshipCreatorTest
     }
 
     @Test
-    public void sourceAndTargetShare1PriorRel() throws Exception
+    public void sourceAndTargetShare1PriorRel()
     {
         givenState(
                 node( 0, nextRel( 0 ) ),
@@ -149,7 +148,7 @@ public class RelationshipCreatorTest
     }
 
     @Test
-    public void selfRelWith1PriorRel() throws Exception
+    public void selfRelWith1PriorRel()
     {
         givenState(
                 node( 0, nextRel( 0 ) ),
@@ -167,7 +166,7 @@ public class RelationshipCreatorTest
     }
 
     @Test
-    public void selfRelUpgradesToDense() throws Exception
+    public void selfRelUpgradesToDense()
     {
         givenState(
                 node( 0, nextRel( 0 ) ),
@@ -186,7 +185,7 @@ public class RelationshipCreatorTest
     }
 
     @Test
-    public void sourceNodeUpdatesToDense() throws Exception
+    public void sourceNodeUpdatesToDense()
     {
         givenState(
                 node( 0, nextRel( 0 ) ),
@@ -207,7 +206,7 @@ public class RelationshipCreatorTest
     }
 
     @Test
-    public void targetNodeUpdatesToDense() throws Exception
+    public void targetNodeUpdatesToDense()
     {
         givenState(
                 node( 0, nextRel( 0 ) ),

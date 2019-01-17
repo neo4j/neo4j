@@ -17,11 +17,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.storageengine.impl.recordstorage;
+package org.neo4j.internal.recordstorage;
 
 import org.eclipse.collections.impl.block.factory.Functions;
 import org.hamcrest.Description;
-import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
 
 import java.util.HashSet;
@@ -34,11 +33,9 @@ import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
-import org.neo4j.kernel.impl.transaction.state.RecordChangeSet;
 
-import static org.junit.Assert.assertThat;
-import static org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordBuilders.filterType;
-import static org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordBuilders.records;
+import static org.neo4j.internal.recordstorage.RecordBuilders.filterType;
+import static org.neo4j.internal.recordstorage.RecordBuilders.records;
 
 // Hamcrest matchers for store records
 public class RecordMatchers
