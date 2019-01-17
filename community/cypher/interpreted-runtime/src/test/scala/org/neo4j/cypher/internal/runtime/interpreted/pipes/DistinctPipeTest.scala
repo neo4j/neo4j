@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.ValueComparisonHelper._
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{Expression, Literal, Multiply, Variable}
-import org.neo4j.cypher.internal.v4_0.util.symbols._
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.values.storable.Values.stringArray
 import org.neo4j.values.virtual.MapValue
@@ -79,8 +78,8 @@ class DistinctPipeTest extends CypherFunSuite {
     result.head.getByName("x").asInstanceOf[MapValue].get("prop") should equal(stringArray("a", "b"))
   }
 
-  def createDistinctPipe(input: List[Map[String, Any]], expressions: Map[String, Expression] = Map("x" -> Variable("x"))) = {
-    val source = new FakePipe(input, "x" -> CTNumber)
+  def createDistinctPipe(input: List[Map[String, Any]], expressions: Map[String, Expression] = Map("x" -> Variable("x"))): DistinctPipe = {
+    val source = new FakePipe(input)
     DistinctPipe(source, expressions)()
   }
 }

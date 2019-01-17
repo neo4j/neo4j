@@ -48,7 +48,7 @@ class ProcedureCallPipeTest
 
   test("should execute read-only procedure calls") {
     val lhsData = List(Map("a" -> 1), Map("a" -> 2))
-    val lhs = new FakePipe(lhsData.iterator, "a" -> CTNumber) {}
+    val lhs = new FakePipe(lhsData.iterator)
 
     val pipe = ProcedureCallPipe(
       source = lhs,
@@ -71,7 +71,7 @@ class ProcedureCallPipeTest
 
   test("should execute read-write procedure calls") {
     val lhsData = List(Map("a" -> 1), Map("a" -> 2))
-    val lhs = new FakePipe(lhsData.iterator, "a" -> CTNumber)
+    val lhs = new FakePipe(lhsData.iterator)
 
     val pipe = ProcedureCallPipe(
       source = lhs,
@@ -93,7 +93,7 @@ class ProcedureCallPipeTest
 
   test("should execute void procedure calls") {
     val lhsData = List(Map("a" -> 1), Map("a" -> 2))
-    val lhs = new FakePipe(lhsData.iterator, "a" -> CTNumber)
+    val lhs = new FakePipe(lhsData.iterator)
 
     val pipe = ProcedureCallPipe(
       source = lhs,

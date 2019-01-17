@@ -26,7 +26,6 @@ import org.mockito.stubbing.Answer
 import org.neo4j.cypher.internal.runtime.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.ValueComparisonHelper.beEquivalentTo
-import org.neo4j.cypher.internal.v4_0.util.symbols._
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.values.storable.Values
 import org.neo4j.values.storable.Values.NO_VALUE
@@ -96,11 +95,11 @@ class RollUpApplyPipeTest extends CypherFunSuite with PipeTestSupport {
 
   private def createRhs(data: Any*) = {
     val rhsData = data.map { case v => Map("y" -> v) }
-    new FakePipe(rhsData.iterator, "a" -> CTAny)
+    new FakePipe(rhsData.iterator)
   }
 
   private def createLhs(data: Any*) = {
     val lhsData = data.map { case v => Map("a" -> v) }
-    new FakePipe(lhsData.iterator, "a" -> CTNumber)
+    new FakePipe(lhsData.iterator)
   }
 }

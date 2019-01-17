@@ -19,17 +19,14 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import java.util.Comparator
-
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.ValueComparisonHelper.beEquivalentTo
-import org.neo4j.cypher.internal.v4_0.util.symbols._
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 
 class Top1WithTiesPipeTest extends CypherFunSuite {
 
   test("empty input gives empty output") {
-    val source = new FakePipe(List(), "x" -> CTAny)
+    val source = new FakePipe(List())
     val sortPipe = Top1WithTiesPipe(source, ExecutionContextOrdering.asComparator(List(Ascending("x"))))()
 
     sortPipe.createResults(QueryStateHelper.emptyWithValueSerialization) should be(empty)
@@ -37,7 +34,7 @@ class Top1WithTiesPipeTest extends CypherFunSuite {
 
   test("simple sorting works as expected") {
     val list = List(Map("x" -> "B"), Map("x" -> "A")).iterator
-    val source = new FakePipe(list, "x" -> CTString)
+    val source = new FakePipe(list)
     val sortPipe = Top1WithTiesPipe(source, ExecutionContextOrdering.asComparator(List(Ascending("x"))))()
 
     sortPipe.createResults(QueryStateHelper.emptyWithValueSerialization).toList should beEquivalentTo(List(Map("x" -> "A")))
@@ -51,7 +48,7 @@ class Top1WithTiesPipeTest extends CypherFunSuite {
       Map("x" -> 2, "y" -> 4)
     ).iterator
 
-    val source = new FakePipe(input, "x" -> CTInteger, "y" -> CTInteger)
+    val source = new FakePipe(input)
     val sortPipe = Top1WithTiesPipe(source, ExecutionContextOrdering.asComparator(List(Ascending("x"))))()
 
     sortPipe.createResults(QueryStateHelper.emptyWithValueSerialization).toList should beEquivalentTo(List(
@@ -65,7 +62,7 @@ class Top1WithTiesPipeTest extends CypherFunSuite {
       Map[String,Any]("x" -> null, "y" -> 2)
     ).iterator
 
-    val source = new FakePipe(input, "x" -> CTInteger, "y" -> CTInteger)
+    val source = new FakePipe(input)
     val sortPipe = Top1WithTiesPipe(source, ExecutionContextOrdering.asComparator(List(Ascending("x"))))()
 
     sortPipe.createResults(QueryStateHelper.emptyWithValueSerialization).toList should beEquivalentTo(List(
@@ -80,7 +77,7 @@ class Top1WithTiesPipeTest extends CypherFunSuite {
       Map[String,Any]("x" -> 2, "y" -> 3)
     ).iterator
 
-    val source = new FakePipe(input, "x" -> CTInteger, "y" -> CTInteger)
+    val source = new FakePipe(input)
     val sortPipe = Top1WithTiesPipe(source, ExecutionContextOrdering.asComparator(List(Ascending("x"))))()
 
     sortPipe.createResults(QueryStateHelper.emptyWithValueSerialization).toList should beEquivalentTo(List(
@@ -94,7 +91,7 @@ class Top1WithTiesPipeTest extends CypherFunSuite {
       Map[String,Any]("x" -> smaller, "y" -> 1)
     ).iterator
 
-    val source = new FakePipe(input, "x" -> CTInteger, "y" -> CTInteger)
+    val source = new FakePipe(input)
     val sortPipe = Top1WithTiesPipe(source, ExecutionContextOrdering.asComparator(List(Ascending("x"))))()
 
     sortPipe.createResults(QueryStateHelper.emptyWithValueSerialization).toList should beEquivalentTo(List(
@@ -108,7 +105,7 @@ class Top1WithTiesPipeTest extends CypherFunSuite {
       Map[String,Any]("x" -> "A", "y" -> 2)
     ).iterator
 
-    val source = new FakePipe(input, "x" -> CTInteger, "y" -> CTInteger)
+    val source = new FakePipe(input)
     val sortPipe = Top1WithTiesPipe(source, ExecutionContextOrdering.asComparator(List(Ascending("x"))))()
 
     sortPipe.createResults(QueryStateHelper.emptyWithValueSerialization).toList should beEquivalentTo(List(

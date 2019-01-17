@@ -24,7 +24,6 @@ import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper.withQueryS
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.ShortestPathExpression
 import org.neo4j.cypher.internal.runtime.interpreted.commands.{ShortestPath, SingleNode}
 import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
-import org.neo4j.cypher.internal.v4_0.util.symbols._
 import org.neo4j.graphdb.Node
 import org.neo4j.kernel.impl.util.ValueUtils.fromNodeProxy
 import org.neo4j.values.virtual.PathValue
@@ -34,8 +33,8 @@ import scala.collection.mutable
 
 class AllShortestPathsPipeTest extends GraphDatabaseFunSuite {
 
-  def runThroughPipeAndGetPath(a: Node, b: Node) = {
-    val source = new FakePipe(List(mutable.Map("a" -> a, "b" -> b)), "a" -> CTNode, "b" -> CTNode)
+  def runThroughPipeAndGetPath(a: Node, b: Node): List[PathValue] = {
+    val source = new FakePipe(List(mutable.Map("a" -> a, "b" -> b)))
 
     val pipe = ShortestPathPipe(source, ShortestPathExpression(ShortestPath("p", SingleNode("a"), SingleNode("b"), Seq(),
                                                                SemanticDirection.BOTH, allowZeroLength = false, Some(15),

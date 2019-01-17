@@ -26,9 +26,8 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{Short
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.True
 import org.neo4j.cypher.internal.runtime.interpreted.commands.{ShortestPath, SingleNode, SortItem}
 import org.neo4j.cypher.internal.runtime.interpreted.pipes._
-import org.neo4j.graphdb._
 import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
-import org.neo4j.cypher.internal.v4_0.util.symbols._
+import org.neo4j.graphdb._
 
 import scala.collection.JavaConverters._
 
@@ -45,7 +44,7 @@ class PipeLazinessTest extends GraphDatabaseFunSuite with QueryStateTestSupport 
   }
 
   implicit class IsNotEager(pair: (Pipe, LazyIterator[Map[String, Any]])) {
-      def !!() = {
+      def !!(): Unit = {
         val pipe = pair._1
         val iter = pair._2
         iter.db = Some(graph)
@@ -61,8 +60,8 @@ class PipeLazinessTest extends GraphDatabaseFunSuite with QueryStateTestSupport 
   }
 
   private def distinctPipe = {
-    val iter = new LazyIterator[Map[String, Any]](10, (n) => Map("x" -> n))
-    val src = new FakePipe(iter, "x" -> CTNumber)
+    val iter = new LazyIterator[Map[String, Any]](10, n => Map("x" -> n))
+    val src = new FakePipe(iter)
     val pipe = new DistinctPipe(src, Map("x" -> Variable("x")))()
     (pipe, iter)
   }
@@ -78,8 +77,8 @@ class PipeLazinessTest extends GraphDatabaseFunSuite with QueryStateTestSupport 
       dir = SemanticDirection.OUTGOING, allowZeroLength = true, maxDepth = None, single = true, relIterator = None)
     val n1 = mock[Node]
     when(n1.getRelationships).thenReturn(Iterable.empty[Relationship].asJava)
-    val iter = new LazyIterator[Map[String, Any]](10, (_) => Map("start" -> n1, "end" -> n1))
-    val src = new FakePipe(iter, "start" -> CTNode, "end" -> CTNode)
+    val iter = new LazyIterator[Map[String, Any]](10, _ => Map("start" -> n1, "end" -> n1))
+    val src = new FakePipe(iter)
     val pipe = new ShortestPathPipe(src, ShortestPathExpression(shortestPath))()
     (pipe, iter)
   }
@@ -96,8 +95,8 @@ class PipeLazinessTest extends GraphDatabaseFunSuite with QueryStateTestSupport 
   }
 
   private def emptyFakes: (LazyIterator[Map[String, Any]], FakePipe) = {
-    val iter = new LazyIterator[Map[String, Any]](10, (x) => Map("x" -> x))
-    val src = new FakePipe(iter, "x" -> CTNumber)
+    val iter = new LazyIterator[Map[String, Any]](10, x => Map("x" -> x))
+    val src = new FakePipe(iter)
     (iter, src)
   }
 }

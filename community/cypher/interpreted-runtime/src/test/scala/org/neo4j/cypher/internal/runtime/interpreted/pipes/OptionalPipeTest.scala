@@ -20,15 +20,14 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
-import org.neo4j.cypher.internal.v4_0.util.symbols.CTNumber
+import org.neo4j.cypher.internal.runtime.interpreted.ValueComparisonHelper.beEquivalentTo
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.values.storable.Values.{NO_VALUE, intValue}
-import org.neo4j.cypher.internal.runtime.interpreted.ValueComparisonHelper.beEquivalentTo
 
 class OptionalPipeTest extends CypherFunSuite {
 
   test("should return results if it finds them") {
-    val source = new FakePipe( Iterator(Map("a" -> 1)), "a" -> CTNumber)
+    val source = new FakePipe(Iterator(Map("a" -> 1)))
     val state = QueryStateHelper.empty
 
     val result = OptionalPipe(Set("a"), source)().createResults(state).toList
@@ -37,7 +36,7 @@ class OptionalPipeTest extends CypherFunSuite {
   }
 
   test("should return nulls if it finds no results") {
-    val source = new FakePipe( Iterator.empty, "a" -> CTNumber)
+    val source = new FakePipe(Iterator.empty)
     val state = QueryStateHelper.empty
 
     val result = OptionalPipe(Set("a"), source)().createResults(state).toList

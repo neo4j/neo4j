@@ -21,18 +21,35 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.runtime.ExecutionContext
 import org.neo4j.cypher.internal.v4_0.util.attribution.Id
-import org.neo4j.cypher.internal.v4_0.util.symbols.CypherType
 import org.neo4j.kernel.impl.util.ValueUtils
-import org.scalatest.mock.MockitoSugar
 
 import scala.collection.Map
 
-class FakePipe(val data: Iterator[Map[String, Any]], newVariables: (String, CypherType)*) extends Pipe with MockitoSugar {
+class FakePipe(val data: Iterator[Map[String, Any]]) extends Pipe {
 
-  def this(data: Traversable[Map[String, Any]], variables: (String, CypherType)*) = this(data.toIterator, variables:_*)
+  private var _countingIterator: CountingIterator[ExecutionContext] = _
 
-  def internalCreateResults(state: QueryState): Iterator[ExecutionContext] =
-    data.map(m => ExecutionContext(collection.mutable.Map(m.mapValues(ValueUtils.of).toSeq: _*)))
+  def this(data: Traversable[Map[String, Any]]) = this(data.toIterator)
 
-  var id: Id = Id.INVALID_ID
+  override def internalCreateResults(state: QueryState): CountingIterator[ExecutionContext] = {
+    _countingIterator = new CountingIterator(data.map(m => ExecutionContext(collection.mutable.Map(m.mapValues(ValueUtils.of).toSeq: _*))))
+    _countingIterator
+  }
+
+  def numberOfPulledRows: Int = _countingIterator.count
+
+  override val id: Id = Id.INVALID_ID
+
+  class CountingIterator[T](inner: Iterator[T]) extends Iterator[T] {
+    private var _count = 0
+
+    override def hasNext: Boolean = inner.hasNext
+
+    override def next(): T = {
+      _count += 1
+      inner.next()
+    }
+
+    def count: Int = _count
+  }
 }

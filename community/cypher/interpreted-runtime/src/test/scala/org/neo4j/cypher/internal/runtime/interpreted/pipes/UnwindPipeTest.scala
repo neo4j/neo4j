@@ -20,19 +20,18 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
+import org.neo4j.cypher.internal.runtime.interpreted.ValueComparisonHelper.beEquivalentTo
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Variable
-import org.neo4j.cypher.internal.v4_0.util.symbols._
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.values.storable.Values.intValue
 import org.neo4j.values.virtual.VirtualValues.list
 
 import scala.collection.JavaConverters._
-import org.neo4j.cypher.internal.runtime.interpreted.ValueComparisonHelper.beEquivalentTo
 
 class UnwindPipeTest extends CypherFunSuite {
 
   private def unwindWithInput(data: Traversable[Map[String, Any]]) = {
-    val source = new FakePipe(data, "x" -> CTList(CTInteger))
+    val source = new FakePipe(data)
     val unwindPipe = UnwindPipe(source, Variable("x"), "y")()
     unwindPipe.createResults(QueryStateHelper.empty).toList
   }
