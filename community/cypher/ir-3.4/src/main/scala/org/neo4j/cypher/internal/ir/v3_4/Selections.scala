@@ -62,15 +62,13 @@ case class Selections(predicates: Set[Predicate] = Set.empty) {
     def updateMap(map: Map[String, Set[Property]], key: String, prop: Property) =
       map.updated(key, map.getOrElse(key, Set.empty) + prop)
 
-    def findPropertiesAndUpdateMap(map: Map[String, Set[Property]], expression: Expression) = {
-      expression.treeFold(map) {
-        case prop@Property(key: Variable, _) => acc => (updateMap(acc, key.name, prop), Some(identity))
-        case _ => acc => (acc, Some(identity))
-      }
-    }
-
     predicates.foldLeft(Map.empty[String, Set[Property]]) {
-      case (acc, Predicate(_, expression)) => findPropertiesAndUpdateMap(acc, expression)
+
+      // We rewrite set property expressions to use In (and not Equals)
+      case (acc, Predicate(_, In(prop@Property(key: Variable, _), _))) =>
+        updateMap(acc, key.name, prop)
+      case (acc, Predicate(_, In(_, prop@Property(key: Variable, _)))) =>
+        updateMap(acc, key.name, prop)
       case (acc, _) => acc
     }
   }
