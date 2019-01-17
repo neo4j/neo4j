@@ -40,6 +40,7 @@ import org.neo4j.helpers.Exceptions
 import org.neo4j.internal.cypher.acceptance.NewRuntimeMonitor.{NewPlanSeen, NewRuntimeMonitorCall, UnableToCompileQuery}
 import org.neo4j.test.{TestEnterpriseGraphDatabaseFactory, TestGraphDatabaseFactory}
 import org.neo4j.values.storable.{CoordinateReferenceSystem, Values}
+import org.neo4j.test.TestEnterpriseGraphDatabaseFactory
 import org.scalatest.Assertions
 import org.scalatest.matchers.{MatchResult, Matcher}
 
@@ -612,6 +613,8 @@ object CypherComparisonSupport {
     def SlottedInterpreted: TestConfiguration = TestScenario(Versions.Default, Planners.Default, Runtimes.Slotted)
 
     def DefaultInterpreted: TestConfiguration = TestScenario(Versions.Default, Planners.Default, Runtimes.Interpreted)
+
+    def DefaultRule: TestConfiguration = TestScenario(Versions.Default, Planners.Rule, Runtimes.Default)
 
     def Cost2_3: TestConfiguration = TestScenario(Versions.V2_3, Planners.Cost, Runtimes.Default)
 
