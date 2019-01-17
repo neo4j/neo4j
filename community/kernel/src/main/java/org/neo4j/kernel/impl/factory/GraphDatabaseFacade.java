@@ -57,7 +57,6 @@ import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.IndexReference;
-import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.NodeIndexCursor;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
@@ -203,20 +202,6 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
         try ( Statement ignore = transaction.acquireStatement() )
         {
             return newNodeProxy( transaction.dataWrite().nodeCreate() );
-        }
-        catch ( InvalidTransactionTypeKernelException e )
-        {
-            throw new ConstraintViolationException( e.getMessage(), e );
-        }
-    }
-
-    @Override
-    public Long createNodeId()
-    {
-        KernelTransaction transaction = statementContext.getKernelTransactionBoundToThisThread( true );
-        try ( Statement ignore = transaction.acquireStatement() )
-        {
-            return transaction.dataWrite().nodeCreate();
         }
         catch ( InvalidTransactionTypeKernelException e )
         {

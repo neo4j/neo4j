@@ -55,18 +55,6 @@ public interface GraphDatabaseService
     Node createNode();
 
     /**
-     * Creates a new node and returns it id.
-     * Please note: Neo4j reuses its internal ids when
-     * nodes and relationships are deleted, which means it's bad practice to
-     * refer to them this way. Instead, use application generated ids.
-     *
-     * @return the created nodes id.
-     * @deprecated This method will be removed in a future major release.
-     */
-    @Deprecated
-    Long createNodeId();
-
-    /**
      * Creates a new node and adds the provided labels to it.
      *
      * @param labels {@link Label labels} to add to the created node.

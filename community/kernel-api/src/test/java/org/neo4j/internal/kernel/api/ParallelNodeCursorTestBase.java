@@ -62,7 +62,7 @@ public abstract class ParallelNodeCursorTestBase<G extends KernelAPIReadTestSupp
             MutableLongList list = new LongArrayList( NUMBER_OF_NODES );
             for ( int i = 0; i < NUMBER_OF_NODES; i++ )
             {
-                list.add( graphDb.createNodeId() );
+                list.add( graphDb.createNode().getId() );
             }
             NODE_IDS = list;
             tx.success();
