@@ -26,9 +26,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import java.util.stream.Stream;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.harness.internal.InProcessNeo4j;
 import org.neo4j.harness.internal.Neo4jBuilder;
-import org.neo4j.harness.internal.Neo4jControls;
 import org.neo4j.harness.internal.TestNeo4jBuilders;
+import org.neo4j.harness.junit.Neo4j;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Mode;
@@ -135,7 +136,7 @@ class JavaProceduresTest
     void shouldLaunchWithDeclaredProcedures() throws Exception
     {
         // When
-        try ( Neo4jControls server = createServer( MyProcedures.class ).build() )
+        try ( InProcessNeo4j server = createServer( MyProcedures.class ).build() )
         {
             // Then
             HTTP.Response response = HTTP.POST( server.httpURI().resolve( "db/data/transaction/commit" ).toString(),
@@ -152,7 +153,7 @@ class JavaProceduresTest
     void shouldGetHelpfulErrorOnProcedureThrowsException() throws Exception
     {
         // When
-        try ( Neo4jControls server = createServer( MyProcedures.class ).build() )
+        try ( InProcessNeo4j server = createServer( MyProcedures.class ).build() )
         {
             // Then
             HTTP.Response response = HTTP.POST( server.httpURI().resolve( "db/data/transaction/commit" ).toString(),
@@ -168,7 +169,7 @@ class JavaProceduresTest
     void shouldWorkWithInjectableFromExtension() throws Throwable
     {
         // When
-        try ( Neo4jControls server = createServer( MyProceduresUsingMyService.class ).build() )
+        try ( InProcessNeo4j server = createServer( MyProceduresUsingMyService.class ).build() )
         {
             // Then
             HTTP.Response response = HTTP.POST( server.httpURI().resolve( "db/data/transaction/commit" ).toString(),
@@ -185,7 +186,7 @@ class JavaProceduresTest
     void shouldWorkWithInjectableFromExtensionWithMorePower() throws Throwable
     {
         // When
-        try ( Neo4jControls server = createServer( MyProceduresUsingMyCoreAPI.class )
+        try ( InProcessNeo4j server = createServer( MyProceduresUsingMyCoreAPI.class )
                 .withConfig( GraphDatabaseSettings.record_id_batch_size, "1" )
                 .build() )
         {
@@ -198,7 +199,7 @@ class JavaProceduresTest
         }
     }
 
-    private void assertQueryGetsValue( Neo4jControls server, String query, long value ) throws Throwable
+    private void assertQueryGetsValue( Neo4j server, String query, long value ) throws Throwable
     {
         HTTP.Response response = HTTP.POST( server.httpURI().resolve( "db/data/transaction/commit" ).toString(),
                 quotedJson( "{ 'statements': [ { 'statement': '" + query + "' } ] }" ) );
@@ -209,7 +210,7 @@ class JavaProceduresTest
         assertEquals( value, result.get( "data" ).get( 0 ).get( "row" ).get( 0 ).asLong() );
     }
 
-    private void assertQueryGetsError( Neo4jControls server, String query, String error ) throws Throwable
+    private void assertQueryGetsError( Neo4j server, String query, String error ) throws Throwable
     {
         HTTP.Response response = HTTP.POST( server.httpURI().resolve( "db/data/transaction/commit" ).toString(),
                 quotedJson( "{ 'statements': [ { 'statement': '" + query + "' } ] }" ) );

@@ -79,41 +79,22 @@ public abstract class AbstractInProcessNeo4jBuilder implements Neo4jBuilder
     private boolean disabledServer;
     private final Map<String,String> config = new HashMap<>();
 
-    public AbstractInProcessNeo4jBuilder( File workingDir )
+    public AbstractInProcessNeo4jBuilder()
     {
-        File dataDir = new File( workingDir, randomFolderName() ).getAbsoluteFile();
-        init( dataDir );
     }
 
     public AbstractInProcessNeo4jBuilder( File workingDir, String dataSubDir )
     {
         File dataDir = new File( workingDir, dataSubDir ).getAbsoluteFile();
-        init( dataDir );
+        withWorkingDir( dataDir );
     }
 
-    private void init( File workingDir )
+    @Override
+    public Neo4jBuilder withWorkingDir( File workingDirectory )
     {
-        setDirectory( workingDir );
-        withConfig( auth_enabled, "false" );
-        withConfig( pagecache_memory, "8m" );
-
-        BoltConnector bolt0 = new BoltConnector( "bolt" );
-        HttpConnector http1 = new HttpConnector( "http", Encryption.NONE );
-        HttpConnector http2 = new HttpConnector( "https", Encryption.TLS );
-
-        withConfig( http1.type, "HTTP" );
-        withConfig( http1.encryption, Encryption.NONE.name() );
-        withConfig( http1.enabled, "true" );
-        withConfig( http1.address, "localhost:0" );
-
-        withConfig( http2.type, "HTTP" );
-        withConfig( http2.encryption, Encryption.TLS.name() );
-        withConfig( http2.enabled, "false" );
-        withConfig( http2.address, "localhost:0" );
-
-        withConfig( bolt0.type, "BOLT" );
-        withConfig( bolt0.enabled, "true" );
-        withConfig( bolt0.address, "localhost:0" );
+        File dataDir = new File( workingDirectory, randomFolderName() ).getAbsoluteFile();
+        setWorkingDirectory( dataDir );
+        return this;
     }
 
     @Override
@@ -131,7 +112,7 @@ public abstract class AbstractInProcessNeo4jBuilder implements Neo4jBuilder
     }
 
     @Override
-    public Neo4jControls build()
+    public InProcessNeo4j build()
     {
         try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction() )
         {
@@ -167,7 +148,7 @@ public abstract class AbstractInProcessNeo4jBuilder implements Neo4jBuilder
 
             NeoServer server = startNeo4jServer( dependencies, dbConfig, graphFactory, httpAndHttpsDisabled );
 
-            InProcessNeo4jControls controls = new InProcessNeo4jControls( serverFolder, userLogFile, internalLogFile, server, logOutputStream );
+            InProcessNeo4j controls = new InProcessNeo4j( serverFolder, userLogFile, internalLogFile, server, logOutputStream );
             controls.start();
 
             try
@@ -282,6 +263,31 @@ public abstract class AbstractInProcessNeo4jBuilder implements Neo4jBuilder
     {
         Iterable<ExtensionFactory<?>> extensions = append( new Neo4jHarnessExtensions( procedures ), dependencies.extensions() );
         return addAll( this.extensionFactories, extensions );
+    }
+
+    private void setWorkingDirectory( File workingDir )
+    {
+        setDirectory( workingDir );
+        withConfig( auth_enabled, "false" );
+        withConfig( pagecache_memory, "8m" );
+
+        BoltConnector bolt0 = new BoltConnector( "bolt" );
+        HttpConnector http1 = new HttpConnector( "http", Encryption.NONE );
+        HttpConnector http2 = new HttpConnector( "https", Encryption.TLS );
+
+        withConfig( http1.type, "HTTP" );
+        withConfig( http1.encryption, Encryption.NONE.name() );
+        withConfig( http1.enabled, "true" );
+        withConfig( http1.address, "localhost:0" );
+
+        withConfig( http2.type, "HTTP" );
+        withConfig( http2.encryption, Encryption.TLS.name() );
+        withConfig( http2.enabled, "false" );
+        withConfig( http2.address, "localhost:0" );
+
+        withConfig( bolt0.type, "BOLT" );
+        withConfig( bolt0.enabled, "true" );
+        withConfig( bolt0.address, "localhost:0" );
     }
 
     private Neo4jBuilder setDirectory( File dir )

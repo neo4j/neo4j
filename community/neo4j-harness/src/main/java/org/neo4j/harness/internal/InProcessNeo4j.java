@@ -31,6 +31,7 @@ import java.util.Optional;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Configuration;
+import org.neo4j.harness.junit.Neo4j;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.configuration.BoltConnector;
@@ -41,7 +42,7 @@ import org.neo4j.server.NeoServer;
 
 import static org.neo4j.kernel.configuration.HttpConnector.Encryption;
 
-public class InProcessNeo4jControls implements Neo4jControls
+public class InProcessNeo4j implements Neo4j, AutoCloseable
 {
     private static final String DEFAULT_BOLT_CONNECTOR_KEY = "bolt";
 
@@ -52,7 +53,7 @@ public class InProcessNeo4jControls implements Neo4jControls
     private final Closeable additionalClosable;
     private ConnectorPortRegister connectorPortRegister;
 
-    InProcessNeo4jControls( File serverFolder, File userLogFile, File internalLogFile, NeoServer server, Closeable additionalClosable )
+    InProcessNeo4j( File serverFolder, File userLogFile, File internalLogFile, NeoServer server, Closeable additionalClosable )
     {
         this.serverFolder = serverFolder;
         this.userLogFile = userLogFile;
@@ -103,9 +104,10 @@ public class InProcessNeo4jControls implements Neo4jControls
     }
 
     @Override
-    public Optional<URI> httpsURI()
+    public URI httpsURI()
     {
-        return httpConnectorUri( "https", Encryption.TLS );
+        return httpConnectorUri( "https", Encryption.TLS )
+                .orElseThrow( () -> new IllegalStateException( "HTTPS connector is not configured" ) );
     }
 
     public void start()

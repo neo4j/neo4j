@@ -17,19 +17,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.harness.internal;
+package org.neo4j.harness.junit;
 
 import java.io.PrintStream;
 import java.net.URI;
-import java.util.Optional;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Configuration;
 
 /**
- * Control panel for a Neo4j test instance.
+ * Neo4j test instance.
  */
-public interface Neo4jControls extends AutoCloseable
+public interface Neo4j
 {
     /** Returns the URI to the Bolt Protocol connector of the instance. */
     URI boltURI();
@@ -41,11 +40,7 @@ public interface Neo4jControls extends AutoCloseable
      * Returns ths URI to the root resource of the instance using the https protocol.
      * For example, https://localhost:7475/.
      */
-    Optional<URI> httpsURI();
-
-    /** Stop the test instance and delete all files related to it on disk. */
-    @Override
-    void close();
+    URI httpsURI();
 
     /** Access the {@link org.neo4j.graphdb.GraphDatabaseService} used by the server */
     GraphDatabaseService graph();

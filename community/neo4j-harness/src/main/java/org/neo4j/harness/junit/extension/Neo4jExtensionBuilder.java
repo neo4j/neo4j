@@ -17,20 +17,50 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.harness.internal;
+package org.neo4j.harness.junit.extension;
 
 import java.io.File;
 import java.util.function.Function;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Setting;
+import org.neo4j.harness.internal.Neo4jBuilder;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.procedure.Procedure;
 import org.neo4j.procedure.UserAggregationFunction;
 import org.neo4j.procedure.UserFunction;
 
-public interface Neo4jConfigurator<T extends Neo4jConfigurator>
+import static org.neo4j.harness.internal.TestNeo4jBuilders.newInProcessBuilder;
+
+/**
+ * {@link Neo4jExtension} extension builder.
+ */
+public class Neo4jExtensionBuilder
 {
+    private Neo4jBuilder builder;
+
+    Neo4jExtensionBuilder()
+    {
+        this( newInProcessBuilder() );
+    }
+
+    protected Neo4jExtensionBuilder( Neo4jBuilder builder )
+    {
+        this.builder = builder;
+    }
+
+    /**
+     * Configure the Neo4j to use provided directory
+     *
+     * @param workingDirectory new working directory
+     * @return this configurator instance
+     */
+    public Neo4jExtensionBuilder withFolder( File workingDirectory )
+    {
+        builder = builder.withWorkingDir( workingDirectory );
+        return this;
+    }
+
     /**
      * Configure the Neo4j instance. Configuration here can be both configuration aimed at the server as well as the
      * database tuning options. Please refer to the Neo4j Manual for details on available configuration options.
@@ -39,12 +69,20 @@ public interface Neo4jConfigurator<T extends Neo4jConfigurator>
      * @param value the config value
      * @return this configurator instance
      */
-    T withConfig( Setting<?> key, String value );
+    public Neo4jExtensionBuilder withConfig( Setting<?> key, String value )
+    {
+        builder = builder.withConfig( key, value );
+        return this;
+    }
 
     /**
      * @see #withConfig(org.neo4j.graphdb.config.Setting, String)
      */
-    T withConfig( String key, String value );
+    public Neo4jExtensionBuilder withConfig( String key, String value )
+    {
+        builder = builder.withConfig( key, value );
+        return this;
+    }
 
     /**
      * Shortcut for configuring the server to use an unmanaged extension. Please refer to the Neo4j Manual on how to
@@ -54,7 +92,11 @@ public interface Neo4jConfigurator<T extends Neo4jConfigurator>
      * @param extension the unmanaged extension class.
      * @return this configurator instance
      */
-    T withUnmanagedExtension( String mountPath, Class<?> extension );
+    public Neo4jExtensionBuilder withUnmanagedExtension( String mountPath, Class<?> extension )
+    {
+        builder = builder.withUnmanagedExtension( mountPath, extension );
+        return this;
+    }
 
     /**
      * Shortcut for configuring the server to find and mount all unmanaged extensions in the given package.
@@ -63,7 +105,11 @@ public interface Neo4jConfigurator<T extends Neo4jConfigurator>
      * @param packageName a java package with extension classes.
      * @return this configurator instance
      */
-    T withUnmanagedExtension( String mountPath, String packageName );
+    public Neo4jExtensionBuilder withUnmanagedExtension( String mountPath, String packageName )
+    {
+        builder = builder.withUnmanagedExtension( mountPath, packageName );
+        return this;
+    }
 
     /**
      * Enhance Neo4j instance with provided extensions.
@@ -71,14 +117,22 @@ public interface Neo4jConfigurator<T extends Neo4jConfigurator>
      * @param extensionFactories extension factories
      * @return this configurator instance
      */
-    T withExtensionFactories( Iterable<ExtensionFactory<?>> extensionFactories );
+    public Neo4jExtensionBuilder withExtensionFactories( Iterable<ExtensionFactory<?>> extensionFactories )
+    {
+        builder = builder.withExtensionFactories( extensionFactories );
+        return this;
+    }
 
     /**
      * Disable web server on configured Neo4j instance.
      * For cases where web server is not required to test specific functionality it can be fully disabled using this tuning option.
      * @return this configurator instance.
      */
-    T withDisabledServer();
+    public Neo4jExtensionBuilder withDisabledServer()
+    {
+        builder = builder.withDisabledServer();
+        return this;
+    }
 
     /**
      * Data fixtures to inject upon server build. This can be either a file with a plain-text cypher query
@@ -86,14 +140,22 @@ public interface Neo4jConfigurator<T extends Neo4jConfigurator>
      * @param cypherFileOrDirectory file with cypher statement, or directory containing ".cyp"-suffixed files.
      * @return this configurator instance
      */
-    T withFixture( File cypherFileOrDirectory );
+    public Neo4jExtensionBuilder withFixture( File cypherFileOrDirectory )
+    {
+        builder = builder.withFixture( cypherFileOrDirectory );
+        return this;
+    }
 
     /**
      * Data fixture to inject upon server build. This should be a valid Cypher statement.
      * @param fixtureStatement a cypher statement
      * @return this configurator instance
      */
-    T withFixture( String fixtureStatement );
+    public Neo4jExtensionBuilder withFixture( String fixtureStatement )
+    {
+        builder = builder.withFixture( fixtureStatement );
+        return this;
+    }
 
     /**
      * Data fixture to inject upon server build. This should be a user implemented fixture function
@@ -101,7 +163,11 @@ public interface Neo4jConfigurator<T extends Neo4jConfigurator>
      * @param fixtureFunction a fixture function
      * @return this configurator instance
      */
-    T withFixture( Function<GraphDatabaseService, Void> fixtureFunction );
+    public Neo4jExtensionBuilder withFixture( Function<GraphDatabaseService,Void> fixtureFunction )
+    {
+        builder = builder.withFixture( fixtureFunction );
+        return this;
+    }
 
     /**
      * Pre-populate the server with databases copied from the specified source directory.
@@ -109,7 +175,11 @@ public interface Neo4jConfigurator<T extends Neo4jConfigurator>
      * @param sourceDirectory the directory to copy from
      * @return this configurator instance
      */
-    T copyFrom( File sourceDirectory );
+    public Neo4jExtensionBuilder copyFrom( File sourceDirectory )
+    {
+        builder = builder.copyFrom( sourceDirectory );
+        return this;
+    }
 
     /**
      * Configure the server to load the specified procedure definition class. The class should contain one or more
@@ -119,7 +189,11 @@ public interface Neo4jConfigurator<T extends Neo4jConfigurator>
      * @param procedureClass a class containing one or more procedure definitions
      * @return this configurator instance
      */
-    T withProcedure( Class<?> procedureClass );
+    public Neo4jExtensionBuilder withProcedure( Class<?> procedureClass )
+    {
+        builder = builder.withProcedure( procedureClass );
+        return this;
+    }
 
     /**
      * Configure the server to load the specified function definition class. The class should contain one or more
@@ -129,7 +203,11 @@ public interface Neo4jConfigurator<T extends Neo4jConfigurator>
      * @param functionClass a class containing one or more function definitions
      * @return this configurator instance
      */
-    T withFunction( Class<?> functionClass );
+    public Neo4jExtensionBuilder withFunction( Class<?> functionClass )
+    {
+        builder = builder.withFunction( functionClass );
+        return this;
+    }
 
     /**
      * Configure the server to load the specified aggregation function definition class. The class should contain one or more
@@ -139,13 +217,14 @@ public interface Neo4jConfigurator<T extends Neo4jConfigurator>
      * @param functionClass a class containing one or more function definitions
      * @return this configurator instance
      */
-    T withAggregationFunction( Class<?> functionClass );
+    public Neo4jExtensionBuilder withAggregationFunction( Class<?> functionClass )
+    {
+        builder = builder.withAggregationFunction( functionClass );
+        return this;
+    }
 
-    /**
-     * Configure the Neo4j to use provided directory
-     *
-     * @param workingDirectory new working directory
-     * @return this configurator instance
-     */
-    T withWorkingDir( File workingDirectory );
+    public Neo4jExtension build()
+    {
+        return new Neo4jExtension( builder );
+    }
 }

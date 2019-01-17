@@ -31,10 +31,14 @@ import java.util.function.Function;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.graphdb.config.Setting;
+import org.neo4j.harness.internal.InProcessNeo4j;
 import org.neo4j.harness.internal.Neo4jBuilder;
-import org.neo4j.harness.internal.Neo4jControls;
-import org.neo4j.harness.internal.TestNeo4jBuilders;
 import org.neo4j.kernel.extension.ExtensionFactory;
+import org.neo4j.procedure.Procedure;
+import org.neo4j.procedure.UserAggregationFunction;
+import org.neo4j.procedure.UserFunction;
+
+import static org.neo4j.harness.internal.TestNeo4jBuilders.newInProcessBuilder;
 
 /**
  * Community Neo4j JUnit {@link org.junit.Rule rule}.
@@ -48,7 +52,7 @@ import org.neo4j.kernel.extension.ExtensionFactory;
 public class Neo4jRule implements TestRule
 {
     private Neo4jBuilder builder;
-    private Neo4jControls controls;
+    private InProcessNeo4j neo4j;
     private PrintStream dumpLogsOnFailureTarget;
 
     protected Neo4jRule( Neo4jBuilder builder )
@@ -58,12 +62,12 @@ public class Neo4jRule implements TestRule
 
     public Neo4jRule()
     {
-        this( TestNeo4jBuilders.newInProcessBuilder() );
+        this( newInProcessBuilder() );
     }
 
     public Neo4jRule( File workingDirectory )
     {
-        this( TestNeo4jBuilders.newInProcessBuilder( workingDirectory ) );
+        this( newInProcessBuilder( workingDirectory ) );
     }
 
     @Override
@@ -74,7 +78,7 @@ public class Neo4jRule implements TestRule
             @Override
             public void evaluate() throws Throwable
             {
-                try ( Neo4jControls sc = controls = builder.build() )
+                try ( InProcessNeo4j sc = neo4j = builder.build() )
                 {
                     try
                     {
@@ -94,124 +98,222 @@ public class Neo4jRule implements TestRule
         };
     }
 
+    /**
+     * Configure the Neo4j instance. Configuration here can be both configuration aimed at the server as well as the
+     * database tuning options. Please refer to the Neo4j Manual for details on available configuration options.
+     *
+     * @param key the config key
+     * @param value the config value
+     * @return this configurator instance
+     */
     public Neo4jRule withConfig( Setting<?> key, String value )
     {
         builder = builder.withConfig( key, value );
         return this;
     }
 
+    /**
+     * @see #withConfig(org.neo4j.graphdb.config.Setting, String)
+     */
     public Neo4jRule withConfig( String key, String value )
     {
         builder = builder.withConfig( key, value );
         return this;
     }
 
+    /**
+     * Shortcut for configuring the server to use an unmanaged extension. Please refer to the Neo4j Manual on how to
+     * write unmanaged extensions.
+     *
+     * @param mountPath the http path, relative to the server base URI, that this extension should be mounted at.
+     * @param extension the unmanaged extension class.
+     * @return this configurator instance
+     */
     public Neo4jRule withUnmanagedExtension( String mountPath, Class<?> extension )
     {
         builder = builder.withUnmanagedExtension( mountPath, extension );
         return this;
     }
 
+    /**
+     * Shortcut for configuring the server to find and mount all unmanaged extensions in the given package.
+     * @see #withUnmanagedExtension(String, Class)
+     * @param mountPath the http path, relative to the server base URI, that this extension should be mounted at.
+     * @param packageName a java package with extension classes.
+     * @return this configurator instance
+     */
     public Neo4jRule withUnmanagedExtension( String mountPath, String packageName )
     {
         builder = builder.withUnmanagedExtension( mountPath, packageName );
         return this;
     }
 
+    /**
+     * Enhance Neo4j instance with provided extensions.
+     * Please refer to the Neo4j Manual for details on extensions, how to write and use them.
+     * @param extensionFactories extension factories
+     * @return this configurator instance
+     */
     public Neo4jRule withExtensionFactories( Iterable<ExtensionFactory<?>> extensionFactories )
     {
         builder = builder.withExtensionFactories( extensionFactories );
         return this;
     }
 
+    /**
+     * Disable web server on configured Neo4j instance.
+     * For cases where web server is not required to test specific functionality it can be fully disabled using this tuning option.
+     * @return this configurator instance.
+     */
     public Neo4jRule withDisabledServer()
     {
         builder = builder.withDisabledServer();
         return this;
     }
 
+    /**
+     * Data fixtures to inject upon server build. This can be either a file with a plain-text cypher query
+     * (for example, myFixture.cyp), or a directory containing such files with the suffix ".cyp".
+     * @param cypherFileOrDirectory file with cypher statement, or directory containing ".cyp"-suffixed files.
+     * @return this configurator instance
+     */
     public Neo4jRule withFixture( File cypherFileOrDirectory )
     {
         builder = builder.withFixture( cypherFileOrDirectory );
         return this;
     }
 
+    /**
+     * Data fixture to inject upon server build. This should be a valid Cypher statement.
+     * @param fixtureStatement a cypher statement
+     * @return this configurator instance
+     */
     public Neo4jRule withFixture( String fixtureStatement )
     {
         builder = builder.withFixture( fixtureStatement );
         return this;
     }
 
+    /**
+     * Data fixture to inject upon server build. This should be a user implemented fixture function
+     * operating on a {@link GraphDatabaseService} instance
+     * @param fixtureFunction a fixture function
+     * @return this configurator instance
+     */
     public Neo4jRule withFixture( Function<GraphDatabaseService,Void> fixtureFunction )
     {
         builder = builder.withFixture( fixtureFunction );
         return this;
     }
 
+    /**
+     * Pre-populate the server with databases copied from the specified source directory.
+     * The source directory needs to have sub-folders `databases/graph.db` in which the source store files are located.
+     * @param sourceDirectory the directory to copy from
+     * @return this configurator instance
+     */
     public Neo4jRule copyFrom( File sourceDirectory )
     {
         builder = builder.copyFrom( sourceDirectory );
         return this;
     }
 
+    /**
+     * Configure the server to load the specified procedure definition class. The class should contain one or more
+     * methods annotated with {@link Procedure}, these will become available to call through
+     * cypher.
+     *
+     * @param procedureClass a class containing one or more procedure definitions
+     * @return this configurator instance
+     */
     public Neo4jRule withProcedure( Class<?> procedureClass )
     {
         builder = builder.withProcedure( procedureClass );
         return this;
     }
 
+    /**
+     * Configure the server to load the specified function definition class. The class should contain one or more
+     * methods annotated with {@link UserFunction}, these will become available to call through
+     * cypher.
+     *
+     * @param functionClass a class containing one or more function definitions
+     * @return this configurator instance
+     */
     public Neo4jRule withFunction( Class<?> functionClass )
     {
         builder = builder.withFunction( functionClass );
         return this;
     }
 
+    /**
+     * Configure the server to load the specified aggregation function definition class. The class should contain one or more
+     * methods annotated with {@link UserAggregationFunction}, these will become available to call through
+     * cypher.
+     *
+     * @param functionClass a class containing one or more function definitions
+     * @return this configurator instance
+     */
     public Neo4jRule withAggregationFunction( Class<?> functionClass )
     {
         builder = builder.withAggregationFunction( functionClass );
         return this;
     }
 
+    /**
+     * Dump available logs on failure.
+     * @param out stream used to dump logs into.
+     * @return this configurator instance
+     */
     public Neo4jRule dumpLogsOnFailure( PrintStream out )
     {
         dumpLogsOnFailureTarget = out;
         return this;
     }
 
+    /** Returns the URI to the Bolt Protocol connector of the instance. */
     public URI boltURI()
     {
-        if ( controls == null )
-        {
-            throw new IllegalStateException( "Cannot access instance URI before or after the test runs." );
-        }
-        return controls.boltURI();
+        assertInitialised();
+        return neo4j.boltURI();
     }
 
+    /** Returns the URI to the root resource of the instance. For example, http://localhost:7474/ */
     public URI httpURI()
     {
-        if ( controls == null )
-        {
-            throw new IllegalStateException( "Cannot access instance URI before or after the test runs." );
-        }
-        return controls.httpURI();
+        assertInitialised();
+        return neo4j.httpURI();
     }
 
+    /**
+     * Returns ths URI to the root resource of the instance using the https protocol.
+     * For example, https://localhost:7475/.
+     */
     public URI httpsURI()
     {
-        if ( controls == null )
-        {
-            throw new IllegalStateException( "Cannot access instance URI before or after the test runs." );
-        }
-        return controls.httpsURI().orElseThrow( () -> new IllegalStateException( "HTTPS connector is not configured" ) );
+        assertInitialised();
+        return neo4j.httpsURI();
     }
 
+    /** Access the {@link org.neo4j.graphdb.GraphDatabaseService} */
     public GraphDatabaseService getGraphDatabaseService()
     {
-        return controls.graph();
+        assertInitialised();
+        return neo4j.graph();
     }
 
+    /** Returns the neo4j's configuration */
     public Configuration getConfig()
     {
-        return controls.config();
+        assertInitialised();
+        return neo4j.config();
+    }
+
+    private void assertInitialised()
+    {
+        if ( neo4j == null )
+        {
+            throw new IllegalStateException( "Cannot access Neo4j before or after the test runs." );
+        }
     }
 }

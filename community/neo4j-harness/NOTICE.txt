@@ -64,6 +64,8 @@ Apache Software License, Version 2.0
   Lucene Core
   Lucene QueryParsers
   Netty/All-in-One
+  org.apiguardian:apiguardian-api
+  org.opentest4j:opentest4j
   parboiled-core
   parboiled-scala
   WMI4Java
@@ -119,6 +121,8 @@ Eclipse Public License - v 1.0
 
 Eclipse Public License v2.0
   javax.ws.rs-api
+  JUnit Jupiter API
+  JUnit Platform Commons
 
 GNU General Public License, version 2 with the Classpath Exception
   Extended StAX API

@@ -39,7 +39,7 @@ public class InProcessNeo4jBuilder extends AbstractInProcessNeo4jBuilder
 
     public InProcessNeo4jBuilder( File workingDir )
     {
-        super( workingDir );
+        withWorkingDir( workingDir );
     }
 
     @Override

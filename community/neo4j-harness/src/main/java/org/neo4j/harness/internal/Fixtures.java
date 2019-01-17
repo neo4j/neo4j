@@ -90,7 +90,7 @@ public class Fixtures
         fixtureFunctions.add( fixtureFunction );
     }
 
-    void applyTo( InProcessNeo4jControls controls )
+    void applyTo( InProcessNeo4j controls )
     {
         GraphDatabaseService db = controls.graph();
         for ( String fixtureStatement : fixtureStatements )

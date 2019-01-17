@@ -23,14 +23,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.runners.model.Statement;
 
 import java.net.URI;
-import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.neo4j.harness.internal.InProcessNeo4j;
 import org.neo4j.harness.internal.Neo4jBuilder;
-import org.neo4j.harness.internal.Neo4jControls;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.runner.Description.createTestDescription;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -44,18 +42,12 @@ class Neo4jRuleTest
         assertEquals( configuredHttpsUri, getHttpsUriFromNeo4jRule( configuredHttpsUri ) );
     }
 
-    @Test
-    void shouldThrowWhenHttpsUriNotConfigured()
-    {
-        assertThrows( IllegalStateException.class, () -> getHttpsUriFromNeo4jRule( null ) );
-    }
-
     private static URI getHttpsUriFromNeo4jRule( URI configuredHttpsUri ) throws Throwable
     {
-        Neo4jControls neo4jControls = mock( Neo4jControls.class );
-        when( neo4jControls.httpsURI() ).thenReturn( Optional.ofNullable( configuredHttpsUri ) );
+        InProcessNeo4j neo4J = mock( InProcessNeo4j.class );
+        when( neo4J.httpsURI() ).thenReturn( configuredHttpsUri );
         Neo4jBuilder serverBuilder = mock( Neo4jBuilder.class );
-        when( serverBuilder.build() ).thenReturn( neo4jControls );
+        when( serverBuilder.build() ).thenReturn( neo4J );
 
         Neo4jRule rule = new Neo4jRule( serverBuilder );
 

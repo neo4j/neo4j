@@ -19,6 +19,8 @@
  */
 package org.neo4j.harness.internal;
 
+import org.neo4j.harness.junit.Neo4j;
+
 /**
  * Builder for constructing and starting Neo4j for test purposes.
  */
@@ -26,11 +28,9 @@ public interface Neo4jBuilder extends Neo4jConfigurator<Neo4jBuilder>
 {
     /**
      * Start new neo4j instance. By default, the neo4j server will listen on random free port, and you can determine where to
-     * connect using the {@link Neo4jControls#httpURI()} method. You could also specify explicit ports using the
+     * connect using the {@link Neo4j#httpURI()} method. You could also specify explicit ports using the
      * {@link #withConfig(org.neo4j.graphdb.config.Setting, String)} method or disable web server completely. Please refer to the Neo4j Manual for
      * details on available configuration options.
-     *
-     * When the returned controls are {@link Neo4jControls#close() closed}, the resources the server used will be removed as well.
      */
-    Neo4jControls build();
+    InProcessNeo4j build();
 }

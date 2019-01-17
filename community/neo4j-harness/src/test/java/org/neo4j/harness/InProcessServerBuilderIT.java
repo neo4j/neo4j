@@ -47,8 +47,9 @@ import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.harness.extensionpackage.MyUnmanagedExtension;
+import org.neo4j.harness.internal.InProcessNeo4j;
 import org.neo4j.harness.internal.Neo4jBuilder;
-import org.neo4j.harness.internal.Neo4jControls;
+import org.neo4j.harness.junit.Neo4j;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.configuration.Config;
@@ -98,10 +99,10 @@ class InProcessServerBuilderIT
         File workDir = directory.directory( "specific" );
 
         // When
-        try ( Neo4jControls controls = getTestBuilder( workDir ).build() )
+        try ( InProcessNeo4j neo4j = getTestBuilder( workDir ).build() )
         {
             // Then
-            assertThat( HTTP.GET( controls.httpURI().toString() ).status(), equalTo( 200 ) );
+            assertThat( HTTP.GET( neo4j.httpURI().toString() ).status(), equalTo( 200 ) );
             assertThat( workDir.list().length, equalTo( 1 ) );
         }
 
@@ -122,7 +123,7 @@ class InProcessServerBuilderIT
         // When
         HttpConnector httpConnector = new HttpConnector( "0", Encryption.NONE );
         HttpConnector httpsConnector = new HttpConnector( "1", Encryption.TLS );
-        try ( Neo4jControls controls = getTestBuilder( directory.directory() )
+        try ( InProcessNeo4j neo4j = getTestBuilder( directory.directory() )
                 .withConfig( httpConnector.type, "HTTP" )
                 .withConfig( httpConnector.enabled, "true" )
                 .withConfig( httpConnector.encryption, "NONE" )
@@ -143,9 +144,9 @@ class InProcessServerBuilderIT
                 .build() )
         {
             // Then
-            assertThat( HTTP.GET( controls.httpURI().toString() ).status(), equalTo( 200 ) );
-            assertThat( HTTP.GET( controls.httpsURI().get().toString() ).status(), equalTo( 200 ) );
-            assertDBConfig( controls, "20", GraphDatabaseSettings.dense_node_threshold.name() );
+            assertThat( HTTP.GET( neo4j.httpURI().toString() ).status(), equalTo( 200 ) );
+            assertThat( HTTP.GET( neo4j.httpsURI().toString() ).status(), equalTo( 200 ) );
+            assertDBConfig( neo4j, "20", GraphDatabaseSettings.dense_node_threshold.name() );
         }
     }
 
@@ -153,12 +154,12 @@ class InProcessServerBuilderIT
     void shouldMountUnmanagedExtensionsByClass()
     {
         // When
-        try ( Neo4jControls controls = getTestBuilder( directory.directory() )
+        try ( InProcessNeo4j neo4j = getTestBuilder( directory.directory() )
                 .withUnmanagedExtension( "/path/to/my/extension", MyUnmanagedExtension.class )
                 .build() )
         {
             // Then
-            assertThat( HTTP.GET( controls.httpURI().toString() + "path/to/my/extension/myExtension" ).status(),
+            assertThat( HTTP.GET( neo4j.httpURI().toString() + "path/to/my/extension/myExtension" ).status(),
                     equalTo( 234 ) );
         }
     }
@@ -167,12 +168,12 @@ class InProcessServerBuilderIT
     void shouldMountUnmanagedExtensionsByPackage()
     {
         // When
-        try ( Neo4jControls controls = getTestBuilder( directory.directory() )
+        try ( InProcessNeo4j neo4j = getTestBuilder( directory.directory() )
                 .withUnmanagedExtension( "/path/to/my/extension", "org.neo4j.harness.extensionpackage" )
                 .build() )
         {
             // Then
-            assertThat( HTTP.GET( controls.httpURI().toString() + "path/to/my/extension/myExtension" ).status(),
+            assertThat( HTTP.GET( neo4j.httpURI().toString() + "path/to/my/extension/myExtension" ).status(),
                     equalTo( 234 ) );
         }
     }
@@ -180,10 +181,10 @@ class InProcessServerBuilderIT
     @Test
     void startWithCustomExtension()
     {
-        try ( Neo4jControls controls = getTestBuilder( directory.directory() )
+        try ( InProcessNeo4j neo4j = getTestBuilder( directory.directory() )
                 .withExtensionFactories( asIterable( new TestExtensionFactory() ) ).build() )
         {
-            assertThat( HTTP.GET( controls.httpURI().toString() ).status(), equalTo( 200 ) );
+            assertThat( HTTP.GET( neo4j.httpURI().toString() ).status(), equalTo( 200 ) );
             assertEquals( 1, TestExtension.getStartCounter() );
         }
     }
@@ -191,14 +192,14 @@ class InProcessServerBuilderIT
     @Test
     void startWithDisabledServer()
     {
-        try ( Neo4jControls controls = getTestBuilder( directory.directory() ).withDisabledServer().build() )
+        try ( InProcessNeo4j neo4j = getTestBuilder( directory.directory() ).withDisabledServer().build() )
         {
-            assertThrows( IllegalStateException.class, controls::httpURI );
-            assertFalse( controls.httpsURI().isPresent() );
+            assertThrows( IllegalStateException.class, neo4j::httpURI );
+            assertThrows( IllegalStateException.class, neo4j::httpsURI );
 
             assertDoesNotThrow( () ->
             {
-                GraphDatabaseService service = controls.graph();
+                GraphDatabaseService service = neo4j.graph();
                 try ( Transaction transaction = service.beginTx() )
                 {
                     service.createNode();
@@ -212,10 +213,10 @@ class InProcessServerBuilderIT
     void shouldFindFreePort()
     {
         // Given one server is running
-        try ( Neo4jControls firstServer = getTestBuilder( directory.directory() ).build() )
+        try ( InProcessNeo4j firstServer = getTestBuilder( directory.directory() ).build() )
         {
             // When I build a second server
-            try ( Neo4jControls secondServer = getTestBuilder( directory.directory() ).build() )
+            try ( InProcessNeo4j secondServer = getTestBuilder( directory.directory() ).build() )
             {
                 // Then
                 assertThat( secondServer.httpURI().getPort(), not( firstServer.httpURI().getPort() ) );
@@ -241,18 +242,18 @@ class InProcessServerBuilderIT
             db.shutdown();
         }
 
-        try ( Neo4jControls controls = getTestBuilder( directory.databaseDir() ).copyFrom( existingStoreDir )
+        try ( InProcessNeo4j neo4j = getTestBuilder( directory.databaseDir() ).copyFrom( existingStoreDir )
                 .build() )
         {
             // Then
-            try ( Transaction tx = controls.graph().beginTx() )
+            try ( Transaction tx = neo4j.graph().beginTx() )
             {
-                ResourceIterable<Node> allNodes = Iterables.asResourceIterable( controls.graph().getAllNodes() );
+                ResourceIterable<Node> allNodes = Iterables.asResourceIterable( neo4j.graph().getAllNodes() );
 
                 assertTrue( Iterables.count( allNodes ) > 0 );
 
                 // When: create another node
-                controls.graph().createNode();
+                neo4j.graph().createNode();
                 tx.success();
             }
         }
@@ -277,9 +278,9 @@ class InProcessServerBuilderIT
     void shouldOpenBoltPort()
     {
         // given
-        try ( Neo4jControls controls = getTestBuilder( directory.directory() ).build() )
+        try ( InProcessNeo4j neo4j = getTestBuilder( directory.directory() ).build() )
         {
-            URI uri = controls.boltURI();
+            URI uri = neo4j.boltURI();
 
             // when
             assertDoesNotThrow( () -> new SocketConnection().connect( new HostnamePort( uri.getHost(), uri.getPort() ) ) );
@@ -310,16 +311,16 @@ class InProcessServerBuilderIT
                 .withConfig( "dbms.connector.bolt.enabled", "true" )
                 .withConfig( "dbms.connector.bolt.listen_address", ":0" );
 
-        try ( Neo4jControls controls = serverBuilder.build() )
+        try ( InProcessNeo4j neo4j = serverBuilder.build() )
         {
-            HostnamePort boltHostPort = connectorAddress( controls.graph(), "bolt" );
-            HostnamePort anotherBoltHostPort = connectorAddress( controls.graph(), "another_bolt" );
+            HostnamePort boltHostPort = connectorAddress( neo4j.graph(), "bolt" );
+            HostnamePort anotherBoltHostPort = connectorAddress( neo4j.graph(), "another_bolt" );
 
             assertNotNull( boltHostPort );
             assertNotNull( anotherBoltHostPort );
             assertNotEquals( boltHostPort, anotherBoltHostPort );
 
-            URI boltUri = controls.boltURI();
+            URI boltUri = neo4j.boltURI();
             assertEquals( "bolt", boltUri.getScheme() );
             assertEquals( boltHostPort.getHost(), boltUri.getHost() );
             assertEquals( boltHostPort.getPort(), boltUri.getPort() );
@@ -335,15 +336,15 @@ class InProcessServerBuilderIT
                 .withConfig( "dbms.connector.another_bolt.enabled", "true" )
                 .withConfig( "dbms.connector.another_bolt.listen_address", ":0" );
 
-        try ( Neo4jControls controls = serverBuilder.build() )
+        try ( InProcessNeo4j neo4j = serverBuilder.build() )
         {
-            HostnamePort boltHostPort = connectorAddress( controls.graph(), "bolt" );
-            HostnamePort anotherBoltHostPort = connectorAddress( controls.graph(), "another_bolt" );
+            HostnamePort boltHostPort = connectorAddress( neo4j.graph(), "bolt" );
+            HostnamePort anotherBoltHostPort = connectorAddress( neo4j.graph(), "another_bolt" );
 
             assertNull( boltHostPort );
             assertNotNull( anotherBoltHostPort );
 
-            URI boltUri = controls.boltURI();
+            URI boltUri = neo4j.boltURI();
             assertEquals( "bolt", boltUri.getScheme() );
             assertEquals( anotherBoltHostPort.getHost(), boltUri.getHost() );
             assertEquals( anotherBoltHostPort.getPort(), boltUri.getPort() );
@@ -402,9 +403,9 @@ class InProcessServerBuilderIT
                 .withConfig( "dbms.connector.bolt.enabled", Boolean.toString( boltEnabled ) )
                 .withConfig( "dbms.connector.bolt.listen_address", ":0" );
 
-        try ( Neo4jControls controls = serverBuilder.build() )
+        try ( InProcessNeo4j neo4j = serverBuilder.build() )
         {
-            GraphDatabaseService db = controls.graph();
+            GraphDatabaseService db = neo4j.graph();
 
             assertDbAccessible( db );
             verifyConnector( db, "http", httpEnabled );
@@ -432,7 +433,7 @@ class InProcessServerBuilderIT
         }
     }
 
-    private void assertDBConfig( Neo4jControls server, String expected, String key ) throws JsonParseException
+    private void assertDBConfig( Neo4j server, String expected, String key ) throws JsonParseException
     {
         JsonNode beans = HTTP.GET(
                 server.httpURI().toString() + "db/manage/server/jmx/domain/org.neo4j/" ).get( "beans" );
