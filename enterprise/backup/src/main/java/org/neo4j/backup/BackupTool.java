@@ -87,9 +87,10 @@ public class BackupTool
     {
         System.err.println("WARNING: neo4j-backup is deprecated and support for it will be removed in a future\n" +
                 "version of Neo4j; please use neo4j-admin backup instead.\n");
-        BackupTool tool = new BackupTool( new BackupProtocolService(), System.out );
         try
         {
+            BackupProtocolService service = new BackupProtocolService( System.out, readConfiguration( Args.withFlags( CONFIG ).parse( args ) ) );
+            BackupTool tool = new BackupTool( service, System.out );
             BackupOutcome backupOutcome = tool.run( args );
 
             if ( !backupOutcome.isConsistent() )

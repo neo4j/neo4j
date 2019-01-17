@@ -33,6 +33,7 @@ import org.neo4j.backup.impl.BackupOutcome;
 import org.neo4j.backup.impl.BackupProtocolService;
 import org.neo4j.backup.impl.ConsistencyCheck;
 import org.neo4j.function.Predicates;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helper.IsChannelClosedException;
 import org.neo4j.helper.IsConnectionException;
 import org.neo4j.helper.IsConnectionResetByPeer;
@@ -61,10 +62,10 @@ public class BackupHelper
         boolean failure = false;
         try
         {
-            BackupProtocolService backupProtocolService = new BackupProtocolService( outputStream );
+            Config config = Config.defaults( GraphDatabaseSettings.pagecache_memory, "8m" );
+            BackupProtocolService backupProtocolService = new BackupProtocolService( outputStream, config );
             BackupOutcome backupOutcome = backupProtocolService.doIncrementalBackupOrFallbackToFull( host, port,
-                    targetDirectory, ConsistencyCheck.FULL, Config.defaults(), BackupClient.BIG_READ_TIMEOUT,
-                    false );
+                    targetDirectory, ConsistencyCheck.FULL, config, BackupClient.BIG_READ_TIMEOUT, false );
             consistent = backupOutcome.isConsistent();
         }
         catch ( Throwable t )

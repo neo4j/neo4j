@@ -107,18 +107,13 @@ public class BackupProtocolService
     private final Monitors monitors;
     private final PageCache pageCache;
 
-    public BackupProtocolService()
-    {
-        this( System.out );
-    }
-
-    public BackupProtocolService( OutputStream logDestination )
+    public BackupProtocolService( OutputStream logDestination, Config tuningConfiguration )
     {
         this( DefaultFileSystemAbstraction::new, FormattedLogProvider.toOutputStream( logDestination ), logDestination, new Monitors(),
-                createPageCache( new DefaultFileSystemAbstraction() ) );
+                createPageCache( new DefaultFileSystemAbstraction(), tuningConfiguration ) );
     }
 
-    BackupProtocolService( Supplier<FileSystemAbstraction> fileSystemSupplier, LogProvider logProvider, OutputStream logDestination, Monitors monitors,
+    public BackupProtocolService( Supplier<FileSystemAbstraction> fileSystemSupplier, LogProvider logProvider, OutputStream logDestination, Monitors monitors,
             @Nullable PageCache pageCache )
     {
         this.fileSystemSupplier = fileSystemSupplier;
