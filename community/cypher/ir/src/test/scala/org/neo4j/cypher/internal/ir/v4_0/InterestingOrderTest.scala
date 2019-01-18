@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.ir.v4_0
 
-import org.neo4j.cypher.internal.v4_0.expressions.{Property, PropertyKeyName, Variable}
+import org.neo4j.cypher.internal.v4_0.expressions._
 import org.neo4j.cypher.internal.v4_0.util.DummyPosition
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 
@@ -71,6 +71,20 @@ class InterestingOrderTest extends CypherFunSuite {
 
     // then
     result should be(InterestingOrder.required(RequiredOrderCandidate.asc(varFor("y"), projections)))
+  }
+
+
+  test("cannot reverse project expression") {
+    val expr:Expression = Add(varFor("xfoo"), prop("y", "foo"))(pos)
+    // projection
+    val projection = Map("xfoo" -> prop("x", "foo"))
+    val io = InterestingOrder.required(RequiredOrderCandidate.desc(expr, projection))
+
+    // when applying the projection on the interestingOrder
+    val result = io.withReverseProjectedColumns(Map.empty, Set.empty)
+
+    // then
+    result should be(InterestingOrder.required(RequiredOrderCandidate.empty))
   }
 
   test("should reverse project variable to variable and then to another variable") {
@@ -161,6 +175,89 @@ class InterestingOrderTest extends CypherFunSuite {
     result should be(io)
   }
 
+  test("Empty required order is always satisfied") {
+    val io = InterestingOrder.empty
+
+    io.satisfiedBy(ProvidedOrder.asc("x.foo")) should be(true)
+    io.satisfiedBy(ProvidedOrder.empty) should be(true)
+  }
+
+  test("Required order is not satisfied by an empty provided order") {
+    val io = InterestingOrder.required(RequiredOrderCandidate.asc(prop("x", "foo")))
+
+    io.satisfiedBy(ProvidedOrder.empty) should be(false)
+  }
+
+  test("Required order is not satisfied by provided order in other direction") {
+    val ioAsc = InterestingOrder.required(RequiredOrderCandidate.asc(prop("x", "foo")))
+    val ioDesc = InterestingOrder.required(RequiredOrderCandidate.desc(prop("x", "foo")))
+
+    val poAsc = ProvidedOrder.asc("x.foo")
+    val poDesc = ProvidedOrder.desc("x.foo")
+
+    ioAsc.satisfiedBy(poDesc) should be(false)
+    ioDesc.satisfiedBy(poAsc) should be(false)
+  }
+
+  test("Required order should be satisfied by provided order on same property") {
+    val ioAsc = InterestingOrder.required(RequiredOrderCandidate.asc(prop("x", "foo")))
+    val ioDesc = InterestingOrder.required(RequiredOrderCandidate.desc(prop("x", "foo")))
+
+    val poAsc = ProvidedOrder.asc("x.foo")
+    val poDesc = ProvidedOrder.desc("x.foo")
+
+    ioAsc.satisfiedBy(poAsc) should be(true)
+    ioDesc.satisfiedBy(poDesc) should be(true)
+  }
+
+  test("Required order should be satisfied by provided order on same renamed property") {
+    val projectionSeveralSteps = Map("x" -> varFor("y"), "y" -> varFor("z"))
+    val projectionOneStep = Map("xfoo" -> prop("x", "foo"))
+
+    val ioAsc = InterestingOrder.required(RequiredOrderCandidate.asc(prop("x", "foo"), projectionSeveralSteps))
+    val ioDesc = InterestingOrder.required(RequiredOrderCandidate.desc(varFor("xfoo"), projectionOneStep))
+
+    val poAsc = ProvidedOrder.asc("z.foo")
+    val poDesc = ProvidedOrder.desc("x.foo")
+
+    ioAsc.satisfiedBy(poAsc) should be(true)
+    ioDesc.satisfiedBy(poDesc) should be(true)
+  }
+
+  test("Required order should not be satisfied by provided order on different property") {
+    val io = InterestingOrder.required(RequiredOrderCandidate.asc(prop("x", "foo")))
+    val po = ProvidedOrder.asc("y.foo")
+
+    io.satisfiedBy(po) should be(false)
+  }
+
+  test("Required order on renamed property should not be satisfied by provided order on different property") {
+    val projection = Map("xfoo" -> prop("x", "foo"))
+
+    val io = InterestingOrder.required(RequiredOrderCandidate.desc(varFor("xfoo"), projection))
+    val po = ProvidedOrder.desc("y.foo")
+
+    io.satisfiedBy(po) should be(false)
+  }
+
+  test("Required order on expression is not satisfied by provided order on property") {
+    val projection = Map("add" -> Add(prop("x", "foo"), SignedDecimalIntegerLiteral("42")(pos))(pos))
+
+    val io = InterestingOrder.required(RequiredOrderCandidate.asc(varFor("add"), projection))
+    val po = ProvidedOrder.asc("x.foo")
+
+    io.satisfiedBy(po) should be(false)
+  }
+
+  test("should transform required to interesting") {
+    val projection = Map("xfoo" -> prop("x", "foo"))
+    val ro = InterestingOrder.required(RequiredOrderCandidate.asc(varFor("xfoo"), projection))
+    val io = InterestingOrder.interested(InterestingOrderCandidate.asc(varFor("xfoo"), projection))
+
+    ro.asInteresting should be(io)
+    io.asInteresting should be(io)
+  }
+
   // test the interesting part of the InterestingOrder
 
   test("should reverse project property to variable (for both)") {
@@ -248,6 +345,7 @@ class InterestingOrderTest extends CypherFunSuite {
     result should be(InterestingOrder.interested(InterestingOrderCandidate.asc(varFor("y"))))
   }
 
-  private def varFor(name: String) = Variable(name)(DummyPosition(0))
-  private def prop(varName: String, propName: String) = Property(varFor(varName), PropertyKeyName(propName)(DummyPosition(0)))(DummyPosition(0))
+  private val pos = DummyPosition(0)
+  private def varFor(name: String) = Variable(name)(pos)
+  private def prop(varName: String, propName: String) = Property(varFor(varName), PropertyKeyName(propName)(pos))(pos)
 }

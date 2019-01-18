@@ -143,29 +143,23 @@ object ClauseConverters {
       // RETURN a AS b ORDER BY b.prop
       case AscSortItem(e@Property(LogicalVariable(varName), _)) =>
         projections.get(varName) match {
-          case Some(v: LogicalVariable) => Asc(e, Map(varName -> v))
-          case Some(_) => throw new IllegalStateException("Cannot sort on property lookup of non-variable property container")
+          case Some(expression) => Asc(e, Map(varName -> expression))
           case None => Asc(e)
         }
       case DescSortItem(e@Property(LogicalVariable(varName), _)) =>
         projections.get(varName) match {
-          case Some(v: LogicalVariable) => Desc(e, Map(varName -> v))
-          case Some(_) => throw new IllegalStateException("Cannot sort on property lookup of non-variable property container")
+          case Some(expression) => Desc(e, Map(varName -> expression))
           case None => Desc(e)
         }
 
       // RETURN n.prop as foo ORDER BY foo
       case AscSortItem(e@LogicalVariable(name)) =>
         projections.get(name) match {
-          case Some(prop: Property) => Asc(e, Map(name -> prop))
-          case Some(v: Variable) => Asc(e, Map(name -> v))
           case Some(expression) => Asc(e, Map(name -> expression))
           case None => Asc(e)
         }
       case DescSortItem(e@LogicalVariable(name)) =>
         projections.get(name) match {
-          case Some(prop: Property) => Desc(e, Map(name -> prop))
-          case Some(v: Variable) => Desc(e, Map(name -> v))
           case Some(expression) => Desc(e, Map(name -> expression))
           case None => Desc(e)
         }

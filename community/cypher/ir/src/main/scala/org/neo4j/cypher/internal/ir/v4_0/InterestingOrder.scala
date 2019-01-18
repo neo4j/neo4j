@@ -108,9 +108,7 @@ case class InterestingOrder(requiredOrderCandidate: RequiredOrderCandidate,
         projections.getOrElse(varName, expression)
 
       case Property(Variable(varName), propertyKeyName) =>
-        if (projections.contains(expression.asCanonicalStringVal))
-          projections(expression.asCanonicalStringVal)
-        else if (projections.contains(varName))
+        if (projections.contains(varName))
           Property(projections(varName), propertyKeyName)(expression.position)
         else
           expression
