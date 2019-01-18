@@ -3031,6 +3031,40 @@ class EagerizationAcceptanceTest
     result.toList should equal(List(Map("count(*)" -> 1)))
   }
 
+  test("matching node property using greater than or equal operator and creating other node should be eager") {
+    relate(createNode(Map("prop" -> 5)), createNode())
+    val query = "MATCH (n)-[r]-(m) WHERE n.prop >= 4 CREATE ({prop:5})-[:R]->(m) RETURN count(*)"
+    val result = executeWith(Configs.Interpreted - Configs.Cost2_3, query,
+                             planComparisonStrategy = testEagerPlanComparisonStrategy(1))
+    assertStats(result, propertiesWritten = 1, nodesCreated = 1, relationshipsCreated = 1)
+    result.toList should equal(List(Map("count(*)" -> 1)))
+  }
+
+  test("unstable iterator and property predicates followed by set must be eager") {
+    createLabeledNode(Map("prop" -> 42), "L")
+    createLabeledNode("L")
+    createNode()
+    val query = "MATCH (m1:L), (m2:L) WHERE m1.prop < 43 SET m2.prop = 42 RETURN count(*)"
+    val buggyVersions = Configs.Cost3_2 + Configs.Cost3_1 + Configs.Rule3_1 + Configs.DefaultRule
+    val result = executeWith(Configs.CommunityInterpreted - Configs.Cost2_3, query,
+                             expectedDifferentResults = buggyVersions,
+                             planComparisonStrategy = testEagerPlanComparisonStrategy(1,
+                                                                                      expectPlansToFailPredicate = buggyVersions))
+    assertStats(result, propertiesWritten = 2)
+    result.toList should equal(List(Map("count(*)" -> 2)))
+  }
+
+  test("unstable iterator and property predicates followed by CREATE must be eager") {
+    createLabeledNode(Map("prop" -> 42), "L")
+    createLabeledNode("L")
+    createNode()
+    val query = "MATCH (m1:L), (m2:L) WHERE m1.prop < 43 CREATE (:L {prop: 42}) RETURN count(*)"
+    val result = executeWith(Configs.Interpreted - Configs.Cost2_3, query,
+                             planComparisonStrategy = testEagerPlanComparisonStrategy(1))
+    assertStats(result, propertiesWritten = 2, labelsAdded = 2, nodesCreated = 2)
+    result.toList should equal(List(Map("count(*)" -> 2)))
+  }
+
   private def testEagerPlanComparisonStrategy(expectedEagerCount: Int,
                                               expectPlansToFailPredicate: TestConfiguration = TestConfiguration.empty,
                                               optimalEagerCount: Int = -1) = {

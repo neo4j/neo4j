@@ -64,8 +64,8 @@ case class Selections(predicates: Set[Predicate] = Set.empty) {
 
     def findPropertiesAndUpdateMap(map: Map[String, Set[Property]], expression: Expression) = {
       expression.treeFold(map) {
-        case prop@Property(key: Variable, _) => acc => (updateMap(acc, key.name, prop), Some(identity))
-        case _ => acc => (acc, Some(identity))
+        case prop@Property(key: Variable, _) => acc => (updateMap(acc, key.name, prop), None)
+        case _: Expression => acc => (acc, Some(identity))
       }
     }
 
