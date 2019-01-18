@@ -793,7 +793,7 @@ class QueryPlanCompactionAcceptanceTest extends ExecutionEngineFunSuite with Que
         |+-------------------------+----------------+---------------------------+-----------------------+
         |""".stripMargin
     executeWith(expectedToSucceed - Configs.SlottedInterpreted, query, planComparisonStrategy = ComparePlansWithAssertion(_ should matchPlan(expectedPlan),
-                expectPlansToFail = Configs.All - Configs.Cost3_3), params = Map("csv_filename" -> "x"))
+                expectPlansToFail = Configs.All - Configs.Cost3_3 - Configs.DefaultInterpreted), params = Map("csv_filename" -> "x"))
   }
 
   test("Don't compact query with consecutive expands due to presence of values in 'other' column") {

@@ -125,12 +125,12 @@ class VarLengthExpandQueryPlanAcceptanceTest extends ExecutionEngineFunSuite wit
       }, expectPlansToFail = ignoreConfiguration))
   }
 
-  test("on longer var-lengths, we use FullPruningVarExpand") {
+  test("on longer var-lengths, we also use PruningVarExpand") {
     val query = "MATCH (a)-[*4..5]->(b) RETURN DISTINCT b"
     executeWith(expectedToSucceed - Configs.SlottedInterpreted, query, planComparisonStrategy =
       ComparePlansWithAssertion( plan => {
-        plan should useOperators("VarLengthExpand(FullPruning)")
-      }, expectPlansToFail = ignoreConfiguration))
+        plan should useOperators("VarLengthExpand(Pruning)")
+      }, expectPlansToFail = ignoreConfiguration + Configs.Cost3_2))
   }
 
   test("Do not plan pruning var expand for length=1") {
