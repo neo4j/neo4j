@@ -24,6 +24,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.test.extension.Inject;
@@ -57,11 +58,11 @@ class LegacyTransactionLogsLocatorTest
     }
 
     @Test
-    void transactionLogsDirectoryEqualsToDatabaseDirectoryForNonDefaultDatabase()
+    void transactionLogsDirectoryEqualsToDatabaseDirectoryForSystemDatabase()
     {
         File customDirectory = testDirectory.directory( "customDirectory" );
         Config config = Config.defaults( stringMap( LEGACY_TX_LOGS_LOCATION_SETTING, customDirectory.getAbsolutePath() ) );
-        DatabaseLayout systemDbLayout = testDirectory.databaseLayout( "system" );
+        DatabaseLayout systemDbLayout = testDirectory.databaseLayout( GraphDatabaseSettings.SYSTEM_DATABASE_NAME );
         LegacyTransactionLogsLocator logsLocator = new LegacyTransactionLogsLocator( config, systemDbLayout );
         assertEquals( systemDbLayout.databaseDirectory(), logsLocator.getTransactionLogsDirectory() );
     }

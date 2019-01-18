@@ -27,7 +27,7 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.configuration.Config;
 
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.database_path;
 import static org.neo4j.kernel.configuration.Settings.pathSetting;
 
@@ -46,7 +46,7 @@ public class LegacyTransactionLogsLocator
     public File getTransactionLogsDirectory()
     {
         File databaseDirectory = databaseLayout.databaseDirectory();
-        if ( !databaseLayout.getDatabaseName().equals( DEFAULT_DATABASE_NAME ) )
+        if ( databaseLayout.getDatabaseName().equals( SYSTEM_DATABASE_NAME ) )
         {
             return databaseDirectory;
         }

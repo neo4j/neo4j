@@ -78,7 +78,7 @@ public class DatabaseMigratorFactoryImpl implements org.neo4j.storageengine.migr
             // and that's why we need to use custom transaction logs locator and database layout
             DatabaseLayout oldDatabaseLayout = new LegacyDatabaseLayout( databaseLayout.getStoreLayout(), databaseLayout.getDatabaseName(),
                     logsLocator );
-            logFiles = LogFilesBuilder.builder( oldDatabaseLayout,fs )
+            logFiles = LogFilesBuilder.builder( oldDatabaseLayout, fs )
                 .withLogEntryReader( logEntryReader )
                 .withLogFileMonitor( logFileCreationMonitor )
                 .withConfig( config )

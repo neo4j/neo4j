@@ -33,7 +33,6 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.format.Capability;
-import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.internal.Version;
@@ -43,6 +42,8 @@ import org.neo4j.storageengine.migration.MigrationProgressMonitor;
 import org.neo4j.storageengine.migration.StoreMigrationParticipant;
 import org.neo4j.storageengine.migration.UpgradeNotAllowedException;
 
+import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.isStoreAndConfigFormatsCompatible;
+import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForStore;
 import static org.neo4j.kernel.impl.storemigration.ExistingTargetStrategy.FAIL;
 import static org.neo4j.kernel.impl.storemigration.FileOperation.COPY;
 import static org.neo4j.kernel.impl.storemigration.FileOperation.DELETE;
@@ -131,20 +132,18 @@ public class StoreUpgrader
         {
             migrate( layout, migrationStructure, migrationStateFile );
         }
-        else if ( isUpgradeRequired( layout ) )
+        else
         {
-            throw new UpgradeNotAllowedException();
+            RecordFormats currentStoreFormat = selectForStore( layout, fileSystem, pageCache, logProvider );
+            if ( currentStoreFormat != null && currentStoreFormat.hasCapability( Capability.LUCENE_5 ) )
+            {
+                throw new UpgradeNotAllowedException( "Upgrade is required to migrate store to new major version." );
+            }
+            if ( !isStoreAndConfigFormatsCompatible( config, layout, fileSystem, pageCache, logProvider ) )
+            {
+                throw new UpgradeNotAllowedException();
+            }
         }
-    }
-
-    private boolean isUpgradeRequired( DatabaseLayout layout )
-    {
-        RecordFormats currentStoreFormat = RecordFormatSelector.selectForStore( layout, fileSystem, pageCache, logProvider );
-        if ( currentStoreFormat != null && currentStoreFormat.hasCapability( Capability.LUCENE_5 ) )
-        {
-            throw new UpgradeNotAllowedException( "Upgrade is required to migrate store to new major version." );
-        }
-        return !RecordFormatSelector.isStoreAndConfigFormatsCompatible( config, layout, fileSystem, pageCache, logProvider );
     }
 
     private void migrate( DatabaseLayout dbDirectoryLayout, DatabaseLayout migrationLayout, File migrationStateFile )

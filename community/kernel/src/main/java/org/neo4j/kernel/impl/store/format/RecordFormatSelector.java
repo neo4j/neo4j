@@ -273,8 +273,6 @@ public class RecordFormatSelector
             }
             Optional<RecordFormats> newestFormatInFamily = findLatestFormatInFamily( result );
             RecordFormats newestFormat = newestFormatInFamily.orElse( result );
-            // format was not explicitly configured and store has lower format
-            // select default format, upgrade is intended
             info( logProvider, "Selected format '" + newestFormat + "' for existing store with format '" + result + "'" );
             return newestFormat;
         }
