@@ -58,7 +58,7 @@ case class Selections(predicates: Set[Predicate] = Set.empty) {
       case (acc, _) => acc
     }
 
-  def propertyPredicatesForSet: Map[String, Set[Property]] = {
+  lazy val propertyPredicatesForSet: Map[String, Set[Property]] = {
     def updateMap(map: Map[String, Set[Property]], key: String, prop: Property) =
       map.updated(key, map.getOrElse(key, Set.empty) + prop)
 
