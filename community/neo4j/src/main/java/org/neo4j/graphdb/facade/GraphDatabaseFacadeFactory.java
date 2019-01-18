@@ -249,6 +249,7 @@ public class GraphDatabaseFacadeFactory
     {
         File pluginDir = platform.config.get( GraphDatabaseSettings.plugin_dir );
         Log internalLog = platform.logService.getInternalLog( Procedures.class );
+        Log proceduresLog = platform.logService.getUserLog( Procedures.class );
 
         ProcedureConfig procedureConfig = new ProcedureConfig( platform.config );
         Procedures procedures =
@@ -264,9 +265,7 @@ public class GraphDatabaseFacadeFactory
         procedures.registerType( Point.class, NTPoint );
 
         // Register injected public API components
-        Log proceduresLog = platform.logService.getUserLog( Procedures.class );
         procedures.registerComponent( Log.class, ctx -> proceduresLog, true );
-
         procedures.registerComponent( ProcedureTransaction.class, new ProcedureTransactionProvider(), true );
         procedures.registerComponent( org.neo4j.procedure.TerminationGuard.class, new TerminationGuardProvider(), true );
 

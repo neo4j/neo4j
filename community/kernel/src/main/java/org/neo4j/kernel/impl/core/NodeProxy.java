@@ -618,7 +618,7 @@ public class NodeProxy implements Node, RelationshipFactory<Relationship>
     {
         KernelTransaction transaction = safeAcquireTransaction();
         NodeCursor nodes = transaction.ambientNodeCursor();
-        try ( Statement ignore = spi.statement() )
+        try ( Statement ignore = transaction.acquireStatement() )
         {
             singleNode( transaction, nodes );
             LabelSet labelSet = nodes.labels();

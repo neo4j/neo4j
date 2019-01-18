@@ -791,7 +791,6 @@ class ReflectiveProcedureCompiler
         private final UserFunctionSignature signature;
         private final MethodHandle constructor;
         private final Method udfMethod;
-        private final int[] indexesToMap;
 
         ReflectiveUserFunction( UserFunctionSignature signature, MethodHandle constructor,
                 Method udfMethod, TypeMappers.TypeChecker typeChecker,
@@ -802,7 +801,6 @@ class ReflectiveProcedureCompiler
             this.udfMethod = udfMethod;
             this.signature = signature;
             this.typeChecker = typeChecker;
-            indexesToMap = computeIndexesToMap( signature.inputSignature() );
         }
 
         @Override

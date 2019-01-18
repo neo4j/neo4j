@@ -91,7 +91,6 @@ import org.neo4j.kernel.impl.core.TokenHolders;
 import org.neo4j.kernel.impl.core.TokenNotFoundException;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.coreapi.PlaceboTransaction;
-import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker;
 import org.neo4j.kernel.impl.coreapi.TopLevelTransaction;
 import org.neo4j.kernel.impl.coreapi.schema.SchemaImpl;
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory;
@@ -120,8 +119,6 @@ import static org.neo4j.values.storable.Values.utf8Value;
  */
 public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
 {
-    private static final PropertyContainerLocker locker = new PropertyContainerLocker();
-
     private Schema schema;
     private ThreadToStatementContextBridge statementContext;
     private SPI spi;
@@ -884,12 +881,6 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
     public String toString()
     {
         return spi.name() + " [" + databaseLayout() + "]";
-    }
-
-    @Override
-    public Statement statement()
-    {
-        return statementContext.get();
     }
 
     @Override

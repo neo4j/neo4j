@@ -78,7 +78,6 @@ import org.neo4j.storageengine.api.schema.IndexDescriptor;
 import org.neo4j.storageengine.api.schema.SchemaDescriptor;
 import org.neo4j.storageengine.api.txstate.DiffSets;
 import org.neo4j.values.AnyValue;
-import org.neo4j.values.ValueMapper;
 import org.neo4j.values.storable.Value;
 
 import static java.lang.String.format;
@@ -974,12 +973,6 @@ public class AllStoreHolder extends Read
     {
         return aggregationFunction( name,
                 new OverriddenAccessMode( ktx.securityContext().mode(), AccessMode.Static.READ ) );
-    }
-
-    @Override
-    public ValueMapper<Object> valueMapper()
-    {
-        return procedures.valueMapper();
     }
 
     @Override

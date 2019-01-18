@@ -22,12 +22,9 @@ package org.neo4j.kernel.impl.core;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.Statement;
 
 public interface EmbeddedProxySPI
 {
-    Statement statement();
-
     KernelTransaction kernelTransaction();
 
     GraphDatabaseService getGraphDatabase();

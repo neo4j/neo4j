@@ -20,8 +20,8 @@
 package org.neo4j.kernel.impl.util;
 
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 
@@ -50,20 +50,20 @@ import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
 import static org.neo4j.values.virtual.VirtualValues.nodeValue;
 import static org.neo4j.values.virtual.VirtualValues.path;
 
-public class DefaultValueMapperTest
+class DefaultValueMapperTest
 {
-    GraphDatabaseService db;
+    private GraphDatabaseService db;
     private DefaultValueMapper mapper;
 
-    @Before
-    public void setup()
+    @BeforeEach
+    void setup()
     {
         db = new TestGraphDatabaseFactory().newImpermanentDatabase();
         mapper = new DefaultValueMapper( (EmbeddedProxySPI) db );
     }
 
     @Test
-    public void shouldHandleSingleNodePath()
+    void shouldHandleSingleNodePath()
     {
         // Given
         Node node;
@@ -92,7 +92,7 @@ public class DefaultValueMapperTest
     }
 
     @Test
-    public void shouldHandleSingleRelationshipPath()
+    void shouldHandleSingleRelationshipPath()
     {
         // Given
         Node start, end;
@@ -124,7 +124,7 @@ public class DefaultValueMapperTest
     }
 
     @Test
-    public void shouldHandleLongPath()
+    void shouldHandleLongPath()
     {
         // Given
         Node a, b, c, d, e;
@@ -163,7 +163,7 @@ public class DefaultValueMapperTest
     }
 
     @Test
-    public void shouldMapDirectRelationship()
+    void shouldMapDirectRelationship()
     {
         // Given
         Node start, end;

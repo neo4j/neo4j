@@ -19,26 +19,24 @@
  */
 package org.neo4j.cypher.internal.javacompat;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.ServiceLoader;
 
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.query.QueryEngineProvider;
 
-import static org.junit.Assert.assertTrue;
+import static java.util.ServiceLoader.load;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.instanceOf;
 
-public class CommunityCypherEngineProviderTest
+class CommunityCypherEngineProviderTest
 {
-
     @Test
-    public void shouldServiceLoaderFindCypherEngineProvider()
+    void shouldServiceLoaderFindCypherEngineProvider()
     {
+        ServiceLoader<QueryEngineProvider> services = load( QueryEngineProvider.class );
 
-        // WHEN
-        ServiceLoader<QueryEngineProvider> services = ServiceLoader.load(QueryEngineProvider.class);
-
-        // THEN
-        assertTrue(Iterables.single(services) instanceof CommunityCypherEngineProvider );
+        assertThat( Iterables.single( services ), instanceOf( CommunityCypherEngineProvider.class ) );
     }
 }

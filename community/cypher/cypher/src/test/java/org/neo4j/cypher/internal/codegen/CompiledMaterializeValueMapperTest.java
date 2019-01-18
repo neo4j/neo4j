@@ -19,12 +19,11 @@
  */
 package org.neo4j.cypher.internal.codegen;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
 import org.neo4j.kernel.impl.core.GraphPropertiesProxy;
 import org.neo4j.kernel.impl.core.NodeProxy;
@@ -40,85 +39,24 @@ import org.neo4j.values.virtual.RelationshipReference;
 import org.neo4j.values.virtual.RelationshipValue;
 import org.neo4j.values.virtual.VirtualValues;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertSame;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 
-public class CompiledMaterializeValueMapperTest
+class CompiledMaterializeValueMapperTest
 {
-    private EmbeddedProxySPI spi = new EmbeddedProxySPI()
-    {
-        @Override
-        public RelationshipProxy newRelationshipProxy( long id )
-        {
-            return new RelationshipProxy( this, id );
-        }
+    private static final EmbeddedProxySPI spi = new CompilerEmbeddedProxySPI();
 
-        @Override
-        public NodeProxy newNodeProxy( long nodeId )
-        {
-            return new NodeProxy( this, nodeId );
-        }
+    private static final NodeValue nodeProxyValue = ValueUtils.fromNodeProxy( new NodeProxy( spi, 1L ) );
+    private static final NodeValue directNodeValue = VirtualValues.nodeValue( 2L, Values.stringArray(), VirtualValues.emptyMap() );
+    private static final NodeReference nodeReference = VirtualValues.node( 1L ); // Should equal nodeProxyValue when converted
 
-        @Override
-        public Statement statement()
-        {
-            throw new IllegalStateException( "Should not be used" );
-        }
-
-        @Override
-        public KernelTransaction kernelTransaction()
-        {
-            throw new IllegalStateException( "Should not be used" );
-        }
-
-        @Override
-        public GraphDatabaseService getGraphDatabase()
-        {
-            throw new IllegalStateException( "Should not be used" );
-        }
-
-        @Override
-        public void assertInUnterminatedTransaction()
-        {
-            throw new IllegalStateException( "Should not be used" );
-        }
-
-        @Override
-        public void failTransaction()
-        {
-            throw new IllegalStateException( "Should not be used" );
-        }
-
-        @Override
-        public RelationshipProxy newRelationshipProxy( long id, long startNodeId, int typeId, long endNodeId )
-        {
-            throw new IllegalStateException( "Should not be used" );
-        }
-
-        @Override
-        public GraphPropertiesProxy newGraphPropertiesProxy()
-        {
-            throw new IllegalStateException( "Should not be used" );
-        }
-
-        @Override
-        public RelationshipType getRelationshipTypeById( int type )
-        {
-            throw new IllegalStateException( "Should not be used" );
-        }
-    };
-
-    NodeValue nodeProxyValue = ValueUtils.fromNodeProxy( new NodeProxy( spi, 1L ) );
-    NodeValue directNodeValue = VirtualValues.nodeValue( 2L, Values.stringArray(), VirtualValues.emptyMap() );
-    NodeReference nodeReference = VirtualValues.node( 1L ); // Should equal nodeProxyValue when converted
-
-    RelationshipValue relationshipProxyValue = ValueUtils.fromRelationshipProxy( new RelationshipProxy( spi, 11L ) );
-    RelationshipValue directRelationshipValue =
+    private static final RelationshipValue relationshipProxyValue = ValueUtils.fromRelationshipProxy( new RelationshipProxy( spi, 11L ) );
+    private static final RelationshipValue directRelationshipValue =
             VirtualValues.relationshipValue( 12L, nodeProxyValue, directNodeValue, Values.stringValue( "TYPE" ), VirtualValues.emptyMap() );
-    RelationshipReference relationshipReference = VirtualValues.relationship( 11L ); // Should equal relationshipProxyValue when converted
+    private static final RelationshipReference relationshipReference = VirtualValues.relationship( 11L ); // Should equal relationshipProxyValue when converted
 
     @Test
-    public void shouldNotTouchValuesThatDoNotNeedConversion()
+    void shouldNotTouchValuesThatDoNotNeedConversion()
     {
         // Given
         ListValue nodeList = VirtualValues.list( nodeProxyValue, directNodeValue );
@@ -140,11 +78,10 @@ public class CompiledMaterializeValueMapperTest
         verifyDoesNotTouchValue( Values.booleanValue( false ) );
         verifyDoesNotTouchValue( Values.stringValue( "Hello" ) );
         verifyDoesNotTouchValue( Values.longValue( 42L ) );
-        // ...
     }
 
     @Test
-    public void shouldConvertValuesWithVirtualEntities()
+    void shouldConvertValuesWithVirtualEntities()
     {
         // Given
         ListValue nodeList = VirtualValues.list( nodeProxyValue, directNodeValue, nodeReference );
@@ -200,5 +137,62 @@ public class CompiledMaterializeValueMapperTest
     {
         AnyValue mappedValue = CompiledMaterializeValueMapper.mapAnyValue( spi, value );
         assertSame( value, mappedValue ); // Test with reference equality since we should get the same reference back
+    }
+
+    private static class CompilerEmbeddedProxySPI implements EmbeddedProxySPI
+    {
+        @Override
+        public RelationshipProxy newRelationshipProxy( long id )
+        {
+            return new RelationshipProxy( this, id );
+        }
+
+        @Override
+        public NodeProxy newNodeProxy( long nodeId )
+        {
+            return new NodeProxy( this, nodeId );
+        }
+
+        @Override
+        public KernelTransaction kernelTransaction()
+        {
+            throw new IllegalStateException( "Should not be used" );
+        }
+
+        @Override
+        public GraphDatabaseService getGraphDatabase()
+        {
+            throw new IllegalStateException( "Should not be used" );
+        }
+
+        @Override
+        public void assertInUnterminatedTransaction()
+        {
+            throw new IllegalStateException( "Should not be used" );
+        }
+
+        @Override
+        public void failTransaction()
+        {
+            throw new IllegalStateException( "Should not be used" );
+        }
+
+        @Override
+        public RelationshipProxy newRelationshipProxy( long id, long startNodeId, int typeId, long endNodeId )
+        {
+            throw new IllegalStateException( "Should not be used" );
+        }
+
+        @Override
+        public GraphPropertiesProxy newGraphPropertiesProxy()
+        {
+            throw new IllegalStateException( "Should not be used" );
+        }
+
+        @Override
+        public RelationshipType getRelationshipTypeById( int type )
+        {
+            throw new IllegalStateException( "Should not be used" );
+        }
     }
 }

@@ -44,7 +44,6 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLog;
 import org.neo4j.values.AnyValue;
-import org.neo4j.values.ValueMapper;
 
 /**
  * This is the coordinating service for procedures in the database. It loads procedures from a specified
@@ -308,11 +307,6 @@ public class Procedures extends LifecycleAdapter
     public UserAggregator createAggregationFunction( Context ctx, int id ) throws ProcedureException
     {
         return registry.createAggregationFunction( ctx, id );
-    }
-
-    public ValueMapper<Object> valueMapper()
-    {
-        return typeMappers;
     }
 
     @Override

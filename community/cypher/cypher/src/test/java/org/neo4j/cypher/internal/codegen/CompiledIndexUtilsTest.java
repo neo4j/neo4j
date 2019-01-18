@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.codegen;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.CursorFactory;
@@ -27,7 +27,7 @@ import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.Read;
 
-import static org.junit.Assert.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.Mockito.mock;
@@ -35,13 +35,12 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class CompiledIndexUtilsTest
+class CompiledIndexUtilsTest
 {
 
     @Test
-    public void shouldCallIndexSeek() throws KernelException
+    void shouldCallIndexSeek() throws KernelException
     {
-
         // GIVEN
         Read read = mock( Read.class );
         IndexReference index = mock( IndexReference.class );
@@ -55,7 +54,7 @@ public class CompiledIndexUtilsTest
     }
 
     @Test
-    public void shouldHandleNullInIndexSeek() throws KernelException
+    void shouldHandleNullInIndexSeek() throws KernelException
     {
         // GIVEN
         Read read = mock( Read.class );
@@ -63,8 +62,7 @@ public class CompiledIndexUtilsTest
         when( index.properties() ).thenReturn( new int[]{42} );
 
         // WHEN
-        NodeValueIndexCursor cursor = CompiledIndexUtils.indexSeek( mock( Read.class ), mock( CursorFactory.class ),
-                index, null );
+        NodeValueIndexCursor cursor = CompiledIndexUtils.indexSeek( mock( Read.class ), mock( CursorFactory.class ), index, null );
 
         // THEN
         verify( read, never() ).nodeIndexSeek( any(), any(), any(), anyBoolean() );
