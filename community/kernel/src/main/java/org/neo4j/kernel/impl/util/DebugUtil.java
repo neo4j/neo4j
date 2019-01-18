@@ -53,14 +53,32 @@ public class DebugUtil
     {
         if ( enabledAssertions() )
         {
-            Thread thread = Thread.currentThread();
-            String threadName = thread.getName();
-            ThreadGroup group = thread.getThreadGroup();
-            String groupPart = group != null ? " in group " + group.getName() : "";
-            String message = "[" + threadName + groupPart + "] " + String.format( fmt, args );
+            String message = formatWithThreadContext( fmt, args );
             TraceLog traceLog = new TraceLog( message );
             printLimitedStackTrace( System.err, traceLog, skip, limit );
         }
+    }
+
+    /**
+     * Utility method for annotated logging in multi-threaded scenarios. The best
+     * results are achieved if threads are neatly categorized using thread groups.
+     *
+     * @param fmt format string
+     * @param args arguments referenced by format string
+     */
+    @SuppressWarnings( "unused" )
+    public static void threadLog( String fmt, Object... args )
+    {
+        System.out.println( formatWithThreadContext( fmt, args ) );
+    }
+
+    private static String formatWithThreadContext( String fmt, Object... args )
+    {
+        Thread thread = Thread.currentThread();
+        String threadName = thread.getName();
+        ThreadGroup group = thread.getThreadGroup();
+        String groupPart = group != null ? ":" + group.getName() : "";
+        return "[" + threadName + groupPart + "] " + String.format( fmt, args );
     }
 
     private static void printLimitedStackTrace( PrintStream out, Throwable cause, int skip, int limit )
@@ -94,6 +112,7 @@ public class DebugUtil
         }
     }
 
+    @SuppressWarnings( "unused" )
     public static void printShortStackTrace( Throwable cause, int maxNumberOfStackLines )
     {
         System.out.println( firstLinesOf( stringify( cause ), maxNumberOfStackLines + 1 ) );
