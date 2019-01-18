@@ -62,7 +62,9 @@ public interface GraphDatabaseService
      * refer to them this way. Instead, use application generated ids.
      *
      * @return the created nodes id.
+     * @deprecated This method will be removed in a future major release.
      */
+    @Deprecated
     Long createNodeId();
 
     /**
