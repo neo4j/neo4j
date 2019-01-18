@@ -89,7 +89,7 @@ public class BackupTool
                 "version of Neo4j; please use neo4j-admin backup instead.\n");
         try
         {
-            BackupProtocolService service = new BackupProtocolService( System.out, readConfiguration( Args.withFlags( CONFIG ).parse( args ) ) );
+            BackupProtocolService service = new BackupProtocolService( System.out, Config.defaults() );
             BackupTool tool = new BackupTool( service, System.out );
             BackupOutcome backupOutcome = tool.run( args );
 
