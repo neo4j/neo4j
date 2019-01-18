@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v4_0.planner.logical.plans.rewriter
 
+import org.neo4j.cypher.internal.v4_0.logical.plans.{DoNotIncludeTies, Limit, PartialSort, PartialTop, Sort, Top}
 import org.neo4j.cypher.internal.v4_0.util.attribution.SameId
-import org.neo4j.cypher.internal.v4_0.logical.plans.{DoNotIncludeTies, Limit, Sort, Top}
 import org.neo4j.cypher.internal.v4_0.util.{Rewriter, bottomUp}
 
 /**
@@ -31,6 +31,8 @@ case object useTop extends Rewriter {
   private val instance: Rewriter = bottomUp(Rewriter.lift {
     case o @ Limit(Sort(src, sortDescriptions), limit, DoNotIncludeTies) =>
       Top(src, sortDescriptions, limit)(SameId(o.id))
+    case o @ Limit(PartialSort(src, alreadySortedPrefix, stillToSortSuffix), limit, DoNotIncludeTies) =>
+      PartialTop(src, alreadySortedPrefix, stillToSortSuffix, limit)(SameId(o.id))
   })
 
   override def apply(input: AnyRef): AnyRef = instance.apply(input)

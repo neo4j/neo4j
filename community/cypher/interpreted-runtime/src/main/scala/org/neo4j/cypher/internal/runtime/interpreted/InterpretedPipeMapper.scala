@@ -193,6 +193,16 @@ case class InterpretedPipeMapper(readOnly: Boolean,
         TopNPipe(source, buildExpression(limit),
                  ExecutionContextOrdering.asComparator(sortItems.map(translateColumnOrder).toList))(id = id)
 
+      case PartialTop(_, _, stillToSortSuffix, _) if stillToSortSuffix.isEmpty => source
+
+      case PartialTop(_, alreadySortedPrefix, stillToSortSuffix, SignedDecimalIntegerLiteral("1")) =>
+        PartialTop1Pipe(source, ExecutionContextOrdering.asComparator(alreadySortedPrefix.map(translateColumnOrder).toList),
+          ExecutionContextOrdering.asComparator(stillToSortSuffix.map(translateColumnOrder).toList))(id = id)
+
+      case PartialTop(_, alreadySortedPrefix, stillToSortSuffix, limit) =>
+        PartialTopNPipe(source, buildExpression(limit), ExecutionContextOrdering.asComparator(alreadySortedPrefix.map(translateColumnOrder).toList),
+          ExecutionContextOrdering.asComparator(stillToSortSuffix.map(translateColumnOrder).toList))(id = id)
+
       case LimitPlan(_, count, DoNotIncludeTies) =>
         LimitPipe(source, buildExpression(count))(id = id)
 
@@ -200,6 +210,9 @@ case class InterpretedPipeMapper(readOnly: Boolean,
         (source, count) match {
           case (SortPipe(inner, sortDescription), SignedDecimalIntegerLiteral("1")) =>
             Top1WithTiesPipe(inner, ExecutionContextOrdering.asComparator(sortDescription))(id = id)
+          case (PartialSortPipe(inner, alreadySortedPrefix, stillToSortSuffix), SignedDecimalIntegerLiteral("1")) =>
+            PartialTop1WithTiesPipe(inner, ExecutionContextOrdering.asComparator(alreadySortedPrefix),
+              ExecutionContextOrdering.asComparator(stillToSortSuffix))(id = id)
 
           case _ => throw new InternalException("Including ties is only supported for very specific plans")
         }
