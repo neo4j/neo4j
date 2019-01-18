@@ -1171,8 +1171,8 @@
       </dependency>
       <dependency>
         <groupId>org.apache.directory.server</groupId>
-        <artifactId>apacheds-test-framework</artifactId>
-        <version>2.0.0.AM25</version>
+        <artifactId>apacheds-server-integ</artifactId>
+        <version>2.0.0-M21</version>
         <scope>test</scope>
       </dependency>
       <dependency>
