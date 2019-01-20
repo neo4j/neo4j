@@ -72,7 +72,7 @@ public abstract class CacheTask extends ConsistencyCheckerTask
         protected void processCache()
         {
             cacheAccess.clearCache();
-            long[] fields = new long[] {1, 0, -1};
+            long[] fields = new long[] {-1, 1, 0};
             CacheAccess.Client client = cacheAccess.client();
             try ( ResourceIterator<NodeRecord> nodeRecords = nodes.iterator() )
             {

@@ -22,6 +22,7 @@ package org.neo4j.consistency.checking.full;
 import java.lang.reflect.Array;
 import java.util.List;
 
+import org.neo4j.consistency.checking.ByteArrayBitsManipulator;
 import org.neo4j.consistency.checking.CheckDecorator;
 import org.neo4j.consistency.checking.cache.CacheAccess;
 import org.neo4j.consistency.checking.cache.DefaultCacheAccess;
@@ -51,6 +52,7 @@ import org.neo4j.logging.Log;
 
 import static org.neo4j.consistency.report.ConsistencyReporter.NO_MONITOR;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
+import static org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory.AUTO_WITHOUT_PAGECACHE;
 
 public class FullCheck
 {
@@ -98,7 +100,9 @@ public class FullCheck
         CountsBuilderDecorator countsBuilder =
                 new CountsBuilderDecorator( stores.nativeStores() );
         CheckDecorator decorator = new CheckDecorator.ChainCheckDecorator( ownerCheck, countsBuilder );
-        CacheAccess cacheAccess = new DefaultCacheAccess( statistics.getCounts(), threads );
+        CacheAccess cacheAccess = new DefaultCacheAccess(
+                AUTO_WITHOUT_PAGECACHE.newByteArray( stores.nativeStores().getNodeStore().getHighId(), new byte[ByteArrayBitsManipulator.MAX_BYTES] ),
+                statistics.getCounts(), threads );
         RecordAccess records = recordAccess( stores.nativeStores(), cacheAccess );
         execute( stores, decorator, records, report, cacheAccess, reportMonitor );
         ownerCheck.scanForOrphanChains( progressFactory );

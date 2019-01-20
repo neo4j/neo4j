@@ -19,29 +19,34 @@
  */
 package org.neo4j.consistency.checking.cache;
 
+import org.neo4j.consistency.checking.ByteArrayBitsManipulator;
 import org.neo4j.kernel.impl.store.record.Record;
-import org.neo4j.unsafe.impl.batchimport.cache.LongArray;
-import org.neo4j.unsafe.impl.batchimport.cache.LongBitsManipulator;
+import org.neo4j.unsafe.impl.batchimport.cache.ByteArray;
 
 import static org.neo4j.consistency.checking.cache.CacheSlots.ID_SLOT_SIZE;
 import static org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory.AUTO_WITHOUT_PAGECACHE;
 
 /**
- * Simply combining a {@link LongArray} with {@link LongBitsManipulator}, so that each long can be split up into
- * slots, i.e. holding multiple values per long for space efficiency.
+ * Simply combining a {@link ByteArray} with {@link ByteArrayBitsManipulator}, so that each byte[] index can be split up into
+ * slots, i.e. holding multiple values for space efficiency and convenience.
  */
 public class PackedMultiFieldCache
 {
-    private final LongArray array;
-    private LongBitsManipulator slots;
+    private final ByteArray array;
+    private ByteArrayBitsManipulator slots;
     private long[] initValues;
+
+    static ByteArray defaultArray()
+    {
+        return AUTO_WITHOUT_PAGECACHE.newDynamicByteArray( 1_000_000, new byte[ByteArrayBitsManipulator.MAX_BYTES] );
+    }
 
     public PackedMultiFieldCache( int... slotSizes )
     {
-        this( AUTO_WITHOUT_PAGECACHE.newDynamicLongArray( 1_000_000, 0 ), slotSizes );
+        this( defaultArray(), slotSizes );
     }
 
-    public PackedMultiFieldCache( LongArray array, int... slotSizes )
+    public PackedMultiFieldCache( ByteArray array, int... slotSizes )
     {
         this.array = array;
         setSlotSizes( slotSizes );
@@ -49,29 +54,25 @@ public class PackedMultiFieldCache
 
     public void put( long index, long... values )
     {
-        long field = 0;
         for ( int i = 0; i < values.length; i++ )
         {
-            field = slots.set( field, i, values[i] );
+            slots.set( array, index, i, values[i] );
         }
-        array.set( index, field );
     }
 
     public void put( long index, int slot, long value )
     {
-        long field = array.get( index );
-        field = slots.set( field, slot, value );
-        array.set( index, field );
+        slots.set( array, index, slot, value );
     }
 
     public long get( long index, int slot )
     {
-        return slots.get( array.get( index ), slot );
+        return slots.get( array, index, slot );
     }
 
     public void setSlotSizes( int... slotSizes )
     {
-        this.slots = new LongBitsManipulator( slotSizes );
+        this.slots = new ByteArrayBitsManipulator( slotSizes );
         this.initValues = getInitVals( slotSizes );
     }
 
