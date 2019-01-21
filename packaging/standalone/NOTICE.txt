@@ -39,6 +39,7 @@ Apache Software License, Version 2.0
   @firebase/util
   @firebase/webchannel-wrapper
   Apache Commons Lang
+  Apache Commons Text
   ascli
   aws-sign2
   bytebuffer
@@ -61,6 +62,10 @@ Apache Software License, Version 2.0
 
 BSD License
   antlr4
+  asm
+  asm-analysis
+  asm-tree
+  asm-util
   bcrypt-pbkdf
   boom
   cryptiles
