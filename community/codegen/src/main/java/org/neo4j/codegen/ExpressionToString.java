@@ -78,6 +78,16 @@ class ExpressionToString implements ExpressionVisitor
     }
 
     @Override
+    public void arrayLoad( Expression array, Expression index )
+    {
+        result.append( "loadArray{array=" );
+        array.accept( this );
+        result.append( ", index=" );
+        index.accept( this );
+        result.append( "}" );
+    }
+
+    @Override
     public void getField( Expression target, FieldReference field )
     {
         result.append( "get{target=" );

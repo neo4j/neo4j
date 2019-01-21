@@ -27,6 +27,8 @@ public interface ExpressionVisitor
 
     void load( LocalVariable variable );
 
+    void arrayLoad( Expression array, Expression index );
+
     void getField( Expression target, FieldReference field );
 
     void constant( Object value );
@@ -80,4 +82,5 @@ public interface ExpressionVisitor
     void box( Expression expression );
 
     void unbox( Expression expression );
+
 }

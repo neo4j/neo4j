@@ -380,6 +380,20 @@ public abstract class Expression extends ExpressionTemplate
         };
     }
 
+    public static Expression arrayLoad( Expression array, Expression index )
+    {
+        assert (array.type().isArray());
+
+        return new Expression( array.type() )
+        {
+            @Override
+            public void accept( ExpressionVisitor visitor )
+            {
+                visitor.arrayLoad( array, index);
+            }
+        };
+    }
+
     public static Expression add( final Expression lhs, final Expression rhs )
     {
         if ( !lhs.type.equals( rhs.type ) )

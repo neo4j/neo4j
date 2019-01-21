@@ -31,6 +31,14 @@ import org.neo4j.codegen.LocalVariable;
 import org.neo4j.codegen.MethodReference;
 import org.neo4j.codegen.TypeReference;
 
+import static jdk.internal.org.objectweb.asm.Opcodes.AALOAD;
+import static jdk.internal.org.objectweb.asm.Opcodes.BALOAD;
+import static jdk.internal.org.objectweb.asm.Opcodes.CALOAD;
+import static jdk.internal.org.objectweb.asm.Opcodes.DALOAD;
+import static jdk.internal.org.objectweb.asm.Opcodes.FALOAD;
+import static jdk.internal.org.objectweb.asm.Opcodes.IALOAD;
+import static jdk.internal.org.objectweb.asm.Opcodes.LALOAD;
+import static jdk.internal.org.objectweb.asm.Opcodes.SALOAD;
 import static org.neo4j.codegen.ByteCodeUtils.byteCodeName;
 import static org.neo4j.codegen.ByteCodeUtils.desc;
 import static org.neo4j.codegen.ByteCodeUtils.typeName;
@@ -192,6 +200,44 @@ class ByteCodeExpressionVisitor implements ExpressionVisitor
         else
         {
             methodVisitor.visitVarInsn( ALOAD, variable.index() );
+        }
+    }
+
+    @Override
+    public void arrayLoad( Expression array, Expression index )
+    {
+        assert array.type().isArray();
+
+        array.accept( this );
+        index.accept( this );
+        switch ( array.type().name() )
+        {
+        case "int":
+            methodVisitor.visitInsn( IALOAD );
+            break;
+        case "byte":
+            methodVisitor.visitInsn( BALOAD );
+            break;
+        case "short":
+            methodVisitor.visitInsn( SALOAD );
+            break;
+        case "char":
+            methodVisitor.visitInsn( CALOAD );
+            break;
+        case "boolean":
+            methodVisitor.visitInsn( BALOAD );
+            break;
+        case "long":
+            methodVisitor.visitInsn( LALOAD );
+            break;
+        case "float":
+            methodVisitor.visitInsn( FALOAD );
+            break;
+        case "double":
+            methodVisitor.visitInsn( DALOAD );
+            break;
+        default:
+            methodVisitor.visitInsn( AALOAD );
         }
     }
 

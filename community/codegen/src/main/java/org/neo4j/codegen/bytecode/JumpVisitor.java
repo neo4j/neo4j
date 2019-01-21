@@ -69,6 +69,13 @@ class JumpVisitor implements ExpressionVisitor
     }
 
     @Override
+    public void arrayLoad( Expression array, Expression index )
+    {
+        eval.arrayLoad( array, index );
+        methodVisitor.visitJumpInsn( IFEQ, this.target );
+    }
+
+    @Override
     public void getField( Expression target, FieldReference field )
     {
         eval.getField( target, field );

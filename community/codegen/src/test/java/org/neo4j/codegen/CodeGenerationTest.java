@@ -62,6 +62,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.neo4j.codegen.Expression.add;
 import static org.neo4j.codegen.Expression.and;
+import static org.neo4j.codegen.Expression.arrayLoad;
 import static org.neo4j.codegen.Expression.constant;
 import static org.neo4j.codegen.Expression.equal;
 import static org.neo4j.codegen.Expression.invoke;
@@ -2139,6 +2140,36 @@ public class CodeGenerationTest
 
         // then
         assertEquals( 84, foo );
+    }
+
+    @Test
+    public void shouldAccessArray() throws Throwable
+    {
+        assertArrayLoad( long.class, long[].class, new long[]{1L, 2L, 3L}, 2, 3L );
+        assertArrayLoad( int.class, int[].class, new int[]{1, 2, 3}, 1, 2 );
+        assertArrayLoad( short.class, short[].class, new short[]{1, 2, 3}, 1, (short) 2 );
+        assertArrayLoad( byte.class, byte[].class, new byte[]{1, 2, 3}, 0, (byte) 1 );
+        assertArrayLoad( char.class, char[].class, new char[]{'a', 'b', 'c'}, 2, 'c' );
+        assertArrayLoad( float.class, float[].class, new float[]{1, 2, 3}, 2, 3F );
+        assertArrayLoad( double.class, double[].class, new double[]{1, 2, 3}, 2, 3D );
+        assertArrayLoad( boolean.class, boolean[].class, new boolean[]{true, false, true}, 2, true );
+        assertArrayLoad( String.class, String[].class, new String[]{"a", "b", "c"}, 2, "c" );
+    }
+
+    private <T, U> void assertArrayLoad(Class<T> returnType, Class<U> arrayType, U array, int index, T expexted ) throws Throwable
+    {
+        ClassHandle handle;
+        try ( ClassGenerator simple = generateClass( "SimpleClass" + returnType.getSimpleName() ) )
+        {
+            try ( CodeBlock body = simple.generateMethod( returnType, "get", param( arrayType, "array"),
+                    param(int.class, "index" ) ))
+            {
+                body.returns( arrayLoad( body.load( "array" ), body.load( "index" )) );
+            }
+            handle = simple.handle();
+        }
+
+        assertEquals( expexted, instanceMethod( handle.newInstance(), "get", arrayType, int.class ).invoke(array, index));
     }
 
     private Supplier<Double> generateDoubleMethod( double toBeReturned ) throws Throwable

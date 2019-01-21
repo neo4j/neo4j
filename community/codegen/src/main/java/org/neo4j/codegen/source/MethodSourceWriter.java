@@ -280,6 +280,15 @@ class MethodSourceWriter implements MethodEmitter, ExpressionVisitor
     }
 
     @Override
+    public void arrayLoad( Expression array, Expression index )
+    {
+        array.accept( this );
+        append( "[" );
+        index.accept( this );
+        append( "]" );
+    }
+
+    @Override
     public void getField( Expression target, FieldReference field )
     {
         target.accept( this );
