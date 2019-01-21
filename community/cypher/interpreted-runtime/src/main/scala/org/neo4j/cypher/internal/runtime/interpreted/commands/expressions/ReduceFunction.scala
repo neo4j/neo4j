@@ -31,12 +31,20 @@ case class ReduceFunction(collection: Expression, id: String, expression: Expres
   override def compute(value: AnyValue, m: ExecutionContext, state: QueryState): AnyValue = {
     val list = makeTraversable(value)
     val iterator = list.iterator()
-    val contextWithAcc = m.copyWith(acc, init(m, state))
+    val initialAcc = init(m, state)
+
+    m.set(acc, initialAcc)
     while(iterator.hasNext) {
-      contextWithAcc.set(id, iterator.next())
-      contextWithAcc.set(acc, expression(contextWithAcc, state))
+      m.set(id, iterator.next())
+      m.set(acc, expression(m, state))
     }
-    contextWithAcc.getByName(acc)
+    val result = m.getByName(acc)
+
+    // Clean up accumulator slots
+    m.set(acc, null)
+    m.set(id, null)
+
+    result
   }
 
   def rewrite(f: (Expression) => Expression) =
