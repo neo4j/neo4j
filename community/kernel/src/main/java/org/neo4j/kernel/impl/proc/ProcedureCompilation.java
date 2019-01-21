@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.proc;
 
+import org.apache.commons.lang3.exception.ExceptionUtils;
+
 import java.lang.reflect.Method;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -37,13 +39,13 @@ import org.neo4j.codegen.CodeGenerationNotSupportedException;
 import org.neo4j.codegen.CodeGenerator;
 import org.neo4j.codegen.Expression;
 import org.neo4j.codegen.FieldReference;
-import org.neo4j.codegen.MethodReference;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.spatial.Point;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.UserFunctionSignature;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.proc.CallableUserFunction;
 import org.neo4j.kernel.api.proc.Context;
 import org.neo4j.kernel.impl.util.ValueUtils;
@@ -66,8 +68,10 @@ import org.neo4j.values.virtual.NodeValue;
 import org.neo4j.values.virtual.PathValue;
 import org.neo4j.values.virtual.RelationshipValue;
 
+import static java.lang.String.format;
 import static org.neo4j.codegen.CodeGenerator.generateCode;
 import static org.neo4j.codegen.Expression.cast;
+import static org.neo4j.codegen.Expression.constant;
 import static org.neo4j.codegen.Expression.getStatic;
 import static org.neo4j.codegen.Expression.invoke;
 import static org.neo4j.codegen.Expression.unbox;
@@ -81,7 +85,7 @@ import static org.neo4j.codegen.bytecode.ByteCode.BYTECODE;
 import static org.neo4j.codegen.source.SourceCode.PRINT_SOURCE;
 import static org.neo4j.codegen.source.SourceCode.SOURCECODE;
 
-class ProcedureCompilation
+public class ProcedureCompilation
 {
     private static final String LONG = long.class.getCanonicalName();
     private static final String BOXED_LONG = Long.class.getCanonicalName();
@@ -116,7 +120,7 @@ class ProcedureCompilation
         try
         {
             CodeGenerator codeGenerator = codeGenerator();
-            String className = String.format( "Generated_%s%d", signature.name().name(), System.nanoTime());
+            String className = format( "Generated_%s%d", signature.name().name(), System.nanoTime() );
             try ( ClassGenerator generator = codeGenerator.generateClass( PACKAGE, className, CallableUserFunction.class ) )
             {
 
@@ -124,10 +128,10 @@ class ProcedureCompilation
                 FieldReference signatureField =
                         generator.publicStaticField( typeReference( UserFunctionSignature.class ), "SIGNATURE" );
                 FieldReference udfField = generator.publicStaticField( typeReference( methodToCall.getDeclaringClass() ), "UDF" );
-                List<FieldReference> setters = new ArrayList<>( fieldSetters.size() );
+                List<FieldReference> fieldsToSet = new ArrayList<>( fieldSetters.size() );
                 for ( int i = 0; i < fieldSetters.size(); i++ )
                 {
-                    setters.add( generator.publicStaticField( typeReference( FieldSetter.class ), "SETTER_" + i ) );
+                    fieldsToSet.add( generator.publicStaticField( typeReference( FieldSetter.class ), "SETTER_" + i ) );
                 }
 
                 //CallableUserFunction::apply
@@ -136,21 +140,17 @@ class ProcedureCompilation
                         param( AnyValue[].class, "input" ) )
                         .throwsException( typeReference( ProcedureException.class ) ) ) )
                 {
-                    for ( int i = 0; i < fieldSetters.size(); i++ )
-                    {
-                        FieldSetter setter = fieldSetters.get( i );
-                        method.put( getStatic( udfField ), fieldReference( setter.field() ),
-                                cast(  setter.field().getType(),
-                                invoke(
-                                        getStatic( setters.get( i ) ),
-                                        methodReference( typeReference( FieldSetter.class ), OBJECT, "get",
-                                                typeReference( Context.class ) ),
-                                        method.load( "ctx" ) ) ));
-                    }
-
-                    MethodReference referenceToCall = methodReference( methodToCall );
-                    method.returns(
-                            convert( invoke( getStatic( udfField ), referenceToCall ) ) );
+                    method.tryCatch(
+                            body -> functionBody( body, fieldSetters, fieldsToSet, udfField, methodToCall ),
+                            onError ->
+                                    onError.throwException(
+                                            invoke( methodReference( ProcedureCompilation.class,
+                                                    ProcedureException.class,
+                                                    "rethrowProcedureException", Throwable.class, String.class ),
+                                                    onError.load( "T" ),
+                                                    constant( format( "function '%s'", signature.name() ) ) ) ),
+                            param( Throwable.class, "T" )
+                    );
                 }
 
                 //CallableUserFunction::signature
@@ -177,6 +177,26 @@ class ProcedureCompilation
         }
     }
 
+    private static void functionBody( CodeBlock block,
+            List<FieldSetter> fieldSetters, List<FieldReference> fieldsToSet, FieldReference udfField,
+            Method methodToCall )
+    {
+        for ( int i = 0; i < fieldSetters.size(); i++ )
+        {
+            FieldSetter setter = fieldSetters.get( i );
+            block.put( getStatic( udfField ), fieldReference( setter.field() ),
+                    cast( setter.field().getType(),
+                            invoke(
+                                    getStatic( fieldsToSet.get( i ) ),
+                                    methodReference( typeReference( FieldSetter.class ), OBJECT, "get",
+                                            typeReference( Context.class ) ),
+                                    block.load( "ctx" ) ) ) );
+        }
+
+        block.returns(
+                convert( invoke( getStatic( udfField ), methodReference( methodToCall ) ) ) );
+    }
+
     private static CodeGenerator codeGenerator() throws CodeGenerationNotSupportedException
     {
         if (DEBUG)
@@ -186,6 +206,22 @@ class ProcedureCompilation
         else
         {
             return generateCode( CallableUserFunction.class.getClassLoader(), BYTECODE );
+        }
+    }
+
+    public static ProcedureException rethrowProcedureException( Throwable throwable, String typeAndName )
+    {
+        if ( throwable instanceof Status.HasStatus )
+        {
+            return new ProcedureException( ((Status.HasStatus) throwable).status(), throwable,
+                    throwable.getMessage(), throwable );
+        }
+        else
+        {
+            Throwable cause = ExceptionUtils.getRootCause( throwable );
+            return new ProcedureException( Status.Procedure.ProcedureCallFailed, throwable,
+                    "Failed to invoke %s : %s", typeAndName,
+                    "Caused by: " + (cause != null ? cause : throwable) );
         }
     }
 

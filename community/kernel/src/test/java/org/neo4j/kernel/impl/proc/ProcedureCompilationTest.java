@@ -39,6 +39,7 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.internal.kernel.api.procs.UserFunctionSignature.functionSignature;
@@ -86,7 +87,19 @@ public class ProcedureCompilationTest
         assertEquals( longValue(42L), compileFunction( signature, singletonList( setter1 ), longMethod ).apply( ctx, EMPTY ));
         assertEquals( longValue(1337L), compileFunction( signature, singletonList( setter2 ), longMethod ).apply( ctx, EMPTY ));
         assertEquals( longValue(1379L), compileFunction( signature, asList(setter1, setter2), longMethod ).apply( ctx, EMPTY ));
+    }
 
+    @Test
+    void shouldHandleThrowingUDF() throws ProcedureException, NoSuchFieldException, IllegalAccessException
+    {
+        // Given
+        UserFunctionSignature signature = functionSignature( "test", "foo" ).out( Neo4jTypes.NTInteger ).build();
+
+        // When
+        CallableUserFunction longMethod = compileFunction( signature, emptyList(), method( "throwingLongMethod" ) );
+
+        // Then
+        assertThrows( ProcedureException.class, () -> longMethod.apply( ctx, EMPTY ));
     }
 
     private FieldSetter createSetter(Class<?> owner, String field, Key<Long> key) throws NoSuchFieldException, IllegalAccessException
@@ -118,6 +131,11 @@ public class ProcedureCompilationTest
     public long longMethod()
     {
         return 1337L;
+    }
+
+    public long throwingLongMethod()
+    {
+        throw new RuntimeException( "wut!" );
     }
 
     public static class InnerClass
