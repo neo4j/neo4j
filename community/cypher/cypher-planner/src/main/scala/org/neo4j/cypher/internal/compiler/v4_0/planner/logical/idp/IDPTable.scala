@@ -23,32 +23,30 @@ import scala.collection.mutable
 
 // Table used by IDPSolver to record optimal plans found so far
 //
-class IDPTable[P, O](private val map: mutable.Map[(Goal, O), P] = mutable.Map.empty[(Goal, O), P]) extends IDPCache[P, O] {
+class IDPTable[Result, Attribute](private val map: mutable.Map[(Goal, Attribute), Result] = mutable.Map.empty[(Goal, Attribute), Result]) extends IDPCache[Result, Attribute] {
 
   def size: Int = map.size
 
-  def put(goal: Goal, o: O, product: P): Unit = {
-    map.put((goal, o), product)
+  def put(goal: Goal, attribute: Attribute, result: Result): Unit = {
+    map.put((goal, attribute), result)
   }
 
-  def apply(goal: Goal, o: O): Option[P] = map.get((goal, o))
-
-  def apply(goal: Goal): Seq[(O, P)] = map.collect {
-    case ((key, o), p) if key == goal => (o, p)
+  def apply(goal: Goal): Seq[(Attribute, Result)] = map.collect {
+    case ((key, attribute), result) if key == goal => (attribute, result)
   }.toSeq
 
-  def contains(goal: Goal, o: O): Boolean = map.contains((goal, o))
+  def contains(goal: Goal, attribute: Attribute): Boolean = map.contains((goal, attribute))
 
-  def plansOfSize(k: Int): Iterator[((Goal, O), P)] = map.iterator.filter(_._1._1.size == k)
+  def plansOfSize(k: Int): Iterator[((Goal, Attribute), Result)] = map.iterator.filter(_._1._1.size == k)
 
-  def plans: Iterator[((Goal, O), P)] = map.iterator
+  def plans: Iterator[((Goal, Attribute), Result)] = map.iterator
 
   def removeAllTracesOf(goal: Goal): Unit = {
     val toDrop = map.keysIterator.filter { case (entry, _) => (entry & goal).nonEmpty }
     toDrop.foreach(map.remove)
   }
 
-  override def toString(): String = s"IDPPlanTable(numberOfPlans=$size, largestSolved=${map.keySet.map(_._1.size).max})"
+  override def toString: String = s"IDPPlanTable(numberOfPlans=$size, largestSolved=${map.keySet.map(_._1.size).max})"
 }
 
 object IDPTable {

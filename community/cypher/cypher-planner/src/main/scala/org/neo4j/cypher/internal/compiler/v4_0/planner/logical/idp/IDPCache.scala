@@ -20,15 +20,14 @@
 package org.neo4j.cypher.internal.compiler.v4_0.planner.logical.idp
 
 // Read-only interface to IDPTable
-//
-trait IDPCache[P,O] extends ((Goal, O) => Option[P]) {
+trait IDPCache[Result,Attribute] {
   def size: Int
 
-  def apply(goal: Goal): Seq[(O, P)]
+  def apply(goal: Goal): Seq[(Attribute, Result)]
 
-  def contains(goal: Goal, o: O): Boolean
+  def contains(goal: Goal, o: Attribute): Boolean
 
-  def plansOfSize(k: Int): Iterator[((Goal, O), P)]
+  def plansOfSize(k: Int): Iterator[((Goal, Attribute), Result)]
 
-  def plans: Iterator[((Goal, O), P)]
+  def plans: Iterator[((Goal, Attribute), Result)]
 }

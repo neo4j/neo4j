@@ -106,8 +106,8 @@ class IDPSolver[Solvable, Requirement, Result, Context](generator: IDPSolverStep
     def compactBlock(original: Goal): Unit = {
       val newId = registry.compact(original)
       table(original).foreach {
-        case (ro, plan) =>
-          table.put(BitSet.empty + newId, ro, plan)
+        case (attribute, result) =>
+          table.put(BitSet.empty + newId, attribute, result)
       }
       toDo = toDo -- original + newId
       table.removeAllTracesOf(original)
@@ -127,10 +127,10 @@ class IDPSolver[Solvable, Requirement, Result, Context](generator: IDPSolverStep
     }
     monitor.foundPlanAfter(iterations)
 
-    val maybeSorted = table.plans.collect { case ((k, o), v) if extraRequirement.is(o) => (registry.explode(k), o) -> v }
+    val maybeSorted = table.plans.collect { case ((key, attribute), result) if extraRequirement.is(attribute) => (registry.explode(key), attribute) -> result }
     if (maybeSorted.hasNext)
       maybeSorted
     else
-      table.plans.collect { case ((k, o), v) => (registry.explode(k), o) -> v }
+      table.plans.collect { case ((key, attribute), result) => (registry.explode(key), attribute) -> result }
   }
 }

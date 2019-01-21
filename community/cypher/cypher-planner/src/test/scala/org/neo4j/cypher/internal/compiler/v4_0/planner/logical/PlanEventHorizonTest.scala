@@ -102,4 +102,79 @@ class PlanEventHorizonTest extends CypherFunSuite with LogicalPlanningTestSuppor
       producedPlan should equal(Projection(Sort(Projection(inputPlan, Map("a" -> literal)), Seq(Ascending("a"))), Map("b" -> literal, "c" -> literal)))
     }
   }
+
+  test("should add the correct plans when query uses both ORDER BY, SKIP and LIMIT") {
+    // given
+    val x: Expression = UnsignedDecimalIntegerLiteral("110")(pos)
+    val y: Expression = UnsignedDecimalIntegerLiteral("10")(pos)
+    new given().withLogicalPlanningContext { (_, context) =>
+      val interestingOrder = InterestingOrder.required(RequiredOrderCandidate.asc(varFor("x")))
+      val horizon = RegularQueryProjection(Map("x" -> varFor("x")), queryPagination = QueryPagination(skip = Some(y), limit = Some(x)))
+      val pq = RegularPlannerQuery(interestingOrder = interestingOrder, horizon = horizon)
+      val inputPlan = fakeLogicalPlanFor(context.planningAttributes, "x")
+
+      // When
+      val result = PlanEventHorizon(pq, inputPlan, context)
+
+      // Then
+      val sorted = Sort(inputPlan, Seq(Ascending("x")))
+      val skipped = Skip(sorted, y)
+      val limited = Limit(skipped, x, DoNotIncludeTies)
+      result should equal(limited)
+    }
+  }
+
+  test("should add sort without pre-projection for DistinctQueryProjection") {
+    // [WITH DISTINCT n, m] WITH n AS n, m AS m, 5 AS notSortColumn ORDER BY m
+    val mSortVar = Variable("m")(pos)
+    val projectionsMap = Map(
+      "n" -> varFor("n"),
+      mSortVar.name -> mSortVar,
+      // a projection that sort will not take care of
+      "notSortColumn" -> UnsignedDecimalIntegerLiteral("5")(pos))
+    new given().withLogicalPlanningContext { (_, context) =>
+      val interestingOrder = InterestingOrder.required(RequiredOrderCandidate.asc(varFor("m")))
+      val horizon = DistinctQueryProjection(groupingKeys = projectionsMap)
+      val pq = RegularPlannerQuery(interestingOrder = interestingOrder, horizon = horizon)
+      val inputPlan = fakeLogicalPlanFor(context.planningAttributes, "m", "n")
+
+      // When
+      val result = PlanEventHorizon(pq, inputPlan, context)
+
+      // Then
+      val distinct = Distinct(inputPlan, groupingExpressions = projectionsMap)
+      val sorted = Sort(distinct, Seq(Ascending("m")))
+      result should equal(sorted)
+    }
+  }
+  test("should add sort without pre-projection for AggregatingQueryProjection") {
+    // [WITH n, m, o] // o is an aggregating expression
+    // WITH o, n AS n, m AS m, 5 AS notSortColumn ORDER BY m, o
+    val grouping = Map(
+      "n" -> varFor("n"),
+      "m" -> varFor("m"),
+      // a projection that sort will not take care of
+      "notSortColumn" -> UnsignedDecimalIntegerLiteral("5")(pos))
+    val aggregating = Map("o" -> varFor("o"))
+
+    val projection = AggregatingQueryProjection(
+      groupingExpressions = grouping,
+      aggregationExpressions = aggregating,
+      queryPagination = QueryPagination(skip = None, limit = None)
+    )
+
+    new given().withLogicalPlanningContext { (_, context) =>
+      val interestingOrder = InterestingOrder.required(RequiredOrderCandidate.asc(varFor("m")).asc(varFor("o")))
+      val pq = RegularPlannerQuery(interestingOrder = interestingOrder, horizon = projection)
+      val inputPlan = fakeLogicalPlanFor(context.planningAttributes, "m", "n", "o")
+
+      // When
+      val result = PlanEventHorizon(pq, inputPlan, context)
+
+      // Then
+      val aggregation = Aggregation(inputPlan, grouping, aggregating)
+      val sorted = Sort(aggregation, Seq(Ascending("m"), Ascending("o")))
+      result should equal(sorted)
+    }
+  }
 }
