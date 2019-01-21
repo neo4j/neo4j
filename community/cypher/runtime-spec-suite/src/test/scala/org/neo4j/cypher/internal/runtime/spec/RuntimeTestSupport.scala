@@ -44,10 +44,12 @@ import org.scalatest.BeforeAndAfterAll
   * and then execute a query.
   */
 class RuntimeTestSupport[CONTEXT <: RuntimeContext](val graphDb: GraphDatabaseService,
-                                                    val runtimeContextCreator: RuntimeContextCreator[CONTEXT]) extends CypherFunSuite with BeforeAndAfterAll
+                                                    val edition: Edition[CONTEXT]
+                                                   ) extends CypherFunSuite with BeforeAndAfterAll
 {
   val cypherGraphDb = new GraphDatabaseCypherService(graphDb)
   private val resolver: DependencyResolver = cypherGraphDb.getDependencyResolver
+  private val runtimeContextCreator = edition.runtimeContextCreator(resolver)
   private val monitors = resolver.resolveDependency(classOf[Monitors], SelectionStrategy.SINGLE)
   private val contextFactory = Neo4jTransactionalContextFactory.create(cypherGraphDb)
   private val spi: EmbeddedProxySPI = resolver.resolveDependency(classOf[EmbeddedProxySPI], DependencyResolver.SelectionStrategy.SINGLE)

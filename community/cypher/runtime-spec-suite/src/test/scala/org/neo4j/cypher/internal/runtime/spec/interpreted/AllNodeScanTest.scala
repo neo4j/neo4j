@@ -17,19 +17,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.runtime.spec
+package org.neo4j.cypher.internal.runtime.spec.interpreted
 
-import org.neo4j.cypher.internal.compatibility.InterpretedRuntime
+import org.neo4j.cypher.internal.compatibility._
+import org.neo4j.cypher.internal.runtime.spec._
 
-/**
-  * Sample tests to demonstrate the runtime acceptance test framework. Remove eventually?
-  */
-class RuntimeSampleTest extends RuntimeTestSuite(COMMUNITY_EDITION, InterpretedRuntime)
-{
+abstract class AllNodeScanTestBase[CONTEXT <: RuntimeContext](
+  edition: Edition[CONTEXT],
+  runtime: CypherRuntime[CONTEXT]
+) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
-  test("sample test I - simple all nodes scan") {
+  test("should scan all nodes") {
     // given
-    val nodes = nodeGraph(10)
+    val nodes = nodeGraph(10, "Honey") ++
+      nodeGraph(10, "Butter") ++
+      nodeGraph(10, "Almond")
 
     // when
     val logicalQuery = new LogicalQueryBuilder()
@@ -43,16 +45,27 @@ class RuntimeSampleTest extends RuntimeTestSuite(COMMUNITY_EDITION, InterpretedR
     runtimeResult should beColumns("x").withSingleValueRows(nodes)
   }
 
-  test("sample test II - logical plan with branches") {
+  test("should scan empty graph") {
+    // when
+    val logicalQuery = new LogicalQueryBuilder()
+      .produceResults("x")
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("x").withNoRows()
+  }
+
+  test("should handle multiple scans") {
     // given
-    val nodes = nodeGraph(2)
+    val nodes = nodeGraph(10, "Honey")
 
     // when
     val logicalQuery = new LogicalQueryBuilder()
-      .produceResults("x", "y", "z", "q")
+      .produceResults("y", "z", "x")
       .apply()
-      .║.apply()
-      .║.║.allNodeScan("q")
       .║.allNodeScan("z")
       .apply()
       .║.allNodeScan("y")
@@ -62,12 +75,9 @@ class RuntimeSampleTest extends RuntimeTestSuite(COMMUNITY_EDITION, InterpretedR
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    val expected = for {
-        x <- nodes
-        y <- nodes
-        z <- nodes
-        q <- nodes
-      } yield Array(x, y, z, q)
-    runtimeResult should beColumns("x", "y", "z", "q").withRows(expected)
+    val expected = for {x <- nodes; y <- nodes; z <- nodes} yield Array(y, z, x)
+    runtimeResult should beColumns("y", "z", "x").withRows(expected)
   }
 }
+
+class InterpretedAllNodeScanTest extends AllNodeScanTestBase(COMMUNITY_EDITION, InterpretedRuntime)

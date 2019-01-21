@@ -20,13 +20,18 @@
 package org.neo4j.cypher.internal.runtime.spec
 
 import org.neo4j.cypher.internal.CypherConfiguration
-import org.neo4j.cypher.internal.compatibility._
+import org.neo4j.cypher.internal.compatibility.{RuntimeContextCreator, _}
+import org.neo4j.graphdb.DependencyResolver
 import org.neo4j.kernel.configuration.Config
 import org.neo4j.test.TestGraphDatabaseFactory
 
-abstract class Edition[CONTEXT <: RuntimeContext](val runtimeContextCreator: RuntimeContextCreator[CONTEXT],
-                                                  val graphDatabaseFactory: TestGraphDatabaseFactory)
+abstract class Edition[CONTEXT <: RuntimeContext](val graphDatabaseFactory: TestGraphDatabaseFactory) {
+  def runtimeContextCreator(resolver: DependencyResolver): RuntimeContextCreator[CONTEXT]
+}
 
-object COMMUNITY_EDITION extends Edition(
-  CommunityRuntimeContextCreator(CypherConfiguration.fromConfig(Config.defaults()).toCypherRuntimeConfiguration),
-  new TestGraphDatabaseFactory)
+object COMMUNITY_EDITION extends Edition[CommunityRuntimeContext](new TestGraphDatabaseFactory) {
+  override def runtimeContextCreator(resolver: DependencyResolver): CommunityRuntimeContextCreator = {
+    val runtimeConfig = CypherConfiguration.fromConfig(Config.defaults()).toCypherRuntimeConfiguration
+    CommunityRuntimeContextCreator(runtimeConfig)
+  }
+}

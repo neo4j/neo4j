@@ -25,7 +25,7 @@ import org.neo4j.cypher.result.{QueryResult, RuntimeResult}
 import org.neo4j.graphdb.{GraphDatabaseService, Label, Node}
 import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.values.AnyValue
-import org.scalatest.BeforeAndAfterEach
+import org.scalatest.{BeforeAndAfterEach, Tag}
 import org.scalatest.matchers.{MatchResult, Matcher}
 
 import scala.collection.mutable.ArrayBuffer
@@ -38,7 +38,8 @@ import scala.collection.mutable.ArrayBuffer
   *  - executed on a real database
   *  - evaluated by it's results
   */
-abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT])
+abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT],
+                                                           val runtime: CypherRuntime[CONTEXT])
   extends CypherFunSuite
     with BeforeAndAfterEach
 {
@@ -48,12 +49,16 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
 
   override def beforeEach(): Unit = {
     graphDb = edition.graphDatabaseFactory.newImpermanentDatabase()
-    runtimeTestSupport = new RuntimeTestSupport[CONTEXT](graphDb, edition.runtimeContextCreator)
+    runtimeTestSupport = new RuntimeTestSupport[CONTEXT](graphDb, edition)
     super.beforeEach()
   }
 
   override def afterEach(): Unit = {
     graphDb.shutdown()
+  }
+
+  override def test(testName: String, testTags: Tag*)(testFun: => Unit): Unit = {
+    super.test(s"[${runtime.name}] $testName", testTags:_*)(testFun)
   }
 
   // EXECUTE
