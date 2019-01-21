@@ -3,12 +3,12 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent</artifactId>
-    <version>3.4.12-SNAPSHOT</version>
+    <version>3.4.13-SNAPSHOT</version>
     <relativePath>../..</relativePath>
   </parent>
 
   <artifactId>neo4j-auth-plugin-api</artifactId>
-  <version>3.4.12-SNAPSHOT</version>
+  <version>3.4.13-SNAPSHOT</version>
 
   <name>Neo4j - Enterprise Graph Database Auth Plugin API</name>
   <description>Enterprise auth plugin API for adding custom auth providers to the Neo4j database</description>

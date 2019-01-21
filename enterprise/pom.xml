@@ -3,14 +3,14 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent</artifactId>
-    <version>3.4.12-SNAPSHOT</version>
+    <version>3.4.13-SNAPSHOT</version>
     <relativePath>..</relativePath>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.neo4j.build</groupId>
   <artifactId>enterprise-build</artifactId>
-  <version>3.4.12-SNAPSHOT</version>
+  <version>3.4.13-SNAPSHOT</version>
 
   <name>Neo4j - Enterprise Build</name>
   <packaging>pom</packaging>

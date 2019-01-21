@@ -3,11 +3,11 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent</artifactId>
-    <version>3.4.12-SNAPSHOT</version>
+    <version>3.4.13-SNAPSHOT</version>
     <relativePath>../..</relativePath>
   </parent>
   <artifactId>neo4j-enterprise-kernel</artifactId>
-  <version>3.4.12-SNAPSHOT</version>
+  <version>3.4.13-SNAPSHOT</version>
 
   <name>Neo4j - Enterprise Graph Database Kernel Features</name>
   <description>Enterprise features for Neo4j</description>

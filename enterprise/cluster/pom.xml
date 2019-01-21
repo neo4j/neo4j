@@ -3,11 +3,11 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent</artifactId>
-    <version>3.4.12-SNAPSHOT</version>
+    <version>3.4.13-SNAPSHOT</version>
     <relativePath>../..</relativePath>
   </parent>
   <artifactId>neo4j-cluster</artifactId>
-  <version>3.4.12-SNAPSHOT</version>
+  <version>3.4.13-SNAPSHOT</version>
 
   <name>Neo4j - Clustering Infrastructure</name>
   <description>Library implementing Paxos and Heartbeat components required for High Availability Neo4j</description>

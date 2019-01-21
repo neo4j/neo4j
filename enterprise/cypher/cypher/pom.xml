@@ -5,14 +5,14 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>cypher-enterprise-parent</artifactId>
-    <version>3.4.12-SNAPSHOT</version>
+    <version>3.4.13-SNAPSHOT</version>
     <relativePath>../</relativePath>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
   <artifactId>neo4j-enterprise-cypher</artifactId>
   <packaging>jar</packaging>
-  <version>3.4.12-SNAPSHOT</version>
+  <version>3.4.13-SNAPSHOT</version>
   <name>Neo4j Enterprise Cypher</name>
   <description>Neo4j query language</description>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
@@ -143,7 +143,7 @@
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-kernel-api</artifactId>
-      <version>3.4.12-SNAPSHOT</version>
+      <version>3.4.13-SNAPSHOT</version>
       <type>test-jar</type>
       <scope>test</scope>
     </dependency>
