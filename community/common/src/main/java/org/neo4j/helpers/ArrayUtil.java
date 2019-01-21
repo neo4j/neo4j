@@ -21,6 +21,7 @@ package org.neo4j.helpers;
 
 import java.lang.reflect.Array;
 import java.util.Arrays;
+import java.util.Objects;
 import java.util.function.Function;
 
 import static java.util.Arrays.copyOf;
@@ -70,7 +71,7 @@ public abstract class ArrayUtil
         @Override
         public boolean itemEquals( Object lhs, Object rhs )
         {
-            return lhs == rhs || lhs != null && lhs.equals( rhs );
+            return Objects.equals( lhs, rhs );
         }
     };
 
@@ -128,7 +129,7 @@ public abstract class ArrayUtil
         @Override
         public boolean itemEquals( Object lhs, Object rhs )
         {
-            return lhs == rhs || lhs != null && lhs.equals( rhs );
+            return Objects.equals( lhs, rhs );
         }
     };
 
