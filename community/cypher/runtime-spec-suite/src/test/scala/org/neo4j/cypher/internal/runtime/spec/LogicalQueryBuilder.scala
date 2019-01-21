@@ -63,7 +63,7 @@ class LogicalQueryBuilder()
     * Increase indent. The indent determines where the next
     * logical plan will be appended to the tree.
     */
-  def ║ : LogicalQueryBuilder = {
+  def | : LogicalQueryBuilder = {
     indent += 1
     this
   }

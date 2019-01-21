@@ -66,9 +66,9 @@ abstract class AllNodeScanTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder()
       .produceResults("y", "z", "x")
       .apply()
-      .║.allNodeScan("z")
+      .|.allNodeScan("z")
       .apply()
-      .║.allNodeScan("y")
+      .|.allNodeScan("y")
       .allNodeScan("x")
       .build()
 
