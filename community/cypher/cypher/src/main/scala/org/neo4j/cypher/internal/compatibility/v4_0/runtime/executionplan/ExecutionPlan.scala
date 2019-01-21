@@ -22,13 +22,21 @@ package org.neo4j.cypher.internal.compatibility.v4_0.runtime.executionplan
 import org.neo4j.cypher.internal.compatibility.v4_0.runtime.RuntimeName
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.planDescription.Argument
-import org.neo4j.cypher.result.RuntimeResult
-import org.neo4j.values.virtual.MapValue
 import org.neo4j.cypher.internal.v4_0.util.InternalNotification
+import org.neo4j.cypher.result.RuntimeResult
+import org.neo4j.internal.kernel.api.CursorFactory
+import org.neo4j.values.virtual.MapValue
 
 abstract class ExecutionPlan {
 
   def run(queryContext: QueryContext, doProfile: Boolean, params: MapValue, prePopulateResults: Boolean): RuntimeResult
+
+  /**
+    *
+    * @return if this ExecutionPlan needs a thread safe cursor factory to be used from the TransactionBoundQueryContext,
+    *         then it has to override this method and provide it here.
+    */
+  def threadSafeCursorFactory: Option[CursorFactory] = None
 
   def runtimeName: RuntimeName
 

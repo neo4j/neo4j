@@ -177,7 +177,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
         executionPlan.metadata)
 
     private def getQueryContext(transactionalContext: TransactionalContext) = {
-      val ctx = new TransactionBoundQueryContext(TransactionalContextWrapper(transactionalContext),
+      val ctx = new TransactionBoundQueryContext(TransactionalContextWrapper(transactionalContext, executionPlan.threadSafeCursorFactory.orNull),
                                                  new ResourceManager(resourceMonitor)
                                                )(searchMonitor)
       new ExceptionTranslatingQueryContext(ctx)
