@@ -17,14 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.runtime
+package org.neo4j.cypher.internal.runtime.spec
 
 import org.neo4j.cypher.internal.compatibility._
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.result.{QueryResult, RuntimeResult}
 import org.neo4j.graphdb.{GraphDatabaseService, Label, Node}
 import org.neo4j.kernel.impl.util.ValueUtils
-import org.neo4j.test.TestGraphDatabaseFactory
 import org.neo4j.values.AnyValue
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.matchers.{MatchResult, Matcher}
@@ -39,8 +38,7 @@ import scala.collection.mutable.ArrayBuffer
   *  - executed on a real database
   *  - evaluated by it's results
   */
-abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](runtimeContextCreator: RuntimeContextCreator[CONTEXT],
-                                                           graphDatabaseFactory: TestGraphDatabaseFactory)
+abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT])
   extends CypherFunSuite
     with BeforeAndAfterEach
 {
@@ -49,8 +47,8 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](runtimeContextCreator
   var runtimeTestSupport: RuntimeTestSupport[CONTEXT] = _
 
   override def beforeEach(): Unit = {
-    graphDb = graphDatabaseFactory.newImpermanentDatabase()
-    runtimeTestSupport = new RuntimeTestSupport[CONTEXT](graphDb, runtimeContextCreator)
+    graphDb = edition.graphDatabaseFactory.newImpermanentDatabase()
+    runtimeTestSupport = new RuntimeTestSupport[CONTEXT](graphDb, edition.runtimeContextCreator)
     super.beforeEach()
   }
 

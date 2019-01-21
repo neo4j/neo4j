@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.runtime
+package org.neo4j.cypher.internal.runtime.spec
 
 import org.neo4j.cypher.internal.compatibility.LogicalQuery
 import org.neo4j.cypher.internal.planner.v4_0.spi.PlanningAttributes.Cardinalities

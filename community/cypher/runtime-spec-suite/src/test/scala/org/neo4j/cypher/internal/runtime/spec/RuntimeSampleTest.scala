@@ -17,19 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.runtime
+package org.neo4j.cypher.internal.runtime.spec
 
-import org.neo4j.cypher.internal.CypherConfiguration
-import org.neo4j.cypher.internal.compatibility.{CommunityRuntimeContext, CommunityRuntimeContextCreator, InterpretedRuntime}
-import org.neo4j.kernel.configuration.Config
-import org.neo4j.test.TestGraphDatabaseFactory
+import org.neo4j.cypher.internal.compatibility.InterpretedRuntime
 
 /**
   * Sample tests to demonstrate the runtime acceptance test framework. Remove eventually?
   */
-class RuntimeSampleTest extends RuntimeTestSuite[CommunityRuntimeContext](
-  CommunityRuntimeContextCreator(CypherConfiguration.fromConfig(Config.defaults()).toCypherRuntimeConfiguration),
-  new TestGraphDatabaseFactory)
+class RuntimeSampleTest extends RuntimeTestSuite(COMMUNITY_EDITION)
 {
 
   test("sample test I - simple all nodes scan") {
