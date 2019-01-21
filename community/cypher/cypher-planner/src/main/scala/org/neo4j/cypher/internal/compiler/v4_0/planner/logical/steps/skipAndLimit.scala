@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v4_0.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v4_0.planner.logical._
 import org.neo4j.cypher.internal.ir.v4_0._
-import org.neo4j.cypher.internal.v4_0.expressions.Expression
+import org.neo4j.cypher.internal.v4_0.expressions.{Add, Expression}
 import org.neo4j.cypher.internal.v4_0.logical.plans._
 
 object skipAndLimit extends PlanTransformer {
@@ -32,17 +32,22 @@ object skipAndLimit extends PlanTransformer {
         val queryPagination = p.queryPagination
         (queryPagination.skip, queryPagination.limit) match {
           case (skip, limit) =>
-            addLimit(limit, addSkip(skip, plan, context), context)
+            addSkip(skip, addLimit(limit, skip, plan, context), context)
         }
 
       case _ => plan
     }
   }
 
-  private def addSkip(s: Option[Expression], plan: LogicalPlan, context: LogicalPlanningContext): LogicalPlan =
-    s.fold(plan)(x => context.logicalPlanProducer.planSkip(plan, x, context))
+  private def addSkip(maybeSkip: Option[Expression], plan: LogicalPlan, context: LogicalPlanningContext): LogicalPlan =
+    maybeSkip.fold(plan)(skipExpression => context.logicalPlanProducer.planSkip(plan, skipExpression, context))
 
-  private def addLimit(s: Option[Expression], plan: LogicalPlan, context: LogicalPlanningContext): LogicalPlan =
-    s.fold(plan)(x => context.logicalPlanProducer.planLimit(plan, x, context = context))
+  private def addLimit(maybeLimit: Option[Expression], maybeSkip: Option[Expression], plan: LogicalPlan, context: LogicalPlanningContext): LogicalPlan = {
+    maybeLimit.fold(plan) { limitExpression =>
+      // In case we have SKIP n LIMIT m, we want to limit by (n + m), since we plan the Limit before the Skip.
+      val effectiveLimit = maybeSkip.fold(limitExpression)(skip => Add(limitExpression, skip)(limitExpression.position))
+      context.logicalPlanProducer.planLimit(plan, effectiveLimit, limitExpression, context = context)
+    }
+  }
 
 }

@@ -75,7 +75,7 @@ class SkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val result = skipAndLimit(startPlan, query, context)
 
     // then
-    result should equal(Limit(Skip(startPlan, y), x, DoNotIncludeTies))
+    result should equal(Skip(Limit(startPlan, Add(x, y)(pos), DoNotIncludeTies), y))
     context.planningAttributes.solveds.get(result.id).horizon should equal(RegularQueryProjection(Map.empty, QueryPagination(limit = Some(x), skip = Some(y))))
   }
 

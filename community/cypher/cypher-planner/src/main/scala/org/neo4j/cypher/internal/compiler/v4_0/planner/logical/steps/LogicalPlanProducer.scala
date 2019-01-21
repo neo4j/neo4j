@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.LogicalPlanningCo
 import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.Metrics.CardinalityModel
 import org.neo4j.cypher.internal.ir.v4_0._
 import org.neo4j.cypher.internal.planner.v4_0.spi.PlanningAttributes
+import org.neo4j.cypher.internal.v4_0.ast
 import org.neo4j.cypher.internal.v4_0.ast._
 import org.neo4j.cypher.internal.v4_0.expressions._
 import org.neo4j.cypher.internal.v4_0.logical.plans
@@ -536,9 +537,9 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     annotate(newPlan, solved, providedOrders.get(inner.id), context)
   }
 
-  def planLimit(inner: LogicalPlan, count: Expression, ties: Ties = DoNotIncludeTies, context: LogicalPlanningContext): LogicalPlan = {
-    val solved = solveds.get(inner.id).updateTailOrSelf(_.updateQueryProjection(_.updatePagination(_.withLimitExpression(count))))
-    annotate(LimitPlan(inner, count, ties), solved, providedOrders.get(inner.id), context)
+  def planLimit(inner: LogicalPlan, effectiveCount: Expression, reportedCount: Expression, ties: Ties = DoNotIncludeTies, context: LogicalPlanningContext): LogicalPlan = {
+    val solved = solveds.get(inner.id).updateTailOrSelf(_.updateQueryProjection(_.updatePagination(_.withLimitExpression(reportedCount))))
+    annotate(LimitPlan(inner, effectiveCount, ties), solved, providedOrders.get(inner.id), context)
   }
 
   def planLimitForAggregation(inner: LogicalPlan,

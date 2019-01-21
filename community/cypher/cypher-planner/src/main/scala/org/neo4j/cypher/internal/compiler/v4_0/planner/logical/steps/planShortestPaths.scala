@@ -23,9 +23,9 @@ import org.neo4j.cypher.internal.compiler.v4_0.ExhaustiveShortestPathForbiddenNo
 import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.idp.expandSolverStep
 import org.neo4j.cypher.internal.ir.v4_0.{Predicate, ShortestPathPattern, _}
-import org.neo4j.cypher.internal.v4_0.logical.plans.{Ascending, DoNotIncludeTies, IncludeTies, LogicalPlan}
 import org.neo4j.cypher.internal.v4_0.expressions._
-import org.neo4j.cypher.internal.v4_0.expressions.functions.{Length, Nodes}
+import org.neo4j.cypher.internal.v4_0.expressions.functions.Length
+import org.neo4j.cypher.internal.v4_0.logical.plans.{Ascending, DoNotIncludeTies, IncludeTies, LogicalPlan}
 import org.neo4j.cypher.internal.v4_0.rewriting.rewriters.projectNamedPaths
 import org.neo4j.cypher.internal.v4_0.util.{ExhaustiveShortestPathForbiddenException, FreshIdNameGenerator, InternalException}
 
@@ -143,6 +143,7 @@ case object planShortestPaths {
     val sortDescription = Seq(Ascending(columnName))
     val sorted = lpp.planSort(rhsProjected, sortDescription, ProvidedOrder.empty, InterestingOrder.empty, context)
     val ties = if (shortestPath.single) DoNotIncludeTies else IncludeTies
-    lpp.planLimit(sorted, SignedDecimalIntegerLiteral("1")(pos), ties, context)
+    val one = SignedDecimalIntegerLiteral("1")(pos)
+    lpp.planLimit(sorted, one, one, ties, context)
   }
 }
