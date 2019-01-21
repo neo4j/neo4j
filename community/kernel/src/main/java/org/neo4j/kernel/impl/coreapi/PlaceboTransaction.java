@@ -24,6 +24,7 @@ import java.util.Optional;
 
 import org.neo4j.graphdb.Lock;
 import org.neo4j.graphdb.PropertyContainer;
+import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -77,6 +78,12 @@ public class PlaceboTransaction implements InternalTransaction
     public Lock acquireReadLock( PropertyContainer entity )
     {
         return locker.sharedLock( currentTransaction, entity );
+    }
+
+    @Override
+    public Transaction kernelTransaction()
+    {
+        return currentTransaction;
     }
 
     @Override

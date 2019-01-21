@@ -30,6 +30,7 @@ import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.graphdb.TransientFailureException;
 import org.neo4j.graphdb.TransientTransactionFailureException;
+import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -122,6 +123,12 @@ public class TopLevelTransaction implements InternalTransaction
     public Lock acquireReadLock( PropertyContainer entity )
     {
         return locker.sharedLock(transaction, entity);
+    }
+
+    @Override
+    public Transaction kernelTransaction()
+    {
+        return transaction;
     }
 
     @Override

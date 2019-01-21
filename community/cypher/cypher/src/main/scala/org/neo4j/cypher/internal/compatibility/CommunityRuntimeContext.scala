@@ -34,12 +34,12 @@ case class CommunityRuntimeContext(tokenContext: TokenContext,
   override def compileExpressions: Boolean = false
 }
 
-case class CommunityRuntimeContextCreator(config: CypherRuntimeConfiguration) extends RuntimeContextCreator[RuntimeContext] {
+case class CommunityRuntimeContextCreator(config: CypherRuntimeConfiguration) extends RuntimeContextCreator[CommunityRuntimeContext] {
   override def create(tokenContext: TokenContext,
                       schemaRead: SchemaRead,
                       clock: Clock,
                       debugOptions: Set[String],
                       ignore: Boolean
-                     ): RuntimeContext =
+                     ): CommunityRuntimeContext =
     CommunityRuntimeContext(tokenContext, schemaRead, config)
 }

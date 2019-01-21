@@ -30,6 +30,12 @@ import org.neo4j.kernel.api.exceptions.Status;
 
 public interface InternalTransaction extends Transaction
 {
+    /**
+     * Loop-hole to access underlying kernel transaction. This is intended to allow
+     * gradual removal of the InternalTransaction interface.
+     */
+    org.neo4j.internal.kernel.api.Transaction kernelTransaction();
+
     KernelTransaction.Type transactionType();
 
     SecurityContext securityContext();

@@ -90,7 +90,7 @@ abstract class RuntimeContext {
   *
   * @tparam CONTEXT type of runtime context created
   */
-trait RuntimeContextCreator[CONTEXT <: RuntimeContext] {
+trait RuntimeContextCreator[+CONTEXT <: RuntimeContext] {
   def create(tokenContext: TokenContext,
              schemaRead: SchemaRead,
              clock: Clock,
