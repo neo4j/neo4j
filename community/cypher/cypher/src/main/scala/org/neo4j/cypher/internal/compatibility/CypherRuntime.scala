@@ -53,6 +53,8 @@ trait CypherRuntime[-CONTEXT <: RuntimeContext] {
     * @return the executable plan
     */
   def compileToExecutable(logicalQuery: LogicalQuery, context: CONTEXT): ExecutionPlan
+
+  def name: String
 }
 
 /**
@@ -103,6 +105,8 @@ trait RuntimeContextCreator[+CONTEXT <: RuntimeContext] {
   * Cypher runtime representing a user-selected runtime which is not supported.
   */
 object UnknownRuntime extends CypherRuntime[RuntimeContext] {
+  override def name: String = "unknown"
+
   def compileToExecutable(logicalQuery: LogicalQuery, context: RuntimeContext): ExecutionPlan =
     throw new CantCompileQueryException()
 }
@@ -119,6 +123,8 @@ object UnknownRuntime extends CypherRuntime[RuntimeContext] {
   */
 class FallbackRuntime[CONTEXT <: RuntimeContext](runtimes: Seq[CypherRuntime[CONTEXT]],
                                                  requestedRuntime: CypherRuntimeOption) extends CypherRuntime[CONTEXT] {
+
+  override def name: String = "fallback"
 
   private def publicCannotCompile(originalException: Exception) = {
     val message = s"This version of Neo4j does not support requested runtime: ${requestedRuntime.name}"

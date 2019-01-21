@@ -32,6 +32,8 @@ import org.neo4j.cypher.internal.v4_0.util.{LabelId, PropertyKeyId}
   * This runtime takes on queries that require no planning, such as procedures and schema commands
   */
 object ProcedureCallOrSchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
+  override def name: String = "procedure"
+
   override def compileToExecutable(state: LogicalQuery, context: RuntimeContext): ExecutionPlan = {
 
     def throwCantCompile(unknownPlan: LogicalPlan): Nothing = {
