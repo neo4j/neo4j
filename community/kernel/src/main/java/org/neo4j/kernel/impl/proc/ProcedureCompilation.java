@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.proc;
 
 import org.apache.commons.lang3.exception.ExceptionUtils;
 
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -39,6 +40,7 @@ import org.neo4j.codegen.CodeGenerationNotSupportedException;
 import org.neo4j.codegen.CodeGenerator;
 import org.neo4j.codegen.Expression;
 import org.neo4j.codegen.FieldReference;
+import org.neo4j.codegen.TypeReference;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
@@ -50,6 +52,7 @@ import org.neo4j.kernel.api.proc.CallableUserFunction;
 import org.neo4j.kernel.api.proc.Context;
 import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.values.AnyValue;
+import org.neo4j.values.ValueMapper;
 import org.neo4j.values.storable.BooleanValue;
 import org.neo4j.values.storable.ByteArray;
 import org.neo4j.values.storable.DateTimeValue;
@@ -59,8 +62,10 @@ import org.neo4j.values.storable.DurationValue;
 import org.neo4j.values.storable.LocalDateTimeValue;
 import org.neo4j.values.storable.LocalTimeValue;
 import org.neo4j.values.storable.LongValue;
+import org.neo4j.values.storable.NumberValue;
 import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.TextValue;
+import org.neo4j.values.storable.TimeValue;
 import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.ListValue;
 import org.neo4j.values.virtual.MapValue;
@@ -70,6 +75,8 @@ import org.neo4j.values.virtual.RelationshipValue;
 
 import static java.lang.String.format;
 import static org.neo4j.codegen.CodeGenerator.generateCode;
+import static org.neo4j.codegen.Expression.arrayLoad;
+import static org.neo4j.codegen.Expression.box;
 import static org.neo4j.codegen.Expression.cast;
 import static org.neo4j.codegen.Expression.constant;
 import static org.neo4j.codegen.Expression.getStatic;
@@ -80,6 +87,8 @@ import static org.neo4j.codegen.MethodDeclaration.method;
 import static org.neo4j.codegen.MethodReference.methodReference;
 import static org.neo4j.codegen.Parameter.param;
 import static org.neo4j.codegen.TypeReference.OBJECT;
+import static org.neo4j.codegen.TypeReference.parameterizedType;
+import static org.neo4j.codegen.TypeReference.toBoxedType;
 import static org.neo4j.codegen.TypeReference.typeReference;
 import static org.neo4j.codegen.bytecode.ByteCode.BYTECODE;
 import static org.neo4j.codegen.source.SourceCode.PRINT_SOURCE;
@@ -109,11 +118,11 @@ public class ProcedureCompilation
     private static final String LOCAL_TIME = LocalTime.class.getCanonicalName();
     private static final String TEMPORAL_AMOUNT = TemporalAmount.class.getCanonicalName();
     private static final String PACKAGE = "org.neo4j.kernel.impl.proc";
-    private static final boolean DEBUG = true;
+    private static final boolean DEBUG = false;
 
     static CallableUserFunction compileFunction(
             UserFunctionSignature signature, List<FieldSetter> fieldSetters,
-            Method methodToCall )
+            Method methodToCall, ValueMapper<Object> typeMappers )
     {
 
         ClassHandle handle;
@@ -128,6 +137,8 @@ public class ProcedureCompilation
                 FieldReference signatureField =
                         generator.publicStaticField( typeReference( UserFunctionSignature.class ), "SIGNATURE" );
                 FieldReference udfField = generator.publicStaticField( typeReference( methodToCall.getDeclaringClass() ), "UDF" );
+                FieldReference mapperField =
+                        generator.publicStaticField( parameterizedType( ValueMapper.class, Object.class ), "MAPPER" );
                 List<FieldReference> fieldsToSet = new ArrayList<>( fieldSetters.size() );
                 for ( int i = 0; i < fieldSetters.size(); i++ )
                 {
@@ -141,7 +152,8 @@ public class ProcedureCompilation
                         .throwsException( typeReference( ProcedureException.class ) ) ) )
                 {
                     method.tryCatch(
-                            body -> functionBody( body, fieldSetters, fieldsToSet, udfField, methodToCall ),
+                            body -> functionBody( body, fieldSetters, fieldsToSet, udfField, methodToCall,
+                                    mapperField ),
                             onError ->
                                     onError.throwException(
                                             invoke( methodReference( ProcedureCompilation.class,
@@ -164,6 +176,7 @@ public class ProcedureCompilation
             Class<?> clazz = handle.loadClass();
             clazz.getDeclaredField( "SIGNATURE" ).set( null, signature );
             clazz.getDeclaredField( "UDF" ).set( null, methodToCall.getDeclaringClass().newInstance() );
+            clazz.getDeclaredField( "MAPPER" ).set( null, typeMappers );
             for ( int i = 0; i < fieldSetters.size(); i++ )
             {
                 clazz.getDeclaredField( "SETTER_" + i ).set(null, fieldSetters.get( i ));
@@ -179,22 +192,44 @@ public class ProcedureCompilation
 
     private static void functionBody( CodeBlock block,
             List<FieldSetter> fieldSetters, List<FieldReference> fieldsToSet, FieldReference udfField,
-            Method methodToCall )
+            Method methodToCall, FieldReference mapperField )
     {
         for ( int i = 0; i < fieldSetters.size(); i++ )
         {
             FieldSetter setter = fieldSetters.get( i );
-            block.put( getStatic( udfField ), fieldReference( setter.field() ),
-                    cast( setter.field().getType(),
+            Field field = setter.field();
+            Class<?> fieldType = field.getType();
+            block.put( getStatic( udfField ), fieldReference( field ),
+                    unboxIfNecessary( fieldType,
                             invoke(
                                     getStatic( fieldsToSet.get( i ) ),
                                     methodReference( typeReference( FieldSetter.class ), OBJECT, "get",
                                             typeReference( Context.class ) ),
                                     block.load( "ctx" ) ) ) );
         }
+        Class<?>[] parameterTypes = methodToCall.getParameterTypes();
+        Expression[] parameters = new Expression[parameterTypes.length];
+        for ( int i = 0; i < parameterTypes.length; i++ )
+        {
+            parameters[i] = fromAnyValue(
+                    typeReference(
+                            parameterTypes[i] ), arrayLoad( block.load( "input" ), constant( i ) ), mapperField );
+        }
 
         block.returns(
-                convert( invoke( getStatic( udfField ), methodReference( methodToCall ) ) ) );
+                toAnyValue( invoke( getStatic( udfField ), methodReference( methodToCall ), parameters ) ) );
+    }
+
+    private static Expression unboxIfNecessary( Class<?> fieldType, Expression invoke )
+    {
+        if ( fieldType.isPrimitive() )
+        {
+            return unbox( cast( toBoxedType( typeReference( fieldType ) ), invoke ) );
+        }
+        else
+        {
+            return cast( fieldType, invoke );
+        }
     }
 
     private static CodeGenerator codeGenerator() throws CodeGenerationNotSupportedException
@@ -225,7 +260,14 @@ public class ProcedureCompilation
         }
     }
 
-    private static Expression convert( Expression expression )
+    /**
+     * Takes an expression evaluating to one of the supported java values and turns
+     * it into the corresponding AnyValue
+     *
+     * @param expression the expression to evaluate
+     * @return an expression propery mapped to AnyValue
+     */
+    private static Expression toAnyValue( Expression expression )
     {
         String type = expression.type().fullName();
         if ( type.equals( LONG ) )
@@ -286,7 +328,7 @@ public class ProcedureCompilation
         }
         else if ( type.equals( OFFSET_TIME ) )
         {
-            return invoke( methodReference( DateTimeValue.class, DateTimeValue.class, "datetime", OffsetTime.class ),
+            return invoke( methodReference( TimeValue.class, TimeValue.class, "time", OffsetTime.class ),
                     expression );
         }
         else if ( type.equals( LOCAL_DATE ) )
@@ -334,4 +376,115 @@ public class ProcedureCompilation
         }
     }
 
+
+    /**
+     * Converts from an `AnyValue` to the type specified by the procedure or function.
+     * <p>
+     * In a lot of cases we can figure out the conversion statically, for example `LongValue` will
+     * be turned into ((LongValue) value).longValue() etc. For composite types as Lists and Maps and also
+     * for Graph types such as Nodes, Relationships and Paths we will us a ValueMapper.
+     *
+     * @param expectedType the java type expected by the procedure or function
+     * @param expression an expression that will evaluate to an AnyValue
+     * @param mapper The field holding the ValueMapper.
+     * @return an expression properly typed to be consumed by function or procedure
+     */
+    private static Expression fromAnyValue( TypeReference expectedType, Expression expression, FieldReference mapper )
+    {
+        String type = expectedType.fullName();
+        if ( type.equals( LONG ) )
+        {
+            return invoke( cast( NumberValue.class, expression ),
+                    methodReference( NumberValue.class, long.class, "longValue" ) );
+
+        }
+        else if ( type.equals( BOXED_LONG ) )
+        {
+            return box( invoke( cast( NumberValue.class, expression ),
+                    methodReference( NumberValue.class, long.class, "longValue" ) ) );
+        }
+        else if ( type.equals( DOUBLE ) )
+        {
+            return invoke( cast( NumberValue.class, expression ),
+                    methodReference( NumberValue.class, double.class, "doubleValue" ) );
+        }
+        else if ( type.equals( BOXED_DOUBLE ) )
+        {
+            return box( invoke( cast( NumberValue.class, expression ),
+                    methodReference( NumberValue.class, double.class, "doubleValue" ) ) );
+        }
+        else if ( type.equals( NUMBER ) )
+        {
+            return invoke( cast( NumberValue.class, expression ),
+                    methodReference( NumberValue.class, Number.class, "asObjectCopy" ) );
+        }
+        else if ( type.equals( BOOLEAN ) )
+        {
+            return invoke( cast( BooleanValue.class, expression ),
+                    methodReference( BooleanValue.class, boolean.class, "booleanValue" ) );
+        }
+        else if ( type.equals( BOXED_BOOLEAN ) )
+        {
+            return box( invoke( cast( BooleanValue.class, expression ),
+                    methodReference( BooleanValue.class, boolean.class, "booleanValue" ) ) );
+        }
+        else if ( type.equals( STRING ) )
+        {
+            return invoke( cast( TextValue.class, expression ),
+                    methodReference( TextValue.class, String.class, "stringValue" ) );
+        }
+        else if ( type.equals( BYTE_ARRAY ) )
+        {
+            return invoke( cast( ByteArray.class, expression ),
+                    methodReference( ByteArray.class, byte[].class, "asObjectCopy" ) );
+        }
+        else if ( type.equals( ZONED_DATE_TIME ) )
+        {
+            return invoke( cast( DateTimeValue.class, expression ),
+                    methodReference( DateTimeValue.class, ZonedDateTime.class, "temporal" ) );
+        }
+        else if ( type.equals( OFFSET_TIME ) )
+        {
+            return invoke( cast( TimeValue.class, expression ),
+                    methodReference( TimeValue.class, OffsetTime.class, "temporal" ) );
+        }
+        else if ( type.equals( LOCAL_DATE ) )
+        {
+            return invoke( cast( TimeValue.class, expression ),
+                    methodReference( TimeValue.class, OffsetTime.class, "temporal" ) );
+        }
+        else if ( type.equals( LOCAL_TIME ) )
+        {
+            return invoke( cast( LocalTimeValue.class, expression ),
+                    methodReference( LocalTimeValue.class, LocalTime.class, "temporal" ) );
+        }
+        else if ( type.equals( LOCAL_DATE_TIME ) )
+        {
+            return invoke( cast( LocalDateTimeValue.class, expression ),
+                    methodReference( LocalTimeValue.class, LocalDateTime.class, "temporal" ) );
+        }
+        else if ( type.equals( TEMPORAL_AMOUNT ) )
+        {
+            return invoke( cast( DurationValue.class, expression ),
+                    methodReference( DurationValue.class, TemporalAmount.class, "asObjectCopy" ) );
+        }
+        else if ( type.equals( PATH ) )
+        {
+            return invoke( methodReference( ValueUtils.class, PathValue.class, "fromPath", Path.class ), expression );
+        }
+        else if ( type.equals( POINT ) )
+        {
+            return invoke( cast( PointValue.class, expression ),
+                    methodReference( PointValue.class, Point.class, "asObjectCopy" ) );
+        }
+        else
+        {
+            return
+                    cast( expectedType, invoke(
+                            expression,
+                            methodReference( AnyValue.class, Object.class, "map", ValueMapper.class ),
+                            getStatic( mapper ) ) );
+
+        }
+    }
 }
