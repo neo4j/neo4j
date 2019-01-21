@@ -32,6 +32,7 @@ import static org.neo4j.codegen.TypeReference.OBJECT;
 import static org.neo4j.codegen.TypeReference.VALUE;
 import static org.neo4j.codegen.TypeReference.VOID;
 import static org.neo4j.codegen.TypeReference.arrayOf;
+import static org.neo4j.codegen.TypeReference.toBoxedType;
 import static org.neo4j.codegen.TypeReference.typeReference;
 
 public abstract class Expression extends ExpressionTemplate
@@ -555,40 +556,8 @@ public abstract class Expression extends ExpressionTemplate
     /** box expression */
     public static Expression box( final Expression expression )
     {
-        TypeReference type = expression.type;
-        if ( type.isPrimitive() )
-        {
-            switch ( type.name() )
-            {
-            case "byte":
-                type = TypeReference.typeReference( Byte.class );
-                break;
-            case "short":
-                type = TypeReference.typeReference( Short.class );
-                break;
-            case "int":
-                type = TypeReference.typeReference( Integer.class );
-                break;
-            case "long":
-                type = TypeReference.typeReference( Long.class );
-                break;
-            case "char":
-                type = TypeReference.typeReference( Character.class );
-                break;
-            case "boolean":
-                type = TypeReference.typeReference( Boolean.class );
-                break;
-            case "float":
-                type = TypeReference.typeReference( Float.class );
-                break;
-            case "double":
-                type = TypeReference.typeReference( Double.class );
-                break;
-            default:
-                break;
-            }
-        }
-        return new Expression( type )
+
+        return new Expression( toBoxedType( expression.type ) )
         {
             @Override
             public void accept( ExpressionVisitor visitor )

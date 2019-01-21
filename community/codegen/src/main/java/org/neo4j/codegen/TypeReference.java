@@ -153,6 +153,31 @@ public class TypeReference
         return result;
     }
 
+    public static TypeReference toBoxedType( TypeReference in)
+    {
+        switch (in.fullName() )
+        {
+        case "byte":
+            return TypeReference.typeReference( Byte.class );
+        case "short":
+            return TypeReference.typeReference( Short.class );
+        case "int":
+            return TypeReference.typeReference( Integer.class );
+        case "long":
+            return TypeReference.typeReference( Long.class );
+        case "char":
+            return TypeReference.typeReference( Character.class );
+        case "boolean":
+            return TypeReference.typeReference( Boolean.class );
+        case "float":
+            return TypeReference.typeReference( Float.class );
+        case "double":
+            return TypeReference.typeReference( Double.class );
+        default:
+            return in;
+        }
+    }
+
     private final String packageName;
     private final String name;
     private final TypeReference[] parameters;
