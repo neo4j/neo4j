@@ -19,21 +19,21 @@
  */
 package org.neo4j.kernel.impl.proc;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.NoSuchElementException;
 
 import org.neo4j.internal.kernel.api.procs.QualifiedName;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class ProcedureHolderTest
+class ProcedureHolderTest
 {
     @Test
-    public void shouldGetProcedureFromHolder()
+    void shouldGetProcedureFromHolder()
     {
         // given
         ProcedureHolder<String> procHolder = new ProcedureHolder<>();
@@ -47,7 +47,7 @@ public class ProcedureHolderTest
     }
 
     @Test
-    public void okToHaveProcsOnlyDifferByCase()
+    void okToHaveProcsOnlyDifferByCase()
     {
         // given
         ProcedureHolder<String> procHolder = new ProcedureHolder<>();
@@ -62,7 +62,7 @@ public class ProcedureHolderTest
     }
 
     @Test
-    public void shouldGetCaseInsensitiveFromHolder()
+    void shouldGetCaseInsensitiveFromHolder()
     {
         // given
         ProcedureHolder<String> procHolder = new ProcedureHolder<>();
@@ -77,7 +77,7 @@ public class ProcedureHolderTest
     }
 
     @Test
-    public void canOverwriteFunctionAndChangeCaseSensitivity()
+    void canOverwriteFunctionAndChangeCaseSensitivity()
     {
         // given
         ProcedureHolder<String> procHolder = new ProcedureHolder<>();
@@ -93,14 +93,6 @@ public class ProcedureHolderTest
         // and then
         procHolder.put( qualifiedName, item, false );
         assertNull( procHolder.get( lowerCaseName ) );
-        try
-        {
-            procHolder.idOf( lowerCaseName );
-            fail( "Should have failed to find with lower case" );
-        }
-        catch ( NoSuchElementException e )
-        {
-            // expected
-        }
+        assertThrows( NoSuchElementException.class, () -> procHolder.idOf( lowerCaseName ) );
     }
 }

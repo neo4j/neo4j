@@ -20,8 +20,8 @@
 package org.neo4j.kernel.builtinprocs;
 
 import org.hamcrest.Matcher;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.stubbing.Answer;
 
 import java.util.HashMap;
@@ -57,9 +57,11 @@ import org.neo4j.kernel.api.proc.Context;
 import org.neo4j.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.IndexingService;
+import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
 import org.neo4j.kernel.impl.factory.Edition;
 import org.neo4j.kernel.impl.index.schema.IndexDescriptorFactory;
-import org.neo4j.kernel.impl.proc.Procedures;
+import org.neo4j.kernel.impl.proc.GlobalProcedures;
+import org.neo4j.kernel.impl.util.DefaultValueMapper;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.Log;
 import org.neo4j.storageengine.api.schema.SchemaDescriptor;
@@ -70,8 +72,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
@@ -88,7 +89,7 @@ import static org.neo4j.kernel.api.proc.Context.KERNEL_TRANSACTION;
 import static org.neo4j.kernel.api.proc.Context.SECURITY_CONTEXT;
 import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forLabel;
 
-public class BuiltInProceduresTest
+class BuiltInProceduresTest
 {
     private final List<IndexReference> indexes = new LinkedList<>();
     private final List<IndexReference> uniqueIndexes = new LinkedList<>();
@@ -107,11 +108,11 @@ public class BuiltInProceduresTest
     private final IndexingService indexingService = mock( IndexingService.class );
     private final Log log = mock( Log.class );
 
-    private final Procedures procs = new Procedures();
+    private final GlobalProcedures procs = new GlobalProcedures();
     private final ResourceTracker resourceTracker = new StubResourceManager();
 
-    @Before
-    public void setup() throws Exception
+    @BeforeEach
+    void setup() throws Exception
     {
         procs.registerComponent( KernelTransaction.class, ctx -> ctx.get( KERNEL_TRANSACTION ), false );
         procs.registerComponent( DependencyResolver.class, ctx -> ctx.get( DEPENDENCY_RESOLVER ), false );
@@ -160,7 +161,7 @@ public class BuiltInProceduresTest
     }
 
     @Test
-    public void shouldListAllIndexes() throws Throwable
+    void shouldListAllIndexes() throws Throwable
     {
         // Given
         givenIndex( "User", "name" );
@@ -172,7 +173,7 @@ public class BuiltInProceduresTest
     }
 
     @Test
-    public void shouldListAllUniqueIndexes() throws Throwable
+    void shouldListAllUniqueIndexes() throws Throwable
     {
         // Given
         givenUniqueConstraint( "User", "name" );
@@ -184,7 +185,7 @@ public class BuiltInProceduresTest
     }
 
     @Test
-    public void shouldListPropertyKeys() throws Throwable
+    void shouldListPropertyKeys() throws Throwable
     {
         // Given
         givenPropertyKeys( "name", "age" );
@@ -197,7 +198,7 @@ public class BuiltInProceduresTest
     }
 
     @Test
-    public void shouldListLabels() throws Throwable
+    void shouldListLabels() throws Throwable
     {
         // Given
         givenLabels( "Banana", "Fruit" );
@@ -210,7 +211,7 @@ public class BuiltInProceduresTest
     }
 
     @Test
-    public void shouldListRelTypes() throws Throwable
+    void shouldListRelTypes() throws Throwable
     {
         // Given
         givenRelationshipTypes( "EATS", "SPROUTS" );
@@ -223,7 +224,7 @@ public class BuiltInProceduresTest
     }
 
     @Test
-    public void shouldListConstraints() throws Throwable
+    void shouldListConstraints() throws Throwable
     {
         // Given
         givenUniqueConstraint( "User", "name" );
@@ -239,7 +240,7 @@ public class BuiltInProceduresTest
     }
 
     @Test
-    public void shouldEscapeLabelNameContainingColons() throws Throwable
+    void shouldEscapeLabelNameContainingColons() throws Throwable
     {
         // Given
         givenUniqueConstraint( "FOO:BAR", "x.y" );
@@ -254,7 +255,7 @@ public class BuiltInProceduresTest
     }
 
     @Test
-    public void shouldListCorrectBuiltinProcedures() throws Throwable
+    void shouldListCorrectBuiltinProcedures() throws Throwable
     {
         // When/Then
         assertThat( call( "dbms.procedures" ), containsInAnyOrder(
@@ -330,7 +331,7 @@ public class BuiltInProceduresTest
     }
 
     @Test
-    public void shouldListSystemComponents() throws Throwable
+    void shouldListSystemComponents() throws Throwable
     {
         // When/Then
         assertThat( call( "dbms.components" ), contains(
@@ -339,71 +340,41 @@ public class BuiltInProceduresTest
     }
 
     @Test
-    public void shouldCloseStatementIfExceptionIsThrownDbLabels()
+    void shouldCloseStatementIfExceptionIsThrownDbLabels()
     {
         // Given
         RuntimeException runtimeException = new RuntimeException();
         when( tokens.labelsGetAllTokens() ).thenThrow( runtimeException );
 
         // When
-        try
-        {
-            call( "db.labels" );
-            fail( "Procedure call should have failed" );
-        }
-        catch ( Exception e )
-        {
-            assertThat( e.getCause(), is( runtimeException ) );
-            // expected
-        }
+        assertThrows( ProcedureException.class, () -> call( "db.labels" ) );
 
-        // Then
         verify( statement ).close();
     }
 
     @Test
-    public void shouldCloseStatementIfExceptionIsThrownDbPropertyKeys()
+    void shouldCloseStatementIfExceptionIsThrownDbPropertyKeys()
     {
         // Given
         RuntimeException runtimeException = new RuntimeException();
         when( tokens.propertyKeyGetAllTokens() ).thenThrow( runtimeException );
 
         // When
-        try
-        {
-            call( "db.propertyKeys" );
-            fail( "Procedure call should have failed" );
-        }
-        catch ( Exception e )
-        {
-            assertThat( e.getCause(), is( runtimeException ) );
-            // expected
-        }
+        assertThrows( ProcedureException.class, () -> call( "db.propertyKeys" ) );
 
-        // Then
         verify( statement ).close();
     }
 
     @Test
-    public void shouldCloseStatementIfExceptionIsThrownDbRelationshipTypes()
+    void shouldCloseStatementIfExceptionIsThrownDbRelationshipTypes()
     {
         // Given
         RuntimeException runtimeException = new RuntimeException();
         when( tokens.relationshipTypesGetAllTokens() ).thenThrow( runtimeException );
 
         // When
-        try
-        {
-            call( "db.relationshipTypes" );
-            fail( "Procedure call should have failed" );
-        }
-        catch ( Exception e )
-        {
-            assertThat( e.getCause(), is( runtimeException ) );
-            // expected
-        }
+        assertThrows( ProcedureException.class, () -> call( "db.relationshipTypes" ) );
 
-        // Then
         verify( statement ).close();
     }
 
@@ -522,15 +493,13 @@ public class BuiltInProceduresTest
 
     private List<Object[]> call( String name, Object... args ) throws ProcedureException, IndexNotFoundKernelException
     {
-        Context ctx =
-                buildContext()
-                        .withResolver( resolver )
+        Context ctx = buildContext(resolver, new DefaultValueMapper( mock( EmbeddedProxySPI.class ) ) )
                         .withKernelTransaction( tx )
                         .context();
 
         when( graphDatabaseAPI.getDependencyResolver() ).thenReturn( resolver );
         when( resolver.resolveDependency( GraphDatabaseAPI.class ) ).thenReturn( graphDatabaseAPI );
-        when( resolver.resolveDependency( Procedures.class ) ).thenReturn( procs );
+        when( resolver.resolveDependency( GlobalProcedures.class ) ).thenReturn( procs );
         when( resolver.resolveDependency( IndexingService.class ) ).thenReturn( indexingService );
         when( schemaRead.indexGetPopulationProgress( any( IndexReference.class) ) ).thenReturn( PopulationProgress.DONE );
         return Iterators.asList( procs.callProcedure(

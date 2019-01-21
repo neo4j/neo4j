@@ -35,7 +35,7 @@ import org.neo4j.graphdb.spatial.Coordinate;
 import org.neo4j.graphdb.spatial.Geometry;
 import org.neo4j.graphdb.spatial.Point;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.impl.proc.Procedures;
+import org.neo4j.kernel.impl.proc.GlobalProcedures;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
 import org.neo4j.test.rule.DbmsRule;
@@ -209,9 +209,9 @@ public class GraphDatabaseServiceExecuteTest
     public void shouldBeAbleToUseResultsOfPointProcedureAsInputToDistanceFunction() throws Exception
     {
         // given procedure that produces a point
-        Procedures procedures =
-                graphDb.getDependencyResolver().resolveDependency( Procedures.class );
-        procedures.registerProcedure( PointProcs.class );
+        GlobalProcedures globalProcedures =
+                graphDb.getDependencyResolver().resolveDependency( GlobalProcedures.class );
+        globalProcedures.registerProcedure( PointProcs.class );
 
         // when calling procedure that produces a point
         Result result = graphDb.execute(
@@ -228,9 +228,9 @@ public class GraphDatabaseServiceExecuteTest
     public void shouldBeAbleToUseResultsOfPointGeometryProcedureAsInputToDistanceFunction() throws Exception
     {
         // given procedure that produces a point
-        Procedures procedures =
-                graphDb.getDependencyResolver().resolveDependency( Procedures.class );
-        procedures.registerProcedure( PointProcs.class );
+        GlobalProcedures globalProcedures =
+                graphDb.getDependencyResolver().resolveDependency( GlobalProcedures.class );
+        globalProcedures.registerProcedure( PointProcs.class );
 
         // when calling procedure that produces a point
         Result result = graphDb.execute(

@@ -38,8 +38,8 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.proc.CallableUserFunction;
 import org.neo4j.kernel.api.proc.Context;
 import org.neo4j.kernel.api.proc.Key;
+import org.neo4j.kernel.impl.proc.GlobalProcedures;
 import org.neo4j.kernel.impl.proc.ProcedureConfig;
-import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.procedure.Description;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.TemporalValue;
@@ -59,19 +59,18 @@ public abstract class TemporalFunction<T extends AnyValue> implements CallableUs
     private static final String DEFAULT_TEMPORAL_ARGUMENT = "DEFAULT_TEMPORAL_ARGUMENT";
     private static final TextValue DEFAULT_TEMPORAL_ARGUMENT_VALUE = Values.stringValue( DEFAULT_TEMPORAL_ARGUMENT );
     private static final DefaultParameterValue DEFAULT_PARAMETER_VALUE = new DefaultParameterValue( DEFAULT_TEMPORAL_ARGUMENT, Neo4jTypes.NTAny );
+    private static final Key<Clock> DEFAULT_CLOCK = Context.STATEMENT_CLOCK;
 
-    public static void registerTemporalFunctions( Procedures procedures, ProcedureConfig procedureConfig ) throws ProcedureException
+    public static void registerTemporalFunctions( GlobalProcedures globalProcedures, ProcedureConfig procedureConfig ) throws ProcedureException
     {
         Supplier<ZoneId> defaultZone = procedureConfig::getDefaultTemporalTimeZone;
-        register( new DateTimeFunction( defaultZone ), procedures );
-        register( new LocalDateTimeFunction( defaultZone ), procedures );
-        register( new DateFunction( defaultZone ), procedures );
-        register( new TimeFunction( defaultZone ), procedures );
-        register( new LocalTimeFunction( defaultZone ), procedures );
-        DurationFunction.register( procedures );
+        register( new DateTimeFunction( defaultZone ), globalProcedures );
+        register( new LocalDateTimeFunction( defaultZone ), globalProcedures );
+        register( new DateFunction( defaultZone ), globalProcedures );
+        register( new TimeFunction( defaultZone ), globalProcedures );
+        register( new LocalTimeFunction( defaultZone ), globalProcedures );
+        DurationFunction.register( globalProcedures );
     }
-
-    private static final Key<Clock> DEFAULT_CLOCK = Context.STATEMENT_CLOCK;
 
     /**
      * @param clock the clock to use
@@ -107,14 +106,14 @@ public abstract class TemporalFunction<T extends AnyValue> implements CallableUs
         this.defaultZone = defaultZone;
     }
 
-    private static void register( TemporalFunction<?> base, Procedures procedures ) throws ProcedureException
+    private static void register( TemporalFunction<?> base, GlobalProcedures globalProcedures ) throws ProcedureException
     {
-        procedures.register( base );
-        procedures.register( new Now<>( base, "transaction" ) );
-        procedures.register( new Now<>( base, "statement" ) );
-        procedures.register( new Now<>( base, "realtime" ) );
-        procedures.register( new Truncate<>( base ) );
-        base.registerMore( procedures );
+        globalProcedures.register( base );
+        globalProcedures.register( new Now<>( base, "transaction" ) );
+        globalProcedures.register( new Now<>( base, "statement" ) );
+        globalProcedures.register( new Now<>( base, "realtime" ) );
+        globalProcedures.register( new Truncate<>( base ) );
+        base.registerMore( globalProcedures );
     }
 
     private static String basename( Class<? extends TemporalFunction> function )
@@ -122,7 +121,7 @@ public abstract class TemporalFunction<T extends AnyValue> implements CallableUs
         return function.getSimpleName().replace( "Function", "" );
     }
 
-    void registerMore( Procedures procedures ) throws ProcedureException
+    void registerMore( GlobalProcedures globalProcedures ) throws ProcedureException
     {
         // Empty by default
     }

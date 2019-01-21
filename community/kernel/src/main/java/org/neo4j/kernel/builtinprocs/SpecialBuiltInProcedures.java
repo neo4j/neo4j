@@ -23,7 +23,7 @@ import java.lang.management.ManagementFactory;
 
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
-import org.neo4j.kernel.impl.proc.Procedures;
+import org.neo4j.kernel.impl.proc.GlobalProcedures;
 
 import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureName;
 
@@ -32,7 +32,7 @@ import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureNa
  * <p>
  * TODO: The dependencies should be made available by a standard mechanism so the backdoor is not needed.
  */
-public class SpecialBuiltInProcedures implements ThrowingConsumer<Procedures, ProcedureException>
+public class SpecialBuiltInProcedures implements ThrowingConsumer<GlobalProcedures, ProcedureException>
 {
     private final String neo4jVersion;
     private final String neo4jEdition;
@@ -44,7 +44,7 @@ public class SpecialBuiltInProcedures implements ThrowingConsumer<Procedures, Pr
     }
 
     @Override
-    public void accept( Procedures procs ) throws ProcedureException
+    public void accept( GlobalProcedures procs ) throws ProcedureException
     {
         procs.register( new ListComponentsProcedure( procedureName( "dbms", "components" ),
                 neo4jVersion, neo4jEdition ) );

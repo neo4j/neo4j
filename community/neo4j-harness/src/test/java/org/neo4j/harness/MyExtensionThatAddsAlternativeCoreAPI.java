@@ -23,7 +23,7 @@ import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.extension.ExtensionType;
 import org.neo4j.kernel.extension.context.ExtensionContext;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
-import org.neo4j.kernel.impl.proc.Procedures;
+import org.neo4j.kernel.impl.proc.GlobalProcedures;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -54,7 +54,7 @@ public class MyExtensionThatAddsAlternativeCoreAPI
     {
         LogService logService();
 
-        Procedures procedures();
+        GlobalProcedures procedures();
 
         GraphDatabaseAPI getGraphDatabaseAPI();
 

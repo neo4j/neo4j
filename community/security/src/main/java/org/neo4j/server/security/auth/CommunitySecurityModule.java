@@ -32,7 +32,7 @@ import org.neo4j.kernel.api.security.SecurityModule;
 import org.neo4j.kernel.api.security.UserManager;
 import org.neo4j.kernel.api.security.UserManagerSupplier;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.proc.Procedures;
+import org.neo4j.kernel.impl.proc.GlobalProcedures;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.time.Clocks;
 
@@ -52,7 +52,7 @@ public class CommunitySecurityModule extends SecurityModule
     public void setup( Dependencies dependencies ) throws KernelException
     {
         Config config = dependencies.config();
-        Procedures procedures = dependencies.procedures();
+        GlobalProcedures globalProcedures = dependencies.procedures();
         LogProvider logProvider = dependencies.logService().getUserLogProvider();
         FileSystemAbstraction fileSystem = dependencies.fileSystem();
         final UserRepository userRepository = getUserRepository( config, logProvider, fileSystem );
@@ -65,8 +65,8 @@ public class CommunitySecurityModule extends SecurityModule
 
         life.add( dependencies.dependencySatisfier().satisfyDependency( authManager ) );
 
-        procedures.registerComponent( UserManager.class, ctx -> authManager, false );
-        procedures.registerProcedure( AuthProcedures.class );
+        globalProcedures.registerComponent( UserManager.class, ctx -> authManager, false );
+        globalProcedures.registerProcedure( AuthProcedures.class );
     }
 
     @Override

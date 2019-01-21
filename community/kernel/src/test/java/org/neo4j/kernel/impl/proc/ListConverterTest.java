@@ -19,9 +19,7 @@
  */
 package org.neo4j.kernel.impl.proc;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
@@ -34,7 +32,8 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.MapUtil.map;
@@ -47,14 +46,10 @@ import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTList;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTMap;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTString;
 
-public class ListConverterTest
+class ListConverterTest
 {
-
-    @Rule
-    public ExpectedException exception = ExpectedException.none();
-
     @Test
-    public void shouldHandleNullString()
+    void shouldHandleNullString()
     {
         // Given
         ListConverter converter = new ListConverter( String.class, NTString );
@@ -68,7 +63,7 @@ public class ListConverterTest
     }
 
     @Test
-    public void shouldHandleEmptyList()
+    void shouldHandleEmptyList()
     {
         // Given
         ListConverter converter = new ListConverter( String.class, NTString );
@@ -82,7 +77,7 @@ public class ListConverterTest
     }
 
     @Test
-    public void shouldHandleEmptyListWithSpaces()
+    void shouldHandleEmptyListWithSpaces()
     {
         // Given
         ListConverter converter = new ListConverter( String.class, NTString );
@@ -96,7 +91,7 @@ public class ListConverterTest
     }
 
     @Test
-    public void shouldHandleSingleQuotedValue()
+    void shouldHandleSingleQuotedValue()
     {
         // Given
         ListConverter converter = new ListConverter( String.class, NTString );
@@ -110,7 +105,7 @@ public class ListConverterTest
     }
 
     @Test
-    public void shouldHandleDoubleQuotedValue()
+    void shouldHandleDoubleQuotedValue()
     {
         // Given
         ListConverter converter = new ListConverter( String.class, NTString );
@@ -124,7 +119,7 @@ public class ListConverterTest
     }
 
     @Test
-    public void shouldHandleIntegerValue()
+    void shouldHandleIntegerValue()
     {
         // Given
         ListConverter converter = new ListConverter( Long.class, NTInteger );
@@ -138,7 +133,7 @@ public class ListConverterTest
     }
 
     @Test
-    public void shouldHandleFloatValue()
+    void shouldHandleFloatValue()
     {
         // Given
         ListConverter converter = new ListConverter( Double.class, NTFloat );
@@ -152,7 +147,7 @@ public class ListConverterTest
     }
 
     @Test
-    public void shouldHandleNullValue()
+    void shouldHandleNullValue()
     {
         // Given
         ListConverter converter = new ListConverter( Double.class, NTFloat );
@@ -166,7 +161,7 @@ public class ListConverterTest
     }
 
     @Test
-    public void shouldHandleBooleanValues()
+    void shouldHandleBooleanValues()
     {
         // Given
         ListConverter converter = new ListConverter( Boolean.class, NTBoolean );
@@ -181,7 +176,7 @@ public class ListConverterTest
 
     @SuppressWarnings( "unchecked" )
     @Test
-    public void shouldHandleNestedLists()
+    void shouldHandleNestedLists()
     {
         // Given
         ParameterizedType type = mock( ParameterizedType.class );
@@ -199,22 +194,18 @@ public class ListConverterTest
     }
 
     @Test
-    public void shouldFailOnInvalidMixedTyoes()
+    void shouldFailOnInvalidMixedTyoes()
     {
         // Given
         ListConverter converter = new ListConverter( Long.class, NTInteger );
         String listString = "[1337, 'forty-two']";
 
-        // Expect
-        exception.expect( IllegalArgumentException.class );
-        exception.expectMessage( "Expects a list of Long but got a list of String" );
-
-        // When
-        converter.apply( listString );
+        IllegalArgumentException exception = assertThrows( IllegalArgumentException.class, () -> converter.apply( listString ) );
+        assertThat( exception.getMessage(), equalTo( "Expects a list of Long but got a list of String" ) );
     }
 
     @Test
-    public void shouldPassOnValidMixedTyoes()
+    void shouldPassOnValidMixedTyoes()
     {
         // Given
         ListConverter converter = new ListConverter( Object.class, NTAny );
@@ -229,7 +220,7 @@ public class ListConverterTest
 
     @SuppressWarnings( "unchecked" )
     @Test
-    public void shouldHandleListsOfMaps()
+    void shouldHandleListsOfMaps()
     {
         // Given
         ListConverter converter = new ListConverter( Map.class, NTMap );

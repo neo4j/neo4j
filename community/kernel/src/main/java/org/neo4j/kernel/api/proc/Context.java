@@ -26,6 +26,7 @@ import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.values.ValueMapper;
 
 /**
  * The context in which a procedure is invoked. This is a read-only map-like structure.
@@ -40,6 +41,7 @@ public interface Context
     String DEPENDENCY_RESOLVER_NAME = "DependencyResolver";
     String DATABASE_API_NAME = "DatabaseAPI";
     String KERNEL_TRANSACTION_NAME = "KernelTransaction";
+    String VALUE_MAPPER_NAME = "ValueMapper";
     String SECURITY_CONTEXT_NAME = "SecurityContext";
     String THREAD_NAME = "Thread";
     String SYSTEM_CLOCK_NAME = "SystemClock";
@@ -49,6 +51,7 @@ public interface Context
     Key<DependencyResolver> DEPENDENCY_RESOLVER = Key.key( DEPENDENCY_RESOLVER_NAME, DependencyResolver.class );
     Key<GraphDatabaseAPI> DATABASE_API = Key.key( DATABASE_API_NAME, GraphDatabaseAPI.class );
     Key<KernelTransaction> KERNEL_TRANSACTION = Key.key( KERNEL_TRANSACTION_NAME, KernelTransaction.class );
+    Key<ValueMapper> VALUE_MAPPER = Key.key( VALUE_MAPPER_NAME, ValueMapper.class );
     Key<SecurityContext> SECURITY_CONTEXT = Key.key( SECURITY_CONTEXT_NAME, SecurityContext.class );
     Key<Thread> THREAD = Key.key( THREAD_NAME, Thread.class );
     Key<Clock> SYSTEM_CLOCK = Key.key( SYSTEM_CLOCK_NAME, Clock.class );

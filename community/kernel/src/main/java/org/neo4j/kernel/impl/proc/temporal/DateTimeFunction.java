@@ -35,7 +35,7 @@ import org.neo4j.internal.kernel.api.procs.UserFunctionSignature;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.proc.CallableUserFunction;
 import org.neo4j.kernel.api.proc.Context;
-import org.neo4j.kernel.impl.proc.Procedures;
+import org.neo4j.kernel.impl.proc.GlobalProcedures;
 import org.neo4j.procedure.Description;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.DateTimeValue;
@@ -86,10 +86,10 @@ class DateTimeFunction extends TemporalFunction<DateTimeValue>
     }
 
     @Override
-    void registerMore( Procedures procedures ) throws ProcedureException
+    void registerMore( GlobalProcedures globalProcedures ) throws ProcedureException
     {
-        procedures.register( new FromEpoch() );
-        procedures.register( new FromEpochMillis() );
+        globalProcedures.register( new FromEpoch() );
+        globalProcedures.register( new FromEpochMillis() );
     }
 
     private static class FromEpoch implements CallableUserFunction

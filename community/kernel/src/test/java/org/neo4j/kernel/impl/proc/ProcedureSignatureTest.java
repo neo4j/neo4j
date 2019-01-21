@@ -19,47 +19,36 @@
  */
 package org.neo4j.kernel.impl.proc;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.internal.kernel.api.procs.FieldSignature;
 import org.neo4j.internal.kernel.api.procs.Neo4jTypes;
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureSignature;
 
+@SuppressWarnings( "WeakerAccess" )
 public class ProcedureSignatureTest
 {
-    @Rule
-    public ExpectedException exception = ExpectedException.none();
-    private final ProcedureSignature signature = procedureSignature( "asd" )
-            .in( "a", Neo4jTypes.NTAny ).build();
+    private static final ProcedureSignature signature = procedureSignature( "asd" ).in( "a", Neo4jTypes.NTAny ).build();
 
     @Test
-    public void inputSignatureShouldNotBeModifiable()
+    void inputSignatureShouldNotBeModifiable()
     {
-        // Expect
-        exception.expect( UnsupportedOperationException.class );
-
-        // When
-        signature.inputSignature().add( FieldSignature.inputField( "b", Neo4jTypes.NTAny ) );
+        assertThrows( UnsupportedOperationException.class, () -> signature.inputSignature().add( FieldSignature.inputField( "b", Neo4jTypes.NTAny ) ) );
     }
 
     @Test
-    public void outputSignatureShouldNotBeModifiable()
+    void outputSignatureShouldNotBeModifiable()
     {
-        // Expect
-        exception.expect( UnsupportedOperationException.class );
-
-        // When
-        signature.outputSignature().add( FieldSignature.outputField( "b", Neo4jTypes.NTAny ) );
+        assertThrows( UnsupportedOperationException.class, () -> signature.outputSignature().add( FieldSignature.outputField( "b", Neo4jTypes.NTAny ) ) );
     }
 
     @Test
-    public void shouldHonorVoidInEquals()
+    void shouldHonorVoidInEquals()
     {
         ProcedureSignature sig1 = procedureSignature( "foo" ).in( "a", Neo4jTypes.NTAny ).build();
         ProcedureSignature sig2 = procedureSignature( "foo" ).in( "a", Neo4jTypes.NTAny ).out( ProcedureSignature.VOID ).build();
@@ -70,7 +59,7 @@ public class ProcedureSignatureTest
     }
 
     @Test
-    public void toStringShouldMatchCypherSyntax()
+    void toStringShouldMatchCypherSyntax()
     {
         // When
         String toStr = procedureSignature( "org", "myProcedure" )
@@ -84,7 +73,7 @@ public class ProcedureSignatureTest
     }
 
     @Test
-    public void toStringForVoidProcedureShouldMatchCypherSyntax()
+    void toStringForVoidProcedureShouldMatchCypherSyntax()
     {
         // Given
         ProcedureSignature proc = procedureSignature( "org", "myProcedure" )

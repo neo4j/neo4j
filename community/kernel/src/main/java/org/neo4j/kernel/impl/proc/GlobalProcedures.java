@@ -39,47 +39,44 @@ import org.neo4j.kernel.api.proc.CallableUserAggregationFunction;
 import org.neo4j.kernel.api.proc.CallableUserFunction;
 import org.neo4j.kernel.api.proc.Context;
 import org.neo4j.kernel.builtinprocs.SpecialBuiltInProcedures;
-import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLog;
+import org.neo4j.util.VisibleForTesting;
 import org.neo4j.values.AnyValue;
 
 /**
- * This is the coordinating service for procedures in the database. It loads procedures from a specified
+ * This is the coordinating service for procedures in the DBMS. It loads procedures from a specified
  * directory at startup, but also allows programmatic registration of them - and then, of course, allows
  * invoking procedures.
  */
-public class Procedures extends LifecycleAdapter
+public class GlobalProcedures extends LifecycleAdapter
 {
     private final ProcedureRegistry registry = new ProcedureRegistry();
     private final TypeMappers typeMappers;
     private final ComponentRegistry safeComponents = new ComponentRegistry();
     private final ComponentRegistry allComponents = new ComponentRegistry();
     private final ReflectiveProcedureCompiler compiler;
-    private final ThrowingConsumer<Procedures, ProcedureException> builtin;
-    private final File pluginDir;
+    private final ThrowingConsumer<GlobalProcedures, ProcedureException> builtin;
+    private final File proceduresDirectory;
     private final Log log;
 
-    /**
-     * Used by testing.
-     */
-    public Procedures()
+    @VisibleForTesting
+    public GlobalProcedures()
     {
-        this( null, new SpecialBuiltInProcedures( "N/A", "N/A" ), null, NullLog.getInstance(), ProcedureConfig.DEFAULT );
+        this( new SpecialBuiltInProcedures( "N/A", "N/A" ), null, NullLog.getInstance(), ProcedureConfig.DEFAULT );
     }
 
-    public Procedures(
-            EmbeddedProxySPI proxySPI,
-            ThrowingConsumer<Procedures,ProcedureException> builtin,
-            File pluginDir,
+    public GlobalProcedures(
+            ThrowingConsumer<GlobalProcedures,ProcedureException> builtin,
+            File proceduresDirectory,
             Log log,
             ProcedureConfig config )
     {
         this.builtin = builtin;
-        this.pluginDir = pluginDir;
+        this.proceduresDirectory = proceduresDirectory;
         this.log = log;
-        this.typeMappers = new TypeMappers( proxySPI );
+        this.typeMappers = new TypeMappers();
         this.compiler = new ReflectiveProcedureCompiler( typeMappers, safeComponents, allComponents, log, config );
     }
 
@@ -312,9 +309,8 @@ public class Procedures extends LifecycleAdapter
     @Override
     public void start() throws Throwable
     {
-
         ProcedureJarLoader loader = new ProcedureJarLoader( compiler, log );
-        ProcedureJarLoader.Callables callables = loader.loadProceduresFromDir( pluginDir );
+        ProcedureJarLoader.Callables callables = loader.loadProceduresFromDir( proceduresDirectory );
         for ( CallableProcedure procedure : callables.procedures() )
         {
             register( procedure );

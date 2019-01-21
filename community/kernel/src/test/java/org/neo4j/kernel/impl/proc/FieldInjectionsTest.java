@@ -19,55 +19,45 @@
  */
 package org.neo4j.kernel.impl.proc;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.procedure.Context;
 
-import static org.junit.Assert.assertEquals;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class FieldInjectionsTest
+class FieldInjectionsTest
 {
-    @Rule
-    public ExpectedException exception = ExpectedException.none();
-
     @Test
-    public void shouldNotAllowClassesWithNonInjectedFields() throws Throwable
+    void shouldNotAllowClassesWithNonInjectedFields()
     {
         // Given
         FieldInjections injections = new FieldInjections( new ComponentRegistry() );
 
-        // Expect
-        exception.expect( ProcedureException.class );
-        exception.expectMessage( "Field `someState` on `ProcedureWithNonInjectedMemberFields` " +
-                                 "is not annotated as a @Context and is not static. " +
-                                 "If you want to store state along with your procedure, " +
-                                 "please use a static field." );
-
-        // When
-        injections.setters( ProcedureWithNonInjectedMemberFields.class );
+        ProcedureException exception = assertThrows( ProcedureException.class, () -> injections.setters( ProcedureWithNonInjectedMemberFields.class ) );
+        assertThat( exception.getMessage(), equalTo("Field `someState` on `ProcedureWithNonInjectedMemberFields` " +
+                                                            "is not annotated as a @Context and is not static. " +
+                                                            "If you want to store state along with your procedure, " +
+                                                            "please use a static field.") );
     }
 
     @Test
-    public void shouldNotAllowNonPublicFieldsForInjection() throws Throwable
+    void shouldNotAllowNonPublicFieldsForInjection()
     {
         // Given
         FieldInjections injections = new FieldInjections( new ComponentRegistry() );
 
-        // Expect
-        exception.expect( ProcedureException.class );
-        exception.expectMessage( "Field `someState` on `ProcedureWithPrivateMemberField` must be non-final and public." );
-
-        // When
-        injections.setters( ProcedureWithPrivateMemberField.class );
+        ProcedureException exception = assertThrows( ProcedureException.class, () -> injections.setters( ProcedureWithPrivateMemberField.class ) );
+        assertThat( exception.getMessage(), equalTo("Field `someState` on `ProcedureWithPrivateMemberField` must be non-final and public.") );
     }
 
     @Test
-    public void staticFieldsAreAllowed() throws Throwable
+    void staticFieldsAreAllowed() throws Throwable
     {
         // Given
         FieldInjections injections = new FieldInjections( new ComponentRegistry() );
@@ -80,7 +70,7 @@ public class FieldInjectionsTest
     }
 
     @Test
-    public void inheritanceIsAllowed() throws Throwable
+    void inheritanceIsAllowed() throws Throwable
     {
         // Given
         ComponentRegistry components = new ComponentRegistry();
@@ -102,7 +92,7 @@ public class FieldInjectionsTest
     }
 
     @Test
-    public void syntheticsAllowed() throws Throwable
+    void syntheticsAllowed() throws Throwable
     {
         // Given
         ComponentRegistry components = new ComponentRegistry();

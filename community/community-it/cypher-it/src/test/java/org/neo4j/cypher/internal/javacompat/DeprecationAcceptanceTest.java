@@ -30,7 +30,7 @@ import org.neo4j.graphdb.InputPosition;
 import org.neo4j.graphdb.Notification;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.SeverityLevel;
-import org.neo4j.kernel.impl.proc.Procedures;
+import org.neo4j.kernel.impl.proc.GlobalProcedures;
 import org.neo4j.procedure.Procedure;
 
 import static org.hamcrest.Matchers.any;
@@ -103,7 +103,7 @@ public class DeprecationAcceptanceTest extends NotificationTestSupport
     @Test
     public void deprecatedProcedureCalls() throws Exception
     {
-        db().getDependencyResolver().provideDependency( Procedures.class ).get().registerProcedure( TestProcedures.class );
+        db().getDependencyResolver().provideDependency( GlobalProcedures.class ).get().registerProcedure( TestProcedures.class );
         Stream.of( "CYPHER 3.5", "CYPHER 4.0" ).forEach( version ->
                                                          {
                                                              assertNotifications( version + "explain CALL oldProc()",
@@ -118,7 +118,7 @@ public class DeprecationAcceptanceTest extends NotificationTestSupport
     @Test
     public void deprecatedProcedureResultField() throws Exception
     {
-        db().getDependencyResolver().provideDependency( Procedures.class ).get().registerProcedure( TestProcedures.class );
+        db().getDependencyResolver().provideDependency( GlobalProcedures.class ).get().registerProcedure( TestProcedures.class );
         Stream.of( "CYPHER 4.0" ).forEach(
                 version -> assertNotifications(
                         version + "explain CALL changedProc() YIELD oldField RETURN oldField",

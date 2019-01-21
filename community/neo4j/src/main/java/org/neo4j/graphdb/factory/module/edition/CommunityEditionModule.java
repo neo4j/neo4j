@@ -59,7 +59,7 @@ import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.LocksFactory;
 import org.neo4j.kernel.impl.locking.SimpleStatementLocksFactory;
 import org.neo4j.kernel.impl.locking.StatementLocksFactory;
-import org.neo4j.kernel.impl.proc.Procedures;
+import org.neo4j.kernel.impl.proc.GlobalProcedures;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFiles;
 import org.neo4j.kernel.internal.KernelData;
@@ -220,19 +220,18 @@ public class CommunityEditionModule extends DefaultEditionModule
     }
 
     @Override
-    public void registerEditionSpecificProcedures( Procedures procedures ) throws KernelException
+    public void registerEditionSpecificProcedures( GlobalProcedures globalProcedures ) throws KernelException
     {
         // Community does not add any extra procedures
     }
 
     @Override
-    public void createSecurityModule( PlatformModule platformModule, Procedures procedures )
+    public void createSecurityModule( PlatformModule platformModule, GlobalProcedures globalProcedures )
     {
         if ( platformModule.config.get( GraphDatabaseSettings.auth_enabled ) )
         {
             SecurityModule securityModule = setupSecurityModule( platformModule, this,
-                    platformModule.logService.getUserLog( getClass() ),
-                    procedures, COMMUNITY_SECURITY_MODULE_ID );
+                    platformModule.logService.getUserLog( getClass() ), globalProcedures, COMMUNITY_SECURITY_MODULE_ID );
             platformModule.life.add( securityModule );
             this.securityProvider = securityModule;
         }

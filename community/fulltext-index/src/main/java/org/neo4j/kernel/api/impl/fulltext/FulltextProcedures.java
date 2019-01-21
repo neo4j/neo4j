@@ -55,6 +55,7 @@ import org.neo4j.kernel.builtinprocs.IndexProcedures;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.index.schema.IndexDescriptor;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Description;
 import org.neo4j.procedure.Name;
@@ -81,7 +82,7 @@ public class FulltextProcedures
     public KernelTransaction tx;
 
     @Context
-    public GraphDatabaseService db;
+    public GraphDatabaseAPI db;
 
     @Context
     public DependencyResolver resolver;

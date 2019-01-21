@@ -19,9 +19,7 @@
  */
 package org.neo4j.kernel.impl.proc;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
 
 import java.util.Map;
 
@@ -29,17 +27,18 @@ import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.impl.proc.OutputMappers.OutputMapper;
 
 import static java.util.Arrays.asList;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.startsWith;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.internal.kernel.api.procs.FieldSignature.outputField;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTString;
 
+@SuppressWarnings( "WeakerAccess" )
 public class OutputMappersTest
 {
-    @Rule
-    public ExpectedException exception = ExpectedException.none();
-
     public static class SingleStringFieldRecord
     {
         public String name;
@@ -87,7 +86,7 @@ public class OutputMappersTest
     }
 
     @Test
-    public void shouldMapSimpleRecordWithString() throws Throwable
+    void shouldMapSimpleRecordWithString() throws Throwable
     {
         // When
         OutputMapper mapper = mapper( SingleStringFieldRecord.class );
@@ -104,7 +103,7 @@ public class OutputMappersTest
     }
 
     @Test
-    public void shouldSkipStaticFields() throws Throwable
+    void shouldSkipStaticFields() throws Throwable
     {
         // When
         OutputMapper mapper = mapper( RecordWithStaticFields.class );
@@ -121,7 +120,7 @@ public class OutputMappersTest
     }
 
     @Test
-    public void shouldNoteDeprecatedFields() throws Exception
+    void shouldNoteDeprecatedFields() throws Exception
     {
         // when
         OutputMapper mapper = mapper( RecordWithDeprecatedFields.class );
@@ -134,64 +133,47 @@ public class OutputMappersTest
     }
 
     @Test
-    public void shouldGiveHelpfulErrorOnUnmappable() throws Throwable
+    void shouldGiveHelpfulErrorOnUnmappable()
     {
-        // Expect
-        exception.expect( ProcedureException.class );
-        exception.expectMessage(
-                "Field `wat` in record `UnmappableRecord` cannot be converted to a Neo4j type:" +
-                        " Don't know how to map `org.neo4j.kernel.impl.proc.OutputMappersTest$UnmappableRecord`" );
-
-        // When
-        mapper( UnmappableRecord.class );
+        ProcedureException exception = assertThrows( ProcedureException.class, () -> mapper( UnmappableRecord.class ) );
+        assertThat( exception.getMessage(), startsWith( "Field `wat` in record `UnmappableRecord` cannot be converted to a Neo4j type: " +
+                "Don't know how to map `org.neo4j.kernel.impl.proc.OutputMappersTest$UnmappableRecord`" ) );
     }
 
     @Test
-    public void shouldGiveHelpfulErrorOnPrivateField() throws Throwable
+    void shouldGiveHelpfulErrorOnPrivateField()
     {
-        // Expect
-        exception.expect( ProcedureException.class );
-        exception.expectMessage( "Field `wat` in record `RecordWithPrivateField` cannot be accessed. " +
-                "Please ensure the field is marked as `public`." );
-
-        // When
-        mapper( RecordWithPrivateField.class );
+        ProcedureException exception = assertThrows( ProcedureException.class, () -> mapper( RecordWithPrivateField.class ) );
+        assertThat( exception.getMessage(), startsWith( "Field `wat` in record `RecordWithPrivateField` cannot be accessed. " +
+                "Please ensure the field is marked as `public`." ) );
     }
 
     @Test
-    public void shouldGiveHelpfulErrorOnMapWithNonStringKeyMap() throws Throwable
+    void shouldGiveHelpfulErrorOnMapWithNonStringKeyMap()
     {
-        // Expect
-        exception.expect( ProcedureException.class );
-        exception.expectMessage( "Field `wat` in record `RecordWithNonStringKeyMap` cannot be converted " +
+        ProcedureException exception = assertThrows( ProcedureException.class, () -> mapper( RecordWithNonStringKeyMap.class ) );
+        assertThat( exception.getMessage(), equalTo( "Field `wat` in record `RecordWithNonStringKeyMap` cannot be converted " +
                 "to a Neo4j type: Maps are required to have `String` keys - but this map " +
-                "has `org.neo4j.kernel.impl.proc.OutputMappersTest$RecordWithNonStringKeyMap` keys." );
-
-        // When
-        mapper( RecordWithNonStringKeyMap.class );
+                "has `org.neo4j.kernel.impl.proc.OutputMappersTest$RecordWithNonStringKeyMap` keys." ) );
     }
 
     @Test
-    public void shouldWarnAgainstStdLibraryClassesSinceTheseIndicateUserError() throws Throwable
+    void shouldWarnAgainstStdLibraryClassesSinceTheseIndicateUserError() throws Throwable
     {
         // Impl note: We may want to change this behavior and actually allow procedures to return `Long` etc,
         //            with a default column name. So Stream<Long> would become records like (out: Long)
         //            Drawback of that is that it'd cause cognitive dissonance, it's not obvious what's a record
         //            and what is a primitive value..
 
-        // Expect
-        exception.expect( ProcedureException.class );
-        exception.expectMessage(String.format("Procedures must return a Stream of records, where a record is a concrete class%n" +
-                                "that you define, with public non-final fields defining the fields in the record.%n" +
-                                "If you''d like your procedure to return `Long`, you could define a record class like:%n" +
-                                "public class Output '{'%n" +
-                                "    public Long out;%n" +
-                                "'}'%n" +
-                                "%n" +
-                                "And then define your procedure as returning `Stream<Output>`." ));
-
-        // When
-        mapper(Long.class);
+        ProcedureException exception = assertThrows( ProcedureException.class, () -> mapper(Long.class) );
+        assertThat( exception.getMessage(), equalTo( String.format("Procedures must return a Stream of records, where a record is a concrete class%n" +
+                "that you define, with public non-final fields defining the fields in the record.%n" +
+                "If you''d like your procedure to return `Long`, you could define a record class like:%n" +
+                "public class Output '{'%n" +
+                "    public Long out;%n" +
+                "'}'%n" +
+                "%n" +
+                "And then define your procedure as returning `Stream<Output>`." ) ) );
     }
 
     private OutputMapper mapper( Class<?> clazz ) throws ProcedureException

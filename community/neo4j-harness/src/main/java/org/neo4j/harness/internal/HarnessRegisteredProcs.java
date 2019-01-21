@@ -23,7 +23,7 @@ import java.util.LinkedList;
 import java.util.List;
 
 import org.neo4j.exceptions.KernelException;
-import org.neo4j.kernel.impl.proc.Procedures;
+import org.neo4j.kernel.impl.proc.GlobalProcedures;
 
 class HarnessRegisteredProcs
 {
@@ -46,21 +46,22 @@ class HarnessRegisteredProcs
         this.aggregationFunctions.add( functionClass );
     }
 
-    void applyTo( Procedures procedures ) throws KernelException
+    @SuppressWarnings( "deprecation" )
+    void applyTo( GlobalProcedures globalProcedures ) throws KernelException
     {
         for ( Class<?> cls : procs )
         {
-            procedures.registerProcedure( cls );
+            globalProcedures.registerProcedure( cls );
         }
 
         for ( Class<?> cls : functions )
         {
-            procedures.registerFunction( cls );
+            globalProcedures.registerFunction( cls );
         }
 
         for ( Class<?> cls : aggregationFunctions )
         {
-            procedures.registerAggregationFunction( cls );
+            globalProcedures.registerAggregationFunction( cls );
         }
     }
 }

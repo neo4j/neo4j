@@ -46,7 +46,7 @@ import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.Context;
-import org.neo4j.kernel.impl.proc.Procedures;
+import org.neo4j.kernel.impl.proc.GlobalProcedures;
 import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.AssertableLogProvider;
@@ -141,7 +141,7 @@ public class BoltChannelAutoReadLimiterIT
     {
         GraphDatabaseAPI dbApi = (GraphDatabaseAPI) db;
 
-        dbApi.getDependencyResolver().resolveDependency( Procedures.class ).register(
+        dbApi.getDependencyResolver().resolveDependency( GlobalProcedures.class ).register(
                 new CallableProcedure.BasicProcedure(
                         procedureSignature( "boltissue", "sleep" )
                                 .in( "data", Neo4jTypes.NTString )

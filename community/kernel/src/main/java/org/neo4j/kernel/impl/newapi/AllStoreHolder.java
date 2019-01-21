@@ -66,7 +66,8 @@ import org.neo4j.kernel.impl.api.security.OverriddenAccessMode;
 import org.neo4j.kernel.impl.api.security.RestrictedAccessMode;
 import org.neo4j.kernel.impl.index.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
-import org.neo4j.kernel.impl.proc.Procedures;
+import org.neo4j.kernel.impl.proc.GlobalProcedures;
+import org.neo4j.kernel.impl.util.DefaultValueMapper;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.register.Registers;
@@ -93,19 +94,20 @@ import static org.neo4j.storageengine.api.txstate.TxStateVisitor.EMPTY;
 public class AllStoreHolder extends Read
 {
     private final StorageReader storageReader;
-    private final Procedures procedures;
+    private final GlobalProcedures globalProcedures;
     private final SchemaState schemaState;
     private final IndexingService indexingService;
     private final LabelScanStore labelScanStore;
     private final IndexStatisticsStore indexStatisticsStore;
     private final Dependencies databaseDependencies;
     private final IndexReaderCache indexReaderCache;
+    private final DefaultValueMapper valueMapper;
     private LabelScanReader labelScanReader;
 
     public AllStoreHolder( StorageReader storageReader,
                            KernelTransactionImplementation ktx,
                            DefaultPooledCursors cursors,
-                           Procedures procedures,
+                           GlobalProcedures globalProcedures,
                            SchemaState schemaState,
                            IndexingService indexingService,
                            LabelScanStore labelScanStore,
@@ -114,13 +116,14 @@ public class AllStoreHolder extends Read
     {
         super( storageReader, cursors, ktx );
         this.storageReader = storageReader;
-        this.procedures = procedures;
+        this.globalProcedures = globalProcedures;
         this.schemaState = schemaState;
         this.indexReaderCache = new IndexReaderCache( indexingService );
         this.indexingService = indexingService;
         this.labelScanStore = labelScanStore;
         this.indexStatisticsStore = indexStatisticsStore;
         this.databaseDependencies = databaseDependencies;
+        this.valueMapper = databaseDependencies.resolveDependency( DefaultValueMapper.class );
     }
 
     @Override
@@ -742,28 +745,28 @@ public class AllStoreHolder extends Read
     public UserFunctionHandle functionGet( QualifiedName name )
     {
         ktx.assertOpen();
-        return procedures.function( name );
+        return globalProcedures.function( name );
     }
 
     @Override
     public ProcedureHandle procedureGet( QualifiedName name ) throws ProcedureException
     {
         ktx.assertOpen();
-        return procedures.procedure( name );
+        return globalProcedures.procedure( name );
     }
 
     @Override
     public Set<ProcedureSignature> proceduresGetAll( )
     {
         ktx.assertOpen();
-        return procedures.getAllProcedures();
+        return globalProcedures.getAllProcedures();
     }
 
     @Override
     public UserFunctionHandle aggregationFunctionGet( QualifiedName name )
     {
         ktx.assertOpen();
-        return procedures.aggregationFunction( name );
+        return globalProcedures.aggregationFunction( name );
     }
 
     @Override
@@ -998,7 +1001,7 @@ public class AllStoreHolder extends Read
         try ( KernelTransaction.Revertable ignore = ktx.overrideWith( procedureSecurityContext );
               Statement statement = ktx.acquireStatement() )
         {
-            procedureCall = procedures
+            procedureCall = globalProcedures
                     .callProcedure( prepareContext( procedureSecurityContext ), id, input, statement );
         }
         return createIterator( procedureSecurityContext, procedureCall );
@@ -1015,7 +1018,7 @@ public class AllStoreHolder extends Read
         try ( KernelTransaction.Revertable ignore = ktx.overrideWith( procedureSecurityContext );
               Statement statement = ktx.acquireStatement() )
         {
-            procedureCall = procedures
+            procedureCall = globalProcedures
                     .callProcedure( prepareContext( procedureSecurityContext ), name, input, statement );
         }
         return createIterator( procedureSecurityContext, procedureCall );
@@ -1053,7 +1056,7 @@ public class AllStoreHolder extends Read
         SecurityContext securityContext = ktx.securityContext().withMode( mode );
         try ( KernelTransaction.Revertable ignore = ktx.overrideWith( securityContext ) )
         {
-            return procedures.callFunction( prepareContext( securityContext ), id, input );
+            return globalProcedures.callFunction( prepareContext( securityContext ), id, input );
         }
     }
 
@@ -1065,7 +1068,7 @@ public class AllStoreHolder extends Read
         SecurityContext securityContext = ktx.securityContext().withMode( mode );
         try ( KernelTransaction.Revertable ignore = ktx.overrideWith( securityContext ) )
         {
-            return procedures.callFunction( prepareContext( securityContext ), name, input );
+            return globalProcedures.callFunction( prepareContext( securityContext ), name, input );
         }
     }
 
@@ -1077,7 +1080,7 @@ public class AllStoreHolder extends Read
         SecurityContext securityContext = ktx.securityContext().withMode( mode );
         try ( KernelTransaction.Revertable ignore = ktx.overrideWith( securityContext ) )
         {
-            return procedures.createAggregationFunction( prepareContext( securityContext ), id );
+            return globalProcedures.createAggregationFunction( prepareContext( securityContext ), id );
         }
     }
 
@@ -1089,16 +1092,14 @@ public class AllStoreHolder extends Read
         SecurityContext securityContext = ktx.securityContext().withMode( mode );
         try ( KernelTransaction.Revertable ignore = ktx.overrideWith( securityContext ) )
         {
-            return procedures.createAggregationFunction( prepareContext( securityContext ), name );
+            return globalProcedures.createAggregationFunction( prepareContext( securityContext ), name );
         }
     }
 
     private Context prepareContext( SecurityContext securityContext )
     {
-        return buildContext()
-                .withResolver( databaseDependencies )
+        return buildContext( databaseDependencies, valueMapper )
                 .withKernelTransaction( ktx )
-                .withThread( Thread.currentThread() )
                 .withSecurityContext( securityContext )
                 .context();
     }

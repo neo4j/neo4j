@@ -327,8 +327,7 @@ class ReflectiveProcedureCompiler
         return description;
     }
 
-    private CallableUserFunction compileFunction( Class<?> procDefinition, MethodHandle constructor, Method method,
-            QualifiedName procName )
+    private CallableUserFunction compileFunction( Class<?> procDefinition, MethodHandle constructor, Method method, QualifiedName procName )
             throws ProcedureException, IllegalAccessException
     {
         restrictions.verify( procName );
@@ -362,7 +361,7 @@ class ReflectiveProcedureCompiler
                 new UserFunctionSignature( procName, inputSignature, typeChecker.type(), deprecated,
                         config.rolesFor( procName.toString() ), description, false );
 
-        return new ReflectiveUserFunction( signature, constructor, method, typeChecker, typeMappers, setters );
+        return new ReflectiveUserFunction( signature, constructor, method, typeChecker, setters );
     }
 
     private CallableUserAggregationFunction compileAggregationFunction( Class<?> definition, MethodHandle constructor,
@@ -560,11 +559,9 @@ class ReflectiveProcedureCompiler
     {
 
         final List<FieldInjections.FieldSetter> fieldSetters;
-        private final ValueMapper<Object> mapper;
 
-        ReflectiveBase( ValueMapper<Object> mapper, List<FieldInjections.FieldSetter> fieldSetters )
+        ReflectiveBase( List<FieldInjections.FieldSetter> fieldSetters )
         {
-            this.mapper = mapper;
             this.fieldSetters = fieldSetters;
         }
 
@@ -576,7 +573,7 @@ class ReflectiveProcedureCompiler
             }
         }
 
-        protected Object[] mapToObjects( String type, QualifiedName name, List<FieldSignature> inputSignature,
+        protected Object[] mapToObjects( String type, QualifiedName name, ValueMapper<Object> mapper, List<FieldSignature> inputSignature,
                 AnyValue[] input ) throws ProcedureException
         {
             // Verify that the number of passed arguments matches the number expected in the mthod signature
@@ -608,7 +605,7 @@ class ReflectiveProcedureCompiler
                 Method procedureMethod, OutputMapper outputMapper,
                 List<FieldInjections.FieldSetter> fieldSetters )
         {
-            super( null, fieldSetters );
+            super( fieldSetters );
             this.constructor = constructor;
             this.procedureMethod = procedureMethod;
             this.signature = signature;
@@ -793,10 +790,9 @@ class ReflectiveProcedureCompiler
         private final Method udfMethod;
 
         ReflectiveUserFunction( UserFunctionSignature signature, MethodHandle constructor,
-                Method udfMethod, TypeMappers.TypeChecker typeChecker,
-                ValueMapper<Object> mapper, List<FieldInjections.FieldSetter> fieldSetters )
+                Method udfMethod, TypeMappers.TypeChecker typeChecker, List<FieldInjections.FieldSetter> fieldSetters )
         {
-            super( mapper, fieldSetters );
+            super( fieldSetters );
             this.constructor = constructor;
             this.udfMethod = udfMethod;
             this.signature = signature;
@@ -821,8 +817,9 @@ class ReflectiveProcedureCompiler
                 //API injection
                 inject( ctx, cls );
 
+                ValueMapper mapper = ctx.get( Context.VALUE_MAPPER );
                 // Call the method
-                Object rs = udfMethod.invoke( cls, mapToObjects( "Function", signature.name(), signature.inputSignature(), input  ) );
+                Object rs = udfMethod.invoke( cls, mapToObjects( "Function", signature.name(), mapper, signature.inputSignature(), input  ) );
 
                 return typeChecker.toValue( rs );
             }
@@ -867,7 +864,7 @@ class ReflectiveProcedureCompiler
                 TypeMappers.TypeChecker typeChecker,
                 List<FieldInjections.FieldSetter> fieldSetters )
         {
-            super( null, fieldSetters );
+            super( fieldSetters );
             this.constructor = constructor;
             this.creator = creator;
             this.updateMethod = updateMethod;

@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.runtime.interpreted
 import org.neo4j.collection.RawIterator
 import org.neo4j.cypher.internal.runtime.UserDefinedAggregator
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException
-import org.neo4j.internal.kernel.api.procs.{UserAggregator, QualifiedName}
+import org.neo4j.internal.kernel.api.procs.{QualifiedName, UserAggregator}
 import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.values.AnyValue
 
@@ -88,7 +88,8 @@ object CallSupport {
                                                                         transactionalContext.graph
                                                                           .getDependencyResolver,
                                                                         transactionalContext.securityContext,
-                                                                        transactionalContext.resourceTracker))
+                                                                        transactionalContext.resourceTracker,
+                                                                        transactionalContext.valueMapper))
 
   def callReadOnlyProcedure(transactionalContext: TransactionalContext, name: QualifiedName, args: Seq[Any],
                             allowed: Array[String]): Iterator[Array[AnyRef]] = {
@@ -129,7 +130,8 @@ object CallSupport {
                                                                         transactionalContext.graph
                                                                           .getDependencyResolver,
                                                                         transactionalContext.securityContext,
-                                                                        transactionalContext.resourceTracker))
+                                                                        transactionalContext.resourceTracker,
+                                                                        transactionalContext.valueMapper))
   }
 
   def aggregateFunction(transactionalContext: TransactionalContext, id: Int, allowed: Array[String]): UserDefinedAggregator = {

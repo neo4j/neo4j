@@ -27,21 +27,27 @@ import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.values.ValueMapper;
+
+import static java.util.Objects.requireNonNull;
 
 public class BasicContext implements Context
 {
     private final DependencyResolver resolver;
     private final KernelTransaction kernelTransaction;
     private final SecurityContext securityContext;
+    private final ValueMapper<Object> valueMapper;
     private final Thread thread;
 
     private BasicContext( DependencyResolver resolver,
             KernelTransaction kernelTransaction,
-            SecurityContext securityContext, Thread thread )
+            SecurityContext securityContext, ValueMapper<Object> valueMapper,
+            Thread thread )
     {
         this.resolver = resolver;
         this.kernelTransaction = kernelTransaction;
         this.securityContext = securityContext;
+        this.valueMapper = valueMapper;
         this.thread = thread;
     }
 
@@ -51,16 +57,18 @@ public class BasicContext implements Context
     {
         switch ( key.name() )
         {
+        case VALUE_MAPPER_NAME:
+            return (T) valueMapper;
         case DEPENDENCY_RESOLVER_NAME:
-            return throwIfNull( key, resolver );
+            return (T) resolver;
         case DATABASE_API_NAME:
-            return throwIfNull( key, resolver, r -> (T) r.resolveDependency( GraphDatabaseAPI.class ) );
+            return (T) resolver.resolveDependency( GraphDatabaseAPI.class );
         case KERNEL_TRANSACTION_NAME:
             return throwIfNull( key, kernelTransaction );
         case SECURITY_CONTEXT_NAME:
-            return throwIfNull( key, securityContext );
+            return (T) securityContext;
         case THREAD_NAME:
-            return throwIfNull( key, thread );
+            return (T) thread;
         case SYSTEM_CLOCK_NAME:
             return throwIfNull( key, kernelTransaction, t -> (T)t.clocks().systemClock() );
         case STATEMENT_CLOCK_NAME:
@@ -68,8 +76,7 @@ public class BasicContext implements Context
         case TRANSACTION_CLOCK_NAME:
             return throwIfNull( key, kernelTransaction,  t -> (T)t.clocks().transactionClock() );
         default:
-            throw new ProcedureException( Status.Procedure.ProcedureCallFailed,
-                    "There is no `%s` in the current procedure call context.", key.name() );
+            throw new ProcedureException( Status.Procedure.ProcedureCallFailed, "There is no `%s` in the current procedure call context.", key.name() );
         }
     }
     @SuppressWarnings( "unchecked" )
@@ -99,9 +106,9 @@ public class BasicContext implements Context
         }
     }
 
-    public static ContextBuilder buildContext()
+    public static ContextBuilder buildContext( DependencyResolver dependencyResolver, ValueMapper<Object> valueMapper )
     {
-        return new ContextBuilder();
+        return new ContextBuilder( dependencyResolver, valueMapper );
     }
 
     @SuppressWarnings( "unchecked" )
@@ -140,12 +147,13 @@ public class BasicContext implements Context
         private DependencyResolver resolver;
         private KernelTransaction kernelTransaction;
         private SecurityContext securityContext = SecurityContext.AUTH_DISABLED;
-        private Thread thread;
+        private Thread thread = Thread.currentThread();
+        private ValueMapper<Object> valueMapper;
 
-        public ContextBuilder withResolver( DependencyResolver resolver )
+        private ContextBuilder( DependencyResolver resolver, ValueMapper<Object> valueMapper )
         {
             this.resolver = resolver;
-            return this;
+            this.valueMapper = valueMapper;
         }
 
         public ContextBuilder withKernelTransaction( KernelTransaction kernelTransaction )
@@ -168,7 +176,11 @@ public class BasicContext implements Context
 
         public Context context()
         {
-            return new BasicContext( resolver, kernelTransaction, securityContext, thread );
+            requireNonNull( resolver );
+            requireNonNull( securityContext );
+            requireNonNull( valueMapper );
+            requireNonNull( thread );
+            return new BasicContext( resolver, kernelTransaction, securityContext, valueMapper, thread );
         }
 
     }

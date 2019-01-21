@@ -33,7 +33,7 @@ import org.neo4j.internal.kernel.api.procs.UserFunctionSignature;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.proc.CallableUserFunction;
 import org.neo4j.kernel.api.proc.Context;
-import org.neo4j.kernel.impl.proc.Procedures;
+import org.neo4j.kernel.impl.proc.GlobalProcedures;
 import org.neo4j.procedure.Description;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.DurationValue;
@@ -55,13 +55,13 @@ class DurationFunction implements CallableUserFunction
                     DurationFunction.class.getAnnotation( Description.class ).value(),
                     true );
 
-    static void register( Procedures procedures ) throws ProcedureException
+    static void register( GlobalProcedures globalProcedures ) throws ProcedureException
     {
-        procedures.register( new DurationFunction() );
-        procedures.register( new Between( "between" ) );
-        procedures.register( new Between( "inMonths" ) );
-        procedures.register( new Between( "inDays" ) );
-        procedures.register( new Between( "inSeconds" ) );
+        globalProcedures.register( new DurationFunction() );
+        globalProcedures.register( new Between( "between" ) );
+        globalProcedures.register( new Between( "inMonths" ) );
+        globalProcedures.register( new Between( "inDays" ) );
+        globalProcedures.register( new Between( "inSeconds" ) );
     }
 
     @Override

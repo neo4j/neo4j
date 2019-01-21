@@ -25,6 +25,7 @@ import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.QualifiedName;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.ResourceTracker;
+import org.neo4j.values.ValueMapper;
 
 /**
  * Defines all types of system-oriented operations - i.e. those which do not read from or
@@ -35,9 +36,9 @@ public interface DbmsOperations
 {
     /** Invoke a DBMS procedure by name */
     RawIterator<Object[],ProcedureException> procedureCallDbms( QualifiedName name, Object[] input, DependencyResolver dependencyResolver,
-            SecurityContext securityContext, ResourceTracker resourceTracker ) throws ProcedureException;
+            SecurityContext securityContext, ResourceTracker resourceTracker, ValueMapper<Object> valueMapper ) throws ProcedureException;
 
     /** Invoke a DBMS procedure by id */
     RawIterator<Object[],ProcedureException> procedureCallDbms( int id, Object[] input, DependencyResolver dependencyResolver, SecurityContext securityContext,
-            ResourceTracker resourceTracker ) throws ProcedureException;
+            ResourceTracker resourceTracker, ValueMapper<Object> valueMapper ) throws ProcedureException;
 }

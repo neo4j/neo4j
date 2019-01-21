@@ -56,7 +56,7 @@ public class AuthProceduresTest extends KernelIntegrationTest
                 .procedureCallDbms( procedureName( "dbms", "changePassword" ),
                                     inputArray, dependencyResolver,
                                     AnonymousContext.none().authorize( s -> -1, GraphDatabaseSettings.DEFAULT_DATABASE_NAME ),
-                                    resourceTracker );
+                                    resourceTracker, valueMapper );
     }
 
     @Test
@@ -74,7 +74,7 @@ public class AuthProceduresTest extends KernelIntegrationTest
         dbmsOperations().procedureCallDbms( procedureName( "dbms", "security", "changePassword" ),
                                             inputArray, dependencyResolver,
                                             AnonymousContext.none().authorize( s -> -1, GraphDatabaseSettings.DEFAULT_DATABASE_NAME ),
-                                            resourceTracker );
+                                            resourceTracker, valueMapper );
     }
 
     @Override

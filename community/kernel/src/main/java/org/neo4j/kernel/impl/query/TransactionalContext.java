@@ -27,9 +27,12 @@ import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.dbms.DbmsOperations;
 import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.impl.query.statistic.StatisticProvider;
+import org.neo4j.values.ValueMapper;
 
 public interface TransactionalContext
 {
+    ValueMapper<Object> valueMapper();
+
     ExecutingQuery executingQuery();
 
     DbmsOperations dbmsOperations();

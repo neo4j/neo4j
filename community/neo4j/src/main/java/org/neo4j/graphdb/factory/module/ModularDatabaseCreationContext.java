@@ -50,7 +50,7 @@ import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.StatementLocksFactory;
-import org.neo4j.kernel.impl.proc.Procedures;
+import org.neo4j.kernel.impl.proc.GlobalProcedures;
 import org.neo4j.kernel.impl.query.QueryEngineProvider;
 import org.neo4j.kernel.impl.store.id.IdController;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
@@ -92,7 +92,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     private final ConstraintSemantics constraintSemantics;
     private final Monitors monitors;
     private final Tracers tracers;
-    private final Procedures procedures;
+    private final GlobalProcedures globalProcedures;
     private final IOLimiter ioLimiter;
     private final DatabaseAvailabilityGuard databaseAvailabilityGuard;
     private final CoreAPIAvailabilityGuard coreAPIAvailabilityGuard;
@@ -113,7 +113,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     private final DatabaseMigratorFactory databaseMigratorFactory;
 
     ModularDatabaseCreationContext( String databaseName, PlatformModule platformModule, EditionDatabaseContext editionContext,
-            Procedures procedures, GraphDatabaseFacade facade )
+            GlobalProcedures globalProcedures, GraphDatabaseFacade facade )
     {
         this.databaseName = databaseName;
         this.config = platformModule.config;
@@ -140,7 +140,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
         this.pageCache = platformModule.pageCache;
         this.constraintSemantics = editionContext.getConstraintSemantics();
         this.tracers = platformModule.tracers;
-        this.procedures = procedures;
+        this.globalProcedures = globalProcedures;
         this.ioLimiter = editionContext.getIoLimiter();
         this.clock = platformModule.clock;
         this.databaseAvailabilityGuard = editionContext.createDatabaseAvailabilityGuard( clock, logService, config );
@@ -292,9 +292,9 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     }
 
     @Override
-    public Procedures getProcedures()
+    public GlobalProcedures getGlobalProcedures()
     {
-        return procedures;
+        return globalProcedures;
     }
 
     @Override

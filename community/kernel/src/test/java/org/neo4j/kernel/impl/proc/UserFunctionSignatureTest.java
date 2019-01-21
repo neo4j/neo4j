@@ -19,36 +19,29 @@
  */
 package org.neo4j.kernel.impl.proc;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.internal.kernel.api.procs.FieldSignature;
 import org.neo4j.internal.kernel.api.procs.Neo4jTypes;
 import org.neo4j.internal.kernel.api.procs.UserFunctionSignature;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.internal.kernel.api.procs.UserFunctionSignature.functionSignature;
 
-public class UserFunctionSignatureTest
+class UserFunctionSignatureTest
 {
-    @Rule
-    public ExpectedException exception = ExpectedException.none();
     private final UserFunctionSignature signature =
             functionSignature( "asd" ).in( "in", Neo4jTypes.NTAny ).out( Neo4jTypes.NTAny ).build();
 
     @Test
-    public void inputSignatureShouldNotBeModifiable()
+    void inputSignatureShouldNotBeModifiable()
     {
-        // Expect
-        exception.expect( UnsupportedOperationException.class );
-
-        // When
-        signature.inputSignature().add( FieldSignature.inputField( "in2", Neo4jTypes.NTAny ) );
+        assertThrows( UnsupportedOperationException.class, () -> signature.inputSignature().add( FieldSignature.inputField( "in2", Neo4jTypes.NTAny ) ) );
     }
 
     @Test
-    public void toStringShouldMatchCypherSyntax()
+    void toStringShouldMatchCypherSyntax()
     {
         // When
         String toStr = functionSignature( "org", "myProcedure" )

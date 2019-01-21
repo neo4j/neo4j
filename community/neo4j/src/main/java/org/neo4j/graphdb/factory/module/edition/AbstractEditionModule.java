@@ -31,15 +31,21 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.factory.module.PlatformModule;
 import org.neo4j.graphdb.factory.module.edition.context.EditionDatabaseContext;
 import org.neo4j.helpers.Service;
+import org.neo4j.internal.collector.DataCollectorProcedures;
 import org.neo4j.io.fs.watcher.DatabaseLayoutWatcher;
 import org.neo4j.io.fs.watcher.FileWatcher;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.IOLimiter;
+import org.neo4j.kernel.api.impl.fulltext.FulltextProcedures;
 import org.neo4j.kernel.api.net.NetworkConnectionTracker;
 import org.neo4j.kernel.api.security.SecurityModule;
 import org.neo4j.kernel.api.security.provider.SecurityProvider;
 import org.neo4j.kernel.availability.AvailabilityGuard;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
+import org.neo4j.kernel.builtinprocs.BuiltInDbmsProcedures;
+import org.neo4j.kernel.builtinprocs.BuiltInFunctions;
+import org.neo4j.kernel.builtinprocs.BuiltInProcedures;
+import org.neo4j.kernel.builtinprocs.TokenProcedures;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
@@ -47,8 +53,8 @@ import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.factory.AccessCapability;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
+import org.neo4j.kernel.impl.proc.GlobalProcedures;
 import org.neo4j.kernel.impl.proc.ProcedureConfig;
-import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats;
 import org.neo4j.kernel.impl.transaction.stats.TransactionCounters;
@@ -90,18 +96,20 @@ public abstract class AbstractEditionModule
         return new DatabaseLayoutWatcher( watcher, databaseLayout, listenerFactory );
     }
 
-    public void registerProcedures( Procedures procedures, ProcedureConfig procedureConfig ) throws KernelException
+    public void registerProcedures( GlobalProcedures globalProcedures, ProcedureConfig procedureConfig ) throws KernelException
     {
-        procedures.registerProcedure( org.neo4j.kernel.builtinprocs.BuiltInProcedures.class );
-        procedures.registerProcedure( org.neo4j.kernel.builtinprocs.TokenProcedures.class );
-        procedures.registerProcedure( org.neo4j.kernel.builtinprocs.BuiltInDbmsProcedures.class );
-        procedures.registerBuiltInFunctions( org.neo4j.kernel.builtinprocs.BuiltInFunctions.class );
-        registerTemporalFunctions( procedures, procedureConfig );
+        globalProcedures.registerProcedure( BuiltInProcedures.class );
+        globalProcedures.registerProcedure( TokenProcedures.class );
+        globalProcedures.registerProcedure( BuiltInDbmsProcedures.class );
+        globalProcedures.registerProcedure( FulltextProcedures.class );
+        globalProcedures.registerProcedure( DataCollectorProcedures.class );
+        globalProcedures.registerBuiltInFunctions( BuiltInFunctions.class );
+        registerTemporalFunctions( globalProcedures, procedureConfig );
 
-        registerEditionSpecificProcedures( procedures );
+        registerEditionSpecificProcedures( globalProcedures );
     }
 
-    protected abstract void registerEditionSpecificProcedures( Procedures procedures ) throws KernelException;
+    protected abstract void registerEditionSpecificProcedures( GlobalProcedures globalProcedures ) throws KernelException;
 
     protected void publishEditionInfo( UsageData sysInfo, DatabaseInfo databaseInfo, Config config )
     {
@@ -111,9 +119,9 @@ public abstract class AbstractEditionModule
     }
 
     public DatabaseManager createDatabaseManager( GraphDatabaseFacade graphDatabaseFacade, PlatformModule platform, AbstractEditionModule edition,
-            Procedures procedures, Logger msgLog )
+            GlobalProcedures globalProcedures, Logger msgLog )
     {
-        return new DefaultDatabaseManager( platform, edition, procedures, msgLog, graphDatabaseFacade );
+        return new DefaultDatabaseManager( platform, edition, globalProcedures, msgLog, graphDatabaseFacade );
     }
 
     /**
@@ -127,12 +135,12 @@ public abstract class AbstractEditionModule
         return false;
     }
 
-    public abstract void createSecurityModule( PlatformModule platformModule, Procedures procedures );
+    public abstract void createSecurityModule( PlatformModule platformModule, GlobalProcedures globalProcedures );
 
-    protected static SecurityModule setupSecurityModule( PlatformModule platformModule, AbstractEditionModule editionModule, Log log, Procedures procedures,
-            String key )
+    protected static SecurityModule setupSecurityModule( PlatformModule platformModule, AbstractEditionModule editionModule, Log log,
+            GlobalProcedures globalProcedures, String key )
     {
-        SecurityModule.Dependencies securityModuleDependencies = new SecurityModuleDependencies( platformModule, editionModule, procedures );
+        SecurityModule.Dependencies securityModuleDependencies = new SecurityModuleDependencies( platformModule, editionModule, globalProcedures );
         SecurityModule securityModule = Service.loadSilently( SecurityModule.class, key );
         if ( securityModule == null )
         {

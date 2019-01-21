@@ -77,6 +77,7 @@ import org.neo4j.kernel.impl.query.statistic.StatisticProvider;
 import org.neo4j.storageengine.api.lock.ResourceType;
 import org.neo4j.storageengine.api.schema.SchemaDescriptor;
 import org.neo4j.test.rule.EmbeddedDbmsRule;
+import org.neo4j.values.ValueMapper;
 import org.neo4j.values.virtual.VirtualValues;
 
 import static java.util.Arrays.asList;
@@ -220,6 +221,12 @@ public class QueryExecutionLocksIT
             this.delegate = delegate;
             this.recordedLocks = recordedLocks;
             this.listeners = listeners;
+        }
+
+        @Override
+        public ValueMapper<Object> valueMapper()
+        {
+            return delegate.valueMapper();
         }
 
         @Override

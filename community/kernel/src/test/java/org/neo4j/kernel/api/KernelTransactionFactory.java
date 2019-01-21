@@ -43,9 +43,10 @@ import org.neo4j.kernel.impl.factory.CanWrite;
 import org.neo4j.kernel.impl.locking.NoOpClient;
 import org.neo4j.kernel.impl.locking.SimpleStatementLocks;
 import org.neo4j.kernel.impl.locking.StatementLocks;
-import org.neo4j.kernel.impl.proc.Procedures;
+import org.neo4j.kernel.impl.proc.GlobalProcedures;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
+import org.neo4j.kernel.impl.util.DefaultValueMapper;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.resources.CpuClock;
 import org.neo4j.resources.HeapAllocation;
@@ -87,15 +88,17 @@ public class KernelTransactionFactory
         StorageReader storageReader = mock( StorageReader.class );
         when( storageEngine.newReader() ).thenReturn( storageReader );
 
+        Dependencies dependencies = new Dependencies();
+        dependencies.satisfyDependency( mock( DefaultValueMapper.class ) );
         KernelTransactionImplementation transaction =
                 new KernelTransactionImplementation( Config.defaults(), mock( StatementOperationParts.class ), mock( SchemaWriteGuard.class ),
-                        new TransactionHooks(), mock( ConstraintIndexCreator.class ), new Procedures(), headerInformationFactory,
+                        new TransactionHooks(), mock( ConstraintIndexCreator.class ), new GlobalProcedures(), headerInformationFactory,
                         mock( TransactionRepresentationCommitProcess.class ), mock( TransactionMonitor.class ),
                         mock( Pool.class ), Clocks.systemClock(), new AtomicReference<>( CpuClock.NOT_AVAILABLE ),
                         new AtomicReference<>( HeapAllocation.NOT_AVAILABLE ), NULL, LockTracer.NONE, PageCursorTracerSupplier.NULL, storageEngine,
                         new CanWrite(), EmptyVersionContextSupplier.EMPTY, ON_HEAP,
                         new StandardConstraintSemantics(), mock( SchemaState.class ), mockedTokenHolders(),
-                        mock( IndexingService.class ), mock( LabelScanStore.class ), mock( IndexStatisticsStore.class ), new Dependencies() );
+                        mock( IndexingService.class ), mock( LabelScanStore.class ), mock( IndexStatisticsStore.class ), dependencies );
 
         StatementLocks statementLocks = new SimpleStatementLocks( new NoOpClient() );
 

@@ -26,7 +26,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.security.provider.SecurityProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.AccessCapability;
-import org.neo4j.kernel.impl.proc.Procedures;
+import org.neo4j.kernel.impl.proc.GlobalProcedures;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.internal.LogService;
@@ -73,7 +73,7 @@ public abstract class SecurityModule extends Service implements Lifecycle, Secur
 
         Config config();
 
-        Procedures procedures();
+        GlobalProcedures procedures();
 
         JobScheduler scheduler();
 

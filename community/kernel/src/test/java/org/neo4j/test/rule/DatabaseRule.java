@@ -56,7 +56,7 @@ import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.StatementLocks;
 import org.neo4j.kernel.impl.locking.StatementLocksFactory;
-import org.neo4j.kernel.impl.proc.Procedures;
+import org.neo4j.kernel.impl.proc.GlobalProcedures;
 import org.neo4j.kernel.impl.query.QueryEngineProvider;
 import org.neo4j.kernel.impl.store.id.BufferedIdController;
 import org.neo4j.kernel.impl.store.id.BufferingIdGeneratorFactory;
@@ -160,7 +160,7 @@ public class DatabaseRule extends ExternalResource
                 TransactionHeaderInformationFactory.DEFAULT, new CommunityCommitProcessFactory(),
                 pageCache, new StandardConstraintSemantics(), monitors,
                 new Tracers( "null", NullLog.getInstance(), monitors, jobScheduler, clock ),
-                mock( Procedures.class ), IOLimiter.UNLIMITED, databaseAvailabilityGuard, clock, new CanWrite(), new StoreCopyCheckPointMutex(),
+                mock( GlobalProcedures.class ), IOLimiter.UNLIMITED, databaseAvailabilityGuard, clock, new CanWrite(), new StoreCopyCheckPointMutex(),
                 new BufferedIdController( new BufferingIdGeneratorFactory( idGeneratorFactory, IdReuseEligibility.ALWAYS, idConfigurationProvider ),
                         jobScheduler ), DatabaseInfo.COMMUNITY, new TransactionVersionContextSupplier(), ON_HEAP, Collections.emptyList(),
             file -> mock( DatabaseLayoutWatcher.class ), new GraphDatabaseFacade(), Iterables.empty(),
@@ -217,7 +217,7 @@ public class DatabaseRule extends ExternalResource
         private final ConstraintSemantics constraintSemantics;
         private final Monitors monitors;
         private final Tracers tracers;
-        private final Procedures procedures;
+        private final GlobalProcedures globalProcedures;
         private final IOLimiter ioLimiter;
         private final DatabaseAvailabilityGuard databaseAvailabilityGuard;
         private final SystemNanoClock clock;
@@ -243,7 +243,7 @@ public class DatabaseRule extends ExternalResource
                 TransactionMonitor transactionMonitor, DatabaseHealth databaseHealth,
                 TransactionHeaderInformationFactory transactionHeaderInformationFactory, CommitProcessFactory commitProcessFactory,
                 PageCache pageCache, ConstraintSemantics constraintSemantics,
-                Monitors monitors, Tracers tracers, Procedures procedures, IOLimiter ioLimiter, DatabaseAvailabilityGuard databaseAvailabilityGuard,
+                Monitors monitors, Tracers tracers, GlobalProcedures globalProcedures, IOLimiter ioLimiter, DatabaseAvailabilityGuard databaseAvailabilityGuard,
                 SystemNanoClock clock, AccessCapability accessCapability, StoreCopyCheckPointMutex storeCopyCheckPointMutex, IdController idController,
                 DatabaseInfo databaseInfo, VersionContextSupplier versionContextSupplier, CollectionsFactorySupplier collectionsFactorySupplier,
                 Iterable<ExtensionFactory<?>> extensionFactories, Function<DatabaseLayout,DatabaseLayoutWatcher> watcherServiceFactory,
@@ -270,7 +270,7 @@ public class DatabaseRule extends ExternalResource
             this.constraintSemantics = constraintSemantics;
             this.monitors = monitors;
             this.tracers = tracers;
-            this.procedures = procedures;
+            this.globalProcedures = globalProcedures;
             this.ioLimiter = ioLimiter;
             this.databaseAvailabilityGuard = databaseAvailabilityGuard;
             this.clock = clock;
@@ -427,9 +427,9 @@ public class DatabaseRule extends ExternalResource
         }
 
         @Override
-        public Procedures getProcedures()
+        public GlobalProcedures getGlobalProcedures()
         {
-            return procedures;
+            return globalProcedures;
         }
 
         @Override

@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
 
@@ -59,7 +59,8 @@ import org.neo4j.kernel.impl.index.schema.CapableIndexDescriptor;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.locking.SimpleStatementLocks;
-import org.neo4j.kernel.impl.proc.Procedures;
+import org.neo4j.kernel.impl.proc.GlobalProcedures;
+import org.neo4j.kernel.impl.util.DefaultValueMapper;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.storageengine.api.CommandCreationContext;
 import org.neo4j.storageengine.api.StorageEngine;
@@ -91,7 +92,7 @@ import static org.neo4j.kernel.impl.newapi.TwoPhaseNodeForRelationshipLockingTes
 import static org.neo4j.test.MockedNeoStores.mockedTokenHolders;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 
-public class OperationsLockTest
+class OperationsLockTest
 {
     private KernelTransactionImplementation transaction = mock( KernelTransactionImplementation.class );
     private Operations operations;
@@ -106,11 +107,10 @@ public class OperationsLockTest
     private final LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( 123, 456 );
     private StorageReader storageReader;
     private ConstraintIndexCreator constraintIndexCreator;
-    private CommandCreationContext creationContext;
     private IndexingService indexingService;
 
-    @Before
-    public void setUp() throws InvalidTransactionTypeKernelException
+    @BeforeEach
+    void setUp() throws InvalidTransactionTypeKernelException
     {
         txState = Mockito.spy( new TxState() );
         when( transaction.getReasonIfTerminated() ).thenReturn( Optional.empty() );
@@ -135,10 +135,13 @@ public class OperationsLockTest
         when( storageReader.constraintsGetAll() ).thenReturn( Collections.emptyIterator() );
         when( engine.newReader() ).thenReturn( storageReader );
         indexingService = mock( IndexingService.class );
-        allStoreHolder = new AllStoreHolder( storageReader, transaction, cursors, mock( Procedures.class ), mock( SchemaState.class ), indexingService,
-                mock( LabelScanStore.class ), mock( IndexStatisticsStore.class ), new Dependencies() );
+        Dependencies dependencies = new Dependencies();
+        DefaultValueMapper mapper = mock( DefaultValueMapper.class );
+        dependencies.satisfyDependency( mapper );
+        allStoreHolder = new AllStoreHolder( storageReader, transaction, cursors, mock( GlobalProcedures.class ), mock( SchemaState.class ), indexingService,
+                mock( LabelScanStore.class ), mock( IndexStatisticsStore.class ), dependencies );
         constraintIndexCreator = mock( ConstraintIndexCreator.class );
-        creationContext = mock( CommandCreationContext.class );
+        CommandCreationContext creationContext = mock( CommandCreationContext.class );
         operations = new Operations( allStoreHolder, mock( IndexTxStateUpdater.class ), creationContext,
                  transaction, new KernelToken( storageReader, creationContext, transaction, mockedTokenHolders() ), cursors,
                 constraintIndexCreator, mock( ConstraintSemantics.class ), mock( IndexingProvidersService.class ), Config.defaults() );
@@ -147,14 +150,14 @@ public class OperationsLockTest
         this.order = inOrder( locks, txState, storageReader );
     }
 
-    @After
-    public void tearDown()
+    @AfterEach
+    void tearDown()
     {
         operations.release();
     }
 
     @Test
-    public void shouldAcquireEntityWriteLockCreatingRelationship() throws Exception
+    void shouldAcquireEntityWriteLockCreatingRelationship() throws Exception
     {
         // when
         long rId = operations.relationshipCreate( 1, 2, 3 );
@@ -166,39 +169,35 @@ public class OperationsLockTest
     }
 
     @Test
-    public void shouldAcquireNodeLocksWhenCreatingRelationshipInOrderOfAscendingId() throws Exception
+    void shouldAcquireNodeLocksWhenCreatingRelationshipInOrderOfAscendingId() throws Exception
     {
         // GIVEN
         long lowId = 3;
         long highId = 5;
         int relationshipLabel = 0;
 
-        {
-            // WHEN
-            operations.relationshipCreate( lowId, relationshipLabel, highId );
+        // WHEN
+        operations.relationshipCreate( lowId, relationshipLabel, highId );
 
-            // THEN
-            InOrder lockingOrder = inOrder( locks );
-            lockingOrder.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, lowId );
-            lockingOrder.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, highId );
-            lockingOrder.verifyNoMoreInteractions();
-            reset( locks );
-        }
+        // THEN
+        InOrder lockingOrder = inOrder( locks );
+        lockingOrder.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, lowId );
+        lockingOrder.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, highId );
+        lockingOrder.verifyNoMoreInteractions();
+        reset( locks );
 
-        {
-            // WHEN
-            operations.relationshipCreate( highId, relationshipLabel, lowId );
+        // WHEN
+        operations.relationshipCreate( highId, relationshipLabel, lowId );
 
-            // THEN
-            InOrder lockingOrder = inOrder( locks );
-            lockingOrder.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, lowId );
-            lockingOrder.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, highId );
-            lockingOrder.verifyNoMoreInteractions();
-        }
+        // THEN
+        InOrder lowLockingOrder = inOrder( locks );
+        lowLockingOrder.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, lowId );
+        lowLockingOrder.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, highId );
+        lowLockingOrder.verifyNoMoreInteractions();
     }
 
     @Test
-    public void shouldAcquireNodeLocksWhenDeletingRelationshipInOrderOfAscendingId() throws Exception
+    void shouldAcquireNodeLocksWhenDeletingRelationshipInOrderOfAscendingId() throws Exception
     {
         // GIVEN
         final long relationshipId = 10;
@@ -206,40 +205,36 @@ public class OperationsLockTest
         final long highId = 5;
         int relationshipLabel = 0;
 
-        {
-            // and GIVEN
-            setStoreRelationship( relationshipId, lowId, highId, relationshipLabel );
+        // and GIVEN
+        setStoreRelationship( relationshipId, lowId, highId, relationshipLabel );
 
-            // WHEN
-            operations.relationshipDelete( relationshipId );
+        // WHEN
+        operations.relationshipDelete( relationshipId );
 
-            // THEN
-            InOrder lockingOrder = inOrder( locks );
-            lockingOrder.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, lowId );
-            lockingOrder.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, highId );
-            lockingOrder.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.RELATIONSHIP, relationshipId );
-            lockingOrder.verifyNoMoreInteractions();
-            reset( locks );
-        }
+        // THEN
+        InOrder lockingOrder = inOrder( locks );
+        lockingOrder.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, lowId );
+        lockingOrder.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, highId );
+        lockingOrder.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.RELATIONSHIP, relationshipId );
+        lockingOrder.verifyNoMoreInteractions();
+        reset( locks );
 
-        {
-            // and GIVEN
-            setStoreRelationship( relationshipId, highId, lowId, relationshipLabel );
+        // and GIVEN
+        setStoreRelationship( relationshipId, highId, lowId, relationshipLabel );
 
-            // WHEN
-            operations.relationshipDelete( relationshipId );
+        // WHEN
+        operations.relationshipDelete( relationshipId );
 
-            // THEN
-            InOrder lockingOrder = inOrder( locks );
-            lockingOrder.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, lowId );
-            lockingOrder.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, highId );
-            lockingOrder.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.RELATIONSHIP, relationshipId );
-            lockingOrder.verifyNoMoreInteractions();
-        }
+        // THEN
+        InOrder highLowIdOrder = inOrder( locks );
+        highLowIdOrder.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, lowId );
+        highLowIdOrder.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, highId );
+        highLowIdOrder.verify( locks ).acquireExclusive( LockTracer.NONE, ResourceTypes.RELATIONSHIP, relationshipId );
+        highLowIdOrder.verifyNoMoreInteractions();
     }
 
     @Test
-    public void shouldAcquireEntityWriteLockBeforeAddingLabelToNode() throws Exception
+    void shouldAcquireEntityWriteLockBeforeAddingLabelToNode() throws Exception
     {
         // given
         when( nodeCursor.next() ).thenReturn( true );
@@ -254,7 +249,7 @@ public class OperationsLockTest
     }
 
     @Test
-    public void shouldNotAcquireEntityWriteLockBeforeAddingLabelToJustCreatedNode() throws Exception
+    void shouldNotAcquireEntityWriteLockBeforeAddingLabelToJustCreatedNode() throws Exception
     {
         // given
         when( nodeCursor.next() ).thenReturn( true );
@@ -270,7 +265,7 @@ public class OperationsLockTest
     }
 
     @Test
-    public void shouldAcquireSchemaReadLockBeforeAddingLabelToNode() throws Exception
+    void shouldAcquireSchemaReadLockBeforeAddingLabelToNode() throws Exception
     {
         // given
         when( nodeCursor.next() ).thenReturn( true );
@@ -286,7 +281,7 @@ public class OperationsLockTest
     }
 
     @Test
-    public void shouldAcquireEntityWriteLockBeforeSettingPropertyOnNode() throws Exception
+    void shouldAcquireEntityWriteLockBeforeSettingPropertyOnNode() throws Exception
     {
         // given
         when( nodeCursor.next() ).thenReturn( true );
@@ -306,7 +301,7 @@ public class OperationsLockTest
     }
 
     @Test
-    public void shouldAcquireSchemaReadLockBeforeSettingPropertyOnNode() throws Exception
+    void shouldAcquireSchemaReadLockBeforeSettingPropertyOnNode() throws Exception
     {
         // given
         when( nodeCursor.next() ).thenReturn( true );
@@ -334,7 +329,7 @@ public class OperationsLockTest
     }
 
     @Test
-    public void shouldAcquireEntityWriteLockBeforeSettingPropertyOnRelationship() throws Exception
+    void shouldAcquireEntityWriteLockBeforeSettingPropertyOnRelationship() throws Exception
     {
         // given
         when( relationshipCursor.next() ).thenReturn( true );
@@ -353,7 +348,7 @@ public class OperationsLockTest
     }
 
     @Test
-    public void shouldNotAcquireEntityWriteLockBeforeSettingPropertyOnJustCreatedNode() throws Exception
+    void shouldNotAcquireEntityWriteLockBeforeSettingPropertyOnJustCreatedNode() throws Exception
     {
         // given
         when( nodeCursor.next() ).thenReturn( true );
@@ -372,7 +367,7 @@ public class OperationsLockTest
     }
 
     @Test
-    public void shouldNotAcquireEntityWriteLockBeforeSettingPropertyOnJustCreatedRelationship() throws Exception
+    void shouldNotAcquireEntityWriteLockBeforeSettingPropertyOnJustCreatedRelationship() throws Exception
     {
         // given
         when( relationshipCursor.next() ).thenReturn( true );
@@ -390,7 +385,7 @@ public class OperationsLockTest
     }
 
     @Test
-    public void shouldAcquireEntityWriteLockBeforeDeletingNode()
+    void shouldAcquireEntityWriteLockBeforeDeletingNode()
     {
         // GIVEN
         when( nodeCursor.next() ).thenReturn( true );
@@ -406,7 +401,7 @@ public class OperationsLockTest
     }
 
     @Test
-    public void shouldNotAcquireEntityWriteLockBeforeDeletingJustCreatedNode() throws Exception
+    void shouldNotAcquireEntityWriteLockBeforeDeletingJustCreatedNode() throws Exception
     {
         // THEN
         txState.nodeDoCreate( 123 );
@@ -421,7 +416,7 @@ public class OperationsLockTest
     }
 
     @Test
-    public void shouldAcquireSchemaReadLockBeforeGettingConstraintsByLabelAndProperty()
+    void shouldAcquireSchemaReadLockBeforeGettingConstraintsByLabelAndProperty()
     {
         // WHEN
         allStoreHolder.constraintsGetForSchema( descriptor );
@@ -432,7 +427,7 @@ public class OperationsLockTest
     }
 
     @Test
-    public void shouldAcquireSchemaReadLockBeforeGettingConstraintsByLabel()
+    void shouldAcquireSchemaReadLockBeforeGettingConstraintsByLabel()
     {
         // WHEN
         allStoreHolder.constraintsGetForLabel( 42 );
@@ -443,7 +438,7 @@ public class OperationsLockTest
     }
 
     @Test
-    public void shouldAcquireSchemaReadLockBeforeCheckingExistenceConstraints()
+    void shouldAcquireSchemaReadLockBeforeCheckingExistenceConstraints()
     {
         // WHEN
         allStoreHolder.constraintExists( ConstraintDescriptorFactory.uniqueForSchema( descriptor ) );
@@ -454,7 +449,7 @@ public class OperationsLockTest
     }
 
     @Test
-    public void shouldAcquireSchemaReadLockLazilyBeforeGettingAllConstraints()
+    void shouldAcquireSchemaReadLockLazilyBeforeGettingAllConstraints()
     {
         // given
         int labelId = 1;
@@ -476,7 +471,7 @@ public class OperationsLockTest
     }
 
     @Test
-    public void shouldAcquireSchemaWriteLockBeforeRemovingIndexRule() throws Exception
+    void shouldAcquireSchemaWriteLockBeforeRemovingIndexRule() throws Exception
     {
         // given
         CapableIndexDescriptor index = TestIndexDescriptorFactory.forLabel( 0, 0 ).withId( 0 ).withoutCapabilities();
@@ -494,7 +489,7 @@ public class OperationsLockTest
     }
 
     @Test
-    public void shouldAcquireSchemaWriteLockBeforeCreatingUniquenessConstraint() throws Exception
+    void shouldAcquireSchemaWriteLockBeforeCreatingUniquenessConstraint() throws Exception
     {
         // given
         String defaultProvider = Config.defaults().get( default_schema_provider );
@@ -510,7 +505,7 @@ public class OperationsLockTest
     }
 
     @Test
-    public void shouldAcquireSchemaWriteLockBeforeDroppingConstraint() throws Exception
+    void shouldAcquireSchemaWriteLockBeforeDroppingConstraint() throws Exception
     {
         // given
         UniquenessConstraintDescriptor constraint = uniqueForSchema( descriptor );
@@ -525,7 +520,7 @@ public class OperationsLockTest
     }
 
     @Test
-    public void detachDeleteNodeWithoutRelationshipsExclusivelyLockNode() throws KernelException
+    void detachDeleteNodeWithoutRelationshipsExclusivelyLockNode() throws KernelException
     {
         long nodeId = 1L;
         returnRelationships( transaction, false, new TestRelationshipChain( nodeId ) );
@@ -543,7 +538,7 @@ public class OperationsLockTest
     }
 
     @Test
-    public void detachDeleteNodeExclusivelyLockNodes() throws KernelException
+    void detachDeleteNodeExclusivelyLockNodes() throws KernelException
     {
         long nodeId = 1L;
         returnRelationships( transaction, false,
@@ -564,7 +559,7 @@ public class OperationsLockTest
     }
 
     @Test
-    public void shouldAcquiredSharedLabelLocksWhenDeletingNode()
+    void shouldAcquiredSharedLabelLocksWhenDeletingNode()
     {
         // given
         long nodeId = 1L;
@@ -586,7 +581,7 @@ public class OperationsLockTest
     }
 
     @Test
-    public void shouldAcquiredSharedLabelLocksWhenDetachDeletingNode() throws KernelException
+    void shouldAcquiredSharedLabelLocksWhenDetachDeletingNode() throws KernelException
     {
         // given
         long nodeId = 1L;
@@ -611,7 +606,7 @@ public class OperationsLockTest
     }
 
     @Test
-    public void shouldAcquiredSharedLabelLocksWhenRemovingNodeLabel() throws EntityNotFoundException
+    void shouldAcquiredSharedLabelLocksWhenRemovingNodeLabel() throws EntityNotFoundException
     {
         // given
         long nodeId = 1L;
@@ -630,7 +625,7 @@ public class OperationsLockTest
     }
 
     @Test
-    public void shouldAcquiredSharedLabelLocksWhenRemovingNodeProperty() throws EntityNotFoundException
+    void shouldAcquiredSharedLabelLocksWhenRemovingNodeProperty() throws EntityNotFoundException
     {
         // given
         long nodeId = 1L;

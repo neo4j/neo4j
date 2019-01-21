@@ -20,10 +20,8 @@
 package org.neo4j.kernel.impl.proc;
 
 import org.hamcrest.Matchers;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -31,27 +29,33 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.exceptions.KernelException;
+import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.Neo4jTypes;
-import org.neo4j.kernel.api.proc.BasicContext;
 import org.neo4j.kernel.api.proc.CallableUserFunction;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
+import org.neo4j.kernel.impl.util.DefaultValueMapper;
+import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLog;
 import org.neo4j.procedure.Context;
 import org.neo4j.procedure.UserFunction;
 import org.neo4j.values.AnyValue;
+import org.neo4j.values.ValueMapper;
 import org.neo4j.values.virtual.MapValue;
 
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.hamcrest.CoreMatchers.startsWith;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
@@ -59,16 +63,16 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.neo4j.internal.kernel.api.procs.UserFunctionSignature.functionSignature;
 import static org.neo4j.kernel.api.proc.BasicContext.buildContext;
 
+@SuppressWarnings( "WeakerAccess" )
 public class ReflectiveUserFunctionTest
 {
-    @Rule
-    public ExpectedException exception = ExpectedException.none();
-
     private ReflectiveProcedureCompiler procedureCompiler;
     private ComponentRegistry components;
+    private final DependencyResolver dependencyResolver = new Dependencies();
+    private final ValueMapper<Object> valueMapper = new DefaultValueMapper( mock( EmbeddedProxySPI.class ) );
 
-    @Before
-    public void setUp()
+    @BeforeEach
+    void setUp()
     {
         components = new ComponentRegistry();
         procedureCompiler = new ReflectiveProcedureCompiler( new TypeMappers(), components, components,
@@ -76,7 +80,7 @@ public class ReflectiveUserFunctionTest
     }
 
     @Test
-    public void shouldInjectLogging() throws KernelException
+    void shouldInjectLogging() throws KernelException
     {
         // Given
         Log log = spy( Log.class );
@@ -84,7 +88,7 @@ public class ReflectiveUserFunctionTest
         CallableUserFunction function = procedureCompiler.compileFunction( LoggingFunction.class ).get( 0 );
 
         // When
-        function.apply( buildContext().context(), new AnyValue[0] );
+        function.apply( prepareContext(), new AnyValue[0] );
 
         // Then
         verify( log ).debug( "1" );
@@ -94,7 +98,7 @@ public class ReflectiveUserFunctionTest
     }
 
     @Test
-    public void shouldCompileFunction() throws Throwable
+    void shouldCompileFunction() throws Throwable
     {
         // When
         List<CallableUserFunction> function = compile( SingleReadOnlyFunction.class );
@@ -108,20 +112,20 @@ public class ReflectiveUserFunctionTest
     }
 
     @Test
-    public void shouldRunSimpleReadOnlyFunction() throws Throwable
+    void shouldRunSimpleReadOnlyFunction() throws Throwable
     {
         // Given
         CallableUserFunction func = compile( SingleReadOnlyFunction.class ).get( 0 );
 
         // When
-        Object out = func.apply( buildContext().context(), new AnyValue[0] );
+        Object out = func.apply( prepareContext(), new AnyValue[0] );
 
         // Then
         assertThat(out, equalTo( ValueUtils.of( Arrays.asList("Bonnie", "Clyde") ) ) );
     }
 
     @Test
-    public void shouldIgnoreClassesWithNoFunctions() throws Throwable
+    void shouldIgnoreClassesWithNoFunctions() throws Throwable
     {
         // When
         List<CallableUserFunction> functions = compile( PrivateConstructorButNoFunctions.class );
@@ -131,7 +135,7 @@ public class ReflectiveUserFunctionTest
     }
 
     @Test
-    public void shouldRunClassWithMultipleFunctionsDeclared() throws Throwable
+    void shouldRunClassWithMultipleFunctionsDeclared() throws Throwable
     {
         // Given
         List<CallableUserFunction> compiled = compile( ReflectiveUserFunctionTest.MultiFunction.class );
@@ -139,8 +143,8 @@ public class ReflectiveUserFunctionTest
         CallableUserFunction coolPeople = compiled.get( 1 );
 
         // When
-        Object coolOut = coolPeople.apply( buildContext().context(), new AnyValue[0] );
-        Object bananaOut = bananaPeople.apply( buildContext().context(), new AnyValue[0] );
+        Object coolOut = coolPeople.apply( prepareContext(), new AnyValue[0] );
+        Object bananaOut = bananaPeople.apply( prepareContext(), new AnyValue[0] );
 
         // Then
         assertThat( coolOut , equalTo(ValueUtils.of( Arrays.asList("Bonnie", "Clyde") ) ) );
@@ -149,75 +153,57 @@ public class ReflectiveUserFunctionTest
     }
 
     @Test
-    public void shouldGiveHelpfulErrorOnConstructorThatRequiresArgument() throws Throwable
+    void shouldGiveHelpfulErrorOnConstructorThatRequiresArgument()
     {
-        // Expect
-        exception.expect( ProcedureException.class );
-        exception.expectMessage( "Unable to find a usable public no-argument constructor " +
-                                 "in the class `WierdConstructorFunction`. Please add a " +
-                                 "valid, public constructor, recompile the class and try again." );
-
-        // When
-        compile( WierdConstructorFunction.class );
+        ProcedureException exception = assertThrows( ProcedureException.class, () -> compile( WierdConstructorFunction.class ) );
+        assertThat( exception.getMessage(), equalTo( "Unable to find a usable public no-argument constructor " +
+                                                    "in the class `WierdConstructorFunction`. Please add a " +
+                                                    "valid, public constructor, recompile the class and try again." ) );
     }
 
     @Test
-    public void shouldGiveHelpfulErrorOnNoPublicConstructor() throws Throwable
+    void shouldGiveHelpfulErrorOnNoPublicConstructor()
     {
-        // Expect
-        exception.expect( ProcedureException.class );
-        exception.expectMessage( "Unable to find a usable public no-argument constructor " +
-                                 "in the class `PrivateConstructorFunction`. Please add " +
-                                 "a valid, public constructor, recompile the class and try again." );
-
-        // When
-        compile( PrivateConstructorFunction.class );
+        ProcedureException exception = assertThrows( ProcedureException.class, () -> compile( PrivateConstructorFunction.class ) );
+        assertThat( exception.getMessage(), equalTo( "Unable to find a usable public no-argument constructor " +
+                                                    "in the class `PrivateConstructorFunction`. Please add " +
+                                                    "a valid, public constructor, recompile the class and try again." ) );
     }
 
     @Test
-    public void shouldNotAllowVoidOutput() throws Throwable
+    void shouldNotAllowVoidOutput()
     {
-        // Expect
-        exception.expect( ProcedureException.class );
-        exception.expectMessage( "Don't know how to map `void` to the Neo4j Type System." );
-
-        // When
-        compile( FunctionWithVoidOutput.class );
+        ProcedureException exception = assertThrows( ProcedureException.class, () -> compile( FunctionWithVoidOutput.class ) );
+        assertThat( exception.getMessage(), startsWith( "Don't know how to map `void` to the Neo4j Type System." ) );
     }
 
     @Test
-    public void shouldGiveHelpfulErrorOnFunctionReturningInvalidType() throws Throwable
+    void shouldGiveHelpfulErrorOnFunctionReturningInvalidType()
     {
-        // Expect
-        exception.expect( ProcedureException.class );
-        exception.expectMessage( String.format("Don't know how to map `char[]` to the Neo4j Type System.%n" +
-                                 "Please refer to to the documentation for full details.%n" +
-                                 "For your reference, known types are: [boolean, byte[], double, java.lang.Boolean, " +
-                                 "java.lang.Double, java.lang.Long, java.lang.Number, java.lang.Object, " +
-                                 "java.lang.String, java.time.LocalDate, java.time.LocalDateTime, " +
-                                 "java.time.LocalTime, java.time.OffsetTime, java.time.ZonedDateTime, " +
-                                 "java.time.temporal.TemporalAmount, java.util.List, java.util.Map, long]" ));
 
         // When
-        compile( FunctionWithInvalidOutput.class ).get( 0 );
+        ProcedureException exception = assertThrows( ProcedureException.class, () -> compile( FunctionWithInvalidOutput.class ).get( 0 ) );
+        assertThat( exception.getMessage(), equalTo( String.format( "Don't know how to map `char[]` to the Neo4j Type System.%n" +
+                "Please refer to to the documentation for full details.%n" +
+                "For your reference, known types are: [boolean, byte[], double, java.lang.Boolean, " +
+                "java.lang.Double, java.lang.Long, java.lang.Number, java.lang.Object, " +
+                "java.lang.String, java.time.LocalDate, java.time.LocalDateTime, " +
+                "java.time.LocalTime, java.time.OffsetTime, java.time.ZonedDateTime, " +
+                "java.time.temporal.TemporalAmount, java.util.List, java.util.Map, long]" ) ) );
     }
 
     @Test
-    public void shouldGiveHelpfulErrorOnContextAnnotatedStaticField() throws Throwable
+    void shouldGiveHelpfulErrorOnContextAnnotatedStaticField()
     {
-        // Expect
-        exception.expect( ProcedureException.class );
-        exception.expectMessage( String.format("The field `gdb` in the class named `FunctionWithStaticContextAnnotatedField` is " +
-                                 "annotated as a @Context field,%n" +
-                                 "but it is static. @Context fields must be public, non-final and non-static,%n" +
-                                 "because they are reset each time a procedure is invoked." ));
-
-        // When
-        compile( FunctionWithStaticContextAnnotatedField.class ).get( 0 );
+        ProcedureException exception = assertThrows( ProcedureException.class, () -> compile( FunctionWithStaticContextAnnotatedField.class ).get( 0 ) );
+        assertThat( exception.getMessage(), equalTo( String.format( "The field `gdb` in the class named `FunctionWithStaticContextAnnotatedField` is " +
+                                                    "annotated as a @Context field,%n" +
+                                                    "but it is static. @Context fields must be public, non-final and non-static,%n" +
+                                                    "because they are reset each time a procedure is invoked." ) ) );
     }
 
     @Test
-    public void shouldAllowOverridingProcedureName() throws Throwable
+    void shouldAllowOverridingProcedureName() throws Throwable
     {
         // When
         CallableUserFunction proc = compile( FunctionWithOverriddenName.class ).get( 0 );
@@ -227,34 +213,27 @@ public class ReflectiveUserFunctionTest
     }
 
     @Test
-    public void shouldNotAllowOverridingFunctionNameWithoutNamespace() throws Throwable
+    void shouldNotAllowOverridingFunctionNameWithoutNamespace()
     {
-        // Expect
-        exception.expect( ProcedureException.class );
-        exception.expectMessage( "It is not allowed to define functions in the root namespace please use a " +
-                                 "namespace, e.g. `@UserFunction(\"org.example.com.singleName\")" );
-
-        // When
-        compile( FunctionWithSingleName.class ).get( 0 );
+        ProcedureException exception = assertThrows( ProcedureException.class, () -> compile( FunctionWithSingleName.class ).get( 0 ) );
+        assertThat( exception.getMessage(), equalTo( "It is not allowed to define functions in the root namespace please use a " +
+                "namespace, e.g. `@UserFunction(\"org.example.com.singleName\")" ) );
     }
 
     @Test
-    public void shouldGiveHelpfulErrorOnNullMessageException() throws Throwable
+    void shouldGiveHelpfulErrorOnNullMessageException() throws Throwable
     {
         // Given
         CallableUserFunction proc = compile( FunctionThatThrowsNullMsgExceptionAtInvocation.class ).get( 0 );
 
-        // Expect
-        exception.expect( ProcedureException.class );
-        exception.expectMessage( "Failed to invoke function `org.neo4j.kernel.impl.proc.throwsAtInvocation`: " +
-                                 "Caused by: java.lang.IndexOutOfBoundsException" );
-
         // When
-        proc.apply( buildContext().context(), new AnyValue[0] );
+        ProcedureException exception = assertThrows( ProcedureException.class, () -> proc.apply( prepareContext(), new AnyValue[0] ) );
+        assertThat( exception.getMessage(),
+                equalTo( "Failed to invoke function `org.neo4j.kernel.impl.proc.throwsAtInvocation`: Caused by: java.lang.IndexOutOfBoundsException" ) );
     }
 
     @Test
-    public void shouldLoadWhiteListedFunction() throws Throwable
+    void shouldLoadWhiteListedFunction() throws Throwable
     {
         // Given
         procedureCompiler = new ReflectiveProcedureCompiler( new TypeMappers(), components, new ComponentRegistry(),
@@ -264,12 +243,12 @@ public class ReflectiveUserFunctionTest
         CallableUserFunction method = compile( SingleReadOnlyFunction.class ).get( 0 );
 
         // Expect
-        Object out = method.apply( buildContext().context(), new AnyValue[0] );
+        Object out = method.apply( prepareContext(), new AnyValue[0] );
         assertThat(out, equalTo( ValueUtils.of( Arrays.asList("Bonnie", "Clyde") ) ) );
     }
 
     @Test
-    public void shouldNotLoadNoneWhiteListedFunction() throws Throwable
+    void shouldNotLoadNoneWhiteListedFunction() throws Throwable
     {
         // Given
         Log log = spy(Log.class);
@@ -282,7 +261,7 @@ public class ReflectiveUserFunctionTest
     }
 
     @Test
-    public void shouldNotLoadAnyFunctionIfConfigIsEmpty() throws Throwable
+    void shouldNotLoadAnyFunctionIfConfigIsEmpty() throws Throwable
     {
         // Given
         Log log = spy(Log.class);
@@ -295,7 +274,7 @@ public class ReflectiveUserFunctionTest
     }
 
     @Test
-    public void shouldSupportFunctionDeprecation() throws Throwable
+    void shouldSupportFunctionDeprecation() throws Throwable
     {
         // Given
         Log log = mock(Log.class);
@@ -311,21 +290,26 @@ public class ReflectiveUserFunctionTest
         for ( CallableUserFunction func : funcs )
         {
             String name = func.signature().name().name();
-            func.apply( buildContext().context(), new AnyValue[0] );
+            func.apply( prepareContext(), new AnyValue[0] );
             switch ( name )
             {
             case "newFunc":
-                assertFalse( "Should not be deprecated", func.signature().deprecated().isPresent() );
+                assertFalse( func.signature().deprecated().isPresent(), "Should not be deprecated" );
                 break;
             case "oldFunc":
             case "badFunc":
-                assertTrue( "Should be deprecated", func.signature().deprecated().isPresent() );
+                assertTrue( func.signature().deprecated().isPresent(), "Should be deprecated" );
                 assertThat( func.signature().deprecated().get(), equalTo( "newFunc" ) );
                 break;
             default:
                 fail( "Unexpected function: " + name );
             }
         }
+    }
+
+    private org.neo4j.kernel.api.proc.Context prepareContext()
+    {
+        return buildContext( dependencyResolver, valueMapper ).context();
     }
 
     public static class LoggingFunction

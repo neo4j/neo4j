@@ -20,10 +20,8 @@
 package org.neo4j.kernel.impl.proc;
 
 import org.hamcrest.core.IsEqual;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.io.IOException;
@@ -37,13 +35,16 @@ import java.util.Random;
 import java.util.stream.Stream;
 import java.util.zip.ZipException;
 
+import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
 import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.StubResourceManager;
-import org.neo4j.kernel.api.proc.BasicContext;
 import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
+import org.neo4j.kernel.impl.util.DefaultValueMapper;
+import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLog;
@@ -51,14 +52,19 @@ import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
 import org.neo4j.procedure.UserFunction;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.TestDirectoryExtension;
+import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.values.ValueMapper;
 
 import static java.util.stream.Collectors.toList;
-import static org.apache.commons.lang3.StringEscapeUtils.escapeJava;
+import static org.apache.commons.text.StringEscapeUtils.escapeJava;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
+import static org.hamcrest.Matchers.equalTo;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.procedure_unrestricted;
 import static org.neo4j.helpers.collection.Iterators.asList;
@@ -66,23 +72,22 @@ import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTInteger;
 import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureSignature;
 import static org.neo4j.kernel.api.proc.BasicContext.buildContext;
 
-
 @SuppressWarnings( "WeakerAccess" )
+@ExtendWith( TestDirectoryExtension.class )
 public class ProcedureJarLoaderTest
 {
-    @Rule
-    public TemporaryFolder tmpdir = new TemporaryFolder();
-    @Rule
-    public ExpectedException exception = ExpectedException.none();
+    @Inject
+    private TestDirectory testDirectory;
 
     private Log log = mock( Log.class );
-    private final ProcedureJarLoader jarloader =
-            new ProcedureJarLoader( new ReflectiveProcedureCompiler( new TypeMappers(), new ComponentRegistry(),
+    private final DependencyResolver dependencyResolver = new Dependencies();
+    private final ValueMapper<Object> valueMapper = new DefaultValueMapper( mock( EmbeddedProxySPI.class ) );
+    private final ProcedureJarLoader jarloader = new ProcedureJarLoader( new ReflectiveProcedureCompiler( new TypeMappers(), new ComponentRegistry(),
                     registryWithUnsafeAPI(), log, procedureConfig() ), NullLog.getInstance() );
     private final ResourceTracker resourceTracker = new StubResourceManager();
 
     @Test
-    public void shouldLoadProcedureFromJar() throws Throwable
+    void shouldLoadProcedureFromJar() throws Throwable
     {
         // Given
         URL jar = createJarFor( ClassWithOneProcedure.class );
@@ -95,15 +100,15 @@ public class ProcedureJarLoaderTest
         assertThat( signatures, contains(
                 procedureSignature( "org","neo4j", "kernel", "impl", "proc", "myProcedure" ).out( "someNumber", NTInteger ).build() ));
 
-        assertThat( asList( procedures.get( 0 ).apply( buildContext().context(), new Object[0], resourceTracker ) ),
+        assertThat( asList( procedures.get( 0 ).apply( prepareContext(), new Object[0], resourceTracker ) ),
                 contains( IsEqual.equalTo( new Object[]{1337L} )) );
     }
 
     @Test
-    public void shouldLoadProcedureFromJarWithSpacesInFilename() throws Throwable
+    void shouldLoadProcedureFromJarWithSpacesInFilename() throws Throwable
     {
         // Given
-        URL jar = new JarBuilder().createJarFor( tmpdir.newFile( new Random().nextInt() + " some spaces in filename.jar" ),
+        URL jar = new JarBuilder().createJarFor( testDirectory.createFile( new Random().nextInt() + " some spaces in filename.jar" ),
                 ClassWithOneProcedure.class);
 
         // When
@@ -114,12 +119,12 @@ public class ProcedureJarLoaderTest
         assertThat( signatures,
                 contains( procedureSignature( "org", "neo4j", "kernel", "impl", "proc", "myProcedure" ).out( "someNumber", NTInteger ).build() ) );
 
-        assertThat( asList( procedures.get( 0 ).apply( buildContext().context(), new Object[0], resourceTracker ) ),
+        assertThat( asList( procedures.get( 0 ).apply( prepareContext(), new Object[0], resourceTracker ) ),
                 contains( IsEqual.equalTo( new Object[]{1337L} ) ) );
     }
 
     @Test
-    public void shouldLoadProcedureWithArgumentFromJar() throws Throwable
+    void shouldLoadProcedureWithArgumentFromJar() throws Throwable
     {
         // Given
         URL jar = createJarFor( ClassWithProcedureWithArgument.class );
@@ -135,12 +140,12 @@ public class ProcedureJarLoaderTest
                         .out( "someNumber", NTInteger )
                         .build() ));
 
-        assertThat( asList(procedures.get( 0 ).apply( buildContext().context(), new Object[]{42L}, resourceTracker ) ),
+        assertThat( asList(procedures.get( 0 ).apply( prepareContext(), new Object[]{42L}, resourceTracker ) ),
                 contains( IsEqual.equalTo( new Object[]{42L} )) );
     }
 
     @Test
-    public void shouldLoadProcedureFromJarWithMultipleProcedureClasses() throws Throwable
+    void shouldLoadProcedureFromJarWithMultipleProcedureClasses() throws Throwable
     {
         // Given
         URL jar = createJarFor( ClassWithOneProcedure.class, ClassWithAnotherProcedure.class, ClassWithNoProcedureAtAll.class );
@@ -156,14 +161,13 @@ public class ProcedureJarLoaderTest
     }
 
     @Test
-    public void shouldGiveHelpfulErrorOnInvalidProcedure() throws Throwable
+    void shouldGiveHelpfulErrorOnInvalidProcedure() throws Throwable
     {
         // Given
         URL jar = createJarFor( ClassWithOneProcedure.class, ClassWithInvalidProcedure.class );
 
-        // Expect
-        exception.expect( ProcedureException.class );
-        exception.expectMessage( String.format("Procedures must return a Stream of records, where a record is a concrete class%n" +
+        ProcedureException exception = assertThrows( ProcedureException.class, () -> jarloader.loadProceduresFromDir( parentDir( jar ) ) );
+        assertThat( exception.getMessage(), equalTo( String.format( "Procedures must return a Stream of records, where a record is a concrete class%n" +
                 "that you define, with public non-final fields defining the fields in the record.%n" +
                 "If you''d like your procedure to return `boolean`, you could define a record class " +
                 "like:%n" +
@@ -171,21 +175,18 @@ public class ProcedureJarLoaderTest
                 "    public boolean out;%n" +
                 "'}'%n" +
                 "%n" +
-                "And then define your procedure as returning `Stream<Output>`." ));
-
-        // When
-        jarloader.loadProceduresFromDir( parentDir( jar ) );
+                "And then define your procedure as returning `Stream<Output>`." )) );
     }
 
     @Test
-    public void shouldLoadProceduresFromDirectory() throws Throwable
+    void shouldLoadProceduresFromDirectory() throws Throwable
     {
         // Given
         createJarFor( ClassWithOneProcedure.class );
         createJarFor( ClassWithAnotherProcedure.class );
 
         // When
-        List<CallableProcedure> procedures = jarloader.loadProceduresFromDir( tmpdir.getRoot() ).procedures();
+        List<CallableProcedure> procedures = jarloader.loadProceduresFromDir( testDirectory.directory() ).procedures();
 
         // Then
         List<ProcedureSignature> signatures = procedures.stream().map( CallableProcedure::signature ).collect( toList() );
@@ -195,53 +196,41 @@ public class ProcedureJarLoaderTest
     }
 
     @Test
-    public void shouldGiveHelpfulErrorOnWildCardProcedure() throws Throwable
+    void shouldGiveHelpfulErrorOnWildCardProcedure() throws Throwable
     {
         // Given
         URL jar = createJarFor( ClassWithWildCardStream.class );
 
-        // Expect
-        exception.expect( ProcedureException.class );
-        exception.expectMessage( String.format("Procedures must return a Stream of records, where a record is a concrete class%n" +
-                "that you define and not a Stream<?>." ));
-
-        // When
-        jarloader.loadProceduresFromDir( parentDir( jar ) );
+        ProcedureException exception = assertThrows( ProcedureException.class, () -> jarloader.loadProceduresFromDir( parentDir( jar ) ) );
+        assertThat( exception.getMessage(), equalTo( String.format( "Procedures must return a Stream of records, where a record is a concrete class%n" +
+                "that you define and not a Stream<?>." ) ) );
     }
 
     @Test
-    public void shouldGiveHelpfulErrorOnRawStreamProcedure() throws Throwable
+    void shouldGiveHelpfulErrorOnRawStreamProcedure() throws Throwable
     {
         // Given
         URL jar = createJarFor( ClassWithRawStream.class );
 
-        // Expect
-        exception.expect( ProcedureException.class );
-        exception.expectMessage( String.format("Procedures must return a Stream of records, where a record is a concrete class%n" +
-                "that you define and not a raw Stream." ));
-
-        // When
-        jarloader.loadProceduresFromDir( parentDir( jar ) );
+        ProcedureException exception = assertThrows( ProcedureException.class, () -> jarloader.loadProceduresFromDir( parentDir( jar ) ) );
+        assertThat( exception.getMessage(), equalTo( String.format( "Procedures must return a Stream of records, where a record is a concrete class%n" +
+                "that you define and not a raw Stream." ) ) );
     }
 
     @Test
-    public void shouldGiveHelpfulErrorOnGenericStreamProcedure() throws Throwable
+    void shouldGiveHelpfulErrorOnGenericStreamProcedure() throws Throwable
     {
         // Given
         URL jar = createJarFor( ClassWithGenericStream.class );
 
-        // Expect
-        exception.expect( ProcedureException.class );
-        exception.expectMessage( String.format("Procedures must return a Stream of records, where a record is a concrete class%n" +
+        ProcedureException exception = assertThrows( ProcedureException.class, () -> jarloader.loadProceduresFromDir( parentDir( jar ) ) );
+        assertThat( exception.getMessage(), equalTo( String.format( "Procedures must return a Stream of records, where a record is a concrete class%n" +
                 "that you define and not a parameterized type such as java.util.List<org.neo4j" +
-                ".kernel.impl.proc.ProcedureJarLoaderTest$Output>."));
-
-        // When
-        jarloader.loadProceduresFromDir( parentDir( jar ) );
+                ".kernel.impl.proc.ProcedureJarLoaderTest$Output>.") ) );
     }
 
     @Test
-    public void shouldLogHelpfullyWhenPluginJarIsCorrupt() throws Exception
+    void shouldLogHelpfullyWhenPluginJarIsCorrupt() throws Exception
     {
         // given
         URL theJar = createJarFor( ClassWithOneProcedure.class, ClassWithAnotherProcedure.class, ClassWithNoProcedureAtAll.class );
@@ -254,24 +243,15 @@ public class ProcedureJarLoaderTest
                 logProvider.getLog( ProcedureJarLoader.class ) );
 
         // when
-        try
-        {
-            jarloader.loadProceduresFromDir( parentDir( theJar ) );
-            fail( "Should have logged and thrown exception." );
-        }
-        catch ( ZipException expected )
-        {
-            // then
-            logProvider.assertContainsLogCallContaining(
-                    escapeJava( String.format( "Plugin jar file: %s corrupted.", new File( theJar.toURI() ).toPath() ) ) );
-        }
+        assertThrows( ZipException.class, () -> jarloader.loadProceduresFromDir( parentDir( theJar ) ) );
+        logProvider.assertContainsLogCallContaining( escapeJava( String.format( "Plugin jar file: %s corrupted.", new File( theJar.toURI() ).toPath() ) ) );
     }
 
     @Test
-    public void shouldWorkOnPathsWithSpaces() throws Exception
+    void shouldWorkOnPathsWithSpaces() throws Exception
     {
         // given
-        File fileWithSpacesInName = tmpdir.newFile( new Random().nextInt() + "  some spaces in the filename" + ".jar" );
+        File fileWithSpacesInName = testDirectory.createFile( new Random().nextInt() + "  some spaces in the filename" + ".jar" );
         URL theJar = new JarBuilder().createJarFor( fileWithSpacesInName, ClassWithOneProcedure.class );
         corruptJar( theJar );
 
@@ -282,21 +262,12 @@ public class ProcedureJarLoaderTest
                 logProvider.getLog( ProcedureJarLoader.class ) );
 
         // when
-        try
-        {
-            jarloader.loadProceduresFromDir( parentDir( theJar ) );
-            fail( "Should have logged and thrown exception." );
-        }
-        catch ( ZipException expected )
-        {
-            // then
-            logProvider.assertContainsLogCallContaining(
-                    escapeJava( String.format( "Plugin jar file: %s corrupted.", fileWithSpacesInName.toPath() ) ) );
-        }
+        assertThrows( ZipException.class, () -> jarloader.loadProceduresFromDir( parentDir( theJar ) ) );
+        logProvider.assertContainsLogCallContaining( escapeJava( String.format( "Plugin jar file: %s corrupted.", fileWithSpacesInName.toPath() ) ) );
     }
 
     @Test
-    public void shouldReturnEmptySetOnNullArgument() throws Exception
+    void shouldReturnEmptySetOnNullArgument() throws Exception
     {
         // given
         ProcedureJarLoader jarloader = new ProcedureJarLoader(
@@ -310,9 +281,14 @@ public class ProcedureJarLoaderTest
         assertEquals( 0, callables.procedures().size() + callables.functions().size() );
     }
 
-    private File parentDir( URL jar )
+    private org.neo4j.kernel.api.proc.Context prepareContext()
     {
-        return new File( jar.getFile() ).getParentFile();
+        return buildContext( dependencyResolver, valueMapper ).context();
+    }
+
+    private File parentDir( URL jar ) throws URISyntaxException
+    {
+        return new File( jar.toURI() ).getParentFile();
     }
 
     private void corruptJar( URL jar ) throws IOException, URISyntaxException
@@ -329,7 +305,7 @@ public class ProcedureJarLoaderTest
 
     private URL createJarFor( Class<?> ... targets ) throws IOException
     {
-        return new JarBuilder().createJarFor( tmpdir.newFile( new Random().nextInt() + ".jar" ), targets );
+        return new JarBuilder().createJarFor( testDirectory.createFile( new Random().nextInt() + ".jar" ), targets );
     }
 
     public static class Output

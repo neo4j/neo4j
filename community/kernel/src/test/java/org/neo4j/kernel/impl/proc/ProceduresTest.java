@@ -19,50 +19,51 @@
  */
 package org.neo4j.kernel.impl.proc;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
 import org.neo4j.collection.RawIterator;
+import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
 import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.StubResourceManager;
-import org.neo4j.kernel.api.proc.BasicContext;
 import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.Context;
-import org.neo4j.kernel.api.proc.Key;
+import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
+import org.neo4j.kernel.impl.util.DefaultValueMapper;
+import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.procedure.Mode;
 import org.neo4j.procedure.PerformsWrites;
 import org.neo4j.procedure.Procedure;
+import org.neo4j.values.ValueMapper;
 
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.mock;
 import static org.neo4j.helpers.collection.Iterators.asList;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTAny;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTInteger;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTString;
 import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureSignature;
 import static org.neo4j.kernel.api.proc.BasicContext.buildContext;
-import static org.neo4j.kernel.api.proc.Key.key;
 
-public class ProceduresTest
+class ProceduresTest
 {
-    @Rule
-    public ExpectedException exception = ExpectedException.none();
-
-    private final Procedures procs = new Procedures();
+    private final GlobalProcedures procs = new GlobalProcedures();
     private final ProcedureSignature signature = procedureSignature( "org", "myproc" ).out( "name", NTString ).build();
     private final CallableProcedure procedure = procedure( signature );
     private final ResourceTracker resourceTracker = new StubResourceManager();
+    private final DependencyResolver dependencyResolver = new Dependencies();
+    private final ValueMapper<Object> valueMapper = new DefaultValueMapper( mock( EmbeddedProxySPI.class ) );
 
     @Test
-    public void shouldGetRegisteredProcedure() throws Throwable
+    void shouldGetRegisteredProcedure() throws Throwable
     {
         // When
         procs.register( procedure );
@@ -72,7 +73,7 @@ public class ProceduresTest
     }
 
     @Test
-    public void shouldGetAllRegisteredProcedures() throws Throwable
+    void shouldGetAllRegisteredProcedures() throws Throwable
     {
         // When
         procs.register( procedure( procedureSignature( "org", "myproc1" ).out( "age", NTInteger ).build() ) );
@@ -88,87 +89,70 @@ public class ProceduresTest
     }
 
     @Test
-    public void shouldCallRegisteredProcedure() throws Throwable
+    void shouldCallRegisteredProcedure() throws Throwable
     {
         // Given
         procs.register( procedure );
 
         // When
         RawIterator<Object[], ProcedureException> result =
-                procs.callProcedure( buildContext().context(), signature.name(), new Object[]{1337}, resourceTracker );
+                procs.callProcedure( buildContext( dependencyResolver, valueMapper ).context(), signature.name(), new Object[]{1337}, resourceTracker );
 
         // Then
         assertThat( asList( result ), contains( equalTo( new Object[]{1337} ) ) );
     }
 
     @Test
-    public void shouldNotAllowCallingNonExistingProcedure() throws Throwable
+    void shouldNotAllowCallingNonExistingProcedure()
     {
-        // Expect
-        exception.expect( ProcedureException.class );
-        exception.expectMessage( "There is no procedure with the name `org.myproc` registered for this " +
-                                 "database instance. Please ensure you've spelled the " +
-                                 "procedure name correctly and that the procedure is properly deployed." );
-
-        // When
-        procs.callProcedure( buildContext().context(), signature.name(), new Object[]{1337}, resourceTracker );
+        ProcedureException exception = assertThrows( ProcedureException.class, () ->
+                procs.callProcedure( prepareContext(), signature.name(), new Object[]{1337}, resourceTracker ) );
+        assertThat( exception.getMessage(), equalTo( "There is no procedure with the name `org.myproc` registered for this " +
+                                                    "database instance. Please ensure you've spelled the " +
+                                                    "procedure name correctly and that the procedure is properly deployed." ) );
     }
 
     @Test
-    public void shouldNotAllowRegisteringConflictingName() throws Throwable
+    void shouldNotAllowRegisteringConflictingName() throws Throwable
     {
         // Given
         procs.register( procedure );
 
-        // Expect
-        exception.expect( ProcedureException.class );
-        exception.expectMessage( "Unable to register procedure, because the name `org.myproc` is already in use." );
-
-        // When
-        procs.register( procedure );
+        ProcedureException exception = assertThrows( ProcedureException.class, () -> procs.register( procedure ) );
+        assertThat( exception.getMessage(), equalTo( "Unable to register procedure, because the name `org.myproc` is already in use." ) );
     }
 
     @Test
-    public void shouldNotAllowDuplicateFieldNamesInInput() throws Throwable
+    void shouldNotAllowDuplicateFieldNamesInInput()
     {
-        // Expect
-        exception.expect( ProcedureException.class );
-        exception.expectMessage( "Procedure `asd(a :: ANY?, a :: ANY?) :: ()` cannot be " +
-                                 "registered, because it contains a duplicated input field, 'a'. " +
-                                 "You need to rename or remove one of the duplicate fields." );
-
-        // When
-        procs.register( procedureWithSignature( procedureSignature( "asd" ).in( "a", NTAny ).in( "a", NTAny ).build() ) );
+        ProcedureException exception = assertThrows( ProcedureException.class,
+                () -> procs.register( procedureWithSignature( procedureSignature( "asd" ).in( "a", NTAny ).in( "a", NTAny ).build() ) ) );
+        assertThat( exception.getMessage(), equalTo( "Procedure `asd(a :: ANY?, a :: ANY?) :: ()` cannot be " +
+                                                    "registered, because it contains a duplicated input field, 'a'. " +
+                                                    "You need to rename or remove one of the duplicate fields." ) );
     }
 
     @Test
-    public void shouldNotAllowDuplicateFieldNamesInOutput() throws Throwable
+    void shouldNotAllowDuplicateFieldNamesInOutput()
     {
-        // Expect
-        exception.expect( ProcedureException.class );
-        exception.expectMessage( "Procedure `asd() :: (a :: ANY?, a :: ANY?)` cannot be registered, " +
-                                 "because it contains a duplicated output field, 'a'. " +
-                                 "You need to rename or remove one of the duplicate fields." );
-
-        // When
-        procs.register( procedureWithSignature( procedureSignature( "asd" ).out( "a", NTAny ).out( "a", NTAny ).build() ) );
+        ProcedureException exception = assertThrows( ProcedureException.class,
+                () -> procs.register( procedureWithSignature( procedureSignature( "asd" ).out( "a", NTAny ).out( "a", NTAny ).build() ) ) );
+        assertThat( exception.getMessage(), equalTo( "Procedure `asd() :: (a :: ANY?, a :: ANY?)` cannot be registered, " +
+                                                    "because it contains a duplicated output field, 'a'. " +
+                                                    "You need to rename or remove one of the duplicate fields." ) );
     }
 
     @Test
-    public void shouldSignalNonExistingProcedure() throws Throwable
+    void shouldSignalNonExistingProcedure()
     {
-        // Expect
-        exception.expect( ProcedureException.class );
-        exception.expectMessage( "There is no procedure with the name `org.myproc` registered for this " +
-                                 "database instance. Please ensure you've spelled the " +
-                                 "procedure name correctly and that the procedure is properly deployed." );
-
-        // When
-        procs.procedure( signature.name() );
+        ProcedureException exception = assertThrows( ProcedureException.class, () -> procs.procedure( signature.name() ) );
+        assertThat( exception.getMessage(), equalTo( "There is no procedure with the name `org.myproc` registered for this " +
+                                                    "database instance. Please ensure you've spelled the " +
+                                                    "procedure name correctly and that the procedure is properly deployed." ) );
     }
 
     @Test
-    public void shouldMakeContextAvailable() throws Throwable
+    void shouldMakeContextAvailable() throws Throwable
     {
         // Given
 
@@ -181,9 +165,7 @@ public class ProceduresTest
             }
         } );
 
-        Context ctx = buildContext()
-                .withThread( Thread.currentThread() )
-                .context();
+        Context ctx = prepareContext();
 
         // When
         RawIterator<Object[], ProcedureException> result = procs.callProcedure( ctx, signature.name(), new Object[0], resourceTracker );
@@ -193,35 +175,36 @@ public class ProceduresTest
     }
 
     @Test
-    public void shouldFailCompileProcedureWithReadConflict() throws Throwable
+    void shouldFailCompileProcedureWithReadConflict()
     {
-        exception.expect( ProcedureException.class );
-        exception.expectMessage( "Conflicting procedure annotation, cannot use PerformsWrites and mode" );
-        procs.registerProcedure( ProcedureWithReadConflictAnnotation.class );
+        ProcedureException exception = assertThrows( ProcedureException.class, () -> procs.registerProcedure( ProcedureWithReadConflictAnnotation.class ) );
+        assertThat( exception.getMessage(), equalTo( "Conflicting procedure annotation, cannot use PerformsWrites and mode" ) );
     }
 
     @Test
-    public void shouldFailCompileProcedureWithWriteConflict() throws Throwable
+    void shouldFailCompileProcedureWithWriteConflict()
     {
-        exception.expect( ProcedureException.class );
-        exception.expectMessage( "Conflicting procedure annotation, cannot use PerformsWrites and mode" );
-        procs.registerProcedure( ProcedureWithWriteConflictAnnotation.class );
+        ProcedureException exception = assertThrows( ProcedureException.class, () -> procs.registerProcedure( ProcedureWithWriteConflictAnnotation.class ) );
+        assertThat( exception.getMessage(), equalTo( "Conflicting procedure annotation, cannot use PerformsWrites and mode" ) );
     }
 
     @Test
-    public void shouldFailCompileProcedureWithSchemaConflict() throws Throwable
+    void shouldFailCompileProcedureWithSchemaConflict()
     {
-        exception.expect( ProcedureException.class );
-        exception.expectMessage( "Conflicting procedure annotation, cannot use PerformsWrites and mode" );
-        procs.registerProcedure( ProcedureWithSchemaConflictAnnotation.class );
+        ProcedureException exception = assertThrows( ProcedureException.class, () -> procs.registerProcedure( ProcedureWithSchemaConflictAnnotation.class ) );
+        assertThat( exception.getMessage(), equalTo( "Conflicting procedure annotation, cannot use PerformsWrites and mode" ) );
     }
 
     @Test
-    public void shouldFailCompileProcedureWithDBMSConflict() throws Throwable
+    void shouldFailCompileProcedureWithDBMSConflict()
     {
-        exception.expect( ProcedureException.class );
-        exception.expectMessage( "Conflicting procedure annotation, cannot use PerformsWrites and mode" );
-        procs.registerProcedure( ProcedureWithDBMSConflictAnnotation.class );
+        ProcedureException exception = assertThrows( ProcedureException.class, () -> procs.registerProcedure( ProcedureWithDBMSConflictAnnotation.class ) );
+        assertThat( exception.getMessage(), equalTo( "Conflicting procedure annotation, cannot use PerformsWrites and mode" ) );
+    }
+
+    private Context prepareContext()
+    {
+        return buildContext( dependencyResolver, valueMapper ).context();
     }
 
     public static class ProcedureWithReadConflictAnnotation
@@ -266,7 +249,7 @@ public class ProceduresTest
         {
             @Override
             public RawIterator<Object[], ProcedureException> apply(
-                    Context ctx, Object[] input, ResourceTracker resourceTracker ) throws ProcedureException
+                    Context ctx, Object[] input, ResourceTracker resourceTracker )
             {
                 return null;
             }

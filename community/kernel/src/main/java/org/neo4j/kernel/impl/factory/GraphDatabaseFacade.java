@@ -189,7 +189,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
         this.schema = new SchemaImpl( () -> txBridge.getKernelTransactionBoundToThisThread( true ) );
         this.statementContext = txBridge;
         this.tokenHolders = tokenHolders;
-        this.contextFactory = Neo4jTransactionalContextFactory.create( spi, txBridge );
+        this.contextFactory = Neo4jTransactionalContextFactory.create( this, spi, txBridge );
     }
 
     @Override

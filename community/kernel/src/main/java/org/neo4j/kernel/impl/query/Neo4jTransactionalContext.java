@@ -33,6 +33,7 @@ import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.query.statistic.StatisticProvider;
+import org.neo4j.values.ValueMapper;
 
 public class Neo4jTransactionalContext implements TransactionalContext
 {
@@ -51,6 +52,7 @@ public class Neo4jTransactionalContext implements TransactionalContext
     private volatile InternalTransaction transaction;
     private KernelTransaction kernelTransaction;
     private Statement statement;
+    private final ValueMapper<Object> valueMapper;
     private boolean isOpen = true;
 
     private long pageHits;
@@ -61,7 +63,8 @@ public class Neo4jTransactionalContext implements TransactionalContext
             ThreadToStatementContextBridge txBridge,
             InternalTransaction initialTransaction,
             Statement initialStatement,
-            ExecutingQuery executingQuery
+            ExecutingQuery executingQuery,
+            ValueMapper<Object> valueMapper
     )
     {
         this.graph = graph;
@@ -74,6 +77,13 @@ public class Neo4jTransactionalContext implements TransactionalContext
         this.transaction = initialTransaction;
         this.kernelTransaction = txBridge.getKernelTransactionBoundToThisThread( true );
         this.statement = initialStatement;
+        this.valueMapper = valueMapper;
+    }
+
+    @Override
+    public ValueMapper valueMapper()
+    {
+        return valueMapper;
     }
 
     @Override

@@ -25,9 +25,11 @@ import org.neo4j.common.DependencyResolver;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.query.ExecutingQuery;
+import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
+import org.neo4j.kernel.impl.util.DefaultValueMapper;
 import org.neo4j.values.virtual.MapValue;
 
 import static org.neo4j.function.Suppliers.lazySingleton;
@@ -37,13 +39,11 @@ public class Neo4jTransactionalContextFactory implements TransactionalContextFac
     private final Supplier<Statement> statementSupplier;
     private final Neo4jTransactionalContext.Creator contextCreator;
 
-    public static TransactionalContextFactory create(
-        GraphDatabaseFacade.SPI spi,
-        ThreadToStatementContextBridge txBridge )
+    public static TransactionalContextFactory create( EmbeddedProxySPI proxySpi, GraphDatabaseFacade.SPI spi, ThreadToStatementContextBridge txBridge )
     {
         Supplier<GraphDatabaseQueryService> queryService = lazySingleton( spi::queryService );
         Neo4jTransactionalContext.Creator contextCreator = ( tx, initialStatement, executingQuery ) ->
-                new Neo4jTransactionalContext( queryService.get(), txBridge, tx, initialStatement, executingQuery );
+                new Neo4jTransactionalContext( queryService.get(), txBridge, tx, initialStatement, executingQuery, new DefaultValueMapper( proxySpi ) );
 
         return new Neo4jTransactionalContextFactory( txBridge, contextCreator );
     }
@@ -53,6 +53,7 @@ public class Neo4jTransactionalContextFactory implements TransactionalContextFac
     {
         DependencyResolver resolver = queryService.getDependencyResolver();
         ThreadToStatementContextBridge txBridge = resolver.resolveDependency( ThreadToStatementContextBridge.class );
+        EmbeddedProxySPI proxySpi = resolver.resolveDependency( EmbeddedProxySPI.class );
         Neo4jTransactionalContext.Creator contextCreator =
                 ( tx, initialStatement, executingQuery ) ->
                         new Neo4jTransactionalContext(
@@ -60,7 +61,8 @@ public class Neo4jTransactionalContextFactory implements TransactionalContextFac
                                 txBridge,
                                 tx,
                                 initialStatement,
-                                executingQuery
+                                executingQuery,
+                                new DefaultValueMapper( proxySpi )
                         );
 
         return new Neo4jTransactionalContextFactory( txBridge, contextCreator );

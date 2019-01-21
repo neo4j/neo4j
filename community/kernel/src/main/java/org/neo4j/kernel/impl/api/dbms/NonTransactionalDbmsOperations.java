@@ -26,47 +26,41 @@ import org.neo4j.internal.kernel.api.procs.QualifiedName;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.dbms.DbmsOperations;
-import org.neo4j.kernel.api.proc.BasicContext;
 import org.neo4j.kernel.api.proc.Context;
-import org.neo4j.kernel.impl.proc.Procedures;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.kernel.impl.proc.GlobalProcedures;
+import org.neo4j.values.ValueMapper;
 
 import static org.neo4j.kernel.api.proc.BasicContext.buildContext;
-import static org.neo4j.kernel.api.proc.Context.DATABASE_API;
-import static org.neo4j.kernel.api.proc.Context.DEPENDENCY_RESOLVER;
-import static org.neo4j.kernel.api.proc.Context.SECURITY_CONTEXT;
 
 public class NonTransactionalDbmsOperations implements DbmsOperations
 {
 
-    private final Procedures procedures;
+    private final GlobalProcedures globalProcedures;
 
-    public NonTransactionalDbmsOperations( Procedures procedures )
+    public NonTransactionalDbmsOperations( GlobalProcedures globalProcedures )
     {
-        this.procedures = procedures;
+        this.globalProcedures = globalProcedures;
     }
 
     @Override
     public RawIterator<Object[],ProcedureException> procedureCallDbms( QualifiedName name, Object[] input, DependencyResolver dependencyResolver,
-            SecurityContext securityContext, ResourceTracker resourceTracker ) throws ProcedureException
+            SecurityContext securityContext, ResourceTracker resourceTracker, ValueMapper<Object> valueMapper ) throws ProcedureException
     {
-        Context ctx = createContext( securityContext, dependencyResolver );
-        return procedures.callProcedure( ctx, name, input, resourceTracker );
+        Context ctx = createContext( securityContext, dependencyResolver, valueMapper );
+        return globalProcedures.callProcedure( ctx, name, input, resourceTracker );
     }
 
     @Override
     public RawIterator<Object[],ProcedureException> procedureCallDbms( int id, Object[] input, DependencyResolver dependencyResolver,
-            SecurityContext securityContext, ResourceTracker resourceTracker ) throws ProcedureException
+            SecurityContext securityContext, ResourceTracker resourceTracker, ValueMapper<Object> valueMapper ) throws ProcedureException
     {
-        Context ctx = createContext( securityContext, dependencyResolver );
-        return procedures.callProcedure( ctx, id, input, resourceTracker );
+        Context ctx = createContext( securityContext, dependencyResolver, valueMapper );
+        return globalProcedures.callProcedure( ctx, id, input, resourceTracker );
     }
 
-    private static Context createContext( SecurityContext securityContext, DependencyResolver dependencyResolver )
+    private static Context createContext( SecurityContext securityContext, DependencyResolver dependencyResolver, ValueMapper<Object> valueMapper )
     {
-        return buildContext()
-                .withSecurityContext( securityContext )
-                .withResolver( dependencyResolver )
-                .context();
+        return buildContext( dependencyResolver, valueMapper )
+                .withSecurityContext( securityContext ).context();
     }
 }

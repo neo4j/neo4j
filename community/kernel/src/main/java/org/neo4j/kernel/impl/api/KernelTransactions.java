@@ -52,7 +52,7 @@ import org.neo4j.kernel.impl.core.TokenHolders;
 import org.neo4j.kernel.impl.factory.AccessCapability;
 import org.neo4j.kernel.impl.locking.StatementLocks;
 import org.neo4j.kernel.impl.locking.StatementLocksFactory;
-import org.neo4j.kernel.impl.proc.Procedures;
+import org.neo4j.kernel.impl.proc.GlobalProcedures;
 import org.neo4j.kernel.impl.store.TransactionId;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
@@ -91,7 +91,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
     private final AvailabilityGuard databaseAvailabilityGuard;
     private final Tracers tracers;
     private final StorageEngine storageEngine;
-    private final Procedures procedures;
+    private final GlobalProcedures globalProcedures;
     private final TransactionIdStore transactionIdStore;
     private final AtomicReference<CpuClock> cpuClockRef;
     private final AtomicReference<HeapAllocation> heapAllocationRef;
@@ -143,7 +143,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
     public KernelTransactions( Config config, StatementLocksFactory statementLocksFactory, ConstraintIndexCreator constraintIndexCreator,
             StatementOperationParts statementOperations, SchemaWriteGuard schemaWriteGuard, TransactionHeaderInformationFactory txHeaderFactory,
             TransactionCommitProcess transactionCommitProcess, TransactionHooks hooks, TransactionMonitor transactionMonitor,
-            AvailabilityGuard databaseAvailabilityGuard, Tracers tracers, StorageEngine storageEngine, Procedures procedures,
+            AvailabilityGuard databaseAvailabilityGuard, Tracers tracers, StorageEngine storageEngine, GlobalProcedures globalProcedures,
             TransactionIdStore transactionIdStore, SystemNanoClock clock, AtomicReference<CpuClock> cpuClockRef,
             AtomicReference<HeapAllocation> heapAllocationRef, AccessCapability accessCapability, VersionContextSupplier versionContextSupplier,
             CollectionsFactorySupplier collectionsFactorySupplier, ConstraintSemantics constraintSemantics, SchemaState schemaState,
@@ -162,7 +162,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
         this.databaseAvailabilityGuard = databaseAvailabilityGuard;
         this.tracers = tracers;
         this.storageEngine = storageEngine;
-        this.procedures = procedures;
+        this.globalProcedures = globalProcedures;
         this.transactionIdStore = transactionIdStore;
         this.cpuClockRef = cpuClockRef;
         this.heapAllocationRef = heapAllocationRef;
@@ -373,7 +373,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
         {
             KernelTransactionImplementation tx =
                     new KernelTransactionImplementation( config, statementOperations, schemaWriteGuard, hooks,
-                            constraintIndexCreator, procedures, transactionHeaderInformationFactory,
+                            constraintIndexCreator, globalProcedures, transactionHeaderInformationFactory,
                             transactionCommitProcess, transactionMonitor, localTxPool, clock, cpuClockRef, heapAllocationRef,
                             tracers.getTransactionTracer(),
                             tracers.getLockTracer(),

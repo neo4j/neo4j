@@ -19,9 +19,7 @@
  */
 package org.neo4j.kernel.impl.proc;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Method;
 import java.util.List;
@@ -35,12 +33,12 @@ import org.neo4j.procedure.Procedure;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.startsWith;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class MethodSignatureCompilerTest
+class MethodSignatureCompilerTest
 {
-    @Rule
-    public ExpectedException exception = ExpectedException.none();
-
     public static class MyOutputRecord
     {
         public String name;
@@ -78,7 +76,7 @@ public class MethodSignatureCompilerTest
     }
 
     @Test
-    public void shouldMapSimpleRecordWithString() throws Throwable
+    void shouldMapSimpleRecordWithString() throws Throwable
     {
         // When
         Method echo = ClassWithProcedureWithSimpleArgs.class.getMethod( "echo", String.class );
@@ -89,7 +87,7 @@ public class MethodSignatureCompilerTest
     }
 
     @Test
-    public void shouldMapSimpleFunctionWithString() throws Throwable
+    void shouldMapSimpleFunctionWithString() throws Throwable
     {
         // When
         Method echo = ClassWithProcedureWithSimpleArgs.class.getMethod( "echo", String.class );
@@ -100,37 +98,29 @@ public class MethodSignatureCompilerTest
     }
 
     @Test
-    public void shouldGiveHelpfulErrorOnUnmappable() throws Throwable
+    void shouldGiveHelpfulErrorOnUnmappable() throws Throwable
     {
         // Given
         Method echo = ClassWithProcedureWithSimpleArgs.class.getMethod( "echoWithInvalidType", UnmappableRecord.class );
 
-        // Expect
-        exception.expect( ProcedureException.class );
-        exception.expectMessage( String.format("Argument `name` at position 0 in `echoWithInvalidType` with%n" +
-                                 "type `UnmappableRecord` cannot be converted to a Neo4j type: Don't know how to map " +
-                                 "`org.neo4j.kernel.impl.proc.MethodSignatureCompilerTest$UnmappableRecord` to " +
-                                 "the Neo4j Type System.%n" +
-                                 "Please refer to to the documentation for full details.%n" +
-                                 "For your reference, known types are:" ));
-
-        // When
-        new MethodSignatureCompiler( new TypeMappers() ).signatureFor( echo );
+        ProcedureException exception = assertThrows( ProcedureException.class, () -> new MethodSignatureCompiler( new TypeMappers() ).signatureFor( echo ) );
+        assertThat( exception.getMessage(), startsWith( String.format("Argument `name` at position 0 in `echoWithInvalidType` with%n" +
+                                                "type `UnmappableRecord` cannot be converted to a Neo4j type: Don't know how to map " +
+                                                "`org.neo4j.kernel.impl.proc.MethodSignatureCompilerTest$UnmappableRecord` to " +
+                                                "the Neo4j Type System.%n" +
+                                                "Please refer to to the documentation for full details.%n" +
+                                                "For your reference, known types are:" ) ) );
     }
 
     @Test
-    public void shouldGiveHelpfulErrorOnMissingAnnotations() throws Throwable
+    void shouldGiveHelpfulErrorOnMissingAnnotations() throws Throwable
     {
         // Given
         Method echo = ClassWithProcedureWithSimpleArgs.class.getMethod( "echoWithoutAnnotations", String.class, String.class);
 
-        // Expect
-        exception.expect( ProcedureException.class );
-        exception.expectMessage( String.format("Argument at position 1 in method `echoWithoutAnnotations` is missing an `@Name` " +
-                                 "annotation.%n" +
-                                 "Please add the annotation, recompile the class and try again." ));
-
-        // When
-        new MethodSignatureCompiler( new TypeMappers() ).signatureFor( echo );
+        ProcedureException exception = assertThrows( ProcedureException.class, () -> new MethodSignatureCompiler( new TypeMappers() ).signatureFor( echo ) );
+        assertThat( exception.getMessage(), equalTo( String.format("Argument at position 1 in method `echoWithoutAnnotations` is missing an `@Name` " +
+                                                    "annotation.%n" +
+                                                    "Please add the annotation, recompile the class and try again." ) ) );
     }
 }

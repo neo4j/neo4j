@@ -19,9 +19,7 @@
  */
 package org.neo4j.kernel.impl.proc;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -31,32 +29,39 @@ import java.util.stream.Stream;
 
 import org.neo4j.collection.RawIterator;
 import org.neo4j.exceptions.KernelException;
+import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.Neo4jTypes;
 import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.StubResourceManager;
-import org.neo4j.kernel.api.proc.BasicContext;
 import org.neo4j.kernel.api.proc.CallableProcedure;
+import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
+import org.neo4j.kernel.impl.util.DefaultValueMapper;
+import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.logging.NullLog;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
+import org.neo4j.values.ValueMapper;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.mock;
 import static org.neo4j.helpers.collection.Iterators.asList;
 import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureSignature;
 import static org.neo4j.kernel.api.proc.BasicContext.buildContext;
 
+@SuppressWarnings( "WeakerAccess" )
 public class ReflectiveProcedureWithArgumentsTest
 {
-    @Rule
-    public ExpectedException exception = ExpectedException.none();
-
     private final ResourceTracker resourceTracker = new StubResourceManager();
+    private final DependencyResolver dependencyResolver = new Dependencies();
+    private final ValueMapper<Object> valueMapper = new DefaultValueMapper( mock( EmbeddedProxySPI.class ) );
 
     @Test
-    public void shouldCompileSimpleProcedure() throws Throwable
+    void shouldCompileSimpleProcedure() throws Throwable
     {
         // When
         List<CallableProcedure> procedures = compile( ClassWithProcedureWithSimpleArgs.class );
@@ -72,13 +77,13 @@ public class ReflectiveProcedureWithArgumentsTest
     }
 
     @Test
-    public void shouldRunSimpleProcedure() throws Throwable
+    void shouldRunSimpleProcedure() throws Throwable
     {
         // Given
         CallableProcedure procedure = compile( ClassWithProcedureWithSimpleArgs.class ).get( 0 );
 
         // When
-        RawIterator<Object[],ProcedureException> out = procedure.apply( buildContext().context(), new Object[]{"Pontus", 35L}, resourceTracker );
+        RawIterator<Object[],ProcedureException> out = procedure.apply( prepareContext(), new Object[]{"Pontus", 35L}, resourceTracker );
 
         // Then
         List<Object[]> collect = asList( out );
@@ -86,13 +91,13 @@ public class ReflectiveProcedureWithArgumentsTest
     }
 
     @Test
-    public void shouldRunGenericProcedure() throws Throwable
+    void shouldRunGenericProcedure() throws Throwable
     {
         // Given
         CallableProcedure procedure = compile( ClassWithProcedureWithGenericArgs.class ).get( 0 );
 
         // When
-        RawIterator<Object[],ProcedureException> out = procedure.apply( buildContext().context(), new Object[]{
+        RawIterator<Object[],ProcedureException> out = procedure.apply( prepareContext(), new Object[]{
                 Arrays.asList( "Roland", "Eddie", "Susan", "Jake" ),
                 Arrays.asList( 1000L, 23L, 29L, 12L )}, resourceTracker );
 
@@ -105,42 +110,34 @@ public class ReflectiveProcedureWithArgumentsTest
     }
 
     @Test
-    public void shouldFailIfMissingAnnotations() throws Throwable
+    void shouldFailIfMissingAnnotations()
     {
-        // Expect
-        exception.expect( ProcedureException.class );
-        exception.expectMessage( String.format("Argument at position 0 in method `listCoolPeople` " +
-                                 "is missing an `@Name` annotation.%n" +
-                                 "Please add the annotation, recompile the class and try again." ));
-
-        // When
-        compile( ClassWithProcedureWithoutAnnotatedArgs.class );
+        ProcedureException exception = assertThrows( ProcedureException.class, () -> compile( ClassWithProcedureWithoutAnnotatedArgs.class ) );
+        assertThat( exception.getMessage(), equalTo( String.format( "Argument at position 0 in method `listCoolPeople` " +
+                                                    "is missing an `@Name` annotation.%n" +
+                                                    "Please add the annotation, recompile the class and try again." ) ) );
     }
 
     @Test
-    public void shouldFailIfMisplacedDefaultValue() throws Throwable
+    void shouldFailIfMisplacedDefaultValue()
     {
-        // Expect
-        exception.expect( ProcedureException.class );
-        exception.expectMessage(
+        ProcedureException exception = assertThrows( ProcedureException.class, () -> compile( ClassWithProcedureWithMisplacedDefault.class ) );
+        assertThat( exception.getMessage(), containsString(
                 "Non-default argument at position 2 with name c in method defaultValues follows default argument. " +
-                "Add a default value or rearrange arguments so that the non-default values comes first." );
-
-        // When
-        compile( ClassWithProcedureWithMisplacedDefault.class );
+                "Add a default value or rearrange arguments so that the non-default values comes first." ) );
     }
 
     @Test
-    public void shouldFailIfWronglyTypedDefaultValue() throws Throwable
+    void shouldFailIfWronglyTypedDefaultValue()
     {
-        // Expect
-        exception.expect( ProcedureException.class );
-        exception.expectMessage( String.format("Argument `a` at position 0 in `defaultValues` with%n" +
-                "type `long` cannot be converted to a Neo4j type: Default value `forty-two` could not be parsed as a " +
-                "Long" ));
+        ProcedureException exception = assertThrows( ProcedureException.class, () -> compile( ClassWithProcedureWithBadlyTypedDefault.class ) );
+        assertThat( exception.getMessage(), equalTo( String.format( "Argument `a` at position 0 in `defaultValues` with%n" +
+                "type `long` cannot be converted to a Neo4j type: Default value `forty-two` could not be parsed as a Long" ) ) );
+    }
 
-        // When
-        compile( ClassWithProcedureWithBadlyTypedDefault.class );
+    private org.neo4j.kernel.api.proc.Context prepareContext()
+    {
+        return buildContext( dependencyResolver, valueMapper ).context();
     }
 
     public static class MyOutputRecord

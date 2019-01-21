@@ -28,7 +28,7 @@ import org.neo4j.kernel.api.InwardKernel;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.impl.coreapi.CoreAPIAvailabilityGuard;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
-import org.neo4j.kernel.impl.proc.Procedures;
+import org.neo4j.kernel.impl.proc.GlobalProcedures;
 import org.neo4j.storageengine.api.StoreId;
 
 public class DatabaseModule
@@ -41,22 +41,24 @@ public class DatabaseModule
 
     public final CoreAPIAvailabilityGuard coreAPIAvailabilityGuard;
 
-    public DatabaseModule( String databaseName, PlatformModule platformModule, AbstractEditionModule editionModule, Procedures procedures,
+    public DatabaseModule( String databaseName, PlatformModule platformModule, AbstractEditionModule editionModule, GlobalProcedures globalProcedures,
             GraphDatabaseFacade graphDatabaseFacade )
     {
         EditionDatabaseContext editionContext = editionModule.createDatabaseContext( databaseName );
         ModularDatabaseCreationContext context =
-                new ModularDatabaseCreationContext( databaseName, platformModule, editionContext, procedures, graphDatabaseFacade );
+                new ModularDatabaseCreationContext( databaseName, platformModule, editionContext, globalProcedures, graphDatabaseFacade );
         database = new Database( context );
 
         this.coreAPIAvailabilityGuard = context.getCoreAPIAvailabilityGuard();
         this.storeId = database::getStoreId;
         this.kernelAPI = database::getKernel;
 
+        // TODO: this is incorrect, and we should remove procedure specific service and factory
+        //  as soon as we will split database and dbms operations into separate services
         ProcedureGDSFactory gdsFactory =
                 new ProcedureGDSFactory( platformModule, this, coreAPIAvailabilityGuard, context.getTokenHolders(),
                         editionModule.getThreadToTransactionBridge() );
-        procedures.registerComponent( GraphDatabaseService.class, gdsFactory::apply, true );
+        globalProcedures.registerComponent( GraphDatabaseService.class, gdsFactory::apply, true );
     }
 
     public CoreAPIAvailabilityGuard getCoreAPIAvailabilityGuard()

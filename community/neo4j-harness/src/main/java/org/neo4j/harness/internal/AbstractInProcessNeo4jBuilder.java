@@ -47,7 +47,7 @@ import org.neo4j.kernel.configuration.HttpConnector.Encryption;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.extension.context.ExtensionContext;
-import org.neo4j.kernel.impl.proc.Procedures;
+import org.neo4j.kernel.impl.proc.GlobalProcedures;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.FormattedLogProvider;
@@ -341,7 +341,7 @@ public abstract class AbstractInProcessNeo4jBuilder implements Neo4jBuilder
     {
         interface Dependencies
         {
-            Procedures procedures();
+            GlobalProcedures procedures();
         }
 
         private HarnessRegisteredProcs userProcs;

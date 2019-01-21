@@ -26,7 +26,7 @@ import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
 import org.neo4j.internal.kernel.api.procs.UserFunctionSignature;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.proc.Procedures;
+import org.neo4j.kernel.impl.proc.GlobalProcedures;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.Log;
@@ -69,7 +69,7 @@ public class BuiltInDbmsProcedures
     public Stream<ProcedureResult> listProcedures()
     {
         securityContext.assertCredentialsNotExpired();
-        return graph.getDependencyResolver().resolveDependency( Procedures.class ).getAllProcedures().stream()
+        return graph.getDependencyResolver().resolveDependency( GlobalProcedures.class ).getAllProcedures().stream()
                 .sorted( Comparator.comparing( a -> a.name().toString() ) )
                 .map( ProcedureResult::new );
     }
@@ -79,7 +79,7 @@ public class BuiltInDbmsProcedures
     public Stream<FunctionResult> listFunctions()
     {
         securityContext.assertCredentialsNotExpired();
-        return graph.getDependencyResolver().resolveDependency( Procedures.class ).getAllFunctions().stream()
+        return graph.getDependencyResolver().resolveDependency( GlobalProcedures.class ).getAllFunctions().stream()
                 .sorted( Comparator.comparing( a -> a.name().toString() ) )
                 .map( FunctionResult::new );
     }

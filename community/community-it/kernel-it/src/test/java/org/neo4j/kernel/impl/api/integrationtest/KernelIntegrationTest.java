@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.api.integrationtest;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
-import org.junit.rules.RuleChain;
 
 import java.util.Iterator;
 
@@ -47,11 +46,12 @@ import org.neo4j.kernel.api.dbms.DbmsOperations;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.impl.api.KernelImpl;
 import org.neo4j.kernel.impl.api.index.IndexingService;
+import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.kernel.impl.util.DefaultValueMapper;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import org.neo4j.values.storable.Value;
 
 import static java.util.Collections.emptyIterator;
@@ -64,11 +64,9 @@ import static org.neo4j.values.storable.Values.NO_VALUE;
 
 public abstract class KernelIntegrationTest
 {
-    protected final TestDirectory testDir = TestDirectory.testDirectory();
-    protected final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
-
     @Rule
-    public RuleChain ruleChain = RuleChain.outerRule( testDir ).around( fileSystemRule );
+    public final TestDirectory testDir = TestDirectory.testDirectory();
+
     @SuppressWarnings( "deprecation" )
     protected GraphDatabaseAPI db;
     ThreadToStatementContextBridge statementContextSupplier;
@@ -78,6 +76,7 @@ public abstract class KernelIntegrationTest
     private Transaction transaction;
     private DbmsOperations dbmsOperations;
     protected DependencyResolver dependencyResolver;
+    protected DefaultValueMapper valueMapper;
 
     protected TokenWrite tokenWriteInNewTransaction() throws KernelException
     {
@@ -172,12 +171,13 @@ public abstract class KernelIntegrationTest
         indexingService = dependencyResolver.resolveDependency( IndexingService.class );
         statementContextSupplier = dependencyResolver.resolveDependency( ThreadToStatementContextBridge.class );
         dbmsOperations = dependencyResolver.resolveDependency( DbmsOperations.class );
+        valueMapper = new DefaultValueMapper( dependencyResolver.resolveDependency( EmbeddedProxySPI.class ) );
     }
 
     protected GraphDatabaseService createGraphDatabase()
     {
         GraphDatabaseBuilder graphDatabaseBuilder = configure( createGraphDatabaseFactory() )
-                .setFileSystem( fileSystemRule.get() )
+                .setFileSystem( testDir.getFileSystem() )
                 .newEmbeddedDatabaseBuilder( testDir.storeDir() );
         return configure( graphDatabaseBuilder ).newGraphDatabase();
     }

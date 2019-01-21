@@ -21,8 +21,6 @@ package org.neo4j.kernel.api.impl.fulltext;
 
 import java.io.File;
 
-import org.neo4j.exceptions.KernelException;
-import org.neo4j.exceptions.UnsatisfiedDependencyException;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Service;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -33,15 +31,12 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.extension.ExtensionType;
 import org.neo4j.kernel.extension.context.ExtensionContext;
-import org.neo4j.kernel.impl.api.NonTransactionalTokenNameLookup;
 import org.neo4j.kernel.impl.core.TokenHolders;
-import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.OperationalMode;
-import org.neo4j.kernel.impl.proc.Procedures;
+import org.neo4j.kernel.impl.proc.GlobalProcedures;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.recovery.RecoveryExtension;
 import org.neo4j.logging.Log;
-import org.neo4j.logging.Logger;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.scheduler.JobScheduler;
 
@@ -66,7 +61,7 @@ public class FulltextIndexProviderFactory extends ExtensionFactory<FulltextIndex
 
         TokenHolders tokenHolders();
 
-        Procedures procedures();
+        GlobalProcedures procedures();
 
         LogService getLogService();
     }
@@ -95,44 +90,8 @@ public class FulltextIndexProviderFactory extends ExtensionFactory<FulltextIndex
         TokenHolders tokenHolders = dependencies.tokenHolders();
         Log log = dependencies.getLogService().getInternalLog( FulltextIndexProvider.class );
 
-        FulltextIndexProvider provider = new FulltextIndexProvider(
+        return new FulltextIndexProvider(
                 DESCRIPTOR, directoryStructureFactory, fileSystemAbstraction, config, tokenHolders,
                 directoryFactory, operationalMode, scheduler, log );
-
-        String procedureRegistrationFailureMessage = "Failed to register the fulltext index procedures. The fulltext index provider will be loaded and " +
-                "updated like normal, but it might not be possible to query any fulltext indexes. The reason given is: ";
-        try
-        {
-            dependencies.procedures().registerComponent( FulltextAdapter.class, procContext -> provider, true );
-            dependencies.procedures().registerProcedure( FulltextProcedures.class );
-        }
-        catch ( KernelException e )
-        {
-            String message = procedureRegistrationFailureMessage + e.getUserMessage( new NonTransactionalTokenNameLookup( tokenHolders ) );
-            // We use the 'warn' logger in this case, because it can occur due to multi-database shenanigans.
-            // These scenarios are less serious, and will _probably_ not prevent FTS from working. Hence we only warn about this.
-            logDependencyException( context, log.debugLogger(), log.warnLogger(), message );
-        }
-        catch ( UnsatisfiedDependencyException e )
-        {
-            String message = procedureRegistrationFailureMessage + e.getMessage();
-            logDependencyException( context, log.debugLogger(), log.errorLogger(), message );
-        }
-
-        return provider;
-    }
-
-    private static void logDependencyException( ExtensionContext context, Logger toolLog, Logger dbmsLog, String message )
-    {
-        // We can for instance get unsatisfied dependency exceptions when the kernel extension is created as part of a consistency check run.
-        if ( context.databaseInfo() == DatabaseInfo.TOOL )
-        {
-            toolLog.log( message );
-        }
-        else
-        {
-            // If we are not in a "TOOL" context, then we log this at the "DBMS" level, since it might be important for correctness.
-            dbmsLog.log( message );
-        }
     }
 }

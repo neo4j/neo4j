@@ -84,7 +84,7 @@ import org.neo4j.kernel.impl.newapi.DefaultPooledCursors;
 import org.neo4j.kernel.impl.newapi.IndexTxStateUpdater;
 import org.neo4j.kernel.impl.newapi.KernelToken;
 import org.neo4j.kernel.impl.newapi.Operations;
-import org.neo4j.kernel.impl.proc.Procedures;
+import org.neo4j.kernel.impl.proc.GlobalProcedures;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
@@ -197,7 +197,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private final Lock terminationReleaseLock = new ReentrantLock();
 
     public KernelTransactionImplementation( Config config, StatementOperationParts statementOperations, SchemaWriteGuard schemaWriteGuard,
-            TransactionHooks hooks, ConstraintIndexCreator constraintIndexCreator, Procedures procedures,
+            TransactionHooks hooks, ConstraintIndexCreator constraintIndexCreator, GlobalProcedures globalProcedures,
             TransactionHeaderInformationFactory headerInformationFactory, TransactionCommitProcess commitProcess, TransactionMonitor transactionMonitor,
             Pool<KernelTransactionImplementation> pool, Clock clock,
             AtomicReference<CpuClock> cpuClockRef, AtomicReference<HeapAllocation> heapAllocationRef, TransactionTracer transactionTracer,
@@ -227,7 +227,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.constraintSemantics = constraintSemantics;
         DefaultPooledCursors cursors = new DefaultPooledCursors( storageReader );
         this.allStoreHolder =
-                new AllStoreHolder( storageReader, this, cursors, procedures, schemaState, indexingService, labelScanStore, indexStatisticsStore,
+                new AllStoreHolder( storageReader, this, cursors, globalProcedures, schemaState, indexingService, labelScanStore, indexStatisticsStore,
                         dependencies );
         this.operations =
                 new Operations(

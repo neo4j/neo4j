@@ -60,16 +60,18 @@ import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.core.TokenHolders;
 import org.neo4j.kernel.impl.factory.AccessCapability;
 import org.neo4j.kernel.impl.factory.CanWrite;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.SimpleStatementLocksFactory;
 import org.neo4j.kernel.impl.locking.StatementLocksFactory;
-import org.neo4j.kernel.impl.proc.Procedures;
+import org.neo4j.kernel.impl.proc.GlobalProcedures;
 import org.neo4j.kernel.impl.store.TransactionId;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
+import org.neo4j.kernel.impl.util.DefaultValueMapper;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -722,12 +724,12 @@ public class KernelTransactionsTest
     {
         return new KernelTransactions( config, statementLocksFactory, null, statementOperations,
                 null, DEFAULT, commitProcess, new TransactionHooks(),
-                mock( TransactionMonitor.class ), databaseAvailabilityGuard, tracers, storageEngine, new Procedures(), transactionIdStore, clock,
+                mock( TransactionMonitor.class ), databaseAvailabilityGuard, tracers, storageEngine, new GlobalProcedures(), transactionIdStore, clock,
                 new AtomicReference<>( CpuClock.NOT_AVAILABLE ), new AtomicReference<>( HeapAllocation.NOT_AVAILABLE ),
                 new CanWrite(), EmptyVersionContextSupplier.EMPTY, ON_HEAP,
                 mock( ConstraintSemantics.class ), mock( SchemaState.class ),
                 mockedTokenHolders(), DEFAULT_DATABASE_NAME, mock( IndexingService.class ), mock( LabelScanStore.class ),
-                mock( IndexStatisticsStore.class ), new Dependencies(), new Monitors() );
+                mock( IndexStatisticsStore.class ), createDependencies(), new Monitors() );
     }
 
     private static TestKernelTransactions createTestTransactions( StorageEngine storageEngine,
@@ -735,9 +737,17 @@ public class KernelTransactionsTest
             StatementLocksFactory statementLocksFactory, StatementOperationParts statementOperations,
             SystemNanoClock clock, AvailabilityGuard databaseAvailabilityGuard )
     {
+        Dependencies dependencies = createDependencies();
         return new TestKernelTransactions( statementLocksFactory, null, statementOperations, null, DEFAULT, commitProcess,
-                new TransactionHooks(), mock( TransactionMonitor.class ), databaseAvailabilityGuard, tracers, storageEngine, new Procedures(),
-                transactionIdStore, clock, new CanWrite(), EmptyVersionContextSupplier.EMPTY, mockedTokenHolders(), new Dependencies(), new Monitors() );
+                new TransactionHooks(), mock( TransactionMonitor.class ), databaseAvailabilityGuard, tracers, storageEngine, new GlobalProcedures(),
+                transactionIdStore, clock, new CanWrite(), EmptyVersionContextSupplier.EMPTY, mockedTokenHolders(), dependencies, new Monitors() );
+    }
+
+    private static Dependencies createDependencies()
+    {
+        Dependencies dependencies = new Dependencies();
+        dependencies.satisfyDependency( new DefaultValueMapper( new GraphDatabaseFacade() ) );
+        return dependencies;
     }
 
     private static TransactionCommitProcess newRememberingCommitProcess( final TransactionRepresentation[] slot )
@@ -784,17 +794,17 @@ public class KernelTransactionsTest
                 SchemaWriteGuard schemaWriteGuard, TransactionHeaderInformationFactory txHeaderFactory,
                 TransactionCommitProcess transactionCommitProcess,
                 TransactionHooks hooks, TransactionMonitor transactionMonitor, AvailabilityGuard databaseAvailabilityGuard, Tracers tracers,
-                StorageEngine storageEngine, Procedures procedures, TransactionIdStore transactionIdStore, SystemNanoClock clock,
+                StorageEngine storageEngine, GlobalProcedures globalProcedures, TransactionIdStore transactionIdStore, SystemNanoClock clock,
                 AccessCapability accessCapability,
-                VersionContextSupplier versionContextSupplier, TokenHolders tokenHolders, Dependencies dataSourceDependencies, Monitors monitors )
+                VersionContextSupplier versionContextSupplier, TokenHolders tokenHolders, Dependencies databaseDependencies, Monitors monitors )
         {
             super( Config.defaults(), statementLocksFactory, constraintIndexCreator, statementOperations, schemaWriteGuard, txHeaderFactory,
                     transactionCommitProcess, hooks, transactionMonitor, databaseAvailabilityGuard, tracers,
-                    storageEngine, procedures, transactionIdStore, clock, new AtomicReference<>( CpuClock.NOT_AVAILABLE ),
+                    storageEngine, globalProcedures, transactionIdStore, clock, new AtomicReference<>( CpuClock.NOT_AVAILABLE ),
                     new AtomicReference<>( HeapAllocation.NOT_AVAILABLE ), accessCapability,
                     versionContextSupplier, ON_HEAP, new StandardConstraintSemantics(), mock( SchemaState.class ), tokenHolders,
                     DEFAULT_DATABASE_NAME, mock( IndexingService.class ), mock( LabelScanStore.class ), mock( IndexStatisticsStore.class ),
-                    dataSourceDependencies, monitors );
+                    databaseDependencies, monitors );
         }
 
         @Override

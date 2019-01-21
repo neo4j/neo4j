@@ -45,10 +45,11 @@ import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.factory.CanWrite;
 import org.neo4j.kernel.impl.locking.NoOpClient;
 import org.neo4j.kernel.impl.locking.SimpleStatementLocks;
-import org.neo4j.kernel.impl.proc.Procedures;
+import org.neo4j.kernel.impl.proc.GlobalProcedures;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionTracer;
+import org.neo4j.kernel.impl.util.DefaultValueMapper;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.resources.CpuClock;
 import org.neo4j.resources.HeapAllocation;
@@ -341,22 +342,24 @@ public class KernelTransactionTerminationTest
     {
         final CommitTrackingMonitor monitor;
 
-        TestKernelTransaction( CommitTrackingMonitor monitor )
+        TestKernelTransaction( CommitTrackingMonitor monitor, Dependencies dependencies )
         {
             super( Config.defaults(), mock( StatementOperationParts.class ), mock( SchemaWriteGuard.class ), new TransactionHooks(),
-                    mock( ConstraintIndexCreator.class ), new Procedures(), TransactionHeaderInformationFactory.DEFAULT, mock( TransactionCommitProcess.class ),
-                    monitor, mock( Pool.class ), Clocks.fakeClock(),
+                    mock( ConstraintIndexCreator.class ), new GlobalProcedures(), TransactionHeaderInformationFactory.DEFAULT,
+                    mock( TransactionCommitProcess.class ), monitor, mock( Pool.class ), Clocks.fakeClock(),
                     new AtomicReference<>( CpuClock.NOT_AVAILABLE ), new AtomicReference<>( HeapAllocation.NOT_AVAILABLE ), TransactionTracer.NULL,
                     LockTracer.NONE, PageCursorTracerSupplier.NULL, mock( StorageEngine.class, RETURNS_MOCKS ), new CanWrite(),
                     EmptyVersionContextSupplier.EMPTY, ON_HEAP, new StandardConstraintSemantics(), mock( SchemaState.class ),
-                    mockedTokenHolders(), mock( IndexingService.class ), mock( LabelScanStore.class ), mock( IndexStatisticsStore.class ), new Dependencies() );
+                    mockedTokenHolders(), mock( IndexingService.class ), mock( LabelScanStore.class ), mock( IndexStatisticsStore.class ), dependencies );
 
             this.monitor = monitor;
         }
 
         static TestKernelTransaction create()
         {
-            return new TestKernelTransaction( new CommitTrackingMonitor() );
+            Dependencies dependencies = new Dependencies();
+            dependencies.satisfyDependency( mock( DefaultValueMapper.class ) );
+            return new TestKernelTransaction( new CommitTrackingMonitor(), dependencies );
         }
 
         TestKernelTransaction initialize()

@@ -115,7 +115,7 @@ public class BuiltInDbmsProceduresIT extends KernelIntegrationTest
     {
         QualifiedName procedureName = procedureName( "dbms", "listConfig" );
         RawIterator<Object[],ProcedureException> callResult =
-                dbmsOperations().procedureCallDbms( procedureName, toArray( seatchString ), dependencyResolver, AUTH_DISABLED, resourceTracker );
+                dbmsOperations().procedureCallDbms( procedureName, toArray( seatchString ), dependencyResolver, AUTH_DISABLED, resourceTracker, valueMapper );
         return asList( callResult );
     }
 }

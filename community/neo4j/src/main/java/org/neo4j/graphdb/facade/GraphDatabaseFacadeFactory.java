@@ -38,9 +38,10 @@ import org.neo4j.graphdb.security.URLAccessRule;
 import org.neo4j.graphdb.spatial.Geometry;
 import org.neo4j.graphdb.spatial.Point;
 import org.neo4j.helpers.collection.Pair;
-import org.neo4j.internal.DataCollectorManager;
+import org.neo4j.internal.collector.DataCollector;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.impl.fulltext.FulltextAdapter;
 import org.neo4j.kernel.api.security.provider.SecurityProvider;
 import org.neo4j.kernel.availability.StartupWaiter;
 import org.neo4j.kernel.builtinprocs.SpecialBuiltInProcedures;
@@ -51,9 +52,9 @@ import org.neo4j.kernel.impl.cache.VmPauseMonitorComponent;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.pagecache.PublishPageCacheTracerMetricsAfterStart;
+import org.neo4j.kernel.impl.proc.GlobalProcedures;
 import org.neo4j.kernel.impl.proc.ProcedureConfig;
 import org.neo4j.kernel.impl.proc.ProcedureTransactionProvider;
-import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.proc.TerminationGuardProvider;
 import org.neo4j.kernel.impl.query.QueryEngineProvider;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -169,21 +170,13 @@ public class GraphDatabaseFacadeFactory
 
         platform.life.add( new VmPauseMonitorComponent( config, platform.logService.getInternalLog( VmPauseMonitorComponent.class ), platform.jobScheduler ) );
 
-        Procedures procedures = setupProcedures( platform, edition, graphDatabaseFacade );
-        platform.dependencies.satisfyDependency( new NonTransactionalDbmsOperations( procedures ) );
+        GlobalProcedures globalProcedures = setupProcedures( platform, edition );
+        platform.dependencies.satisfyDependency( new NonTransactionalDbmsOperations( globalProcedures ) );
 
         Logger logger = platform.logService.getInternalLog( getClass() ).infoLogger();
-        DatabaseManager databaseManager = createAndInitializeDatabaseManager( platform, edition, graphDatabaseFacade, procedures, logger );
+        DatabaseManager databaseManager = createAndInitializeDatabaseManager( platform, edition, graphDatabaseFacade, globalProcedures, logger );
 
-        DataCollectorManager dataCollectorManager =
-                new DataCollectorManager( databaseManager,
-                                          platform.jobScheduler,
-                                          procedures,
-                                          config,
-                                          platform.monitors );
-        platform.life.add( dataCollectorManager );
-
-        edition.createSecurityModule( platform, procedures );
+        edition.createSecurityModule( platform, globalProcedures );
         SecurityProvider securityProvider = edition.getSecurityProvider();
         platform.dependencies.satisfyDependencies( securityProvider.authManager() );
         platform.dependencies.satisfyDependencies( securityProvider.userManagerSupplier() );
@@ -245,55 +238,54 @@ public class GraphDatabaseFacadeFactory
         return new PlatformModule( storeDir, config, databaseInfo, dependencies );
     }
 
-    private static Procedures setupProcedures( PlatformModule platform, AbstractEditionModule editionModule, GraphDatabaseFacade facade )
+    private static GlobalProcedures setupProcedures( PlatformModule platform, AbstractEditionModule editionModule )
     {
-        File pluginDir = platform.config.get( GraphDatabaseSettings.plugin_dir );
-        Log internalLog = platform.logService.getInternalLog( Procedures.class );
-        Log proceduresLog = platform.logService.getUserLog( Procedures.class );
+        File proceduresDirectory = platform.config.get( GraphDatabaseSettings.plugin_dir );
+        Log internalLog = platform.logService.getInternalLog( GlobalProcedures.class );
+        Log proceduresLog = platform.logService.getUserLog( GlobalProcedures.class );
 
         ProcedureConfig procedureConfig = new ProcedureConfig( platform.config );
-        Procedures procedures =
-                new Procedures( facade, new SpecialBuiltInProcedures( Version.getNeo4jVersion(), platform.databaseInfo.edition.toString() ), pluginDir,
-                        internalLog, procedureConfig );
-        platform.life.add( procedures );
-        platform.dependencies.satisfyDependency( procedures );
+        SpecialBuiltInProcedures builtInProcedures = new SpecialBuiltInProcedures( Version.getNeo4jVersion(), platform.databaseInfo.edition.toString() );
+        GlobalProcedures globalProcedures = new GlobalProcedures( builtInProcedures, proceduresDirectory, internalLog, procedureConfig );
 
-        procedures.registerType( Node.class, NTNode );
-        procedures.registerType( Relationship.class, NTRelationship );
-        procedures.registerType( Path.class, NTPath );
-        procedures.registerType( Geometry.class, NTGeometry );
-        procedures.registerType( Point.class, NTPoint );
-
-        // Register injected public API components
-        procedures.registerComponent( Log.class, ctx -> proceduresLog, true );
-        procedures.registerComponent( ProcedureTransaction.class, new ProcedureTransactionProvider(), true );
-        procedures.registerComponent( org.neo4j.procedure.TerminationGuard.class, new TerminationGuardProvider(), true );
+        globalProcedures.registerType( Node.class, NTNode );
+        globalProcedures.registerType( Relationship.class, NTRelationship );
+        globalProcedures.registerType( Path.class, NTPath );
+        globalProcedures.registerType( Geometry.class, NTGeometry );
+        globalProcedures.registerType( Point.class, NTPoint );
 
         // Below components are not public API, but are made available for internal
-        // procedures to call, and to provide temporary workarounds for the following
+        // globalProcedures to call, and to provide temporary workarounds for the following
         // patterns:
         //  - Batch-transaction imports (GDAPI, needs to be real and passed to background processing threads)
         //  - Group-transaction writes (same pattern as above, but rather than splitting large transactions,
         //                              combine lots of small ones)
         //  - Bleeding-edge performance (KernelTransaction, to bypass overhead of working with Core API)
-        procedures.registerComponent( DependencyResolver.class, ctx -> ctx.get( DEPENDENCY_RESOLVER ), false );
-        procedures.registerComponent( KernelTransaction.class, ctx -> ctx.get( KERNEL_TRANSACTION ), false );
-        procedures.registerComponent( GraphDatabaseAPI.class, ctx -> ctx.get( DATABASE_API ), false );
+        globalProcedures.registerComponent( DependencyResolver.class, ctx -> ctx.get( DEPENDENCY_RESOLVER ), false );
+        globalProcedures.registerComponent( KernelTransaction.class, ctx -> ctx.get( KERNEL_TRANSACTION ), false );
+        globalProcedures.registerComponent( GraphDatabaseAPI.class, ctx -> ctx.get( DATABASE_API ), false );
 
-        // Security procedures
-        procedures.registerComponent( SecurityContext.class, ctx -> ctx.get( SECURITY_CONTEXT ), true );
+        // Register injected public API components
+        globalProcedures.registerComponent( Log.class, ctx -> proceduresLog, true );
+        globalProcedures.registerComponent( ProcedureTransaction.class, new ProcedureTransactionProvider(), true );
+        globalProcedures.registerComponent( org.neo4j.procedure.TerminationGuard.class, new TerminationGuardProvider(), true );
+        globalProcedures.registerComponent( SecurityContext.class, ctx -> ctx.get( SECURITY_CONTEXT ), true );
+        globalProcedures.registerComponent( FulltextAdapter.class, ctx -> ctx.get( DEPENDENCY_RESOLVER ).resolveDependency( FulltextAdapter.class ), true );
+        globalProcedures.registerComponent( DataCollector.class, ctx -> ctx.get( DEPENDENCY_RESOLVER ).resolveDependency( DataCollector.class ), false );
 
         // Edition procedures
         try
         {
-            editionModule.registerProcedures( procedures, procedureConfig );
+            editionModule.registerProcedures( globalProcedures, procedureConfig );
         }
         catch ( KernelException e )
         {
             internalLog.error( "Failed to register built-in edition procedures at start up: " + e.getMessage() );
         }
 
-        return procedures;
+        platform.life.add( globalProcedures );
+        platform.dependencies.satisfyDependency( globalProcedures );
+        return globalProcedures;
     }
 
     private static BoltServer createBoltServer( PlatformModule platform, AbstractEditionModule edition, DatabaseManager databaseManager )
@@ -304,9 +296,9 @@ public class GraphDatabaseFacadeFactory
     }
 
     private static DatabaseManager createAndInitializeDatabaseManager( PlatformModule platform, AbstractEditionModule edition,
-            GraphDatabaseFacade facade, Procedures procedures, Logger logger )
+            GraphDatabaseFacade facade, GlobalProcedures globalProcedures, Logger logger )
     {
-        DatabaseManager databaseManager = edition.createDatabaseManager( facade, platform, edition, procedures, logger );
+        DatabaseManager databaseManager = edition.createDatabaseManager( facade, platform, edition, globalProcedures, logger );
         if ( !edition.handlesDatabaseManagerLifecycle() )
         {
             // only add database manager to the lifecycle when edition doesn't manage it already

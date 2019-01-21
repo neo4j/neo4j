@@ -30,7 +30,7 @@ import org.neo4j.graphdb.factory.module.PlatformModule;
 import org.neo4j.graphdb.factory.module.edition.AbstractEditionModule;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
-import org.neo4j.kernel.impl.proc.Procedures;
+import org.neo4j.kernel.impl.proc.GlobalProcedures;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Logger;
 
@@ -43,16 +43,16 @@ public final class DefaultDatabaseManager extends LifecycleAdapter implements Da
     private DatabaseContext databaseContext;
     private final PlatformModule platform;
     private final AbstractEditionModule edition;
-    private final Procedures procedures;
+    private final GlobalProcedures globalProcedures;
     private final Logger log;
     private final GraphDatabaseFacade graphDatabaseFacade;
 
-    public DefaultDatabaseManager( PlatformModule platform, AbstractEditionModule edition, Procedures procedures,
+    public DefaultDatabaseManager( PlatformModule platform, AbstractEditionModule edition, GlobalProcedures globalProcedures,
             Logger log, GraphDatabaseFacade graphDatabaseFacade )
     {
         this.platform = platform;
         this.edition = edition;
-        this.procedures = procedures;
+        this.globalProcedures = globalProcedures;
         this.log = log;
         this.graphDatabaseFacade = graphDatabaseFacade;
     }
@@ -68,7 +68,7 @@ public final class DefaultDatabaseManager extends LifecycleAdapter implements Da
     {
         checkState( databaseContext == null, "Database is already created, fail to create another one." );
         log.log( "Creating '%s' database.", databaseName );
-        DatabaseModule databaseModule = new DatabaseModule( databaseName, platform, edition, procedures, graphDatabaseFacade );
+        DatabaseModule databaseModule = new DatabaseModule( databaseName, platform, edition, globalProcedures, graphDatabaseFacade );
         Database database = databaseModule.database;
         ClassicCoreSPI spi =
                 new ClassicCoreSPI( platform, databaseModule, log, databaseModule.getCoreAPIAvailabilityGuard(), edition.getThreadToTransactionBridge() );

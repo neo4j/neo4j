@@ -45,17 +45,13 @@ import org.neo4j.scheduler.JobScheduler;
 class QueryCollector extends CollectorStateMachine<Iterator<QuerySnapshot>> implements QueryExecutionMonitor
 {
     private volatile boolean isCollecting;
-    private final ConcurrentLinkedQueue<QuerySnapshot> queries;
+    private final ConcurrentLinkedQueue<QuerySnapshot> queries = new ConcurrentLinkedQueue<>();
     private final JobScheduler jobScheduler;
 
     QueryCollector( JobScheduler jobScheduler )
     {
         this.jobScheduler = jobScheduler;
-        isCollecting = false;
-        queries = new ConcurrentLinkedQueue<>();
     }
-
-    // CollectorStateMachine
 
     @Override
     Result doCollect( Map<String,Object> config, long collectionId ) throws InvalidArgumentsException

@@ -90,7 +90,7 @@ import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ReentrantLockService;
 import org.neo4j.kernel.impl.locking.StatementLocksFactory;
 import org.neo4j.kernel.impl.pagecache.PageCacheLifecycle;
-import org.neo4j.kernel.impl.proc.Procedures;
+import org.neo4j.kernel.impl.proc.GlobalProcedures;
 import org.neo4j.kernel.impl.query.QueryEngineProvider;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.store.id.IdController;
@@ -132,6 +132,7 @@ import org.neo4j.kernel.impl.transaction.state.DatabaseFileListing;
 import org.neo4j.kernel.impl.transaction.state.DefaultIndexProviderMap;
 import org.neo4j.kernel.impl.transaction.state.storeview.DynamicIndexStoreView;
 import org.neo4j.kernel.impl.transaction.state.storeview.NeoStoreIndexStoreView;
+import org.neo4j.kernel.impl.util.DefaultValueMapper;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier;
 import org.neo4j.kernel.internal.DatabaseEventHandlers;
@@ -192,7 +193,7 @@ public class Database extends LifecycleAdapter
     private final TransactionHeaderInformationFactory transactionHeaderInformationFactory;
     private final CommitProcessFactory commitProcessFactory;
     private final ConstraintSemantics constraintSemantics;
-    private final Procedures procedures;
+    private final GlobalProcedures globalProcedures;
     private final IOLimiter ioLimiter;
     private final DatabaseAvailabilityGuard databaseAvailabilityGuard;
     private final SystemNanoClock clock;
@@ -253,7 +254,7 @@ public class Database extends LifecycleAdapter
         this.globalMonitors = context.getMonitors();
         this.globalTracers = context.getTracers();
         this.globalConfig = context.getConfig();
-        this.procedures = context.getProcedures();
+        this.globalProcedures = context.getGlobalProcedures();
         this.ioLimiter = context.getIoLimiter();
         this.databaseAvailabilityGuard = context.getDatabaseAvailabilityGuard();
         this.clock = context.getClock();
@@ -312,6 +313,7 @@ public class Database extends LifecycleAdapter
             databaseDependencies.satisfyDependency( idController );
             databaseDependencies.satisfyDependency( new IdBasedStoreEntityCounters( this.idGeneratorFactory ) );
             databaseDependencies.satisfyDependency( lockService );
+            databaseDependencies.satisfyDependency( new DefaultValueMapper( facade ) );
 
             DefaultLogRotationMonitor logRotationMonitor = new DefaultLogRotationMonitor();
             DefaultCheckPointMonitor checkPointMonitor = new DefaultCheckPointMonitor();
@@ -639,14 +641,14 @@ public class Database extends LifecycleAdapter
         KernelTransactions kernelTransactions = life.add(
                 new KernelTransactions( config, statementLocksFactory, constraintIndexCreator, statementOperationParts, schemaWriteGuard,
                         transactionHeaderInformationFactory, transactionCommitProcess, hooks,
-                        transactionMonitor, databaseAvailabilityGuard, globalTracers, storageEngine, procedures, transactionIdStore, clock, cpuClockRef,
+                        transactionMonitor, databaseAvailabilityGuard, globalTracers, storageEngine, globalProcedures, transactionIdStore, clock, cpuClockRef,
                         heapAllocationRef, accessCapability, versionContextSupplier, collectionsFactorySupplier,
                         constraintSemantics, databaseSchemaState, tokenHolders, getDatabaseName(), indexingService, labelScanStore, indexStatisticsStore,
                         databaseDependencies, databaseMonitors ) );
 
         buildTransactionMonitor( kernelTransactions, clock, config );
 
-        final KernelImpl kernel = new KernelImpl( kernelTransactions, hooks, databaseHealth, transactionMonitor, procedures,
+        final KernelImpl kernel = new KernelImpl( kernelTransactions, hooks, databaseHealth, transactionMonitor, globalProcedures,
                 config, storageEngine );
 
         kernel.registerTransactionHook( transactionEventHandlers );

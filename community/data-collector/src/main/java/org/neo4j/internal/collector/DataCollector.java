@@ -19,61 +19,44 @@
  */
 package org.neo4j.internal.collector;
 
-import org.neo4j.common.DependencyResolver;
-import org.neo4j.dbms.database.DatabaseContext;
-import org.neo4j.dbms.database.DatabaseManager;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.internal.kernel.api.Kernel;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.database.Database;
-import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
 import org.neo4j.kernel.impl.util.DefaultValueMapper;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.values.ValueMapper;
 
-public class DataCollector implements AutoCloseable
+public class DataCollector extends LifecycleAdapter
 {
-    private final DatabaseManager databaseManager;
-    private final Config config;
-    final JobScheduler jobScheduler;
-    final QueryCollector queryCollector;
+    private final Database database;
+    private final QueryCollector queryCollector;
 
-    DataCollector( DatabaseManager databaseManager,
-                   Config config,
-                   JobScheduler jobScheduler,
-                   Monitors monitors )
+    public DataCollector( Database database, JobScheduler jobScheduler, Monitors monitors )
     {
-        this.databaseManager = databaseManager;
-        this.config = config;
-        this.jobScheduler = jobScheduler;
+        this.database = database;
         this.queryCollector = new QueryCollector( jobScheduler );
         monitors.addMonitorListener( queryCollector );
     }
 
     @Override
-    public void close()
+    public void stop()
     {
-        // intended to eventually be used to stop any ongoing collection
+        queryCollector.doStop();
     }
 
     public Kernel getKernel()
     {
-        return databaseManager.getDatabaseContext( config.get( GraphDatabaseSettings.active_database ) )
-                .map( DatabaseContext::getDatabase )
-                .map( Database::getKernel )
-                .orElseThrow( () -> new IllegalStateException( "Active database not found." ) );
+        return database.getKernel();
     }
 
-    public ValueMapper.JavaMapper getValueMapper()
+    QueryCollector getQueryCollector()
     {
-        return databaseManager.getDatabaseContext( config.get( GraphDatabaseSettings.active_database ) )
-                .map( DatabaseContext::getDatabase )
-                .map( database -> {
-                    EmbeddedProxySPI spi = database.getDependencyResolver()
-                            .resolveDependency( EmbeddedProxySPI.class, DependencyResolver.SelectionStrategy.SINGLE );
-                    return new DefaultValueMapper( spi );
-                } )
-                .orElseThrow( () -> new IllegalStateException( "Active database not found." ) );
+        return queryCollector;
+    }
+
+    ValueMapper.JavaMapper getValueMapper()
+    {
+        return database.getDependencyResolver().resolveDependency( DefaultValueMapper.class );
     }
 }

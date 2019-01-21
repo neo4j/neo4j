@@ -33,7 +33,7 @@ import org.neo4j.kernel.api.proc.CallableUserAggregationFunction;
 import org.neo4j.kernel.api.proc.CallableUserFunction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.newapi.DefaultThreadSafeCursors;
-import org.neo4j.kernel.impl.proc.Procedures;
+import org.neo4j.kernel.impl.proc.GlobalProcedures;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -61,20 +61,20 @@ public class KernelImpl extends LifecycleAdapter implements InwardKernel
     private final TransactionHooks hooks;
     private final DatabaseHealth health;
     private final TransactionMonitor transactionMonitor;
-    private final Procedures procedures;
+    private final GlobalProcedures globalProcedures;
     private final Config config;
     private DefaultThreadSafeCursors cursors;
     private volatile boolean isRunning;
 
     public KernelImpl( KernelTransactions transactionFactory, TransactionHooks hooks, DatabaseHealth health,
                        TransactionMonitor transactionMonitor,
-                       Procedures procedures, Config config, StorageEngine storageEngine )
+                       GlobalProcedures globalProcedures, Config config, StorageEngine storageEngine )
     {
         this.transactions = transactionFactory;
         this.hooks = hooks;
         this.health = health;
         this.transactionMonitor = transactionMonitor;
-        this.procedures = procedures;
+        this.globalProcedures = globalProcedures;
         this.config = config;
         this.cursors = new DefaultThreadSafeCursors( storageEngine.newReader() );
     }
@@ -115,19 +115,19 @@ public class KernelImpl extends LifecycleAdapter implements InwardKernel
     @Override
     public void registerProcedure( CallableProcedure procedure ) throws ProcedureException
     {
-        procedures.register( procedure );
+        globalProcedures.register( procedure );
     }
 
     @Override
     public void registerUserFunction( CallableUserFunction function ) throws ProcedureException
     {
-        procedures.register( function );
+        globalProcedures.register( function );
     }
 
     @Override
     public void registerUserAggregationFunction( CallableUserAggregationFunction function ) throws ProcedureException
     {
-        procedures.register( function );
+        globalProcedures.register( function );
     }
 
     @Override

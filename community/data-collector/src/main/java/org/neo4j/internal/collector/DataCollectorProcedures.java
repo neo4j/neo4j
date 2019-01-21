@@ -63,7 +63,7 @@ public class DataCollectorProcedures
             return TokensSection.retrieve( dataCollector.getKernel() );
 
         case Sections.QUERIES:
-            return QueriesSection.retrieve( dataCollector.queryCollector.doGetData(),
+            return QueriesSection.retrieve( dataCollector.getQueryCollector().doGetData(),
                                             new PlainText( dataCollector.getValueMapper() ),
                                             RetrieveConfig.of( config ).maxInvocations );
 
@@ -87,7 +87,7 @@ public class DataCollectorProcedures
 
         return Stream.of( meta,
                           GraphCountsSection.retrieve( dataCollector.getKernel(), Anonymizer.IDS ),
-                          QueriesSection.retrieve( dataCollector.queryCollector.doGetData(),
+                          QueriesSection.retrieve( dataCollector.getQueryCollector().doGetData(),
                                                    new IdAnonymizer( transaction.tokenRead() ),
                                                    RetrieveConfig.of( config ).maxInvocations )
             ).flatMap( x -> x );
@@ -98,7 +98,7 @@ public class DataCollectorProcedures
     @Procedure( name = "db.stats.status", mode = Mode.READ )
     public Stream<StatusResult> status()
     {
-        CollectorStateMachine.Status status = dataCollector.queryCollector.status();
+        CollectorStateMachine.Status status = dataCollector.getQueryCollector().status();
         return Stream.of( new StatusResult( Sections.QUERIES, status.message, Collections.emptyMap() ) );
     }
 
@@ -138,7 +138,7 @@ public class DataCollectorProcedures
         case Sections.GRAPH_COUNTS:
             throw new InvalidArgumentsException( "Section '%s' does not have to be explicitly collected, it can always be directly retrieved." );
         case Sections.QUERIES:
-            return dataCollector.queryCollector;
+            return dataCollector.getQueryCollector();
         default:
             throw Sections.unknownSectionException( section );
         }
