@@ -119,7 +119,7 @@ public class TestIdGeneratorRebuilding
     }
 
     @Test
-    public void verifyDynamicSizedStoresCanRebuildIdGeneratorSlowly() throws Exception
+    public void verifyDynamicSizedStoresCanRebuildIdGeneratorSlowly()
     {
         // Given we have a store ...
         Config config = Config.defaults( GraphDatabaseSettings.rebuild_idgenerators_fast, "false" );

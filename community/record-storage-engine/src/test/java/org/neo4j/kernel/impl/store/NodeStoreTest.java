@@ -349,7 +349,7 @@ public class NodeStoreTest
         return newNodeStore( fs, pageCacheRule.getPageCache( fs ) );
     }
 
-    private NodeStore newNodeStore( FileSystemAbstraction fs, PageCache pageCache ) throws IOException
+    private NodeStore newNodeStore( FileSystemAbstraction fs, PageCache pageCache )
     {
         idGeneratorFactory = spy( new DefaultIdGeneratorFactory( fs )
         {

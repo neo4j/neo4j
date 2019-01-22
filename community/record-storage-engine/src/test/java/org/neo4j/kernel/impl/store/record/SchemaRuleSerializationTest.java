@@ -55,7 +55,7 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
     StoreIndexDescriptor indexCompositeRegular = forLabel( LABEL_ID, PROPERTY_ID_1, PROPERTY_ID_2 ).withId( RULE_ID );
 
     StoreIndexDescriptor indexMultiTokenRegular =
-            forSchema( multiToken( new int[]{LABEL_ID, LABEL_ID_2}, EntityType.NODE, new int[]{PROPERTY_ID_1, PROPERTY_ID_2} ) ).withId( RULE_ID );
+            forSchema( multiToken( new int[]{LABEL_ID, LABEL_ID_2}, EntityType.NODE, PROPERTY_ID_1, PROPERTY_ID_2 ) ).withId( RULE_ID );
 
     StoreIndexDescriptor indexCompositeUnique = uniqueForLabel( LABEL_ID, PROPERTY_ID_1, PROPERTY_ID_2 ).withIds( RULE_ID_2, RULE_ID );
 
