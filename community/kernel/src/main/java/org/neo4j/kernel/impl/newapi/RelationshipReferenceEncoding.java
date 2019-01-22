@@ -19,10 +19,10 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
+import static org.neo4j.kernel.impl.newapi.Read.NO_ID;
 
 /**
- * Relationship/relationship group references that leave the are exposed from the kernel API surface into the client
+ * Relationship/relationship group references that are exposed from the kernel API surface into the client
  * will have some flags encoded into them, basically to provide some context which will be lost when exiting the kernel.
  * The flags will help recreated that context when these references are passed back into the kernel API, i.e. when client uses them later.
  * <p>

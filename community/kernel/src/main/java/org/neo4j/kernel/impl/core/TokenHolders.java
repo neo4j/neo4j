@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import org.neo4j.kernel.impl.store.NeoStores;
-
 /**
  * Holds onto all available {@link TokenHolder} for easily passing all those around
  * and for easily extending available instances in one place.
@@ -51,36 +49,5 @@ public class TokenHolders
     public TokenHolder relationshipTypeTokens()
     {
         return relationshipTypeTokens;
-    }
-
-    private void setInitialTokens( NeoStores neoStores )
-    {
-        propertyKeyTokens().setInitialTokens( neoStores.getPropertyKeyTokenStore().getAllReadableTokens() );
-        labelTokens().setInitialTokens( neoStores.getLabelTokenStore().getAllReadableTokens() );
-        relationshipTypeTokens().setInitialTokens( neoStores.getRelationshipTypeTokenStore().getAllReadableTokens() );
-    }
-
-    /**
-     * Create read-only token holders initialised with the tokens from the given {@link NeoStores}.
-     * <p>
-     * Note that this call will ignore tokens that cannot be loaded due to inconsistencies, rather than throwing an exception.
-     * The reason for this is that the read-only token holders are primarily used by tools, such as the consistency checker.
-     *
-     * @param neoStores The {@link NeoStores} from which to load the initial tokens.
-     * @return TokenHolders that can be used for reading tokens, but cannot create new ones.
-     */
-    public static TokenHolders readOnlyTokenHolders( NeoStores neoStores )
-    {
-        TokenHolder propertyKeyTokens = createReadOnlyTokenHolder( TokenHolder.TYPE_PROPERTY_KEY );
-        TokenHolder labelTokens = createReadOnlyTokenHolder( TokenHolder.TYPE_LABEL );
-        TokenHolder relationshipTypeTokens = createReadOnlyTokenHolder( TokenHolder.TYPE_RELATIONSHIP_TYPE );
-        TokenHolders tokenHolders = new TokenHolders( propertyKeyTokens, labelTokens, relationshipTypeTokens );
-        tokenHolders.setInitialTokens( neoStores );
-        return tokenHolders;
-    }
-
-    private static TokenHolder createReadOnlyTokenHolder( String tokenType )
-    {
-        return new DelegatingTokenHolder( new ReadOnlyTokenCreator(), tokenType );
     }
 }

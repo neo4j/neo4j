@@ -30,7 +30,6 @@ import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.function.LongConsumer;
 import java.util.function.LongPredicate;
 
 import org.neo4j.function.Predicates;

@@ -412,7 +412,7 @@ public class NeoStores implements AutoCloseable
             @Override
             protected CommonAbstractStore underlyingObjectToObject( StoreType type )
             {
-                return (CommonAbstractStore) stores[type.ordinal()];
+                return stores[type.ordinal()];
             }
         } );
     }

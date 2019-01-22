@@ -226,7 +226,7 @@ public enum TemporalType
                     if ( dataValue instanceof LongArray )
                     {
                         LongArray numbers = (LongArray) dataValue;
-                        OffsetTime[] times = new OffsetTime[(int) (numbers.length() / BLOCKS_TIME)];
+                        OffsetTime[] times = new OffsetTime[numbers.length() / BLOCKS_TIME];
                         for ( int i = 0; i < times.length; i++ )
                         {
                             long nanoOfDay = numbers.longValue( i * BLOCKS_TIME );
@@ -339,7 +339,7 @@ public enum TemporalType
                 if ( dataValue instanceof LongArray )
                 {
                     LongArray numbers = (LongArray) dataValue;
-                    DurationValue[] durations = new DurationValue[(int) (numbers.length() / BLOCKS_DURATION)];
+                    DurationValue[] durations = new DurationValue[numbers.length() / BLOCKS_DURATION];
                     for ( int i = 0; i < durations.length; i++ )
                     {
                         durations[i] = DurationValue.duration( numbers.longValue( i * BLOCKS_DURATION ), numbers.longValue( i * BLOCKS_DURATION + 1 ),

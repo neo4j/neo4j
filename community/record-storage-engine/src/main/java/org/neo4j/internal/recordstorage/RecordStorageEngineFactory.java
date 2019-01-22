@@ -28,8 +28,12 @@ import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.SchemaState;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
+import org.neo4j.kernel.impl.core.DelegatingTokenHolder;
+import org.neo4j.kernel.impl.core.ReadOnlyTokenCreator;
+import org.neo4j.kernel.impl.core.TokenHolder;
 import org.neo4j.kernel.impl.core.TokenHolders;
 import org.neo4j.kernel.impl.locking.LockService;
+import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.id.IdController;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.storemigration.RecordStorageMigrator;
@@ -96,11 +100,42 @@ public class RecordStorageEngineFactory extends StorageEngineFactory
     public ReadableStorageEngine instantiateReadable( DependencyResolver dependencyResolver )
     {
         return new ReadableRecordStorageEngine(
-            dependencyResolver.resolveDependency( DatabaseLayout.class ),
-            dependencyResolver.resolveDependency( Config.class ),
-            dependencyResolver.resolveDependency( PageCache.class ),
-            dependencyResolver.resolveDependency( FileSystemAbstraction.class ),
-            dependencyResolver.resolveDependency( LogService.class ).getInternalLogProvider(),
-            dependencyResolver.resolveDependency( VersionContextSupplier.class ) );
+                dependencyResolver.resolveDependency( DatabaseLayout.class ),
+                dependencyResolver.resolveDependency( Config.class ),
+                dependencyResolver.resolveDependency( PageCache.class ),
+                dependencyResolver.resolveDependency( FileSystemAbstraction.class ),
+                dependencyResolver.resolveDependency( LogService.class ).getInternalLogProvider(),
+                dependencyResolver.resolveDependency( VersionContextSupplier.class ) );
+    }
+
+    public static void setInitialTokens( TokenHolders tokenHolders, NeoStores neoStores )
+    {
+        tokenHolders.propertyKeyTokens().setInitialTokens( neoStores.getPropertyKeyTokenStore().getAllReadableTokens() );
+        tokenHolders.labelTokens().setInitialTokens( neoStores.getLabelTokenStore().getAllReadableTokens() );
+        tokenHolders.relationshipTypeTokens().setInitialTokens( neoStores.getRelationshipTypeTokenStore().getAllReadableTokens() );
+    }
+
+    /**
+     * Create read-only token holders initialised with the tokens from the given {@link NeoStores}.
+     * <p>
+     * Note that this call will ignore tokens that cannot be loaded due to inconsistencies, rather than throwing an exception.
+     * The reason for this is that the read-only token holders are primarily used by tools, such as the consistency checker.
+     *
+     * @param neoStores The {@link NeoStores} from which to load the initial tokens.
+     * @return TokenHolders that can be used for reading tokens, but cannot create new ones.
+     */
+    public static TokenHolders readOnlyTokenHolders( NeoStores neoStores )
+    {
+        TokenHolder propertyKeyTokens = createReadOnlyTokenHolder( TokenHolder.TYPE_PROPERTY_KEY );
+        TokenHolder labelTokens = createReadOnlyTokenHolder( TokenHolder.TYPE_LABEL );
+        TokenHolder relationshipTypeTokens = createReadOnlyTokenHolder( TokenHolder.TYPE_RELATIONSHIP_TYPE );
+        TokenHolders tokenHolders = new TokenHolders( propertyKeyTokens, labelTokens, relationshipTypeTokens );
+        setInitialTokens( tokenHolders, neoStores );
+        return tokenHolders;
+    }
+
+    private static TokenHolder createReadOnlyTokenHolder( String tokenType )
+    {
+        return new DelegatingTokenHolder( new ReadOnlyTokenCreator(), tokenType );
     }
 }
