@@ -17,16 +17,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.store.format;
+package org.neo4j.storageengine.api.format;
 
-import static java.lang.String.format;
-
-public class UnsupportedFormatCapabilityException extends RuntimeException
+public enum CapabilityType
 {
-    public UnsupportedFormatCapabilityException( LuceneCapability capability )
-    {
-        super( format( "Current record format does not support %s. " +
-                        "Please upgrade your store to the format that support requested capability.",
-                capability.name() ) );
-    }
+    FORMAT,
+    STORE,
+    INDEX
 }

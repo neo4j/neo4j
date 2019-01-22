@@ -24,28 +24,26 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.regex.Pattern;
 
 import org.neo4j.common.ProgressReporter;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.store.format.Capability;
-import org.neo4j.kernel.impl.store.format.RecordFormats;
+import org.neo4j.kernel.impl.store.format.LuceneCapability;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.internal.Version;
 import org.neo4j.kernel.recovery.LogTailScanner;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.storageengine.api.StoreVersion;
 import org.neo4j.storageengine.api.StoreVersionCheck;
 import org.neo4j.storageengine.migration.MigrationProgressMonitor;
 import org.neo4j.storageengine.migration.StoreMigrationParticipant;
 import org.neo4j.storageengine.migration.UpgradeNotAllowedException;
 
-import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.isStoreAndConfigFormatsCompatible;
-import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForStore;
 import static org.neo4j.kernel.impl.storemigration.ExistingTargetStrategy.FAIL;
 import static org.neo4j.kernel.impl.storemigration.FileOperation.COPY;
 import static org.neo4j.kernel.impl.storemigration.FileOperation.DELETE;
@@ -84,24 +82,20 @@ public class StoreUpgrader
     private final List<StoreMigrationParticipant> participants = new ArrayList<>();
     private final Config config;
     private final FileSystemAbstraction fileSystem;
-    private final PageCache pageCache;
     private final Log log;
     private final LogTailScanner logTailScanner;
-    private final LogProvider logProvider;
     private final LegacyTransactionLogsLocator legacyLogsLocator;
 
     private final String configuredFormat;
 
     public StoreUpgrader( StoreVersionCheck storeVersionCheck, MigrationProgressMonitor progressMonitor, Config
-            config, FileSystemAbstraction fileSystem, PageCache pageCache, LogProvider logProvider, LogTailScanner logTailScanner,
+            config, FileSystemAbstraction fileSystem, LogProvider logProvider, LogTailScanner logTailScanner,
             LegacyTransactionLogsLocator legacyLogsLocator )
     {
         this.storeVersionCheck = storeVersionCheck;
         this.progressMonitor = progressMonitor;
         this.fileSystem = fileSystem;
         this.config = config;
-        this.pageCache = pageCache;
-        this.logProvider = logProvider;
         this.legacyLogsLocator = legacyLogsLocator;
         this.log = logProvider.getLog( getClass() );
         this.logTailScanner = logTailScanner;
@@ -142,15 +136,12 @@ public class StoreUpgrader
         }
         else
         {
-            RecordFormats currentStoreFormat = selectForStore( layout, fileSystem, pageCache, logProvider );
-            if ( currentStoreFormat != null && currentStoreFormat.hasCapability( Capability.LUCENE_5 ) )
+            Optional<StoreVersion> storeVersion = storeVersionCheck.storeVersion();
+            if ( storeVersion.isPresent() && storeVersion.get().hasCapability( LuceneCapability.LUCENE_5 ) )
             {
                 throw new UpgradeNotAllowedException( "Upgrade is required to migrate store to new major version." );
             }
-            if ( !isStoreAndConfigFormatsCompatible( config, layout, fileSystem, pageCache, logProvider ) )
-            {
-                throw new UpgradeNotAllowedException();
-            }
+            throw new UpgradeNotAllowedException();
         }
     }
 
@@ -191,7 +182,7 @@ public class StoreUpgrader
             versionToMigrateFrom =
                     MigrationStatus.moving.maybeReadInfo( fileSystem, migrationStateFile, versionToMigrateFrom );
             moveMigratedFilesToStoreDirectory( participants, migrationLayout, dbDirectoryLayout,
-                    versionToMigrateFrom, storeVersionCheck.storeVersion() );
+                    versionToMigrateFrom, storeVersionCheck.storeVersion().orElseThrow( () -> new IOException( "Store version not found" ) ).storeVersion() );
         }
 
         progressMonitor.startTransactionLogsMigration();

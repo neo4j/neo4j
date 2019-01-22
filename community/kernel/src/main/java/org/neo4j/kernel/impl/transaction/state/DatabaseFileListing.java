@@ -34,7 +34,6 @@ import org.neo4j.io.IOUtils;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.impl.api.index.IndexingService;
-import org.neo4j.kernel.impl.store.format.RecordFormat;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.util.MultiResource;
 import org.neo4j.storageengine.api.StorageEngine;
@@ -47,9 +46,8 @@ public class DatabaseFileListing
     private final DatabaseLayout databaseLayout;
     private final LogFiles logFiles;
     private final StorageEngine storageEngine;
-    private static final Function<File, StoreFileMetadata> logFileMapper =
-            file -> new StoreFileMetadata( file, RecordFormat.NO_RECORD_SIZE, true );
-    private final NeoStoreFileIndexListing neoStoreFileIndexListing;
+    private static final Function<File,StoreFileMetadata> logFileMapper = file -> new StoreFileMetadata( file, 1, true );
+    private final SchemaAndIndexingFileIndexListing neoStoreFileIndexListing;
     private final Collection<StoreFileProvider> additionalProviders;
 
     public DatabaseFileListing( DatabaseLayout databaseLayout, LogFiles logFiles,
@@ -58,7 +56,7 @@ public class DatabaseFileListing
         this.databaseLayout = databaseLayout;
         this.logFiles = logFiles;
         this.storageEngine = storageEngine;
-        this.neoStoreFileIndexListing = new NeoStoreFileIndexListing( labelScanStore, indexingService );
+        this.neoStoreFileIndexListing = new SchemaAndIndexingFileIndexListing( labelScanStore, indexingService );
         this.additionalProviders = new CopyOnWriteArraySet<>();
     }
 
@@ -67,7 +65,7 @@ public class DatabaseFileListing
         return new StoreFileListingBuilder();
     }
 
-    public NeoStoreFileIndexListing getNeoStoreFileIndexListing()
+    public SchemaAndIndexingFileIndexListing getNeoStoreFileIndexListing()
     {
         return neoStoreFileIndexListing;
     }

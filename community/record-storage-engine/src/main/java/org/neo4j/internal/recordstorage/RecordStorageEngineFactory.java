@@ -55,7 +55,8 @@ public class RecordStorageEngineFactory extends StorageEngineFactory
         return new RecordStoreVersionCheck(
                 dependencyResolver.resolveDependency( FileSystemAbstraction.class ),
                 dependencyResolver.resolveDependency( PageCache.class ),
-                dependencyResolver.resolveDependency( DatabaseLayout.class ), dependencyResolver.resolveDependency( LogService.class ).getInternalLogProvider(),
+                dependencyResolver.resolveDependency( DatabaseLayout.class ),
+                dependencyResolver.resolveDependency( LogService.class ).getInternalLogProvider(),
                 dependencyResolver.resolveDependency( Config.class ) );
     }
 

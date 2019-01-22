@@ -25,13 +25,16 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
+import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.logging.internal.NullLogService;
+import org.neo4j.storageengine.api.StorageEngineFactory;
+import org.neo4j.storageengine.api.StoreVersionCheck;
 
 import static org.neo4j.kernel.recovery.RecoveryStartInformationProvider.NO_MONITOR;
 
@@ -51,20 +54,30 @@ public class RecoveryRequiredChecker
         this.config = config;
     }
 
-    public boolean isRecoveryRequiredAt( DatabaseLayout databaseLayout ) throws IOException
+    public boolean isRecoveryRequiredAt( StorageEngineFactory storageEngineFactory, DatabaseLayout databaseLayout ) throws IOException
     {
         LogTailScanner tailScanner = getLogTailScanner( databaseLayout );
-        return isRecoveryRequiredAt( databaseLayout, tailScanner );
+        return isRecoveryRequiredAt( storageEngineFactory, databaseLayout, tailScanner );
     }
 
-    boolean isRecoveryRequiredAt( DatabaseLayout databaseLayout, LogTailScanner tailScanner )
+    boolean isRecoveryRequiredAt( StorageEngineFactory storageEngineFactory, DatabaseLayout databaseLayout, LogTailScanner tailScanner )
     {
-        // We need config to determine where the logical log files are
-        if ( !NeoStores.isStorePresent( pageCache, databaseLayout ) )
+        Dependencies dependencies = new Dependencies();
+        dependencies.satisfyDependencies( fs, databaseLayout, pageCache, NullLogService.getInstance(), config );
+        StoreVersionCheck versionCheck = storageEngineFactory.versionCheck( dependencies );
+        try
         {
+            versionCheck.storeVersion();
+            // We could get a version from the store, which means it exists
+
+            // We need config to determine where the logical log files are
+            return new RecoveryStartInformationProvider( tailScanner, NO_MONITOR ).get().isRecoveryRequired();
+        }
+        catch ( IOException e )
+        {
+            // There was no store
             return false;
         }
-        return new RecoveryStartInformationProvider( tailScanner, NO_MONITOR ).get().isRecoveryRequired();
     }
 
     private LogTailScanner getLogTailScanner( DatabaseLayout databaseLayout ) throws IOException

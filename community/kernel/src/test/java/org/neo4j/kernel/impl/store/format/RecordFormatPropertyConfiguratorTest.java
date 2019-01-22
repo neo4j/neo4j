@@ -170,13 +170,13 @@ public class RecordFormatPropertyConfiguratorTest
         }
 
         @Override
-        public Capability[] capabilities()
+        public LuceneCapability[] capabilities()
         {
-            return new Capability[0];
+            return new LuceneCapability[0];
         }
 
         @Override
-        public boolean hasCapability( Capability capability )
+        public boolean hasCapability( LuceneCapability capability )
         {
             return false;
         }

@@ -19,13 +19,15 @@
  */
 package org.neo4j.kernel.impl.store.format;
 
+import org.neo4j.storageengine.api.format.CapabilityType;
+
 import static org.neo4j.helpers.ArrayUtil.contains;
 
 /**
  * A collection of high level capabilities a store can have, should not be more granular than necessary
  * for differentiating different version from one another.
  */
-public enum Capability
+public enum Capability implements org.neo4j.storageengine.api.format.Capability
 {
     /**
      * Store has schema support
@@ -41,16 +43,6 @@ public enum Capability
      * 3 bytes relationship type support
      */
     RELATIONSHIP_TYPE_3BYTES( CapabilityType.FORMAT, CapabilityType.STORE ),
-
-    /**
-     * Lucene version 7.x
-     */
-    LUCENE_7( CapabilityType.INDEX ),
-
-    /**
-     * Lucene version 5.x
-     */
-    LUCENE_5( CapabilityType.INDEX ),
 
     /**
      * Point Geometries are an addition to the format, not a change

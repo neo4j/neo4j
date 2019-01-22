@@ -130,17 +130,17 @@ public class ForcedSecondaryUnitRecordFormats implements RecordFormats
     }
 
     @Override
-    public Capability[] capabilities()
+    public LuceneCapability[] capabilities()
     {
-        Set<Capability> myCapabilities = Stream.of( actual.capabilities() ).collect( toSet() );
-        myCapabilities.add( Capability.SECONDARY_RECORD_UNITS );
-        return myCapabilities.toArray( new Capability[0] );
+        Set<LuceneCapability> myCapabilities = Stream.of( actual.capabilities() ).collect( toSet() );
+        myCapabilities.add( LuceneCapability.SECONDARY_RECORD_UNITS );
+        return myCapabilities.toArray( new LuceneCapability[0] );
     }
 
     @Override
-    public boolean hasCapability( Capability capability )
+    public boolean hasCapability( LuceneCapability capability )
     {
-        return capability == Capability.SECONDARY_RECORD_UNITS || actual.hasCapability( capability );
+        return capability == LuceneCapability.SECONDARY_RECORD_UNITS || actual.hasCapability( capability );
     }
 
     @Override

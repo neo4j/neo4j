@@ -77,8 +77,6 @@ abstract class Read implements TxStateHolder,
         LockingNodeUniqueIndexSeek.UniqueNodeIndexSeeker<DefaultNodeValueIndexCursor>,
         QueryContext
 {
-    static final int NO_ID = -1;
-
     private final StorageReader storageReader;
     private final DefaultPooledCursors cursors;
     final KernelTransactionImplementation ktx;
@@ -385,12 +383,12 @@ abstract class Read implements TxStateHolder,
         case SELECTION:
             // Reference was retrieved from RelationshipGroupCursor#outgoingReference() or similar for a sparse node
             // Do lazy selection, i.e. discover type/direction from the first relationship read, so that it can be used to query tx-state.
-            ((DefaultRelationshipTraversalCursor) cursor).init( nodeReference, clearEncoding( reference ), NO_ID, null, false, this );
+            ((DefaultRelationshipTraversalCursor) cursor).init( nodeReference, clearEncoding( reference ), ANY_RELATIONSHIP_TYPE, null, false, this );
             break;
         case DENSE_SELECTION:
             // Reference was retrieved from RelationshipGroupCursor#outgoingReference() or similar for a dense node
             // Do lazy selection, i.e. discover type/direction from the first relationship read, so that it can be used to query tx-state.
-            ((DefaultRelationshipTraversalCursor) cursor).init( nodeReference, clearEncoding( reference ), NO_ID, null, true, this );
+            ((DefaultRelationshipTraversalCursor) cursor).init( nodeReference, clearEncoding( reference ), ANY_RELATIONSHIP_TYPE, null, true, this );
             break;
         case NO_OUTGOING_OF_TYPE:
             // Reference was retrieved from RelationshipGroupCursor#outgoingReference() where there were no relationships in store

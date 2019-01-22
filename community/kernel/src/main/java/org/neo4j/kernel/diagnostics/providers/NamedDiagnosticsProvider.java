@@ -25,7 +25,7 @@ public abstract class NamedDiagnosticsProvider implements DiagnosticsProvider
 {
     private final String name;
 
-    NamedDiagnosticsProvider( String name )
+    protected NamedDiagnosticsProvider( String name )
     {
         this.name = name;
     }

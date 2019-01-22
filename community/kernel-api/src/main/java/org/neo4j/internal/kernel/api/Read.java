@@ -29,6 +29,7 @@ import org.neo4j.values.storable.Values;
  */
 public interface Read
 {
+    long NO_ID = -1;
     int ANY_LABEL = -1;
     int ANY_RELATIONSHIP_TYPE = -1;
 

@@ -40,7 +40,6 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.store.format.CapabilityType;
 import org.neo4j.kernel.impl.store.format.FormatFamily;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
@@ -50,6 +49,7 @@ import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.Logger;
+import org.neo4j.storageengine.api.format.CapabilityType;
 
 import static org.neo4j.helpers.collection.Iterators.iterator;
 import static org.neo4j.helpers.collection.Iterators.loop;

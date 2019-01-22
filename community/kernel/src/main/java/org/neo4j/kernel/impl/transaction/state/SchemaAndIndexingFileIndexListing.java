@@ -25,7 +25,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.function.Function;
 
 import org.neo4j.graphdb.Resource;
 import org.neo4j.graphdb.ResourceIterator;
@@ -33,19 +32,16 @@ import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.impl.api.index.IndexingService;
-import org.neo4j.kernel.impl.store.format.RecordFormat;
 import org.neo4j.storageengine.api.StoreFileMetadata;
 
 import static org.neo4j.helpers.collection.Iterators.resourceIterator;
 
-public class NeoStoreFileIndexListing
+public class SchemaAndIndexingFileIndexListing
 {
     private final LabelScanStore labelScanStore;
     private final IndexingService indexingService;
 
-    private static final Function<File,StoreFileMetadata> toStoreFileMetatadata = file -> new StoreFileMetadata( file, RecordFormat.NO_RECORD_SIZE );
-
-    NeoStoreFileIndexListing( LabelScanStore labelScanStore, IndexingService indexingService )
+    SchemaAndIndexingFileIndexListing( LabelScanStore labelScanStore, IndexingService indexingService )
     {
         this.labelScanStore = labelScanStore;
         this.indexingService = indexingService;
@@ -76,7 +72,7 @@ public class NeoStoreFileIndexListing
 
     private void getSnapshotFilesMetadata( ResourceIterator<File> snapshot, Collection<StoreFileMetadata> targetFiles )
     {
-        snapshot.stream().map( toStoreFileMetatadata ).forEach( targetFiles::add );
+        snapshot.stream().map( StoreFileMetadata::new ).forEach( targetFiles::add );
     }
 
     public ResourceIterator<StoreFileMetadata> getSnapshot( long indexId ) throws IOException

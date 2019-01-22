@@ -44,19 +44,19 @@ import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelExcep
 import org.neo4j.internal.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.storageengine.api.RelationshipVisitor;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
 import static java.lang.String.format;
+import static org.neo4j.internal.kernel.api.Read.NO_ID;
 
 public class RelationshipProxy implements Relationship, RelationshipVisitor<RuntimeException>
 {
     private final EmbeddedProxySPI spi;
-    private long id = AbstractBaseRecord.NO_ID;
-    private long startNode = AbstractBaseRecord.NO_ID;
-    private long endNode = AbstractBaseRecord.NO_ID;
+    private long id = NO_ID;
+    private long startNode = NO_ID;
+    private long endNode = NO_ID;
     private int type;
 
     public RelationshipProxy( EmbeddedProxySPI spi, long id, long startNode, int type, long endNode )
@@ -83,7 +83,7 @@ public class RelationshipProxy implements Relationship, RelationshipVisitor<Runt
     private void initializeData()
     {
         // it enough to check only start node, since it's absence will indicate that data was not yet loaded
-        if ( startNode == AbstractBaseRecord.NO_ID )
+        if ( startNode == NO_ID )
         {
             KernelTransaction transaction = spi.kernelTransaction();
             try ( Statement ignore = transaction.acquireStatement() )

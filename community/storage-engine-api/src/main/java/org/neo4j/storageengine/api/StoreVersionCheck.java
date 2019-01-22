@@ -19,17 +19,15 @@
  */
 package org.neo4j.storageengine.api;
 
-import java.io.IOException;
+import java.util.Optional;
 
 public interface StoreVersionCheck
 {
     /**
      * Store version of an existing store (this instance knows which store it's about).
      * @return store version of the existing store.
-     * @throws IOException if store or parts of store are missing.
-     * @throws IllegalStateException if store somehow is missing the version.
      */
-    String storeVersion() throws IOException;
+    Optional<StoreVersion> storeVersion();
 
     /**
      * Store version as dictated by configuration.

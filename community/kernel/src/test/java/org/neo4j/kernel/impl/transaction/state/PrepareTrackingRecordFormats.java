@@ -19,15 +19,14 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
-import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
 
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.impl.store.StoreHeader;
-import org.neo4j.kernel.impl.store.format.Capability;
 import org.neo4j.kernel.impl.store.format.CapabilityType;
 import org.neo4j.kernel.impl.store.format.FormatFamily;
+import org.neo4j.kernel.impl.store.format.LuceneCapability;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.standard.StandardFormatFamily;
@@ -129,7 +128,7 @@ public class PrepareTrackingRecordFormats implements RecordFormats
     }
 
     @Override
-    public Capability[] capabilities()
+    public LuceneCapability[] capabilities()
     {
         return actual.capabilities();
     }
@@ -141,7 +140,7 @@ public class PrepareTrackingRecordFormats implements RecordFormats
     }
 
     @Override
-    public boolean hasCapability( Capability capability )
+    public boolean hasCapability( LuceneCapability capability )
     {
         return actual.hasCapability( capability );
     }
@@ -201,7 +200,6 @@ public class PrepareTrackingRecordFormats implements RecordFormats
 
         @Override
         public void read( RECORD record, PageCursor cursor, RecordLoad mode, int recordSize )
-                throws IOException
         {
             actual.read( record, cursor, mode, recordSize );
         }
@@ -214,7 +212,7 @@ public class PrepareTrackingRecordFormats implements RecordFormats
         }
 
         @Override
-        public void write( RECORD record, PageCursor cursor, int recordSize ) throws IOException
+        public void write( RECORD record, PageCursor cursor, int recordSize )
         {
             actual.write( record, cursor, recordSize );
         }

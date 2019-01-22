@@ -52,7 +52,7 @@ import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
-import org.neo4j.kernel.impl.store.format.Capability;
+import org.neo4j.kernel.impl.store.format.LuceneCapability;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
@@ -170,10 +170,9 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
      * Called when expecting a clean {@code storeDir} folder and where a new store will be created.
      * This happens on an initial attempt to import.
      *
-     * @throws IOException on I/O error.
      * @throws IllegalStateException if {@code storeDir} already contains a database.
      */
-    public void createNew() throws IOException
+    public void createNew()
     {
         assertDatabaseIsEmptyOrNonExistent();
 
@@ -203,9 +202,8 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
      *
      * @param mainStoresToKeep {@link Predicate} controlling which files to keep, i.e. {@code true} means keep, {@code false} means delete.
      * @param tempStoresToKeep {@link Predicate} controlling which files to keep, i.e. {@code true} means keep, {@code false} means delete.
-     * @throws IOException on I/O error.
      */
-    public void pruneAndOpenExistingStore( Predicate<StoreType> mainStoresToKeep, Predicate<StoreType> tempStoresToKeep ) throws IOException
+    public void pruneAndOpenExistingStore( Predicate<StoreType> mainStoresToKeep, Predicate<StoreType> tempStoresToKeep )
     {
         deleteStoreFiles( temporaryDatabaseLayout, tempStoresToKeep );
         deleteStoreFiles( databaseLayout, mainStoresToKeep );
@@ -500,7 +498,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
     public boolean determineDoubleRelationshipRecordUnits( Estimates inputEstimates )
     {
         doubleRelationshipRecordUnits =
-                recordFormats.hasCapability( Capability.SECONDARY_RECORD_UNITS ) &&
+                recordFormats.hasCapability( LuceneCapability.SECONDARY_RECORD_UNITS ) &&
                 inputEstimates.numberOfRelationships() > DOUBLE_RELATIONSHIP_RECORD_UNIT_THRESHOLD;
         return doubleRelationshipRecordUnits;
     }

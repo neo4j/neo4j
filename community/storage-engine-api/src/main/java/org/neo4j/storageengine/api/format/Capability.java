@@ -17,11 +17,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.store.format;
+package org.neo4j.storageengine.api.format;
 
-public enum CapabilityType
+public interface Capability
 {
-    FORMAT,
-    STORE,
-    INDEX
+    boolean isType( CapabilityType type );
+
+    boolean isAdditive();
 }

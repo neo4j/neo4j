@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.store.format.standard;
 import org.neo4j.kernel.impl.store.format.BaseRecordFormats;
 import org.neo4j.kernel.impl.store.format.Capability;
 import org.neo4j.kernel.impl.store.format.FormatFamily;
+import org.neo4j.kernel.impl.store.format.LuceneCapability;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.StoreVersion;
@@ -43,7 +44,7 @@ public class StandardV4_0 extends BaseRecordFormats
     public StandardV4_0()
     {
         super( STORE_VERSION, StoreVersion.STANDARD_V4_0.introductionVersion(), 9, Capability.SCHEMA,
-                Capability.DENSE_NODES, Capability.LUCENE_7, Capability.POINT_PROPERTIES, Capability.TEMPORAL_PROPERTIES );
+                Capability.DENSE_NODES, LuceneCapability.LUCENE_7, Capability.POINT_PROPERTIES, Capability.TEMPORAL_PROPERTIES );
     }
 
     @Override

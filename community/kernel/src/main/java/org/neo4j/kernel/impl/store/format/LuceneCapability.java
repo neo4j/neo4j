@@ -19,14 +19,23 @@
  */
 package org.neo4j.kernel.impl.store.format;
 
-import static java.lang.String.format;
+import org.neo4j.storageengine.api.format.CapabilityType;
 
-public class UnsupportedFormatCapabilityException extends RuntimeException
+public enum LuceneCapability implements org.neo4j.storageengine.api.format.Capability
 {
-    public UnsupportedFormatCapabilityException( LuceneCapability capability )
+    /**
+     * Lucene version 7.x
+     */
+    LUCENE_7,
+
+    /**
+     * Lucene version 5.x
+     */
+    LUCENE_5;
+
+    @Override
+    public boolean isType( CapabilityType type )
     {
-        super( format( "Current record format does not support %s. " +
-                        "Please upgrade your store to the format that support requested capability.",
-                capability.name() ) );
+        return type == CapabilityType.INDEX;
     }
 }

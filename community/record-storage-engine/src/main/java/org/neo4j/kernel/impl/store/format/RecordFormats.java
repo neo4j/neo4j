@@ -29,10 +29,12 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
+import org.neo4j.storageengine.api.format.Capability;
+import org.neo4j.storageengine.api.format.CapabilityType;
 
 /**
  * The record formats that a store version uses. Contains all formats for all different stores as well as
- * accessors for which {@link Capability capabilities} a format has as to be able to compare between formats.
+ * accessors for which {@link LuceneCapability capabilities} a format has as to be able to compare between formats.
  */
 public interface RecordFormats
 {
@@ -91,15 +93,15 @@ public interface RecordFormats
     /**
      * Use when comparing one format to another, for example for migration purposes.
      *
-     * @return array of {@link Capability capabilities} for comparison.
+     * @return array of {@link LuceneCapability capabilities} for comparison.
      */
     Capability[] capabilities();
 
     /**
-     * @param capability {@link Capability} to check for.
-     * @return whether or not this format has a certain {@link Capability}.
+     * @param capability {@link LuceneCapability} to check for.
+     * @return whether or not this format has a certain {@link LuceneCapability}.
      */
-    boolean hasCapability( Capability capability );
+    boolean hasCapability( LuceneCapability capability );
 
     /**
      * Get format family to which this format belongs to.

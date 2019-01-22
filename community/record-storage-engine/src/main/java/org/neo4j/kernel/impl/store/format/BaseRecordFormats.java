@@ -24,6 +24,8 @@ import java.util.stream.Stream;
 
 import org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat;
 import org.neo4j.kernel.impl.store.record.MetaDataRecord;
+import org.neo4j.storageengine.api.format.Capability;
+import org.neo4j.storageengine.api.format.CapabilityType;
 
 import static java.util.stream.Collectors.toSet;
 import static org.neo4j.helpers.ArrayUtil.contains;
@@ -118,7 +120,7 @@ public abstract class BaseRecordFormats implements RecordFormats
     }
 
     @Override
-    public boolean hasCapability( Capability capability )
+    public boolean hasCapability( LuceneCapability capability )
     {
         return contains( capabilities(), capability );
     }

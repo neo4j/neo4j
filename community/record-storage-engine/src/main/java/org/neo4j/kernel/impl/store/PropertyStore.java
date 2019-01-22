@@ -33,7 +33,7 @@ import org.neo4j.helpers.collection.Pair;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.store.format.Capability;
+import org.neo4j.kernel.impl.store.format.LuceneCapability;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.UnsupportedFormatCapabilityException;
 import org.neo4j.kernel.impl.store.format.standard.StandardFormatSettings;
@@ -172,7 +172,7 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
         this.propertyKeyTokenStore = propertyKeyTokenStore;
         this.arrayStore = arrayPropertyStore;
         allowStorePointsAndTemporal =
-                recordFormats.hasCapability( Capability.POINT_PROPERTIES ) && recordFormats.hasCapability( Capability.TEMPORAL_PROPERTIES );
+                recordFormats.hasCapability( LuceneCapability.POINT_PROPERTIES ) && recordFormats.hasCapability( LuceneCapability.TEMPORAL_PROPERTIES );
     }
 
     @Override
@@ -527,7 +527,7 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
             }
             else
             {
-                throw new UnsupportedFormatCapabilityException( Capability.POINT_PROPERTIES );
+                throw new UnsupportedFormatCapabilityException( LuceneCapability.POINT_PROPERTIES );
             }
         }
 
@@ -540,7 +540,7 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
             }
             else
             {
-                throw new UnsupportedFormatCapabilityException( Capability.TEMPORAL_PROPERTIES );
+                throw new UnsupportedFormatCapabilityException( LuceneCapability.TEMPORAL_PROPERTIES );
             }
         }
 
@@ -553,7 +553,7 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
             }
             else
             {
-                throw new UnsupportedFormatCapabilityException( Capability.TEMPORAL_PROPERTIES );
+                throw new UnsupportedFormatCapabilityException( LuceneCapability.TEMPORAL_PROPERTIES );
             }
         }
 
@@ -566,7 +566,7 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
             }
             else
             {
-                throw new UnsupportedFormatCapabilityException( Capability.TEMPORAL_PROPERTIES );
+                throw new UnsupportedFormatCapabilityException( LuceneCapability.TEMPORAL_PROPERTIES );
             }
         }
 
@@ -579,7 +579,7 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
             }
             else
             {
-                throw new UnsupportedFormatCapabilityException( Capability.TEMPORAL_PROPERTIES );
+                throw new UnsupportedFormatCapabilityException( LuceneCapability.TEMPORAL_PROPERTIES );
             }
         }
 
@@ -592,7 +592,7 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
             }
             else
             {
-                throw new UnsupportedFormatCapabilityException( Capability.TEMPORAL_PROPERTIES );
+                throw new UnsupportedFormatCapabilityException( LuceneCapability.TEMPORAL_PROPERTIES );
             }
         }
 
@@ -605,7 +605,7 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
             }
             else
             {
-                throw new UnsupportedFormatCapabilityException( Capability.TEMPORAL_PROPERTIES );
+                throw new UnsupportedFormatCapabilityException( LuceneCapability.TEMPORAL_PROPERTIES );
             }
         }
 
@@ -618,7 +618,7 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
             }
             else
             {
-                throw new UnsupportedFormatCapabilityException( Capability.TEMPORAL_PROPERTIES );
+                throw new UnsupportedFormatCapabilityException( LuceneCapability.TEMPORAL_PROPERTIES );
             }
         }
 
