@@ -234,7 +234,7 @@ public class ProcedureCompilation
 
     private static CodeGenerator codeGenerator() throws CodeGenerationNotSupportedException
     {
-        if (DEBUG)
+        if ( DEBUG )
         {
             return generateCode( CallableUserFunction.class.getClassLoader(), SOURCECODE, PRINT_SOURCE );
         }
@@ -375,7 +375,6 @@ public class ProcedureCompilation
             return invoke( methodReference( ValueUtils.class, AnyValue.class, "of", Object.class ), expression );
         }
     }
-
 
     /**
      * Converts from an `AnyValue` to the type specified by the procedure or function.

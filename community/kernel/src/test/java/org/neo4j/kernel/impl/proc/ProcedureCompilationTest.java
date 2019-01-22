@@ -171,7 +171,8 @@ public class ProcedureCompilationTest
                                 new AnyValue[]{list( longValue( 42 ), doubleValue( 1.1 ), booleanValue( true ) )} ) );
     }
 
-    private FieldSetter createSetter(Class<?> owner, String field, Key<Long> key) throws NoSuchFieldException, IllegalAccessException
+    private FieldSetter createSetter( Class<?> owner, String field, Key<Long> key )
+            throws NoSuchFieldException, IllegalAccessException
     {
         Field declaredField = owner.getDeclaredField( field );
         MethodHandle setter = MethodHandles.lookup().unreflectSetter( declaredField );
@@ -195,7 +196,6 @@ public class ProcedureCompilationTest
             throw new AssertionError( e );
         }
     }
-
 
     public long longMethod()
     {
@@ -232,6 +232,4 @@ public class ProcedureCompilationTest
         }
         return builder.toString();
     }
-
-
 }

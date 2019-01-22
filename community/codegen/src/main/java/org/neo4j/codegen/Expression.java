@@ -383,7 +383,7 @@ public abstract class Expression extends ExpressionTemplate
 
     public static Expression arrayLoad( Expression array, Expression index )
     {
-        assert (array.type().isArray());
+        assert array.type().isArray();
 
         return new Expression( array.type() )
         {

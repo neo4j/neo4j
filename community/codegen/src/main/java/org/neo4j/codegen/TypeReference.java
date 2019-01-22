@@ -153,9 +153,9 @@ public class TypeReference
         return result;
     }
 
-    public static TypeReference toBoxedType( TypeReference in)
+    public static TypeReference toBoxedType( TypeReference in )
     {
-        switch (in.fullName() )
+        switch ( in.fullName() )
         {
         case "byte":
             return TypeReference.typeReference( Byte.class );

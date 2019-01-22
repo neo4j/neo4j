@@ -2156,20 +2156,22 @@ public class CodeGenerationTest
         assertArrayLoad( String.class, String[].class, new String[]{"a", "b", "c"}, 2, "c" );
     }
 
-    private <T, U> void assertArrayLoad(Class<T> returnType, Class<U> arrayType, U array, int index, T expexted ) throws Throwable
+    private <T, U> void assertArrayLoad( Class<T> returnType, Class<U> arrayType, U array, int index, T expexted )
+            throws Throwable
     {
         ClassHandle handle;
         try ( ClassGenerator simple = generateClass( "SimpleClass" + returnType.getSimpleName() ) )
         {
-            try ( CodeBlock body = simple.generateMethod( returnType, "get", param( arrayType, "array"),
-                    param(int.class, "index" ) ))
+            try ( CodeBlock body = simple.generateMethod( returnType, "get", param( arrayType, "array" ),
+                    param( int.class, "index" ) ) )
             {
-                body.returns( arrayLoad( body.load( "array" ), body.load( "index" )) );
+                body.returns( arrayLoad( body.load( "array" ), body.load( "index" ) ) );
             }
             handle = simple.handle();
         }
 
-        assertEquals( expexted, instanceMethod( handle.newInstance(), "get", arrayType, int.class ).invoke(array, index));
+        assertEquals( expexted,
+                instanceMethod( handle.newInstance(), "get", arrayType, int.class ).invoke( array, index ) );
     }
 
     private Supplier<Double> generateDoubleMethod( double toBeReturned ) throws Throwable
