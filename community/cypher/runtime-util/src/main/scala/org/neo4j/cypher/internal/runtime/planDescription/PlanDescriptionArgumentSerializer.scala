@@ -113,6 +113,18 @@ object PlanDescriptionArgumentSerializer {
 
   def removeGeneratedNames(s: String): String = {
     val named = UNNAMED_PATTERN.replaceAllIn(s, m => s"anon[${m group 2}]")
-    DEDUP_PATTERN.replaceAllIn(named, _.group(1))
+    deduplicateVariableNames(named)
+  }
+
+  def deduplicateVariableNames(in: String): String = {
+    val sb = new StringBuilder
+    var i = 0
+    for (m <- DEDUP_PATTERN.findAllMatchIn(in)) {
+      sb ++= in.substring(i, m.start)
+      sb ++= m.group(1)
+      i = m.end
+    }
+    sb ++= in.substring(i)
+    sb.toString()
   }
 }
