@@ -110,7 +110,7 @@ public class PageCacheWarmupEnterpriseEditionIT extends PageCacheWarmupTestSuppo
 
         File metricsDirectory = dir.cleanDirectory( "metrics" );
         File backupDir = dir.cleanDirectory( "backup" );
-        assertTrue( OnlineBackup.from( "localhost", backupPort ).backup( backupDir ).isConsistent() );
+        assertTrue( OnlineBackup.from( "localhost", backupPort ).backup( backupDir, null, true, "8m" ).isConsistent() );
         latch.release();
         DatabaseRule.RestartAction useBackupDir = ( fs, storeDir ) ->
         {
@@ -144,8 +144,8 @@ public class PageCacheWarmupEnterpriseEditionIT extends PageCacheWarmupTestSuppo
 
         for ( int i = 0; i < 20; i++ )
         {
-            String backupDir = dir.cleanDirectory( "backup" ).getAbsolutePath();
-            assertTrue( OnlineBackup.from( "localhost", backupPort ).full( backupDir ).isConsistent() );
+            File backupDir = dir.cleanDirectory( "backup" );
+            assertTrue( OnlineBackup.from( "localhost", backupPort ).backup( backupDir, null, true, "8m" ).isConsistent() );
         }
     }
 

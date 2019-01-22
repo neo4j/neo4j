@@ -26,12 +26,14 @@ import java.io.File;
 import java.io.OutputStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Objects;
 
 import org.neo4j.backup.impl.BackupClient;
 import org.neo4j.backup.impl.BackupOutcome;
 import org.neo4j.backup.impl.BackupProtocolService;
 import org.neo4j.backup.impl.BackupServer;
 import org.neo4j.backup.impl.ConsistencyCheck;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 
@@ -106,7 +108,9 @@ public class OnlineBackup
      *
      * @param targetDirectory A directory holding a complete database previously obtained from the backup server.
      * @return The same OnlineBackup instance, possible to use for a new backup operation
+     * @deprecated use {@link #backup(File, Config, boolean, String)} instead.
      */
+    @Deprecated
     public OnlineBackup backup( File targetDirectory )
     {
         Path dir = targetDirectory.toPath();
@@ -142,7 +146,9 @@ public class OnlineBackup
      * @param targetDirectory A directory holding a complete database previously obtained from the backup server.
      * @param verification If true, the verification phase will be run.
      * @return The same OnlineBackup instance, possible to use for a new backup operation
+     * @deprecated use {@link #backup(File, Config, boolean, String)} instead.
      */
+    @Deprecated
     public OnlineBackup backup( File targetDirectory, boolean verification )
     {
         Config config = defaultConfig();
@@ -156,7 +162,7 @@ public class OnlineBackup
      * @param targetDirectory A directory holding a complete database previously obtained from the backup server.
      * @param tuningConfiguration The {@link Config} to use when running the consistency check
      * @return The same OnlineBackup instance, possible to use for a new backup operation
-     * @deprecated use {@link #backup(File, Config)} instead
+     * @deprecated use {@link #backup(File, Config, boolean, String)} instead
      */
     @Deprecated
     public OnlineBackup backup( String targetDirectory, Config tuningConfiguration )
@@ -177,10 +183,12 @@ public class OnlineBackup
      * @param targetDirectory A directory holding a complete database previously obtained from the backup server.
      * @param tuningConfiguration The {@link Config} to use when running the consistency check
      * @return The same OnlineBackup instance, possible to use for a new backup operation
+     * @deprecated use {@link #backup(File, Config, boolean, String)} instead.
      */
+    @Deprecated
     public OnlineBackup backup( File targetDirectory, Config tuningConfiguration )
     {
-        outcome = new BackupProtocolService( out, tuningConfiguration ).doIncrementalBackupOrFallbackToFull(
+        outcome = new BackupProtocolService( out, defaultConfig() ).doIncrementalBackupOrFallbackToFull(
                 hostNameOrIp, port, targetDirectory.toPath(), getConsistencyCheck( true ), tuningConfiguration,
                 timeoutMillis, forensics );
         return this;
@@ -191,7 +199,7 @@ public class OnlineBackup
      * @param tuningConfiguration The {@link Config} to use when running the consistency check
      * @param verification If true, the verification phase will be run.
      * @return The same OnlineBackup instance, possible to use for a new backup operation.
-     * @deprecated use {@link #backup(File, Config, boolean)} instead
+     * @deprecated use {@link #backup(File, Config, boolean, String)} instead
      */
     @Deprecated
     public OnlineBackup backup( String targetDirectory, Config tuningConfiguration, boolean verification )
@@ -214,12 +222,53 @@ public class OnlineBackup
      * @param tuningConfiguration The {@link Config} to use when running the consistency check
      * @param verification If true, the verification phase will be run.
      * @return The same OnlineBackup instance, possible to use for a new backup operation.
+     * @deprecated use {@link #backup(File, Config, boolean, String)} instead.
      */
+    @Deprecated
     public OnlineBackup backup( File targetDirectory, Config tuningConfiguration, boolean verification )
     {
-        outcome = new BackupProtocolService( out, tuningConfiguration ).doIncrementalBackupOrFallbackToFull(
+        outcome = new BackupProtocolService( out, defaultConfig() ).doIncrementalBackupOrFallbackToFull(
                 hostNameOrIp, port, targetDirectory.toPath(), getConsistencyCheck( verification ), tuningConfiguration,
                 timeoutMillis, forensics );
+        return this;
+    }
+
+    /**
+     * Performs a backup into targetDirectory. The server contacted is the one configured in the factory method used to
+     * obtain this instance. After the backup is complete, and if the verification parameter is set to true,
+     * a verification phase will take place, checking the database for consistency. If any errors are found, they will
+     * be printed in stderr.
+     *
+     * If the target directory does not contain a database, a full backup will be performed, otherwise an incremental
+     * backup mechanism is used.
+     *
+     * If the backup has become too far out of date for an incremental backup to succeed, a full backup is performed.
+     *
+     * @param targetDirectory A directory holding a complete database previously obtained from the backup server.
+     * @param tuningConfiguration The {@link Config} to use when running the consistency check
+     * @param verification If true, the verification phase will be run.
+     * @param pageCacheSize The size of the page cache used for the backup process, e.g. "2 GiB".
+     * This value is parsed in the same way as the {@link GraphDatabaseSettings#pagecache_memory} setting.
+     * @return The same OnlineBackup instance, possible to use for a new backup operation.
+     */
+    public OnlineBackup backup( File targetDirectory, Config tuningConfiguration, boolean verification, String pageCacheSize )
+    {
+        Objects.requireNonNull( targetDirectory, "The 'targetDirectory' parameter cannot be null." );
+        Objects.requireNonNull( pageCacheSize, "The 'pageCacheSize' parameter cannot be null." );
+
+        Config config = Config.defaults( GraphDatabaseSettings.pagecache_memory, pageCacheSize );
+        if ( tuningConfiguration == null )
+        {
+            tuningConfiguration = config;
+        }
+        else if ( !tuningConfiguration.isConfigured( GraphDatabaseSettings.pagecache_memory ) )
+        {
+            tuningConfiguration = Config.fromSettings( tuningConfiguration.getRaw() )
+                    .withSetting( GraphDatabaseSettings.pagecache_memory, pageCacheSize )
+                    .build();
+        }
+        outcome = new BackupProtocolService( out, config ).doIncrementalBackupOrFallbackToFull(
+                hostNameOrIp, port, targetDirectory.toPath(), getConsistencyCheck( verification ), tuningConfiguration, timeoutMillis, forensics );
         return this;
     }
 
