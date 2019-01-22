@@ -58,7 +58,7 @@ import static org.neo4j.values.storable.Values.TRUE;
 /**
  * This class contains static helper boolean methods used by the compiled expressions
  */
-@SuppressWarnings( "unused" )
+@SuppressWarnings( {"unused", "ReferenceEquality"} )
 public final class CypherBoolean
 {
     private static final BooleanMapper BOOLEAN_MAPPER = new BooleanMapper();

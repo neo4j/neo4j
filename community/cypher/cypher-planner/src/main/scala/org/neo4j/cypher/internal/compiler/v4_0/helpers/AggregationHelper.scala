@@ -72,12 +72,12 @@ object AggregationHelper {
         if (renamings.contains(varName))
           extractPropertyForValue(renamings(varName), renamings, Some(propName))
         else
-          Some(varName, propName)
+          Some(varName -> propName)
       case variable@Variable(varName) =>
         if (renamings.contains(varName) && renamings(varName) != variable)
           extractPropertyForValue(renamings(varName), renamings)
         else if (property.nonEmpty)
-          Some(varName, property.get)
+          Some(varName -> property.get)
         else
           None
       case _ => None

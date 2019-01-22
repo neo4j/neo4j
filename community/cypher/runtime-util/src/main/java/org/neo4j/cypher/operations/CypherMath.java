@@ -21,7 +21,6 @@ package org.neo4j.cypher.operations;
 
 import org.neo4j.cypher.internal.v4_0.util.ArithmeticException;
 import org.neo4j.cypher.internal.v4_0.util.CypherTypeException;
-
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.ArrayValue;
 import org.neo4j.values.storable.DurationValue;
@@ -44,7 +43,7 @@ import static org.neo4j.values.storable.Values.stringValue;
 /**
  * This class contains static helper math methods used by the compiled expressions
  */
-@SuppressWarnings( "unused" )
+@SuppressWarnings( {"unused", "ReferenceEquality"} )
 public final class CypherMath
 {
     private CypherMath()

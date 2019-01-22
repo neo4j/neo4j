@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.runtime.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.values.AnyValue
+import org.neo4j.cypher.internal.v4_0.util.InternalException
 import org.neo4j.values.storable._
 import org.neo4j.values.utils.ValueMath.overflowSafeAdd
 
@@ -54,6 +55,7 @@ class AvgFunction(val value: Expression)
       sumNumber
     case Some(AggregatingDurations) =>
       DurationValue.approximate(monthsRunningAvg, daysRunningAvg, secondsRunningAvg, nanosRunningAvg)
+    case _ => throw new InternalException(s"invalid aggregation type $aggregatingType")
   }
 
   override def apply(data: ExecutionContext, state: QueryState): Unit = {
