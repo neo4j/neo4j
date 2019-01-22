@@ -49,6 +49,7 @@ import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTAny;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTBoolean;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTFloat;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTList;
+import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTNumber;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTString;
 import static org.neo4j.internal.kernel.api.procs.UserFunctionSignature.functionSignature;
 import static org.neo4j.kernel.impl.proc.ProcedureCompilation.compileFunction;
@@ -191,6 +192,23 @@ public class ProcedureCompilationTest
                 nullyMethod.apply( ctx, new AnyValue[]{Values.NO_VALUE} ) );
     }
 
+    @Test
+    void shouldHandleNumberOutput() throws ProcedureException
+    {
+        // Given
+        UserFunctionSignature signature = functionSignature( "test", "foo" )
+                .in( "numbers", NTList( NTNumber ) )
+                .out( NTNumber ).build();
+
+        // When
+        CallableUserFunction sumMethod = compileFunction( signature, emptyList(),
+                method( "sum", List.class ), typeMappers );
+
+        // Then
+        assertEquals( longValue( 3 ),
+                sumMethod.apply( ctx, new AnyValue[]{list( longValue( 1 ), longValue( 2 ) )} ) );
+    }
+
     private FieldSetter createSetter( Class<?> owner, String field, Key<Long> key )
             throws NoSuchFieldException, IllegalAccessException
     {
@@ -263,5 +281,10 @@ public class ProcedureCompilationTest
         {
             return Math.PI;
         }
+    }
+
+    public Number sum(  List<Number> numbers )
+    {
+        return numbers.stream().mapToDouble( Number::doubleValue ).sum();
     }
 }

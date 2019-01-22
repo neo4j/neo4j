@@ -122,7 +122,7 @@ public class ProcedureCompilation
     private static final String LOCAL_TIME = LocalTime.class.getCanonicalName();
     private static final String TEMPORAL_AMOUNT = TemporalAmount.class.getCanonicalName();
     private static final String PACKAGE = "org.neo4j.kernel.impl.proc";
-    private static final boolean DEBUG = true;
+    private static final boolean DEBUG = false;
 
     static CallableUserFunction compileFunction(
             UserFunctionSignature signature, List<FieldSetter> fieldSetters,
@@ -189,6 +189,9 @@ public class ProcedureCompilation
         }
         catch ( Throwable e )
         {
+            System.out.println( "#############################" );
+            System.out.println( signature.name() );
+            System.out.println( "#############################" );
             e.printStackTrace();
             throw new RuntimeException( e );
         }
@@ -295,7 +298,7 @@ public class ProcedureCompilation
         }
         else if ( type.equals( NUMBER ) )
         {
-            return nullCheck( expression, invoke( methodReference( Values.class, Number.class, "numberValue", Number.class ), expression ));
+            return nullCheck( expression, invoke( methodReference( Values.class, NumberValue.class, "numberValue", Number.class ), expression ));
         }
         else if ( type.equals( BOOLEAN ) )
         {
@@ -433,8 +436,8 @@ public class ProcedureCompilation
         }
         else if ( type.equals( NUMBER ) )
         {
-            return invoke( cast( NumberValue.class, expression ),
-                    methodReference( NumberValue.class, Number.class, "asObjectCopy" ) );
+            return noValueCheck( expression, invoke( cast( NumberValue.class, expression ),
+                    methodReference( NumberValue.class, Number.class, "asObjectCopy" ) ));
         }
         else if ( type.equals( BOOLEAN ) )
         {
