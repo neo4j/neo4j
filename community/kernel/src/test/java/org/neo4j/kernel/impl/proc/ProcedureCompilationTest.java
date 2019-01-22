@@ -36,6 +36,7 @@ import org.neo4j.kernel.api.proc.Context;
 import org.neo4j.kernel.api.proc.Key;
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
 import org.neo4j.values.AnyValue;
+import org.neo4j.values.storable.Values;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
@@ -168,7 +169,26 @@ public class ProcedureCompilationTest
         assertEquals( stringValue( "421.1true" ),
                 concatMethod
                         .apply( ctx,
-                                new AnyValue[]{list( longValue( 42 ), doubleValue( 1.1 ), booleanValue( true ) )} ) );
+                                new AnyValue[]{list( longValue( 42 ), doubleValue( 1.1 ), Values.TRUE )} ) );
+    }
+
+    @Test
+    void shouldHandleNulls() throws ProcedureException
+    {
+        // Given
+        UserFunctionSignature signature = functionSignature( "test", "foo" )
+                .in( "b", NTBoolean )
+                .out( NTFloat ).build();
+
+        // When
+        CallableUserFunction nullyMethod = compileFunction( signature, emptyList(),
+                method( "nullyMethod", Boolean.class ), typeMappers );
+
+        // Then
+        assertEquals( Values.NO_VALUE,
+                nullyMethod.apply( ctx, new AnyValue[]{Values.TRUE} ) );
+        assertEquals( Values.PI,
+                nullyMethod.apply( ctx, new AnyValue[]{Values.NO_VALUE} ) );
     }
 
     private FieldSetter createSetter( Class<?> owner, String field, Key<Long> key )
@@ -231,5 +251,17 @@ public class ProcedureCompilationTest
             builder.append( o.toString() );
         }
         return builder.toString();
+    }
+
+    public Double nullyMethod( Boolean b )
+    {
+        if ( b != null )
+        {
+            return null;
+        }
+        else
+        {
+            return Math.PI;
+        }
     }
 }

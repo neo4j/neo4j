@@ -66,6 +66,7 @@ import org.neo4j.values.storable.NumberValue;
 import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.TimeValue;
+import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.ListValue;
 import org.neo4j.values.virtual.MapValue;
@@ -79,9 +80,12 @@ import static org.neo4j.codegen.Expression.arrayLoad;
 import static org.neo4j.codegen.Expression.box;
 import static org.neo4j.codegen.Expression.cast;
 import static org.neo4j.codegen.Expression.constant;
+import static org.neo4j.codegen.Expression.equal;
 import static org.neo4j.codegen.Expression.getStatic;
 import static org.neo4j.codegen.Expression.invoke;
+import static org.neo4j.codegen.Expression.ternary;
 import static org.neo4j.codegen.Expression.unbox;
+import static org.neo4j.codegen.FieldReference.field;
 import static org.neo4j.codegen.FieldReference.fieldReference;
 import static org.neo4j.codegen.MethodDeclaration.method;
 import static org.neo4j.codegen.MethodReference.methodReference;
@@ -118,7 +122,7 @@ public class ProcedureCompilation
     private static final String LOCAL_TIME = LocalTime.class.getCanonicalName();
     private static final String TEMPORAL_AMOUNT = TemporalAmount.class.getCanonicalName();
     private static final String PACKAGE = "org.neo4j.kernel.impl.proc";
-    private static final boolean DEBUG = false;
+    private static final boolean DEBUG = true;
 
     static CallableUserFunction compileFunction(
             UserFunctionSignature signature, List<FieldSetter> fieldSetters,
@@ -160,7 +164,7 @@ public class ProcedureCompilation
                                                     ProcedureException.class,
                                                     "rethrowProcedureException", Throwable.class, String.class ),
                                                     onError.load( "T" ),
-                                                    constant( format( "function '%s'", signature.name() ) ) ) ),
+                                                    constant( format( "function `%s`", signature.name() ) ) ) ),
                             param( Throwable.class, "T" )
                     );
                 }
@@ -215,9 +219,9 @@ public class ProcedureCompilation
                     typeReference(
                             parameterTypes[i] ), arrayLoad( block.load( "input" ), constant( i ) ), mapperField );
         }
-
+        block.assign( methodToCall.getReturnType(), "fromFunction", invoke( getStatic( udfField ), methodReference( methodToCall ), parameters ) );
         block.returns(
-                toAnyValue( invoke( getStatic( udfField ), methodReference( methodToCall ), parameters ) ) );
+                toAnyValue( block.load( "fromFunction" ) ) );
     }
 
     private static Expression unboxIfNecessary( Class<?> fieldType, Expression invoke )
@@ -255,7 +259,7 @@ public class ProcedureCompilation
         {
             Throwable cause = ExceptionUtils.getRootCause( throwable );
             return new ProcedureException( Status.Procedure.ProcedureCallFailed, throwable,
-                    "Failed to invoke %s : %s", typeAndName,
+                    "Failed to invoke %s: %s", typeAndName,
                     "Caused by: " + (cause != null ? cause : throwable) );
         }
     }
@@ -276,22 +280,22 @@ public class ProcedureCompilation
         }
         else if ( type.equals( BOXED_LONG ) )
         {
-            return invoke( methodReference( Values.class, LongValue.class, "longValue", long.class ),
-                    unbox( expression ) );
+            return nullCheck( expression, invoke( methodReference( Values.class, LongValue.class, "longValue", long.class ),
+                    unbox( expression ) ));
         }
         else if ( type.equals( DOUBLE ) )
         {
             return invoke( methodReference( Values.class, DoubleValue.class, "doubleValue", double.class ),
                     expression );
         }
-        else if ( type.equals( NUMBER ) )
-        {
-            return invoke( methodReference( Values.class, Number.class, "numberValue", Number.class ), expression );
-        }
         else if ( type.equals( BOXED_DOUBLE ) )
         {
-            return invoke( methodReference( Values.class, DoubleValue.class, "doubleValue", double.class ),
-                    unbox( expression ) );
+            return nullCheck( expression, invoke( methodReference( Values.class, DoubleValue.class, "doubleValue", double.class ),
+                    unbox( expression )));
+        }
+        else if ( type.equals( NUMBER ) )
+        {
+            return nullCheck( expression, invoke( methodReference( Values.class, Number.class, "numberValue", Number.class ), expression ));
         }
         else if ( type.equals( BOOLEAN ) )
         {
@@ -300,80 +304,95 @@ public class ProcedureCompilation
         }
         else if ( type.equals( BOXED_BOOLEAN ) )
         {
-            return invoke( methodReference( Values.class, BooleanValue.class, "booleanValue", boolean.class ),
-                    unbox( expression ) );
+            return nullCheck( expression, invoke( methodReference( Values.class, BooleanValue.class, "booleanValue", boolean.class ),
+                    unbox( expression ) ));
         }
         else if ( type.equals( STRING ) )
         {
-            return invoke( methodReference( Values.class, TextValue.class, "stringValue", String.class ), expression );
+            return invoke( methodReference( Values.class, Value.class, "stringOrNoValue", String.class ), expression );
         }
         else if ( type.equals( BYTE_ARRAY ) )
         {
-            return invoke( methodReference( Values.class, ByteArray.class, "byteArray", byte[].class ), expression );
+            return nullCheck( expression, invoke( methodReference( Values.class, ByteArray.class, "byteArray", byte[].class ), expression ));
         }
         else if ( type.equals( LIST ) )
         {
-            return invoke( methodReference( ValueUtils.class, ListValue.class, "asListValue", Iterable.class ),
-                    expression );
+            return nullCheck( expression, invoke( methodReference( ValueUtils.class, ListValue.class, "asListValue", Iterable.class ),
+                    expression ));
         }
         else if ( type.equals( MAP ) )
         {
-            return invoke( methodReference( ValueUtils.class, MapValue.class, "asMapValue", Map.class ),
-                    expression );
+            return nullCheck( expression, invoke( methodReference( ValueUtils.class, MapValue.class, "asMapValue", Map.class ),
+                    expression ));
         }
         else if ( type.equals( ZONED_DATE_TIME ) )
         {
-            return invoke( methodReference( DateTimeValue.class, DateTimeValue.class, "datetime", ZonedDateTime.class ),
-                    expression );
+            return nullCheck( expression, invoke( methodReference( DateTimeValue.class, DateTimeValue.class, "datetime", ZonedDateTime.class ),
+                    expression ));
         }
         else if ( type.equals( OFFSET_TIME ) )
         {
-            return invoke( methodReference( TimeValue.class, TimeValue.class, "time", OffsetTime.class ),
-                    expression );
+            return nullCheck( expression, invoke( methodReference( TimeValue.class, TimeValue.class, "time", OffsetTime.class ),
+                    expression ));
         }
         else if ( type.equals( LOCAL_DATE ) )
         {
-            return invoke( methodReference( DateValue.class, DateValue.class, "date", LocalDate.class ),
-                    expression );
+            return nullCheck( expression, invoke( methodReference( DateValue.class, DateValue.class, "date", LocalDate.class ),
+                    expression ));
         }
         else if ( type.equals( LOCAL_TIME ) )
         {
-            return invoke( methodReference( LocalTimeValue.class, LocalTimeValue.class, "localTime", LocalTime.class ),
-                    expression );
+            return nullCheck( expression, invoke( methodReference( LocalTimeValue.class, LocalTimeValue.class, "localTime", LocalTime.class ),
+                    expression ));
         }
         else if ( type.equals( LOCAL_DATE_TIME ) )
         {
-            return invoke( methodReference( LocalDateTimeValue.class, LocalDateTimeValue.class, "localDateTime",
-                    LocalDateTime.class ), expression );
+            return nullCheck( expression, invoke( methodReference( LocalDateTimeValue.class, LocalDateTimeValue.class, "localDateTime",
+                    LocalDateTime.class ), expression ));
         }
         else if ( type.equals( TEMPORAL_AMOUNT ) )
         {
-            return invoke( methodReference( Values.class, DurationValue.class, "durationValue",
-                    TemporalAmount.class ), expression );
+            return nullCheck( expression, invoke( methodReference( Values.class, DurationValue.class, "durationValue",
+                    TemporalAmount.class ), expression ));
         }
         else if ( type.equals( NODE ) )
         {
-            return invoke( methodReference( ValueUtils.class, NodeValue.class, "fromNodeProxy", Node.class ),
-                    expression );
+            return nullCheck( expression, invoke( methodReference( ValueUtils.class, NodeValue.class, "fromNodeProxy", Node.class ),
+                    expression ));
         }
         else if ( type.equals( RELATIONSHIP ) )
         {
-            return invoke( methodReference( ValueUtils.class, RelationshipValue.class, "fromRelationshipProxy",
-                    Relationship.class ), expression );
+            return nullCheck( expression, invoke( methodReference( ValueUtils.class, RelationshipValue.class, "fromRelationshipProxy",
+                    Relationship.class ), expression ));
         }
         else if ( type.equals( PATH ) )
         {
-            return invoke( methodReference( ValueUtils.class, PathValue.class, "fromPath", Path.class ), expression );
+            return nullCheck( expression, invoke( methodReference( ValueUtils.class, PathValue.class, "fromPath", Path.class ), expression ));
         }
         else if ( type.equals( POINT ) )
         {
-            return invoke( methodReference( ValueUtils.class, PointValue.class, "asPointValue", Point.class ),
-                    expression );
+            return nullCheck( expression, invoke( methodReference( ValueUtils.class, PointValue.class, "asPointValue", Point.class ),
+                    expression ));
         }
         else
         {
             return invoke( methodReference( ValueUtils.class, AnyValue.class, "of", Object.class ), expression );
         }
+    }
+
+    private static Expression nullCheck( Expression toCheck, Expression onNotNull )
+    {
+        return ternary( equal( toCheck, constant( null ) ), noValue(), onNotNull );
+    }
+
+    private static Expression noValueCheck( Expression toCheck, Expression onNotNoValue )
+    {
+        return ternary( equal( toCheck, noValue() ), constant( null ), onNotNoValue );
+    }
+
+    private static Expression noValue()
+    {
+        return getStatic( field( typeReference( Values.class ), typeReference( Value.class ), "NO_VALUE" ) );
     }
 
     /**
@@ -399,8 +418,8 @@ public class ProcedureCompilation
         }
         else if ( type.equals( BOXED_LONG ) )
         {
-            return box( invoke( cast( NumberValue.class, expression ),
-                    methodReference( NumberValue.class, long.class, "longValue" ) ) );
+            return noValueCheck( expression, box( invoke( cast( NumberValue.class, expression ),
+                    methodReference( NumberValue.class, long.class, "longValue" ) ) ));
         }
         else if ( type.equals( DOUBLE ) )
         {
@@ -409,8 +428,8 @@ public class ProcedureCompilation
         }
         else if ( type.equals( BOXED_DOUBLE ) )
         {
-            return box( invoke( cast( NumberValue.class, expression ),
-                    methodReference( NumberValue.class, double.class, "doubleValue" ) ) );
+            return noValueCheck( expression,box( invoke( cast( NumberValue.class, expression ),
+                    methodReference( NumberValue.class, double.class, "doubleValue" ) ) ));
         }
         else if ( type.equals( NUMBER ) )
         {
@@ -424,57 +443,57 @@ public class ProcedureCompilation
         }
         else if ( type.equals( BOXED_BOOLEAN ) )
         {
-            return box( invoke( cast( BooleanValue.class, expression ),
-                    methodReference( BooleanValue.class, boolean.class, "booleanValue" ) ) );
+            return noValueCheck(expression, box( invoke( cast( BooleanValue.class, expression ),
+                    methodReference( BooleanValue.class, boolean.class, "booleanValue" ) ) ));
         }
         else if ( type.equals( STRING ) )
         {
-            return invoke( cast( TextValue.class, expression ),
-                    methodReference( TextValue.class, String.class, "stringValue" ) );
+            return noValueCheck( expression, invoke( cast( TextValue.class, expression ),
+                    methodReference( TextValue.class, String.class, "stringValue" ) ));
         }
         else if ( type.equals( BYTE_ARRAY ) )
         {
-            return invoke( cast( ByteArray.class, expression ),
-                    methodReference( ByteArray.class, byte[].class, "asObjectCopy" ) );
+            return noValueCheck( expression, invoke( cast( ByteArray.class, expression ),
+                    methodReference( ByteArray.class, byte[].class, "asObjectCopy" ) ));
         }
         else if ( type.equals( ZONED_DATE_TIME ) )
         {
-            return invoke( cast( DateTimeValue.class, expression ),
-                    methodReference( DateTimeValue.class, ZonedDateTime.class, "temporal" ) );
+            return noValueCheck( expression,invoke( cast( DateTimeValue.class, expression ),
+                    methodReference( DateTimeValue.class, ZonedDateTime.class, "temporal" ) ));
         }
         else if ( type.equals( OFFSET_TIME ) )
         {
-            return invoke( cast( TimeValue.class, expression ),
-                    methodReference( TimeValue.class, OffsetTime.class, "temporal" ) );
+            return noValueCheck( expression,invoke( cast( TimeValue.class, expression ),
+                    methodReference( TimeValue.class, OffsetTime.class, "temporal" ) ));
         }
         else if ( type.equals( LOCAL_DATE ) )
         {
-            return invoke( cast( TimeValue.class, expression ),
-                    methodReference( TimeValue.class, OffsetTime.class, "temporal" ) );
+            return noValueCheck( expression,invoke( cast( TimeValue.class, expression ),
+                    methodReference( TimeValue.class, OffsetTime.class, "temporal" ) ));
         }
         else if ( type.equals( LOCAL_TIME ) )
         {
-            return invoke( cast( LocalTimeValue.class, expression ),
-                    methodReference( LocalTimeValue.class, LocalTime.class, "temporal" ) );
+            return noValueCheck( expression,invoke( cast( LocalTimeValue.class, expression ),
+                    methodReference( LocalTimeValue.class, LocalTime.class, "temporal" ) ));
         }
         else if ( type.equals( LOCAL_DATE_TIME ) )
         {
-            return invoke( cast( LocalDateTimeValue.class, expression ),
-                    methodReference( LocalTimeValue.class, LocalDateTime.class, "temporal" ) );
+            return noValueCheck( expression, invoke( cast( LocalDateTimeValue.class, expression ),
+                    methodReference( LocalTimeValue.class, LocalDateTime.class, "temporal" ) ));
         }
         else if ( type.equals( TEMPORAL_AMOUNT ) )
         {
-            return invoke( cast( DurationValue.class, expression ),
-                    methodReference( DurationValue.class, TemporalAmount.class, "asObjectCopy" ) );
+            return noValueCheck( expression, invoke( cast( DurationValue.class, expression ),
+                    methodReference( DurationValue.class, TemporalAmount.class, "asObjectCopy" ) ));
         }
         else if ( type.equals( PATH ) )
         {
-            return invoke( methodReference( ValueUtils.class, PathValue.class, "fromPath", Path.class ), expression );
+            return noValueCheck( expression, invoke( methodReference( ValueUtils.class, PathValue.class, "fromPath", Path.class ), expression ));
         }
         else if ( type.equals( POINT ) )
         {
-            return invoke( cast( PointValue.class, expression ),
-                    methodReference( PointValue.class, Point.class, "asObjectCopy" ) );
+            return noValueCheck( expression, invoke( cast( PointValue.class, expression ),
+                    methodReference( PointValue.class, Point.class, "asObjectCopy" ) ));
         }
         else
         {
