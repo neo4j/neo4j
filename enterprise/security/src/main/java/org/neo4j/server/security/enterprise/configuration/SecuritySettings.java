@@ -126,7 +126,7 @@ public class SecuritySettings implements LoadableConfig
                   "The format of the setting is `<protocol>://<hostname>:<port>`, where hostname is the only " +
                   "required field. The supported values for protocol are `ldap` (default) and `ldaps`. " +
                   "The default port for `ldap` is 389 and for `ldaps` 636. For example: " +
-                  "`ldaps://ldap.example.com:10389`.\n\n" +
+                  "`ldaps://ldap.example.com:10389`.\n" +
                   "You may want to consider using STARTTLS (`dbms.security.ldap.use_starttls`) instead of LDAPS " +
                   "for secure connections, in which case the correct protocol is `ldap`." )
     public static final Setting<String> ldap_server =
@@ -140,7 +140,7 @@ public class SecuritySettings implements LoadableConfig
 
     @Description(
             "The LDAP referral behavior when creating a connection. This is one of `follow`, `ignore` or `throw`.\n" +
-            "\n" +
+
             "* `follow` automatically follows any referrals\n" +
             "* `ignore` ignores any referrals\n" +
             "* `throw` throws an exception, which will lead to authentication failure" )
@@ -203,14 +203,14 @@ public class SecuritySettings implements LoadableConfig
     // LDAP authorization settings
     //-----------------------------------------------------
 
-    @Description( "Perform LDAP search for authorization info using a system account instead of the user's own account.\n\n" +
+    @Description( "Perform LDAP search for authorization info using a system account instead of the user's own account.\n" +
                   "If this is set to `false` (default), the search for group membership will be performed " +
                   "directly after authentication using the LDAP context bound with the user's own account. " +
                   "The mapped roles will be cached for the duration of `dbms.security.auth_cache_ttl`, " +
                   "and then expire, requiring re-authentication. To avoid frequently having to re-authenticate " +
                   "sessions you may want to set a relatively long auth cache expiration time together with this " +
                   "option. NOTE: This option will only work if the users are permitted to search for their " +
-                  "own group membership attributes in the directory.\n\n" +
+                  "own group membership attributes in the directory.\n" +
                   "If this is set to `true`, the search will be performed using a special system account user " +
                   "with read access to all the users in the directory. " +
                   "You need to specify the username and password using the settings " +
@@ -257,10 +257,8 @@ public class SecuritySettings implements LoadableConfig
                   "The map should be formatted as a semicolon separated list of key-value pairs, where the " +
                   "key is the LDAP group name and the value is a comma separated list of corresponding role names. " +
                   "For example: group1=role1;group2=role2;group3=role3,role4,role5\n" +
-                  "\n" +
                   "You could also use whitespaces and quotes around group names to make this mapping more readable, " +
                   "for example: \n" +
-                  "\n" +
                   "----\n" +
                   "+dbms.security.ldap.authorization.group_to_role_mapping+=\\\n" +
                   "         \"cn=Neo4j Read Only,cn=users,dc=example,dc=com\"      = reader;    \\\n" +
@@ -365,7 +363,7 @@ public class SecuritySettings implements LoadableConfig
     @Description( "An authorization mapping for property level access for roles. " +
             "The map should be formatted as a semicolon separated list of key-value pairs, where the " +
             "key is the role name and the value is a comma separated list of blacklisted properties. " +
-            "For example: role1=prop1;role2=prop2;role3=prop3,prop4,prop5\n\n" +
+            "For example: role1=prop1;role2=prop2;role3=prop3,prop4,prop5\n" +
             "You could also use whitespaces and quotes around group names to make this mapping more readable, " +
             "for example: dbms.security.property_level.blacklist=\\\n" +
             "         \"role1\"      = ssn;    \\\n" +
