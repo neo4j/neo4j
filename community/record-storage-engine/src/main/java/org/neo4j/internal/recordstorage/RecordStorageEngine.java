@@ -61,13 +61,11 @@ import org.neo4j.kernel.impl.store.id.IdController;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.kvstore.DataInitializer;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
-import org.neo4j.kernel.impl.transaction.log.ServiceLoadingCommandReaderFactory;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.storageengine.api.CommandCreationContext;
-import org.neo4j.storageengine.api.CommandReaderFactory;
 import org.neo4j.storageengine.api.CommandsToApply;
 import org.neo4j.storageengine.api.IndexUpdateListener;
 import org.neo4j.storageengine.api.NodeLabelUpdateListener;
@@ -101,7 +99,6 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     private final ConstraintSemantics constraintSemantics;
     private final LockService lockService;
     private WorkSync<NodeLabelUpdateListener,LabelUpdateWork> labelScanStoreSync;
-    private final CommandReaderFactory commandReaderFactory;
     private WorkSync<IndexUpdateListener,IndexUpdatesWork> indexUpdatesSync;
     private final PropertyPhysicalToLogicalConverter indexUpdatesConverter;
     private final IdController idController;
@@ -152,8 +149,6 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
 
             integrityValidator = new IntegrityValidator( neoStores );
             cacheAccess = new BridgingCacheAccess( schemaCache, schemaState, tokenHolders );
-
-            commandReaderFactory = new ServiceLoadingCommandReaderFactory();
 
             denseNodeThreshold = config.get( GraphDatabaseSettings.dense_node_threshold );
             recordIdBatchSize = config.get( GraphDatabaseSettings.record_id_batch_size );

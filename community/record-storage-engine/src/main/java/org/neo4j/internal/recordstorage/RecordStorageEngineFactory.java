@@ -32,28 +32,13 @@ import org.neo4j.kernel.impl.core.TokenHolders;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.id.IdController;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
-import org.neo4j.kernel.impl.transaction.log.ServiceLoadingCommandReaderFactory;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.storageengine.api.CommandReaderFactory;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 
 public class RecordStorageEngineFactory implements StorageEngineFactory
 {
-    @Override
-    public int priority()
-    {
-        return 100;
-    }
-
-    @Override
-    public CommandReaderFactory commandReader()
-    {
-        // TODO we don't actually need service loading on command readers now that we have it on a StorageEngineFactory level
-        return new ServiceLoadingCommandReaderFactory();
-    }
-
     @Override
     public StorageEngine instantiate( DependencyResolver dependencyResolver, DependencySatisfier dependencySatisfier )
     {

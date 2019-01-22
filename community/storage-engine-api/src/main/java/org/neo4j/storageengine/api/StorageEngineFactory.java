@@ -28,16 +28,6 @@ import org.neo4j.common.DependencySatisfier;
 public interface StorageEngineFactory
 {
     /**
-     * @return priority of this {@link StorageEngine}, useful if multiple alternatives are available.
-     */
-    int priority();
-
-    /**
-     * @return a {@link CommandReaderFactory} which can read commands that this {@link StorageEngine} generates.
-     */
-    CommandReaderFactory commandReader();
-
-    /**
      * Instantiates a {@link StorageEngine} where all dependencies can be retrieved from the supplied {@code dependencyResolver}.
      *
      * @param dependencyResolver {@link DependencyResolver} used to get all required dependencies to instantiate the {@link StorageEngine}.

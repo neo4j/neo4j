@@ -36,6 +36,7 @@ import org.neo4j.dbms.database.DatabasePageCache;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Service;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -113,7 +114,6 @@ import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointerMonitor;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckpointerLifecycle;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.DefaultCheckPointMonitor;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.StoreCopyCheckPointMutex;
-import org.neo4j.kernel.impl.transaction.log.entry.InvalidLogEntryHandler;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFileCreationMonitor;
@@ -337,8 +337,7 @@ public class Database extends LifecycleAdapter
 
             // Check the tail of transaction logs and validate version
             StorageEngineFactory storageEngineFactory = selectStorageEngine();
-            final LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader =
-                    new VersionAwareLogEntryReader<>( storageEngineFactory.commandReader(), InvalidLogEntryHandler.STRICT );
+            final LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader = new VersionAwareLogEntryReader<>();
 
             LogFiles logFiles =
                     LogFilesBuilder.builder( databaseLayout, fs ).withLogEntryReader( logEntryReader ).withLogFileMonitor( physicalLogMonitor ).withConfig(
@@ -501,19 +500,8 @@ public class Database extends LifecycleAdapter
 
     public static StorageEngineFactory selectStorageEngine()
     {
-        StorageEngineFactory highest = null;
-        for ( StorageEngineFactory engine : Service.load( StorageEngineFactory.class ) )
-        {
-            if ( highest == null || engine.priority() > highest.priority() )
-            {
-                highest = engine;
-            }
-        }
-        if ( highest == null )
-        {
-            throw new IllegalStateException( "No storage engines found" );
-        }
-        return highest;
+        // For now assume single available engine
+        return Iterables.single( Service.load( StorageEngineFactory.class ) );
     }
 
     /**
