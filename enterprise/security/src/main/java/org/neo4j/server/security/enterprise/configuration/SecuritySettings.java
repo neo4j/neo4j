@@ -140,7 +140,6 @@ public class SecuritySettings implements LoadableConfig
 
     @Description(
             "The LDAP referral behavior when creating a connection. This is one of `follow`, `ignore` or `throw`.\n" +
-
             "* `follow` automatically follows any referrals\n" +
             "* `ignore` ignores any referrals\n" +
             "* `throw` throws an exception, which will lead to authentication failure" )
