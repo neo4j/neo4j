@@ -58,17 +58,19 @@ case class Selections(predicates: Set[Predicate] = Set.empty) {
       case (acc, _) => acc
     }
 
-  def propertyPredicatesForSet: Map[String, Set[Property]] = {
+  lazy val propertyPredicatesForSet: Map[String, Set[Property]] = {
     def updateMap(map: Map[String, Set[Property]], key: String, prop: Property) =
       map.updated(key, map.getOrElse(key, Set.empty) + prop)
 
-    predicates.foldLeft(Map.empty[String, Set[Property]]) {
+    def findPropertiesAndUpdateMap(map: Map[String, Set[Property]], expression: Expression) = {
+      expression.treeFold(map) {
+        case prop@Property(key: Variable, _) => acc => (updateMap(acc, key.name, prop), None)
+        case _: Expression => acc => (acc, Some(identity))
+      }
+    }
 
-      // We rewrite set property expressions to use In (and not Equals)
-      case (acc, Predicate(_, In(prop@Property(key: Variable, _), _))) =>
-        updateMap(acc, key.name, prop)
-      case (acc, Predicate(_, In(_, prop@Property(key: Variable, _)))) =>
-        updateMap(acc, key.name, prop)
+    predicates.foldLeft(Map.empty[String, Set[Property]]) {
+      case (acc, Predicate(_, expression)) => findPropertiesAndUpdateMap(acc, expression)
       case (acc, _) => acc
     }
   }

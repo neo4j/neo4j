@@ -379,7 +379,7 @@ trait UpdateGraph {
 
   /*
    * Checks for overlap between what relationship props are read in query graph
-   * and what is updated with SET her
+   * and what is updated with SET here
    */
   private def setRelPropertyOverlap(propertiesToRead: Set[PropertyKeyName]): Boolean = {
     @tailrec
