@@ -99,6 +99,12 @@ public class Loader
     private void loadEntry( Path destination, ArchiveInputStream stream, ArchiveEntry entry ) throws IOException
     {
         Path file = destination.resolve( entry.getName() );
+
+        if ( !file.normalize().startsWith( destination ) )
+        {
+            throw new IOException( "Zip entry outside destination path." );
+        }
+
         if ( entry.isDirectory() )
         {
             Files.createDirectories( file );
