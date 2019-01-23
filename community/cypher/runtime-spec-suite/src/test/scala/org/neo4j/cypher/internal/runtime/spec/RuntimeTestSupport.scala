@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.spec
 
+import org.neo4j.common.DependencyResolver
 import org.neo4j.cypher.internal.MasterCompiler
 import org.neo4j.cypher.internal.compatibility._
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
@@ -27,8 +28,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContex
 import org.neo4j.cypher.internal.runtime.interpreted.{TransactionBoundQueryContext, TransactionalContextWrapper}
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.result.RuntimeResult
-import org.neo4j.graphdb.DependencyResolver.SelectionStrategy
-import org.neo4j.graphdb.{DependencyResolver, GraphDatabaseService}
+import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.internal.kernel.api.Transaction
 import org.neo4j.internal.kernel.api.security.LoginContext
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI
@@ -50,7 +50,7 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](val graphDb: GraphDatabaseSe
   val cypherGraphDb = new GraphDatabaseCypherService(graphDb)
   private val resolver: DependencyResolver = cypherGraphDb.getDependencyResolver
   private val runtimeContextCreator = edition.runtimeContextCreator(resolver)
-  private val monitors = resolver.resolveDependency(classOf[Monitors], SelectionStrategy.SINGLE)
+  private val monitors = resolver.resolveDependency(classOf[Monitors])
   private val contextFactory = Neo4jTransactionalContextFactory.create(cypherGraphDb)
   private val spi: EmbeddedProxySPI = resolver.resolveDependency(classOf[EmbeddedProxySPI], DependencyResolver.SelectionStrategy.SINGLE)
 
