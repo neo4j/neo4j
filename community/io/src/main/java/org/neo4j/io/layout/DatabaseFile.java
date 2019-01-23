@@ -94,7 +94,7 @@ public enum DatabaseFile
         return names;
     }
 
-    String getName()
+    public String getName()
     {
         Preconditions.checkState( names.size() == 1, "Database file has more then one file names." );
         return names.get( 0 );
