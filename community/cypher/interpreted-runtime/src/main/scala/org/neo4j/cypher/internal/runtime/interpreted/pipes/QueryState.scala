@@ -68,11 +68,11 @@ class QueryState(val query: QueryContext,
 
   def withDecorator(decorator: PipeDecorator) =
     new QueryState(query, resources, params, cursors, queryIndexes, decorator, initialContext,
-                   cachedIn, lenientCreateRelationship, prePopulateResults)
+                   cachedIn, lenientCreateRelationship, prePopulateResults, input)
 
   def withInitialContext(initialContext: ExecutionContext) =
     new QueryState(query, resources, params, cursors, queryIndexes, decorator, Some(initialContext),
-                   cachedIn, lenientCreateRelationship, prePopulateResults)
+                   cachedIn, lenientCreateRelationship, prePopulateResults, input)
 
   /**
     * When running on the RHS of an Apply, this method will fill an execution context with argument data
@@ -84,7 +84,7 @@ class QueryState(val query: QueryContext,
 
   def withQueryContext(query: QueryContext) =
     new QueryState(query, resources, params, cursors, queryIndexes, decorator, initialContext,
-                   cachedIn, lenientCreateRelationship, prePopulateResults)
+                   cachedIn, lenientCreateRelationship, prePopulateResults, input)
 
   def setExecutionContextFactory(exFactory: ExecutionContextFactory): Unit = {
     _exFactory = exFactory
