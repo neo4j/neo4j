@@ -63,7 +63,7 @@ public class ProcedureRegistry
         validateSignature( descriptiveName, signature.inputSignature(), "input" );
         validateSignature( descriptiveName, signature.outputSignature(), "output" );
 
-        if ( ! signature.isVoid() && signature.outputSignature().isEmpty() )
+        if ( !signature.isVoid() && signature.outputSignature().isEmpty() )
         {
             throw new ProcedureException(
                 Status.Procedure.ProcedureRegistrationFailed,

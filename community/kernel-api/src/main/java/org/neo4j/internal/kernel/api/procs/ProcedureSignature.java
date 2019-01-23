@@ -21,12 +21,12 @@ package org.neo4j.internal.kernel.api.procs;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.procedure.Mode;
+
 import static java.util.Collections.unmodifiableList;
 
 /**
@@ -176,8 +176,8 @@ public class ProcedureSignature
     public static class Builder
     {
         private final QualifiedName name;
-        private final List<FieldSignature> inputSignature = new LinkedList<>();
-        private List<FieldSignature> outputSignature = new LinkedList<>();
+        private final List<FieldSignature> inputSignature = new ArrayList<>();
+        private List<FieldSignature> outputSignature = new ArrayList<>();
         private Mode mode = Mode.READ;
         private String deprecated;
         private String[] allowed = new String[0];
