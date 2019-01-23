@@ -33,9 +33,10 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.facade.ExternalDependencies;
 import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.graphdb.factory.module.PlatformModule;
+import org.neo4j.graphdb.factory.module.GlobalModule;
 import org.neo4j.graphdb.factory.module.edition.CommunityEditionModule;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.graphdb.mockfs.UncloseableDelegatingFileSystemAbstraction;
@@ -241,7 +242,7 @@ class IdGeneratorRebuildTest
         }
 
         @Override
-        protected void create( File storeDir, Map<String, String> params, GraphDatabaseFacadeFactory.Dependencies dependencies )
+        protected void create( File storeDir, Map<String, String> params, ExternalDependencies dependencies )
         {
             File absoluteStoreDir = storeDir.getAbsoluteFile();
             File databasesRoot = absoluteStoreDir.getParentFile();
@@ -250,9 +251,9 @@ class IdGeneratorRebuildTest
             new GraphDatabaseFacadeFactory( DatabaseInfo.COMMUNITY, CommunityEditionModule::new )
             {
                 @Override
-                protected PlatformModule createPlatform( File storeDir, Config config, Dependencies dependencies )
+                protected GlobalModule createGlobalPlatform( File storeDir, Config config, ExternalDependencies dependencies )
                 {
-                    return new ImpermanentPlatformModule( storeDir, config, databaseInfo, dependencies )
+                    return new ImpermanentGlobalModule( storeDir, config, databaseInfo, dependencies )
                     {
                         @Override
                         protected FileSystemAbstraction createFileSystemAbstraction()

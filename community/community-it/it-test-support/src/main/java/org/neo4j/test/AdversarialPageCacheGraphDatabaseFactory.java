@@ -24,11 +24,11 @@ import java.io.File;
 import org.neo4j.adversaries.Adversary;
 import org.neo4j.adversaries.pagecache.AdversarialPageCache;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.facade.ExternalDependencies;
 import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory;
-import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory.Dependencies;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.graphdb.factory.module.PlatformModule;
+import org.neo4j.graphdb.factory.module.GlobalModule;
 import org.neo4j.graphdb.factory.module.edition.CommunityEditionModule;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -51,14 +51,14 @@ public class AdversarialPageCacheGraphDatabaseFactory
         return new TestGraphDatabaseFactory()
         {
             @Override
-            protected GraphDatabaseService newEmbeddedDatabase( File dir, Config config, Dependencies
+            protected GraphDatabaseService newEmbeddedDatabase( File dir, Config config, ExternalDependencies
                     dependencies )
             {
                 return new GraphDatabaseFacadeFactory( DatabaseInfo.COMMUNITY, CommunityEditionModule::new )
                 {
 
                     @Override
-                    protected PlatformModule createPlatform( File storeDir, Config config, Dependencies dependencies )
+                    protected GlobalModule createGlobalPlatform( File storeDir, Config config, ExternalDependencies dependencies )
                     {
                         File absoluteStoreDir = storeDir.getAbsoluteFile();
                         File databasesRoot = absoluteStoreDir.getParentFile();
@@ -68,7 +68,7 @@ public class AdversarialPageCacheGraphDatabaseFactory
                         {
                             config.augment( GraphDatabaseSettings.transaction_logs_root_path, databasesRoot.getAbsolutePath() );
                         }
-                        return new PlatformModule( databasesRoot, config, databaseInfo, dependencies )
+                        return new GlobalModule( databasesRoot, config, databaseInfo, dependencies )
                         {
                             @Override
                             protected FileSystemAbstraction createFileSystemAbstraction()

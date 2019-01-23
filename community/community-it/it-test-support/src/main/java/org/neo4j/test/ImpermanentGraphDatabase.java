@@ -24,10 +24,10 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.neo4j.graphdb.facade.ExternalDependencies;
 import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory;
-import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory.Dependencies;
 import org.neo4j.graphdb.facade.embedded.EmbeddedGraphDatabase;
-import org.neo4j.graphdb.factory.module.PlatformModule;
+import org.neo4j.graphdb.factory.module.GlobalModule;
 import org.neo4j.graphdb.factory.module.edition.CommunityEditionModule;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.helpers.Service;
@@ -123,33 +123,33 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
         this( storeDir, params, getDependencies( extensions ) );
     }
 
-    private static Dependencies getDependencies( Iterable<ExtensionFactory<?>> extensions )
+    private static ExternalDependencies getDependencies( Iterable<ExtensionFactory<?>> extensions )
     {
         return newDependencies().extensions( extensions );
     }
 
-    public ImpermanentGraphDatabase( File storeDir, Map<String, String> params, Dependencies dependencies )
+    public ImpermanentGraphDatabase( File storeDir, Map<String, String> params, ExternalDependencies dependencies )
     {
         super( storeDir, params, dependencies );
         trackUnclosedUse( storeDir );
     }
 
     public ImpermanentGraphDatabase( File storeDir, Config config,
-            Dependencies dependencies )
+            ExternalDependencies dependencies )
     {
         super( storeDir, config, dependencies );
         trackUnclosedUse( storeDir );
     }
 
     @Override
-    protected void create( File storeDir, Map<String, String> params, Dependencies dependencies )
+    protected void create( File storeDir, Map<String, String> params, ExternalDependencies dependencies )
     {
         new GraphDatabaseFacadeFactory( DatabaseInfo.COMMUNITY, CommunityEditionModule::new )
         {
             @Override
-            protected PlatformModule createPlatform( File storeDir, Config config, Dependencies dependencies )
+            protected GlobalModule createGlobalPlatform( File storeDir, Config config, ExternalDependencies dependencies )
             {
-                return new ImpermanentPlatformModule( storeDir, config, databaseInfo, dependencies );
+                return new ImpermanentGlobalModule( storeDir, config, databaseInfo, dependencies );
             }
         }.initFacade( storeDir, params, dependencies, this );
     }
@@ -185,9 +185,9 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
         return config;
     }
 
-    protected static class ImpermanentPlatformModule extends PlatformModule
+    protected static class ImpermanentGlobalModule extends GlobalModule
     {
-        public ImpermanentPlatformModule( File storeDir, Config config, DatabaseInfo databaseInfo, Dependencies dependencies )
+        public ImpermanentGlobalModule( File storeDir, Config config, DatabaseInfo databaseInfo, ExternalDependencies dependencies )
         {
             super( storeDir, withForcedInMemoryConfiguration(config), databaseInfo, dependencies );
         }
@@ -195,7 +195,7 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
         @Override
         protected StoreLocker createStoreLocker()
         {
-            return new StoreLocker( fileSystem, storeLayout );
+            return new StoreLocker( getFileSystem(), getStoreLayout() );
         }
 
         @Override

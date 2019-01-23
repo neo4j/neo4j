@@ -41,12 +41,12 @@ public class DatabaseModule
 
     public final CoreAPIAvailabilityGuard coreAPIAvailabilityGuard;
 
-    public DatabaseModule( String databaseName, PlatformModule platformModule, AbstractEditionModule editionModule, GlobalProcedures globalProcedures,
+    public DatabaseModule( String databaseName, GlobalModule globalModule, AbstractEditionModule editionModule, GlobalProcedures globalProcedures,
             GraphDatabaseFacade graphDatabaseFacade )
     {
         EditionDatabaseContext editionContext = editionModule.createDatabaseContext( databaseName );
         ModularDatabaseCreationContext context =
-                new ModularDatabaseCreationContext( databaseName, platformModule, editionContext, globalProcedures, graphDatabaseFacade );
+                new ModularDatabaseCreationContext( databaseName, globalModule, editionContext, globalProcedures, graphDatabaseFacade );
         database = new Database( context );
 
         this.coreAPIAvailabilityGuard = context.getCoreAPIAvailabilityGuard();
@@ -56,7 +56,7 @@ public class DatabaseModule
         // TODO: this is incorrect, and we should remove procedure specific service and factory
         //  as soon as we will split database and dbms operations into separate services
         ProcedureGDSFactory gdsFactory =
-                new ProcedureGDSFactory( platformModule, this, coreAPIAvailabilityGuard, context.getTokenHolders(),
+                new ProcedureGDSFactory( globalModule, this, coreAPIAvailabilityGuard, context.getTokenHolders(),
                         editionModule.getThreadToTransactionBridge() );
         globalProcedures.registerComponent( GraphDatabaseService.class, gdsFactory::apply, true );
     }

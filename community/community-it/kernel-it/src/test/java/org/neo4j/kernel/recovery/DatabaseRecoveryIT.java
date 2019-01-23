@@ -48,9 +48,10 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.graphdb.facade.ExternalDependencies;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder.DatabaseCreator;
-import org.neo4j.graphdb.factory.module.PlatformModule;
+import org.neo4j.graphdb.factory.module.GlobalModule;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.helpers.collection.BoundedIterable;
 import org.neo4j.helpers.collection.Iterators;
@@ -408,7 +409,7 @@ class DatabaseRecoveryIT
             {
                 try
                 {
-                    // Flush the page cache which will fished out of the PlatformModule at the point of constructing the database
+                    // Flush the page cache which will fished out of the GlobalModule at the point of constructing the database
                     pageCache.get().flushAndForce();
                 }
                 catch ( IOException e )
@@ -423,7 +424,7 @@ class DatabaseRecoveryIT
         } );
         new TestGraphDatabaseFactory()
                 {
-                    // This nested constructing is done purely to be able to fish out PlatformModule
+                    // This nested constructing is done purely to be able to fish out GlobalModule
                     // (and its PageCache inside it). It would be great if this could be done in a prettier way.
 
                     @Override
@@ -438,12 +439,12 @@ class DatabaseRecoveryIT
                                 TestGraphDatabaseFacadeFactory factory = new TestGraphDatabaseFacadeFactory( state, true )
                                 {
                                     @Override
-                                    protected PlatformModule createPlatform( File storeDir, Config config, Dependencies dependencies )
+                                    protected GlobalModule createGlobalPlatform( File storeDir, Config config, ExternalDependencies dependencies )
                                     {
-                                        PlatformModule platform = super.createPlatform( storeDir, config, dependencies );
+                                        GlobalModule globalModule = super.createGlobalPlatform( storeDir, config, dependencies );
                                         // nice way of getting the page cache dependency before db is created, huh?
-                                        pageCache.set( platform.pageCache );
-                                        return platform;
+                                        pageCache.set( globalModule.getPageCache() );
+                                        return globalModule;
                                     }
                                 };
                                 return factory.newFacade( storeDir, config, newDependencies( state.databaseDependencies() ) );

@@ -22,8 +22,8 @@ package org.neo4j.server.database;
 import org.junit.Test;
 
 import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.graphdb.facade.ExternalDependencies;
 import org.neo4j.graphdb.facade.GraphDatabaseDependencies;
-import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.logging.NullLogProvider;
@@ -40,7 +40,7 @@ public class LifecycleManagingDatabaseTest
         // Given a lifecycled database that'll try to warm up Cypher when it starts
         final GraphDatabaseFacade mockDb = mock( GraphDatabaseFacade.class );
         Config config = Config.defaults();
-        GraphDatabaseFacadeFactory.Dependencies deps =
+        ExternalDependencies deps =
                 GraphDatabaseDependencies.newDependencies().userLogProvider( NullLogProvider.getInstance() );
         GraphFactory factory = new SimpleGraphFactory( mockDb );
         LifecycleManagingDatabase db = new LifecycleManagingDatabase( config, factory, deps )

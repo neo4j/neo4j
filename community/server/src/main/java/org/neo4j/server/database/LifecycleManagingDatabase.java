@@ -22,7 +22,7 @@ package org.neo4j.server.database;
 import java.io.File;
 
 import org.neo4j.graphdb.Result;
-import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory;
+import org.neo4j.graphdb.facade.ExternalDependencies;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
@@ -39,14 +39,14 @@ public class LifecycleManagingDatabase implements Database
 
     private final Config config;
     private final GraphFactory dbFactory;
-    private final GraphDatabaseFacadeFactory.Dependencies dependencies;
+    private final ExternalDependencies dependencies;
     private final Log log;
 
     private boolean isRunning;
     private GraphDatabaseFacade graph;
 
     public LifecycleManagingDatabase( Config config, GraphFactory dbFactory,
-            GraphDatabaseFacadeFactory.Dependencies dependencies )
+            ExternalDependencies dependencies )
     {
         this.config = config;
         this.dbFactory = dbFactory;

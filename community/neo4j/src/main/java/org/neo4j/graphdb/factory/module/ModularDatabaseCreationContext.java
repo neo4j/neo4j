@@ -72,7 +72,7 @@ import org.neo4j.time.SystemNanoClock;
 public class ModularDatabaseCreationContext implements DatabaseCreationContext
 {
     private final String databaseName;
-    private final Config config;
+    private final Config globalConfig;
     private final IdGeneratorFactory idGeneratorFactory;
     private final LogService logService;
     private final JobScheduler scheduler;
@@ -90,7 +90,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     private final CommitProcessFactory commitProcessFactory;
     private final PageCache pageCache;
     private final ConstraintSemantics constraintSemantics;
-    private final Monitors monitors;
+    private final Monitors globalMonitors;
     private final Tracers tracers;
     private final GlobalProcedures globalProcedures;
     private final IOLimiter ioLimiter;
@@ -112,51 +112,51 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     private final DatabaseEventHandlers eventHandlers;
     private final DatabaseMigratorFactory databaseMigratorFactory;
 
-    ModularDatabaseCreationContext( String databaseName, PlatformModule platformModule, EditionDatabaseContext editionContext,
+    ModularDatabaseCreationContext( String databaseName, GlobalModule globalModule, EditionDatabaseContext editionContext,
             GlobalProcedures globalProcedures, GraphDatabaseFacade facade )
     {
         this.databaseName = databaseName;
-        this.config = platformModule.config;
+        this.globalConfig = globalModule.getGlobalConfig();
         DatabaseIdContext idContext = editionContext.getIdContext();
         this.idGeneratorFactory = idContext.getIdGeneratorFactory();
         this.idController = idContext.getIdController();
-        this.databaseLayout = platformModule.storeLayout.databaseLayout( databaseName );
-        this.logService = platformModule.logService;
-        this.scheduler = platformModule.jobScheduler;
-        this.globalDependencies =  platformModule.dependencies;
+        this.databaseLayout = globalModule.getStoreLayout().databaseLayout( databaseName );
+        this.logService = globalModule.getLogService();
+        this.scheduler = globalModule.getJobScheduler();
+        this.globalDependencies =  globalModule.getGlobalDependencies();
         this.tokenHolders = editionContext.getTokenHolders();
         this.tokenNameLookup = new NonTransactionalTokenNameLookup( tokenHolders );
         this.locks = editionContext.getLocks();
         this.statementLocksFactory = editionContext.getStatementLocksFactory();
         this.schemaWriteGuard = editionContext.getSchemaWriteGuard();
         this.transactionEventHandlers = new TransactionEventHandlers( facade );
-        this.monitors = platformModule.monitors;
-        this.fs = platformModule.fileSystem;
+        this.globalMonitors = globalModule.getGlobalMonitors();
+        this.fs = globalModule.getFileSystem();
         this.transactionStats = editionContext.getTransactionMonitor();
         this.eventHandlers = new DatabaseEventHandlers( logService.getInternalLog( DatabaseEventHandlers.class ) );
         this.databaseHealth = new DatabaseHealth( new DatabasePanicEventGenerator( eventHandlers ), logService.getInternalLog( DatabaseHealth.class ) );
         this.transactionHeaderInformationFactory = editionContext.getHeaderInformationFactory();
         this.commitProcessFactory = editionContext.getCommitProcessFactory();
-        this.pageCache = platformModule.pageCache;
+        this.pageCache = globalModule.getPageCache();
         this.constraintSemantics = editionContext.getConstraintSemantics();
-        this.tracers = platformModule.tracers;
+        this.tracers = globalModule.getTracers();
         this.globalProcedures = globalProcedures;
         this.ioLimiter = editionContext.getIoLimiter();
-        this.clock = platformModule.clock;
-        this.databaseAvailabilityGuard = editionContext.createDatabaseAvailabilityGuard( clock, logService, config );
+        this.clock = globalModule.getGlobalClock();
+        this.databaseAvailabilityGuard = editionContext.createDatabaseAvailabilityGuard( clock, logService, globalConfig );
         this.databaseAvailability =
-                new DatabaseAvailability( databaseAvailabilityGuard, transactionStats, platformModule.clock, getAwaitActiveTransactionDeadlineMillis() );
+                new DatabaseAvailability( databaseAvailabilityGuard, transactionStats, clock, getAwaitActiveTransactionDeadlineMillis() );
         this.coreAPIAvailabilityGuard = new CoreAPIAvailabilityGuard( databaseAvailabilityGuard, editionContext.getTransactionStartTimeout() );
         this.accessCapability = editionContext.getAccessCapability();
         this.storeCopyCheckPointMutex = new StoreCopyCheckPointMutex();
-        this.databaseInfo = platformModule.databaseInfo;
-        this.versionContextSupplier = platformModule.versionContextSupplier;
-        this.collectionsFactorySupplier = platformModule.collectionsFactorySupplier;
-        this.extensionFactories = platformModule.extensionFactories;
+        this.databaseInfo = globalModule.getDatabaseInfo();
+        this.versionContextSupplier = globalModule.getVersionContextSupplier();
+        this.collectionsFactorySupplier = globalModule.getCollectionsFactorySupplier();
+        this.extensionFactories = globalModule.getExtensionFactories();
         this.watcherServiceFactory = editionContext.getWatcherServiceFactory();
         this.facade = facade;
-        this.engineProviders = platformModule.engineProviders;
-        this.databaseMigratorFactory = new DatabaseMigratorFactoryImpl( fs, config, logService, pageCache, scheduler );
+        this.engineProviders = globalModule.getQueryEngineProviders();
+        this.databaseMigratorFactory = new DatabaseMigratorFactoryImpl( fs, globalConfig, logService, pageCache, scheduler );
     }
 
     @Override
@@ -172,9 +172,9 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     }
 
     @Override
-    public Config getConfig()
+    public Config getGlobalConfig()
     {
-        return config;
+        return globalConfig;
     }
 
     @Override
@@ -282,7 +282,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     @Override
     public Monitors getMonitors()
     {
-        return monitors;
+        return globalMonitors;
     }
 
     @Override
@@ -389,7 +389,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
 
     private long getAwaitActiveTransactionDeadlineMillis()
     {
-        return config.get( GraphDatabaseSettings.shutdown_transaction_end_timeout ).toMillis();
+        return globalConfig.get( GraphDatabaseSettings.shutdown_transaction_end_timeout ).toMillis();
     }
 
     @Override

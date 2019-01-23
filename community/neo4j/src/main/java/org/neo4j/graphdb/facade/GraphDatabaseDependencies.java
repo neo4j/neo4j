@@ -45,9 +45,9 @@ import static org.neo4j.helpers.collection.Iterables.asImmutableMap;
 import static org.neo4j.helpers.collection.Iterables.asIterable;
 import static org.neo4j.helpers.collection.Iterables.concat;
 
-public class GraphDatabaseDependencies implements GraphDatabaseFacadeFactory.Dependencies
+public class GraphDatabaseDependencies implements ExternalDependencies
 {
-    public static GraphDatabaseDependencies newDependencies( GraphDatabaseFacadeFactory.Dependencies deps )
+    public static GraphDatabaseDependencies newDependencies( ExternalDependencies deps )
     {
         return new GraphDatabaseDependencies( deps.monitors(), deps.userLogProvider(),
                 asImmutableList( deps.settingsClasses() ), asImmutableList( deps.extensions() ),

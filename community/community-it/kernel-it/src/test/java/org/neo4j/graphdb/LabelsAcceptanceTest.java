@@ -34,10 +34,11 @@ import java.util.stream.Stream;
 import javax.annotation.Nonnull;
 
 import org.neo4j.common.DependencyResolver;
+import org.neo4j.graphdb.facade.ExternalDependencies;
 import org.neo4j.graphdb.facade.GraphDatabaseDependencies;
 import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
-import org.neo4j.graphdb.factory.module.PlatformModule;
+import org.neo4j.graphdb.factory.module.GlobalModule;
 import org.neo4j.graphdb.factory.module.edition.AbstractEditionModule;
 import org.neo4j.graphdb.factory.module.edition.CommunityEditionModule;
 import org.neo4j.graphdb.factory.module.id.IdContextFactoryBuilder;
@@ -748,17 +749,17 @@ public class LabelsAcceptanceTest
                             protected void create(
                                     File storeDir,
                                     Config config,
-                                    GraphDatabaseFacadeFactory.Dependencies dependencies )
+                                    ExternalDependencies dependencies )
                             {
-                                Function<PlatformModule,AbstractEditionModule> factory =
-                                        platformModule -> new CommunityEditionModuleWithCustomIdContextFactory( platformModule, idFactory );
+                                Function<GlobalModule,AbstractEditionModule> factory =
+                                        globalModule -> new CommunityEditionModuleWithCustomIdContextFactory( globalModule, idFactory );
                                 new GraphDatabaseFacadeFactory( DatabaseInfo.COMMUNITY, factory )
                                 {
 
                                     @Override
-                                    protected PlatformModule createPlatform( File storeDir, Config config, Dependencies dependencies )
+                                    protected GlobalModule createGlobalPlatform( File storeDir, Config config, ExternalDependencies dependencies )
                                     {
-                                        return new ImpermanentPlatformModule( storeDir, config, databaseInfo, dependencies );
+                                        return new ImpermanentGlobalModule( storeDir, config, databaseInfo, dependencies );
                                     }
                                 }.initFacade( storeDir, config, dependencies, this );
                             }
@@ -783,10 +784,10 @@ public class LabelsAcceptanceTest
 
     private static class CommunityEditionModuleWithCustomIdContextFactory extends CommunityEditionModule
     {
-        CommunityEditionModuleWithCustomIdContextFactory( PlatformModule platformModule, EphemeralIdGenerator.Factory idFactory )
+        CommunityEditionModuleWithCustomIdContextFactory( GlobalModule globalModule, EphemeralIdGenerator.Factory idFactory )
         {
-            super( platformModule );
-            idContextFactory = IdContextFactoryBuilder.of( platformModule.fileSystem, platformModule.jobScheduler )
+            super( globalModule );
+            idContextFactory = IdContextFactoryBuilder.of( globalModule.getFileSystem(), globalModule.getJobScheduler() )
                     .withIdGenerationFactoryProvider( any -> idFactory )
                     .build();
         }

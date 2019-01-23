@@ -26,7 +26,7 @@ import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.event.DatabaseEventHandler;
 import org.neo4j.graphdb.event.TransactionEventHandler;
 import org.neo4j.graphdb.factory.module.DatabaseModule;
-import org.neo4j.graphdb.factory.module.PlatformModule;
+import org.neo4j.graphdb.factory.module.GlobalModule;
 import org.neo4j.graphdb.security.URLAccessValidationError;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
@@ -52,13 +52,13 @@ import org.neo4j.values.virtual.MapValue;
  */
 public class ClassicCoreSPI implements GraphDatabaseFacade.SPI
 {
-    private final PlatformModule platform;
+    private final GlobalModule platform;
     private final DatabaseModule dataSource;
     private final Logger msgLog;
     private final CoreAPIAvailabilityGuard availability;
     private final ThreadToStatementContextBridge threadToTransactionBridge;
 
-    public ClassicCoreSPI( PlatformModule platform, DatabaseModule dataSource, Logger msgLog, CoreAPIAvailabilityGuard availability,
+    public ClassicCoreSPI( GlobalModule platform, DatabaseModule dataSource, Logger msgLog, CoreAPIAvailabilityGuard availability,
             ThreadToStatementContextBridge threadToTransactionBridge )
     {
         this.platform = platform;
@@ -133,7 +133,7 @@ public class ClassicCoreSPI implements GraphDatabaseFacade.SPI
     @Override
     public URL validateURLAccess( URL url ) throws URLAccessValidationError
     {
-        return platform.urlAccessRule.validate( platform.config, url );
+        return platform.getUrlAccessRule().validate( platform.getGlobalConfig(), url );
     }
 
     @Override
@@ -145,7 +145,7 @@ public class ClassicCoreSPI implements GraphDatabaseFacade.SPI
     @Override
     public String name()
     {
-        return platform.databaseInfo.toString();
+        return platform.getDatabaseInfo().toString();
     }
 
     @Override
@@ -155,7 +155,7 @@ public class ClassicCoreSPI implements GraphDatabaseFacade.SPI
         {
             msgLog.log( "Shutdown started" );
             dataSource.database.getDatabaseAvailabilityGuard().shutdown();
-            platform.life.shutdown();
+            platform.getGlobalLife().shutdown();
         }
         catch ( LifecycleException throwable )
         {

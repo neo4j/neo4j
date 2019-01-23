@@ -23,7 +23,7 @@ import org.apache.commons.lang3.SystemUtils;
 
 import java.io.File;
 
-import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory.Dependencies;
+import org.neo4j.graphdb.facade.ExternalDependencies;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.server.AbstractNeoServer;
 import org.neo4j.server.CommunityNeoServer;
@@ -49,7 +49,7 @@ public class InProcessNeo4jBuilder extends AbstractInProcessNeo4jBuilder
     }
 
     @Override
-    protected AbstractNeoServer createNeoServer( GraphFactory graphFactory, Config config, Dependencies dependencies )
+    protected AbstractNeoServer createNeoServer( GraphFactory graphFactory, Config config, ExternalDependencies dependencies )
     {
         return new CommunityNeoServer( config, graphFactory, dependencies );
     }

@@ -67,7 +67,7 @@ public interface DatabaseCreationContext
 
     DatabaseLayout getDatabaseLayout();
 
-    Config getConfig();
+    Config getGlobalConfig();
 
     IdGeneratorFactory getIdGeneratorFactory();
 

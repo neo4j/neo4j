@@ -22,8 +22,6 @@ package org.neo4j.graphdb.factory.module;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -44,7 +42,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.graphdb.facade.GraphDatabaseDependencies.newDependencies;
 
 @ExtendWith( TestDirectoryExtension.class )
-class PlatformModuleTest
+class GlobalModuleTest
 {
     @Inject
     private TestDirectory testDirectory;
@@ -74,8 +72,8 @@ class PlatformModuleTest
         // my counter is still unincremented as well
         assertThat( counter.get(), equalTo( 0 ) );
 
-        // When I construct a PlatformModule...
-        PlatformModule pm = new PlatformModule( testDirectory.storeDir(), Config.defaults(), DatabaseInfo.UNKNOWN, externalDependencies );
+        // When I construct a GlobalModule...
+        GlobalModule pm = new GlobalModule( testDirectory.storeDir(), Config.defaults(), DatabaseInfo.UNKNOWN, externalDependencies );
 
         // then the tasks that I queued up earlier should be run...
         // the timeout here is really high to ensure that this test does not become flaky because of a slow running JVM

@@ -26,7 +26,7 @@ import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.facade.spi.ClassicCoreSPI;
 import org.neo4j.graphdb.factory.module.DatabaseModule;
-import org.neo4j.graphdb.factory.module.PlatformModule;
+import org.neo4j.graphdb.factory.module.GlobalModule;
 import org.neo4j.graphdb.factory.module.edition.AbstractEditionModule;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
@@ -41,13 +41,13 @@ import static org.neo4j.util.Preconditions.checkState;
 public final class DefaultDatabaseManager extends LifecycleAdapter implements DatabaseManager
 {
     private DatabaseContext databaseContext;
-    private final PlatformModule platform;
+    private final GlobalModule platform;
     private final AbstractEditionModule edition;
     private final GlobalProcedures globalProcedures;
     private final Logger log;
     private final GraphDatabaseFacade graphDatabaseFacade;
 
-    public DefaultDatabaseManager( PlatformModule platform, AbstractEditionModule edition, GlobalProcedures globalProcedures,
+    public DefaultDatabaseManager( GlobalModule platform, AbstractEditionModule edition, GlobalProcedures globalProcedures,
             Logger log, GraphDatabaseFacade graphDatabaseFacade )
     {
         this.platform = platform;
@@ -72,7 +72,7 @@ public final class DefaultDatabaseManager extends LifecycleAdapter implements Da
         Database database = databaseModule.database;
         ClassicCoreSPI spi =
                 new ClassicCoreSPI( platform, databaseModule, log, databaseModule.getCoreAPIAvailabilityGuard(), edition.getThreadToTransactionBridge() );
-        graphDatabaseFacade.init( spi, edition.getThreadToTransactionBridge(), platform.config, database.getTokenHolders() );
+        graphDatabaseFacade.init( spi, edition.getThreadToTransactionBridge(), platform.getGlobalConfig(), database.getTokenHolders() );
 
         databaseContext = new DatabaseContext( database, graphDatabaseFacade );
         return databaseContext;

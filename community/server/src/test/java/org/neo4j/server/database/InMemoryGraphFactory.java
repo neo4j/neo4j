@@ -21,8 +21,8 @@ package org.neo4j.server.database;
 
 import java.io.File;
 
+import org.neo4j.graphdb.facade.ExternalDependencies;
 import org.neo4j.graphdb.facade.GraphDatabaseDependencies;
-import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.configuration.Config;
@@ -34,7 +34,7 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
 public class InMemoryGraphFactory implements GraphFactory
 {
     @Override
-    public GraphDatabaseFacade newGraphDatabase( Config config, GraphDatabaseFacadeFactory.Dependencies dependencies )
+    public GraphDatabaseFacade newGraphDatabase( Config config, ExternalDependencies dependencies )
     {
         File storeDir = config.get( GraphDatabaseSettings.database_path );
         config.augment( stringMap( GraphDatabaseSettings.ephemeral.name(), "true",

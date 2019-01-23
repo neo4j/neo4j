@@ -24,6 +24,7 @@ import java.util.Map;
 import javax.annotation.Nonnull;
 
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.facade.ExternalDependencies;
 import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory;
 import org.neo4j.graphdb.factory.module.edition.CommunityEditionModule;
 import org.neo4j.graphdb.security.URLAccessRule;
@@ -107,23 +108,23 @@ public class GraphDatabaseFactory
     }
 
     /**
-     * See {@link #newDatabase(File, Config, GraphDatabaseFacadeFactory.Dependencies)} instead.
+     * See {@link #newDatabase(File, Config, ExternalDependencies)} instead.
      */
     @Deprecated
     protected GraphDatabaseService newDatabase( File storeDir, Map<String,String> settings,
-                                                GraphDatabaseFacadeFactory.Dependencies dependencies )
+                                                ExternalDependencies dependencies )
     {
         return newDatabase( storeDir, Config.defaults( settings ), dependencies );
     }
 
     protected GraphDatabaseService newEmbeddedDatabase( File storeDir, Config config,
-                                                        GraphDatabaseFacadeFactory.Dependencies dependencies )
+                                                        ExternalDependencies dependencies )
     {
         return GraphDatabaseFactory.this.newDatabase( storeDir, config, dependencies );
     }
 
     protected GraphDatabaseService newDatabase( File storeDir, Config config,
-                                                GraphDatabaseFacadeFactory.Dependencies dependencies )
+                                                ExternalDependencies dependencies )
     {
         File absoluteStoreDir = storeDir.getAbsoluteFile();
         File databasesRoot = absoluteStoreDir.getParentFile();

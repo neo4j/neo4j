@@ -26,7 +26,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import java.io.File;
 import java.util.Collections;
 
-import org.neo4j.graphdb.factory.module.PlatformModule;
+import org.neo4j.graphdb.factory.module.GlobalModule;
 import org.neo4j.graphdb.factory.module.edition.AbstractEditionModule;
 import org.neo4j.graphdb.factory.module.edition.CommunityEditionModule;
 import org.neo4j.helpers.Exceptions;
@@ -61,7 +61,7 @@ class GraphDatabaseFacadeFactoryTest
     private TestDirectory testDirectory;
 
     private final GraphDatabaseFacade mockFacade = mock( GraphDatabaseFacade.class );
-    private final GraphDatabaseFacadeFactory.Dependencies deps = mock( GraphDatabaseFacadeFactory.Dependencies.class, RETURNS_MOCKS );
+    private final ExternalDependencies deps = mock( ExternalDependencies.class, RETURNS_MOCKS );
 
     @BeforeEach
     void setup()
@@ -97,8 +97,8 @@ class GraphDatabaseFacadeFactoryTest
 
     private GraphDatabaseFacadeFactory newFaultyGraphDatabaseFacadeFactory( final RuntimeException startupError )
     {
-        PlatformModule platformModule = new PlatformModule( testDirectory.storeDir(), Config.defaults(), COMMUNITY, newDependencies() );
-        AbstractEditionModule editionModule = new CommunityEditionModule( platformModule )
+        GlobalModule globalModule = new GlobalModule( testDirectory.storeDir(), Config.defaults(), COMMUNITY, newDependencies() );
+        AbstractEditionModule editionModule = new CommunityEditionModule( globalModule )
         {
             @Override
             protected SchemaWriteGuard createSchemaWriteGuard()
@@ -109,13 +109,13 @@ class GraphDatabaseFacadeFactoryTest
         return new GraphDatabaseFacadeFactory( DatabaseInfo.UNKNOWN, p -> editionModule )
         {
             @Override
-            protected PlatformModule createPlatform( File storeDir, Config config, Dependencies dependencies )
+            protected GlobalModule createGlobalPlatform( File storeDir, Config config, ExternalDependencies dependencies )
             {
                 final LifeSupport lifeMock = mock( LifeSupport.class );
                 doThrow( startupError ).when( lifeMock ).start();
                 doAnswer( invocation -> invocation.getArgument( 0 ) ).when( lifeMock ).add( any( Lifecycle.class ) );
 
-                return new PlatformModule( storeDir, config, databaseInfo, dependencies )
+                return new GlobalModule( storeDir, config, databaseInfo, dependencies )
                 {
                     @Override
                     public LifeSupport createLife()

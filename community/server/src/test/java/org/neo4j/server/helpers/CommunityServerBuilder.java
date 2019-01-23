@@ -27,8 +27,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 
+import org.neo4j.graphdb.facade.ExternalDependencies;
 import org.neo4j.graphdb.facade.GraphDatabaseDependencies;
-import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.kernel.configuration.Config;
@@ -109,7 +109,7 @@ public class CommunityServerBuilder
     }
 
     protected CommunityNeoServer build( File configFile, Config config,
-            GraphDatabaseFacadeFactory.Dependencies dependencies )
+            ExternalDependencies dependencies )
     {
         return new TestCommunityNeoServer( config, configFile, dependencies );
     }
@@ -349,7 +349,7 @@ public class CommunityServerBuilder
     {
         private final File configFile;
 
-        private TestCommunityNeoServer( Config config, File configFile, GraphDatabaseFacadeFactory.Dependencies dependencies )
+        private TestCommunityNeoServer( Config config, File configFile, ExternalDependencies dependencies )
         {
             super( config, persistent ? new CommunityGraphFactory() : new InMemoryGraphFactory(), dependencies );
             this.configFile = configFile;

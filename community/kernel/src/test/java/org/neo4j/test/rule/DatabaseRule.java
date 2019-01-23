@@ -303,7 +303,7 @@ public class DatabaseRule extends ExternalResource
         }
 
         @Override
-        public Config getConfig()
+        public Config getGlobalConfig()
         {
             return config;
         }

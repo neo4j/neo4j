@@ -28,8 +28,9 @@ import java.nio.file.OpenOption;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.event.DatabaseEventHandlerAdapter;
+import org.neo4j.graphdb.facade.ExternalDependencies;
 import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory;
-import org.neo4j.graphdb.factory.module.PlatformModule;
+import org.neo4j.graphdb.factory.module.GlobalModule;
 import org.neo4j.graphdb.factory.module.edition.CommunityEditionModule;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.DelegatingPageCache;
@@ -87,20 +88,20 @@ class DatabaseShutdownTest
 
     private static class TestGraphDatabaseFactoryWithFailingPageCacheFlush extends TestGraphDatabaseFactory
     {
-        private LifeSupport life;
+        private LifeSupport globalLife;
         private volatile boolean failFlush;
 
         @Override
         protected GraphDatabaseService newEmbeddedDatabase( File storeDir, Config config,
-                GraphDatabaseFacadeFactory.Dependencies dependencies )
+                ExternalDependencies dependencies )
         {
             return new GraphDatabaseFacadeFactory( DatabaseInfo.COMMUNITY, CommunityEditionModule::new )
             {
 
                 @Override
-                protected PlatformModule createPlatform( File storeDir, Config config, Dependencies dependencies )
+                protected GlobalModule createGlobalPlatform( File storeDir, Config config, ExternalDependencies dependencies )
                 {
-                    PlatformModule platformModule = new PlatformModule( storeDir, config, databaseInfo, dependencies )
+                    GlobalModule globalModule = new GlobalModule( storeDir, config, databaseInfo, dependencies )
                     {
                         @Override
                         protected PageCache createPageCache( FileSystemAbstraction fileSystem, Config config, LogService logging, Tracers tracers,
@@ -130,15 +131,15 @@ class DatabaseShutdownTest
                             };
                         }
                     };
-                    life = platformModule.life;
-                    return platformModule;
+                    globalLife = globalModule.getGlobalLife();
+                    return globalModule;
                 }
             }.newFacade( storeDir, config, dependencies );
         }
 
         LifecycleStatus getDatabaseStatus()
         {
-            return life.getStatus();
+            return globalLife.getStatus();
         }
 
         public void setFailFlush( boolean failFlush )

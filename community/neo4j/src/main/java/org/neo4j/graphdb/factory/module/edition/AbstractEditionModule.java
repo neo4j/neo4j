@@ -28,7 +28,7 @@ import org.neo4j.dmbs.database.DefaultDatabaseManager;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.graphdb.factory.module.PlatformModule;
+import org.neo4j.graphdb.factory.module.GlobalModule;
 import org.neo4j.graphdb.factory.module.edition.context.EditionDatabaseContext;
 import org.neo4j.helpers.Service;
 import org.neo4j.internal.collector.DataCollectorProcedures;
@@ -118,10 +118,10 @@ public abstract class AbstractEditionModule
         config.augment( GraphDatabaseSettings.editionName, databaseInfo.edition.toString() );
     }
 
-    public DatabaseManager createDatabaseManager( GraphDatabaseFacade graphDatabaseFacade, PlatformModule platform, AbstractEditionModule edition,
+    public DatabaseManager createDatabaseManager( GraphDatabaseFacade graphDatabaseFacade, GlobalModule globalModule, AbstractEditionModule edition,
             GlobalProcedures globalProcedures, Logger msgLog )
     {
-        return new DefaultDatabaseManager( platform, edition, globalProcedures, msgLog, graphDatabaseFacade );
+        return new DefaultDatabaseManager( globalModule, edition, globalProcedures, msgLog, graphDatabaseFacade );
     }
 
     /**
@@ -135,12 +135,12 @@ public abstract class AbstractEditionModule
         return false;
     }
 
-    public abstract void createSecurityModule( PlatformModule platformModule, GlobalProcedures globalProcedures );
+    public abstract void createSecurityModule( GlobalModule globalModule, GlobalProcedures globalProcedures );
 
-    protected static SecurityModule setupSecurityModule( PlatformModule platformModule, AbstractEditionModule editionModule, Log log,
+    protected static SecurityModule setupSecurityModule( GlobalModule globalModule, AbstractEditionModule editionModule, Log log,
             GlobalProcedures globalProcedures, String key )
     {
-        SecurityModule.Dependencies securityModuleDependencies = new SecurityModuleDependencies( platformModule, editionModule, globalProcedures );
+        SecurityModule.Dependencies securityModuleDependencies = new SecurityModuleDependencies( globalModule, editionModule, globalProcedures );
         SecurityModule securityModule = Service.loadSilently( SecurityModule.class, key );
         if ( securityModule == null )
         {

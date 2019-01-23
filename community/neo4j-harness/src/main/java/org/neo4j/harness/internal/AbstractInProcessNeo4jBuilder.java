@@ -36,6 +36,7 @@ import java.util.function.Function;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Setting;
+import org.neo4j.graphdb.facade.ExternalDependencies;
 import org.neo4j.graphdb.facade.GraphDatabaseDependencies;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
@@ -60,7 +61,6 @@ import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.configuration.ThirdPartyJaxRsPackage;
 import org.neo4j.server.database.GraphFactory;
 
-import static org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory.Dependencies;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.auth_enabled;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.data_directory;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.db_timezone;
@@ -170,7 +170,7 @@ public abstract class AbstractInProcessNeo4jBuilder implements Neo4jBuilder
 
     protected abstract GraphFactory createGraphFactory( Config config );
 
-    protected abstract AbstractNeoServer createNeoServer( GraphFactory graphFactory, Config config, Dependencies dependencies );
+    protected abstract AbstractNeoServer createNeoServer( GraphFactory graphFactory, Config config, ExternalDependencies dependencies );
 
     @Override
     public Neo4jBuilder withConfig( Setting<?> key, String value )

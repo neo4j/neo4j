@@ -20,7 +20,7 @@
 package org.neo4j.graphdb.factory.module.edition;
 
 import org.neo4j.common.DependencySatisfier;
-import org.neo4j.graphdb.factory.module.PlatformModule;
+import org.neo4j.graphdb.factory.module.GlobalModule;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.security.SecurityModule;
 import org.neo4j.kernel.configuration.Config;
@@ -31,13 +31,13 @@ import org.neo4j.scheduler.JobScheduler;
 
 class SecurityModuleDependencies implements SecurityModule.Dependencies
 {
-    private final PlatformModule platformModule;
+    private final GlobalModule globalModule;
     private final AbstractEditionModule editionModule;
     private final GlobalProcedures globalProcedures;
 
-    SecurityModuleDependencies( PlatformModule platformModule, AbstractEditionModule editionModule, GlobalProcedures globalProcedures )
+    SecurityModuleDependencies( GlobalModule globalModule, AbstractEditionModule editionModule, GlobalProcedures globalProcedures )
     {
-        this.platformModule = platformModule;
+        this.globalModule = globalModule;
         this.editionModule = editionModule;
         this.globalProcedures = globalProcedures;
     }
@@ -45,13 +45,13 @@ class SecurityModuleDependencies implements SecurityModule.Dependencies
     @Override
     public LogService logService()
     {
-        return platformModule.logService;
+        return globalModule.getLogService();
     }
 
     @Override
     public Config config()
     {
-        return platformModule.config;
+        return globalModule.getGlobalConfig();
     }
 
     @Override
@@ -63,19 +63,19 @@ class SecurityModuleDependencies implements SecurityModule.Dependencies
     @Override
     public JobScheduler scheduler()
     {
-        return platformModule.jobScheduler;
+        return globalModule.getJobScheduler();
     }
 
     @Override
     public FileSystemAbstraction fileSystem()
     {
-        return platformModule.fileSystem;
+        return globalModule.getFileSystem();
     }
 
     @Override
     public DependencySatisfier dependencySatisfier()
     {
-        return platformModule.dependencies;
+        return globalModule.getGlobalDependencies();
     }
 
     @Override

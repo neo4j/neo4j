@@ -120,7 +120,7 @@ class CommitContentionTest
     private GraphDatabaseService createDb()
     {
         GraphDatabaseFactoryState state = new GraphDatabaseFactoryState();
-        return new GraphDatabaseFacadeFactory( DatabaseInfo.COMMUNITY, platformModule -> new CommunityEditionModule( platformModule )
+        return new GraphDatabaseFacadeFactory( DatabaseInfo.COMMUNITY, globalModule -> new CommunityEditionModule( globalModule )
         {
             @Override
             public DatabaseTransactionStats createTransactionMonitor()

@@ -28,12 +28,13 @@ import javax.annotation.Nonnull;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Setting;
+import org.neo4j.graphdb.facade.ExternalDependencies;
 import org.neo4j.graphdb.facade.GraphDatabaseDependencies;
 import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.graphdb.factory.module.PlatformModule;
+import org.neo4j.graphdb.factory.module.GlobalModule;
 import org.neo4j.graphdb.factory.module.edition.AbstractEditionModule;
 import org.neo4j.graphdb.factory.module.edition.CommunityEditionModule;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
@@ -234,7 +235,7 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
 
     @Override
     protected GraphDatabaseService newEmbeddedDatabase( File storeDir, Config config,
-            GraphDatabaseFacadeFactory.Dependencies dependencies )
+            ExternalDependencies dependencies )
     {
         return new TestGraphDatabaseFacadeFactory( getCurrentState() ).newFacade( storeDir, config,
                 GraphDatabaseDependencies.newDependencies( dependencies ) );
@@ -265,7 +266,7 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
         }
 
         protected TestGraphDatabaseFacadeFactory( TestGraphDatabaseFactoryState state, boolean impermanent,
-                DatabaseInfo databaseInfo, Function<PlatformModule,AbstractEditionModule> editionFactory )
+                DatabaseInfo databaseInfo, Function<GlobalModule,AbstractEditionModule> editionFactory )
         {
             super( databaseInfo, editionFactory );
             this.state = state;
@@ -278,7 +279,7 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
         }
 
         @Override
-        protected PlatformModule createPlatform( File storeDir, Config config, Dependencies dependencies )
+        protected GlobalModule createGlobalPlatform( File storeDir, Config config, ExternalDependencies dependencies )
         {
             File absoluteStoreDir = storeDir.getAbsoluteFile();
             File databasesRoot = absoluteStoreDir.getParentFile();
@@ -296,18 +297,18 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
             if ( impermanent )
             {
                 config.augment( ephemeral, TRUE );
-                return new ImpermanentTestDatabasePlatformModule( databasesRoot, config, dependencies, this.databaseInfo );
+                return new ImpermanentTestDatabaseGlobalModule( databasesRoot, config, dependencies, this.databaseInfo );
             }
             else
             {
-                return new TestDatabasePlatformModule( databasesRoot, config, dependencies, this.databaseInfo );
+                return new TestDatabaseGlobalModule( databasesRoot, config, dependencies, this.databaseInfo );
             }
         }
 
-        class TestDatabasePlatformModule extends PlatformModule
+        class TestDatabaseGlobalModule extends GlobalModule
         {
 
-            TestDatabasePlatformModule( File storeDir, Config config, Dependencies dependencies, DatabaseInfo databaseInfo )
+            TestDatabaseGlobalModule( File storeDir, Config config, ExternalDependencies dependencies, DatabaseInfo databaseInfo )
             {
                 super( storeDir, config, databaseInfo, dependencies );
             }
@@ -354,10 +355,10 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
             }
         }
 
-        private class ImpermanentTestDatabasePlatformModule extends TestDatabasePlatformModule
+        private class ImpermanentTestDatabaseGlobalModule extends TestDatabaseGlobalModule
         {
 
-            ImpermanentTestDatabasePlatformModule( File storeDir, Config config, Dependencies dependencies, DatabaseInfo databaseInfo )
+            ImpermanentTestDatabaseGlobalModule( File storeDir, Config config, ExternalDependencies dependencies, DatabaseInfo databaseInfo )
             {
                 super( storeDir, config, dependencies, databaseInfo );
             }
@@ -371,7 +372,7 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
             @Override
             protected StoreLocker createStoreLocker()
             {
-                return new StoreLocker( fileSystem, storeLayout );
+                return new StoreLocker( getFileSystem(), getStoreLayout() );
             }
         }
     }

@@ -28,7 +28,7 @@ import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.graphdb.factory.module.PlatformModule;
+import org.neo4j.graphdb.factory.module.GlobalModule;
 import org.neo4j.graphdb.factory.module.id.IdContextFactory;
 import org.neo4j.graphdb.factory.module.id.IdContextFactoryBuilder;
 import org.neo4j.internal.kernel.api.Kernel;
@@ -62,9 +62,11 @@ import org.neo4j.kernel.impl.locking.StatementLocksFactory;
 import org.neo4j.kernel.impl.proc.GlobalProcedures;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFiles;
+import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.internal.KernelData;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.internal.LogService;
+import org.neo4j.time.SystemNanoClock;
 import org.neo4j.udc.UsageData;
 
 import static org.neo4j.graphdb.factory.EditionLocksFactories.createLockFactory;
@@ -79,38 +81,39 @@ public class CommunityEditionModule extends DefaultEditionModule
 {
     public static final String COMMUNITY_SECURITY_MODULE_ID = "community-security-module";
 
-    public CommunityEditionModule( PlatformModule platformModule )
+    public CommunityEditionModule( GlobalModule globalModule )
     {
-        org.neo4j.kernel.impl.util.Dependencies dependencies = platformModule.dependencies;
-        Config config = platformModule.config;
-        LogService logService = platformModule.logService;
-        FileSystemAbstraction fileSystem = platformModule.fileSystem;
-        PageCache pageCache = platformModule.pageCache;
-        LifeSupport life = platformModule.life;
+        Dependencies globalDependencies = globalModule.getGlobalDependencies();
+        Config globalConfig = globalModule.getGlobalConfig();
+        LogService logService = globalModule.getLogService();
+        FileSystemAbstraction fileSystem = globalModule.getFileSystem();
+        PageCache pageCache = globalModule.getPageCache();
+        LifeSupport globalLife = globalModule.getGlobalLife();
+        SystemNanoClock globalClock = globalModule.getGlobalClock();
 
-        watcherServiceFactory = databaseLayout -> createDatabaseFileSystemWatcher( platformModule.fileSystemWatcher.getFileWatcher(), databaseLayout,
+        watcherServiceFactory = databaseLayout -> createDatabaseFileSystemWatcher( globalModule.getFileWatcher(), databaseLayout,
                 logService, fileWatcherFileNameFilter() );
 
-        this.accessCapability = config.get( GraphDatabaseSettings.read_only ) ? new ReadOnly() : new CanWrite();
+        this.accessCapability = globalConfig.get( GraphDatabaseSettings.read_only ) ? new ReadOnly() : new CanWrite();
 
-        dependencies.satisfyDependency(
-                SslPolicyLoader.create( config, logService.getInternalLogProvider() ) ); // for bolt and web server
+        globalDependencies.satisfyDependency(
+                SslPolicyLoader.create( globalConfig, logService.getInternalLogProvider() ) ); // for bolt and web server
 
-        LocksFactory lockFactory = createLockFactory( config, logService );
-        locksSupplier = () -> createLockManager( lockFactory, config, platformModule.clock );
-        statementLocksFactoryProvider = locks -> createStatementLocksFactory( locks, config, logService );
+        LocksFactory lockFactory = createLockFactory( globalConfig, logService );
+        locksSupplier = () -> createLockManager( lockFactory, globalConfig, globalClock );
+        statementLocksFactoryProvider = locks -> createStatementLocksFactory( locks, globalConfig, logService );
 
-        threadToTransactionBridge = dependencies.satisfyDependency(
-                new ThreadToStatementContextBridge( getGlobalAvailabilityGuard( platformModule.clock, logService, platformModule.config ) ) );
+        threadToTransactionBridge = globalDependencies.satisfyDependency(
+                new ThreadToStatementContextBridge( getGlobalAvailabilityGuard( globalClock, logService, globalConfig ) ) );
 
-        idContextFactory = createIdContextFactory( platformModule, fileSystem );
+        idContextFactory = createIdContextFactory( globalModule, fileSystem );
 
-        tokenHoldersProvider = createTokenHolderProvider( platformModule );
+        tokenHoldersProvider = createTokenHolderProvider( globalModule );
 
-        File kernelContextDirectory = platformModule.storeLayout.storeDirectory();
-        KernelData kernelData = createKernelData( fileSystem, pageCache, kernelContextDirectory, config );
-        dependencies.satisfyDependency( kernelData );
-        life.add( kernelData );
+        File kernelContextDirectory = globalModule.getStoreLayout().storeDirectory();
+        KernelData kernelData = createKernelData( fileSystem, pageCache, kernelContextDirectory, globalConfig );
+        globalDependencies.satisfyDependency( kernelData );
+        globalLife.add( kernelData );
 
         commitProcessFactory = new CommunityCommitProcessFactory();
 
@@ -118,34 +121,34 @@ public class CommunityEditionModule extends DefaultEditionModule
 
         schemaWriteGuard = createSchemaWriteGuard();
 
-        transactionStartTimeout = config.get( GraphDatabaseSettings.transaction_start_timeout ).toMillis();
+        transactionStartTimeout = globalConfig.get( GraphDatabaseSettings.transaction_start_timeout ).toMillis();
 
         constraintSemantics = createSchemaRuleVerifier();
 
         ioLimiter = IOLimiter.UNLIMITED;
 
-        connectionTracker = dependencies.satisfyDependency( createConnectionTracker() );
+        connectionTracker = globalDependencies.satisfyDependency( createConnectionTracker() );
 
-        publishEditionInfo( dependencies.resolveDependency( UsageData.class ), platformModule.databaseInfo, config );
+        publishEditionInfo( globalDependencies.resolveDependency( UsageData.class ), globalModule.getDatabaseInfo(), globalConfig );
     }
 
-    protected Function<String,TokenHolders> createTokenHolderProvider( PlatformModule platform )
+    protected Function<String,TokenHolders> createTokenHolderProvider( GlobalModule platform )
     {
-        Config config = platform.config;
-        Supplier<Kernel> kernelSupplier = () -> platform.dependencies.resolveDependency( DatabaseManager.class )
+        Config globalConfig = platform.getGlobalConfig();
+        Supplier<Kernel> kernelSupplier = () -> platform.getGlobalDependencies().resolveDependency( DatabaseManager.class )
                         .getDatabaseContext( DEFAULT_DATABASE_NAME )
                         .map( DatabaseContext::getDatabase)
                         .map( Database::getKernel )
                         .orElseThrow( () -> new IllegalStateException( "Default database kernel should be always accessible" ) );
         return ignored -> new TokenHolders(
-                new DelegatingTokenHolder( createPropertyKeyCreator( config, kernelSupplier ), TokenHolder.TYPE_PROPERTY_KEY ),
-                new DelegatingTokenHolder( createLabelIdCreator( config, kernelSupplier ), TokenHolder.TYPE_LABEL ),
-                new DelegatingTokenHolder( createRelationshipTypeCreator( config, kernelSupplier ), TokenHolder.TYPE_RELATIONSHIP_TYPE ) );
+                new DelegatingTokenHolder( createPropertyKeyCreator( globalConfig, kernelSupplier ), TokenHolder.TYPE_PROPERTY_KEY ),
+                new DelegatingTokenHolder( createLabelIdCreator( globalConfig, kernelSupplier ), TokenHolder.TYPE_LABEL ),
+                new DelegatingTokenHolder( createRelationshipTypeCreator( globalConfig, kernelSupplier ), TokenHolder.TYPE_RELATIONSHIP_TYPE ) );
     }
 
-    protected IdContextFactory createIdContextFactory( PlatformModule platformModule, FileSystemAbstraction fileSystem )
+    protected IdContextFactory createIdContextFactory( GlobalModule globalModule, FileSystemAbstraction fileSystem )
     {
-        return IdContextFactoryBuilder.of( fileSystem, platformModule.jobScheduler ).build();
+        return IdContextFactoryBuilder.of( fileSystem, globalModule.getJobScheduler() ).build();
     }
 
     protected Predicate<String> fileWatcherFileNameFilter()
@@ -226,19 +229,20 @@ public class CommunityEditionModule extends DefaultEditionModule
     }
 
     @Override
-    public void createSecurityModule( PlatformModule platformModule, GlobalProcedures globalProcedures )
+    public void createSecurityModule( GlobalModule globalModule, GlobalProcedures globalProcedures )
     {
-        if ( platformModule.config.get( GraphDatabaseSettings.auth_enabled ) )
+        LifeSupport globalLife = globalModule.getGlobalLife();
+        if ( globalModule.getGlobalConfig().get( GraphDatabaseSettings.auth_enabled ) )
         {
-            SecurityModule securityModule = setupSecurityModule( platformModule, this,
-                    platformModule.logService.getUserLog( getClass() ), globalProcedures, COMMUNITY_SECURITY_MODULE_ID );
-            platformModule.life.add( securityModule );
+            SecurityModule securityModule = setupSecurityModule( globalModule, this,
+                    globalModule.getLogService().getUserLog( getClass() ), globalProcedures, COMMUNITY_SECURITY_MODULE_ID );
+            globalLife.add( securityModule );
             this.securityProvider = securityModule;
         }
         else
         {
             NoAuthSecurityProvider noAuthSecurityProvider = NoAuthSecurityProvider.INSTANCE;
-            platformModule.life.add( noAuthSecurityProvider );
+            globalLife.add( noAuthSecurityProvider );
             this.securityProvider = noAuthSecurityProvider;
         }
     }

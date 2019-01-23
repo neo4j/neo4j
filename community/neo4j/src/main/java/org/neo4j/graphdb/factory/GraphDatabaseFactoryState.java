@@ -26,7 +26,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Predicate;
 
 import org.neo4j.configuration.LoadableConfig;
-import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory;
+import org.neo4j.graphdb.facade.ExternalDependencies;
 import org.neo4j.graphdb.security.URLAccessRule;
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.extension.ExtensionFactory;
@@ -124,7 +124,7 @@ public class GraphDatabaseFactoryState
         this.monitors = monitors;
     }
 
-    public GraphDatabaseFacadeFactory.Dependencies databaseDependencies()
+    public ExternalDependencies databaseDependencies()
     {
         return newDependencies().
                 monitors( monitors ).

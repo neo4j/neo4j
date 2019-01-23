@@ -232,7 +232,7 @@ public class Database extends LifecycleAdapter
     {
         this.databaseName = context.getDatabaseName();
         this.databaseLayout = context.getDatabaseLayout();
-        this.config = new DatabaseConfig( context.getConfig() );
+        this.config = new DatabaseConfig( context.getGlobalConfig() );
         this.idGeneratorFactory = context.getIdGeneratorFactory();
         this.tokenNameLookup = context.getTokenNameLookup();
         this.globalDependencies = context.getGlobalDependencies();
@@ -253,7 +253,7 @@ public class Database extends LifecycleAdapter
         this.constraintSemantics = context.getConstraintSemantics();
         this.globalMonitors = context.getMonitors();
         this.globalTracers = context.getTracers();
-        this.globalConfig = context.getConfig();
+        this.globalConfig = context.getGlobalConfig();
         this.globalProcedures = context.getGlobalProcedures();
         this.ioLimiter = context.getIoLimiter();
         this.databaseAvailabilityGuard = context.getDatabaseAvailabilityGuard();
@@ -261,7 +261,7 @@ public class Database extends LifecycleAdapter
         this.accessCapability = context.getAccessCapability();
         this.eventHandlers = context.getEventHandlers();
 
-        this.readOnly = context.getConfig().get( GraphDatabaseSettings.read_only );
+        this.readOnly = context.getGlobalConfig().get( GraphDatabaseSettings.read_only );
         this.idController = context.getIdController();
         this.databaseInfo = context.getDatabaseInfo();
         this.versionContextSupplier = context.getVersionContextSupplier();

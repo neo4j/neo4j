@@ -33,7 +33,7 @@ import java.util.regex.Pattern;
 
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory.Dependencies;
+import org.neo4j.graphdb.facade.ExternalDependencies;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.helpers.RunCarefully;
@@ -141,7 +141,7 @@ public abstract class AbstractNeoServer implements NeoServer
 
     protected abstract WebServer createWebServer();
 
-    public AbstractNeoServer( Config config, GraphFactory graphFactory, Dependencies dependencies )
+    public AbstractNeoServer( Config config, GraphFactory graphFactory, ExternalDependencies dependencies )
     {
         this.config = config;
         this.userLogProvider = dependencies.userLogProvider();

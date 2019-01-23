@@ -22,8 +22,9 @@ package org.neo4j.test.limited;
 import java.io.File;
 import java.util.Map;
 
+import org.neo4j.graphdb.facade.ExternalDependencies;
 import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory;
-import org.neo4j.graphdb.factory.module.PlatformModule;
+import org.neo4j.graphdb.factory.module.GlobalModule;
 import org.neo4j.graphdb.factory.module.edition.CommunityEditionModule;
 import org.neo4j.graphdb.mockfs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -42,14 +43,14 @@ public class LimitedFileSystemGraphDatabase extends ImpermanentGraphDatabase
     }
 
     @Override
-    protected void create( File storeDir, Map<String, String> params, GraphDatabaseFacadeFactory.Dependencies dependencies )
+    protected void create( File storeDir, Map<String, String> params, ExternalDependencies dependencies )
     {
         new GraphDatabaseFacadeFactory( DatabaseInfo.COMMUNITY, CommunityEditionModule::new )
         {
             @Override
-            protected PlatformModule createPlatform( File storeDir, Config config, Dependencies dependencies )
+            protected GlobalModule createGlobalPlatform( File storeDir, Config config, ExternalDependencies dependencies )
             {
-                return new ImpermanentPlatformModule( storeDir, config, databaseInfo, dependencies )
+                return new ImpermanentGlobalModule( storeDir, config, databaseInfo, dependencies )
                 {
                     @Override
                     protected FileSystemAbstraction createFileSystemAbstraction()

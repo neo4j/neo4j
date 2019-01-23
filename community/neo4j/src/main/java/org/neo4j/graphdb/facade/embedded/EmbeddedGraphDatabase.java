@@ -23,6 +23,7 @@ import java.io.File;
 import java.util.Map;
 
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.facade.ExternalDependencies;
 import org.neo4j.graphdb.facade.GraphDatabaseDependencies;
 import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -58,7 +59,7 @@ public class EmbeddedGraphDatabase extends GraphDatabaseFacade
      */
     public EmbeddedGraphDatabase( File storeDir,
                                   Map<String, String> params,
-                                  GraphDatabaseFacadeFactory.Dependencies dependencies )
+                                  ExternalDependencies dependencies )
     {
         create( storeDir, params, dependencies );
     }
@@ -68,13 +69,13 @@ public class EmbeddedGraphDatabase extends GraphDatabaseFacade
      */
     protected EmbeddedGraphDatabase( File storeDir,
             Config config,
-            GraphDatabaseFacadeFactory.Dependencies dependencies )
+            ExternalDependencies dependencies )
     {
         create( storeDir, config, dependencies );
     }
 
     protected void create( File storeDir, Map<String,String> params,
-            GraphDatabaseFacadeFactory.Dependencies dependencies )
+            ExternalDependencies dependencies )
     {
         GraphDatabaseDependencies newDependencies = newDependencies( dependencies )
                 .settingsClasses( asList( append( GraphDatabaseSettings.class, dependencies.settingsClasses() ) ) );
@@ -82,7 +83,7 @@ public class EmbeddedGraphDatabase extends GraphDatabaseFacade
                 .initFacade( storeDir, params, newDependencies, this );
     }
 
-    protected void create( File storeDir, Config config, GraphDatabaseFacadeFactory.Dependencies dependencies )
+    protected void create( File storeDir, Config config, ExternalDependencies dependencies )
     {
         GraphDatabaseDependencies newDependencies = newDependencies( dependencies )
                 .settingsClasses( asList( append( GraphDatabaseSettings.class, dependencies.settingsClasses() ) ) );

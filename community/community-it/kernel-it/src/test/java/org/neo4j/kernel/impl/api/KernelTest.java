@@ -26,8 +26,9 @@ import java.util.Map;
 import java.util.function.Function;
 
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.facade.ExternalDependencies;
 import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory;
-import org.neo4j.graphdb.factory.module.PlatformModule;
+import org.neo4j.graphdb.factory.module.GlobalModule;
 import org.neo4j.graphdb.factory.module.edition.AbstractEditionModule;
 import org.neo4j.graphdb.factory.module.edition.CommunityEditionModule;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
@@ -75,10 +76,10 @@ public class KernelTest
     class FakeHaDatabase extends ImpermanentGraphDatabase
     {
         @Override
-        protected void create( File storeDir, Map<String, String> params, GraphDatabaseFacadeFactory.Dependencies dependencies )
+        protected void create( File storeDir, Map<String, String> params, ExternalDependencies dependencies )
         {
-            Function<PlatformModule,AbstractEditionModule> factory =
-                    platformModule -> new CommunityEditionModule( platformModule )
+            Function<GlobalModule,AbstractEditionModule> factory =
+                    globalModule -> new CommunityEditionModule( globalModule )
                     {
                         @Override
                         protected SchemaWriteGuard createSchemaWriteGuard()
@@ -95,9 +96,9 @@ public class KernelTest
             new GraphDatabaseFacadeFactory( DatabaseInfo.COMMUNITY,  factory )
             {
                 @Override
-                protected PlatformModule createPlatform( File storeDir, Config config, Dependencies dependencies )
+                protected GlobalModule createGlobalPlatform( File storeDir, Config config, ExternalDependencies dependencies )
                 {
-                    return new ImpermanentPlatformModule( storeDir, config, databaseInfo, dependencies );
+                    return new ImpermanentGlobalModule( storeDir, config, databaseInfo, dependencies );
                 }
             }.initFacade( storeDir, params, dependencies, this );
         }

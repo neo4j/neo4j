@@ -27,9 +27,10 @@ import java.util.concurrent.locks.LockSupport;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.facade.ExternalDependencies;
 import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseFactoryState;
-import org.neo4j.graphdb.factory.module.PlatformModule;
+import org.neo4j.graphdb.factory.module.GlobalModule;
 import org.neo4j.graphdb.factory.module.edition.CommunityEditionModule;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
@@ -123,9 +124,9 @@ class NonUniqueIndexTest
         return new GraphDatabaseFacadeFactory( DatabaseInfo.COMMUNITY, CommunityEditionModule::new )
         {
             @Override
-            protected PlatformModule createPlatform( File storeDir, Config config, Dependencies dependencies )
+            protected GlobalModule createGlobalPlatform( File storeDir, Config config, ExternalDependencies dependencies )
             {
-                return new PlatformModule( storeDir, config, databaseInfo, dependencies )
+                return new GlobalModule( storeDir, config, databaseInfo, dependencies )
                 {
                     @Override
                     protected CentralJobScheduler createJobScheduler()

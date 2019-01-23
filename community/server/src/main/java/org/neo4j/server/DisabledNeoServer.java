@@ -22,6 +22,7 @@ package org.neo4j.server;
 import java.net.URI;
 import java.util.Collections;
 
+import org.neo4j.graphdb.facade.ExternalDependencies;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.server.database.Database;
@@ -33,7 +34,6 @@ import org.neo4j.server.rest.management.AdvertisableService;
 import org.neo4j.server.rest.transactional.DisabledTransactionRegistry;
 import org.neo4j.server.rest.transactional.TransactionRegistry;
 
-import static org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory.Dependencies;
 import static org.neo4j.server.AbstractNeoServer.NEO4J_IS_STARTING_MESSAGE;
 import static org.neo4j.server.exception.ServerStartupErrors.translateToServerStartupError;
 
@@ -44,7 +44,7 @@ public class DisabledNeoServer implements NeoServer
 
     private final LifeSupport life = new LifeSupport();
 
-    public DisabledNeoServer( GraphFactory graphFactory, Dependencies dependencies, Config config )
+    public DisabledNeoServer( GraphFactory graphFactory, ExternalDependencies dependencies, Config config )
     {
         this.db = new LifecycleManagingDatabase( config, graphFactory, dependencies );
         this.config = config;

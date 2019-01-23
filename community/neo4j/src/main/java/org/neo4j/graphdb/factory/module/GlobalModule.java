@@ -25,15 +25,16 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.graphdb.facade.ExternalDependencies;
 import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.graphdb.factory.module.edition.AbstractEditionModule;
 import org.neo4j.graphdb.security.URLAccessRule;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.internal.diagnostics.DiagnosticsManager;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemLifecycleAdapter;
+import org.neo4j.io.fs.watcher.FileWatcher;
 import org.neo4j.io.layout.StoreLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
@@ -45,10 +46,12 @@ import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.extension.ExtensionFailureStrategies;
 import org.neo4j.kernel.extension.GlobalExtensions;
 import org.neo4j.kernel.extension.context.GlobalExtensionContext;
+import org.neo4j.kernel.impl.cache.VmPauseMonitorComponent;
 import org.neo4j.kernel.impl.context.TransactionVersionContextSupplier;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
 import org.neo4j.kernel.impl.pagecache.PageCacheLifecycle;
+import org.neo4j.kernel.impl.pagecache.PublishPageCacheTracerMetricsAfterStart;
 import org.neo4j.kernel.impl.query.QueryEngineProvider;
 import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
 import org.neo4j.kernel.impl.security.URLAccessRules;
@@ -89,131 +92,112 @@ import static org.neo4j.kernel.configuration.LayoutConfig.of;
 import static org.neo4j.kernel.lifecycle.LifecycleAdapter.onShutdown;
 
 /**
- * Platform module for {@link GraphDatabaseFacadeFactory}. This creates
- * all the services needed by {@link AbstractEditionModule} implementations.
+ * Global module for {@link GraphDatabaseFacadeFactory}. This creates all global services and components from DBMS.
  */
-public class PlatformModule
+public class GlobalModule
 {
-    public final PageCache pageCache;
+    private final PageCache pageCache;
+    private final Monitors globalMonitors;
+    private final Dependencies globalDependencies;
+    private final LogService logService;
+    private final LifeSupport globalLife;
+    private final StoreLayout storeLayout;
+    private final DatabaseInfo databaseInfo;
+    private final DbmsDiagnosticsManager dbmsDiagnosticsManager;
+    private final Tracers tracers;
+    private final Config globalConfig;
+    private final FileSystemAbstraction fileSystem;
+    private final GlobalExtensions globalExtensions;
+    private final Iterable<ExtensionFactory<?>> extensionFactories;
+    private final Iterable<QueryEngineProvider> queryEngineProviders;
+    private final URLAccessRule urlAccessRule;
+    private final JobScheduler jobScheduler;
+    private final SystemNanoClock globalClock;
+    private final VersionContextSupplier versionContextSupplier;
+    private final CollectionsFactorySupplier collectionsFactorySupplier;
+    private final UsageData usageData;
+    private final ConnectorPortRegister connectorPortRegister;
+    private final FileSystemWatcherService fileSystemWatcher;
 
-    public final Monitors monitors;
-
-    public final org.neo4j.kernel.impl.util.Dependencies dependencies;
-
-    public final LogService logService;
-
-    public final LifeSupport life;
-
-    public final StoreLayout storeLayout;
-
-    public final DatabaseInfo databaseInfo;
-
-    public final DbmsDiagnosticsManager dbmsDiagnosticsManager;
-
-    public final Tracers tracers;
-
-    public final Config config;
-
-    public final FileSystemAbstraction fileSystem;
-
-    public final GlobalExtensions globalExtensions;
-    public final Iterable<ExtensionFactory<?>> extensionFactories;
-    public final Iterable<QueryEngineProvider> engineProviders;
-
-    public final URLAccessRule urlAccessRule;
-
-    public final JobScheduler jobScheduler;
-
-    public final SystemNanoClock clock;
-
-    public final VersionContextSupplier versionContextSupplier;
-
-    public final CollectionsFactorySupplier collectionsFactorySupplier;
-
-    public final UsageData usageData;
-
-    public final ConnectorPortRegister connectorPortRegister;
-
-    public final FileSystemWatcherService fileSystemWatcher;
-
-    public PlatformModule( File providedStoreDir, Config config, DatabaseInfo databaseInfo,
-            GraphDatabaseFacadeFactory.Dependencies externalDependencies )
+    public GlobalModule( File providedStoreDir, Config globalConfig, DatabaseInfo databaseInfo,
+            ExternalDependencies externalDependencies )
     {
         this.databaseInfo = databaseInfo;
 
-        dependencies = new Dependencies();
-        dependencies.satisfyDependency( databaseInfo );
+        globalDependencies = new Dependencies();
+        globalDependencies.satisfyDependency( databaseInfo );
 
-        clock = dependencies.satisfyDependency( createClock() );
-        life = createLife();
+        globalClock = globalDependencies.satisfyDependency( createClock() );
+        globalLife = createLife();
 
-        this.storeLayout = StoreLayout.of( providedStoreDir, of( config ) );
+        this.storeLayout = StoreLayout.of( providedStoreDir, of( globalConfig ) );
 
-        config.augmentDefaults( GraphDatabaseSettings.neo4j_home, storeLayout.storeDirectory().getPath() );
-        this.config = dependencies.satisfyDependency( config );
+        globalConfig.augmentDefaults( GraphDatabaseSettings.neo4j_home, storeLayout.storeDirectory().getPath() );
+        this.globalConfig = globalDependencies.satisfyDependency( globalConfig );
 
-        fileSystem = dependencies.satisfyDependency( createFileSystemAbstraction() );
-        life.add( new FileSystemLifecycleAdapter( fileSystem ) );
+        fileSystem = globalDependencies.satisfyDependency( createFileSystemAbstraction() );
+        globalLife.add( new FileSystemLifecycleAdapter( fileSystem ) );
 
         // Component monitoring
-        monitors = externalDependencies.monitors() == null ? new Monitors() : externalDependencies.monitors();
-        dependencies.satisfyDependency( monitors );
+        globalMonitors = externalDependencies.monitors() == null ? new Monitors() : externalDependencies.monitors();
+        globalDependencies.satisfyDependency( globalMonitors );
 
-        jobScheduler = life.add( dependencies.satisfyDependency( createJobScheduler() ) );
-        startDeferredExecutors(jobScheduler, externalDependencies.deferredExecutors());
+        jobScheduler = globalLife.add( globalDependencies.satisfyDependency( createJobScheduler() ) );
+        startDeferredExecutors( jobScheduler, externalDependencies.deferredExecutors() );
 
         // Database system information, used by UDC
         usageData = new UsageData( jobScheduler );
-        dependencies.satisfyDependency( life.add( usageData ) );
+        globalDependencies.satisfyDependency( globalLife.add( usageData ) );
 
         // If no logging was passed in from the outside then create logging and register
         // with this life
-        logService = dependencies.satisfyDependency( createLogService( externalDependencies.userLogProvider() ) );
+        logService = globalDependencies.satisfyDependency( createLogService( externalDependencies.userLogProvider() ) );
 
-        config.setLogger( logService.getInternalLog( Config.class ) );
+        globalConfig.setLogger( logService.getInternalLog( Config.class ) );
 
-        life.add( dependencies
+        globalLife.add( globalDependencies
                 .satisfyDependency( new StoreLockerLifecycleAdapter( createStoreLocker() ) ) );
 
         new JvmChecker( logService.getInternalLog( JvmChecker.class ),
                 new JvmMetadataRepository() ).checkJvmCompatibilityAndIssueWarning();
 
-        String desiredImplementationName = config.get( GraphDatabaseSettings.tracer );
-        tracers = dependencies.satisfyDependency( new Tracers( desiredImplementationName,
-                logService.getInternalLog( Tracers.class ), monitors, jobScheduler, clock ) );
-        dependencies.satisfyDependency( tracers.getPageCacheTracer() );
+        globalLife.add( new VmPauseMonitorComponent( globalConfig, logService.getInternalLog( VmPauseMonitorComponent.class ), jobScheduler ) );
 
-        versionContextSupplier = createCursorContextSupplier( config );
+        String desiredImplementationName = globalConfig.get( GraphDatabaseSettings.tracer );
+        tracers = globalDependencies.satisfyDependency( new Tracers( desiredImplementationName,
+                logService.getInternalLog( Tracers.class ), globalMonitors, jobScheduler, globalClock ) );
+        globalDependencies.satisfyDependency( tracers.getPageCacheTracer() );
 
-        collectionsFactorySupplier = createCollectionsFactorySupplier( config, life );
+        versionContextSupplier = createCursorContextSupplier( globalConfig );
+        globalDependencies.satisfyDependency( versionContextSupplier );
 
-        dependencies.satisfyDependency( versionContextSupplier );
+        collectionsFactorySupplier = createCollectionsFactorySupplier( globalConfig, globalLife );
 
-        pageCache = createPageCache( fileSystem, config, logService, tracers, versionContextSupplier, jobScheduler );
+        globalLife.add( new PublishPageCacheTracerMetricsAfterStart( tracers.getPageCursorTracerSupplier() ) );
+        pageCache = createPageCache( fileSystem, globalConfig, logService, tracers, versionContextSupplier, jobScheduler );
+        globalLife.add( new PageCacheLifecycle( pageCache ) );
 
-        life.add( new PageCacheLifecycle( pageCache ) );
-
-        dbmsDiagnosticsManager = new DbmsDiagnosticsManager( dependencies, logService );
-        dependencies.satisfyDependency( dbmsDiagnosticsManager );
+        dbmsDiagnosticsManager = new DbmsDiagnosticsManager( globalDependencies, logService );
+        globalDependencies.satisfyDependency( dbmsDiagnosticsManager );
 
         dbmsDiagnosticsManager.dumpSystemDiagnostics();
 
-        fileSystemWatcher = createFileSystemWatcherService( fileSystem, logService, jobScheduler, config );
-        life.add( fileSystemWatcher );
-        dependencies.satisfyDependency( fileSystemWatcher );
+        fileSystemWatcher = createFileSystemWatcherService( fileSystem, logService, jobScheduler, globalConfig );
+        globalLife.add( fileSystemWatcher );
+        globalDependencies.satisfyDependency( fileSystemWatcher );
 
         extensionFactories = externalDependencies.extensions();
-        engineProviders = externalDependencies.executionEngines();
-        globalExtensions = dependencies.satisfyDependency(
-                new GlobalExtensions( new GlobalExtensionContext( storeLayout, databaseInfo, dependencies ), extensionFactories, dependencies,
+        queryEngineProviders = externalDependencies.executionEngines();
+        globalExtensions = globalDependencies.satisfyDependency(
+                new GlobalExtensions( new GlobalExtensionContext( storeLayout, databaseInfo, globalDependencies ), extensionFactories, globalDependencies,
                         ExtensionFailureStrategies.fail() ) );
 
-        urlAccessRule = dependencies.satisfyDependency( URLAccessRules.combined( externalDependencies.urlAccessRules() ) );
+        urlAccessRule = globalDependencies.satisfyDependency( URLAccessRules.combined( externalDependencies.urlAccessRules() ) );
 
         connectorPortRegister = new ConnectorPortRegister();
-        dependencies.satisfyDependency( connectorPortRegister );
+        globalDependencies.satisfyDependency( connectorPortRegister );
 
-        publishPlatformInfo( dependencies.resolveDependency( UsageData.class ) );
+        publishPlatformInfo( globalDependencies.resolveDependency( UsageData.class ) );
     }
 
     private void startDeferredExecutors( JobScheduler jobScheduler, Iterable<Pair<DeferredExecutor,Group>> deferredExecutors )
@@ -234,7 +218,7 @@ public class PlatformModule
 
     protected StoreLocker createStoreLocker()
     {
-        boolean ignoreLock = config.get( GraphDatabaseSettings.ignore_store_lock );
+        boolean ignoreLock = globalConfig.get( GraphDatabaseSettings.ignore_store_lock );
         return new GlobalStoreLocker( fileSystem, storeLayout, ignoreLock );
     }
 
@@ -283,9 +267,9 @@ public class PlatformModule
 
     protected LogService createLogService( LogProvider userLogProvider )
     {
-        long internalLogRotationThreshold = config.get( GraphDatabaseSettings.store_internal_log_rotation_threshold );
-        long internalLogRotationDelay = config.get( GraphDatabaseSettings.store_internal_log_rotation_delay ).toMillis();
-        int internalLogMaxArchives = config.get( GraphDatabaseSettings.store_internal_log_max_archives );
+        long internalLogRotationThreshold = globalConfig.get( GraphDatabaseSettings.store_internal_log_rotation_threshold );
+        long internalLogRotationDelay = globalConfig.get( GraphDatabaseSettings.store_internal_log_rotation_delay ).toMillis();
+        int internalLogMaxArchives = globalConfig.get( GraphDatabaseSettings.store_internal_log_max_archives );
 
         final StoreLogService.Builder builder =
                 StoreLogService.withRotation( internalLogRotationThreshold, internalLogRotationDelay,
@@ -299,11 +283,11 @@ public class PlatformModule
         builder.withRotationListener(
                 logProvider -> dbmsDiagnosticsManager.dumpAll( logProvider.getLog( DiagnosticsManager.class ) ) );
 
-        builder.withLevels( asDebugLogLevels( config.get( GraphDatabaseSettings.store_internal_debug_contexts ) ) );
-        builder.withDefaultLevel( config.get( GraphDatabaseSettings.store_internal_log_level ) )
-               .withTimeZone( config.get( GraphDatabaseSettings.db_timezone ).getZoneId() );
+        builder.withLevels( asDebugLogLevels( globalConfig.get( GraphDatabaseSettings.store_internal_debug_contexts ) ) );
+        builder.withDefaultLevel( globalConfig.get( GraphDatabaseSettings.store_internal_log_level ) )
+               .withTimeZone( globalConfig.get( GraphDatabaseSettings.db_timezone ).getZoneId() );
 
-        File logFile = config.get( store_internal_log_path );
+        File logFile = globalConfig.get( store_internal_log_path );
         if ( !logFile.getParentFile().exists() )
         {
             logFile.getParentFile().mkdirs();
@@ -318,11 +302,11 @@ public class PlatformModule
             throw new RuntimeException( ex );
         }
         // Listen to changes to the dynamic log level settings.
-        config.registerDynamicUpdateListener( GraphDatabaseSettings.store_internal_log_level,
+        globalConfig.registerDynamicUpdateListener( GraphDatabaseSettings.store_internal_log_level,
                 ( before, after ) -> logService.setDefaultLogLevel( after ) );
-        config.registerDynamicUpdateListener( GraphDatabaseSettings.store_internal_debug_contexts,
+        globalConfig.registerDynamicUpdateListener( GraphDatabaseSettings.store_internal_debug_contexts,
                 ( before, after ) -> logService.setContextLogLevels( asDebugLogLevels( after ) ) );
-        return life.add( logService );
+        return globalLife.add( logService );
     }
 
     private Map<String,Level> asDebugLogLevels( List<String> strings )
@@ -377,5 +361,110 @@ public class PlatformModule
         default:
             throw new IllegalArgumentException( "Unknown transaction state memory allocation value: " + allocation );
         }
+    }
+
+    public FileWatcher getFileWatcher()
+    {
+        return fileSystemWatcher.getFileWatcher();
+    }
+
+    public ConnectorPortRegister getConnectorPortRegister()
+    {
+        return connectorPortRegister;
+    }
+
+    public UsageData getUsageData()
+    {
+        return usageData;
+    }
+
+    CollectionsFactorySupplier getCollectionsFactorySupplier()
+    {
+        return collectionsFactorySupplier;
+    }
+
+    public VersionContextSupplier getVersionContextSupplier()
+    {
+        return versionContextSupplier;
+    }
+
+    public SystemNanoClock getGlobalClock()
+    {
+        return globalClock;
+    }
+
+    public JobScheduler getJobScheduler()
+    {
+        return jobScheduler;
+    }
+
+    Iterable<QueryEngineProvider> getQueryEngineProviders()
+    {
+        return queryEngineProviders;
+    }
+
+    public GlobalExtensions getGlobalExtensions()
+    {
+        return globalExtensions;
+    }
+
+    Iterable<ExtensionFactory<?>> getExtensionFactories()
+    {
+        return extensionFactories;
+    }
+
+    public Config getGlobalConfig()
+    {
+        return globalConfig;
+    }
+
+    public URLAccessRule getUrlAccessRule()
+    {
+        return urlAccessRule;
+    }
+
+    public FileSystemAbstraction getFileSystem()
+    {
+        return fileSystem;
+    }
+
+    public Tracers getTracers()
+    {
+        return tracers;
+    }
+
+    public StoreLayout getStoreLayout()
+    {
+        return storeLayout;
+    }
+
+    public DatabaseInfo getDatabaseInfo()
+    {
+        return databaseInfo;
+    }
+
+    public LifeSupport getGlobalLife()
+    {
+        return globalLife;
+    }
+
+    public PageCache getPageCache()
+    {
+        return pageCache;
+    }
+
+    public Monitors getGlobalMonitors()
+    {
+        return globalMonitors;
+    }
+
+    public Dependencies getGlobalDependencies()
+    {
+        return globalDependencies;
+    }
+
+    public LogService getLogService()
+    {
+        return logService;
     }
 }

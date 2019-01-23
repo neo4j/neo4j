@@ -24,6 +24,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.function.Supplier;
 
+import org.neo4j.graphdb.facade.ExternalDependencies;
 import org.neo4j.kernel.api.net.NetworkConnectionTracker;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ConnectorPortRegister;
@@ -46,17 +47,16 @@ import org.neo4j.server.web.Jetty9WebServer;
 import org.neo4j.server.web.WebServer;
 import org.neo4j.udc.UsageData;
 
-import static org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory.Dependencies;
 import static org.neo4j.server.rest.discovery.CommunityDiscoverableURIs.communityDiscoverableURIs;
 
 public class CommunityNeoServer extends AbstractNeoServer
 {
-    public CommunityNeoServer( Config config, Dependencies dependencies )
+    public CommunityNeoServer( Config config, ExternalDependencies dependencies )
     {
         this( config, new CommunityGraphFactory(), dependencies );
     }
 
-    public CommunityNeoServer( Config config, GraphFactory graphFactory, Dependencies dependencies )
+    public CommunityNeoServer( Config config, GraphFactory graphFactory, ExternalDependencies dependencies )
     {
         super( config, graphFactory, dependencies );
     }

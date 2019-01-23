@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.util.watcher;
 
 import org.neo4j.io.fs.watcher.FileWatcher;
 import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 /**
  * Interface to be able to recognise file system watcher service in the set of discoverable services,
@@ -29,35 +30,16 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
  */
 public interface FileSystemWatcherService extends Lifecycle
 {
-    FileSystemWatcherService EMPTY_WATCHER = new FileSystemWatcherService()
+    FileSystemWatcherService EMPTY_WATCHER = new EmptyWatcherService();
+
+    FileWatcher getFileWatcher();
+
+    class EmptyWatcherService extends LifecycleAdapter implements FileSystemWatcherService
     {
         @Override
         public FileWatcher getFileWatcher()
         {
             return FileWatcher.SILENT_WATCHER;
         }
-
-        @Override
-        public void init()
-        {
-        }
-
-        @Override
-        public void start()
-        {
-        }
-
-        @Override
-        public void stop()
-        {
-        }
-
-        @Override
-        public void shutdown()
-        {
-        }
-    };
-
-    FileWatcher getFileWatcher();
-
+    }
 }

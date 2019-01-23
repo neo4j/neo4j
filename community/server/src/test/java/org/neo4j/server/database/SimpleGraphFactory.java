@@ -19,7 +19,7 @@
  */
 package org.neo4j.server.database;
 
-import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory;
+import org.neo4j.graphdb.facade.ExternalDependencies;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 
@@ -33,7 +33,7 @@ public class SimpleGraphFactory implements GraphFactory
     }
 
     @Override
-    public GraphDatabaseFacade newGraphDatabase( Config config, GraphDatabaseFacadeFactory.Dependencies dependencies )
+    public GraphDatabaseFacade newGraphDatabase( Config config, ExternalDependencies dependencies )
     {
         return db;
     }
