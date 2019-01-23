@@ -51,9 +51,8 @@
     <dependencies>
         <dependency>
             <groupId>org.neo4j</groupId>
-            <artifactId>neo4j-io</artifactId>
+            <artifactId>io-test-utils</artifactId>
             <version>${project.version}</version>
-            <type>test-jar</type>
         </dependency>
         <dependency>
             <groupId>com.google.code.findbugs</groupId>

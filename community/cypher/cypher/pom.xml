@@ -102,8 +102,8 @@
         </dependency>
         <dependency>
             <groupId>org.neo4j</groupId>
-            <artifactId>neo4j-io</artifactId>
-            <type>test-jar</type>
+            <artifactId>io-test-utils</artifactId>
+            <version>${project.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>

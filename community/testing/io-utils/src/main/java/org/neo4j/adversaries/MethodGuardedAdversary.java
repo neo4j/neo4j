@@ -19,12 +19,12 @@
  */
 package org.neo4j.adversaries;
 
-import static java.util.stream.Collectors.toSet;
-
-import java.util.Set;
 import java.lang.reflect.Method;
+import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
+
+import static java.util.stream.Collectors.toSet;
 
 /**
  * An adversary that delegates failure injection only when invoked through certain methods.

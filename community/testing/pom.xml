@@ -59,6 +59,7 @@
     </licenses>
 
     <modules>
+        <module>io-utils</module>
         <module>test-utils</module>
     </modules>
 </project>
