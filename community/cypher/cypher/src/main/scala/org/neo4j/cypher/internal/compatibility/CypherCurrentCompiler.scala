@@ -213,7 +213,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
           } else {
 
             val doProfile = innerExecutionMode == ProfileMode
-            val runtimeResult = executionPlan.run(queryContext, doProfile, params, prePopulateResults)
+            val runtimeResult = executionPlan.run(queryContext, doProfile, params, prePopulateResults, NoInput)
 
             taskCloser.addTask(_ => runtimeResult.close)
 

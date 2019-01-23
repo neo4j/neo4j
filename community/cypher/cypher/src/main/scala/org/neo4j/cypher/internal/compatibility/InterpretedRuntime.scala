@@ -22,11 +22,11 @@ package org.neo4j.cypher.internal.compatibility
 import org.neo4j.cypher.internal.compatibility.v4_0.runtime._
 import org.neo4j.cypher.internal.compatibility.v4_0.runtime.executionplan._
 import org.neo4j.cypher.internal.compatibility.v4_0.runtime.profiler.{InterpretedProfileInformation, Profiler}
-import org.neo4j.cypher.internal.runtime.{QueryContext, QueryIndexes}
-import org.neo4j.cypher.internal.runtime.interpreted.{InterpretedPipeMapper, UpdateCountingQueryContext}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{NestedPipeExpressions, PipeTreeBuilder}
+import org.neo4j.cypher.internal.runtime.interpreted.{InterpretedPipeMapper, UpdateCountingQueryContext}
 import org.neo4j.cypher.internal.runtime.planDescription.Argument
+import org.neo4j.cypher.internal.runtime.{InputDataStream, QueryContext, QueryIndexes}
 import org.neo4j.cypher.internal.v4_0.util.{InternalNotification, PeriodicCommitInOpenTransactionException}
 import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.values.virtual.MapValue
@@ -69,7 +69,8 @@ object InterpretedRuntime extends CypherRuntime[RuntimeContext] {
     override def run(queryContext: QueryContext,
                      doProfile: Boolean,
                      params: MapValue,
-                     prePopulateResults: Boolean): RuntimeResult = {
+                     prePopulateResults: Boolean,
+                     input: InputDataStream): RuntimeResult = {
       val builderContext = if (!readOnly || doProfile) new UpdateCountingQueryContext(queryContext) else queryContext
       val builder = resultBuilderFactory.create(builderContext)
 
@@ -87,7 +88,8 @@ object InterpretedRuntime extends CypherRuntime[RuntimeContext] {
       builder.build(params,
                     readOnly,
                     profileInformation,
-                    prePopulateResults)
+                    prePopulateResults,
+                    input)
     }
 
     override def metadata: Seq[Argument] = Nil

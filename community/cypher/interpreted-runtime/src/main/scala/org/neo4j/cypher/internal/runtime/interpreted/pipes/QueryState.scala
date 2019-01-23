@@ -39,7 +39,8 @@ class QueryState(val query: QueryContext,
                  val initialContext: Option[ExecutionContext] = None,
                  val cachedIn: SingleThreadedLRUCache[Any, InCheckContainer] = new SingleThreadedLRUCache(maxSize = 16),
                  val lenientCreateRelationship: Boolean = false,
-                 val prePopulateResults: Boolean = false ) extends AutoCloseable {
+                 val prePopulateResults: Boolean = false,
+                 val input: InputDataStream = NoInput) extends AutoCloseable {
 
   private var _pathValueBuilder: PathValueBuilder = _
   private var _exFactory: ExecutionContextFactory = _

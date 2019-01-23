@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compatibility.v4_0.runtime.executionplan
 
-import org.neo4j.cypher.internal.runtime.QueryContext
+import org.neo4j.cypher.internal.runtime.{InputDataStream, QueryContext}
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.PipeDecorator
 import org.neo4j.cypher.result.QueryProfile
 import org.neo4j.cypher.result.RuntimeResult
@@ -31,7 +31,8 @@ trait ExecutionResultBuilder {
   def build(params: MapValue,
             readOnly: Boolean,
             queryProfile: QueryProfile,
-            prePopulateResults: Boolean): RuntimeResult
+            prePopulateResults: Boolean,
+            input: InputDataStream): RuntimeResult
 }
 
 trait ExecutionResultBuilderFactory {

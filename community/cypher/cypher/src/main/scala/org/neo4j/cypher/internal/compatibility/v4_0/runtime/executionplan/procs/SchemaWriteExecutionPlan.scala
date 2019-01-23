@@ -40,7 +40,8 @@ case class SchemaWriteExecutionPlan(name: String, schemaWrite: QueryContext => U
   override def run(ctx: QueryContext,
                    doProfile: Boolean,
                    params: MapValue,
-                   prePopulateResults: Boolean): RuntimeResult = {
+                   prePopulateResults: Boolean,
+                   ignore: InputDataStream): RuntimeResult = {
 
     ctx.assertSchemaWritesAllowed()
 

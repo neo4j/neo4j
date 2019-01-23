@@ -23,7 +23,7 @@ import org.neo4j.common.DependencyResolver
 import org.neo4j.cypher.internal.MasterCompiler
 import org.neo4j.cypher.internal.compatibility._
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
-import org.neo4j.cypher.internal.runtime.QueryContext
+import org.neo4j.cypher.internal.runtime.{InputDataStream, QueryContext}
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.runtime.interpreted.{TransactionBoundQueryContext, TransactionalContextWrapper}
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
@@ -61,13 +61,15 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](val graphDb: GraphDatabaseSe
     super.afterAll()
   }
 
-  def run(logicalQuery: LogicalQuery, runtime: CypherRuntime[CONTEXT], hasLoadCSV: Boolean = false): RuntimeResult = {
+  def run(logicalQuery: LogicalQuery,
+          runtime: CypherRuntime[CONTEXT],
+          input: InputDataStream): RuntimeResult = {
     val tx = cypherGraphDb.beginTransaction(Transaction.Type.`implicit`, LoginContext.AUTH_DISABLED)
     val queryContext = newQueryContext(tx)
     val runtimeContext = newRuntimeContext(tx)
 
-    val executableQuery = runtime.compileToExecutable(logicalQuery, runtimeContext, hasLoadCSV)
-    executableQuery.run(queryContext, false, VirtualValues.EMPTY_MAP, prePopulateResults = true)
+    val executableQuery = runtime.compileToExecutable(logicalQuery, runtimeContext, false)
+    executableQuery.run(queryContext, false, VirtualValues.EMPTY_MAP, prePopulateResults = true, input)
   }
 
   def newRuntimeContext(tx: InternalTransaction): CONTEXT = {

@@ -69,7 +69,8 @@ case class ProcedureCallExecutionPlan(signature: ProcedureSignature,
   override def run(ctx: QueryContext,
                    doProfile: Boolean,
                    params: MapValue,
-                   prePopulateResults: Boolean): RuntimeResult = {
+                   prePopulateResults: Boolean,
+                   ignore: InputDataStream): RuntimeResult = {
     val input = evaluateArguments(ctx, params)
     val callMode = ProcedureCallMode.fromAccessMode(signature.accessMode)
     import scala.collection.JavaConverters._

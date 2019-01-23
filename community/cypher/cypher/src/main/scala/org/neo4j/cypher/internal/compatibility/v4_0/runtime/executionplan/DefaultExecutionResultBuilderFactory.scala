@@ -37,7 +37,7 @@ abstract class BaseExecutionResultBuilderFactory(pipe: Pipe,
     protected var externalResource: ExternalCSVResource = new CSVResources(queryContext.resources)
     protected var pipeDecorator: PipeDecorator = if (hasLoadCSV) new LinenumberPipeDecorator() else NullPipeDecorator
 
-    protected def createQueryState(params: MapValue, prePopulateResults: Boolean): QueryState
+    protected def createQueryState(params: MapValue, prePopulateResults: Boolean, input: InputDataStream): QueryState
 
     def queryContext: QueryContext
 
@@ -53,8 +53,9 @@ abstract class BaseExecutionResultBuilderFactory(pipe: Pipe,
     override def build(params: MapValue,
                        readOnly: Boolean,
                        queryProfile: QueryProfile,
-                       prePopulateResults: Boolean): RuntimeResult = {
-      val state = createQueryState(params, prePopulateResults)
+                       prePopulateResults: Boolean,
+                       input: InputDataStream): RuntimeResult = {
+      val state = createQueryState(params, prePopulateResults, input)
       val results = pipe.createResults(state)
       val resultIterator = buildResultIterator(results, readOnly)
       new PipeExecutionResult(resultIterator, columns.toArray, state, queryProfile)
@@ -77,7 +78,7 @@ case class InterpretedExecutionResultBuilderFactory(pipe: Pipe,
   override def create(queryContext: QueryContext): ExecutionResultBuilder = InterpretedExecutionResultBuilder(queryContext: QueryContext)
 
   case class InterpretedExecutionResultBuilder(queryContext: QueryContext) extends BaseExecutionResultBuilder {
-    override def createQueryState(params: MapValue, prePopulateResults: Boolean): QueryState = {
+    override def createQueryState(params: MapValue, prePopulateResults: Boolean, input: InputDataStream): QueryState = {
       val cursors = new ExpressionCursors(queryContext.transactionalContext.cursors)
 
       new QueryState(queryContext,
@@ -87,7 +88,8 @@ case class InterpretedExecutionResultBuilderFactory(pipe: Pipe,
                      queryIndexes.indexes.map(index => queryContext.transactionalContext.dataRead.indexReadSession(index)),
                      pipeDecorator,
                      lenientCreateRelationship = lenientCreateRelationship,
-                     prePopulateResults = prePopulateResults)
+                     prePopulateResults = prePopulateResults,
+                     input = input)
     }
 
     override def buildResultIterator(results: Iterator[ExecutionContext], readOnly: Boolean): IteratorBasedResult = {

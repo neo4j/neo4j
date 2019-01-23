@@ -25,7 +25,7 @@ import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
 import org.neo4j.cypher.internal.planner.v4_0.spi.TokenContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
-import org.neo4j.cypher.internal.runtime.{QueryContext, QueryTransactionalContext, ResourceManager}
+import org.neo4j.cypher.internal.runtime.{NoInput, QueryContext, QueryTransactionalContext, ResourceManager}
 import org.neo4j.cypher.internal.v4_0.expressions._
 import org.neo4j.cypher.internal.v4_0.logical.plans._
 import org.neo4j.cypher.internal.v4_0.util.DummyPosition
@@ -51,7 +51,7 @@ class ProcedureCallExecutionPlanTest extends CypherFunSuite {
                                           converters, idGen.id())
 
     // When
-    val res = proc.run(ctx, doProfile = false, EMPTY_MAP, prePopulateResults = false)
+    val res = proc.run(ctx, doProfile = false, EMPTY_MAP, prePopulateResults = false, NoInput)
 
     // Then
     toList(res) should equal(List(Map("b" -> 84)))
@@ -64,7 +64,7 @@ class ProcedureCallExecutionPlanTest extends CypherFunSuite {
                                           converters, idGen.id())
 
     // When
-    proc.run(ctx, doProfile = false, EMPTY_MAP, prePopulateResults = false)
+    proc.run(ctx, doProfile = false, EMPTY_MAP, prePopulateResults = false, NoInput)
 
     // Then without touching the result, it should have been spooled out
     iteratorExhausted should equal(true)
@@ -77,7 +77,7 @@ class ProcedureCallExecutionPlanTest extends CypherFunSuite {
                                           converters, idGen.id())
 
     // When
-    proc.run(ctx, doProfile = false, EMPTY_MAP, prePopulateResults = false)
+    proc.run(ctx, doProfile = false, EMPTY_MAP, prePopulateResults = false, NoInput)
 
     // Then without touching the result, the Kernel iterator should not be touched
     iteratorExhausted should equal(false)

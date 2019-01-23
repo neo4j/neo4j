@@ -83,6 +83,16 @@ class LogicalQueryBuilder()
   def apply(): LogicalQueryBuilder =
     appendAtCurrentIndent(BinaryOperator((lhs, rhs) => Apply(lhs, rhs)))
 
+  def input(variables: String*): LogicalQueryBuilder = {
+    if (indent != 0)
+      throw new IllegalStateException("The input operator has to be the left-most leaf of the plan")
+    if (variables.toSet.size < variables.size)
+      throw new IllegalArgumentException("Input must create unique variables")
+    appendAtCurrentIndent(LeafOperator(Input(variables.toArray)))
+  }
+
+  // SHIP IT
+
   def build(): LogicalQuery = {
     val logicalPlan = tree.build()
     LogicalQuery(logicalPlan,

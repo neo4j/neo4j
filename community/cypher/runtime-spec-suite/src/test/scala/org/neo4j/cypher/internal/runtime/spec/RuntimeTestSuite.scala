@@ -19,7 +19,10 @@
  */
 package org.neo4j.cypher.internal.runtime.spec
 
+import java.util.concurrent.atomic.AtomicInteger
+
 import org.neo4j.cypher.internal.compatibility._
+import org.neo4j.cypher.internal.runtime.{InputCursor, InputDataStream}
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.result.{QueryResult, RuntimeResult}
 import org.neo4j.graphdb.{GraphDatabaseService, Label, Node}
@@ -63,8 +66,60 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
 
   // EXECUTE
 
-  def execute(logicalQuery: LogicalQuery, runtime: CypherRuntime[CONTEXT]): RuntimeResult =
-    runtimeTestSupport.run(logicalQuery, runtime)
+
+  def execute(logicalQuery: LogicalQuery,
+              runtime: CypherRuntime[CONTEXT]): RuntimeResult =
+    execute(logicalQuery, runtime, NO_INPUT)
+
+  def execute(logicalQuery: LogicalQuery,
+              runtime: CypherRuntime[CONTEXT],
+              input: InputValues
+             ): RuntimeResult =
+    runtimeTestSupport.run(logicalQuery, runtime, input.stream())
+
+  // INPUT
+
+  def inputValues(rows: Array[Any]*): InputValues =
+    new InputValues().and(rows:_*)
+
+  val NO_INPUT = new InputValues
+
+  class InputValues() {
+    val batches = new ArrayBuffer[IndexedSeq[Array[Any]]]
+    def and(rows: Array[Any]*): InputValues = {
+      batches += rows.toIndexedSeq
+      this
+    }
+    def flatten: IndexedSeq[Array[Any]] =
+      batches.flatten
+
+    def stream(): InputDataStream = new BufferInputStream(batches.map(_.map(row => row.map(ValueUtils.of))))
+  }
+
+  class BufferInputStream(data: ArrayBuffer[IndexedSeq[Array[AnyValue]]]) extends InputDataStream {
+    private var batchIndex = new AtomicInteger(0)
+    override def nextInputBatch(): InputCursor = {
+      val i = batchIndex.getAndIncrement()
+      if (i < data.size)
+        new BufferInputCursor(data(i))
+      else
+        null
+    }
+  }
+
+  class BufferInputCursor(data: IndexedSeq[Array[AnyValue]]) extends InputCursor {
+    private var i = -1
+
+    override def next(): Boolean = {
+      i += 1
+      i < data.size
+    }
+
+    override def value(offset: Int): AnyValue =
+      data(i)(offset)
+
+    override def close(): Unit = {}
+  }
 
   // GRAPHS
 
