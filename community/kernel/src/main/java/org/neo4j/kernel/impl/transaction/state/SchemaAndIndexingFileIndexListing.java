@@ -25,6 +25,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.function.Function;
 
 import org.neo4j.graphdb.Resource;
 import org.neo4j.graphdb.ResourceIterator;
@@ -38,6 +39,8 @@ import static org.neo4j.helpers.collection.Iterators.resourceIterator;
 
 public class SchemaAndIndexingFileIndexListing
 {
+    private static final Function<File,StoreFileMetadata> toStoreFileMetatadata = file -> new StoreFileMetadata( file, 0 );
+
     private final LabelScanStore labelScanStore;
     private final IndexingService indexingService;
 
@@ -72,7 +75,7 @@ public class SchemaAndIndexingFileIndexListing
 
     private void getSnapshotFilesMetadata( ResourceIterator<File> snapshot, Collection<StoreFileMetadata> targetFiles )
     {
-        snapshot.stream().map( StoreFileMetadata::new ).forEach( targetFiles::add );
+        snapshot.stream().map( toStoreFileMetatadata ).forEach( targetFiles::add );
     }
 
     public ResourceIterator<StoreFileMetadata> getSnapshot( long indexId ) throws IOException

@@ -29,6 +29,7 @@ import org.neo4j.storageengine.api.StorageRelationshipTraversalCursor;
 import org.neo4j.storageengine.api.txstate.NodeState;
 
 import static java.lang.String.format;
+import static org.neo4j.internal.kernel.api.Read.ANY_RELATIONSHIP_TYPE;
 import static org.neo4j.kernel.impl.newapi.Read.NO_ID;
 
 class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<StorageRelationshipTraversalCursor>
@@ -36,7 +37,7 @@ class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<Stora
 {
     private final CursorPool<DefaultRelationshipTraversalCursor> pool;
     private LongIterator addedRelationships;
-    private int type = NO_ID;
+    private int type = ANY_RELATIONSHIP_TYPE;
     private RelationshipDirection direction;
     private boolean lazySelection;
     private boolean filterInitialized;
@@ -201,7 +202,7 @@ class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<Stora
         if ( !isClosed() )
         {
             read = null;
-            type = NO_ID;
+            type = ANY_RELATIONSHIP_TYPE;
             direction = null;
             filterInitialized = false;
             lazySelection = false;

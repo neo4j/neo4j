@@ -65,19 +65,14 @@ public class RecoveryRequiredChecker
         Dependencies dependencies = new Dependencies();
         dependencies.satisfyDependencies( fs, databaseLayout, pageCache, NullLogService.getInstance(), config );
         StoreVersionCheck versionCheck = storageEngineFactory.versionCheck( dependencies );
-        try
-        {
-            versionCheck.storeVersion();
-            // We could get a version from the store, which means it exists
-
-            // We need config to determine where the logical log files are
-            return new RecoveryStartInformationProvider( tailScanner, NO_MONITOR ).get().isRecoveryRequired();
-        }
-        catch ( IOException e )
+        if ( !versionCheck.storeVersion().isPresent() )
         {
             // There was no store
             return false;
         }
+
+        // We need config to determine where the logical log files are
+        return new RecoveryStartInformationProvider( tailScanner, NO_MONITOR ).get().isRecoveryRequired();
     }
 
     private LogTailScanner getLogTailScanner( DatabaseLayout databaseLayout ) throws IOException

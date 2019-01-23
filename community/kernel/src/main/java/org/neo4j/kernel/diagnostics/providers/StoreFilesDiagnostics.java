@@ -30,22 +30,23 @@ import java.util.TimeZone;
 
 import org.neo4j.helpers.Format;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.internal.NativeIndexFileFilter;
 import org.neo4j.logging.Logger;
 
-import static java.util.stream.Collectors.toList;
-
 public class StoreFilesDiagnostics extends NamedDiagnosticsProvider
 {
     private static final String FORMAT_DATE_ISO = "yyyy-MM-dd'T'HH:mm:ssZ";
+    private final Database database;
     private final DatabaseLayout databaseLayout;
     private final SimpleDateFormat dateFormat;
 
-    public StoreFilesDiagnostics( DatabaseLayout databaseLayout )
+    public StoreFilesDiagnostics( Database database )
     {
         super( "Store files" );
-        this.databaseLayout = databaseLayout;
+        this.database = database;
+        this.databaseLayout = database.getDatabaseLayout();
         dateFormat = new SimpleDateFormat( FORMAT_DATE_ISO );
         dateFormat.setTimeZone( TimeZone.getDefault() );
     }
@@ -55,7 +56,7 @@ public class StoreFilesDiagnostics extends NamedDiagnosticsProvider
     {
         logger.log( getDiskSpace( databaseLayout ) );
         logger.log( "Storage files: (filename : modification date - size)" );
-        MappedFileCounter mappedCounter = new MappedFileCounter( databaseLayout );
+        MappedFileCounter mappedCounter = new MappedFileCounter( database );
         long totalSize = logStoreFiles( logger, "  ", databaseLayout.databaseDirectory(), mappedCounter );
         logger.log( "Storage summary: " );
         logger.log( "  Total size of store: " + Format.bytes( totalSize ) );
@@ -123,19 +124,21 @@ public class StoreFilesDiagnostics extends NamedDiagnosticsProvider
 
     private static class MappedFileCounter
     {
+        private final Database database;
         private final DatabaseLayout layout;
         private final List<File> mappedCandidates;
         private long size;
         private final FileFilter mappedIndexFilter;
 
-        MappedFileCounter( DatabaseLayout layout )
+        MappedFileCounter( Database database )
         {
-            this.layout = layout;
             mappedCandidates = Arrays.stream( StoreType.values() )
                     .map( StoreType::getDatabaseFile )
                     .flatMap( layout::file )
                     .collect( toList() );
             mappedIndexFilter = new NativeIndexFileFilter( layout.databaseDirectory() );
+            this.database = database;
+            this.layout = database.getDatabaseLayout();
         }
 
         void addFile( File file )

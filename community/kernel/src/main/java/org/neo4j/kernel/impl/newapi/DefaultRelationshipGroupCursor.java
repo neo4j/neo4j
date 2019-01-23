@@ -31,6 +31,7 @@ import org.neo4j.storageengine.api.StorageRelationshipGroupCursor;
 import org.neo4j.storageengine.api.txstate.NodeState;
 import org.neo4j.storageengine.api.txstate.RelationshipState;
 
+import static org.neo4j.internal.kernel.api.Read.ANY_RELATIONSHIP_TYPE;
 import static org.neo4j.kernel.impl.newapi.Read.NO_ID;
 import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.encodeDenseSelection;
 import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.encodeNoIncoming;
@@ -47,7 +48,7 @@ class DefaultRelationshipGroupCursor implements RelationshipGroupCursor
     private boolean hasCheckedTxState;
     private final MutableIntSet txTypes = new IntHashSet();
     private IntIterator txTypeIterator;
-    private int currentTypeAddedInTx = NO_ID;
+    private int currentTypeAddedInTx = ANY_RELATIONSHIP_TYPE;
     private boolean nodeIsDense;
 
     DefaultRelationshipGroupCursor( CursorPool<DefaultRelationshipGroupCursor> pool, StorageRelationshipGroupCursor storeCursor )
@@ -62,7 +63,7 @@ class DefaultRelationshipGroupCursor implements RelationshipGroupCursor
         this.storeCursor.init( nodeReference, reference, nodeIsDense );
         this.txTypes.clear();
         this.txTypeIterator = null;
-        this.currentTypeAddedInTx = NO_ID;
+        this.currentTypeAddedInTx = ANY_RELATIONSHIP_TYPE;
         this.hasCheckedTxState = false;
         this.read = read;
     }
@@ -118,7 +119,7 @@ class DefaultRelationshipGroupCursor implements RelationshipGroupCursor
             }
             else
             {
-                currentTypeAddedInTx = NO_ID;
+                currentTypeAddedInTx = ANY_RELATIONSHIP_TYPE;
             }
         }
         return false;

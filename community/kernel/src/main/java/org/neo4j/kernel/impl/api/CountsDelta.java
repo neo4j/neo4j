@@ -20,25 +20,24 @@
 package org.neo4j.kernel.impl.api;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.neo4j.kernel.impl.store.counts.keys.CountsKey;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.register.Registers;
 
+import static java.lang.Math.toIntExact;
 import static java.util.Objects.requireNonNull;
 import static org.neo4j.kernel.api.StatementConstants.ANY_LABEL;
 import static org.neo4j.kernel.api.StatementConstants.ANY_RELATIONSHIP_TYPE;
-import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.nodeKey;
-import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.relationshipKey;
 
 public class CountsDelta implements CountsAccessor, CountsAccessor.Updater
 {
     private static final long DEFAULT_FIRST_VALUE = 0;
     private static final long DEFAULT_SECOND_VALUE = 0;
-    private final Map<CountsKey, DoubleLongRegister> counts = new HashMap<>();
+    private final Map<Key, DoubleLongRegister> counts = new HashMap<>();
 
     @Override
     public DoubleLongRegister nodeCount( int labelId, DoubleLongRegister target )
@@ -79,10 +78,10 @@ public class CountsDelta implements CountsAccessor, CountsAccessor.Updater
     @Override
     public void accept( CountsVisitor visitor )
     {
-        for ( Map.Entry<CountsKey, DoubleLongRegister> entry : counts.entrySet() )
+        for ( Map.Entry<Key, DoubleLongRegister> entry : counts.entrySet() )
         {
             DoubleLongRegister register = entry.getValue();
-            entry.getKey().accept( visitor, register.readFirst(), register.readSecond() );
+            entry.getKey().accept( visitor, register.readSecond() );
         }
     }
 
@@ -100,13 +99,13 @@ public class CountsDelta implements CountsAccessor, CountsAccessor.Updater
 
     public static final class Difference
     {
-        private final CountsKey key;
+        private final Key key;
         private final long expectedFirst;
         private final long expectedSecond;
         private final long actualFirst;
         private final long actualSecond;
 
-        public Difference( CountsKey key, long expectedFirst, long expectedSecond, long actualFirst, long actualSecond )
+        public Difference( Key key, long expectedFirst, long expectedSecond, long actualFirst, long actualSecond )
         {
             this.expectedFirst = expectedFirst;
             this.expectedSecond = expectedSecond;
@@ -122,7 +121,7 @@ public class CountsDelta implements CountsAccessor, CountsAccessor.Updater
                     expectedSecond, actualFirst, actualSecond );
         }
 
-        public CountsKey key()
+        public Key key()
         {
             return key;
         }
@@ -181,18 +180,17 @@ public class CountsDelta implements CountsAccessor, CountsAccessor.Updater
         }
     }
 
-    private DoubleLongRegister counts( CountsKey key )
+    private DoubleLongRegister counts( Key key )
     {
-        return counts.computeIfAbsent( key,
-                k -> Registers.newDoubleLongRegister( DEFAULT_FIRST_VALUE, DEFAULT_SECOND_VALUE ) );
+        return counts.computeIfAbsent( key, k -> Registers.newDoubleLongRegister( DEFAULT_FIRST_VALUE, DEFAULT_SECOND_VALUE ) );
     }
 
     private static class Verifier implements CountsVisitor
     {
-        private final Map<CountsKey, DoubleLongRegister> counts;
+        private final Map<Key, DoubleLongRegister> counts;
         private final List<Difference> differences = new ArrayList<>();
 
-        Verifier( Map<CountsKey, DoubleLongRegister> counts )
+        Verifier( Map<Key, DoubleLongRegister> counts )
         {
             this.counts = new HashMap<>( counts );
         }
@@ -209,7 +207,7 @@ public class CountsDelta implements CountsAccessor, CountsAccessor.Updater
             verify( relationshipKey( startLabelId, typeId, endLabelId ), 0, count );
         }
 
-        private void verify( CountsKey key, long actualFirst, long actualSecond )
+        private void verify( Key key, long actualFirst, long actualSecond )
         {
             DoubleLongRegister expected = counts.remove( key );
             if ( expected == null )
@@ -232,7 +230,7 @@ public class CountsDelta implements CountsAccessor, CountsAccessor.Updater
 
         public List<Difference> differences()
         {
-            for ( Map.Entry<CountsKey, DoubleLongRegister> entry : counts.entrySet() )
+            for ( Map.Entry<Key, DoubleLongRegister> entry : counts.entrySet() )
             {
                 DoubleLongRegister value = entry.getValue();
                 differences.add( new Difference( entry.getKey(), value.readFirst(), value.readSecond(), 0, 0 ) );
@@ -240,5 +238,53 @@ public class CountsDelta implements CountsAccessor, CountsAccessor.Updater
             counts.clear();
             return differences;
         }
+    }
+
+    private static abstract class Key
+    {
+        final long[] tokens;
+
+        Key( long... tokens )
+        {
+            this.tokens = tokens;
+        }
+
+        abstract void accept( CountsVisitor visitor, long count );
+
+        @Override
+        public boolean equals( Object o )
+        {
+            return o != null && getClass() == o.getClass() && Arrays.equals( tokens, ((Key) o).tokens );
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return Arrays.hashCode( tokens );
+        }
+    }
+
+    private static Key nodeKey( long labelId )
+    {
+        return new Key( labelId )
+        {
+            @Override
+            void accept( CountsVisitor visitor, long count )
+            {
+                visitor.visitNodeCount( toIntExact( tokens[0] ), count );
+            }
+        };
+    }
+
+    private static Key relationshipKey( long startLabelId, long relationshipTypeId, long endLabelId )
+    {
+        return new Key( startLabelId, relationshipTypeId, endLabelId )
+        {
+            @Override
+            void accept( CountsVisitor visitor, long count )
+            {
+                visitor.visitRelationshipCount( toIntExact( tokens[0] ), toIntExact( tokens[1] ), toIntExact( tokens[2] ), count );
+            }
+        };
     }
 }

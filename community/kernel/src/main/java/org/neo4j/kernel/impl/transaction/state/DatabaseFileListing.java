@@ -46,7 +46,7 @@ public class DatabaseFileListing
     private final DatabaseLayout databaseLayout;
     private final LogFiles logFiles;
     private final StorageEngine storageEngine;
-    private static final Function<File,StoreFileMetadata> logFileMapper = file -> new StoreFileMetadata( file, 1, true );
+    private static final Function<File,StoreFileMetadata> logFileMapper = file -> new StoreFileMetadata( file, 1, true, false );
     private final SchemaAndIndexingFileIndexListing neoStoreFileIndexListing;
     private final Collection<StoreFileProvider> additionalProviders;
 

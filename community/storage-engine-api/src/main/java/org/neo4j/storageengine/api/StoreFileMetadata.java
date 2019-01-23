@@ -24,20 +24,17 @@ import java.io.File;
 public class StoreFileMetadata
 {
     private final File file;
-    // TODO this field can be removed, affecting things all the way up to clustering. Please do so at some point.
+    // TODO this recordSize field can be removed, affecting things all the way up to clustering. Please do so at some point.
     private final int recordSize;
     private final boolean isLogFile;
+    private final boolean isPageCacheMapped;
 
-    public StoreFileMetadata( File file, int recordSize )
-    {
-        this( file, recordSize, false );
-    }
-
-    public StoreFileMetadata( File file, int recordSize, boolean isLogFile )
+    public StoreFileMetadata( File file, int recordSize, boolean isLogFile, boolean isPageCacheMapped )
     {
         this.file = file;
         this.recordSize = recordSize;
         this.isLogFile = isLogFile;
+        this.isPageCacheMapped = isPageCacheMapped;
     }
 
     public File file()
@@ -53,5 +50,10 @@ public class StoreFileMetadata
     public boolean isLogFile()
     {
         return isLogFile;
+    }
+
+    public boolean isPageCacheMapped()
+    {
+        return isPageCacheMapped;
     }
 }

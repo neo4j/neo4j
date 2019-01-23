@@ -38,4 +38,10 @@ public enum LuceneCapability implements org.neo4j.storageengine.api.format.Capab
     {
         return type == CapabilityType.INDEX;
     }
+
+    @Override
+    public boolean isAdditive()
+    {
+        return false;
+    }
 }
