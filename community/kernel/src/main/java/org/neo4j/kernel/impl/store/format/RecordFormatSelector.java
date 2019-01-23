@@ -163,7 +163,7 @@ public class RecordFormatSelector
             }
             catch ( IOException e )
             {
-                info( logProvider, "Unable to read store format: " + e.getMessage() );
+                info( logProvider, String.format( "Unable to read format for store %s. %s ", databaseLayout.databaseDirectory(), e.getMessage() ) );
             }
         }
         return null;
@@ -192,26 +192,27 @@ public class RecordFormatSelector
 
         if ( formatConfigured && storeWithFormatExists )
         {
-            if ( currentFormat.getFormatFamily().equals( configuredFormat.getFormatFamily() ) &&
-                 (currentFormat.generation() == configuredFormat.generation()) )
+            if ( formatSameFamilyAndGeneration( currentFormat, configuredFormat ) )
             {
-                info( logProvider, "Configured format matches format in the store. Selected: " + currentFormat );
+                info( logProvider, String.format( "Configured format matches format in the store %s. Selected: %s",
+                        databaseLayout.databaseDirectory(), currentFormat ) );
                 return currentFormat;
             }
             throw new IllegalArgumentException( String.format(
-                    "Configured format '%s' is different from the actual format in the store '%s'",
-                    configuredFormat, currentFormat ) );
+                    "Configured format '%s' is different from the actual format in the store %s, which was '%s'",
+                    configuredFormat, databaseLayout.databaseDirectory(), currentFormat ) );
         }
 
         if ( !formatConfigured && storeWithFormatExists )
         {
-            info( logProvider, "Format not configured. Selected format from the store: " + currentFormat );
+            info( logProvider, String.format( "Format not configured for store %s. Selected format from the store files: %s",
+                    databaseLayout.databaseDirectory(), currentFormat ) );
             return currentFormat;
         }
 
         if ( formatConfigured )
         {
-            info( logProvider, "Selected configured format: " + configuredFormat );
+            info( logProvider, String.format( "Selected configured format for store %s: %s", databaseLayout.databaseDirectory(), configuredFormat ) );
             return configuredFormat;
         }
 
@@ -220,7 +221,8 @@ public class RecordFormatSelector
 
     /**
      * Check if store and configured formats are compatible. In case if format is not configured or store does not
-     * exist yet - we consider formats as compatible.
+     * exist yet - we consider formats as compatible. If the store is that of the system database then we also disregard
+     * configuration, considering formats as compatible.
      * @param config configuration parameters
      * @param databaseLayout database directory structure
      * @param fs file system used to access store files
@@ -235,9 +237,14 @@ public class RecordFormatSelector
 
         RecordFormats currentFormat = selectForStore( databaseLayout, fs, pageCache, logProvider );
 
-        return (configuredFormat == null) || (currentFormat == null) ||
-                (currentFormat.getFormatFamily().equals( configuredFormat.getFormatFamily() ) &&
-                (currentFormat.generation() == configuredFormat.generation()));
+        return (configuredFormat == null) ||
+                (currentFormat == null) ||
+                formatSameFamilyAndGeneration( currentFormat, configuredFormat );
+    }
+
+    private static boolean formatSameFamilyAndGeneration( RecordFormats left, RecordFormats right )
+    {
+        return left.getFormatFamily().equals( right.getFormatFamily() ) && left.generation() == right.generation();
     }
 
     /**
@@ -268,12 +275,13 @@ public class RecordFormatSelector
             if ( result == null )
             {
                 // format was not explicitly configured and store does not exist, select default format
-                info( logProvider, "Selected format '" + DEFAULT_FORMAT + "' for the new store" );
+                info( logProvider, String.format( "Selected format '%s' for the new store %s", DEFAULT_FORMAT, databaseLayout.databaseDirectory() ) );
                 return DEFAULT_FORMAT;
             }
             Optional<RecordFormats> newestFormatInFamily = findLatestFormatInFamily( result );
             RecordFormats newestFormat = newestFormatInFamily.orElse( result );
-            info( logProvider, "Selected format '" + newestFormat + "' for existing store with format '" + result + "'" );
+            info( logProvider, String.format( "Selected format '%s' for existing store %s with format '%s'",
+                    newestFormat, databaseLayout.databaseDirectory(), result ) );
             return newestFormat;
         }
     }

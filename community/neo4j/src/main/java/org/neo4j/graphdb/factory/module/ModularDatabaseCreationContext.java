@@ -23,6 +23,7 @@ import java.util.function.Function;
 
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.common.TokenNameLookup;
+import org.neo4j.dbms.database.DatabaseConfig;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.factory.module.edition.context.EditionDatabaseContext;
 import org.neo4j.graphdb.factory.module.id.DatabaseIdContext;
@@ -68,11 +69,13 @@ import org.neo4j.logging.internal.LogService;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.migration.DatabaseMigratorFactory;
 import org.neo4j.time.SystemNanoClock;
+import org.neo4j.unsafe.impl.batchimport.input.csv.Data;
 
 public class ModularDatabaseCreationContext implements DatabaseCreationContext
 {
     private final String databaseName;
     private final Config globalConfig;
+    private final DatabaseConfig databaseConfig;
     private final IdGeneratorFactory idGeneratorFactory;
     private final LogService logService;
     private final JobScheduler scheduler;
@@ -117,6 +120,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     {
         this.databaseName = databaseName;
         this.globalConfig = globalModule.getGlobalConfig();
+        this.databaseConfig = DatabaseConfig.from( globalConfig, databaseName );
         DatabaseIdContext idContext = editionContext.getIdContext();
         this.idGeneratorFactory = idContext.getIdGeneratorFactory();
         this.idController = idContext.getIdController();
@@ -175,6 +179,12 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     public Config getGlobalConfig()
     {
         return globalConfig;
+    }
+
+    @Override
+    public DatabaseConfig getDatabaseConfig()
+    {
+        return databaseConfig;
     }
 
     @Override

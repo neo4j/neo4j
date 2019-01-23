@@ -232,7 +232,7 @@ public class Database extends LifecycleAdapter
     {
         this.databaseName = context.getDatabaseName();
         this.databaseLayout = context.getDatabaseLayout();
-        this.config = new DatabaseConfig( context.getGlobalConfig() );
+        this.config = context.getDatabaseConfig();
         this.idGeneratorFactory = context.getIdGeneratorFactory();
         this.tokenNameLookup = context.getTokenNameLookup();
         this.globalDependencies = context.getGlobalDependencies();
@@ -287,7 +287,6 @@ public class Database extends LifecycleAdapter
         }
         try
         {
-            config = new DatabaseConfig( globalConfig );
             databaseDependencies = new Dependencies( globalDependencies );
             databasePageCache = new DatabasePageCache( globalPageCache );
             databaseMonitors = new Monitors( globalMonitors );
@@ -753,6 +752,11 @@ public class Database extends LifecycleAdapter
         {
             LockSupport.parkNanos( TimeUnit.MILLISECONDS.toNanos( 10 ) );
         }
+    }
+
+    public Config getConfig()
+    {
+        return config;
     }
 
     public StoreId getStoreId()

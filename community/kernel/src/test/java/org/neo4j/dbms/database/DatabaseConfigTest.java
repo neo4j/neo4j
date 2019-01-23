@@ -36,7 +36,7 @@ class DatabaseConfigTest
     void shouldHandleRegisterDynamicUpdateListenersConcurrently() throws Throwable
     {
         // given
-        DatabaseConfig config = new DatabaseConfig( Config.defaults() );
+        DatabaseConfig config = DatabaseConfig.from( Config.defaults(), GraphDatabaseSettings.DEFAULT_DATABASE_NAME );
         Setting<TransactionTracingLevel> setting = GraphDatabaseSettings.transaction_tracing_level;
         int threads = 100; // big because we want to exercise what happens when the potentially backing List wants to grow
         Listener[] listeners = new Listener[threads];

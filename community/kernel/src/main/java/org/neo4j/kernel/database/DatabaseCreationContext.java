@@ -23,6 +23,7 @@ import java.util.function.Function;
 
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.common.TokenNameLookup;
+import org.neo4j.dbms.database.DatabaseConfig;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.watcher.DatabaseLayoutWatcher;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -68,6 +69,8 @@ public interface DatabaseCreationContext
     DatabaseLayout getDatabaseLayout();
 
     Config getGlobalConfig();
+
+    DatabaseConfig getDatabaseConfig();
 
     IdGeneratorFactory getIdGeneratorFactory();
 

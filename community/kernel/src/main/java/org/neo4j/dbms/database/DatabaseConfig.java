@@ -22,15 +22,20 @@ package org.neo4j.dbms.database;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.stream.Stream;
 import javax.annotation.Nonnull;
 
 import org.neo4j.configuration.ConfigValue;
 import org.neo4j.graphdb.config.InvalidSettingException;
 import org.neo4j.graphdb.config.Setting;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.collection.CollectorsUtil;
+import org.neo4j.helpers.collection.Pair;
 import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.HttpConnector;
@@ -39,10 +44,23 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 
 public class DatabaseConfig extends Config implements Lifecycle
 {
-    private Config globalConfig;
+    Config globalConfig;
     private Map<Setting,Collection<SettingChangeListener>> registeredListeners = new ConcurrentHashMap<>();
 
-    public DatabaseConfig( Config globalConfig )
+    public static DatabaseConfig from( Config globalConfig, String databaseName )
+    {
+        if ( Objects.equals( databaseName, GraphDatabaseSettings.SYSTEM_DATABASE_NAME ) )
+        {
+            Map<String,String> overriddenConfigs = Stream.of(
+                    Pair.of( GraphDatabaseSettings.record_format.name(), "" )
+            ).collect( CollectorsUtil.pairsToMap() );
+            return new OverriddenDatabaseConfig( globalConfig, overriddenConfigs );
+        }
+
+        return new DatabaseConfig( globalConfig );
+    }
+
+    DatabaseConfig( Config globalConfig )
     {
         this.globalConfig = globalConfig;
     }

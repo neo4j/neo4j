@@ -24,6 +24,7 @@ import java.util.function.Function;
 
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.common.TokenNameLookup;
+import org.neo4j.dbms.database.DatabaseConfig;
 import org.neo4j.exceptions.UnsatisfiedDependencyException;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -199,6 +200,7 @@ public class DatabaseRule extends ExternalResource
         private final String databaseName;
         private final DatabaseLayout databaseLayout;
         private final Config config;
+        private final DatabaseConfig databaseConfig;
         private final IdGeneratorFactory idGeneratorFactory;
         private final LogService logService;
         private final JobScheduler scheduler;
@@ -252,6 +254,7 @@ public class DatabaseRule extends ExternalResource
             this.databaseName = databaseName;
             this.databaseLayout = databaseLayout;
             this.config = config;
+            this.databaseConfig = DatabaseConfig.from( config, databaseName );
             this.idGeneratorFactory = idGeneratorFactory;
             this.logService = logService;
             this.scheduler = scheduler;
@@ -306,6 +309,12 @@ public class DatabaseRule extends ExternalResource
         public Config getGlobalConfig()
         {
             return config;
+        }
+
+        @Override
+        public DatabaseConfig getDatabaseConfig()
+        {
+            return databaseConfig;
         }
 
         @Override
