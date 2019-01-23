@@ -24,7 +24,7 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 
 import org.neo4j.collection.RawIterator;
-import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.common.DependencyResolver;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
