@@ -41,7 +41,6 @@ import org.neo4j.internal.cypher.acceptance.NewRuntimeMonitor.{NewPlanSeen, NewR
 import org.neo4j.test.{TestEnterpriseGraphDatabaseFactory, TestGraphDatabaseFactory}
 import org.neo4j.values.storable.{CoordinateReferenceSystem, Values}
 import org.neo4j.test.TestEnterpriseGraphDatabaseFactory
-import org.scalacheck.Prop.True
 import org.scalatest.Assertions
 import org.scalatest.matchers.{MatchResult, Matcher}
 
@@ -162,6 +161,8 @@ trait CypherComparisonSupport extends CypherTestSupport {
 
       // Assumption: baseOption.get is safe because the baseScenario is expected to succeed
       val baseResult = baseOption.get._2
+      //must also check planComparisonStrategy on baseScenario
+      planComparisonStrategy.compare(expectSucceed, baseScenario, baseResult)
 
       positiveResults.foreach {
         case (scenario, result) =>
@@ -614,6 +615,8 @@ object CypherComparisonSupport {
     def SlottedInterpreted: TestConfiguration = TestScenario(Versions.Default, Planners.Default, Runtimes.Slotted)
 
     def DefaultInterpreted: TestConfiguration = TestScenario(Versions.Default, Planners.Default, Runtimes.Interpreted)
+
+    def DefaultRule: TestConfiguration = TestScenario(Versions.Default, Planners.Rule, Runtimes.Default)
 
     def Cost2_3: TestConfiguration = TestScenario(Versions.V2_3, Planners.Cost, Runtimes.Default)
 
