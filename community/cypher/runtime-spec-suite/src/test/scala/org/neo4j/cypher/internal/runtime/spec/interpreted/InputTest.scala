@@ -53,6 +53,34 @@ abstract class InputTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("x", "y", "z").withRows(input.flatten)
   }
 
+  test("should retain input value order") {
+    // when
+    val columns = (0 until 100).map(i => "c"+i)
+
+    val logicalQuery = new LogicalQueryBuilder()
+      .produceResults(columns:_*)
+      .input(columns:_*)
+      .build()
+
+    val input = inputValues(columns.toArray)
+    val runtimeResult = execute(logicalQuery, runtime, input)
+
+    // then
+    runtimeResult should beColumns(columns:_*).withRow(columns:_*)
+  }
+
+  test("should return no rows on no input") {
+    // when
+    val logicalQuery = new LogicalQueryBuilder()
+      .produceResults("x", "y", "z")
+      .input("x", "y", "z")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, NO_INPUT)
+
+    // then
+    runtimeResult should beColumns("x", "y", "z").withNoRows()
+  }
 }
 
 class InterpretedInputTest extends InputTestBase(COMMUNITY_EDITION, InterpretedRuntime)
