@@ -23,7 +23,7 @@ import java.util
 import java.util.concurrent.atomic.AtomicInteger
 
 import org.neo4j.cypher.internal.compatibility._
-import org.neo4j.cypher.internal.runtime.{InputCursor, InputDataStream}
+import org.neo4j.cypher.internal.runtime.{InputCursor, InputDataStream, NoInput}
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.result.{QueryResult, RuntimeResult}
 import org.neo4j.graphdb.{GraphDatabaseService, Label, Node}
@@ -69,23 +69,41 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
 
   // EXECUTE
 
-
-  def execute(logicalQuery: LogicalQuery,
-              runtime: CypherRuntime[CONTEXT]): RuntimeResult =
-    execute(logicalQuery, runtime, NO_INPUT)
-
   def execute(logicalQuery: LogicalQuery,
               runtime: CypherRuntime[CONTEXT],
               input: InputValues
              ): RuntimeResult =
-    runtimeTestSupport.run(logicalQuery, runtime, input.stream())
+    runtimeTestSupport.run(logicalQuery, runtime, input.stream(), (_, result) => result)
+
+  def execute(logicalQuery: LogicalQuery,
+              runtime: CypherRuntime[CONTEXT]
+             ): RuntimeResult =
+    runtimeTestSupport.run(logicalQuery, runtime, NoInput, (_, result) => result)
+
+  def executeAndContext(logicalQuery: LogicalQuery,
+                        runtime: CypherRuntime[CONTEXT],
+                        input: InputValues
+                       ): (RuntimeResult, CONTEXT) =
+    runtimeTestSupport.run(logicalQuery, runtime, input.stream(), (context, result) => (result, context))
 
   // INPUT
+
+  val NO_INPUT = new InputValues
 
   def inputValues(rows: Array[Any]*): InputValues =
     new InputValues().and(rows:_*)
 
-  val NO_INPUT = new InputValues
+  def inputSingleColumn(nBatches: Int, batchSize: Int, valueFunction: Int => Any): InputValues = {
+    val input = new InputValues()
+    for (batch <- 0 until nBatches) {
+      val rows =
+        for (row <- 0 until batchSize)
+          yield Array(valueFunction(batch * batchSize + row))
+      input.and(rows:_*)
+
+    }
+    input
+  }
 
   class InputValues() {
     val batches = new ArrayBuffer[IndexedSeq[Array[Any]]]
@@ -205,6 +223,17 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
 
       val sortedA = a.map(row => VirtualValues.list(row:_*)).sorted(ANY_VALUE_ORDERING)
       val sortedB = b.map(row => VirtualValues.list(row:_*)).sorted(ANY_VALUE_ORDERING)
+
+      sortedA == sortedB
+    }
+
+    private def equalInOrder(a: ArrayBuffer[Array[AnyValue]], b: ArrayBuffer[Array[AnyValue]]): Boolean = {
+
+      if (a.size != b.size)
+        return false
+
+      val sortedA = a.map(row => VirtualValues.list(row:_*))
+      val sortedB = b.map(row => VirtualValues.list(row:_*))
 
       sortedA == sortedB
     }

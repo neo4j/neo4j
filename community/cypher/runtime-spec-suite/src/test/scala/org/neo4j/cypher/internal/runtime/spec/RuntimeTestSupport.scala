@@ -61,15 +61,17 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](val graphDb: GraphDatabaseSe
     super.afterAll()
   }
 
-  def run(logicalQuery: LogicalQuery,
-          runtime: CypherRuntime[CONTEXT],
-          input: InputDataStream): RuntimeResult = {
+  def run[RESULT](logicalQuery: LogicalQuery,
+                  runtime: CypherRuntime[CONTEXT],
+                  input: InputDataStream,
+                  resultMapper: (CONTEXT, RuntimeResult) => RESULT): RESULT = {
     val tx = cypherGraphDb.beginTransaction(Transaction.Type.`implicit`, LoginContext.AUTH_DISABLED)
     val queryContext = newQueryContext(tx)
     val runtimeContext = newRuntimeContext(tx)
 
     val executableQuery = runtime.compileToExecutable(logicalQuery, runtimeContext, false)
-    executableQuery.run(queryContext, false, VirtualValues.EMPTY_MAP, prePopulateResults = true, input)
+    val result = executableQuery.run(queryContext, false, VirtualValues.EMPTY_MAP, prePopulateResults = true, input)
+    resultMapper(runtimeContext, result)
   }
 
   def newRuntimeContext(tx: InternalTransaction): CONTEXT = {
