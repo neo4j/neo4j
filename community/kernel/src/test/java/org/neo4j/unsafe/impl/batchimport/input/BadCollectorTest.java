@@ -26,14 +26,19 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Future;
 
-import org.neo4j.io.NullOutputStream;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
+import static org.neo4j.io.NullOutputStream.NULL_OUTPUT_STREAM;
+import static org.neo4j.test.OtherThreadExecutor.command;
 import static org.neo4j.unsafe.impl.batchimport.input.BadCollector.COLLECT_ALL;
+import static org.neo4j.unsafe.impl.batchimport.input.BadCollector.NO_MONITOR;
 import static org.neo4j.unsafe.impl.batchimport.input.BadCollector.UNLIMITED_TOLERANCE;
 
 public class BadCollectorTest
@@ -149,7 +154,7 @@ public class BadCollectorTest
     public void shouldCollectUnlimitedNumberOfBadEntriesIfToldTo()
     {
         // GIVEN
-        try ( BadCollector collector = new BadCollector( NullOutputStream.NULL_OUTPUT_STREAM, UNLIMITED_TOLERANCE, COLLECT_ALL ) )
+        try ( BadCollector collector = new BadCollector( NULL_OUTPUT_STREAM, UNLIMITED_TOLERANCE, COLLECT_ALL ) )
         {
             // WHEN
             int count = 10_000;
@@ -167,7 +172,7 @@ public class BadCollectorTest
     public void skipBadEntriesLogging()
     {
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        try ( BadCollector badCollector = new BadCollector( outputStream, 100, COLLECT_ALL, true ) )
+        try ( BadCollector badCollector = new BadCollector( outputStream, 100, COLLECT_ALL, 10, true, NO_MONITOR ) )
         {
             collectBadRelationship( badCollector );
             for ( int i = 0; i < 2; i++ )
@@ -177,6 +182,30 @@ public class BadCollectorTest
             collectBadRelationship( badCollector );
             badCollector.collectExtraColumns( "a,b,c", 1, "a" );
             assertEquals( "Output stream should not have any reported entries", 0, outputStream.size() );
+        }
+    }
+
+    @Test
+    public void shouldApplyBackPressure() throws Exception
+    {
+        // given
+        int backPressureThreshold = 10;
+        BlockableMonitor monitor = new BlockableMonitor();
+        try ( OtherThreadExecutor<Void> t2 = new OtherThreadExecutor<>( "T2", null );
+              BadCollector badCollector = new BadCollector( NULL_OUTPUT_STREAM, UNLIMITED_TOLERANCE, COLLECT_ALL, backPressureThreshold, false, monitor ) )
+        {
+            for ( int i = 0; i < backPressureThreshold; i++ )
+            {
+                badCollector.collectDuplicateNode( i, i, "group" );
+            }
+
+            // when
+            Future<Object> enqueue = t2.executeDontWait( command( () -> badCollector.collectDuplicateNode( 999, 999, "group" ) ) );
+            t2.waitUntilWaiting( waitDetails -> waitDetails.isAt( BadCollector.class, "collect" ) );
+            monitor.unblock();
+
+            // then
+            enqueue.get();
         }
     }
 
@@ -198,5 +227,29 @@ public class BadCollectorTest
         fileSystem.mkdir( badDataPath.getParentFile() );
         fileSystem.create( badDataPath );
         return badDataPath;
+    }
+
+    private static class BlockableMonitor implements BadCollector.Monitor
+    {
+        private final CountDownLatch latch = new CountDownLatch( 1 );
+
+        @Override
+        public void beforeProcessEvent()
+        {
+            try
+            {
+                latch.await();
+            }
+            catch ( InterruptedException e )
+            {
+                Thread.currentThread().interrupt();
+                throw new RuntimeException( e );
+            }
+        }
+
+        void unblock()
+        {
+            latch.countDown();
+        }
     }
 }
