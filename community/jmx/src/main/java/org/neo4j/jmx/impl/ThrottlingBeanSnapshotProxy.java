@@ -96,7 +96,7 @@ class ThrottlingBeanSnapshotProxy implements InvocationHandler
         {
             return target;
         }
-        checkArgument( iface.isInterface(), "%s is not an interface" );
+        checkArgument( iface.isInterface(), "%s is not an interface", iface );
         requirePositive( updateInterval );
         final ThrottlingBeanSnapshotProxy proxy = new ThrottlingBeanSnapshotProxy( iface, target, updateInterval, clock );
         return iface.cast( newProxyInstance( iface.getClassLoader(), new Class[] {iface}, proxy ) );
