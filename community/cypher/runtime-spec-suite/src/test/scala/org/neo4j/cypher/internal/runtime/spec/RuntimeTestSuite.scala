@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.spec
 
+import java.util
 import java.util.concurrent.atomic.AtomicInteger
 
 import org.neo4j.cypher.internal.compatibility._
@@ -27,7 +28,8 @@ import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.result.{QueryResult, RuntimeResult}
 import org.neo4j.graphdb.{GraphDatabaseService, Label, Node}
 import org.neo4j.kernel.impl.util.ValueUtils
-import org.neo4j.values.AnyValue
+import org.neo4j.values.{AnyValue, AnyValues}
+import org.neo4j.values.virtual.VirtualValues
 import org.scalatest.{BeforeAndAfterEach, Tag}
 import org.scalatest.matchers.{MatchResult, Matcher}
 
@@ -49,6 +51,7 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
 
   var graphDb: GraphDatabaseService = _
   var runtimeTestSupport: RuntimeTestSupport[CONTEXT] = _
+  val ANY_VALUE_ORDERING = Ordering.comparatorToOrdering(AnyValues.COMPARATOR)
 
   override def beforeEach(): Unit = {
     graphDb = edition.graphDatabaseFactory.newImpermanentDatabase()
@@ -168,23 +171,42 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
         val rows = new ArrayBuffer[Array[AnyValue]]
         left.accept(new QueryResult.QueryResultVisitor[Exception] {
           override def visit(row: QueryResult.Record): Boolean = {
-            rows += row.fields()
+            val valueArray = row.fields()
+            rows += util.Arrays.copyOf(valueArray, valueArray.length)
             true
           }
         })
         MatchResult(
-          expectedRows.size == rows.size,
+          equalWithoutOrder(expectedRows, rows),
           s"""Expected rows:
             |
-            |$expectedRows
+            |${pretty(expectedRows)}
             |
             |but got
             |
-            |$rows
+            |${pretty(rows)}
           """.stripMargin,
           ""
         )
       }
+    }
+
+    private def pretty(a: ArrayBuffer[Array[AnyValue]]): String = {
+      val sb = new StringBuilder
+      for (row <- a)
+        sb ++= row.map(value => value.toString).mkString("", ", ", "\n")
+      sb.result()
+    }
+
+    private def equalWithoutOrder(a: ArrayBuffer[Array[AnyValue]], b: ArrayBuffer[Array[AnyValue]]): Boolean = {
+
+      if (a.size != b.size)
+        return false
+
+      val sortedA = a.map(row => VirtualValues.list(row:_*)).sorted(ANY_VALUE_ORDERING)
+      val sortedB = b.map(row => VirtualValues.list(row:_*)).sorted(ANY_VALUE_ORDERING)
+
+      sortedA == sortedB
     }
   }
 }
