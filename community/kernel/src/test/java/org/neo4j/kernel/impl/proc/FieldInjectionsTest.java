@@ -63,7 +63,7 @@ class FieldInjectionsTest
         FieldInjections injections = new FieldInjections( new ComponentRegistry() );
 
         // When
-        List<FieldInjections.FieldSetter> setters = injections.setters( ProcedureWithStaticFields.class );
+        List<FieldSetter> setters = injections.setters( ProcedureWithStaticFields.class );
 
         // Then
         assertEquals( 0, setters.size() );
@@ -78,11 +78,11 @@ class FieldInjectionsTest
         FieldInjections injections = new FieldInjections( components );
 
         // When
-        List<FieldInjections.FieldSetter> setters = injections.setters( ChildProcedure.class );
+        List<FieldSetter> setters = injections.setters( ChildProcedure.class );
 
         // Then
         ChildProcedure childProcedure = new ChildProcedure();
-        for ( FieldInjections.FieldSetter setter : setters )
+        for ( FieldSetter setter : setters )
         {
             setter.apply( null, childProcedure );
         }
@@ -100,11 +100,11 @@ class FieldInjectionsTest
         FieldInjections injections = new FieldInjections( components );
 
         // When
-        List<FieldInjections.FieldSetter> setters = injections.setters( Outer.ClassWithSyntheticField.class );
+        List<FieldSetter> setters = injections.setters( Outer.ClassWithSyntheticField.class );
 
         // Then
         Outer.ClassWithSyntheticField syntheticField = new Outer().classWithSyntheticField();
-        for ( FieldInjections.FieldSetter setter : setters )
+        for ( FieldSetter setter : setters )
         {
             setter.apply( null, syntheticField );
         }

@@ -44,37 +44,6 @@ class FieldInjections
     }
 
     /**
-     * On calling apply, injects the `value` for the field `field` on the provided `object`.
-     */
-    static class FieldSetter
-    {
-        private final Field field;
-        private final MethodHandle setter;
-        private final ComponentRegistry.Provider<?> provider;
-
-        FieldSetter( Field field, MethodHandle setter, ComponentRegistry.Provider<?> provider )
-        {
-            this.field = field;
-            this.setter = setter;
-            this.provider = provider;
-        }
-
-        void apply( org.neo4j.kernel.api.proc.Context ctx, Object object ) throws ProcedureException
-        {
-            try
-            {
-                setter.invoke( object, provider.apply( ctx ) );
-            }
-            catch ( Throwable e )
-            {
-                throw new ProcedureException( Status.Procedure.ProcedureCallFailed, e,
-                        "Unable to inject component to field `%s`, please ensure it is public and non-final: %s",
-                        field.getName(), e.getMessage() );
-            }
-        }
-    }
-
-    /**
      * For each annotated field in the provided class, creates a `FieldSetter`.
      * @param cls The class where injection should happen.
      * @return A list of `FieldSetters`

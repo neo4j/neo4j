@@ -293,7 +293,7 @@ class ReflectiveProcedureCompiler
         String deprecated = deprecated( method, procedure::deprecatedBy,
                 "Use of @Procedure(deprecatedBy) without @Deprecated in " + procName );
 
-        List<FieldInjections.FieldSetter> setters = allFieldInjections.setters( procDefinition );
+        List<FieldSetter> setters = allFieldInjections.setters( procDefinition );
         if ( !fullAccess && !config.fullAccessFor( procName.toString() ) )
         {
             try
@@ -340,7 +340,7 @@ class ReflectiveProcedureCompiler
         String deprecated = deprecated( method, function::deprecatedBy,
                 "Use of @UserFunction(deprecatedBy) without @Deprecated in " + procName );
 
-        List<FieldInjections.FieldSetter> setters = allFieldInjections.setters( procDefinition );
+        List<FieldSetter> setters = allFieldInjections.setters( procDefinition );
         if ( !config.fullAccessFor( procName.toString() ) )
         {
             try
@@ -446,7 +446,7 @@ class ReflectiveProcedureCompiler
         String deprecated = deprecated( method, function::deprecatedBy,
                 "Use of @UserAggregationFunction(deprecatedBy) without @Deprecated in " + funcName );
 
-        List<FieldInjections.FieldSetter> setters = allFieldInjections.setters( definition );
+        List<FieldSetter> setters = allFieldInjections.setters( definition );
         if ( !config.fullAccessFor( funcName.toString() ) )
         {
             try
@@ -558,16 +558,16 @@ class ReflectiveProcedureCompiler
     private abstract static class ReflectiveBase
     {
 
-        final List<FieldInjections.FieldSetter> fieldSetters;
+        final List<FieldSetter> fieldSetters;
 
-        ReflectiveBase( List<FieldInjections.FieldSetter> fieldSetters )
+        ReflectiveBase( List<FieldSetter> fieldSetters )
         {
             this.fieldSetters = fieldSetters;
         }
 
         protected void inject( Context ctx, Object object ) throws ProcedureException
         {
-            for ( FieldInjections.FieldSetter setter : fieldSetters )
+            for ( FieldSetter setter : fieldSetters )
             {
                 setter.apply( ctx, object );
             }
@@ -603,7 +603,7 @@ class ReflectiveProcedureCompiler
 
         ReflectiveProcedure( ProcedureSignature signature, MethodHandle constructor,
                 Method procedureMethod, OutputMapper outputMapper,
-                List<FieldInjections.FieldSetter> fieldSetters )
+                List<FieldSetter> fieldSetters )
         {
             super( fieldSetters );
             this.constructor = constructor;
@@ -790,7 +790,7 @@ class ReflectiveProcedureCompiler
         private final Method udfMethod;
 
         ReflectiveUserFunction( UserFunctionSignature signature, MethodHandle constructor,
-                Method udfMethod, TypeMappers.TypeChecker typeChecker, List<FieldInjections.FieldSetter> fieldSetters )
+                Method udfMethod, TypeMappers.TypeChecker typeChecker, List<FieldSetter> fieldSetters )
         {
             super( fieldSetters );
             this.constructor = constructor;
@@ -862,7 +862,7 @@ class ReflectiveProcedureCompiler
         ReflectiveUserAggregationFunction( UserFunctionSignature signature, MethodHandle constructor,
                 MethodHandle creator, Method updateMethod, MethodHandle resultMethod,
                 TypeMappers.TypeChecker typeChecker,
-                List<FieldInjections.FieldSetter> fieldSetters )
+                List<FieldSetter> fieldSetters )
         {
             super( fieldSetters );
             this.constructor = constructor;

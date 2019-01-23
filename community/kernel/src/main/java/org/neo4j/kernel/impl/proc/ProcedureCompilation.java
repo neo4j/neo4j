@@ -86,7 +86,6 @@ import static org.neo4j.codegen.Expression.invoke;
 import static org.neo4j.codegen.Expression.ternary;
 import static org.neo4j.codegen.Expression.unbox;
 import static org.neo4j.codegen.FieldReference.field;
-import static org.neo4j.codegen.FieldReference.fieldReference;
 import static org.neo4j.codegen.MethodDeclaration.method;
 import static org.neo4j.codegen.MethodReference.methodReference;
 import static org.neo4j.codegen.Parameter.param;
@@ -206,7 +205,7 @@ public class ProcedureCompilation
             FieldSetter setter = fieldSetters.get( i );
             Field field = setter.field();
             Class<?> fieldType = field.getType();
-            block.put( getStatic( udfField ), fieldReference( field ),
+            block.put( getStatic( udfField ), field( typeReference( field.getDeclaringClass() ), typeReference( field.getType() ), field.getName() ),
                     unboxIfNecessary( fieldType,
                             invoke(
                                     getStatic( fieldsToSet.get( i ) ),
@@ -222,7 +221,8 @@ public class ProcedureCompilation
                     typeReference(
                             parameterTypes[i] ), arrayLoad( block.load( "input" ), constant( i ) ), mapperField );
         }
-        block.assign( methodToCall.getReturnType(), "fromFunction", invoke( getStatic( udfField ), methodReference( methodToCall ), parameters ) );
+        block.assign( methodToCall.getReturnType(), "fromFunction", invoke( getStatic( udfField ),
+                methodReference( methodToCall.getDeclaringClass(), methodToCall.getReturnType(), methodToCall.getName(), methodToCall.getParameterTypes() ), parameters ) );
         block.returns(
                 toAnyValue( block.load( "fromFunction" ) ) );
     }
