@@ -19,28 +19,43 @@
  */
 package org.neo4j.kernel.internal;
 
+import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.Mockito;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
+import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.logging.AssertableLogProvider;
+import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.io.ByteUnit.kibiBytes;
 
 public class KernelDiagnosticsTest
 {
+    @Rule
+    public final DefaultFileSystemRule fs = new DefaultFileSystemRule();
+    @Rule
+    public final TestDirectory directory = TestDirectory.testDirectory();
+
     @Test
     public void shouldPrintDiskUsage()
     {
-        File databaseDir = Mockito.mock( File.class );
+        // Not sure how to get around this w/o spying. The method that we're unit testing will construct
+        // other File instances with this guy as parent and internally the File constructor uses the field 'path'
+        // which, if purely mocked, won't be assigned. At the same time we want to control the total/free space methods
+        // and what they return... a tough one.
+        File storeDir = Mockito.spy( new File( "storeDir" ) );
         DatabaseLayout layout = mock( DatabaseLayout.class );
-        when( layout.databaseDirectory() ).thenReturn( databaseDir );
-        when( databaseDir.getTotalSpace() ).thenReturn( 100L );
-        when( databaseDir.getFreeSpace() ).thenReturn( 40L );
+        when( layout.databaseDirectory() ).thenReturn( storeDir );
+        when( storeDir.getTotalSpace() ).thenReturn( 100L );
+        when( storeDir.getFreeSpace() ).thenReturn( 40L );
 
         AssertableLogProvider logProvider = new AssertableLogProvider();
         KernelDiagnostics.StoreFiles storeFiles = new KernelDiagnostics.StoreFiles( layout );
@@ -52,29 +67,14 @@ public class KernelDiagnosticsTest
     @Test
     public void shouldCountFileSizeRecursively() throws IOException
     {
-        File indexFile = Mockito.mock( File.class );
-        when( indexFile.isDirectory() ).thenReturn( false );
-        when( indexFile.getName() ).thenReturn( "indexFile" );
-        when( indexFile.length() ).thenReturn( 1024L );
-
-        File indexDir = Mockito.mock( File.class );
-        when( indexDir.isDirectory() ).thenReturn( true );
-        when( indexDir.listFiles()).thenReturn( new File[] {indexFile} );
-        when( indexDir.getName() ).thenReturn( "indexDir" );
-
-        File dbFile = Mockito.mock( File.class );
-        when( dbFile.isDirectory() ).thenReturn( false );
-        when( dbFile.getName() ).thenReturn( "store" );
-        when( dbFile.length() ).thenReturn( 3 * 1024L );
-
-        File databaseDir = Mockito.mock( File.class );
-        DatabaseLayout layout = mock( DatabaseLayout.class );
-        when( layout.databaseDirectory() ).thenReturn( databaseDir );
-        when( layout.labelScanStore() ).thenReturn( dbFile );
-        when( databaseDir.isDirectory() ).thenReturn( true );
-        when( databaseDir.listFiles()).thenReturn( new File[] {indexDir, dbFile} );
-        when( databaseDir.getName() ).thenReturn( "storeDir" );
-        when( databaseDir.getAbsolutePath() ).thenReturn( "/test/storeDir" );
+        // file structure:
+        //   storeDir/indexDir/indexFile (1 kB)
+        //   storeDir/neostore (3 kB)
+        File storeDir = directory.directory( "storeDir" );
+        DatabaseLayout layout = DatabaseLayout.of( storeDir );
+        File indexDir = directory( storeDir, "indexDir" );
+        file( indexDir, "indexFile", (int) kibiBytes( 1 ) );
+        file( storeDir, layout.metadataStore().getName(), (int) kibiBytes( 3 ) );
 
         AssertableLogProvider logProvider = new AssertableLogProvider();
         KernelDiagnostics.StoreFiles storeFiles = new KernelDiagnostics.StoreFiles( layout );
@@ -82,5 +82,24 @@ public class KernelDiagnosticsTest
 
         logProvider.assertContainsMessageContaining( "Total size of store: 4.00 kB" );
         logProvider.assertContainsMessageContaining( "Total size of mapped files: 3.00 kB" );
+    }
+
+    private File directory( File parent, String name ) throws IOException
+    {
+        File dir = new File( parent, name );
+        fs.mkdirs( dir );
+        return dir;
+    }
+
+    private File file( File parent, String name, int size ) throws IOException
+    {
+        File file = new File( parent, name );
+        try ( StoreChannel channel = fs.create( file ) )
+        {
+            ByteBuffer buffer = ByteBuffer.allocate( size );
+            buffer.position( size ).flip();
+            channel.write( buffer );
+        }
+        return file;
     }
 }

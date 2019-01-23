@@ -20,6 +20,7 @@
 package org.neo4j.kernel.internal;
 
 import java.io.File;
+import java.io.FileFilter;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -147,6 +148,7 @@ public abstract class KernelDiagnostics implements DiagnosticsProvider
         private static class MappedFileCounter
         {
             private final DatabaseLayout layout;
+            private final FileFilter mappedIndexFilter;
             private long size;
             private final List<File> mappedCandidates;
 
@@ -158,11 +160,12 @@ public abstract class KernelDiagnostics implements DiagnosticsProvider
                                          .map( StoreType::getDatabaseFile )
                                          .flatMap( layout::file )
                                          .collect( toList() );
+                mappedIndexFilter = new NativeIndexFileFilter( layout.databaseDirectory() );
             }
 
             void addFile( File file )
             {
-                if ( canBeManagedByPageCache( file ) )
+                if ( canBeManagedByPageCache( file ) || mappedIndexFilter.accept( file ) )
                 {
                     size += file.length();
                 }
