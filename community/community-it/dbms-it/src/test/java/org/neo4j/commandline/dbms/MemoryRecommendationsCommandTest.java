@@ -166,6 +166,25 @@ public class MemoryRecommendationsCommandTest
     }
 
     @Test
+    public void shouldPrintKilobytesEvenForByteSizeBelowAKiloByte()
+    {
+        // given
+        long bytesBelowK = 176;
+        long bytesBelow10K = 1762;
+        long bytesBelow100K = 17625;
+
+        // when
+        String stringBelowK = MemoryRecommendationsCommand.bytesToString( bytesBelowK );
+        String stringBelow10K = MemoryRecommendationsCommand.bytesToString( bytesBelow10K );
+        String stringBelow100K = MemoryRecommendationsCommand.bytesToString( bytesBelow100K );
+
+        // then
+        assertThat( stringBelowK, is( "1k" ) );
+        assertThat( stringBelow10K, is( "2k" ) );
+        assertThat( stringBelow100K, is( "18k" ) );
+    }
+
+    @Test
     public void mustPrintMinimalPageCacheMemorySettingForConfiguredDb() throws Exception
     {
         // given

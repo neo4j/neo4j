@@ -20,6 +20,7 @@
 package org.neo4j.kernel.diagnostics.providers;
 
 import java.io.File;
+import java.io.FileFilter;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -30,6 +31,7 @@ import java.util.TimeZone;
 import org.neo4j.helpers.Format;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.impl.store.StoreType;
+import org.neo4j.kernel.internal.NativeIndexFileFilter;
 import org.neo4j.logging.Logger;
 
 import static java.util.stream.Collectors.toList;
@@ -124,19 +126,21 @@ public class StoreFilesDiagnostics extends NamedDiagnosticsProvider
         private final DatabaseLayout layout;
         private final List<File> mappedCandidates;
         private long size;
+        private final FileFilter mappedIndexFilter;
 
         MappedFileCounter( DatabaseLayout layout )
         {
             this.layout = layout;
-            this.mappedCandidates = Arrays.stream( StoreType.values() )
-                                     .map( StoreType::getDatabaseFile )
-                                     .flatMap( layout::file )
-                                     .collect( toList() );
+            mappedCandidates = Arrays.stream( StoreType.values() )
+                    .map( StoreType::getDatabaseFile )
+                    .flatMap( layout::file )
+                    .collect( toList() );
+            mappedIndexFilter = new NativeIndexFileFilter( layout.databaseDirectory() );
         }
 
         void addFile( File file )
         {
-            if ( canBeManagedByPageCache( file ) )
+            if ( canBeManagedByPageCache( file ) || mappedIndexFilter.accept( file ) )
             {
                 size += file.length();
             }

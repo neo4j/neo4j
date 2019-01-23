@@ -29,7 +29,7 @@ import org.neo4j.kernel.impl.index.schema.fusion.FusionIndexProvider;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesBySubProvider;
 
-abstract class NativeLuceneFusionIndexProviderFactory<DEPENDENCIES extends AbstractIndexProviderFactory.Dependencies>
+public abstract class NativeLuceneFusionIndexProviderFactory<DEPENDENCIES extends AbstractIndexProviderFactory.Dependencies>
         extends AbstractIndexProviderFactory<DEPENDENCIES>
 {
     NativeLuceneFusionIndexProviderFactory( String key )
