@@ -21,7 +21,10 @@ package org.neo4j.unsafe.impl.batchimport.input;
 
 import java.io.OutputStream;
 import java.io.PrintStream;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.LongAdder;
+import java.util.concurrent.locks.LockSupport;
 
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.DuplicateInputIdException;
 import org.neo4j.util.concurrent.AsyncEvent;
@@ -55,34 +58,52 @@ public class BadCollector implements Collector
         abstract InputException exception();
     }
 
-    public static final int BAD_RELATIONSHIPS = 0x1;
-    public static final int DUPLICATE_NODES = 0x2;
-    public static final int EXTRA_COLUMNS = 0x4;
-    public static final int COLLECT_ALL = BAD_RELATIONSHIPS | DUPLICATE_NODES | EXTRA_COLUMNS;
+    interface Monitor
+    {
+        default void beforeProcessEvent()
+        {
+        }
+    }
+
+    static final Monitor NO_MONITOR = new Monitor()
+    {
+    };
+
+    static final int BAD_RELATIONSHIPS = 0x1;
+    static final int DUPLICATE_NODES = 0x2;
+    static final int EXTRA_COLUMNS = 0x4;
+
+    static final int COLLECT_ALL = BAD_RELATIONSHIPS | DUPLICATE_NODES | EXTRA_COLUMNS;
     public static final long UNLIMITED_TOLERANCE = -1;
+    static final int DEFAULT_BACK_PRESSURE_THRESHOLD = 10_000;
 
     private final PrintStream out;
     private final long tolerance;
     private final int collect;
+    private final int backPressureThreshold;
     private final boolean logBadEntries;
+    private final Monitor monitor;
 
     // volatile since one importer thread calls collect(), where this value is incremented and later the "main"
     // thread calls badEntries() to get a count.
     private final AtomicLong badEntries = new AtomicLong();
     private final AsyncEvents<ProblemReporter> logger;
     private final Thread eventProcessor;
+    private final LongAdder queueSize = new LongAdder();
 
     public BadCollector( OutputStream out, long tolerance, int collect )
     {
-        this( out, tolerance, collect, false );
+        this( out, tolerance, collect, DEFAULT_BACK_PRESSURE_THRESHOLD, false, NO_MONITOR );
     }
 
-    public BadCollector( OutputStream out, long tolerance, int collect, boolean skipBadEntriesLogging )
+    BadCollector( OutputStream out, long tolerance, int collect, int backPressureThreshold, boolean skipBadEntriesLogging, Monitor monitor )
     {
         this.out = new PrintStream( out );
         this.tolerance = tolerance;
         this.collect = collect;
+        this.backPressureThreshold = backPressureThreshold;
         this.logBadEntries = !skipBadEntriesLogging;
+        this.monitor = monitor;
         this.logger = new AsyncEvents<>( this::processEvent, AsyncEvents.Monitor.NONE );
         this.eventProcessor = new Thread( logger );
         this.eventProcessor.start();
@@ -90,7 +111,9 @@ public class BadCollector implements Collector
 
     private void processEvent( ProblemReporter report )
     {
+        monitor.beforeProcessEvent();
         out.println( report.message() );
+        queueSize.add( -1 );
     }
 
     @Override
@@ -130,8 +153,13 @@ public class BadCollector implements Collector
                 // We're within the threshold
                 if ( logBadEntries )
                 {
-                    // Send this to the logger
+                    // Send this to the logger... but first apply some back pressure if queue is growing big
+                    while ( queueSize.sum() >= backPressureThreshold )
+                    {
+                        LockSupport.parkNanos( TimeUnit.MILLISECONDS.toNanos( 10 ) );
+                    }
                     logger.send( report );
+                    queueSize.add( 1 );
                 }
                 return; // i.e. don't treat this as an exception
             }
@@ -149,6 +177,11 @@ public class BadCollector implements Collector
         try
         {
             logger.awaitTermination();
+            eventProcessor.join();
+        }
+        catch ( InterruptedException e )
+        {
+            Thread.currentThread().interrupt();
         }
         finally
         {
