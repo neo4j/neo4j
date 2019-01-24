@@ -165,7 +165,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData, AutoClos
     {
         if ( transaction instanceof KernelTransactionImplementation )
         {
-            return ((KernelTransactionImplementation) transaction).getMetaData();
+            return transaction.getMetaData();
         }
         else
         {

@@ -37,6 +37,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.kernel.impl.util.AutoCreatingHashMap.nested;
+import static org.neo4j.values.storable.Values.of;
 
 class ExpectedTransactionData
 {
@@ -44,18 +45,18 @@ class ExpectedTransactionData
     final Set<Relationship> expectedCreatedRelationships = new HashSet<>();
     final Set<Node> expectedDeletedNodes = new HashSet<>();
     final Set<Relationship> expectedDeletedRelationships = new HashSet<>();
-    final Map<Node, Map<String, PropertyEntryImpl<Node>>> expectedAssignedNodeProperties =
-            new AutoCreatingHashMap<>( nested( String.class, AutoCreatingHashMap.<PropertyEntryImpl<Node>>dontCreate() ) );
-    final Map<Relationship, Map<String, PropertyEntryImpl<Relationship>>> expectedAssignedRelationshipProperties =
-            new AutoCreatingHashMap<>( nested( String.class, AutoCreatingHashMap.<PropertyEntryImpl<Relationship>>dontCreate() ) );
-    final Map<Node, Map<String, PropertyEntryImpl<Node>>> expectedRemovedNodeProperties =
-            new AutoCreatingHashMap<>( nested( String.class, AutoCreatingHashMap.<PropertyEntryImpl<Node>>dontCreate() ) );
-    final Map<Relationship, Map<String, PropertyEntryImpl<Relationship>>> expectedRemovedRelationshipProperties =
-            new AutoCreatingHashMap<>( nested( String.class, AutoCreatingHashMap.<PropertyEntryImpl<Relationship>>dontCreate() ) );
-    final Map<Node, Set<String>> expectedAssignedLabels =
-            new AutoCreatingHashMap<>( AutoCreatingHashMap.<String>valuesOfTypeHashSet() );
-    final Map<Node, Set<String>> expectedRemovedLabels =
-            new AutoCreatingHashMap<>( AutoCreatingHashMap.<String>valuesOfTypeHashSet() );
+    private final Map<Node, Map<String, PropertyEntryImpl<Node>>> expectedAssignedNodeProperties =
+            new AutoCreatingHashMap<>( nested( AutoCreatingHashMap.dontCreate() ) );
+    private final Map<Relationship, Map<String, PropertyEntryImpl<Relationship>>> expectedAssignedRelationshipProperties =
+            new AutoCreatingHashMap<>( nested( AutoCreatingHashMap.dontCreate() ) );
+    private final Map<Node, Map<String, PropertyEntryImpl<Node>>> expectedRemovedNodeProperties =
+            new AutoCreatingHashMap<>( nested( AutoCreatingHashMap.dontCreate() ) );
+    private final Map<Relationship, Map<String, PropertyEntryImpl<Relationship>>> expectedRemovedRelationshipProperties =
+            new AutoCreatingHashMap<>( nested( AutoCreatingHashMap.dontCreate() ) );
+    private final Map<Node, Set<String>> expectedAssignedLabels =
+            new AutoCreatingHashMap<>( AutoCreatingHashMap.valuesOfTypeHashSet() );
+    private final Map<Node, Set<String>> expectedRemovedLabels =
+            new AutoCreatingHashMap<>( AutoCreatingHashMap.valuesOfTypeHashSet() );
     private final boolean ignoreAdditionalData;
 
     /**
@@ -126,7 +127,7 @@ class ExpectedTransactionData
     void assignedProperty( Node node, String key, Object value, Object valueBeforeTx )
     {
         valueBeforeTx = removeProperty( expectedRemovedNodeProperties, node, key, valueBeforeTx );
-        if ( !value.equals( valueBeforeTx ) )
+        if ( isDifferent( value, valueBeforeTx ) )
         {
             Map<String,PropertyEntryImpl<Node>> map = expectedAssignedNodeProperties.get( node );
             PropertyEntryImpl<Node> prev = map.get( key );
@@ -137,7 +138,7 @@ class ExpectedTransactionData
     void assignedProperty( Relationship rel, String key, Object value, Object valueBeforeTx )
     {
         valueBeforeTx = removeProperty( expectedRemovedRelationshipProperties, rel, key, valueBeforeTx );
-        if ( !value.equals( valueBeforeTx ) )
+        if ( isDifferent( value, valueBeforeTx ) )
         {
             Map<String,PropertyEntryImpl<Relationship>> map = expectedAssignedRelationshipProperties.get( rel );
             PropertyEntryImpl<Relationship> prev = map.get( key );
@@ -361,15 +362,14 @@ class ExpectedTransactionData
             Map<KEY, Map<String, PropertyEntryImpl<KEY>>> map )
     {
         Map<KEY, Map<String, PropertyEntryImpl<KEY>>> result = new HashMap<>();
-        for ( KEY key : map.keySet() )
+        for ( Map.Entry<KEY,Map<String,PropertyEntryImpl<KEY>>> entry : map.entrySet() )
         {
-            result.put( key, new HashMap<>( map.get( key ) ) );
+            result.put( entry.getKey(), new HashMap<>( entry.getValue() ) );
         }
         return result;
     }
 
-    <T extends PropertyContainer> void checkAssigned(
-            Map<T, Map<String, PropertyEntryImpl<T>>> map, PropertyEntry<T> entry )
+    private <T extends PropertyContainer> void checkAssigned( Map<T,Map<String,PropertyEntryImpl<T>>> map, PropertyEntry<T> entry )
     {
         PropertyEntryImpl<T> expected = fetchExpectedPropertyEntry( map, entry );
         if ( expected != null )
@@ -378,8 +378,7 @@ class ExpectedTransactionData
         }
     }
 
-    <T extends PropertyContainer> void checkRemoved(
-            Map<T, Map<String, PropertyEntryImpl<T>>> map, PropertyEntry<T> entry )
+    private <T extends PropertyContainer> void checkRemoved( Map<T,Map<String,PropertyEntryImpl<T>>> map, PropertyEntry<T> entry )
     {
         PropertyEntryImpl<T> expected = fetchExpectedPropertyEntry( map, entry );
         if ( expected != null )
@@ -388,8 +387,7 @@ class ExpectedTransactionData
         }
     }
 
-    <T extends PropertyContainer> PropertyEntryImpl<T> fetchExpectedPropertyEntry(
-            Map<T, Map<String, PropertyEntryImpl<T>>> map, PropertyEntry<T> entry )
+    private <T extends PropertyContainer> PropertyEntryImpl<T> fetchExpectedPropertyEntry( Map<T,Map<String,PropertyEntryImpl<T>>> map, PropertyEntry<T> entry )
     {
         T entity = entry.entity();
         boolean hasEntity = map.containsKey( entity );
@@ -410,5 +408,10 @@ class ExpectedTransactionData
             map.remove( entity );
         }
         return expectedEntry;
+    }
+
+    private static boolean isDifferent( Object value, Object valueBeforeTx )
+    {
+        return !of( value ).eq( of( valueBeforeTx ) );
     }
 }

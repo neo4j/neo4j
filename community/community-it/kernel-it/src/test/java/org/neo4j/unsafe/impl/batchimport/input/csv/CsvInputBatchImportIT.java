@@ -313,10 +313,10 @@ public class CsvInputBatchImportIT
         Map<String,String[]> expectedNodeNames = new HashMap<>();
         Map<String, Map<String,Consumer<Object>>> expectedNodePropertyVerifiers = new HashMap<>();
         Map<String/*start node name*/, Map<String/*end node name*/, Map<String, AtomicInteger>>> expectedRelationships =
-                new AutoCreatingHashMap<>( nested( String.class, nested( String.class, values( AtomicInteger.class ) ) ) );
+                new AutoCreatingHashMap<>( nested( nested( values( AtomicInteger.class ) ) ) );
         Map<String, AtomicLong> expectedNodeCounts = new AutoCreatingHashMap<>( values( AtomicLong.class ) );
         Map<String, Map<String, Map<String, AtomicLong>>> expectedRelationshipCounts =
-                new AutoCreatingHashMap<>( nested( String.class, nested( String.class, values( AtomicLong.class ) ) ) );
+                new AutoCreatingHashMap<>( nested( nested( values( AtomicLong.class ) ) ) );
         buildUpExpectedData( nodeData, relationshipData, expectedNodes, expectedNodeNames, expectedNodePropertyVerifiers,
                 expectedRelationships, expectedNodeCounts, expectedRelationshipCounts );
 

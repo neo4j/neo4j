@@ -19,21 +19,21 @@
  */
 package org.neo4j.kernel.impl.util;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.kernel.impl.util.AutoCreatingHashMap.nested;
 import static org.neo4j.kernel.impl.util.AutoCreatingHashMap.values;
 
-public class AutoCreatingHashMapTest
+class AutoCreatingHashMapTest
 {
     @Test
-    public void shouldCreateValuesIfMissing()
+    void shouldCreateValuesIfMissing()
     {
         // GIVEN
         Map<String, AtomicLong> map = new AutoCreatingHashMap<>( values( AtomicLong.class ) );
@@ -49,11 +49,11 @@ public class AutoCreatingHashMapTest
     }
 
     @Test
-    public void shouldCreateValuesEvenForNestedMaps()
+    void shouldCreateValuesEvenForNestedMaps()
     {
         // GIVEN
         Map<String, Map<String, Map<String, AtomicLong>>> map = new AutoCreatingHashMap<>(
-                nested( String.class, nested( String.class, values( AtomicLong.class ) ) ) );
+                nested( nested( values( AtomicLong.class ) ) ) );
         String keyLevelOne = "first";
         String keyLevelTwo = "second";
         String keyLevelThree = "third";

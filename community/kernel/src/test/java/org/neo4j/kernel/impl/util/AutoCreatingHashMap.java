@@ -135,7 +135,7 @@ public class AutoCreatingHashMap<K,V> extends HashMap<K,V>
      * @return a {@link Factory} that creates {@link AutoCreatingHashMap} instances as values, and where the
      * created maps have the supplied {@code nested} {@link Factory} as value factory.
      */
-    public static <K,V> Factory<Map<K,V>> nested( Class<K> keyClass, final Factory<V> nested )
+    public static <K,V> Factory<Map<K,V>> nested( final Factory<V> nested )
     {
         return () -> new AutoCreatingHashMap<>( nested );
     }
