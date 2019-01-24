@@ -74,6 +74,15 @@ class PlanDescriptionArgumentSerializerTests extends CypherFunSuite {
     )
   }
 
+  test("serialize and deduplicate variable names with regexy symbols") {
+    serialize(KeyNames(Seq("1 >=   version$@40, 2 <=   version$@352"))) should equal (
+      "1 >= version$, 2 <= version$"
+    )
+    serialize(KeyNames(Seq("1 >=   version\\@40, 2 <=   version\\@352"))) should equal (
+      "1 >= version\\, 2 <= version\\"
+    )
+  }
+
   test("should serialize point distance index seeks") {
     serialize(PointDistanceIndex("L", "location", "p", "300", inclusive = false)) should equal(":L(location) WHERE distance(_,p) < 300")
     serialize(PointDistanceIndex("L", "location", "p", "300", inclusive = true)) should equal(":L(location) WHERE distance(_,p) <= 300")
