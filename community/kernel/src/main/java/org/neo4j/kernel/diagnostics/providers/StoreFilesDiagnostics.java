@@ -27,13 +27,15 @@ import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 import java.util.TimeZone;
+import java.util.stream.Collectors;
 
 import org.neo4j.helpers.Format;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.database.Database;
-import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.internal.NativeIndexFileFilter;
 import org.neo4j.logging.Logger;
+import org.neo4j.storageengine.api.StorageEngine;
+import org.neo4j.storageengine.api.StoreFileMetadata;
 
 public class StoreFilesDiagnostics extends NamedDiagnosticsProvider
 {
@@ -132,11 +134,9 @@ public class StoreFilesDiagnostics extends NamedDiagnosticsProvider
 
         MappedFileCounter( Database database )
         {
-            mappedCandidates = Arrays.stream( StoreType.values() )
-                    .map( StoreType::getDatabaseFile )
-                    .flatMap( layout::file )
-                    .collect( toList() );
-            mappedIndexFilter = new NativeIndexFileFilter( layout.databaseDirectory() );
+            StorageEngine storageEngine = database.getDependencyResolver().resolveDependency( StorageEngine.class );
+            mappedCandidates = storageEngine.listStorageFiles().stream().map( StoreFileMetadata::file ).collect( Collectors.toList() );
+            mappedIndexFilter = new NativeIndexFileFilter( database.getDatabaseLayout().databaseDirectory() );
             this.database = database;
             this.layout = database.getDatabaseLayout();
         }
