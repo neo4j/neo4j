@@ -74,15 +74,8 @@ public class StoreInfoCommand implements AdminCommand
             Dependencies dependencies = new Dependencies();
             dependencies.satisfyDependencies( pageCache, databaseLayout, fileSystem, NullLogService.getInstance(), Config.defaults() );
             StoreVersionCheck storeVersionCheck = storageEngineFactory.versionCheck( dependencies );
-            String storeVersion;
-            try
-            {
-                storeVersion = storeVersionCheck.storeVersion();
-            }
-            catch ( Exception e )
-            {
-                throw new CommandFailed( String.format( "Could not find version metadata in store '%s'", databaseDirectory ) );
-            }
+            String storeVersion = storeVersionCheck.storeVersion()
+                    .orElseThrow( () -> new CommandFailed( String.format( "Could not find version metadata in store '%s'", databaseDirectory ) ) );
 
             final String fmt = "%-30s%s";
             out.accept( String.format( fmt, "Store format version:", storeVersion ) );

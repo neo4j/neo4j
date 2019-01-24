@@ -19,6 +19,8 @@
  */
 package org.neo4j.storageengine.api;
 
+import java.io.IOException;
+
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.common.DependencySatisfier;
 import org.neo4j.helpers.collection.Iterables;
@@ -57,9 +59,9 @@ public interface StorageEngineFactory
      */
     StorageEngine instantiate( DependencyResolver dependencyResolver, DependencySatisfier dependencySatisfier );
 
-    TransactionIdStore readOnlyTransactionIdStore( DependencyResolver dependencyResolver );
+    TransactionIdStore readOnlyTransactionIdStore( DependencyResolver dependencyResolver ) throws IOException;
 
-    LogVersionRepository readOnlyLogVersionRepository( DependencyResolver dependencyResolver );
+    LogVersionRepository readOnlyLogVersionRepository( DependencyResolver dependencyResolver ) throws IOException;
 
     /**
      * Instantiates a {@link ReadableStorageEngine} over a storage location without instantiating the full {@link StorageEngine}, just the readable parts.

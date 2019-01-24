@@ -19,16 +19,18 @@
  */
 package org.neo4j.kernel.impl.storemigration;
 
+import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.storageengine.api.StoreVersion;
 import org.neo4j.storageengine.api.format.Capability;
+import org.neo4j.storageengine.api.format.CapabilityType;
 
-class RecordStoreVersion implements StoreVersion
+public class RecordStoreVersion implements StoreVersion
 {
     private final String version;
     private final RecordFormats format;
 
-    RecordStoreVersion( String version, RecordFormats format )
+    public RecordStoreVersion( String version, RecordFormats format )
     {
         this.version = version;
         this.format = format;
@@ -44,5 +46,11 @@ class RecordStoreVersion implements StoreVersion
     public boolean hasCapability( Capability capability )
     {
         return format.hasCapability( capability );
+    }
+
+    @Override
+    public boolean hasCompatibleCapabilities( StoreVersion otherVersion, CapabilityType type )
+    {
+        return format.hasCompatibleCapabilities( RecordFormatSelector.selectForVersion( otherVersion.storeVersion() ), type );
     }
 }

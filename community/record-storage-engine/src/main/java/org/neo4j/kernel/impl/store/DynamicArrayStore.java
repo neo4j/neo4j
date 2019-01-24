@@ -33,7 +33,7 @@ import java.util.Collection;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.store.format.LuceneCapability;
+import org.neo4j.kernel.impl.store.format.Capability;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.UnsupportedFormatCapabilityException;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
@@ -114,8 +114,8 @@ public class DynamicArrayStore extends AbstractDynamicStore
     {
         super( file, idFile, configuration, idType, idGeneratorFactory, pageCache,
                 logProvider, TYPE_DESCRIPTOR, dataSizeFromConfiguration, recordFormats.dynamic(), recordFormats.storeVersion(), openOptions );
-        allowStorePointsAndTemporal = recordFormats.hasCapability( LuceneCapability.POINT_PROPERTIES )
-                && recordFormats.hasCapability( LuceneCapability.TEMPORAL_PROPERTIES );
+        allowStorePointsAndTemporal = recordFormats.hasCapability( Capability.POINT_PROPERTIES )
+                && recordFormats.hasCapability( Capability.TEMPORAL_PROPERTIES );
     }
 
     @Override
@@ -218,7 +218,7 @@ public class DynamicArrayStore extends AbstractDynamicStore
             byte[] bytes,
             DynamicRecordAllocator recordAllocator,
             boolean allowsStorage,
-            LuceneCapability storageCapability )
+            Capability storageCapability )
     {
         if ( allowsStorage )
         {
@@ -275,37 +275,37 @@ public class DynamicArrayStore extends AbstractDynamicStore
         else if ( type.equals( PointValue.class ) )
         {
             allocateFromCompositeType( target,GeometryType.encodePointArray( (PointValue[]) array ),
-                    recordAllocator, allowStorePointsAndTemporal, LuceneCapability.POINT_PROPERTIES );
+                    recordAllocator, allowStorePointsAndTemporal, Capability.POINT_PROPERTIES );
         }
         else if ( type.equals( LocalDate.class ) )
         {
             allocateFromCompositeType( target, TemporalType.encodeDateArray( (LocalDate[]) array ),
-                    recordAllocator, allowStorePointsAndTemporal, LuceneCapability.TEMPORAL_PROPERTIES );
+                    recordAllocator, allowStorePointsAndTemporal, Capability.TEMPORAL_PROPERTIES );
         }
         else if ( type.equals( LocalTime.class ) )
         {
             allocateFromCompositeType( target, TemporalType.encodeLocalTimeArray( (LocalTime[]) array ),
-                    recordAllocator, allowStorePointsAndTemporal, LuceneCapability.TEMPORAL_PROPERTIES );
+                    recordAllocator, allowStorePointsAndTemporal, Capability.TEMPORAL_PROPERTIES );
         }
         else if ( type.equals( LocalDateTime.class ) )
         {
             allocateFromCompositeType( target, TemporalType.encodeLocalDateTimeArray( (LocalDateTime[]) array ),
-                    recordAllocator, allowStorePointsAndTemporal, LuceneCapability.TEMPORAL_PROPERTIES );
+                    recordAllocator, allowStorePointsAndTemporal, Capability.TEMPORAL_PROPERTIES );
         }
         else if ( type.equals( OffsetTime.class ) )
         {
             allocateFromCompositeType( target, TemporalType.encodeTimeArray( (OffsetTime[]) array ),
-                    recordAllocator, allowStorePointsAndTemporal, LuceneCapability.TEMPORAL_PROPERTIES );
+                    recordAllocator, allowStorePointsAndTemporal, Capability.TEMPORAL_PROPERTIES );
         }
         else if ( type.equals( ZonedDateTime.class ) )
         {
             allocateFromCompositeType( target, TemporalType.encodeDateTimeArray( (ZonedDateTime[]) array ),
-                    recordAllocator, allowStorePointsAndTemporal, LuceneCapability.TEMPORAL_PROPERTIES );
+                    recordAllocator, allowStorePointsAndTemporal, Capability.TEMPORAL_PROPERTIES );
         }
         else if ( type.equals( DurationValue.class ) )
         {
             allocateFromCompositeType( target, TemporalType.encodeDurationArray( (DurationValue[]) array ),
-                    recordAllocator, allowStorePointsAndTemporal, LuceneCapability.TEMPORAL_PROPERTIES );
+                    recordAllocator, allowStorePointsAndTemporal, Capability.TEMPORAL_PROPERTIES );
         }
         else
         {

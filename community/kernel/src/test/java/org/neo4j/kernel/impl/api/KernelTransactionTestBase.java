@@ -47,8 +47,6 @@ import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.NoOpClient;
 import org.neo4j.kernel.impl.locking.SimpleStatementLocks;
 import org.neo4j.kernel.impl.locking.StatementLocks;
-import org.neo4j.kernel.impl.store.MetaDataStore;
-import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
@@ -85,14 +83,13 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo.EMBEDDED_CONNECTION;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
-import static org.neo4j.test.MockedNeoStores.mockedTokenHolders;
+import static org.neo4j.test.rule.DatabaseRule.mockedTokenHolders;
 
 public class KernelTransactionTestBase
 {
     protected final StorageEngine storageEngine = mock( StorageEngine.class );
-    protected final NeoStores neoStores = mock( NeoStores.class );
-    protected final MetaDataStore metaDataStore = mock( MetaDataStore.class );
     protected final StorageReader storageReader = mock( StorageReader.class );
+    protected final TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
     protected final CommandCreationContext commandCreationContext = mock( CommandCreationContext.class );
     protected final TransactionHooks hooks = new TransactionHooks();
     protected final TransactionMonitor transactionMonitor = mock( TransactionMonitor.class );
@@ -114,9 +111,9 @@ public class KernelTransactionTestBase
         collectionsFactory = Mockito.spy( new TestCollectionsFactory() );
         when( headerInformation.getAdditionalHeader() ).thenReturn( new byte[0] );
         when( headerInformationFactory.create() ).thenReturn( headerInformation );
-        when( neoStores.getMetaDataStore() ).thenReturn( metaDataStore );
         when( storageEngine.newReader() ).thenReturn( storageReader );
         when( storageEngine.newCommandCreationContext() ).thenReturn( commandCreationContext );
+        when( storageEngine.transactionIdStore() ).thenReturn( transactionIdStore );
         doAnswer( invocation -> ((Collection<StorageCommand>) invocation.getArgument(0) ).add( new TestCommand() ) )
             .when( storageEngine ).createCommands(
                     anyCollection(),

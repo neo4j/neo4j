@@ -23,8 +23,6 @@ import org.neo4j.io.ByteUnit;
 import org.neo4j.io.os.OsBeanUtil;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
-import org.neo4j.unsafe.impl.batchimport.staging.Stage;
-import org.neo4j.unsafe.impl.batchimport.staging.Step;
 
 import static java.lang.Math.min;
 import static java.lang.Math.round;
@@ -46,8 +44,7 @@ public interface Configuration
     int DEFAULT_MAX_MEMORY_PERCENT = 90;
 
     /**
-     * A {@link Stage} works with batches going through one or more {@link Step steps} where one or more threads
-     * process batches at each {@link Step}. This setting dictates how big the batches that are passed around are.
+     * Size of batches that are being sent through pipelines for processing.
      */
     default int batchSize()
     {

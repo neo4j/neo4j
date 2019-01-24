@@ -39,8 +39,6 @@ import org.neo4j.kernel.impl.api.SchemaState;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.index.schema.IndexDescriptor;
 import org.neo4j.kernel.impl.locking.LockService;
-import org.neo4j.kernel.impl.store.NeoStores;
-import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.transaction.state.storeview.NeoStoreIndexStoreView;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
@@ -112,10 +110,6 @@ public class BatchingMultipleIndexPopulatorTest
     public void populateFromQueuePopulatesWhenThresholdReached() throws Exception
     {
         setProperty( QUEUE_THRESHOLD_NAME, 2 );
-
-        NeoStores neoStores = mock( NeoStores.class );
-        NodeStore nodeStore = mock( NodeStore.class );
-        when( neoStores.getNodeStore() ).thenReturn( nodeStore );
 
         NeoStoreIndexStoreView storeView =
                 new NeoStoreIndexStoreView( LockService.NO_LOCK_SERVICE, () -> mock( StorageReader.class ) );

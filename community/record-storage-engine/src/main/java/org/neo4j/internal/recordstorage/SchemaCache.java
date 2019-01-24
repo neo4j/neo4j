@@ -43,7 +43,7 @@ import org.neo4j.common.EntityType;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptorPredicates;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
-import org.neo4j.kernel.impl.index.schema.ConstraintRule;
+import org.neo4j.kernel.impl.store.record.ConstraintRule;
 import org.neo4j.storageengine.api.SchemaRule;
 import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.storageengine.api.schema.ConstraintDescriptor;
@@ -394,7 +394,7 @@ public class SchemaCache
             if ( constraintRuleById.containsKey( id ) )
             {
                 ConstraintRule rule = constraintRuleById.remove( id );
-                constraints.remove( rule.getConstraintDescriptor() );
+                constraints.remove( rule );
             }
             else if ( indexDescriptorById.containsKey( id ) )
             {

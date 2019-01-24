@@ -22,15 +22,16 @@ package org.neo4j.kernel.impl.transaction;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.util.ArrayQueueOutOfOrderSequence;
 import org.neo4j.kernel.impl.util.OutOfOrderSequence;
 import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.storageengine.api.TransactionIdStore;
 
+import static org.neo4j.storageengine.api.LogVersionRepository.BASE_TX_LOG_BYTE_OFFSET;
+import static org.neo4j.storageengine.api.LogVersionRepository.BASE_TX_LOG_VERSION;
+
 /**
- * Duplicates the {@link TransactionIdStore} parts of {@link NeoStores}, which is somewhat bad to have to keep
- * in sync.
+ * Simple implementation of a {@link TransactionIdStore}.
  */
 public class SimpleTransactionIdStore implements TransactionIdStore
 {

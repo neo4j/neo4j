@@ -120,7 +120,7 @@ public abstract class BaseRecordFormats implements RecordFormats
     }
 
     @Override
-    public boolean hasCapability( LuceneCapability capability )
+    public boolean hasCapability( Capability capability )
     {
         return contains( capabilities(), capability );
     }

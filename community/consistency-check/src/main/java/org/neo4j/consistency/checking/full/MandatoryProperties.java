@@ -31,10 +31,11 @@ import java.util.function.Function;
 import org.neo4j.consistency.RecordType;
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.report.ConsistencyReporter;
+import org.neo4j.internal.recordstorage.RecordStorageEngineFactory;
 import org.neo4j.internal.recordstorage.SchemaRuleAccess;
 import org.neo4j.kernel.impl.core.TokenHolders;
-import org.neo4j.kernel.impl.index.schema.ConstraintRule;
 import org.neo4j.kernel.impl.store.StoreAccess;
+import org.neo4j.kernel.impl.store.record.ConstraintRule;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
@@ -54,13 +55,13 @@ public class MandatoryProperties
     public MandatoryProperties( StoreAccess storeAccess )
     {
         this.storeAccess = storeAccess;
-        TokenHolders tokenHolders = TokenHolders.readOnlyTokenHolders( storeAccess.getRawNeoStores() );
+        TokenHolders tokenHolders = RecordStorageEngineFactory.readOnlyTokenHolders( storeAccess.getRawNeoStores() );
         SchemaRuleAccess schemaRuleAccess = SchemaRuleAccess.getSchemaRuleAccess( storeAccess.getSchemaStore(), tokenHolders );
-        for ( ConstraintRule rule : constraintsIgnoringMalformed( schemaRuleAccess ) )
+        for ( ConstraintRule constraint : constraintsIgnoringMalformed( schemaRuleAccess ) )
         {
-            if ( rule.getConstraintDescriptor().enforcesPropertyExistence() )
+            if ( constraint.enforcesPropertyExistence() )
             {
-                rule.schema().processWith( constraintRecorder );
+                constraint.schema().processWith( constraintRecorder );
             }
         }
     }

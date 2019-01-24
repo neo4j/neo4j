@@ -19,6 +19,8 @@
  */
 package org.neo4j.internal.recordstorage;
 
+import java.io.IOException;
+
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.common.DependencySatisfier;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -34,20 +36,26 @@ import org.neo4j.kernel.impl.core.TokenHolder;
 import org.neo4j.kernel.impl.core.TokenHolders;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
+import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.id.IdController;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.storemigration.RecordStorageMigrator;
+import org.neo4j.kernel.impl.storemigration.RecordStoreVersion;
 import org.neo4j.kernel.impl.storemigration.RecordStoreVersionCheck;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.ReadableStorageEngine;
+import org.neo4j.storageengine.api.LogVersionRepository;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageEngineFactory;
+import org.neo4j.storageengine.api.StoreVersion;
 import org.neo4j.storageengine.api.StoreVersionCheck;
+import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.storageengine.migration.StoreMigrationParticipant;
 
-public class RecordStorageEngineFactory extends StorageEngineFactory
+public class RecordStorageEngineFactory implements StorageEngineFactory
 {
     @Override
     public StoreVersionCheck versionCheck( DependencyResolver dependencyResolver )
@@ -58,6 +66,13 @@ public class RecordStorageEngineFactory extends StorageEngineFactory
                 dependencyResolver.resolveDependency( DatabaseLayout.class ),
                 dependencyResolver.resolveDependency( LogService.class ).getInternalLogProvider(),
                 dependencyResolver.resolveDependency( Config.class ) );
+    }
+
+    @Override
+    public StoreVersion versionInformation( String storeVersion )
+    {
+        RecordFormats formats = RecordFormatSelector.selectForVersion( storeVersion );
+        return new RecordStoreVersion( storeVersion, formats );
     }
 
     @Override
@@ -107,6 +122,21 @@ public class RecordStorageEngineFactory extends StorageEngineFactory
                 dependencyResolver.resolveDependency( FileSystemAbstraction.class ),
                 dependencyResolver.resolveDependency( LogService.class ).getInternalLogProvider(),
                 dependencyResolver.resolveDependency( VersionContextSupplier.class ) );
+    }
+
+    public TransactionIdStore readOnlyTransactionIdStore( DependencyResolver dependencyResolver ) throws IOException
+    {
+        return new ReadOnlyTransactionIdStore(
+                dependencyResolver.resolveDependency( PageCache.class ),
+                dependencyResolver.resolveDependency( DatabaseLayout.class ) );
+    }
+
+    @Override
+    public LogVersionRepository readOnlyLogVersionRepository( DependencyResolver dependencyResolver ) throws IOException
+    {
+        return new ReadOnlyLogVersionRepository(
+                dependencyResolver.resolveDependency( PageCache.class ),
+                dependencyResolver.resolveDependency( DatabaseLayout.class ) );
     }
 
     public static void setInitialTokens( TokenHolders tokenHolders, NeoStores neoStores )

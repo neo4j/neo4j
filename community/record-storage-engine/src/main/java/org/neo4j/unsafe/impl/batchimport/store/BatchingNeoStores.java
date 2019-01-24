@@ -52,7 +52,7 @@ import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
-import org.neo4j.kernel.impl.store.format.LuceneCapability;
+import org.neo4j.kernel.impl.store.format.Capability;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
@@ -498,7 +498,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
     public boolean determineDoubleRelationshipRecordUnits( Estimates inputEstimates )
     {
         doubleRelationshipRecordUnits =
-                recordFormats.hasCapability( LuceneCapability.SECONDARY_RECORD_UNITS ) &&
+                recordFormats.hasCapability( Capability.SECONDARY_RECORD_UNITS ) &&
                 inputEstimates.numberOfRelationships() > DOUBLE_RELATIONSHIP_RECORD_UNIT_THRESHOLD;
         return doubleRelationshipRecordUnits;
     }

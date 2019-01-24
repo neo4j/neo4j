@@ -17,13 +17,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api;
+package org.neo4j.kernel.impl.store.counts.keys;
 
 import org.junit.Test;
 
 import java.util.Arrays;
-
-import org.neo4j.kernel.impl.store.counts.keys.CountsKey;
 
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.nodeKey;

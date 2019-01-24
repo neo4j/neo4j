@@ -24,8 +24,8 @@ import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.ConstraintViolationTransactionFailureException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.api.index.TentativeConstraintIndexProxy;
-import org.neo4j.kernel.impl.index.schema.ConstraintRule;
 import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.store.record.ConstraintRule;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.storageengine.api.IndexUpdateListener;
@@ -91,7 +91,7 @@ class IntegrityValidator
         if ( schemaRule instanceof ConstraintRule )
         {
             ConstraintRule constraintRule = (ConstraintRule) schemaRule;
-            if ( constraintRule.getConstraintDescriptor().enforcesUniqueness() )
+            if ( constraintRule.enforcesUniqueness() )
             {
                 long ownedIndex = constraintRule.getOwnedIndex();
                 try

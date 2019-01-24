@@ -27,8 +27,8 @@ import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.internal.kernel.api.exceptions.schema.MalformedSchemaRuleException;
 import org.neo4j.internal.recordstorage.SchemaRuleAccess;
-import org.neo4j.kernel.impl.index.schema.ConstraintRule;
 import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
+import org.neo4j.kernel.impl.store.record.ConstraintRule;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
@@ -155,14 +155,14 @@ public class SchemaRecordCheck implements RecordCheck<DynamicRecord, Consistency
         }
 
         @Override
-        public void checkConstraintRule( ConstraintRule rule, DynamicRecord record,
+        public void checkConstraintRule( ConstraintRule constraint, DynamicRecord record,
                 RecordAccess records, CheckerEngine<DynamicRecord,ConsistencyReport.SchemaConsistencyReport> engine )
         {
-            checkSchema( rule, record, records, engine );
+            checkSchema( constraint, record, records, engine );
 
-            if ( rule.getConstraintDescriptor().enforcesUniqueness() )
+            if ( constraint.enforcesUniqueness() )
             {
-                DynamicRecord previousObligation = indexObligations.put( rule.getOwnedIndex(), record.clone() );
+                DynamicRecord previousObligation = indexObligations.put( constraint.getOwnedIndex(), record.clone() );
                 if ( previousObligation != null )
                 {
                     engine.report().duplicateObligation( previousObligation );
@@ -206,19 +206,19 @@ public class SchemaRecordCheck implements RecordCheck<DynamicRecord, Consistency
         }
 
         @Override
-        public void checkConstraintRule( ConstraintRule rule, DynamicRecord record,
+        public void checkConstraintRule( ConstraintRule constraint, DynamicRecord record,
                 RecordAccess records, CheckerEngine<DynamicRecord,ConsistencyReport.SchemaConsistencyReport> engine )
         {
-            if ( rule.getConstraintDescriptor().enforcesUniqueness() )
+            if ( constraint.enforcesUniqueness() )
             {
-                DynamicRecord obligation = constraintObligations.get( rule.getId() );
+                DynamicRecord obligation = constraintObligations.get( constraint.getId() );
                 if ( obligation == null )
                 {
                     engine.report().missingObligation( SchemaRule.Kind.CONSTRAINT_INDEX_RULE );
                 }
                 else
                 {
-                    if ( obligation.getId() != rule.getOwnedIndex() )
+                    if ( obligation.getId() != constraint.getOwnedIndex() )
                     {
                         engine.report().uniquenessConstraintNotReferencingBack( obligation );
                     }

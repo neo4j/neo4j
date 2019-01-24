@@ -89,7 +89,7 @@ import static org.neo4j.kernel.api.schema.constraints.ConstraintDescriptorFactor
 import static org.neo4j.kernel.api.schema.constraints.ConstraintDescriptorFactory.uniqueForLabel;
 import static org.neo4j.kernel.api.schema.constraints.ConstraintDescriptorFactory.uniqueForSchema;
 import static org.neo4j.kernel.impl.newapi.TwoPhaseNodeForRelationshipLockingTest.returnRelationships;
-import static org.neo4j.test.MockedNeoStores.mockedTokenHolders;
+import static org.neo4j.test.rule.DatabaseRule.mockedTokenHolders;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 
 class OperationsLockTest
@@ -197,7 +197,7 @@ class OperationsLockTest
     }
 
     @Test
-    void shouldAcquireNodeLocksWhenDeletingRelationshipInOrderOfAscendingId() throws Exception
+    void shouldAcquireNodeLocksWhenDeletingRelationshipInOrderOfAscendingId()
     {
         // GIVEN
         final long relationshipId = 10;
@@ -401,7 +401,7 @@ class OperationsLockTest
     }
 
     @Test
-    void shouldNotAcquireEntityWriteLockBeforeDeletingJustCreatedNode() throws Exception
+    void shouldNotAcquireEntityWriteLockBeforeDeletingJustCreatedNode()
     {
         // THEN
         txState.nodeDoCreate( 123 );

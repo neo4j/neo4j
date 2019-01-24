@@ -70,7 +70,7 @@ import static org.mockito.Mockito.mock;
 import static org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo.EMBEDDED_CONNECTION;
 import static org.neo4j.internal.kernel.api.security.SecurityContext.AUTH_DISABLED;
 import static org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier.ON_HEAP;
-import static org.neo4j.test.MockedNeoStores.mockedTokenHolders;
+import static org.neo4j.test.rule.DatabaseRule.mockedTokenHolders;
 
 public class KernelTransactionTerminationTest
 {

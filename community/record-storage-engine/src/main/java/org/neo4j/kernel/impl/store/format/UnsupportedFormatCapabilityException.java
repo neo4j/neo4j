@@ -23,7 +23,7 @@ import static java.lang.String.format;
 
 public class UnsupportedFormatCapabilityException extends RuntimeException
 {
-    public UnsupportedFormatCapabilityException( LuceneCapability capability )
+    public UnsupportedFormatCapabilityException( Capability capability )
     {
         super( format( "Current record format does not support %s. " +
                         "Please upgrade your store to the format that support requested capability.",

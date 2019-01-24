@@ -25,9 +25,9 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 
+import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.kernel.impl.core.DelegatingTokenHolder;
 import org.neo4j.kernel.impl.core.TokenHolder;
-import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.storageengine.api.schema.ConstraintDescriptor;
 import org.neo4j.storageengine.api.schema.SchemaDescriptor;
 import org.neo4j.values.storable.Value;
@@ -278,7 +278,7 @@ public class StubStorageCursors implements StorageReader
 
     class EntityData<SELF> extends Data<SELF>
     {
-        long propertyId = Record.NO_NEXT_PROPERTY.longValue();
+        long propertyId = Read.NO_ID;
 
         public SELF propertyId( long propertyId )
         {
@@ -301,7 +301,7 @@ public class StubStorageCursors implements StorageReader
     {
         private final long id;
         private long[] labels = EMPTY_LONG_ARRAY;
-        private long firstRelationship = Record.NO_NEXT_RELATIONSHIP.longValue();
+        private long firstRelationship = NO_ID;
 
         NodeData( long id )
         {

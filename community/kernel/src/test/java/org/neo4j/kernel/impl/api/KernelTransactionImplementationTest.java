@@ -419,7 +419,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
             // WHEN committing it at a later point
             clock.forward( 5, MILLISECONDS );
             // ...and simulating some other transaction being committed
-            when( metaDataStore.getLastCommittedTransactionId() ).thenReturn( 7L );
+            when( transactionIdStore.getLastCommittedTransactionId() ).thenReturn( 7L );
             transaction.success();
         }
 

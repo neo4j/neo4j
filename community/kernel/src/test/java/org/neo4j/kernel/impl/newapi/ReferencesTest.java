@@ -30,6 +30,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
+import static org.neo4j.internal.kernel.api.Read.NO_ID;
 import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.DENSE;
 import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.DENSE_SELECTION;
 import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.NO_INCOMING_OF_TYPE;
@@ -38,7 +39,6 @@ import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.NO_OUTG
 import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.SELECTION;
 import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.clearEncoding;
 import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.parseEncoding;
-import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
 
 public class ReferencesTest
 {
@@ -48,12 +48,12 @@ public class ReferencesTest
     @Test
     public void shouldPreserveNoId()
     {
-        assertThat( RelationshipReferenceEncoding.encodeDense( NO_ID ), equalTo( (long) NO_ID ) );
-        assertThat( RelationshipReferenceEncoding.encodeSelection( NO_ID ), equalTo( (long) NO_ID ) );
-        assertThat( RelationshipReferenceEncoding.encodeDenseSelection( NO_ID ), equalTo( (long) NO_ID ) );
-        assertThat( RelationshipReferenceEncoding.encodeNoIncoming( NO_ID ), equalTo( (long) NO_ID ) );
-        assertThat( RelationshipReferenceEncoding.encodeNoOutgoing( NO_ID ), equalTo( (long) NO_ID ) );
-        assertThat( RelationshipReferenceEncoding.encodeNoLoops( NO_ID ), equalTo( (long) NO_ID ) );
+        assertThat( RelationshipReferenceEncoding.encodeDense( NO_ID ), equalTo( NO_ID ) );
+        assertThat( RelationshipReferenceEncoding.encodeSelection( NO_ID ), equalTo( NO_ID ) );
+        assertThat( RelationshipReferenceEncoding.encodeDenseSelection( NO_ID ), equalTo( NO_ID ) );
+        assertThat( RelationshipReferenceEncoding.encodeNoIncoming( (int) NO_ID ), equalTo( NO_ID ) );
+        assertThat( RelationshipReferenceEncoding.encodeNoOutgoing( (int) NO_ID ), equalTo( NO_ID ) );
+        assertThat( RelationshipReferenceEncoding.encodeNoLoops( (int) NO_ID ), equalTo( NO_ID ) );
     }
 
     @Test

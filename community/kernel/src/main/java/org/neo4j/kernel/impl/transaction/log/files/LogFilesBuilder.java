@@ -233,7 +233,7 @@ public class LogFilesBuilder
         return configThreshold;
     }
 
-    private Supplier<LogVersionRepository> getLogVersionRepositorySupplier()
+    private Supplier<LogVersionRepository> getLogVersionRepositorySupplier() throws IOException
     {
         if ( logVersionRepository != null )
         {
@@ -263,7 +263,7 @@ public class LogFilesBuilder
         }
     }
 
-    private LongSupplier lastCommittedIdSupplier()
+    private LongSupplier lastCommittedIdSupplier() throws IOException
     {
         if ( lastCommittedTransactionIdSupplier != null )
         {
@@ -298,7 +298,7 @@ public class LogFilesBuilder
         }
     }
 
-    private LongSupplier committingIdSupplier()
+    private LongSupplier committingIdSupplier() throws IOException
     {
         if ( transactionIdStore != null )
         {
@@ -329,7 +329,7 @@ public class LogFilesBuilder
         }
     }
 
-    private TransactionIdStore readOnlyTransactionIdStore()
+    private TransactionIdStore readOnlyTransactionIdStore() throws IOException
     {
         StorageEngineFactory storageEngineFactory = StorageEngineFactory.selectStorageEngine( Service.load( StorageEngineFactory.class ) );
         Dependencies dependencies = new Dependencies();
@@ -337,7 +337,7 @@ public class LogFilesBuilder
         return storageEngineFactory.readOnlyTransactionIdStore( dependencies );
     }
 
-    private LogVersionRepository readOnlyLogVersionRepository()
+    private LogVersionRepository readOnlyLogVersionRepository() throws IOException
     {
         StorageEngineFactory storageEngineFactory = StorageEngineFactory.selectStorageEngine( Service.load( StorageEngineFactory.class ) );
         Dependencies dependencies = new Dependencies();

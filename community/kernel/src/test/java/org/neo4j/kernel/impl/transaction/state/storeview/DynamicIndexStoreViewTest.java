@@ -34,16 +34,12 @@ import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.impl.api.index.EntityUpdates;
 import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.kernel.impl.locking.LockService;
-import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.register.Register;
-import org.neo4j.register.Registers;
 import org.neo4j.storageengine.api.NodeLabelUpdate;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.StubStorageCursors;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -53,7 +49,6 @@ public class DynamicIndexStoreViewTest
 {
     private final LabelScanStore labelScanStore = mock( LabelScanStore.class );
     private final StubStorageCursors cursors = new StubStorageCursors();
-    private final CountsTracker countStore = mock( CountsTracker.class );
     private final Visitor<EntityUpdates,Exception> propertyUpdateVisitor = mock( Visitor.class );
     private final Visitor<NodeLabelUpdate,Exception> labelUpdateVisitor = mock( Visitor.class );
     private final IntPredicate propertyKeyIdFilter = mock( IntPredicate.class );
@@ -85,9 +80,6 @@ public class DynamicIndexStoreViewTest
             cursors.withNode( id );
         }
 
-        mockLabelNodeCount( countStore, 2 );
-        mockLabelNodeCount( countStore, 6 );
-
         DynamicIndexStoreView storeView = dynamicIndexStoreView();
         StoreScan<Exception> storeScan = storeView.visitNodes( new int[]{2, 6}, propertyKeyIdFilter, propertyUpdateVisitor, labelUpdateVisitor, false );
         storeScan.run();
@@ -101,11 +93,5 @@ public class DynamicIndexStoreViewTest
         Supplier<StorageReader> storageReaderSupplier = () -> cursors;
         return new DynamicIndexStoreView( new NeoStoreIndexStoreView( locks, storageReaderSupplier ), labelScanStore,
                 locks, storageReaderSupplier, NullLogProvider.getInstance() );
-    }
-
-    private void mockLabelNodeCount( CountsTracker countStore, int labelId )
-    {
-        Register.DoubleLongRegister register = Registers.newDoubleLongRegister( labelId, labelId );
-        when( countStore.nodeCount( eq( labelId ), any( Register.DoubleLongRegister.class ) ) ).thenReturn( register );
     }
 }

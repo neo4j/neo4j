@@ -67,9 +67,9 @@ public abstract class ConstraintDescriptor implements org.neo4j.storageengine.ap
     }
 
     @Override
-    public final boolean isSame( Supplier supplier )
+    public final boolean isSame( org.neo4j.storageengine.api.schema.ConstraintDescriptor descriptor )
     {
-        return this.equals( supplier.getConstraintDescriptor() );
+        return this.equals( descriptor );
     }
 
     @Override

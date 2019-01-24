@@ -21,6 +21,9 @@ package org.neo4j.unsafe.impl.batchimport;
 
 import org.neo4j.storageengine.api.TransactionIdStore;
 
+import static org.neo4j.storageengine.api.LogVersionRepository.BASE_TX_LOG_BYTE_OFFSET;
+import static org.neo4j.storageengine.api.LogVersionRepository.BASE_TX_LOG_VERSION;
+
 /**
  * Migrating a store uses the {@link ParallelBatchImporter} to do so, where node/relationship stores
  * are created with data read from legacy node/relationship stores. The batch import also populates
@@ -64,13 +67,13 @@ public interface AdditionalInitialIds
         @Override
         public long lastCommittedTransactionLogVersion()
         {
-            return TransactionIdStore.BASE_TX_LOG_VERSION;
+            return BASE_TX_LOG_VERSION;
         }
 
         @Override
         public long lastCommittedTransactionLogByteOffset()
         {
-            return TransactionIdStore.BASE_TX_LOG_BYTE_OFFSET;
+            return BASE_TX_LOG_BYTE_OFFSET;
         }
     };
 }

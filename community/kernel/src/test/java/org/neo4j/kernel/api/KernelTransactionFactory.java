@@ -60,7 +60,7 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo.EMBEDDED_CONNECTION;
 import static org.neo4j.kernel.impl.transaction.tracing.TransactionTracer.NULL;
 import static org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier.ON_HEAP;
-import static org.neo4j.test.MockedNeoStores.mockedTokenHolders;
+import static org.neo4j.test.rule.DatabaseRule.mockedTokenHolders;
 
 public class KernelTransactionFactory
 {

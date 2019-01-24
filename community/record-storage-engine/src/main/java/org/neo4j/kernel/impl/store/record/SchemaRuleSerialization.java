@@ -29,13 +29,11 @@ import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema.constraints.NodeKeyConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constraints.UniquenessConstraintDescriptor;
-import org.neo4j.kernel.impl.index.schema.ConstraintRule;
 import org.neo4j.kernel.impl.index.schema.IndexDescriptor;
 import org.neo4j.kernel.impl.index.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
 import org.neo4j.storageengine.api.SchemaRule;
 import org.neo4j.storageengine.api.StorageIndexReference;
-import org.neo4j.storageengine.api.schema.ConstraintDescriptor;
 import org.neo4j.storageengine.api.schema.LabelSchemaDescriptor;
 import org.neo4j.storageengine.api.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.storageengine.api.schema.SchemaComputer;
@@ -156,17 +154,16 @@ public class SchemaRuleSerialization
 
     /**
      * Serialize the provided ConstraintRule onto the target buffer
-     * @param constraintRule the ConstraintRule to serialize
+     * @param constraint the ConstraintRule to serialize
      * @throws IllegalStateException if the ConstraintRule is of type unique, but the owned index has not been set
      */
-    public static byte[] serialize( ConstraintRule constraintRule )
+    public static byte[] serialize( ConstraintRule constraint )
     {
-        ByteBuffer target = ByteBuffer.allocate( lengthOf( constraintRule ) );
+        ByteBuffer target = ByteBuffer.allocate( lengthOf( constraint ) );
         target.putInt( LEGACY_LABEL_OR_REL_TYPE_ID );
         target.put( CONSTRAINT_RULE );
 
-        ConstraintDescriptor constraintDescriptor = constraintRule.getConstraintDescriptor();
-        switch ( constraintDescriptor.type() )
+        switch ( constraint.type() )
         {
         case EXISTS:
             target.put( EXISTS_CONSTRAINT );
@@ -174,21 +171,21 @@ public class SchemaRuleSerialization
 
         case UNIQUE:
             target.put( UNIQUE_CONSTRAINT );
-            target.putLong( constraintRule.getOwnedIndex() );
+            target.putLong( constraint.getOwnedIndex() );
             break;
 
         case UNIQUE_EXISTS:
             target.put( UNIQUE_EXISTS_CONSTRAINT );
-            target.putLong( constraintRule.getOwnedIndex() );
+            target.putLong( constraint.getOwnedIndex() );
             break;
 
         default:
             throw new UnsupportedOperationException( format( "Got unknown index descriptor type '%s'.",
-                    constraintDescriptor.type() ) );
+                    constraint.type() ) );
         }
 
-        constraintDescriptor.schema().processWith( new SchemaDescriptorSerializer( target ) );
-        UTF8.putEncodedStringInto( constraintRule.getName(), target );
+        constraint.schema().processWith( new SchemaDescriptorSerializer( target ) );
+        UTF8.putEncodedStringInto( constraint.getName(), target );
         return target.array();
     }
 
@@ -218,23 +215,22 @@ public class SchemaRuleSerialization
 
     /**
      * Compute the byte size needed to serialize the provided ConstraintRule using serialize.
-     * @param constraintRule the ConstraintRule
+     * @param constraint the ConstraintRule
      * @return the byte size of ConstraintRule
      */
-    static int lengthOf( ConstraintRule constraintRule )
+    static int lengthOf( ConstraintRule constraint )
     {
         int length = 4; // legacy label or relType id
         length += 1; // schema rule type
 
         length += 1; // constraint type
-        ConstraintDescriptor constraintDescriptor = constraintRule.getConstraintDescriptor();
-        if ( constraintDescriptor.enforcesUniqueness() )
+        if ( constraint.enforcesUniqueness() )
         {
             length += 8; // owned index id
         }
 
-        length += constraintDescriptor.schema().computeWith( schemaSizeComputer );
-        length += UTF8.computeRequiredByteBufferSize( constraintRule.getName() );
+        length += constraint.schema().computeWith( schemaSizeComputer );
+        length += UTF8.computeRequiredByteBufferSize( constraint.getName() );
         return length;
     }
 

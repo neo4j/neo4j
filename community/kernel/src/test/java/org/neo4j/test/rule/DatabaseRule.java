@@ -47,6 +47,7 @@ import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.context.TransactionVersionContextSupplier;
 import org.neo4j.kernel.impl.core.DatabasePanicEventGenerator;
+import org.neo4j.kernel.impl.core.TokenHolder;
 import org.neo4j.kernel.impl.core.TokenHolders;
 import org.neo4j.kernel.impl.coreapi.CoreAPIAvailabilityGuard;
 import org.neo4j.kernel.impl.factory.AccessCapability;
@@ -97,7 +98,6 @@ import static org.neo4j.graphdb.factory.GraphDatabaseSettings.DEFAULT_DATABASE_N
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.default_schema_provider;
 import static org.neo4j.kernel.api.index.IndexProvider.EMPTY;
 import static org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier.ON_HEAP;
-import static org.neo4j.test.MockedNeoStores.mockedTokenHolders;
 
 public class DatabaseRule extends ExternalResource
 {
@@ -550,5 +550,13 @@ public class DatabaseRule extends ExternalResource
         {
             return databaseMigratorFactory;
         }
+    }
+
+    public static TokenHolders mockedTokenHolders()
+    {
+        return new TokenHolders(
+                mock( TokenHolder.class ),
+                mock( TokenHolder.class ),
+                mock( TokenHolder.class ) );
     }
 }

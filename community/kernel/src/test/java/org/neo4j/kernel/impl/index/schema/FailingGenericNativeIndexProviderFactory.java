@@ -47,6 +47,7 @@ import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
+import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.storageengine.migration.StoreMigrationParticipant;
 
@@ -273,9 +274,9 @@ public class FailingGenericNativeIndexProviderFactory extends ExtensionFactory<G
             }
 
             @Override
-            public StoreMigrationParticipant storeMigrationParticipant( FileSystemAbstraction fs, PageCache pageCache )
+            public StoreMigrationParticipant storeMigrationParticipant( FileSystemAbstraction fs, PageCache pageCache, StorageEngineFactory storageEngineFactory )
             {
-                return actualProvider.storeMigrationParticipant( fs, pageCache );
+                return actualProvider.storeMigrationParticipant( fs, pageCache, storageEngineFactory );
             }
         };
     }

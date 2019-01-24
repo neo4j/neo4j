@@ -17,16 +17,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction.state;
+package org.neo4j.internal.recordstorage;
 
+import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
 
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.impl.store.StoreHeader;
-import org.neo4j.kernel.impl.store.format.CapabilityType;
 import org.neo4j.kernel.impl.store.format.FormatFamily;
-import org.neo4j.kernel.impl.store.format.LuceneCapability;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.standard.StandardFormatFamily;
@@ -42,6 +41,8 @@ import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
+import org.neo4j.storageengine.api.format.Capability;
+import org.neo4j.storageengine.api.format.CapabilityType;
 
 public class PrepareTrackingRecordFormats implements RecordFormats
 {
@@ -128,7 +129,7 @@ public class PrepareTrackingRecordFormats implements RecordFormats
     }
 
     @Override
-    public LuceneCapability[] capabilities()
+    public Capability[] capabilities()
     {
         return actual.capabilities();
     }
@@ -140,7 +141,7 @@ public class PrepareTrackingRecordFormats implements RecordFormats
     }
 
     @Override
-    public boolean hasCapability( LuceneCapability capability )
+    public boolean hasCapability( Capability capability )
     {
         return actual.hasCapability( capability );
     }
@@ -199,7 +200,7 @@ public class PrepareTrackingRecordFormats implements RecordFormats
         }
 
         @Override
-        public void read( RECORD record, PageCursor cursor, RecordLoad mode, int recordSize )
+        public void read( RECORD record, PageCursor cursor, RecordLoad mode, int recordSize ) throws IOException
         {
             actual.read( record, cursor, mode, recordSize );
         }
@@ -212,7 +213,7 @@ public class PrepareTrackingRecordFormats implements RecordFormats
         }
 
         @Override
-        public void write( RECORD record, PageCursor cursor, int recordSize )
+        public void write( RECORD record, PageCursor cursor, int recordSize ) throws IOException
         {
             actual.write( record, cursor, recordSize );
         }

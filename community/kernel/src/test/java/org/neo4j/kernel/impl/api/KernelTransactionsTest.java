@@ -123,8 +123,8 @@ import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 import static org.neo4j.kernel.api.security.AnonymousContext.none;
 import static org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory.DEFAULT;
 import static org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier.ON_HEAP;
-import static org.neo4j.test.MockedNeoStores.mockedTokenHolders;
 import static org.neo4j.test.assertion.Assert.assertException;
+import static org.neo4j.test.rule.DatabaseRule.mockedTokenHolders;
 import static org.neo4j.util.concurrent.Futures.combine;
 
 public class KernelTransactionsTest

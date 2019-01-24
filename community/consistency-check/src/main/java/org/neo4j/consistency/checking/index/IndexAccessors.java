@@ -30,6 +30,7 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.neo4j.internal.kernel.api.InternalIndexState;
+import org.neo4j.internal.recordstorage.RecordStorageEngineFactory;
 import org.neo4j.internal.recordstorage.SchemaRuleAccess;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexProvider;
@@ -49,7 +50,7 @@ public class IndexAccessors implements Closeable
                            StoreAccess storeAccess,
                            IndexSamplingConfig samplingConfig ) throws IOException
     {
-        TokenHolders tokenHolders = TokenHolders.readOnlyTokenHolders( storeAccess.getRawNeoStores() );
+        TokenHolders tokenHolders = RecordStorageEngineFactory.readOnlyTokenHolders( storeAccess.getRawNeoStores() );
         Iterator<StoreIndexDescriptor> indexes = SchemaRuleAccess.getSchemaRuleAccess( storeAccess.getSchemaStore(), tokenHolders ).indexesGetAll();
         for (; ; )
         {

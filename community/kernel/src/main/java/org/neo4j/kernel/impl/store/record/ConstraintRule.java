@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.index.schema;
+package org.neo4j.kernel.impl.store.record;
 
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.kernel.api.schema.constraints.IndexBackedConstraintDescriptor;
@@ -167,9 +167,9 @@ public class ConstraintRule implements SchemaRule, StorageConstraintReference
     }
 
     @Override
-    public boolean isSame( Supplier supplier )
+    public boolean isSame( ConstraintDescriptor descriptor )
     {
-        return descriptor.isSame( supplier );
+        return this.descriptor.isSame( descriptor );
     }
 
     @Override

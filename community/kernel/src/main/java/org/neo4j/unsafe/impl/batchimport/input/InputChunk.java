@@ -28,6 +28,5 @@ import java.io.IOException;
  */
 public interface InputChunk extends Closeable
 {
-
     boolean next( InputEntityVisitor visitor ) throws IOException;
 }

@@ -32,10 +32,11 @@ import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdType;
 
 import static org.junit.Assert.assertEquals;
-import static org.neo4j.kernel.impl.store.format.standard.NodeRecordFormat.RECORD_SIZE;
 
 public class TestJumpingIdGenerator
 {
+    private static final int RECORD_SIZE = 15;
+
     @Test
     public void testIt()
     {

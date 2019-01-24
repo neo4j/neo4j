@@ -69,6 +69,7 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.storageengine.api.CommandCreationContext;
 import org.neo4j.storageengine.api.CommandsToApply;
 import org.neo4j.storageengine.api.IndexUpdateListener;
+import org.neo4j.storageengine.api.LogVersionRepository;
 import org.neo4j.storageengine.api.NodeLabelUpdateListener;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageEngine;
@@ -76,6 +77,7 @@ import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.StoreFileMetadata;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
+import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.storageengine.api.lock.ResourceLocker;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
@@ -327,7 +329,6 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     {
         satisfier.satisfyDependency( cacheAccess );
         satisfier.satisfyDependency( integrityValidator );
-        satisfier.satisfyDependency( neoStores.getMetaDataStore() );
     }
 
     @Override
@@ -471,5 +472,16 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
                 loadSchemaCache();
             }
         };
+    }
+
+    public TransactionIdStore transactionIdStore()
+    {
+        return neoStores.getMetaDataStore();
+    }
+
+    @Override
+    public LogVersionRepository logVersionRepository()
+    {
+        return neoStores.getMetaDataStore();
     }
 }

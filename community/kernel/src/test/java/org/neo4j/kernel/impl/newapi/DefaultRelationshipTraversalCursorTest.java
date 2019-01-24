@@ -99,7 +99,7 @@ public class DefaultRelationshipTraversalCursorTest
         // when
         cursor.init( node, relationship,
                 // relationships of a specific type/direction
-                NO_ID, null, true, read );
+                (int) NO_ID, null, true, read );
 
         // then
         assertRelationships( cursor, 100, 3, 7, 102, 104 );
@@ -128,7 +128,7 @@ public class DefaultRelationshipTraversalCursorTest
         // when
         cursor.init( node, relationship,
                 // relationships of a specific type/direction
-                NO_ID, null, false, read );
+                (int) NO_ID, null, false, read );
 
         // then
         assertRelationships( cursor, 100, 4, 103 );
