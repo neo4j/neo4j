@@ -47,18 +47,23 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTAny;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTBoolean;
+import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTByteArray;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTFloat;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTList;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTNumber;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTString;
 import static org.neo4j.internal.kernel.api.procs.UserFunctionSignature.functionSignature;
 import static org.neo4j.kernel.impl.proc.ProcedureCompilation.compileFunction;
+import static org.neo4j.values.storable.Values.NO_VALUE;
 import static org.neo4j.values.storable.Values.booleanValue;
+import static org.neo4j.values.storable.Values.byteArray;
+import static org.neo4j.values.storable.Values.byteValue;
 import static org.neo4j.values.storable.Values.doubleValue;
 import static org.neo4j.values.storable.Values.longValue;
 import static org.neo4j.values.storable.Values.stringValue;
 import static org.neo4j.values.virtual.VirtualValues.list;
 
+@SuppressWarnings( {"unused", "WeakerAccess"} )
 public class ProcedureCompilationTest
 {
     private static final Key<Long> KEY_1 = Key.key( "long1", Long.class );
@@ -209,6 +214,28 @@ public class ProcedureCompilationTest
                 sumMethod.apply( ctx, new AnyValue[]{list( longValue( 1 ), longValue( 2 ) )} ) );
     }
 
+    @Test
+    void shouldHandleByteArrays() throws ProcedureException
+    {
+        // Given
+        UserFunctionSignature signature = functionSignature( "test", "foo" )
+                .in( "bytes", NTByteArray )
+                .out( NTByteArray ).build();
+
+        // When
+        CallableUserFunction bytesMethod =
+                compileFunction( signature, emptyList(), method( "bytes", byte[].class ), typeMappers );
+
+        // Then
+        assertEquals( byteArray( new byte[]{1, 2, 3} ),
+                bytesMethod.apply( ctx, new AnyValue[]{byteArray( new byte[]{1, 2, 3} )} ) );
+        assertEquals( byteArray( new byte[]{1, 2, 3} ),
+                bytesMethod.apply( ctx, new AnyValue[]{list( byteValue( (byte) 1 ), byteValue( (byte) 2 ), byteValue(
+                        (byte) 3 ) )} ) );
+        assertEquals( NO_VALUE,
+                bytesMethod.apply( ctx, new AnyValue[]{NO_VALUE} ) );
+    }
+
     private FieldSetter createSetter( Class<?> owner, String field, Key<Long> key )
             throws NoSuchFieldException, IllegalAccessException
     {
@@ -287,4 +314,10 @@ public class ProcedureCompilationTest
     {
         return numbers.stream().mapToDouble( Number::doubleValue ).sum();
     }
+
+    public byte[] bytes( byte[] bytes )
+    {
+        return bytes;
+    }
+
 }

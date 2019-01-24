@@ -51,11 +51,14 @@ import org.neo4j.internal.kernel.api.procs.UserFunctionSignature;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.proc.CallableUserFunction;
 import org.neo4j.kernel.api.proc.Context;
+import org.neo4j.kernel.impl.util.DefaultValueMapper;
 import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.values.AnyValue;
+import org.neo4j.values.SequenceValue;
 import org.neo4j.values.ValueMapper;
 import org.neo4j.values.storable.BooleanValue;
 import org.neo4j.values.storable.ByteArray;
+import org.neo4j.values.storable.ByteValue;
 import org.neo4j.values.storable.DateTimeValue;
 import org.neo4j.values.storable.DateValue;
 import org.neo4j.values.storable.DoubleValue;
@@ -97,11 +100,12 @@ import static org.neo4j.codegen.TypeReference.typeReference;
 import static org.neo4j.codegen.bytecode.ByteCode.BYTECODE;
 import static org.neo4j.codegen.source.SourceCode.PRINT_SOURCE;
 import static org.neo4j.codegen.source.SourceCode.SOURCECODE;
+import static org.neo4j.values.SequenceValue.IterationPreference.RANDOM_ACCESS;
 
 /**
  * Class responsible for generating code for calling user-defined procedures and functions.
  */
-@SuppressWarnings( "WeakerAccess" )
+@SuppressWarnings( {"WeakerAccess", "unused"} )
 public final class ProcedureCompilation
 {
     private static final String LONG = long.class.getCanonicalName();
@@ -367,6 +371,62 @@ public final class ProcedureCompilation
     }
 
     /**
+     * Byte arrays needs special treatment since it is not a proper Cypher type
+     * @param input either a ByteArray or ListValue of bytes
+     * @return input value converted to a byte[]
+     */
+    public static byte[] toByteArray( AnyValue input )
+    {
+        if ( input instanceof ByteArray )
+        {
+            return ((ByteArray) input).asObjectCopy();
+        }
+        if ( input instanceof SequenceValue )
+        {
+            SequenceValue list = (SequenceValue) input;
+            if ( list.iterationPreference() == RANDOM_ACCESS )
+            {
+                byte[] bytes = new byte[list.length()];
+                for ( int a = 0; a < bytes.length; a++ )
+                {
+                    bytes[a] = asByte( list.value( a ) );
+                }
+                return  bytes;
+            }
+            else
+            {
+                //list.length may have linear complexity, still worth doing it upfront
+                byte[] bytes = new byte[list.length()];
+                int i = 0;
+                for ( AnyValue anyValue : list )
+                {
+                    bytes[i++] = asByte( anyValue );
+                }
+
+                return bytes;
+            }
+        }
+        else
+        {
+            throw new IllegalArgumentException(
+                    "Cannot convert " + input.getClass().getSimpleName() + " to byte[] for input to procedure" );
+        }
+    }
+
+    private static byte asByte( AnyValue value )
+    {
+        if ( value instanceof ByteValue )
+        {
+            return ((ByteValue) value).value();
+        }
+        else
+        {
+            throw new IllegalArgumentException(
+                    "Cannot convert " + value.map( new DefaultValueMapper( null ) ) + " to byte for input to procedure" );
+        }
+    }
+
+    /**
      * Takes an expression evaluating to one of the supported java values and turns
      * it into the corresponding AnyValue
      *
@@ -535,13 +595,14 @@ public final class ProcedureCompilation
         }
         else if ( type.equals( STRING ) )
         {
-            return noValueCheck( expression, invoke( cast( TextValue.class, expression ),
+            return noValueCheck( expression, invoke(
                     methodReference( TextValue.class, String.class, "stringValue" ) ));
         }
         else if ( type.equals( BYTE_ARRAY ) )
         {
-            return noValueCheck( expression, invoke( cast( ByteArray.class, expression ),
-                    methodReference( ByteArray.class, byte[].class, "asObjectCopy" ) ));
+            return noValueCheck( expression, invoke(
+                    methodReference( ProcedureCompilation.class, byte[].class, "toByteArray", AnyValue.class ),
+                    expression ));
         }
         else if ( type.equals( ZONED_DATE_TIME ) )
         {

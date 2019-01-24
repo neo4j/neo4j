@@ -24,16 +24,12 @@ import java.util.function.Function;
 
 import org.neo4j.internal.kernel.api.procs.DefaultParameterValue;
 import org.neo4j.internal.kernel.api.procs.FieldSignature;
-import org.neo4j.kernel.impl.util.DefaultValueMapper;
 import org.neo4j.values.AnyValue;
-import org.neo4j.values.SequenceValue;
-import org.neo4j.values.storable.ByteArray;
-import org.neo4j.values.storable.ByteValue;
-import org.neo4j.values.storable.Values;
 
 import static org.neo4j.internal.kernel.api.procs.DefaultParameterValue.ntByteArray;
 import static org.neo4j.kernel.impl.proc.ParseUtil.parseList;
-import static org.neo4j.values.SequenceValue.IterationPreference.RANDOM_ACCESS;
+import static org.neo4j.kernel.impl.proc.ProcedureCompilation.toByteArray;
+import static org.neo4j.values.storable.Values.byteArray;
 
 public class ByteArrayConverter implements Function<String,DefaultParameterValue>, FieldSignature.InputMapper
 {
@@ -93,53 +89,6 @@ public class ByteArrayConverter implements Function<String,DefaultParameterValue
     @Override
     public AnyValue map( AnyValue input )
     {
-
-        if ( input instanceof ByteArray )
-        {
-            return input;
-        }
-        if ( input instanceof SequenceValue )
-        {
-            SequenceValue list = (SequenceValue) input;
-            if ( list.iterationPreference() == RANDOM_ACCESS )
-            {
-                byte[] bytes = new byte[list.length()];
-                for ( int a = 0; a < bytes.length; a++ )
-                {
-                    bytes[a] = asByte( list.value( a ) );
-                }
-                return Values.byteArray( bytes );
-            }
-            else
-            {
-                //this may have linear complexity, still worth doing it upfront
-                byte[] bytes = new byte[list.length()];
-                int i = 0;
-                for ( AnyValue anyValue : list )
-                {
-                    bytes[i++] = asByte( anyValue );
-                }
-
-                return Values.byteArray( bytes );
-            }
-        }
-        else
-        {
-            throw new IllegalArgumentException(
-                    "Cannot convert " + input.getClass().getSimpleName() + " to byte[] for input to procedure" );
-        }
-    }
-
-    private byte asByte( AnyValue value )
-    {
-        if ( value instanceof ByteValue )
-        {
-            return ((ByteValue) value).value();
-        }
-        else
-        {
-            throw new IllegalArgumentException(
-                    "Cannot convert " + value.map( new DefaultValueMapper( null ) ) + " to byte for input to procedure" );
-        }
+        return byteArray( toByteArray( input ) );
     }
 }
