@@ -459,13 +459,6 @@ abstract class Read implements TxStateHolder,
     }
 
     @Override
-    public void acquireExclusiveExplicitIndexLock( long... ids )
-    {
-        acquireExclusiveLock( ResourceTypes.EXPLICIT_INDEX, ids );
-        ktx.assertOpen();
-    }
-
-    @Override
     public void acquireExclusiveLabelLock( long... ids )
     {
         acquireExclusiveLock( ResourceTypes.LABEL, ids );
@@ -483,13 +476,6 @@ abstract class Read implements TxStateHolder,
     public void releaseExclusiveRelationshipLock( long... ids )
     {
         releaseExclusiveLock( ResourceTypes.RELATIONSHIP, ids );
-        ktx.assertOpen();
-    }
-
-    @Override
-    public void releaseExclusiveExplicitIndexLock( long... ids )
-    {
-        releaseExclusiveLock( ResourceTypes.EXPLICIT_INDEX, ids );
         ktx.assertOpen();
     }
 
@@ -515,13 +501,6 @@ abstract class Read implements TxStateHolder,
     }
 
     @Override
-    public void acquireSharedExplicitIndexLock( long... ids )
-    {
-        acquireSharedLock( ResourceTypes.EXPLICIT_INDEX, ids );
-        ktx.assertOpen();
-    }
-
-    @Override
     public void acquireSharedLabelLock( long... ids )
     {
         acquireSharedLock( ResourceTypes.LABEL, ids );
@@ -539,13 +518,6 @@ abstract class Read implements TxStateHolder,
     public void releaseSharedRelationshipLock( long... ids )
     {
         releaseSharedLock( ResourceTypes.RELATIONSHIP, ids );
-        ktx.assertOpen();
-    }
-
-    @Override
-    public void releaseSharedExplicitIndexLock( long... ids )
-    {
-        releaseSharedLock( ResourceTypes.EXPLICIT_INDEX, ids );
         ktx.assertOpen();
     }
 

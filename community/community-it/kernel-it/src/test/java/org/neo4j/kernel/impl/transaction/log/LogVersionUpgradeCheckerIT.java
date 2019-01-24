@@ -28,7 +28,6 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.storageengine.migration.UpgradeNotAllowedException;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
@@ -36,6 +35,7 @@ import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.kernel.recovery.LogTailScanner;
+import org.neo4j.storageengine.migration.UpgradeNotAllowedException;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
@@ -74,7 +74,7 @@ class LogVersionUpgradeCheckerIT
     @Test
     void failToStartFromOlderTransactionLogsIfNotAllowed() throws Exception
     {
-        createStoreWithLogEntryVersion( LogEntryVersion.V2_3 );
+        createStoreWithLogEntryVersion( LogEntryVersion.V3_0_10 );
 
         Exception exception = assertThrows( Exception.class, () ->
         {
@@ -90,7 +90,7 @@ class LogVersionUpgradeCheckerIT
     @Test
     void startFromOlderTransactionLogsIfAllowed() throws Exception
     {
-        createStoreWithLogEntryVersion( LogEntryVersion.V2_3 );
+        createStoreWithLogEntryVersion( LogEntryVersion.V3_0_10 );
 
         // Try to start with upgrading enabled
         final GraphDatabaseService db = new TestGraphDatabaseFactory()

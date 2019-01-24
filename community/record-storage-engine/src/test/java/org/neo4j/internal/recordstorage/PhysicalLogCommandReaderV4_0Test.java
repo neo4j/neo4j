@@ -19,7 +19,7 @@
  */
 package org.neo4j.internal.recordstorage;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
@@ -33,13 +33,13 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
 import org.neo4j.storageengine.api.CommandReader;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class PhysicalLogCommandReaderV4_0Test
+class PhysicalLogCommandReaderV4_0Test
 {
     @Test
-    public void shouldReadRelationshipCommand() throws Throwable
+    void shouldReadRelationshipCommand() throws Throwable
     {
         // Given
         InMemoryClosableChannel channel = new InMemoryClosableChannel();
@@ -60,7 +60,7 @@ public class PhysicalLogCommandReaderV4_0Test
     }
 
     @Test
-    public void readRelationshipCommandWithSecondaryUnit() throws IOException
+    void readRelationshipCommandWithSecondaryUnit() throws IOException
     {
         InMemoryClosableChannel channel = new InMemoryClosableChannel();
         RelationshipRecord before = new RelationshipRecord( 42, true, 1, 2, 3, 4, 5, 6, 7, true, true );
@@ -80,7 +80,7 @@ public class PhysicalLogCommandReaderV4_0Test
     }
 
     @Test
-    public void readRelationshipCommandWithNonRequiredSecondaryUnit() throws IOException
+    void readRelationshipCommandWithNonRequiredSecondaryUnit() throws IOException
     {
         InMemoryClosableChannel channel = new InMemoryClosableChannel();
         RelationshipRecord before = new RelationshipRecord( 42, true, 1, 2, 3, 4, 5, 6, 7, true, true );
@@ -100,7 +100,7 @@ public class PhysicalLogCommandReaderV4_0Test
     }
 
     @Test
-    public void readRelationshipCommandWithFixedReferenceFormat() throws IOException
+    void readRelationshipCommandWithFixedReferenceFormat() throws IOException
     {
         InMemoryClosableChannel channel = new InMemoryClosableChannel();
         RelationshipRecord before = new RelationshipRecord( 42, true, 1, 2, 3, 4, 5, 6, 7, true, true );
@@ -121,7 +121,7 @@ public class PhysicalLogCommandReaderV4_0Test
     }
 
     @Test
-    public void shouldReadRelationshipGroupCommand() throws Throwable
+    void shouldReadRelationshipGroupCommand() throws Throwable
     {
         // Given
         InMemoryClosableChannel channel = new InMemoryClosableChannel();
@@ -144,7 +144,7 @@ public class PhysicalLogCommandReaderV4_0Test
     }
 
     @Test
-    public void readRelationshipGroupCommandWithSecondaryUnit() throws IOException
+    void readRelationshipGroupCommandWithSecondaryUnit() throws IOException
     {
         // Given
         InMemoryClosableChannel channel = new InMemoryClosableChannel();
@@ -170,7 +170,7 @@ public class PhysicalLogCommandReaderV4_0Test
     }
 
     @Test
-    public void readRelationshipGroupCommandWithNonRequiredSecondaryUnit() throws IOException
+    void readRelationshipGroupCommandWithNonRequiredSecondaryUnit() throws IOException
     {
         // Given
         InMemoryClosableChannel channel = new InMemoryClosableChannel();
@@ -196,7 +196,7 @@ public class PhysicalLogCommandReaderV4_0Test
     }
 
     @Test
-    public void readRelationshipGroupCommandWithFixedReferenceFormat() throws IOException
+    void readRelationshipGroupCommandWithFixedReferenceFormat() throws IOException
     {
         // Given
         InMemoryClosableChannel channel = new InMemoryClosableChannel();
@@ -222,7 +222,7 @@ public class PhysicalLogCommandReaderV4_0Test
     }
 
     @Test
-    public void shouldReadNeoStoreCommand() throws Throwable
+    void shouldReadNeoStoreCommand() throws Throwable
     {
         // Given
         InMemoryClosableChannel channel = new InMemoryClosableChannel();
@@ -245,7 +245,7 @@ public class PhysicalLogCommandReaderV4_0Test
     }
 
     @Test
-    public void nodeCommandWithFixedReferenceFormat() throws Exception
+    void nodeCommandWithFixedReferenceFormat() throws Exception
     {
         // Given
         InMemoryClosableChannel channel = new InMemoryClosableChannel();
@@ -271,7 +271,7 @@ public class PhysicalLogCommandReaderV4_0Test
     }
 
     @Test
-    public void readPropertyCommandWithSecondaryUnit() throws IOException
+    void readPropertyCommandWithSecondaryUnit() throws IOException
     {
         InMemoryClosableChannel channel = new InMemoryClosableChannel();
         PropertyRecord before = new PropertyRecord( 1 );
@@ -294,7 +294,7 @@ public class PhysicalLogCommandReaderV4_0Test
     }
 
     @Test
-    public void readPropertyCommandWithNonRequiredSecondaryUnit() throws IOException
+    void readPropertyCommandWithNonRequiredSecondaryUnit() throws IOException
     {
         InMemoryClosableChannel channel = new InMemoryClosableChannel();
         PropertyRecord before = new PropertyRecord( 1 );
@@ -317,7 +317,7 @@ public class PhysicalLogCommandReaderV4_0Test
     }
 
     @Test
-    public void readPropertyCommandWithFixedReferenceFormat() throws IOException
+    void readPropertyCommandWithFixedReferenceFormat() throws IOException
     {
         InMemoryClosableChannel channel = new InMemoryClosableChannel();
         PropertyRecord before = new PropertyRecord( 1 );
@@ -341,7 +341,7 @@ public class PhysicalLogCommandReaderV4_0Test
     }
 
     @Test
-    public void shouldReadSomeCommands() throws Exception
+    void shouldReadSomeCommands() throws Exception
     {
         // GIVEN
         InMemoryClosableChannel channel = new InMemoryClosableChannel();
@@ -369,9 +369,9 @@ public class PhysicalLogCommandReaderV4_0Test
 
     private <T extends AbstractBaseRecord> void verifySecondaryUnit( T record, T commandRecord )
     {
-        assertEquals( "Secondary unit requirements should be the same",  record.requiresSecondaryUnit(),
-                commandRecord.requiresSecondaryUnit() );
-        assertEquals( "Secondary unit ids should be the same", record.getSecondaryUnitId(),
-                commandRecord.getSecondaryUnitId() );
+        assertEquals( record.requiresSecondaryUnit(),
+                commandRecord.requiresSecondaryUnit(), "Secondary unit requirements should be the same" );
+        assertEquals( record.getSecondaryUnitId(),
+                commandRecord.getSecondaryUnitId(), "Secondary unit ids should be the same" );
     }
 }

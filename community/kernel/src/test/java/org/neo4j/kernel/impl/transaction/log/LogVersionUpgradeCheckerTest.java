@@ -47,7 +47,7 @@ class LogVersionUpgradeCheckerTest
     @Test
     void throwWhenVersionIsOlderAndUpgradeIsNotAllowed()
     {
-        when( tailScanner.getTailInformation() ).thenReturn( new OnlyVersionTailInformation( LogEntryVersion.V2_3 ) );
+        when( tailScanner.getTailInformation() ).thenReturn( new OnlyVersionTailInformation( LogEntryVersion.V3_0_10 ) );
 
         assertThrows( UpgradeNotAllowedException.class, () -> check( tailScanner, Config.defaults( GraphDatabaseSettings.allow_upgrade, "false" ) ) );
     }
@@ -63,7 +63,7 @@ class LogVersionUpgradeCheckerTest
     @Test
     void acceptOlderLogsWhenUpgradeIsAllowed()
     {
-        when( tailScanner.getTailInformation() ).thenReturn( new OnlyVersionTailInformation( LogEntryVersion.V2_3 ) );
+        when( tailScanner.getTailInformation() ).thenReturn( new OnlyVersionTailInformation( LogEntryVersion.V3_0_10 ) );
 
         check( tailScanner, Config.defaults( GraphDatabaseSettings.allow_upgrade, "true") );
     }

@@ -19,18 +19,17 @@
  */
 package org.neo4j.internal.recordstorage;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -43,9 +42,9 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.CommandReader;
-import org.neo4j.test.rule.PageCacheRule;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
 import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static java.util.Collections.singletonList;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -57,37 +56,38 @@ import static org.neo4j.kernel.impl.store.ShortArray.LONG;
 import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
 import static org.neo4j.kernel.impl.store.record.DynamicRecord.dynamicRecord;
 
-public class NodeCommandTest
+@EphemeralPageCacheExtension
+class NodeCommandTest
 {
-    @ClassRule
-    public static PageCacheRule pageCacheRule = new PageCacheRule();
-    private final EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
-    private final TestDirectory testDirectory = TestDirectory.testDirectory( fs );
-    @Rule
-    public final RuleChain ruleChain = RuleChain.outerRule( fs ).around( testDirectory );
+    @Inject
+    private EphemeralFileSystemAbstraction fs;
+    @Inject
+    private TestDirectory testDirectory;
+    @Inject
+    private PageCache pageCache;
+
     private NodeStore nodeStore;
     private final InMemoryClosableChannel channel = new InMemoryClosableChannel();
-    private final CommandReader commandReader = new PhysicalLogCommandReaderV3_0();
+    private final CommandReader commandReader = new PhysicalLogCommandReaderV3_0_10();
     private NeoStores neoStores;
 
-    @Before
-    public void before()
+    @BeforeEach
+    void before()
     {
-        StoreFactory storeFactory = new StoreFactory( testDirectory.databaseLayout(), Config.defaults(), new DefaultIdGeneratorFactory( fs.get() ),
-                pageCacheRule.getPageCache( fs.get() ), fs.get(), NullLogProvider.getInstance(),
-                EmptyVersionContextSupplier.EMPTY );
+        StoreFactory storeFactory = new StoreFactory( testDirectory.databaseLayout(), Config.defaults(), new DefaultIdGeneratorFactory( fs ), pageCache, fs,
+                NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY );
         neoStores = storeFactory.openAllNeoStores( true );
         nodeStore = neoStores.getNodeStore();
     }
 
-    @After
-    public void after()
+    @AfterEach
+    void after()
     {
         neoStores.close();
     }
 
     @Test
-    public void shouldSerializeAndDeserializeUnusedRecords() throws Exception
+    void shouldSerializeAndDeserializeUnusedRecords() throws Exception
     {
         // Given
         NodeRecord before = new NodeRecord( 12, false, 1, 2 );
@@ -97,7 +97,7 @@ public class NodeCommandTest
     }
 
     @Test
-    public void shouldSerializeCreatedRecord() throws Exception
+    void shouldSerializeCreatedRecord() throws Exception
     {
         // Given
         NodeRecord before = new NodeRecord( 12, false, 1, 2 );
@@ -109,7 +109,7 @@ public class NodeCommandTest
     }
 
     @Test
-    public void shouldSerializeDenseRecord() throws Exception
+    void shouldSerializeDenseRecord() throws Exception
     {
         // Given
         NodeRecord before = new NodeRecord( 12, false, 1, 2 );
@@ -121,7 +121,7 @@ public class NodeCommandTest
     }
 
     @Test
-    public void shouldSerializeUpdatedRecord() throws Exception
+    void shouldSerializeUpdatedRecord() throws Exception
     {
         // Given
         NodeRecord before = new NodeRecord( 12, false, 1, 2 );
@@ -133,7 +133,7 @@ public class NodeCommandTest
     }
 
     @Test
-    public void shouldSerializeInlineLabels() throws Exception
+    void shouldSerializeInlineLabels() throws Exception
     {
         // Given
         NodeRecord before = new NodeRecord( 12, false, 1, 2 );
@@ -147,7 +147,7 @@ public class NodeCommandTest
     }
 
     @Test
-    public void shouldSerializeSecondaryUnitUsage() throws Exception
+    void shouldSerializeSecondaryUnitUsage() throws Exception
     {
         // Given
         // a record that is changed to include a secondary unit
@@ -167,7 +167,7 @@ public class NodeCommandTest
     }
 
     @Test
-    public void shouldSerializeDynamicRecordLabels() throws Exception
+    void shouldSerializeDynamicRecordLabels() throws Exception
     {
         // Given
         NodeRecord before = new NodeRecord( 12, false, 1, 2 );
@@ -184,7 +184,7 @@ public class NodeCommandTest
     }
 
     @Test
-    public void shouldSerializeDynamicRecordsRemoved() throws Exception
+    void shouldSerializeDynamicRecordsRemoved() throws Exception
     {
         channel.reset();
         // Given

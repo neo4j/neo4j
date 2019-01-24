@@ -391,13 +391,6 @@ public class QueryExecutionLocksIT
         }
 
         @Override
-        public void acquireExclusiveExplicitIndexLock( long... ids )
-        {
-            record( true, true, ResourceTypes.EXPLICIT_INDEX, ids );
-            delegate.acquireExclusiveExplicitIndexLock( ids );
-        }
-
-        @Override
         public void acquireExclusiveLabelLock( long... ids )
         {
             record( true, true, ResourceTypes.LABEL, ids );
@@ -416,13 +409,6 @@ public class QueryExecutionLocksIT
         {
             record( true, false, ResourceTypes.RELATIONSHIP, ids );
             delegate.releaseExclusiveRelationshipLock( ids );
-        }
-
-        @Override
-        public void releaseExclusiveExplicitIndexLock( long... ids )
-        {
-            record( true, false, ResourceTypes.EXPLICIT_INDEX, ids );
-            delegate.releaseExclusiveExplicitIndexLock( ids );
         }
 
         @Override
@@ -447,13 +433,6 @@ public class QueryExecutionLocksIT
         }
 
         @Override
-        public void acquireSharedExplicitIndexLock( long... ids )
-        {
-            record( false, true, ResourceTypes.EXPLICIT_INDEX, ids );
-            delegate.acquireSharedExplicitIndexLock( ids );
-        }
-
-        @Override
         public void acquireSharedLabelLock( long... ids )
         {
             record( false, true, ResourceTypes.LABEL, ids );
@@ -472,13 +451,6 @@ public class QueryExecutionLocksIT
         {
             record( false, false, ResourceTypes.RELATIONSHIP, ids );
             delegate.releaseSharedRelationshipLock( ids );
-        }
-
-        @Override
-        public void releaseSharedExplicitIndexLock( long... ids )
-        {
-            record( false, false, ResourceTypes.EXPLICIT_INDEX, ids );
-            delegate.releaseSharedExplicitIndexLock( ids );
         }
 
         @Override

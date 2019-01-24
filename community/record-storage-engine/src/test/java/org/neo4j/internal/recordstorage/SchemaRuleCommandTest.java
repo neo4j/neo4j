@@ -80,7 +80,7 @@ public class SchemaRuleCommandTest
             new IndexBatchTransactionApplier( indexUpdateListener, labelScanStoreSynchronizer, indexUpdatesSync, mock( NodeStore.class ),
                     neoStores.getRelationshipStore(), new PropertyPhysicalToLogicalConverter( propertyStore ), storageEngine, schemaCache,
                     new IndexActivator( indexes ) );
-    private final BaseCommandReader reader = new PhysicalLogCommandReaderV3_0_2();
+    private final BaseCommandReader reader = new PhysicalLogCommandReaderV3_0_10();
     private final StoreIndexDescriptor rule = TestIndexDescriptorFactory.forLabel( labelId, propertyKey ).withId( id );
 
     @Test

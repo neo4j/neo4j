@@ -19,17 +19,18 @@
  */
 package org.neo4j.internal.recordstorage;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.internal.recordstorage.IndexCommand.AddRelationshipCommand;
 import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class PhysicalLogNeoCommandReaderV2Test
+//TODO: this can be removed?
+class PhysicalLogNeoCommandReaderTest
 {
     @Test
-    public void shouldReadIndexCommandHeaderCorrectly() throws Exception
+    void shouldReadIndexCommandHeaderCorrectly() throws Exception
     {
         // This bug manifested in header byte[1] {0,1,2}, which contains:
         // [x   ,    ] start node needs long
@@ -40,7 +41,7 @@ public class PhysicalLogNeoCommandReaderV2Test
         // Number 12 will do just fine.
 
         // GIVEN
-        PhysicalLogCommandReaderV2_2_4 reader = new PhysicalLogCommandReaderV2_2_4();
+        PhysicalLogCommandReaderV3_0_10 reader = new PhysicalLogCommandReaderV3_0_10();
         InMemoryClosableChannel data = new InMemoryClosableChannel();
         AddRelationshipCommand command = new AddRelationshipCommand();
         byte indexNameId = (byte)12;
@@ -65,7 +66,7 @@ public class PhysicalLogNeoCommandReaderV2Test
     }
 
     @Test
-    public void shouldProperlyMaskIndexIdFieldInIndexHeader() throws Exception
+    void shouldProperlyMaskIndexIdFieldInIndexHeader() throws Exception
     {
         /* This is how the index command header is laid out
          * [x   ,    ] start node needs long
@@ -76,7 +77,7 @@ public class PhysicalLogNeoCommandReaderV2Test
          */
 
         // GIVEN
-        PhysicalLogCommandReaderV2_2_4 reader = new PhysicalLogCommandReaderV2_2_4();
+        PhysicalLogCommandReaderV3_0_10 reader = new PhysicalLogCommandReaderV3_0_10();
         InMemoryClosableChannel data = new InMemoryClosableChannel();
         // Here we take advantage of the fact that all index commands have the same header written out
         AddRelationshipCommand command = new AddRelationshipCommand();
