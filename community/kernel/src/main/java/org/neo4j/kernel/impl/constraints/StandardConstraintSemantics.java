@@ -29,7 +29,7 @@ import org.neo4j.internal.kernel.api.exceptions.schema.CreateConstraintFailureEx
 import org.neo4j.kernel.api.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema.constraints.NodeKeyConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constraints.UniquenessConstraintDescriptor;
-import org.neo4j.kernel.impl.store.record.ConstraintRule;
+import org.neo4j.kernel.impl.index.schema.ConstraintRule;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.schema.ConstraintDescriptor;
 import org.neo4j.storageengine.api.schema.LabelSchemaDescriptor;
@@ -77,15 +77,14 @@ public class StandardConstraintSemantics extends ConstraintSemantics
     @Override
     public ConstraintDescriptor readConstraint( ConstraintRule rule )
     {
-        ConstraintDescriptor desc = rule.getConstraintDescriptor();
-        switch ( desc.type() )
+        switch ( rule.type() )
         {
         case EXISTS:
             return readNonStandardConstraint( rule, ERROR_MESSAGE_EXISTS );
         case UNIQUE_EXISTS:
             return readNonStandardConstraint( rule, ERROR_MESSAGE_NODE_KEY );
         default:
-            return desc;
+            return rule;
         }
     }
 

@@ -19,14 +19,16 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import org.neo4j.common.TokenNameLookup;
 import org.neo4j.kernel.api.schema.constraints.IndexBackedConstraintDescriptor;
 import org.neo4j.storageengine.api.SchemaRule;
+import org.neo4j.storageengine.api.StorageConstraintReference;
 import org.neo4j.storageengine.api.schema.ConstraintDescriptor;
 import org.neo4j.storageengine.api.schema.SchemaDescriptor;
 
 import static org.neo4j.common.TokenNameLookup.idTokenNameLookup;
 
-public class ConstraintRule implements SchemaRule, ConstraintDescriptor.Supplier
+public class ConstraintRule implements SchemaRule, StorageConstraintReference
 {
     private final Long ownedIndex;
     private final String name;
@@ -83,12 +85,6 @@ public class ConstraintRule implements SchemaRule, ConstraintDescriptor.Supplier
         return descriptor.schema();
     }
 
-    @Override
-    public ConstraintDescriptor getConstraintDescriptor()
-    {
-        return descriptor;
-    }
-
     @SuppressWarnings( "NumberEquality" )
     public long getOwnedIndex()
     {
@@ -124,6 +120,66 @@ public class ConstraintRule implements SchemaRule, ConstraintDescriptor.Supplier
 
     @Override
     public String getName()
+    {
+        return name;
+    }
+
+    @Override
+    public boolean hasOwnedIndexReference()
+    {
+        return ownedIndex != null;
+    }
+
+    @Override
+    public long ownedIndexReference()
+    {
+        return ownedIndex;
+    }
+
+    @Override
+    public long constraintReference()
+    {
+        return id;
+    }
+
+    @Override
+    public Type type()
+    {
+        return descriptor.type();
+    }
+
+    @Override
+    public boolean enforcesUniqueness()
+    {
+        return descriptor.enforcesUniqueness();
+    }
+
+    @Override
+    public boolean enforcesPropertyExistence()
+    {
+        return descriptor.enforcesPropertyExistence();
+    }
+
+    @Override
+    public String userDescription( TokenNameLookup tokenNameLookup )
+    {
+        return descriptor.userDescription( tokenNameLookup );
+    }
+
+    @Override
+    public boolean isSame( Supplier supplier )
+    {
+        return descriptor.isSame( supplier );
+    }
+
+    @Override
+    public String prettyPrint( TokenNameLookup tokenNameLookup )
+    {
+        return descriptor.prettyPrint( tokenNameLookup );
+    }
+
+    @Override
+    public String name()
     {
         return name;
     }
