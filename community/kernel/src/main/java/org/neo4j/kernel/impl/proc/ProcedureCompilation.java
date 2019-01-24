@@ -40,6 +40,7 @@ import org.neo4j.codegen.CodeGenerationNotSupportedException;
 import org.neo4j.codegen.CodeGenerator;
 import org.neo4j.codegen.Expression;
 import org.neo4j.codegen.FieldReference;
+import org.neo4j.codegen.MethodDeclaration;
 import org.neo4j.codegen.TypeReference;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
@@ -97,7 +98,11 @@ import static org.neo4j.codegen.bytecode.ByteCode.BYTECODE;
 import static org.neo4j.codegen.source.SourceCode.PRINT_SOURCE;
 import static org.neo4j.codegen.source.SourceCode.SOURCECODE;
 
-public class ProcedureCompilation
+/**
+ * Class responsible for generating code for calling user-defined procedures and functions.
+ */
+@SuppressWarnings( "WeakerAccess" )
+public final class ProcedureCompilation
 {
     private static final String LONG = long.class.getCanonicalName();
     private static final String BOXED_LONG = Long.class.getCanonicalName();
@@ -122,26 +127,83 @@ public class ProcedureCompilation
     private static final String TEMPORAL_AMOUNT = TemporalAmount.class.getCanonicalName();
     private static final String PACKAGE = "org.neo4j.kernel.impl.proc";
     private static final boolean DEBUG = false;
+    private static final String SIGNATURE_NAME = "SIGNATURE";
+    private static final String USER_CLASS = "USER_CLASS";
+    private static final String VALUE_MAPPER_NAME = "MAPPER";
+    private static final MethodDeclaration.Builder USER_FUNCTION = method( AnyValue.class, "apply",
+            param( Context.class, "ctx" ),
+            param( AnyValue[].class, "input" ) )
+            .throwsException( typeReference( ProcedureException.class ) );
 
+    private ProcedureCompilation()
+    {
+        throw new UnsupportedOperationException( "Do not instantiate" );
+    }
+
+    /**
+     * Generates code for a user-defined function.
+     * <p>
+     * Given a user-defined function defined by
+     *
+     * <pre>
+     *     class MyClass {
+     *         //Using [AT] because the javadocs chokes on the real symbol
+     *        [AT]Context
+     *        public Log log;
+     *        //Using [AT] because the javadocs chokes on the real symbol
+     *        [AT]serFunction
+     *        public double addPi(long value) {
+     *            return value + Math.PI;
+     *        }
+     *     }
+     * </pre>
+     * <p>
+     * we will generate something like
+     *
+     * <pre>
+     *     class GeneratedAddPi implements CallableUserFunction {
+     *         public static UserFunctionSignature SIGNATURE;
+     *         public static MyClass USER_CLASS;
+     *         public static FieldSetter SETTER_0;
+     *
+     *         public AnyValue apply(Context ctx, AnyValue[] input) {
+     *              try {
+     *                  UDF.log = (Log) SETTER_0.get(ctx);
+     *                  return Values.doubleValue(UDF.addPi( ((NumberValue) input[0]).longValue() );
+     *              } catch (Throwable T) {
+     *                  throw new ProcedureException([appropriate error msg], T);
+     *              }
+     *         }
+     *
+     *         public UserFunctionSignature signature() {return SIGNATURE;}
+     *     }
+     * </pre>
+     * <p>
+     * where the static fields are set once during loading via reflection.
+     *
+     * @param signature the signature of the user-defined function
+     * @param fieldSetters the fields to set before each call.
+     * @param methodToCall the method to call
+     * @param typeMappers the type-mappers to use to transform tricky types such as going lists, maps, nodes etc
+     * @return a CallableUserFunction delegating to the underlying user-defined function.
+     * @throws ProcedureException if something went wrong when compiling the user-defined function.
+     */
     static CallableUserFunction compileFunction(
             UserFunctionSignature signature, List<FieldSetter> fieldSetters,
-            Method methodToCall, ValueMapper<Object> typeMappers )
+            Method methodToCall, ValueMapper<Object> typeMappers ) throws ProcedureException
     {
 
         ClassHandle handle;
         try
         {
             CodeGenerator codeGenerator = codeGenerator();
-            String className = format( "Generated_%s%d", signature.name().name(), System.nanoTime() );
-            try ( ClassGenerator generator = codeGenerator.generateClass( PACKAGE, className, CallableUserFunction.class ) )
+            try ( ClassGenerator generator = codeGenerator.generateClass( PACKAGE, className( signature ), CallableUserFunction.class ) )
             {
-
                 //static fields
-                FieldReference signatureField =
-                        generator.publicStaticField( typeReference( UserFunctionSignature.class ), "SIGNATURE" );
-                FieldReference udfField = generator.publicStaticField( typeReference( methodToCall.getDeclaringClass() ), "UDF" );
-                FieldReference mapperField =
-                        generator.publicStaticField( parameterizedType( ValueMapper.class, Object.class ), "MAPPER" );
+                FieldReference signatureField = generator.publicStaticField( typeReference( UserFunctionSignature.class ), SIGNATURE_NAME );
+                FieldReference userClass = generator.publicStaticField( typeReference( methodToCall.getDeclaringClass() ), USER_CLASS );
+                FieldReference mapperField = generator.publicStaticField( parameterizedType( ValueMapper.class, Object.class ),
+                                VALUE_MAPPER_NAME );
                 List<FieldReference> fieldsToSet = new ArrayList<>( fieldSetters.size() );
                 for ( int i = 0; i < fieldSetters.size(); i++ )
                 {
@@ -149,21 +211,13 @@ public class ProcedureCompilation
                 }
 
                 //CallableUserFunction::apply
-                try ( CodeBlock method = generator.generate( method( AnyValue.class, "apply",
-                        param( Context.class, "ctx" ),
-                        param( AnyValue[].class, "input" ) )
-                        .throwsException( typeReference( ProcedureException.class ) ) ) )
+                try ( CodeBlock method = generator.generate( USER_FUNCTION ) )
                 {
                     method.tryCatch(
-                            body -> functionBody( body, fieldSetters, fieldsToSet, udfField, methodToCall,
+                            body -> functionBody( body, fieldSetters, fieldsToSet, userClass, methodToCall,
                                     mapperField ),
                             onError ->
-                                    onError.throwException(
-                                            invoke( methodReference( ProcedureCompilation.class,
-                                                    ProcedureException.class,
-                                                    "rethrowProcedureException", Throwable.class, String.class ),
-                                                    onError.load( "T" ),
-                                                    constant( format( "function `%s`", signature.name() ) ) ) ),
+                                    onError( onError, format( "function `%s`", signature.name() ) ),
                             param( Throwable.class, "T" )
                     );
                 }
@@ -177,25 +231,39 @@ public class ProcedureCompilation
                 handle = generator.handle();
             }
             Class<?> clazz = handle.loadClass();
-            clazz.getDeclaredField( "SIGNATURE" ).set( null, signature );
-            clazz.getDeclaredField( "UDF" ).set( null, methodToCall.getDeclaringClass().newInstance() );
-            clazz.getDeclaredField( "MAPPER" ).set( null, typeMappers );
+
+            //set all static fields
+            clazz.getDeclaredField( SIGNATURE_NAME ).set( null, signature );
+            clazz.getDeclaredField( USER_CLASS ).set( null, methodToCall.getDeclaringClass().newInstance() );
+            clazz.getDeclaredField( VALUE_MAPPER_NAME ).set( null, typeMappers );
             for ( int i = 0; i < fieldSetters.size(); i++ )
             {
                 clazz.getDeclaredField( "SETTER_" + i ).set(null, fieldSetters.get( i ));
             }
+
             return (CallableUserFunction) clazz.newInstance();
         }
         catch ( Throwable e )
         {
-            System.out.println( "#############################" );
-            System.out.println( signature.name() );
-            System.out.println( "#############################" );
-            e.printStackTrace();
-            throw new RuntimeException( e );
+            throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed, e,
+                    "Failed to compile function defined in `%s`: %s", methodToCall.getDeclaringClass().getSimpleName(),
+                    e.getMessage() );
         }
     }
 
+    private static String className( UserFunctionSignature signature )
+    {
+        return format( "Generated_%s%d", signature.name().name(), System.nanoTime() );
+    }
+
+    /**
+     * Generates the actual body of the function. Generated the code will look something like:
+     * <p>
+     * USER_CLASS.field1 = (type1) SETTER_1.get(context)
+     * USER_CLASS.field2 = (type2) SETTER_2.get(context)
+     * ...
+     * return [CONVERT TO AnyVALUE](USER_CLASS.call( [CONVERT_TO_JAVA] input[0], ... );
+     */
     private static void functionBody( CodeBlock block,
             List<FieldSetter> fieldSetters, List<FieldReference> fieldsToSet, FieldReference udfField,
             Method methodToCall, FieldReference mapperField )
@@ -205,7 +273,7 @@ public class ProcedureCompilation
             FieldSetter setter = fieldSetters.get( i );
             Field field = setter.field();
             Class<?> fieldType = field.getType();
-            block.put( getStatic( udfField ), field( typeReference( field.getDeclaringClass() ), typeReference( field.getType() ), field.getName() ),
+            block.put( getStatic( udfField ), field( field ),
                     unboxIfNecessary( fieldType,
                             invoke(
                                     getStatic( fieldsToSet.get( i ) ),
@@ -221,12 +289,37 @@ public class ProcedureCompilation
                     typeReference(
                             parameterTypes[i] ), arrayLoad( block.load( "input" ), constant( i ) ), mapperField );
         }
-        block.assign( methodToCall.getReturnType(), "fromFunction", invoke( getStatic( udfField ),
-                methodReference( methodToCall.getDeclaringClass(), methodToCall.getReturnType(), methodToCall.getName(), methodToCall.getParameterTypes() ), parameters ) );
+        block.assign( methodToCall.getReturnType(), "fromFunction",
+                invoke( getStatic( udfField ), methodReference( methodToCall ), parameters ) );
         block.returns(
                 toAnyValue( block.load( "fromFunction" ) ) );
     }
 
+    /**
+     * Handle errors by redirecting to {@link #rethrowProcedureException(Throwable, String)}  }
+     */
+    private static void onError( CodeBlock block, String typeAndName )
+    {
+
+        block.throwException(
+                invoke( methodReference( ProcedureCompilation.class, ProcedureException.class,
+                        "rethrowProcedureException", Throwable.class, String.class ),
+                        block.load( "T" ),
+                        constant( typeAndName ) ) );
+    }
+
+    /**
+     * Used for properly setting a primitive field
+     *
+     * For example say that the class has a field of type long. Then we will generate the RHS of.
+     * <pre>
+     *     USER_CLASS.longField = ((Long) invoke).longValue()
+     * </pre>
+     *
+     * @param fieldType the type of the field
+     * @param invoke the expression used to set the field
+     * @return an expression where casting and boxing/unboxing has been taken care of.
+     */
     private static Expression unboxIfNecessary( Class<?> fieldType, Expression invoke )
     {
         if ( fieldType.isPrimitive() )
@@ -251,6 +344,12 @@ public class ProcedureCompilation
         }
     }
 
+    /**
+     * Used by generated code. Needs to be public.
+     * @param throwable The thrown exception
+     * @param typeAndName the type and name of the caller, e.g "function `my.udf`"
+     * @return an exception with an appropriate message.
+     */
     public static ProcedureException rethrowProcedureException( Throwable throwable, String typeAndName )
     {
         if ( throwable instanceof Status.HasStatus )
@@ -383,21 +482,6 @@ public class ProcedureCompilation
         }
     }
 
-    private static Expression nullCheck( Expression toCheck, Expression onNotNull )
-    {
-        return ternary( equal( toCheck, constant( null ) ), noValue(), onNotNull );
-    }
-
-    private static Expression noValueCheck( Expression toCheck, Expression onNotNoValue )
-    {
-        return ternary( equal( toCheck, noValue() ), constant( null ), onNotNoValue );
-    }
-
-    private static Expression noValue()
-    {
-        return getStatic( field( typeReference( Values.class ), typeReference( Value.class ), "NO_VALUE" ) );
-    }
-
     /**
      * Converts from an `AnyValue` to the type specified by the procedure or function.
      * <p>
@@ -507,5 +591,29 @@ public class ProcedureCompilation
                             getStatic( mapper ) ) );
 
         }
+    }
+
+    /**
+     * toCheck == null ? Values.NO_VALUE : onNotNull;
+     */
+    private static Expression nullCheck( Expression toCheck, Expression onNotNull )
+    {
+        return ternary( equal( toCheck, constant( null ) ), noValue(), onNotNull );
+    }
+
+    /**
+     * toCheck == NO_VALUE ? null : onNotNoValue;
+     */
+    private static Expression noValueCheck( Expression toCheck, Expression onNotNoValue )
+    {
+        return ternary( equal( toCheck, noValue() ), constant( null ), onNotNoValue );
+    }
+
+    /**
+     * @return Values.NO_VALUE;
+     */
+    private static Expression noValue()
+    {
+        return getStatic( field( typeReference( Values.class ), typeReference( Value.class ), "NO_VALUE" ) );
     }
 }

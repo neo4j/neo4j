@@ -89,7 +89,7 @@ public class ProcedureCompilationTest
     }
 
     @Test
-    void shouldExposeSignature()
+    void shouldExposeSignature() throws ProcedureException
     {
         // Given
         UserFunctionSignature signature = functionSignature( "test", "foo" ).out( Neo4jTypes.NTInteger ).build();

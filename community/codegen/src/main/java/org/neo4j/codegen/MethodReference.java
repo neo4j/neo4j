@@ -19,6 +19,7 @@
  */
 package org.neo4j.codegen;
 
+import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 
 import static org.neo4j.codegen.TypeReference.typeReference;
@@ -72,6 +73,11 @@ public class MethodReference
             int modifiers, TypeReference... parameters )
     {
         return new MethodReference( owner, name, returns, modifiers, parameters );
+    }
+
+    public static MethodReference methodReference( Method method )
+    {
+        return methodReference( method.getDeclaringClass(), method.getReturnType(), method.getName(), method.getParameterTypes() );
     }
 
     public static MethodReference constructorReference( Class<?> owner, Class<?> firstParameter, Class<?>... parameters )
