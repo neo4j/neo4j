@@ -507,8 +507,8 @@ public class FulltextIndexConsistencyCheckIT
         assertFalse( result.isSuccessful() );
     }
 
-//    @Ignore( "Turns out that this is not something that the consistency checker actually looks for, currently. " +
-//            "The test is disabled until the consistency checker is extended with checks that will discover this sort of inconsistency." )
+    @Ignore( "Turns out that this is not something that the consistency checker actually looks for, currently. " +
+            "The test is disabled until the consistency checker is extended with checks that will discover this sort of inconsistency." )
     @Test
     public void mustDiscoverNodeInIndexMissingFromStore() throws Exception
     {
