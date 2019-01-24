@@ -36,7 +36,7 @@ abstract class ExecutionPlan {
     * @return if this ExecutionPlan needs a thread safe cursor factory to be used from the TransactionBoundQueryContext,
     *         then it has to override this method and provide it here.
     */
-  def threadSafeCursorFactory: Option[CursorFactory] = None
+  def threadSafeCursorFactory(debugOptions: Set[String]): Option[CursorFactory] = None
 
   def runtimeName: RuntimeName
 

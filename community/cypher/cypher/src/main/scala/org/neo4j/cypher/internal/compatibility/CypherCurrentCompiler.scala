@@ -176,8 +176,9 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
         executionPlan.runtimeName,
         executionPlan.metadata)
 
-    private def getQueryContext(transactionalContext: TransactionalContext) = {
-      val ctx = new TransactionBoundQueryContext(TransactionalContextWrapper(transactionalContext, executionPlan.threadSafeCursorFactory.orNull),
+    private def getQueryContext(transactionalContext: TransactionalContext, debugOptions: Set[String]) = {
+      val txContextWrapper = TransactionalContextWrapper(transactionalContext, executionPlan.threadSafeCursorFactory(debugOptions).orNull)
+      val ctx = new TransactionBoundQueryContext(txContextWrapper,
                                                  new ResourceManager(resourceMonitor)
                                                )(searchMonitor)
       new ExceptionTranslatingQueryContext(ctx)
@@ -193,7 +194,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
         case CypherExecutionMode.normal => NormalMode
       }
       val taskCloser = new TaskCloser
-      val queryContext = getQueryContext(transactionalContext)
+      val queryContext = getQueryContext(transactionalContext, preParsedQuery.debugOptions)
       taskCloser.addTask(queryContext.transactionalContext.close)
       taskCloser.addTask(queryContext.resources.close)
 
