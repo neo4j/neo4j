@@ -43,7 +43,7 @@ import org.neo4j.kernel.impl.store.format.standard.StandardV3_4;
 import org.neo4j.kernel.impl.store.format.standard.StandardV4_0;
 import org.neo4j.logging.LogProvider;
 
-import static java.lang.String.*;
+import static java.lang.String.format;
 import static java.util.Arrays.asList;
 import static java.util.Comparator.comparingInt;
 import static org.neo4j.helpers.collection.Iterables.concat;
