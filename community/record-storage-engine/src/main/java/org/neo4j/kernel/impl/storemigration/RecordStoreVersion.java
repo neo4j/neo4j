@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.storemigration;
 
+import java.util.Optional;
+
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.storageengine.api.StoreVersion;
@@ -27,19 +29,17 @@ import org.neo4j.storageengine.api.format.CapabilityType;
 
 public class RecordStoreVersion implements StoreVersion
 {
-    private final String version;
     private final RecordFormats format;
 
-    public RecordStoreVersion( String version, RecordFormats format )
+    public RecordStoreVersion( RecordFormats format )
     {
-        this.version = version;
         this.format = format;
     }
 
     @Override
     public String storeVersion()
     {
-        return version;
+        return format.storeVersion();
     }
 
     @Override
@@ -52,5 +52,17 @@ public class RecordStoreVersion implements StoreVersion
     public boolean hasCompatibleCapabilities( StoreVersion otherVersion, CapabilityType type )
     {
         return format.hasCompatibleCapabilities( RecordFormatSelector.selectForVersion( otherVersion.storeVersion() ), type );
+    }
+
+    @Override
+    public String introductionNeo4jVersion()
+    {
+        return format.introductionVersion();
+    }
+
+    @Override
+    public Optional<StoreVersion> successor()
+    {
+        return RecordFormatSelector.findSuccessor( format ).map( RecordStoreVersion::new );
     }
 }

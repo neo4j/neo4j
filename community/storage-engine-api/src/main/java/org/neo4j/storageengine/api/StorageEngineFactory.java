@@ -19,11 +19,15 @@
  */
 package org.neo4j.storageengine.api;
 
+import java.io.File;
 import java.io.IOException;
+import java.util.stream.Stream;
 
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.common.DependencySatisfier;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.storageengine.migration.StoreMigrationParticipant;
 
 /**
@@ -80,4 +84,6 @@ public interface StorageEngineFactory
     {
         return Iterables.single( candidates );
     }
+
+    Stream<File> listStorageFiles( FileSystemAbstraction fileSystem, DatabaseLayout databaseLayout );
 }

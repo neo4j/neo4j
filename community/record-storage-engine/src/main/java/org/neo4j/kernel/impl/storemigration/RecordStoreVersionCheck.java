@@ -86,7 +86,7 @@ public class RecordStoreVersionCheck implements StoreVersionCheck
     @Override
     public StoreVersion versionInformation( String storeVersion )
     {
-        return new RecordStoreVersion( storeVersion, RecordFormatSelector.selectForVersion( storeVersion ) );
+        return new RecordStoreVersion( RecordFormatSelector.selectForVersion( storeVersion ) );
     }
 
     @Override

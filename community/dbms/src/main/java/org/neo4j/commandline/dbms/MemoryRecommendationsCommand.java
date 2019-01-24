@@ -32,14 +32,14 @@ import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.commandline.arguments.Arguments;
 import org.neo4j.commandline.arguments.OptionalNamedArg;
-import org.neo4j.graphdb.config.InvalidSettingException;
+import org.neo4j.helpers.Service;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.os.OsBeanUtil;
 import org.neo4j.kernel.api.impl.index.storage.FailureStorage;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.internal.NativeIndexFileFilter;
+import org.neo4j.storageengine.api.StorageEngineFactory;
 
 import static java.lang.String.format;
 import static org.neo4j.commandline.arguments.common.Database.ARG_DATABASE;
@@ -282,13 +282,9 @@ public class MemoryRecommendationsCommand implements AdminCommand
 
     private long sumStoreFiles( DatabaseLayout databaseLayout )
     {
-        long total = 0;
-        for ( StoreType type : StoreType.values() )
-        {
-            FileSystemAbstraction fileSystem = outsideWorld.fileSystem();
-            total += databaseLayout.file( type.getDatabaseFile() ).filter( fileSystem::fileExists ).mapToLong( fileSystem::getFileSize ).sum();
-        }
-        return total;
+        StorageEngineFactory storageEngineFactory = StorageEngineFactory.selectStorageEngine( Service.load( StorageEngineFactory.class ) );
+        FileSystemAbstraction fileSystem = outsideWorld.fileSystem();
+        return storageEngineFactory.listStorageFiles( fileSystem, databaseLayout ).mapToLong( fileSystem::getFileSize ).sum();
     }
 
     private long sumIndexFiles( File file, FilenameFilter filter )

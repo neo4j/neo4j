@@ -33,17 +33,15 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
-import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.Validators;
 import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.StorageEngineFactory;
+import org.neo4j.storageengine.api.StoreVersion;
 import org.neo4j.storageengine.api.StoreVersionCheck;
 
 import static org.neo4j.kernel.impl.scheduler.JobSchedulerFactory.createInitialisedScheduler;
-import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.findSuccessor;
 
 public class StoreInfoCommand implements AdminCommand
 {
@@ -80,11 +78,11 @@ public class StoreInfoCommand implements AdminCommand
             final String fmt = "%-30s%s";
             out.accept( String.format( fmt, "Store format version:", storeVersion ) );
 
-            RecordFormats format = RecordFormatSelector.selectForVersion( storeVersion );
-            out.accept( String.format( fmt, "Store format introduced in:", format.introductionVersion() ) );
+            StoreVersion versionInformation = storageEngineFactory.versionInformation( storeVersion );
+            out.accept( String.format( fmt, "Store format introduced in:", versionInformation.introductionNeo4jVersion() ) );
 
-            findSuccessor( format )
-                    .map( next -> String.format( fmt, "Store format superseded in:", next.introductionVersion() ) )
+            versionInformation.successor()
+                    .map( next -> String.format( fmt, "Store format superseded in:", next.introductionNeo4jVersion() ) )
                     .ifPresent( out );
         }
         catch ( Exception e )

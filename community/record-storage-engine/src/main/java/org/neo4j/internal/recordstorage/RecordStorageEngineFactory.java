@@ -19,7 +19,11 @@
  */
 package org.neo4j.internal.recordstorage;
 
+import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Stream;
 
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.common.DependencySatisfier;
@@ -36,8 +40,8 @@ import org.neo4j.kernel.impl.core.TokenHolder;
 import org.neo4j.kernel.impl.core.TokenHolders;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
-import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.id.IdController;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.storemigration.RecordStorageMigrator;
@@ -71,8 +75,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
     @Override
     public StoreVersion versionInformation( String storeVersion )
     {
-        RecordFormats formats = RecordFormatSelector.selectForVersion( storeVersion );
-        return new RecordStoreVersion( storeVersion, formats );
+        return new RecordStoreVersion( RecordFormatSelector.selectForVersion( storeVersion ) );
     }
 
     @Override
@@ -124,6 +127,17 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
                 dependencyResolver.resolveDependency( VersionContextSupplier.class ) );
     }
 
+    public Stream<File> listStorageFiles( FileSystemAbstraction fileSystem, DatabaseLayout databaseLayout )
+    {
+        List<File> files = new ArrayList<>();
+        for ( StoreType type : StoreType.values() )
+        {
+            databaseLayout.file( type.getDatabaseFile() ).filter( fileSystem::fileExists ).forEach( files::add );
+        }
+        return files.stream();
+    }
+
+    @Override
     public TransactionIdStore readOnlyTransactionIdStore( DependencyResolver dependencyResolver ) throws IOException
     {
         return new ReadOnlyTransactionIdStore(
