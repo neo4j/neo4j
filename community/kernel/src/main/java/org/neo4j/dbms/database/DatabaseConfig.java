@@ -35,6 +35,7 @@ import org.neo4j.graphdb.config.InvalidSettingException;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.CollectorsUtil;
+import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.configuration.Config;
@@ -51,9 +52,7 @@ public class DatabaseConfig extends Config implements Lifecycle
     {
         if ( Objects.equals( databaseName, GraphDatabaseSettings.SYSTEM_DATABASE_NAME ) )
         {
-            Map<String,String> overriddenConfigs = Stream.of(
-                    Pair.of( GraphDatabaseSettings.record_format.name(), "" )
-            ).collect( CollectorsUtil.pairsToMap() );
+            Map<String,String> overriddenConfigs = MapUtil.stringMap( GraphDatabaseSettings.record_format.name(), "" );
             return new OverriddenDatabaseConfig( globalConfig, overriddenConfigs );
         }
 

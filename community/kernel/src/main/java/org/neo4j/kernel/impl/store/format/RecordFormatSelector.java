@@ -43,6 +43,7 @@ import org.neo4j.kernel.impl.store.format.standard.StandardV3_4;
 import org.neo4j.kernel.impl.store.format.standard.StandardV4_0;
 import org.neo4j.logging.LogProvider;
 
+import static java.lang.String.*;
 import static java.util.Arrays.asList;
 import static java.util.Comparator.comparingInt;
 import static org.neo4j.helpers.collection.Iterables.concat;
@@ -163,7 +164,7 @@ public class RecordFormatSelector
             }
             catch ( IOException e )
             {
-                info( logProvider, String.format( "Unable to read format for store %s. %s ", databaseLayout.databaseDirectory(), e.getMessage() ) );
+                info( logProvider, format( "Unable to read format for store %s. %s ", databaseLayout.databaseDirectory(), e.getMessage() ) );
             }
         }
         return null;
@@ -194,25 +195,25 @@ public class RecordFormatSelector
         {
             if ( formatSameFamilyAndGeneration( currentFormat, configuredFormat ) )
             {
-                info( logProvider, String.format( "Configured format matches format in the store %s. Selected: %s",
+                info( logProvider, format( "Configured format matches format in the store %s. Selected: %s",
                         databaseLayout.databaseDirectory(), currentFormat ) );
                 return currentFormat;
             }
-            throw new IllegalArgumentException( String.format(
+            throw new IllegalArgumentException( format(
                     "Configured format '%s' is different from the actual format in the store %s, which was '%s'",
                     configuredFormat, databaseLayout.databaseDirectory(), currentFormat ) );
         }
 
         if ( !formatConfigured && storeWithFormatExists )
         {
-            info( logProvider, String.format( "Format not configured for store %s. Selected format from the store files: %s",
+            info( logProvider, format( "Format not configured for store %s. Selected format from the store files: %s",
                     databaseLayout.databaseDirectory(), currentFormat ) );
             return currentFormat;
         }
 
         if ( formatConfigured )
         {
-            info( logProvider, String.format( "Selected configured format for store %s: %s", databaseLayout.databaseDirectory(), configuredFormat ) );
+            info( logProvider, format( "Selected configured format for store %s: %s", databaseLayout.databaseDirectory(), configuredFormat ) );
             return configuredFormat;
         }
 
@@ -275,12 +276,12 @@ public class RecordFormatSelector
             if ( result == null )
             {
                 // format was not explicitly configured and store does not exist, select default format
-                info( logProvider, String.format( "Selected format '%s' for the new store %s", DEFAULT_FORMAT, databaseLayout.databaseDirectory() ) );
+                info( logProvider, format( "Selected format '%s' for the new store %s", DEFAULT_FORMAT, databaseLayout.databaseDirectory() ) );
                 return DEFAULT_FORMAT;
             }
             Optional<RecordFormats> newestFormatInFamily = findLatestFormatInFamily( result );
             RecordFormats newestFormat = newestFormatInFamily.orElse( result );
-            info( logProvider, String.format( "Selected format '%s' for existing store %s with format '%s'",
+            info( logProvider, format( "Selected format '%s' for existing store %s with format '%s'",
                     newestFormat, databaseLayout.databaseDirectory(), result ) );
             return newestFormat;
         }
