@@ -123,7 +123,7 @@ public class KernelDiagnosticsOfflineReportProvider extends DiagnosticsOfflineRe
      */
     private void listDataDirectory( List<DiagnosticsReportSource> sources )
     {
-        StoreFilesDiagnostics storeFiles = new StoreFilesDiagnostics( databaseLayout );
+        StoreFilesDiagnostics storeFiles = new StoreFilesDiagnostics( null ); // TODO
 
         BufferingLog logger = new BufferingLog();
         storeFiles.dump( logger.debugLogger() );

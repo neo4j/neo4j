@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.api.schema.constraints;
 
-
 import org.neo4j.storageengine.api.schema.LabelSchemaDescriptor;
 
 public class UniquenessConstraintDescriptor extends IndexBackedConstraintDescriptor

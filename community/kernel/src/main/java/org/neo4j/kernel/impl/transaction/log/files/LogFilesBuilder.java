@@ -26,16 +26,17 @@ import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 
 import org.neo4j.common.DependencyResolver;
+import org.neo4j.helpers.Service;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.transaction.log.LogVersionRepository;
-import org.neo4j.kernel.impl.transaction.log.ReadOnlyLogVersionRepository;
-import org.neo4j.kernel.impl.transaction.log.ReadOnlyTransactionIdStore;
-import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
+import org.neo4j.kernel.impl.util.Dependencies;
+import org.neo4j.storageengine.api.LogVersionRepository;
+import org.neo4j.storageengine.api.StorageEngineFactory;
+import org.neo4j.storageengine.api.TransactionIdStore;
 
 import static java.util.Objects.requireNonNull;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.logical_log_rotation_threshold;
@@ -232,7 +233,7 @@ public class LogFilesBuilder
         return configThreshold;
     }
 
-    private Supplier<LogVersionRepository> getLogVersionRepositorySupplier() throws IOException
+    private Supplier<LogVersionRepository> getLogVersionRepositorySupplier()
     {
         if ( logVersionRepository != null )
         {
@@ -251,8 +252,7 @@ public class LogFilesBuilder
         {
             requireNonNull( pageCache, "Read only log files require page cache to be able to read current log version." );
             requireNonNull( databaseLayout,"Store directory is required.");
-            ReadOnlyLogVersionRepository logVersionRepository =
-                    new ReadOnlyLogVersionRepository( pageCache, databaseLayout );
+            LogVersionRepository logVersionRepository = readOnlyLogVersionRepository();
             return () -> logVersionRepository;
         }
         else
@@ -263,7 +263,7 @@ public class LogFilesBuilder
         }
     }
 
-    private LongSupplier lastCommittedIdSupplier() throws IOException
+    private LongSupplier lastCommittedIdSupplier()
     {
         if ( lastCommittedTransactionIdSupplier != null )
         {
@@ -287,7 +287,7 @@ public class LogFilesBuilder
             requireNonNull( pageCache, "Read only log files require page cache to be able to read commited " +
                     "transaction info from store store." );
             requireNonNull( databaseLayout, "Store directory is required." );
-            ReadOnlyTransactionIdStore transactionIdStore = new ReadOnlyTransactionIdStore( pageCache, databaseLayout );
+            TransactionIdStore transactionIdStore = readOnlyTransactionIdStore();
             return transactionIdStore::getLastCommittedTransactionId;
         }
         else
@@ -298,7 +298,7 @@ public class LogFilesBuilder
         }
     }
 
-    private LongSupplier committingIdSupplier() throws IOException
+    private LongSupplier committingIdSupplier()
     {
         if ( transactionIdStore != null )
         {
@@ -318,7 +318,7 @@ public class LogFilesBuilder
             requireNonNull( pageCache, "Read only log files require page cache to be able to read commited " +
                     "transaction info from store store." );
             requireNonNull( databaseLayout, "Store directory is required." );
-            ReadOnlyTransactionIdStore transactionIdStore = new ReadOnlyTransactionIdStore( pageCache, databaseLayout );
+            TransactionIdStore transactionIdStore = readOnlyTransactionIdStore();
             return transactionIdStore::committingTransactionId;
         }
         else
@@ -327,6 +327,22 @@ public class LogFilesBuilder
                     "Please provide an instance or a dependencies where it can be found." );
             return () -> resolveDependency( TransactionIdStore.class ).committingTransactionId();
         }
+    }
+
+    private TransactionIdStore readOnlyTransactionIdStore()
+    {
+        StorageEngineFactory storageEngineFactory = StorageEngineFactory.selectStorageEngine( Service.load( StorageEngineFactory.class ) );
+        Dependencies dependencies = new Dependencies();
+        dependencies.satisfyDependencies( pageCache, databaseLayout );
+        return storageEngineFactory.readOnlyTransactionIdStore( dependencies );
+    }
+
+    private LogVersionRepository readOnlyLogVersionRepository()
+    {
+        StorageEngineFactory storageEngineFactory = StorageEngineFactory.selectStorageEngine( Service.load( StorageEngineFactory.class ) );
+        Dependencies dependencies = new Dependencies();
+        dependencies.satisfyDependencies( pageCache, databaseLayout );
+        return storageEngineFactory.readOnlyLogVersionRepository( dependencies );
     }
 
     private <T> Supplier<T> getSupplier( Class<T> clazz )

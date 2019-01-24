@@ -25,7 +25,7 @@ import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFileInformation;
 
 import static java.lang.Math.min;
-import static org.neo4j.kernel.impl.transaction.log.LogVersionRepository.INITIAL_LOG_VERSION;
+import static org.neo4j.storageengine.api.LogVersionRepository.INITIAL_LOG_VERSION;
 import static org.neo4j.util.Preconditions.requireNonNegative;
 
 public class ThresholdBasedPruneStrategy implements LogPruneStrategy

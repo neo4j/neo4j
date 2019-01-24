@@ -82,11 +82,11 @@ public class DatabaseMigrator
         StoreVersionCheck storeVersionCheck = storageEngineFactory.versionCheck( dependencies );
 
         StoreUpgrader storeUpgrader = new StoreUpgrader( storeVersionCheck,
-                new VisibleMigrationProgressMonitor( logService.getUserLog( DatabaseMigrator.class ) ), config, fs, pageCache, logProvider,
+                new VisibleMigrationProgressMonitor( logService.getUserLog( DatabaseMigrator.class ) ), config, fs, logProvider,
                 tailScanner, legacyLogsLocator );
 
         this.indexProviderMap.accept(
-            provider -> storeUpgrader.addParticipant( provider.storeMigrationParticipant( fs, pageCache ) ) );
+            provider -> storeUpgrader.addParticipant( provider.storeMigrationParticipant( fs, pageCache, storageEngineFactory ) ) );
         storeUpgrader.addParticipant( storageEngineFactory.migrationParticipant( dependencies ) );
         storeUpgrader.addParticipant( new NativeLabelScanStoreMigrator( fs, pageCache, config, storageEngineFactory ) );
         storeUpgrader.migrateIfNeeded( databaseLayout );

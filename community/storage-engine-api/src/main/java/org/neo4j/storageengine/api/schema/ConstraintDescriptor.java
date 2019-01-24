@@ -73,6 +73,4 @@ public interface ConstraintDescriptor extends SchemaDescriptorSupplier
     }
 
     String prettyPrint( TokenNameLookup tokenNameLookup );
-
-    String name();
 }

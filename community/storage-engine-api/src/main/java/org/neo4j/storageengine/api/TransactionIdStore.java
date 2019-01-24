@@ -17,13 +17,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction.log;
+package org.neo4j.storageengine.api;
 
 import java.util.concurrent.TimeoutException;
-
-import org.neo4j.kernel.impl.store.TransactionId;
-
-import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
 
 /**
  * Keeps a latest transaction id. There's one counter for {@code committed transaction id} and one for
@@ -47,7 +43,7 @@ public interface TransactionIdStore
     /**
      * Tx id counting starting from this value (this value means no transaction ever committed).
      *
-     * Note that a read only transaction will get txId = 0, see {@link org.neo4j.internal.kernel.api.Transaction}.
+     * Note that a read only transaction will get txId = 0.
      */
     long BASE_TX_ID = 1;
     long BASE_TX_CHECKSUM = 0;
@@ -66,9 +62,6 @@ public interface TransactionIdStore
      * Timestamp value used when record in the metadata store is not present and there are no transactions in logs.
      */
     long UNKNOWN_TX_COMMIT_TIMESTAMP = 1;
-
-    long BASE_TX_LOG_VERSION = 0;
-    long BASE_TX_LOG_BYTE_OFFSET = LOG_HEADER_SIZE;
 
     /**
      * @return the next transaction id for a committing transaction. The transaction id is incremented

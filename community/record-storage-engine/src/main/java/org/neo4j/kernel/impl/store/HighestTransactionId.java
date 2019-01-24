@@ -21,6 +21,8 @@ package org.neo4j.kernel.impl.store;
 
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.neo4j.storageengine.api.TransactionId;
+
 /**
  * Can accept offerings about {@link TransactionId}, but will always only keep the highest one,
  * always available in {@link #get()}.

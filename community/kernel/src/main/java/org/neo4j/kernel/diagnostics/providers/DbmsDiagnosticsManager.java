@@ -101,7 +101,7 @@ public class DbmsDiagnosticsManager
 
         diagnosticsManager.section( log, "Database: " + database.getDatabaseName() );
         diagnosticsManager.dump( new VersionDiagnostics( databaseInfo, database.getStoreId() ), log );
-        diagnosticsManager.dump( new StoreFilesDiagnostics( database.getDatabaseLayout() ), log );
+        diagnosticsManager.dump( new StoreFilesDiagnostics( database ), log );
         diagnosticsManager.dump( new TransactionRangeDiagnostics( database ), log );
         storageEngine.dumpDiagnostics( diagnosticsManager, log );
     }

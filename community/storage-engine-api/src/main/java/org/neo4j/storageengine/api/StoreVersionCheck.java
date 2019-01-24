@@ -27,13 +27,15 @@ public interface StoreVersionCheck
      * Store version of an existing store (this instance knows which store it's about).
      * @return store version of the existing store.
      */
-    Optional<StoreVersion> storeVersion();
+    Optional<String> storeVersion();
 
     /**
      * Store version as dictated by configuration.
      * @return store version that configuration says is the version to use.
      */
     String configuredVersion();
+
+    StoreVersion versionInformation( String storeVersion );
 
     /**
      * Should only be called if {@link #storeVersion()} and {@link #configuredVersion()} aren't equal.

@@ -23,7 +23,7 @@ import java.util.function.LongSupplier;
 
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContext;
 
-import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
+import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_ID;
 
 /**
  * Transactional version context that used by read transaction to read data of specific version.

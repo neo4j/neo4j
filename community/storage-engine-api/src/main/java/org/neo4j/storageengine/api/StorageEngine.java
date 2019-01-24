@@ -151,4 +151,12 @@ public interface StorageEngine extends ReadableStorageEngine
      * The life cycle that is used for initialising the token holders, and filling the schema cache.
      */
     Lifecycle schemaAndTokensLifecycle();
+
+    /**
+     * @return a {@link TransactionIdStore}, which is exposed because kernel treats transaction ids as central to a lot of functionality,
+     * not the least clustering. It is owned by the storage engine because it's tightly coupled with.
+     */
+    TransactionIdStore transactionIdStore();
+
+    LogVersionRepository logVersionRepository();
 }

@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.store.counts;
 import org.neo4j.kernel.impl.store.kvstore.HeaderField;
 import org.neo4j.kernel.impl.store.kvstore.ReadableBuffer;
 import org.neo4j.kernel.impl.store.kvstore.WritableBuffer;
-import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.storageengine.api.TransactionIdStore;
 
 final class FileVersion
 {

@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.transaction.log.entry;
 
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.storageengine.api.TransactionIdStore;
 
 import static java.lang.Math.abs;
 import static java.lang.System.currentTimeMillis;

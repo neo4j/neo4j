@@ -23,6 +23,7 @@ import org.junit.Test;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.test.Race;
 
 import static java.lang.Math.max;

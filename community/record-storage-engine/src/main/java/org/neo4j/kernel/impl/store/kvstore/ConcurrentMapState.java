@@ -32,7 +32,7 @@ import java.util.concurrent.locks.Lock;
 
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContext;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
-import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.storageengine.api.TransactionIdStore;
 
 class ConcurrentMapState<Key> extends ActiveState<Key>
 {

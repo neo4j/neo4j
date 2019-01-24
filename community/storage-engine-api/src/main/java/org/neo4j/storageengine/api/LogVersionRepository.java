@@ -17,11 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction.log;
+package org.neo4j.storageengine.api;
 
 public interface LogVersionRepository
 {
     long INITIAL_LOG_VERSION = 0;
+    long BASE_TX_LOG_VERSION = 0;
+    int BASE_TX_LOG_BYTE_OFFSET = Long.BYTES * 2;
 
     /**
      * Returns the current log version. It is non blocking.

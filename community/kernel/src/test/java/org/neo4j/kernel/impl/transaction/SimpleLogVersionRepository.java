@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
-import org.neo4j.kernel.impl.transaction.log.LogVersionRepository;
+import org.neo4j.storageengine.api.LogVersionRepository;
 
 public class SimpleLogVersionRepository implements LogVersionRepository
 {

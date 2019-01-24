@@ -17,15 +17,32 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal
+package org.neo4j.kernel.impl.storemigration;
 
-import org.neo4j.kernel.GraphDatabaseQueryService
-import org.neo4j.storageengine.api.TransactionIdStore
+import org.neo4j.kernel.impl.store.format.RecordFormats;
+import org.neo4j.storageengine.api.StoreVersion;
+import org.neo4j.storageengine.api.format.Capability;
 
-case class LastCommittedTxIdProvider(db: GraphDatabaseQueryService) extends (() => Long) {
+class RecordStoreVersion implements StoreVersion
+{
+    private final String version;
+    private final RecordFormats format;
 
-  override def apply(): Long = {
-    val txIdStore = db.getDependencyResolver.resolveDependency(classOf[TransactionIdStore])
-    txIdStore.getLastCommittedTransactionId
-  }
+    RecordStoreVersion( String version, RecordFormats format )
+    {
+        this.version = version;
+        this.format = format;
+    }
+
+    @Override
+    public String storeVersion()
+    {
+        return version;
+    }
+
+    @Override
+    public boolean hasCapability( Capability capability )
+    {
+        return format.hasCapability( capability );
+    }
 }

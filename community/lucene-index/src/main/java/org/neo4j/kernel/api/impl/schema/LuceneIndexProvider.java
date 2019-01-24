@@ -39,9 +39,10 @@ import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.factory.OperationalMode;
-import org.neo4j.storageengine.migration.StoreMigrationParticipant;
 import org.neo4j.kernel.impl.storemigration.SchemaIndexMigrator;
+import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.StorageIndexReference;
+import org.neo4j.storageengine.migration.StoreMigrationParticipant;
 
 public class LuceneIndexProvider extends IndexProvider
 {
@@ -134,9 +135,9 @@ public class LuceneIndexProvider extends IndexProvider
     }
 
     @Override
-    public StoreMigrationParticipant storeMigrationParticipant( final FileSystemAbstraction fs, PageCache pageCache )
+    public StoreMigrationParticipant storeMigrationParticipant( final FileSystemAbstraction fs, PageCache pageCache, StorageEngineFactory storageEngineFactory )
     {
-        return new SchemaIndexMigrator( fs, this );
+        return new SchemaIndexMigrator( fs, this, storageEngineFactory );
     }
 
     @Override

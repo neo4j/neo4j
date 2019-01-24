@@ -29,7 +29,6 @@ import static java.lang.String.format;
  */
 public abstract class ConstraintDescriptor implements org.neo4j.storageengine.api.schema.ConstraintDescriptor
 {
-
     private final ConstraintDescriptor.Type type;
 
     ConstraintDescriptor( Type type )

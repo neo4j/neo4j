@@ -36,10 +36,10 @@ import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
-import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.logging.NullLog;
 import org.neo4j.test.rule.OtherThreadRule;
+import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.time.FakeClock;
 
 import static java.util.concurrent.TimeUnit.SECONDS;

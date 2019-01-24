@@ -26,9 +26,9 @@ import org.neo4j.common.ProgressReporter;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.impl.store.format.CapabilityType;
-import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
-import org.neo4j.kernel.impl.store.format.RecordFormats;
+import org.neo4j.storageengine.api.StorageEngineFactory;
+import org.neo4j.storageengine.api.StoreVersion;
+import org.neo4j.storageengine.api.format.CapabilityType;
 import org.neo4j.storageengine.migration.AbstractStoreMigrationParticipant;
 
 /**
@@ -43,21 +43,23 @@ public class SchemaIndexMigrator extends AbstractStoreMigrationParticipant
     private boolean deleteObsoleteIndexes;
     private File schemaIndexDirectory;
     private final IndexProvider indexProvider;
+    private final StorageEngineFactory storageEngineFactory;
 
-    public SchemaIndexMigrator( FileSystemAbstraction fileSystem, IndexProvider indexProvider )
+    public SchemaIndexMigrator( FileSystemAbstraction fileSystem, IndexProvider indexProvider, StorageEngineFactory storageEngineFactory )
     {
         super( "Indexes" );
         this.fileSystem = fileSystem;
         this.indexProvider = indexProvider;
+        this.storageEngineFactory = storageEngineFactory;
     }
 
     @Override
     public void migrate( DatabaseLayout directoryLayout, DatabaseLayout migrationLayout, ProgressReporter progressReporter,
             String versionToMigrateFrom, String versionToMigrateTo )
     {
-        RecordFormats from = RecordFormatSelector.selectForVersion( versionToMigrateFrom );
-        RecordFormats to = RecordFormatSelector.selectForVersion( versionToMigrateTo );
-        if ( !from.hasCompatibleCapabilities( to, CapabilityType.INDEX ) )
+        StoreVersion fromVersionInformation = storageEngineFactory.versionInformation( versionToMigrateFrom );
+        StoreVersion toVersionInformation = storageEngineFactory.versionInformation( versionToMigrateTo );
+        if ( !fromVersionInformation.hasCompatibleCapabilities( toVersionInformation, CapabilityType.INDEX ) )
         {
             schemaIndexDirectory = indexProvider.directoryStructure().rootDirectory();
             if ( schemaIndexDirectory != null )

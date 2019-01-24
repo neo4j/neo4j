@@ -24,8 +24,8 @@ import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.impl.transaction.log.LogVersionRepository;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
+import org.neo4j.storageengine.api.LogVersionRepository;
 
 class TransactionLogFilesContext
 {

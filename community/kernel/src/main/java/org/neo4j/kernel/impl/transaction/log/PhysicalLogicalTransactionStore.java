@@ -36,11 +36,11 @@ import org.neo4j.kernel.impl.transaction.log.reverse.ReversedMultiFileTransactio
 import org.neo4j.kernel.impl.transaction.log.reverse.ReversedTransactionCursorMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
 
-import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_CHECKSUM;
-import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
-import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryByteCodes.TX_COMMIT;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryByteCodes.TX_START;
+import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
+import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
+import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_ID;
 
 public class PhysicalLogicalTransactionStore implements LogicalTransactionStore
 {

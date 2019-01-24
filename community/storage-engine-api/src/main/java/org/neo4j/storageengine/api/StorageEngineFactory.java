@@ -28,7 +28,7 @@ import org.neo4j.storageengine.migration.StoreMigrationParticipant;
  * A factory suitable for something like service-loading to load {@link StorageEngine} instances.
  * Also migration logic is provided by this factory.
  */
-public abstract class StorageEngineFactory
+public interface StorageEngineFactory
 {
     /**
      * Returns a {@link StoreVersionCheck} which can provide both configured and existing store versions
@@ -36,14 +36,16 @@ public abstract class StorageEngineFactory
      * @param dependencyResolver {@link DependencyResolver} for all dependency needs.
      * @return StoreVersionCheck to check store version as well as upgradability to other versions.
      */
-    public abstract StoreVersionCheck versionCheck( DependencyResolver dependencyResolver );
+    StoreVersionCheck versionCheck( DependencyResolver dependencyResolver );
+
+    StoreVersion versionInformation( String storeVersion );
 
     /**
      * Returns a {@link StoreMigrationParticipant} which will be able to participate in a store migration.
      * @param dependencyResolver {@link DependencyResolver} for all dependency needs.
      * @return StoreMigrationParticipant for migration.
      */
-    public abstract StoreMigrationParticipant migrationParticipant( DependencyResolver dependencyResolver );
+    StoreMigrationParticipant migrationParticipant( DependencyResolver dependencyResolver );
 
     /**
      * Instantiates a {@link StorageEngine} where all dependencies can be retrieved from the supplied {@code dependencyResolver}.
@@ -53,7 +55,11 @@ public abstract class StorageEngineFactory
      * back to the instantiator. This is a hack with the goal to be removed completely when graph storage abstraction in kernel is properly in place.
      * @return the instantiated {@link StorageEngine}.
      */
-    public abstract StorageEngine instantiate( DependencyResolver dependencyResolver, DependencySatisfier dependencySatisfier );
+    StorageEngine instantiate( DependencyResolver dependencyResolver, DependencySatisfier dependencySatisfier );
+
+    TransactionIdStore readOnlyTransactionIdStore( DependencyResolver dependencyResolver );
+
+    LogVersionRepository readOnlyLogVersionRepository( DependencyResolver dependencyResolver );
 
     /**
      * Instantiates a {@link ReadableStorageEngine} over a storage location without instantiating the full {@link StorageEngine}, just the readable parts.
@@ -68,7 +74,7 @@ public abstract class StorageEngineFactory
      * @return the selected {@link StorageEngineFactory}.
      * @throws IllegalStateException if there were no candidates.
      */
-    public static StorageEngineFactory selectStorageEngine( Iterable<StorageEngineFactory> candidates )
+    static StorageEngineFactory selectStorageEngine( Iterable<StorageEngineFactory> candidates )
     {
         return Iterables.single( candidates );
     }

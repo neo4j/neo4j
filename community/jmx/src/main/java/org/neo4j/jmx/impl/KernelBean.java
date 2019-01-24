@@ -26,8 +26,8 @@ import javax.management.ObjectName;
 
 import org.neo4j.jmx.Kernel;
 import org.neo4j.kernel.database.Database;
-import org.neo4j.kernel.impl.transaction.log.LogVersionRepository;
 import org.neo4j.kernel.internal.KernelData;
+import org.neo4j.storageengine.api.LogVersionRepository;
 import org.neo4j.storageengine.api.StoreId;
 
 import static org.neo4j.function.Suppliers.lazySingleton;

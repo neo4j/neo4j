@@ -136,10 +136,14 @@ public class StoreUpgrader
         }
         else
         {
-            Optional<StoreVersion> storeVersion = storeVersionCheck.storeVersion();
-            if ( storeVersion.isPresent() && storeVersion.get().hasCapability( LuceneCapability.LUCENE_5 ) )
+            Optional<String> storeVersion = storeVersionCheck.storeVersion();
+            if ( storeVersion.isPresent() )
             {
-                throw new UpgradeNotAllowedException( "Upgrade is required to migrate store to new major version." );
+                StoreVersion version = storeVersionCheck.versionInformation( storeVersion.get() );
+                if ( version.hasCapability( LuceneCapability.LUCENE_5 ) )
+                {
+                    throw new UpgradeNotAllowedException( "Upgrade is required to migrate store to new major version." );
+                }
             }
             throw new UpgradeNotAllowedException();
         }
@@ -182,7 +186,7 @@ public class StoreUpgrader
             versionToMigrateFrom =
                     MigrationStatus.moving.maybeReadInfo( fileSystem, migrationStateFile, versionToMigrateFrom );
             moveMigratedFilesToStoreDirectory( participants, migrationLayout, dbDirectoryLayout,
-                    versionToMigrateFrom, storeVersionCheck.storeVersion().orElseThrow( () -> new IOException( "Store version not found" ) ).storeVersion() );
+                    versionToMigrateFrom, storeVersionCheck.storeVersion().orElseThrow( () -> new IOException( "Store version not found" ) ) );
         }
 
         progressMonitor.startTransactionLogsMigration();

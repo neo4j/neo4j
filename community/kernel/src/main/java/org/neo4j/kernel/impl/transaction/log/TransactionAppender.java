@@ -25,6 +25,7 @@ import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogCheckPointEvent;
 import org.neo4j.kernel.internal.DatabaseHealth;
+import org.neo4j.storageengine.api.TransactionIdStore;
 
 /**
  * Writes batches of transactions, each containing groups of commands to a log that is guaranteed to be recoverable,

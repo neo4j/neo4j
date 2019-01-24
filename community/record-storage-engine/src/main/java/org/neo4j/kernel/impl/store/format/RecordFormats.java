@@ -101,7 +101,7 @@ public interface RecordFormats
      * @param capability {@link LuceneCapability} to check for.
      * @return whether or not this format has a certain {@link LuceneCapability}.
      */
-    boolean hasCapability( LuceneCapability capability );
+    boolean hasCapability( Capability capability );
 
     /**
      * Get format family to which this format belongs to.

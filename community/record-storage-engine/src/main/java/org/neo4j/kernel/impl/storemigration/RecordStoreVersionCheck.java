@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.storemigration;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Optional;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -58,7 +59,20 @@ public class RecordStoreVersionCheck implements StoreVersionCheck
     }
 
     @Override
-    public String storeVersion() throws IOException
+    public Optional<String> storeVersion()
+    {
+        try
+        {
+            String version = readVersion();
+            return Optional.of( version );
+        }
+        catch ( IOException e )
+        {
+            return Optional.empty();
+        }
+    }
+
+    private String readVersion() throws IOException
     {
         long record = MetaDataStore.getRecord( pageCache, metaDataFile, STORE_VERSION );
         if ( record == MetaDataRecordFormat.FIELD_NOT_PRESENT )
@@ -78,21 +92,13 @@ public class RecordStoreVersionCheck implements StoreVersionCheck
     @Override
     public Result checkUpgrade( String desiredVersion )
     {
-        String version;
-        try
-        {
-            version = storeVersion();
-        }
-        catch ( IllegalStateException e )
+        Optional<String> storeVersion = storeVersion();
+        if ( !storeVersion.isPresent() )
         {
             return new Result( Outcome.storeVersionNotFound, null, metaDataFile.getName() );
         }
-        catch ( IOException e )
-        {
-            // since we cannot read let's assume the file is not there
-            return new Result( Outcome.missingStoreFile, null, metaDataFile.getName() );
-        }
 
+        String version = storeVersion.get();
         if ( desiredVersion.equals( version ) )
         {
             return new Result( Outcome.ok, version, metaDataFile.getName() );

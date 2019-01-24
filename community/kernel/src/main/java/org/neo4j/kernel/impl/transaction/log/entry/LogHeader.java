@@ -19,9 +19,11 @@
  */
 package org.neo4j.kernel.impl.transaction.log.entry;
 
+import org.neo4j.storageengine.api.LogVersionRepository;
+
 public class LogHeader
 {
-    public static final int LOG_HEADER_SIZE = 16;
+    public static final int LOG_HEADER_SIZE = LogVersionRepository.BASE_TX_LOG_BYTE_OFFSET;
 
     public final byte logFormatVersion;
     public final long logVersion;

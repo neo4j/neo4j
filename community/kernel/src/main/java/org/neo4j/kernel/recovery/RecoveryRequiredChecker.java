@@ -21,6 +21,7 @@ package org.neo4j.kernel.recovery;
 
 import java.io.IOException;
 
+import org.neo4j.helpers.Service;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
@@ -46,21 +47,24 @@ public class RecoveryRequiredChecker
     private final FileSystemAbstraction fs;
     private final PageCache pageCache;
     private final Config config;
+    private final StorageEngineFactory storageEngineFactory;
 
     RecoveryRequiredChecker( FileSystemAbstraction fs, PageCache pageCache, Config config )
     {
         this.fs = fs;
         this.pageCache = pageCache;
         this.config = config;
+        // TODO perhaps pass in from outside?
+        this.storageEngineFactory = StorageEngineFactory.selectStorageEngine( Service.load( StorageEngineFactory.class ) );
     }
 
-    public boolean isRecoveryRequiredAt( StorageEngineFactory storageEngineFactory, DatabaseLayout databaseLayout ) throws IOException
+    public boolean isRecoveryRequiredAt( DatabaseLayout databaseLayout ) throws IOException
     {
         LogTailScanner tailScanner = getLogTailScanner( databaseLayout );
-        return isRecoveryRequiredAt( storageEngineFactory, databaseLayout, tailScanner );
+        return isRecoveryRequiredAt( databaseLayout, tailScanner );
     }
 
-    boolean isRecoveryRequiredAt( StorageEngineFactory storageEngineFactory, DatabaseLayout databaseLayout, LogTailScanner tailScanner )
+    boolean isRecoveryRequiredAt( DatabaseLayout databaseLayout, LogTailScanner tailScanner )
     {
         Dependencies dependencies = new Dependencies();
         dependencies.satisfyDependencies( fs, databaseLayout, pageCache, NullLogService.getInstance(), config );

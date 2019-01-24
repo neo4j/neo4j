@@ -38,8 +38,9 @@ import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexProviderDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.newapi.UnionIndexCapability;
-import org.neo4j.storageengine.migration.StoreMigrationParticipant;
+import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.StorageIndexReference;
+import org.neo4j.storageengine.migration.StoreMigrationParticipant;
 import org.neo4j.values.storable.ValueCategory;
 
 import static org.neo4j.internal.kernel.api.InternalIndexState.FAILED;
@@ -177,7 +178,7 @@ public class FusionIndexProvider extends IndexProvider
     }
 
     @Override
-    public StoreMigrationParticipant storeMigrationParticipant( FileSystemAbstraction fs, PageCache pageCache )
+    public StoreMigrationParticipant storeMigrationParticipant( FileSystemAbstraction fs, PageCache pageCache, StorageEngineFactory storageEngineFactory )
     {
         return StoreMigrationParticipant.NOT_PARTICIPATING;
     }

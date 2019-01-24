@@ -28,7 +28,7 @@ import java.io.IOException;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.MetaDataStore;
-import org.neo4j.kernel.impl.transaction.log.LogVersionRepository;
+import org.neo4j.storageengine.api.LogVersionRepository;
 import org.neo4j.test.limited.LimitedFileSystemGraphDatabase;
 import org.neo4j.test.rule.CleanupRule;
 import org.neo4j.test.rule.PageCacheRule;

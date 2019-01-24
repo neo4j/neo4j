@@ -41,8 +41,8 @@ import org.neo4j.common.DependencyResolver;
 import org.neo4j.kernel.api.KernelTransactionHandle;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.api.KernelTransactions;
-import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.values.virtual.MapValue;
 
 import static java.util.Arrays.asList;

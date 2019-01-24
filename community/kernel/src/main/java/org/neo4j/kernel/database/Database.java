@@ -105,7 +105,6 @@ import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
-import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointScheduler;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointThreshold;
@@ -156,6 +155,7 @@ import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.StoreFileMetadata;
 import org.neo4j.storageengine.api.StoreId;
+import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.time.SystemNanoClock;
 import org.neo4j.util.VisibleForTesting;
 
@@ -322,7 +322,10 @@ public class Database extends LifecycleAdapter
             databaseDependencies.satisfyDependency( checkPointMonitor );
 
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector = RecoveryCleanupWorkCollector.immediate();
-            databaseDependencies.satisfyDependencies( recoveryCleanupWorkCollector );
+            databaseDependencies.satisfyDependency( recoveryCleanupWorkCollector );
+
+            StorageEngineFactory storageEngineFactory = selectStorageEngine();
+            databaseDependencies.satisfyDependency( storageEngineFactory );
 
             life.add( new PageCacheLifecycle( databasePageCache ) );
             life.add( initializeExtensions( databaseDependencies ) );

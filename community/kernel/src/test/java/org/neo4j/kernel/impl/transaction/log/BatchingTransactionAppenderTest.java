@@ -44,6 +44,7 @@ import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogCheckPointEvent;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.storageengine.api.StorageCommand;
+import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.test.rule.CleanupRule;
 import org.neo4j.test.rule.LifeRule;
 

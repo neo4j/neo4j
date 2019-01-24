@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
+import org.neo4j.storageengine.api.TransactionIdStore;
+
 class TransactionCommitment implements Commitment
 {
     private final long transactionId;

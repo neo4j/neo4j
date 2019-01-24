@@ -30,9 +30,10 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.index.schema.IndexDescriptor;
-import org.neo4j.storageengine.migration.StoreMigrationParticipant;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.StorageIndexReference;
+import org.neo4j.storageengine.migration.StoreMigrationParticipant;
 
 /**
  * Contract for implementing an index in Neo4j.
@@ -178,7 +179,7 @@ public abstract class IndexProvider extends LifecycleAdapter
 
                 @Override
                 public StoreMigrationParticipant storeMigrationParticipant( FileSystemAbstraction fs,
-                        PageCache pageCache )
+                        PageCache pageCache, StorageEngineFactory storageEngineFactory )
                 {
                     return StoreMigrationParticipant.NOT_PARTICIPATING;
                 }
@@ -299,5 +300,6 @@ public abstract class IndexProvider extends LifecycleAdapter
         return directoryStructure;
     }
 
-    public abstract StoreMigrationParticipant storeMigrationParticipant( FileSystemAbstraction fs, PageCache pageCache );
+    public abstract StoreMigrationParticipant storeMigrationParticipant( FileSystemAbstraction fs, PageCache pageCache,
+            StorageEngineFactory storageEngineFactory );
 }

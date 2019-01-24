@@ -46,8 +46,8 @@ public class DatabaseFileListing
     private final DatabaseLayout databaseLayout;
     private final LogFiles logFiles;
     private final StorageEngine storageEngine;
-    private static final Function<File,StoreFileMetadata> logFileMapper = file -> new StoreFileMetadata( file, 1, true, false );
-    private final SchemaAndIndexingFileIndexListing neoStoreFileIndexListing;
+    private static final Function<File,StoreFileMetadata> logFileMapper = file -> new StoreFileMetadata( file, 1, true );
+    private final SchemaAndIndexingFileIndexListing fileIndexListing;
     private final Collection<StoreFileProvider> additionalProviders;
 
     public DatabaseFileListing( DatabaseLayout databaseLayout, LogFiles logFiles,
@@ -56,7 +56,7 @@ public class DatabaseFileListing
         this.databaseLayout = databaseLayout;
         this.logFiles = logFiles;
         this.storageEngine = storageEngine;
-        this.neoStoreFileIndexListing = new SchemaAndIndexingFileIndexListing( labelScanStore, indexingService );
+        this.fileIndexListing = new SchemaAndIndexingFileIndexListing( labelScanStore, indexingService );
         this.additionalProviders = new CopyOnWriteArraySet<>();
     }
 
@@ -65,9 +65,9 @@ public class DatabaseFileListing
         return new StoreFileListingBuilder();
     }
 
-    public SchemaAndIndexingFileIndexListing getNeoStoreFileIndexListing()
+    public SchemaAndIndexingFileIndexListing getIndexFileListing()
     {
-        return neoStoreFileIndexListing;
+        return fileIndexListing;
     }
 
     public void registerStoreFileProvider( StoreFileProvider provider )
@@ -238,11 +238,11 @@ public class DatabaseFileListing
                 }
                 if ( !excludeLabelScanStoreFiles )
                 {
-                    resources.add( neoStoreFileIndexListing.gatherLabelScanStoreFiles( files ) );
+                    resources.add( fileIndexListing.gatherLabelScanStoreFiles( files ) );
                 }
                 if ( !excludeSchemaIndexStoreFiles )
                 {
-                    resources.add( neoStoreFileIndexListing.gatherSchemaIndexFiles( files ) );
+                    resources.add( fileIndexListing.gatherSchemaIndexFiles( files ) );
                 }
                 if ( !excludeAdditionalProviders )
                 {

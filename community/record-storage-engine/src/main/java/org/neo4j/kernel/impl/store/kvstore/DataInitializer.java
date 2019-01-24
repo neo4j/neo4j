@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.store.kvstore;
 
-import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.storageengine.api.TransactionIdStore;
 
 public interface DataInitializer<Sink>
 {

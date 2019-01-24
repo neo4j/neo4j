@@ -24,8 +24,8 @@ import java.util.function.BooleanSupplier;
 
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
-import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
+import org.neo4j.storageengine.api.TransactionIdStore;
 
 class Worker implements Runnable
 {

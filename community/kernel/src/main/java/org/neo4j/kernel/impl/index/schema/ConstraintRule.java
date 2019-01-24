@@ -177,10 +177,4 @@ public class ConstraintRule implements SchemaRule, StorageConstraintReference
     {
         return descriptor.prettyPrint( tokenNameLookup );
     }
-
-    @Override
-    public String name()
-    {
-        return name;
-    }
 }
