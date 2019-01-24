@@ -16,10 +16,14 @@
  */
 package org.neo4j.cypher.internal.v4_0.expressions.functions
 
-case object Range extends Function with FunctionWithInfo {
+import org.neo4j.cypher.internal.v4_0.expressions.{FunctionTypeSignature, TypeSignatures}
+import org.neo4j.cypher.internal.v4_0.util.symbols._
+
+case object Range extends Function with TypeSignatures {
   def name = "range"
 
-  override def getSignatureAsString: String = name + "(start :: INTEGER, end :: INTEGER, step = null :: INTEGER) :: (FLOAT?)"
-
-  override def getDescription: String = "Returns a list comprising all integer values within a specified range created with optional step length."
+  override val signatures = Vector(
+    FunctionTypeSignature(names = Vector("start", "end"), argumentTypes = Vector(CTInteger, CTInteger), outputType = CTList(CTInteger), description = "Returns a list comprising all integer values within a specified range."),
+    FunctionTypeSignature(names = Vector("start", "end", "step"), argumentTypes = Vector(CTInteger, CTInteger, CTInteger), outputType = CTList(CTInteger), description = "Returns a list comprising all integer values within a specified range created with optional step length.")
+  )
 }
