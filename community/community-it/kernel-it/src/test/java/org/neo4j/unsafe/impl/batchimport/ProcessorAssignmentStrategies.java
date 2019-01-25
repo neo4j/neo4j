@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.unsafe.impl.batchimport.staging;
+package org.neo4j.unsafe.impl.batchimport;
 
 import java.time.Clock;
 import java.util.HashMap;
@@ -27,7 +27,9 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.time.Clocks;
-import org.neo4j.unsafe.impl.batchimport.ParallelBatchImporter;
+import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitor;
+import org.neo4j.unsafe.impl.batchimport.staging.StageExecution;
+import org.neo4j.unsafe.impl.batchimport.staging.Step;
 
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;

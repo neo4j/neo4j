@@ -20,4 +20,6 @@ public interface StoreVersion
     String introductionNeo4jVersion();
 
     Optional<StoreVersion> successor();
+
+    boolean isCompatibleWith( StoreVersion otherVersion );
 }

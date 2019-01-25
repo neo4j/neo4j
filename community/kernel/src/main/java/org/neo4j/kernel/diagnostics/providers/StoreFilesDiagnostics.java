@@ -21,13 +21,14 @@ package org.neo4j.kernel.diagnostics.providers;
 
 import java.io.File;
 import java.io.FileFilter;
+import java.io.IOException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 import java.util.TimeZone;
-import java.util.stream.Collectors;
 
 import org.neo4j.helpers.Format;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -127,13 +128,20 @@ public class StoreFilesDiagnostics extends NamedDiagnosticsProvider
 
     private class MappedFileCounter
     {
-        private final List<File> mappedCandidates;
+        private final List<File> mappedCandidates = new ArrayList<>();
         private long size;
         private final FileFilter mappedIndexFilter;
 
         MappedFileCounter()
         {
-            mappedCandidates = storageEngineFactory.listStorageFiles( fs, databaseLayout ).collect( Collectors.toList() );
+            try
+            {
+                storageEngineFactory.listStorageFiles( fs, databaseLayout ).forEach( mappedCandidates::add );
+            }
+            catch ( IOException e )
+            {
+                // Hmm, there was no storage here
+            }
             mappedIndexFilter = new NativeIndexFileFilter( databaseLayout.databaseDirectory() );
         }
 

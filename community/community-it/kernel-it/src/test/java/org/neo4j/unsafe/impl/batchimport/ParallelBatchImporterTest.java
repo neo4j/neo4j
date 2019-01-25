@@ -87,12 +87,12 @@ import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.io.ByteUnit.mebiBytes;
 import static org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds.EMPTY;
 import static org.neo4j.unsafe.impl.batchimport.ImportLogic.NO_MONITOR;
+import static org.neo4j.unsafe.impl.batchimport.ProcessorAssignmentStrategies.eagerRandomSaturation;
 import static org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory.AUTO_WITHOUT_PAGECACHE;
 import static org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMappers.longs;
 import static org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMappers.strings;
 import static org.neo4j.unsafe.impl.batchimport.input.Collectors.silentBadCollector;
 import static org.neo4j.unsafe.impl.batchimport.input.Inputs.knownEstimates;
-import static org.neo4j.unsafe.impl.batchimport.staging.ProcessorAssignmentStrategies.eagerRandomSaturation;
 
 @RunWith( Parameterized.class )
 public class ParallelBatchImporterTest

@@ -27,6 +27,7 @@ import java.util.stream.Stream;
 
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.common.DependencySatisfier;
+import org.neo4j.exceptions.UnsatisfiedDependencyException;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
@@ -39,25 +40,37 @@ import org.neo4j.kernel.impl.core.ReadOnlyTokenCreator;
 import org.neo4j.kernel.impl.core.TokenHolder;
 import org.neo4j.kernel.impl.core.TokenHolders;
 import org.neo4j.kernel.impl.locking.LockService;
+import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
+import org.neo4j.kernel.impl.store.format.RecordFormats;
+import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdController;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.storemigration.RecordStorageMigrator;
 import org.neo4j.kernel.impl.storemigration.RecordStoreVersion;
 import org.neo4j.kernel.impl.storemigration.RecordStoreVersionCheck;
 import org.neo4j.kernel.internal.DatabaseHealth;
+import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.ReadableStorageEngine;
 import org.neo4j.storageengine.api.LogVersionRepository;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageEngineFactory;
+import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.StoreVersion;
 import org.neo4j.storageengine.api.StoreVersionCheck;
 import org.neo4j.storageengine.api.TransactionIdStore;
+import org.neo4j.storageengine.api.TransactionMetaDataStore;
 import org.neo4j.storageengine.migration.StoreMigrationParticipant;
+
+import static org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.kernel.impl.store.StoreType.META_DATA;
+import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForStoreOrConfig;
 
 public class RecordStorageEngineFactory implements StorageEngineFactory
 {
@@ -68,7 +81,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
                 dependencyResolver.resolveDependency( FileSystemAbstraction.class ),
                 dependencyResolver.resolveDependency( PageCache.class ),
                 dependencyResolver.resolveDependency( DatabaseLayout.class ),
-                dependencyResolver.resolveDependency( LogService.class ).getInternalLogProvider(),
+                resolveLogProvider( dependencyResolver ),
                 dependencyResolver.resolveDependency( Config.class ) );
     }
 
@@ -97,7 +110,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
                 dependencyResolver.resolveDependency( Config.class ),
                 dependencyResolver.resolveDependency( PageCache.class ),
                 dependencyResolver.resolveDependency( FileSystemAbstraction.class ),
-                dependencyResolver.resolveDependency( LogService.class ).getInternalLogProvider(),
+                resolveLogProvider( dependencyResolver ),
                 dependencyResolver.resolveDependency( TokenHolders.class ),
                 dependencyResolver.resolveDependency( SchemaState.class ),
                 dependencyResolver.resolveDependency( ConstraintSemantics.class ),
@@ -127,14 +140,25 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
                 dependencyResolver.resolveDependency( VersionContextSupplier.class ) );
     }
 
-    public Stream<File> listStorageFiles( FileSystemAbstraction fileSystem, DatabaseLayout databaseLayout )
+    public Stream<File> listStorageFiles( FileSystemAbstraction fileSystem, DatabaseLayout databaseLayout ) throws IOException
     {
+        if ( !fileSystem.fileExists( databaseLayout.file( META_DATA.getDatabaseFile() ).findFirst().get() ) )
+        {
+            throw new IOException( "No storage present at " + databaseLayout + " on " + fileSystem );
+        }
+
         List<File> files = new ArrayList<>();
         for ( StoreType type : StoreType.values() )
         {
             databaseLayout.file( type.getDatabaseFile() ).filter( fileSystem::fileExists ).forEach( files::add );
         }
         return files.stream();
+    }
+
+    @Override
+    public boolean storageExists( FileSystemAbstraction fs, PageCache pageCache, DatabaseLayout databaseLayout )
+    {
+        return NeoStores.isStorePresent( pageCache, databaseLayout );
     }
 
     @Override
@@ -151,6 +175,35 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
         return new ReadOnlyLogVersionRepository(
                 dependencyResolver.resolveDependency( PageCache.class ),
                 dependencyResolver.resolveDependency( DatabaseLayout.class ) );
+    }
+
+    @Override
+    public TransactionMetaDataStore transactionMetaDataStore( DependencyResolver dependencyResolver )
+    {
+        DatabaseLayout databaseLayout = dependencyResolver.resolveDependency( DatabaseLayout.class );
+        FileSystemAbstraction fs = dependencyResolver.resolveDependency( FileSystemAbstraction.class );
+        PageCache pageCache = dependencyResolver.resolveDependency( PageCache.class );
+        Config config = dependencyResolver.resolveDependency( Config.class );
+        NullLogProvider logProvider = NullLogProvider.getInstance();
+
+        RecordFormats recordFormats = selectForStoreOrConfig( Config.defaults(), databaseLayout, fs, pageCache, logProvider );
+        return new StoreFactory( databaseLayout, config, new DefaultIdGeneratorFactory( fs ), pageCache, fs, recordFormats, logProvider, EMPTY )
+                .openNeoStores( META_DATA ).getMetaDataStore();
+    }
+
+    @Override
+    public StoreId storeId( DependencyResolver dependencyResolver ) throws IOException
+    {
+        DatabaseLayout databaseLayout = dependencyResolver.resolveDependency( DatabaseLayout.class );
+        PageCache pageCache = dependencyResolver.resolveDependency( PageCache.class );
+        FileSystemAbstraction fs = dependencyResolver.resolveDependency( FileSystemAbstraction.class );
+
+        File neoStoreFile = databaseLayout.metadataStore();
+        if ( !fs.fileExists( neoStoreFile ) )
+        {
+            return null;
+        }
+        return MetaDataStore.getStoreId( pageCache, neoStoreFile );
     }
 
     public static void setInitialTokens( TokenHolders tokenHolders, NeoStores neoStores )
@@ -182,5 +235,17 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
     private static TokenHolder createReadOnlyTokenHolder( String tokenType )
     {
         return new DelegatingTokenHolder( new ReadOnlyTokenCreator(), tokenType );
+    }
+
+    private LogProvider resolveLogProvider( DependencyResolver dependencyResolver )
+    {
+        try
+        {
+            return dependencyResolver.resolveDependency( LogService.class ).getInternalLogProvider();
+        }
+        catch ( UnsatisfiedDependencyException e )
+        {
+            return dependencyResolver.resolveDependency( LogProvider.class );
+        }
     }
 }

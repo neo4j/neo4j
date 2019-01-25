@@ -22,6 +22,7 @@ package org.neo4j.commandline.dbms;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.FilenameFilter;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Locale;
 import java.util.function.ToDoubleFunction;
@@ -284,7 +285,14 @@ public class MemoryRecommendationsCommand implements AdminCommand
     {
         StorageEngineFactory storageEngineFactory = StorageEngineFactory.selectStorageEngine( Service.load( StorageEngineFactory.class ) );
         FileSystemAbstraction fileSystem = outsideWorld.fileSystem();
-        return storageEngineFactory.listStorageFiles( fileSystem, databaseLayout ).mapToLong( fileSystem::getFileSize ).sum();
+        try
+        {
+            return storageEngineFactory.listStorageFiles( fileSystem, databaseLayout ).mapToLong( fileSystem::getFileSize ).sum();
+        }
+        catch ( IOException e )
+        {
+            return 0;
+        }
     }
 
     private long sumIndexFiles( File file, FilenameFilter filter )

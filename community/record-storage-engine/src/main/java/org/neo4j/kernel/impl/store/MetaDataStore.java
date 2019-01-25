@@ -44,10 +44,9 @@ import org.neo4j.kernel.impl.util.Bits;
 import org.neo4j.kernel.impl.util.OutOfOrderSequence;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.Logger;
-import org.neo4j.storageengine.api.LogVersionRepository;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionId;
-import org.neo4j.storageengine.api.TransactionIdStore;
+import org.neo4j.storageengine.api.TransactionMetaDataStore;
 
 import static java.lang.String.format;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
@@ -58,7 +57,7 @@ import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
 public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHeader>
-        implements TransactionIdStore, LogVersionRepository
+        implements TransactionMetaDataStore
 {
     public static final String TYPE_DESCRIPTOR = "NeoStore";
     // This value means the field has not been refreshed from the store. Normally, this should happen only once

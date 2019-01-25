@@ -128,4 +128,9 @@ public class DatabaseHealth
     {
         return causeOfPanic;
     }
+
+    public static DatabaseHealth newDatabaseHealth( Log log )
+    {
+        return new DatabaseHealth( new DatabasePanicEventGenerator( new DatabaseEventHandlers( log ) ), log );
+    }
 }

@@ -144,8 +144,15 @@ public class StoreUpgrader
                 {
                     throw new UpgradeNotAllowedException( "Upgrade is required to migrate store to new major version." );
                 }
+                else
+                {
+                    String configuredVersion = storeVersionCheck.configuredVersion();
+                    if ( configuredVersion != null && !version.isCompatibleWith( storeVersionCheck.versionInformation( configuredVersion ) ) )
+                    {
+                        throw new UpgradeNotAllowedException();
+                    }
+                }
             }
-            throw new UpgradeNotAllowedException();
         }
     }
 

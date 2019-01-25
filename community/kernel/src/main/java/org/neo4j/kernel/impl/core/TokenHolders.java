@@ -50,4 +50,15 @@ public class TokenHolders
     {
         return relationshipTypeTokens;
     }
+
+    /**
+     * @return TokenHolders which can be initialized, but not have any new tokens created.
+     */
+    public static TokenHolders readOnlyTokenHolders()
+    {
+        return new TokenHolders(
+                new DelegatingTokenHolder( new ReadOnlyTokenCreator(), TokenHolder.TYPE_PROPERTY_KEY ),
+                new DelegatingTokenHolder( new ReadOnlyTokenCreator(), TokenHolder.TYPE_LABEL ),
+                new DelegatingTokenHolder( new ReadOnlyTokenCreator(), TokenHolder.TYPE_RELATIONSHIP_TYPE ) );
+    }
 }

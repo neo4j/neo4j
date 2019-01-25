@@ -62,6 +62,7 @@ import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.internal.recordstorage.RecordStorageEngineFactory;
 import org.neo4j.internal.recordstorage.SchemaRuleAccess;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -2382,7 +2383,7 @@ public class FullCheckIntegrationTest
     private Iterator<StoreIndexDescriptor> getIndexDescriptors()
     {
         StoreAccess storeAccess = fixture.directStoreAccess().nativeStores();
-        TokenHolders tokenHolders = TokenHolders.readOnlyTokenHolders( storeAccess.getRawNeoStores() );
+        TokenHolders tokenHolders = RecordStorageEngineFactory.readOnlyTokenHolders( storeAccess.getRawNeoStores() );
         SchemaRuleAccess schema = SchemaRuleAccess.getSchemaRuleAccess( storeAccess.getSchemaStore(), tokenHolders );
         return schema.indexesGetAll();
     }

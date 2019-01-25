@@ -65,4 +65,14 @@ public class RecordStoreVersion implements StoreVersion
     {
         return RecordFormatSelector.findSuccessor( format ).map( RecordStoreVersion::new );
     }
+
+    @Override
+    public boolean isCompatibleWith( StoreVersion otherVersion )
+    {
+        if ( !(otherVersion instanceof RecordStoreVersion) )
+        {
+            return false;
+        }
+        return RecordFormatSelector.isStoreAndConfigFormatsCompatible( format, ((RecordStoreVersion) otherVersion).format );
+    }
 }

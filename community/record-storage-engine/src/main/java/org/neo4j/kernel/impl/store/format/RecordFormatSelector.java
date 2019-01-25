@@ -235,17 +235,25 @@ public class RecordFormatSelector
             Config config, DatabaseLayout databaseLayout, FileSystemAbstraction fs, PageCache pageCache, LogProvider logProvider )
     {
         RecordFormats configuredFormat = loadRecordFormat( configuredRecordFormat( config ) );
-
         RecordFormats currentFormat = selectForStore( databaseLayout, fs, pageCache, logProvider );
-
-        return (configuredFormat == null) ||
-                (currentFormat == null) ||
-                formatSameFamilyAndGeneration( currentFormat, configuredFormat );
+        return isStoreAndConfigFormatsCompatible( configuredFormat, currentFormat );
     }
 
     private static boolean formatSameFamilyAndGeneration( RecordFormats left, RecordFormats right )
     {
         return left.getFormatFamily().equals( right.getFormatFamily() ) && left.generation() == right.generation();
+    }
+
+    /**
+     * Check if a format is compatible with another format. In case if format is not configured or store does not
+     * exist yet - we consider formats as compatible.
+     * @param format a {@link RecordFormats}
+     * @param otherFormat another {@link RecordFormats} to compare with.
+     * @return true if the two formats are compatible, false otherwise.
+     */
+    public static boolean isStoreAndConfigFormatsCompatible( RecordFormats format, RecordFormats otherFormat )
+    {
+        return (format == null) || (otherFormat == null) || formatSameFamilyAndGeneration( format, otherFormat );
     }
 
     /**
