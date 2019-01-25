@@ -32,11 +32,6 @@ import org.neo4j.internal.recordstorage.Command.RelationshipCountsCommand;
 import org.neo4j.internal.recordstorage.Command.RelationshipGroupCommand;
 import org.neo4j.internal.recordstorage.Command.RelationshipTypeTokenCommand;
 import org.neo4j.internal.recordstorage.Command.SchemaRuleCommand;
-import org.neo4j.internal.recordstorage.IndexCommand.AddNodeCommand;
-import org.neo4j.internal.recordstorage.IndexCommand.AddRelationshipCommand;
-import org.neo4j.internal.recordstorage.IndexCommand.CreateCommand;
-import org.neo4j.internal.recordstorage.IndexCommand.DeleteCommand;
-import org.neo4j.internal.recordstorage.IndexCommand.RemoveCommand;
 
 /**
  * An interface for dealing with commands, either reading or writing them. See also {@link TransactionApplier}. The
@@ -62,19 +57,6 @@ public interface CommandVisitor
     boolean visitSchemaRuleCommand( SchemaRuleCommand command ) throws IOException;
 
     boolean visitNeoStoreCommand( NeoStoreCommand command ) throws IOException;
-
-    // Index commands
-    boolean visitIndexAddNodeCommand( AddNodeCommand command ) throws IOException;
-
-    boolean visitIndexAddRelationshipCommand( AddRelationshipCommand command ) throws IOException;
-
-    boolean visitIndexRemoveCommand( RemoveCommand command ) throws IOException;
-
-    boolean visitIndexDeleteCommand( DeleteCommand command ) throws IOException;
-
-    boolean visitIndexCreateCommand( CreateCommand command ) throws IOException;
-
-    boolean visitIndexDefineCommand( IndexDefineCommand command ) throws IOException;
 
     boolean visitNodeCountsCommand( NodeCountsCommand command ) throws IOException;
 
@@ -142,42 +124,6 @@ public interface CommandVisitor
         }
 
         @Override
-        public boolean visitIndexAddNodeCommand( AddNodeCommand command )
-        {
-            return false;
-        }
-
-        @Override
-        public boolean visitIndexAddRelationshipCommand( AddRelationshipCommand command )
-        {
-            return false;
-        }
-
-        @Override
-        public boolean visitIndexRemoveCommand( RemoveCommand command )
-        {
-            return false;
-        }
-
-        @Override
-        public boolean visitIndexDeleteCommand( DeleteCommand command )
-        {
-            return false;
-        }
-
-        @Override
-        public boolean visitIndexCreateCommand( CreateCommand command )
-        {
-            return false;
-        }
-
-        @Override
-        public boolean visitIndexDefineCommand( IndexDefineCommand command )
-        {
-            return false;
-        }
-
-        @Override
         public boolean visitNodeCountsCommand( NodeCountsCommand command )
         {
             return false;
@@ -187,122 +133,6 @@ public interface CommandVisitor
         public boolean visitRelationshipCountsCommand( RelationshipCountsCommand command )
         {
             return false;
-        }
-    }
-
-    /**
-     * Wraps a given {@link CommandVisitor}, allowing you to do some extra operations before/after/instead of the
-     * delegate executes.
-     */
-    class Delegator implements CommandVisitor
-    {
-        private final CommandVisitor delegate;
-
-        public Delegator( CommandVisitor delegate )
-        {
-            this.delegate = delegate;
-        }
-
-        @Override
-        public boolean visitNodeCommand( NodeCommand command ) throws IOException
-        {
-            return delegate.visitNodeCommand( command );
-        }
-
-        @Override
-        public boolean visitRelationshipCommand( RelationshipCommand command ) throws IOException
-        {
-            return delegate.visitRelationshipCommand( command );
-        }
-
-        @Override
-        public boolean visitPropertyCommand( PropertyCommand command ) throws IOException
-        {
-            return delegate.visitPropertyCommand( command );
-        }
-
-        @Override
-        public boolean visitRelationshipGroupCommand( RelationshipGroupCommand command ) throws IOException
-        {
-            return delegate.visitRelationshipGroupCommand( command );
-        }
-
-        @Override
-        public boolean visitRelationshipTypeTokenCommand( RelationshipTypeTokenCommand command ) throws IOException
-        {
-            return delegate.visitRelationshipTypeTokenCommand( command );
-        }
-
-        @Override
-        public boolean visitLabelTokenCommand( LabelTokenCommand command ) throws IOException
-        {
-            return delegate.visitLabelTokenCommand( command );
-        }
-
-        @Override
-        public boolean visitPropertyKeyTokenCommand( PropertyKeyTokenCommand command ) throws IOException
-        {
-            return delegate.visitPropertyKeyTokenCommand( command );
-        }
-
-        @Override
-        public boolean visitSchemaRuleCommand( SchemaRuleCommand command ) throws IOException
-        {
-            return delegate.visitSchemaRuleCommand( command );
-        }
-
-        @Override
-        public boolean visitNeoStoreCommand( NeoStoreCommand command ) throws IOException
-        {
-            return delegate.visitNeoStoreCommand( command );
-        }
-
-        @Override
-        public boolean visitIndexAddNodeCommand( AddNodeCommand command ) throws IOException
-        {
-            return delegate.visitIndexAddNodeCommand( command );
-        }
-
-        @Override
-        public boolean visitIndexAddRelationshipCommand( AddRelationshipCommand command ) throws IOException
-        {
-            return delegate.visitIndexAddRelationshipCommand( command );
-        }
-
-        @Override
-        public boolean visitIndexRemoveCommand( RemoveCommand command ) throws IOException
-        {
-            return delegate.visitIndexRemoveCommand( command );
-        }
-
-        @Override
-        public boolean visitIndexDeleteCommand( DeleteCommand command ) throws IOException
-        {
-            return delegate.visitIndexDeleteCommand( command );
-        }
-
-        @Override
-        public boolean visitIndexCreateCommand( CreateCommand command ) throws IOException
-        {
-            return delegate.visitIndexCreateCommand( command );
-        }
-
-        @Override
-        public boolean visitIndexDefineCommand( IndexDefineCommand command ) throws IOException
-        {
-            return delegate.visitIndexDefineCommand( command );
-        }
-
-        @Override
-        public boolean visitNodeCountsCommand( NodeCountsCommand command ) throws IOException
-        {
-            return delegate.visitNodeCountsCommand( command );
-        }
-
-        @Override
-        public boolean visitRelationshipCountsCommand( RelationshipCountsCommand command ) throws IOException
-        {
-            return delegate.visitRelationshipCountsCommand( command );
         }
     }
 }

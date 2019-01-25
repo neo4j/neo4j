@@ -17,23 +17,39 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.index;
+package org.neo4j.internal.recordstorage.legacy;
 
-import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
-
-/*
- This seems like a weird test, but it's necessary because we have a binding between the Enum name
- and the name on the filesystem. On case-sensitive file systems, we need a consistent lower-cased name
- for the entity type.
- */
-public class IndexEntityTypeTest
+public enum IndexEntityType
 {
-    @Test
-    public void shouldLowerCaseEnumName()
+    Node( (byte) 0 ),
+    Relationship( (byte) 1 );
+
+    private final byte id;
+
+    IndexEntityType( byte id )
     {
-        assertEquals( "node", IndexEntityType.Node.nameToLowerCase() );
-        assertEquals( "relationship", IndexEntityType.Relationship.nameToLowerCase() );
+        this.id = id;
+    }
+
+    public byte id()
+    {
+        return id;
+    }
+
+    public static IndexEntityType byId( byte id )
+    {
+        for ( IndexEntityType type : values() )
+        {
+            if ( type.id() == id )
+            {
+                return type;
+            }
+        }
+        throw new IllegalArgumentException( "Unknown id " + id );
+    }
+
+    public String nameToLowerCase()
+    {
+        return this.name().toLowerCase();
     }
 }

@@ -118,43 +118,6 @@ public class TransactionApplierFacade implements TransactionApplier
     }
 
     @Override
-    public boolean visitIndexAddNodeCommand( IndexCommand.AddNodeCommand command ) throws IOException
-    {
-        return visit( command );
-    }
-
-    @Override
-    public boolean visitIndexAddRelationshipCommand( IndexCommand.AddRelationshipCommand command )
-            throws IOException
-    {
-        return visit( command );
-    }
-
-    @Override
-    public boolean visitIndexRemoveCommand( IndexCommand.RemoveCommand command ) throws IOException
-    {
-        return visit( command );
-    }
-
-    @Override
-    public boolean visitIndexDeleteCommand( IndexCommand.DeleteCommand command ) throws IOException
-    {
-        return visit( command );
-    }
-
-    @Override
-    public boolean visitIndexCreateCommand( IndexCommand.CreateCommand command ) throws IOException
-    {
-        return visit( command );
-    }
-
-    @Override
-    public boolean visitIndexDefineCommand( IndexDefineCommand command ) throws IOException
-    {
-        return visit( command );
-    }
-
-    @Override
     public boolean visitNodeCountsCommand( Command.NodeCountsCommand command ) throws IOException
     {
         return visit( command );

@@ -17,13 +17,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.internal.recordstorage;
+package org.neo4j.internal.recordstorage.legacy;
 
 import java.io.IOException;
 import java.util.Map;
 import java.util.Objects;
 
-import org.neo4j.kernel.impl.index.IndexEntityType;
+import org.neo4j.internal.recordstorage.Command;
+import org.neo4j.internal.recordstorage.CommandVisitor;
+import org.neo4j.internal.recordstorage.NeoCommandType;
 import org.neo4j.storageengine.api.WritableChannel;
 
 import static java.lang.String.format;
@@ -226,7 +228,7 @@ public abstract class IndexCommand extends Command
         @Override
         public boolean handle( CommandVisitor visitor ) throws IOException
         {
-            return visitor.visitIndexAddNodeCommand( this );
+            throw new UnsupportedOperationException( "Legacy command can't be applied." );
         }
 
         @Override
@@ -312,7 +314,7 @@ public abstract class IndexCommand extends Command
         @Override
         public boolean handle( CommandVisitor visitor ) throws IOException
         {
-            return visitor.visitIndexAddRelationshipCommand( this );
+            throw new UnsupportedOperationException( "Legacy command can't be applied." );
         }
 
         @Override
@@ -345,7 +347,7 @@ public abstract class IndexCommand extends Command
         @Override
         public boolean handle( CommandVisitor visitor ) throws IOException
         {
-            return visitor.visitIndexRemoveCommand( this );
+            throw new UnsupportedOperationException( "Legacy command can't be applied." );
         }
 
         @Override
@@ -373,7 +375,7 @@ public abstract class IndexCommand extends Command
         @Override
         public boolean handle( CommandVisitor visitor ) throws IOException
         {
-            return visitor.visitIndexDeleteCommand( this );
+            throw new UnsupportedOperationException( "Legacy command can't be applied." );
         }
 
         @Override
@@ -433,7 +435,7 @@ public abstract class IndexCommand extends Command
         @Override
         public boolean handle( CommandVisitor visitor ) throws IOException
         {
-            return visitor.visitIndexCreateCommand( this );
+            throw new UnsupportedOperationException( "Legacy command can't be applied." );
         }
 
         @Override
@@ -486,11 +488,6 @@ public abstract class IndexCommand extends Command
     public int hashCode()
     {
         return Objects.hash( super.hashCode(), commandType, indexNameId, entityType, entityId, keyId, valueType, value );
-    }
-
-    public byte getCommandType()
-    {
-        return commandType;
     }
 
     public byte getValueType()

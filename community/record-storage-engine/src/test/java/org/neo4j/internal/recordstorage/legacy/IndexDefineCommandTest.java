@@ -17,11 +17,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.internal.recordstorage;
+package org.neo4j.internal.recordstorage.legacy;
 
 import org.eclipse.collections.api.map.primitive.MutableObjectIntMap;
 import org.eclipse.collections.impl.map.mutable.primitive.ObjectIntHashMap;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
@@ -30,14 +30,12 @@ import org.neo4j.kernel.impl.transaction.log.ServiceLoadingCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion;
 import org.neo4j.storageengine.api.CommandReader;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class IndexDefineCommandTest
+class IndexDefineCommandTest
 {
     @Test
-    public void testIndexCommandCreationEnforcesLimit()
+    void testIndexCommandCreationEnforcesLimit()
     {
         // Given
         IndexDefineCommand idc = new IndexDefineCommand();
@@ -52,29 +50,12 @@ public class IndexDefineCommandTest
 
         // Then
         // it should break on too many
-        try
-        {
-            idc.getOrAssignKeyId( "dropThatOverflows" );
-            fail( "IndexDefineCommand should not allow more than " + count + " indexes per transaction" );
-        }
-        catch ( IllegalStateException e )
-        {
-            // wonderful
-        }
-
-        try
-        {
-            idc.getOrAssignIndexNameId( "dropThatOverflows" );
-            fail( "IndexDefineCommand should not allow more than " + count + " keys per transaction" );
-        }
-        catch ( IllegalStateException e )
-        {
-            // wonderful
-        }
+        assertThrows( IllegalStateException.class, () -> idc.getOrAssignKeyId( "dropThatOverflows" ) );
+        assertThrows( IllegalStateException.class, () -> idc.getOrAssignIndexNameId( "dropThatOverflows" ) );
     }
 
     @Test
-    public void shouldWriteIndexDefineCommandIfMapWithinShortRange() throws IOException
+    void shouldWriteIndexDefineCommandIfMapWithinShortRange() throws IOException
     {
         // GIVEN
         InMemoryClosableChannel channel =  new InMemoryClosableChannel( 10_000 );
@@ -86,13 +67,11 @@ public class IndexDefineCommandTest
         // THEN
         CommandReader commandReader = new ServiceLoadingCommandReaderFactory().get(
                 LogEntryVersion.CURRENT.byteCode() );
-        IndexDefineCommand read = (IndexDefineCommand) commandReader.read( channel );
-        assertEquals( command.getIndexNameIdRange(), read.getIndexNameIdRange() );
-        assertEquals( command.getKeyIdRange(), read.getKeyIdRange() );
+        assertThrows( IOException.class, () -> commandReader.read( channel ) );
     }
 
     @Test
-    public void shouldFailToWriteIndexDefineCommandIfMapIsLargerThanShort() throws IOException
+    void shouldFailToWriteIndexDefineCommandIfMapIsLargerThanShort()
     {
         // GIVEN
         InMemoryClosableChannel channel =  new InMemoryClosableChannel( 1000 );
@@ -101,20 +80,7 @@ public class IndexDefineCommandTest
         command.init( largeMap, largeMap );
 
         // WHEN
-        assertTrue( serialize( channel, command ) );
-    }
-
-    private boolean serialize( InMemoryClosableChannel channel, IndexDefineCommand command ) throws IOException
-    {
-        try
-        {
-            command.serialize( channel );
-        }
-        catch ( AssertionError e )
-        {
-            return true;
-        }
-        return false;
+        assertThrows( AssertionError.class, () -> command.serialize( channel ) );
     }
 
     private IndexDefineCommand initIndexDefineCommand( int nbrOfEntries )

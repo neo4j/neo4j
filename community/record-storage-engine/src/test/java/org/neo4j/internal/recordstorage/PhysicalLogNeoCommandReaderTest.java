@@ -21,12 +21,11 @@ package org.neo4j.internal.recordstorage;
 
 import org.junit.jupiter.api.Test;
 
-import org.neo4j.internal.recordstorage.IndexCommand.AddRelationshipCommand;
+import org.neo4j.internal.recordstorage.legacy.IndexCommand.AddRelationshipCommand;
 import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-//TODO: this can be removed?
 class PhysicalLogNeoCommandReaderTest
 {
     @Test

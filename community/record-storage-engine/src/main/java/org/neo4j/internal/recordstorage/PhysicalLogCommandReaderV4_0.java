@@ -19,14 +19,10 @@
  */
 package org.neo4j.internal.recordstorage;
 
-import org.eclipse.collections.api.map.primitive.MutableObjectIntMap;
-import org.eclipse.collections.impl.map.mutable.primitive.ObjectIntHashMap;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Map;
 
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.internal.kernel.api.exceptions.schema.MalformedSchemaRuleException;
@@ -54,9 +50,6 @@ import static org.neo4j.internal.recordstorage.CommandReading.PROPERTY_BLOCK_DYN
 import static org.neo4j.internal.recordstorage.CommandReading.PROPERTY_DELETED_DYNAMIC_RECORD_ADDER;
 import static org.neo4j.internal.recordstorage.CommandReading.PROPERTY_INDEX_DYNAMIC_RECORD_ADDER;
 import static org.neo4j.kernel.impl.util.Bits.bitFlag;
-import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.read2bLengthAndString;
-import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.read2bMap;
-import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.read3bLengthAndString;
 
 public class PhysicalLogCommandReaderV4_0 extends BaseCommandReader
 {
@@ -89,47 +82,12 @@ public class PhysicalLogCommandReaderV4_0 extends BaseCommandReader
             return visitSchemaRuleCommand( channel );
         case NeoCommandType.REL_GROUP_COMMAND:
             return visitRelationshipGroupCommand( channel );
-        case NeoCommandType.INDEX_DEFINE_COMMAND:
-            return visitIndexDefineCommand( channel );
-        case NeoCommandType.INDEX_ADD_COMMAND:
-            return visitIndexAddNodeCommand( channel );
-        case NeoCommandType.INDEX_ADD_RELATIONSHIP_COMMAND:
-            return visitIndexAddRelationshipCommand( channel );
-        case NeoCommandType.INDEX_REMOVE_COMMAND:
-            return visitIndexRemoveCommand( channel );
-        case NeoCommandType.INDEX_DELETE_COMMAND:
-            return visitIndexDeleteCommand( channel );
-        case NeoCommandType.INDEX_CREATE_COMMAND:
-            return visitIndexCreateCommand( channel );
         case NeoCommandType.UPDATE_RELATIONSHIP_COUNTS_COMMAND:
             return visitRelationshipCountsCommand( channel );
         case NeoCommandType.UPDATE_NODE_COUNTS_COMMAND:
             return visitNodeCountsCommand( channel );
         default:
             throw unknownCommandType( commandType, channel );
-        }
-    }
-
-    private static final class IndexCommandHeader
-    {
-        byte valueType;
-        byte entityType;
-        boolean entityIdNeedsLong;
-        int indexNameId;
-        boolean startNodeNeedsLong;
-        boolean endNodeNeedsLong;
-        int keyId;
-
-        IndexCommandHeader( byte valueType, byte entityType, boolean entityIdNeedsLong, int indexNameId,
-                boolean startNodeNeedsLong, boolean endNodeNeedsLong, int keyId )
-        {
-            this.valueType = valueType;
-            this.entityType = entityType;
-            this.entityIdNeedsLong = entityIdNeedsLong;
-            this.indexNameId = indexNameId;
-            this.startNodeNeedsLong = startNodeNeedsLong;
-            this.endNodeNeedsLong = endNodeNeedsLong;
-            this.keyId = keyId;
         }
     }
 
@@ -647,66 +605,6 @@ public class PhysicalLogCommandReaderV4_0 extends BaseCommandReader
         return rule;
     }
 
-    private Command visitIndexAddNodeCommand( ReadableChannel channel ) throws IOException
-    {
-        IndexCommandHeader header = readIndexCommandHeader( channel );
-        Number entityId = header.entityIdNeedsLong ? channel.getLong() : channel.getInt();
-        Object value = readIndexValue( header.valueType, channel );
-        IndexCommand.AddNodeCommand command = new IndexCommand.AddNodeCommand();
-        command.init( header.indexNameId, entityId.longValue(), header.keyId, value );
-        return command;
-    }
-
-    private Command visitIndexAddRelationshipCommand( ReadableChannel channel ) throws IOException
-    {
-        IndexCommandHeader header = readIndexCommandHeader( channel );
-        Number entityId = header.entityIdNeedsLong ? channel.getLong() : channel.getInt();
-        Object value = readIndexValue( header.valueType, channel );
-        Number startNode = header.startNodeNeedsLong ? channel.getLong() : channel.getInt();
-        Number endNode = header.endNodeNeedsLong ? channel.getLong() : channel.getInt();
-        IndexCommand.AddRelationshipCommand command = new IndexCommand.AddRelationshipCommand();
-        command.init( header.indexNameId, entityId.longValue(), header.keyId, value, startNode.longValue(),
-                endNode.longValue() );
-        return command;
-    }
-
-    private Command visitIndexRemoveCommand( ReadableChannel channel ) throws IOException
-    {
-        IndexCommandHeader header = readIndexCommandHeader( channel );
-        Number entityId = header.entityIdNeedsLong ? channel.getLong() : channel.getInt();
-        Object value = readIndexValue( header.valueType, channel );
-        IndexCommand.RemoveCommand command = new IndexCommand.RemoveCommand();
-        command.init( header.indexNameId, header.entityType, entityId.longValue(), header.keyId, value );
-        return command;
-    }
-
-    private Command visitIndexDeleteCommand( ReadableChannel channel ) throws IOException
-    {
-        IndexCommandHeader header = readIndexCommandHeader( channel );
-        IndexCommand.DeleteCommand command = new IndexCommand.DeleteCommand();
-        command.init( header.indexNameId, header.entityType );
-        return command;
-    }
-
-    private Command visitIndexCreateCommand( ReadableChannel channel ) throws IOException
-    {
-        IndexCommandHeader header = readIndexCommandHeader( channel );
-        Map<String,String> config = read2bMap( channel );
-        IndexCommand.CreateCommand command = new IndexCommand.CreateCommand();
-        command.init( header.indexNameId, header.entityType, config );
-        return command;
-    }
-
-    private Command visitIndexDefineCommand( ReadableChannel channel ) throws IOException
-    {
-        readIndexCommandHeader( channel );
-        MutableObjectIntMap<String> indexNames = readMap( channel );
-        MutableObjectIntMap<String> keys = readMap( channel );
-        IndexDefineCommand command = new IndexDefineCommand();
-        command.init( indexNames, keys );
-        return command;
-    }
-
     private Command visitNodeCountsCommand( ReadableChannel channel ) throws IOException
     {
         int labelId = channel.getInt();
@@ -721,66 +619,5 @@ public class PhysicalLogCommandReaderV4_0 extends BaseCommandReader
         int endLabelId = channel.getInt();
         long delta = channel.getLong();
         return new Command.RelationshipCountsCommand( startLabelId, typeId, endLabelId, delta );
-    }
-
-    private MutableObjectIntMap<String> readMap( ReadableChannel channel ) throws IOException
-    {
-        int size = getUnsignedShort( channel );
-        MutableObjectIntMap<String> result = new ObjectIntHashMap<>( size );
-        for ( int i = 0; i < size; i++ )
-        {
-            String key = read2bLengthAndString( channel );
-            int id = getUnsignedShort( channel );
-            if ( key == null )
-            {
-                return null;
-            }
-            result.put( key, id );
-        }
-        return result;
-    }
-
-    private int getUnsignedShort( ReadableChannel channel ) throws IOException
-    {
-        int result = channel.getShort() & 0xFFFF;
-        return result == 0xFFFF ? -1 : result;
-    }
-
-    private IndexCommandHeader readIndexCommandHeader( ReadableChannel channel ) throws IOException
-    {
-        byte firstHeaderByte = channel.get();
-        byte valueType = (byte) ((firstHeaderByte & 0x1C) >> 2);
-        byte entityType = (byte) ((firstHeaderByte & 0x2) >> 1);
-        boolean entityIdNeedsLong = (firstHeaderByte & 0x1) > 0;
-        byte secondHeaderByte = channel.get();
-        boolean startNodeNeedsLong = (secondHeaderByte & 0x80) > 0;
-        boolean endNodeNeedsLong = (secondHeaderByte & 0x40) > 0;
-        int indexNameId = getUnsignedShort( channel );
-        int keyId = getUnsignedShort( channel );
-        return new IndexCommandHeader( valueType, entityType, entityIdNeedsLong, indexNameId, startNodeNeedsLong,
-                endNodeNeedsLong, keyId );
-    }
-
-    private Object readIndexValue( byte valueType, ReadableChannel channel ) throws IOException
-    {
-        switch ( valueType )
-        {
-        case IndexCommand.VALUE_TYPE_NULL:
-            return null;
-        case IndexCommand.VALUE_TYPE_SHORT:
-            return channel.getShort();
-        case IndexCommand.VALUE_TYPE_INT:
-            return channel.getInt();
-        case IndexCommand.VALUE_TYPE_LONG:
-            return channel.getLong();
-        case IndexCommand.VALUE_TYPE_FLOAT:
-            return channel.getFloat();
-        case IndexCommand.VALUE_TYPE_DOUBLE:
-            return channel.getDouble();
-        case IndexCommand.VALUE_TYPE_STRING:
-            return read3bLengthAndString( channel );
-        default:
-            throw new RuntimeException( "Unknown value type " + valueType );
-        }
     }
 }

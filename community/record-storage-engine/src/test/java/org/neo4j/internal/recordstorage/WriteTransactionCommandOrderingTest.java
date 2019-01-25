@@ -19,7 +19,8 @@
  */
 package org.neo4j.internal.recordstorage;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -34,7 +35,6 @@ import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
-import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
@@ -48,11 +48,10 @@ import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.storageengine.api.SchemaRule;
 import org.neo4j.storageengine.api.StorageCommand;
 
-import static org.junit.Assert.assertFalse;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class WriteTransactionCommandOrderingTest
+class WriteTransactionCommandOrderingTest
 {
     private static NodeRecord missingNode()
     {
@@ -74,21 +73,8 @@ public class WriteTransactionCommandOrderingTest
         return record;
     }
 
-    private static String commandActionToken( AbstractBaseRecord record )
-    {
-        if ( !record.inUse() )
-        {
-            return "deleted";
-        }
-        if ( record.isCreated() )
-        {
-            return "created";
-        }
-        return "updated";
-    }
-
     @Test
-    public void shouldExecuteCommandsInTheSameOrderRegardlessOfItBeingRecoveredOrNot() throws Exception
+    void shouldExecuteCommandsInTheSameOrderRegardlessOfItBeingRecoveredOrNot() throws Exception
     {
         // Given
         TransactionRecordState tx = injectAllPossibleCommands();
@@ -200,12 +186,12 @@ public class WriteTransactionCommandOrderingTest
             switch ( command.getMode() )
             {
             case CREATE:
-                assertFalse( updated );
-                assertFalse( deleted );
+                Assertions.assertFalse( updated );
+                Assertions.assertFalse( deleted );
                 break;
             case UPDATE:
                 updated = true;
-                assertFalse( deleted );
+                Assertions.assertFalse( deleted );
                 break;
             case DELETE:
                 deleted = true;

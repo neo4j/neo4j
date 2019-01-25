@@ -19,8 +19,7 @@
  */
 package org.neo4j.internal.recordstorage;
 
-import org.eclipse.collections.impl.map.mutable.primitive.ObjectIntHashMap;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -28,16 +27,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.internal.recordstorage.Command.NodeCountsCommand;
 import org.neo4j.internal.recordstorage.Command.RelationshipCountsCommand;
-import org.neo4j.internal.recordstorage.IndexCommand.AddNodeCommand;
-import org.neo4j.internal.recordstorage.IndexCommand.AddRelationshipCommand;
-import org.neo4j.internal.recordstorage.IndexCommand.CreateCommand;
-import org.neo4j.internal.recordstorage.IndexCommand.DeleteCommand;
-import org.neo4j.internal.recordstorage.IndexCommand.RemoveCommand;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
-import org.neo4j.kernel.impl.index.IndexEntityType;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.NeoStoreRecord;
@@ -59,15 +51,15 @@ import org.neo4j.storageengine.api.StorageCommand;
 import static java.lang.reflect.Modifier.isAbstract;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.neo4j.kernel.impl.store.record.DynamicRecord.dynamicRecord;
 
 /**
  * At any point, a power outage may stop us from writing to the log, which means that, at any point, all our commands
  * need to be able to handle the log ending mid-way through reading it.
  */
-public class LogTruncationTest
+class LogTruncationTest
 {
     private final InMemoryClosableChannel inMemoryChannel = new InMemoryClosableChannel();
     private final LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader = new VersionAwareLogEntryReader<>();
@@ -105,32 +97,6 @@ public class LogTruncationTest
                 new Command[] { new Command.LabelTokenCommand( new LabelTokenRecord( 1 ),
                         createLabelTokenRecord( 1 ) ) } );
 
-        // Index commands
-        AddRelationshipCommand addRelationshipCommand = new AddRelationshipCommand();
-        addRelationshipCommand.init( 1, 1L, 12345, "some value", 1, 1 );
-        permutations.put( AddRelationshipCommand.class, new Command[] { addRelationshipCommand } );
-
-        CreateCommand createCommand = new CreateCommand();
-        createCommand.init( 1, IndexEntityType.Relationship.id(), MapUtil.stringMap( "string1", "string 2" ) );
-        permutations.put( CreateCommand.class, new Command[] { createCommand } );
-
-        AddNodeCommand addCommand = new AddNodeCommand();
-        addCommand.init( 1234, 122L, 2, "value" );
-        permutations.put( AddNodeCommand.class, new Command[] { addCommand } );
-
-        DeleteCommand deleteCommand = new DeleteCommand();
-        deleteCommand.init( 1, IndexEntityType.Relationship.id() );
-        permutations.put( DeleteCommand.class, new Command[] { deleteCommand } );
-
-        RemoveCommand removeCommand = new RemoveCommand();
-        removeCommand.init( 1, IndexEntityType.Node.id(), 126, (byte) 3, "the value" );
-        permutations.put( RemoveCommand.class, new Command[] { removeCommand } );
-
-        IndexDefineCommand indexDefineCommand = new IndexDefineCommand();
-        indexDefineCommand.init( ObjectIntHashMap.newWithKeysValues(
-                "string1", 45, "key1", 2 ), ObjectIntHashMap.newWithKeysValues( "string", 2 ) );
-        permutations.put( IndexDefineCommand.class, new Command[] { indexDefineCommand } );
-
         // Counts commands
         permutations.put( NodeCountsCommand.class, new Command[]{new NodeCountsCommand( 42, 11 )} );
         permutations.put( RelationshipCountsCommand.class,
@@ -138,7 +104,7 @@ public class LogTruncationTest
     }
 
     @Test
-    public void testSerializationInFaceOfLogTruncation() throws Exception
+    void testSerializationInFaceOfLogTruncation() throws Exception
     {
         for ( Command cmd : enumerateCommands() )
         {
@@ -154,21 +120,6 @@ public class LogTruncationTest
         // beginning of this class.
         List<Command> commands = new ArrayList<>();
         for ( Class<?> cmd : Command.class.getClasses() )
-        {
-            if ( Command.class.isAssignableFrom( cmd ) )
-            {
-                if ( permutations.containsKey( cmd ) )
-                {
-                    commands.addAll( asList( permutations.get( cmd ) ) );
-                }
-                else if ( !isAbstract( cmd.getModifiers() ) )
-                {
-                    throw new AssertionError( "Unknown command type: " + cmd + ", please add missing instantiation to "
-                            + "test serialization of this command." );
-                }
-            }
-        }
-        for ( Class<?> cmd : IndexCommand.class.getClasses() )
         {
             if ( Command.class.isAssignableFrom( cmd ) )
             {
@@ -208,13 +159,13 @@ public class LogTruncationTest
             writer.serialize( new PhysicalTransactionRepresentation( singletonList( cmd ) ) );
             inMemoryChannel.truncateTo( bytesSuccessfullyWritten );
             LogEntry deserialized = logEntryReader.readLogEntry( inMemoryChannel );
-            assertNull( "Deserialization did not detect log truncation!" +
-                    "Record: " + cmd + ", deserialized: " + deserialized, deserialized );
+            assertNull( deserialized, "Deserialization did not detect log truncation!" +
+                    "Record: " + cmd + ", deserialized: " + deserialized );
         }
     }
 
     @Test
-    public void testInMemoryLogChannel() throws Exception
+    void testInMemoryLogChannel() throws Exception
     {
         InMemoryClosableChannel channel = new InMemoryClosableChannel();
         for ( int i = 0; i < 25; i++ )

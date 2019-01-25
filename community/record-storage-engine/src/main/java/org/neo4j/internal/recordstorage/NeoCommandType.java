@@ -31,6 +31,7 @@ public interface NeoCommandType
     byte LABEL_KEY_COMMAND = (byte) 8;
     byte REL_GROUP_COMMAND = (byte) 9;
 
+    /*legacy index command types*/
     byte INDEX_DEFINE_COMMAND = (byte) 10;
     byte INDEX_ADD_COMMAND = (byte) 11;
     byte INDEX_ADD_RELATIONSHIP_COMMAND = (byte) 12;

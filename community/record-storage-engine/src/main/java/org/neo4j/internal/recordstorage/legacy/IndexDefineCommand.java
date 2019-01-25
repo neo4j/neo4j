@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.internal.recordstorage;
+package org.neo4j.internal.recordstorage.legacy;
 
 import org.eclipse.collections.api.map.primitive.IntObjectMap;
 import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
@@ -31,6 +31,9 @@ import java.io.UncheckedIOException;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.neo4j.internal.recordstorage.Command;
+import org.neo4j.internal.recordstorage.CommandVisitor;
+import org.neo4j.internal.recordstorage.NeoCommandType;
 import org.neo4j.storageengine.api.WritableChannel;
 import org.neo4j.util.VisibleForTesting;
 
@@ -78,11 +81,6 @@ public class IndexDefineCommand extends Command
             throw new IllegalArgumentException( String.valueOf( id ) );
         }
         return result;
-    }
-
-    public String getIndexName( int id )
-    {
-        return getFromMap( idToIndexName, id );
     }
 
     public String getKey( int id )
@@ -160,7 +158,7 @@ public class IndexDefineCommand extends Command
     @Override
     public boolean handle( CommandVisitor visitor ) throws IOException
     {
-        return visitor.visitIndexDefineCommand( this );
+        throw new UnsupportedOperationException( "Legacy command can't be applied." );
     }
 
     @VisibleForTesting

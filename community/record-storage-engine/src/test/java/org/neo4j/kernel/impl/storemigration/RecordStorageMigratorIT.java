@@ -60,7 +60,6 @@ import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.UNKNOWN_TX_COMMIT_TIMESTAMP;
 
 @RunWith( Parameterized.class )
 public class RecordStorageMigratorIT
@@ -91,8 +90,8 @@ public class RecordStorageMigratorIT
     public static Collection<Object[]> versions()
     {
         return Collections.singletonList(
-                new Object[]{StandardV3_4.STORE_VERSION, new LogPosition( 3, 169 ),
-                        txInfoAcceptanceOnIdAndTimestamp( 39, UNKNOWN_TX_COMMIT_TIMESTAMP )} );
+                new Object[]{StandardV3_4.STORE_VERSION, new LogPosition( 3, 385 ),
+                        txInfoAcceptanceOnIdAndTimestamp( 42, 1548441268467L )} );
     }
 
     @Before
