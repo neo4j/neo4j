@@ -361,7 +361,7 @@ class ReflectiveProcedureCompiler
                 new UserFunctionSignature( procName, inputSignature, typeChecker.type(), deprecated,
                         config.rolesFor( procName.toString() ), description, false );
 
-        return new ReflectiveUserFunction( signature, constructor, method, typeChecker, setters );
+        return ProcedureCompilation.compileFunction( signature, setters, method );
     }
 
     private CallableUserAggregationFunction compileAggregationFunction( Class<?> definition, MethodHandle constructor,
@@ -779,71 +779,6 @@ class ReflectiveProcedureCompiler
                         "Failed to invoke procedure `%s`: %s", signature.name(),
                         "Caused by: " + (cause != null ? cause : throwable) );
             }
-        }
-    }
-
-    private static class ReflectiveUserFunction extends ReflectiveBase implements CallableUserFunction
-    {
-        private final TypeMappers.TypeChecker typeChecker;
-        private final UserFunctionSignature signature;
-        private final MethodHandle constructor;
-        private final Method udfMethod;
-
-        ReflectiveUserFunction( UserFunctionSignature signature, MethodHandle constructor,
-                Method udfMethod, TypeMappers.TypeChecker typeChecker, List<FieldSetter> fieldSetters )
-        {
-            super( fieldSetters );
-            this.constructor = constructor;
-            this.udfMethod = udfMethod;
-            this.signature = signature;
-            this.typeChecker = typeChecker;
-        }
-
-        @Override
-        public UserFunctionSignature signature()
-        {
-            return signature;
-        }
-
-        @Override
-        public AnyValue apply( Context ctx, AnyValue[] input ) throws ProcedureException
-        {
-            // For now, create a new instance of the class for each invocation. In the future, we'd like to keep
-            // instances local to
-            // at least the executing session, but we don't yet have good interfaces to the kernel to model that with.
-            try
-            {
-                Object cls = constructor.invoke();
-                //API injection
-                inject( ctx, cls );
-
-                ValueMapper mapper = ctx.get( Context.VALUE_MAPPER );
-                // Call the method
-                Object rs = udfMethod.invoke( cls, mapToObjects( "Function", signature.name(), mapper, signature.inputSignature(), input  ) );
-
-                return typeChecker.toValue( rs );
-            }
-            catch ( Throwable throwable )
-            {
-                if ( throwable instanceof Status.HasStatus )
-                {
-                    throw new ProcedureException( ((Status.HasStatus) throwable).status(), throwable,
-                            throwable.getMessage(), throwable );
-                }
-                else
-                {
-                    Throwable cause = ExceptionUtils.getRootCause( throwable );
-                    throw new ProcedureException( Status.Procedure.ProcedureCallFailed, throwable,
-                            "Failed to invoke function `%s`: %s", signature.name(),
-                            "Caused by: " + (cause != null ? cause : throwable) );
-                }
-            }
-        }
-
-        @Override
-        public boolean threadSafe()
-        {
-            return false;
         }
     }
 

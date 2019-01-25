@@ -188,13 +188,12 @@ public final class ProcedureCompilation
      * @param signature the signature of the user-defined function
      * @param fieldSetters the fields to set before each call.
      * @param methodToCall the method to call
-     * @param typeMappers the type-mappers to use to transform tricky types such as going lists, maps, nodes etc
      * @return a CallableUserFunction delegating to the underlying user-defined function.
      * @throws ProcedureException if something went wrong when compiling the user-defined function.
      */
     static CallableUserFunction compileFunction(
             UserFunctionSignature signature, List<FieldSetter> fieldSetters,
-            Method methodToCall, ValueMapper<Object> typeMappers ) throws ProcedureException
+            Method methodToCall ) throws ProcedureException
     {
 
         ClassHandle handle;
@@ -239,7 +238,6 @@ public final class ProcedureCompilation
             //set all static fields
             clazz.getDeclaredField( SIGNATURE_NAME ).set( null, signature );
             clazz.getDeclaredField( USER_CLASS ).set( null, methodToCall.getDeclaringClass().newInstance() );
-            clazz.getDeclaredField( VALUE_MAPPER_NAME ).set( null, typeMappers );
             for ( int i = 0; i < fieldSetters.size(); i++ )
             {
                 clazz.getDeclaredField( "SETTER_" + i ).set(null, fieldSetters.get( i ));

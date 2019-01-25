@@ -70,11 +70,12 @@ public class ProcedureCompilationTest
     private static final Key<Long> KEY_2 = Key.key( "long2", Long.class );
     private static final AnyValue[] EMPTY = new AnyValue[0];
     private Context ctx;
-    private TypeMappers typeMappers = new TypeMappers( mock( EmbeddedProxySPI.class ) );
+    private TypeMappers typeMappers = new TypeMappers( );
 
     @BeforeEach
     void setUp() throws ProcedureException
     {
+        typeMappers.converterFor(  )
         ctx = mock(Context.class);
         when(ctx.get( KEY_1 )).thenReturn( 42L );
         when(ctx.get( KEY_2 )).thenReturn( 1337L );
