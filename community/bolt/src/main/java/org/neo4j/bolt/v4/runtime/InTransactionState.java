@@ -34,7 +34,7 @@ import org.neo4j.bolt.v4.messaging.DiscardAllResultConsumer;
 import org.neo4j.bolt.v4.messaging.PullNMessage;
 import org.neo4j.bolt.v4.messaging.PullResultConsumer;
 import org.neo4j.bolt.v4.messaging.ResultConsumer;
-import org.neo4j.internal.kernel.api.exceptions.KernelException;
+import org.neo4j.exceptions.KernelException;
 import org.neo4j.values.storable.Values;
 
 import static org.neo4j.bolt.v3.runtime.ReadyState.FIELDS_KEY;

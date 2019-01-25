@@ -28,10 +28,11 @@ import java.util.Optional;
 import org.neo4j.bolt.runtime.BoltResult;
 import org.neo4j.bolt.runtime.BoltResultHandle;
 import org.neo4j.bolt.runtime.StatementMetadata;
+import org.neo4j.bolt.v1.runtime.TransactionStateMachine.MutableTransactionState;
 import org.neo4j.bolt.v1.runtime.TransactionStateMachine.StatementOutcome;
 import org.neo4j.bolt.v1.runtime.bookmarking.Bookmark;
-import org.neo4j.exceptions.KernelException;
 import org.neo4j.bolt.v4.messaging.ResultConsumer;
+import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.internal.kernel.api.security.LoginContext;
@@ -43,6 +44,7 @@ import org.neo4j.time.FakeClock;
 import org.neo4j.values.virtual.MapValue;
 
 import static java.util.Arrays.asList;
+import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.hasSize;
 import static org.junit.Assert.assertEquals;
@@ -54,6 +56,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -71,7 +74,7 @@ class TransactionStateMachineTest
             "CREATE (:Node {id: line[0], name: line[1]})";
 
     private TransactionStateMachineV1SPI stateMachineSPI;
-    private TransactionStateMachine.MutableTransactionState mutableState;
+    private MutableTransactionState mutableState;
     private TransactionStateMachine stateMachine;
     private static EmptyResultConsumer EMPTY = new EmptyResultConsumer();
     private static EmptyResultConsumer ERROR = new EmptyResultConsumer()
@@ -88,7 +91,7 @@ class TransactionStateMachineTest
     {
         FakeClock clock = new FakeClock();
         stateMachineSPI = mock( TransactionStateMachineV1SPI.class );
-        mutableState = new TransactionStateMachine.MutableTransactionState( AUTH_DISABLED, clock );
+        mutableState = new MutableTransactionState( AUTH_DISABLED, clock );
         stateMachine = new TransactionStateMachine( stateMachineSPI, AUTH_DISABLED, clock );
     }
 
@@ -205,6 +208,42 @@ class TransactionStateMachineTest
         verify( transaction, never() ).getReasonIfTerminated();
         verify( transaction, never() ).failure();
         verify( transaction, never() ).close();
+    }
+
+    @Test
+    void shouldTryToTerminateAllActiveStatements() throws Exception
+    {
+        KernelTransaction transaction = newTimedOutTransaction();
+
+        BoltResultHandle resultHandle = newResultHandle();
+        doThrow( new RuntimeException( "You shall not pass" ) ).doThrow( new RuntimeException( "Not pass twice" ) ).when( resultHandle ).terminate();
+        TransactionStateMachineV1SPI stateMachineSPI = mock( TransactionStateMachineV1SPI.class );
+
+        when( stateMachineSPI.beginTransaction( any(), any(), any() ) ).thenReturn( transaction );
+        when( stateMachineSPI.executeQuery( any(), anyString(), any(), any(), any() ) ).thenReturn( resultHandle );
+        when( stateMachineSPI.nestedStatementsInTransactionSupported() ).thenReturn( true ); // V4
+
+        TransactionStateMachine stateMachine = newTransactionStateMachine( stateMachineSPI );
+
+        // We're in explicit-commit state
+        stateMachine.beginTransaction( Bookmark.EMPTY_BOOKMARK );
+
+        assertThat( stateMachine.state, is( TransactionStateMachine.State.EXPLICIT_TRANSACTION ) );
+        assertNotNull( stateMachine.ctx.currentTransaction );
+
+        // We run two statements
+        stateMachine.run( "RETURN 1", null );
+        stateMachine.run( "RETURN 2", null );
+
+        assertThat( stateMachine.state, is( TransactionStateMachine.State.EXPLICIT_TRANSACTION ) );
+        assertNotNull( stateMachine.ctx.currentTransaction );
+        assertThat( stateMachine.ctx.statementCounter, equalTo( 2 ) );
+
+        RuntimeException error = assertThrows( RuntimeException.class, () -> stateMachine.reset() );
+
+        assertThat( error.getCause().getMessage(), equalTo( "You shall not pass" ) );
+        assertThat( error.getSuppressed().length, equalTo( 1 ) );
+        assertThat( error.getSuppressed()[0].getMessage(), equalTo( "Not pass twice" ) );
     }
 
     @Test

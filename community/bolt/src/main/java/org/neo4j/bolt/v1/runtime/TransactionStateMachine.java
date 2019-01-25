@@ -531,44 +531,84 @@ public class TransactionStateMachine implements StatementProcessor
             }
         }
 
-        // todo: handle potential errors from .terminate() and .close()
         private void terminateActiveStatements( MutableTransactionState ctx )
         {
+            RuntimeException error = null;
+
             for ( StatementOutcome outcome : ctx.statementOutcomes.values() )
             {
-                BoltResultHandle resultHandle = outcome.resultHandle;
-                if ( resultHandle != null )
+                try
                 {
-                    resultHandle.terminate();
-                }
+                    BoltResultHandle resultHandle = outcome.resultHandle;
+                    if ( resultHandle != null )
+                    {
+                        resultHandle.terminate();
+                    }
 
-                BoltResult result = outcome.result;
-                if ( result != null )
+                    BoltResult result = outcome.result;
+                    if ( result != null )
+                    {
+                        result.close();
+                    }
+                }
+                catch ( Throwable e )
                 {
-                    result.close();
+                    if ( error == null )
+                    {
+                        error = new RuntimeException( "Failed to terminate active statements.", e );
+                    }
+                    else
+                    {
+                        error.addSuppressed( e );
+                    }
                 }
             }
             ctx.statementOutcomes.clear();
+
+            if ( error != null )
+            {
+                throw error;
+            }
         }
 
-        // todo: handle potential errors from .close(boolean) and .close()
         private void closeActiveStatements( MutableTransactionState ctx, boolean success )
         {
+            RuntimeException error = null;
+
             for ( StatementOutcome outcome : ctx.statementOutcomes.values() )
             {
-                BoltResultHandle resultHandle = outcome.resultHandle;
-                if ( resultHandle != null )
+                try
                 {
-                    resultHandle.close( success );
-                }
+                    BoltResultHandle resultHandle = outcome.resultHandle;
+                    if ( resultHandle != null )
+                    {
+                        resultHandle.close( success );
+                    }
 
-                BoltResult result = outcome.result;
-                if ( result != null )
+                    BoltResult result = outcome.result;
+                    if ( result != null )
+                    {
+                        result.close();
+                    }
+                }
+                catch ( Throwable e )
                 {
-                    result.close();
+                    if ( error == null )
+                    {
+                        error = new RuntimeException( "Failed to close active statements.", e );
+                    }
+                    else
+                    {
+                        error.addSuppressed( e );
+                    }
                 }
             }
             ctx.statementOutcomes.clear();
+
+            if ( error != null )
+            {
+                throw error;
+            }
         }
 
         void consumeResult( MutableTransactionState ctx, int statementId, StatementOutcome outcome, ResultConsumer resultConsumer ) throws Exception

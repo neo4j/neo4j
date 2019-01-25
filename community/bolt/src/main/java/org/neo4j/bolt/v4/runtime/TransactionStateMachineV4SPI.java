@@ -27,13 +27,13 @@ import org.neo4j.bolt.runtime.BoltResult;
 import org.neo4j.bolt.runtime.BoltResultHandle;
 import org.neo4j.bolt.v1.runtime.TransactionStateMachineV1SPI;
 import org.neo4j.cypher.internal.javacompat.QueryResultProvider;
+import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.kernel.impl.query.TransactionalContext;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.values.virtual.MapValue;
 
 public class TransactionStateMachineV4SPI extends TransactionStateMachineV1SPI
 {
-    public TransactionStateMachineV4SPI( GraphDatabaseAPI db, BoltChannel boltChannel, Duration txAwaitDuration, Clock clock )
+    public TransactionStateMachineV4SPI( DatabaseContext db, BoltChannel boltChannel, Duration txAwaitDuration, Clock clock )
     {
         super( db, boltChannel, txAwaitDuration, clock );
     }
