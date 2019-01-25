@@ -107,8 +107,8 @@ case class Cypher3_5Planner(configv4_0: CypherPlannerConfiguration,
     if (assertionsEnabled()) newValidating else newPlain
   }
 
-  private val contextCreatorV3_5 = CommunityRuntimeContextCreator
-  private val compiler: v3_5.CypherPlanner[CommunityRuntimeContext] =
+  private val contextCreatorV3_5 = Planner3_5ContextCreator
+  private val compiler: v3_5.CypherPlanner[Planner3_5Context] =
     new v3_5.CypherPlannerFactory().costBasedCompiler(configV3_5, clock, monitorsV3_5, rewriterSequencer,
       maybeUpdateStrategy, contextCreatorV3_5)
 
@@ -175,7 +175,7 @@ case class Cypher3_5Planner(configv4_0: CypherPlannerConfiguration,
 
       // Context used to create logical plans
       val logicalPlanIdGenv3_5 = new utilV3_5.attribution.SequentialIdGen()
-      val contextV3_5: CommunityRuntimeContext =
+      val contextV3_5: Planner3_5Context =
         contextCreatorV3_5.create(as3_5(tracer),
                                   notificationLoggerV3_5,
                                   planContextV3_5,
@@ -259,7 +259,7 @@ case class Cypher3_5Planner(configv4_0: CypherPlannerConfiguration,
   override val name: PlannerName = PlannerNameWithVersion(as4_0(plannerName), CypherVersion.v3_5.name)
 }
 
-private[v3_5] class Parser3_5(compiler: v3_5.CypherPlanner[CommunityRuntimeContext],
+private[v3_5] class Parser3_5(compiler: v3_5.CypherPlanner[Planner3_5Context],
                               notificationLogger: RecordingNotificationLoggerV3_5,
                               offset: org.neo4j.cypher.internal.v3_5.util.InputPosition,
                               tracer: phases.CompilationPhaseTracer

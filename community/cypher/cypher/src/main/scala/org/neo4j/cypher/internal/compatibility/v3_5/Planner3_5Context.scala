@@ -29,23 +29,23 @@ import org.neo4j.cypher.internal.planner.v3_5.spi.PlanContext
 import org.neo4j.cypher.internal.v3_5.util.attribution.IdGen
 import org.neo4j.cypher.internal.v3_5.util.{CypherException, InputPosition}
 
-class CommunityRuntimeContext(override val exceptionCreator: (String, InputPosition) => CypherException,
-                              override val tracer: CompilationPhaseTracer,
-                              override val notificationLogger: InternalNotificationLogger,
-                              override val planContext: PlanContext,
-                              override val monitors: Monitors,
-                              override val metrics: Metrics,
-                              override val config: CypherPlannerConfiguration,
-                              override val queryGraphSolver: QueryGraphSolver,
-                              override val updateStrategy: UpdateStrategy,
-                              override val debugOptions: Set[String],
-                              override val clock: Clock,
-                              override val logicalPlanIdGen: IdGen)
+class Planner3_5Context(override val exceptionCreator: (String, InputPosition) => CypherException,
+                        override val tracer: CompilationPhaseTracer,
+                        override val notificationLogger: InternalNotificationLogger,
+                        override val planContext: PlanContext,
+                        override val monitors: Monitors,
+                        override val metrics: Metrics,
+                        override val config: CypherPlannerConfiguration,
+                        override val queryGraphSolver: QueryGraphSolver,
+                        override val updateStrategy: UpdateStrategy,
+                        override val debugOptions: Set[String],
+                        override val clock: Clock,
+                        override val logicalPlanIdGen: IdGen)
   extends PlannerContext(exceptionCreator, tracer,
                           notificationLogger, planContext, monitors, metrics,
                           config, queryGraphSolver, updateStrategy, debugOptions, clock, logicalPlanIdGen)
 
-object CommunityRuntimeContextCreator extends ContextCreator[CommunityRuntimeContext] {
+object Planner3_5ContextCreator extends ContextCreator[Planner3_5Context] {
 
   override def create(tracer: CompilationPhaseTracer,
                       notificationLogger: InternalNotificationLogger,
@@ -60,7 +60,7 @@ object CommunityRuntimeContextCreator extends ContextCreator[CommunityRuntimeCon
                       updateStrategy: UpdateStrategy,
                       clock: Clock,
                       logicalPlanIdGen: IdGen,
-                      evaluator: ExpressionEvaluator): CommunityRuntimeContext = {
+                      evaluator: ExpressionEvaluator): Planner3_5Context = {
     val exceptionCreator = new SyntaxExceptionCreator(queryText, offset)
 
     val metrics: Metrics = if (planContext == null)
@@ -68,7 +68,7 @@ object CommunityRuntimeContextCreator extends ContextCreator[CommunityRuntimeCon
     else
       metricsFactory.newMetrics(planContext.statistics, evaluator, config)
 
-    new CommunityRuntimeContext(exceptionCreator, tracer, notificationLogger, planContext,
-                        monitors, metrics, config, queryGraphSolver, updateStrategy, debugOptions, clock, logicalPlanIdGen)
+    new Planner3_5Context(exceptionCreator, tracer, notificationLogger, planContext,
+                          monitors, metrics, config, queryGraphSolver, updateStrategy, debugOptions, clock, logicalPlanIdGen)
   }
 }
