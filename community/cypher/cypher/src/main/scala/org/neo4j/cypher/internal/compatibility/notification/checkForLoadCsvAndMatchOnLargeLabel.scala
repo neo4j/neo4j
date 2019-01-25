@@ -17,12 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compatibility.v4_0.notification
+package org.neo4j.cypher.internal.compatibility.notification
 
 import org.neo4j.cypher.internal.compiler.v4_0.LargeLabelWithLoadCsvNotification
 import org.neo4j.cypher.internal.planner.v4_0.spi.PlanContext
 import org.neo4j.cypher.internal.v4_0.logical.plans.{LoadCSV, LogicalPlan, NodeByLabelScan}
-import org.neo4j.cypher.internal.v4_0.util._
+import org.neo4j.cypher.internal.v4_0.util.{Cardinality, InternalNotification, LabelId}
 
 case class checkForLoadCsvAndMatchOnLargeLabel(planContext: PlanContext,
                                                nonIndexedLabelWarningThreshold: Long

@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal
 import java.io.File
 import java.time.Clock
 
-import org.neo4j.cypher.internal.compatibility.v4_0.runtime.executionplan.{DelegatingExecutionPlan, ExecutionPlan, PeriodicCommitInfo}
 import org.neo4j.cypher.internal.compiler.v4_0.RuntimeUnsupportedNotification
 import org.neo4j.cypher.internal.compiler.v4_0.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.planner.v4_0.spi.PlanningAttributes.Cardinalities

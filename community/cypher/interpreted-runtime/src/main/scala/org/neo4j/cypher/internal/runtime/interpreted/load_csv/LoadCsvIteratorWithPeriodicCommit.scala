@@ -17,28 +17,27 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compatibility.v4_0.runtime.executionplan
+package org.neo4j.cypher.internal.runtime.interpreted.load_csv
 
-class UpdateCounter {
-  def offsetForHeaders(): Unit = {
-    if (uncommittedRows != 0)
-      throw new IllegalStateException("Header offset must be accounted for at the beginning")
-    uncommittedRows = -1
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.LoadCsvIterator
+
+class LoadCsvIteratorWithPeriodicCommit(loadCsvIterator: LoadCsvIterator)(onNext: => Unit) extends LoadCsvIterator {
+
+  var lastCommitted: Long = -1L
+
+  def lastProcessed: Long = loadCsvIterator.lastProcessed
+
+  def readAll: Boolean = loadCsvIterator.readAll
+
+  def next(): Array[String] = {
+    val row = loadCsvIterator.next()
+    onNext
+    row
   }
 
-  private var uncommittedRows = 0L
-  private var totalRows = 0L
+  def hasNext: Boolean = loadCsvIterator.hasNext
 
-  def +=(increment: Long) {
-    assert(increment > 0L, s"increment must be positive but was: $increment")
-    uncommittedRows += increment
-    totalRows += increment
-  }
-
-  def resetIfPastLimit(limit: Long)(f: => Unit) {
-    if (uncommittedRows >= limit) {
-      f
-      uncommittedRows = 0
-    }
+  def notifyCommit() {
+    lastCommitted = loadCsvIterator.lastProcessed - 1
   }
 }

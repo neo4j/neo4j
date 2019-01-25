@@ -17,18 +17,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compatibility.v4_0.runtime.helpers
+package org.neo4j.cypher.internal
 
 import org.neo4j.cypher.internal.compiler.v4_0._
+import org.neo4j.cypher.internal.v4_0.util._
 import org.neo4j.graphdb
 import org.neo4j.graphdb.impl.notification.{NotificationCode, NotificationDetail}
-import org.neo4j.cypher.internal.v4_0.util._
 
 import scala.collection.JavaConverters._
 
-object InternalWrapping {
+object NotificationWrapping {
 
-  def asKernelNotification(offset: Option[InputPosition])(notification: InternalNotification) = notification match {
+  def asKernelNotification(offset: Option[InputPosition])(notification: InternalNotification): NotificationCode#Notification = notification match {
     case CartesianProductNotification(pos, variables) =>
       NotificationCode.CARTESIAN_PRODUCT.notification(pos.withOffset(offset).asInputPosition, NotificationDetail.Factory.cartesianProduct(variables.asJava))
     case LengthOnNonPathNotification(pos) =>

@@ -20,10 +20,9 @@
 package org.neo4j.cypher.internal
 
 import org.neo4j.cypher.exceptionHandler.runSafely
+import org.neo4j.cypher.internal.NotificationWrapping.asKernelNotification
 import org.neo4j.cypher.internal.compatibility._
 import org.neo4j.cypher.internal.compatibility.v4_0.ExceptionTranslatingQueryContext
-import org.neo4j.cypher.internal.compatibility.v4_0.runtime.executionplan.{ExecutionPlan, PeriodicCommitInfo}
-import org.neo4j.cypher.internal.compatibility.v4_0.runtime.helpers.InternalWrapping.asKernelNotification
 import org.neo4j.cypher.internal.compiler.v4_0.phases.LogicalPlanState
 import org.neo4j.cypher.internal.javacompat.ExecutionResult
 import org.neo4j.cypher.internal.plan_description.PlanDescriptionBuilder

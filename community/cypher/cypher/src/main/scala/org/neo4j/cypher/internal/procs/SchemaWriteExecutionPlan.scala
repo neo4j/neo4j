@@ -19,12 +19,11 @@
  */
 package org.neo4j.cypher.internal.procs
 
-import org.neo4j.cypher.internal.compatibility.v4_0.runtime.executionplan.ExecutionPlan
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.UpdateCountingQueryContext
 import org.neo4j.cypher.internal.runtime.planDescription.Argument
 import org.neo4j.cypher.internal.v4_0.util.InternalNotification
-import org.neo4j.cypher.internal.{ProcedureRuntimeName, RuntimeName}
+import org.neo4j.cypher.internal.{ExecutionPlan, ProcedureRuntimeName, RuntimeName}
 import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.values.virtual.MapValue
 

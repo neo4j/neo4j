@@ -17,10 +17,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compatibility.v4_0.runtime.executionplan.procs
+package org.neo4j.cypher.internal.procs
 
-import org.neo4j.cypher.internal.{ProcedureRuntimeName, RuntimeName}
-import org.neo4j.cypher.internal.compatibility.v4_0.runtime.executionplan.ExecutionPlan
+import org.neo4j.cypher.internal.{ExecutionPlan, ProcedureRuntimeName, RuntimeName}
 import org.neo4j.cypher.internal.procs.ProcedureCallRuntimeResult
 import org.neo4j.cypher.internal.runtime.{ExecutionContext, _}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.ExpressionConverters

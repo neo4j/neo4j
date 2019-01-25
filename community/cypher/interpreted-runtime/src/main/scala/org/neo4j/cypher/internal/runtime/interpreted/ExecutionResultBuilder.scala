@@ -17,12 +17,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compatibility.v4_0.runtime.executionplan
+package org.neo4j.cypher.internal.runtime.interpreted
 
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.Pipe
+import org.neo4j.cypher.internal.runtime.{InputDataStream, QueryContext}
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.PipeDecorator
+import org.neo4j.cypher.result.{QueryProfile, RuntimeResult}
+import org.neo4j.values.virtual.MapValue
 
-case class PipeInfo(pipe: Pipe, periodicCommit: Option[PeriodicCommitInfo] = None)
+trait ExecutionResultBuilder {
+  def setLoadCsvPeriodicCommitObserver(batchRowCount: Long)
+  def addProfileDecorator(profileDecorator: PipeDecorator)
+  def build(params: MapValue,
+            readOnly: Boolean,
+            queryProfile: QueryProfile,
+            prePopulateResults: Boolean,
+            input: InputDataStream): RuntimeResult
+}
 
-case class PeriodicCommitInfo(size: Option[Long]) {
-  def batchRowCount = size.getOrElse(/* defaultSize */ 1000L)
+trait ExecutionResultBuilderFactory {
+  def create(queryContext: QueryContext): ExecutionResultBuilder
 }

@@ -17,27 +17,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compatibility.v4_0.runtime.executionplan
+package org.neo4j.cypher.internal
 
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.LoadCsvIterator
-
-class LoadCsvIteratorWithPeriodicCommit(loadCsvIterator: LoadCsvIterator)(onNext: => Unit) extends LoadCsvIterator {
-
-  var lastCommitted: Long = -1L
-
-  def lastProcessed: Long = loadCsvIterator.lastProcessed
-
-  def readAll: Boolean = loadCsvIterator.readAll
-
-  def next(): Array[String] = {
-    val row = loadCsvIterator.next()
-    onNext
-    row
-  }
-
-  def hasNext: Boolean = loadCsvIterator.hasNext
-
-  def notifyCommit() {
-    lastCommitted = loadCsvIterator.lastProcessed - 1
-  }
+case class PeriodicCommitInfo(size: Option[Long]) {
+  def batchRowCount: Long = size.getOrElse(/* defaultSize */ 1000L)
 }

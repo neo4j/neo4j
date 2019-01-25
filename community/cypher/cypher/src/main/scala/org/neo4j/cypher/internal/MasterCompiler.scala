@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal
 
 import java.time.Clock
 
-import org.neo4j.cypher.internal.compatibility.v4_0.runtime.helpers.InternalWrapping.asKernelNotification
+import org.neo4j.cypher.internal.NotificationWrapping.asKernelNotification
 import org.neo4j.cypher.internal.compiler.v4_0.{StatsDivergenceCalculator, _}
 import org.neo4j.cypher.{InvalidArgumentException, _}
 import org.neo4j.graphdb.Notification

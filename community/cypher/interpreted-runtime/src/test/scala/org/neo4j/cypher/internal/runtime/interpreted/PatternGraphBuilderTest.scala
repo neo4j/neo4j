@@ -17,14 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compatibility.v4_0.runtime.executionplan.builders
+package org.neo4j.cypher.internal.runtime.interpreted
 
 import org.neo4j.cypher.internal.runtime.interpreted.commands.RelatedTo
-import org.neo4j.cypher.internal.runtime.interpreted.PatternGraphBuilder
 import org.neo4j.cypher.internal.runtime.interpreted.symbols.SymbolTable
+import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
 import org.neo4j.cypher.internal.v4_0.util.symbols._
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
 
 class PatternGraphBuilderTest extends CypherFunSuite with PatternGraphBuilder {
 

@@ -25,7 +25,6 @@ import org.neo4j.cypher.internal._
 import org.neo4j.cypher.internal.compatibility._
 import org.neo4j.cypher.internal.compatibility.v3_5.helpers.as3_5
 import org.neo4j.cypher.internal.compatibility.v3_5.helpers.as4_0
-import org.neo4j.cypher.internal.compatibility.v4_0.notification.LogicalPlanNotifications
 import org.neo4j.cypher.internal.compiler.v3_5
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.{idp => idpV3_5}
 import org.neo4j.cypher.internal.compiler.v3_5.planner.{logical => logicalV3_5}
@@ -56,6 +55,7 @@ import org.neo4j.cypher.CypherPlannerOption
 import org.neo4j.cypher.CypherUpdateStrategy
 import org.neo4j.cypher.CypherVersion
 import org.neo4j.cypher.internal.v4_0.logical.plans.{LoadCSV, LogicalPlan}
+import org.neo4j.cypher.internal.compatibility.notification.LogicalPlanNotifications
 import org.neo4j.helpers.collection.Pair
 import org.neo4j.kernel.impl.api.SchemaStateKey
 import org.neo4j.kernel.impl.query.TransactionalContext

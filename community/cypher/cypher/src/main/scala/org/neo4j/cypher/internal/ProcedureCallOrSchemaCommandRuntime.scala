@@ -19,10 +19,8 @@
  */
 package org.neo4j.cypher.internal
 
-import org.neo4j.cypher.internal.compatibility.v4_0.runtime.executionplan.ExecutionPlan
-import org.neo4j.cypher.internal.compatibility.v4_0.runtime.executionplan.procs.ProcedureCallExecutionPlan
 import org.neo4j.cypher.internal.compiler.v4_0.planner.CantCompileQueryException
-import org.neo4j.cypher.internal.procs.SchemaWriteExecutionPlan
+import org.neo4j.cypher.internal.procs.{ProcedureCallExecutionPlan, SchemaWriteExecutionPlan}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
 import org.neo4j.cypher.internal.runtime.{InternalQueryType, ProcedureCallMode, QueryContext, SCHEMA_WRITE}
 import org.neo4j.cypher.internal.v4_0.expressions.{LabelName, PropertyKeyName, RelTypeName}

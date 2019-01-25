@@ -17,13 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compatibility.v4_0.runtime.executionplan
+package org.neo4j.cypher.internal.runtime.interpreted.load_csv
 
 import java.net.URL
 
 import org.neo4j.cypher.internal.runtime.QueryContext
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.ExternalCSVResource
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.LoadCsvIterator
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.{ExternalCSVResource, LoadCsvIterator}
 
 class LoadCsvPeriodicCommitObserver(batchRowCount: Long, resources: ExternalCSVResource, queryContext: QueryContext)
   extends ExternalCSVResource {

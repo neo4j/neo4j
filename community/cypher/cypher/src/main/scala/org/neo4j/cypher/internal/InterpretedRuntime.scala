@@ -19,11 +19,10 @@
  */
 package org.neo4j.cypher.internal
 
-import org.neo4j.cypher.internal.compatibility.v4_0.runtime.executionplan.{ExecutionPlan, ExecutionResultBuilderFactory, InterpretedExecutionResultBuilderFactory, PeriodicCommitInfo}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{NestedPipeExpressions, PipeTreeBuilder}
 import org.neo4j.cypher.internal.runtime.interpreted.profiler.{InterpretedProfileInformation, Profiler}
-import org.neo4j.cypher.internal.runtime.interpreted.{InterpretedPipeMapper, UpdateCountingQueryContext}
+import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionResultBuilderFactory, InterpretedExecutionResultBuilderFactory, InterpretedPipeMapper, UpdateCountingQueryContext}
 import org.neo4j.cypher.internal.runtime.planDescription.Argument
 import org.neo4j.cypher.internal.runtime.{InputDataStream, QueryContext, QueryIndexes}
 import org.neo4j.cypher.internal.v4_0.util.{InternalNotification, PeriodicCommitInOpenTransactionException}

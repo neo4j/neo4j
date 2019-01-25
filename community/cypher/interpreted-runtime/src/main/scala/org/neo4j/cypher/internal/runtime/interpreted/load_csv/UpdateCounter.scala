@@ -17,9 +17,28 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compatibility.v4_0.runtime.executionplan;
+package org.neo4j.cypher.internal.runtime.interpreted.load_csv
 
-public interface Provider<T>
-{
-    T get();
+class UpdateCounter {
+  def offsetForHeaders(): Unit = {
+    if (uncommittedRows != 0)
+      throw new IllegalStateException("Header offset must be accounted for at the beginning")
+    uncommittedRows = -1
+  }
+
+  private var uncommittedRows = 0L
+  private var totalRows = 0L
+
+  def +=(increment: Long) {
+    assert(increment > 0L, s"increment must be positive but was: $increment")
+    uncommittedRows += increment
+    totalRows += increment
+  }
+
+  def resetIfPastLimit(limit: Long)(f: => Unit) {
+    if (uncommittedRows >= limit) {
+      f
+      uncommittedRows = 0
+    }
+  }
 }

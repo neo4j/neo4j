@@ -17,20 +17,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compatibility.v4_0.notifications
+package org.neo4j.cypher.internal.compatibility.notification
 
 import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito._
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
-import org.neo4j.cypher.internal.compatibility.v4_0.notification.checkForLoadCsvAndMatchOnLargeLabel
 import org.neo4j.cypher.internal.compiler.v4_0.LargeLabelWithLoadCsvNotification
 import org.neo4j.cypher.internal.compiler.v4_0.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.ir.v4_0.HasHeaders
 import org.neo4j.cypher.internal.planner.v4_0.spi.{GraphStatistics, PlanContext}
 import org.neo4j.cypher.internal.runtime.interpreted.CSVResources
-import org.neo4j.cypher.internal.v4_0.logical.plans._
 import org.neo4j.cypher.internal.v4_0.expressions.{LabelName, StringLiteral}
+import org.neo4j.cypher.internal.v4_0.logical.plans._
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.v4_0.util.{Cardinality, LabelId}
 

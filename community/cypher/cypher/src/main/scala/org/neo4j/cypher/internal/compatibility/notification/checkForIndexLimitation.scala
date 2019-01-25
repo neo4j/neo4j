@@ -17,12 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compatibility.v4_0.notification
+package org.neo4j.cypher.internal.compatibility.notification
 
 import org.neo4j.cypher.internal.compiler.v4_0.{SuboptimalIndexForConstainsQueryNotification, SuboptimalIndexForEndsWithQueryNotification}
 import org.neo4j.cypher.internal.planner.v4_0.spi.{IndexLimitation, PlanContext, SlowContains}
-import org.neo4j.cypher.internal.v4_0.logical.plans._
 import org.neo4j.cypher.internal.v4_0.expressions.{LabelToken, PropertyKeyToken}
+import org.neo4j.cypher.internal.v4_0.logical.plans.{LogicalPlan, NodeIndexContainsScan, NodeIndexEndsWithScan}
 import org.neo4j.cypher.internal.v4_0.util.InternalNotification
 
 case class checkForIndexLimitation(planContext: PlanContext) extends NotificationChecker {
