@@ -214,6 +214,7 @@ public class Database extends LifecycleAdapter
     private final VersionContextSupplier versionContextSupplier;
     private final AccessCapability accessCapability;
 
+    private StorageEngineFactory storageEngineFactory;
     private StorageEngine storageEngine;
     private QueryExecutionEngine executionEngine;
     private DatabaseKernelModule kernelModule;
@@ -324,7 +325,7 @@ public class Database extends LifecycleAdapter
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector = RecoveryCleanupWorkCollector.immediate();
             databaseDependencies.satisfyDependency( recoveryCleanupWorkCollector );
 
-            StorageEngineFactory storageEngineFactory = selectStorageEngine();
+            storageEngineFactory = selectStorageEngine();
             databaseDependencies.satisfyDependency( storageEngineFactory );
 
             life.add( new PageCacheLifecycle( databasePageCache ) );

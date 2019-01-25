@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.Service;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.configuration.Config;
@@ -33,6 +34,7 @@ import org.neo4j.kernel.diagnostics.providers.StoreFilesDiagnostics;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.logging.BufferingLog;
+import org.neo4j.storageengine.api.StorageEngineFactory;
 
 public class KernelDiagnosticsOfflineReportProvider extends DiagnosticsOfflineReportProvider
 {
@@ -123,7 +125,8 @@ public class KernelDiagnosticsOfflineReportProvider extends DiagnosticsOfflineRe
      */
     private void listDataDirectory( List<DiagnosticsReportSource> sources )
     {
-        StoreFilesDiagnostics storeFiles = new StoreFilesDiagnostics( null ); // TODO
+        StorageEngineFactory storageEngineFactory = StorageEngineFactory.selectStorageEngine( Service.load( StorageEngineFactory.class ) );
+        StoreFilesDiagnostics storeFiles = new StoreFilesDiagnostics( storageEngineFactory, fs, databaseLayout );
 
         BufferingLog logger = new BufferingLog();
         storeFiles.dump( logger.debugLogger() );
@@ -195,5 +198,4 @@ public class KernelDiagnosticsOfflineReportProvider extends DiagnosticsOfflineRe
                     .newDiagnosticsString( "tx.txt", () -> "Error getting tx logs: " + e.getMessage() ) );
         }
     }
-
 }

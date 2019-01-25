@@ -58,7 +58,6 @@ import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.IndexUpdateListener;
 import org.neo4j.storageengine.api.NodeLabelUpdateListener;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
-import org.neo4j.test.MockedNeoStores;
 
 import static org.mockito.Mockito.mock;
 import static org.neo4j.kernel.impl.scheduler.JobSchedulerFactory.createScheduler;
@@ -135,7 +134,7 @@ public class RecordStorageEngineRule extends ExternalResource
         private IndexUpdateListener indexUpdateListener = new IndexUpdateListener.Adapter();
         private NodeLabelUpdateListener nodeLabelUpdateListener = new NodeLabelUpdateListener.Adapter();
         private LockService lockService = new ReentrantLockService();
-        private TokenHolders tokenHolders = MockedNeoStores.mockedTokenHolders();
+        private TokenHolders tokenHolders = DatabaseRule.mockedTokenHolders();
         private Config config = Config.defaults();
         private ConstraintSemantics constraintSemantics = new StandardConstraintSemantics();
 

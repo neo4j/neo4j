@@ -32,6 +32,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Optional;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -107,12 +108,14 @@ public class RecordStoreVersionTest
         }
 
         @Test
-        public void shouldDetectOldVersionAsDifferentFromCurrent() throws IOException
+        public void shouldDetectOldVersionAsDifferentFromCurrent()
         {
             // given
             final RecordStoreVersionCheck check = getVersionCheck();
             // when
-            boolean currentVersion = check.storeVersion().equalsIgnoreCase( check.configuredVersion() );
+            Optional<String> version = check.storeVersion();
+            assertTrue( version.isPresent() );
+            boolean currentVersion = version.get().equalsIgnoreCase( check.configuredVersion() );
 
             // then
             assertFalse( currentVersion );
@@ -161,13 +164,15 @@ public class RecordStoreVersionTest
         }
 
         @Test
-        public void shouldDetectOldVersionAsDifferentFromCurrent() throws IOException
+        public void shouldDetectOldVersionAsDifferentFromCurrent()
         {
             // given
             final RecordStoreVersionCheck check = getVersionCheck();
 
             // when
-            boolean currentVersion = check.storeVersion().equals( check.configuredVersion() );
+            Optional<String> version = check.storeVersion();
+            assertTrue( version.isPresent() );
+            boolean currentVersion = version.get().equals( check.configuredVersion() );
 
             // then
             assertFalse( currentVersion );

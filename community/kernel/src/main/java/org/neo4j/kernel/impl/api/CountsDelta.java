@@ -27,6 +27,7 @@ import java.util.Map;
 
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.register.Registers;
+import org.neo4j.util.VisibleForTesting;
 
 import static java.lang.Math.toIntExact;
 import static java.util.Objects.requireNonNull;
@@ -240,7 +241,8 @@ public class CountsDelta implements CountsAccessor, CountsAccessor.Updater
         }
     }
 
-    private static abstract class Key
+    @VisibleForTesting
+    public static abstract class Key
     {
         final long[] tokens;
 
@@ -264,7 +266,8 @@ public class CountsDelta implements CountsAccessor, CountsAccessor.Updater
         }
     }
 
-    private static Key nodeKey( long labelId )
+    @VisibleForTesting
+    public static Key nodeKey( long labelId )
     {
         return new Key( labelId )
         {
@@ -276,7 +279,8 @@ public class CountsDelta implements CountsAccessor, CountsAccessor.Updater
         };
     }
 
-    private static Key relationshipKey( long startLabelId, long relationshipTypeId, long endLabelId )
+    @VisibleForTesting
+    public static Key relationshipKey( long startLabelId, long relationshipTypeId, long endLabelId )
     {
         return new Key( startLabelId, relationshipTypeId, endLabelId )
         {

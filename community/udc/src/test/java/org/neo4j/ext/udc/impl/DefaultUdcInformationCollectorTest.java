@@ -25,14 +25,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mockito;
 
 import java.io.File;
-import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.function.LongSupplier;
-import java.util.stream.Collectors;
 
 import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseManager;
@@ -44,14 +40,12 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.impl.factory.Edition;
 import org.neo4j.kernel.impl.factory.OperationalMode;
-import org.neo4j.kernel.impl.store.format.RecordFormat;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdRange;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.scheduler.JobScheduler;
-import org.neo4j.storageengine.api.StoreFileMetadata;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.TestDirectoryExtension;
@@ -186,7 +180,7 @@ class DefaultUdcInformationCollectorTest
     }
 
     @Test
-    void shouldReportStoreSizes() throws Throwable
+    void shouldReportStoreSizes()
     {
         UdcInformationCollector collector = new DefaultUdcInformationCollector( Config.defaults(), databaseManager, usageData );
 
@@ -194,13 +188,6 @@ class DefaultUdcInformationCollectorTest
         Map<String, String> udcParams = collector.getUdcParams();
 
         assertThat( udcParams.get( "storesize" ), is( "152" ) );
-    }
-
-    private static Set<StoreFileMetadata> toMeta( File... files )
-    {
-        return Arrays.stream( files )
-                .map( file -> new StoreFileMetadata( file, RecordFormat.NO_RECORD_SIZE ) )
-                .collect( Collectors.toCollection( HashSet::new ) );
     }
 
     private static class StubIdGeneratorFactory implements IdGeneratorFactory

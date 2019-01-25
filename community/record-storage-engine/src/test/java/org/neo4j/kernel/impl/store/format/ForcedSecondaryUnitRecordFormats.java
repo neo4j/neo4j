@@ -34,8 +34,11 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
+import org.neo4j.storageengine.api.format.Capability;
+import org.neo4j.storageengine.api.format.CapabilityType;
 
 import static java.util.stream.Collectors.toSet;
+import static org.neo4j.kernel.impl.store.format.Capability.SECONDARY_RECORD_UNITS;
 
 /**
  * Wraps another {@link RecordFormats} and merely forces {@link AbstractBaseRecord#setSecondaryUnitId(long)}
@@ -130,17 +133,17 @@ public class ForcedSecondaryUnitRecordFormats implements RecordFormats
     }
 
     @Override
-    public LuceneCapability[] capabilities()
+    public Capability[] capabilities()
     {
-        Set<LuceneCapability> myCapabilities = Stream.of( actual.capabilities() ).collect( toSet() );
-        myCapabilities.add( LuceneCapability.SECONDARY_RECORD_UNITS );
-        return myCapabilities.toArray( new LuceneCapability[0] );
+        Set<Capability> myCapabilities = Stream.of( actual.capabilities() ).collect( toSet() );
+        myCapabilities.add( SECONDARY_RECORD_UNITS );
+        return myCapabilities.toArray( new Capability[0] );
     }
 
     @Override
-    public boolean hasCapability( LuceneCapability capability )
+    public boolean hasCapability( Capability capability )
     {
-        return capability == LuceneCapability.SECONDARY_RECORD_UNITS || actual.hasCapability( capability );
+        return capability == SECONDARY_RECORD_UNITS || actual.hasCapability( capability );
     }
 
     @Override

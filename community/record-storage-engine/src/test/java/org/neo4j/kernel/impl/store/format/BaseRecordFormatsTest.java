@@ -22,8 +22,10 @@ package org.neo4j.kernel.impl.store.format;
 import org.junit.Rule;
 import org.junit.Test;
 
+import org.neo4j.storageengine.api.format.CapabilityType;
 import org.neo4j.test.rule.RandomRule;
 
+import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -31,7 +33,7 @@ import static org.neo4j.helpers.collection.Iterators.array;
 
 public class BaseRecordFormatsTest
 {
-    private static final LuceneCapability[] CAPABILITIES = LuceneCapability.values();
+    private static final Capability[] CAPABILITIES = Capability.values();
     private static final CapabilityType[] CAPABILITY_TYPES = CapabilityType.values();
 
     @Rule
@@ -41,7 +43,7 @@ public class BaseRecordFormatsTest
     public void shouldReportCompatibilityBetweenTwoEqualSetsOfCapabilities()
     {
         // given
-        LuceneCapability[] capabilities = random.selection( CAPABILITIES, CAPABILITIES.length / 2, CAPABILITIES.length, false );
+        Capability[] capabilities = random.selection( CAPABILITIES, CAPABILITIES.length / 2, CAPABILITIES.length, false );
 
         // then
         assertCompatibility( capabilities, capabilities, true, CAPABILITY_TYPES );
@@ -51,8 +53,8 @@ public class BaseRecordFormatsTest
     public void shouldReportCompatibilityForAdditiveAdditionalCapabilities()
     {
         // given
-        LuceneCapability[] from = array( LuceneCapability.SCHEMA );
-        LuceneCapability[] to = array( LuceneCapability.SCHEMA, LuceneCapability.POINT_PROPERTIES, LuceneCapability.TEMPORAL_PROPERTIES );
+        Capability[] from = array( Capability.SCHEMA );
+        Capability[] to = array( Capability.SCHEMA, Capability.POINT_PROPERTIES, Capability.TEMPORAL_PROPERTIES );
 
         // then
         assertCompatibility( from, to, true, CAPABILITY_TYPES );
@@ -62,8 +64,8 @@ public class BaseRecordFormatsTest
     public void shouldReportIncompatibilityForChangingAdditionalCapabilities()
     {
         // given
-        LuceneCapability[] from = array( LuceneCapability.SCHEMA );
-        LuceneCapability[] to = array( LuceneCapability.SCHEMA, LuceneCapability.DENSE_NODES );
+        Capability[] from = array( Capability.SCHEMA );
+        Capability[] to = array( Capability.SCHEMA, Capability.DENSE_NODES );
 
         // then
         assertCompatibility( from, to, false, CapabilityType.STORE );
@@ -73,14 +75,14 @@ public class BaseRecordFormatsTest
     public void shouldReportIncompatibilityForAdditiveRemovedCapabilities()
     {
         // given
-        LuceneCapability[] from = array( LuceneCapability.SCHEMA, LuceneCapability.POINT_PROPERTIES, LuceneCapability.TEMPORAL_PROPERTIES );
-        LuceneCapability[] to = array( LuceneCapability.SCHEMA );
+        Capability[] from = array( Capability.SCHEMA, Capability.POINT_PROPERTIES, Capability.TEMPORAL_PROPERTIES );
+        Capability[] to = array( Capability.SCHEMA );
 
         // then
         assertCompatibility( from, to, false, CapabilityType.STORE );
     }
 
-    private void assertCompatibility( LuceneCapability[] from, LuceneCapability[] to, boolean compatible, CapabilityType... capabilityTypes )
+    private void assertCompatibility( Capability[] from, Capability[] to, boolean compatible, CapabilityType... capabilityTypes )
     {
         for ( CapabilityType type : capabilityTypes )
         {
@@ -88,7 +90,7 @@ public class BaseRecordFormatsTest
         }
     }
 
-    private RecordFormats format( LuceneCapability... capabilities )
+    private RecordFormats format( Capability... capabilities )
     {
         RecordFormats formats = mock( BaseRecordFormats.class );
         when( formats.capabilities() ).thenReturn( capabilities );

@@ -19,7 +19,6 @@
  */
 package org.neo4j.unsafe.impl.batchimport.input.csv;
 
-import org.apache.commons.io.Charsets;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.junit.Rule;
 import org.junit.Test;
@@ -29,6 +28,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -241,6 +241,6 @@ public class CsvInputEstimateCalculationIT
             }
         }
         start.add( count );
-        return DataFactories.data( InputEntityDecorators.NO_DECORATOR, Charsets.UTF_8, file );
+        return DataFactories.data( InputEntityDecorators.NO_DECORATOR, StandardCharsets.UTF_8, file );
     }
 }

@@ -27,10 +27,12 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
+import org.neo4j.helpers.Service;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.logging.AssertableLogProvider;
+import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.test.extension.DefaultFileSystemExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.TestDirectoryExtension;
@@ -39,6 +41,7 @@ import org.neo4j.test.rule.TestDirectory;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.io.ByteUnit.kibiBytes;
+import static org.neo4j.storageengine.api.StorageEngineFactory.selectStorageEngine;
 
 @ExtendWith( DefaultFileSystemExtension.class )
 @ExtendWith( TestDirectoryExtension.class )
@@ -64,7 +67,7 @@ class KernelDiagnosticsTest
         when( storeDir.getFreeSpace() ).thenReturn( 40L );
 
         AssertableLogProvider logProvider = new AssertableLogProvider();
-        StoreFilesDiagnostics storeFiles = new StoreFilesDiagnostics( layout );
+        StoreFilesDiagnostics storeFiles = new StoreFilesDiagnostics( selectStorageEngine( Service.load( StorageEngineFactory.class ) ), fs, layout );
         storeFiles.dump( logProvider.getLog( getClass() ).debugLogger() );
 
         logProvider.assertContainsMessageContaining( "100 / 40 / 40" );
@@ -83,7 +86,7 @@ class KernelDiagnosticsTest
         file( storeDir, layout.metadataStore().getName(), (int) kibiBytes( 3 ) );
 
         AssertableLogProvider logProvider = new AssertableLogProvider();
-        StoreFilesDiagnostics storeFiles = new StoreFilesDiagnostics( layout );
+        StoreFilesDiagnostics storeFiles = new StoreFilesDiagnostics( selectStorageEngine( Service.load( StorageEngineFactory.class ) ), fs, layout );
         storeFiles.dump( logProvider.getLog( getClass() ).debugLogger() );
 
         logProvider.assertContainsMessageContaining( "Total size of store: 4.00 kB" );

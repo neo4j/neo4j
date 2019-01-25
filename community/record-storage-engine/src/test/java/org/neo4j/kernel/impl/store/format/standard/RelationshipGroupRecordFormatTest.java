@@ -37,7 +37,6 @@ import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
 class RelationshipGroupRecordFormatTest
 {
-
     @ParameterizedTest
     @MethodSource( "formats" )
     void shouldReadUnsignedRelationshipTypeId( RecordFormats formats ) throws Exception

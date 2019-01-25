@@ -123,12 +123,12 @@ public class RecordStorageMigratorIT
         RecordStorageMigrator migrator = new RecordStorageMigrator( fs, pageCache, CONFIG, logService, jobScheduler );
         DatabaseLayout migrationLayout = directory.databaseLayout( StoreUpgrader.MIGRATION_DIRECTORY );
         migrator.migrate( databaseLayout, migrationLayout, progressMonitor.startSection( "section" ), versionToMigrateFrom,
-                check.storeVersion() );
+                check.storeVersion().get() );
 
         // WHEN simulating resuming the migration
         migrator = new RecordStorageMigrator( fs, pageCache, CONFIG, logService, jobScheduler );
         migrator.moveMigratedFiles( migrationLayout, databaseLayout, versionToMigrateFrom,
-                check.storeVersion() );
+                check.storeVersion().get() );
 
         // THEN starting the new store should be successful
         StoreFactory storeFactory = new StoreFactory(
@@ -157,9 +157,9 @@ public class RecordStorageMigratorIT
 
         // WHEN migrating
         migrator.migrate( databaseLayout, migrationLayout, progressMonitor.startSection( "section" ), versionToMigrateFrom,
-                check.storeVersion() );
+                check.storeVersion().get() );
         migrator.moveMigratedFiles( migrationLayout, databaseLayout, versionToMigrateFrom,
-                check.storeVersion() );
+                check.storeVersion().get() );
 
         // THEN starting the new store should be successful
         StoreFactory storeFactory = new StoreFactory(
@@ -186,12 +186,12 @@ public class RecordStorageMigratorIT
         RecordStorageMigrator migrator = new RecordStorageMigrator( fs, pageCache, CONFIG, logService, jobScheduler );
         DatabaseLayout migrationLayout = directory.databaseLayout( StoreUpgrader.MIGRATION_DIRECTORY );
         migrator.migrate( databaseLayout, migrationLayout, progressMonitor.startSection( "section" ),
-                versionToMigrateFrom, check.storeVersion() );
+                versionToMigrateFrom, check.storeVersion().get() );
 
         // WHEN simulating resuming the migration
 
         migrator.moveMigratedFiles( migrationLayout, databaseLayout, versionToMigrateFrom,
-                check.storeVersion() );
+                check.storeVersion().get() );
 
         // THEN starting the new store should be successful
         StoreFactory storeFactory =
@@ -219,7 +219,7 @@ public class RecordStorageMigratorIT
 
         // WHEN migrating
         migrator.migrate( databaseLayout, migrationLayout, progressMonitor.startSection( "section" ),
-                versionToMigrateFrom, check.storeVersion() );
+                versionToMigrateFrom, check.storeVersion().get() );
 
         // THEN it should compute the correct last tx log position
         assertEquals( expectedLogPosition, migrator.readLastTxLogPosition( migrationLayout ) );
@@ -244,7 +244,7 @@ public class RecordStorageMigratorIT
 
         // when
         migrator.migrate( databaseLayout, migrationLayout, progressMonitor.startSection( "section" ),
-                versionToMigrateFrom, check.storeVersion() );
+                versionToMigrateFrom, check.storeVersion().get() );
 
         // then
         assertTrue( txIdComparator.apply( migrator.readLastTxInformation( migrationLayout ) ) );

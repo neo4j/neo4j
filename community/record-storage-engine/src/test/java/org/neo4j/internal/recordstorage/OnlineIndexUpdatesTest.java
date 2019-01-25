@@ -144,7 +144,7 @@ class OnlineIndexUpdatesTest
                 idTokenNameLookup, empty(), nullLogProvider, nullLogProvider,
                 IndexingService.NO_MONITOR, new DatabaseSchemaState( nullLogProvider ), indexStatisticsStore );
 
-        TokenHolders tokenHolders = TokenHolders.readOnlyTokenHolders( neoStores );
+        TokenHolders tokenHolders = RecordStorageEngineFactory.readOnlyTokenHolders( neoStores );
         SchemaRuleAccess schemaRuleAccess = SchemaRuleAccess.getSchemaRuleAccess( neoStores.getSchemaStore(), tokenHolders );
         schemaCache = new SchemaCache( new StandardConstraintSemantics(), schemaRuleAccess );
         propertyPhysicalToLogicalConverter = new PropertyPhysicalToLogicalConverter( neoStores.getPropertyStore() );

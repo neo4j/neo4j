@@ -25,12 +25,11 @@ import java.util.List;
 import java.util.Set;
 
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.kernel.impl.api.CountsDelta;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.helpers.collection.Iterators.asSet;
-import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.nodeKey;
-import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.relationshipKey;
 
 public class CountsRecordStateTest
 {
@@ -54,8 +53,8 @@ public class CountsRecordStateTest
 
         // then
         assertEquals( differences, asSet(
-                new CountsRecordState.Difference( nodeKey( 17 ), 0, 5, 0, 3 ),
-                new CountsRecordState.Difference( relationshipKey( 1, 2, 3 ), 0, 19, 0, 22 )
+                new CountsRecordState.Difference( CountsDelta.nodeKey( 17 ), 0, 5, 0, 3 ),
+                new CountsRecordState.Difference( CountsDelta.relationshipKey( 1, 2, 3 ), 0, 19, 0, 22 )
         ) );
     }
 

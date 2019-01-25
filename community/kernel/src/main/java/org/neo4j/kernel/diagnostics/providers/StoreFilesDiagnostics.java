@@ -30,25 +30,26 @@ import java.util.TimeZone;
 import java.util.stream.Collectors;
 
 import org.neo4j.helpers.Format;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.internal.NativeIndexFileFilter;
 import org.neo4j.logging.Logger;
-import org.neo4j.storageengine.api.StorageEngine;
-import org.neo4j.storageengine.api.StoreFileMetadata;
+import org.neo4j.storageengine.api.StorageEngineFactory;
 
 public class StoreFilesDiagnostics extends NamedDiagnosticsProvider
 {
     private static final String FORMAT_DATE_ISO = "yyyy-MM-dd'T'HH:mm:ssZ";
-    private final Database database;
+    private final StorageEngineFactory storageEngineFactory;
+    private final FileSystemAbstraction fs;
     private final DatabaseLayout databaseLayout;
     private final SimpleDateFormat dateFormat;
 
-    public StoreFilesDiagnostics( Database database )
+    public StoreFilesDiagnostics( StorageEngineFactory storageEngineFactory, FileSystemAbstraction fs, DatabaseLayout databaseLayout )
     {
         super( "Store files" );
-        this.database = database;
-        this.databaseLayout = database.getDatabaseLayout();
+        this.storageEngineFactory = storageEngineFactory;
+        this.fs = fs;
+        this.databaseLayout = databaseLayout;
         dateFormat = new SimpleDateFormat( FORMAT_DATE_ISO );
         dateFormat.setTimeZone( TimeZone.getDefault() );
     }
@@ -58,7 +59,7 @@ public class StoreFilesDiagnostics extends NamedDiagnosticsProvider
     {
         logger.log( getDiskSpace( databaseLayout ) );
         logger.log( "Storage files: (filename : modification date - size)" );
-        MappedFileCounter mappedCounter = new MappedFileCounter( database );
+        MappedFileCounter mappedCounter = new MappedFileCounter();
         long totalSize = logStoreFiles( logger, "  ", databaseLayout.databaseDirectory(), mappedCounter );
         logger.log( "Storage summary: " );
         logger.log( "  Total size of store: " + Format.bytes( totalSize ) );
@@ -124,21 +125,16 @@ public class StoreFilesDiagnostics extends NamedDiagnosticsProvider
         return String.format( "Disk space on partition (Total / Free / Free %%): %s / %s / %s", total, free, percentage );
     }
 
-    private static class MappedFileCounter
+    private class MappedFileCounter
     {
-        private final Database database;
-        private final DatabaseLayout layout;
         private final List<File> mappedCandidates;
         private long size;
         private final FileFilter mappedIndexFilter;
 
-        MappedFileCounter( Database database )
+        MappedFileCounter()
         {
-            StorageEngine storageEngine = database.getDependencyResolver().resolveDependency( StorageEngine.class );
-            mappedCandidates = storageEngine.listStorageFiles().stream().map( StoreFileMetadata::file ).collect( Collectors.toList() );
-            mappedIndexFilter = new NativeIndexFileFilter( database.getDatabaseLayout().databaseDirectory() );
-            this.database = database;
-            this.layout = database.getDatabaseLayout();
+            mappedCandidates = storageEngineFactory.listStorageFiles( fs, databaseLayout ).collect( Collectors.toList() );
+            mappedIndexFilter = new NativeIndexFileFilter( databaseLayout.databaseDirectory() );
         }
 
         void addFile( File file )
@@ -162,7 +158,7 @@ public class StoreFilesDiagnostics extends NamedDiagnosticsProvider
          */
         boolean canBeManagedByPageCache( File storeFile )
         {
-            boolean isLabelScanStore = layout.labelScanStore().equals( storeFile );
+            boolean isLabelScanStore = databaseLayout.labelScanStore().equals( storeFile );
             return isLabelScanStore || mappedCandidates.contains( storeFile );
         }
     }

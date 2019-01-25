@@ -24,6 +24,7 @@ import java.util.List;
 import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.internal.diagnostics.DiagnosticsManager;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
@@ -31,6 +32,7 @@ import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.storageengine.api.StorageEngine;
+import org.neo4j.storageengine.api.StorageEngineFactory;
 
 public class DbmsDiagnosticsManager
 {
@@ -97,11 +99,13 @@ public class DbmsDiagnosticsManager
     {
         Dependencies databaseResolver = database.getDependencyResolver();
         DatabaseInfo databaseInfo = databaseResolver.resolveDependency( DatabaseInfo.class );
+        FileSystemAbstraction fs = databaseResolver.resolveDependency( FileSystemAbstraction.class );
+        StorageEngineFactory storageEngineFactory = databaseResolver.resolveDependency( StorageEngineFactory.class );
         StorageEngine storageEngine = databaseResolver.resolveDependency( StorageEngine.class );
 
         diagnosticsManager.section( log, "Database: " + database.getDatabaseName() );
         diagnosticsManager.dump( new VersionDiagnostics( databaseInfo, database.getStoreId() ), log );
-        diagnosticsManager.dump( new StoreFilesDiagnostics( database ), log );
+        diagnosticsManager.dump( new StoreFilesDiagnostics( storageEngineFactory, fs, database.getDatabaseLayout() ), log );
         diagnosticsManager.dump( new TransactionRangeDiagnostics( database ), log );
         storageEngine.dumpDiagnostics( diagnosticsManager, log );
     }

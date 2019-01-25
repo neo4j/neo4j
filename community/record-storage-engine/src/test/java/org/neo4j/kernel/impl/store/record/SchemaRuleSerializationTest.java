@@ -495,7 +495,7 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
 
         // THEN
         assertThat( deserialized.getId(), equalTo( ruleId ) );
-        assertThat( deserialized.getConstraintDescriptor(), equalTo( constraint ) );
+        assertThat( deserialized, equalTo( constraint ) );
         assertThat( deserialized.schema(), equalTo( constraint.schema() ) );
         assertThat( deserialized.getOwnedIndex(), equalTo( ownedIndexId ) );
         assertThat( deserialized.getName(), is( name ) );
@@ -516,7 +516,7 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
 
         // THEN
         assertThat( deserialized.getId(), equalTo( ruleId ) );
-        assertThat( deserialized.getConstraintDescriptor(), equalTo( constraint ) );
+        assertThat( deserialized, equalTo( constraint ) );
         assertThat( deserialized.schema(), equalTo( constraint.schema() ) );
         assertThat( deserialized.getOwnedIndex(), equalTo( ownedIndexId ) );
         assertThat( deserialized.getName(), is( name ) );
@@ -536,7 +536,7 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
 
         // THEN
         assertThat( deserialized.getId(), equalTo( ruleId ) );
-        assertThat( deserialized.getConstraintDescriptor(), equalTo( constraint ) );
+        assertThat( deserialized, equalTo( constraint ) );
         assertThat( deserialized.schema(), equalTo( constraint.schema() ) );
         assertException( deserialized::getOwnedIndex, IllegalStateException.class );
         assertThat( deserialized.getName(), is( name ) );
@@ -556,7 +556,7 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
 
         // THEN
         assertThat( deserialized.getId(), equalTo( ruleId ) );
-        assertThat( deserialized.getConstraintDescriptor(), equalTo( constraint ) );
+        assertThat( deserialized, equalTo( constraint ) );
         assertThat( deserialized.schema(), equalTo( constraint.schema() ) );
         assertException( deserialized::getOwnedIndex, IllegalStateException.class );
         assertThat( deserialized.getName(), is( name ) );
@@ -590,7 +590,7 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
         ConstraintRule deserialized = assertConstraintRule( serialiseAndDeserialise( constraintRule ) );
 
         assertThat( deserialized.getId(), equalTo( constraintRule.getId() ) );
-        assertThat( deserialized.getConstraintDescriptor(), equalTo( constraintRule.getConstraintDescriptor() ) );
+        assertThat( deserialized, equalTo( constraintRule ) );
         assertThat( deserialized.schema(), equalTo( constraintRule.schema() ) );
     }
 

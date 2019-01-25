@@ -93,13 +93,13 @@ public interface RecordFormats
     /**
      * Use when comparing one format to another, for example for migration purposes.
      *
-     * @return array of {@link LuceneCapability capabilities} for comparison.
+     * @return array of {@link Capability capabilities} for comparison.
      */
     Capability[] capabilities();
 
     /**
-     * @param capability {@link LuceneCapability} to check for.
-     * @return whether or not this format has a certain {@link LuceneCapability}.
+     * @param capability {@link Capability} to check for.
+     * @return whether or not this format has a certain {@link Capability}.
      */
     boolean hasCapability( Capability capability );
 

@@ -44,7 +44,7 @@ public class ConstraintRuleTest extends SchemaRuleTestBase
         // THEN
         assertThat( constraintRule.getId(), equalTo( RULE_ID ) );
         assertThat( constraintRule.schema(), equalTo( descriptor.schema() ) );
-        assertThat( constraintRule.getConstraintDescriptor(), equalTo( descriptor ) );
+        assertThat( constraintRule, equalTo( descriptor ) );
         assertException( constraintRule::getOwnedIndex, IllegalStateException.class );
     }
 
@@ -56,7 +56,7 @@ public class ConstraintRuleTest extends SchemaRuleTestBase
         ConstraintRule constraintRule = ConstraintRule.constraintRule( RULE_ID, descriptor, RULE_ID_2 );
 
         // THEN
-        assertThat( constraintRule.getConstraintDescriptor(), equalTo( descriptor ) );
+        assertThat( constraintRule, equalTo( descriptor ) );
         assertThat( constraintRule.getOwnedIndex(), equalTo( RULE_ID_2 ) );
     }
 
@@ -70,7 +70,7 @@ public class ConstraintRuleTest extends SchemaRuleTestBase
         // THEN
         assertThat( constraintRule.getId(), equalTo( RULE_ID ) );
         assertThat( constraintRule.schema(), equalTo( descriptor.schema() ) );
-        assertThat( constraintRule.getConstraintDescriptor(), equalTo( descriptor ) );
+        assertThat( constraintRule, equalTo( descriptor ) );
         assertException( constraintRule::getOwnedIndex, IllegalStateException.class );
     }
 
@@ -82,7 +82,7 @@ public class ConstraintRuleTest extends SchemaRuleTestBase
         ConstraintRule constraintRule = ConstraintRule.constraintRule( RULE_ID, descriptor, RULE_ID_2 );
 
         // THEN
-        assertThat( constraintRule.getConstraintDescriptor(), equalTo( descriptor ) );
+        assertThat( constraintRule, equalTo( descriptor ) );
         assertThat( constraintRule.getOwnedIndex(), equalTo( RULE_ID_2 ) );
     }
 
@@ -96,7 +96,7 @@ public class ConstraintRuleTest extends SchemaRuleTestBase
         // THEN
         assertThat( constraintRule.getId(), equalTo( RULE_ID ) );
         assertThat( constraintRule.schema(), equalTo( descriptor.schema() ) );
-        assertThat( constraintRule.getConstraintDescriptor(), equalTo( descriptor ) );
+        assertThat( constraintRule, equalTo( descriptor ) );
         assertException( constraintRule::getOwnedIndex, IllegalStateException.class );
     }
 
