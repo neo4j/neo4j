@@ -140,8 +140,6 @@ class ReflectiveProcedureCompiler
                 return emptyList();
             }
 
-            MethodHandle constructor = constructor( fcnDefinition );
-
             ArrayList<CallableUserFunction> out = new ArrayList<>( functionMethods.size() );
             for ( Method method : functionMethods )
             {
@@ -150,7 +148,7 @@ class ReflectiveProcedureCompiler
                 QualifiedName funcName = extractName( fcnDefinition, method, valueName, definedName );
                 if ( config.isWhitelisted( funcName.toString() ) )
                 {
-                    out.add( compileFunction( fcnDefinition, constructor, method, funcName ) );
+                    out.add( compileFunction( fcnDefinition, method, funcName ) );
                 }
                 else
                 {
@@ -327,8 +325,8 @@ class ReflectiveProcedureCompiler
         return description;
     }
 
-    private CallableUserFunction compileFunction( Class<?> procDefinition, MethodHandle constructor, Method method, QualifiedName procName )
-            throws ProcedureException, IllegalAccessException
+    private CallableUserFunction compileFunction( Class<?> procDefinition, Method method, QualifiedName procName )
+            throws ProcedureException
     {
         restrictions.verify( procName );
 

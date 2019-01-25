@@ -73,7 +73,7 @@ public class TypeMappers
     private static final DefaultValueConverter TO_STRING = new DefaultValueConverter( NTString, String.class, DefaultParameterValue::ntString );
     private static final DefaultValueConverter TO_INTEGER = new DefaultValueConverter( NTInteger, Long.class, s -> ntInteger( parseLong( s ) ) );
     private static final DefaultValueConverter TO_FLOAT = new DefaultValueConverter( NTFloat, Double.class, s -> ntFloat( parseDouble( s ) ) );
-    private static final DefaultValueConverter TO_NUMBER = new DefaultValueConverter( NTNumber, Number.class, TypeMappers::paserNumber );
+    private static final DefaultValueConverter TO_NUMBER = new DefaultValueConverter( NTNumber, Number.class, TypeMappers::parseNumber );
     private static final DefaultValueConverter TO_BOOLEAN = new DefaultValueConverter( NTBoolean, Boolean.class, s -> ntBoolean( parseBoolean( s ) ) );
     private static final DefaultValueConverter TO_MAP = new DefaultValueConverter( NTMap, Map.class, new MapConverter() );
     private static final DefaultValueConverter TO_LIST = toList( TO_ANY, Object.class );
@@ -165,7 +165,7 @@ public class TypeMappers
         javaToNeo.put( javaClass, toNeo );
     }
 
-    private static DefaultParameterValue paserNumber( String s )
+    private static DefaultParameterValue parseNumber( String s )
     {
         try
         {
