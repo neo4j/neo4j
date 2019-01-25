@@ -32,7 +32,7 @@ import org.neo4j.internal.kernel.api.{Kernel, TokenRead, Transaction => KernelTr
 import org.neo4j.kernel.api.InwardKernel
 import org.neo4j.kernel.api.proc._
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
-import org.neo4j.kernel.impl.proc.Procedures
+import org.neo4j.kernel.impl.proc.GlobalProcedures
 import org.neo4j.kernel.monitoring.Monitors
 import org.neo4j.kernel.{GraphDatabaseQueryService, monitoring}
 import org.neo4j.test.TestGraphDatabaseFactory
@@ -301,7 +301,7 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
     val parts = qualifiedName.split('.')
     val namespace = parts.reverse.tail.reverse
     val name = parts.last
-    val procs = graph.getDependencyResolver.resolveDependency(classOf[Procedures])
+    val procs = graph.getDependencyResolver.resolveDependency(classOf[GlobalProcedures])
     procs.function(new QualifiedName(namespace, name))
   }
 
