@@ -25,12 +25,11 @@ import org.neo4j.cypher.internal.compatibility._
 import org.neo4j.cypher.internal.compatibility.v4_0.ExceptionTranslatingQueryContext
 import org.neo4j.cypher.internal.compiler.v4_0.phases.LogicalPlanState
 import org.neo4j.cypher.internal.javacompat.ExecutionResult
-import org.neo4j.cypher.internal.plan_description.PlanDescriptionBuilder
+import org.neo4j.cypher.internal.plan_description.{InternalPlanDescription, PlanDescriptionBuilder}
 import org.neo4j.cypher.internal.planner.v4_0.spi.PlanningAttributes.{Cardinalities, ProvidedOrders}
 import org.neo4j.cypher.internal.result.{ClosingExecutionResult, ExplainExecutionResult, StandardInternalExecutionResult}
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.runtime.interpreted.{TransactionBoundQueryContext, TransactionalContextWrapper}
-import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.runtime.{ExecutableQuery => _, _}
 import org.neo4j.cypher.internal.v4_0.frontend.PlannerName
 import org.neo4j.cypher.internal.v4_0.frontend.phases.CompilationPhaseTracer

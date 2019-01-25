@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
+import org.neo4j.cypher.internal.plan_description.Argument
 import org.neo4j.cypher.internal.runtime.ExecutionContext
-import org.neo4j.cypher.internal.runtime.planDescription.Argument
 import org.neo4j.graphdb.PropertyContainer
 
 trait EntityProducer[T <: PropertyContainer] extends ((ExecutionContext, QueryState) => Iterator[T]) {

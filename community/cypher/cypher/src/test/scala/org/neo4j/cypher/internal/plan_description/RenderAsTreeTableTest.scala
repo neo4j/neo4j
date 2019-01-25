@@ -17,25 +17,24 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.runtime.planDescription
+package org.neo4j.cypher.internal.plan_description
 
 import java.util.Locale
 
+import org.neo4j.cypher.internal.plan_description.Arguments._
 import org.neo4j.cypher.internal.ir.v4_0.ProvidedOrder
 import org.neo4j.cypher.internal.planner.v4_0.spi.PlanningAttributes.{Cardinalities, ProvidedOrders}
-import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments._
-import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
-import org.neo4j.cypher.internal.v4_0.util.attribution.{Id, SequentialIdGen}
-import org.neo4j.cypher.internal.v4_0.util.test_helpers.{CypherFunSuite, WindowsStringSafe}
-import org.neo4j.cypher.internal.v4_0.util.{DummyPosition, LabelId, NonEmptyList, PropertyKeyId}
 import org.neo4j.cypher.internal.v4_0.expressions.{Expression => ASTExpression, LabelName => ASTLabelName, Range => ASTRange, _}
 import org.neo4j.cypher.internal.v4_0.logical.plans
 import org.neo4j.cypher.internal.v4_0.logical.plans._
+import org.neo4j.cypher.internal.v4_0.util.attribution.{Id, SequentialIdGen}
+import org.neo4j.cypher.internal.v4_0.util.test_helpers.{CypherFunSuite, WindowsStringSafe}
+import org.neo4j.cypher.internal.v4_0.util.{DummyPosition, LabelId, NonEmptyList, PropertyKeyId}
 import org.scalatest.BeforeAndAfterAll
 
 class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll {
-  implicit val windowsSafe = WindowsStringSafe
-  implicit val idGen = new SequentialIdGen()
+  implicit val windowsSafe: WindowsStringSafe.type = WindowsStringSafe
+  implicit val idGen: SequentialIdGen = new SequentialIdGen()
 
   private val defaultLocale = Locale.getDefault
   override def beforeAll() {

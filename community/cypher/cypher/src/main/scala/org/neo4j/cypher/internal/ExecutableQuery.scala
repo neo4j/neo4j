@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal
 
-import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription
+import org.neo4j.cypher.internal.plan_description.InternalPlanDescription
 import org.neo4j.graphdb.Result
 import org.neo4j.kernel.api.query.CompilerInfo
 import org.neo4j.kernel.impl.query.TransactionalContext

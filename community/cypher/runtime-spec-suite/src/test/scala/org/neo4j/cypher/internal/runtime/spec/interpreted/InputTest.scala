@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.spec.interpreted
 
-import org.neo4j.cypher.internal.compatibility._
+import org.neo4j.cypher.internal.{CypherRuntime, InterpretedRuntime, RuntimeContext}
 import org.neo4j.cypher.internal.runtime.spec._
 
 abstract class InputTestBase[CONTEXT <: RuntimeContext](

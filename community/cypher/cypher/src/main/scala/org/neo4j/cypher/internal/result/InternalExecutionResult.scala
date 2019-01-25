@@ -17,12 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.runtime
+package org.neo4j.cypher.internal.result
 
 import java.io.PrintWriter
 import java.lang
 
-import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription
+import org.neo4j.cypher.internal.plan_description.InternalPlanDescription
+import org.neo4j.cypher.internal.runtime._
 import org.neo4j.cypher.result.QueryResult
 import org.neo4j.graphdb.Result.ResultVisitor
 import org.neo4j.graphdb.{Notification, QueryExecutionType, ResourceIterator}

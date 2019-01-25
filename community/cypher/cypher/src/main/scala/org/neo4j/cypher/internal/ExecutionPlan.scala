@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal
 
+import org.neo4j.cypher.internal.plan_description.Argument
 import org.neo4j.cypher.internal.runtime.{InputDataStream, QueryContext}
-import org.neo4j.cypher.internal.runtime.planDescription.Argument
 import org.neo4j.cypher.internal.v4_0.util.InternalNotification
 import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.internal.kernel.api.CursorFactory

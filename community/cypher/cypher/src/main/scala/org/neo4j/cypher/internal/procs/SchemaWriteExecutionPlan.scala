@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.procs
 
-import org.neo4j.cypher.internal.runtime.QueryContext
+import org.neo4j.cypher.internal.runtime.{InputDataStream, QueryContext}
 import org.neo4j.cypher.internal.runtime.interpreted.UpdateCountingQueryContext
-import org.neo4j.cypher.internal.runtime.planDescription.Argument
+import org.neo4j.cypher.internal.plan_description.Argument
 import org.neo4j.cypher.internal.v4_0.util.InternalNotification
 import org.neo4j.cypher.internal.{ExecutionPlan, ProcedureRuntimeName, RuntimeName}
 import org.neo4j.cypher.result.RuntimeResult

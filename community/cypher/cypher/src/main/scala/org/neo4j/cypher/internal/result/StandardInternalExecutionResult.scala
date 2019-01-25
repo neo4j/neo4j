@@ -23,10 +23,9 @@ import java.io.PrintWriter
 import java.util
 
 import org.neo4j.cypher.internal.RuntimeName
-import org.neo4j.cypher.internal.plan_description.PlanDescriptionBuilder
+import org.neo4j.cypher.internal.plan_description.{InternalPlanDescription, PlanDescriptionBuilder}
 import org.neo4j.cypher.internal.result.string.ResultStringBuilder
 import org.neo4j.cypher.internal.runtime._
-import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.v4_0.util.{ProfilerStatisticsNotReadyException, TaskCloser}
 import org.neo4j.cypher.result.QueryResult.QueryResultVisitor
 import org.neo4j.cypher.result.RuntimeResult.ConsumptionState

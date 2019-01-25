@@ -17,10 +17,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.runtime.planDescription
+package org.neo4j.cypher.internal.plan_description
 
 import org.mockito.Mockito._
-import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments.{DbHits, Rows, Time}
+import org.neo4j.cypher.internal.plan_description.Arguments.{DbHits, Rows, Time}
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.scalatest.mock.MockitoSugar
 

@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes.matching
 
+import org.neo4j.cypher.internal.plan_description.Argument
 import org.neo4j.cypher.internal.runtime.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
-import org.neo4j.cypher.internal.runtime.planDescription.Argument
 import org.neo4j.graphdb.Path
 
 trait TraversalMatcher {
