@@ -22,8 +22,8 @@ package org.neo4j.cypher.internal.runtime.spec
 import java.util
 import java.util.concurrent.atomic.AtomicInteger
 
-import org.neo4j.cypher.internal.compatibility._
 import org.neo4j.cypher.internal.runtime.{InputCursor, InputDataStream, NoInput}
+import org.neo4j.cypher.internal.{CypherRuntime, LogicalQuery, RuntimeContext}
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.result.{QueryResult, RuntimeResult}
 import org.neo4j.graphdb.{GraphDatabaseService, Label, Node}

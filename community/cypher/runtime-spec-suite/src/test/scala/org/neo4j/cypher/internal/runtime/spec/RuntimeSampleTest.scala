@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.spec
 
-import org.neo4j.cypher.internal.compatibility.InterpretedRuntime
+import org.neo4j.cypher.internal.InterpretedRuntime
 
 /**
   * Sample tests to demonstrate the runtime acceptance test framework. Remove eventually?

@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal
 
 import org.neo4j.cypher.SyntaxException
-import org.neo4j.cypher.internal.compatibility.LFUCache
+import org.neo4j.cypher.internal.cache.LFUCache
 
 /**
   * Cypher planner which has the ability to cache parsing and planning results.

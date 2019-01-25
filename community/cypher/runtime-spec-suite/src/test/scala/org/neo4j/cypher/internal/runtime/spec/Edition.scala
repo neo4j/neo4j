@@ -20,8 +20,7 @@
 package org.neo4j.cypher.internal.runtime.spec
 
 import org.neo4j.common.DependencyResolver
-import org.neo4j.cypher.internal.CypherConfiguration
-import org.neo4j.cypher.internal.compatibility.{RuntimeContextCreator, _}
+import org.neo4j.cypher.internal._
 import org.neo4j.kernel.configuration.Config
 import org.neo4j.test.TestGraphDatabaseFactory
 

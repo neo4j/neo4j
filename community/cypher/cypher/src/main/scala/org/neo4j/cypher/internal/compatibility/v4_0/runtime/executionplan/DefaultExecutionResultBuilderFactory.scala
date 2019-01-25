@@ -19,9 +19,8 @@
  */
 package org.neo4j.cypher.internal.compatibility.v4_0.runtime.executionplan
 
-import org.neo4j.cypher.internal.compatibility.v4_0.runtime._
 import org.neo4j.cypher.internal.runtime.{ExecutionContext, _}
-import org.neo4j.cypher.internal.runtime.interpreted.CSVResources
+import org.neo4j.cypher.internal.runtime.interpreted.{CSVResources, PipeExecutionResult}
 import org.neo4j.cypher.internal.runtime.interpreted.pipes._
 import org.neo4j.cypher.internal.v4_0.logical.plans.LogicalPlan
 import org.neo4j.cypher.result.{QueryProfile, RuntimeResult}

@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compatibility.v4_0.runtime.executionplan
 
-import org.neo4j.cypher.internal.compatibility.v4_0.runtime.RuntimeName
+import org.neo4j.cypher.internal.RuntimeName
 import org.neo4j.cypher.internal.runtime.{InputDataStream, QueryContext}
 import org.neo4j.cypher.internal.runtime.planDescription.Argument
 import org.neo4j.cypher.internal.v4_0.util.InternalNotification

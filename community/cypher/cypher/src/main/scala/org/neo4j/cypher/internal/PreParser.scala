@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal
 
 import org.neo4j.cypher._
-import org.neo4j.cypher.internal.compatibility.LFUCache
+import org.neo4j.cypher.internal.cache.LFUCache
 
 import scala.util.matching.Regex
 
