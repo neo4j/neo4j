@@ -593,7 +593,7 @@ public final class ProcedureCompilation
         }
         else if ( type.equals( STRING ) )
         {
-            return noValueCheck( expression, invoke(
+            return noValueCheck( expression, invoke( cast( TextValue.class, expression ),
                     methodReference( TextValue.class, String.class, "stringValue" ) ));
         }
         else if ( type.equals( BYTE_ARRAY ) )

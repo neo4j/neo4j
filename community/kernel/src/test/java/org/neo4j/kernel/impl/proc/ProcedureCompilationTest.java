@@ -237,6 +237,25 @@ public class ProcedureCompilationTest
                 bytesMethod.apply( ctx, new AnyValue[]{NO_VALUE} ) );
     }
 
+    @Test
+    void shouldHandleStrings() throws ProcedureException
+    {
+        // Given
+        UserFunctionSignature signature = functionSignature( "test", "foo" )
+                .in( "string", NTString )
+                .out( NTString ).build();
+
+        // When
+        CallableUserFunction stringMethod =
+                compileFunction( signature, emptyList(), method( "stringMethod", String.class ), typeMappers );
+
+        // Then
+        assertEquals( stringValue("good bye!"),
+                stringMethod.apply( ctx, new AnyValue[]{stringValue( "good" )} ) );
+        assertEquals( stringValue( "you gave me null" ),
+                stringMethod.apply( ctx, new AnyValue[]{NO_VALUE} ) );
+    }
+
     private FieldSetter createSetter( Class<?> owner, String field, Key<Long> key )
             throws NoSuchFieldException, IllegalAccessException
     {
@@ -319,6 +338,15 @@ public class ProcedureCompilationTest
     public byte[] bytes( byte[] bytes )
     {
         return bytes;
+    }
+
+    public String stringMethod( String in )
+    {
+        if ( in == null )
+        {
+            return "you gave me null";
+        }
+        return in + " bye!";
     }
 
 }
