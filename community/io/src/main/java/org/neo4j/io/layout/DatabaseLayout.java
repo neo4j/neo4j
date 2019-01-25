@@ -68,12 +68,12 @@ public class DatabaseLayout
 
     public static DatabaseLayout of( File rootDirectory, String databaseName )
     {
-        return of(rootDirectory, NOT_CONFIGURED, databaseName );
+        return of( rootDirectory, NOT_CONFIGURED, databaseName );
     }
 
-    public static DatabaseLayout of( File rootDirectory, StoreLayoutConfig config, String databaseName )
+    public static DatabaseLayout of( File storeDirectory, StoreLayoutConfig config, String databaseName )
     {
-        return new DatabaseLayout( StoreLayout.of( rootDirectory, config ), databaseName );
+        return new DatabaseLayout( StoreLayout.of( storeDirectory, config ), databaseName );
     }
 
     protected DatabaseLayout( StoreLayout storeLayout, String databaseName )

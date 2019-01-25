@@ -93,6 +93,7 @@ public class GraphDatabaseSettings implements LoadableConfig
     public static final String SYSTEM_DATABASE_NAME = "system.db";
     public static final String DEFAULT_DATABASE_NAME = "graph.db";
 
+    public static final String DEFAULT_DATABASES_ROOT_DIR_NAME = "databases";
     public static final String DEFAULT_TX_LOGS_ROOT_DIR_NAME = "tx-logs";
 
     @SuppressWarnings( "unused" ) // accessed by reflection
@@ -115,7 +116,7 @@ public class GraphDatabaseSettings implements LoadableConfig
 
     @Internal
     public static final Setting<File> databases_root_path = derivedSetting( "unsupported.dbms.directories.databases.root",
-            data_directory,  data -> new File( data, "databases" ), PATH );
+            data_directory,  data -> new File( data, DEFAULT_DATABASES_ROOT_DIR_NAME ), PATH );
 
     @Description( "Root location where Neo4j will store transaction logs for configured databases." )
     public static final Setting<File> transaction_logs_root_path = derivedSetting( "dbms.directories.transaction.logs.root",
