@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.ir.v4_0
 
-import org.neo4j.cypher.internal.ir.v4_0.InterestingOrder.{Asc, ColumnOrder, Desc}
 import org.neo4j.cypher.internal.v4_0.expressions._
 
 import scala.annotation.tailrec
@@ -37,6 +36,23 @@ object InterestingOrder {
   case class Asc(expression: Expression, projections: Map[String, Expression] = Map.empty) extends ColumnOrder
 
   case class Desc(expression: Expression, projections: Map[String, Expression] = Map.empty) extends ColumnOrder
+
+  /**
+    * An [[InterestingOrder]] can be fully, partially, or not all all satisfied by a [[ProvidedOrder]].
+    * This class specifies the satisfied prefix of columns and the missing suffix of columns.
+    */
+  case class Satisfaction(satisfiedPrefix: Seq[ColumnOrder], missingSuffix: Seq[ColumnOrder]){
+    def withSatisfied(columnOrder: ColumnOrder): Satisfaction = this.copy(satisfiedPrefix :+ columnOrder, missingSuffix)
+    def withMissing(columnOrder: ColumnOrder): Satisfaction = this.copy(satisfiedPrefix, missingSuffix :+ columnOrder)
+  }
+
+  object FullSatisfaction {
+    def unapply(s: Satisfaction): Boolean = s.missingSuffix.isEmpty
+  }
+
+  object NoSatisfaction {
+    def unapply(s: Satisfaction): Boolean = s.satisfiedPrefix.isEmpty && s.missingSuffix.nonEmpty
+  }
 
   val empty = InterestingOrder(RequiredOrderCandidate.empty, Seq.empty)
 
@@ -64,7 +80,7 @@ case class InterestingOrder(requiredOrderCandidate: RequiredOrderCandidate,
   val isEmpty: Boolean = requiredOrderCandidate.isEmpty && interestingOrderCandidates.forall(_.isEmpty)
 
   // TODO maybe merge some candidates
-  def interested(candidate: InterestingOrderCandidate): InterestingOrder = InterestingOrder(requiredOrderCandidate, interestingOrderCandidates :+ candidate)
+  def interesting(candidate: InterestingOrderCandidate): InterestingOrder = InterestingOrder(requiredOrderCandidate, interestingOrderCandidates :+ candidate)
 
   // TODO maybe merge some candidates
   def asInteresting: InterestingOrder =
@@ -120,74 +136,23 @@ case class InterestingOrder(requiredOrderCandidate: RequiredOrderCandidate,
   /**
     * Checks if a RequiredOrder is satisfied by a ProvidedOrder
     */
-  def satisfiedBy(providedOrder: ProvidedOrder): Boolean = {
+  def satisfiedBy(providedOrder: ProvidedOrder): Satisfaction = {
     @tailrec
     def satisfied(providedOrder: Expression, requiredOrder: Expression, projections: Map[String, Expression]): Boolean = {
       val projected = projectExpression(requiredOrder, projections)
-      if (providedOrder == requiredOrder || providedOrder == projected)
+      if (providedOrder == requiredOrder || providedOrder == projected) {
         true
-      else if (projected != requiredOrder) {
+      } else if (projected != requiredOrder) {
         satisfied(providedOrder, projected, projections)
-      }
-      else
+      } else {
         false
+      }
     }
-    requiredOrderCandidate.order.zipAll(providedOrder.columns, null, null).forall {
-      case (null, _) => true // no required order left
-      case (_, null) => false // required order left but no provided
-      case (InterestingOrder.Asc(interestedExpr, projections), ProvidedOrder.Asc(providedExpr)) => satisfied(providedExpr, interestedExpr, projections)
-      case (InterestingOrder.Desc(interestedExpr, projections), ProvidedOrder.Desc(providedExpr)) => satisfied(providedExpr, interestedExpr, projections)
-      case _ => false
+    requiredOrderCandidate.order.zipAll(providedOrder.columns, null, null).foldLeft(Satisfaction(Seq.empty, Seq.empty)){
+      case (s, (null, _)) => s // no required order left
+      case (s@FullSatisfaction(), (satisfiedColumn@InterestingOrder.Asc(requiredExp, projections), ProvidedOrder.Asc(providedExpr))) if satisfied(providedExpr, requiredExp, projections)  => s.withSatisfied(satisfiedColumn)
+      case (s@FullSatisfaction(), (satisfiedColumn@InterestingOrder.Desc(requiredExp, projections), ProvidedOrder.Desc(providedExpr))) if satisfied(providedExpr, requiredExp, projections) => s.withSatisfied(satisfiedColumn)
+      case (s, (unsatisfiedColumn, _)) => s.withMissing(unsatisfiedColumn) // required order left but no provided or provided not matching or previous column not matching
     }
   }
-}
-
-trait OrderCandidate {
-  def order: Seq[ColumnOrder]
-
-  def isEmpty: Boolean = order.isEmpty
-
-  def nonEmpty: Boolean = !isEmpty
-
-  def headOption: Option[ColumnOrder] = order.headOption
-
-  def renameColumns(f: Seq[ColumnOrder] => Seq[ColumnOrder]): OrderCandidate
-
-  def asc(expression: Expression, projections: Map[String, Expression]): OrderCandidate
-
-  def desc(expression: Expression, projections: Map[String, Expression]): OrderCandidate
-}
-
-case class RequiredOrderCandidate(order: Seq[ColumnOrder]) extends OrderCandidate {
-  def asInteresting: InterestingOrderCandidate = InterestingOrderCandidate(order)
-
-  override def renameColumns(f: Seq[ColumnOrder] => Seq[ColumnOrder]): RequiredOrderCandidate = RequiredOrderCandidate(f(order))
-
-  override def asc(expression: Expression, projections: Map[String, Expression] = Map.empty): RequiredOrderCandidate = RequiredOrderCandidate(order :+ Asc(expression, projections))
-
-  override def desc(expression: Expression, projections: Map[String, Expression] = Map.empty): RequiredOrderCandidate = RequiredOrderCandidate(order :+ Desc(expression, projections))
-}
-
-object RequiredOrderCandidate {
-  def empty: RequiredOrderCandidate = RequiredOrderCandidate(Seq.empty)
-
-  def asc(expression: Expression, projections: Map[String, Expression] = Map.empty): RequiredOrderCandidate = empty.asc(expression, projections)
-
-  def desc(expression: Expression, projections: Map[String, Expression] = Map.empty): RequiredOrderCandidate = empty.desc(expression, projections)
-}
-
-case class InterestingOrderCandidate(order: Seq[ColumnOrder]) extends OrderCandidate {
-  override def renameColumns(f: Seq[ColumnOrder] => Seq[ColumnOrder]): InterestingOrderCandidate = InterestingOrderCandidate(f(order))
-
-  override def asc(expression: Expression, projections: Map[String, Expression] = Map.empty): InterestingOrderCandidate = InterestingOrderCandidate(order :+ Asc(expression, projections))
-
-  override def desc(expression: Expression, projections: Map[String, Expression] = Map.empty): InterestingOrderCandidate = InterestingOrderCandidate(order :+ Desc(expression, projections))
-}
-
-object InterestingOrderCandidate {
-  def empty: InterestingOrderCandidate = InterestingOrderCandidate(Seq.empty)
-
-  def asc(expression: Expression, projections: Map[String, Expression] = Map.empty): InterestingOrderCandidate = empty.asc(expression, projections)
-
-  def desc(expression: Expression, projections: Map[String, Expression] = Map.empty): InterestingOrderCandidate = empty.desc(expression, projections)
 }

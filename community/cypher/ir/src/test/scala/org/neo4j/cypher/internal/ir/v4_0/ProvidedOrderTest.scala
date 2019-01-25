@@ -57,39 +57,5 @@ class ProvidedOrderTest extends CypherFunSuite {
     ProvidedOrder.empty.upToExcluding(Set("c")).columns should be(Seq.empty)
   }
 
-  test("Empty required order satisfied by anything") {
-    InterestingOrder.empty.satisfiedBy(ProvidedOrder.empty) should be(true)
-    InterestingOrder.empty.satisfiedBy(ProvidedOrder.asc(varFor("x"))) should be(true)
-    InterestingOrder.empty.satisfiedBy(ProvidedOrder.desc(varFor("x"))) should be(true)
-    InterestingOrder.empty.satisfiedBy(ProvidedOrder.asc(varFor("x")).asc(varFor("y"))) should be(true)
-    InterestingOrder.empty.satisfiedBy(ProvidedOrder.desc(varFor("x")).desc(varFor("y"))) should be(true)
-  }
-
-  test("Single property required order satisfied by matching provided order") {
-    InterestingOrder.required(RequiredOrderCandidate.asc(varFor("x"))).satisfiedBy(ProvidedOrder.asc(varFor("x"))) should be(true)
-  }
-
-  test("Single property required order satisfied by longer provided order") {
-    InterestingOrder.required(RequiredOrderCandidate.asc(varFor("x"))).satisfiedBy(ProvidedOrder.asc(varFor("x")).asc(varFor("y"))) should be(true)
-    InterestingOrder.required(RequiredOrderCandidate.asc(varFor("x"))).satisfiedBy(ProvidedOrder.asc(varFor("x")).desc(varFor("y"))) should be(true)
-  }
-
-  test("Single property required order not satisfied by mismatching provided order") {
-    InterestingOrder.required(RequiredOrderCandidate.asc(varFor("x"))).satisfiedBy(ProvidedOrder.asc(varFor("y"))) should be(false)
-    InterestingOrder.required(RequiredOrderCandidate.asc(varFor("x"))).satisfiedBy(ProvidedOrder.desc(varFor("x"))) should be(false)
-    InterestingOrder.required(RequiredOrderCandidate.asc(varFor("x"))).satisfiedBy(ProvidedOrder.asc(varFor("y")).asc(varFor("x"))) should be(false)
-  }
-
-  test("Multi property required order satisfied only be matching provided order") {
-    val interestingOrder = InterestingOrder.required(RequiredOrderCandidate.asc(varFor("x")).desc(varFor("y")).asc(varFor("z")))
-
-    interestingOrder.satisfiedBy(ProvidedOrder.asc(varFor("x"))) should be(false)
-    interestingOrder.satisfiedBy(ProvidedOrder.asc(varFor("x")).desc(varFor("y"))) should be(false)
-    interestingOrder.satisfiedBy(ProvidedOrder.asc(varFor("x")).desc(varFor("y")).asc(varFor("z"))) should be(true)
-    interestingOrder.satisfiedBy(ProvidedOrder.asc(varFor("x")).desc(varFor("z")).asc(varFor("y"))) should be(false)
-    interestingOrder.satisfiedBy(ProvidedOrder.asc(varFor("x")).desc(varFor("y")).desc(varFor("z"))) should be(false)
-    interestingOrder.satisfiedBy(ProvidedOrder.asc(varFor("x")).asc(varFor("y")).desc(varFor("z"))) should be(false)
-  }
-
-  private def varFor(name: String): Variable = Variable(name)(DummyPosition(0))
+  private def varFor(name: String) = Variable(name)(DummyPosition(0))
 }

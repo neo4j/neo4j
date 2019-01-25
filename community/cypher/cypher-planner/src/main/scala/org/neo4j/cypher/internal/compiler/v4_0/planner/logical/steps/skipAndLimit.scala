@@ -21,8 +21,8 @@ package org.neo4j.cypher.internal.compiler.v4_0.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v4_0.planner.logical._
 import org.neo4j.cypher.internal.ir.v4_0._
-import org.neo4j.cypher.internal.v4_0.logical.plans._
 import org.neo4j.cypher.internal.v4_0.expressions.Expression
+import org.neo4j.cypher.internal.v4_0.logical.plans._
 
 object skipAndLimit extends PlanTransformer {
 
@@ -39,10 +39,10 @@ object skipAndLimit extends PlanTransformer {
     }
   }
 
-  private def addSkip(s: Option[Expression], plan: LogicalPlan, context: LogicalPlanningContext) =
+  private def addSkip(s: Option[Expression], plan: LogicalPlan, context: LogicalPlanningContext): LogicalPlan =
     s.fold(plan)(x => context.logicalPlanProducer.planSkip(plan, x, context))
 
-  private def addLimit(s: Option[Expression], plan: LogicalPlan, context: LogicalPlanningContext) =
+  private def addLimit(s: Option[Expression], plan: LogicalPlan, context: LogicalPlanningContext): LogicalPlan =
     s.fold(plan)(x => context.logicalPlanProducer.planLimit(plan, x, context = context))
 
 }

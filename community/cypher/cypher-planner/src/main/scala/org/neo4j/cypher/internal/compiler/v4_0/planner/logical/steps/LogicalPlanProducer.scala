@@ -26,10 +26,10 @@ import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.LogicalPlanningCo
 import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.Metrics.CardinalityModel
 import org.neo4j.cypher.internal.ir.v4_0._
 import org.neo4j.cypher.internal.planner.v4_0.spi.PlanningAttributes
-import org.neo4j.cypher.internal.v4_0.logical.plans
-import org.neo4j.cypher.internal.v4_0.logical.plans.{Union, UnwindCollection, ValueHashJoin, DeleteExpression => DeleteExpressionPlan, Limit => LimitPlan, LoadCSV => LoadCSVPlan, Skip => SkipPlan, _}
 import org.neo4j.cypher.internal.v4_0.ast._
 import org.neo4j.cypher.internal.v4_0.expressions._
+import org.neo4j.cypher.internal.v4_0.logical.plans
+import org.neo4j.cypher.internal.v4_0.logical.plans.{Union, UnwindCollection, ValueHashJoin, DeleteExpression => DeleteExpressionPlan, Limit => LimitPlan, LoadCSV => LoadCSVPlan, Skip => SkipPlan, _}
 import org.neo4j.cypher.internal.v4_0.util.AssertionRunner.Thunk
 import org.neo4j.cypher.internal.v4_0.util.Foldable.FoldableAny
 import org.neo4j.cypher.internal.v4_0.util.attribution.{Attributes, IdGen}
@@ -560,6 +560,11 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
   def planSort(inner: LogicalPlan, sortColumns: Seq[ColumnOrder], providedOrder: ProvidedOrder, interestingOrder: InterestingOrder, context: LogicalPlanningContext): LogicalPlan = {
     val solved = solveds.get(inner.id).updateTailOrSelf(_.withInterestingOrder(interestingOrder))
     annotate(Sort(inner, sortColumns), solved, providedOrder, context)
+  }
+
+  def planPartialSort(inner: LogicalPlan, alreadySortedPrefix: Seq[ColumnOrder], stillToSortSuffix: Seq[ColumnOrder], providedOrder: ProvidedOrder, interestingOrder: InterestingOrder, context: LogicalPlanningContext): LogicalPlan = {
+    val solved = solveds.get(inner.id).updateTailOrSelf(_.withInterestingOrder(interestingOrder))
+    annotate(PartialSort(inner, alreadySortedPrefix, stillToSortSuffix), solved, providedOrder, context)
   }
 
   def planShortestPath(inner: LogicalPlan, shortestPaths: ShortestPathPattern, predicates: Seq[Expression],

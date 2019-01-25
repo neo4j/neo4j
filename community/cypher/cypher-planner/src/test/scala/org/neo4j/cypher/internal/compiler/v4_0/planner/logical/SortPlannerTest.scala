@@ -73,6 +73,42 @@ class SortPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 wi
     }
   }
 
+  test("should do a partial sort if things are partially in the right order already") {
+    new given().withLogicalPlanningContext { (_, context) =>
+      val io = InterestingOrder.required(RequiredOrderCandidate.asc(varFor("n")).asc(varFor("m")))
+      val solvedIO = InterestingOrder.required(RequiredOrderCandidate.asc(varFor("n")))
+      val inputPlan = fakeLogicalPlanFor(context.planningAttributes, "n", "m")
+      // Fake sort the plan
+      context.planningAttributes.solveds.set(inputPlan.id, RegularPlannerQuery(interestingOrder = solvedIO))
+      context.planningAttributes.providedOrders.set(inputPlan.id, ProvidedOrder.asc(varFor("n")))
+
+      // When
+      val sortedPlan = SortPlanner.maybeSortedPlan(inputPlan, io, context)
+
+      // Then
+      sortedPlan should equal(Some(PartialSort(inputPlan, Seq(Ascending("n")), Seq(Ascending("m")))))
+      context.planningAttributes.solveds.get(sortedPlan.get.id) should equal(RegularPlannerQuery(interestingOrder = io))
+    }
+  }
+
+  test("should do a partial sort and projection if things are partially in the right order already") {
+    new given().withLogicalPlanningContext { (_, context) =>
+      val io = InterestingOrder.required(RequiredOrderCandidate.asc(prop("x", "foo")).asc(prop("x", "bar")))
+      val solvedIO = InterestingOrder.required(RequiredOrderCandidate.asc(prop("x", "foo")))
+      val inputPlan = fakeLogicalPlanFor(context.planningAttributes, "x")
+      // Fake sort the plan
+      context.planningAttributes.solveds.set(inputPlan.id, RegularPlannerQuery(interestingOrder = solvedIO))
+      context.planningAttributes.providedOrders.set(inputPlan.id, ProvidedOrder.asc(prop("x", "foo")))
+
+      // When
+      val sortedPlan = SortPlanner.maybeSortedPlan(inputPlan, io, context)
+
+      // Then
+      sortedPlan should equal(Some(PartialSort(Projection(inputPlan, Map("x.foo" -> prop("x", "foo"), "x.bar" -> prop("x", "bar"))), Seq(Ascending("x.foo")), Seq(Ascending("x.bar")))))
+      context.planningAttributes.solveds.get(sortedPlan.get.id) should equal(RegularPlannerQuery(interestingOrder = io))
+    }
+  }
+
   test("should return sorted plan when needed for renamed property") {
     // [WITH x] WITH x.foo AS a ORDER BY a
     new given().withLogicalPlanningContext { (_, context) =>

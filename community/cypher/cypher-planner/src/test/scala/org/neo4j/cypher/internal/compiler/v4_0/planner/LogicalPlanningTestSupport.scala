@@ -34,15 +34,15 @@ import org.neo4j.cypher.internal.compiler.v4_0.test_helpers.ContextHelper
 import org.neo4j.cypher.internal.ir.v4_0._
 import org.neo4j.cypher.internal.planner.v4_0.spi.PlanningAttributes.{Cardinalities, ProvidedOrders, Solveds}
 import org.neo4j.cypher.internal.planner.v4_0.spi.{CostBasedPlannerName, GraphStatistics, PlanContext, PlanningAttributes}
-import org.neo4j.cypher.internal.v4_0.logical.plans._
 import org.neo4j.cypher.internal.v4_0.ast._
 import org.neo4j.cypher.internal.v4_0.ast.semantics.{SemanticFeature, SemanticTable}
 import org.neo4j.cypher.internal.v4_0.expressions._
 import org.neo4j.cypher.internal.v4_0.frontend.phases._
+import org.neo4j.cypher.internal.v4_0.logical.plans._
 import org.neo4j.cypher.internal.v4_0.parser.CypherParser
-import org.neo4j.cypher.internal.v4_0.rewriting.{Deprecations, RewriterStepSequencer}
 import org.neo4j.cypher.internal.v4_0.rewriting.RewriterStepSequencer.newPlain
 import org.neo4j.cypher.internal.v4_0.rewriting.rewriters._
+import org.neo4j.cypher.internal.v4_0.rewriting.{Deprecations, RewriterStepSequencer}
 import org.neo4j.cypher.internal.v4_0.util._
 import org.neo4j.cypher.internal.v4_0.util.attribution.IdGen
 import org.neo4j.cypher.internal.v4_0.util.symbols._
@@ -194,18 +194,19 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
                            hints: Set[Hint] = Set[Hint](),
                            availablePropertiesFromIndexes: Map[Property, String] = Map.empty): LogicalPlan = {
     val solved = RegularPlannerQuery(QueryGraph.empty.addPatternNodes(idNames.toSeq: _*).addHints(hints))
-    newMockedLogicalPlanWithSolved(planningAttributes, idNames, solved, Cardinality(1), availablePropertiesFromIndexes)
+    newMockedLogicalPlanWithSolved(planningAttributes, idNames, solved, Cardinality(1), availablePropertiesFromIndexes = availablePropertiesFromIndexes)
   }
 
   def newMockedLogicalPlanWithSolved(planningAttributes: PlanningAttributes = PlanningAttributes(new Solveds, new Cardinalities, new ProvidedOrders),
                                      idNames: Set[String],
                                      solved: PlannerQuery,
                                      cardinality: Cardinality = Cardinality(1),
+                                     providedOrder: ProvidedOrder = ProvidedOrder.empty,
                                      availablePropertiesFromIndexes: Map[Property, String] = Map.empty): LogicalPlan = {
     val res = FakePlan(idNames, availablePropertiesFromIndexes)
     planningAttributes.solveds.set(res.id, solved)
     planningAttributes.cardinalities.set(res.id, cardinality)
-    planningAttributes.providedOrders.set(res.id, ProvidedOrder.empty)
+    planningAttributes.providedOrders.set(res.id, providedOrder)
     res
   }
 
@@ -214,7 +215,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
                                        patterns: Seq[PatternRelationship] = Seq.empty,
                                        availablePropertiesFromIndexes: Map[Property, String] = Map.empty): LogicalPlan = {
     val solved = RegularPlannerQuery(QueryGraph.empty.addPatternNodes(idNames.toSeq: _*).addPatternRelationships(patterns))
-    newMockedLogicalPlanWithSolved(planningAttributes, idNames, solved, Cardinality(0), availablePropertiesFromIndexes)
+    newMockedLogicalPlanWithSolved(planningAttributes, idNames, solved, Cardinality(0), availablePropertiesFromIndexes = availablePropertiesFromIndexes)
   }
 
   def newAttributes() : PlanningAttributes = {

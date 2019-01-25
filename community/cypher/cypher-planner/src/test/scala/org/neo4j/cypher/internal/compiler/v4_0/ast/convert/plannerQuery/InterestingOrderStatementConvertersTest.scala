@@ -217,7 +217,7 @@ class InterestingOrderStatementConvertersTest extends CypherFunSuite with Logica
     interestingOrders(result).take(4) should be(List(
       InterestingOrder.interested(InterestingOrderCandidate.asc(prop("a2", "prop"), Map("a2" -> varFor("a")))),
       InterestingOrder.required(RequiredOrderCandidate.asc(prop("a2", "prop"), Map("a2" -> varFor("a2"))))
-        .interested(InterestingOrderCandidate.asc(prop("b2", "prop"), Map("b2" -> varFor("b")))),
+        .interesting(InterestingOrderCandidate.asc(prop("b2", "prop"), Map("b2" -> varFor("b")))),
       InterestingOrder.interested(InterestingOrderCandidate
         .asc(prop("a2", "prop"), Map("a2" -> varFor("a2"))).asc(prop("b2", "prop"), Map("b2" -> varFor("b2")))),
       InterestingOrder.required(RequiredOrderCandidate

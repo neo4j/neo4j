@@ -23,9 +23,9 @@ import org.neo4j.cypher.internal.compiler.v4_0.planner.LogicalPlanningTestSuppor
 import org.neo4j.cypher.internal.ir.v4_0.RegularPlannerQuery
 import org.neo4j.cypher.internal.planner.v4_0.spi.IndexOrderCapability
 import org.neo4j.cypher.internal.planner.v4_0.spi.IndexOrderCapability.{ASC, BOTH, DESC}
-import org.neo4j.cypher.internal.v4_0.logical.plans.{Limit => LimitPlan, Skip => SkipPlan, _}
 import org.neo4j.cypher.internal.v4_0.ast._
 import org.neo4j.cypher.internal.v4_0.expressions._
+import org.neo4j.cypher.internal.v4_0.logical.plans.{Limit => LimitPlan, Skip => SkipPlan, _}
 import org.neo4j.cypher.internal.v4_0.util._
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 
@@ -63,6 +63,60 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
                 IndexOrderNone),
             Map("n.prop" -> Property(Variable("n")(pos), PropertyKeyName("prop")(pos))(pos))),
           Seq(sortOrder("n.prop")))
+      )
+    }
+
+    test(s"$cypherToken-$orderCapability: Order by index backed property should plan partial sort if index does partially provide order") {
+      val plan = new given {
+        indexOn("Awesome", "prop").providesOrder(orderCapability)
+      } getLogicalPlanFor s"MATCH (n:Awesome) WHERE n.prop > 'foo' RETURN n.prop ORDER BY n.prop $cypherToken, n.foo ASC"
+
+      plan._2 should equal(
+        PartialSort(
+          Projection(
+            Projection(
+              IndexSeek(
+                "n:Awesome(prop > 'foo')", indexOrder = plannedOrder),
+              Map("n.prop" -> Property(Variable("n")(pos), PropertyKeyName("prop")(pos))(pos))),
+            Map("n.foo" -> Property(Variable("n")(pos), PropertyKeyName("foo")(pos))(pos))),
+          Seq(sortOrder("n.prop")), Seq(Ascending("n.foo")))
+      )
+    }
+
+    test(s"$cypherToken-$orderCapability: Order by index backed property should plan partial sort if index does partially provide order and the second column is more complicated") {
+      val plan = new given {
+        indexOn("Awesome", "prop").providesOrder(orderCapability)
+      } getLogicalPlanFor s"MATCH (n:Awesome) WHERE n.prop > 'foo' RETURN n.prop ORDER BY n.prop $cypherToken, n.foo + 1 ASC"
+
+      plan._2 should equal(
+          PartialSort(
+            Projection(
+              Projection(
+              IndexSeek(
+                "n:Awesome(prop > 'foo')", indexOrder = plannedOrder),
+                Map("n.prop" -> Property(Variable("n")(pos), PropertyKeyName("prop")(pos))(pos))),
+              Map("n.foo + 1" -> Add(Property(Variable("n")(pos), PropertyKeyName("foo")(pos))(pos), SignedDecimalIntegerLiteral("1")(pos))(pos))),
+            Seq(sortOrder("n.prop")), Seq(Ascending("n.foo + 1")))
+      )
+    }
+
+    test(s"$cypherToken-$orderCapability: Order by index backed property should plan multiple partial sorts") {
+      val plan = new given {
+        indexOn("Awesome", "prop").providesOrder(orderCapability)
+      } getLogicalPlanFor s"MATCH (n:Awesome) WHERE n.prop > 'foo' WITH n, n.prop AS p, n.foo AS f ORDER BY p $cypherToken, f ASC RETURN p ORDER BY p $cypherToken, f ASC, n.bar ASC"
+
+
+      plan._2 should equal(
+        PartialSort(
+          Projection(
+            PartialSort(
+              Projection(
+                IndexSeek(
+                  "n:Awesome(prop > 'foo')", indexOrder = plannedOrder),
+                Map("f" -> Property(Variable("n")(pos), PropertyKeyName("foo")(pos))(pos), "p" -> Property(Variable("n")(pos), PropertyKeyName("prop")(pos))(pos))),
+              Seq(sortOrder("p")), Seq(Ascending("f"))),
+            Map("n.bar" -> Property(Variable("n")(pos), PropertyKeyName("bar")(pos))(pos))),
+          Seq(sortOrder("p"), Ascending("f")), Seq(Ascending("n.bar")))
       )
     }
 
@@ -195,7 +249,7 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
       )
     }
 
-    test(s"$cypherToken-$orderCapability: Order by index backed properties in a plan with an Apply needs Sort if RHS order required") {
+    test(s"$cypherToken-$orderCapability: Order by index backed properties in a plan with an Apply needs Partial Sort if RHS order required") {
       val plan = new given {
         indexOn("A", "prop").providesOrder(orderCapability)
         indexOn("B", "prop").providesOrder(orderCapability)
@@ -205,7 +259,7 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
       val expectedBIndexOrder = if (orderCapability.asc) IndexOrderAscending else IndexOrderDescending
 
       plan._2 should equal(
-        Sort(
+        PartialSort(
           Projection(
             Apply(
               IndexSeek("a:A(prop STARTS WITH 'foo')", indexOrder = plannedOrder),
@@ -216,7 +270,7 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
                 argumentIds = Set("a"))
             ),
             Map("a.prop" -> Property(Variable("a")(pos), PropertyKeyName("prop")(pos))(pos), "b.prop" -> Property(Variable("b")(pos), PropertyKeyName("prop")(pos))(pos))),
-          Seq(sortOrder("a.prop"), sortOrder("b.prop")))
+          Seq(sortOrder("a.prop")), Seq(sortOrder("b.prop")))
       )
     }
 
@@ -253,6 +307,61 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
       )
     }
 
+    test(s"$cypherToken-$orderCapability: Order by index backed property in a plan with partial provided order and with an expand") {
+      val plan = new given {
+        indexOn("A", "prop").providesOrder(orderCapability)
+        cardinality = mapCardinality {
+          // Force the planner to start at a
+          case RegularPlannerQuery(queryGraph, _, _, _) if queryGraph.patternNodes == Set("a") => 100.0
+          case RegularPlannerQuery(queryGraph, _, _, _) if queryGraph.patternNodes == Set("b") => 2000.0
+        }
+      } getLogicalPlanFor s"MATCH (a:A)-[r]->(b) WHERE a.prop > 'foo' RETURN a.prop ORDER BY a.prop $cypherToken, b.prop"
+
+      plan._2 should equal(
+        PartialSort(
+          Projection(
+            Projection(
+              Expand(
+                IndexSeek(
+                  "a:A(prop > 'foo')", indexOrder = plannedOrder),
+                "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r"),
+              Map("a.prop" -> Property(Variable("a")(pos), PropertyKeyName("prop")(pos))(pos))),
+            Map("b.prop" -> Property(Variable("b")(pos), PropertyKeyName("prop")(pos))(pos))),
+          Seq(sortOrder("a.prop")), Seq(Ascending("b.prop")))
+      )
+    }
+
+    test(s"$cypherToken-$orderCapability: Order by index backed property in a plan with partial provided order and with two expand - should plan partial sort in the middle") {
+      val plan = new given {
+        indexOn("A", "prop").providesOrder(orderCapability)
+        cardinality = mapCardinality {
+          // Force the planner to start at a
+          case RegularPlannerQuery(queryGraph, _, _, _) if queryGraph.patternNodes == Set("a") => 100.0
+          case RegularPlannerQuery(queryGraph, _, _, _) if queryGraph.patternNodes == Set("b") => 2000.0
+          case RegularPlannerQuery(queryGraph, _, _, _) if queryGraph.patternNodes == Set("c") => 2000.0
+          case RegularPlannerQuery(queryGraph, _, _, _) if queryGraph.patternNodes == Set("a", "b") => 50.0
+          case RegularPlannerQuery(queryGraph, _, _, _) if queryGraph.patternNodes == Set("b", "c") => 500.0
+          case RegularPlannerQuery(queryGraph, _, _, _) if queryGraph.patternNodes == Set("a", "b", "c") => 1000.0
+        }
+      } getLogicalPlanFor s"MATCH (a:A)-[r]->(b)-[q]->(c) WHERE a.prop > 'foo' RETURN a.prop ORDER BY a.prop $cypherToken, b.prop"
+
+      plan._2 should equal(
+        Selection(Seq(Not(Equals(Variable("q")(pos), Variable("r")(pos))(pos))(pos)),
+          Expand(
+            PartialSort(
+              Projection(
+                Projection(
+                  Expand(
+                    IndexSeek(
+                      "a:A(prop > 'foo')", indexOrder = plannedOrder),
+                    "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r"),
+                  Map("a.prop" -> Property(Variable("a")(pos), PropertyKeyName("prop")(pos))(pos))),
+                Map("b.prop" -> Property(Variable("b")(pos), PropertyKeyName("prop")(pos))(pos))),
+              Seq(sortOrder("a.prop")), Seq(Ascending("b.prop"))),
+            "b", SemanticDirection.OUTGOING, Seq.empty, "c", "q"))
+      )
+    }
+
     test(s"$cypherToken-$orderCapability: Order by index backed property in a plan with a distinct") {
       val plan = new given {
         indexOn("A", "prop").providesOrder(orderCapability)
@@ -273,7 +382,7 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
       )
     }
 
-    test(s"$cypherToken-$orderCapability: Order by index backed property in a plan with a outer join") {
+    test(s"$cypherToken-$orderCapability: Order by index backed property in a plan with an outer join") {
       val plan = new given {
         indexOn("A", "prop").providesOrder(orderCapability)
         cardinality = mapCardinality {

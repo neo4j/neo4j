@@ -120,8 +120,8 @@ class ResultOrderingTest extends CypherFunSuite with LogicalPlanningTestSupport2
     indexOrder(InterestingOrder.interested(interestingAscXFoo), indexPropertyXFoo, ASC) should be(ProvidedOrder.asc(prop("x", "foo")))
     indexOrder(InterestingOrder.interested(interestingDescXFoo), indexPropertyXFoo, DESC) should be(ProvidedOrder.desc(prop("x", "foo")))
 
-    indexOrder(requiredDescXFoo.interested(interestingAscXFoo), indexPropertyXFoo, ASC) should be(ProvidedOrder.asc(prop("x", "foo")))
-    indexOrder(requiredAscXFoo.interested(interestingDescXFoo), indexPropertyXFoo, DESC) should be(ProvidedOrder.desc(prop("x", "foo")))
+    indexOrder(requiredDescXFoo.interesting(interestingAscXFoo), indexPropertyXFoo, ASC) should be(ProvidedOrder.asc(prop("x", "foo")))
+    indexOrder(requiredAscXFoo.interesting(interestingDescXFoo), indexPropertyXFoo, DESC) should be(ProvidedOrder.desc(prop("x", "foo")))
   }
 
   test("Single property interesting order with projection results in matching provided order for compatible index capability") {
@@ -143,60 +143,60 @@ class ResultOrderingTest extends CypherFunSuite with LogicalPlanningTestSupport2
     indexOrder(InterestingOrder.interested(interestingDescXFoo), indexPropertyXFoo, ASC) should be(ProvidedOrder.asc(prop("x", "foo")))
     indexOrder(InterestingOrder.interested(interestingAscXFoo), indexPropertyXFoo, DESC) should be(ProvidedOrder.desc(prop("x", "foo")))
 
-    indexOrder(requiredDescXFoo.interested(interestingDescXFoo), indexPropertyXFoo, ASC) should be(ProvidedOrder.asc(prop("x", "foo")))
-    indexOrder(requiredAscXFoo.interested(interestingAscXFoo), indexPropertyXFoo, DESC) should be(ProvidedOrder.desc(prop("x", "foo")))
+    indexOrder(requiredDescXFoo.interesting(interestingDescXFoo), indexPropertyXFoo, ASC) should be(ProvidedOrder.asc(prop("x", "foo")))
+    indexOrder(requiredAscXFoo.interesting(interestingAscXFoo), indexPropertyXFoo, DESC) should be(ProvidedOrder.desc(prop("x", "foo")))
   }
 
   test("Single property empty provided order when there is no capability") {
     indexOrder(InterestingOrder.interested(interestingAscXFoo), indexPropertyXFoo, NONE) should be(ProvidedOrder.empty)
     indexOrder(InterestingOrder.interested(interestingDescXFoo), indexPropertyXFoo, NONE) should be(ProvidedOrder.empty)
 
-    indexOrder(requiredDescXFoo.interested(interestingAscXFoo), indexPropertyXFoo, NONE) should be(ProvidedOrder.empty)
-    indexOrder(requiredAscXFoo.interested(interestingDescXFoo), indexPropertyXFoo, NONE) should be(ProvidedOrder.empty)
+    indexOrder(requiredDescXFoo.interesting(interestingAscXFoo), indexPropertyXFoo, NONE) should be(ProvidedOrder.empty)
+    indexOrder(requiredAscXFoo.interesting(interestingDescXFoo), indexPropertyXFoo, NONE) should be(ProvidedOrder.empty)
   }
 
   test("Multi property interesting order results in provided order when required can't be fulfilled or is empty") {
     val properties = Seq("x", "y").map { node => prop(node, "foo") }
 
     // can't fulfill first interesting so falls back on second interesting
-    val interestingDesc = InterestingOrder.interested(interestingDescXFoo.desc(prop("y", "foo"))).interested(interestingAscXFoo.asc(prop("y", "foo")))
+    val interestingDesc = InterestingOrder.interested(interestingDescXFoo.desc(prop("y", "foo"))).interesting(interestingAscXFoo.asc(prop("y", "foo")))
     indexOrder(interestingDesc, properties, ASC) should be(ProvidedOrder.asc(prop("x", "foo")).asc(prop("y", "foo")))
 
-    val interestingAsc = InterestingOrder.interested(interestingAscXFoo.asc(prop("y", "foo"))).interested(interestingDescXFoo.desc(prop("y", "foo")))
+    val interestingAsc = InterestingOrder.interested(interestingAscXFoo.asc(prop("y", "foo"))).interesting(interestingDescXFoo.desc(prop("y", "foo")))
     indexOrder(interestingAsc, properties, DESC) should be(ProvidedOrder.desc(prop("x", "foo")).desc(prop("y", "foo")))
 
     // can't fulfill required so falls back on interesting
-    val interestingDescRequired = InterestingOrder.required(RequiredOrderCandidate.desc(prop("x", "foo")).desc(prop("y", "foo"))).interested(interestingAscXFoo.asc(prop("y", "foo")))
+    val interestingDescRequired = InterestingOrder.required(RequiredOrderCandidate.desc(prop("x", "foo")).desc(prop("y", "foo"))).interesting(interestingAscXFoo.asc(prop("y", "foo")))
     indexOrder(interestingDescRequired, properties, ASC) should be(ProvidedOrder.asc(prop("x", "foo")).asc(prop("y", "foo")))
 
-    val interestingAscRequired = InterestingOrder.required(RequiredOrderCandidate.asc(prop("x", "foo")).asc(prop("y", "foo"))).interested(interestingDescXFoo.desc(prop("y", "foo")))
+    val interestingAscRequired = InterestingOrder.required(RequiredOrderCandidate.asc(prop("x", "foo")).asc(prop("y", "foo"))).interesting(interestingDescXFoo.desc(prop("y", "foo")))
     indexOrder(interestingAscRequired, properties, DESC) should be(ProvidedOrder.desc(prop("x", "foo")).desc(prop("y", "foo")))
   }
 
   test("Multi property capability results in default provided order when neither required nor interesting can be fulfilled or are empty") {
     val properties = Seq("x", "y").map { node => prop(node, "foo") }
 
-    val interestingDesc = InterestingOrder.interested(interestingDescXFoo.desc(prop("y", "foo"))).interested(interestingDescXFoo.desc(prop("y", "foo")))
+    val interestingDesc = InterestingOrder.interested(interestingDescXFoo.desc(prop("y", "foo"))).interesting(interestingDescXFoo.desc(prop("y", "foo")))
     indexOrder(interestingDesc, properties, ASC) should be(ProvidedOrder.asc(prop("x", "foo")).asc(prop("y", "foo")))
 
-    val interestingAsc = InterestingOrder.interested(interestingAscXFoo).interested(InterestingOrderCandidate.asc(prop("y", "foo")))
+    val interestingAsc = InterestingOrder.interested(interestingAscXFoo).interesting(InterestingOrderCandidate.asc(prop("y", "foo")))
     indexOrder(interestingAsc, properties, DESC) should be(ProvidedOrder.desc(prop("x", "foo")).desc(prop("y", "foo")))
 
 
-    val interestingDescRequired = InterestingOrder.required(RequiredOrderCandidate.desc(prop("x", "foo")).desc(prop("y", "foo"))).interested(interestingDescXFoo.desc(prop("y", "foo")))
+    val interestingDescRequired = InterestingOrder.required(RequiredOrderCandidate.desc(prop("x", "foo")).desc(prop("y", "foo"))).interesting(interestingDescXFoo.desc(prop("y", "foo")))
     indexOrder(interestingDescRequired, properties, ASC) should be(ProvidedOrder.asc(prop("x", "foo")).asc(prop("y", "foo")))
 
-    val interestingAscRequired = InterestingOrder.required(RequiredOrderCandidate.asc(prop("x", "foo")).asc(prop("y", "foo"))).interested(interestingAscXFoo.asc(prop("y", "foo")))
+    val interestingAscRequired = InterestingOrder.required(RequiredOrderCandidate.asc(prop("x", "foo")).asc(prop("y", "foo"))).interesting(interestingAscXFoo.asc(prop("y", "foo")))
     indexOrder(interestingAscRequired, properties, DESC) should be(ProvidedOrder.desc(prop("x", "foo")).desc(prop("y", "foo")))
   }
 
   test("Multi property empty provided order when there is no capability") {
     val properties = Seq("x", "y").map { node => prop(node, "foo") }
 
-    val interestingDesc = InterestingOrder.interested(interestingDescXFoo.desc(prop("y", "foo"))).interested(interestingAscXFoo.asc(prop("y", "foo")))
+    val interestingDesc = InterestingOrder.interested(interestingDescXFoo.desc(prop("y", "foo"))).interesting(interestingAscXFoo.asc(prop("y", "foo")))
     indexOrder(interestingDesc, properties, NONE) should be(ProvidedOrder.empty)
 
-    val interestingAsc = InterestingOrder.interested(interestingAscXFoo.asc(prop("y", "foo"))).interested(interestingDescXFoo.desc(prop("y", "foo")))
+    val interestingAsc = InterestingOrder.interested(interestingAscXFoo.asc(prop("y", "foo"))).interesting(interestingDescXFoo.desc(prop("y", "foo")))
     indexOrder(interestingAsc, properties, NONE) should be(ProvidedOrder.empty)
   }
 

@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.compiler.v4_0.planner.logical._
 import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.idp.SingleComponentPlanner.planSinglePattern
 import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.idp.expandSolverStep.{planSinglePatternSide, planSingleProjectEndpoints}
 import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.steps.leafPlanOptions
+import org.neo4j.cypher.internal.ir.v4_0.InterestingOrder.FullSatisfaction
 import org.neo4j.cypher.internal.ir.v4_0.{InterestingOrder, PatternRelationship, QueryGraph}
 import org.neo4j.cypher.internal.v4_0.ast.RelationshipHint
 import org.neo4j.cypher.internal.v4_0.logical.plans._
@@ -58,8 +59,12 @@ case class SingleComponentPlanner(monitor: IDPQueryGraphSolverMonitor,
         val orderRequirement = new ExtraRequirement[InterestingOrder, LogicalPlan]() {
           override def none: InterestingOrder = InterestingOrder.empty
 
-          override def forResult(plan: LogicalPlan): InterestingOrder =
-            if (SortPlanner.satisfiesOrder(interestingOrder, context, plan)) interestingOrder else InterestingOrder.empty
+          override def forResult(plan: LogicalPlan): InterestingOrder = {
+            SortPlanner.orderSatisfaction(interestingOrder, context, plan) match {
+              case FullSatisfaction() => interestingOrder
+              case _ => InterestingOrder.empty
+            }
+          }
 
           override def is(requirement: InterestingOrder): Boolean = requirement == interestingOrder
         }
@@ -105,11 +110,18 @@ case class SingleComponentPlanner(monitor: IDPQueryGraphSolverMonitor,
     for (pattern <- qg.patternRelationships)
       yield {
         val input = planSinglePattern(qg, pattern, leaves, context).map(plan => kit.select(plan, qg))
-        val plans = if (interestingOrder.requiredOrderCandidate.nonEmpty)
+        val plans = if (interestingOrder.requiredOrderCandidate.nonEmpty) {
           input ++ input.flatMap(plan => SortPlanner.maybeSortedPlan(plan, interestingOrder, context))
-        else input
+        } else {
+          input
+        }
 
-        val ordered = plans.filter(plan => SortPlanner.satisfiesOrder(interestingOrder, context, plan))
+        val ordered = plans.filter { plan =>
+          SortPlanner.orderSatisfaction(interestingOrder, context, plan) match {
+            case FullSatisfaction() => true
+            case _ => false
+          }
+        }
 
         val best = kit.pickBest(plans)
         val bestWithSort = kit.pickBest(ordered)

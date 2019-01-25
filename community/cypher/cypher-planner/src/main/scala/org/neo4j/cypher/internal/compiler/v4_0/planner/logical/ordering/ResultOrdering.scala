@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.v4_0.expressions.{Expression, Property}
 import org.neo4j.cypher.internal.v4_0.util.symbols.CypherType
 
 /**
-  * This object provides some utility methods around RequiredOrder and ProvidedOrder.
+  * This object provides some utility methods around InterestingOrder and ProvidedOrder.
   */
 object ResultOrdering {
 
