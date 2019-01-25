@@ -28,7 +28,6 @@ import org.neo4j.cypher.internal.ir.v4_0._
 import org.neo4j.cypher.internal.planner.v4_0.spi.PlanningAttributes
 import org.neo4j.cypher.internal.v4_0.logical.plans
 import org.neo4j.cypher.internal.v4_0.logical.plans.{Union, UnwindCollection, ValueHashJoin, DeleteExpression => DeleteExpressionPlan, Limit => LimitPlan, LoadCSV => LoadCSVPlan, Skip => SkipPlan, _}
-import org.neo4j.cypher.internal.v4_0.ast
 import org.neo4j.cypher.internal.v4_0.ast._
 import org.neo4j.cypher.internal.v4_0.expressions._
 import org.neo4j.cypher.internal.v4_0.util.AssertionRunner.Thunk
@@ -460,13 +459,13 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
 
     // Trim provided order for each sort column, if it is a non-grouping column
     val trimmed = providedOrders.get(left.id).columns.takeWhile {
-      case ProvidedOrder.ColumnOfProperty((varName, propName)) =>
+      case ProvidedOrder.Column(Property(Variable(varName), PropertyKeyName(propName))) =>
         grouping.values.exists {
           case CachedNodeProperty(`varName`, PropertyKeyName(`propName`)) => true
           case Property(Variable(`varName`), PropertyKeyName(`propName`)) => true
           case _ => false
         }
-      case ProvidedOrder.Column(varName) =>
+      case ProvidedOrder.Column(Variable(varName)) =>
         grouping.values.exists {
           case Variable(`varName`) => true
           case _ => false
@@ -834,24 +833,36 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
 
   private def sortColumnToProvided(columnOrder: ColumnOrder): ProvidedOrder.Column =
     columnOrder match {
-      case Ascending(id) => ProvidedOrder.Asc(id)
-      case Descending(id) => ProvidedOrder.Desc(id)
+      case Ascending(id) => ProvidedOrder.Asc(idToExpression(id))
+      case Descending(id) => ProvidedOrder.Desc(idToExpression(id))
     }
+
+  // TODO: improve
+  private def idToExpression(id: String): Expression = {
+    val exprArray: Array[String] = id.split("\\.")
+
+    exprArray match {
+      case Array(varName, propName) => Property(Variable(varName)(InputPosition.NONE), PropertyKeyName(propName)(InputPosition.NONE))(InputPosition.NONE)
+      case Array(varName) => Variable(varName)(InputPosition.NONE)
+    }
+  }
 
   /**
     * Rename sort columns if they are renamed in a projection.
     */
   private def renameProvidedOrderColumns(columns: Seq[ProvidedOrder.Column], projectExpressions: Map[String, Expression]): Seq[ProvidedOrder.Column] = {
     columns.map {
-      case columnOrder@ProvidedOrder.ColumnOfProperty((varName, propName)) =>
+      case columnOrder@ProvidedOrder.Column(Property(Variable(varName), PropertyKeyName(propName))) =>
+          val pos = columnOrder.expression.position
+          projectExpressions.collectFirst {
+            case (newName, Property(Variable(`varName`), PropertyKeyName(`propName`)) | CachedNodeProperty(`varName`, PropertyKeyName(`propName`))) =>
+              ProvidedOrder.Column(Variable(newName)(pos), columnOrder.isAscending)
+            case (newName, Variable(`varName`)) =>
+              ProvidedOrder.Column(Property(Variable(newName)(pos), PropertyKeyName(propName)(pos))(pos), columnOrder.isAscending)
+          }.getOrElse(columnOrder)
+      case columnOrder@ProvidedOrder.Column(variable@Variable(varName)) =>
         projectExpressions.collectFirst {
-          case (newName, Property(Variable(`varName`), PropertyKeyName(`propName`))) => ProvidedOrder.Column(newName, columnOrder.isAscending)
-          case (newName, CachedNodeProperty(`varName`, PropertyKeyName(`propName`))) => ProvidedOrder.Column(newName, columnOrder.isAscending)
-          case (newName, Variable(`varName`)) => ProvidedOrder.Column(newName + "." + propName, columnOrder.isAscending)
-        }.getOrElse(columnOrder)
-      case columnOrder@ProvidedOrder.Column(varName) =>
-        projectExpressions.collectFirst {
-          case (newName, Variable(`varName`)) => ProvidedOrder.Column(newName, columnOrder.isAscending)
+          case (newName, Variable(`varName`)) => ProvidedOrder.Column(Variable(newName)(variable.position), columnOrder.isAscending)
         }.getOrElse(columnOrder)
     }
   }

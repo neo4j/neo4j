@@ -59,17 +59,17 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     val modeCombinations: TableFor2[LogicalPlan, PlanDescriptionImpl] = Table(
       "logical plan" -> "expected plan description",
 
-      attach(AllNodesScan("a", Set.empty), 1.0, ProvidedOrder(Seq(ProvidedOrder.Asc("a")))) ->
+      attach(AllNodesScan("a", Set.empty), 1.0, ProvidedOrder(Seq(ProvidedOrder.Asc(varFor("a"))))) ->
         PlanDescriptionImpl(id, "AllNodesScan", NoChildren,
-                            Seq(EstimatedRows(1), Order(ProvidedOrder(Seq(ProvidedOrder.Asc("a")))), CYPHER_VERSION, RUNTIME_VERSION, Planner("COST"), PlannerImpl("IDP"),
+                            Seq(EstimatedRows(1), Order(ProvidedOrder(Seq(ProvidedOrder.Asc(varFor("a"))))), CYPHER_VERSION, RUNTIME_VERSION, Planner("COST"), PlannerImpl("IDP"),
                                 PLANNER_VERSION), Set("a"))
 
-      , attach(AllNodesScan("b", Set.empty), 42.0, ProvidedOrder(Seq(ProvidedOrder.Asc("b"), ProvidedOrder.Desc("b.foo")))) ->
+      , attach(AllNodesScan("b", Set.empty), 42.0, ProvidedOrder(Seq(ProvidedOrder.Asc(varFor("b")), ProvidedOrder.Desc(prop("b","foo"))))) ->
         PlanDescriptionImpl(id, "AllNodesScan", NoChildren,
-                            Seq(EstimatedRows(42), Order(ProvidedOrder(Seq(ProvidedOrder.Asc("b"), ProvidedOrder.Desc("b.foo")))), CYPHER_VERSION, RUNTIME_VERSION, Planner("COST"), PlannerImpl("IDP"),
+                            Seq(EstimatedRows(42), Order(ProvidedOrder(Seq(ProvidedOrder.Asc(varFor("b")), ProvidedOrder.Desc(prop("b","foo"))))), CYPHER_VERSION, RUNTIME_VERSION, Planner("COST"), PlannerImpl("IDP"),
                                 PLANNER_VERSION), Set("b"))
 
-      , attach(NodeByLabelScan("node", AstLabelName("X")(DummyPosition(0)), Set.empty), 33.0) ->
+      , attach(NodeByLabelScan("node", AstLabelName("X")(pos), Set.empty), 33.0) ->
         PlanDescriptionImpl(id, "NodeByLabelScan", NoChildren,
                             Seq(LabelName("X"), EstimatedRows(33), CYPHER_VERSION, RUNTIME_VERSION, Planner("COST"),
                                 PlannerImpl("IDP"), PLANNER_VERSION), Set("node"))
@@ -137,4 +137,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         }
     }
   }
+  private val pos: InputPosition = DummyPosition(0)
+  private def varFor(name: String): Variable = Variable(name)(pos)
+  private def prop(varName: String, propName: String): Property = Property(varFor(varName), PropertyKeyName(propName)(pos))(pos)
 }

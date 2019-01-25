@@ -33,7 +33,7 @@ class SortPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 wi
       val inputPlan = fakeLogicalPlanFor(context.planningAttributes, "x")
       // Fake sort the plan
       context.planningAttributes.solveds.set(inputPlan.id, RegularPlannerQuery(interestingOrder = io))
-      context.planningAttributes.providedOrders.set(inputPlan.id, ProvidedOrder.asc("x.foo"))
+      context.planningAttributes.providedOrders.set(inputPlan.id, ProvidedOrder.asc(prop("x", "foo")))
 
       // When
       val sortedPlan = SortPlanner.maybeSortedPlan(inputPlan, io, context)
@@ -48,7 +48,7 @@ class SortPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 wi
       val io = InterestingOrder.required(RequiredOrderCandidate.asc(prop("x", "foo")))
       val inputPlan = fakeLogicalPlanFor(context.planningAttributes, "x")
       // Fake sorted from index
-      context.planningAttributes.providedOrders.set(inputPlan.id, ProvidedOrder.asc("x.foo"))
+      context.planningAttributes.providedOrders.set(inputPlan.id, ProvidedOrder.asc(prop("x", "foo")))
 
       // When
       val sortedPlan = SortPlanner.maybeSortedPlan(inputPlan, io, context)
@@ -137,7 +137,7 @@ class SortPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 wi
       val inputPlan = fakeLogicalPlanFor(context.planningAttributes, "x")
       // Fake sort the plan
       context.planningAttributes.solveds.set(inputPlan.id, RegularPlannerQuery(interestingOrder = io))
-      context.planningAttributes.providedOrders.set(inputPlan.id, ProvidedOrder.asc("x.foo"))
+      context.planningAttributes.providedOrders.set(inputPlan.id, ProvidedOrder.asc(prop("x", "foo")))
 
       // When
       val sortedPlan = SortPlanner.ensureSortedPlanWithSolved(inputPlan, io, context)
@@ -153,7 +153,7 @@ class SortPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 wi
       val io = InterestingOrder.required(RequiredOrderCandidate.asc(prop("x", "foo")))
       val inputPlan = fakeLogicalPlanFor(context.planningAttributes, "x")
       // Fake sorted from index
-      context.planningAttributes.providedOrders.set(inputPlan.id, ProvidedOrder.asc("x.foo"))
+      context.planningAttributes.providedOrders.set(inputPlan.id, ProvidedOrder.asc(prop("x", "foo")))
 
       // When
       val sortedPlan = SortPlanner.ensureSortedPlanWithSolved(inputPlan, io, context)

@@ -39,15 +39,15 @@ object aggregation {
         val value: Expression = aggregations(key)
         val providedOrder = context.planningAttributes.providedOrders.get(rewrittenPlan.id)
 
-        def minFunc(e: Expression) = {
+        def minFunc(expr: Expression) = {
           providedOrder.columns.headOption match {
-            case Some(Asc(id)) => id == e.asCanonicalStringVal
+            case Some(Asc(providedExpr)) => providedExpr == expr
             case _ => false
           }
         }
-        def maxFunc(e: Expression) = {
+        def maxFunc(expr: Expression) = {
           providedOrder.columns.headOption match {
-            case Some(Desc(id)) => id == e.asCanonicalStringVal
+            case Some(Desc(providedExpr)) => providedExpr == expr
             case _ => false
           }
         }

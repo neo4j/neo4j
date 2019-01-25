@@ -20,10 +20,10 @@
 package org.neo4j.cypher.internal.plandescription
 
 import org.neo4j.cypher.internal.ir.v4_0.ProvidedOrder
-import org.neo4j.cypher.internal.plandescription.Arguments._
+import org.neo4j.cypher.internal.plandescription.Arguments.{Expression => argExpression, _}
 import org.neo4j.cypher.internal.plandescription.PlanDescriptionArgumentSerializer.serialize
-import org.neo4j.cypher.internal.v4_0.util.DummyPosition
-import org.neo4j.cypher.internal.v4_0.expressions.{DummyExpression, SemanticDirection, SignedDecimalIntegerLiteral}
+import org.neo4j.cypher.internal.v4_0.util.{DummyPosition, InputPosition}
+import org.neo4j.cypher.internal.v4_0.expressions._
 import org.neo4j.cypher.internal.v4_0.logical.plans
 import org.neo4j.cypher.internal.v4_0.logical.plans.{LogicalPlan, NestedPlanExpression}
 import org.neo4j.cypher.internal.v4_0.util.attribution.SequentialIdGen
@@ -31,7 +31,6 @@ import org.neo4j.cypher.internal.v4_0.util.symbols.{CTBoolean, CTList, CTNode, C
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 
 class PlanDescriptionArgumentSerializerTests extends CypherFunSuite {
-  private val pos = DummyPosition(0)
   implicit val idGen = new SequentialIdGen()
 
   test("serialization should leave numeric arguments as numbers") {
@@ -59,7 +58,7 @@ class PlanDescriptionArgumentSerializerTests extends CypherFunSuite {
 
     val nested = NestedPlanExpression(argument, expression)(pos)
 
-    serialize(Expression(nested)) should equal("NestedPlanExpression(Argument)")
+    serialize(argExpression(nested)) should equal("NestedPlanExpression(Argument)")
   }
 
   test("projection should show multiple expressions") {
@@ -89,9 +88,12 @@ class PlanDescriptionArgumentSerializerTests extends CypherFunSuite {
   }
 
   test("should serialize provided order") {
-    serialize(Order(ProvidedOrder(List(ProvidedOrder.Asc("a"), ProvidedOrder.Desc("b"), ProvidedOrder.Asc("c.foo"))))) should be("a ASC, b DESC, c.foo ASC")
+    serialize(Order(ProvidedOrder(List(ProvidedOrder.Asc(varFor("a")), ProvidedOrder.Desc(varFor("b")), ProvidedOrder.Asc(prop("c","foo")))))) should be("a ASC, b DESC, c.foo ASC")
     serialize(Order(ProvidedOrder.empty)) should be("")
-    serialize(Order(ProvidedOrder(List(ProvidedOrder.Asc("  FRESHID42"))))) should be("anon[42] ASC")
+    serialize(Order(ProvidedOrder(List(ProvidedOrder.Asc(varFor("  FRESHID42")))))) should be("anon[42] ASC")
   }
 
+  private val pos: InputPosition = DummyPosition(0)
+  private def varFor(name: String): Variable = Variable(name)(pos)
+  private def prop(varName: String, propName: String): Property = Property(varFor(varName), PropertyKeyName(propName)(pos))(pos)
 }

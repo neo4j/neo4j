@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.v4_0.logical.plans
 import org.neo4j.cypher.internal.v4_0.logical.plans._
 import org.neo4j.cypher.internal.v4_0.util.attribution.{Id, SequentialIdGen}
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.{CypherFunSuite, WindowsStringSafe}
-import org.neo4j.cypher.internal.v4_0.util.{DummyPosition, LabelId, NonEmptyList, PropertyKeyId}
+import org.neo4j.cypher.internal.v4_0.util._
 import org.scalatest.BeforeAndAfterAll
 
 class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll {
@@ -47,8 +47,9 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll {
     Locale.setDefault(defaultLocale)
   }
 
-  private val pos = DummyPosition(0)
-  private val id = Id.INVALID_ID
+  private val pos: InputPosition = DummyPosition(0)
+  private def varFor(name: String): Variable = Variable(name)(pos)
+  private val id: Id = Id.INVALID_ID
 
   test("node feeding from other node") {
     val leaf = PlanDescriptionImpl(id, "LEAF", NoChildren, Seq.empty, Set())
@@ -331,7 +332,7 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll {
     cardinalities.set(argument.id, 1.0)
     val providedOrders = new ProvidedOrders
     providedOrders.set(argument.id, ProvidedOrder.empty)
-    providedOrders.set(expandPlan.id, ProvidedOrder(Seq(ProvidedOrder.Asc("foo"), ProvidedOrder.Desc("bar"))))
+    providedOrders.set(expandPlan.id, ProvidedOrder(Seq(ProvidedOrder.Asc(varFor("foo")), ProvidedOrder.Desc(varFor("bar")))))
     val description = LogicalPlan2PlanDescription(readOnly = true, cardinalities, providedOrders)
 
     renderAsTreeTable(description.create(expandPlan)) should equal(
@@ -347,7 +348,7 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll {
     val expandPlan = Expand(argument, "from", SemanticDirection.INCOMING, Seq.empty, "to", "rel", ExpandAll)
     val cardinalities = new Cardinalities
     val providedOrders = new ProvidedOrders
-    providedOrders.set(expandPlan.id, ProvidedOrder(Seq(ProvidedOrder.Asc("  FRESHID42"))))
+    providedOrders.set(expandPlan.id, ProvidedOrder(Seq(ProvidedOrder.Asc(varFor("  FRESHID42")))))
     val description = LogicalPlan2PlanDescription(readOnly = true, cardinalities, providedOrders)
 
     renderAsTreeTable(description.create(expandPlan)) should equal(
@@ -482,7 +483,7 @@ class RenderAsTreeTableTest extends CypherFunSuite with BeforeAndAfterAll {
     cardinalities.set(argument.id, 1.0)
     val providedOrders = new ProvidedOrders
     providedOrders.set(argument.id, ProvidedOrder.empty)
-    providedOrders.set(seekPlan.id, ProvidedOrder(Seq(ProvidedOrder.Asc("foo"))))
+    providedOrders.set(seekPlan.id, ProvidedOrder(Seq(ProvidedOrder.Asc(varFor("foo")))))
     val description = LogicalPlan2PlanDescription(readOnly = true, cardinalities, providedOrders)
 
     renderAsTreeTable(description.create(seekPlan)) should equal(

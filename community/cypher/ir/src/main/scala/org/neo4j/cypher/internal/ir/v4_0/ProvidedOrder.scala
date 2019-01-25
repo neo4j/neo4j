@@ -20,60 +20,49 @@
 package org.neo4j.cypher.internal.ir.v4_0
 
 import org.neo4j.cypher.internal.ir.v4_0.ProvidedOrder.{Asc, Desc}
+import org.neo4j.cypher.internal.v4_0.expressions._
+import org.neo4j.cypher.internal.v4_0.util.InputPosition
 
 
 object ProvidedOrder {
 
   object Column {
-    def unapply(arg: Column): Option[String] = {
-      Some(arg.id)
+    def unapply(arg: Column): Option[Expression] = {
+      Some(arg.expression)
     }
-    def apply(id: String, ascending: Boolean): Column = {
-      if (ascending) Asc(id) else Desc(id)
-    }
-  }
-
-  object ColumnOfProperty {
-    /**
-      * Split the id into varName and propName, if the
-      * ordered column is a property lookup.
-      */
-    def unapply(arg: Column): Option[(String, String)] = {
-      arg.id.split("\\.", 2) match {
-        case Array(varName, propName) => Some((varName, propName))
-        case _ => None
-      }
+    def apply(expression: Expression, ascending: Boolean): Column = {
+      if (ascending) Asc(expression) else Desc(expression)
     }
   }
 
   sealed trait Column {
-    def id: String
+    def expression: Expression
     def isAscending: Boolean
   }
 
-  case class Asc(id: String) extends Column {
+  case class Asc(expression: Expression) extends Column {
     override val isAscending: Boolean = true
   }
-  case class Desc(id: String) extends Column {
+  case class Desc(expression: Expression) extends Column {
     override val isAscending: Boolean = false
   }
 
   object Asc {
     def apply(element: String, property:String): Asc = {
-      Asc(s"$element.$property")
+      Asc(Property( Variable(element)(InputPosition.NONE), PropertyKeyName(property)(InputPosition.NONE))(InputPosition.NONE))
     }
   }
 
   object Desc {
     def apply(element: String, property:String): Desc = {
-      Desc(s"$element.$property")
+      Desc(Property( Variable(element)(InputPosition.NONE), PropertyKeyName(property)(InputPosition.NONE))(InputPosition.NONE))
     }
   }
 
   val empty: ProvidedOrder = ProvidedOrder(Seq.empty[Column])
 
-  def asc(id: String): ProvidedOrder = empty.asc(id)
-  def desc(id: String): ProvidedOrder = empty.desc(id)
+  def asc(expression: Expression): ProvidedOrder = empty.asc(expression)
+  def desc(expression: Expression): ProvidedOrder = empty.desc(expression)
 }
 
 /**
@@ -87,8 +76,8 @@ case class ProvidedOrder(columns: Seq[ProvidedOrder.Column]) {
 
   val isEmpty: Boolean = columns.isEmpty
 
-  def asc(id: String): ProvidedOrder = ProvidedOrder(columns :+ Asc(id))
-  def desc(id: String): ProvidedOrder = ProvidedOrder(columns :+ Desc(id))
+  def asc(expression: Expression): ProvidedOrder = ProvidedOrder(columns :+ Asc(expression))
+  def desc(expression: Expression): ProvidedOrder = ProvidedOrder(columns :+ Desc(expression))
 
   /**
     * Returns a new provided order where the order columns of this are concatenated with
@@ -112,7 +101,7 @@ case class ProvidedOrder(columns: Seq[ProvidedOrder.Column]) {
   def upToExcluding(args: Set[String]): ProvidedOrder = {
     val trimmed = columns.foldLeft((false,Seq.empty[ProvidedOrder.Column])) {
       case (acc, _) if acc._1 => acc
-      case (acc, col) if args.contains(col.id) => (true, acc._2)
+      case (acc, col) if args.contains(col.expression.asCanonicalStringVal) => (true, acc._2)
       case (acc, col) => (acc._1, acc._2 :+ col)
     }
     ProvidedOrder(trimmed._2)

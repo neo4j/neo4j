@@ -122,12 +122,12 @@ case class InterestingOrder(requiredOrderCandidate: RequiredOrderCandidate,
     */
   def satisfiedBy(providedOrder: ProvidedOrder): Boolean = {
     @tailrec
-    def satisfied(providedId: String, requiredOrder: Expression, projections: Map[String, Expression]): Boolean = {
+    def satisfied(providedOrder: Expression, requiredOrder: Expression, projections: Map[String, Expression]): Boolean = {
       val projected = projectExpression(requiredOrder, projections)
-      if (providedId == requiredOrder.asCanonicalStringVal || providedId == projected.asCanonicalStringVal)
+      if (providedOrder == requiredOrder || providedOrder == projected)
         true
       else if (projected != requiredOrder) {
-        satisfied(providedId, projected, projections)
+        satisfied(providedOrder, projected, projections)
       }
       else
         false
@@ -135,8 +135,8 @@ case class InterestingOrder(requiredOrderCandidate: RequiredOrderCandidate,
     requiredOrderCandidate.order.zipAll(providedOrder.columns, null, null).forall {
       case (null, _) => true // no required order left
       case (_, null) => false // required order left but no provided
-      case (InterestingOrder.Asc(e, projections), ProvidedOrder.Asc(providedId)) => satisfied(providedId, e, projections)
-      case (InterestingOrder.Desc(e, projections), ProvidedOrder.Desc(providedId)) => satisfied(providedId, e, projections)
+      case (InterestingOrder.Asc(interestedExpr, projections), ProvidedOrder.Asc(providedExpr)) => satisfied(providedExpr, interestedExpr, projections)
+      case (InterestingOrder.Desc(interestedExpr, projections), ProvidedOrder.Desc(providedExpr)) => satisfied(providedExpr, interestedExpr, projections)
       case _ => false
     }
   }

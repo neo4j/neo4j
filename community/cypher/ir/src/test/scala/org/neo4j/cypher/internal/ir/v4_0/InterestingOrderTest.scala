@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.ir.v4_0
 
 import org.neo4j.cypher.internal.v4_0.expressions._
-import org.neo4j.cypher.internal.v4_0.util.DummyPosition
+import org.neo4j.cypher.internal.v4_0.util.{DummyPosition, InputPosition}
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 
 class InterestingOrderTest extends CypherFunSuite {
@@ -178,7 +178,7 @@ class InterestingOrderTest extends CypherFunSuite {
   test("Empty required order is always satisfied") {
     val io = InterestingOrder.empty
 
-    io.satisfiedBy(ProvidedOrder.asc("x.foo")) should be(true)
+    io.satisfiedBy(ProvidedOrder.asc(prop("x","foo"))) should be(true)
     io.satisfiedBy(ProvidedOrder.empty) should be(true)
   }
 
@@ -192,8 +192,8 @@ class InterestingOrderTest extends CypherFunSuite {
     val ioAsc = InterestingOrder.required(RequiredOrderCandidate.asc(prop("x", "foo")))
     val ioDesc = InterestingOrder.required(RequiredOrderCandidate.desc(prop("x", "foo")))
 
-    val poAsc = ProvidedOrder.asc("x.foo")
-    val poDesc = ProvidedOrder.desc("x.foo")
+    val poAsc = ProvidedOrder.asc(prop("x","foo"))
+    val poDesc = ProvidedOrder.desc(prop("x","foo"))
 
     ioAsc.satisfiedBy(poDesc) should be(false)
     ioDesc.satisfiedBy(poAsc) should be(false)
@@ -203,8 +203,8 @@ class InterestingOrderTest extends CypherFunSuite {
     val ioAsc = InterestingOrder.required(RequiredOrderCandidate.asc(prop("x", "foo")))
     val ioDesc = InterestingOrder.required(RequiredOrderCandidate.desc(prop("x", "foo")))
 
-    val poAsc = ProvidedOrder.asc("x.foo")
-    val poDesc = ProvidedOrder.desc("x.foo")
+    val poAsc = ProvidedOrder.asc(prop("x","foo"))
+    val poDesc = ProvidedOrder.desc(prop("x","foo"))
 
     ioAsc.satisfiedBy(poAsc) should be(true)
     ioDesc.satisfiedBy(poDesc) should be(true)
@@ -217,8 +217,8 @@ class InterestingOrderTest extends CypherFunSuite {
     val ioAsc = InterestingOrder.required(RequiredOrderCandidate.asc(prop("x", "foo"), projectionSeveralSteps))
     val ioDesc = InterestingOrder.required(RequiredOrderCandidate.desc(varFor("xfoo"), projectionOneStep))
 
-    val poAsc = ProvidedOrder.asc("z.foo")
-    val poDesc = ProvidedOrder.desc("x.foo")
+    val poAsc = ProvidedOrder.asc(prop("z", "foo"))
+    val poDesc = ProvidedOrder.desc(prop("x","foo"))
 
     ioAsc.satisfiedBy(poAsc) should be(true)
     ioDesc.satisfiedBy(poDesc) should be(true)
@@ -226,7 +226,7 @@ class InterestingOrderTest extends CypherFunSuite {
 
   test("Required order should not be satisfied by provided order on different property") {
     val io = InterestingOrder.required(RequiredOrderCandidate.asc(prop("x", "foo")))
-    val po = ProvidedOrder.asc("y.foo")
+    val po = ProvidedOrder.asc(prop("y","foo"))
 
     io.satisfiedBy(po) should be(false)
   }
@@ -235,7 +235,7 @@ class InterestingOrderTest extends CypherFunSuite {
     val projection = Map("xfoo" -> prop("x", "foo"))
 
     val io = InterestingOrder.required(RequiredOrderCandidate.desc(varFor("xfoo"), projection))
-    val po = ProvidedOrder.desc("y.foo")
+    val po = ProvidedOrder.desc(prop("y", "foo"))
 
     io.satisfiedBy(po) should be(false)
   }
@@ -244,7 +244,7 @@ class InterestingOrderTest extends CypherFunSuite {
     val projection = Map("add" -> Add(prop("x", "foo"), SignedDecimalIntegerLiteral("42")(pos))(pos))
 
     val io = InterestingOrder.required(RequiredOrderCandidate.asc(varFor("add"), projection))
-    val po = ProvidedOrder.asc("x.foo")
+    val po = ProvidedOrder.asc(prop("x","foo"))
 
     io.satisfiedBy(po) should be(false)
   }
@@ -345,7 +345,7 @@ class InterestingOrderTest extends CypherFunSuite {
     result should be(InterestingOrder.interested(InterestingOrderCandidate.asc(varFor("y"))))
   }
 
-  private val pos = DummyPosition(0)
-  private def varFor(name: String) = Variable(name)(pos)
-  private def prop(varName: String, propName: String) = Property(varFor(varName), PropertyKeyName(propName)(pos))(pos)
+  private val pos: InputPosition = DummyPosition(0)
+  private def varFor(name: String): Variable = Variable(name)(pos)
+  private def prop(varName: String, propName: String): Property = Property(varFor(varName), PropertyKeyName(propName)(pos))(pos)
 }

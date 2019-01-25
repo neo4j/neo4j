@@ -106,7 +106,7 @@ object PlanDescriptionArgumentSerializer {
   def serializeProvidedOrder(providedOrder: ProvidedOrder): String = {
     providedOrder.columns.map(col => {
       val direction = if (col.isAscending) "ASC" else "DESC"
-      s"${removeGeneratedNames(col.id)} $direction"
+      s"${removeGeneratedNames(col.expression.asCanonicalStringVal)} $direction"
     }).mkString(", ")
   }
 
