@@ -35,6 +35,7 @@ import org.neo4j.kernel.api.proc.CallableUserFunction;
 import org.neo4j.kernel.api.proc.Context;
 import org.neo4j.kernel.api.proc.Key;
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
+import org.neo4j.kernel.impl.util.DefaultValueMapper;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.Values;
 
@@ -70,15 +71,15 @@ public class ProcedureCompilationTest
     private static final Key<Long> KEY_2 = Key.key( "long2", Long.class );
     private static final AnyValue[] EMPTY = new AnyValue[0];
     private Context ctx;
-    private TypeMappers typeMappers = new TypeMappers( );
 
     @BeforeEach
     void setUp() throws ProcedureException
     {
-        typeMappers.converterFor(  )
-        ctx = mock(Context.class);
-        when(ctx.get( KEY_1 )).thenReturn( 42L );
-        when(ctx.get( KEY_2 )).thenReturn( 1337L );
+        DefaultValueMapper mapper = new DefaultValueMapper( mock( EmbeddedProxySPI.class ) );
+        ctx = mock( Context.class );
+        when( ctx.get( KEY_1 ) ).thenReturn( 42L );
+        when( ctx.get( KEY_2 ) ).thenReturn( 1337L );
+        when( ctx.valueMapper() ).thenReturn( mapper );
     }
 
     @Test
@@ -88,7 +89,7 @@ public class ProcedureCompilationTest
         UserFunctionSignature signature = functionSignature( "test", "foo" ).out( Neo4jTypes.NTInteger ).build();
         // When
         CallableUserFunction longMethod =
-                compileFunction( signature, emptyList(), method( "longMethod" ), typeMappers );
+                compileFunction( signature, emptyList(), method( "longMethod" ) );
 
         // Then
         assertEquals( longMethod.apply( ctx, EMPTY ), longValue(1337L));
@@ -100,7 +101,7 @@ public class ProcedureCompilationTest
         // Given
         UserFunctionSignature signature = functionSignature( "test", "foo" ).out( Neo4jTypes.NTInteger ).build();
         // When
-        CallableUserFunction function = compileFunction( signature, emptyList(), method( "longMethod" ), typeMappers );
+        CallableUserFunction function = compileFunction( signature, emptyList(), method( "longMethod" ) );
 
         // Then
         assertEquals( function.signature(), signature );
@@ -117,24 +118,23 @@ public class ProcedureCompilationTest
 
         // Then
         assertEquals( longValue( 0L ),
-                compileFunction( signature, emptyList(), longMethod, typeMappers ).apply( ctx, EMPTY ) );
+                compileFunction( signature, emptyList(), longMethod ).apply( ctx, EMPTY ) );
         assertEquals( longValue( 42L ),
-                compileFunction( signature, singletonList( setter1 ), longMethod, typeMappers ).apply( ctx, EMPTY ) );
+                compileFunction( signature, singletonList( setter1 ), longMethod ).apply( ctx, EMPTY ) );
         assertEquals( longValue( 1337L ),
-                compileFunction( signature, singletonList( setter2 ), longMethod, typeMappers ).apply( ctx, EMPTY ) );
+                compileFunction( signature, singletonList( setter2 ), longMethod ).apply( ctx, EMPTY ) );
         assertEquals( longValue( 1379L ),
-                compileFunction( signature, asList( setter1, setter2 ), longMethod, typeMappers ).apply( ctx, EMPTY ) );
+                compileFunction( signature, asList( setter1, setter2 ), longMethod ).apply( ctx, EMPTY ) );
     }
 
     @Test
-    void shouldHandleThrowingUDF() throws ProcedureException, NoSuchFieldException, IllegalAccessException
+    void shouldHandleThrowingUDF() throws ProcedureException
     {
         // Given
         UserFunctionSignature signature = functionSignature( "test", "foo" ).out( Neo4jTypes.NTInteger ).build();
 
         // When
-        CallableUserFunction longMethod = compileFunction( signature, emptyList(), method( "throwingLongMethod" ),
-                typeMappers );
+        CallableUserFunction longMethod = compileFunction( signature, emptyList(), method( "throwingLongMethod" ) );
 
         // Then
         assertThrows( ProcedureException.class, () -> longMethod.apply( ctx, EMPTY ));
@@ -152,7 +152,7 @@ public class ProcedureCompilationTest
 
         // When
         CallableUserFunction concatMethod = compileFunction( signature, emptyList(),
-                method( "concat", long.class, Double.class, boolean.class ), typeMappers );
+                method( "concat", long.class, Double.class, boolean.class ) );
 
         // Then
         assertEquals(
@@ -170,7 +170,7 @@ public class ProcedureCompilationTest
 
         // When
         CallableUserFunction concatMethod = compileFunction( signature, emptyList(),
-                method( "concat", List.class ), typeMappers );
+                method( "concat", List.class ) );
 
         // Then
         assertEquals( stringValue( "421.1true" ),
@@ -189,7 +189,7 @@ public class ProcedureCompilationTest
 
         // When
         CallableUserFunction nullyMethod = compileFunction( signature, emptyList(),
-                method( "nullyMethod", Boolean.class ), typeMappers );
+                method( "nullyMethod", Boolean.class ) );
 
         // Then
         assertEquals( Values.NO_VALUE,
@@ -208,7 +208,7 @@ public class ProcedureCompilationTest
 
         // When
         CallableUserFunction sumMethod = compileFunction( signature, emptyList(),
-                method( "sum", List.class ), typeMappers );
+                method( "sum", List.class ) );
 
         // Then
         assertEquals( longValue( 3 ),
@@ -225,7 +225,7 @@ public class ProcedureCompilationTest
 
         // When
         CallableUserFunction bytesMethod =
-                compileFunction( signature, emptyList(), method( "bytes", byte[].class ), typeMappers );
+                compileFunction( signature, emptyList(), method( "bytes", byte[].class ) );
 
         // Then
         assertEquals( byteArray( new byte[]{1, 2, 3} ),
@@ -247,7 +247,7 @@ public class ProcedureCompilationTest
 
         // When
         CallableUserFunction stringMethod =
-                compileFunction( signature, emptyList(), method( "stringMethod", String.class ), typeMappers );
+                compileFunction( signature, emptyList(), method( "stringMethod", String.class ) );
 
         // Then
         assertEquals( stringValue("good bye!"),

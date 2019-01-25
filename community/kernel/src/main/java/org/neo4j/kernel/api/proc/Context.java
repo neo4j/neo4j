@@ -60,4 +60,9 @@ public interface Context
 
     <T> T get( Key<T> key ) throws ProcedureException;
     <T> T getOrElse( Key<T> key, T orElse );
+
+    //I don't see much of a point of calling via a generic get method
+    //so I think we should move towards real getters.
+
+    ValueMapper<Object> valueMapper();
 }

@@ -106,6 +106,12 @@ public class BasicContext implements Context
         }
     }
 
+    @Override
+    public ValueMapper<Object> valueMapper()
+    {
+        return valueMapper;
+    }
+
     public static ContextBuilder buildContext( DependencyResolver dependencyResolver, ValueMapper<Object> valueMapper )
     {
         return new ContextBuilder( dependencyResolver, valueMapper );

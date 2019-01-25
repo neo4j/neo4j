@@ -94,7 +94,6 @@ import static org.neo4j.codegen.MethodDeclaration.method;
 import static org.neo4j.codegen.MethodReference.methodReference;
 import static org.neo4j.codegen.Parameter.param;
 import static org.neo4j.codegen.TypeReference.OBJECT;
-import static org.neo4j.codegen.TypeReference.parameterizedType;
 import static org.neo4j.codegen.TypeReference.toBoxedType;
 import static org.neo4j.codegen.TypeReference.typeReference;
 import static org.neo4j.codegen.bytecode.ByteCode.BYTECODE;
@@ -205,8 +204,6 @@ public final class ProcedureCompilation
                 //static fields
                 FieldReference signatureField = generator.publicStaticField( typeReference( UserFunctionSignature.class ), SIGNATURE_NAME );
                 FieldReference userClass = generator.publicStaticField( typeReference( methodToCall.getDeclaringClass() ), USER_CLASS );
-                FieldReference mapperField = generator.publicStaticField( parameterizedType( ValueMapper.class, Object.class ),
-                                VALUE_MAPPER_NAME );
                 List<FieldReference> fieldsToSet = new ArrayList<>( fieldSetters.size() );
                 for ( int i = 0; i < fieldSetters.size(); i++ )
                 {
@@ -217,8 +214,7 @@ public final class ProcedureCompilation
                 try ( CodeBlock method = generator.generate( USER_FUNCTION ) )
                 {
                     method.tryCatch(
-                            body -> functionBody( body, fieldSetters, fieldsToSet, userClass, methodToCall,
-                                    mapperField ),
+                            body -> functionBody( body, fieldSetters, fieldsToSet, userClass, methodToCall ),
                             onError ->
                                     onError( onError, format( "function `%s`", signature.name() ) ),
                             param( Throwable.class, "T" )
@@ -268,7 +264,7 @@ public final class ProcedureCompilation
      */
     private static void functionBody( CodeBlock block,
             List<FieldSetter> fieldSetters, List<FieldReference> fieldsToSet, FieldReference udfField,
-            Method methodToCall, FieldReference mapperField )
+            Method methodToCall )
     {
         for ( int i = 0; i < fieldSetters.size(); i++ )
         {
@@ -288,8 +284,7 @@ public final class ProcedureCompilation
         for ( int i = 0; i < parameterTypes.length; i++ )
         {
             parameters[i] = fromAnyValue(
-                    typeReference(
-                            parameterTypes[i] ), arrayLoad( block.load( "input" ), constant( i ) ), mapperField );
+                    typeReference( parameterTypes[i] ), arrayLoad( block.load( "input" ), constant( i ) ), block );
         }
         block.assign( methodToCall.getReturnType(), "fromFunction",
                 invoke( getStatic( udfField ), methodReference( methodToCall ), parameters ) );
@@ -549,10 +544,10 @@ public final class ProcedureCompilation
      *
      * @param expectedType the java type expected by the procedure or function
      * @param expression an expression that will evaluate to an AnyValue
-     * @param mapper The field holding the ValueMapper.
+     * @param block The current code block.
      * @return an expression properly typed to be consumed by function or procedure
      */
-    private static Expression fromAnyValue( TypeReference expectedType, Expression expression, FieldReference mapper )
+    private static Expression fromAnyValue( TypeReference expectedType, Expression expression, CodeBlock block )
     {
         String type = expectedType.fullName();
         if ( type.equals( LONG ) )
@@ -647,7 +642,7 @@ public final class ProcedureCompilation
                     cast( expectedType, invoke(
                             expression,
                             methodReference( AnyValue.class, Object.class, "map", ValueMapper.class ),
-                            getStatic( mapper ) ) );
+                            invoke( block.load("ctx"), methodReference( Context.class, ValueMapper.class, "valueMapper" ) ) ) );
 
         }
     }
