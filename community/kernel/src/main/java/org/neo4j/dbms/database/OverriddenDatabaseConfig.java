@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.CopyOnWriteArraySet;
 
 import javax.annotation.Nonnull;
 
@@ -38,23 +39,24 @@ import org.neo4j.kernel.configuration.Config;
  */
 final class OverriddenDatabaseConfig extends DatabaseConfig
 {
-    private final Map<String,String> rawValueOverrides;
-    private final Config overridenConfig;
+    private final CopyOnWriteArraySet<String> overriddenSettings;
+    private final Config overriddenConfig;
 
     OverriddenDatabaseConfig( Config globalConfig, Map<String,String> rawValueOverrides )
     {
         super( globalConfig );
-        this.rawValueOverrides = rawValueOverrides;
-        this.overridenConfig = createOverriddenConfig( globalConfig, rawValueOverrides );
+
+        this.overriddenSettings = new CopyOnWriteArraySet<>( rawValueOverrides.keySet() );
+        this.overriddenConfig = createOverriddenConfig( globalConfig, rawValueOverrides );
     }
 
     @Override
     public <T> T get( Setting<T> setting )
     {
         //We do not simply get from the overriddenConfig in order to pick up augmented changes to underlying config
-        if ( rawValueOverrides.containsKey( setting.name() ) )
+        if ( overriddenSettings.contains( setting.name() ) )
         {
-            return overridenConfig.get( setting );
+            return overriddenConfig.get( setting );
         }
         return super.get( setting );
     }
@@ -62,48 +64,61 @@ final class OverriddenDatabaseConfig extends DatabaseConfig
     @Override
     public boolean isConfigured( Setting<?> setting )
     {
-       //Do not simply check overridden in order to pick up augmented changes and allow us to override settings with null values
-       if ( rawValueOverrides.containsKey( setting.name() ) )
-       {
-           return Optional.ofNullable( overridenConfig.get( setting ) ).isPresent();
-       }
+        //Do not simply check overridden in order to pick up augmented changes
+        if ( overriddenSettings.contains( setting.name() ) )
+        {
+            return overriddenConfig.isConfigured( setting );
+        }
        return super.isConfigured( setting );
     }
 
     @Override
     public void augment( Map<String,String> settings ) throws InvalidSettingException
     {
-        super.augment( settings );
-        rawValueOverrides.keySet().removeAll( settings.keySet() );
+        for ( Map.Entry<String,String> entry : settings.entrySet() )
+        {
+            augment( entry.getKey(), entry.getValue() );
+        }
     }
 
     @Override
     public void augment( String setting, String value ) throws InvalidSettingException
     {
-        super.augment( setting, value );
-        rawValueOverrides.remove( setting );
+        if ( overriddenSettings.contains( setting ) )
+        {
+            overriddenConfig.augment( setting, value );
+        }
+        else
+        {
+            super.augment( setting, value );
+        }
     }
 
     @Override
     public void augment( Setting<?> setting, String value )
     {
-        super.augment( setting, value );
-        rawValueOverrides.remove( setting.name() );
+        if ( overriddenSettings.contains( setting.name() ) )
+        {
+            overriddenConfig.augment( setting, value );
+        }
+        else
+        {
+            super.augment( setting, value );
+        }
     }
 
     @Override
     public void augment( Config config ) throws InvalidSettingException
     {
-        super.augment( config );
-        rawValueOverrides.keySet().removeAll( config.getRaw().keySet() );
+        augment( config.getRaw() );
     }
 
     @Override
     public Optional<String> getRaw( @Nonnull String key )
     {
-        if ( rawValueOverrides.containsKey( key ) )
+        if ( overriddenSettings.contains( key ) )
         {
-            return overridenConfig.getRaw( key );
+            return overriddenConfig.getRaw( key );
         }
         return super.getRaw( key );
     }
@@ -112,16 +127,16 @@ final class OverriddenDatabaseConfig extends DatabaseConfig
     public Map<String,String> getRaw()
     {
         Map<String,String> combinedRaw = new HashMap<>( super.getRaw() );
-        combinedRaw.putAll( rawValueOverrides );
+        combinedRaw.putAll( overriddenConfig.getRaw() );
         return combinedRaw;
     }
 
     @Override
     public Optional<Object> getValue( @Nonnull String key )
     {
-        if ( rawValueOverrides.containsKey( key ) )
+        if ( overriddenSettings.contains( key ) )
         {
-            return overridenConfig.getValue( key );
+            return overriddenConfig.getValue( key );
         }
         return super.getValue( key );
     }
@@ -130,19 +145,19 @@ final class OverriddenDatabaseConfig extends DatabaseConfig
     public void updateDynamicSetting( String setting, String update, String origin ) throws IllegalArgumentException, InvalidSettingException
     {
         super.updateDynamicSetting( setting, update, origin );
-        rawValueOverrides.remove( setting );
+        overriddenSettings.remove( setting );
     }
 
     @Override
     public Map<String,ConfigValue> getConfigValues()
     {
-        return createOverriddenConfig( super.globalConfig, rawValueOverrides ).getConfigValues();
+        return createOverriddenConfig( super.globalConfig, overriddenConfig.getRaw() ).getConfigValues();
     }
 
     @Override
     public Set<String> identifiersFromGroup( Class<?> groupClass )
     {
-        return createOverriddenConfig( super.globalConfig, rawValueOverrides ).identifiersFromGroup( groupClass );
+        return createOverriddenConfig( super.globalConfig, overriddenConfig.getRaw() ).identifiersFromGroup( groupClass );
     }
 
     private static Config createOverriddenConfig( Config original, Map<String,String> overrides )
