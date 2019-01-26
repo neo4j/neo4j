@@ -28,6 +28,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.OffsetTime;
 import java.time.ZonedDateTime;
+import java.time.temporal.Temporal;
 import java.time.temporal.TemporalAmount;
 import java.util.ArrayList;
 import java.util.List;
@@ -599,33 +600,32 @@ public final class ProcedureCompilation
         }
         else if ( type.equals( ZONED_DATE_TIME ) )
         {
-            return noValueCheck( expression,invoke( cast( DateTimeValue.class, expression ),
-                    methodReference( DateTimeValue.class, ZonedDateTime.class, "temporal" ) ));
+            return  noValueCheck( expression, cast(ZonedDateTime.class, invoke( cast( DateTimeValue.class, expression ),
+                    methodReference( DateTimeValue.class, Temporal.class, "asObjectCopy" ) )));
         }
         else if ( type.equals( OFFSET_TIME ) )
         {
-            return noValueCheck( expression,invoke( cast( TimeValue.class, expression ),
-                    methodReference( TimeValue.class, OffsetTime.class, "temporal" ) ));
+            return  noValueCheck( expression, cast(OffsetTime.class, invoke( cast( TimeValue.class, expression ),
+                    methodReference( TimeValue.class, Temporal.class, "asObjectCopy" ) )));
         }
         else if ( type.equals( LOCAL_DATE ) )
         {
-            return noValueCheck( expression,invoke( cast( TimeValue.class, expression ),
-                    methodReference( TimeValue.class, OffsetTime.class, "temporal" ) ));
+            return noValueCheck( expression, cast(LocalDate.class, invoke( cast( DateValue.class, expression ),
+                    methodReference( DateValue.class, Temporal.class, "asObjectCopy" ) )));
         }
         else if ( type.equals( LOCAL_TIME ) )
         {
-            return noValueCheck( expression,invoke( cast( LocalTimeValue.class, expression ),
-                    methodReference( LocalTimeValue.class, LocalTime.class, "temporal" ) ));
+            return noValueCheck( expression, cast(LocalTime.class, invoke( cast( LocalTimeValue.class, expression ),
+                    methodReference( LocalTimeValue.class, Temporal.class, "asObjectCopy" ) )));
         }
         else if ( type.equals( LOCAL_DATE_TIME ) )
         {
-            return noValueCheck( expression, invoke( cast( LocalDateTimeValue.class, expression ),
-                    methodReference( LocalTimeValue.class, LocalDateTime.class, "temporal" ) ));
+            return  noValueCheck( expression, cast(LocalDateTime.class, invoke( cast( LocalDateTimeValue.class, expression ),
+                    methodReference( LocalDateTimeValue.class, Temporal.class, "asObjectCopy" ) )));
         }
         else if ( type.equals( TEMPORAL_AMOUNT ) )
         {
-            return noValueCheck( expression, invoke( cast( DurationValue.class, expression ),
-                    methodReference( DurationValue.class, TemporalAmount.class, "asObjectCopy" ) ));
+            return noValueCheck( expression, cast( TemporalAmount.class, expression ) );
         }
         else if ( type.equals( PATH ) )
         {

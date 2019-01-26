@@ -31,6 +31,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -42,6 +43,7 @@ import org.neo4j.internal.kernel.api.procs.Neo4jTypes.AnyType;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.procedure.Name;
+import org.neo4j.util.VisibleForTesting;
 import org.neo4j.values.AnyValue;
 
 import static java.lang.Boolean.parseBoolean;
@@ -163,6 +165,12 @@ public class TypeMappers
     void registerType( Class<?> javaClass, DefaultValueConverter toNeo )
     {
         javaToNeo.put( javaClass, toNeo );
+    }
+
+    @VisibleForTesting
+    Set<Type> allTypes()
+    {
+        return javaToNeo.keySet();
     }
 
     private static DefaultParameterValue parseNumber( String s )

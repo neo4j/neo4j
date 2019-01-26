@@ -26,7 +26,18 @@ import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.lang.reflect.Type;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.OffsetTime;
+import java.time.ZonedDateTime;
+import java.time.temporal.TemporalAmount;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
 
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.Neo4jTypes;
@@ -44,6 +55,7 @@ import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTAny;
@@ -56,6 +68,8 @@ import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTString;
 import static org.neo4j.internal.kernel.api.procs.UserFunctionSignature.functionSignature;
 import static org.neo4j.kernel.impl.proc.ProcedureCompilation.compileFunction;
 import static org.neo4j.values.storable.Values.NO_VALUE;
+import static org.neo4j.values.storable.Values.PI;
+import static org.neo4j.values.storable.Values.TRUE;
 import static org.neo4j.values.storable.Values.booleanValue;
 import static org.neo4j.values.storable.Values.byteArray;
 import static org.neo4j.values.storable.Values.byteValue;
@@ -71,6 +85,7 @@ public class ProcedureCompilationTest
     private static final Key<Long> KEY_2 = Key.key( "long2", Long.class );
     private static final AnyValue[] EMPTY = new AnyValue[0];
     private Context ctx;
+
 
     @BeforeEach
     void setUp() throws ProcedureException
@@ -92,7 +107,7 @@ public class ProcedureCompilationTest
                 compileFunction( signature, emptyList(), method( "longMethod" ) );
 
         // Then
-        assertEquals( longMethod.apply( ctx, EMPTY ), longValue(1337L));
+        assertEquals( longMethod.apply( ctx, EMPTY ), longValue( 1337L ) );
     }
 
     @Test
@@ -112,8 +127,8 @@ public class ProcedureCompilationTest
     {
         // Given
         UserFunctionSignature signature = functionSignature( "test", "foo" ).out( Neo4jTypes.NTInteger ).build();
-        FieldSetter setter1 = createSetter(  InnerClass.class, "field1", KEY_1 );
-        FieldSetter setter2 = createSetter(  InnerClass.class, "field2", KEY_2);
+        FieldSetter setter1 = createSetter( InnerClass.class, "field1", KEY_1 );
+        FieldSetter setter2 = createSetter( InnerClass.class, "field2", KEY_2 );
         Method longMethod = method( InnerClass.class, "longMethod" );
 
         // Then
@@ -137,7 +152,7 @@ public class ProcedureCompilationTest
         CallableUserFunction longMethod = compileFunction( signature, emptyList(), method( "throwingLongMethod" ) );
 
         // Then
-        assertThrows( ProcedureException.class, () -> longMethod.apply( ctx, EMPTY ));
+        assertThrows( ProcedureException.class, () -> longMethod.apply( ctx, EMPTY ) );
     }
 
     @Test
@@ -157,7 +172,7 @@ public class ProcedureCompilationTest
         // Then
         assertEquals(
                 stringValue( "421.1true" ),
-                concatMethod.apply( ctx, new AnyValue[]{longValue( 42 ), doubleValue( 1.1 ), booleanValue( true )} ));
+                concatMethod.apply( ctx, new AnyValue[]{longValue( 42 ), doubleValue( 1.1 ), booleanValue( true )} ) );
     }
 
     @Test
@@ -176,7 +191,7 @@ public class ProcedureCompilationTest
         assertEquals( stringValue( "421.1true" ),
                 concatMethod
                         .apply( ctx,
-                                new AnyValue[]{list( longValue( 42 ), doubleValue( 1.1 ), Values.TRUE )} ) );
+                                new AnyValue[]{list( longValue( 42 ), doubleValue( 1.1 ), TRUE )} ) );
     }
 
     @Test
@@ -193,8 +208,8 @@ public class ProcedureCompilationTest
 
         // Then
         assertEquals( Values.NO_VALUE,
-                nullyMethod.apply( ctx, new AnyValue[]{Values.TRUE} ) );
-        assertEquals( Values.PI,
+                nullyMethod.apply( ctx, new AnyValue[]{TRUE} ) );
+        assertEquals( PI,
                 nullyMethod.apply( ctx, new AnyValue[]{Values.NO_VALUE} ) );
     }
 
@@ -225,7 +240,7 @@ public class ProcedureCompilationTest
 
         // When
         CallableUserFunction bytesMethod =
-                compileFunction( signature, emptyList(), method( "bytes", byte[].class ) );
+                compileFunction( signature, emptyList(), method( "testMethod", byte[].class ) );
 
         // Then
         assertEquals( byteArray( new byte[]{1, 2, 3} ),
@@ -247,13 +262,44 @@ public class ProcedureCompilationTest
 
         // When
         CallableUserFunction stringMethod =
-                compileFunction( signature, emptyList(), method( "stringMethod", String.class ) );
+                compileFunction( signature, emptyList(), method( "testMethod", String.class ) );
 
         // Then
-        assertEquals( stringValue("good bye!"),
+        assertEquals( stringValue( "good" ),
                 stringMethod.apply( ctx, new AnyValue[]{stringValue( "good" )} ) );
-        assertEquals( stringValue( "you gave me null" ),
+        assertEquals(NO_VALUE,
                 stringMethod.apply( ctx, new AnyValue[]{NO_VALUE} ) );
+    }
+
+    @Test
+    void shouldHandleAllTypes() throws ProcedureException
+    {
+        Map<Class<?>,Method> allTypes = typeMaps();
+        UserFunctionSignature signature = functionSignature( "test", "foo" ).in( "in", NTAny  ).out( NTAny  ).build();
+
+        for ( Entry<Class<?>,Method> entry : allTypes.entrySet() )
+        {
+
+            CallableUserFunction function = compileFunction( signature, emptyList(), entry.getValue() );
+            Class<?> type = entry.getKey();
+
+            if ( type.equals( long.class ) )
+            {
+                assertEquals( longValue( 1337L ), function.apply( ctx, new AnyValue[]{longValue( 1337L )} ) );
+            }
+            else if ( type.equals( double.class ) )
+            {
+                assertEquals( PI, function.apply( ctx, new AnyValue[]{PI} ) );
+            }
+            else if ( type.equals( boolean.class ) )
+            {
+                assertEquals( TRUE, function.apply( ctx, new AnyValue[]{TRUE} ) );
+            }
+            else
+            {
+                assertEquals( NO_VALUE, function.apply( ctx, new AnyValue[]{NO_VALUE} ) );
+            }
+        }
     }
 
     private FieldSetter createSetter( Class<?> owner, String field, Key<Long> key )
@@ -262,15 +308,15 @@ public class ProcedureCompilationTest
         Field declaredField = owner.getDeclaredField( field );
         MethodHandle setter = MethodHandles.lookup().unreflectSetter( declaredField );
         return new FieldSetter( declaredField, setter,
-                (ComponentRegistry.Provider<Long>) context -> context.get( key) );
+                (ComponentRegistry.Provider<Long>) context -> context.get( key ) );
     }
 
-    private Method method( String name, Class<?>...types )
+    private Method method( String name, Class<?>... types )
     {
-       return method( this.getClass(), name, types );
+        return method( this.getClass(), name, types );
     }
 
-    private Method method( Class<?> owner, String name, Class<?>...types )
+    private Method method( Class<?> owner, String name, Class<?>... types )
     {
         try
         {
@@ -330,23 +376,130 @@ public class ProcedureCompilationTest
         }
     }
 
-    public Number sum(  List<Number> numbers )
+    public Number sum( List<Number> numbers )
     {
         return numbers.stream().mapToDouble( Number::doubleValue ).sum();
     }
 
-    public byte[] bytes( byte[] bytes )
+    //Exhaustive implementation of supported types
+    public String testMethod( String in )
+    {
+        return in;
+    }
+
+    public long testMethod( long in )
+    {
+        return in;
+    }
+
+    public Long testMethod( Long in )
+    {
+        return in;
+    }
+
+    public double testMethod( double in )
+    {
+        return in;
+    }
+
+    public Double testMethod( Double in )
+    {
+        return in;
+    }
+
+    public Number testMethod( Number in )
+    {
+        return in;
+    }
+
+    public boolean testMethod( boolean in )
+    {
+        return in;
+    }
+
+    public Boolean testMethod( Boolean in )
+    {
+        return in;
+    }
+
+    public List<Object> testMethod( List<Object> in )
+    {
+        return in;
+    }
+
+    public Map<String,Object> testMethod( Map<String,Object> in )
+    {
+        return in;
+    }
+
+    public byte[] testMethod( byte[] bytes )
     {
         return bytes;
     }
 
-    public String stringMethod( String in )
+    public Object testMethod( Object in )
     {
-        if ( in == null )
-        {
-            return "you gave me null";
-        }
-        return in + " bye!";
+        return in;
     }
 
+    public ZonedDateTime testMethod( ZonedDateTime in )
+    {
+        return in;
+    }
+
+    public LocalDateTime testMethod( LocalDateTime in )
+    {
+        return in;
+    }
+
+    public LocalDate testMethod( LocalDate in )
+    {
+        return in;
+    }
+
+    public OffsetTime testMethod( OffsetTime in )
+    {
+        return in;
+    }
+
+    public LocalTime testMethod( LocalTime in )
+    {
+        return in;
+    }
+
+    public TemporalAmount testMethod( TemporalAmount in )
+    {
+        return in;
+    }
+
+    private Map<Class<?>,Method> typeMaps()
+    {
+        HashMap<Class<?>,Method> methodHashMap = new HashMap<>();
+        methodHashMap.put( String.class, method( "testMethod", String.class ) );
+        methodHashMap.put( long.class, method( "testMethod", long.class ) );
+        methodHashMap.put( Long.class, method( "testMethod", Long.class ) );
+        methodHashMap.put( double.class, method( "testMethod", double.class ) );
+        methodHashMap.put( Double.class, method( "testMethod", Double.class ) );
+        methodHashMap.put( Number.class, method( "testMethod", Number.class ) );
+        methodHashMap.put( boolean.class, method( "testMethod", boolean.class ) );
+        methodHashMap.put( Boolean.class, method( "testMethod", Boolean.class ) );
+        methodHashMap.put( byte[].class, method( "testMethod", byte[].class ) );
+        methodHashMap.put( List.class, method( "testMethod", List.class ) );
+        methodHashMap.put( Map.class, method( "testMethod", Map.class ) );
+        methodHashMap.put( Object.class, method( "testMethod", Object.class ) );
+        methodHashMap.put( ZonedDateTime.class, method( "testMethod", ZonedDateTime.class ) );
+        methodHashMap.put( LocalDateTime.class, method( "testMethod", LocalDateTime.class ) );
+        methodHashMap.put( LocalDate.class, method( "testMethod", LocalDate.class ) );
+        methodHashMap.put( OffsetTime.class, method( "testMethod", OffsetTime.class ) );
+        methodHashMap.put( LocalTime.class, method( "testMethod", LocalTime.class ) );
+        methodHashMap.put( TemporalAmount.class, method( "testMethod", TemporalAmount.class ) );
+
+        //safety check, make sure we are testing all types
+        Set<Type> types = new TypeMappers().allTypes();
+        for ( Type type : types )
+        {
+            assertTrue( methodHashMap.containsKey( type ), type + " is not being tested!" );
+        }
+        return methodHashMap;
+    }
 }
