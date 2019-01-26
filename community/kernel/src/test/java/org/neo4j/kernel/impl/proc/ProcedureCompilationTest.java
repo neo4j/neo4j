@@ -86,7 +86,6 @@ public class ProcedureCompilationTest
     private static final AnyValue[] EMPTY = new AnyValue[0];
     private Context ctx;
 
-
     @BeforeEach
     void setUp() throws ProcedureException
     {
