@@ -151,11 +151,10 @@ public final class ProcedureCompilation
      *
      * <pre>
      *     class MyClass {
-     *         //Using [AT] because the javadocs chokes on the real symbol
-     *        [AT]Context
+     *       {@literal @}Context
      *        public Log log;
-     *        //Using [AT] because the javadocs chokes on the real symbol
-     *        [AT]serFunction
+
+     *       {@literal @}UserFunction
      *        public double addPi(long value) {
      *            return value + Math.PI;
      *        }
