@@ -140,6 +140,9 @@ class ReflectiveProcedureCompiler
                 return emptyList();
             }
 
+            //used for proper error handling
+            constructor( fcnDefinition );
+
             ArrayList<CallableUserFunction> out = new ArrayList<>( functionMethods.size() );
             for ( Method method : functionMethods )
             {
