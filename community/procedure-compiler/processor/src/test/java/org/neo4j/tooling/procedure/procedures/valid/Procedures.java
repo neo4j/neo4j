@@ -27,7 +27,6 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.procedure.Name;
-import org.neo4j.procedure.PerformsWrites;
 import org.neo4j.procedure.Procedure;
 
 import static org.neo4j.procedure.Mode.DBMS;
@@ -220,12 +219,6 @@ public class Procedures
             @Name( "foo" ) Map<String,List<List<Map<String,Map<String,List<Path>>>>>> input )
     {
         return Stream.of( new Records.GenericTypesWrapper() );
-    }
-
-    @Procedure
-    @PerformsWrites
-    public void performsWrites()
-    {
     }
 
     @Procedure( mode = DEFAULT )

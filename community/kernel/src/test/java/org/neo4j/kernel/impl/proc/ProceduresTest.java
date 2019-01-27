@@ -35,9 +35,6 @@ import org.neo4j.kernel.api.proc.Context;
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
 import org.neo4j.kernel.impl.util.DefaultValueMapper;
 import org.neo4j.kernel.impl.util.Dependencies;
-import org.neo4j.procedure.Mode;
-import org.neo4j.procedure.PerformsWrites;
-import org.neo4j.procedure.Procedure;
 import org.neo4j.values.ValueMapper;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -174,73 +171,9 @@ class ProceduresTest
         assertThat( asList( result ), contains( equalTo( new Object[]{ Thread.currentThread() } ) ) );
     }
 
-    @Test
-    void shouldFailCompileProcedureWithReadConflict()
-    {
-        ProcedureException exception = assertThrows( ProcedureException.class, () -> procs.registerProcedure( ProcedureWithReadConflictAnnotation.class ) );
-        assertThat( exception.getMessage(), equalTo( "Conflicting procedure annotation, cannot use PerformsWrites and mode" ) );
-    }
-
-    @Test
-    void shouldFailCompileProcedureWithWriteConflict()
-    {
-        ProcedureException exception = assertThrows( ProcedureException.class, () -> procs.registerProcedure( ProcedureWithWriteConflictAnnotation.class ) );
-        assertThat( exception.getMessage(), equalTo( "Conflicting procedure annotation, cannot use PerformsWrites and mode" ) );
-    }
-
-    @Test
-    void shouldFailCompileProcedureWithSchemaConflict()
-    {
-        ProcedureException exception = assertThrows( ProcedureException.class, () -> procs.registerProcedure( ProcedureWithSchemaConflictAnnotation.class ) );
-        assertThat( exception.getMessage(), equalTo( "Conflicting procedure annotation, cannot use PerformsWrites and mode" ) );
-    }
-
-    @Test
-    void shouldFailCompileProcedureWithDBMSConflict()
-    {
-        ProcedureException exception = assertThrows( ProcedureException.class, () -> procs.registerProcedure( ProcedureWithDBMSConflictAnnotation.class ) );
-        assertThat( exception.getMessage(), equalTo( "Conflicting procedure annotation, cannot use PerformsWrites and mode" ) );
-    }
-
     private Context prepareContext()
     {
         return buildContext( dependencyResolver, valueMapper ).context();
-    }
-
-    public static class ProcedureWithReadConflictAnnotation
-    {
-        @PerformsWrites
-        @Procedure( mode = Mode.READ )
-        public void shouldCompile()
-        {
-        }
-    }
-
-    public static class ProcedureWithWriteConflictAnnotation
-    {
-        @PerformsWrites
-        @Procedure( mode = Mode.WRITE )
-        public void shouldCompileToo()
-        {
-        }
-    }
-
-    public static class ProcedureWithDBMSConflictAnnotation
-    {
-        @PerformsWrites
-        @Procedure( mode = Mode.DBMS )
-        public void shouldNotCompile()
-        {
-        }
-    }
-
-    public static class ProcedureWithSchemaConflictAnnotation
-    {
-        @PerformsWrites
-        @Procedure( mode = Mode.SCHEMA )
-        public void shouldNotCompile()
-        {
-        }
     }
 
     private CallableProcedure.BasicProcedure procedureWithSignature( final ProcedureSignature signature )

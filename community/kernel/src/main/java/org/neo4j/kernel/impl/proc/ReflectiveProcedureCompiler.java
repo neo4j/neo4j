@@ -63,7 +63,6 @@ import org.neo4j.logging.Log;
 import org.neo4j.procedure.Admin;
 import org.neo4j.procedure.Description;
 import org.neo4j.procedure.Mode;
-import org.neo4j.procedure.PerformsWrites;
 import org.neo4j.procedure.Procedure;
 import org.neo4j.procedure.UserAggregationFunction;
 import org.neo4j.procedure.UserAggregationResult;
@@ -278,19 +277,6 @@ class ReflectiveProcedureCompiler
         Procedure procedure = method.getAnnotation( Procedure.class );
         Mode mode = procedure.mode();
         boolean admin = method.isAnnotationPresent( Admin.class );
-        if ( method.isAnnotationPresent( PerformsWrites.class ) )
-        {
-            if ( procedure.mode() != org.neo4j.procedure.Mode.DEFAULT )
-            {
-                throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed,
-                        "Conflicting procedure annotation, cannot use PerformsWrites and mode" );
-            }
-            else
-            {
-                mode = Mode.WRITE;
-            }
-        }
-
         String deprecated = deprecated( method, procedure::deprecatedBy,
                 "Use of @Procedure(deprecatedBy) without @Deprecated in " + procName );
 
