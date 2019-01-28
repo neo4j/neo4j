@@ -19,14 +19,14 @@
  */
 package org.neo4j.kernel.impl.api.integrationtest;
 
+import org.hamcrest.Description;
 import org.hamcrest.Matcher;
+import org.hamcrest.TypeSafeMatcher;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import java.util.Arrays;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 
 import org.neo4j.collection.RawIterator;
@@ -48,10 +48,14 @@ import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode;
+import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.kernel.internal.Version;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.values.AnyValue;
+import org.neo4j.values.storable.TextValue;
+import org.neo4j.values.virtual.MapValue;
+import org.neo4j.values.virtual.VirtualValues;
 
-import static java.util.Collections.singletonList;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.arrayContaining;
@@ -64,6 +68,10 @@ import static org.neo4j.helpers.collection.Iterators.asList;
 import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureName;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forLabel;
+import static org.neo4j.values.storable.Values.EMPTY_STRING;
+import static org.neo4j.values.storable.Values.doubleValue;
+import static org.neo4j.values.storable.Values.longValue;
+import static org.neo4j.values.storable.Values.stringValue;
 
 public class BuiltInProceduresIT extends KernelIntegrationTest
 {
@@ -83,11 +91,11 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
         commit();
 
         // When
-        RawIterator<Object[],ProcedureException> stream =
-                procs().procedureCallRead( procs().procedureGet( procedureName( "db", "labels" ) ).id(), new Object[0] );
+        RawIterator<AnyValue[],ProcedureException> stream =
+                procs().procedureCallRead( procs().procedureGet( procedureName( "db", "labels" ) ).id(), new AnyValue[0] );
 
         // Then
-        assertThat( asList( stream ), contains( equalTo( new Object[]{"MyLabel", 1L} ) ) );
+        assertThat( asList( stream ), contains( equalTo( new AnyValue[]{stringValue("MyLabel"), longValue(1L)} ) ) );
     }
 
     @Test
@@ -99,11 +107,11 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
         commit();
 
         // When
-        RawIterator<Object[],ProcedureException> stream =
-                procs().procedureCallRead( procs().procedureGet( procedureName( "db", "propertyKeys" ) ).id(), new Object[0] );
+        RawIterator<AnyValue[],ProcedureException> stream =
+                procs().procedureCallRead( procs().procedureGet( procedureName( "db", "propertyKeys" ) ).id(), new AnyValue[0] );
 
         // Then
-        assertThat( asList( stream ), contains( equalTo( new Object[]{"MyProp"} ) ) );
+        assertThat( asList( stream ), contains( equalTo( new AnyValue[]{stringValue( "MyProp" )} ) ) );
     }
 
     @Test
@@ -118,11 +126,11 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
         commit();
 
         // When
-        RawIterator<Object[],ProcedureException> stream =
-                procs().procedureCallRead( procs().procedureGet( procedureName( "db", "relationshipTypes" ) ).id(), new Object[0] );
+        RawIterator<AnyValue[],ProcedureException> stream =
+                procs().procedureCallRead( procs().procedureGet( procedureName( "db", "relationshipTypes" ) ).id(), new AnyValue[0] );
 
         // Then
-        assertThat( asList( stream ), contains( equalTo( new Object[]{"MyRelType", 1L} ) ) );
+        assertThat( asList( stream ), contains( equalTo( new AnyValue[]{stringValue( "MyRelType" ), longValue( 1L ) } ) ) );
     }
 
     @Test
@@ -130,7 +138,7 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
     {
         // When
         ProcedureHandle procedures = procs().procedureGet( procedureName( "dbms", "procedures" ) );
-        RawIterator<Object[],ProcedureException> stream = procs().procedureCallRead( procedures.id(), new Object[0] );
+        RawIterator<AnyValue[],ProcedureException> stream = procs().procedureCallRead( procedures.id(), new AnyValue[0] );
 
         // Then
         //noinspection unchecked
@@ -228,7 +236,7 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
     {
         try
         {
-            dbmsOperations().procedureCallDbms( procedureName( "dbms", "iDoNotExist" ), new Object[0], dependencyResolver,
+            dbmsOperations().procedureCallDbms( procedureName( "dbms", "iDoNotExist" ), new AnyValue[0], dependencyResolver,
                     AnonymousContext.none().authorize( s -> -1, GraphDatabaseSettings.DEFAULT_DATABASE_NAME ), resourceTracker, valueMapper );
             fail( "This should never get here" );
         }
@@ -245,11 +253,12 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
         // Given a running database
 
         // When
-        RawIterator<Object[],ProcedureException> stream =
-                procs().procedureCallRead( procs().procedureGet( procedureName( "dbms", "components" ) ).id(), new Object[0] );
+        RawIterator<AnyValue[],ProcedureException> stream =
+                procs().procedureCallRead( procs().procedureGet( procedureName( "dbms", "components" ) ).id(), new AnyValue[0] );
 
         // Then
-        assertThat( asList( stream ), contains( equalTo( new Object[]{"Neo4j Kernel", singletonList( Version.getNeo4jVersion() ), "community"} ) ) );
+        assertThat( asList( stream ), contains( equalTo( new AnyValue[]{stringValue( "Neo4j Kernel" ),
+                VirtualValues.list( stringValue( Version.getNeo4jVersion() ) ), stringValue( "community" )} ) ) );
 
         commit();
     }
@@ -284,10 +293,10 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
         IndexReference personFooBarIndex = transaction.schemaRead().index( personFooBarDescriptor );
 
         // When
-        RawIterator<Object[],ProcedureException> stream =
-                procs().procedureCallRead( procs().procedureGet( procedureName( "db", "indexes" ) ).id(), new Object[0] );
+        RawIterator<AnyValue[],ProcedureException> stream =
+                procs().procedureCallRead( procs().procedureGet( procedureName( "db", "indexes" ) ).id(), new AnyValue[0] );
 
-        Set<Object[]> result = new HashSet<>();
+        Set<AnyValue[]> result = new HashSet<>();
         while ( stream.hasNext() )
         {
             result.add( stream.next() );
@@ -297,15 +306,26 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
         IndexProviderMap indexProviderMap = db.getDependencyResolver().resolveDependency( IndexProviderMap.class );
         IndexingService indexingService = db.getDependencyResolver().resolveDependency( IndexingService.class );
         IndexProvider provider = indexProviderMap.getDefaultProvider();
-        Map<String,String> pdm = MapUtil.stringMap( // Provider Descriptor Map.
-                "key", provider.getProviderDescriptor().getKey(), "version", provider.getProviderDescriptor().getVersion() );
+        MapValue pdm = ValueUtils.asMapValue( MapUtil.map( // Provider Descriptor Map.
+                "key", provider.getProviderDescriptor().getKey(), "version",
+                provider.getProviderDescriptor().getVersion() ) );
         assertThat( result, containsInAnyOrder(
-                new Object[]{"INDEX ON :Age(foo)", ageFooIndex.name(), singletonList( "Age" ), singletonList( "foo" ), "ONLINE",
-                        "node_unique_property", 100D, pdm, indexingService.getIndexId( ageFooDescriptor ), ""},
-                new Object[]{"INDEX ON :Person(foo)", personFooIndex.name(), singletonList( "Person" ),
-                        singletonList( "foo" ), "ONLINE", "node_label_property", 100D, pdm, indexingService.getIndexId( personFooDescriptor ), ""},
-                new Object[]{"INDEX ON :Person(foo, bar)", personFooBarIndex.name(), singletonList( "Person" ),
-                        Arrays.asList( "foo", "bar" ), "ONLINE", "node_label_property", 100D, pdm, indexingService.getIndexId( personFooBarDescriptor ), ""}
+                new AnyValue[]{stringValue( "INDEX ON :Age(foo)" ), stringValue( ageFooIndex.name() ),
+                        VirtualValues.list( stringValue( "Age" ) ), VirtualValues.list( stringValue( "foo" ) ),
+                        stringValue( "ONLINE" ),
+                        stringValue( "node_unique_property" ), doubleValue( 100D ), pdm,
+                        longValue( indexingService.getIndexId( ageFooDescriptor ) ),
+                        EMPTY_STRING},
+                new AnyValue[]{stringValue( "INDEX ON :Person(foo)" ), stringValue( personFooIndex.name() ),
+                        VirtualValues.list( stringValue( "Person" ) ),
+                        VirtualValues.list( stringValue( "foo" ) ), stringValue( "ONLINE" ),
+                        stringValue( "node_label_property" ), doubleValue( 100D ), pdm,
+                        longValue( indexingService.getIndexId( personFooDescriptor ) ), EMPTY_STRING},
+                new AnyValue[]{stringValue( "INDEX ON :Person(foo, bar)" ), stringValue( personFooBarIndex.name() ),
+                        VirtualValues.list( stringValue( "Person" ) ),
+                        VirtualValues.list( stringValue( "foo" ), stringValue( "bar" ) ), stringValue( "ONLINE" ),
+                        stringValue( "node_label_property" ), doubleValue( 100D ), pdm,
+                        longValue( indexingService.getIndexId( personFooBarDescriptor ) ), EMPTY_STRING}
         ) );
         commit();
     }
@@ -397,17 +417,32 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
         }
     }
 
-    private Matcher<Object[]> proc( String procName, String procSignature, String description, String mode )
+    private Matcher<AnyValue[]> proc( String procName, String procSignature, String description, String mode )
     {
-        return equalTo( new Object[]{procName, procName + procSignature, description, mode} );
+        return equalTo( new AnyValue[]{stringValue( procName ), stringValue( procName + procSignature ), stringValue( description ), stringValue( mode )} );
     }
 
     @SuppressWarnings( {"unchecked", "TypeParameterExplicitlyExtendsObject"} )
-    private Matcher<Object[]> proc( String procName, String procSignature, Matcher<String> description, String mode )
+    private Matcher<AnyValue[]> proc( String procName, String procSignature, Matcher<String> description, String mode )
     {
         Matcher<Object> desc = (Matcher<Object>) (Matcher<? extends Object>) description;
-        Matcher<Object>[] matchers =
-                new Matcher[]{equalTo( procName ), equalTo( procName + procSignature ), desc, equalTo( mode )};
+        new TypeSafeMatcher<AnyValue>()
+        {
+            @Override
+            public void describeTo( Description description )
+            {
+                description.appendText( "invalid description" );
+            }
+
+            @Override
+            protected boolean matchesSafely( AnyValue item )
+            {
+                return item instanceof TextValue && description.matches( ((TextValue) item).stringValue() );
+            }
+        };
+
+        Matcher<AnyValue>[] matchers =
+                new Matcher[]{equalTo( stringValue( procName )), equalTo( stringValue( procName + procSignature  ) ), desc, equalTo( stringValue( mode ) )};
         return arrayContaining( matchers );
     }
 }

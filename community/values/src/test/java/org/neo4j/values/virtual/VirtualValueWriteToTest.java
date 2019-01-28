@@ -51,7 +51,7 @@ import static org.neo4j.values.virtual.VirtualValues.relationship;
 import static org.neo4j.values.virtual.VirtualValues.relationshipValue;
 
 @RunWith( value = Parameterized.class )
-@SuppressWarnings("ReferenceEquality")
+@SuppressWarnings( "ReferenceEquality" )
 public class VirtualValueWriteToTest
 {
 

@@ -21,9 +21,7 @@ package org.neo4j.kernel.builtinprocs;
 
 import java.util.Arrays;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import javax.management.JMException;
@@ -37,7 +35,6 @@ import javax.management.openmbean.CompositeData;
 import javax.management.openmbean.TabularData;
 
 import org.neo4j.collection.RawIterator;
-import org.neo4j.helpers.collection.CollectorsUtil;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.Neo4jTypes;
 import org.neo4j.internal.kernel.api.procs.QualifiedName;
@@ -45,11 +42,17 @@ import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.Context;
+import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.procedure.Mode;
+import org.neo4j.values.AnyValue;
+import org.neo4j.values.virtual.ListValue;
+import org.neo4j.values.virtual.MapValue;
+import org.neo4j.values.virtual.MapValueBuilder;
+import org.neo4j.values.virtual.VirtualValues;
 
-import static org.neo4j.helpers.collection.MapUtil.map;
-import static org.neo4j.helpers.collection.Pair.pair;
 import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureSignature;
+import static org.neo4j.values.storable.Values.longValue;
+import static org.neo4j.values.storable.Values.stringValue;
 
 public class JmxQueryProcedure extends CallableProcedure.BasicProcedure
 {
@@ -69,7 +72,7 @@ public class JmxQueryProcedure extends CallableProcedure.BasicProcedure
     }
 
     @Override
-    public RawIterator<Object[], ProcedureException> apply( Context ctx, Object[] input, ResourceTracker resourceTracker ) throws ProcedureException
+    public RawIterator<AnyValue[], ProcedureException> apply( Context ctx, AnyValue[] input, ResourceTracker resourceTracker ) throws ProcedureException
     {
         String query = input[0].toString();
         try
@@ -89,9 +92,9 @@ public class JmxQueryProcedure extends CallableProcedure.BasicProcedure
                 try
                 {
                     MBeanInfo beanInfo = jmxServer.getMBeanInfo( name );
-                    return new Object[]{
-                            name.getCanonicalName(),
-                            beanInfo.getDescription(),
+                    return new AnyValue[]{
+                            stringValue(name.getCanonicalName()),
+                            stringValue( beanInfo.getDescription() ),
                             toNeo4jValue( name, beanInfo.getAttributes() ) };
                 }
                 catch ( JMException e )
@@ -112,24 +115,24 @@ public class JmxQueryProcedure extends CallableProcedure.BasicProcedure
         }
     }
 
-    private Map<String,Object> toNeo4jValue( ObjectName name, MBeanAttributeInfo[] attributes )
+    private MapValue toNeo4jValue( ObjectName name, MBeanAttributeInfo[] attributes )
             throws JMException
     {
-        HashMap<String,Object> out = new HashMap<>();
+        MapValueBuilder out = new MapValueBuilder(  );
         for ( MBeanAttributeInfo attribute : attributes )
         {
             if ( attribute.isReadable() )
             {
-                out.put( attribute.getName(), toNeo4jValue( name, attribute ) );
+                out.add( attribute.getName(), toNeo4jValue( name, attribute ) );
             }
         }
-        return out;
+        return out.build();
     }
 
-    private Map<String,Object> toNeo4jValue( ObjectName name, MBeanAttributeInfo attribute )
+    private MapValue toNeo4jValue( ObjectName name, MBeanAttributeInfo attribute )
             throws JMException
     {
-        Object value;
+        AnyValue value;
         try
         {
             value = toNeo4jValue( jmxServer.getAttribute( name, attribute.getName() ) );
@@ -149,24 +152,22 @@ public class JmxQueryProcedure extends CallableProcedure.BasicProcedure
                 throw e;
             }
         }
-        return map(
-            "description", attribute.getDescription(),
-            "value", value
-        );
+        return VirtualValues.map( new String[]{"description", "value"},
+                new AnyValue[]{stringValue( attribute.getDescription() ), value} );
     }
 
-    private Object toNeo4jValue( Object attributeValue )
+    private AnyValue toNeo4jValue( Object attributeValue )
     {
         // These branches as per {@link javax.management.openmbean.OpenType#ALLOWED_CLASSNAMES_LIST}
         if ( isSimpleType( attributeValue ) )
         {
-            return attributeValue;
+            return ValueUtils.of( attributeValue );
         }
         else if ( attributeValue.getClass().isArray() )
         {
             if ( isSimpleType( attributeValue.getClass().getComponentType() ) )
             {
-                return attributeValue;
+                return ValueUtils.of( attributeValue );
             }
             else
             {
@@ -179,7 +180,7 @@ public class JmxQueryProcedure extends CallableProcedure.BasicProcedure
         }
         else if ( attributeValue instanceof ObjectName )
         {
-            return ((ObjectName) attributeValue).getCanonicalName();
+            return stringValue( ((ObjectName) attributeValue).getCanonicalName() );
         }
         else if ( attributeValue instanceof TabularData )
         {
@@ -187,7 +188,7 @@ public class JmxQueryProcedure extends CallableProcedure.BasicProcedure
         }
         else if ( attributeValue instanceof Date )
         {
-            return ((Date) attributeValue).getTime();
+            return longValue(((Date) attributeValue).getTime());
         }
         else
         {
@@ -196,32 +197,33 @@ public class JmxQueryProcedure extends CallableProcedure.BasicProcedure
         }
     }
 
-    private Map<String,Object> toNeo4jValue( Map<?,?> attributeValue )
+    private MapValue toNeo4jValue( Map<?,?> attributeValue )
     {
         // Build a new map with the same keys, but each value passed
         // through `toNeo4jValue`
-        return attributeValue.entrySet().stream()
-                .map( e -> pair( e.getKey().toString(), toNeo4jValue( e.getValue() ) ) )
-                .collect( CollectorsUtil.pairsToMap() );
+        MapValueBuilder builder = new MapValueBuilder(  );
+        attributeValue.forEach( ( key, value ) -> builder.add( (String) key, toNeo4jValue( value ) ) );
+        return builder.build();
     }
 
-    private List<Object> toNeo4jValue( Object[] array )
+    private ListValue toNeo4jValue( Object[] array )
     {
-        return Arrays.stream(array).map( this::toNeo4jValue ).collect( Collectors.toList() );
+        return VirtualValues.fromList( Arrays.stream(array).map( this::toNeo4jValue ).collect( Collectors.toList() ) );
     }
 
-    private Map<String, Object> toNeo4jValue( CompositeData composite )
+    private MapValue toNeo4jValue( CompositeData composite )
     {
-        HashMap<String,Object> properties = new HashMap<>();
+        MapValueBuilder properties = new MapValueBuilder();
         for ( String key : composite.getCompositeType().keySet() )
         {
-            properties.put( key, toNeo4jValue(composite.get( key )) );
+            properties.add( key, toNeo4jValue(composite.get( key )) );
         }
 
-        return map(
-            "description", composite.getCompositeType().getDescription(),
-            "properties", properties
-        );
+        MapValueBuilder out = new MapValueBuilder();
+        out.add( "description", stringValue( composite.getCompositeType().getDescription() ) );
+        out.add( "properties", properties.build() );
+
+        return out.build();
     }
 
     private boolean isSimpleType( Object value )

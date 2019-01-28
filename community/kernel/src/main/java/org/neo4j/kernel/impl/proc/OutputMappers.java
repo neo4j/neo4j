@@ -35,6 +35,7 @@ import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.FieldSignature;
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.values.AnyValue;
 
 import static java.lang.reflect.Modifier.isPublic;
 import static java.lang.reflect.Modifier.isStatic;
@@ -72,12 +73,12 @@ public class OutputMappers
             return signature;
         }
 
-        public Object[] apply( Object record ) throws ProcedureException
+        public AnyValue[] apply( Object record ) throws ProcedureException
         {
-            Object[] output = new Object[fieldMappers.length];
+            AnyValue[] output = new AnyValue[fieldMappers.length];
             for ( int i = 0; i < fieldMappers.length; i++ )
             {
-                output[i] = fieldMappers[i].apply( record );
+                output[i] = fieldMappers[i].toAnyValue( record );
             }
             return output;
         }
@@ -110,6 +111,11 @@ public class OutputMappers
         {
             Object invoke = getValue( record );
             return checker.typeCheck( invoke );
+        }
+
+        AnyValue toAnyValue( Object record ) throws ProcedureException
+        {
+            return checker.toValue(  apply( record ) );
         }
 
         private Object getValue( Object record ) throws ProcedureException

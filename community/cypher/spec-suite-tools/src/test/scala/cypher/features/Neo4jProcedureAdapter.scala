@@ -27,8 +27,10 @@ import org.neo4j.internal.kernel.api.procs.Neo4jTypes
 import org.neo4j.kernel.api.proc.CallableProcedure.BasicProcedure
 import org.neo4j.kernel.api.proc.Context
 import org.neo4j.kernel.api.{InwardKernel, ResourceTracker}
+import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.kernel.internal.GraphDatabaseAPI
 import org.neo4j.procedure.Mode
+import org.neo4j.values.AnyValue
 import org.opencypher.tools.tck.api.{CypherValueRecords, Graph, ProcedureSupport}
 import org.opencypher.tools.tck.values.CypherValue
 
@@ -77,17 +79,17 @@ trait Neo4jProcedureAdapter extends ProcedureSupport {
     val kernelSignature = asKernelSignature(parsedSignature)
     val kernelProcedure = new BasicProcedure(kernelSignature) {
       override def apply(ctx: Context,
-                         input: Array[AnyRef],
-                         resourceTracker: ResourceTracker): RawIterator[Array[AnyRef], ProcedureException] = {
+                         input: Array[AnyValue],
+                         resourceTracker: ResourceTracker): RawIterator[Array[AnyValue], ProcedureException] = {
         // For example of usage see ProcedureCallAcceptance.feature e.g. "Standalone call to procedure with explicit arguments"
         val rowsWithMatchingInput = neo4jValues.rows.filter { row =>
           row.startsWith(input)
         }
         val extractResultsFromRows = rowsWithMatchingInput.map { row =>
-          row.drop(input.length)
+          row.drop(input.length).map(ValueUtils.of)
         }
 
-        val rawIterator = RawIterator.wrap[Array[AnyRef], ProcedureException](extractResultsFromRows.toIterator.asJava)
+        val rawIterator = RawIterator.wrap[Array[AnyValue], ProcedureException](extractResultsFromRows.toIterator.asJava)
         rawIterator
       }
     }

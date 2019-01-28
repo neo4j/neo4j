@@ -31,6 +31,8 @@ import org.neo4j.internal.kernel.api.procs.QualifiedName;
 import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.StubResourceManager;
 import org.neo4j.kernel.impl.api.integrationtest.KernelIntegrationTest;
+import org.neo4j.values.AnyValue;
+import org.neo4j.values.storable.BooleanValue;
 
 import static org.apache.commons.lang3.ArrayUtils.toArray;
 import static org.hamcrest.Matchers.hasItem;
@@ -42,6 +44,7 @@ import static org.junit.Assert.assertTrue;
 import static org.neo4j.helpers.collection.Iterators.asList;
 import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureName;
 import static org.neo4j.internal.kernel.api.security.SecurityContext.AUTH_DISABLED;
+import static org.neo4j.values.storable.Values.stringValue;
 
 public class BuiltInDbmsProceduresIT extends KernelIntegrationTest
 {
@@ -51,7 +54,7 @@ public class BuiltInDbmsProceduresIT extends KernelIntegrationTest
     public void listConfig() throws Exception
     {
         // When
-        List<Object[]> config = callListConfig( "" );
+        List<AnyValue[]> config = callListConfig( "" );
         List<String> names = config.stream()
                 .map( o -> o[0].toString() )
                 .collect( Collectors.toList() );
@@ -71,7 +74,7 @@ public class BuiltInDbmsProceduresIT extends KernelIntegrationTest
     public void listConfigWithASpecificConfigName() throws Exception
     {
         // When
-        List<Object[]> config = callListConfig( GraphDatabaseSettings.strict_config_validation.name() );
+        List<AnyValue[]> config = callListConfig( GraphDatabaseSettings.strict_config_validation.name() );
 
         assertEquals( 1, config.size() );
         assertArrayEquals( new Object[]{ "dbms.config.strict_validation",
@@ -85,7 +88,7 @@ public class BuiltInDbmsProceduresIT extends KernelIntegrationTest
     public void durationAlwaysListedWithUnit() throws Exception
     {
         // When
-        List<Object[]> config = callListConfig( GraphDatabaseSettings.transaction_timeout.name() );
+        List<AnyValue[]> config = callListConfig( GraphDatabaseSettings.transaction_timeout.name() );
 
         assertEquals( 1, config.size() );
         assertArrayEquals( new Object[]{ "dbms.transaction.timeout",
@@ -96,26 +99,28 @@ public class BuiltInDbmsProceduresIT extends KernelIntegrationTest
     @Test
     public void listDynamicSetting() throws ProcedureException
     {
-        List<Object[]> config = callListConfig( GraphDatabaseSettings.check_point_iops_limit.name() );
+        List<AnyValue[]> config = callListConfig( GraphDatabaseSettings.check_point_iops_limit.name() );
 
         assertEquals( 1, config.size() );
-        assertTrue( (Boolean) config.get(0)[3] );
+        assertTrue( ((BooleanValue) config.get(0)[3]).booleanValue() );
     }
 
     @Test
     public void listNotDynamicSetting() throws ProcedureException
     {
-        List<Object[]> config = callListConfig( GraphDatabaseSettings.data_directory.name() );
+        List<AnyValue[]> config = callListConfig( GraphDatabaseSettings.data_directory.name() );
 
         assertEquals( 1, config.size() );
-        assertFalse( (Boolean) config.get(0)[3] );
+        assertFalse(((BooleanValue) config.get(0)[3]).booleanValue() );
     }
 
-    private List<Object[]> callListConfig( String seatchString ) throws ProcedureException
+    private List<AnyValue[]> callListConfig( String seatchString ) throws ProcedureException
     {
         QualifiedName procedureName = procedureName( "dbms", "listConfig" );
-        RawIterator<Object[],ProcedureException> callResult =
-                dbmsOperations().procedureCallDbms( procedureName, toArray( seatchString ), dependencyResolver, AUTH_DISABLED, resourceTracker, valueMapper );
+        RawIterator<AnyValue[],ProcedureException> callResult =
+                dbmsOperations()
+                        .procedureCallDbms( procedureName, toArray( stringValue( seatchString ) ), dependencyResolver,
+                                AUTH_DISABLED, resourceTracker, valueMapper );
         return asList( callResult );
     }
 }

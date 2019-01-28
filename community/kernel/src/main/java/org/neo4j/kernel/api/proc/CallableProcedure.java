@@ -23,11 +23,12 @@ import org.neo4j.collection.RawIterator;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
 import org.neo4j.kernel.api.ResourceTracker;
+import org.neo4j.values.AnyValue;
 
 public interface CallableProcedure
 {
     ProcedureSignature signature();
-    RawIterator<Object[], ProcedureException> apply( Context ctx, Object[] input, ResourceTracker resourceTracker ) throws ProcedureException;
+    RawIterator<AnyValue[], ProcedureException> apply( Context ctx, AnyValue[] input, ResourceTracker resourceTracker ) throws ProcedureException;
 
     abstract class BasicProcedure implements CallableProcedure
     {
@@ -45,7 +46,7 @@ public interface CallableProcedure
         }
 
         @Override
-        public abstract RawIterator<Object[], ProcedureException> apply(
-                Context ctx, Object[] input, ResourceTracker resourceTracker ) throws ProcedureException;
+        public abstract RawIterator<AnyValue[], ProcedureException> apply(
+                Context ctx, AnyValue[] input, ResourceTracker resourceTracker ) throws ProcedureException;
     }
 }

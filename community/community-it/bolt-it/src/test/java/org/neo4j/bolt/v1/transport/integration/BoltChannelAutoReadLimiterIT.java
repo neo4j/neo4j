@@ -52,6 +52,7 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
+import org.neo4j.values.AnyValue;
 
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonMap;
@@ -149,8 +150,8 @@ public class BoltChannelAutoReadLimiterIT
                                 .build() )
                 {
                     @Override
-                    public RawIterator<Object[],ProcedureException> apply(
-                            Context context, Object[] objects, ResourceTracker resourceTracker ) throws ProcedureException
+                    public RawIterator<AnyValue[],ProcedureException> apply(
+                            Context context, AnyValue[] objects, ResourceTracker resourceTracker ) throws ProcedureException
                     {
                         try
                         {

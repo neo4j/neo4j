@@ -586,7 +586,6 @@ class ReflectiveProcedureCompiler
         private final OutputMapper outputMapper;
         private final MethodHandle constructor;
         private final Method procedureMethod;
-        private final int[] indexesToMap;
 
         ReflectiveProcedure( ProcedureSignature signature, MethodHandle constructor,
                 Method procedureMethod, OutputMapper outputMapper,
@@ -597,7 +596,6 @@ class ReflectiveProcedureCompiler
             this.procedureMethod = procedureMethod;
             this.signature = signature;
             this.outputMapper = outputMapper;
-            this.indexesToMap = computeIndexesToMap( signature.inputSignature() );
         }
 
         @Override
@@ -607,7 +605,7 @@ class ReflectiveProcedureCompiler
         }
 
         @Override
-        public RawIterator<Object[],ProcedureException> apply( Context ctx, Object[] input,
+        public RawIterator<AnyValue[],ProcedureException> apply( Context ctx, AnyValue[] input,
                 ResourceTracker resourceTracker ) throws ProcedureException
         {
             // For now, create a new instance of the class for each invocation. In the future, we'd like to keep
@@ -622,11 +620,6 @@ class ReflectiveProcedureCompiler
                             "Procedure `%s` takes %d arguments but %d was provided.",
                             signature.name(),
                             inputSignature.size(), input.length );
-                }
-                // Some input fields are not supported by Cypher and need to be mapped
-                for ( int indexToMap : indexesToMap )
-                {
-                    input[indexToMap] = inputSignature.get( indexToMap ).map( input[indexToMap] );
                 }
 
                 Object cls = constructor.invoke();
@@ -645,7 +638,9 @@ class ReflectiveProcedureCompiler
                 }
 
                 // Call the method
-                Object rs = procedureMethod.invoke( cls, input );
+                ValueMapper<Object> mapper = ctx.valueMapper();
+                Object rs = procedureMethod.invoke( cls,
+                        mapToObjects( "Procedure", signature.name(), mapper, signature.inputSignature(), input ) );
 
                 // This also handles VOID
                 if ( rs == null )
@@ -663,7 +658,7 @@ class ReflectiveProcedureCompiler
             }
         }
 
-        private class MappingIterator implements RawIterator<Object[],ProcedureException>, Resource
+        private class MappingIterator implements RawIterator<AnyValue[],ProcedureException>, Resource
         {
             private final Iterator<?> out;
             private Resource closeableResource;
@@ -696,7 +691,7 @@ class ReflectiveProcedureCompiler
             }
 
             @Override
-            public Object[] next() throws ProcedureException
+            public AnyValue[] next() throws ProcedureException
             {
                 try
                 {

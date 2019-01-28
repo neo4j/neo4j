@@ -30,8 +30,10 @@ import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.StubResourceManager;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.impl.api.integrationtest.KernelIntegrationTest;
+import org.neo4j.values.AnyValue;
 
 import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureName;
+import static org.neo4j.values.storable.Values.stringValue;
 
 public class AuthProceduresTest extends KernelIntegrationTest
 {
@@ -44,8 +46,8 @@ public class AuthProceduresTest extends KernelIntegrationTest
     public void shouldFailWhenDeprecatedChangePasswordWithStaticAccessModeInDbmsMode() throws Throwable
     {
         // Given
-        Object[] inputArray = new Object[1];
-        inputArray[0] = "newPassword";
+        AnyValue[] inputArray = new AnyValue[1];
+        inputArray[0] = stringValue( "newPassword" );
 
         // Then
         exception.expect( ProcedureException.class );
@@ -63,8 +65,8 @@ public class AuthProceduresTest extends KernelIntegrationTest
     public void shouldFailWhenChangePasswordWithStaticAccessModeInDbmsMode() throws Throwable
     {
         // Given
-        Object[] inputArray = new Object[1];
-        inputArray[0] = "newPassword";
+        AnyValue[] inputArray = new AnyValue[1];
+        inputArray[0] = stringValue( "newPassword" );
 
         // Then
         exception.expect( ProcedureException.class );

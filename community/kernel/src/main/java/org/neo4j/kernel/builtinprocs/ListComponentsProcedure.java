@@ -26,12 +26,16 @@ import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.Context;
 import org.neo4j.procedure.Mode;
+import org.neo4j.values.AnyValue;
+import org.neo4j.values.storable.TextValue;
+import org.neo4j.values.virtual.VirtualValues;
 
 import static java.util.Collections.singletonList;
 import static org.neo4j.helpers.collection.Iterators.asRawIterator;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTList;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTString;
 import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureSignature;
+import static org.neo4j.values.storable.Values.stringValue;
 
 /**
  * This procedure lists "components" and their version.
@@ -49,8 +53,9 @@ import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureSi
  */
 public class ListComponentsProcedure extends CallableProcedure.BasicProcedure
 {
-    private final String neo4jVersion;
-    private final String neo4jEdition;
+    private static final TextValue NEO_4J_KERNEL = stringValue( "Neo4j Kernel" );
+    private final TextValue neo4jVersion;
+    private final TextValue neo4jEdition;
 
     public ListComponentsProcedure( QualifiedName name, String neo4jVersion, String neo4jEdition )
     {
@@ -63,15 +68,15 @@ public class ListComponentsProcedure extends CallableProcedure.BasicProcedure
                 .mode( Mode.DBMS )
                 .description( "List DBMS components and their versions." )
                 .build() );
-        this.neo4jVersion = neo4jVersion;
-        this.neo4jEdition = neo4jEdition;
+        this.neo4jVersion = stringValue( neo4jVersion );
+        this.neo4jEdition = stringValue( neo4jEdition );
     }
 
     @Override
-    public RawIterator<Object[],ProcedureException> apply( Context ctx, Object[] input, ResourceTracker resourceTracker )
+    public RawIterator<AnyValue[],ProcedureException> apply( Context ctx, AnyValue[] input, ResourceTracker resourceTracker )
             throws ProcedureException
     {
         return asRawIterator( singletonList(
-                new Object[]{"Neo4j Kernel", singletonList( neo4jVersion ), neo4jEdition}).iterator() );
+                new AnyValue[]{NEO_4J_KERNEL, VirtualValues.list( neo4jVersion ),  neo4jEdition }).iterator() );
     }
 }

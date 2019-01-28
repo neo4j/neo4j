@@ -35,6 +35,7 @@ import org.neo4j.kernel.api.proc.Context;
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
 import org.neo4j.kernel.impl.util.DefaultValueMapper;
 import org.neo4j.kernel.impl.util.Dependencies;
+import org.neo4j.values.AnyValue;
 import org.neo4j.values.ValueMapper;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -49,6 +50,7 @@ import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTInteger;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTString;
 import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureSignature;
 import static org.neo4j.kernel.api.proc.BasicContext.buildContext;
+import static org.neo4j.values.storable.Values.stringValue;
 
 class ProceduresTest
 {
@@ -156,9 +158,9 @@ class ProceduresTest
         procs.register( new CallableProcedure.BasicProcedure( signature )
         {
             @Override
-            public RawIterator<Object[], ProcedureException> apply( Context ctx, Object[] input, ResourceTracker resourceTracker ) throws ProcedureException
+            public RawIterator<AnyValue[], ProcedureException> apply( Context ctx, AnyValue[] input, ResourceTracker resourceTracker ) throws ProcedureException
             {
-                return RawIterator.<Object[], ProcedureException>of( new Object[]{ctx.get( Context.THREAD )} );
+                return RawIterator.<AnyValue[], ProcedureException>of( new AnyValue[]{stringValue(ctx.get( Context.THREAD ).getName())} );
             }
         } );
 
@@ -168,7 +170,7 @@ class ProceduresTest
         RawIterator<Object[], ProcedureException> result = procs.callProcedure( ctx, signature.name(), new Object[0], resourceTracker );
 
         // Then
-        assertThat( asList( result ), contains( equalTo( new Object[]{ Thread.currentThread() } ) ) );
+        assertThat( asList( result ), contains( equalTo( new AnyValue[]{ stringValue( Thread.currentThread().getName() ) } ) ) );
     }
 
     private Context prepareContext()
@@ -181,8 +183,8 @@ class ProceduresTest
         return new CallableProcedure.BasicProcedure( signature )
         {
             @Override
-            public RawIterator<Object[], ProcedureException> apply(
-                    Context ctx, Object[] input, ResourceTracker resourceTracker )
+            public RawIterator<AnyValue[], ProcedureException> apply(
+                    Context ctx, AnyValue[] input, ResourceTracker resourceTracker )
             {
                 return null;
             }
@@ -194,9 +196,9 @@ class ProceduresTest
         return new CallableProcedure.BasicProcedure( signature )
         {
             @Override
-            public RawIterator<Object[], ProcedureException> apply( Context ctx, Object[] input, ResourceTracker resourceTracker )
+            public RawIterator<AnyValue[], ProcedureException> apply( Context ctx, AnyValue[] input, ResourceTracker resourceTracker )
             {
-                return RawIterator.<Object[], ProcedureException>of( input );
+                return RawIterator.<AnyValue[], ProcedureException>of( input );
             }
         };
     }

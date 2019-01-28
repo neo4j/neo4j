@@ -34,6 +34,8 @@ import org.neo4j.internal.kernel.api.procs.QualifiedName;
 import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.Context;
+import org.neo4j.values.AnyValue;
+import org.neo4j.values.storable.Values;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -45,6 +47,7 @@ import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTInteger;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTString;
 import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureName;
 import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureSignature;
+import static org.neo4j.values.storable.Values.longValue;
 
 public class ProceduresKernelIT extends KernelIntegrationTest
 {
@@ -125,13 +128,13 @@ public class ProceduresKernelIT extends KernelIntegrationTest
         internalKernel().registerProcedure( procedure );
 
         // When
-        RawIterator<Object[],ProcedureException> found = procs()
+        RawIterator<AnyValue[],ProcedureException> found = procs()
                 .procedureCallRead(
                         procs().procedureGet( new QualifiedName( new String[]{"example"}, "exampleProc" ) ).id(),
-                        new Object[]{1337} );
+                        new AnyValue[]{longValue(1337)} );
 
         // Then
-        assertThat( asList( found ), contains( equalTo( new Object[]{1337} ) ) );
+        assertThat( asList( found ), contains( equalTo( new AnyValue[]{longValue(1337)} ) ) );
         commit();
     }
 
@@ -142,17 +145,17 @@ public class ProceduresKernelIT extends KernelIntegrationTest
         internalKernel().registerProcedure( new CallableProcedure.BasicProcedure( signature )
         {
             @Override
-            public RawIterator<Object[],ProcedureException> apply( Context ctx, Object[] input,
+            public RawIterator<AnyValue[],ProcedureException> apply( Context ctx, AnyValue[] input,
                     ResourceTracker resourceTracker ) throws ProcedureException
             {
-                return RawIterator.<Object[],ProcedureException>of(
-                        new Object[]{ctx.get( Context.KERNEL_TRANSACTION ).dataRead()} );
+                return RawIterator.<AnyValue[],ProcedureException>of(
+                        new AnyValue[]{Values.stringValue(ctx.get( Context.KERNEL_TRANSACTION ).dataRead().toString() )} );
             }
         } );
 
         // When
-        RawIterator<Object[],ProcedureException> stream =
-                procs().procedureCallRead( procs().procedureGet( signature.name() ).id(), new Object[]{""} );
+        RawIterator<AnyValue[],ProcedureException> stream =
+                procs().procedureCallRead( procs().procedureGet( signature.name() ).id(), new AnyValue[]{Values.EMPTY_STRING} );
 
         // Then
         assertNotNull( asList( stream  ).get( 0 )[0] );
@@ -164,9 +167,9 @@ public class ProceduresKernelIT extends KernelIntegrationTest
         return new CallableProcedure.BasicProcedure( signature )
         {
             @Override
-            public RawIterator<Object[], ProcedureException> apply( Context ctx, Object[] input, ResourceTracker resourceTracker )
+            public RawIterator<AnyValue[], ProcedureException> apply( Context ctx, AnyValue[] input, ResourceTracker resourceTracker )
             {
-                return RawIterator.<Object[], ProcedureException>of( input );
+                return RawIterator.<AnyValue[], ProcedureException>of( input );
             }
         };
     }
