@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.proc;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Stream;
@@ -41,7 +40,9 @@ import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.logging.NullLog;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
+import org.neo4j.values.AnyValue;
 import org.neo4j.values.ValueMapper;
+import org.neo4j.values.virtual.VirtualValues;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -52,6 +53,8 @@ import static org.mockito.Mockito.mock;
 import static org.neo4j.helpers.collection.Iterators.asList;
 import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureSignature;
 import static org.neo4j.kernel.api.proc.BasicContext.buildContext;
+import static org.neo4j.values.storable.Values.longValue;
+import static org.neo4j.values.storable.Values.stringValue;
 
 @SuppressWarnings( "WeakerAccess" )
 public class ReflectiveProcedureWithArgumentsTest
@@ -83,11 +86,12 @@ public class ReflectiveProcedureWithArgumentsTest
         CallableProcedure procedure = compile( ClassWithProcedureWithSimpleArgs.class ).get( 0 );
 
         // When
-        RawIterator<Object[],ProcedureException> out = procedure.apply( prepareContext(), new Object[]{"Pontus", 35L}, resourceTracker );
+        RawIterator<AnyValue[],ProcedureException> out = procedure
+                .apply( prepareContext(), new AnyValue[]{stringValue( "Pontus" ), longValue( 35L )}, resourceTracker );
 
         // Then
-        List<Object[]> collect = asList( out );
-        assertThat( collect.get( 0 )[0], equalTo( "Pontus is 35 years old." ) );
+        List<AnyValue[]> collect = asList( out );
+        assertThat( collect.get( 0 )[0], equalTo( stringValue( "Pontus is 35 years old." )) );
     }
 
     @Test
@@ -97,16 +101,18 @@ public class ReflectiveProcedureWithArgumentsTest
         CallableProcedure procedure = compile( ClassWithProcedureWithGenericArgs.class ).get( 0 );
 
         // When
-        RawIterator<Object[],ProcedureException> out = procedure.apply( prepareContext(), new Object[]{
-                Arrays.asList( "Roland", "Eddie", "Susan", "Jake" ),
-                Arrays.asList( 1000L, 23L, 29L, 12L )}, resourceTracker );
+        RawIterator<AnyValue[],ProcedureException> out = procedure.apply( prepareContext(), new AnyValue[]{
+                        VirtualValues.list( stringValue( "Roland" ), stringValue( "Eddie" ), stringValue( "Susan" ),
+                                stringValue( "Jake" ) ),
+                        VirtualValues.list( longValue( 1000L ), longValue( 23L ), longValue( 29L ), longValue( 12L ) )},
+                resourceTracker );
 
         // Then
-        List<Object[]> collect = asList( out );
-        assertThat( collect.get( 0 )[0], equalTo( "Roland is 1000 years old." ) );
-        assertThat( collect.get( 1 )[0], equalTo( "Eddie is 23 years old." ) );
-        assertThat( collect.get( 2 )[0], equalTo( "Susan is 29 years old." ) );
-        assertThat( collect.get( 3 )[0], equalTo( "Jake is 12 years old." ) );
+        List<AnyValue[]> collect = asList( out );
+        assertThat( collect.get( 0 )[0], equalTo( stringValue( "Roland is 1000 years old." ) ) );
+        assertThat( collect.get( 1 )[0], equalTo( stringValue( "Eddie is 23 years old." ) ) );
+        assertThat( collect.get( 2 )[0], equalTo( stringValue( "Susan is 29 years old." ) ) );
+        assertThat( collect.get( 3 )[0], equalTo( stringValue( "Jake is 12 years old." ) ) );
     }
 
     @Test

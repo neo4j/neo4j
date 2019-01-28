@@ -193,7 +193,7 @@ public class ProcedureRegistry
         return new UserFunctionHandle( func.signature(), aggregationFunctions.idOf( name), false );
     }
 
-    public RawIterator<Object[],ProcedureException> callProcedure( Context ctx, QualifiedName name, Object[] input, ResourceTracker resourceTracker )
+    public RawIterator<AnyValue[],ProcedureException> callProcedure( Context ctx, QualifiedName name, AnyValue[] input, ResourceTracker resourceTracker )
             throws ProcedureException
     {
         CallableProcedure proc = procedures.get( name );
@@ -204,7 +204,7 @@ public class ProcedureRegistry
         return proc.apply( ctx, input, resourceTracker );
     }
 
-    public RawIterator<Object[],ProcedureException> callProcedure( Context ctx, int id, Object[] input, ResourceTracker resourceTracker )
+    public RawIterator<AnyValue[],ProcedureException> callProcedure( Context ctx, int id, AnyValue[] input, ResourceTracker resourceTracker )
             throws ProcedureException
     {
         CallableProcedure proc;

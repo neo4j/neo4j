@@ -28,6 +28,7 @@ import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.dbms.DbmsOperations;
 import org.neo4j.kernel.api.proc.Context;
 import org.neo4j.kernel.impl.proc.GlobalProcedures;
+import org.neo4j.values.AnyValue;
 import org.neo4j.values.ValueMapper;
 
 import static org.neo4j.kernel.api.proc.BasicContext.buildContext;
@@ -43,7 +44,7 @@ public class NonTransactionalDbmsOperations implements DbmsOperations
     }
 
     @Override
-    public RawIterator<Object[],ProcedureException> procedureCallDbms( QualifiedName name, Object[] input, DependencyResolver dependencyResolver,
+    public RawIterator<AnyValue[],ProcedureException> procedureCallDbms( QualifiedName name, AnyValue[] input, DependencyResolver dependencyResolver,
             SecurityContext securityContext, ResourceTracker resourceTracker, ValueMapper<Object> valueMapper ) throws ProcedureException
     {
         Context ctx = createContext( securityContext, dependencyResolver, valueMapper );
@@ -51,7 +52,7 @@ public class NonTransactionalDbmsOperations implements DbmsOperations
     }
 
     @Override
-    public RawIterator<Object[],ProcedureException> procedureCallDbms( int id, Object[] input, DependencyResolver dependencyResolver,
+    public RawIterator<AnyValue[],ProcedureException> procedureCallDbms( int id, AnyValue[] input, DependencyResolver dependencyResolver,
             SecurityContext securityContext, ResourceTracker resourceTracker, ValueMapper<Object> valueMapper ) throws ProcedureException
     {
         Context ctx = createContext( securityContext, dependencyResolver, valueMapper );

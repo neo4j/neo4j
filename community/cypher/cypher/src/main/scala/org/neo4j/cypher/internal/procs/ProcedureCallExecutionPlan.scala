@@ -25,6 +25,10 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{Literal, ParameterExpression, Expression => CommandExpression}
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{ExternalCSVResource, QueryState}
 import org.neo4j.cypher.internal.plandescription.Argument
+import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.ExpressionConverters
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{Literal, ParameterExpression, Expression => CommandExpression}
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.{ExternalCSVResource, QueryState}
+import org.neo4j.cypher.internal.runtime.{ExecutionContext, _}
 import org.neo4j.cypher.internal.v4_0.expressions.Expression
 import org.neo4j.cypher.internal.v4_0.logical.plans.ProcedureSignature
 import org.neo4j.cypher.internal.v4_0.util.attribution.Id
@@ -33,6 +37,7 @@ import org.neo4j.cypher.internal.v4_0.util.{InternalNotification, InvalidArgumen
 import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.internal.kernel.api.IndexReadSession
 import org.neo4j.internal.kernel.api.procs.QualifiedName
+import org.neo4j.values.AnyValue
 import org.neo4j.values.virtual.MapValue
 
 /**
@@ -78,7 +83,7 @@ case class ProcedureCallExecutionPlan(signature: ProcedureSignature,
     new ProcedureCallRuntimeResult(ctx, kernelName, signature.id, callMode, input, resultMappings, doProfile)
   }
 
-  private def evaluateArguments(ctx: QueryContext, params: MapValue): Seq[Any] = {
+  private def evaluateArguments(ctx: QueryContext, params: MapValue): Seq[AnyValue] = {
     val state = new QueryState(ctx, ExternalCSVResource.empty, params, new ExpressionCursors(ctx.transactionalContext.cursors), Array.empty[IndexReadSession])
     val args = zippedArgCandidates.map {
       // an actual argument (or even a parameter that ResolvedCall puts there instead if there is no default value)
@@ -91,7 +96,7 @@ case class ProcedureCallExecutionPlan(signature: ProcedureSignature,
       case (_, ParameterExpression(name), _) => throw new InvalidArgumentException(s"Invalid procedure call. Parameter for $name not specified.")
     }
 
-    val evaluated = args.map(expr => ctx.asObject(expr.apply(ExecutionContext.empty, state)))
+    val evaluated = args.map(expr => expr.apply(ExecutionContext.empty, state))
     state.close()
     evaluated
   }

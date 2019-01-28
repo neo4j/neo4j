@@ -237,28 +237,28 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
                                filters: Seq[KernelPredicate[PropertyContainer]]): Iterator[Path] =
     manyDbHits(inner.allShortestPath(left, right, depth, expander, pathPredicate, filters))
 
-  override def callReadOnlyProcedure(id: Int, args: Seq[Any], allowed: Array[String]) =
+  override def callReadOnlyProcedure(id: Int, args: Seq[AnyValue], allowed: Array[String]) =
     singleDbHit(inner.callReadOnlyProcedure(id, args, allowed))
 
-  override def callReadWriteProcedure(id: Int, args: Seq[Any], allowed: Array[String]) =
+  override def callReadWriteProcedure(id: Int, args: Seq[AnyValue], allowed: Array[String]) =
     singleDbHit(inner.callReadWriteProcedure(id, args, allowed))
 
-  override def callSchemaWriteProcedure(id: Int, args: Seq[Any], allowed: Array[String]) =
+  override def callSchemaWriteProcedure(id: Int, args: Seq[AnyValue], allowed: Array[String]) =
     singleDbHit(inner.callSchemaWriteProcedure(id, args, allowed))
 
-  override def callDbmsProcedure(id: Int, args: Seq[Any], allowed: Array[String]) =
+  override def callDbmsProcedure(id: Int, args: Seq[AnyValue], allowed: Array[String]) =
     inner.callDbmsProcedure(id, args, allowed)
 
-  override def callReadOnlyProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]) =
+  override def callReadOnlyProcedure(name: QualifiedName, args: Seq[AnyValue], allowed: Array[String]) =
     singleDbHit(inner.callReadOnlyProcedure(name, args, allowed))
 
-  override def callReadWriteProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]) =
+  override def callReadWriteProcedure(name: QualifiedName, args: Seq[AnyValue], allowed: Array[String]) =
     singleDbHit(inner.callReadWriteProcedure(name, args, allowed))
 
-  override def callSchemaWriteProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]) =
+  override def callSchemaWriteProcedure(name: QualifiedName, args: Seq[AnyValue], allowed: Array[String]) =
     singleDbHit(inner.callSchemaWriteProcedure(name, args, allowed))
 
-  override def callDbmsProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]) =
+  override def callDbmsProcedure(name: QualifiedName, args: Seq[AnyValue], allowed: Array[String]) =
     inner.callDbmsProcedure(name, args, allowed)
 
   override def callFunction(id: Int, args: Array[AnyValue], allowed: Array[String]) =

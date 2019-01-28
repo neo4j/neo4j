@@ -38,6 +38,8 @@ import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
 import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.StubResourceManager;
+import org.neo4j.kernel.impl.util.ValueUtils;
+import org.neo4j.values.AnyValue;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
@@ -47,6 +49,7 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.Iterators.asList;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.MapUtil.map;
+import static org.neo4j.values.storable.Values.stringValue;
 
 public class JmxQueryProcedureTest
 {
@@ -64,17 +67,18 @@ public class JmxQueryProcedureTest
         JmxQueryProcedure procedure = new JmxQueryProcedure( ProcedureSignature.procedureName( "bob" ), jmxServer );
 
         // when
-        RawIterator<Object[],ProcedureException> result = procedure.apply( null, new Object[]{"*:*"}, resourceTracker );
+        RawIterator<AnyValue[],ProcedureException> result =
+                procedure.apply( null, new AnyValue[]{stringValue( "*:*" )}, resourceTracker );
 
         // then
         assertThat( asList( result ), contains(
-            equalTo( new Object[]{
-                    "org.neo4j:chevyMakesTheTruck=bobMcCoshMakesTheDifference",
-                    "This is a description",
-                    map( attributeName, map(
-                        "description", "This is the attribute desc.",
-                        "value", "Hello, world!"
-                    ) )
+            equalTo( new AnyValue[]{
+                    stringValue( "org.neo4j:chevyMakesTheTruck=bobMcCoshMakesTheDifference" ),
+                    stringValue( "This is a description" ),
+                    ValueUtils.of( map( attributeName, map(
+                            "description", "This is the attribute desc.",
+                            "value", "Hello, world!"
+                    ) ) )
             } ) ) );
     }
 
@@ -92,17 +96,17 @@ public class JmxQueryProcedureTest
         JmxQueryProcedure procedure = new JmxQueryProcedure( ProcedureSignature.procedureName( "bob" ), jmxServer );
 
         // when
-        RawIterator<Object[],ProcedureException> result = procedure.apply( null, new Object[]{"*:*"}, resourceTracker );
+        RawIterator<AnyValue[],ProcedureException> result = procedure.apply( null, new AnyValue[]{stringValue( "*:*" )}, resourceTracker );
 
         // then
         assertThat( asList( result ), contains(
-                equalTo( new Object[]{
-                        "org.neo4j:chevyMakesTheTruck=bobMcCoshMakesTheDifference",
-                        "This is a description",
-                        map( attributeName, map(
-                            "description", "This is the attribute desc.",
-                            "value", null
-                        ) )
+                equalTo( new AnyValue[]{
+                        stringValue( "org.neo4j:chevyMakesTheTruck=bobMcCoshMakesTheDifference" ),
+                        stringValue( "This is a description" ),
+                        ValueUtils.of( map( attributeName, map(
+                                "description", "This is the attribute desc.",
+                                "value", null
+                        ) ) )
                 } ) ) );
     }
 
@@ -136,20 +140,20 @@ public class JmxQueryProcedureTest
         JmxQueryProcedure procedure = new JmxQueryProcedure( ProcedureSignature.procedureName( "bob" ), jmxServer );
 
         // when
-        RawIterator<Object[],ProcedureException> result = procedure.apply( null, new Object[]{"*:*"}, resourceTracker );
+        RawIterator<AnyValue[],ProcedureException> result = procedure.apply( null, new AnyValue[]{stringValue( "*:*" )}, resourceTracker );
 
         // then
         assertThat( asList( result ), contains(
-                equalTo( new Object[]{
-                    "org.neo4j:chevyMakesTheTruck=bobMcCoshMakesTheDifference",
-                    "This is a description",
-                    map( attributeName, map(
-                            "description", "Who makes the difference?",
-                            "value", map(
-                                "description", "Composite description",
-                                "properties", map(
-                                        "key1", "Hello",
-                                        "key2", 123 ) ) ) ) } ) ) );
+                equalTo( new AnyValue[]{
+                        stringValue( "org.neo4j:chevyMakesTheTruck=bobMcCoshMakesTheDifference" ),
+                        stringValue( "This is a description" ),
+                        ValueUtils.of( map( attributeName, map(
+                                "description", "Who makes the difference?",
+                                "value", map(
+                                        "description", "Composite description",
+                                        "properties", map(
+                                                "key1", "Hello",
+                                                "key2", 123 ) ) ) ) )} ) ) );
     }
 
     @Test
@@ -161,7 +165,7 @@ public class JmxQueryProcedureTest
         JmxQueryProcedure procedure = new JmxQueryProcedure( ProcedureSignature.procedureName( "bob" ), jmxServer );
 
         // when
-        RawIterator<Object[],ProcedureException> result = procedure.apply( null, new Object[]{"*:*"}, resourceTracker );
+        RawIterator<AnyValue[],ProcedureException> result = procedure.apply( null, new AnyValue[]{stringValue( "*:*" )}, resourceTracker );
 
         // then we verify that we respond with the expected number of beans without error
         //      .. we don't assert more than this, this is more of a smoke test to ensure

@@ -55,7 +55,9 @@ import org.neo4j.procedure.UserFunction;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.values.AnyValue;
 import org.neo4j.values.ValueMapper;
+import org.neo4j.values.storable.Values;
 
 import static java.util.stream.Collectors.toList;
 import static org.apache.commons.text.StringEscapeUtils.escapeJava;
@@ -96,12 +98,14 @@ public class ProcedureJarLoaderTest
         List<CallableProcedure> procedures = jarloader.loadProceduresFromDir( parentDir( jar ) ).procedures();
 
         // Then
-        List<ProcedureSignature> signatures = procedures.stream().map( CallableProcedure::signature ).collect( toList() );
+        List<ProcedureSignature> signatures =
+                procedures.stream().map( CallableProcedure::signature ).collect( toList() );
         assertThat( signatures, contains(
-                procedureSignature( "org","neo4j", "kernel", "impl", "proc", "myProcedure" ).out( "someNumber", NTInteger ).build() ));
+                procedureSignature( "org", "neo4j", "kernel", "impl", "proc", "myProcedure" )
+                        .out( "someNumber", NTInteger ).build() ) );
 
-        assertThat( asList( procedures.get( 0 ).apply( prepareContext(), new Object[0], resourceTracker ) ),
-                contains( IsEqual.equalTo( new Object[]{1337L} )) );
+        assertThat( asList( procedures.get( 0 ).apply( prepareContext(), new AnyValue[0], resourceTracker ) ),
+                contains( IsEqual.equalTo( new AnyValue[]{Values.longValue( 1337L )} ) ) );
     }
 
     @Test
@@ -119,8 +123,8 @@ public class ProcedureJarLoaderTest
         assertThat( signatures,
                 contains( procedureSignature( "org", "neo4j", "kernel", "impl", "proc", "myProcedure" ).out( "someNumber", NTInteger ).build() ) );
 
-        assertThat( asList( procedures.get( 0 ).apply( prepareContext(), new Object[0], resourceTracker ) ),
-                contains( IsEqual.equalTo( new Object[]{1337L} ) ) );
+        assertThat( asList( procedures.get( 0 ).apply( prepareContext(), new AnyValue[0], resourceTracker ) ),
+                contains( IsEqual.equalTo( new AnyValue[]{Values.longValue( 1337L )} ) ) );
     }
 
     @Test
@@ -140,8 +144,9 @@ public class ProcedureJarLoaderTest
                         .out( "someNumber", NTInteger )
                         .build() ));
 
-        assertThat( asList(procedures.get( 0 ).apply( prepareContext(), new Object[]{42L}, resourceTracker ) ),
-                contains( IsEqual.equalTo( new Object[]{42L} )) );
+        assertThat( asList( procedures.get( 0 )
+                        .apply( prepareContext(), new AnyValue[]{Values.longValue( 42 )}, resourceTracker ) ),
+                contains( IsEqual.equalTo( new AnyValue[]{Values.longValue( 42 )} ) ) );
     }
 
     @Test

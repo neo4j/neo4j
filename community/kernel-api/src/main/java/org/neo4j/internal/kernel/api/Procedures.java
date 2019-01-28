@@ -69,7 +69,7 @@ public interface Procedures
      * @return an iterator containing the procedure results.
      * @throws ProcedureException if there was an exception thrown during procedure execution.
      */
-    RawIterator<Object[], ProcedureException> procedureCallRead( int id, Object[] arguments )
+    RawIterator<AnyValue[], ProcedureException> procedureCallRead( int id, AnyValue[] arguments )
             throws ProcedureException;
 
     /**
@@ -80,7 +80,7 @@ public interface Procedures
      * @return an iterator containing the procedure results.
      * @throws ProcedureException if there was an exception thrown during procedure execution.
      */
-    RawIterator<Object[], ProcedureException> procedureCallReadOverride( int id, Object[] arguments )
+    RawIterator<AnyValue[], ProcedureException> procedureCallReadOverride( int id, AnyValue[] arguments )
             throws ProcedureException;
 
     /**
@@ -90,7 +90,7 @@ public interface Procedures
      * @return an iterator containing the procedure results.
      * @throws ProcedureException if there was an exception thrown during procedure execution.
      */
-    RawIterator<Object[], ProcedureException> procedureCallWrite( int id, Object[] arguments )
+    RawIterator<AnyValue[], ProcedureException> procedureCallWrite( int id, AnyValue[] arguments )
             throws ProcedureException;
     /**
      * Invoke a read/write procedure by id, and set the transaction's access mode to
@@ -100,7 +100,7 @@ public interface Procedures
      * @return an iterator containing the procedure results.
      * @throws ProcedureException if there was an exception thrown during procedure execution.
      */
-    RawIterator<Object[], ProcedureException> procedureCallWriteOverride( int id, Object[] arguments )
+    RawIterator<AnyValue[], ProcedureException> procedureCallWriteOverride( int id, AnyValue[] arguments )
             throws ProcedureException;
 
     /**
@@ -110,7 +110,7 @@ public interface Procedures
      * @return an iterator containing the procedure results.
      * @throws ProcedureException if there was an exception thrown during procedure execution.
      */
-    RawIterator<Object[], ProcedureException> procedureCallSchema( int id, Object[] arguments )
+    RawIterator<AnyValue[], ProcedureException> procedureCallSchema( int id, AnyValue[] arguments )
             throws ProcedureException;
     /**
      * Invoke a schema write procedure by id, and set the transaction's access mode to
@@ -120,7 +120,7 @@ public interface Procedures
      * @return an iterator containing the procedure results.
      * @throws ProcedureException if there was an exception thrown during procedure execution.
      */
-    RawIterator<Object[], ProcedureException> procedureCallSchemaOverride( int id, Object[] arguments )
+    RawIterator<AnyValue[], ProcedureException> procedureCallSchemaOverride( int id, AnyValue[] arguments )
             throws ProcedureException;
 
     /**
@@ -130,7 +130,7 @@ public interface Procedures
      * @return an iterator containing the procedure results.
      * @throws ProcedureException if there was an exception thrown during procedure execution.
      */
-    RawIterator<Object[], ProcedureException> procedureCallRead( QualifiedName name, Object[] arguments )
+    RawIterator<AnyValue[], ProcedureException> procedureCallRead( QualifiedName name, AnyValue[] arguments )
             throws ProcedureException;
 
     /**
@@ -141,7 +141,7 @@ public interface Procedures
      * @return an iterator containing the procedure results.
      * @throws ProcedureException if there was an exception thrown during procedure execution.
      */
-    RawIterator<Object[], ProcedureException> procedureCallReadOverride( QualifiedName name, Object[] arguments )
+    RawIterator<AnyValue[], ProcedureException> procedureCallReadOverride( QualifiedName name, AnyValue[] arguments )
             throws ProcedureException;
 
     /**
@@ -151,7 +151,7 @@ public interface Procedures
      * @return an iterator containing the procedure results.
      * @throws ProcedureException if there was an exception thrown during procedure execution.
      */
-    RawIterator<Object[], ProcedureException> procedureCallWrite( QualifiedName name, Object[] arguments )
+    RawIterator<AnyValue[], ProcedureException> procedureCallWrite( QualifiedName name, AnyValue[] arguments )
             throws ProcedureException;
     /**
      * Invoke a read/write procedure by name, and set the transaction's access mode to
@@ -161,7 +161,7 @@ public interface Procedures
      * @return an iterator containing the procedure results.
      * @throws ProcedureException if there was an exception thrown during procedure execution.
      */
-    RawIterator<Object[], ProcedureException> procedureCallWriteOverride( QualifiedName name, Object[] arguments )
+    RawIterator<AnyValue[], ProcedureException> procedureCallWriteOverride( QualifiedName name, AnyValue[] arguments )
             throws ProcedureException;
 
     /**
@@ -171,7 +171,7 @@ public interface Procedures
      * @return an iterator containing the procedure results.
      * @throws ProcedureException if there was an exception thrown during procedure execution.
      */
-    RawIterator<Object[], ProcedureException> procedureCallSchema( QualifiedName name, Object[] arguments )
+    RawIterator<AnyValue[], ProcedureException> procedureCallSchema( QualifiedName name, AnyValue[] arguments )
             throws ProcedureException;
     /**
      * Invoke a schema write procedure by name, and set the transaction's access mode to
@@ -181,7 +181,7 @@ public interface Procedures
      * @return an iterator containing the procedure results.
      * @throws ProcedureException if there was an exception thrown during procedure execution.
      */
-    RawIterator<Object[], ProcedureException> procedureCallSchemaOverride( QualifiedName name, Object[] arguments )
+    RawIterator<AnyValue[], ProcedureException> procedureCallSchemaOverride( QualifiedName name, AnyValue[] arguments )
             throws ProcedureException;
 
     /** Invoke a read-only function by id

@@ -46,6 +46,7 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLog;
 import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Procedure;
+import org.neo4j.values.AnyValue;
 import org.neo4j.values.ValueMapper;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -65,6 +66,8 @@ import static org.neo4j.graphdb.factory.GraphDatabaseSettings.procedure_whitelis
 import static org.neo4j.helpers.collection.Iterators.asList;
 import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureSignature;
 import static org.neo4j.kernel.api.proc.BasicContext.buildContext;
+import static org.neo4j.values.storable.Values.longValue;
+import static org.neo4j.values.storable.Values.stringValue;
 
 @SuppressWarnings( "WeakerAccess" )
 public class ReflectiveProcedureTest
@@ -93,7 +96,7 @@ public class ReflectiveProcedureTest
                 procedureCompiler.compileProcedure( LoggingProcedure.class, null, true ).get( 0 );
 
         // When
-        procedure.apply( prepareContext(), new Object[0], resourceTracker );
+        procedure.apply( prepareContext(), new AnyValue[0], resourceTracker );
 
         // Then
         verify( log ).debug( "1" );
@@ -123,12 +126,12 @@ public class ReflectiveProcedureTest
         CallableProcedure proc = compile( SingleReadOnlyProcedure.class ).get( 0 );
 
         // When
-        RawIterator<Object[],ProcedureException> out = proc.apply( prepareContext(), new Object[0], resourceTracker );
+        RawIterator<AnyValue[],ProcedureException> out = proc.apply( prepareContext(), new AnyValue[0], resourceTracker );
 
         // Then
         assertThat( asList( out ), contains(
-                new Object[]{"Bonnie"},
-                new Object[]{"Clyde"}
+                new AnyValue[]{stringValue( "Bonnie" )},
+                new AnyValue[]{stringValue( "Clyde" )}
         ) );
     }
 
@@ -151,18 +154,18 @@ public class ReflectiveProcedureTest
         CallableProcedure coolPeople = compiled.get( 1 );
 
         // When
-        RawIterator<Object[],ProcedureException> coolOut = coolPeople.apply( prepareContext(), new Object[0], resourceTracker );
-        RawIterator<Object[],ProcedureException> bananaOut = bananaPeople.apply( prepareContext(), new Object[0], resourceTracker );
+        RawIterator<AnyValue[],ProcedureException> coolOut = coolPeople.apply( prepareContext(), new AnyValue[0], resourceTracker );
+        RawIterator<AnyValue[],ProcedureException> bananaOut = bananaPeople.apply( prepareContext(), new AnyValue[0], resourceTracker );
 
         // Then
         assertThat( asList( coolOut ), contains(
-                new Object[]{"Bonnie"},
-                new Object[]{"Clyde"}
+                new AnyValue[]{stringValue( "Bonnie" )},
+                new AnyValue[]{stringValue( "Clyde" )}
         ) );
 
         assertThat( asList( bananaOut ), contains(
-                new Object[]{"Jake", 18L},
-                new Object[]{"Pontus", 2L}
+                new AnyValue[]{stringValue( "Jake" ), longValue( 18L )},
+                new AnyValue[]{stringValue( "Pontus" ), longValue( 2L )}
         ) );
     }
 
@@ -192,7 +195,7 @@ public class ReflectiveProcedureTest
 
         // Then
         assertEquals( 0, proc.signature().outputSignature().size() );
-        assertFalse( proc.apply( null, new Object[0], resourceTracker ).hasNext() );
+        assertFalse( proc.apply( null, new AnyValue[0], resourceTracker ).hasNext() );
     }
 
     @Test
@@ -257,7 +260,7 @@ public class ReflectiveProcedureTest
         // Given
         CallableProcedure proc = compile( ProcedureThatThrowsNullMsgExceptionAtInvocation.class ).get( 0 );
 
-        ProcedureException exception = assertThrows( ProcedureException.class, () -> proc.apply( prepareContext(), new Object[0], resourceTracker ) );
+        ProcedureException exception = assertThrows( ProcedureException.class, () -> proc.apply( prepareContext(), new AnyValue[0], resourceTracker ) );
         assertThat( exception.getMessage(), equalTo( "Failed to invoke procedure `org.neo4j.kernel.impl.proc.throwsAtInvocation`: " +
                                                     "Caused by: java.lang.IndexOutOfBoundsException" ) );
     }
@@ -270,7 +273,7 @@ public class ReflectiveProcedureTest
 
         ProcedureException exception = assertThrows( ProcedureException.class, () ->
         {
-            RawIterator<Object[],ProcedureException> stream = proc.apply( prepareContext(), new Object[0], resourceTracker );
+            RawIterator<AnyValue[],ProcedureException> stream = proc.apply( prepareContext(), new AnyValue[0], resourceTracker );
             if ( stream.hasNext() )
             {
                 stream.next();
@@ -325,7 +328,7 @@ public class ReflectiveProcedureTest
         for ( CallableProcedure proc : procs )
         {
             String name = proc.signature().name().name();
-            proc.apply( prepareContext(), new Object[0], resourceTracker );
+            proc.apply( prepareContext(), new AnyValue[0], resourceTracker );
             switch ( name )
             {
             case "newProc":
@@ -357,10 +360,10 @@ public class ReflectiveProcedureTest
         CallableProcedure proc =
                 procedureCompiler.compileProcedure( SingleReadOnlyProcedure.class, null, false ).get( 0 );
         // When
-        RawIterator<Object[],ProcedureException> result = proc.apply( prepareContext(), new Object[0], resourceTracker );
+        RawIterator<AnyValue[],ProcedureException> result = proc.apply( prepareContext(), new AnyValue[0], resourceTracker );
 
         // Then
-        assertEquals( result.next()[0], "Bonnie" );
+        assertEquals( result.next()[0], stringValue( "Bonnie" ) );
     }
 
     @Test
@@ -396,8 +399,8 @@ public class ReflectiveProcedureTest
         CallableProcedure proc =
                 procedureCompiler.compileProcedure( SingleReadOnlyProcedure.class, null, true ).get( 0 );
         // Then
-        RawIterator<Object[],ProcedureException> result = proc.apply( prepareContext(), new Object[0], resourceTracker );
-        assertEquals( result.next()[0], "Bonnie" );
+        RawIterator<AnyValue[],ProcedureException> result = proc.apply( prepareContext(), new AnyValue[0], resourceTracker );
+        assertEquals( result.next()[0], stringValue( "Bonnie" ) );
     }
 
     @Test

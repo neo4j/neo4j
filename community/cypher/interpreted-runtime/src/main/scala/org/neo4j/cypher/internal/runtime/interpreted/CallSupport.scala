@@ -32,7 +32,7 @@ import org.neo4j.values.AnyValue
   */
 object CallSupport {
 
-  type KernelProcedureCall = Array[AnyRef] => RawIterator[Array[AnyRef], ProcedureException]
+  type KernelProcedureCall = Array[AnyValue] => RawIterator[Array[AnyValue], ProcedureException]
 
   def callFunction(transactionalContext: TransactionalContext, id: Int, args: Array[AnyValue],
                    allowed: Array[String]): AnyValue = {
@@ -50,8 +50,8 @@ object CallSupport {
       transactionalContext.kernelTransaction().procedures().functionCall(name, args)
   }
 
-  def callReadOnlyProcedure(transactionalContext: TransactionalContext, id: Int, args: Seq[Any],
-                            allowed: Array[String]): Iterator[Array[AnyRef]] = {
+  def callReadOnlyProcedure(transactionalContext: TransactionalContext, id: Int, args: Seq[AnyValue],
+                            allowed: Array[String]): Iterator[Array[AnyValue]] = {
     val call: KernelProcedureCall =
       if (shouldElevate(transactionalContext, allowed))
         transactionalContext.kernelTransaction.procedures().procedureCallReadOverride(id, _)
@@ -61,8 +61,8 @@ object CallSupport {
     callProcedure(args, call)
   }
 
-  def callReadWriteProcedure(transactionalContext: TransactionalContext, id: Int, args: Seq[Any],
-                             allowed: Array[String]): Iterator[Array[AnyRef]] = {
+  def callReadWriteProcedure(transactionalContext: TransactionalContext, id: Int, args: Seq[AnyValue],
+                             allowed: Array[String]): Iterator[Array[AnyValue]] = {
     val call: KernelProcedureCall =
       if (shouldElevate(transactionalContext, allowed))
         transactionalContext.kernelTransaction().procedures().procedureCallWriteOverride(id, _)
@@ -71,8 +71,8 @@ object CallSupport {
     callProcedure(args, call)
   }
 
-  def callSchemaWriteProcedure(transactionalContext: TransactionalContext, id: Int, args: Seq[Any],
-                               allowed: Array[String]): Iterator[Array[AnyRef]] = {
+  def callSchemaWriteProcedure(transactionalContext: TransactionalContext, id: Int, args: Seq[AnyValue],
+                               allowed: Array[String]): Iterator[Array[AnyValue]] = {
     val call: KernelProcedureCall =
       if (shouldElevate(transactionalContext, allowed))
         transactionalContext.kernelTransaction().procedures().procedureCallSchemaOverride(id, _)
@@ -81,7 +81,7 @@ object CallSupport {
     callProcedure(args, call)
   }
 
-  def callDbmsProcedure(transactionalContext: TransactionalContext, id: Int, args: Seq[Any], allowed: Array[String]): Iterator[Array[AnyRef]] =
+  def callDbmsProcedure(transactionalContext: TransactionalContext, id: Int, args: Seq[AnyValue], allowed: Array[String]): Iterator[Array[AnyValue]] =
     callProcedure(args,
                   transactionalContext.dbmsOperations.procedureCallDbms(id,
                                                                         _,
@@ -91,8 +91,8 @@ object CallSupport {
                                                                         transactionalContext.resourceTracker,
                                                                         transactionalContext.valueMapper))
 
-  def callReadOnlyProcedure(transactionalContext: TransactionalContext, name: QualifiedName, args: Seq[Any],
-                            allowed: Array[String]): Iterator[Array[AnyRef]] = {
+  def callReadOnlyProcedure(transactionalContext: TransactionalContext, name: QualifiedName, args: Seq[AnyValue],
+                            allowed: Array[String]): Iterator[Array[AnyValue]] = {
     val call: KernelProcedureCall =
       if (shouldElevate(transactionalContext, allowed))
         transactionalContext.kernelTransaction().procedures().procedureCallReadOverride(name, _)
@@ -102,8 +102,8 @@ object CallSupport {
     callProcedure(args, call)
   }
 
-  def callReadWriteProcedure(transactionalContext: TransactionalContext, name: QualifiedName, args: Seq[Any],
-                             allowed: Array[String]): Iterator[Array[AnyRef]] = {
+  def callReadWriteProcedure(transactionalContext: TransactionalContext, name: QualifiedName, args: Seq[AnyValue],
+                             allowed: Array[String]): Iterator[Array[AnyValue]] = {
     val call: KernelProcedureCall =
       if (shouldElevate(transactionalContext, allowed))
         transactionalContext.kernelTransaction().procedures().procedureCallWriteOverride(name, _)
@@ -112,8 +112,8 @@ object CallSupport {
     callProcedure(args, call)
   }
 
-  def callSchemaWriteProcedure(transactionalContext: TransactionalContext, name: QualifiedName, args: Seq[Any],
-                               allowed: Array[String]): Iterator[Array[AnyRef]] = {
+  def callSchemaWriteProcedure(transactionalContext: TransactionalContext, name: QualifiedName, args: Seq[AnyValue],
+                               allowed: Array[String]): Iterator[Array[AnyValue]] = {
     val call: KernelProcedureCall =
       if (shouldElevate(transactionalContext: TransactionalContext, allowed))
         transactionalContext.kernelTransaction().procedures().procedureCallSchemaOverride(name, _)
@@ -122,8 +122,8 @@ object CallSupport {
     callProcedure(args, call)
   }
 
-  def callDbmsProcedure(transactionalContext: TransactionalContext, name: QualifiedName, args: Seq[Any],
-                        allowed: Array[String]): Iterator[Array[AnyRef]] = {
+  def callDbmsProcedure(transactionalContext: TransactionalContext, name: QualifiedName, args: Seq[AnyValue],
+                        allowed: Array[String]): Iterator[Array[AnyValue]] = {
     callProcedure(args,
                   transactionalContext.dbmsOperations.procedureCallDbms(name,
                                                                         _,
@@ -154,13 +154,12 @@ object CallSupport {
     userDefinedAggregator(aggregator)
   }
 
-  private def callProcedure(args: Seq[Any], call: KernelProcedureCall): Iterator[Array[AnyRef]] = {
-    val toArray = args.map(_.asInstanceOf[AnyRef]).toArray
-    val read = call(toArray)
-    new scala.Iterator[Array[AnyRef]] {
+  private def callProcedure(args: Seq[AnyValue], call: KernelProcedureCall): Iterator[Array[AnyValue]] = {
+    val read = call(args.toArray)
+    new scala.Iterator[Array[AnyValue]] {
       override def hasNext: Boolean = read.hasNext
 
-      override def next(): Array[AnyRef] = read.next
+      override def next(): Array[AnyValue] = read.next
     }
   }
 

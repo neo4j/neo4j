@@ -770,7 +770,7 @@ public class AllStoreHolder extends Read
     }
 
     @Override
-    public RawIterator<Object[],ProcedureException> procedureCallRead( int id, Object[] arguments )
+    public RawIterator<AnyValue[],ProcedureException> procedureCallRead( int id, AnyValue[] arguments )
             throws ProcedureException
     {
         AccessMode accessMode = ktx.securityContext().mode();
@@ -783,7 +783,7 @@ public class AllStoreHolder extends Read
     }
 
     @Override
-    public RawIterator<Object[],ProcedureException> procedureCallReadOverride( int id, Object[] arguments )
+    public RawIterator<AnyValue[],ProcedureException> procedureCallReadOverride( int id, AnyValue[] arguments )
             throws ProcedureException
     {
         return callProcedure( id, arguments,
@@ -791,7 +791,7 @@ public class AllStoreHolder extends Read
     }
 
     @Override
-    public RawIterator<Object[],ProcedureException> procedureCallWrite( int id, Object[] arguments )
+    public RawIterator<AnyValue[],ProcedureException> procedureCallWrite( int id, AnyValue[] arguments )
             throws ProcedureException
     {
         AccessMode accessMode = ktx.securityContext().mode();
@@ -805,7 +805,7 @@ public class AllStoreHolder extends Read
     }
 
     @Override
-    public RawIterator<Object[],ProcedureException> procedureCallWriteOverride( int id, Object[] arguments )
+    public RawIterator<AnyValue[],ProcedureException> procedureCallWriteOverride( int id, AnyValue[] arguments )
             throws ProcedureException
     {
         return callProcedure( id, arguments,
@@ -813,7 +813,7 @@ public class AllStoreHolder extends Read
     }
 
     @Override
-    public RawIterator<Object[],ProcedureException> procedureCallSchema( int id, Object[] arguments )
+    public RawIterator<AnyValue[],ProcedureException> procedureCallSchema( int id, AnyValue[] arguments )
             throws ProcedureException
     {
         AccessMode accessMode = ktx.securityContext().mode();
@@ -827,7 +827,7 @@ public class AllStoreHolder extends Read
     }
 
     @Override
-    public RawIterator<Object[],ProcedureException> procedureCallSchemaOverride( int id, Object[] arguments )
+    public RawIterator<AnyValue[],ProcedureException> procedureCallSchemaOverride( int id, AnyValue[] arguments )
             throws ProcedureException
     {
         return callProcedure( id, arguments,
@@ -835,7 +835,7 @@ public class AllStoreHolder extends Read
     }
 
     @Override
-    public RawIterator<Object[],ProcedureException> procedureCallRead( QualifiedName name, Object[] arguments )
+    public RawIterator<AnyValue[],ProcedureException> procedureCallRead( QualifiedName name, AnyValue[] arguments )
             throws ProcedureException
     {
         AccessMode accessMode = ktx.securityContext().mode();
@@ -849,7 +849,7 @@ public class AllStoreHolder extends Read
     }
 
     @Override
-    public RawIterator<Object[],ProcedureException> procedureCallReadOverride( QualifiedName name, Object[] arguments )
+    public RawIterator<AnyValue[],ProcedureException> procedureCallReadOverride( QualifiedName name, AnyValue[] arguments )
             throws ProcedureException
     {
         return callProcedure( name, arguments,
@@ -857,7 +857,7 @@ public class AllStoreHolder extends Read
     }
 
     @Override
-    public RawIterator<Object[],ProcedureException> procedureCallWrite( QualifiedName name, Object[] arguments )
+    public RawIterator<AnyValue[],ProcedureException> procedureCallWrite( QualifiedName name, AnyValue[] arguments )
             throws ProcedureException
     {
         AccessMode accessMode = ktx.securityContext().mode();
@@ -871,7 +871,7 @@ public class AllStoreHolder extends Read
     }
 
     @Override
-    public RawIterator<Object[],ProcedureException> procedureCallWriteOverride( QualifiedName name, Object[] arguments )
+    public RawIterator<AnyValue[],ProcedureException> procedureCallWriteOverride( QualifiedName name, AnyValue[] arguments )
             throws ProcedureException
     {
         return callProcedure( name, arguments,
@@ -880,7 +880,7 @@ public class AllStoreHolder extends Read
     }
 
     @Override
-    public RawIterator<Object[],ProcedureException> procedureCallSchema( QualifiedName name, Object[] arguments )
+    public RawIterator<AnyValue[],ProcedureException> procedureCallSchema( QualifiedName name, AnyValue[] arguments )
             throws ProcedureException
     {
         AccessMode accessMode = ktx.securityContext().mode();
@@ -894,8 +894,8 @@ public class AllStoreHolder extends Read
     }
 
     @Override
-    public RawIterator<Object[],ProcedureException> procedureCallSchemaOverride( QualifiedName name,
-            Object[] arguments )
+    public RawIterator<AnyValue[],ProcedureException> procedureCallSchemaOverride( QualifiedName name,
+            AnyValue[] arguments )
             throws ProcedureException
     {
         return callProcedure( name, arguments,
@@ -990,14 +990,14 @@ public class AllStoreHolder extends Read
         schemaState.clear();
     }
 
-    private RawIterator<Object[],ProcedureException> callProcedure(
-            int id, Object[] input, final AccessMode override )
+    private RawIterator<AnyValue[],ProcedureException> callProcedure(
+            int id, AnyValue[] input, final AccessMode override )
             throws ProcedureException
     {
         ktx.assertOpen();
 
         final SecurityContext procedureSecurityContext = ktx.securityContext().withMode( override );
-        final RawIterator<Object[],ProcedureException> procedureCall;
+        final RawIterator<AnyValue[],ProcedureException> procedureCall;
         try ( KernelTransaction.Revertable ignore = ktx.overrideWith( procedureSecurityContext );
               Statement statement = ktx.acquireStatement() )
         {
@@ -1007,14 +1007,14 @@ public class AllStoreHolder extends Read
         return createIterator( procedureSecurityContext, procedureCall );
     }
 
-    private RawIterator<Object[],ProcedureException> callProcedure(
-            QualifiedName name, Object[] input, final AccessMode override )
+    private RawIterator<AnyValue[],ProcedureException> callProcedure(
+            QualifiedName name, AnyValue[] input, final AccessMode override )
             throws ProcedureException
     {
         ktx.assertOpen();
 
         final SecurityContext procedureSecurityContext = ktx.securityContext().withMode( override );
-        final RawIterator<Object[],ProcedureException> procedureCall;
+        final RawIterator<AnyValue[],ProcedureException> procedureCall;
         try ( KernelTransaction.Revertable ignore = ktx.overrideWith( procedureSecurityContext );
               Statement statement = ktx.acquireStatement() )
         {
@@ -1024,10 +1024,10 @@ public class AllStoreHolder extends Read
         return createIterator( procedureSecurityContext, procedureCall );
     }
 
-    private RawIterator<Object[],ProcedureException> createIterator( SecurityContext procedureSecurityContext,
-            RawIterator<Object[],ProcedureException> procedureCall )
+    private RawIterator<AnyValue[],ProcedureException> createIterator( SecurityContext procedureSecurityContext,
+            RawIterator<AnyValue[],ProcedureException> procedureCall )
     {
-        return new RawIterator<Object[],ProcedureException>()
+        return new RawIterator<AnyValue[],ProcedureException>()
         {
             @Override
             public boolean hasNext() throws ProcedureException
@@ -1039,7 +1039,7 @@ public class AllStoreHolder extends Read
             }
 
             @Override
-            public Object[] next() throws ProcedureException
+            public AnyValue[] next() throws ProcedureException
             {
                 try ( KernelTransaction.Revertable ignore = ktx.overrideWith( procedureSecurityContext ) )
                 {

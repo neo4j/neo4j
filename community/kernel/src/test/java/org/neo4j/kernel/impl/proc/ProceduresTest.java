@@ -50,6 +50,7 @@ import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTInteger;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTString;
 import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureSignature;
 import static org.neo4j.kernel.api.proc.BasicContext.buildContext;
+import static org.neo4j.values.storable.Values.longValue;
 import static org.neo4j.values.storable.Values.stringValue;
 
 class ProceduresTest
@@ -94,8 +95,9 @@ class ProceduresTest
         procs.register( procedure );
 
         // When
-        RawIterator<Object[], ProcedureException> result =
-                procs.callProcedure( buildContext( dependencyResolver, valueMapper ).context(), signature.name(), new Object[]{1337}, resourceTracker );
+        RawIterator<AnyValue[], ProcedureException> result =
+                procs.callProcedure( buildContext( dependencyResolver, valueMapper ).context(), signature.name(),
+                        new AnyValue[]{longValue( 1337 )}, resourceTracker );
 
         // Then
         assertThat( asList( result ), contains( equalTo( new Object[]{1337} ) ) );
@@ -105,7 +107,7 @@ class ProceduresTest
     void shouldNotAllowCallingNonExistingProcedure()
     {
         ProcedureException exception = assertThrows( ProcedureException.class, () ->
-                procs.callProcedure( prepareContext(), signature.name(), new Object[]{1337}, resourceTracker ) );
+                procs.callProcedure( prepareContext(), signature.name(), new AnyValue[]{longValue( 1337 )}, resourceTracker ) );
         assertThat( exception.getMessage(), equalTo( "There is no procedure with the name `org.myproc` registered for this " +
                                                     "database instance. Please ensure you've spelled the " +
                                                     "procedure name correctly and that the procedure is properly deployed." ) );
@@ -167,7 +169,7 @@ class ProceduresTest
         Context ctx = prepareContext();
 
         // When
-        RawIterator<Object[], ProcedureException> result = procs.callProcedure( ctx, signature.name(), new Object[0], resourceTracker );
+        RawIterator<AnyValue[], ProcedureException> result = procs.callProcedure( ctx, signature.name(), new AnyValue[0], resourceTracker );
 
         // Then
         assertThat( asList( result ), contains( equalTo( new AnyValue[]{ stringValue( Thread.currentThread().getName() ) } ) ) );

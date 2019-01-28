@@ -35,6 +35,7 @@ import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.internal.kernel.api.procs.{QualifiedName => KernelQualifiedName}
 import org.neo4j.internal.kernel.api.{CursorFactory, Procedures}
+import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.LongValue
 import org.neo4j.values.virtual.VirtualValues.EMPTY_MAP
 
@@ -115,13 +116,13 @@ class ProcedureCallExecutionPlanTest extends CypherFunSuite {
   when(ctx.resources).thenReturn(mock[ResourceManager])
   private var iteratorExhausted = false
 
-  private val procedureResult = new Answer[Iterator[Array[AnyRef]]] {
+  private val procedureResult = new Answer[Iterator[Array[AnyValue]]] {
     override def answer(invocationOnMock: InvocationOnMock) = {
-      val input: Seq[AnyRef] = invocationOnMock.getArgument(1)
-      new Iterator[Array[AnyRef]] {
-        override def hasNext = !iteratorExhausted
+      val input: Seq[AnyValue] = invocationOnMock.getArgument(1)
+      new Iterator[Array[AnyValue]] {
+        override def hasNext: Boolean = !iteratorExhausted
 
-        override def next() = if (hasNext) {
+        override def next(): Array[AnyValue] = if (hasNext) {
           iteratorExhausted = true
           input.toArray
         } else throw new IllegalStateException("Iterator exhausted")
@@ -133,10 +134,10 @@ class ProcedureCallExecutionPlanTest extends CypherFunSuite {
   private val transactionalContext: QueryTransactionalContext = mock[QueryTransactionalContext]
   when(ctx.transactionalContext).thenReturn(transactionalContext)
   when(transactionalContext.cursors).thenReturn(mock[CursorFactory])
-  when(ctx.callReadOnlyProcedure(anyInt, any[Seq[Any]], any[Array[String]])).thenAnswer(procedureResult)
-  when(ctx.callReadOnlyProcedure(any[KernelQualifiedName], any[Seq[Any]], any[Array[String]])).thenAnswer(procedureResult)
-  when(ctx.callReadWriteProcedure(anyInt, any[Seq[Any]], any[Array[String]])).thenAnswer(procedureResult)
-  when(ctx.callReadWriteProcedure(any[KernelQualifiedName], any[Seq[Any]], any[Array[String]])).thenAnswer(procedureResult)
+  when(ctx.callReadOnlyProcedure(anyInt, any[Seq[AnyValue]], any[Array[String]])).thenAnswer(procedureResult)
+  when(ctx.callReadOnlyProcedure(any[KernelQualifiedName], any[Seq[AnyValue]], any[Array[String]])).thenAnswer(procedureResult)
+  when(ctx.callReadWriteProcedure(anyInt, any[Seq[AnyValue]], any[Array[String]])).thenAnswer(procedureResult)
+  when(ctx.callReadWriteProcedure(any[KernelQualifiedName], any[Seq[AnyValue]], any[Array[String]])).thenAnswer(procedureResult)
   when(ctx.asObject(any[LongValue])).thenAnswer(new Answer[Long]() {
     override def answer(invocationOnMock: InvocationOnMock): Long = invocationOnMock.getArgument(0).asInstanceOf[LongValue].value()
   })

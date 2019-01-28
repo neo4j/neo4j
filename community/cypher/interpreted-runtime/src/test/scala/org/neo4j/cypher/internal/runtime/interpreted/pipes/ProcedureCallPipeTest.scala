@@ -24,19 +24,14 @@ import org.mockito.Mockito
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
 import org.neo4j.cypher.internal.runtime.ImplicitValueConversion._
+import org.neo4j.cypher.internal.runtime.{EagerReadWriteCallMode, ExecutionContext, LazyReadOnlyCallMode, QueryContext}
+import org.neo4j.cypher.internal.runtime.interpreted.{ImplicitDummyPos, QueryStateHelper}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Variable
-import org.neo4j.cypher.internal.runtime.ExecutionContext
-import org.neo4j.cypher.internal.runtime.interpreted.ImplicitDummyPos
-import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
-import org.neo4j.cypher.internal.runtime.EagerReadWriteCallMode
-import org.neo4j.cypher.internal.runtime.LazyReadOnlyCallMode
-import org.neo4j.cypher.internal.runtime.QueryContext
+import org.neo4j.cypher.internal.v4_0.logical.plans._
 import org.neo4j.cypher.internal.v4_0.util.symbols._
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.v4_0.logical.plans._
 import org.neo4j.values.AnyValue
-import org.neo4j.values.storable.IntValue
-import org.neo4j.values.storable.LongValue
+import org.neo4j.values.storable.{IntValue, LongValue, NumberValue, Values}
 import org.scalatest.mock.MockitoSugar
 
 class ProcedureCallPipeTest
@@ -117,37 +112,37 @@ class ProcedureCallPipeTest
     ))
   }
 
-  private def resultsTransformer(args: Seq[Any]): Iterator[Array[AnyRef]] = {
-    val count = args.head.asInstanceOf[Number].intValue()
+  private def resultsTransformer(args: Seq[AnyValue]): Iterator[Array[AnyValue]] = {
+    val count = args.head.asInstanceOf[NumberValue].longValue().intValue()
     1.to(count).map { i =>
-      Array[AnyRef](s"take $i/$count")
+      Array[AnyValue](Values.stringValue(s"take $i/$count"))
     }
 
   }.toIterator
 
   private def fakeQueryContext(id: Int,
-                               result: Seq[Any] => Iterator[Array[AnyRef]],
+                               result: Seq[AnyValue] => Iterator[Array[AnyValue]],
                                expectedAccessMode: ProcedureAccessMode): QueryContext = {
 
-    def doIt(id: Int, args: Seq[Any], allowed: Array[String]): Iterator[Array[AnyRef]] = {
+    def doIt(id: Int, args: Seq[AnyValue], allowed: Array[String]): Iterator[Array[AnyValue]] = {
       id should equal(ID)
       args.length should be(1)
       result(args)
     }
 
     val queryContext = mock[QueryContext]
-    Mockito.when(queryContext.callReadOnlyProcedure(any[Int](), any[Seq[Any]](), any[Array[String]]())).thenAnswer(
-      new Answer[Iterator[Array[AnyRef]]] {
-        override def answer(invocationOnMock: InvocationOnMock): Iterator[Array[AnyRef]] = {
+    Mockito.when(queryContext.callReadOnlyProcedure(any[Int](), any[Seq[AnyValue]](), any[Array[String]]())).thenAnswer(
+      new Answer[Iterator[Array[AnyValue]]] {
+        override def answer(invocationOnMock: InvocationOnMock): Iterator[Array[AnyValue]] = {
           expectedAccessMode should equal(ProcedureReadOnlyAccess(emptyStringArray))
           doIt(invocationOnMock.getArgument(0), invocationOnMock.getArgument(1), invocationOnMock.getArgument(2))
         }
       }
     )
 
-    Mockito.when(queryContext.callReadWriteProcedure(any[Int](), any[Seq[Any]](), any[Array[String]]())).thenAnswer(
-      new Answer[Iterator[Array[AnyRef]]] {
-        override def answer(invocationOnMock: InvocationOnMock): Iterator[Array[AnyRef]] = {
+    Mockito.when(queryContext.callReadWriteProcedure(any[Int](), any[Seq[AnyValue]](), any[Array[String]]())).thenAnswer(
+      new Answer[Iterator[Array[AnyValue]]] {
+        override def answer(invocationOnMock: InvocationOnMock): Iterator[Array[AnyValue]] = {
           expectedAccessMode should equal(ProcedureReadWriteAccess(emptyStringArray))
           doIt(invocationOnMock.getArgument(0), invocationOnMock.getArgument(1), invocationOnMock.getArgument(2))
         }

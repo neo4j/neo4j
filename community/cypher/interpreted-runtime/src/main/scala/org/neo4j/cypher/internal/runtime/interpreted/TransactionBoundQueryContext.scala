@@ -849,30 +849,29 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
       .asScala
   }
 
-  override def callReadOnlyProcedure(id: Int, args: Seq[Any], allowed: Array[String]): Iterator[Array[AnyRef]] =
+  override def callReadOnlyProcedure(id: Int, args: Seq[AnyValue], allowed: Array[String]): Iterator[Array[AnyValue]] =
     CallSupport.callReadOnlyProcedure(transactionalContext.tc, id, args, allowed)
 
-  override def callReadWriteProcedure(id: Int, args: Seq[Any], allowed: Array[String]): Iterator[Array[AnyRef]] =
+  override def callReadWriteProcedure(id: Int, args: Seq[AnyValue], allowed: Array[String]): Iterator[Array[AnyValue]] =
     CallSupport.callReadWriteProcedure(transactionalContext.tc, id, args, allowed)
 
-  override def callSchemaWriteProcedure(id: Int, args: Seq[Any], allowed: Array[String]): Iterator[Array[AnyRef]] =
+  override def callSchemaWriteProcedure(id: Int, args: Seq[AnyValue], allowed: Array[String]): Iterator[Array[AnyValue]] =
   CallSupport.callSchemaWriteProcedure(transactionalContext.tc, id, args, allowed)
 
-  override def callDbmsProcedure(id: Int, args: Seq[Any], allowed: Array[String]) : Iterator[Array[AnyRef]] =
+  override def callDbmsProcedure(id: Int, args: Seq[AnyValue], allowed: Array[String]) : Iterator[Array[AnyValue]] =
     CallSupport.callDbmsProcedure(transactionalContext.tc, id, args, allowed)
 
-  override def callReadOnlyProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]): Iterator[Array[AnyRef]] =
+  override def callReadOnlyProcedure(name: QualifiedName, args: Seq[AnyValue], allowed: Array[String]): Iterator[Array[AnyValue]] =
     CallSupport.callReadOnlyProcedure(transactionalContext.tc, name, args, allowed)
 
-  override def callReadWriteProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]): Iterator[Array[AnyRef]] =
+  override def callReadWriteProcedure(name: QualifiedName, args: Seq[AnyValue], allowed: Array[String]): Iterator[Array[AnyValue]] =
     CallSupport.callReadWriteProcedure(transactionalContext.tc, name, args, allowed)
 
-  override def callSchemaWriteProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]): Iterator[Array[AnyRef]] =
+  override def callSchemaWriteProcedure(name: QualifiedName, args: Seq[AnyValue], allowed: Array[String]): Iterator[Array[AnyValue]] =
     CallSupport.callSchemaWriteProcedure(transactionalContext.tc, name, args, allowed)
 
-  override def callDbmsProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]): Iterator[Array[AnyRef]] =
+  override def callDbmsProcedure(name: QualifiedName, args: Seq[AnyValue], allowed: Array[String]): Iterator[Array[AnyValue]] =
     CallSupport.callDbmsProcedure(transactionalContext.tc, name, args, allowed)
-
 
   override def callFunction(id: Int, args: Array[AnyValue], allowed: Array[String]): AnyValue =
     CallSupport.callFunction(transactionalContext.tc, id, args, allowed)

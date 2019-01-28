@@ -19,23 +19,16 @@
  */
 package org.neo4j.cypher.internal.procs
 
-import java.time._
-import java.time.temporal.TemporalAmount
 import java.util
 
 import org.neo4j.cypher.internal.runtime._
-import org.neo4j.cypher.internal.v4_0.util.symbols.{CypherType, _}
+import org.neo4j.cypher.internal.v4_0.util.symbols.CypherType
 import org.neo4j.cypher.result.QueryResult.{QueryResultVisitor, Record}
 import org.neo4j.cypher.result.RuntimeResult.ConsumptionState
 import org.neo4j.cypher.result.{OperatorProfile, QueryProfile, RuntimeResult}
 import org.neo4j.graphdb.ResourceIterator
-import org.neo4j.graphdb.spatial.{Geometry, Point}
 import org.neo4j.internal.kernel.api.procs.QualifiedName
-import org.neo4j.kernel.impl.util.ValueUtils
-import org.neo4j.kernel.impl.util.ValueUtils._
 import org.neo4j.values.AnyValue
-import org.neo4j.values.storable.Values._
-import org.neo4j.values.storable._
 
 /**
   * Result of calling a procedure.
@@ -51,7 +44,7 @@ class ProcedureCallRuntimeResult(context: QueryContext,
                                  name: QualifiedName,
                                  id: Option[Int],
                                  callMode: ProcedureCallMode,
-                                 args: Seq[Any],
+                                 args: Seq[AnyValue],
                                  indexResultNameMappings: IndexedSeq[(Int, String, CypherType)],
                                  profile: Boolean) extends RuntimeResult {
 
@@ -61,11 +54,11 @@ class ProcedureCallRuntimeResult(context: QueryContext,
 
   override val fieldNames: Array[String] = indexResultNameMappings.map(_._2).toArray
 
-  private final val executionResults: Iterator[Array[AnyRef]] = executeCall
+  private final val executionResults: Iterator[Array[AnyValue]] = executeCall
   private var resultRequested = false
 
   // The signature mode is taking care of eagerization
-  protected def executeCall: Iterator[Array[AnyRef]] = {
+  protected def executeCall: Iterator[Array[AnyValue]] = {
     val iterator =
       if (id.nonEmpty) callMode.callProcedure(context, id.get, args)
       else callMode.callProcedure(context, name, args)
@@ -94,11 +87,6 @@ class ProcedureCallRuntimeResult(context: QueryContext,
     }
   }
 
-  private def transform[T](value: AnyRef, f: T => AnyValue): AnyValue = {
-    if (value == null) NO_VALUE
-    else f(value.asInstanceOf[T])
-  }
-
   override def accept[EX <: Exception](visitor: QueryResultVisitor[EX]): Unit = {
     resultRequested = true
     executionResults.foreach { res =>
@@ -106,27 +94,7 @@ class ProcedureCallRuntimeResult(context: QueryContext,
       for (i <- indexResultNameMappings.indices) {
         val mapping = indexResultNameMappings(i)
         val pos = mapping._1
-        fieldArray(i) = mapping._3 match {
-          case CTNode => transform(res(pos), fromNodeProxy)
-          case CTRelationship => transform(res(pos), fromRelationshipProxy)
-          case CTPath => transform(res(pos), fromPath)
-          case CTInteger => transform(res(pos), longValue)
-          case CTFloat => transform(res(pos), doubleValue)
-          case CTNumber => transform(res(pos), numberValue)
-          case CTString => transform(res(pos), stringValue)
-          case CTBoolean => transform(res(pos), booleanValue)
-          case CTPoint => transform(res(pos), (p: Point) => asPointValue(p))
-          case CTGeometry => transform(res(pos), (g: Geometry) => asGeometryValue(g))
-          case CTDateTime => transform(res(pos), (g: ZonedDateTime) => DateTimeValue.datetime(g))
-          case CTLocalDateTime => transform(res(pos), (g: LocalDateTime) => LocalDateTimeValue.localDateTime(g))
-          case CTDate => transform(res(pos), (g: LocalDate) => DateValue.date(g))
-          case CTTime => transform(res(pos), (g: OffsetTime) => TimeValue.time(g))
-          case CTLocalTime => transform(res(pos), (g: LocalTime) => LocalTimeValue.localTime(g))
-          case CTDuration => transform(res(pos), (g: TemporalAmount) => Values.durationValue(g))
-          case CTMap => transform(res(pos), asMapValue)
-          case ListType(_) => transform(res(pos), asListValue)
-          case CTAny => transform(res(pos), ValueUtils.of)
-        }
+        fieldArray(i) = res(pos)
       }
       visitor.visit(new Record {
         override def fields(): Array[AnyValue] = fieldArray
@@ -137,9 +105,9 @@ class ProcedureCallRuntimeResult(context: QueryContext,
 
   override def queryStatistics(): QueryStatistics = context.getOptStatistics.getOrElse(QueryStatistics())
 
-  private def resultAsMap(rowData: Array[AnyRef]): util.Map[String, AnyRef] = {
+  private def resultAsMap(rowData: Array[AnyValue]): util.Map[String, AnyRef] = {
     val mapData = new util.HashMap[String, AnyRef](rowData.length)
-    indexResultNameMappings.foreach { entry => mapData.put(entry._2, rowData(entry._1)) }
+    indexResultNameMappings.foreach { entry => mapData.put(entry._2, context.asObject(rowData(entry._1))) }
     mapData
   }
 

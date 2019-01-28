@@ -25,6 +25,7 @@ import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.QualifiedName;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.ResourceTracker;
+import org.neo4j.values.AnyValue;
 import org.neo4j.values.ValueMapper;
 
 /**
@@ -35,10 +36,13 @@ import org.neo4j.values.ValueMapper;
 public interface DbmsOperations
 {
     /** Invoke a DBMS procedure by name */
-    RawIterator<Object[],ProcedureException> procedureCallDbms( QualifiedName name, Object[] input, DependencyResolver dependencyResolver,
-            SecurityContext securityContext, ResourceTracker resourceTracker, ValueMapper<Object> valueMapper ) throws ProcedureException;
+    RawIterator<AnyValue[],ProcedureException> procedureCallDbms( QualifiedName name, AnyValue[] input,
+            DependencyResolver dependencyResolver,
+            SecurityContext securityContext, ResourceTracker resourceTracker, ValueMapper<Object> valueMapper )
+            throws ProcedureException;
 
     /** Invoke a DBMS procedure by id */
-    RawIterator<Object[],ProcedureException> procedureCallDbms( int id, Object[] input, DependencyResolver dependencyResolver, SecurityContext securityContext,
+    RawIterator<AnyValue[],ProcedureException> procedureCallDbms( int id, AnyValue[] input,
+            DependencyResolver dependencyResolver, SecurityContext securityContext,
             ResourceTracker resourceTracker, ValueMapper<Object> valueMapper ) throws ProcedureException;
 }

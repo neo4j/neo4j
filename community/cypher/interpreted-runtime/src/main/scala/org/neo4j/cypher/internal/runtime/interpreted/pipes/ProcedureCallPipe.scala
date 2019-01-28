@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.neo4j.cypher.internal.runtime.interpreted.ValueConversion
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.{ExecutionContext, ProcedureCallMode, QueryContext}
 import org.neo4j.cypher.internal.v4_0.logical.plans.ProcedureSignature
@@ -50,10 +49,8 @@ case class ProcedureCallPipe(source: Pipe,
   extends PipeWithSource(source) {
   import scala.collection.JavaConverters._
   private val kernelName = new QualifiedName(signature.name.namespace.asJava, signature.name.name)
-
   argExprs.foreach(_.registerOwningPipe(this))
 
-  private val maybeConverter = signature.outputSignature.map(_.map(v => ValueConversion.getValueConverter(v.typ)).toArray)
   private val rowProcessor = rowProcessing match {
     case FlatMapAndAppendToRow => internalCreateResultsByAppending _
     case PassThroughRow => internalCreateResultsByPassingThrough _
@@ -65,13 +62,12 @@ case class ProcedureCallPipe(source: Pipe,
     val qtx = state.query
     val builder = Seq.newBuilder[(String, AnyValue)]
     builder.sizeHint(resultIndices.length)
-    input flatMap { input =>
-      val argValues = argExprs.map(arg => qtx.asObject(arg(input, state)))
-      val results = call(qtx, argValues)
+    input.flatMap { input =>
+      val argValues = argExprs.map(arg => arg(input, state))
+      val results: Iterator[Array[AnyValue]] = call(qtx, argValues)
       results map { resultValues =>
         resultIndices foreach { case (k, v) =>
-          val javaValue = maybeConverter.get(k)(resultValues(k))
-          builder += v -> javaValue
+          builder += v -> resultValues(k)
         }
         val rowEntries = builder.result()
         val output = executionContextFactory.copyWith(input, rowEntries)
@@ -82,14 +78,14 @@ case class ProcedureCallPipe(source: Pipe,
   }
 
   private def call(qtx: QueryContext,
-                   argValues: Seq[Any]) =
+                   argValues: Seq[AnyValue]) =
     if (signature.id.nonEmpty) callMode.callProcedure(qtx, signature.id.get, argValues)
     else callMode.callProcedure(qtx, kernelName, argValues)
 
   private def internalCreateResultsByPassingThrough(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
     val qtx = state.query
     input map { input =>
-      val argValues = argExprs.map(arg => qtx.asObject(arg(input, state)))
+      val argValues = argExprs.map(arg => arg(input, state))
       val results = call(qtx, argValues)
       // the iterator here should be empty; we'll drain just in case
       while (results.hasNext) results.next()

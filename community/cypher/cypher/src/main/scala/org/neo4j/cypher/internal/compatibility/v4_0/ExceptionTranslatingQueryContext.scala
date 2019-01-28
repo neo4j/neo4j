@@ -161,28 +161,28 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
   override def dropRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int) =
     translateException(inner.dropRelationshipPropertyExistenceConstraint(relTypeId, propertyKeyId))
 
-  override def callReadOnlyProcedure(id: Int, args: Seq[Any], allowed: Array[String]): Iterator[Array[AnyRef]] =
+  override def callReadOnlyProcedure(id: Int, args: Seq[AnyValue], allowed: Array[String]): Iterator[Array[AnyValue]] =
     translateIterator(inner.callReadOnlyProcedure(id, args, allowed))
 
-  override def callReadWriteProcedure(id: Int, args: Seq[Any], allowed: Array[String]): Iterator[Array[AnyRef]] =
+  override def callReadWriteProcedure(id: Int, args: Seq[AnyValue], allowed: Array[String]): Iterator[Array[AnyValue]] =
     translateIterator(inner.callReadWriteProcedure(id, args, allowed))
 
-  override def callSchemaWriteProcedure(id: Int, args: Seq[Any], allowed: Array[String]): Iterator[Array[AnyRef]] =
+  override def callSchemaWriteProcedure(id: Int, args: Seq[AnyValue], allowed: Array[String]): Iterator[Array[AnyValue]] =
     translateIterator(inner.callSchemaWriteProcedure(id, args, allowed))
 
-  override def callDbmsProcedure(id: Int, args: Seq[Any], allowed: Array[String]): Iterator[Array[AnyRef]] =
+  override def callDbmsProcedure(id: Int, args: Seq[AnyValue], allowed: Array[String]): Iterator[Array[AnyValue]] =
     translateIterator(inner.callDbmsProcedure(id, args, allowed))
 
-  override def callReadOnlyProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]): Iterator[Array[AnyRef]] =
+  override def callReadOnlyProcedure(name: QualifiedName, args: Seq[AnyValue], allowed: Array[String]): Iterator[Array[AnyValue]] =
     translateIterator(inner.callReadOnlyProcedure(name, args, allowed))
 
-  override def callReadWriteProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]): Iterator[Array[AnyRef]] =
+  override def callReadWriteProcedure(name: QualifiedName, args: Seq[AnyValue], allowed: Array[String]): Iterator[Array[AnyValue]] =
     translateIterator(inner.callReadWriteProcedure(name, args, allowed))
 
-  override def callSchemaWriteProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]): Iterator[Array[AnyRef]] =
+  override def callSchemaWriteProcedure(name: QualifiedName, args: Seq[AnyValue], allowed: Array[String]): Iterator[Array[AnyValue]] =
     translateIterator(inner.callSchemaWriteProcedure(name, args, allowed))
 
-  override def callDbmsProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]): Iterator[Array[AnyRef]] =
+  override def callDbmsProcedure(name: QualifiedName, args: Seq[AnyValue], allowed: Array[String]): Iterator[Array[AnyValue]] =
     translateIterator(inner.callDbmsProcedure(name, args, allowed))
 
   override def callFunction(id: Int, args: Array[AnyValue], allowed: Array[String]) =

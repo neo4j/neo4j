@@ -59,6 +59,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.hamcrest.MockitoHamcrest.argThat;
 import static org.neo4j.kernel.api.proc.BasicContext.buildContext;
+import static org.neo4j.values.storable.Values.stringValue;
 
 @SuppressWarnings( "WeakerAccess" )
 public class ResourceInjectionTest
@@ -101,11 +102,11 @@ public class ResourceInjectionTest
                 compiler.compileProcedure( ProcedureWithInjectedAPI.class, null, true ).get( 0 );
 
         // Then
-        List<Object[]> out = Iterators.asList( proc.apply( prepareContext(), new Object[0], resourceTracker ) );
+        List<AnyValue[]> out = Iterators.asList( proc.apply( prepareContext(), new AnyValue[0], resourceTracker ) );
 
         // Then
-        assertThat( out.get( 0 ), equalTo( new Object[]{"Bonnie"} ) );
-        assertThat( out.get( 1 ), equalTo( new Object[]{"Clyde"} ) );
+        assertThat( out.get( 0 ), equalTo( new AnyValue[]{stringValue( "Bonnie" )} ) );
+        assertThat( out.get( 1 ), equalTo( new AnyValue[]{stringValue( "Clyde" )} ) );
     }
 
     @Test
@@ -125,13 +126,13 @@ public class ResourceInjectionTest
                 compiler.compileProcedure( ProcedureWithUnsafeAPI.class, null, true ).get( 0 );
 
         // Then
-        List<Object[]> out = Iterators.asList( proc.apply( prepareContext(), new Object[0], resourceTracker ) );
+        List<AnyValue[]> out = Iterators.asList( proc.apply( prepareContext(), new AnyValue[0], resourceTracker ) );
 
         // Then
-        assertThat( out.get( 0 ), equalTo( new Object[]{"Morpheus"} ) );
-        assertThat( out.get( 1 ), equalTo( new Object[]{"Trinity"} ) );
-        assertThat( out.get( 2 ), equalTo( new Object[]{"Neo"} ) );
-        assertThat( out.get( 3 ), equalTo( new Object[]{"Emil"} ) );
+        assertThat( out.get( 0 ), equalTo( new AnyValue[]{stringValue( "Morpheus" )} ) );
+        assertThat( out.get( 1 ), equalTo( new AnyValue[]{stringValue( "Trinity" )} ) );
+        assertThat( out.get( 2 ), equalTo( new AnyValue[]{stringValue( "Neo" )} ) );
+        assertThat( out.get( 3 ), equalTo( new AnyValue[]{stringValue( "Emil" )} ) );
     }
 
     @Test
@@ -144,7 +145,7 @@ public class ResourceInjectionTest
 
         assertThat( procList.size(), equalTo( 1 ) );
         ProcedureException exception =
-                assertThrows( ProcedureException.class, () -> procList.get( 0 ).apply( prepareContext(), new Object[0], resourceTracker ) );
+                assertThrows( ProcedureException.class, () -> procList.get( 0 ).apply( prepareContext(), new AnyValue[0], resourceTracker ) );
         assertThat( exception.getMessage(), notAvailableMessageMatcher( "org.neo4j.kernel.impl.proc.listCoolPeople" ) );
     }
 
@@ -156,7 +157,7 @@ public class ResourceInjectionTest
                 compiler.compileFunction( FunctionWithInjectedAPI.class).get( 0 );
 
         // When
-        Object out = proc.apply( prepareContext(), new AnyValue[0] );
+        AnyValue out = proc.apply( prepareContext(), new AnyValue[0] );
 
         // Then
         assertThat( out, equalTo( Values.of("[Bonnie, Clyde]") ) );

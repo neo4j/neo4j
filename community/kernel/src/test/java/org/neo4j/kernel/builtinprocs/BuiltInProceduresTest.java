@@ -24,12 +24,14 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.stubbing.Answer;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.IntSupplier;
+import java.util.stream.Collectors;
 
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.graphdb.Node;
@@ -62,9 +64,11 @@ import org.neo4j.kernel.impl.factory.Edition;
 import org.neo4j.kernel.impl.index.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.proc.GlobalProcedures;
 import org.neo4j.kernel.impl.util.DefaultValueMapper;
+import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.Log;
 import org.neo4j.storageengine.api.schema.SchemaDescriptor;
+import org.neo4j.values.AnyValue;
 
 import static java.util.Collections.emptyIterator;
 import static java.util.Collections.singletonList;
@@ -493,7 +497,8 @@ class BuiltInProceduresTest
 
     private List<Object[]> call( String name, Object... args ) throws ProcedureException, IndexNotFoundKernelException
     {
-        Context ctx = buildContext(resolver, new DefaultValueMapper( mock( EmbeddedProxySPI.class ) ) )
+        DefaultValueMapper valueMapper = new DefaultValueMapper( mock( EmbeddedProxySPI.class ) );
+        Context ctx = buildContext(resolver, valueMapper )
                         .withKernelTransaction( tx )
                         .context();
 
@@ -502,7 +507,12 @@ class BuiltInProceduresTest
         when( resolver.resolveDependency( GlobalProcedures.class ) ).thenReturn( procs );
         when( resolver.resolveDependency( IndexingService.class ) ).thenReturn( indexingService );
         when( schemaRead.indexGetPopulationProgress( any( IndexReference.class) ) ).thenReturn( PopulationProgress.DONE );
-        return Iterators.asList( procs.callProcedure(
-                ctx, ProcedureSignature.procedureName( name.split( "\\." ) ), args, resourceTracker ) );
+        AnyValue[] input = Arrays.stream( args ).map( ValueUtils::of ).toArray( AnyValue[]::new );
+        List<AnyValue[]> anyValues = Iterators.asList( procs.callProcedure(
+                ctx, ProcedureSignature.procedureName( name.split( "\\." ) ), input, resourceTracker ) );
+
+        return anyValues.stream().map( vs -> Arrays.stream( vs ).map( v -> v.map( valueMapper ) ).toArray( Object[]::new ) )
+                .collect( Collectors.toList());
+
     }
 }
