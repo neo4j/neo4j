@@ -51,7 +51,6 @@ import org.neo4j.kernel.impl.context.TransactionVersionContextSupplier;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
 import org.neo4j.kernel.impl.pagecache.PageCacheLifecycle;
-import org.neo4j.kernel.impl.pagecache.PublishPageCacheTracerMetricsAfterStart;
 import org.neo4j.kernel.impl.query.QueryEngineProvider;
 import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
 import org.neo4j.kernel.impl.security.URLAccessRules;
@@ -173,7 +172,6 @@ public class GlobalModule
 
         collectionsFactorySupplier = createCollectionsFactorySupplier( globalConfig, globalLife );
 
-        globalLife.add( new PublishPageCacheTracerMetricsAfterStart( tracers.getPageCursorTracerSupplier() ) );
         pageCache = createPageCache( fileSystem, globalConfig, logService, tracers, versionContextSupplier, jobScheduler );
         globalLife.add( new PageCacheLifecycle( pageCache ) );
 

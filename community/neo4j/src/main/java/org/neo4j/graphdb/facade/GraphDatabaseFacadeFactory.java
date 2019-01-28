@@ -47,6 +47,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.dbms.NonTransactionalDbmsOperations;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
+import org.neo4j.kernel.impl.pagecache.PublishPageCacheTracerMetricsAfterStart;
 import org.neo4j.kernel.impl.proc.GlobalProcedures;
 import org.neo4j.kernel.impl.proc.ProcedureConfig;
 import org.neo4j.kernel.impl.proc.ProcedureTransactionProvider;
@@ -157,6 +158,7 @@ public class GraphDatabaseFacadeFactory
         globalLife.add( new StartupWaiter( edition.getGlobalAvailabilityGuard( globalPlatform.getGlobalClock(),
                 logService, globalPlatform.getGlobalConfig() ), edition.getTransactionStartTimeout() ) );
         globalDependencies.satisfyDependency( edition.getSchemaWriteGuard() );
+        globalLife.add( new PublishPageCacheTracerMetricsAfterStart( globalPlatform.getTracers().getPageCursorTracerSupplier() ) );
 
         RuntimeException error = null;
         GraphDatabaseFacade databaseFacade = null;
