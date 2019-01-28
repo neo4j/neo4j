@@ -76,8 +76,10 @@ case class PartialSortPipe(source: Pipe,
           }
         }
 
-        // Sort this chunk
-        buffer.sort(suffixComparator)
+        if (buffer.size() > 1) {
+          // Sort this chunk
+          buffer.sort(suffixComparator)
+        }
 
         // Update state
         state.nextIndexToRead = 1

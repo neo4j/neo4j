@@ -128,8 +128,10 @@ case class PartialTopNPipe(source: Pipe,
             }
 
             if (topTable == null) {
-              // Sort the buffered chunk
-              buffer.sort(suffixComparator)
+              if (buffer.size() > 1) {
+                // Sort the buffered chunk
+                buffer.sort(suffixComparator)
+              }
 
               // Update state
               bufferState.nextIndexToRead = 1

@@ -75,6 +75,30 @@ class PartialSortPipeTest extends CypherFunSuite with MockitoSugar {
     ))
   }
 
+  test("partial sort with chunk size 1") {
+    val list = List(
+      MutableMap("x" -> 1, "y" -> 1),
+      MutableMap("x" -> 2, "y" -> 3),
+      MutableMap("x" -> 3, "y" -> 2),
+      MutableMap("x" -> 4, "y" -> 9),
+      MutableMap("x" -> 5, "y" -> 9),
+      MutableMap("x" -> 6, "y" -> 0),
+      MutableMap("x" -> 7, "y" -> 7)
+    )
+    val source = new FakePipe(list)
+    val sortPipe = PartialSortPipe(source, List(Ascending("x")), List(Ascending("y")))()
+
+    sortPipe.createResults(QueryStateHelper.emptyWithValueSerialization).toList should beEquivalentTo(List(
+      Map("x" -> 1, "y" -> 1),
+      Map("x" -> 2, "y" -> 3),
+      Map("x" -> 3, "y" -> 2),
+      Map("x" -> 4, "y" -> 9),
+      Map("x" -> 5, "y" -> 9),
+      Map("x" -> 6, "y" -> 0),
+      Map("x" -> 7, "y" -> 7)
+    ))
+  }
+
   test("partial sort with two sorted and two unsorted columns") {
     val list = List(
       MutableMap("x" -> 3, "y" -> 3, "z" -> 0, "a" -> 1),
