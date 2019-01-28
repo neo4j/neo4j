@@ -31,6 +31,7 @@ import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexProviderDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
+import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.storageengine.migration.StoreMigrationParticipant;
 
@@ -99,8 +100,8 @@ public class TrackingReadersIndexProvider extends IndexProvider
     }
 
     @Override
-    public StoreMigrationParticipant storeMigrationParticipant( FileSystemAbstraction fs, PageCache pageCache )
+    public StoreMigrationParticipant storeMigrationParticipant( FileSystemAbstraction fs, PageCache pageCache, StorageEngineFactory storageEngineFactory )
     {
-        return indexProvider.storeMigrationParticipant( fs, pageCache );
+        return indexProvider.storeMigrationParticipant( fs, pageCache, storageEngineFactory );
     }
 }

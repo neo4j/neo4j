@@ -173,7 +173,7 @@ public class IndexCRUDIT
     public void before() throws MisconfiguredIndexException
     {
         when( mockedIndexProvider.getProviderDescriptor() ).thenReturn( PROVIDER_DESCRIPTOR );
-        when( mockedIndexProvider.storeMigrationParticipant( any( FileSystemAbstraction.class ), any( PageCache.class ) ) )
+        when( mockedIndexProvider.storeMigrationParticipant( any( FileSystemAbstraction.class ), any( PageCache.class ), any() ) )
                 .thenReturn( StoreMigrationParticipant.NOT_PARTICIPATING );
         when( mockedIndexProvider.bless( any( IndexDescriptor.class ) ) ).thenCallRealMethod();
         TestGraphDatabaseFactory factory = new TestGraphDatabaseFactory();

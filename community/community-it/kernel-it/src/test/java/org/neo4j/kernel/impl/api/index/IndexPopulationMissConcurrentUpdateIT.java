@@ -56,6 +56,7 @@ import org.neo4j.kernel.impl.store.id.IdController;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
+import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.storageengine.migration.StoreMigrationParticipant;
 import org.neo4j.test.Barrier;
@@ -320,7 +321,8 @@ public class IndexPopulationMissConcurrentUpdateIT
                 }
 
                 @Override
-                public StoreMigrationParticipant storeMigrationParticipant( FileSystemAbstraction fs, PageCache pageCache )
+                public StoreMigrationParticipant storeMigrationParticipant( FileSystemAbstraction fs, PageCache pageCache,
+                        StorageEngineFactory storageEngineFactory )
                 {
                     return NOT_PARTICIPATING;
                 }

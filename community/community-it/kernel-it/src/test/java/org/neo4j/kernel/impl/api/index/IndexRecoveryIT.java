@@ -116,7 +116,7 @@ class IndexRecoveryIT
     void setUp() throws MisconfiguredIndexException
     {
         when( mockedIndexProvider.getProviderDescriptor() ).thenReturn( PROVIDER_DESCRIPTOR );
-        when( mockedIndexProvider.storeMigrationParticipant( any( FileSystemAbstraction.class ), any( PageCache.class ) ) )
+        when( mockedIndexProvider.storeMigrationParticipant( any( FileSystemAbstraction.class ), any( PageCache.class ), any() ) )
                 .thenReturn( StoreMigrationParticipant.NOT_PARTICIPATING );
         when( mockedIndexProvider.getCapability( any() ) ).thenReturn( IndexCapability.NO_CAPABILITY );
         when( mockedIndexProvider.bless( any( IndexDescriptor.class ) ) ).thenCallRealMethod();

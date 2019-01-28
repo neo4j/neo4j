@@ -22,33 +22,62 @@ package org.neo4j.unsafe.impl.batchimport.store;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.stream.Stream;
 
 import org.neo4j.function.Predicates;
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.graphdb.mockfs.UncloseableDelegatingFileSystemAbstraction;
+import org.neo4j.internal.recordstorage.RecordStorageEngine;
+import org.neo4j.internal.recordstorage.RecordStorageReader;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
+import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
+import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.MyRelTypes;
+import org.neo4j.kernel.impl.api.DatabaseSchemaState;
+import org.neo4j.kernel.impl.api.TransactionToApply;
+import org.neo4j.kernel.impl.api.state.TxState;
+import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
+import org.neo4j.kernel.impl.core.DatabasePanicEventGenerator;
+import org.neo4j.kernel.impl.core.DelegatingTokenHolder;
+import org.neo4j.kernel.impl.core.TokenCreator;
+import org.neo4j.kernel.impl.core.TokenHolder;
+import org.neo4j.kernel.impl.core.TokenHolders;
+import org.neo4j.kernel.impl.locking.LockService;
+import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
+import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
+import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.StoreType;
+import org.neo4j.kernel.impl.store.TokenStore;
 import org.neo4j.kernel.impl.store.format.ForcedSecondaryUnitRecordFormats;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
+import org.neo4j.kernel.impl.store.id.DefaultIdController;
+import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
+import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
+import org.neo4j.kernel.internal.DatabaseEventHandlers;
+import org.neo4j.kernel.internal.DatabaseHealth;
+import org.neo4j.kernel.lifecycle.Lifespan;
+import org.neo4j.logging.NullLog;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.scheduler.JobScheduler;
-import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.storageengine.api.CommandCreationContext;
+import org.neo4j.storageengine.api.CommandsToApply;
+import org.neo4j.storageengine.api.StorageCommand;
+import org.neo4j.storageengine.api.TransactionApplicationMode;
+import org.neo4j.storageengine.api.lock.ResourceLocker;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.rule.TestDirectory;
@@ -67,6 +96,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.store.format.standard.Standard.LATEST_RECORD_FORMATS;
 import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
+import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_ID;
 import static org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds.EMPTY;
 import static org.neo4j.unsafe.impl.batchimport.Configuration.DEFAULT;
 import static org.neo4j.unsafe.impl.batchimport.store.BatchingNeoStores.DOUBLE_RELATIONSHIP_RECORD_UNIT_THRESHOLD;
@@ -82,7 +112,7 @@ class BatchingNeoStoresTest
     private FileSystemAbstraction fileSystem;
 
     @Test
-    void shouldNotOpenStoreWithNodesOrRelationshipsInIt()
+    void shouldNotOpenStoreWithNodesOrRelationshipsInIt() throws Exception
     {
         // GIVEN
         someDataInTheDatabase();
@@ -284,19 +314,98 @@ class BatchingNeoStoresTest
         store.updateRecord( record );
     }
 
-    private void someDataInTheDatabase()
+    private void someDataInTheDatabase() throws Exception
     {
-        GraphDatabaseService db = new TestGraphDatabaseFactory()
-                .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fileSystem ) )
-                .newImpermanentDatabase( testDirectory.databaseDir() );
-        try ( Transaction tx = db.beginTx() )
+        NullLog nullLog = NullLog.getInstance();
+        try ( PageCache pageCache = new ConfiguringPageCacheFactory( fileSystem, Config.defaults(), PageCacheTracer.NULL, PageCursorTracerSupplier.NULL,
+                nullLog, EmptyVersionContextSupplier.EMPTY, JobSchedulerFactory.createInitialisedScheduler() ).getOrCreatePageCache();
+              Lifespan life = new Lifespan() )
         {
-            db.createNode().createRelationshipTo( db.createNode(), MyRelTypes.TEST );
-            tx.success();
+            // TODO this little dance with TokenHolders is really annoying and must be solved with a better abstraction
+            DeferredInitializedTokenCreator propertyKeyTokenCreator = new DeferredInitializedTokenCreator()
+            {
+                @Override
+                void create( String name, int id )
+                {
+                    txState.propertyKeyDoCreateForName( name, id );
+                }
+            };
+            DeferredInitializedTokenCreator labelTokenCreator = new DeferredInitializedTokenCreator()
+            {
+                @Override
+                void create( String name, int id )
+                {
+                    txState.labelDoCreateForName( name, id );
+                }
+            };
+            DeferredInitializedTokenCreator relationshipTypeTokenCreator = new DeferredInitializedTokenCreator()
+            {
+                @Override
+                void create( String name, int id )
+                {
+                    txState.relationshipTypeDoCreateForName( name, id );
+                }
+            };
+            TokenHolders tokenHolders = new TokenHolders(
+                    new DelegatingTokenHolder( propertyKeyTokenCreator, TokenHolder.TYPE_PROPERTY_KEY ),
+                    new DelegatingTokenHolder( labelTokenCreator, TokenHolder.TYPE_LABEL ),
+                    new DelegatingTokenHolder( relationshipTypeTokenCreator, TokenHolder.TYPE_RELATIONSHIP_TYPE ) );
+            RecordStorageEngine storageEngine = life.add(
+                    new RecordStorageEngine( testDirectory.databaseLayout(), Config.defaults(), pageCache, fileSystem, NullLogProvider.getInstance(),
+                            tokenHolders, new DatabaseSchemaState( NullLogProvider.getInstance() ), new StandardConstraintSemantics(),
+                            LockService.NO_LOCK_SERVICE, new DatabaseHealth( new DatabasePanicEventGenerator( new DatabaseEventHandlers( nullLog ) ), nullLog ),
+                            new DefaultIdGeneratorFactory( fileSystem ), new DefaultIdController(), EmptyVersionContextSupplier.EMPTY ) );
+            // Create the relationship type token
+            TxState txState = new TxState();
+            NeoStores neoStores = storageEngine.testAccessNeoStores();
+            CommandCreationContext commandCreationContext = storageEngine.newCommandCreationContext();
+            propertyKeyTokenCreator.initialize( neoStores.getPropertyKeyTokenStore(), txState );
+            labelTokenCreator.initialize( neoStores.getLabelTokenStore(), txState );
+            relationshipTypeTokenCreator.initialize( neoStores.getRelationshipTypeTokenStore(), txState );
+            int relTypeId = tokenHolders.relationshipTypeTokens().getOrCreateId( MyRelTypes.TEST.name() );
+            apply( txState, commandCreationContext, storageEngine );
+
+            // Finally, we're initialized and ready to create two nodes and a relationship
+            txState = new TxState();
+            long node1 = commandCreationContext.reserveNode();
+            long node2 = commandCreationContext.reserveNode();
+            txState.nodeDoCreate( node1 );
+            txState.nodeDoCreate( node2 );
+            txState.relationshipDoCreate( commandCreationContext.reserveRelationship(), relTypeId, node1, node2 );
+            apply( txState, commandCreationContext, storageEngine );
         }
-        finally
+    }
+
+    private void apply( TxState txState, CommandCreationContext commandCreationContext, RecordStorageEngine storageEngine ) throws Exception
+    {
+        List<StorageCommand> commands = new ArrayList<>();
+        try ( RecordStorageReader storageReader = storageEngine.newReader() )
         {
-            db.shutdown();
+            storageEngine.createCommands( commands, txState, storageReader, commandCreationContext, ResourceLocker.NONE, BASE_TX_ID, v -> v );
+            CommandsToApply apply = new TransactionToApply( new PhysicalTransactionRepresentation( commands, new byte[0], 0, 0, 0, 0, 0, 0 ) );
+            storageEngine.apply( apply, TransactionApplicationMode.EXTERNAL );
         }
+    }
+
+    private static abstract class DeferredInitializedTokenCreator implements TokenCreator
+    {
+        TokenStore store;
+        TransactionState txState;
+
+        void initialize( TokenStore store, TransactionState txState )
+        {
+            this.store = store;
+            this.txState = txState;
+        }
+
+        @Override
+        public int createToken( String name )
+        {
+            int id = (int) store.nextId();
+            create( name, id );
+            return id;
+        }
+
+        abstract void create( String name, int id );
     }
 }

@@ -48,5 +48,4 @@ public abstract class IdGeneratorContractTest
             assertEquals( 0, idGenerator.getHighestPossibleIdInUse() );
         }
     }
-
 }

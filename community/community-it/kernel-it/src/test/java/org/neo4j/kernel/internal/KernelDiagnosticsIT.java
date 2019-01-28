@@ -36,13 +36,16 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Format;
+import org.neo4j.helpers.Service;
 import org.neo4j.io.layout.DatabaseFile;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.diagnostics.providers.StoreFilesDiagnostics;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.logging.Logger;
+import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.MINUTES;
@@ -55,6 +58,9 @@ public class KernelDiagnosticsIT
     @Rule
     public final TestDirectory directory = TestDirectory.testDirectory();
 
+    @Rule
+    public final DefaultFileSystemRule fs = new DefaultFileSystemRule();
+
     @Test
     public void shouldIncludeNativeIndexFilesInTotalMappedSize()
     {
@@ -66,7 +72,8 @@ public class KernelDiagnosticsIT
             createIndexInIsolatedDbInstance( dbDir, schemaIndex );
 
             // when
-            StoreFilesDiagnostics files = new StoreFilesDiagnostics( DatabaseLayout.of( dbDir ) );
+            StorageEngineFactory storageEngineFactory = StorageEngineFactory.selectStorageEngine( Service.load( StorageEngineFactory.class ) );
+            StoreFilesDiagnostics files = new StoreFilesDiagnostics( storageEngineFactory, fs, DatabaseLayout.of( dbDir ) );
             SizeCapture capture = new SizeCapture();
             files.dump( capture );
             assertNotNull( capture.size );

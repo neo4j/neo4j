@@ -100,6 +100,7 @@ import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.NullLog;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
+import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.storageengine.migration.StoreMigrationParticipant;
@@ -868,9 +869,9 @@ class DatabaseRecoveryIT
         }
 
         @Override
-        public StoreMigrationParticipant storeMigrationParticipant( FileSystemAbstraction fs, PageCache pageCache )
+        public StoreMigrationParticipant storeMigrationParticipant( FileSystemAbstraction fs, PageCache pageCache, StorageEngineFactory storageEngineFactory )
         {
-            return actual.storeMigrationParticipant( fs, pageCache );
+            return actual.storeMigrationParticipant( fs, pageCache, storageEngineFactory );
         }
 
         public Map<Long,Collection<IndexEntryUpdate<?>>> snapshot()

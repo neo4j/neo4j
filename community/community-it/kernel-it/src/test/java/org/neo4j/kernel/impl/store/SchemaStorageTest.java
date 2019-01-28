@@ -247,11 +247,11 @@ public class SchemaStorageTest
         assertEquals( type, rule.type() );
     }
 
-    private void assertRule( ConstraintRule rule, String label, String propertyKey, ConstraintDescriptor.Type type )
+    private void assertRule( ConstraintRule constraint, String label, String propertyKey, ConstraintDescriptor.Type type )
     {
-        assertTrue( SchemaDescriptorPredicates.hasLabel( rule, labelId( label ) ) );
-        assertTrue( SchemaDescriptorPredicates.hasProperty( rule, propId( propertyKey ) ) );
-        assertEquals( type, rule.getConstraintDescriptor().type() );
+        assertTrue( SchemaDescriptorPredicates.hasLabel( constraint, labelId( label ) ) );
+        assertTrue( SchemaDescriptorPredicates.hasProperty( constraint, propId( propertyKey ) ) );
+        assertEquals( type, constraint.type() );
     }
 
     private IndexDescriptor indexDescriptor( String label, String property )
