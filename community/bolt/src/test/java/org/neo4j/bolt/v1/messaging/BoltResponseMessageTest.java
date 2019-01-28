@@ -173,10 +173,10 @@ public class BoltResponseMessageTest
                          "79 65 65 A2 84 6E 61 6D 65 83 42 6F 62 83 61 67" + lineSeparator() +
                          "65 2C B3 4E C9 03 EB 91 86 50 65 72 73 6F 6E A1" + lineSeparator() +
                          "84 6E 61 6D 65 85 43 61 72 6F 6C B3 4E C9 03 EC" + lineSeparator() +
-                         "90 A1 84 6E 61 6D 65 84 44 61 76 65 93 B3 72 0C" + lineSeparator() +
-                         "85 4B 4E 4F 57 53 A1 85 73 69 6E 63 65 C9 07 CF" + lineSeparator() +
-                         "B3 72 20 88 44 49 53 4C 49 4B 45 53 A0 B3 72 22" + lineSeparator() +
-                         "8A 4D 41 52 52 49 45 44 5F 54 4F A0 96 01 01 FE" + lineSeparator() +
+                         "90 A1 84 6E 61 6D 65 84 44 61 76 65 93 B3 72 20" + lineSeparator() +
+                         "88 44 49 53 4C 49 4B 45 53 A0 B3 72 22 8A 4D 41" + lineSeparator() +
+                         "52 52 49 45 44 5F 54 4F A0 B3 72 0C 85 4B 4E 4F" + lineSeparator() +
+                         "57 53 A1 85 73 69 6E 63 65 C9 07 CF 96 01 01 FE" + lineSeparator() +
                          "02 03 03" ) );
         assertThat( serialized( PATH_WITH_NODES_VISITED_MULTIPLE_TIMES ),
                 equalTo( "B1 71 91 B3 50 93 B3 4E C9 03 E9 92 86 50 65 72" + lineSeparator() +
@@ -185,31 +185,31 @@ public class BoltResponseMessageTest
                          "03 EA 92 86 50 65 72 73 6F 6E 88 45 6D 70 6C 6F" + lineSeparator() +
                          "79 65 65 A2 84 6E 61 6D 65 83 42 6F 62 83 61 67" + lineSeparator() +
                          "65 2C B3 4E C9 03 EB 91 86 50 65 72 73 6F 6E A1" + lineSeparator() +
-                         "84 6E 61 6D 65 85 43 61 72 6F 6C 93 B3 72 0C 85" + lineSeparator() +
-                         "4B 4E 4F 57 53 A1 85 73 69 6E 63 65 C9 07 CF B3" + lineSeparator() +
-                         "72 0D 85 4C 49 4B 45 53 A0 B3 72 20 88 44 49 53" + lineSeparator() +
+                         "84 6E 61 6D 65 85 43 61 72 6F 6C 93 B3 72 20 88" + lineSeparator() +
+                         "44 49 53 4C 49 4B 45 53 A0 B3 72 0C 85 4B 4E 4F" + lineSeparator() +
+                         "57 53 A1 85 73 69 6E 63 65 C9 07 CF B3 72 0D 85" + lineSeparator() +
                          "4C 49 4B 45 53 A0 9A 01 01 FF 00 02 02 03 01 FD" + lineSeparator() +
                          "02" ) );
         assertThat( serialized( PATH_WITH_RELATIONSHIP_TRAVERSED_MULTIPLE_TIMES_IN_SAME_DIRECTION ),
                 equalTo( "B1 71 91 B3 50 94 B3 4E C9 03 E9 92 86 50 65 72" + lineSeparator() +
                          "73 6F 6E 88 45 6D 70 6C 6F 79 65 65 A2 84 6E 61" + lineSeparator() +
                          "6D 65 85 41 6C 69 63 65 83 61 67 65 21 B3 4E C9" + lineSeparator() +
-                         "03 EB 91 86 50 65 72 73 6F 6E A1 84 6E 61 6D 65" + lineSeparator() +
-                         "85 43 61 72 6F 6C B3 4E C9 03 EA 92 86 50 65 72" + lineSeparator() +
-                         "73 6F 6E 88 45 6D 70 6C 6F 79 65 65 A2 84 6E 61" + lineSeparator() +
-                         "6D 65 83 42 6F 62 83 61 67 65 2C B3 4E C9 03 EC" + lineSeparator() +
-                         "90 A1 84 6E 61 6D 65 84 44 61 76 65 94 B3 72 0D" + lineSeparator() +
-                         "85 4C 49 4B 45 53 A0 B3 72 20 88 44 49 53 4C 49" + lineSeparator() +
-                         "4B 45 53 A0 B3 72 0C 85 4B 4E 4F 57 53 A1 85 73" + lineSeparator() +
-                         "69 6E 63 65 C9 07 CF B3 72 22 8A 4D 41 52 52 49" + lineSeparator() +
-                         "45 44 5F 54 4F A0 9A 01 01 02 02 FD 00 01 01 04" + lineSeparator() +
+                         "03 EA 92 86 50 65 72 73 6F 6E 88 45 6D 70 6C 6F" + lineSeparator() +
+                         "79 65 65 A2 84 6E 61 6D 65 83 42 6F 62 83 61 67" + lineSeparator() +
+                         "65 2C B3 4E C9 03 EB 91 86 50 65 72 73 6F 6E A1" + lineSeparator() +
+                         "84 6E 61 6D 65 85 43 61 72 6F 6C B3 4E C9 03 EC" + lineSeparator() +
+                         "90 A1 84 6E 61 6D 65 84 44 61 76 65 94 B3 72 20" + lineSeparator() +
+                         "88 44 49 53 4C 49 4B 45 53 A0 B3 72 22 8A 4D 41" + lineSeparator() +
+                         "52 52 49 45 44 5F 54 4F A0 B3 72 0C 85 4B 4E 4F" + lineSeparator() +
+                         "57 53 A1 85 73 69 6E 63 65 C9 07 CF B3 72 0D 85" + lineSeparator() +
+                         "4C 49 4B 45 53 A0 9A 01 01 02 02 FD 00 01 01 04" + lineSeparator() +
                          "03" ) );
         assertThat( serialized( PATH_WITH_LOOP ),
                 equalTo( "B1 71 91 B3 50 92 B3 4E C9 03 EB 91 86 50 65 72" + lineSeparator() +
                          "73 6F 6E A1 84 6E 61 6D 65 85 43 61 72 6F 6C B3" + lineSeparator() +
                          "4E C9 03 EC 90 A1 84 6E 61 6D 65 84 44 61 76 65" + lineSeparator() +
-                         "92 B3 72 22 8A 4D 41 52 52 49 45 44 5F 54 4F A0" + lineSeparator() +
-                         "B3 72 2C 89 57 4F 52 4B 53 5F 46 4F 52 A0 94 01" + lineSeparator() +
+                         "92 B3 72 2C 89 57 4F 52 4B 53 5F 46 4F 52 A0 B3" + lineSeparator() +
+                         "72 22 8A 4D 41 52 52 49 45 44 5F 54 4F A0 94 01" + lineSeparator() +
                          "01 02 01" ) );
     }
 

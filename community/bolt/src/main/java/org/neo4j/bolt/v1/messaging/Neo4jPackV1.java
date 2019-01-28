@@ -19,6 +19,10 @@
  */
 package org.neo4j.bolt.v1.messaging;
 
+import org.eclipse.collections.api.iterator.MutableLongIterator;
+import org.eclipse.collections.api.map.primitive.MutableLongIntMap;
+import org.eclipse.collections.impl.map.mutable.primitive.LongIntHashMap;
+
 import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -35,7 +39,6 @@ import org.neo4j.bolt.v1.packstream.PackInput;
 import org.neo4j.bolt.v1.packstream.PackOutput;
 import org.neo4j.bolt.v1.packstream.PackStream;
 import org.neo4j.bolt.v1.packstream.PackType;
-import org.neo4j.collection.primitive.PrimitiveLongIntKeyValueArray;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.AnyValueWriter;
@@ -101,10 +104,8 @@ public class Neo4jPackV1 implements Neo4jPack
     {
         private static final int INITIAL_PATH_CAPACITY = 500;
         private static final int NO_SUCH_ID = -1;
-        private final PrimitiveLongIntKeyValueArray nodeIndexes =
-                new PrimitiveLongIntKeyValueArray( INITIAL_PATH_CAPACITY + 1 );
-        private final PrimitiveLongIntKeyValueArray relationshipIndexes =
-                new PrimitiveLongIntKeyValueArray( INITIAL_PATH_CAPACITY );
+        private MutableLongIntMap nodeIndexes = new LongIntHashMap( INITIAL_PATH_CAPACITY + 1 );
+        private MutableLongIntMap relationshipIndexes = new LongIntHashMap( INITIAL_PATH_CAPACITY );
 
         protected PackerV1( PackOutput output )
         {
@@ -219,13 +220,13 @@ public class Neo4jPackV1 implements Neo4jPack
                 if ( i % 2 == 0 )
                 {
                     node = nodes[i / 2];
-                    int index = nodeIndexes.getOrDefault( node.id(), NO_SUCH_ID );
+                    int index = nodeIndexes.getIfAbsent( node.id(), NO_SUCH_ID );
                     pack( index );
                 }
                 else
                 {
                     RelationshipValue r = relationships[i / 2];
-                    int index = relationshipIndexes.getOrDefault( r.id(), NO_SUCH_ID );
+                    int index = relationshipIndexes.getIfAbsent( r.id(), NO_SUCH_ID );
 
                     if ( node.id() == r.startNode().id() )
                     {
@@ -242,19 +243,21 @@ public class Neo4jPackV1 implements Neo4jPack
 
         private void writeNodesForPath( NodeValue[] nodes ) throws IOException
         {
-            nodeIndexes.reset( nodes.length );
+            nodeIndexes = new LongIntHashMap( nodes.length );
             for ( NodeValue node : nodes )
             {
-                nodeIndexes.putIfAbsent( node.id(), nodeIndexes.size() );
+                nodeIndexes.getIfAbsentPut( node.id(), nodeIndexes.size() );
             }
 
             int size = nodeIndexes.size();
             packListHeader( size );
             if ( size > 0 )
             {
-                NodeValue node = nodes[0];
-                for ( long id : nodeIndexes.keys() )
+                MutableLongIterator keyIterator = nodeIndexes.keySet().longIterator();
+                while ( keyIterator.hasNext() )
                 {
+                    NodeValue node = nodes[0];
+                    long id = keyIterator.next();
                     int i = 1;
                     while ( node.id() != id )
                     {
@@ -267,11 +270,11 @@ public class Neo4jPackV1 implements Neo4jPack
 
         private void writeRelationshipsForPath( RelationshipValue[] relationships ) throws IOException
         {
-            relationshipIndexes.reset( relationships.length );
+            relationshipIndexes = new LongIntHashMap( relationships.length );
             for ( RelationshipValue node : relationships )
             {
                 // relationship indexes are one-based
-                relationshipIndexes.putIfAbsent( node.id(), relationshipIndexes.size() + 1 );
+                relationshipIndexes.getIfAbsentPut( node.id(), relationshipIndexes.size() + 1 );
             }
 
             int size = relationshipIndexes.size();
@@ -279,9 +282,11 @@ public class Neo4jPackV1 implements Neo4jPack
             if ( size > 0 )
             {
                 {
-                    RelationshipValue edge = relationships[0];
-                    for ( long id : relationshipIndexes.keys() )
+                    MutableLongIterator keyIterator = relationshipIndexes.keySet().longIterator();
+                    while ( keyIterator.hasNext() )
                     {
+                        RelationshipValue edge = relationships[0];
+                        long id = keyIterator.next();
                         int i = 1;
                         while ( edge.id() != id )
                         {

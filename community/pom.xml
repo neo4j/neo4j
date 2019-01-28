@@ -45,7 +45,6 @@
     <module>kernel</module>
     <module>jmx</module>
     <module>udc</module>
-    <module>legacy</module>
     <module>lucene-index</module>
     <module>fulltext-index</module>
     <module>graph-algo</module>

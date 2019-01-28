@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.api.impl.fulltext;
 
+import org.eclipse.collections.api.set.primitive.MutableLongSet;
+import org.eclipse.collections.impl.factory.primitive.LongSets;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 import org.junit.Before;
 import org.junit.Rule;
@@ -32,8 +34,6 @@ import java.util.Optional;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.collection.primitive.Primitive;
-import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.common.EntityType;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -493,7 +493,7 @@ public class FulltextIndexProviderTest
                 assertFalse( cursor.next() );
 
                 ktx.dataRead().nodeIndexSeek( index, cursor, IndexOrder.NONE, false, fulltextSearch( "value3" ) );
-                PrimitiveLongSet ids = Primitive.longSet();
+                MutableLongSet ids = LongSets.mutable.empty();
                 ids.add( 0L );
                 ids.add( thirdNodeid );
                 assertTrue( cursor.next() );

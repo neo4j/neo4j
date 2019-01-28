@@ -19,19 +19,17 @@
  */
 package org.neo4j.kernel.api.impl.fulltext;
 
+import org.eclipse.collections.api.set.primitive.MutableLongSet;
+import org.eclipse.collections.impl.factory.primitive.LongSets;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.rules.RuleChain;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Properties;
 
-import org.neo4j.collection.primitive.PrimitiveLongCollections;
-import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -159,7 +157,7 @@ public class LuceneFulltextTestSupport
     {
         IndexReference index = ktx.schemaRead().indexGetForName( indexName );
         IndexReadSession indexSession = ktx.dataRead().indexReadSession( index );
-        PrimitiveLongSet set = PrimitiveLongCollections.setOf( ids );
+        MutableLongSet set = LongSets.mutable.of( ids );
         if ( nodes )
         {
             try ( NodeValueIndexCursor cursor = ktx.cursors().allocateNodeValueIndexCursor() )
@@ -188,9 +186,7 @@ public class LuceneFulltextTestSupport
 
         if ( !set.isEmpty() )
         {
-            List<Long> list = new ArrayList<>();
-            set.visitKeys( k -> !list.add( k ) );
-            fail( "Number of results differ from expected. " + set.size() + " IDs were not found in the result: " + list );
+            fail( "Number of results differ from expected. " + set.size() + " IDs were not found in the result: " + set );
         }
     }
 
