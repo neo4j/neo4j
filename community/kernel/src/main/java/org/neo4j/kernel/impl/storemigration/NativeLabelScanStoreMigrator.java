@@ -37,31 +37,29 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.kernel.impl.api.scan.FullLabelStream;
 import org.neo4j.kernel.impl.index.labelscan.NativeLabelScanStore;
-import org.neo4j.kernel.impl.store.StoreFactory;
-import org.neo4j.kernel.impl.store.format.RecordFormats;
-import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
-import org.neo4j.kernel.impl.store.id.ReadOnlyIdGeneratorFactory;
 import org.neo4j.kernel.impl.transaction.state.storeview.NeoStoreIndexStoreView;
+import org.neo4j.kernel.impl.util.Dependencies;
+import org.neo4j.kernel.lifecycle.LifecycleException;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.kernel.monitoring.Monitors;
-import org.neo4j.logging.NullLogProvider;
+import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.storageengine.api.NodeLabelUpdate;
-import org.neo4j.storageengine.api.StorageEngine;
+import org.neo4j.storageengine.api.ReadableStorageEngine;
+import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.migration.AbstractStoreMigrationParticipant;
 
 import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK_SERVICE;
-import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForVersion;
 
 class NativeLabelScanStoreMigrator extends AbstractStoreMigrationParticipant
 {
     private final FileSystemAbstraction fileSystem;
     private final PageCache pageCache;
     private final Config config;
-    private final Supplier<StorageEngine> storageEngineFactory;
+    private final StorageEngineFactory storageEngineFactory;
     private boolean nativeLabelScanStoreMigrated;
 
-    NativeLabelScanStoreMigrator( FileSystemAbstraction fileSystem, PageCache pageCache, Config config, Supplier<StorageEngine> storageEngineFactory )
+    NativeLabelScanStoreMigrator( FileSystemAbstraction fileSystem, PageCache pageCache, Config config, StorageEngineFactory storageEngineFactory )
     {
         super( "Native label scan index" );
         this.fileSystem = fileSystem;
@@ -78,15 +76,32 @@ class NativeLabelScanStoreMigrator extends AbstractStoreMigrationParticipant
         {
             try ( Lifespan lifespan = new Lifespan() )
             {
-                StorageEngine storageEngine = lifespan.add( storageEngineFactory.get() );
-                // TODO neoStores.verifyStoreOk();
-                deleteNativeIndexFile( migrationLayout );
+                Dependencies dependencies = new Dependencies();
+                // Use Config.defaults() because we don't want to pass in the config which specifies the store format,
+                // now that we're referencing the older store.
+                dependencies.satisfyDependencies( directoryLayout, Config.defaults(), pageCache, fileSystem, NullLogService.getInstance(),
+                        EmptyVersionContextSupplier.EMPTY );
+                ReadableStorageEngine storageEngine = lifespan.add( storageEngineFactory.instantiateReadable( dependencies ) );
                 try ( StorageReader reader = storageEngine.newReader() )
                 {
+                    deleteNativeIndexFile( migrationLayout );
                     progressReporter.start( reader.nodesGetCount() );
+                    // The label scan store will be rebuilt as part of init/start
+                    lifespan.add( getNativeLabelScanStore( migrationLayout, progressReporter, storageEngine::newReader ) );
                 }
-                NativeLabelScanStore nativeLabelScanStore = getNativeLabelScanStore( migrationLayout, progressReporter, storageEngine::newReader );
-                lifespan.add( nativeLabelScanStore ); // <-- The label scan store will be rebuilt as part of init/start
+            }
+            catch ( LifecycleException e )
+            {
+                Throwable cause = e.getCause();
+                if ( cause instanceof RuntimeException )
+                {
+                    throw (RuntimeException) cause;
+                }
+                if ( cause instanceof IOException )
+                {
+                    throw (IOException) cause;
+                }
+                throw new RuntimeException( cause );
             }
             nativeLabelScanStoreMigrated = true;
         }
@@ -145,15 +160,6 @@ class NativeLabelScanStoreMigrator extends AbstractStoreMigrationParticipant
                 RecoveryCleanupWorkCollector.immediate() );
     }
 
-    private StoreFactory getStoreFactory( DatabaseLayout directoryStructure, String versionToMigrateFrom )
-    {
-        NullLogProvider logProvider = NullLogProvider.getInstance();
-        RecordFormats recordFormats = selectForVersion( versionToMigrateFrom );
-        IdGeneratorFactory idGeneratorFactory = new ReadOnlyIdGeneratorFactory( fileSystem );
-        return new StoreFactory( directoryStructure, config, idGeneratorFactory, pageCache, fileSystem,
-                recordFormats, logProvider, EmptyVersionContextSupplier.EMPTY );
-    }
-
     private boolean isNativeLabelScanStoreMigrationRequired( DatabaseLayout directoryStructure ) throws IOException
     {
         return fileSystem.streamFilesRecursive( directoryStructure.labelScanStore() )
@@ -172,7 +178,6 @@ class NativeLabelScanStoreMigrator extends AbstractStoreMigrationParticipant
 
     private static class MonitoredFullLabelStream extends FullLabelStream
     {
-
         private final ProgressReporter progressReporter;
 
         MonitoredFullLabelStream( IndexStoreView indexStoreView, ProgressReporter progressReporter )

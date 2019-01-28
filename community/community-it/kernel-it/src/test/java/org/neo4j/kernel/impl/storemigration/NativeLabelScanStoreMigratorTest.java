@@ -40,35 +40,19 @@ import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.api.labelscan.LabelScanReader;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.api.DatabaseSchemaState;
 import org.neo4j.kernel.impl.api.scan.FullStoreChangeStream;
-import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
-import org.neo4j.kernel.impl.core.DatabasePanicEventGenerator;
-import org.neo4j.kernel.impl.core.DelegatingTokenHolder;
 import org.neo4j.kernel.impl.core.TokenCreator;
-import org.neo4j.kernel.impl.core.TokenHolder;
-import org.neo4j.kernel.impl.core.TokenHolders;
 import org.neo4j.kernel.impl.index.labelscan.NativeLabelScanStore;
-import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.InvalidIdGeneratorException;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.MetaDataStore.Position;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_4;
 import org.neo4j.kernel.impl.store.format.standard.StandardV4_0;
-import org.neo4j.kernel.impl.store.id.DefaultIdController;
-import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
-import org.neo4j.kernel.impl.util.Dependencies;
-import org.neo4j.kernel.internal.DatabaseEventHandlers;
-import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.kernel.monitoring.Monitors;
-import org.neo4j.logging.NullLog;
-import org.neo4j.logging.NullLogProvider;
-import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.storageengine.api.NodeLabelUpdate;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -115,19 +99,7 @@ class NativeLabelScanStoreMigratorTest
         luceneLabelScanStore = testDirectory.databaseDir().toPath().resolve( Paths.get( "schema", "label", "lucene" ) ).toFile();
 
         StorageEngineFactory storageEngineFactory = StorageEngineFactory.selectStorageEngine( Service.load( StorageEngineFactory.class ) );
-        TokenHolders tokenHolders = new TokenHolders(
-                new DelegatingTokenHolder( new SimpleTokenCreator(), TokenHolder.TYPE_PROPERTY_KEY ),
-                new DelegatingTokenHolder( new SimpleTokenCreator(), TokenHolder.TYPE_LABEL ),
-                new DelegatingTokenHolder( new SimpleTokenCreator(), TokenHolder.TYPE_RELATIONSHIP_TYPE ) );
-        DatabaseHealth databaseHealth =
-                new DatabaseHealth( new DatabasePanicEventGenerator( new DatabaseEventHandlers( NullLog.getInstance() ) ), NullLog.getInstance() );
-        Dependencies dependencies = new Dependencies();
-        dependencies.satisfyDependencies( databaseLayout, Config.defaults(), pageCache, fileSystem, NullLogService.getInstance(),
-                tokenHolders, new DatabaseSchemaState( NullLogProvider.getInstance() ), new StandardConstraintSemantics(),
-                LockService.NO_LOCK_SERVICE, databaseHealth, new DefaultIdGeneratorFactory( fileSystem ), new DefaultIdController(),
-                EmptyVersionContextSupplier.EMPTY );
-        indexMigrator = new NativeLabelScanStoreMigrator( fileSystem, pageCache, Config.defaults(),
-                () -> storageEngineFactory.instantiate( dependencies, dependencies ) );
+        indexMigrator = new NativeLabelScanStoreMigrator( fileSystem, pageCache, Config.defaults(), storageEngineFactory );
         fileSystem.mkdirs( luceneLabelScanStore );
     }
 

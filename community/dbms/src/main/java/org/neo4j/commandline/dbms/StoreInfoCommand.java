@@ -32,10 +32,12 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.Validators;
+import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.StoreVersionCheck;
@@ -70,7 +72,7 @@ public class StoreInfoCommand implements AdminCommand
             DatabaseLayout databaseLayout = DatabaseLayout.of( databaseDirectory.toFile() );
             StorageEngineFactory storageEngineFactory = StorageEngineFactory.selectStorageEngine( Service.load( StorageEngineFactory.class ) );
             Dependencies dependencies = new Dependencies();
-            dependencies.satisfyDependencies( pageCache, databaseLayout );
+            dependencies.satisfyDependencies( pageCache, databaseLayout, fileSystem, NullLogService.getInstance(), Config.defaults() );
             StoreVersionCheck storeVersionCheck = storageEngineFactory.versionCheck( dependencies );
             String storeVersion;
             try

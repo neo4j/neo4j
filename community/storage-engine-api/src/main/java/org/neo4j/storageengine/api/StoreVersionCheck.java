@@ -57,6 +57,12 @@ public interface StoreVersionCheck
             this.actualVersion = actualVersion;
             this.storeFilename = storeFilename;
         }
+
+        @Override
+        public String toString()
+        {
+            return "Result{" + "outcome=" + outcome + ", actualVersion='" + actualVersion + '\'' + ", storeFilename='" + storeFilename + '\'' + '}';
+        }
     }
 
     enum Outcome

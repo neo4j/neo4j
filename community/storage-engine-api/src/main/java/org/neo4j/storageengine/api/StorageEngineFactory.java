@@ -56,6 +56,13 @@ public abstract class StorageEngineFactory
     public abstract StorageEngine instantiate( DependencyResolver dependencyResolver, DependencySatisfier dependencySatisfier );
 
     /**
+     * Instantiates a {@link ReadableStorageEngine} over a storage location without instantiating the full {@link StorageEngine}, just the readable parts.
+     * @param dependencyResolver {@link DependencyResolver} for all dependency needs.
+     * @return StorageReader for reading the storage at this location. Must be closed after usage.
+     */
+    public abstract ReadableStorageEngine instantiateReadable( DependencyResolver dependencyResolver );
+
+    /**
      * Selects a {@link StorageEngineFactory} among the candidates. How it's done or which it selects isn't important a.t.m.
      * @param candidates list of {@link StorageEngineFactory} to compare.
      * @return the selected {@link StorageEngineFactory}.

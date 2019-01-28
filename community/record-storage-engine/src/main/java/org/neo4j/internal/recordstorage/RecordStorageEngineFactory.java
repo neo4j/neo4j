@@ -37,6 +37,7 @@ import org.neo4j.kernel.impl.storemigration.RecordStoreVersionCheck;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.storageengine.api.ReadableStorageEngine;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.StoreVersionCheck;
@@ -88,5 +89,17 @@ public class RecordStorageEngineFactory extends StorageEngineFactory
         storageEngine.satisfyDependencies( dependencySatisfier );
 
         return storageEngine;
+    }
+
+    @Override
+    public ReadableStorageEngine instantiateReadable( DependencyResolver dependencyResolver )
+    {
+        return new ReadableRecordStorageEngine(
+            dependencyResolver.resolveDependency( DatabaseLayout.class ),
+            dependencyResolver.resolveDependency( Config.class ),
+            dependencyResolver.resolveDependency( PageCache.class ),
+            dependencyResolver.resolveDependency( FileSystemAbstraction.class ),
+            dependencyResolver.resolveDependency( LogService.class ).getInternalLogProvider(),
+            dependencyResolver.resolveDependency( VersionContextSupplier.class ) );
     }
 }

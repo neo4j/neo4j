@@ -28,7 +28,6 @@ import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.internal.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.io.pagecache.IOLimiter;
-import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.Log;
 import org.neo4j.storageengine.api.lock.ResourceLocker;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
@@ -37,18 +36,8 @@ import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 /**
  * A StorageEngine provides the functionality to durably store data, and read it back.
  */
-public interface StorageEngine extends Lifecycle
+public interface StorageEngine extends ReadableStorageEngine
 {
-    /**
-     * Creates a new {@link StorageReader} for reading committed data from the underlying storage.
-     * The returned instance is intended to be used by one transaction at a time, although can and should be reused
-     * for multiple transactions.
-     *
-     * @return an interface for accessing data previously
-     * {@link #apply(CommandsToApply, TransactionApplicationMode) applied} to this storage.
-     */
-    StorageReader newReader();
-
     /**
      * @return a new {@link CommandCreationContext} meant to be kept for multiple calls to
      * {@link #createCommands(Collection, ReadableTransactionState, StorageReader, CommandCreationContext, ResourceLocker, long, TxStateVisitor.Decorator)}.

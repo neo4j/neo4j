@@ -177,9 +177,9 @@ public class StoreUpgrader
         // and it's just a matter of moving over the files to the storeDir.
         if ( MigrationStatus.migrating.isNeededFor( migrationStatus ) )
         {
-            assertCleanlyShutDownByCheckPoint();
             StoreVersionCheck.Result upgradeCheck = storeVersionCheck.checkUpgrade( storeVersionCheck.configuredVersion() );
             versionToMigrateFrom = getVersionFromResult( upgradeCheck );
+            assertCleanlyShutDownByCheckPoint();
             cleanMigrationDirectory( migrationLayout.databaseDirectory() );
             MigrationStatus.migrating.setMigrationStatus( fileSystem, migrationStateFile, versionToMigrateFrom );
             migrateToIsolatedDirectory( dbDirectoryLayout, migrationLayout, versionToMigrateFrom );
@@ -336,7 +336,7 @@ public class StoreUpgrader
             {
                 ProgressReporter progressReporter = progressMonitor.startSection( participant.getName() );
                 participant.migrate( directoryLayout, migrationLayout, progressReporter, versionToMigrateFrom,
-                        storeVersionCheck.storeVersion() );
+                        storeVersionCheck.configuredVersion() );
                 progressReporter.completed();
             }
         }

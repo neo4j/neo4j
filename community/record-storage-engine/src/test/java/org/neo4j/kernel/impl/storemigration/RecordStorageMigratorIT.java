@@ -47,7 +47,6 @@ import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.AssertableLogProvider;
-import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.logging.internal.SimpleLogService;
@@ -261,8 +260,7 @@ public class RecordStorageMigratorIT
 
     private RecordStoreVersionCheck getVersionCheck( PageCache pageCache, DatabaseLayout layout )
     {
-        return new RecordStoreVersionCheck( fileSystemRule, pageCache, layout, NullLogProvider.getInstance(),
-                Config.defaults( GraphDatabaseSettings.record_format, selectFormat().storeVersion() ) );
+        return new RecordStoreVersionCheck( pageCache, layout, selectFormat(), Config.defaults() );
     }
 
     private static RecordFormats selectFormat()
