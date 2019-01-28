@@ -141,6 +141,11 @@ object SemanticFunctionCheck extends SemanticAnalysisTooling {
           checkToSpecifiedTypeOfArgument(invocation, ToString.validInputTypes) ifOkChain
           specifyType(CTString, invocation)
 
+      case Distance =>
+        checkMinArgs(invocation, 2) ifOkChain
+          checkMaxArgs(invocation, 2) ifOkChain
+          specifyType(CTFloat, invocation)
+
       case UnresolvedFunction =>
         // We cannot do a full semantic check until we have resolved the function call.
         SemanticCheckResult.success
@@ -235,7 +240,12 @@ object SemanticFunctionCheck extends SemanticAnalysisTooling {
 
       if (correctType) SemanticCheckResult.success(s)
       else {
-        val msg = s"Type mismatch: expected Boolean or String but was ${specifiedType.mkString(", ")}"
+        val msg = invocation.function match {
+          case ToString =>
+            s"Type mismatch: expected Boolean, Float, Integer, Point, String, Duration, Date, Time, LocalTime, LocalDateTime or DateTime but was ${specifiedType.mkString(", ")}"
+          case _ =>
+            s"Type mismatch: expected Boolean or String but was ${specifiedType.mkString(", ")}"
+        }
         error(msg, argument.position)(s)
       }
     }
