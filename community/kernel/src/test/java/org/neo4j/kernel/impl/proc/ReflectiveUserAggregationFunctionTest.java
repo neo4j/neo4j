@@ -25,7 +25,6 @@ import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -49,7 +48,10 @@ import org.neo4j.procedure.Name;
 import org.neo4j.procedure.UserAggregationFunction;
 import org.neo4j.procedure.UserAggregationResult;
 import org.neo4j.procedure.UserAggregationUpdate;
+import org.neo4j.values.AnyValue;
 import org.neo4j.values.ValueMapper;
+import org.neo4j.values.virtual.MapValue;
+import org.neo4j.values.virtual.VirtualValues;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.startsWith;
@@ -65,6 +67,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.neo4j.internal.kernel.api.procs.UserFunctionSignature.functionSignature;
 import static org.neo4j.kernel.api.proc.BasicContext.buildContext;
+import static org.neo4j.values.storable.Values.longValue;
+import static org.neo4j.values.storable.Values.stringValue;
 
 @SuppressWarnings( "WeakerAccess" )
 public class ReflectiveUserAggregationFunctionTest
@@ -106,10 +110,10 @@ public class ReflectiveUserAggregationFunctionTest
         // When
         UserAggregator aggregator = func.create( prepareContext() );
 
-        aggregator.update( new Object[]{"Harry"} );
-        aggregator.update( new Object[]{"Bonnie"} );
-        aggregator.update( new Object[]{"Sally"} );
-        aggregator.update( new Object[]{"Clyde"} );
+        aggregator.update( new AnyValue[]{stringValue( "Harry" )} );
+        aggregator.update( new AnyValue[]{stringValue( "Bonnie" )} );
+        aggregator.update( new AnyValue[]{stringValue( "Sally" )} );
+        aggregator.update( new AnyValue[]{stringValue( "Clyde" )} );
 
         // Then
         assertThat( aggregator.result(), equalTo( Arrays.asList( "Bonnie", "Clyde" ) ) );
@@ -126,7 +130,7 @@ public class ReflectiveUserAggregationFunctionTest
 
         // When
         UserAggregator aggregator = function.create( prepareContext() );
-        aggregator.update( new Object[]{} );
+        aggregator.update( new AnyValue[]{} );
         aggregator.result();
 
         // Then
@@ -156,15 +160,16 @@ public class ReflectiveUserAggregationFunctionTest
 
         // When
         UserAggregator f1Aggregator = f1.create( prepareContext() );
-        f1Aggregator.update( new Object[]{"Bonnie"} );
-        f1Aggregator.update( new Object[]{"Clyde"} );
+        f1Aggregator.update( new AnyValue[]{stringValue( "Bonnie" )} );
+        f1Aggregator.update( new AnyValue[]{stringValue( "Clyde" )} );
         UserAggregator f2Aggregator = f2.create( prepareContext() );
-        f2Aggregator.update( new Object[]{"Bonnie", 1337L} );
-        f2Aggregator.update( new Object[]{"Bonnie", 42L} );
+        f2Aggregator.update( new AnyValue[]{stringValue( "Bonnie" ), longValue( 1337L )} );
+        f2Aggregator.update( new AnyValue[]{stringValue( "Bonnie" ), longValue( 42L )} );
 
         // Then
-        assertThat( f1Aggregator.result(), equalTo( Arrays.asList( "Bonnie", "Clyde" ) ) );
-        assertThat( ((Map) f2Aggregator.result()).get( "Bonnie" ), equalTo( 1337L ) );
+        assertThat( f1Aggregator.result(),
+                equalTo( VirtualValues.list( stringValue( "Bonnie" ), stringValue( "Clyde" ) ) ) );
+        assertThat( ((MapValue) f2Aggregator.result()).get( "Bonnie" ), equalTo( longValue( 1337L ) ) );
     }
 
     @Test
@@ -289,7 +294,8 @@ public class ReflectiveUserAggregationFunctionTest
         // Given
         CallableUserAggregationFunction method = compile( FunctionThatThrowsNullMsgExceptionAtInvocation.class ).get( 0 );
 
-        ProcedureException exception = assertThrows( ProcedureException.class, () -> method.create( prepareContext() ).update( new Object[]{} ) );
+        ProcedureException exception = assertThrows( ProcedureException.class,
+                () -> method.create( prepareContext() ).update( new AnyValue[]{} ) );
         assertThat( exception.getMessage(),
                 equalTo( "Failed to invoke function `org.neo4j.kernel.impl.proc.test`: Caused by: java.lang.IndexOutOfBoundsException" ) );
     }
@@ -306,8 +312,8 @@ public class ReflectiveUserAggregationFunctionTest
 
         // Expect
         UserAggregator created = method.create( prepareContext() );
-        created.update( new Object[]{"Bonnie"} );
-        assertThat(created.result(), equalTo( Collections.singletonList( "Bonnie" ) ) );
+        created.update( new AnyValue[]{stringValue( "Bonnie" )} );
+        assertThat( created.result(), equalTo( VirtualValues.list( stringValue( "Bonnie" ) ) ) );
     }
 
     @Test

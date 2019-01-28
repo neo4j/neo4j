@@ -816,7 +816,7 @@ class ReflectiveProcedureCompiler
                 return new UserAggregator()
                 {
                     @Override
-                    public void update( Object[] input ) throws ProcedureException
+                    public void update( AnyValue[] input ) throws ProcedureException
                     {
                         try
                         {
@@ -827,14 +827,11 @@ class ReflectiveProcedureCompiler
                                         signature.name(),
                                         expectedNumberOfInputs, input.length );
                             }
-                            // Some input fields are not supported by Cypher and need to be mapped
-                            for ( int indexToMap : indexesToMap )
-                            {
-                                input[indexToMap] = inputSignature.get( indexToMap ).map( input[indexToMap] );
-                            }
+
+                            ValueMapper<Object> mapper = ctx.valueMapper();
 
                             // Call the method
-                            updateMethod.invoke( aggregator, input );
+                            updateMethod.invoke( aggregator, mapToObjects( "Function", signature.name(), mapper, signature.inputSignature(), input ) );
                         }
                         catch ( Throwable throwable )
                         {
@@ -854,11 +851,11 @@ class ReflectiveProcedureCompiler
                     }
 
                     @Override
-                    public Object result() throws ProcedureException
+                    public AnyValue result() throws ProcedureException
                     {
                         try
                         {
-                            return typeChecker.typeCheck( resultMethod.invoke(aggregator) );
+                            return typeChecker.toValue( resultMethod.invoke(aggregator) );
                         }
                         catch ( Throwable throwable )
                         {

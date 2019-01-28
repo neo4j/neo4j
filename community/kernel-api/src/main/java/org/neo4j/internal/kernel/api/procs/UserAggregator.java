@@ -20,10 +20,11 @@
 package org.neo4j.internal.kernel.api.procs;
 
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
+import org.neo4j.values.AnyValue;
 
 public interface UserAggregator
 {
-    void update( Object[] input ) throws ProcedureException;
+    void update( AnyValue[] input ) throws ProcedureException;
 
-    Object result() throws ProcedureException;
+    AnyValue result() throws ProcedureException;
 }

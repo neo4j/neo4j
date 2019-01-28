@@ -193,7 +193,7 @@ public class ResourceInjectionTest
         CallableUserAggregationFunction proc =
                 compiler.compileAggregationFunction( AggregationFunctionWithInjectedAPI.class).get( 0 );
         // When
-        proc.create( prepareContext() ).update( new Object[]{} );
+        proc.create( prepareContext() ).update( new AnyValue[]{} );
         Object out = proc.create( prepareContext() ).result();
 
         // Then
@@ -221,7 +221,7 @@ public class ResourceInjectionTest
         assertThat( procList.size(), equalTo( 1 ) );
         ProcedureException exception = assertThrows( ProcedureException.class, () ->
         {
-            procList.get( 0 ).create( prepareContext() ).update( new Object[]{} );
+            procList.get( 0 ).create( prepareContext() ).update( new AnyValue[]{} );
             procList.get( 0 ).create( prepareContext() ).result();
         } );
         assertThat( exception.getMessage(), notAvailableMessageMatcher( "org.neo4j.kernel.impl.proc.listCoolPeople" ) );

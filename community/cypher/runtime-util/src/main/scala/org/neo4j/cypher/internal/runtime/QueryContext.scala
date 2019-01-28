@@ -324,8 +324,8 @@ trait Expander {
 }
 
 trait UserDefinedAggregator {
-  def update(args: IndexedSeq[Any]): Unit
-  def result: Any
+  def update(args: IndexedSeq[AnyValue]): Unit
+  def result: AnyValue
 }
 
 trait CloseableResource {

@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
-import org.neo4j.cypher.internal.runtime.interpreted.ValueConversion
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation.AggregationFunction
 import org.neo4j.cypher.internal.runtime.{ExecutionContext, UserDefinedAggregator}
@@ -29,18 +28,17 @@ import org.neo4j.values.AnyValue
 
 abstract class AggregationFunctionInvocation(signature: UserFunctionSignature, arguments: IndexedSeq[Expression])
   extends AggregationExpression {
-  private val valueConverter = ValueConversion.getValueConverter(signature.outputType)
 
   override def createAggregationFunction: AggregationFunction = new AggregationFunction {
     private var inner: UserDefinedAggregator = _
 
     override def result(state: QueryState): AnyValue = {
-      valueConverter(aggregator(state).result)
+      aggregator(state).result
     }
 
     override def apply(data: ExecutionContext, state: QueryState): Unit = {
       val argValues = arguments.map(arg => {
-        state.query.asObject(arg(data, state))
+        arg(data, state)
       })
       aggregator(state).update(argValues)
     }

@@ -165,11 +165,10 @@ object CallSupport {
 
   private def userDefinedAggregator(aggregator: UserAggregator): UserDefinedAggregator = {
     new UserDefinedAggregator {
-      override def result: AnyRef = aggregator.result()
+      override def result: AnyValue = aggregator.result()
 
-      override def update(args: IndexedSeq[Any]): Unit = {
-        val toArray = args.map(_.asInstanceOf[AnyRef]).toArray
-        aggregator.update(toArray)
+      override def update(args: IndexedSeq[AnyValue]): Unit = {
+        aggregator.update(args.toArray)
       }
     }
   }
