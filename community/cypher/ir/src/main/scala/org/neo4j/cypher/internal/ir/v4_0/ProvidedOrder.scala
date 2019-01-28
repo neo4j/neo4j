@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.ir.v4_0
 
 import org.neo4j.cypher.internal.ir.v4_0.ProvidedOrder.{Asc, Desc}
 import org.neo4j.cypher.internal.v4_0.expressions._
-import org.neo4j.cypher.internal.v4_0.util.InputPosition
 
 
 object ProvidedOrder {
@@ -45,18 +44,6 @@ object ProvidedOrder {
   }
   case class Desc(expression: Expression) extends Column {
     override val isAscending: Boolean = false
-  }
-
-  object Asc {
-    def apply(element: String, property:String): Asc = {
-      Asc(Property( Variable(element)(InputPosition.NONE), PropertyKeyName(property)(InputPosition.NONE))(InputPosition.NONE))
-    }
-  }
-
-  object Desc {
-    def apply(element: String, property:String): Desc = {
-      Desc(Property( Variable(element)(InputPosition.NONE), PropertyKeyName(property)(InputPosition.NONE))(InputPosition.NONE))
-    }
   }
 
   val empty: ProvidedOrder = ProvidedOrder(Seq.empty[Column])

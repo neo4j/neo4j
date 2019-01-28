@@ -44,23 +44,22 @@ object indexScanLeafPlanner extends LeafPlanner with LeafPlanFromExpression {
 
     e match {
       // MATCH (n:User) WHERE n.prop CONTAINS 'substring' RETURN n
-      case predicate@Contains(prop@Property(Variable(name), propertyKey), expr) if onlyArgumentDependencies(expr) =>
-        val plans = produce(name, propertyKey.name, qg, interestingOrder, prop, CTString, predicate,
+      case predicate@Contains(prop@Property(Variable(name), _), expr) if onlyArgumentDependencies(expr) =>
+        val plans = produce(name, qg, interestingOrder, prop, CTString, predicate,
                             lpp.planNodeIndexContainsScan(_, _, _, _, _, expr, _, _, context), context)
         maybeLeafPlans(name, plans)
 
       // MATCH (n:User) WHERE n.prop ENDS WITH 'substring' RETURN n
-      case predicate@EndsWith(prop@Property(Variable(name), propertyKey), expr) if onlyArgumentDependencies(expr) =>
-        val plans = produce(name, propertyKey.name, qg, interestingOrder, prop, CTString, predicate,
+      case predicate@EndsWith(prop@Property(Variable(name), _), expr) if onlyArgumentDependencies(expr) =>
+        val plans = produce(name, qg, interestingOrder, prop, CTString, predicate,
                             lpp.planNodeIndexEndsWithScan(_, _, _, _, _, expr, _, _, context), context)
         maybeLeafPlans(name, plans)
 
       // MATCH (n:User) WHERE exists(n.prop) RETURN n
-      case predicate@AsPropertyScannable(scannable) =>
+      case AsPropertyScannable(scannable) =>
         val name = scannable.name
-        val propertyKeyName = scannable.propertyKey.name
 
-        val plans = produce(name, propertyKeyName, qg, interestingOrder, scannable.property, CTAny, scannable.expr, lpp.planNodeIndexScan(_, _, _, _, _, _, _, context), context)
+        val plans = produce(name, qg, interestingOrder, scannable.property, CTAny, scannable.expr, lpp.planNodeIndexScan(_, _, _, _, _, _, _, context), context)
         maybeLeafPlans(name, plans)
 
       // MATCH (n:User) with existence/node key constraint on :User(prop) or aggregation on n.prop
@@ -80,7 +79,7 @@ object indexScanLeafPlanner extends LeafPlanner with LeafPlanFromExpression {
 
         val plans: Set[LogicalPlan] = properties.flatMap(prop => {
           val property = Property(expr, PropertyKeyName(prop)(predicate.position))(predicate.position)
-          produceForConstraintOrAggregation(name, prop, qg, interestingOrder, property, CTAny, predicate, lpp.planNodeIndexScan(_, _, _, _, _, _, _, context), context)
+          produceForConstraintOrAggregation(name, qg, interestingOrder, property, CTAny, predicate, lpp.planNodeIndexScan(_, _, _, _, _, _, _, context), context)
         })
 
         maybeLeafPlans(name, plans)
@@ -113,7 +112,6 @@ object indexScanLeafPlanner extends LeafPlanner with LeafPlanFromExpression {
   type PlanProducer = (String, LabelToken, IndexedProperty, Seq[Expression], Option[UsingIndexHint], Set[String], ProvidedOrder) => LogicalPlan
 
   private def produce(variableName: String,
-                      propertyKeyName: String,
                       qg: QueryGraph,
                       interestingOrder: InterestingOrder,
                       property: LogicalProperty,
@@ -127,15 +125,14 @@ object indexScanLeafPlanner extends LeafPlanner with LeafPlanFromExpression {
     for (labelPredicate <- labelPredicates.getOrElse(variableName, Set.empty);
          labelName <- labelPredicate.labels;
          labelId <- semanticTable.id(labelName);
-         indexDescriptor <- context.planContext.indexGetForLabelAndProperties(labelName.name, Seq(propertyKeyName))
+         indexDescriptor <- context.planContext.indexGetForLabelAndProperties(labelName.name, Seq(property.propertyKey.name))
     )
       yield {
-        produceInner(variableName, propertyKeyName, qg, interestingOrder, property, propertyType, predicate, planProducer, semanticTable, labelPredicate, labelName, labelId, indexDescriptor)
+        produceInner(variableName, qg, interestingOrder, property, propertyType, predicate, planProducer, semanticTable, labelPredicate, labelName, labelId, indexDescriptor)
       }
   }
 
   private def produceForConstraintOrAggregation(variableName: String,
-                                                propertyKeyName: String,
                                                 qg: QueryGraph,
                                                 interestingOrder: InterestingOrder,
                                                 property: LogicalProperty,
@@ -148,10 +145,10 @@ object indexScanLeafPlanner extends LeafPlanner with LeafPlanFromExpression {
     semanticTable.id(labelName) match {
       case Some(labelId) =>
         val maybePropId = context.semanticTable.id(property.propertyKey)
-        val maybeIndexDescriptor = context.planContext.indexGetForLabelAndProperties(labelName.name, Seq(propertyKeyName))
+        val maybeIndexDescriptor = context.planContext.indexGetForLabelAndProperties(labelName.name, Seq(property.propertyKey.name))
         (maybeIndexDescriptor, maybePropId) match {
           case (Some(indexDescriptor), Some(_)) =>
-            Some(produceInner(variableName, propertyKeyName, qg, interestingOrder, property, propertyType, predicate, planProducer, semanticTable, predicate, labelName, labelId, indexDescriptor))
+            Some(produceInner(variableName, qg, interestingOrder, property, propertyType, predicate, planProducer, semanticTable, predicate, labelName, labelId, indexDescriptor))
           case _ =>
             None
         }
@@ -160,7 +157,6 @@ object indexScanLeafPlanner extends LeafPlanner with LeafPlanFromExpression {
   }
 
   private def produceInner(variableName: String,
-                           propertyKeyName: String,
                            qg: QueryGraph,
                            interestingOrder: InterestingOrder,
                            property: LogicalProperty,
@@ -174,12 +170,13 @@ object indexScanLeafPlanner extends LeafPlanner with LeafPlanFromExpression {
                            indexDescriptor: IndexDescriptor) = {
     val hint = qg.hints.collectFirst {
       case hint@UsingIndexHint(Variable(`variableName`), `labelName`, properties, spec)
-        if spec.fulfilledByScan && properties.map(_.name) == Seq(propertyKeyName) => hint
+        if spec.fulfilledByScan && properties.map(_.name) == Seq(property.propertyKey.name) => hint
     }
     // Index scan is always on just one property
     val getValueBehavior = indexDescriptor.valueCapability(Seq(propertyType)).head
     val indexProperty = plans.IndexedProperty(PropertyKeyToken(property.propertyKey, semanticTable.id(property.propertyKey).head), getValueBehavior)
-    val providedOrder = ResultOrdering.withIndexOrderCapability(interestingOrder, Seq((variableName, property.propertyKey.name)), Seq(propertyType), indexDescriptor.orderCapability)
+    val orderProperty = Property(property.map, property.propertyKey)(property.position)
+    val providedOrder = ResultOrdering.withIndexOrderCapability(interestingOrder, Seq(orderProperty), Seq(propertyType), indexDescriptor.orderCapability)
 
     val labelToken = LabelToken(labelName, labelId)
     val predicates = Seq(predicate, labelPredicate)

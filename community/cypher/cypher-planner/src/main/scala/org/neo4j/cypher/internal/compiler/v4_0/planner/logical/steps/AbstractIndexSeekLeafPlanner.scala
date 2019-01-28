@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.LeafPlansForVaria
 import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.ordering.ResultOrdering
 import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.{LeafPlanFromExpressions, LeafPlanner, LeafPlansForVariable, LogicalPlanningContext}
-import org.neo4j.cypher.internal.ir.v4_0.{ProvidedOrder, QueryGraph, InterestingOrder}
+import org.neo4j.cypher.internal.ir.v4_0.{InterestingOrder, ProvidedOrder, QueryGraph}
 import org.neo4j.cypher.internal.planner.v4_0.spi.IndexDescriptor
 import org.neo4j.cypher.internal.v4_0.logical.plans._
 import org.neo4j.cypher.internal.v4_0.ast._
@@ -241,8 +241,12 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
     }
 
     // Ask the index for its order capabilities for the types in prefix/subset defined by the interesting order
-    val indexNames = matchingPredicates.map(mp => (mp.name, mp.propertyKeyName.name)).slice(0, types.length)
-    val providedOrder = ResultOrdering.withIndexOrderCapability(interestingOrder, indexNames, types, indexDescriptor.orderCapability)
+    val indexProperties = matchingPredicates.map(mp => {
+      val pos = mp.propertyPredicate.position
+      Property(Variable(mp.name)(pos), mp.propertyKeyName)(pos)
+    }).slice(0, types.length)
+
+    val providedOrder = ResultOrdering.withIndexOrderCapability(interestingOrder, indexProperties, types, indexDescriptor.orderCapability)
 
     // Return a tuple of matching predicates(plannables), an equal length seq of property behaviours and a single index ordering capability
     (matchingPredicates, propertyBehaviours, providedOrder)

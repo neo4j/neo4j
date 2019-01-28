@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v4_0.planner.logical.ordering
 import org.neo4j.cypher.internal.compiler.v4_0.helpers.AggregationHelper
 import org.neo4j.cypher.internal.ir.v4_0._
 import org.neo4j.cypher.internal.planner.v4_0.spi.IndexOrderCapability
-import org.neo4j.cypher.internal.v4_0.expressions.{Expression, Property, Variable}
+import org.neo4j.cypher.internal.v4_0.expressions.{Expression, Property}
 import org.neo4j.cypher.internal.v4_0.util.symbols.CypherType
 
 /**
@@ -32,48 +32,47 @@ object ResultOrdering {
 
   /**
     * @param interestingOrder the InterestingOrder from the query
-    * @param properties       a sequence of the properties of a (composite) index. The sequence is length one for non-composite indexes.
-    *                         The tuple contains the property name together with the type that the index query compares against for that
-    *                         property. So for `WHERE n.prop = 1 AND n.foo > 'bla'` this will be Seq( ('prop',CTInt), ('foo',CTString) )
+    * @param indexProperties  a sequence of the properties (inclusive variable name) of a (composite) index.
+    *                         The sequence is length one for non-composite indexes.
+    * @param orderTypes       a sequence of the type that the index query compares against for that each property.
+    *                         So for `WHERE n.prop = 1 AND n.foo > 'bla'` this will be Seq( CTInt, CTString )
     * @param capabilityLookup a lambda function to ask the index for a (sub)-sequence of types for the order capability it provides.
     *                         With the above example, we would ask the index for its ordering capability for Seq(CTInt, CTString).
     *                         In the future we also want to able to ask it for prefix sequences (e.g. just Seq(CTInt)).
     * @return the order that the index guarantees, if possible in accordance with the given required order.
     */
   def withIndexOrderCapability(interestingOrder: InterestingOrder,
-                               properties: Seq[(String, String)],
+                               indexProperties: Seq[Property],
                                orderTypes: Seq[CypherType],
                                capabilityLookup: Seq[CypherType] => IndexOrderCapability): ProvidedOrder = {
 
     import InterestingOrder._
 
-    def satisfies(properties: Seq[(String, String)], expression: Expression, projections: Map[String, Expression]): Boolean = {
-      AggregationHelper.extractPropertyForValue(expression, projections).exists {
-        case (element, property) =>
-          properties.headOption.exists {
-            case (entity, prop) if entity == element && prop == property => true
-            case _ => false
-          }
+    def satisfies(indexProperty: Property, expression: Expression, projections: Map[String, Expression]): Boolean =
+      AggregationHelper.extractPropertyForValue(expression, projections).contains(indexProperty)
+
+    if (indexProperties.isEmpty) {
+      ProvidedOrder.empty
+    } else {
+      val indexOrderCapability: IndexOrderCapability = capabilityLookup(orderTypes)
+      val candidates = interestingOrder.requiredOrderCandidate +: interestingOrder.interestingOrderCandidates
+
+      val maybeProvidedOrder = candidates.map(_.headOption).collectFirst {
+        case Some(Desc(expression, projection)) if indexOrderCapability.desc && satisfies(indexProperties.head, expression, projection) =>
+          ProvidedOrder(indexProperties.map { prop => ProvidedOrder.Desc(prop) })
+
+        case Some(Asc(expression, projection)) if indexOrderCapability.asc && satisfies(indexProperties.head, expression, projection) =>
+          ProvidedOrder(indexProperties.map { prop => ProvidedOrder.Asc(prop) })
       }
-    }
 
-    val indexOrderCapability: IndexOrderCapability = capabilityLookup(orderTypes)
-
-    val candidates = interestingOrder.requiredOrderCandidate +: interestingOrder.interestingOrderCandidates
-    val maybeProvidedOrder = candidates.map(_.headOption).collectFirst {
-      case Some(Desc(expression, projection)) if indexOrderCapability.desc && satisfies(properties, expression, projection) =>
-        ProvidedOrder(properties.map { case (element, property) => ProvidedOrder.Desc(element, property) })
-
-      case Some(Asc(expression, projection)) if indexOrderCapability.asc && satisfies(properties, expression, projection) =>
-        ProvidedOrder(properties.map { case (element, property) => ProvidedOrder.Asc(element, property) })
-    }
-
-    maybeProvidedOrder.getOrElse {
-      if (indexOrderCapability.asc)
-        ProvidedOrder(properties.map { case (element, property) => ProvidedOrder.Asc(element, property) })
-      else if (indexOrderCapability.desc)
-        ProvidedOrder(properties.map { case (element, property) => ProvidedOrder.Desc(element, property) })
-      else ProvidedOrder.empty
+      // If the required order cannot be satisfied, return the index guaranteed order
+      maybeProvidedOrder.getOrElse {
+        if (indexOrderCapability.asc)
+          ProvidedOrder(indexProperties.map { prop => ProvidedOrder.Asc(prop) })
+        else if (indexOrderCapability.desc)
+          ProvidedOrder(indexProperties.map { prop => ProvidedOrder.Desc(prop) })
+        else ProvidedOrder.empty
+      }
     }
   }
 }

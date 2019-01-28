@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.compiler.v4_0.helpers
 import org.neo4j.cypher.internal.v4_0.expressions._
 
 import scala.annotation.tailrec
-import scala.collection.mutable
 
 object AggregationHelper {
   private def check[T](aggregationFunction: FunctionInvocation, result: Expression => T, otherResult: T): T = {
@@ -53,14 +52,16 @@ object AggregationHelper {
 
   def extractProperties(aggregationExpressions: Map[String, Expression], renamings: Map[String, Expression]): Set[(String, String)] = {
     aggregationExpressions.values.flatMap {
-      extractPropertyForValue(_, renamings)
+      extractPropertyForValue(_, renamings).map {
+        case Property(Variable(varName), PropertyKeyName(propName)) => (varName, propName)
+      }
     }.toSet
   }
 
   @tailrec
   def extractPropertyForValue(expression: Expression,
                               renamings: Map[String, Expression],
-                              property: Option[String] = None): Option[(String, String)] = {
+                              property: Option[Property] = None): Option[Property] = {
     expression match {
       case FunctionInvocation(_, _, _, Seq(expr, _*)) =>
         // Cannot handle a function inside an aggregation
@@ -68,16 +69,16 @@ object AggregationHelper {
           None
         else
           extractPropertyForValue(expr, renamings)
-      case Property(Variable(varName), PropertyKeyName(propName)) =>
+      case prop@Property(Variable(varName), _) =>
         if (renamings.contains(varName))
-          extractPropertyForValue(renamings(varName), renamings, Some(propName))
+          extractPropertyForValue(renamings(varName), renamings, Some(prop))
         else
-          Some(varName -> propName)
+          Some(prop)
       case variable@Variable(varName) =>
         if (renamings.contains(varName) && renamings(varName) != variable)
           extractPropertyForValue(renamings(varName), renamings)
         else if (property.nonEmpty)
-          Some(varName -> property.get)
+          Some(Property(variable, property.get.propertyKey)(property.get.position))
         else
           None
       case _ => None
