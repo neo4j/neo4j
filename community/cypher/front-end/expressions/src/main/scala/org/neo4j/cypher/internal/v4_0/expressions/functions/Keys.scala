@@ -23,8 +23,8 @@ case object Keys extends Function with TypeSignatures {
   def name = "keys"
 
   override val signatures = Vector(
-    TypeSignature(CTNode, CTString, "Returns a list containing the string representations for all the property names of a node."),
-    TypeSignature(CTRelationship, CTString, "Returns a list containing the string representations for all the property names of a relationship"),
-    TypeSignature(CTMap, CTString, "Returns a list containing the string representations for all the property names of a map.")
+    TypeSignature(CTNode, CTList(CTString), "Returns a list containing the string representations for all the property names of a node."),
+    TypeSignature(CTRelationship, CTList(CTString), "Returns a list containing the string representations for all the property names of a relationship"),
+    TypeSignature(CTMap, CTList(CTString), "Returns a list containing the string representations for all the property names of a map.")
   )
 }
