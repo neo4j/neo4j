@@ -195,7 +195,7 @@ public class ReflectiveProcedureTest
 
         // Then
         assertEquals( 0, proc.signature().outputSignature().size() );
-        assertFalse( proc.apply( null, new AnyValue[0], resourceTracker ).hasNext() );
+        assertFalse( proc.apply( prepareContext(), new AnyValue[0], resourceTracker ).hasNext() );
     }
 
     @Test

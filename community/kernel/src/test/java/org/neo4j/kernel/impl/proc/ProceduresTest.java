@@ -100,7 +100,7 @@ class ProceduresTest
                         new AnyValue[]{longValue( 1337 )}, resourceTracker );
 
         // Then
-        assertThat( asList( result ), contains( equalTo( new Object[]{1337} ) ) );
+        assertThat( asList( result ), contains( equalTo( new AnyValue[]{longValue( 1337 )} ) ) );
     }
 
     @Test

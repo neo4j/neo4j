@@ -45,12 +45,14 @@ import org.neo4j.kernel.api.proc.Context;
 import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.procedure.Mode;
 import org.neo4j.values.AnyValue;
+import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.virtual.ListValue;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.MapValueBuilder;
 import org.neo4j.values.virtual.VirtualValues;
 
 import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureSignature;
+import static org.neo4j.values.storable.Values.NO_VALUE;
 import static org.neo4j.values.storable.Values.longValue;
 import static org.neo4j.values.storable.Values.stringValue;
 
@@ -74,7 +76,7 @@ public class JmxQueryProcedure extends CallableProcedure.BasicProcedure
     @Override
     public RawIterator<AnyValue[], ProcedureException> apply( Context ctx, AnyValue[] input, ResourceTracker resourceTracker ) throws ProcedureException
     {
-        String query = input[0].toString();
+        String query = ((TextValue) input[0]).stringValue();
         try
         {
             // Find all beans that match the query name pattern
@@ -108,7 +110,7 @@ public class JmxQueryProcedure extends CallableProcedure.BasicProcedure
         catch ( MalformedObjectNameException e )
         {
             throw new ProcedureException( Status.Procedure.ProcedureCallFailed,
-                  "'%s' is an invalid JMX name pattern. Valid queries should use" +
+                  "'%s' is an invalid JMX name pattern. Valid queries should use " +
                   "the syntax outlined in the javax.management.ObjectName API documentation." +
                   "For instance, try 'org.neo4j:*' to find all JMX beans of the 'org.neo4j' " +
                   "domain, or '*:*' to find every JMX bean.", query );
@@ -145,7 +147,7 @@ public class JmxQueryProcedure extends CallableProcedure.BasicProcedure
                 // unknown. We do this rather than rethrow the exception, because several MBeans built into
                 // the JVM will throw exception on attribute access depending on their runtime state, even
                 // if the attribute is marked as readable. Notably the GC beans do this.
-                value = null;
+                value = NO_VALUE;
             }
             else
             {
@@ -202,7 +204,7 @@ public class JmxQueryProcedure extends CallableProcedure.BasicProcedure
         // Build a new map with the same keys, but each value passed
         // through `toNeo4jValue`
         MapValueBuilder builder = new MapValueBuilder(  );
-        attributeValue.forEach( ( key, value ) -> builder.add( (String) key, toNeo4jValue( value ) ) );
+        attributeValue.forEach( ( key, value ) -> builder.add( key.toString(), toNeo4jValue( value ) ) );
         return builder.build();
     }
 

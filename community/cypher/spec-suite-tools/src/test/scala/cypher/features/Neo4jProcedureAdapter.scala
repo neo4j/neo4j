@@ -77,16 +77,17 @@ trait Neo4jProcedureAdapter extends ProcedureSupport {
         s"Data table columns must be the same as all signature fields (inputs + outputs) in order (Actual: ${neo4jValues.rows} Expected: $signatureFields)"
       )
     val kernelSignature = asKernelSignature(parsedSignature)
+    val rows = neo4jValues.rows.map(_.map(ValueUtils.of))
     val kernelProcedure = new BasicProcedure(kernelSignature) {
       override def apply(ctx: Context,
                          input: Array[AnyValue],
                          resourceTracker: ResourceTracker): RawIterator[Array[AnyValue], ProcedureException] = {
         // For example of usage see ProcedureCallAcceptance.feature e.g. "Standalone call to procedure with explicit arguments"
-        val rowsWithMatchingInput = neo4jValues.rows.filter { row =>
+        val rowsWithMatchingInput = rows.filter { row =>
           row.startsWith(input)
         }
         val extractResultsFromRows = rowsWithMatchingInput.map { row =>
-          row.drop(input.length).map(ValueUtils.of)
+          row.drop(input.length)
         }
 
         val rawIterator = RawIterator.wrap[Array[AnyValue], ProcedureException](extractResultsFromRows.toIterator.asJava)

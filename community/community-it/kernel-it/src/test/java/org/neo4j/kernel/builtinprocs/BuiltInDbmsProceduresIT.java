@@ -33,6 +33,8 @@ import org.neo4j.kernel.api.StubResourceManager;
 import org.neo4j.kernel.impl.api.integrationtest.KernelIntegrationTest;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.BooleanValue;
+import org.neo4j.values.storable.TextValue;
+import org.neo4j.values.storable.Values;
 
 import static org.apache.commons.lang3.ArrayUtils.toArray;
 import static org.hamcrest.Matchers.hasItem;
@@ -56,7 +58,7 @@ public class BuiltInDbmsProceduresIT extends KernelIntegrationTest
         // When
         List<AnyValue[]> config = callListConfig( "" );
         List<String> names = config.stream()
-                .map( o -> o[0].toString() )
+                .map( o -> ((TextValue) o[0]).stringValue() )
                 .collect( Collectors.toList() );
 
         // The size of the config is not fixed so just make sure it's the right magnitude
@@ -77,11 +79,12 @@ public class BuiltInDbmsProceduresIT extends KernelIntegrationTest
         List<AnyValue[]> config = callListConfig( GraphDatabaseSettings.strict_config_validation.name() );
 
         assertEquals( 1, config.size() );
-        assertArrayEquals( new Object[]{ "dbms.config.strict_validation",
-                "A strict configuration validation will prevent the database from starting up if unknown " +
+        assertArrayEquals( new AnyValue[]{stringValue( "dbms.config.strict_validation" ),
+                stringValue(
+                        "A strict configuration validation will prevent the database from starting up if unknown " +
                         "configuration options are specified in the neo4j settings namespace (such as dbms., " +
-                        "cypher., etc). This is currently false by default but will be true by default in 4.0.",
-                "false", false }, config.get( 0 ) );
+                        "cypher., etc). This is currently false by default but will be true by default in 4.0." ),
+                stringValue( "false" ), Values.FALSE}, config.get( 0 ) );
     }
 
     @Test
@@ -91,9 +94,9 @@ public class BuiltInDbmsProceduresIT extends KernelIntegrationTest
         List<AnyValue[]> config = callListConfig( GraphDatabaseSettings.transaction_timeout.name() );
 
         assertEquals( 1, config.size() );
-        assertArrayEquals( new Object[]{ "dbms.transaction.timeout",
-                "The maximum time interval of a transaction within which it should be completed.",
-                "0ms", true }, config.get( 0 ) );
+        assertArrayEquals( new AnyValue[]{ stringValue( "dbms.transaction.timeout" ),
+                stringValue( "The maximum time interval of a transaction within which it should be completed." ),
+                stringValue( "0ms" ), Values.TRUE }, config.get( 0 ) );
     }
 
     @Test

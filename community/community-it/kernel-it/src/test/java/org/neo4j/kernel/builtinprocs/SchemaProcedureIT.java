@@ -23,8 +23,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import java.util.ArrayList;
-
 import org.neo4j.collection.RawIterator;
 import org.neo4j.internal.kernel.api.Procedures;
 import org.neo4j.internal.kernel.api.SchemaWrite;
@@ -47,6 +45,7 @@ import static org.junit.Assert.assertEquals;
 import static org.neo4j.helpers.collection.Iterators.asList;
 import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureName;
 import static org.neo4j.values.storable.Values.stringValue;
+import static org.neo4j.values.virtual.VirtualValues.EMPTY_LIST;
 
 public class SchemaProcedureIT extends KernelIntegrationTest
 {
@@ -65,7 +64,7 @@ public class SchemaProcedureIT extends KernelIntegrationTest
                procs.procedureCallRead( procs.procedureGet( procedureName( "db", "schema" ) ).id(), new AnyValue[0] );
 
         // Then
-        assertThat( asList( stream ), contains( equalTo( new Object[]{new ArrayList<>(), new ArrayList<>()} ) ) );
+        assertThat( asList( stream ), contains( equalTo( new AnyValue[]{EMPTY_LIST, EMPTY_LIST} ) ) );
         commit();
     }
 

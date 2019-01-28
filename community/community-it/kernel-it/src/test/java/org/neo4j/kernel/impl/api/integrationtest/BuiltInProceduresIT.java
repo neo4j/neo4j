@@ -425,8 +425,7 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
     @SuppressWarnings( {"unchecked", "TypeParameterExplicitlyExtendsObject"} )
     private Matcher<AnyValue[]> proc( String procName, String procSignature, Matcher<String> description, String mode )
     {
-        Matcher<Object> desc = (Matcher<Object>) (Matcher<? extends Object>) description;
-        new TypeSafeMatcher<AnyValue>()
+        Matcher<AnyValue> desc = new TypeSafeMatcher<AnyValue>()
         {
             @Override
             public void describeTo( Description description )

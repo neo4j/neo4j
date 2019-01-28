@@ -88,7 +88,6 @@ public class ProcedureTest
         try ( Driver driver = GraphDatabase.driver( graphDb.boltURI(), configuration() );
                 Session session = driver.session() )
         {
-            session.run( "CALL " + procedureNamespace + ".performsWrites()" );
             session.run( "CALL " + procedureNamespace + ".defaultMode()" );
             session.run( "CALL " + procedureNamespace + ".readMode()" );
             session.run( "CALL " + procedureNamespace + ".writeMode()" );

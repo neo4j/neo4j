@@ -24,7 +24,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -116,7 +115,8 @@ public class ReflectiveUserAggregationFunctionTest
         aggregator.update( new AnyValue[]{stringValue( "Clyde" )} );
 
         // Then
-        assertThat( aggregator.result(), equalTo( Arrays.asList( "Bonnie", "Clyde" ) ) );
+        assertThat( aggregator.result(),
+                equalTo( VirtualValues.list( stringValue( "Bonnie" ), stringValue( "Clyde" ) ) ) );
     }
 
     @Test

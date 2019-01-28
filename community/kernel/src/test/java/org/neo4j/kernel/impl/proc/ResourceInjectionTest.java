@@ -194,10 +194,10 @@ public class ResourceInjectionTest
                 compiler.compileAggregationFunction( AggregationFunctionWithInjectedAPI.class).get( 0 );
         // When
         proc.create( prepareContext() ).update( new AnyValue[]{} );
-        Object out = proc.create( prepareContext() ).result();
+        AnyValue out = proc.create( prepareContext() ).result();
 
         // Then
-        assertThat( out, equalTo( "[Bonnie, Clyde]" ) );
+        assertThat( out, equalTo( stringValue( "[Bonnie, Clyde]" ) ) );
     }
 
     @Test

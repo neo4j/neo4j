@@ -40,6 +40,7 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.neo4j.helpers.collection.Iterators.asList;
 import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureName;
+import static org.neo4j.values.storable.Values.stringOrNoValue;
 import static org.neo4j.values.storable.Values.stringValue;
 
 public class BuiltInSchemaProceduresIT extends KernelIntegrationTest
@@ -604,15 +605,15 @@ public class BuiltInSchemaProceduresIT extends KernelIntegrationTest
     private AnyValue[] nodeEntry( String escapedLabels, List<String> labels, String propertyName, List<String> propertyValueTypes, boolean mandatory )
     {
         return new AnyValue[]{stringValue( escapedLabels ), ValueUtils.asListValue( labels ),
-                stringValue( propertyName ), ValueUtils.asListValue( propertyValueTypes ),
+                stringOrNoValue( propertyName ), ValueUtils.of( propertyValueTypes ),
                 Values.booleanValue( mandatory )};
     }
 
     private AnyValue[] relEntry( String labelsOrRelType, String propertyName, List<String> propertyValueTypes,
             boolean mandatory )
     {
-        return new AnyValue[]{stringValue( labelsOrRelType ), stringValue( propertyName ),
-                ValueUtils.asListValue( propertyValueTypes ), Values.booleanValue( mandatory )};
+        return new AnyValue[]{stringOrNoValue( labelsOrRelType ), stringOrNoValue( propertyName ),
+                ValueUtils.of( propertyValueTypes ), Values.booleanValue( mandatory )};
     }
 
     private long createEmptyNode() throws Throwable

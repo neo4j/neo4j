@@ -35,6 +35,7 @@ import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.internal.kernel.api.procs.FieldSignature.outputField;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTString;
+import static org.neo4j.values.storable.Values.stringValue;
 
 @SuppressWarnings( "WeakerAccess" )
 public class OutputMappersTest
@@ -98,7 +99,7 @@ public class OutputMappersTest
         );
         assertThat(
                 asList( mapper.apply( new SingleStringFieldRecord( "hello, world!" ) ) ),
-                contains( "hello, world!" )
+                contains( stringValue( "hello, world!" ) )
         );
     }
 
@@ -115,7 +116,7 @@ public class OutputMappersTest
         );
         assertThat(
                 asList( mapper.apply( new RecordWithStaticFields( "hello, world!" ) ) ),
-                contains( "hello, world!" )
+                contains( stringValue( "hello, world!" ) )
         );
     }
 
