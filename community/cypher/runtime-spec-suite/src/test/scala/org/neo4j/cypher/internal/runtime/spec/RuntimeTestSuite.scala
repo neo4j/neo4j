@@ -31,9 +31,9 @@ import org.neo4j.cypher.result.{QueryResult, RuntimeResult}
 import org.neo4j.graphdb._
 import org.neo4j.kernel.impl.coreapi.InternalTransaction
 import org.neo4j.kernel.impl.util.ValueUtils
-import org.neo4j.values.virtual.VirtualValues
 import org.neo4j.values.{AnyValue, AnyValues}
 import org.scalactic.{Equality, TolerantNumerics}
+import org.neo4j.values.virtual.VirtualValues
 import org.scalatest.matchers.{MatchResult, Matcher}
 import org.scalatest.{BeforeAndAfterEach, Tag}
 
@@ -177,12 +177,38 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
   // GRAPHS
 
   def nodeGraph(nNodes: Int, labels: String*): Seq[Node] = {
+    inTx {
+      for (i <- 0 until nNodes) yield {
+        graphDb.createNode(labels.map(Label.label):_*)
+      }
+    }
+  }
+
+  def circleGraph(nNodes: Int, labels: String*): (Seq[Node], Seq[Relationship]) = {
+    val nodes = inTx {
+      for (i <- 0 until nNodes) yield {
+        graphDb.createNode(labels.map(Label.label):_*)
+      }
+    }
+
+    val rels = new ArrayBuffer[Relationship]
+    inTx {
+      val rType = RelationshipType.withName("R")
+      for (i <- 0 until nNodes) {
+        val a = nodes(i)
+        val b = nodes((i+1)%nNodes)
+        rels += a.createRelationshipTo(b, rType)
+      }
+      rels += nodes.last.createRelationshipTo(nodes.head, rType)
+    }
+    (nodes, rels)
+  }
+
+  def inTx[T](f: => T): T = {
     val tx = graphDb.beginTx()
     try {
       tx.success()
-      for (_ <- 0 until nNodes) yield {
-        graphDb.createNode(labels.map(Label.label):_*)
-      }
+      f
     } finally tx.close()
   }
 

@@ -190,6 +190,11 @@ class LogicalQueryBuilder(tokenResolver: TokenResolver)
   def union(): LogicalQueryBuilder =
     appendAtCurrentIndent(BinaryOperator((lhs, rhs) => Union(lhs, rhs)))
 
+  def expandAll(pattern: String): LogicalQueryBuilder = {
+    val p = PatternParser.parse(pattern)
+    appendAtCurrentIndent(UnaryOperator(source => Expand(source, p.from, p.dir, p.relTypes, p.to, p.relName, ExpandAll)))
+  }
+
   def input(variables: String*): LogicalQueryBuilder = {
     if (indent != 0)
       throw new IllegalStateException("The input operator has to be the left-most leaf of the plan")
