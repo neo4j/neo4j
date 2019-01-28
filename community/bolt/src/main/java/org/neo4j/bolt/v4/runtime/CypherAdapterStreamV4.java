@@ -42,7 +42,7 @@ public class CypherAdapterStreamV4 extends CypherAdapterStreamV3
     }
 
     @Override
-    public boolean handlePullRecords( final Visitor visitor, long size ) throws Exception
+    public boolean handleRecords( final Visitor visitor, long size ) throws Exception
     {
         while ( size-- > 0 )
         {
@@ -60,13 +60,6 @@ public class CypherAdapterStreamV4 extends CypherAdapterStreamV3
             }
         }
         return true;
-    }
-
-    @Override
-    public void handleDiscardRecords( Visitor visitor ) throws Exception
-    {
-        // We shall also still go though all records but not sending them back to client.
-        metadata.forEach( visitor::addMetadata );
     }
 
     private void pullInAllRecords()

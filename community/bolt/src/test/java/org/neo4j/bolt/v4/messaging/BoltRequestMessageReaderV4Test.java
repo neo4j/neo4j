@@ -88,8 +88,8 @@ class BoltRequestMessageReaderV4Test
     {
         return Stream.of(
                 new PullNMessage( asMapValue( singletonMap( "n",  100L ) ) ),
+                new DiscardNMessage( asMapValue( singletonMap( "n", 100L ) ) ),
                 new RunMessage( "RETURN 1", EMPTY_MAP, EMPTY_MAP ),
-                DiscardAllMessage.INSTANCE,
 
                 new BeginMessage(),
                 COMMIT_MESSAGE,
@@ -103,7 +103,8 @@ class BoltRequestMessageReaderV4Test
                 new InitMessage( "My driver", map( "one", 1L, "two", 2L ) ),
                 AckFailureMessage.INSTANCE,
                 new org.neo4j.bolt.v1.messaging.request.RunMessage( "RETURN 1" ),
-                PullAllMessage.INSTANCE
+                PullAllMessage.INSTANCE,
+                DiscardAllMessage.INSTANCE
         );
     }
 

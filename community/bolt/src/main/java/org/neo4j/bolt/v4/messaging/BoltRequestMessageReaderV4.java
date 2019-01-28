@@ -29,7 +29,6 @@ import org.neo4j.bolt.runtime.BoltConnection;
 import org.neo4j.bolt.runtime.BoltResponseHandler;
 import org.neo4j.bolt.v1.messaging.MessageProcessingHandler;
 import org.neo4j.bolt.v1.messaging.ResultHandler;
-import org.neo4j.bolt.v1.messaging.decoder.DiscardAllMessageDecoder;
 import org.neo4j.bolt.v1.messaging.decoder.ResetMessageDecoder;
 import org.neo4j.bolt.v3.messaging.decoder.BeginMessageDecoder;
 import org.neo4j.bolt.v3.messaging.decoder.CommitMessageDecoder;
@@ -58,7 +57,7 @@ public class BoltRequestMessageReaderV4 extends BoltRequestMessageReader
         return Arrays.asList(
                 new HelloMessageDecoder( defaultHandler ),
                 new RunMessageDecoder( defaultHandler ),
-                new DiscardAllMessageDecoder( resultHandler ),
+                new DiscardNMessageDecoder( resultHandler ), // New
                 new PullNMessageDecoder( resultHandler ), // New
                 new BeginMessageDecoder( defaultHandler ),
                 new CommitMessageDecoder( resultHandler ),

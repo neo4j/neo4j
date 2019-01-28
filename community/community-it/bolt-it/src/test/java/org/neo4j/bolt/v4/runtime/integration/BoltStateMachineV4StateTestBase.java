@@ -35,7 +35,7 @@ public class BoltStateMachineV4StateTestBase
 {
     protected static final MapValue EMPTY_PARAMS = VirtualValues.EMPTY_MAP;
     protected static final String USER_AGENT = "BoltConnectionIT/0.0";
-    protected static final BoltChannel BOLT_CHANNEL = BoltTestUtil.newTestBoltChannel( "conn-v3-test-boltchannel-id" );
+    protected static final BoltChannel BOLT_CHANNEL = BoltTestUtil.newTestBoltChannel( "conn-v4-test-boltchannel-id" );
 
     @RegisterExtension
     static final SessionExtension env = new SessionExtension();

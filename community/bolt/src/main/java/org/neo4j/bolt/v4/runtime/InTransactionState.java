@@ -24,13 +24,13 @@ import org.neo4j.bolt.runtime.BoltStateMachineState;
 import org.neo4j.bolt.runtime.StateMachineContext;
 import org.neo4j.bolt.runtime.StatementMetadata;
 import org.neo4j.bolt.runtime.StatementProcessor;
-import org.neo4j.bolt.v1.messaging.request.DiscardAllMessage;
 import org.neo4j.bolt.v1.runtime.bookmarking.Bookmark;
 import org.neo4j.bolt.v3.messaging.request.CommitMessage;
 import org.neo4j.bolt.v3.messaging.request.RollbackMessage;
 import org.neo4j.bolt.v3.messaging.request.RunMessage;
 import org.neo4j.bolt.v3.runtime.FailSafeBoltStateMachineState;
 import org.neo4j.bolt.v4.messaging.DiscardAllResultConsumer;
+import org.neo4j.bolt.v4.messaging.DiscardNMessage;
 import org.neo4j.bolt.v4.messaging.PullNMessage;
 import org.neo4j.bolt.v4.messaging.PullResultConsumer;
 import org.neo4j.bolt.v4.messaging.ResultConsumer;
@@ -70,10 +70,10 @@ public class InTransactionState extends FailSafeBoltStateMachineState
             PullNMessage pullNMessage = (PullNMessage) message;
             return processStreamResultMessage( pullNMessage.statementId(), new PullResultConsumer( context, pullNMessage.n() ), context );
         }
-        if ( message instanceof DiscardAllMessage )
+        if ( message instanceof DiscardNMessage )
         {
-            // todo: pass statementId in DiscardAll message
-            return processStreamResultMessage( StatementMetadata.ABSENT_STATEMENT_ID, new DiscardAllResultConsumer( context ), context );
+            DiscardNMessage discardNMessage = (DiscardNMessage) message;
+            return processStreamResultMessage( discardNMessage.statementId(), new DiscardAllResultConsumer( context, discardNMessage.n() ), context );
         }
         return null;
     }

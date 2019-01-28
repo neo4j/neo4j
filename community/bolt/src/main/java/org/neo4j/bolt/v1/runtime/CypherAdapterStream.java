@@ -70,18 +70,7 @@ public class CypherAdapterStream implements BoltResult
     }
 
     @Override
-    public boolean handlePullRecords( Visitor visitor, long ignored ) throws Exception
-    {
-        return handleRecords( visitor );
-    }
-
-    @Override
-    public void handleDiscardRecords( Visitor visitor ) throws Exception
-    {
-        handleRecords( visitor );
-    }
-
-    private boolean handleRecords( Visitor visitor ) throws Exception
+    public boolean handleRecords( Visitor visitor, long ignored ) throws Exception
     {
         long start = clock.millis();
         delegate.accept( row -> {

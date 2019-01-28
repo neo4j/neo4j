@@ -75,6 +75,27 @@ public class BoltMatchers
         };
     }
 
+    public static Matcher<RecordedBoltResponse> succeededWithoutMetadata( final String key )
+    {
+        return new BaseMatcher<RecordedBoltResponse>()
+        {
+            @Override
+            public boolean matches( final Object item )
+            {
+                final RecordedBoltResponse response = (RecordedBoltResponse) item;
+                return response.message() == SUCCESS &&
+                        !response.hasMetadata( key );
+            }
+
+            @Override
+            public void describeTo( Description description )
+            {
+                description.appendValue( SUCCESS )
+                        .appendText( format( " without metadata %s", key ) );
+            }
+        };
+    }
+
     public static Matcher<RecordedBoltResponse> succeededWithMetadata( final String key, final String value )
     {
         return succeededWithMetadata( key, stringValue( value ) );
@@ -102,6 +123,26 @@ public class BoltMatchers
         };
     }
 
+    public static Matcher<RecordedBoltResponse> containsNoRecord()
+    {
+        return new BaseMatcher<RecordedBoltResponse>()
+        {
+            @Override
+            public boolean matches( Object item )
+            {
+                final RecordedBoltResponse response = (RecordedBoltResponse) item;
+                QueryResult.Record[] records = response.records();
+                return records.length == 0;
+            }
+
+            @Override
+            public void describeTo( Description description )
+            {
+                description.appendText( " without record" );
+            }
+        };
+    }
+
     public static Matcher<RecordedBoltResponse> containsRecord( final Object... values )
     {
         return new BaseMatcher<RecordedBoltResponse>()
@@ -111,7 +152,6 @@ public class BoltMatchers
             @Override
             public boolean matches( final Object item )
             {
-
                 final RecordedBoltResponse response = (RecordedBoltResponse) item;
                 QueryResult.Record[] records = response.records();
                 return records.length > 0 && Arrays.equals( records[0].fields(), anyValues );
@@ -120,7 +160,7 @@ public class BoltMatchers
             @Override
             public void describeTo( Description description )
             {
-                description.appendText( format( "with record %s", values ) );
+                description.appendText( format( " with record %s", values ) );
             }
         };
     }

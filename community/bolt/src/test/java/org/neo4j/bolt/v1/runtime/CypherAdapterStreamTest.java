@@ -49,6 +49,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.closeTo;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.bolt.v1.messaging.BoltResponseHandlerV1Adaptor.PULL_DISCARD_ALL_N_SIZE;
 import static org.neo4j.graphdb.QueryExecutionType.QueryType.READ_ONLY;
 import static org.neo4j.graphdb.QueryExecutionType.QueryType.READ_WRITE;
 import static org.neo4j.graphdb.QueryExecutionType.explained;
@@ -257,8 +258,8 @@ public class CypherAdapterStreamTest
 
     private MapValue metadataOf( CypherAdapterStream stream ) throws Exception
     {
-        final MapValueBuilder meta = new MapValueBuilder(  );
-        stream.handleDiscardRecords( new BoltResult.Visitor()
+        final MapValueBuilder meta = new MapValueBuilder();
+        stream.handleRecords( new BoltResult.Visitor()
         {
             @Override
             public void visit( QueryResult.Record record )
@@ -270,7 +271,7 @@ public class CypherAdapterStreamTest
             {
                 meta.add( key, value );
             }
-        } );
+        }, PULL_DISCARD_ALL_N_SIZE );
         return meta.build();
     }
 

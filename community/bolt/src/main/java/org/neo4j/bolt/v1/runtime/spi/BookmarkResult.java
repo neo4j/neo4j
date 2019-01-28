@@ -40,16 +40,10 @@ public class BookmarkResult implements BoltResult
     }
 
     @Override
-    public boolean handlePullRecords( Visitor visitor, long size )
+    public boolean handleRecords( Visitor visitor, long size )
     {
         visitor.addMetadata( "bookmark", stringValue( bookmark.toString() ) );
         return false;
-    }
-
-    @Override
-    public void handleDiscardRecords( Visitor visitor )
-    {
-        visitor.addMetadata( "bookmark", stringValue( bookmark.toString() ) );
     }
 
     @Override

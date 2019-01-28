@@ -32,22 +32,21 @@ import org.neo4j.bolt.runtime.BoltConnectionFatality;
 import org.neo4j.bolt.testing.BoltResponseRecorder;
 import org.neo4j.bolt.testing.RecordedBoltResponse;
 import org.neo4j.bolt.v1.messaging.BoltResponseHandlerV1Adaptor;
-import org.neo4j.bolt.v1.messaging.request.DiscardAllMessage;
 import org.neo4j.bolt.v1.messaging.request.InterruptSignal;
 import org.neo4j.bolt.v1.messaging.request.ResetMessage;
 import org.neo4j.bolt.v3.messaging.request.BeginMessage;
 import org.neo4j.bolt.v3.messaging.request.RunMessage;
-import org.neo4j.bolt.v3.runtime.FailedState;
 import org.neo4j.bolt.v3.runtime.InterruptedState;
 import org.neo4j.bolt.v3.runtime.ReadyState;
 import org.neo4j.bolt.v4.BoltStateMachineV4;
+import org.neo4j.bolt.v4.messaging.DiscardNMessage;
 import org.neo4j.bolt.v4.messaging.PullNMessage;
+import org.neo4j.bolt.v4.runtime.FailedState;
 import org.neo4j.bolt.v4.runtime.InTransactionState;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.values.storable.BooleanValue;
 
-import static java.util.Collections.singletonMap;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertFalse;
@@ -57,10 +56,12 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.neo4j.bolt.testing.BoltMatchers.containsNoRecord;
 import static org.neo4j.bolt.testing.BoltMatchers.containsRecord;
 import static org.neo4j.bolt.testing.BoltMatchers.failedWithStatus;
 import static org.neo4j.bolt.testing.BoltMatchers.succeeded;
 import static org.neo4j.bolt.testing.BoltMatchers.succeededWithMetadata;
+import static org.neo4j.bolt.testing.BoltMatchers.succeededWithoutMetadata;
 import static org.neo4j.bolt.testing.BoltMatchers.verifyKillsConnection;
 import static org.neo4j.bolt.testing.NullResponseHandler.nullResponseHandler;
 import static org.neo4j.bolt.v3.messaging.request.CommitMessage.COMMIT_MESSAGE;
@@ -104,19 +105,44 @@ class TransactionInTransactionStateIT extends BoltStateMachineV4StateTestBase
     }
 
     @Test
-    void shouldStayInTxOnDiscardAll_succ() throws Throwable
+    void shouldStayInTxOnDiscardN_succ() throws Throwable
     {
         // Given
         BoltStateMachineV4 machine = getBoltStateMachineInTxState();
 
         // When
         BoltResponseRecorder recorder = new BoltResponseRecorder();
-        machine.process( DiscardAllMessage.INSTANCE, recorder );
+        machine.process( newDiscardNMessage( 100L ), recorder );
 
         // Then
         RecordedBoltResponse response = recorder.nextResponse();
         assertThat( response, succeeded() );
         assertFalse( response.hasMetadata( "bookmark" ) );
+        assertThat( machine.state(), instanceOf( InTransactionState.class ) );
+    }
+
+    @Test
+    void shouldStayInTxOnDiscardN_succ_hasMore() throws Throwable
+    {
+        // Given
+        BoltStateMachineV4 machine = getBoltStateMachineInTxState( "Unwind [1, 2, 3] as n return n" );
+
+        // When
+        BoltResponseRecorder recorder = new BoltResponseRecorder();
+        machine.process( newDiscardNMessage( 2 ), recorder );
+
+        // Then
+        RecordedBoltResponse response = recorder.nextResponse();
+        assertThat( response, containsNoRecord() );
+        assertThat( response, succeededWithMetadata( "has_more", BooleanValue.TRUE ) );
+
+        machine.process( newDiscardNMessage( 2 ), recorder );
+        response = recorder.nextResponse();
+        assertThat( response, containsNoRecord() );
+        assertTrue( response.hasMetadata( "type" ) );
+        assertTrue( response.hasMetadata( "t_last" ) );
+        assertFalse( response.hasMetadata( "bookmark" ) );
+        assertThat( response, succeededWithoutMetadata( "has_more" ) );
         assertThat( machine.state(), instanceOf( InTransactionState.class ) );
     }
 
@@ -128,7 +154,7 @@ class TransactionInTransactionStateIT extends BoltStateMachineV4StateTestBase
 
         // When
         BoltResponseRecorder recorder = new BoltResponseRecorder();
-        machine.process( newPullNMessage( 100L ), recorder );
+        machine.process( newPullNMessage( 100 ), recorder );
 
         // Then
         RecordedBoltResponse response = recorder.nextResponse();
@@ -147,14 +173,14 @@ class TransactionInTransactionStateIT extends BoltStateMachineV4StateTestBase
 
         // When
         BoltResponseRecorder recorder = new BoltResponseRecorder();
-        machine.process( new PullNMessage( ValueUtils.asMapValue( singletonMap( "n", 2L ) ) ), recorder );
+        machine.process( newPullNMessage( 2 ), recorder );
 
         // Then
         RecordedBoltResponse response = recorder.nextResponse();
         assertThat( response, containsRecord( 1L ) );
         assertThat( response, succeededWithMetadata( "has_more", BooleanValue.TRUE ) );
 
-        machine.process( new PullNMessage( ValueUtils.asMapValue( singletonMap( "n", 2L ) ) ), recorder );
+        machine.process( newPullNMessage( 2 ), recorder );
         response = recorder.nextResponse();
         assertThat( response, containsRecord( 3L ) );
         assertTrue( response.hasMetadata( "type" ) );
@@ -219,7 +245,7 @@ class TransactionInTransactionStateIT extends BoltStateMachineV4StateTestBase
 
         BoltResponseHandlerV1Adaptor handler = mock( BoltResponseHandlerV1Adaptor.class );
         doThrow( new RuntimeException( "Fail" ) ).when( handler ).onPullRecords( any(), anyLong() );
-        doThrow( new RuntimeException( "Fail" ) ).when( handler ).onDiscardRecords( any() );
+        doThrow( new RuntimeException( "Fail" ) ).when( handler ).onDiscardRecords( any(), anyLong() );
         machine.process( message, handler );
 
         // Then
@@ -263,7 +289,7 @@ class TransactionInTransactionStateIT extends BoltStateMachineV4StateTestBase
 
     private static Stream<RequestMessage> pullAllDiscardAllMessages() throws BoltIOException
     {
-        return Stream.of( newPullNMessage( 100L ), DiscardAllMessage.INSTANCE );
+        return Stream.of( newPullNMessage( 100L ), newDiscardNMessage( 100L ) );
     }
 
     private BoltStateMachineV4 getBoltStateMachineInTxState() throws BoltConnectionFatality, BoltIOException
@@ -287,4 +313,10 @@ class TransactionInTransactionStateIT extends BoltStateMachineV4StateTestBase
     {
         return new PullNMessage( ValueUtils.asMapValue( Collections.singletonMap( "n", size ) ) );
     }
+
+    private static DiscardNMessage newDiscardNMessage( long size ) throws BoltIOException
+    {
+        return new DiscardNMessage( ValueUtils.asMapValue( Collections.singletonMap( "n", size ) ) );
+    }
+
 }

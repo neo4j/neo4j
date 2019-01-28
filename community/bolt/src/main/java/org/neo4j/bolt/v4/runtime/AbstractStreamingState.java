@@ -22,9 +22,9 @@ package org.neo4j.bolt.v4.runtime;
 import org.neo4j.bolt.messaging.RequestMessage;
 import org.neo4j.bolt.runtime.BoltStateMachineState;
 import org.neo4j.bolt.runtime.StateMachineContext;
-import org.neo4j.bolt.v1.messaging.request.DiscardAllMessage;
 import org.neo4j.bolt.v3.runtime.FailSafeBoltStateMachineState;
 import org.neo4j.bolt.v4.messaging.DiscardAllResultConsumer;
+import org.neo4j.bolt.v4.messaging.DiscardNMessage;
 import org.neo4j.bolt.v4.messaging.PullNMessage;
 import org.neo4j.bolt.v4.messaging.PullResultConsumer;
 import org.neo4j.bolt.v4.messaging.ResultConsumer;
@@ -43,9 +43,10 @@ public abstract class AbstractStreamingState extends FailSafeBoltStateMachineSta
     @Override
     public BoltStateMachineState processUnsafe( RequestMessage message, StateMachineContext context ) throws Throwable
     {
-        if ( message instanceof DiscardAllMessage )
+        if ( message instanceof DiscardNMessage )
         {
-            return processStreamResultMessage( new DiscardAllResultConsumer( context ), context );
+            long size = ((DiscardNMessage) message).n();
+            return processStreamResultMessage( new DiscardAllResultConsumer( context, size ), context );
         }
         if ( message instanceof PullNMessage )
         {

@@ -22,7 +22,6 @@ package org.neo4j.bolt.runtime;
 import org.junit.jupiter.api.Test;
 
 import org.neo4j.bolt.v1.messaging.BoltResponseHandlerV1Adaptor;
-import org.neo4j.bolt.v1.messaging.request.PullAllMessage;
 import org.neo4j.bolt.v1.runtime.MutableConnectionState;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -31,6 +30,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.neo4j.bolt.v1.messaging.BoltResponseHandlerV1Adaptor.PULL_DISCARD_ALL_N_SIZE;
 import static org.neo4j.values.storable.Values.stringValue;
 
 class MutableConnectionStateTest
@@ -58,7 +58,7 @@ class MutableConnectionStateTest
 
         state.onRecords( result, true );
 
-        verify( responseHandler ).onPullRecords( result, PullAllMessage.PULL_N_SIZE );
+        verify( responseHandler ).onPullRecords( result, PULL_DISCARD_ALL_N_SIZE );
     }
 
     @Test
@@ -68,7 +68,7 @@ class MutableConnectionStateTest
 
         state.onRecords( result, false );
 
-        verify( responseHandler ).onDiscardRecords( result );
+        verify( responseHandler ).onDiscardRecords( result, PULL_DISCARD_ALL_N_SIZE );
     }
 
     @Test

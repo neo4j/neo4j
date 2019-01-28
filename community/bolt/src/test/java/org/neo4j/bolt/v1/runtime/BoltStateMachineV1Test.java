@@ -747,7 +747,7 @@ public class BoltStateMachineV1Test
     {
         // Given
         BoltStateMachine machine = init( newMachine() );
-        BoltResponseHandler responseHandler = mock( BoltResponseHandler.class );
+        BoltResponseHandlerV1Adaptor responseHandler = mock( BoltResponseHandlerV1Adaptor.class );
 
         Neo4jError error = Neo4jError.from( Status.Request.NoThreadsAvailable, "no threads" );
         machine.markFailed( error );
@@ -790,7 +790,7 @@ public class BoltStateMachineV1Test
         // Given
         BoltStateMachine machine = init( newMachine() );
         machine.markFailed( Neo4jError.from( new RuntimeException() ) );
-        BoltResponseHandler responseHandler = mock( BoltResponseHandler.class );
+        BoltResponseHandlerV1Adaptor responseHandler = mock( BoltResponseHandlerV1Adaptor.class );
 
         Neo4jError error = Neo4jError.from( Status.Request.NoThreadsAvailable, "no threads" );
         machine.markFailed( error );

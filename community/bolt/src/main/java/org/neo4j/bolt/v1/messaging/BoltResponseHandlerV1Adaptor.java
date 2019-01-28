@@ -21,23 +21,29 @@ package org.neo4j.bolt.v1.messaging;
 
 import org.neo4j.bolt.runtime.BoltResponseHandler;
 import org.neo4j.bolt.runtime.BoltResult;
-import org.neo4j.bolt.v1.messaging.request.PullAllMessage;
+
+import static java.lang.String.format;
 
 public abstract class BoltResponseHandlerV1Adaptor implements BoltResponseHandler
 {
+    public static final long PULL_DISCARD_ALL_N_SIZE = Long.MAX_VALUE;
+
     public void onRecords( BoltResult result, boolean pullAll ) throws Exception
     {
+        boolean hasMore;
         if ( pullAll )
         {
-            boolean hasMore = onPullRecords( result, PullAllMessage.PULL_N_SIZE );
-            if ( hasMore )
-            {
-                throw new IllegalArgumentException( "Shall not allow pulling records multiple times in bolt v1" );
-            }
+            hasMore = onPullRecords( result, PULL_DISCARD_ALL_N_SIZE );
         }
         else
         {
-            onDiscardRecords( result );
+            hasMore = onDiscardRecords( result, PULL_DISCARD_ALL_N_SIZE );
+        }
+
+        if ( hasMore )
+        {
+            throw new IllegalArgumentException( format( "Returning records size exceeding the maximum allowed size: %s",
+                    PULL_DISCARD_ALL_N_SIZE ) );
         }
     }
 }

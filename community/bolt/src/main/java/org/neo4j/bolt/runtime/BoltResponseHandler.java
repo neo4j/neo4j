@@ -30,7 +30,7 @@ public interface BoltResponseHandler
 {
     boolean onPullRecords( BoltResult result, long size ) throws Exception;
 
-    void onDiscardRecords( BoltResult result ) throws Exception;
+    boolean onDiscardRecords( BoltResult result, long size ) throws Exception;
 
     void onMetadata( String key, AnyValue value );
 

@@ -69,11 +69,15 @@ public class MutableConnectionState extends BoltResponseHandlerV1Adaptor
     }
 
     @Override
-    public void onDiscardRecords( BoltResult result ) throws Exception
+    public boolean onDiscardRecords( BoltResult result, long size ) throws Exception
     {
         if ( responseHandler != null )
         {
-            responseHandler.onDiscardRecords( result );
+            return responseHandler.onDiscardRecords( result, size );
+        }
+        else
+        {
+            return false;
         }
     }
 

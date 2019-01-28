@@ -24,7 +24,6 @@ import org.neo4j.bolt.messaging.RequestMessage;
 public class PullAllMessage implements RequestMessage
 {
     public static final byte SIGNATURE = 0x3F;
-    public static final long PULL_N_SIZE = Long.MAX_VALUE;
 
     public static final PullAllMessage INSTANCE = new PullAllMessage();
 

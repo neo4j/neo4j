@@ -19,27 +19,40 @@
  */
 package org.neo4j.bolt.v4.messaging;
 
-import org.neo4j.bolt.messaging.BoltIOException;
+import java.io.IOException;
+
+import org.neo4j.bolt.messaging.Neo4jPack;
+import org.neo4j.bolt.messaging.RequestMessage;
+import org.neo4j.bolt.messaging.RequestMessageDecoder;
+import org.neo4j.bolt.runtime.BoltResponseHandler;
 import org.neo4j.values.virtual.MapValue;
 
-public class PullNMessage extends AbstractHandleNMessage
+public class DiscardNMessageDecoder implements RequestMessageDecoder
 {
-    public static final byte SIGNATURE = 0x3F;
+    private final BoltResponseHandler responseHandler;
 
-    public PullNMessage( MapValue meta ) throws BoltIOException
+    public DiscardNMessageDecoder( BoltResponseHandler responseHandler )
     {
-        super( meta );
+        this.responseHandler = responseHandler;
     }
 
     @Override
-    public boolean safeToProcessInAnyState()
+    public int signature()
     {
-        return false;
+        return DiscardNMessage.SIGNATURE;
     }
 
     @Override
-    String name()
+    public BoltResponseHandler responseHandler()
     {
-        return "PULL_N";
+        return responseHandler;
+    }
+
+    @Override
+    public RequestMessage decode( Neo4jPack.Unpacker unpacker ) throws IOException
+    {
+        MapValue meta = unpacker.unpackMap();
+        return new DiscardNMessage( meta );
     }
 }
+

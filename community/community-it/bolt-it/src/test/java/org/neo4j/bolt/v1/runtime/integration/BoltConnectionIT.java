@@ -444,8 +444,9 @@ public class BoltConnectionIT
             }
 
             @Override
-            public void onDiscardRecords( BoltResult result ) throws Exception
+            public boolean onDiscardRecords( BoltResult result, long size ) throws Exception
             {
+                return false;
             }
 
             @Override

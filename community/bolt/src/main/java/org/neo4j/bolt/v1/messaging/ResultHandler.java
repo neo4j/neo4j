@@ -38,19 +38,13 @@ public class ResultHandler extends MessageProcessingHandler
     @Override
     public boolean onPullRecords( final BoltResult result, final long size ) throws Exception
     {
-        boolean hasMore = result.handlePullRecords( new RecordWritingBoltResultVisitor(), size );
-
-        if ( hasMore )
-        {
-            onMetadata( "has_more", BooleanValue.TRUE );
-        }
-        return hasMore;
+        return hasMore( result.handleRecords( new RecordWritingBoltResultVisitor(), size ) );
     }
 
     @Override
-    public void onDiscardRecords( BoltResult result ) throws Exception
+    public boolean onDiscardRecords( BoltResult result, long size ) throws Exception
     {
-        result.handleDiscardRecords( new RecordDiscardingBoltResultVisitor() );
+        return hasMore( result.handleRecords( new RecordDiscardingBoltResultVisitor(), size ) );
     }
 
     private class RecordWritingBoltResultVisitor implements BoltResult.Visitor
@@ -80,5 +74,14 @@ public class ResultHandler extends MessageProcessingHandler
         {
             onMetadata( key, value );
         }
+    }
+
+    private boolean hasMore( boolean hasMore )
+    {
+        if ( hasMore )
+        {
+            onMetadata( "has_more", BooleanValue.TRUE );
+        }
+        return hasMore;
     }
 }

@@ -39,6 +39,7 @@ import org.neo4j.bolt.v3.messaging.request.RunMessage;
 import org.neo4j.bolt.v3.runtime.InterruptedState;
 import org.neo4j.bolt.v3.runtime.ReadyState;
 import org.neo4j.bolt.v4.BoltStateMachineV4;
+import org.neo4j.bolt.v4.messaging.DiscardNMessage;
 import org.neo4j.bolt.v4.messaging.PullNMessage;
 import org.neo4j.bolt.v4.runtime.StreamingState;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -113,7 +114,7 @@ class StreamingStateIT extends BoltStateMachineV4StateTestBase
 
         // When
         BoltResponseRecorder recorder = new BoltResponseRecorder();
-        machine.process( DiscardAllMessage.INSTANCE, recorder );
+        machine.process( new DiscardNMessage( ValueUtils.asMapValue( singletonMap( "n", 2L ) ) ), recorder );
 
         // Then
         RecordedBoltResponse response = recorder.nextResponse();
@@ -137,7 +138,7 @@ class StreamingStateIT extends BoltStateMachineV4StateTestBase
     }
 
     @ParameterizedTest
-    @MethodSource( "illegalV3Messages" )
+    @MethodSource( "illegalV4Messages" )
     void shouldCloseConnectionOnIllegalV3MessagesInStreamingState( RequestMessage message ) throws Throwable
     {
         shouldThrowExceptionOnIllegalMessagesInStreamingState( message );
@@ -161,10 +162,10 @@ class StreamingStateIT extends BoltStateMachineV4StateTestBase
         assertNull( machine.state() );
     }
 
-    private static Stream<RequestMessage> illegalV3Messages() throws BoltIOException
+    private static Stream<RequestMessage> illegalV4Messages() throws BoltIOException
     {
         return Stream.of( newHelloMessage(), new RunMessage( "any string" ), new BeginMessage(), ROLLBACK_MESSAGE, COMMIT_MESSAGE, ResetMessage.INSTANCE,
-                GOODBYE_MESSAGE, PullAllMessage.INSTANCE );
+                GOODBYE_MESSAGE, PullAllMessage.INSTANCE, DiscardAllMessage.INSTANCE );
     }
 
     private BoltStateMachineV4 getBoltStateMachineInStreamingState() throws BoltConnectionFatality, BoltIOException

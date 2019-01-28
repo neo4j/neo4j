@@ -19,29 +19,27 @@
  */
 package org.neo4j.bolt.v4.messaging;
 
-import org.neo4j.bolt.runtime.BoltResult;
-import org.neo4j.bolt.runtime.StateMachineContext;
+import org.neo4j.bolt.messaging.BoltIOException;
+import org.neo4j.values.virtual.MapValue;
 
-public class DiscardAllResultConsumer implements ResultConsumer
+public class DiscardNMessage extends AbstractHandleNMessage
 {
-    private final StateMachineContext context;
-    private final long size;
-    private boolean hasMore;
+    public static final byte SIGNATURE = 0x2F;
 
-    public DiscardAllResultConsumer( StateMachineContext context, long size )
+    public DiscardNMessage( MapValue meta ) throws BoltIOException
     {
-        this.context = context;
-        this.size = size;
+        super( meta );
     }
 
     @Override
-    public void consume( BoltResult boltResult ) throws Exception
+    public boolean safeToProcessInAnyState()
     {
-        hasMore = context.connectionState().getResponseHandler().onDiscardRecords( boltResult, size );
+        return false;
     }
 
-    public boolean hasMore()
+    @Override
+    String name()
     {
-        return hasMore;
+        return "DISCARD_N";
     }
 }

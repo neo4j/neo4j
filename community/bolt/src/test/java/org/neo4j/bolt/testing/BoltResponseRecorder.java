@@ -56,19 +56,13 @@ public class BoltResponseRecorder extends BoltResponseHandlerV1Adaptor
     @Override
     public boolean onPullRecords( BoltResult result, long size ) throws Exception
     {
-        boolean hasMore = result.handlePullRecords( new RecordingBoltResultVisitor(), size );
-        if ( hasMore )
-        {
-            onMetadata( "has_more", BooleanValue.TRUE );
-        }
-
-        return hasMore;
+        return hasMore( result.handleRecords( new RecordingBoltResultVisitor(), size ) );
     }
 
     @Override
-    public void onDiscardRecords( BoltResult result ) throws Exception
+    public boolean onDiscardRecords( BoltResult result, long size ) throws Exception
     {
-        result.handleDiscardRecords( new RecordingBoltResultVisitor() );
+        return hasMore( result.handleRecords( new DiscardingBoltResultVisitor(), size ) );
     }
 
     @Override
@@ -114,6 +108,21 @@ public class BoltResponseRecorder extends BoltResponseHandlerV1Adaptor
         return response;
     }
 
+    private class DiscardingBoltResultVisitor implements BoltResult.Visitor
+    {
+        @Override
+        public void visit( QueryResult.Record record )
+        {
+            // discard
+        }
+
+        @Override
+        public void addMetadata( String key, AnyValue value )
+        {
+            currentResponse.addMetadata( key, value );
+        }
+    }
+
     private class RecordingBoltResultVisitor implements BoltResult.Visitor
     {
         @Override
@@ -127,5 +136,14 @@ public class BoltResponseRecorder extends BoltResponseHandlerV1Adaptor
         {
             currentResponse.addMetadata( key, value );
         }
+    }
+
+    private boolean hasMore( boolean hasMore )
+    {
+        if ( hasMore )
+        {
+            onMetadata( "has_more", BooleanValue.TRUE );
+        }
+        return hasMore;
     }
 }

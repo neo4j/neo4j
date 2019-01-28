@@ -26,6 +26,8 @@ import org.neo4j.bolt.messaging.Neo4jPack;
 import org.neo4j.bolt.messaging.RequestMessage;
 import org.neo4j.bolt.v1.messaging.BoltRequestMessageWriter;
 import org.neo4j.bolt.v3.messaging.BoltRequestMessageWriterV3;
+import org.neo4j.bolt.v4.messaging.AbstractHandleNMessage;
+import org.neo4j.bolt.v4.messaging.DiscardNMessage;
 import org.neo4j.bolt.v4.messaging.PullNMessage;
 
 /**
@@ -43,7 +45,11 @@ public class BoltRequestMessageWriterV4 extends BoltRequestMessageWriterV3
     {
         if ( message instanceof PullNMessage )
         {
-            writePullN( (PullNMessage) message );
+            writeHandleN( (PullNMessage) message, PullNMessage.SIGNATURE );
+        }
+        else if ( message instanceof DiscardNMessage )
+        {
+            writeHandleN( (DiscardNMessage) message, DiscardNMessage.SIGNATURE );
         }
         else
         {
@@ -52,11 +58,11 @@ public class BoltRequestMessageWriterV4 extends BoltRequestMessageWriterV3
         return this;
     }
 
-    private void writePullN( PullNMessage message )
+    private void writeHandleN( AbstractHandleNMessage message, byte signature )
     {
         try
         {
-            packer.packStructHeader( 0, PullNMessage.SIGNATURE );
+            packer.packStructHeader( 0, signature );
             packer.pack( message.meta() );
         }
         catch ( IOException e )
