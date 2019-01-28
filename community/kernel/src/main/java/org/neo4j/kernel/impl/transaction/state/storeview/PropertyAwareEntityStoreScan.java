@@ -27,7 +27,9 @@ import java.util.function.LongFunction;
 import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.impl.api.index.EntityUpdates;
+import org.neo4j.kernel.impl.api.index.LoggingPhaseTracker;
 import org.neo4j.kernel.impl.api.index.MultipleIndexPopulator;
+import org.neo4j.kernel.impl.api.index.PhaseTracker;
 import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.storageengine.api.StorageEntityScanCursor;
@@ -46,6 +48,7 @@ public abstract class PropertyAwareEntityStoreScan<CURSOR extends StorageEntityS
     private long totalCount;
     private final IntPredicate propertyKeyIdFilter;
     private final LongFunction<Lock> lockFunction;
+    private PhaseTracker phaseTracker;
 
     protected PropertyAwareEntityStoreScan( StorageReader storageReader, long totalEntityCount, IntPredicate propertyKeyIdFilter,
             LongFunction<Lock> lockFunction )
@@ -56,6 +59,7 @@ public abstract class PropertyAwareEntityStoreScan<CURSOR extends StorageEntityS
         this.propertyKeyIdFilter = propertyKeyIdFilter;
         this.lockFunction = lockFunction;
         this.totalCount = totalEntityCount;
+        this.phaseTracker = PhaseTracker.nullInstance;
     }
 
     protected abstract CURSOR allocateCursor( StorageReader storageReader );
@@ -106,6 +110,7 @@ public abstract class PropertyAwareEntityStoreScan<CURSOR extends StorageEntityS
             continueScanning = true;
             while ( continueScanning && entityIdIterator.hasNext() )
             {
+                phaseTracker.enterPhase( LoggingPhaseTracker.Phase.SCAN );
                 long id = entityIdIterator.next();
                 try ( Lock ignored = lockFunction.apply( id ) )
                 {
@@ -159,6 +164,12 @@ public abstract class PropertyAwareEntityStoreScan<CURSOR extends StorageEntityS
 
         // nothing to do 100% completed
         return PopulationProgress.DONE;
+    }
+
+    @Override
+    public void setPhaseTracker( PhaseTracker phaseTracker )
+    {
+        this.phaseTracker = phaseTracker;
     }
 
     protected EntityIdIterator getEntityIdIterator()

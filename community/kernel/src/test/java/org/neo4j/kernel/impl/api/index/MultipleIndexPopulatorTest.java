@@ -71,10 +71,8 @@ import static org.neo4j.kernel.api.index.IndexQueryHelper.add;
 public class MultipleIndexPopulatorTest
 {
     private final LabelSchemaDescriptor index1 = SchemaDescriptorFactory.forLabel( 1, 1 );
-    @Mock
+    @Mock( answer = Answers.RETURNS_MOCKS )
     private IndexStoreView indexStoreView;
-    @Mock
-    private StoreScan storeScan;
     @Mock( answer = Answers.RETURNS_MOCKS )
     private LogProvider logProvider;
     @Mock

@@ -106,6 +106,7 @@ public class MultipleIndexPopulator implements IndexPopulator
     protected final Log log;
     private final EntityType type;
     private final SchemaState schemaState;
+    private final PhaseTracker phaseTracker;
     private StoreScan<IndexPopulationFailedKernelException> storeScan;
 
     public MultipleIndexPopulator( IndexStoreView storeView, LogProvider logProvider, EntityType type, SchemaState schemaState )
@@ -115,6 +116,7 @@ public class MultipleIndexPopulator implements IndexPopulator
         this.log = logProvider.getLog( IndexPopulationJob.class );
         this.type = type;
         this.schemaState = schemaState;
+        this.phaseTracker = new LoggingPhaseTracker( logProvider.getLog( IndexPopulationJob.class ) );
     }
 
     IndexPopulation addPopulator( IndexPopulator populator, CapableIndexDescriptor capableIndexDescriptor, FlippableIndexProxy flipper,
@@ -172,6 +174,7 @@ public class MultipleIndexPopulator implements IndexPopulator
         {
             storeScan = storeView.visitNodes( entityTokenIds, propertyKeyIdFilter, new EntityPopulationVisitor(), null, false );
         }
+        storeScan.setPhaseTracker( phaseTracker );
         return new DelegatingStoreScan<IndexPopulationFailedKernelException>( storeScan )
         {
             @Override
@@ -268,6 +271,7 @@ public class MultipleIndexPopulator implements IndexPopulator
     @Override
     public void close( boolean populationCompletedSuccessfully )
     {
+        phaseTracker.stop();
         // closing the populators happens in flip, fail or individually when they are completed
     }
 
@@ -355,6 +359,12 @@ public class MultipleIndexPopulator implements IndexPopulator
     }
 
     protected void flush( IndexPopulation population )
+    {
+        phaseTracker.enterPhase( LoggingPhaseTracker.Phase.WRITE );
+        doFlush( population );
+    }
+
+    void doFlush( IndexPopulation population )
     {
         try
         {
@@ -553,6 +563,7 @@ public class MultipleIndexPopulator implements IndexPopulator
 
         void flip( boolean verifyBeforeFlipping ) throws FlipFailedKernelException
         {
+            phaseTracker.enterPhase( LoggingPhaseTracker.Phase.FLIP );
             flipper.flip( () ->
             {
                 populatorLock.lock();
@@ -677,6 +688,12 @@ public class MultipleIndexPopulator implements IndexPopulator
         public PopulationProgress getProgress()
         {
             return delegate.getProgress();
+        }
+
+        @Override
+        public void setPhaseTracker( PhaseTracker phaseTracker )
+        {
+            delegate.setPhaseTracker( phaseTracker );
         }
     }
 }

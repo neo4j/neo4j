@@ -32,4 +32,13 @@ public interface StoreScan<FAILURE extends Exception>
             long currentlyIndexedNodeId );
 
     PopulationProgress getProgress();
+
+    /**
+     * Give this {@link StoreScan} a {@link PhaseTracker} to report to.
+     * Must not be called once scan has already started.
+     * @param phaseTracker {@link PhaseTracker} this store scan shall report to.
+     */
+    default void setPhaseTracker( PhaseTracker phaseTracker )
+    {   // no-op
+    }
 }

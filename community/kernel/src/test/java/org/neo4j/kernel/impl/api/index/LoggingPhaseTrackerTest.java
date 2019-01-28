@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2018 "Neo4j,"
+ * Copyright (c) 2002-2019 "Neo4j,"
  * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
@@ -36,22 +36,22 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-public class PhaseTrackerTest
+public class LoggingPhaseTrackerTest
 {
     @Test
     public void shouldLogSingleTime() throws InterruptedException
     {
-        PhaseTracker phaseTracker = getPhaseTracker();
+        LoggingPhaseTracker phaseTracker = getPhaseTracker();
 
-        phaseTracker.enterPhase( PhaseTracker.Phase.SCAN );
+        phaseTracker.enterPhase( LoggingPhaseTracker.Phase.SCAN );
         sleep( 100 );
         phaseTracker.stop();
 
-        EnumMap<PhaseTracker.Phase,PhaseTracker.Logger> times = phaseTracker.times();
-        for ( PhaseTracker.Phase phase : times.keySet() )
+        EnumMap<LoggingPhaseTracker.Phase,LoggingPhaseTracker.Logger> times = phaseTracker.times();
+        for ( LoggingPhaseTracker.Phase phase : times.keySet() )
         {
-            PhaseTracker.Logger logger = times.get( phase );
-            if ( phase == PhaseTracker.Phase.SCAN )
+            LoggingPhaseTracker.Logger logger = times.get( phase );
+            if ( phase == LoggingPhaseTracker.Phase.SCAN )
             {
                 assertTrue( logger.totalTime >= TimeUnit.MILLISECONDS.toNanos( 100 ) );
                 assertTrue( logger.totalTime < TimeUnit.MILLISECONDS.toNanos( 500 ) );
@@ -66,20 +66,20 @@ public class PhaseTrackerTest
     @Test
     public void shouldLogMultipleTimes() throws InterruptedException
     {
-        PhaseTracker phaseTracker = getPhaseTracker();
+        LoggingPhaseTracker phaseTracker = getPhaseTracker();
 
-        phaseTracker.enterPhase( PhaseTracker.Phase.SCAN );
+        phaseTracker.enterPhase( LoggingPhaseTracker.Phase.SCAN );
         sleep( 100 );
-        phaseTracker.enterPhase( PhaseTracker.Phase.WRITE );
+        phaseTracker.enterPhase( LoggingPhaseTracker.Phase.WRITE );
         sleep( 100 );
         phaseTracker.stop();
 
-        EnumMap<PhaseTracker.Phase,PhaseTracker.Logger> times = phaseTracker.times();
-        for ( PhaseTracker.Phase phase : times.keySet() )
+        EnumMap<LoggingPhaseTracker.Phase,LoggingPhaseTracker.Logger> times = phaseTracker.times();
+        for ( LoggingPhaseTracker.Phase phase : times.keySet() )
         {
-            PhaseTracker.Logger logger = times.get( phase );
-            if ( phase == PhaseTracker.Phase.SCAN ||
-                    phase == PhaseTracker.Phase.WRITE )
+            LoggingPhaseTracker.Logger logger = times.get( phase );
+            if ( phase == LoggingPhaseTracker.Phase.SCAN ||
+                    phase == LoggingPhaseTracker.Phase.WRITE )
             {
                 assertTrue( logger.totalTime >= TimeUnit.MILLISECONDS.toNanos( 100 ) );
                 assertTrue( logger.totalTime < TimeUnit.MILLISECONDS.toNanos( 500 ) );
@@ -94,14 +94,14 @@ public class PhaseTrackerTest
     @Test
     public void shouldAccumulateTimes() throws InterruptedException
     {
-        PhaseTracker phaseTracker = getPhaseTracker();
+        LoggingPhaseTracker phaseTracker = getPhaseTracker();
 
-        phaseTracker.enterPhase( PhaseTracker.Phase.SCAN );
+        phaseTracker.enterPhase( LoggingPhaseTracker.Phase.SCAN );
         sleep( 100 );
-        phaseTracker.enterPhase( PhaseTracker.Phase.WRITE );
-        PhaseTracker.Logger scanLogger = phaseTracker.times().get( PhaseTracker.Phase.SCAN );
+        phaseTracker.enterPhase( LoggingPhaseTracker.Phase.WRITE );
+        LoggingPhaseTracker.Logger scanLogger = phaseTracker.times().get( LoggingPhaseTracker.Phase.SCAN );
         long firstCount = scanLogger.totalTime;
-        phaseTracker.enterPhase( PhaseTracker.Phase.SCAN );
+        phaseTracker.enterPhase( LoggingPhaseTracker.Phase.SCAN );
         sleep( 100 );
         phaseTracker.stop();
 
@@ -115,7 +115,7 @@ public class PhaseTrackerTest
         phaseTracker.stop();
         try
         {
-            phaseTracker.enterPhase( PhaseTracker.Phase.SCAN );
+            phaseTracker.enterPhase( LoggingPhaseTracker.Phase.SCAN );
             fail( "Should have failed" );
         }
         catch ( IllegalStateException e )
@@ -131,16 +131,15 @@ public class PhaseTrackerTest
         AssertableLogProvider logProvider = new AssertableLogProvider( true );
         Log log = logProvider.getLog( IndexPopulationJob.class );
         PhaseTracker phaseTracker = getPhaseTracker( log );
-        phaseTracker.enterPhase( PhaseTracker.Phase.SCAN );
+        phaseTracker.enterPhase( LoggingPhaseTracker.Phase.SCAN );
         sleep( 100 );
-        phaseTracker.enterPhase( PhaseTracker.Phase.WRITE );
+        phaseTracker.enterPhase( LoggingPhaseTracker.Phase.WRITE );
         sleep( 100 );
-        phaseTracker.enterPhase( PhaseTracker.Phase.FLIP );
+        phaseTracker.enterPhase( LoggingPhaseTracker.Phase.FLIP );
         sleep( 100 );
 
         // when
         phaseTracker.stop();
-        phaseTracker.reportMain( "Final" );
 
         // then
         //noinspection unchecked
@@ -165,11 +164,11 @@ public class PhaseTrackerTest
         AssertableLogProvider logProvider = new AssertableLogProvider( true );
         Log log = logProvider.getLog( IndexPopulationJob.class );
         PhaseTracker phaseTracker = getPhaseTracker( 1, log );
-        phaseTracker.enterPhase( PhaseTracker.Phase.SCAN );
+        phaseTracker.enterPhase( LoggingPhaseTracker.Phase.SCAN );
 
         // when
         sleep( 1000 );
-        phaseTracker.enterPhase( PhaseTracker.Phase.WRITE );
+        phaseTracker.enterPhase( LoggingPhaseTracker.Phase.WRITE );
 
         // then
         //noinspection unchecked
@@ -187,18 +186,18 @@ public class PhaseTrackerTest
         ) );
     }
 
-    private PhaseTracker getPhaseTracker()
+    private LoggingPhaseTracker getPhaseTracker()
     {
         return getPhaseTracker( NullLog.getInstance() );
     }
 
-    private PhaseTracker getPhaseTracker( Log log )
+    private LoggingPhaseTracker getPhaseTracker( Log log )
     {
-        return new PhaseTracker( log );
+        return new LoggingPhaseTracker( log );
     }
 
     private PhaseTracker getPhaseTracker( int periodIntervalInSeconds, Log log )
     {
-        return new PhaseTracker( periodIntervalInSeconds, log );
+        return new LoggingPhaseTracker( periodIntervalInSeconds, log );
     }
 }

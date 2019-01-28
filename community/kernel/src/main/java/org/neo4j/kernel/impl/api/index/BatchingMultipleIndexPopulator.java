@@ -154,11 +154,12 @@ public class BatchingMultipleIndexPopulator extends MultipleIndexPopulator
 
     /**
      * Insert the given batch of updates into the index defined by the given {@link IndexPopulation}.
+     * Called from {@link MultipleIndexPopulator#flush(IndexPopulation)}.
      *
      * @param population the index population.
      */
     @Override
-    protected void flush( IndexPopulation population )
+    void doFlush( IndexPopulation population )
     {
         activeTasks.incrementAndGet();
         Collection<IndexEntryUpdate<?>> batch = population.takeCurrentBatch();
