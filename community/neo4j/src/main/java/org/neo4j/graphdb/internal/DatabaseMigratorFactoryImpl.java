@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.common.DependencyResolver;
+import org.neo4j.dbms.database.DatabaseConfig;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.StoreLayout;
@@ -66,11 +67,12 @@ public class DatabaseMigratorFactoryImpl implements org.neo4j.storageengine.migr
     @Override
     public DatabaseMigrator createDatabaseMigrator( DatabaseLayout databaseLayout, DependencyResolver dependencyResolver )
     {
+        final DatabaseConfig dbConfig = DatabaseConfig.from( config, databaseLayout.getDatabaseName() );
         final IndexProviderMap indexProviderMap = dependencyResolver.resolveDependency( IndexProviderMap.class );
         final Monitors monitors = dependencyResolver.resolveDependency( Monitors.class );
         final LogFileCreationMonitor logFileCreationMonitor = monitors.newMonitor( LogFileCreationMonitor.class );
         final LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader = new VersionAwareLogEntryReader<>();
-        final LegacyTransactionLogsLocator logsLocator = new LegacyTransactionLogsLocator( config, databaseLayout );
+        final LegacyTransactionLogsLocator logsLocator = new LegacyTransactionLogsLocator( dbConfig, databaseLayout );
         final LogFiles logFiles;
         try
         {
@@ -81,7 +83,7 @@ public class DatabaseMigratorFactoryImpl implements org.neo4j.storageengine.migr
             logFiles = LogFilesBuilder.builder( oldDatabaseLayout, fs )
                 .withLogEntryReader( logEntryReader )
                 .withLogFileMonitor( logFileCreationMonitor )
-                .withConfig( config )
+                .withConfig( dbConfig )
                 .withDependencies( dependencyResolver ).build();
         }
         catch ( IOException e )
@@ -89,10 +91,10 @@ public class DatabaseMigratorFactoryImpl implements org.neo4j.storageengine.migr
             throw new RuntimeException( e );
         }
         final LogTailScanner tailScanner = new LogTailScanner(
-            logFiles, logEntryReader, monitors, config.get( fail_on_corrupted_log_files ) );
-        LogVersionUpgradeChecker.check( tailScanner, config );
+            logFiles, logEntryReader, monitors, dbConfig.get( fail_on_corrupted_log_files ) );
+        LogVersionUpgradeChecker.check( tailScanner, dbConfig );
         return new DatabaseMigratorImpl(
-            fs, config, logService, indexProviderMap, pageCache, tailScanner, jobScheduler, databaseLayout, logsLocator );
+            fs, dbConfig, logService, indexProviderMap, pageCache, tailScanner, jobScheduler, databaseLayout, logsLocator );
     }
 
     private static class LegacyDatabaseLayout extends DatabaseLayout
