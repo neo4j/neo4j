@@ -34,8 +34,11 @@ import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.test.rule.EmbeddedDbmsRule;
 
+import static org.hamcrest.Matchers.array;
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.SchemaIndex.NATIVE20;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.default_schema_provider;
@@ -63,6 +66,7 @@ public class ConstraintCreationIT
         assertFalse( new IndexFolderLayout( indexDir ).getIndexFolder().exists() );
     }
 
+    @SuppressWarnings( "unchecked" )
     @Test
     public void shouldNotLeaveNativeIndexFilesHangingAroundIfConstraintCreationFails()
     {
@@ -74,7 +78,8 @@ public class ConstraintCreationIT
                 db.getDependencyResolver().resolveDependency( IndexProviderMap.class ).getDefaultProvider();
         File indexDir = indexProvider.directoryStructure().directoryForIndex( indexId );
 
-        assertEquals( 0, indexDir.listFiles().length );
+        File[] files = indexDir.listFiles();
+        assertThat( Arrays.toString( files ), files, array() );
     }
 
     private void attemptAndFailConstraintCreation()
