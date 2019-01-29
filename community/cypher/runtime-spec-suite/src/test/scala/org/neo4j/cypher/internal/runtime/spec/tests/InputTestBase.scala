@@ -23,16 +23,17 @@ import org.neo4j.cypher.internal.runtime.spec._
 import org.neo4j.cypher.internal.{CypherRuntime, RuntimeContext}
 
 abstract class InputTestBase[CONTEXT <: RuntimeContext](
-  edition: Edition[CONTEXT],
-  runtime: CypherRuntime[CONTEXT]
-) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
+                                                         edition: Edition[CONTEXT],
+                                                         runtime: CypherRuntime[CONTEXT],
+                                                         sizeHint: Int
+                                                       ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
   test("should produce input") {
     // given
     val nodes = nodeGraph(3)
 
     // when
-    val logicalQuery = new LogicalQueryBuilder()
+    val logicalQuery = new LogicalQueryBuilder(graphDb)
       .produceResults("x", "y", "z")
       .input("x", "y", "z")
       .build()
@@ -55,9 +56,9 @@ abstract class InputTestBase[CONTEXT <: RuntimeContext](
 
   test("should retain input value order") {
     // when
-    val columns = (0 until 100).map(i => "c"+i)
+    val columns = (0 until sizeHint).map(i => "c"+i)
 
-    val logicalQuery = new LogicalQueryBuilder()
+    val logicalQuery = new LogicalQueryBuilder(graphDb)
       .produceResults(columns:_*)
       .input(columns:_*)
       .build()
@@ -71,7 +72,7 @@ abstract class InputTestBase[CONTEXT <: RuntimeContext](
 
   test("should return no rows on no input") {
     // when
-    val logicalQuery = new LogicalQueryBuilder()
+    val logicalQuery = new LogicalQueryBuilder(graphDb)
       .produceResults("x", "y", "z")
       .input("x", "y", "z")
       .build()

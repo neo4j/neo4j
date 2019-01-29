@@ -19,10 +19,22 @@
  */
 package org.neo4j.cypher.internal.runtime.spec.interpreted
 
-import org.neo4j.cypher.internal.InterpretedRuntime
 import org.neo4j.cypher.internal.runtime.spec.COMMUNITY_EDITION
-import org.neo4j.cypher.internal.runtime.spec.tests.{AggregationTestBase, AllNodeScanTestBase, InputTestBase}
+import org.neo4j.cypher.internal.runtime.spec.interpreted.InterpretedSpecSuite.SIZE_HINT
+import org.neo4j.cypher.internal.runtime.spec.tests.{AggregationTestBase, AllNodeScanTestBase, ExpandAllTestBase, ExpandAllWithOptionalTestBase, InputTestBase, LabelScanTestBase, NodeIndexScanTestBase, NodeIndexSeekRangeAndCompositeTestBase, NodeIndexSeekTestBase, NodeLockingUniqueIndexSeekTestBase}
+import org.neo4j.cypher.internal.{CommunityRuntimeContext, InterpretedRuntime}
 
-class InterpretedAggregationTest extends AggregationTestBase(COMMUNITY_EDITION, InterpretedRuntime)
-class InterpretedAllNodeScanTest extends AllNodeScanTestBase(COMMUNITY_EDITION, InterpretedRuntime)
-class InterpretedInputTest extends InputTestBase(COMMUNITY_EDITION, InterpretedRuntime)
+object InterpretedSpecSuite {
+  val SIZE_HINT = 200
+}
+
+class InterpretedAggregationTest extends AggregationTestBase(COMMUNITY_EDITION, InterpretedRuntime, SIZE_HINT)
+class InterpretedAllNodeScanTest extends AllNodeScanTestBase(COMMUNITY_EDITION, InterpretedRuntime, SIZE_HINT)
+class InterpretedExpandAllTest extends ExpandAllTestBase(COMMUNITY_EDITION, InterpretedRuntime, SIZE_HINT)
+                               with ExpandAllWithOptionalTestBase[CommunityRuntimeContext]
+class InterpretedLabelScanTest extends LabelScanTestBase(COMMUNITY_EDITION, InterpretedRuntime, SIZE_HINT)
+class InterpretedNodeIndexScanTest extends NodeIndexScanTestBase(COMMUNITY_EDITION, InterpretedRuntime, SIZE_HINT)
+class InterpretedNodeIndexSeekTest extends NodeIndexSeekTestBase(COMMUNITY_EDITION, InterpretedRuntime, SIZE_HINT)
+                                   with NodeIndexSeekRangeAndCompositeTestBase[CommunityRuntimeContext]
+                                   with NodeLockingUniqueIndexSeekTestBase[CommunityRuntimeContext]
+class InterpretedInputTest extends InputTestBase(COMMUNITY_EDITION, InterpretedRuntime, SIZE_HINT)

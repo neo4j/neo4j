@@ -46,7 +46,7 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](val graphDb: GraphDatabaseSe
                                                     val edition: Edition[CONTEXT]
                                                    ) extends CypherFunSuite with BeforeAndAfterAll
 {
-  val cypherGraphDb = new GraphDatabaseCypherService(graphDb)
+  private val cypherGraphDb = new GraphDatabaseCypherService(graphDb)
   private val resolver: DependencyResolver = cypherGraphDb.getDependencyResolver
   private val runtimeContextCreator = edition.runtimeContextCreator(resolver)
   private val monitors = resolver.resolveDependency(classOf[Monitors])
@@ -73,7 +73,7 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](val graphDb: GraphDatabaseSe
     resultMapper(runtimeContext, result)
   }
 
-  def newRuntimeContext(tx: InternalTransaction): CONTEXT = {
+  private def newRuntimeContext(tx: InternalTransaction): CONTEXT = {
     val contextFactory = Neo4jTransactionalContextFactory.create(cypherGraphDb)
     val txContext = TransactionalContextWrapper(contextFactory.newContext(tx, "<<queryText>>", VirtualValues.EMPTY_MAP))
     val queryContext = new TransactionBoundQueryContext(txContext)(monitors.newMonitor(classOf[IndexSearchMonitor]))
@@ -84,7 +84,7 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](val graphDb: GraphDatabaseSe
                                  compileExpressions = false)
   }
 
-  def newQueryContext(tx: InternalTransaction): QueryContext = {
+  private def newQueryContext(tx: InternalTransaction): QueryContext = {
     val txContext = TransactionalContextWrapper(contextFactory.newContext(tx, "<<queryText>>", VirtualValues.EMPTY_MAP))
     new TransactionBoundQueryContext(txContext)(monitors.newMonitor(classOf[IndexSearchMonitor]))
   }

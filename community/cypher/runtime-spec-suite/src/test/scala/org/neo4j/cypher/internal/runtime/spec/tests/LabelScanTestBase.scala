@@ -19,42 +19,25 @@
  */
 package org.neo4j.cypher.internal.runtime.spec.tests
 
-import org.neo4j.cypher.internal.{CypherRuntime, InterpretedRuntime, RuntimeContext}
 import org.neo4j.cypher.internal.runtime.spec._
+import org.neo4j.cypher.internal.{CypherRuntime, RuntimeContext}
 
-abstract class AllNodeScanTestBase[CONTEXT <: RuntimeContext](
-                                                               edition: Edition[CONTEXT],
-                                                               runtime: CypherRuntime[CONTEXT],
-                                                               sizeHint: Int
-                                                             ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
+abstract class LabelScanTestBase[CONTEXT <: RuntimeContext](
+                                                             edition: Edition[CONTEXT],
+                                                             runtime: CypherRuntime[CONTEXT],
+                                                             sizeHint: Int
+                                                           ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
-  test("should scan all nodes") {
+  test("should scan all nodes of a label") {
     // given
-    val nodes = nodeGraph(sizeHint, "Honey") ++
-      nodeGraph(sizeHint, "Butter") ++
-      nodeGraph(sizeHint, "Almond")
+    val nodes = nodeGraph(sizeHint, "Honey")
+    nodeGraph(sizeHint, "Butter")
+    nodeGraph(sizeHint, "Almond")
 
     // when
     val logicalQuery = new LogicalQueryBuilder(graphDb)
       .produceResults("x")
-      .allNodeScan("x")
-      .build()
-
-    val runtimeResult = execute(logicalQuery, runtime)
-
-    // then
-    runtimeResult should beColumns("x").withSingleValueRows(nodes)
-  }
-
-
-  test("should scan all nodes - single label") {
-    // given
-    val nodes = nodeGraph(sizeHint)
-
-    // when
-    val logicalQuery = new LogicalQueryBuilder(graphDb)
-      .produceResults("x")
-      .allNodeScan("x")
+      .nodeByLabelScan("x", "Honey")
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -67,7 +50,7 @@ abstract class AllNodeScanTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(graphDb)
       .produceResults("x")
-      .allNodeScan("x")
+      .nodeByLabelScan("x", "Honey")
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -84,10 +67,10 @@ abstract class AllNodeScanTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(graphDb)
       .produceResults("y", "z", "x")
       .apply()
-      .|.allNodeScan("z")
+      .|.nodeByLabelScan("x", "Honey")
       .apply()
-      .|.allNodeScan("y")
-      .allNodeScan("x")
+      .|.nodeByLabelScan("y", "Honey")
+      .nodeByLabelScan("z", "Honey")
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)

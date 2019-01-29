@@ -20,14 +20,15 @@
 package org.neo4j.cypher.internal.runtime.spec
 
 import java.util
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 
-import org.neo4j.cypher.internal.runtime.{InputCursor, InputDataStream, NoInput}
+import org.neo4j.cypher.internal.runtime.{InputCursor, InputDataStream, NoInput, QueryStatistics}
 import org.neo4j.cypher.internal.v4_0.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.{CypherRuntime, LogicalQuery, RuntimeContext}
 import org.neo4j.cypher.result.{QueryResult, RuntimeResult}
-import org.neo4j.graphdb.{GraphDatabaseService, Label, Node}
+import org.neo4j.graphdb.{GraphDatabaseService, Label, Node, Relationship, RelationshipType}
 import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.values.virtual.VirtualValues
 import org.neo4j.values.{AnyValue, AnyValues}
@@ -186,6 +187,50 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
     } finally tx.close()
   }
 
+  def connect(nodes: Seq[Node], rels: Seq[(Int, Int, String)]): Seq[Relationship] = {
+    val tx = graphDb.beginTx()
+    try {
+      tx.success()
+      rels.map {
+        case (from, to, typ) =>
+          nodes(from).createRelationshipTo(nodes(to), RelationshipType.withName(typ))
+      }
+    } finally tx.close()
+  }
+
+  // INDEXES
+
+  def index(label: String, properties: String*): Unit = {
+    var tx = graphDb.beginTx()
+    try {
+      tx.success()
+      var creator = graphDb.schema().indexFor(Label.label(label))
+      properties.foreach(p => creator = creator.on(p))
+      creator.create()
+    } finally tx.close()
+
+    tx = graphDb.beginTx()
+    try {
+      tx.success()
+      graphDb.schema().awaitIndexesOnline(10, TimeUnit.MINUTES)
+    } finally tx.close()
+  }
+
+  def uniqueIndex(label: String, property: String): Unit = {
+    var tx = graphDb.beginTx()
+    try {
+      tx.success()
+      val creator = graphDb.schema().constraintFor(Label.label(label)).assertPropertyIsUnique(property)
+      creator.create()
+    } finally tx.close()
+
+    tx = graphDb.beginTx()
+    try {
+      tx.success()
+      graphDb.schema().awaitIndexesOnline(10, TimeUnit.MINUTES)
+    } finally tx.close()
+  }
+
   // MATCHERS
 
   private val doubleEquality: Equality[Double] = TolerantNumerics.tolerantDoubleEquality(0.0001)
@@ -200,6 +245,8 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
 
     val expectedRows = new ArrayBuffer[Array[AnyValue]]
     var maybeResultMatcher: Option[Matcher[Seq[Array[AnyValue]]]] = None
+    var maybeStatisticts: Option[QueryStatistics] = None
+    var expectResultsInOrder = false
 
     def withRow(values: Any*): RuntimeResultMatcher = {
       rowModifier()
@@ -224,6 +271,12 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
       this
     }
 
+    def inOrder: RuntimeResultMatcher = {
+      rowModifier()
+      expectResultsInOrder = true
+      this
+    }
+
     private def rowModifier(): Unit = {
       if (maybeResultMatcher.isDefined) {
         throw new IllegalArgumentException("Cannot use both `withRow` and `withResultMatching`")
@@ -238,11 +291,18 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
       this
     }
 
+    def withStatistics(stats: QueryStatistics): RuntimeResultMatcher = {
+      maybeStatisticts = Some(stats)
+      this
+    }
+
     override def apply(left: RuntimeResult): MatchResult = {
       val columns = left.fieldNames().toSeq
-      if (columns != expectedColumns)
+      if (columns != expectedColumns) {
         MatchResult(matches = false, s"Expected result columns $expectedColumns, got $columns", "")
-      else {
+      } else if (maybeStatisticts.isDefined && maybeStatisticts.get != left.queryStatistics()) {
+        MatchResult(matches = false, s"Expected statistics ${left.queryStatistics()}, got ${maybeStatisticts.get}", "")
+      } else {
         val rows = new ArrayBuffer[Array[AnyValue]]
         left.accept(new QueryResult.QueryResultVisitor[Exception] {
           override def visit(row: QueryResult.Record): Boolean = {
@@ -255,7 +315,11 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
           case Some(matcher) => matcher(rows)
           case None =>
             MatchResult(
-              equalWithoutOrder(expectedRows, rows),
+              if (expectResultsInOrder) {
+                equalInOrder(expectedRows, rows)
+              } else {
+                equalWithoutOrder(expectedRows, rows)
+              },
               s"""Expected rows:
                  |
                  |${pretty(expectedRows)}

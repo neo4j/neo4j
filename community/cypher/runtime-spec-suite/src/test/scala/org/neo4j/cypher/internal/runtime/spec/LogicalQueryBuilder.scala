@@ -20,19 +20,22 @@
 package org.neo4j.cypher.internal.runtime.spec
 
 import org.neo4j.cypher.internal.LogicalQuery
+import org.neo4j.cypher.internal.ir.v4_0.SimplePatternLength
 import org.neo4j.cypher.internal.planner.v4_0.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
-import org.neo4j.cypher.internal.v4_0.expressions.{Expression, Variable}
+import org.neo4j.cypher.internal.v4_0.expressions.{Expression, LabelName, Variable}
 import org.neo4j.cypher.internal.v4_0.logical.plans._
 import org.neo4j.cypher.internal.v4_0.util.InputPosition
 import org.neo4j.cypher.internal.v4_0.util.attribution.{IdGen, SequentialIdGen}
+import org.neo4j.graphdb.GraphDatabaseService
+import org.neo4j.kernel.impl.coreapi.InternalTransaction
 
 import scala.collection.mutable.ArrayBuffer
 
 /**
   * Test help utility for hand-writing logical queries.
   */
-class LogicalQueryBuilder()
+class LogicalQueryBuilder(graphDb: GraphDatabaseService)
 {
   private sealed trait OperatorBuilder
   private case class LeafOperator(plan: LogicalPlan) extends OperatorBuilder
@@ -80,9 +83,93 @@ class LogicalQueryBuilder()
     this
   }
 
-  def allNodeScan(node: String): LogicalQueryBuilder = {
+  def optional(): LogicalQueryBuilder = {
+    appendAtCurrentIndent(UnaryOperator(lp => Optional(lp, Set.empty)))
+    this
+  }
+
+  def expand(pattern: String): LogicalQueryBuilder = {
+    val p = PatternParser.parse(pattern)
+    p.length match {
+      case SimplePatternLength =>
+        appendAtCurrentIndent(UnaryOperator(lp => Expand(lp, p.from, p.dir, p.relTypes, p.to, p.relName, ExpandAll)))
+      // TODO VarExpand and PruningVarExpand
+    }
+    this
+  }
+
+  def optionalExpand(pattern: String, predicates: String*): LogicalQueryBuilder = {
+    val p = PatternParser.parse(pattern)
+    p.length match {
+      case SimplePatternLength =>
+        val preds = predicates.map(ExpressionParser.parseExpression)
+        appendAtCurrentIndent(UnaryOperator(lp => OptionalExpand(lp, p.from, p.dir, p.relTypes, p.to, p.relName, ExpandAll, preds)))
+      case _ =>
+        throw new IllegalArgumentException("Cannot have optional expand with variable length pattern")
+    }
+    this
+  }
+
+  def eager(): LogicalQueryBuilder = {
+    appendAtCurrentIndent(UnaryOperator(lp => Eager(lp)))
+    this
+  }
+
+
+  def emptyResult(): LogicalQueryBuilder = {
+    appendAtCurrentIndent(UnaryOperator(lp => EmptyResult(lp)))
+    this
+  }
+
+  def detachDeleteNode(node: String): LogicalQueryBuilder = {
+    appendAtCurrentIndent(UnaryOperator(lp => DetachDeleteNode(lp, Variable(node)(InputPosition.NONE))))
+    this
+  }
+
+  def deleteRel(rel: String): LogicalQueryBuilder = {
+    appendAtCurrentIndent(UnaryOperator(lp => DeleteRelationship(lp, Variable(rel)(InputPosition.NONE))))
+    this
+  }
+
+  def expandInto(pattern: String): LogicalQueryBuilder = {
+    val p = PatternParser.parse(pattern)
+    appendAtCurrentIndent(UnaryOperator(lp => Expand(lp, p.from, p.dir, p.relTypes, p.to, p.relName, ExpandInto)))
+    this
+  }
+
+  def projection(projectionStrings: String*): LogicalQueryBuilder = {
+    val projections = ExpressionParser.parseProjections(projectionStrings: _*)
+    appendAtCurrentIndent(UnaryOperator(lp => Projection(lp, projections)))
+    this
+  }
+
+  def distinct(projectionStrings: String*): LogicalQueryBuilder = {
+    val projections = ExpressionParser.parseProjections(projectionStrings: _*)
+    appendAtCurrentIndent(UnaryOperator(lp => Distinct(lp, projections)))
+    this
+  }
+
+  def allNodeScan(node: String, args: String*): LogicalQueryBuilder = {
     semanticTable = semanticTable.addNode(Variable(node)(InputPosition.NONE))
-    appendAtCurrentIndent(LeafOperator(AllNodesScan(node, Set.empty)))
+    appendAtCurrentIndent(LeafOperator(AllNodesScan(node, args.toSet)))
+  }
+
+  def nodeByLabelScan(node: String, label: String, args: String*): LogicalQueryBuilder = {
+    semanticTable = semanticTable.addNode(Variable(node)(InputPosition.NONE))
+    appendAtCurrentIndent(LeafOperator(NodeByLabelScan(node, LabelName(label)(InputPosition.NONE), args.toSet)))
+  }
+
+  def nodeIndexOperator(indexSeekString: String,
+                        getValue: GetValueFromIndexBehavior = DoNotGetValue,
+                        indexOrder: IndexOrder = IndexOrderNone,
+                        paramExpr: Option[Expression] = None,
+                        argumentIds: Set[String] = Set.empty,
+                        propIds: Map[String, Int] = Map.empty,
+                        unique: Boolean = false,
+                        customQueryExpression: Option[QueryExpression[Expression]] = None): LogicalQueryBuilder = {
+    val label = labelId(IndexSeek.labelFromIndexSeekString(indexSeekString))
+    val plan = IndexSeek(indexSeekString, getValue, indexOrder, paramExpr, argumentIds, propIds, label, unique, customQueryExpression)
+    appendAtCurrentIndent(LeafOperator(plan))
   }
 
   def aggregation(groupingExpressions: Map[String, Expression],
@@ -91,6 +178,9 @@ class LogicalQueryBuilder()
 
   def apply(): LogicalQueryBuilder =
     appendAtCurrentIndent(BinaryOperator((lhs, rhs) => Apply(lhs, rhs)))
+
+  def union(): LogicalQueryBuilder =
+    appendAtCurrentIndent(BinaryOperator((lhs, rhs) => Union(lhs, rhs)))
 
   def input(variables: String*): LogicalQueryBuilder = {
     if (indent != 0)
@@ -102,15 +192,15 @@ class LogicalQueryBuilder()
 
   // SHIP IT
 
-  def build(): LogicalQuery = {
+  def build(readOnly: Boolean = true): LogicalQuery = {
     val logicalPlan = tree.build()
     LogicalQuery(logicalPlan,
                  "<<queryText>>",
-                 readOnly = true,
+                 readOnly,
                  resultColumns,
                  semanticTable,
                  new Cardinalities,
-                 false,
+                 hasLoadCSV = false,
                  None)
   }
 
@@ -142,5 +232,13 @@ class LogicalQueryBuilder()
     }
     indent = 0
     this
+  }
+
+  def labelId(label: String): Int = {
+    val tx = graphDb.beginTx()
+    try {
+      tx.success()
+      tx.asInstanceOf[InternalTransaction].kernelTransaction().tokenRead().nodeLabel(label)
+    } finally tx.close()
   }
 }

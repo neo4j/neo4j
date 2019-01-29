@@ -35,7 +35,11 @@ class IndexSeekTest extends CypherFunSuite {
     (getValue, args, indexOrder) => "b:Y(prop = 1)" -> NodeIndexSeek("b", label("Y"), Seq(prop("prop", getValue)), exactInt(1), args, indexOrder),
     (getValue, args, indexOrder) => "b:Y(dogs = 1)" -> NodeIndexSeek("b", label("Y"), Seq(prop("dogs", getValue)), exactInt(1), args, indexOrder),
     (getValue, args, indexOrder) => "b:Y(dogs = 2)" -> NodeIndexSeek("b", label("Y"), Seq(prop("dogs", getValue)), exactInt(2), args, indexOrder),
+    (getValue, args, indexOrder) => "b:Y(dogs = 2 OR 5)" -> NodeIndexSeek("b", label("Y"), Seq(prop("dogs", getValue)), exactInts(2, 5), args, indexOrder),
     (getValue, args, indexOrder) => "b:Y(dogs = 2, cats = 4)" -> NodeIndexSeek("b", label("Y"), Seq(prop("dogs", getValue, 0), prop("cats", getValue, 1)), CompositeQueryExpression(Seq(exactInt(2), exactInt(4))), args, indexOrder),
+    (getValue, args, indexOrder) => "b:Y(dogs = 2 OR 5, cats = 4)" -> NodeIndexSeek("b", label("Y"), Seq(prop("dogs", getValue, 0), prop("cats", getValue, 1)), CompositeQueryExpression(Seq(exactInts(2, 5), exactInt(4))), args, indexOrder),
+    (getValue, args, indexOrder) => "b:Y(dogs = 2, cats = 4 OR 5)" -> NodeIndexSeek("b", label("Y"), Seq(prop("dogs", getValue, 0), prop("cats", getValue, 1)), CompositeQueryExpression(Seq(exactInt(2), exactInts(4, 5))), args, indexOrder),
+    (getValue, args, indexOrder) => "b:Y(dogs = 2 OR 3, cats = 4 OR 5)" -> NodeIndexSeek("b", label("Y"), Seq(prop("dogs", getValue, 0), prop("cats", getValue, 1)), CompositeQueryExpression(Seq(exactInts(2, 3), exactInts(4, 5))), args, indexOrder),
     (getValue, args, indexOrder) => "b:Y(name = 'hi')" -> NodeIndexSeek("b", label("Y"), Seq(prop("name", getValue)), exactString("hi"), args, indexOrder),
     (getValue, args, indexOrder) => "b:Y(name < 'hi')" -> NodeIndexSeek("b", label("Y"), Seq(prop("name", getValue)), lt(string("hi")), args, indexOrder),
     (getValue, args, indexOrder) => "b:Y(name <= 'hi')" -> NodeIndexSeek("b", label("Y"), Seq(prop("name", getValue)), lte(string("hi")), args, indexOrder),
@@ -64,6 +68,12 @@ class IndexSeekTest extends CypherFunSuite {
     )
   }
 
+  test("custom query expression") {
+    IndexSeek("a:X(prop)", customQueryExpression = Some(exactInts(1, 2, 3)) ) should be(
+      NodeIndexSeek("a", label("X"), Seq(prop("prop", DoNotGetValue)), exactInts(1, 2, 3), Set.empty, IndexOrderNone)
+    )
+  }
+
   // HELPERS
 
   private def label(str:String) = LabelToken(str, LabelId(0))
@@ -72,6 +82,9 @@ class IndexSeekTest extends CypherFunSuite {
     IndexedProperty(PropertyKeyToken(name, PropertyKeyId(propId)), getValue)
 
   private def exactInt(int: Int) = SingleQueryExpression(SignedDecimalIntegerLiteral(int.toString)(pos))
+
+
+  private def exactInts(ints: Int*) = ManyQueryExpression(ListLiteral(ints.map(i => SignedDecimalIntegerLiteral(i.toString)(pos)))(pos))
 
   private def exactString(x: String) = SingleQueryExpression(string(x))
 

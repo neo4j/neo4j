@@ -19,14 +19,14 @@
  */
 package org.neo4j.cypher.internal.runtime.spec
 
-import org.neo4j.cypher.internal.ir.v4_0.VarPatternLength
+import org.neo4j.cypher.internal.ir.v4_0.{PatternLength, SimplePatternLength, VarPatternLength}
 import org.neo4j.cypher.internal.v4_0.expressions.{RelTypeName, SemanticDirection}
 import org.neo4j.cypher.internal.v4_0.util.InputPosition.NONE
 
 object PatternParser
 {
   private val ID = "([a-zA-Z0-9]*)"
-  private val REL_TYPES = "([a-zA-Z|]*)"
+  private val REL_TYPES = "([a-zA-Z_|]*)"
   private val regex = s"\\($ID\\)(<?)-\\[?$ID:?$REL_TYPES(\\*?)([0-9]*)\\.?\\.?([0-9]*)\\]?-(>?)\\($ID\\)".r
 
   def parse(pattern: String): Pattern = {
@@ -42,7 +42,7 @@ object PatternParser
           else relTypesStr.split("\\|").toSeq.map(x => RelTypeName(x)(NONE))
         val length =
           (star, min, max) match {
-            case ("", "", "")  => VarPatternLength(1, Some(1))
+            case ("", "", "")  => SimplePatternLength
             case ("*", "", "") => VarPatternLength(0, None)
             case ("*", x, "")  => VarPatternLength(x.toInt, Some(x.toInt))
             case ("*", "", _)  => VarPatternLength(0, Some(max.toInt))
@@ -58,5 +58,5 @@ object PatternParser
                      relTypes: Seq[RelTypeName],
                      relName: String,
                      to: String,
-                     length: VarPatternLength)
+                     length: PatternLength)
 }
