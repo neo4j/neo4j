@@ -23,7 +23,6 @@ import org.neo4j.cypher.internal.compiler.v4_0.planner.LogicalPlanningTestSuppor
 import org.neo4j.cypher.internal.ir.v4_0.RegularPlannerQuery
 import org.neo4j.cypher.internal.planner.v4_0.spi.IndexOrderCapability
 import org.neo4j.cypher.internal.planner.v4_0.spi.IndexOrderCapability.{ASC, BOTH, DESC}
-import org.neo4j.cypher.internal.v4_0.ast._
 import org.neo4j.cypher.internal.v4_0.expressions._
 import org.neo4j.cypher.internal.v4_0.logical.plans.{Limit => LimitPlan, Skip => SkipPlan, _}
 import org.neo4j.cypher.internal.v4_0.util._
@@ -46,7 +45,7 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
       plan._2 should equal(
         Projection(
           IndexSeek("n:Awesome(prop > 'foo')", indexOrder = plannedOrder),
-          Map("n.prop" -> Property(Variable("n")(pos), PropertyKeyName("prop")(pos))(pos)))
+          Map("n.prop" -> prop("n", "prop")))
       )
     }
 
@@ -61,7 +60,7 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
             IndexSeek(
               "n:Awesome(prop > 'foo')", indexOrder =
                 IndexOrderNone),
-            Map("n.prop" -> Property(Variable("n")(pos), PropertyKeyName("prop")(pos))(pos))),
+            Map("n.prop" -> prop("n", "prop"))),
           Seq(sortOrder("n.prop")))
       )
     }
@@ -77,8 +76,8 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
             Projection(
               IndexSeek(
                 "n:Awesome(prop > 'foo')", indexOrder = plannedOrder),
-              Map("n.prop" -> Property(Variable("n")(pos), PropertyKeyName("prop")(pos))(pos))),
-            Map("n.foo" -> Property(Variable("n")(pos), PropertyKeyName("foo")(pos))(pos))),
+              Map("n.prop" -> prop("n", "prop"))),
+            Map("n.foo" -> prop("n", "foo"))),
           Seq(sortOrder("n.prop")), Seq(Ascending("n.foo")))
       )
     }
@@ -94,8 +93,8 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
               Projection(
               IndexSeek(
                 "n:Awesome(prop > 'foo')", indexOrder = plannedOrder),
-                Map("n.prop" -> Property(Variable("n")(pos), PropertyKeyName("prop")(pos))(pos))),
-              Map("n.foo + 1" -> Add(Property(Variable("n")(pos), PropertyKeyName("foo")(pos))(pos), SignedDecimalIntegerLiteral("1")(pos))(pos))),
+                Map("n.prop" -> prop("n", "prop"))),
+              Map("n.foo + 1" -> add(prop("n", "foo"), literalInt(1)))),
             Seq(sortOrder("n.prop")), Seq(Ascending("n.foo + 1")))
       )
     }
@@ -113,9 +112,9 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
               Projection(
                 IndexSeek(
                   "n:Awesome(prop > 'foo')", indexOrder = plannedOrder),
-                Map("f" -> Property(Variable("n")(pos), PropertyKeyName("foo")(pos))(pos), "p" -> Property(Variable("n")(pos), PropertyKeyName("prop")(pos))(pos))),
+                Map("f" -> prop("n", "foo"), "p" -> prop("n", "prop"))),
               Seq(sortOrder("p")), Seq(Ascending("f"))),
-            Map("n.bar" -> Property(Variable("n")(pos), PropertyKeyName("bar")(pos))(pos))),
+            Map("n.bar" -> prop("n", "bar"))),
           Seq(sortOrder("p"), Ascending("f")), Seq(Ascending("n.bar")))
       )
     }
@@ -135,9 +134,9 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
             Projection(
               IndexSeek(
                 "n:Awesome(prop > 'foo')", indexOrder = plannedOrder),
-              Map("nnn" -> Variable("n")(pos))),
+              Map("nnn" -> varFor("n"))),
             "nnn", SemanticDirection.INCOMING, Seq.empty, "m", "r"),
-          Map("nnn.prop" -> Property(Variable("nnn")(pos), PropertyKeyName("prop")(pos))(pos)))
+          Map("nnn.prop" -> prop("nnn", "prop")))
       )
     }
 
@@ -151,7 +150,7 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
       plan._2 should equal(
         Projection(
           IndexSeek("n:Awesome(prop > 'foo')", indexOrder = plannedOrder),
-          Map("m" -> Variable("n")(pos)))
+          Map("m" -> varFor("n")))
       )
     }
 
@@ -168,8 +167,8 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
             CartesianProduct(
               IndexSeek(
                 "n:Awesome(prop > 'foo')", indexOrder = expectedIndexOrder),
-              NodeByLabelScan("m", LabelName("Awesome")(pos), Set.empty)),
-            Map("m.prop" -> Property(Variable("m")(pos), PropertyKeyName("prop")(pos))(pos))),
+              NodeByLabelScan("m", lblName("Awesome"), Set.empty)),
+            Map("m.prop" -> prop("m", "prop"))),
           Seq(sortOrder("m.prop")))
       )
     }
@@ -183,7 +182,7 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
         Projection(
           IndexSeek(
             "n:Awesome(prop STARTS WITH 'foo')", indexOrder = plannedOrder),
-          Map("n.prop" -> Property(Variable("n")(pos), PropertyKeyName("prop")(pos))(pos)))
+          Map("n.prop" -> prop("n", "prop")))
       )
     }
 
@@ -196,7 +195,7 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
       plan._2 should equal(
         Projection(
           IndexSeek("n:Awesome(prop CONTAINS 'foo')", indexOrder = plannedOrder),
-          Map("n.prop" -> Property(Variable("n")(pos), PropertyKeyName("prop")(pos))(pos)))
+          Map("n.prop" -> prop("n", "prop")))
       )
     }
 
@@ -209,7 +208,7 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
       plan._2 should equal(
         Projection(
           IndexSeek("n:Awesome(prop ENDS WITH 'foo')", indexOrder = plannedOrder),
-          Map("n.prop" -> Property(Variable("n")(pos), PropertyKeyName("prop")(pos))(pos)))
+          Map("n.prop" -> prop("n", "prop")))
       )
     }
 
@@ -222,7 +221,7 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
         Projection(
           IndexSeek(
             "n:Awesome(prop)", indexOrder = plannedOrder),
-          Map("n.prop" -> Property(Variable("n")(pos), PropertyKeyName("prop")(pos))(pos)))
+          Map("n.prop" -> prop("n", "prop")))
       )
     }
 
@@ -245,7 +244,7 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
               labelId = 1,
               argumentIds = Set("a"))
           ),
-          Map("a.prop" -> Property(Variable("a")(pos), PropertyKeyName("prop")(pos))(pos)))
+          Map("a.prop" -> prop("a", "prop")))
       )
     }
 
@@ -269,7 +268,7 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
                 labelId = 1,
                 argumentIds = Set("a"))
             ),
-            Map("a.prop" -> Property(Variable("a")(pos), PropertyKeyName("prop")(pos))(pos), "b.prop" -> Property(Variable("b")(pos), PropertyKeyName("prop")(pos))(pos))),
+            Map("a.prop" -> prop("a", "prop"), "b.prop" -> prop("b", "prop"))),
           Seq(sortOrder("a.prop")), Seq(sortOrder("b.prop")))
       )
     }
@@ -283,7 +282,7 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
         Projection(
           IndexSeek(
             "a:A(prop > 'foo')", indexOrder = plannedOrder),
-          Map("theProp" -> Property(Variable("a")(pos), PropertyKeyName("prop")(pos))(pos), "x" -> SignedDecimalIntegerLiteral("1")(pos)))
+          Map("theProp" -> prop("a", "prop"), "x" -> literalInt(1)))
       )
     }
 
@@ -303,7 +302,7 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
             IndexSeek(
               "a:A(prop > 'foo')", indexOrder = plannedOrder),
             "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r"),
-          Map("a.prop" -> prop("a", "prop")), Map("count(b)" -> FunctionInvocation(Namespace(List())(pos), FunctionName("count")(pos), distinct = false, Vector(varFor("b")))(pos)))
+          Map("a.prop" -> prop("a", "prop")), Map("count(b)" -> function("count", varFor("b"))))
       )
     }
 
@@ -325,8 +324,8 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
                 IndexSeek(
                   "a:A(prop > 'foo')", indexOrder = plannedOrder),
                 "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r"),
-              Map("a.prop" -> Property(Variable("a")(pos), PropertyKeyName("prop")(pos))(pos))),
-            Map("b.prop" -> Property(Variable("b")(pos), PropertyKeyName("prop")(pos))(pos))),
+              Map("a.prop" -> prop("a", "prop"))),
+            Map("b.prop" -> prop("b", "prop"))),
           Seq(sortOrder("a.prop")), Seq(Ascending("b.prop")))
       )
     }
@@ -346,7 +345,7 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
       } getLogicalPlanFor s"MATCH (a:A)-[r]->(b)-[q]->(c) WHERE a.prop > 'foo' RETURN a.prop ORDER BY a.prop $cypherToken, b.prop"
 
       plan._2 should equal(
-        Selection(Seq(Not(Equals(Variable("q")(pos), Variable("r")(pos))(pos))(pos)),
+        Selection(Seq(not(equals(varFor("q"), varFor("r")))),
           Expand(
             PartialSort(
               Projection(
@@ -355,8 +354,8 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
                     IndexSeek(
                       "a:A(prop > 'foo')", indexOrder = plannedOrder),
                     "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r"),
-                  Map("a.prop" -> Property(Variable("a")(pos), PropertyKeyName("prop")(pos))(pos))),
-                Map("b.prop" -> Property(Variable("b")(pos), PropertyKeyName("prop")(pos))(pos))),
+                  Map("a.prop" -> prop("a", "prop"))),
+                Map("b.prop" -> prop("b", "prop"))),
               Seq(sortOrder("a.prop")), Seq(Ascending("b.prop"))),
             "b", SemanticDirection.OUTGOING, Seq.empty, "c", "q"))
       )
@@ -418,7 +417,7 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
             SkipPlan(
               IndexSeek(
                 "a:A(prop > 'foo')", indexOrder = plannedOrder),
-              SignedDecimalIntegerLiteral("0")(pos)),
+              literalInt(0)),
             AllNodesScan("b", Set("a"))),
           Map("a.prop" -> prop("a", "prop")))
       )
@@ -437,7 +436,7 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
         Projection(
           IndexSeek(
             "n:Awesome(prop)", indexOrder = plannedOrder),
-          Map("n.prop" -> Property(Variable("n")(pos), PropertyKeyName("prop")(pos))(pos)))
+          Map("n.prop" -> prop("n", "prop")))
       )
     }
   }
@@ -460,7 +459,7 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
               IndexSeek("n:Awesome(prop > 0)", indexOrder = plannedOrder, getValue = GetValue),
               Map(s"$functionName(n.prop)" -> cachedNodeProperty("n", "prop"))
             ),
-            SignedDecimalIntegerLiteral("1")(pos),
+            literalInt(1),
             DoNotIncludeTies
           )
         )
@@ -479,7 +478,7 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
               IndexSeek("n:Awesome(prop > 0)", indexOrder = plannedOrder, getValue = GetValue),
               Map(s"$functionName(n.prop)" -> cachedNodeProperty("n", "prop"))
             ),
-            SignedDecimalIntegerLiteral("1")(pos),
+            literalInt(1),
             DoNotIncludeTies
           )
         )
@@ -504,7 +503,7 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
                 IndexSeek("n:Awesome(prop > 0)", indexOrder = plannedOrder, getValue = GetValue),
                 Map(s"$functionName(n.prop)" -> cachedNodeProperty("n", "prop"))
               ),
-              SignedDecimalIntegerLiteral("1")(pos),
+              literalInt(1),
               DoNotIncludeTies
             )),
           Seq(inverseSortOrder(s"$functionName(n.prop)"))
@@ -525,10 +524,10 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
                 IndexSeek("n:Awesome(prop > 0)", indexOrder = plannedOrder, getValue = GetValue),
                 Map(s"$functionName(n.prop)" -> cachedNodeProperty("n", "prop"))
               ),
-              SignedDecimalIntegerLiteral("1")(pos),
+              literalInt(1),
               DoNotIncludeTies
             )),
-          SignedDecimalIntegerLiteral("2")(pos),
+          literalInt(2),
           DoNotIncludeTies
         )
       )
@@ -551,7 +550,7 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
               IndexSeek("n:Awesome(prop > 0)", indexOrder = plannedOrder, getValue = GetValue),
               Map("agg" -> cachedNodeProperty("n", "prop"))
             ),
-            SignedDecimalIntegerLiteral("1")(pos),
+            literalInt(1),
             DoNotIncludeTies
           )
         )
@@ -569,16 +568,8 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
         Aggregation(
           IndexSeek("n:Awesome(prop > 0)", indexOrder = expectedIndexOrder, getValue = GetValue),
           Map.empty,
-          Map(s"$functionName(n.prop)" -> FunctionInvocation(
-            Namespace(List())(pos),
-            FunctionName(functionName)(pos),
-            distinct = false,
-            Vector(cachedNodeProperty("n", "prop")))(pos),
-            "count(n.prop)" -> FunctionInvocation(
-              Namespace(List())(pos),
-              FunctionName("count")(pos),
-              distinct = false,
-              Vector(cachedNodeProperty("n", "prop")))(pos))
+          Map(s"$functionName(n.prop)" -> function(functionName, cachedNodeProperty("n", "prop")),
+            "count(n.prop)" -> function("count", cachedNodeProperty("n", "prop")))
         )
       )
     }
@@ -597,7 +588,7 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
             Set.empty,
             IndexOrderNone),
           Map.empty,
-          Map(s"$functionName(n.prop)" -> FunctionInvocation(Namespace(List())(pos), FunctionName(functionName)(pos), distinct = false, Vector(CachedNodeProperty("n", PropertyKeyName("prop")(pos))(pos)))(pos))
+          Map(s"$functionName(n.prop)" -> function(functionName, cachedNodeProperty("n", "prop")))
         )
       )
     }
@@ -615,7 +606,7 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
         Aggregation(
           IndexSeek("n:Awesome(prop > 0)", indexOrder = plannedOrder, getValue = GetValue),
           Map.empty,
-          Map(s"$functionName(n.prop)" -> FunctionInvocation(Namespace(List())(pos), FunctionName(functionName)(pos), distinct = false, Vector(cachedNodeProperty("n", "prop")))(pos))
+          Map(s"$functionName(n.prop)" -> function(functionName, cachedNodeProperty("n", "prop")))
         )
       )
     }

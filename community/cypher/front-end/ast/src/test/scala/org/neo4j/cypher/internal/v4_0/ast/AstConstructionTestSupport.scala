@@ -19,7 +19,6 @@ package org.neo4j.cypher.internal.v4_0.ast
 import org.neo4j.cypher.internal.v4_0.expressions
 import org.neo4j.cypher.internal.v4_0.expressions._
 import org.neo4j.cypher.internal.v4_0.expressions.functions.{Avg, Collect, Count, Max, Min, Sum}
-import org.neo4j.cypher.internal.v4_0.util.symbols.CypherType
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherTestSupport
 import org.neo4j.cypher.internal.v4_0.util.{DummyPosition, InputPosition, symbols}
 
@@ -42,23 +41,16 @@ trait AstConstructionTestSupport extends CypherTestSupport {
 
   def prop(variable: String, propKey: String): Property = Property(varFor(variable), PropertyKeyName(propKey)(pos))(pos)
 
+  def property(map: Expression, key: String): Expression = Property(map, PropertyKeyName(key)(pos))(pos)
+
   def propEquality(variable: String, propKey: String, intValue: Int): Equals =
     Equals(prop(variable, propKey), literalInt(intValue))(pos)
 
   def propLessThan(variable: String, propKey: String, intValue: Int): LessThan =
     LessThan(prop(variable, propKey), literalInt(intValue))(pos)
 
-  def count(expression: Expression): FunctionInvocation = FunctionInvocation(expression, FunctionName(Count.name)(pos))
-
-  def avg(expression: Expression): FunctionInvocation = FunctionInvocation(expression, FunctionName(Avg.name)(pos))
-
-  def collect(expression: Expression): FunctionInvocation = FunctionInvocation(expression, FunctionName(Collect.name)(pos))
-
-  def max(expression: Expression): FunctionInvocation = FunctionInvocation(expression, FunctionName(Max.name)(pos))
-
-  def min(expression: Expression): FunctionInvocation = FunctionInvocation(expression, FunctionName(Min.name)(pos))
-
-  def sum(expression: Expression): FunctionInvocation = FunctionInvocation(expression, FunctionName(Sum.name)(pos))
+  def literalString(stringValue: String): StringLiteral =
+    StringLiteral(stringValue)(pos)
 
   def literalInt(intValue: Int): SignedDecimalIntegerLiteral =
     SignedDecimalIntegerLiteral(intValue.toString)(pos)
@@ -88,11 +80,46 @@ trait AstConstructionTestSupport extends CypherTestSupport {
 
   def TRUE: Expression = True()(pos)
 
+  def nullLiteral: Null = Null()(pos)
+
+  def trueLiteral: True = True()(pos)
+
+  def falseLiteral: False = False()(pos)
+
+  def literal(a: Any): Expression = a match {
+    case null => nullLiteral
+    case s: String => literalString(s)
+    case d: Double => literalFloat(d)
+    case d: java.lang.Float => literalFloat(d.doubleValue())
+    case i: Byte => literalInt(i)
+    case i: Short => literalInt(i)
+    case i: Int => literalInt(i)
+    case l: Long => SignedDecimalIntegerLiteral(l.toString)(pos)
+  }
+
   def function(name: String, args: Expression*): FunctionInvocation =  FunctionInvocation(FunctionName(name)(pos),
                                                                                           distinct = false, args.toIndexedSeq)(pos)
 
+  def count(expression: Expression): FunctionInvocation = FunctionInvocation(expression, FunctionName(Count.name)(pos))
+
+  def avg(expression: Expression): FunctionInvocation = FunctionInvocation(expression, FunctionName(Avg.name)(pos))
+
+  def collect(expression: Expression): FunctionInvocation = FunctionInvocation(expression, FunctionName(Collect.name)(pos))
+
+  def max(expression: Expression): FunctionInvocation = FunctionInvocation(expression, FunctionName(Max.name)(pos))
+
+  def min(expression: Expression): FunctionInvocation = FunctionInvocation(expression, FunctionName(Min.name)(pos))
+
+  def sum(expression: Expression): FunctionInvocation = FunctionInvocation(expression, FunctionName(Sum.name)(pos))
+
   def literalMap(keyValues: (String,Expression)*): MapExpression =
     MapExpression(keyValues.map(kv => (PropertyKeyName(kv._1)(pos), kv._2)))(pos)
+
+  def not(e: Expression): Expression = expressions.Not(e)(pos)
+
+  def equals(lhs: Expression, rhs: Expression): Equals = Equals(lhs, rhs)(pos)
+
+  def notEquals(lhs: Expression, rhs: Expression): Expression = NotEquals(lhs, rhs)(pos)
 
   def lessThan(lhs: Expression, rhs: Expression): LessThan = LessThan(lhs, rhs)(pos)
 
@@ -112,7 +139,7 @@ trait AstConstructionTestSupport extends CypherTestSupport {
 
   def in(lhs: Expression, rhs: Expression): In = In(lhs, rhs)(pos)
 
-  def coerceTo(expression: Expression, typ: CypherType): CoerceTo = CoerceTo(expression, typ)
+  def coerceTo(expression: Expression, typ: symbols.CypherType): CoerceTo = CoerceTo(expression, typ)
 
   def isNull(expression: Expression): IsNull = expressions.IsNull(expression)(pos)
 
@@ -170,12 +197,6 @@ trait AstConstructionTestSupport extends CypherTestSupport {
 
   def parameter(key: String): Expression = Parameter(key, symbols.CTAny)(pos)
 
-  def nullLiteral: Null = Null()(pos)
-
-  def trueLiteral: True = True()(pos)
-
-  def falseLiteral: False = False()(pos)
-
   def or(l: Expression, r: Expression): Expression = Or(l, r)(pos)
 
   def xor(l: Expression, r: Expression): Expression = Xor(l, r)(pos)
@@ -186,26 +207,5 @@ trait AstConstructionTestSupport extends CypherTestSupport {
 
   def ands(es: Expression*): Expression = Ands(es.toSet)(pos)
 
-  def not(e: Expression): Expression = expressions.Not(e)(pos)
-
-  def equals(lhs: Expression, rhs: Expression): Expression = Equals(lhs, rhs)(pos)
-
-  def notEquals(lhs: Expression, rhs: Expression): Expression = NotEquals(lhs, rhs)(pos)
-
-  def property(map: Expression, key: String): Expression = Property(map, PropertyKeyName(key)(pos))(pos)
-
   def containerIndex(container: Expression, index: Expression): Expression = ContainerIndex(container, index)(pos)
-
-  def literalString(s: String): Expression = expressions.StringLiteral(s)(pos)
-
-  def literal(a: Any): Expression = a match {
-    case null => nullLiteral
-    case s: String => literalString(s)
-    case d: Double => literalFloat(d)
-    case d: java.lang.Float => literalFloat(d.doubleValue())
-    case i: Byte => literalInt(i)
-    case i: Short => literalInt(i)
-    case i: Int => literalInt(i)
-    case l: Long => SignedDecimalIntegerLiteral(l.toString)(pos)
-  }
 }

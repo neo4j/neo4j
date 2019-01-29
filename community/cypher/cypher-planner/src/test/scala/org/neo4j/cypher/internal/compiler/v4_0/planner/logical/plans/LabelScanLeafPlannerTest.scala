@@ -69,10 +69,8 @@ class LabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
     // given
     val idName = "n"
     val labelId = LabelId(12)
-    val labelName = LabelName("Awesome")(pos)
-    val hasLabels = HasLabels(Variable("n")_, Seq(labelName))_
     val qg = QueryGraph(
-      selections = Selections(Set(Predicate(Set(idName), hasLabels))),
+      selections = Selections(Set(Predicate(Set(idName), hasLabels("n", "Awesome")))),
       patternNodes = Set(idName))
 
     val factory = newMockedMetricsFactory
@@ -82,7 +80,7 @@ class LabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
     })
 
     implicit val semanticTable = newMockedSemanticTable
-    when(semanticTable.id(labelName)).thenReturn(Some(labelId))
+    when(semanticTable.id(lblName("Awesome"))).thenReturn(Some(labelId))
 
     val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext, metrics = factory.newMetrics(statistics, mock[ExpressionEvaluator], config), semanticTable = semanticTable)
 
