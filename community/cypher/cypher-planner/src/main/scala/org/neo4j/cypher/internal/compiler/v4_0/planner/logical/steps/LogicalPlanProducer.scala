@@ -557,9 +557,8 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     annotate(plan, solved, providedOrder, context)
   }
 
-  def planSort(inner: LogicalPlan, sortColumns: Seq[ColumnOrder], interestingOrder: InterestingOrder, context: LogicalPlanningContext): LogicalPlan = {
+  def planSort(inner: LogicalPlan, sortColumns: Seq[ColumnOrder], providedOrder: ProvidedOrder, interestingOrder: InterestingOrder, context: LogicalPlanningContext): LogicalPlan = {
     val solved = solveds.get(inner.id).updateTailOrSelf(_.withInterestingOrder(interestingOrder))
-    val providedOrder = ProvidedOrder(sortColumns.map(sortColumnToProvided))
     annotate(Sort(inner, sortColumns), solved, providedOrder, context)
   }
 
@@ -831,22 +830,6 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     case _ => throw new IllegalStateException("Cannot mix ascending and descending columns when using index order")
   }
 
-  private def sortColumnToProvided(columnOrder: ColumnOrder): ProvidedOrder.Column =
-    columnOrder match {
-      case Ascending(id) => ProvidedOrder.Asc(idToExpression(id))
-      case Descending(id) => ProvidedOrder.Desc(idToExpression(id))
-    }
-
-  // TODO: improve
-  private def idToExpression(id: String): Expression = {
-    val exprArray: Array[String] = id.split("\\.")
-
-    exprArray match {
-      case Array(varName, propName) => Property(Variable(varName)(InputPosition.NONE), PropertyKeyName(propName)(InputPosition.NONE))(InputPosition.NONE)
-      case Array(varName) => Variable(varName)(InputPosition.NONE)
-    }
-  }
-
   /**
     * Rename sort columns if they are renamed in a projection.
     */
@@ -860,9 +843,9 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
             case (newName, Variable(`varName`)) =>
               ProvidedOrder.Column(Property(Variable(newName)(pos), PropertyKeyName(propName)(pos))(pos), columnOrder.isAscending)
           }.getOrElse(columnOrder)
-      case columnOrder@ProvidedOrder.Column(variable@Variable(varName)) =>
+      case columnOrder@ProvidedOrder.Column(expression) =>
         projectExpressions.collectFirst {
-          case (newName, Variable(`varName`)) => ProvidedOrder.Column(Variable(newName)(variable.position), columnOrder.isAscending)
+          case (newName, `expression`) => ProvidedOrder.Column(Variable(newName)(expression.position), columnOrder.isAscending)
         }.getOrElse(columnOrder)
     }
   }

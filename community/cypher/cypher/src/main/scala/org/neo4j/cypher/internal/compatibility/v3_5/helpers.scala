@@ -146,21 +146,9 @@ object helpers {
   def as4_0(providedOrder: irV3_5.ProvidedOrder) : irV4_0.ProvidedOrder = irV4_0.ProvidedOrder(providedOrder.columns.map(as4_0))
 
   def as4_0(column: irV3_5.ProvidedOrder.Column) : irV4_0.ProvidedOrder.Column = column match {
-    case irV3_5.ProvidedOrder.Asc(id) => irV4_0.ProvidedOrder.Asc(idToExpression(id))
-    case irV3_5.ProvidedOrder.Desc(id) => irV4_0.ProvidedOrder.Desc(idToExpression(id))
-  }
-
-  def idToExpression(id: String): Expression = {
-
     // Since 3.5 only provides a string representation of the expression, the real position is not known
-    val dummmyPosition = InputPosition.NONE
-
-    val exprArray: Array[String] = id.split("\\.")
-
-    exprArray match {
-      case Array(varName, propName) => Property(Variable(varName)(dummmyPosition), PropertyKeyName(propName)(dummmyPosition))(dummmyPosition)
-      case Array(varName) => Variable(varName)(dummmyPosition)
-    }
+    case irV3_5.ProvidedOrder.Asc(id) => irV4_0.ProvidedOrder.Asc(Variable(id)(InputPosition.NONE))
+    case irV3_5.ProvidedOrder.Desc(id) => irV4_0.ProvidedOrder.Desc(Variable(id)(InputPosition.NONE))
   }
 
   def as4_0(notification: nfV3_5.InternalNotification): nfV4_0.InternalNotification = notification match {

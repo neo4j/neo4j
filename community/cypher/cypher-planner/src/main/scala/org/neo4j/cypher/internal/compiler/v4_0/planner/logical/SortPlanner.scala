@@ -20,11 +20,12 @@
 package org.neo4j.cypher.internal.compiler.v4_0.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.steps.projection
-import org.neo4j.cypher.internal.ir.v4_0.InterestingOrder
+import org.neo4j.cypher.internal.ir.v4_0.{InterestingOrder, ProvidedOrder}
 import org.neo4j.cypher.internal.v4_0.expressions.{Expression, Variable}
 import org.neo4j.cypher.internal.v4_0.logical.plans.{Ascending, ColumnOrder, Descending, LogicalPlan}
 
-case class SortColumnsWithProjections(columnOrder: ColumnOrder, projections: Map[String, Expression], unaliasedProjections: Option[(String, Expression)])
+case class SortColumnsWithProjections(columnOrder: ColumnOrder, providedOrderColumn: ProvidedOrder.Column,
+                                      projections: Map[String, Expression], unaliasedProjections: Option[(String, Expression)])
 
 object SortPlanner {
   def maybeSortedPlan(plan: LogicalPlan, interestingOrder: InterestingOrder, context: LogicalPlanningContext): Option[LogicalPlan] = {
@@ -43,16 +44,16 @@ object SortPlanner {
 
       val sortItems: Seq[SortColumnsWithProjections] = interestingOrder.requiredOrderCandidate.order.map {
         // Aliased sort expressions
-        case InterestingOrder.Asc(Variable(key), projection) => SortColumnsWithProjections(Ascending(key), projection, None)
-        case InterestingOrder.Desc(Variable(key), projection) => SortColumnsWithProjections(Descending(key), projection, None)
+        case InterestingOrder.Asc(v@Variable(key), projection) => SortColumnsWithProjections(Ascending(key), ProvidedOrder.Asc(v), projection, None)
+        case InterestingOrder.Desc(v@Variable(key), projection) => SortColumnsWithProjections(Descending(key), ProvidedOrder.Desc(v), projection, None)
 
         // Unaliased sort expressions
         case InterestingOrder.Asc(expression, projection) =>
           val columnId = idFrom(expression, projection)
-          SortColumnsWithProjections(Ascending(columnId), projection, Some(columnId -> expression))
+          SortColumnsWithProjections(Ascending(columnId), ProvidedOrder.Asc(expression), projection, Some(columnId -> expression))
         case InterestingOrder.Desc(expression, projection) =>
           val columnId = idFrom(expression, projection)
-          SortColumnsWithProjections(Descending(columnId), projection, Some(columnId -> expression))
+          SortColumnsWithProjections(Descending(columnId), ProvidedOrder.Desc(expression), projection, Some(columnId -> expression))
       }
 
       // Project all variables needed for sort in two steps
@@ -64,8 +65,10 @@ object SortPlanner {
       val projected2 = projected(projected1, unaliasedProjections, updateSolved = false)
 
       val sortColumns = sortItems.map(_.columnOrder)
+      val providedOrderColumns = sortItems.map(_.providedOrderColumn)
+
       if (sortColumns.forall(column => projected2.availableSymbols.contains(column.id)))
-        Some(context.logicalPlanProducer.planSort(projected2, sortColumns, interestingOrder, context))
+        Some(context.logicalPlanProducer.planSort(projected2, sortColumns, ProvidedOrder(providedOrderColumns), interestingOrder, context))
       else
         None
     } else {

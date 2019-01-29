@@ -483,7 +483,7 @@ class OrderPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
     }
   }
 
-  test("Should plan sort between the expands when ordering by functions of both nodes in first expand and included in return") {
+  test("Should plan sort between the expands when ordering by functions of both nodes in first expand and included aliased in return") {
     val query =
       """MATCH (u:Person)-[f:FRIEND]->(p:Person)-[r:READ]->(b:Book)
         |WHERE u.name STARTS WITH 'Joe'
@@ -496,6 +496,25 @@ class OrderPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
         Selection(_,
           Expand(
             Sort(_,Seq(Ascending("add"))), _, _, _, _, _, _
+          )
+        ), _
+      ) => ()
+    }
+  }
+
+  test("Should plan sort between the expands when ordering by functions of both nodes in first expand and included unaliased in return") {
+    val query =
+      """MATCH (u:Person)-[f:FRIEND]->(p:Person)-[r:READ]->(b:Book)
+        |WHERE u.name STARTS WITH 'Joe'
+        |RETURN u.name + p.name, b.title
+        |ORDER BY u.name + p.name""".stripMargin
+    val plan = idpGiven.getLogicalPlanFor(query)._2
+
+    plan should beLike {
+      case Projection(
+        Selection(_,
+          Expand(
+            Sort(_,Seq(Ascending("u.name + p.name"))), _, _, _, _, _, _
           )
         ), _
       ) => ()
