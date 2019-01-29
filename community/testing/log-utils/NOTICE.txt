@@ -35,8 +35,7 @@ Apache Software License, Version 2.0
   org.opentest4j:opentest4j
 
 BSD License
-  Hamcrest Core
-  Hamcrest library
+  Hamcrest
 
 Eclipse Distribution License - v 1.0
   Eclipse Collections API
@@ -49,7 +48,6 @@ Eclipse Public License - v 1.0
 Eclipse Public License v2.0
   JUnit Jupiter API
   JUnit Jupiter Engine
-  JUnit Jupiter Migration Support
   JUnit Platform Commons
   JUnit Platform Engine API
   JUnit Platform Launcher
