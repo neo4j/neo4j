@@ -411,7 +411,7 @@ public class IndexPopulationJobTest
             LogMatcherBuilder match = inLog( IndexPopulationJob.class );
             logProvider.assertExactly( match.info( "Index population started: [%s]", ":FIRST(name)" ),
                     match.info( "Index creation finished. Index [%s] is %s.", ":FIRST(name)", "ONLINE" ),
-                    match.debug( containsString( "TIME/PHASE Final: SCAN[" ) ) );
+                    match.info( containsString( "TIME/PHASE Final: SCAN[" ) ) );
         }
         finally
         {
@@ -440,7 +440,7 @@ public class IndexPopulationJobTest
             LogMatcherBuilder match = inLog( IndexPopulationJob.class );
             logProvider.assertExactly( match.info( "Index population started: [%s]", ":FIRST(name)" ),
                     match.info( "Index created. Starting data checks. Index [%s] is %s.", ":FIRST(name)", "POPULATING" ),
-                    match.debug( containsString( "TIME/PHASE Final: SCAN[" ) ));
+                    match.info( containsString( "TIME/PHASE Final: SCAN[" ) ));
         }
         finally
         {

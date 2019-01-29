@@ -29,7 +29,6 @@ import org.neo4j.util.FeatureToggles;
 
 public class LoggingPhaseTracker implements PhaseTracker
 {
-
     private static final int PERIOD_INTERVAL = FeatureToggles.getInteger( LoggingPhaseTracker.class, "period_interval", 600 );
     private static final String MESSAGE_PREFIX = "TIME/PHASE ";
 
@@ -101,7 +100,7 @@ public class LoggingPhaseTracker implements PhaseTracker
 
     private void finalReport()
     {
-        log.debug( MESSAGE_PREFIX + mainReportString( "Final" ) );
+        log.info( MESSAGE_PREFIX + mainReportString( "Final" ) );
     }
 
     private void periodReport( long secondsSinceLastPeriodReport )
