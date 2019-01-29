@@ -24,7 +24,7 @@ import java.util
 import java.util.NoSuchElementException
 
 import org.neo4j.cypher.exceptionHandler.RunSafely
-import org.neo4j.cypher.internal.plan_description.InternalPlanDescription
+import org.neo4j.cypher.internal.plandescription.InternalPlanDescription
 import org.neo4j.cypher.internal.runtime._
 import org.neo4j.cypher.result.QueryResult.QueryResultVisitor
 import org.neo4j.graphdb

@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.planmatching
 
-import org.neo4j.cypher.internal.plan_description.PlanDescriptionArgumentSerializer
-import org.neo4j.cypher.internal.plan_description.renderAsTreeTable.UNNAMED_PATTERN
-import org.neo4j.cypher.internal.plan_description.{Argument, InternalPlanDescription}
+import org.neo4j.cypher.internal.plandescription.PlanDescriptionArgumentSerializer
+import org.neo4j.cypher.internal.plandescription.renderAsTreeTable.UNNAMED_PATTERN
+import org.neo4j.cypher.internal.plandescription.{Argument, InternalPlanDescription}
 import org.scalatest.matchers.{MatchResult, Matcher}
 
 import scala.util.matching.Regex

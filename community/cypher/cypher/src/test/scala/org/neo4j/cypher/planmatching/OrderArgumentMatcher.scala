@@ -20,9 +20,9 @@
 package org.neo4j.cypher.planmatching
 
 import org.neo4j.cypher.internal.ir.v4_0.ProvidedOrder
-import org.neo4j.cypher.internal.plan_description.InternalPlanDescription
-import org.neo4j.cypher.internal.plan_description.Arguments.Order
-import org.neo4j.cypher.internal.plan_description.PlanDescriptionArgumentSerializer.removeGeneratedNames
+import org.neo4j.cypher.internal.plandescription.InternalPlanDescription
+import org.neo4j.cypher.internal.plandescription.Arguments.Order
+import org.neo4j.cypher.internal.plandescription.PlanDescriptionArgumentSerializer.removeGeneratedNames
 import org.scalatest.matchers.{MatchResult, Matcher}
 
 /**

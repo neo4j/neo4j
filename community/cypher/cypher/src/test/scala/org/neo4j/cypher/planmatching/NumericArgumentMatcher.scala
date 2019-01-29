@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.planmatching
 
-import org.neo4j.cypher.internal.plan_description.InternalPlanDescription
-import org.neo4j.cypher.internal.plan_description.Arguments.{DbHits, EstimatedRows, Rows, Time}
+import org.neo4j.cypher.internal.plandescription.InternalPlanDescription
+import org.neo4j.cypher.internal.plandescription.Arguments.{DbHits, EstimatedRows, Rows, Time}
 import org.scalatest.matchers.{MatchResult, Matcher}
 
 /**

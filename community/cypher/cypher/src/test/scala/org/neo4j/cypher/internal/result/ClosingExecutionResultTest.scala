@@ -26,7 +26,7 @@ import org.neo4j.cypher.exceptionHandler.RunSafely
 import org.neo4j.cypher.internal.compatibility.ExceptionHandler
 import org.neo4j.cypher.internal.result.ClosingExecutionResult
 import org.neo4j.cypher.internal.runtime._
-import org.neo4j.cypher.internal.plan_description.InternalPlanDescription
+import org.neo4j.cypher.internal.plandescription.InternalPlanDescription
 import org.neo4j.cypher.result.QueryResult
 import org.neo4j.graphdb.Result.ResultVisitor
 import org.neo4j.graphdb.{Notification, ResourceIterator, Result}

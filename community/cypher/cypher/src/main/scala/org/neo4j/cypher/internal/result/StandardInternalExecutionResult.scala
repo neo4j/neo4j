@@ -23,7 +23,7 @@ import java.io.PrintWriter
 import java.util
 
 import org.neo4j.cypher.internal.RuntimeName
-import org.neo4j.cypher.internal.plan_description.{InternalPlanDescription, PlanDescriptionBuilder}
+import org.neo4j.cypher.internal.plandescription.{InternalPlanDescription, PlanDescriptionBuilder}
 import org.neo4j.cypher.internal.result.string.ResultStringBuilder
 import org.neo4j.cypher.internal.runtime._
 import org.neo4j.cypher.internal.v4_0.util.{ProfilerStatisticsNotReadyException, TaskCloser}

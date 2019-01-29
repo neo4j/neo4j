@@ -17,12 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.plan_description
+package org.neo4j.cypher.internal.plandescription
 
 import java.util
 
 import org.neo4j.cypher.exceptionHandler
-import org.neo4j.cypher.internal.plan_description.Arguments._
+import org.neo4j.cypher.internal.plandescription.Arguments._
 import org.neo4j.cypher.internal.v4_0.util.InternalException
 import org.neo4j.cypher.internal.v4_0.util.attribution.Id
 import org.neo4j.graphdb.ExecutionPlanDescription

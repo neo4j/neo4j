@@ -20,9 +20,9 @@
 package org.neo4j.cypher.planmatching
 
 import org.neo4j.cypher.internal.ir.v4_0.ProvidedOrder
-import org.neo4j.cypher.internal.plan_description.Arguments
-import org.neo4j.cypher.internal.plan_description.Arguments.{DbHits, EstimatedRows, Order, Rows}
-import org.neo4j.cypher.internal.plan_description._
+import org.neo4j.cypher.internal.plandescription.Arguments
+import org.neo4j.cypher.internal.plandescription.Arguments.{DbHits, EstimatedRows, Order, Rows}
+import org.neo4j.cypher.internal.plandescription._
 import org.neo4j.cypher.internal.v4_0.expressions.Expression
 import org.neo4j.cypher.internal.v4_0.util.InputPosition
 import org.neo4j.cypher.internal.v4_0.util.attribution.Id
