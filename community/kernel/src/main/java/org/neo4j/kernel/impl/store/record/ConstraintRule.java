@@ -58,7 +58,7 @@ public class ConstraintRule implements SchemaRule, StorageConstraintReference
         return new ConstraintRule( id, descriptor, ownedIndexRule, name );
     }
 
-    ConstraintRule( long id, ConstraintDescriptor descriptor, Long ownedIndex )
+    public ConstraintRule( long id, ConstraintDescriptor descriptor, Long ownedIndex )
     {
         this( id, descriptor, ownedIndex, null );
     }
