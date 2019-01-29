@@ -78,6 +78,7 @@ import org.neo4j.values.storable.Values;
 
 import static java.lang.String.format;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.hamcrest.core.IsEqual.equalTo;
@@ -409,7 +410,8 @@ public class IndexPopulationJobTest
             // Then
             LogMatcherBuilder match = inLog( IndexPopulationJob.class );
             logProvider.assertExactly( match.info( "Index population started: [%s]", ":FIRST(name)" ),
-                    match.info( "Index creation finished. Index [%s] is %s.", ":FIRST(name)", "ONLINE" ) );
+                    match.info( "Index creation finished. Index [%s] is %s.", ":FIRST(name)", "ONLINE" ),
+                    match.debug( containsString( "TIME/PHASE Final: SCAN[" ) ) );
         }
         finally
         {
@@ -437,7 +439,8 @@ public class IndexPopulationJobTest
             // Then
             LogMatcherBuilder match = inLog( IndexPopulationJob.class );
             logProvider.assertExactly( match.info( "Index population started: [%s]", ":FIRST(name)" ),
-                    match.info( "Index created. Starting data checks. Index [%s] is %s.", ":FIRST(name)", "POPULATING" ) );
+                    match.info( "Index created. Starting data checks. Index [%s] is %s.", ":FIRST(name)", "POPULATING" ),
+                    match.debug( containsString( "TIME/PHASE Final: SCAN[" ) ));
         }
         finally
         {
