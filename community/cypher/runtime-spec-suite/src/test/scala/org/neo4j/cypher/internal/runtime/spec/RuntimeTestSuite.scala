@@ -23,17 +23,22 @@ import java.util
 import java.util.concurrent.atomic.AtomicInteger
 
 import org.neo4j.cypher.internal.runtime.{InputCursor, InputDataStream, NoInput}
-import org.neo4j.cypher.internal.{CypherRuntime, LogicalQuery, RuntimeContext}
+import org.neo4j.cypher.internal.v4_0.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.{CypherRuntime, LogicalQuery, RuntimeContext}
 import org.neo4j.cypher.result.{QueryResult, RuntimeResult}
 import org.neo4j.graphdb.{GraphDatabaseService, Label, Node}
 import org.neo4j.kernel.impl.util.ValueUtils
-import org.neo4j.values.{AnyValue, AnyValues}
 import org.neo4j.values.virtual.VirtualValues
-import org.scalatest.{BeforeAndAfterEach, Tag}
+import org.neo4j.values.{AnyValue, AnyValues}
 import org.scalatest.matchers.{MatchResult, Matcher}
+import org.scalatest.{BeforeAndAfterEach, Tag}
 
 import scala.collection.mutable.ArrayBuffer
+
+object RuntimeTestSuite {
+  val ANY_VALUE_ORDERING: Ordering[AnyValue] = Ordering.comparatorToOrdering(AnyValues.COMPARATOR)
+}
 
 /**
   * Contains helpers, matchers and graph handling to support runtime acceptance test,
@@ -46,6 +51,7 @@ import scala.collection.mutable.ArrayBuffer
 abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT],
                                                            val runtime: CypherRuntime[CONTEXT])
   extends CypherFunSuite
+  with AstConstructionTestSupport
     with BeforeAndAfterEach
 {
 
@@ -148,8 +154,20 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
     val tx = graphDb.beginTx()
     try {
       tx.success()
-      for (i <- 0 until nNodes) yield {
+      for (_ <- 0 until nNodes) yield {
         graphDb.createNode(labels.map(Label.label):_*)
+      }
+    } finally tx.close()
+  }
+
+  def nodePropertyGraph(nNodes: Int, properties: PartialFunction[Int, Map[String, Any]], labels: String*): Seq[Node] = {
+    val tx = graphDb.beginTx()
+    try {
+      tx.success()
+      for (i <- 0 until nNodes) yield {
+        val node = graphDb.createNode(labels.map(Label.label):_*)
+        properties.runWith(_.foreach(kv => node.setProperty(kv._1, kv._2)))(i)
+        node
       }
     } finally tx.close()
   }
@@ -162,29 +180,49 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
   class RuntimeResultMatcher(expectedColumns: Seq[String]) extends Matcher[RuntimeResult] {
 
     val expectedRows = new ArrayBuffer[Array[AnyValue]]
-    var expectedRowIndex: Int = 0
+    var maybeResultMatcher: Option[Matcher[Seq[Array[AnyValue]]]] = None
 
     def withRow(values: Any*): RuntimeResultMatcher = {
+      rowModifier()
       expectedRows += values.toArray.map(ValueUtils.of)
       this
     }
 
     def withRows[T](rows: Seq[Array[T]]): RuntimeResultMatcher = {
+      rowModifier()
       expectedRows ++= rows.map(row => row.map(ValueUtils.of))
       this
     }
 
     def withSingleValueRows(values: Seq[Any]): RuntimeResultMatcher = {
+      rowModifier()
       expectedRows ++= values.map(x => Array(ValueUtils.of(x)))
       this
     }
 
-    def withNoRows(): RuntimeResultMatcher = this
+    def withNoRows(): RuntimeResultMatcher = {
+      rowModifier()
+      this
+    }
+
+    private def rowModifier(): Unit = {
+      if (maybeResultMatcher.isDefined) {
+        throw new IllegalArgumentException("Cannot use both `withRow` and `withResultMatching`")
+      }
+    }
+
+    def withResultMatching(func: PartialFunction[Any, _]): RuntimeResultMatcher = {
+      if (expectedRows.nonEmpty) {
+        throw new IllegalArgumentException("Cannot use both `withRow` and `withResultMatching`")
+      }
+      maybeResultMatcher = Some(matchPattern(func))
+      this
+    }
 
     override def apply(left: RuntimeResult): MatchResult = {
       val columns = left.fieldNames().toSeq
       if (columns != expectedColumns)
-        MatchResult(false, s"Expected result columns $expectedColumns, got $columns", "")
+        MatchResult(matches = false, s"Expected result columns $expectedColumns, got $columns", "")
       else {
         val rows = new ArrayBuffer[Array[AnyValue]]
         left.accept(new QueryResult.QueryResultVisitor[Exception] {
@@ -194,18 +232,22 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
             true
           }
         })
-        MatchResult(
-          equalWithoutOrder(expectedRows, rows),
-          s"""Expected rows:
-            |
+        maybeResultMatcher match {
+          case Some(matcher) => matcher(rows)
+          case None =>
+            MatchResult(
+              equalWithoutOrder(expectedRows, rows),
+              s"""Expected rows:
+                 |
             |${pretty(expectedRows)}
-            |
+                 |
             |but got
-            |
+                 |
             |${pretty(rows)}
           """.stripMargin,
-          ""
-        )
+              ""
+            )
+        }
       }
     }
 

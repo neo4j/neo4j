@@ -24,12 +24,15 @@ import java.time.temporal.ChronoUnit
 import org.neo4j.cypher.internal.runtime.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
+import org.neo4j.values.AnyValue
 import org.neo4j.values.storable._
 import org.neo4j.values.utils.ValueMath.overflowSafeAdd
 
 /**
  * AVG computation is calculated using cumulative moving average approach:
  * https://en.wikipedia.org/wiki/Moving_average#Cumulative_moving_average
+  *
+  * TODO consider combining it with https://en.wikipedia.org/wiki/Kahan_summation_algorithm
  */
 class AvgFunction(val value: Expression)
   extends AggregationFunction
@@ -53,8 +56,12 @@ class AvgFunction(val value: Expression)
       DurationValue.approximate(monthsRunningAvg, daysRunningAvg, secondsRunningAvg, nanosRunningAvg)
   }
 
-  override def apply(data: ExecutionContext, state: QueryState) {
+  override def apply(data: ExecutionContext, state: QueryState): Unit = {
     val vl = value(data, state)
+    applyValueDirectly(vl)
+  }
+
+  def applyValueDirectly(vl: AnyValue): Unit = {
     actOnNumberOrDuration(vl,
       number => {
         count += 1
@@ -70,5 +77,8 @@ class AvgFunction(val value: Expression)
         nanosRunningAvg += (duration.get(ChronoUnit.NANOS).asInstanceOf[Double] - nanosRunningAvg) / count
       }
     )
+
   }
+
+  def aggregatedRowCount: Long = count
 }

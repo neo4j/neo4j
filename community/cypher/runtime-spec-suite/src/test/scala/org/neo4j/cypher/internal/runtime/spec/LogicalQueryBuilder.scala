@@ -22,7 +22,9 @@ package org.neo4j.cypher.internal.runtime.spec
 import org.neo4j.cypher.internal.LogicalQuery
 import org.neo4j.cypher.internal.planner.v4_0.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
+import org.neo4j.cypher.internal.v4_0.expressions.{Expression, Variable}
 import org.neo4j.cypher.internal.v4_0.logical.plans._
+import org.neo4j.cypher.internal.v4_0.util.InputPosition
 import org.neo4j.cypher.internal.v4_0.util.attribution.{IdGen, SequentialIdGen}
 
 import scala.collection.mutable.ArrayBuffer
@@ -58,6 +60,7 @@ class LogicalQueryBuilder()
   private var looseEnds = new ArrayBuffer[Tree]
   private var indent = 0
   private var resultColumns: Array[String] = _
+  private var semanticTable = new SemanticTable()
 
   /**
     * Increase indent. The indent determines where the next
@@ -77,8 +80,14 @@ class LogicalQueryBuilder()
     this
   }
 
-  def allNodeScan(node: String): LogicalQueryBuilder =
+  def allNodeScan(node: String): LogicalQueryBuilder = {
+    semanticTable = semanticTable.addNode(Variable(node)(InputPosition.NONE))
     appendAtCurrentIndent(LeafOperator(AllNodesScan(node, Set.empty)))
+  }
+
+  def aggregation(groupingExpressions: Map[String, Expression],
+                  aggregationExpression: Map[String, Expression]): LogicalQueryBuilder =
+    appendAtCurrentIndent(UnaryOperator(lp => Aggregation(lp, groupingExpressions, aggregationExpression)))
 
   def apply(): LogicalQueryBuilder =
     appendAtCurrentIndent(BinaryOperator((lhs, rhs) => Apply(lhs, rhs)))
@@ -99,7 +108,7 @@ class LogicalQueryBuilder()
                  "<<queryText>>",
                  readOnly = true,
                  resultColumns,
-                 new SemanticTable(),
+                 semanticTable,
                  new Cardinalities,
                  false,
                  None)

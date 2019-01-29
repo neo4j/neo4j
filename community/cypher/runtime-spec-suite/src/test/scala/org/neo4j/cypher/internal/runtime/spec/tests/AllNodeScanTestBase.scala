@@ -17,70 +17,65 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.runtime.spec.interpreted
+package org.neo4j.cypher.internal.runtime.spec.tests
 
 import org.neo4j.cypher.internal.{CypherRuntime, InterpretedRuntime, RuntimeContext}
 import org.neo4j.cypher.internal.runtime.spec._
 
-abstract class InputTestBase[CONTEXT <: RuntimeContext](
+abstract class AllNodeScanTestBase[CONTEXT <: RuntimeContext](
   edition: Edition[CONTEXT],
   runtime: CypherRuntime[CONTEXT]
 ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
-  test("should produce input") {
+  test("should scan all nodes") {
     // given
-    val nodes = nodeGraph(3)
+    val nodes = nodeGraph(10, "Honey") ++
+      nodeGraph(10, "Butter") ++
+      nodeGraph(10, "Almond")
 
     // when
     val logicalQuery = new LogicalQueryBuilder()
-      .produceResults("x", "y", "z")
-      .input("x", "y", "z")
+      .produceResults("x")
+      .allNodeScan("x")
       .build()
 
-    val input =
-      inputValues(
-        Array(11, 12, 13),
-        Array(21, 22, 23),
-        Array(31, 32, 33))
-      .and(
-        Array("11", "12", "13"),
-        nodes.toArray
-      )
-
-    val runtimeResult = execute(logicalQuery, runtime, input)
+    val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    runtimeResult should beColumns("x", "y", "z").withRows(input.flatten)
+    runtimeResult should beColumns("x").withSingleValueRows(nodes)
   }
 
-  test("should retain input value order") {
+  test("should scan empty graph") {
     // when
-    val columns = (0 until 100).map(i => "c"+i)
-
     val logicalQuery = new LogicalQueryBuilder()
-      .produceResults(columns:_*)
-      .input(columns:_*)
+      .produceResults("x")
+      .allNodeScan("x")
       .build()
 
-    val input = inputValues(columns.toArray)
-    val runtimeResult = execute(logicalQuery, runtime, input)
+    val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    runtimeResult should beColumns(columns:_*).withRow(columns:_*)
+    runtimeResult should beColumns("x").withNoRows()
   }
 
-  test("should return no rows on no input") {
+  test("should handle multiple scans") {
+    // given
+    val nodes = nodeGraph(10, "Honey")
+
     // when
     val logicalQuery = new LogicalQueryBuilder()
-      .produceResults("x", "y", "z")
-      .input("x", "y", "z")
+      .produceResults("y", "z", "x")
+      .apply()
+      .|.allNodeScan("z")
+      .apply()
+      .|.allNodeScan("y")
+      .allNodeScan("x")
       .build()
 
-    val runtimeResult = execute(logicalQuery, runtime, NO_INPUT)
+    val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    runtimeResult should beColumns("x", "y", "z").withNoRows()
+    val expected = for {x <- nodes; y <- nodes; z <- nodes} yield Array(y, z, x)
+    runtimeResult should beColumns("y", "z", "x").withRows(expected)
   }
 }
-
-class InterpretedInputTest extends InputTestBase(COMMUNITY_EDITION, InterpretedRuntime)
