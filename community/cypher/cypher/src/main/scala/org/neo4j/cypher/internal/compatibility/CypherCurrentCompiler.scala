@@ -98,9 +98,10 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
                                     planState.statement().returnColumns.toArray,
                                     planState.semanticTable(),
                                     planState.planningAttributes.cardinalities,
+                                    planState.hasLoadCSV,
                                     planState.maybePeriodicCommit.flatMap(_.map(x => PeriodicCommitInfo(x.batchSize))))
 
-    val executionPlan4_0: ExecutionPlan_v4_0 = runtime.compileToExecutable(logicalQuery, runtimeContext, planState.hasLoadCSV)
+    val executionPlan4_0: ExecutionPlan_v4_0 = runtime.compileToExecutable(logicalQuery, runtimeContext)
 
     new CypherExecutableQuery(
       logicalPlan,

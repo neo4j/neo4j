@@ -50,10 +50,9 @@ trait CypherRuntime[-CONTEXT <: RuntimeContext] {
     *
     * @param logicalQuery the logical query to compile
     * @param context the compilation context
-    * @param hasLoadCSV a flag showing if the query contains a load csv, used for tracking line numbers
     * @return the executable plan
     */
-  def compileToExecutable(logicalQuery: LogicalQuery, context: CONTEXT, hasLoadCSV: Boolean): ExecutionPlan
+  def compileToExecutable(logicalQuery: LogicalQuery, context: CONTEXT): ExecutionPlan
 
   def name: String
 }
@@ -68,6 +67,7 @@ trait CypherRuntime[-CONTEXT <: RuntimeContext] {
   * @param resultColumns names of the returned result columns
   * @param semanticTable semantic table with type information on the expressions in the query
   * @param cardinalities cardinalities (estimated rows) of all operators in the logical plan tree
+  * @param hasLoadCSV a flag showing if the query contains a load csv, used for tracking line numbers
   * @param periodicCommitInfo periodic commit info if relevant
   */
 case class LogicalQuery(logicalPlan: LogicalPlan,
@@ -76,6 +76,7 @@ case class LogicalQuery(logicalPlan: LogicalPlan,
                         resultColumns: Array[String],
                         semanticTable: SemanticTable,
                         cardinalities: Cardinalities,
+                        hasLoadCSV: Boolean,
                         periodicCommitInfo: Option[PeriodicCommitInfo])
 
 /**
@@ -108,7 +109,7 @@ trait RuntimeContextCreator[+CONTEXT <: RuntimeContext] {
 object UnknownRuntime extends CypherRuntime[RuntimeContext] {
   override def name: String = "unknown"
 
-  override def compileToExecutable(logicalQuery: LogicalQuery, context: RuntimeContext, hasLoadCSV: Boolean): ExecutionPlan =
+  override def compileToExecutable(logicalQuery: LogicalQuery, context: RuntimeContext): ExecutionPlan =
     throw new CantCompileQueryException()
 }
 
@@ -132,14 +133,14 @@ class FallbackRuntime[CONTEXT <: RuntimeContext](runtimes: Seq[CypherRuntime[CON
     throw new RuntimeUnsupportedException(message, originalException)
   }
 
-  override def compileToExecutable(logicalQuery: LogicalQuery, context: CONTEXT, hasLoadCSV: Boolean): ExecutionPlan = {
-    var executionPlan: Try[ExecutionPlan] = Try(ProcedureCallOrSchemaCommandRuntime.compileToExecutable(logicalQuery, context, hasLoadCSV))
+  override def compileToExecutable(logicalQuery: LogicalQuery, context: CONTEXT): ExecutionPlan = {
+    var executionPlan: Try[ExecutionPlan] = Try(ProcedureCallOrSchemaCommandRuntime.compileToExecutable(logicalQuery, context))
     val logger = new RecordingNotificationLogger()
     for (runtime <- runtimes if executionPlan.isFailure) {
       executionPlan =
         Try(
           exceptionHandler.runSafely(
-            runtime.compileToExecutable(logicalQuery, context, hasLoadCSV)
+            runtime.compileToExecutable(logicalQuery, context)
           )
         )
 

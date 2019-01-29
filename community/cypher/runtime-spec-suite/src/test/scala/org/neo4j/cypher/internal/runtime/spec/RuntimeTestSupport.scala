@@ -69,7 +69,7 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](val graphDb: GraphDatabaseSe
     val queryContext = newQueryContext(tx)
     val runtimeContext = newRuntimeContext(tx)
 
-    val executableQuery = runtime.compileToExecutable(logicalQuery, runtimeContext, false)
+    val executableQuery = runtime.compileToExecutable(logicalQuery, runtimeContext)
     val result = executableQuery.run(queryContext, false, VirtualValues.EMPTY_MAP, prePopulateResults = true, input)
     resultMapper(runtimeContext, result)
   }

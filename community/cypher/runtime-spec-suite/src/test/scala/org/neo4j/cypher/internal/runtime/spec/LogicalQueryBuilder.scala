@@ -101,6 +101,7 @@ class LogicalQueryBuilder()
                  resultColumns,
                  new SemanticTable(),
                  new Cardinalities,
+                 false,
                  None)
   }
 

@@ -34,7 +34,7 @@ import org.neo4j.values.virtual.MapValue
 object InterpretedRuntime extends CypherRuntime[RuntimeContext] {
   override def name: String = "interpreted"
 
-  override def compileToExecutable(query: LogicalQuery, context: RuntimeContext, hasLoadCSV: Boolean): ExecutionPlan = {
+  override def compileToExecutable(query: LogicalQuery, context: RuntimeContext): ExecutionPlan = {
     val logicalPlan = query.logicalPlan
     val converters = new ExpressionConverters(CommunityExpressionConverter(context.tokenContext))
     val queryIndexes = new QueryIndexes(context.schemaRead)
@@ -49,7 +49,7 @@ object InterpretedRuntime extends CypherRuntime[RuntimeContext] {
                                                                         columns,
                                                                         logicalPlan,
                                                                         context.config.lenientCreateRelationship,
-                                                                        hasLoadCSV)
+                                                                        query.hasLoadCSV)
 
     new InterpretedExecutionPlan(query.periodicCommitInfo,
                                  resultBuilderFactory,

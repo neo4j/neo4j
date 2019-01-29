@@ -34,7 +34,7 @@ import org.neo4j.cypher.internal.v4_0.util.{LabelId, PropertyKeyId}
 object ProcedureCallOrSchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
   override def name: String = "procedure"
 
-  override def compileToExecutable(state: LogicalQuery, context: RuntimeContext, hasLoadCSV: Boolean): ExecutionPlan = {
+  override def compileToExecutable(state: LogicalQuery, context: RuntimeContext): ExecutionPlan = {
 
     def throwCantCompile(unknownPlan: LogicalPlan): Nothing = {
       throw new CantCompileQueryException(
