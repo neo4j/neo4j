@@ -556,7 +556,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
           ),
           MergeCreateNode(
             Argument(Set()),
-            "n", Seq(lblName("Awesome")), Some(mapOf(("prop", literalString("foo"))))
+            "n", Seq(labelName("Awesome")), Some(mapOf(("prop", literalString("foo"))))
           ),
           Seq("n")),
         Map("n.prop" -> prop("n", "prop")))
@@ -582,7 +582,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
           ),
           MergeCreateNode(
             Argument(Set()),
-            "n", Seq(lblName("Awesome")), Some(mapOf(("prop", literalString("foo"))))
+            "n", Seq(labelName("Awesome")), Some(mapOf(("prop", literalString("foo"))))
           ),
           Seq("n")),
         Map("n.prop" -> prop("n", "prop")))
@@ -609,7 +609,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
           ),
           MergeCreateNode(
             Argument(Set()),
-            "n", Seq(lblName("Awesome")), Some(mapOf(("prop", literalString("foo"))))
+            "n", Seq(labelName("Awesome")), Some(mapOf(("prop", literalString("foo"))))
           ),
           Seq("n")),
         Map(propertyProj("n", "foo")))

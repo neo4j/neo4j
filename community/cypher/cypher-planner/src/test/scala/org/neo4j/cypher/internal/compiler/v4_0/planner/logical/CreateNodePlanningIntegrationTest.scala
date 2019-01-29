@@ -76,7 +76,7 @@ class CreateNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlann
   test("should plan create with labels") {
     planFor("CREATE (a:A:B)")._2 should equal(
       EmptyResult(
-        Create(Argument(), List(CreateNode("a", Seq(lblName("A"), lblName("B")), None)), Nil)
+        Create(Argument(), List(CreateNode("a", Seq(labelName("A"), labelName("B")), None)), Nil)
       )
     )
   }

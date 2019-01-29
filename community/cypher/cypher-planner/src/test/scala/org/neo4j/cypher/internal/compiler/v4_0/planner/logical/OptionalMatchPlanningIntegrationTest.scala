@@ -48,8 +48,8 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
       }
     } getLogicalPlanFor "MATCH (a:X)-[r1]->(b) OPTIONAL MATCH (b)-[r2]->(c:Y) RETURN b")._2 should equal(
       LeftOuterHashJoin(Set("b"),
-        Expand(NodeByLabelScan("a", lblName("X"), Set.empty), "a", SemanticDirection.OUTGOING, Seq(), "b", "r1"),
-        Expand(NodeByLabelScan("c", lblName("Y"), Set.empty), "c", SemanticDirection.INCOMING, Seq(), "b", "r2")
+        Expand(NodeByLabelScan("a", labelName("X"), Set.empty), "a", SemanticDirection.OUTGOING, Seq(), "b", "r1"),
+        Expand(NodeByLabelScan("c", labelName("Y"), Set.empty), "c", SemanticDirection.INCOMING, Seq(), "b", "r2")
       )
     )
   }
@@ -67,8 +67,8 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
       }
     } getLogicalPlanFor "MATCH (a:X)-[r1]->(b) OPTIONAL MATCH (b)-[r2]->(c:Y) RETURN b")._2 should equal(
       RightOuterHashJoin(Set("b"),
-        Expand(NodeByLabelScan("c", lblName("Y"), Set.empty), "c", SemanticDirection.INCOMING, Seq(), "b", "r2"),
-        Expand(NodeByLabelScan("a", lblName("X"), Set.empty), "a", SemanticDirection.OUTGOING, Seq(), "b", "r1")
+        Expand(NodeByLabelScan("c", labelName("Y"), Set.empty), "c", SemanticDirection.INCOMING, Seq(), "b", "r2"),
+        Expand(NodeByLabelScan("a", labelName("X"), Set.empty), "a", SemanticDirection.OUTGOING, Seq(), "b", "r1")
       )
     )
   }
@@ -97,8 +97,8 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
       }
     } getLogicalPlanFor "MATCH (a:X)-[r1]->(b) OPTIONAL MATCH (b)-[r2]->(c:Y) RETURN b")._2 should equal(
       LeftOuterHashJoin(Set("b"),
-        Expand(NodeByLabelScan("a", lblName("X"), Set.empty), "a", SemanticDirection.OUTGOING, Seq(), "b", "r1"),
-        Expand(NodeByLabelScan("c", lblName("Y"), Set.empty), "c", SemanticDirection.INCOMING, Seq(), "b", "r2")
+        Expand(NodeByLabelScan("a", labelName("X"), Set.empty), "a", SemanticDirection.OUTGOING, Seq(), "b", "r1"),
+        Expand(NodeByLabelScan("c", labelName("Y"), Set.empty), "c", SemanticDirection.INCOMING, Seq(), "b", "r2")
       )
     )
   }
@@ -127,8 +127,8 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
       }
     } getLogicalPlanFor "MATCH (a:X)-[r1]->(b) OPTIONAL MATCH (b)-[r2]->(c:Y) RETURN b")._2 should equal(
       RightOuterHashJoin(Set("b"),
-        Expand(NodeByLabelScan("c", lblName("Y"), Set.empty), "c", SemanticDirection.INCOMING, Seq(), "b", "r2"),
-        Expand(NodeByLabelScan("a", lblName("X"), Set.empty), "a", SemanticDirection.OUTGOING, Seq(), "b", "r1")
+        Expand(NodeByLabelScan("c", labelName("Y"), Set.empty), "c", SemanticDirection.INCOMING, Seq(), "b", "r2"),
+        Expand(NodeByLabelScan("a", labelName("X"), Set.empty), "a", SemanticDirection.OUTGOING, Seq(), "b", "r1")
       )
     )
   }

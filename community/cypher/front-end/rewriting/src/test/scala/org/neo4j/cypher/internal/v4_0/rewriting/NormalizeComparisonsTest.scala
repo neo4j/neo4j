@@ -44,16 +44,16 @@ class NormalizeComparisonsTest extends CypherFunSuite with AstConstructionTestSu
   }
 
   test("extract multiple hasLabels") {
-    val original = HasLabels(varFor("a"), Seq(lblName("X"), lblName("Y")))(pos)
+    val original = HasLabels(varFor("a"), Seq(labelName("X"), labelName("Y")))(pos)
 
     original.endoRewrite(normalizeComparisons) should equal(
       Ands(Set(
-        HasLabels(varFor("a"), Seq(lblName("X")))(pos),
-        HasLabels(varFor("a"), Seq(lblName("Y")))(pos)))(pos))
+        HasLabels(varFor("a"), Seq(labelName("X")))(pos),
+        HasLabels(varFor("a"), Seq(labelName("Y")))(pos)))(pos))
   }
 
   test("does not extract single hasLabels") {
-    val original = HasLabels(varFor("a"), Seq(lblName("Y")))(pos)
+    val original = HasLabels(varFor("a"), Seq(labelName("Y")))(pos)
 
     original.endoRewrite(normalizeComparisons) should equal(original)
   }

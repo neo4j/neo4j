@@ -31,13 +31,13 @@ trait AstConstructionTestSupport extends CypherTestSupport {
 
   def varFor(name: String): Variable = Variable(name)(pos)
 
-  def lblName(s: String): LabelName = LabelName(s)(pos)
+  def labelName(s: String): LabelName = LabelName(s)(pos)
 
   def hasLabels(v: String, label: String): HasLabels =
     hasLabels(varFor(v), label)
 
   def hasLabels(v: LogicalVariable, labels: String*): HasLabels =
-    HasLabels(v, labels.map(lblName))(pos)
+    HasLabels(v, labels.map(labelName))(pos)
 
   def prop(variable: String, propKey: String): Property = Property(varFor(variable), PropertyKeyName(propKey)(pos))(pos)
 

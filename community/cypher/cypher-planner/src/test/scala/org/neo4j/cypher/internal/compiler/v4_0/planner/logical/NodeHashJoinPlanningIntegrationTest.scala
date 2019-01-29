@@ -47,10 +47,10 @@ class NodeHashJoinPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         NodeHashJoin(
           Set("b"),
           Expand(
-            NodeByLabelScan("a", lblName("X"), Set.empty),
+            NodeByLabelScan("a", labelName("X"), Set.empty),
             "a", SemanticDirection.INCOMING, Seq.empty, "b", "r1"),
           Expand(
-            NodeByLabelScan("c", lblName("X"), Set.empty),
+            NodeByLabelScan("c", labelName("X"), Set.empty),
             "c", SemanticDirection.INCOMING, Seq.empty, "b", "r2")
         )
       )
@@ -84,10 +84,10 @@ class NodeHashJoinPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         NodeHashJoin(
           Set("b"),
           Expand(
-            NodeByLabelScan("a", lblName("A"), Set.empty),
+            NodeByLabelScan("a", labelName("A"), Set.empty),
             "a", SemanticDirection.OUTGOING, Seq(RelTypeName("X") _), "b", "r1", ExpandAll),
           Expand(
-            NodeByLabelScan("c", lblName("C"), Set.empty),
+            NodeByLabelScan("c", labelName("C"), Set.empty),
             "c", SemanticDirection.INCOMING, Seq(RelTypeName("X") _), "b", "r2", ExpandAll)
         )
       )

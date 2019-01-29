@@ -72,7 +72,7 @@ class InterpretedPipeMapperIT extends CypherFunSuite with LogicalPlanningTestSup
   }
 
   test("simple label scan query") {
-    val logicalPlan = NodeByLabelScan("n", lblName("Foo"), Set.empty)
+    val logicalPlan = NodeByLabelScan("n", labelName("Foo"), Set.empty)
     val pipe = build(logicalPlan)
 
     pipe should equal(NodeByLabelScanPipe("n", LazyLabel("Foo"))())

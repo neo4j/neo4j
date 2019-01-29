@@ -29,7 +29,7 @@ class NamedPathProjectionPlanningIntegrationTest extends CypherFunSuite with Log
   test("should build plans containing outgoing path projections") {
     planFor("MATCH p = (a:X)-[r]->(b) RETURN p")._2 should equal(
       Projection(
-        Expand( NodeByLabelScan("a",  lblName("X"), Set.empty), "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r"),
+        Expand( NodeByLabelScan("a",  labelName("X"), Set.empty), "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r"),
         projectExpressions = Map(
           "p" -> PathExpression(NodePathStep(Variable("a")_,SingleRelationshipPathStep(Variable("r")_, SemanticDirection.OUTGOING, Some(Variable("b")_), NilPathStep)))_
         )
@@ -48,7 +48,7 @@ class NamedPathProjectionPlanningIntegrationTest extends CypherFunSuite with Log
           FunctionInvocation(FunctionName("head") _, FunctionInvocation(FunctionName("nodes") _, pathExpr) _) _,
           varFor("a")
         ) _))_,
-          Expand(NodeByLabelScan("a", lblName("X"), Set.empty), "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r")
+          Expand(NodeByLabelScan("a", labelName("X"), Set.empty), "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r")
       )
     )
   }
@@ -70,7 +70,7 @@ class NamedPathProjectionPlanningIntegrationTest extends CypherFunSuite with Log
             SignedDecimalIntegerLiteral("10") _
           ) _
         ))_,
-          Expand(NodeByLabelScan("a", lblName("X"), Set.empty), "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r")
+          Expand(NodeByLabelScan("a", labelName("X"), Set.empty), "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r")
       )
     )
   }

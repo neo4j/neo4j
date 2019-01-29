@@ -43,9 +43,9 @@ class MergeNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlanni
 
   test("should plan single merge node from a label scan") {
 
-    val labelScan = NodeByLabelScan(aId, lblName("X"), Set.empty)
+    val labelScan = NodeByLabelScan(aId, labelName("X"), Set.empty)
     val optional = Optional(labelScan)
-    val onCreate = MergeCreateNode(Argument(), aId, Seq(lblName("X")), None)
+    val onCreate = MergeCreateNode(Argument(), aId, Seq(labelName("X")), None)
 
     val mergeNode = AntiConditionalApply(optional, onCreate, Seq(aId))
     val emptyResult = EmptyResult(mergeNode)
@@ -136,7 +136,7 @@ class MergeNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlanni
     val allNodesScan = AllNodesScan(aId, Set.empty)
     val optional = Optional(allNodesScan)
     val argument1 = Argument(Set(aId))
-    val setLabels = SetLabels(argument1, aId, Seq(lblName("L")))
+    val setLabels = SetLabels(argument1, aId, Seq(labelName("L")))
     val onMatch = ConditionalApply(optional, setLabels, Seq(aId))
 
     val argument2 = Argument()

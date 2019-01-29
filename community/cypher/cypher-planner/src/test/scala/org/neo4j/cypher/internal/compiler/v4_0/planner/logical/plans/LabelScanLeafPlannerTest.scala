@@ -61,7 +61,7 @@ class LabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
 
     // then
     resultPlans should equal(Seq(
-      NodeByLabelScan(idName, lblName("Awesome"), Set.empty))
+      NodeByLabelScan(idName, labelName("Awesome"), Set.empty))
     )
   }
 
@@ -80,7 +80,7 @@ class LabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
     })
 
     implicit val semanticTable = newMockedSemanticTable
-    when(semanticTable.id(lblName("Awesome"))).thenReturn(Some(labelId))
+    when(semanticTable.id(labelName("Awesome"))).thenReturn(Some(labelId))
 
     val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext, metrics = factory.newMetrics(statistics, mock[ExpressionEvaluator], config), semanticTable = semanticTable)
 
@@ -89,6 +89,6 @@ class LabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
 
     // then
     resultPlans should equal(
-      Seq(NodeByLabelScan(idName, lblName("Awesome"), Set.empty)))
+      Seq(NodeByLabelScan(idName, labelName("Awesome"), Set.empty)))
   }
 }

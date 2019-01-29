@@ -100,10 +100,10 @@ class FindShortestPathsPlanningIntegrationTest extends CypherFunSuite with Logic
           NodeHashJoin(
             Set("b"),
             Expand(
-              NodeByLabelScan("a", lblName("X"), Set.empty),
+              NodeByLabelScan("a", labelName("X"), Set.empty),
               "a", SemanticDirection.INCOMING, Seq.empty, "b", "r1", ExpandAll),
             Expand(
-              NodeByLabelScan("c", lblName("X"), Set.empty),
+              NodeByLabelScan("c", labelName("X"), Set.empty),
               "c", SemanticDirection.INCOMING, Seq.empty, "b", "r2", ExpandAll)
           )
         ),

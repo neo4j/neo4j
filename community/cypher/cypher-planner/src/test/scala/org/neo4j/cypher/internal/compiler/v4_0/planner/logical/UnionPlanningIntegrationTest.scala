@@ -37,11 +37,11 @@ class UnionPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
     logicalPlan should equal(
       Union(
         Projection(
-          NodeByLabelScan("  a@7", lblName("A"), Set.empty),
+          NodeByLabelScan("  a@7", labelName("A"), Set.empty),
           Map("a" -> Variable("  a@7") _)
         ),
         Projection(
-          NodeByLabelScan("  a@43", lblName("B"), Set.empty),
+          NodeByLabelScan("  a@43", labelName("B"), Set.empty),
           Map("a" -> Variable("  a@43") _)
         )
       )
@@ -59,11 +59,11 @@ class UnionPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
       Distinct(
         source = Union(
           Projection(
-            NodeByLabelScan("  a@7", lblName("A"), Set.empty),
+            NodeByLabelScan("  a@7", labelName("A"), Set.empty),
             Map("a" -> Variable("  a@7") _)
           ),
           Projection(
-            NodeByLabelScan("  a@39", lblName("B"), Set.empty),
+            NodeByLabelScan("  a@39", labelName("B"), Set.empty),
             Map("a" -> Variable("  a@39") _)
           )
         ),
