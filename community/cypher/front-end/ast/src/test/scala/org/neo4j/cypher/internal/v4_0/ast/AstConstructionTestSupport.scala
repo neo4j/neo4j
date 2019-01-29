@@ -20,7 +20,7 @@ import org.neo4j.cypher.internal.v4_0.expressions
 import org.neo4j.cypher.internal.v4_0.expressions._
 import org.neo4j.cypher.internal.v4_0.util.symbols.CypherType
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherTestSupport
-import org.neo4j.cypher.internal.v4_0.util.{DummyPosition, InputPosition}
+import org.neo4j.cypher.internal.v4_0.util.{DummyPosition, InputPosition, symbols}
 
 import scala.language.implicitConversions
 
@@ -139,4 +139,60 @@ trait AstConstructionTestSupport extends CypherTestSupport {
                                 extractExpression: Option[Expression]): ListComprehension =
     ListComprehension(varFor(variable), collection, predicate, extractExpression)(pos)
 
+  def add(l: Expression, r: Expression): Expression = expressions.Add(l, r)(pos)
+
+  def unaryAdd(source: Expression): Expression = UnaryAdd(source)(pos)
+
+  def subtract(l: Expression, r: Expression): Expression = expressions.Subtract(l, r)(pos)
+
+  def unarySubtract(source: Expression): Expression = UnarySubtract(source)(pos)
+
+  def multiply(l: Expression, r: Expression): Expression = Multiply(l, r)(pos)
+
+  def divide(l: Expression, r: Expression): Expression = Divide(l, r)(pos)
+
+  def modulo(l: Expression, r: Expression): Expression = Modulo(l, r)(pos)
+
+  def pow(l: Expression, r: Expression): Expression = Pow(l, r)(pos)
+
+  def parameter(key: String): Expression = Parameter(key, symbols.CTAny)(pos)
+
+  def nullLiteral: Null = Null()(pos)
+
+  def trueLiteral: True = True()(pos)
+
+  def falseLiteral: False = False()(pos)
+
+  def or(l: Expression, r: Expression): Expression = Or(l, r)(pos)
+
+  def xor(l: Expression, r: Expression): Expression = Xor(l, r)(pos)
+
+  def ors(es: Expression*): Expression = Ors(es.toSet)(pos)
+
+  def and(l: Expression, r: Expression): Expression = And(l, r)(pos)
+
+  def ands(es: Expression*): Expression = Ands(es.toSet)(pos)
+
+  def not(e: Expression): Expression = expressions.Not(e)(pos)
+
+  def equals(lhs: Expression, rhs: Expression): Expression = Equals(lhs, rhs)(pos)
+
+  def notEquals(lhs: Expression, rhs: Expression): Expression = NotEquals(lhs, rhs)(pos)
+
+  def property(map: Expression, key: String): Expression = Property(map, PropertyKeyName(key)(pos))(pos)
+
+  def containerIndex(container: Expression, index: Expression): Expression = ContainerIndex(container, index)(pos)
+
+  def literalString(s: String): Expression = expressions.StringLiteral(s)(pos)
+
+  def literal(a: Any): Expression = a match {
+    case null => nullLiteral
+    case s: String => literalString(s)
+    case d: Double => literalFloat(d)
+    case d: java.lang.Float => literalFloat(d.doubleValue())
+    case i: Byte => literalInt(i)
+    case i: Short => literalInt(i)
+    case i: Int => literalInt(i)
+    case l: Long => SignedDecimalIntegerLiteral(l.toString)(pos)
+  }
 }
