@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.v4_0.util._
 import org.neo4j.cypher.internal.v4_0.util.symbols.CTString
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 
-class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 with AstConstructionTestSupport with PlanMatchHelp {
+class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 with PlanMatchHelp {
 
   // or planner between two indexes
 

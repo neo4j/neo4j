@@ -20,11 +20,10 @@
 package org.neo4j.cypher.internal.compiler.v4_0.planner
 
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.v4_0.ast._
 import org.neo4j.cypher.internal.ir.v4_0.{Predicate, Selections}
 import org.neo4j.cypher.internal.v4_0.expressions._
 
-class SelectionsTest extends CypherFunSuite with LogicalPlanningTestSupport with AstConstructionTestSupport {
+class SelectionsTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
   val aIsPerson: HasLabels = identHasLabel("a", "Person")
   val aIsProgrammer: HasLabels = identHasLabel("a", "Programmer")

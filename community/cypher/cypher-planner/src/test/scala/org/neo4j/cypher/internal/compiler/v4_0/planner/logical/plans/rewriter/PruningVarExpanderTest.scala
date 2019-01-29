@@ -20,13 +20,12 @@
 package org.neo4j.cypher.internal.compiler.v4_0.planner.logical.plans.rewriter
 
 import org.neo4j.cypher.internal.compiler.v4_0.planner.LogicalPlanningTestSupport
-import org.neo4j.cypher.internal.v4_0.ast._
 import org.neo4j.cypher.internal.ir.v4_0.VarPatternLength
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.v4_0.expressions._
 import org.neo4j.cypher.internal.v4_0.logical.plans._
 
-class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupport with AstConstructionTestSupport {
+class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupport {
   test("simplest possible query that can use PruningVarExpand") {
     // Simplest query:
     // match (a)-[*1..3]->(b) return distinct b

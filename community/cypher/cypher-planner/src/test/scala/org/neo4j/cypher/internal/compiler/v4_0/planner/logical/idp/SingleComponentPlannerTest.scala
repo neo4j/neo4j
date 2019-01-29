@@ -23,12 +23,12 @@ import org.neo4j.cypher.internal.compiler.v4_0.planner.LogicalPlanningTestSuppor
 import org.neo4j.cypher.internal.ir.v4_0.{PatternRelationship, QueryGraph, SimplePatternLength}
 import org.neo4j.cypher.internal.planner.v4_0.spi.PlanContext
 import org.neo4j.cypher.internal.planner.v4_0.spi.PlanningAttributes.Solveds
+import org.neo4j.cypher.internal.v4_0.ast.{Hint, UsingIndexHint, UsingJoinHint}
 import org.neo4j.cypher.internal.v4_0.logical.plans._
-import org.neo4j.cypher.internal.v4_0.ast._
 import org.neo4j.cypher.internal.v4_0.expressions.{PropertyKeyName, SemanticDirection}
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 
-class SingleComponentPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport with AstConstructionTestSupport {
+class SingleComponentPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
   test("plans expands for queries with single pattern rel") {
     // given
     val aNode = "a"

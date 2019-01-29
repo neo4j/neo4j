@@ -25,13 +25,11 @@ import org.neo4j.cypher.internal.planner.v4_0.spi.PlanningAttributes
 import org.neo4j.cypher.internal.planner.v4_0.spi.PlanningAttributes.{Cardinalities, ProvidedOrders, Solveds}
 import org.neo4j.cypher.internal.v4_0.logical.plans._
 import org.neo4j.cypher.internal.v4_0.logical.plans.ValueHashJoin
-import org.neo4j.cypher.internal.v4_0.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.v4_0.expressions.{Contains, Equals}
 import org.neo4j.cypher.internal.v4_0.util.Cardinality
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 
-class CartesianProductsOrValueJoinsTest
-  extends CypherFunSuite with LogicalPlanningTestSupport2 with AstConstructionTestSupport {
+class CartesianProductsOrValueJoinsTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
   val planA = allNodesScan("a")
   val planB = allNodesScan("b")
   val planC = allNodesScan("c")

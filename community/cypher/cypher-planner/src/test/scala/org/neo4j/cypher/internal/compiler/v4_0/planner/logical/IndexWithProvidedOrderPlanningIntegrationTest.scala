@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.v4_0.logical.plans.{Limit => LimitPlan, Skip =>
 import org.neo4j.cypher.internal.v4_0.util._
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 
-class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 with AstConstructionTestSupport with PlanMatchHelp {
+class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 with PlanMatchHelp {
 
   case class TestOrder(indexOrder: IndexOrder, cypherToken: String, indexOrderCapability: IndexOrderCapability, sortOrder: String => ColumnOrder)
   val ASCENDING = TestOrder(IndexOrderAscending, "ASC", ASC, Ascending)

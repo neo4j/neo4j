@@ -20,12 +20,11 @@
 package org.neo4j.cypher.internal.compiler.v4_0.planner.logical.plans.rewriter
 
 import org.neo4j.cypher.internal.compiler.v4_0.planner.LogicalPlanningTestSupport
-import org.neo4j.cypher.internal.v4_0.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.v4_0.logical.plans._
 import org.neo4j.cypher.internal.v4_0.util.helpers.fixedPoint
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 
-class UseTopTest extends CypherFunSuite with LogicalPlanningTestSupport with AstConstructionTestSupport {
+class UseTopTest extends CypherFunSuite with LogicalPlanningTestSupport {
   private val leaf = newMockedLogicalPlan()
   private val sortDescriptionX = Seq(Ascending("x"))
   private val sortDescriptionY = Seq(Ascending("y"))
