@@ -42,7 +42,7 @@ import org.neo4j.values.AnyValue
   */
 class ProcedureCallRuntimeResult(context: QueryContext,
                                  name: QualifiedName,
-                                 id: Option[Int],
+                                 id: Int,
                                  callMode: ProcedureCallMode,
                                  args: Seq[AnyValue],
                                  indexResultNameMappings: IndexedSeq[(Int, String, CypherType)],
@@ -59,9 +59,7 @@ class ProcedureCallRuntimeResult(context: QueryContext,
 
   // The signature mode is taking care of eagerization
   protected def executeCall: Iterator[Array[AnyValue]] = {
-    val iterator =
-      if (id.nonEmpty) callMode.callProcedure(context, id.get, args)
-      else callMode.callProcedure(context, name, args)
+    val iterator = callMode.callProcedure(context, id, args)
 
     if (profile)
       counter.track(iterator)

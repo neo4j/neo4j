@@ -393,7 +393,8 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
       IndexedSeq(FieldSignature("input", CTString)),
       Some(IndexedSeq(FieldSignature("value", CTString))),
       None,
-      ProcedureReadOnlyAccess(Array.empty))
+      ProcedureReadOnlyAccess(Array.empty),
+      id = 42)
 
     val plan = new given {
       procedure(signature)

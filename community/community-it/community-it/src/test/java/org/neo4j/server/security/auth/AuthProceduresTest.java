@@ -54,8 +54,9 @@ public class AuthProceduresTest extends KernelIntegrationTest
         exception.expectMessage( "Anonymous cannot change password" );
 
         // When
+        int procedureId = procs().procedureGet( procedureName( "dbms", "changePassword" ) ).id();
         dbmsOperations()
-                .procedureCallDbms( procedureName( "dbms", "changePassword" ),
+                .procedureCallDbms( procedureId,
                                     inputArray, dependencyResolver,
                                     AnonymousContext.none().authorize( s -> -1, GraphDatabaseSettings.DEFAULT_DATABASE_NAME ),
                                     resourceTracker, valueMapper );
@@ -73,7 +74,8 @@ public class AuthProceduresTest extends KernelIntegrationTest
         exception.expectMessage( "Anonymous cannot change password" );
 
         // When
-        dbmsOperations().procedureCallDbms( procedureName( "dbms", "security", "changePassword" ),
+        int procedureId = procs().procedureGet( procedureName( "dbms", "security", "changePassword" ) ).id();
+        dbmsOperations().procedureCallDbms( procedureId,
                                             inputArray, dependencyResolver,
                                             AnonymousContext.none().authorize( s -> -1, GraphDatabaseSettings.DEFAULT_DATABASE_NAME ),
                                             resourceTracker, valueMapper );

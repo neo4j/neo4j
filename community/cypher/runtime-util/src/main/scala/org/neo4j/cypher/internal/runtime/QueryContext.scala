@@ -180,19 +180,14 @@ trait QueryContext extends TokenContext with DbAccess {
   def lockRelationships(relIds: Long*)
 
   def callReadOnlyProcedure(id: Int, args: Seq[AnyValue], allowed: Array[String]): Iterator[Array[AnyValue]]
-  def callReadOnlyProcedure(name: QualifiedName, args: Seq[AnyValue], allowed: Array[String]): Iterator[Array[AnyValue]]
 
   def callReadWriteProcedure(id: Int, args: Seq[AnyValue], allowed: Array[String]): Iterator[Array[AnyValue]]
-  def callReadWriteProcedure(name: QualifiedName, args: Seq[AnyValue], allowed: Array[String]): Iterator[Array[AnyValue]]
 
   def callSchemaWriteProcedure(id: Int, args: Seq[AnyValue], allowed: Array[String]): Iterator[Array[AnyValue]]
-  def callSchemaWriteProcedure(name: QualifiedName, args: Seq[AnyValue], allowed: Array[String]): Iterator[Array[AnyValue]]
 
   def callDbmsProcedure(id: Int, args: Seq[AnyValue], allowed: Array[String]): Iterator[Array[AnyValue]]
-  def callDbmsProcedure(name: QualifiedName, args: Seq[AnyValue], allowed: Array[String]): Iterator[Array[AnyValue]]
 
   def aggregateFunction(id: Int, allowed: Array[String]): UserDefinedAggregator
-  def aggregateFunction(name: QualifiedName, allowed: Array[String]): UserDefinedAggregator
 
   def detachDeleteNode(id: Long): Int
 

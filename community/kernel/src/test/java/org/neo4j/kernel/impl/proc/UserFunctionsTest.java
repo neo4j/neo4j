@@ -28,6 +28,7 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.Neo4jTypes;
 import org.neo4j.internal.kernel.api.procs.UserAggregator;
+import org.neo4j.internal.kernel.api.procs.UserFunctionHandle;
 import org.neo4j.internal.kernel.api.procs.UserFunctionSignature;
 import org.neo4j.kernel.api.proc.CallableUserAggregationFunction;
 import org.neo4j.kernel.api.proc.CallableUserFunction;
@@ -107,9 +108,10 @@ class UserFunctionsTest
     {
         // Given
         procs.register( function );
+        int functionId = procs.function( signature.name() ).id();
 
         // When
-        Object result = procs.callFunction( prepareContext(), signature.name(), new AnyValue[] {numberValue( 1337 )} );
+        Object result = procs.callFunction( prepareContext(), functionId, new AnyValue[] {numberValue( 1337 )} );
 
         // Then
         assertThat( result , equalTo( Values.of(1337) ) );
@@ -118,11 +120,10 @@ class UserFunctionsTest
     @Test
     void shouldNotAllowCallingNonExistingFunction()
     {
+        UserFunctionHandle functionHandle = procs.function( signature.name() );
         ProcedureException exception = assertThrows( ProcedureException.class,
-                () -> procs.callFunction( prepareContext(), signature.name(), new AnyValue[]{numberValue( 1337 )} ) );
-        assertThat( exception.getMessage(), equalTo( "There is no function with the name `org.myproc` registered for this " +
-                                                    "database instance. Please ensure you've spelled the " +
-                                                    "function name correctly and that the function is properly deployed." ) );
+                () -> procs.callFunction( prepareContext(), functionHandle != null ? functionHandle.id() : -1, new AnyValue[]{numberValue( 1337 )} ) );
+        assertThat( exception.getMessage(), equalTo( "There is no function with the internal id `-1` registered for this database instance." ) );
     }
 
     @Test
@@ -156,9 +157,10 @@ class UserFunctionsTest
         } );
 
         Context ctx = prepareContext();
+        int functionId = procs.function( signature.name() ).id();
 
         // When
-        Object result = procs.callFunction( ctx, signature.name(), new AnyValue[0] );
+        Object result = procs.callFunction( ctx, functionId, new AnyValue[0] );
 
         // Then
         assertThat( result, equalTo( Values.stringValue( Thread.currentThread().getName()) ) );

@@ -95,8 +95,21 @@ object LogicalPlanConverter {
             children(4).asInstanceOf[Array[String]],
             children(5).asInstanceOf[Option[String]],
             children(6).asInstanceOf[Boolean],
-            children(7).asInstanceOf[Option[Int]],
+            children(7).asInstanceOf[Option[Int]].get,
             threadSafe = false)
+
+        case (_: plansV3_5.ProcedureSignature, children) =>
+          plansv4_0.ProcedureSignature(
+            children(0).asInstanceOf[plansv4_0.QualifiedName],
+            children(1).asInstanceOf[IndexedSeq[plansv4_0.FieldSignature]],
+            children(2).asInstanceOf[Option[IndexedSeq[plansv4_0.FieldSignature]]],
+            children(3).asInstanceOf[Option[String]],
+            children(4).asInstanceOf[plansv4_0.ProcedureAccessMode],
+            children(5).asInstanceOf[Option[String]],
+            children(6).asInstanceOf[Option[String]],
+            children(7).asInstanceOf[Boolean],
+            children(8).asInstanceOf[Option[Int]].get
+          )
 
         case ( plan:plansV3_5.ActiveRead, children: Seq[AnyRef]) =>
 
@@ -202,7 +215,6 @@ object LogicalPlanConverter {
                     _: plansV3_5.SeekableArgs |
                     _: plansV3_5.ColumnOrder |
                     _: plansV3_5.IndexedProperty |
-                    _: plansV3_5.ProcedureSignature |
                     _: plansV3_5.Bound[_] |
                     _: plansV3_5.SeekRange[_]), children: Seq[AnyRef]) =>
           convertVersion(oldLogicalPlanPackage, newLogicalPlanPackage, item, children)

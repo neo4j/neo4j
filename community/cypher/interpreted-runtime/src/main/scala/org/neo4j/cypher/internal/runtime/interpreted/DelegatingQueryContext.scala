@@ -28,7 +28,6 @@ import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
 import org.neo4j.cypher.internal.v4_0.logical.plans.IndexOrder
 import org.neo4j.graphdb.{Path, PropertyContainer}
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelectionCursor
-import org.neo4j.internal.kernel.api.procs.QualifiedName
 import org.neo4j.internal.kernel.api.{QueryContext => _, _}
 import org.neo4j.kernel.api.dbms.DbmsOperations
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI
@@ -92,9 +91,9 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
   override def getRelationshipFor(relationshipId: Long, typeId: Int, startNodeId: Long, endNodeId: Long): RelationshipValue =
     inner.getRelationshipFor(relationshipId, typeId, startNodeId, endNodeId)
 
-  override def nodeOps = inner.nodeOps
+  override def nodeOps: NodeOperations = inner.nodeOps
 
-  override def relationshipOps = inner.relationshipOps
+  override def relationshipOps: RelationshipOperations = inner.relationshipOps
 
   override def removeLabelsFromNode(node: Long, labelIds: Iterator[Int]): Int =
     singleDbHit(inner.removeLabelsFromNode(node, labelIds))
@@ -104,9 +103,9 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
   override def getOptPropertyKeyId(propertyKeyName: String): Option[Int] =
     singleDbHit(inner.getOptPropertyKeyId(propertyKeyName))
 
-  override def getPropertyKeyId(propertyKey: String) = singleDbHit(inner.getPropertyKeyId(propertyKey))
+  override def getPropertyKeyId(propertyKey: String): Int = singleDbHit(inner.getPropertyKeyId(propertyKey))
 
-  override def getOrCreatePropertyKeyId(propertyKey: String) = singleDbHit(inner.getOrCreatePropertyKeyId(propertyKey))
+  override def getOrCreatePropertyKeyId(propertyKey: String): Int = singleDbHit(inner.getOrCreatePropertyKeyId(propertyKey))
 
   override def getOrCreatePropertyKeyIds(propertyKeys: Array[String]): Array[Int] = {
     manyDbHits(propertyKeys.length)
@@ -174,13 +173,13 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
   override def createNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int): Boolean =
     singleDbHit(inner.createNodePropertyExistenceConstraint(labelId, propertyKeyId))
 
-  override def dropNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int) =
+  override def dropNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int): Unit =
     singleDbHit(inner.dropNodePropertyExistenceConstraint(labelId, propertyKeyId))
 
   override def createRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int): Boolean =
     singleDbHit(inner.createRelationshipPropertyExistenceConstraint(relTypeId, propertyKeyId))
 
-  override def dropRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int) =
+  override def dropRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int): Unit =
     singleDbHit(inner.dropRelationshipPropertyExistenceConstraint(relTypeId, propertyKeyId))
 
   override def lockingUniqueIndexSeek[RESULT](index: IndexReference,
@@ -237,43 +236,24 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
                                filters: Seq[KernelPredicate[PropertyContainer]]): Iterator[Path] =
     manyDbHits(inner.allShortestPath(left, right, depth, expander, pathPredicate, filters))
 
-  override def callReadOnlyProcedure(id: Int, args: Seq[AnyValue], allowed: Array[String]) =
+  override def callReadOnlyProcedure(id: Int, args: Seq[AnyValue], allowed: Array[String]): Iterator[Array[AnyValue]] =
     singleDbHit(inner.callReadOnlyProcedure(id, args, allowed))
 
-  override def callReadWriteProcedure(id: Int, args: Seq[AnyValue], allowed: Array[String]) =
+  override def callReadWriteProcedure(id: Int, args: Seq[AnyValue], allowed: Array[String]): Iterator[Array[AnyValue]] =
     singleDbHit(inner.callReadWriteProcedure(id, args, allowed))
 
-  override def callSchemaWriteProcedure(id: Int, args: Seq[AnyValue], allowed: Array[String]) =
+  override def callSchemaWriteProcedure(id: Int, args: Seq[AnyValue], allowed: Array[String]): Iterator[Array[AnyValue]] =
     singleDbHit(inner.callSchemaWriteProcedure(id, args, allowed))
 
-  override def callDbmsProcedure(id: Int, args: Seq[AnyValue], allowed: Array[String]) =
+  override def callDbmsProcedure(id: Int, args: Seq[AnyValue], allowed: Array[String]): Iterator[Array[AnyValue]] =
     inner.callDbmsProcedure(id, args, allowed)
 
-  override def callReadOnlyProcedure(name: QualifiedName, args: Seq[AnyValue], allowed: Array[String]) =
-    singleDbHit(inner.callReadOnlyProcedure(name, args, allowed))
-
-  override def callReadWriteProcedure(name: QualifiedName, args: Seq[AnyValue], allowed: Array[String]) =
-    singleDbHit(inner.callReadWriteProcedure(name, args, allowed))
-
-  override def callSchemaWriteProcedure(name: QualifiedName, args: Seq[AnyValue], allowed: Array[String]) =
-    singleDbHit(inner.callSchemaWriteProcedure(name, args, allowed))
-
-  override def callDbmsProcedure(name: QualifiedName, args: Seq[AnyValue], allowed: Array[String]) =
-    inner.callDbmsProcedure(name, args, allowed)
-
-  override def callFunction(id: Int, args: Array[AnyValue], allowed: Array[String]) =
+  override def callFunction(id: Int, args: Array[AnyValue], allowed: Array[String]): AnyValue =
     singleDbHit(inner.callFunction(id, args, allowed))
-
-  override def callFunction(name: QualifiedName, args: Array[AnyValue], allowed: Array[String]) =
-    singleDbHit(inner.callFunction(name, args, allowed))
 
   override def aggregateFunction(id: Int,
                                  allowed: Array[String]): UserDefinedAggregator =
     singleDbHit(inner.aggregateFunction(id, allowed))
-
-  override def aggregateFunction(name: QualifiedName,
-                                 allowed: Array[String]): UserDefinedAggregator =
-    singleDbHit(inner.aggregateFunction(name, allowed))
 
   override def detachDeleteNode(node: Long): Int = manyDbHits(inner.detachDeleteNode(node))
 

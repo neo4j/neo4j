@@ -274,31 +274,15 @@ public class GlobalProcedures extends LifecycleAdapter
         return registry.getAllFunctions();
     }
 
-    public RawIterator<AnyValue[], ProcedureException> callProcedure( Context ctx, QualifiedName name,
-                                                           AnyValue[] input, ResourceTracker resourceTracker ) throws ProcedureException
-    {
-        return registry.callProcedure( ctx, name, input, resourceTracker );
-    }
-
     public RawIterator<AnyValue[], ProcedureException> callProcedure( Context ctx, int id,
             AnyValue[] input, ResourceTracker resourceTracker ) throws ProcedureException
     {
         return registry.callProcedure( ctx, id, input, resourceTracker );
     }
 
-    public AnyValue callFunction( Context ctx, QualifiedName name, AnyValue[] input ) throws ProcedureException
-    {
-        return registry.callFunction( ctx, name, input );
-    }
-
     public AnyValue callFunction( Context ctx, int id, AnyValue[] input ) throws ProcedureException
     {
         return registry.callFunction( ctx, id, input );
-    }
-
-    public UserAggregator createAggregationFunction( Context ctx, QualifiedName name ) throws ProcedureException
-    {
-        return registry.createAggregationFunction( ctx, name );
     }
 
     public UserAggregator createAggregationFunction( Context ctx, int id ) throws ProcedureException

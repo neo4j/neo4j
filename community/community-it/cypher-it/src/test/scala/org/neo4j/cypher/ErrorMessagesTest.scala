@@ -82,6 +82,22 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite {
     )
   }
 
+  test("noSuchProcedure") {
+    expectError(
+      "CALL no.such.procedure YIELD foo RETURN foo",
+      "There is no procedure with the name `no.such.procedure` registered for this database instance. " +
+        "Please ensure you've spelled the procedure name correctly and that the procedure is properly deployed."
+    )
+  }
+
+  test("noSuchProcedure - standalone") {
+    expectError(
+      "CALL no.such.procedure",
+      "There is no procedure with the name `no.such.procedure` registered for this database instance. " +
+      "Please ensure you've spelled the procedure name correctly and that the procedure is properly deployed."
+    )
+  }
+
   test("noIndexName") {
     expectSyntaxError(
       "start a = node(name=\"sebastian\") match (a)-[:WORKED_ON]-b return b",

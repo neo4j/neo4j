@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.api.dbms;
 import org.neo4j.collection.RawIterator;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
-import org.neo4j.internal.kernel.api.procs.QualifiedName;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.dbms.DbmsOperations;
@@ -41,14 +40,6 @@ public class NonTransactionalDbmsOperations implements DbmsOperations
     public NonTransactionalDbmsOperations( GlobalProcedures globalProcedures )
     {
         this.globalProcedures = globalProcedures;
-    }
-
-    @Override
-    public RawIterator<AnyValue[],ProcedureException> procedureCallDbms( QualifiedName name, AnyValue[] input, DependencyResolver dependencyResolver,
-            SecurityContext securityContext, ResourceTracker resourceTracker, ValueMapper<Object> valueMapper ) throws ProcedureException
-    {
-        Context ctx = createContext( securityContext, dependencyResolver, valueMapper );
-        return globalProcedures.callProcedure( ctx, name, input, resourceTracker );
     }
 
     @Override

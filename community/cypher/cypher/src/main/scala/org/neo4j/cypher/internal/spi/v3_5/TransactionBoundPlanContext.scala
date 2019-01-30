@@ -203,7 +203,7 @@ class TransactionBoundPlanContext(txSupplier: () => KernelTransaction, logger: I
       val description = asOption(signature.description())
 
       Some(UserFunctionSignature(name, input, output, deprecationInfo,
-                                 signature.allowed(), description, isAggregate = aggregation))
+                                 signature.allowed(), description, isAggregate = aggregation, id = Some(fcn.id())))
     }
   }
 

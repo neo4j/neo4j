@@ -97,7 +97,8 @@ class ProcedureCallExecutionPlanTest extends CypherFunSuite {
     IndexedSeq(FieldSignature("a", CTInteger)),
     Some(IndexedSeq(FieldSignature("b", CTInteger))),
     None,
-    ProcedureReadOnlyAccess(Array.empty)
+    ProcedureReadOnlyAccess(Array.empty),
+    id = 0
   )
 
   private val writeSignature = ProcedureSignature(
@@ -105,7 +106,8 @@ class ProcedureCallExecutionPlanTest extends CypherFunSuite {
     IndexedSeq(FieldSignature("a", CTInteger)),
     Some(IndexedSeq(FieldSignature("b", CTInteger))),
     None,
-    ProcedureReadWriteAccess(Array.empty)
+    ProcedureReadWriteAccess(Array.empty),
+    id = 1
   )
 
   private def toList(res: RuntimeResult): List[Map[String, AnyRef]] =
@@ -135,9 +137,7 @@ class ProcedureCallExecutionPlanTest extends CypherFunSuite {
   when(ctx.transactionalContext).thenReturn(transactionalContext)
   when(transactionalContext.cursors).thenReturn(mock[CursorFactory])
   when(ctx.callReadOnlyProcedure(anyInt, any[Seq[AnyValue]], any[Array[String]])).thenAnswer(procedureResult)
-  when(ctx.callReadOnlyProcedure(any[KernelQualifiedName], any[Seq[AnyValue]], any[Array[String]])).thenAnswer(procedureResult)
   when(ctx.callReadWriteProcedure(anyInt, any[Seq[AnyValue]], any[Array[String]])).thenAnswer(procedureResult)
-  when(ctx.callReadWriteProcedure(any[KernelQualifiedName], any[Seq[AnyValue]], any[Array[String]])).thenAnswer(procedureResult)
   when(ctx.asObject(any[LongValue])).thenAnswer(new Answer[Long]() {
     override def answer(invocationOnMock: InvocationOnMock): Long = invocationOnMock.getArgument(0).asInstanceOf[LongValue].value()
   })

@@ -504,8 +504,8 @@ class BuiltInProceduresTest
         when( resolver.resolveDependency( IndexingService.class ) ).thenReturn( indexingService );
         when( schemaRead.indexGetPopulationProgress( any( IndexReference.class) ) ).thenReturn( PopulationProgress.DONE );
         AnyValue[] input = Arrays.stream( args ).map( ValueUtils::of ).toArray( AnyValue[]::new );
-        List<AnyValue[]> anyValues = Iterators.asList( procs.callProcedure(
-                ctx, ProcedureSignature.procedureName( name.split( "\\." ) ), input, resourceTracker ) );
+        int procId = procs.procedure( ProcedureSignature.procedureName( name.split( "\\." ) ) ).id();
+        List<AnyValue[]> anyValues = Iterators.asList( procs.callProcedure( ctx, procId, input, resourceTracker ) );
 
         return anyValues.stream().map( vs -> Arrays.stream( vs ).map( v -> v.map( valueMapper ) ).toArray( Object[]::new ) )
                 .collect( Collectors.toList());

@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import org.neo4j.collection.RawIterator;
+import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.QualifiedName;
@@ -100,7 +101,7 @@ public class BuiltInDbmsProceduresIT extends KernelIntegrationTest
     }
 
     @Test
-    public void listDynamicSetting() throws ProcedureException
+    public void listDynamicSetting() throws KernelException
     {
         List<AnyValue[]> config = callListConfig( GraphDatabaseSettings.check_point_iops_limit.name() );
 
@@ -109,7 +110,7 @@ public class BuiltInDbmsProceduresIT extends KernelIntegrationTest
     }
 
     @Test
-    public void listNotDynamicSetting() throws ProcedureException
+    public void listNotDynamicSetting() throws KernelException
     {
         List<AnyValue[]> config = callListConfig( GraphDatabaseSettings.data_directory.name() );
 
@@ -117,12 +118,13 @@ public class BuiltInDbmsProceduresIT extends KernelIntegrationTest
         assertFalse(((BooleanValue) config.get(0)[3]).booleanValue() );
     }
 
-    private List<AnyValue[]> callListConfig( String seatchString ) throws ProcedureException
+    private List<AnyValue[]> callListConfig( String searchString ) throws KernelException
     {
         QualifiedName procedureName = procedureName( "dbms", "listConfig" );
+        int procedureId = procs().procedureGet( procedureName ).id();
         RawIterator<AnyValue[],ProcedureException> callResult =
                 dbmsOperations()
-                        .procedureCallDbms( procedureName, toArray( stringValue( seatchString ) ), dependencyResolver,
+                        .procedureCallDbms( procedureId, toArray( stringValue( searchString ) ), dependencyResolver,
                                 AUTH_DISABLED, resourceTracker, valueMapper );
         return asList( callResult );
     }

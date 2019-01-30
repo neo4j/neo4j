@@ -751,7 +751,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
         SchemaDescriptorFactory.forLabel(labelId, propertyKeyId))
       true
     } catch {
-      case existing: AlreadyConstrainedException => false
+      case _: AlreadyConstrainedException => false
     }
 
   override def dropNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int): Unit =
@@ -764,10 +764,10 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
         SchemaDescriptorFactory.forRelType(relTypeId, propertyKeyId))
       true
     } catch {
-      case existing: AlreadyConstrainedException => false
+      case _: AlreadyConstrainedException => false
     }
 
-  override def dropRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int) =
+  override def dropRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int): Unit =
     transactionalContext.kernelTransaction.schemaWrite()
       .constraintDrop(ConstraintDescriptorFactory.existsForRelType(relTypeId, propertyKeyId))
 
@@ -824,10 +824,10 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     reads().countsForRelationship(startLabelId, typeId, endLabelId)
   }
 
-  override def lockNodes(nodeIds: Long*) =
+  override def lockNodes(nodeIds: Long*): Unit =
     nodeIds.sorted.foreach(transactionalContext.kernelTransaction.locks().acquireExclusiveNodeLock(_))
 
-  override def lockRelationships(relIds: Long*) =
+  override def lockRelationships(relIds: Long*): Unit =
     relIds.sorted
       .foreach(transactionalContext.kernelTransaction.locks().acquireExclusiveRelationshipLock(_))
 
@@ -858,32 +858,14 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
   override def callSchemaWriteProcedure(id: Int, args: Seq[AnyValue], allowed: Array[String]): Iterator[Array[AnyValue]] =
   CallSupport.callSchemaWriteProcedure(transactionalContext.tc, id, args, allowed)
 
-  override def callDbmsProcedure(id: Int, args: Seq[AnyValue], allowed: Array[String]) : Iterator[Array[AnyValue]] =
+  override def callDbmsProcedure(id: Int, args: Seq[AnyValue], allowed: Array[String]): Iterator[Array[AnyValue]] =
     CallSupport.callDbmsProcedure(transactionalContext.tc, id, args, allowed)
-
-  override def callReadOnlyProcedure(name: QualifiedName, args: Seq[AnyValue], allowed: Array[String]): Iterator[Array[AnyValue]] =
-    CallSupport.callReadOnlyProcedure(transactionalContext.tc, name, args, allowed)
-
-  override def callReadWriteProcedure(name: QualifiedName, args: Seq[AnyValue], allowed: Array[String]): Iterator[Array[AnyValue]] =
-    CallSupport.callReadWriteProcedure(transactionalContext.tc, name, args, allowed)
-
-  override def callSchemaWriteProcedure(name: QualifiedName, args: Seq[AnyValue], allowed: Array[String]): Iterator[Array[AnyValue]] =
-    CallSupport.callSchemaWriteProcedure(transactionalContext.tc, name, args, allowed)
-
-  override def callDbmsProcedure(name: QualifiedName, args: Seq[AnyValue], allowed: Array[String]): Iterator[Array[AnyValue]] =
-    CallSupport.callDbmsProcedure(transactionalContext.tc, name, args, allowed)
 
   override def callFunction(id: Int, args: Array[AnyValue], allowed: Array[String]): AnyValue =
     CallSupport.callFunction(transactionalContext.tc, id, args, allowed)
 
-  override def callFunction(name: QualifiedName, args: Array[AnyValue], allowed: Array[String]): AnyValue =
-    CallSupport.callFunction(transactionalContext.tc, name, args, allowed)
-
   override def aggregateFunction(id: Int, allowed: Array[String]): UserDefinedAggregator =
     CallSupport.aggregateFunction(transactionalContext.tc, id, allowed)
-
-  override def aggregateFunction(name: QualifiedName, allowed: Array[String]): UserDefinedAggregator =
-    CallSupport.aggregateFunction(transactionalContext.tc, name, allowed)
 
   private def buildPathFinder(depth: Int, expander: Expander, pathPredicate: KernelPredicate[Path],
                               filters: Seq[KernelPredicate[PropertyContainer]]): ShortestPath = {

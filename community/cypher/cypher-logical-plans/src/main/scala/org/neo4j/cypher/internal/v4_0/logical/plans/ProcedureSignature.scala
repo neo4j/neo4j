@@ -31,13 +31,13 @@ case class ProcedureSignature(name: QualifiedName,
                               description: Option[String] = None,
                               warning: Option[String] = None,
                               eager: Boolean = false,
-                              id: Option[Int] = None) {
+                              id: Int) {
 
-  def outputFields = outputSignature.getOrElse(Seq.empty)
+  def outputFields: Seq[FieldSignature] = outputSignature.getOrElse(Seq.empty)
 
-  def isVoid = outputSignature.isEmpty
+  def isVoid: Boolean = outputSignature.isEmpty
 
-  override def toString = {
+  override def toString: String = {
     val sig = inputSignature.mkString(", ")
     outputSignature.map(out => s"$name($sig) :: ${out.mkString(", ")}").getOrElse(s"$name($sig) :: VOID")
   }
@@ -50,7 +50,7 @@ case class UserFunctionSignature(name: QualifiedName,
                                  allowed: Array[String],
                                  description: Option[String],
                                  isAggregate: Boolean,
-                                 id: Option[Int] = None,
+                                 id: Int,
                                  threadSafe: Boolean = false) {
   override def toString = s"$name(${inputSignature.mkString(", ")}) :: ${outputType.toNeoTypeString}"
 }
@@ -64,12 +64,12 @@ object QualifiedName {
 }
 
 case class QualifiedName(namespace: Seq[String], name: String) {
-  override def toString = (namespace :+ name).mkString(".")
+  override def toString: String = (namespace :+ name).mkString(".")
 }
 
 case class CypherValue(value: AnyRef, cypherType: CypherType)
 case class FieldSignature(name: String, typ: CypherType, default: Option[CypherValue] = None, deprecated: Boolean = false) {
-  override def toString = {
+  override def toString: String = {
     val nameValue = default.map( d => s"$name  =  ${d.value}").getOrElse(name)
     s"$nameValue :: ${typ.toNeoTypeString}"
   }
@@ -78,9 +78,9 @@ case class FieldSignature(name: String, typ: CypherType, default: Option[CypherV
 sealed trait ProcedureAccessMode {
   def allowed: Array[String]
 
-  override def hashCode() = this.allowed.toSet.hashCode()
+  override def hashCode(): Int = this.allowed.toSet.hashCode()
 
-  override def equals(obj: scala.Any) = {
+  override def equals(obj: scala.Any): Boolean = {
     if(obj.getClass != this.getClass) {
       false
     } else {

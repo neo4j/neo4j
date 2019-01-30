@@ -43,7 +43,7 @@ class ProcedureCallPipeTest
   val ID = 42
   val procedureName = QualifiedName(List.empty, "foo")
   val signature = ProcedureSignature(procedureName, IndexedSeq.empty, Some(IndexedSeq(FieldSignature("foo", CTAny))),
-                                     None, ProcedureReadOnlyAccess(Array.empty), id = Some(ID))
+                                     None, ProcedureReadOnlyAccess(Array.empty), id = ID)
   val emptyStringArray = Array.empty[String]
 
   test("should execute read-only procedure calls") {

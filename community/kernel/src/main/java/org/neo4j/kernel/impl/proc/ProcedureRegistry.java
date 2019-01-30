@@ -193,17 +193,6 @@ public class ProcedureRegistry
         return new UserFunctionHandle( func.signature(), aggregationFunctions.idOf( name), false );
     }
 
-    public RawIterator<AnyValue[],ProcedureException> callProcedure( Context ctx, QualifiedName name, AnyValue[] input, ResourceTracker resourceTracker )
-            throws ProcedureException
-    {
-        CallableProcedure proc = procedures.get( name );
-        if ( proc == null )
-        {
-            throw noSuchProcedure( name );
-        }
-        return proc.apply( ctx, input, resourceTracker );
-    }
-
     public RawIterator<AnyValue[],ProcedureException> callProcedure( Context ctx, int id, AnyValue[] input, ResourceTracker resourceTracker )
             throws ProcedureException
     {
@@ -219,17 +208,6 @@ public class ProcedureRegistry
         return proc.apply( ctx, input, resourceTracker );
     }
 
-    public AnyValue callFunction( Context ctx, QualifiedName name, AnyValue[] input )
-            throws ProcedureException
-    {
-        CallableUserFunction func = functions.get( name );
-        if ( func == null )
-        {
-            throw noSuchFunction( name );
-        }
-        return func.apply( ctx, input );
-    }
-
     public AnyValue callFunction( Context ctx, int functionId, AnyValue[] input )
             throws ProcedureException
     {
@@ -243,17 +221,6 @@ public class ProcedureRegistry
             throw noSuchFunction( functionId );
         }
         return func.apply( ctx, input );
-    }
-
-    public UserAggregator createAggregationFunction( Context ctx, QualifiedName name )
-            throws ProcedureException
-    {
-        CallableUserAggregationFunction func = aggregationFunctions.get( name );
-        if ( func == null )
-        {
-            throw noSuchFunction( name );
-        }
-        return func.create(ctx);
     }
 
     public UserAggregator createAggregationFunction( Context ctx, int id ) throws ProcedureException
@@ -281,14 +248,6 @@ public class ProcedureRegistry
     {
         return new ProcedureException( Status.Procedure.ProcedureNotFound,
                 "There is no procedure with the internal id `%d` registered for this database instance.", id );
-    }
-
-    private ProcedureException noSuchFunction( QualifiedName name )
-    {
-        return new ProcedureException( Status.Procedure.ProcedureNotFound,
-                "There is no function with the name `%s` registered for this database instance. " +
-                "Please ensure you've spelled the function name correctly and that the " +
-                "function is properly deployed.", name );
     }
 
     private ProcedureException noSuchFunction( int id )

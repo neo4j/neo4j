@@ -151,12 +151,10 @@ case class CommunityExpressionConverter(tokenContext: TokenContext) extends Expr
             .getOrElse(commandexpressions.Literal(default.get))
         }
         val signature = e.fcnSignature.get
-        (signature.isAggregate, signature.id) match {
-          case (true, Some(_)) => commandexpressions.AggregationFunctionInvocationById(signature, callArgumentCommands)
-          case (true, None) => commandexpressions.AggregationFunctionInvocationByName(signature, callArgumentCommands)
-          case (false, Some(_)) => commandexpressions.FunctionInvocationById(signature, callArgumentCommands.toArray)
-          case (false, None) => commandexpressions.FunctionInvocationByName(signature, callArgumentCommands.toArray)
-        }
+        if (signature.isAggregate)
+          commandexpressions.AggregationFunctionInvocation(signature, callArgumentCommands)
+        else
+          commandexpressions.FunctionInvocation(signature, callArgumentCommands.toArray)
       case e: ast.MapProjection => throw new InternalException("should have been rewritten away")
       case e: NestedPlanExpression => throw new InternalException("should have been rewritten away")
       case CoerceToPredicate(inner) => predicates.CoercedPredicate(self.toCommandExpression(id, inner))

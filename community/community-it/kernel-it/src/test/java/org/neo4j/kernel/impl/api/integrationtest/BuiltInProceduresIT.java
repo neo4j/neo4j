@@ -236,7 +236,7 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
     {
         try
         {
-            dbmsOperations().procedureCallDbms( procedureName( "dbms", "iDoNotExist" ), new AnyValue[0], dependencyResolver,
+            dbmsOperations().procedureCallDbms( -1, new AnyValue[0], dependencyResolver,
                     AnonymousContext.none().authorize( s -> -1, GraphDatabaseSettings.DEFAULT_DATABASE_NAME ), resourceTracker, valueMapper );
             fail( "This should never get here" );
         }

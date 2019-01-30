@@ -329,7 +329,7 @@ class LogicalPlanConverterTest extends CypherFunSuite {
     val var3_5 = expressionsV3_5.Variable("n")(pos3_5)
     val a3_5 = plansV3_5.AllNodesScan("n", Set.empty)
     val inputv3_5 = plansV3_5.FieldSignature("d", symbolsV3_5.CTString, Some(plansV3_5.CypherValue("e", symbolsV3_5.CTString)))
-    val sigv3_5 = plansV3_5.ProcedureSignature(plansV3_5.QualifiedName(Seq("a", "b"), "c"), IndexedSeq(inputv3_5), None, None, plansV3_5.ProcedureReadWriteAccess(Array("foo", "bar")))
+    val sigv3_5 = plansV3_5.ProcedureSignature(plansV3_5.QualifiedName(Seq("a", "b"), "c"), IndexedSeq(inputv3_5), None, None, plansV3_5.ProcedureReadWriteAccess(Array("foo", "bar")), id = Some(42))
     val pres3_5 = astV3_5.ProcedureResultItem(Some(expressionsV3_5.ProcedureOutput("f")(pos3_5)), var3_5)(pos3_5)
     val rc3_5 = plansV3_5.ResolvedCall(sigv3_5, Seq(var3_5), IndexedSeq(pres3_5))(pos3_5)
     val pc3_5 = plansV3_5.ProcedureCall(a3_5, rc3_5)
@@ -337,7 +337,7 @@ class LogicalPlanConverterTest extends CypherFunSuite {
     val var4_0 = expressionsV4_0.Variable("n")(pos4_0)
     val a4_0 = plansV4_0.AllNodesScan("n", Set.empty)
     val inputv4_0 = plansV4_0.FieldSignature("d", symbolsV4_0.CTString, Some(plansV4_0.CypherValue("e", symbolsV4_0.CTString)))
-    val sigv4_0 = plansV4_0.ProcedureSignature(plansV4_0.QualifiedName(Seq("a", "b"), "c"), IndexedSeq(inputv4_0), None, None, plansV4_0.ProcedureReadWriteAccess(Array("foo", "bar")))
+    val sigv4_0 = plansV4_0.ProcedureSignature(plansV4_0.QualifiedName(Seq("a", "b"), "c"), IndexedSeq(inputv4_0), None, None, plansV4_0.ProcedureReadWriteAccess(Array("foo", "bar")), id = 42)
     val pres4_0 = astV4_0.ProcedureResultItem(Some(expressionsV4_0.ProcedureOutput("f")(pos4_0)), var4_0)(pos4_0)
     val rc4_0 = plansV4_0.ResolvedCall(sigv4_0, Seq(var4_0), IndexedSeq(pres4_0))(pos4_0)
     val pc4_0 = plansV4_0.ProcedureCall(a4_0, rc4_0)
@@ -361,13 +361,13 @@ class LogicalPlanConverterTest extends CypherFunSuite {
     val call3_5 = plansV3_5.ResolvedFunctionInvocation(name3_5,
       Some(plansV3_5.UserFunctionSignature(name3_5, Vector(plansV3_5.FieldSignature("input", symbolsV3_5.CTAny,
         default = Some(plansV3_5.CypherValue(null, symbolsV3_5.CTAny)))),
-        symbolsV3_5.CTAny, None, allowed, None, isAggregate = false)), Vector())(InputPositionV3_5(1, 2, 3))
+        symbolsV3_5.CTAny, None, allowed, None, isAggregate = false, id = Some(0))), Vector())(InputPositionV3_5(1, 2, 3))
 
     val name4_0 = plansV4_0.QualifiedName(Seq.empty, "foo")
     val call4_0 = plansV4_0.ResolvedFunctionInvocation(name4_0,
       Some(plansV4_0.UserFunctionSignature(name4_0, Vector(plansV4_0.FieldSignature("input", symbolsV4_0.CTAny,
         default = Some(plansV4_0.CypherValue(null, symbolsV4_0.CTAny)))),
-        symbolsV4_0.CTAny, None, allowed, None, isAggregate = false)), Vector())(InputPosition(1, 2, 3))
+        symbolsV4_0.CTAny, None, allowed, None, isAggregate = false, id = 0)), Vector())(InputPosition(1, 2, 3))
 
     convert[plansV4_0.ResolvedFunctionInvocation](call3_5) should be(call4_0)
   }
@@ -471,7 +471,7 @@ class LogicalPlanConverterTest extends CypherFunSuite {
       case "PropertyKeyToken" => expressionsV3_5.PropertyKeyToken("a", argumentProvider(classOf[utilV3_5.PropertyKeyId]))
       case "PropertyKeyId" => utilV3_5.PropertyKeyId(5)
       case "ResolvedCall" => plansV3_5.ResolvedCall(argumentProvider(classOf[plansV3_5.ProcedureSignature]), Seq.empty, IndexedSeq.empty)(pos3_5)
-      case "ProcedureSignature" => plansV3_5.ProcedureSignature(argumentProvider(classOf[plansV3_5.QualifiedName]), IndexedSeq.empty, None, None, argumentProvider(classOf[plansV3_5.ProcedureAccessMode]))
+      case "ProcedureSignature" => plansV3_5.ProcedureSignature(argumentProvider(classOf[plansV3_5.QualifiedName]), IndexedSeq.empty, None, None, argumentProvider(classOf[plansV3_5.ProcedureAccessMode]), id = Some(42))
       case "QualifiedName" => plansV3_5.QualifiedName(Seq.empty, "c")
       case "ProcedureAccessMode" => plansV3_5.ProcedureReadWriteAccess(Array())
       case "RelTypeName" => expressionsV3_5.RelTypeName("x")(pos3_5)

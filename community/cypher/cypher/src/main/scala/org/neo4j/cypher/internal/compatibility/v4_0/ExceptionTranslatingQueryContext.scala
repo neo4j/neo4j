@@ -29,7 +29,6 @@ import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
 import org.neo4j.cypher.internal.v4_0.logical.plans.IndexOrder
 import org.neo4j.graphdb.{Path, PropertyContainer}
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelectionCursor
-import org.neo4j.internal.kernel.api.procs.QualifiedName
 import org.neo4j.internal.kernel.api.{QueryContext => _, _}
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI
 import org.neo4j.values.AnyValue
@@ -152,13 +151,13 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
   override def createNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int): Boolean =
     translateException(inner.createNodePropertyExistenceConstraint(labelId, propertyKeyId))
 
-  override def dropNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int) =
+  override def dropNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int): Unit =
     translateException(inner.dropNodePropertyExistenceConstraint(labelId, propertyKeyId))
 
   override def createRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int): Boolean =
     translateException(inner.createRelationshipPropertyExistenceConstraint(relTypeId, propertyKeyId))
 
-  override def dropRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int) =
+  override def dropRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int): Unit =
     translateException(inner.dropRelationshipPropertyExistenceConstraint(relTypeId, propertyKeyId))
 
   override def callReadOnlyProcedure(id: Int, args: Seq[AnyValue], allowed: Array[String]): Iterator[Array[AnyValue]] =
@@ -173,55 +172,36 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
   override def callDbmsProcedure(id: Int, args: Seq[AnyValue], allowed: Array[String]): Iterator[Array[AnyValue]] =
     translateIterator(inner.callDbmsProcedure(id, args, allowed))
 
-  override def callReadOnlyProcedure(name: QualifiedName, args: Seq[AnyValue], allowed: Array[String]): Iterator[Array[AnyValue]] =
-    translateIterator(inner.callReadOnlyProcedure(name, args, allowed))
-
-  override def callReadWriteProcedure(name: QualifiedName, args: Seq[AnyValue], allowed: Array[String]): Iterator[Array[AnyValue]] =
-    translateIterator(inner.callReadWriteProcedure(name, args, allowed))
-
-  override def callSchemaWriteProcedure(name: QualifiedName, args: Seq[AnyValue], allowed: Array[String]): Iterator[Array[AnyValue]] =
-    translateIterator(inner.callSchemaWriteProcedure(name, args, allowed))
-
-  override def callDbmsProcedure(name: QualifiedName, args: Seq[AnyValue], allowed: Array[String]): Iterator[Array[AnyValue]] =
-    translateIterator(inner.callDbmsProcedure(name, args, allowed))
-
-  override def callFunction(id: Int, args: Array[AnyValue], allowed: Array[String]) =
+  override def callFunction(id: Int, args: Array[AnyValue], allowed: Array[String]): AnyValue =
     translateException(inner.callFunction(id, args, allowed))
-
-  override def callFunction(name: QualifiedName, args: Array[AnyValue], allowed: Array[String]) =
-    translateException(inner.callFunction(name, args, allowed))
 
   override def aggregateFunction(id: Int,
                                  allowed: Array[String]): UserDefinedAggregator =
     translateException(inner.aggregateFunction(id, allowed))
 
-  override def aggregateFunction(name: QualifiedName,
-                                 allowed: Array[String]): UserDefinedAggregator =
-    translateException(inner.aggregateFunction(name, allowed))
-
   override def isLabelSetOnNode(label: Int, node: Long, nodeCursor: NodeCursor): Boolean =
     translateException(inner.isLabelSetOnNode(label, node, nodeCursor))
 
-  override def getRelTypeId(relType: String) =
+  override def getRelTypeId(relType: String): Int =
     translateException(inner.getRelTypeId(relType))
 
-  override def getRelTypeName(id: Int) =
+  override def getRelTypeName(id: Int): String =
     translateException(inner.getRelTypeName(id))
 
   override def lockingUniqueIndexSeek[RESULT](index: IndexReference,
                                               values: Seq[IndexQuery.ExactPredicate]): NodeValueIndexCursor =
     translateException(inner.lockingUniqueIndexSeek(index, values))
 
-  override def getImportURL(url: URL) =
+  override def getImportURL(url: URL): Either[String, URL] =
     translateException(inner.getImportURL(url))
 
-  override def createRelationship(start: Long, end: Long, relType: Int) =
+  override def createRelationship(start: Long, end: Long, relType: Int): RelationshipValue =
     translateException(inner.createRelationship(start, end, relType))
 
-  override def getOrCreateRelTypeId(relTypeName: String) =
+  override def getOrCreateRelTypeId(relTypeName: String): Int =
     translateException(inner.getOrCreateRelTypeId(relTypeName))
 
-  override def getRelationshipsForIds(node: Long, dir: SemanticDirection, types: Option[Array[Int]]) =
+  override def getRelationshipsForIds(node: Long, dir: SemanticDirection, types: Option[Array[Int]]): Iterator[RelationshipValue] =
     translateException(inner.getRelationshipsForIds(node, dir, types))
 
   override def getRelationshipsForIdsPrimitive(node: Long, dir: SemanticDirection, types: Option[Array[Int]]): RelationshipIterator =
@@ -261,28 +241,28 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
                                             propertyKey: Int): Value =
     translateException(inner.getTxStateNodePropertyOrNull(nodeId, propertyKey))
 
-  override def variableLengthPathExpand(realNode: Long, minHops: Option[Int], maxHops: Option[Int], direction: SemanticDirection, relTypes: Seq[String]) =
+  override def variableLengthPathExpand(realNode: Long, minHops: Option[Int], maxHops: Option[Int], direction: SemanticDirection, relTypes: Seq[String]): Iterator[Path] =
     translateException(inner.variableLengthPathExpand(realNode, minHops, maxHops, direction, relTypes))
 
-  override def singleShortestPath(left: Long, right: Long, depth: Int, expander: Expander, pathPredicate: KernelPredicate[Path], filters: Seq[KernelPredicate[PropertyContainer]]) =
+  override def singleShortestPath(left: Long, right: Long, depth: Int, expander: Expander, pathPredicate: KernelPredicate[Path], filters: Seq[KernelPredicate[PropertyContainer]]): Option[Path] =
     translateException(inner.singleShortestPath(left, right, depth, expander, pathPredicate, filters))
 
-  override def allShortestPath(left: Long, right: Long, depth: Int, expander: Expander, pathPredicate: KernelPredicate[Path], filters: Seq[KernelPredicate[PropertyContainer]]) =
+  override def allShortestPath(left: Long, right: Long, depth: Int, expander: Expander, pathPredicate: KernelPredicate[Path], filters: Seq[KernelPredicate[PropertyContainer]]): Iterator[Path] =
     translateException(inner.allShortestPath(left, right, depth, expander, pathPredicate, filters))
 
-  override def nodeCountByCountStore(labelId: Int) =
+  override def nodeCountByCountStore(labelId: Int): Long =
     translateException(inner.nodeCountByCountStore(labelId))
 
-  override def relationshipCountByCountStore(startLabelId: Int, typeId: Int, endLabelId: Int) =
+  override def relationshipCountByCountStore(startLabelId: Int, typeId: Int, endLabelId: Int): Long =
   translateException(inner.relationshipCountByCountStore(startLabelId, typeId, endLabelId))
 
-  override def lockNodes(nodeIds: Long*) =
+  override def lockNodes(nodeIds: Long*): Unit =
     translateException(inner.lockNodes(nodeIds:_*))
 
-  override def lockRelationships(relIds: Long*) =
+  override def lockRelationships(relIds: Long*): Unit =
     translateException(inner.lockRelationships(relIds:_*))
 
-  override def getOptRelTypeId(relType: String) =
+  override def getOptRelTypeId(relType: String): Option[Int] =
     translateException(inner.getOptRelTypeId(relType))
 
   override def detachDeleteNode(node: Long): Int =
@@ -292,10 +272,10 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
 
   class ExceptionTranslatingOperations[T, CURSOR](inner: Operations[T, CURSOR])
     extends DelegatingOperations[T, CURSOR](inner) {
-    override def delete(id: Long) =
+    override def delete(id: Long): Unit =
       translateException(inner.delete(id))
 
-    override def setProperty(id: Long, propertyKey: Int, value: Value) =
+    override def setProperty(id: Long, propertyKey: Int, value: Value): Unit =
       translateException(inner.setProperty(id, propertyKey, value))
 
     override def getById(id: Long): T =
@@ -310,7 +290,7 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
     override def propertyKeyIds(id: Long, cursor: CURSOR, propertyCursor: PropertyCursor): Array[Int] =
       translateException(inner.propertyKeyIds(id, cursor, propertyCursor))
 
-    override def removeProperty(id: Long, propertyKeyId: Int) =
+    override def removeProperty(id: Long, propertyKeyId: Int): Unit =
       translateException(inner.removeProperty(id, propertyKeyId))
 
     override def all: Iterator[T] =
@@ -335,4 +315,3 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
 
   override def singleRelationship(id: Long, cursor: RelationshipScanCursor): Unit = translateException(inner.singleRelationship(id,cursor))
 }
-

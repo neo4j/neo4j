@@ -835,74 +835,6 @@ public class AllStoreHolder extends Read
     }
 
     @Override
-    public RawIterator<AnyValue[],ProcedureException> procedureCallRead( QualifiedName name, AnyValue[] arguments )
-            throws ProcedureException
-    {
-        AccessMode accessMode = ktx.securityContext().mode();
-        if ( !accessMode.allowsReads() )
-        {
-            throw accessMode.onViolation( format( "Read operations are not allowed for %s.",
-                    ktx.securityContext().description() ) );
-        }
-        return callProcedure( name, arguments, new RestrictedAccessMode( ktx.securityContext().mode(), AccessMode.Static
-                .READ ) );
-    }
-
-    @Override
-    public RawIterator<AnyValue[],ProcedureException> procedureCallReadOverride( QualifiedName name, AnyValue[] arguments )
-            throws ProcedureException
-    {
-        return callProcedure( name, arguments,
-                new OverriddenAccessMode( ktx.securityContext().mode(), AccessMode.Static.READ ) );
-    }
-
-    @Override
-    public RawIterator<AnyValue[],ProcedureException> procedureCallWrite( QualifiedName name, AnyValue[] arguments )
-            throws ProcedureException
-    {
-        AccessMode accessMode = ktx.securityContext().mode();
-        if ( !accessMode.allowsWrites() )
-        {
-            throw accessMode.onViolation( format( "Write operations are not allowed for %s.",
-                    ktx.securityContext().description() ) );
-        }
-        return callProcedure( name, arguments,
-                new RestrictedAccessMode( ktx.securityContext().mode(), AccessMode.Static.TOKEN_WRITE ) );
-    }
-
-    @Override
-    public RawIterator<AnyValue[],ProcedureException> procedureCallWriteOverride( QualifiedName name, AnyValue[] arguments )
-            throws ProcedureException
-    {
-        return callProcedure( name, arguments,
-                new OverriddenAccessMode( ktx.securityContext().mode(), AccessMode.Static.TOKEN_WRITE ) );
-
-    }
-
-    @Override
-    public RawIterator<AnyValue[],ProcedureException> procedureCallSchema( QualifiedName name, AnyValue[] arguments )
-            throws ProcedureException
-    {
-        AccessMode accessMode = ktx.securityContext().mode();
-        if ( !accessMode.allowsSchemaWrites() )
-        {
-            throw accessMode.onViolation( format( "Schema operations are not allowed for %s.",
-                    ktx.securityContext().description() ) );
-        }
-        return callProcedure( name, arguments,
-                new RestrictedAccessMode( ktx.securityContext().mode(), AccessMode.Static.FULL ) );
-    }
-
-    @Override
-    public RawIterator<AnyValue[],ProcedureException> procedureCallSchemaOverride( QualifiedName name,
-            AnyValue[] arguments )
-            throws ProcedureException
-    {
-        return callProcedure( name, arguments,
-                new OverriddenAccessMode( ktx.securityContext().mode(), AccessMode.Static.FULL ) );
-    }
-
-    @Override
     public AnyValue functionCall( int id, AnyValue[] arguments ) throws ProcedureException
     {
         if ( !ktx.securityContext().mode().allowsReads() )
@@ -915,28 +847,9 @@ public class AllStoreHolder extends Read
     }
 
     @Override
-    public AnyValue functionCall( QualifiedName name, AnyValue[] arguments ) throws ProcedureException
-    {
-        if ( !ktx.securityContext().mode().allowsReads() )
-        {
-            throw ktx.securityContext().mode().onViolation(
-                    format( "Read operations are not allowed for %s.", ktx.securityContext().description() ) );
-        }
-        return callFunction( name, arguments,
-                new RestrictedAccessMode( ktx.securityContext().mode(), AccessMode.Static.READ ) );
-    }
-
-    @Override
     public AnyValue functionCallOverride( int id, AnyValue[] arguments ) throws ProcedureException
     {
         return callFunction( id, arguments,
-                new OverriddenAccessMode( ktx.securityContext().mode(), AccessMode.Static.READ ) );
-    }
-
-    @Override
-    public AnyValue functionCallOverride( QualifiedName name, AnyValue[] arguments ) throws ProcedureException
-    {
-        return callFunction( name, arguments,
                 new OverriddenAccessMode( ktx.securityContext().mode(), AccessMode.Static.READ ) );
     }
 
@@ -953,28 +866,9 @@ public class AllStoreHolder extends Read
     }
 
     @Override
-    public UserAggregator aggregationFunction( QualifiedName name ) throws ProcedureException
-    {
-        if ( !ktx.securityContext().mode().allowsReads() )
-        {
-            throw ktx.securityContext().mode().onViolation(
-                    format( "Read operations are not allowed for %s.", ktx.securityContext().description() ) );
-        }
-        return aggregationFunction( name,
-                new RestrictedAccessMode( ktx.securityContext().mode(), AccessMode.Static.READ ) );
-    }
-
-    @Override
     public UserAggregator aggregationFunctionOverride( int id ) throws ProcedureException
     {
         return aggregationFunction( id,
-                new OverriddenAccessMode( ktx.securityContext().mode(), AccessMode.Static.READ ) );
-    }
-
-    @Override
-    public UserAggregator aggregationFunctionOverride( QualifiedName name ) throws ProcedureException
-    {
-        return aggregationFunction( name,
                 new OverriddenAccessMode( ktx.securityContext().mode(), AccessMode.Static.READ ) );
     }
 
@@ -1003,23 +897,6 @@ public class AllStoreHolder extends Read
         {
             procedureCall = globalProcedures
                     .callProcedure( prepareContext( procedureSecurityContext ), id, input, statement );
-        }
-        return createIterator( procedureSecurityContext, procedureCall );
-    }
-
-    private RawIterator<AnyValue[],ProcedureException> callProcedure(
-            QualifiedName name, AnyValue[] input, final AccessMode override )
-            throws ProcedureException
-    {
-        ktx.assertOpen();
-
-        final SecurityContext procedureSecurityContext = ktx.securityContext().withMode( override );
-        final RawIterator<AnyValue[],ProcedureException> procedureCall;
-        try ( KernelTransaction.Revertable ignore = ktx.overrideWith( procedureSecurityContext );
-              Statement statement = ktx.acquireStatement() )
-        {
-            procedureCall = globalProcedures
-                    .callProcedure( prepareContext( procedureSecurityContext ), name, input, statement );
         }
         return createIterator( procedureSecurityContext, procedureCall );
     }
@@ -1060,18 +937,6 @@ public class AllStoreHolder extends Read
         }
     }
 
-    private AnyValue callFunction( QualifiedName name, AnyValue[] input, final AccessMode mode )
-            throws ProcedureException
-    {
-        ktx.assertOpen();
-
-        SecurityContext securityContext = ktx.securityContext().withMode( mode );
-        try ( KernelTransaction.Revertable ignore = ktx.overrideWith( securityContext ) )
-        {
-            return globalProcedures.callFunction( prepareContext( securityContext ), name, input );
-        }
-    }
-
     private UserAggregator aggregationFunction( int id, final AccessMode mode )
             throws ProcedureException
     {
@@ -1081,18 +946,6 @@ public class AllStoreHolder extends Read
         try ( KernelTransaction.Revertable ignore = ktx.overrideWith( securityContext ) )
         {
             return globalProcedures.createAggregationFunction( prepareContext( securityContext ), id );
-        }
-    }
-
-    private UserAggregator aggregationFunction( QualifiedName name, final AccessMode mode )
-            throws ProcedureException
-    {
-        ktx.assertOpen();
-
-        SecurityContext securityContext = ktx.securityContext().withMode( mode );
-        try ( KernelTransaction.Revertable ignore = ktx.overrideWith( securityContext ) )
-        {
-            return globalProcedures.createAggregationFunction( prepareContext( securityContext ), name );
         }
     }
 

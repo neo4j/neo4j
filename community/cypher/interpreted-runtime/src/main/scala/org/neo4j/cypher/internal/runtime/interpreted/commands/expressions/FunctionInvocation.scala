@@ -23,11 +23,10 @@ import org.neo4j.cypher.internal.runtime.interpreted.GraphElementPropertyFunctio
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.runtime.{ExecutionContext, QueryContext}
 import org.neo4j.cypher.internal.v4_0.logical.plans.UserFunctionSignature
-import org.neo4j.internal.kernel.api.procs.{QualifiedName => KernelQualifiedName}
 import org.neo4j.values._
 
 
-abstract class FunctionInvocation(signature: UserFunctionSignature, input: Array[Expression])
+case class FunctionInvocation(signature: UserFunctionSignature, input: Array[Expression])
   extends Expression with GraphElementPropertyFunctions {
 
   override def arguments: Seq[Expression] = input
@@ -39,37 +38,13 @@ abstract class FunctionInvocation(signature: UserFunctionSignature, input: Array
     call(query, argValues)
   }
 
-  protected def call(query: QueryContext,
-                   argValues: Array[AnyValue]): AnyValue
-
+  protected def call(query: QueryContext, argValues: Array[AnyValue]): AnyValue =
+    query.callFunction(signature.id, argValues, signature.allowed)
 
   override def symbolTableDependencies: Set[String] = input.flatMap(_.symbolTableDependencies).toSet
 
   override def toString = s"${signature.name}(${input.mkString(",")})"
-}
-
-case class FunctionInvocationById(signature: UserFunctionSignature, input: Array[Expression])
-  extends FunctionInvocation(signature, input) {
-
-  protected def call(query: QueryContext,
-                   argValues: Array[AnyValue]): AnyValue = {
-    query.callFunction(signature.id.get, argValues, signature.allowed)
-  }
 
   override def rewrite(f: Expression => Expression) =
-    f(FunctionInvocationById(signature, input.map(a => a.rewrite(f))))
-}
-
-case class FunctionInvocationByName(signature: UserFunctionSignature, input: Array[Expression])
-  extends FunctionInvocation(signature, input) {
-  import scala.collection.JavaConverters._
-  private val kernelName = new KernelQualifiedName(signature.name.namespace.asJava, signature.name.name)
-
-  protected def call(query: QueryContext,
-                     argValues: Array[AnyValue]): AnyValue = {
-    query.callFunction(kernelName, argValues, signature.allowed)
-  }
-
-  override def rewrite(f: Expression => Expression) =
-    f(FunctionInvocationByName(signature, input.map(a => a.rewrite(f))))
+    f(FunctionInvocation(signature, input.map(a => a.rewrite(f))))
 }
