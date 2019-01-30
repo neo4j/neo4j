@@ -584,7 +584,7 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
           NodeIndexScan(
             "n",
             LabelToken("Awesome", LabelId(0)),
-            IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), GetValue),
+            indexedProperty("prop", 0, GetValue),
             Set.empty,
             IndexOrderNone),
           Map.empty,
