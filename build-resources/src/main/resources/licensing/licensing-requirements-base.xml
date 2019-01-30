@@ -73,6 +73,9 @@
     <artifact id="org.eclipse.jetty:jetty-security:">
       <license>ASL2.0</license>
     </artifact>
+    <artifact id="com.github.chewiebug:gcviewer:">
+      <license>LGPL2.1</license>
+    </artifact>
   </override-licenses>
   <coalesced-licenses>
     <license name="GNU Affero General Public License, Version 3">
@@ -94,6 +97,7 @@
       <aka>ASL</aka>
       <aka>Apache-2.0</aka>
       <aka>Apache2</aka>
+      <aka>Apache License, Version 2</aka>
     </license>
     <license name="BSD License">
       <aka>BSD</aka>
