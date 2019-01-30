@@ -112,6 +112,23 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
     }
   }
 
+  test("should rename provided order of function if function projected") {
+    new given().withLogicalPlanningContext { (_, context) =>
+      val lpp = LogicalPlanProducer(context.cardinality, context.planningAttributes, idGen)
+      // plan with provided order
+      val plan = fakeLogicalPlanFor(context.planningAttributes, "id(n)")
+      context.planningAttributes.providedOrders.set(plan.id, ProvidedOrder(Seq(ProvidedOrder.Asc(function("id",varFor("n"))))))
+      // projection
+      val projections = Map("id(n)" -> function("id", varFor("n")))
+
+      //when
+      val result = lpp.planDistinct(plan, projections, projections, context)
+
+      // then
+      context.planningAttributes.providedOrders.get(result.id) should be(ProvidedOrder(Seq(ProvidedOrder.Asc(varFor("id(n)")))))
+    }
+  }
+
   test("should trim provided order (1 column) of property column if a sort column is also not a grouping column") {
     new given().withLogicalPlanningContext { (_, context) =>
       val lpp = LogicalPlanProducer(context.cardinality, context.planningAttributes, idGen)
@@ -236,6 +253,47 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
 
       // then
       context.planningAttributes.providedOrders.get(result.id) should be(ProvidedOrder(Seq(ProvidedOrder.Asc(prop("y","bar")))))
+    }
+  }
+
+  test("should trim provided order (2 columns) in aggregation of function column if a sort column is also not a grouping column") {
+    new given().withLogicalPlanningContext { (_, context) =>
+      val lpp = LogicalPlanProducer(context.cardinality, context.planningAttributes, idGen)
+      // plan with provided order
+      val plan = fakeLogicalPlanFor(context.planningAttributes, "size(x)", "y")
+      context.planningAttributes.providedOrders.set(plan.id,
+        ProvidedOrder(Seq(ProvidedOrder.Asc(varFor("y")),
+        ProvidedOrder.Asc(function("size", varFor("x"))))))
+
+      val aggregations = Map("size(x)" -> function("size", varFor("x")))
+      val groupings = Map("y" -> varFor("y"))
+
+      //when
+      val result = lpp.planAggregation(plan, groupings, aggregations, groupings, aggregations, context)
+
+      // then
+      context.planningAttributes.providedOrders.get(result.id) should be(ProvidedOrder(Seq(ProvidedOrder.Asc(varFor("y")))))
+    }
+  }
+
+  test("should trim provided order (2 columns) in aggregation of property of property column if a sort column is also not a grouping column") {
+    new given().withLogicalPlanningContext { (_, context) =>
+      val lpp = LogicalPlanProducer(context.cardinality, context.planningAttributes, idGen)
+      // plan with provided order
+      val plan = fakeLogicalPlanFor(context.planningAttributes, "x.foo.bar", "y")
+
+      val propOfProp = Property(prop("x","foo"),PropertyKeyName("bar")(pos))(pos)
+
+      context.planningAttributes.providedOrders.set(plan.id, ProvidedOrder(Seq(ProvidedOrder.Asc(varFor("y")), ProvidedOrder.Asc(propOfProp))))
+
+      val aggregations = Map("xfoobar" -> propOfProp)
+      val groupings = Map("y" -> varFor("y"))
+
+      //when
+      val result = lpp.planAggregation(plan, groupings, aggregations, groupings, aggregations, context)
+
+      // then
+      context.planningAttributes.providedOrders.get(result.id) should be(ProvidedOrder(Seq(ProvidedOrder.Asc(varFor("y")))))
     }
   }
 

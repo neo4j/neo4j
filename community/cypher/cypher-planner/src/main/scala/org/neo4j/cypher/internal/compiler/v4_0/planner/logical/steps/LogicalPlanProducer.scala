@@ -465,9 +465,9 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
           case Property(Variable(`varName`), PropertyKeyName(`propName`)) => true
           case _ => false
         }
-      case ProvidedOrder.Column(Variable(varName)) =>
+      case ProvidedOrder.Column(expression) =>
         grouping.values.exists {
-          case Variable(`varName`) => true
+          case `expression` => true
           case _ => false
         }
     }
