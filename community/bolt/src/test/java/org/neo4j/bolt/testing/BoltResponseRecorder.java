@@ -22,9 +22,9 @@ package org.neo4j.bolt.testing;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
+import org.neo4j.bolt.runtime.BoltResponseHandler;
 import org.neo4j.bolt.runtime.BoltResult;
 import org.neo4j.bolt.runtime.Neo4jError;
-import org.neo4j.bolt.v1.messaging.BoltResponseHandlerV1Adaptor;
 import org.neo4j.cypher.result.QueryResult;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.BooleanValue;
@@ -37,7 +37,7 @@ import static org.neo4j.bolt.v1.messaging.BoltResponseMessage.SUCCESS;
 import static org.neo4j.values.storable.Values.stringOrNoValue;
 import static org.neo4j.values.storable.Values.stringValue;
 
-public class BoltResponseRecorder extends BoltResponseHandlerV1Adaptor
+public class BoltResponseRecorder implements BoltResponseHandler
 {
     private BlockingQueue<RecordedBoltResponse> responses;
     private RecordedBoltResponse currentResponse;
@@ -108,6 +108,15 @@ public class BoltResponseRecorder extends BoltResponseHandlerV1Adaptor
         return response;
     }
 
+    private boolean hasMore( boolean hasMore )
+    {
+        if ( hasMore )
+        {
+            onMetadata( "has_more", BooleanValue.TRUE );
+        }
+        return hasMore;
+    }
+
     private class DiscardingBoltResultVisitor implements BoltResult.Visitor
     {
         @Override
@@ -136,14 +145,5 @@ public class BoltResponseRecorder extends BoltResponseHandlerV1Adaptor
         {
             currentResponse.addMetadata( key, value );
         }
-    }
-
-    private boolean hasMore( boolean hasMore )
-    {
-        if ( hasMore )
-        {
-            onMetadata( "has_more", BooleanValue.TRUE );
-        }
-        return hasMore;
     }
 }

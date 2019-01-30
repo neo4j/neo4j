@@ -25,6 +25,8 @@ import org.neo4j.bolt.v4.messaging.ResultConsumer;
 
 public class ResultConsumerV1Adaptor implements ResultConsumer
 {
+    public static final long PULL_DISCARD_ALL_N_SIZE = Long.MAX_VALUE;
+
     private final boolean pull;
     private final StateMachineContext context;
 
@@ -43,6 +45,13 @@ public class ResultConsumerV1Adaptor implements ResultConsumer
     @Override
     public void consume( BoltResult boltResult ) throws Exception
     {
-        context.connectionState().getResponseHandler().onRecords( boltResult, pull );
+        if ( pull )
+        {
+            context.connectionState().getResponseHandler().onPullRecords( boltResult, PULL_DISCARD_ALL_N_SIZE );
+        }
+        else
+        {
+            context.connectionState().getResponseHandler().onDiscardRecords( boltResult, PULL_DISCARD_ALL_N_SIZE );
+        }
     }
 }

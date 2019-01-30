@@ -25,7 +25,7 @@ import java.util.Map;
 
 import org.neo4j.bolt.runtime.BoltStateMachineSPI;
 import org.neo4j.bolt.runtime.BoltStateMachineState;
-import org.neo4j.bolt.v1.runtime.MutableConnectionState;
+import org.neo4j.bolt.runtime.MutableConnectionState;
 import org.neo4j.bolt.runtime.StateMachineContext;
 import org.neo4j.bolt.security.auth.AuthenticationResult;
 import org.neo4j.bolt.v3.messaging.request.HelloMessage;

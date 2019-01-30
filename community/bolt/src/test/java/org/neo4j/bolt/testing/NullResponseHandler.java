@@ -19,15 +19,15 @@
  */
 package org.neo4j.bolt.testing;
 
+import org.neo4j.bolt.runtime.BoltResponseHandler;
 import org.neo4j.bolt.runtime.BoltResult;
 import org.neo4j.bolt.runtime.Neo4jError;
-import org.neo4j.bolt.v1.messaging.BoltResponseHandlerV1Adaptor;
 import org.neo4j.values.AnyValue;
 
 /**
  * Used by tests when the response for a request is not relevant.
  */
-public class NullResponseHandler extends BoltResponseHandlerV1Adaptor
+public class NullResponseHandler implements BoltResponseHandler
 {
     private static final NullResponseHandler INSTANCE = new NullResponseHandler();
 

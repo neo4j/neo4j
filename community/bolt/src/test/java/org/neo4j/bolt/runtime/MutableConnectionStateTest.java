@@ -21,16 +21,13 @@ package org.neo4j.bolt.runtime;
 
 import org.junit.jupiter.api.Test;
 
-import org.neo4j.bolt.v1.messaging.BoltResponseHandlerV1Adaptor;
-import org.neo4j.bolt.v1.runtime.MutableConnectionState;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.neo4j.bolt.v1.messaging.BoltResponseHandlerV1Adaptor.PULL_DISCARD_ALL_N_SIZE;
+import static org.neo4j.bolt.v1.ResultConsumerV1Adaptor.PULL_DISCARD_ALL_N_SIZE;
 import static org.neo4j.values.storable.Values.stringValue;
 
 class MutableConnectionStateTest
@@ -38,35 +35,46 @@ class MutableConnectionStateTest
     private final MutableConnectionState state = new MutableConnectionState();
 
     private final BoltResult result = mock( BoltResult.class );
-    private final BoltResponseHandlerV1Adaptor responseHandler = mock( BoltResponseHandlerV1Adaptor.class );
+    private final BoltResponseHandler responseHandler = mock( BoltResponseHandler.class );
 
     @Test
-    void shouldHandleOnRecordsWithoutResponseHandler() throws Exception
+    void shouldHandleOnPullRecordsWithoutResponseHandler() throws Exception
     {
         state.setResponseHandler( null );
 
-        state.onRecords( result, true );
+        state.onPullRecords( result, PULL_DISCARD_ALL_N_SIZE );
 
         assertNull( state.getPendingError() );
         assertFalse( state.hasPendingIgnore() );
     }
 
     @Test
-    void shouldHandleOnPullRecordsWitResponseHandler() throws Exception
+    void shouldHandleOnPullRecordsWithResponseHandler() throws Exception
     {
         state.setResponseHandler( responseHandler );
 
-        state.onRecords( result, true );
+        state.onPullRecords( result, PULL_DISCARD_ALL_N_SIZE );
 
         verify( responseHandler ).onPullRecords( result, PULL_DISCARD_ALL_N_SIZE );
     }
 
     @Test
-    void shouldHandleOnDiscardRecordsWitResponseHandler() throws Exception
+    void shouldHandleOnDiscardRecordsWithoutResponseHandler() throws Exception
+    {
+        state.setResponseHandler( null );
+
+        state.onDiscardRecords( result, PULL_DISCARD_ALL_N_SIZE );
+
+        assertNull( state.getPendingError() );
+        assertFalse( state.hasPendingIgnore() );
+    }
+
+    @Test
+    void shouldHandleOnDiscardRecordsWithResponseHandler() throws Exception
     {
         state.setResponseHandler( responseHandler );
 
-        state.onRecords( result, false );
+        state.onDiscardRecords( result, PULL_DISCARD_ALL_N_SIZE );
 
         verify( responseHandler ).onDiscardRecords( result, PULL_DISCARD_ALL_N_SIZE );
     }

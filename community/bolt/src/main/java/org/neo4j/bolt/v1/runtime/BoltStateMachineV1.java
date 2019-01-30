@@ -32,11 +32,11 @@ import org.neo4j.bolt.runtime.BoltResponseHandler;
 import org.neo4j.bolt.runtime.BoltStateMachine;
 import org.neo4j.bolt.runtime.BoltStateMachineSPI;
 import org.neo4j.bolt.runtime.BoltStateMachineState;
+import org.neo4j.bolt.runtime.MutableConnectionState;
 import org.neo4j.bolt.runtime.Neo4jError;
 import org.neo4j.bolt.runtime.StateMachineContext;
 import org.neo4j.bolt.runtime.StatementProcessor;
 import org.neo4j.bolt.security.auth.AuthenticationException;
-import org.neo4j.bolt.v1.messaging.BoltResponseHandlerV1Adaptor;
 import org.neo4j.bolt.v1.messaging.BoltStateMachineV1Context;
 import org.neo4j.bolt.v1.messaging.request.InterruptSignal;
 import org.neo4j.exceptions.KernelException;
@@ -108,7 +108,7 @@ public class BoltStateMachineV1 implements BoltStateMachine
         {
             nextState( InterruptSignal.INSTANCE, context );
         }
-        connectionState.setResponseHandler( (BoltResponseHandlerV1Adaptor) handler );
+        connectionState.setResponseHandler( handler );
     }
 
     protected void after()

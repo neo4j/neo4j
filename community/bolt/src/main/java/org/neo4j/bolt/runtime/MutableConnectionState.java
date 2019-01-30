@@ -17,21 +17,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.bolt.v1.runtime;
+package org.neo4j.bolt.runtime;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.neo4j.bolt.runtime.BoltResult;
-import org.neo4j.bolt.runtime.BoltStateMachine;
-import org.neo4j.bolt.runtime.Neo4jError;
-import org.neo4j.bolt.runtime.StatementProcessor;
-import org.neo4j.bolt.v1.messaging.BoltResponseHandlerV1Adaptor;
 import org.neo4j.values.AnyValue;
 
 /**
  * Keeps state of the connection and bolt state machine.
  */
-public class MutableConnectionState extends BoltResponseHandlerV1Adaptor
+public class MutableConnectionState implements BoltResponseHandler
 {
     private Neo4jError pendingError;
     private boolean pendingIgnore;
@@ -41,7 +36,7 @@ public class MutableConnectionState extends BoltResponseHandlerV1Adaptor
     /**
      * Callback poised to receive the next response.
      */
-    private BoltResponseHandlerV1Adaptor responseHandler;
+    private BoltResponseHandler responseHandler;
     /**
      * Component responsible for transaction handling and statement execution.
      */
@@ -146,12 +141,12 @@ public class MutableConnectionState extends BoltResponseHandlerV1Adaptor
         return !closed && pendingError == null && !pendingIgnore;
     }
 
-    public BoltResponseHandlerV1Adaptor getResponseHandler()
+    public BoltResponseHandler getResponseHandler()
     {
         return responseHandler;
     }
 
-    public void setResponseHandler( BoltResponseHandlerV1Adaptor responseHandler )
+    public void setResponseHandler( BoltResponseHandler responseHandler )
     {
         this.responseHandler = responseHandler;
     }

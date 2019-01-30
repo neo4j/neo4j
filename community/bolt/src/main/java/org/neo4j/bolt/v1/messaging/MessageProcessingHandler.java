@@ -25,6 +25,7 @@ import java.util.Set;
 
 import org.neo4j.bolt.messaging.BoltResponseMessageWriter;
 import org.neo4j.bolt.runtime.BoltConnection;
+import org.neo4j.bolt.runtime.BoltResponseHandler;
 import org.neo4j.bolt.runtime.BoltResult;
 import org.neo4j.bolt.runtime.Neo4jError;
 import org.neo4j.bolt.v1.messaging.response.FailureMessage;
@@ -39,7 +40,7 @@ import org.neo4j.values.virtual.MapValueBuilder;
 
 import static org.neo4j.bolt.v1.messaging.response.IgnoredMessage.IGNORED_MESSAGE;
 
-public class MessageProcessingHandler extends BoltResponseHandlerV1Adaptor
+public class MessageProcessingHandler implements BoltResponseHandler
 {
     // Errors that are expected when the client disconnects mid-operation
     private static final Set<Status> CLIENT_MID_OP_DISCONNECT_ERRORS =

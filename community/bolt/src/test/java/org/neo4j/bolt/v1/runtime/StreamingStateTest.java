@@ -26,6 +26,7 @@ import java.util.List;
 
 import org.neo4j.bolt.messaging.RequestMessage;
 import org.neo4j.bolt.runtime.BoltStateMachineState;
+import org.neo4j.bolt.runtime.MutableConnectionState;
 import org.neo4j.bolt.runtime.StateMachineContext;
 import org.neo4j.bolt.runtime.StatementMetadata;
 import org.neo4j.bolt.runtime.StatementProcessor;

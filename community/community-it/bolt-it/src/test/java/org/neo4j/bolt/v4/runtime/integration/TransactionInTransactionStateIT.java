@@ -29,9 +29,9 @@ import java.util.stream.Stream;
 import org.neo4j.bolt.messaging.BoltIOException;
 import org.neo4j.bolt.messaging.RequestMessage;
 import org.neo4j.bolt.runtime.BoltConnectionFatality;
+import org.neo4j.bolt.runtime.BoltResponseHandler;
 import org.neo4j.bolt.testing.BoltResponseRecorder;
 import org.neo4j.bolt.testing.RecordedBoltResponse;
-import org.neo4j.bolt.v1.messaging.BoltResponseHandlerV1Adaptor;
 import org.neo4j.bolt.v1.messaging.request.InterruptSignal;
 import org.neo4j.bolt.v1.messaging.request.ResetMessage;
 import org.neo4j.bolt.v3.messaging.request.BeginMessage;
@@ -243,7 +243,7 @@ class TransactionInTransactionStateIT extends BoltStateMachineV4StateTestBase
 
         // When
 
-        BoltResponseHandlerV1Adaptor handler = mock( BoltResponseHandlerV1Adaptor.class );
+        BoltResponseHandler handler = mock( BoltResponseHandler.class );
         doThrow( new RuntimeException( "Fail" ) ).when( handler ).onPullRecords( any(), anyLong() );
         doThrow( new RuntimeException( "Fail" ) ).when( handler ).onDiscardRecords( any(), anyLong() );
         machine.process( message, handler );

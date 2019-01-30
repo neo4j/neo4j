@@ -29,11 +29,12 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.bolt.messaging.RequestMessage;
+import org.neo4j.bolt.runtime.BoltResponseHandler;
 import org.neo4j.bolt.runtime.BoltStateMachineState;
+import org.neo4j.bolt.runtime.MutableConnectionState;
 import org.neo4j.bolt.runtime.StateMachineContext;
 import org.neo4j.bolt.runtime.StatementMetadata;
 import org.neo4j.bolt.runtime.StatementProcessor;
-import org.neo4j.bolt.v1.messaging.BoltResponseHandlerV1Adaptor;
 import org.neo4j.bolt.v1.messaging.request.AckFailureMessage;
 import org.neo4j.bolt.v1.messaging.request.DiscardAllMessage;
 import org.neo4j.bolt.v1.messaging.request.InterruptSignal;
@@ -107,7 +108,7 @@ class ReadyStateTest
         when( statementMetadata.fieldNames() ).thenReturn( new String[]{"foo", "bar", "baz"} );
         when( statementProcessor.run( any(), any() ) ).thenReturn( statementMetadata );
 
-        BoltResponseHandlerV1Adaptor responseHandler = mock( BoltResponseHandlerV1Adaptor.class );
+        BoltResponseHandler responseHandler = mock( BoltResponseHandler.class );
         connectionState.setResponseHandler( responseHandler );
 
         BoltStateMachineState nextState = state.process( new RunMessage( "RETURN 1", EMPTY_MAP ), context );

@@ -28,9 +28,9 @@ import java.util.stream.Stream;
 import org.neo4j.bolt.messaging.BoltIOException;
 import org.neo4j.bolt.messaging.RequestMessage;
 import org.neo4j.bolt.runtime.BoltConnectionFatality;
+import org.neo4j.bolt.runtime.BoltResponseHandler;
 import org.neo4j.bolt.testing.BoltResponseRecorder;
 import org.neo4j.bolt.testing.RecordedBoltResponse;
-import org.neo4j.bolt.v1.messaging.BoltResponseHandlerV1Adaptor;
 import org.neo4j.bolt.v1.messaging.request.DiscardAllMessage;
 import org.neo4j.bolt.v1.messaging.request.InterruptSignal;
 import org.neo4j.bolt.v1.messaging.request.PullAllMessage;
@@ -48,7 +48,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.bolt.testing.BoltMatchers.failedWithStatus;
@@ -114,8 +114,9 @@ class TransactionReadyStateIT extends BoltStateMachineStateTestBase
         BoltStateMachineV3 machine = getBoltStateMachineInTxReadyState();
 
         // When
-        BoltResponseHandlerV1Adaptor handler = mock( BoltResponseHandlerV1Adaptor.class );
-        doThrow( new RuntimeException( "Error!" ) ).when( handler ).onRecords( any(), anyBoolean() );
+        BoltResponseHandler handler = mock( BoltResponseHandler.class );
+        doThrow( new RuntimeException( "Error!" ) ).when( handler ).onPullRecords( any(), anyLong() );
+        doThrow( new RuntimeException( "Error!" ) ).when( handler ).onDiscardRecords( any(), anyLong() );
         machine.process( new RunMessage( "A cypher query" ), handler );
 
         // Then

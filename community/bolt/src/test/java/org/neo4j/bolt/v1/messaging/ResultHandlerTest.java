@@ -37,6 +37,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.mockito.Mockito.mock;
+import static org.neo4j.bolt.v1.ResultConsumerV1Adaptor.PULL_DISCARD_ALL_N_SIZE;
 import static org.neo4j.values.storable.Values.values;
 
 class ResultHandlerTest
@@ -51,7 +52,7 @@ class ResultHandlerTest
         ImmutableRecord record2 = new ImmutableRecord( values( "1", "2", "3" ) );
         BoltResult result = new TestBoltResult( record1, record2 );
 
-        handler.onRecords( result, true );
+        handler.onPullRecords( result, PULL_DISCARD_ALL_N_SIZE );
         handler.onFinish();
 
         List<ResponseMessage> messages = messageWriter.asList();
@@ -71,7 +72,7 @@ class ResultHandlerTest
         ImmutableRecord record2 = new ImmutableRecord( values( "1", "2", "3" ) );
         BoltResult result = new TestBoltResult( record1, record2 );
 
-        handler.onRecords( result, false );
+        handler.onDiscardRecords( result, PULL_DISCARD_ALL_N_SIZE );
         handler.onFinish();
 
         List<ResponseMessage> messages = messageWriter.asList();

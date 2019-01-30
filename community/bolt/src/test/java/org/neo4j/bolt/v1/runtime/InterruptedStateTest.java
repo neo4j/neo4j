@@ -26,6 +26,7 @@ import java.util.List;
 
 import org.neo4j.bolt.messaging.RequestMessage;
 import org.neo4j.bolt.runtime.BoltStateMachineState;
+import org.neo4j.bolt.runtime.MutableConnectionState;
 import org.neo4j.bolt.runtime.StateMachineContext;
 import org.neo4j.bolt.v1.messaging.request.AckFailureMessage;
 import org.neo4j.bolt.v1.messaging.request.DiscardAllMessage;
