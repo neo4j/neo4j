@@ -65,6 +65,7 @@ public class RecordStorageEngineFactory extends StorageEngineFactory
                 dependencyResolver.resolveDependency( LogService.class ),
                 dependencyResolver.resolveDependency( JobScheduler.class ) );
     }
+
     @Override
     public StorageEngine instantiate( DependencyResolver dependencyResolver, DependencySatisfier dependencySatisfier )
     {
