@@ -21,25 +21,23 @@ package org.neo4j.bolt.v4.runtime;
 
 import org.neo4j.bolt.runtime.BoltStateMachineState;
 import org.neo4j.bolt.runtime.StateMachineContext;
-import org.neo4j.bolt.runtime.StatementMetadata;
 import org.neo4j.bolt.v1.runtime.bookmarking.Bookmark;
 import org.neo4j.bolt.v4.messaging.ResultConsumer;
 
 /**
- * When STREAMING, additionally attach bookmark to PULL, DISCARD result
+ * When AUTOCOMMIT, additionally attach bookmark to PULL, DISCARD result
  */
-public class StreamingState extends AbstractStreamingState
+public class AutoCommitState extends AbstractStreamingStateState
 {
     @Override
     public String name()
     {
-        return "STREAMING";
+        return "AUTOCOMMIT";
     }
 
     @Override
-    protected BoltStateMachineState processStreamResultMessage( ResultConsumer resultConsumer, StateMachineContext context ) throws Throwable
+    protected BoltStateMachineState processStreamResultMessage( int statementId, ResultConsumer resultConsumer, StateMachineContext context ) throws Throwable
     {
-        int statementId = StatementMetadata.ABSENT_STATEMENT_ID;
         Bookmark bookmark = context.connectionState().getStatementProcessor().streamResult( statementId, resultConsumer );
         if ( resultConsumer.hasMore() )
         {

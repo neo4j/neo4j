@@ -221,7 +221,7 @@ class TransactionStateMachineTest
 
         when( stateMachineSPI.beginTransaction( any(), any(), any() ) ).thenReturn( transaction );
         when( stateMachineSPI.executeQuery( any(), anyString(), any(), any(), any() ) ).thenReturn( resultHandle );
-        when( stateMachineSPI.nestedStatementsInTransactionSupported() ).thenReturn( true ); // V4
+        when( stateMachineSPI.supportsNestedStatementsInTransaction() ).thenReturn( true ); // V4
 
         TransactionStateMachine stateMachine = newTransactionStateMachine( stateMachineSPI );
 

@@ -23,11 +23,11 @@ import org.neo4j.bolt.messaging.RequestMessage;
 import org.neo4j.bolt.runtime.BoltConnectionFatality;
 import org.neo4j.bolt.runtime.BoltStateMachineState;
 import org.neo4j.bolt.runtime.StateMachineContext;
-import org.neo4j.bolt.v1.messaging.request.DiscardAllMessage;
 import org.neo4j.bolt.v1.messaging.request.InterruptSignal;
 import org.neo4j.bolt.v3.messaging.request.CommitMessage;
 import org.neo4j.bolt.v3.messaging.request.RollbackMessage;
 import org.neo4j.bolt.v3.messaging.request.RunMessage;
+import org.neo4j.bolt.v4.messaging.DiscardNMessage;
 import org.neo4j.bolt.v4.messaging.PullNMessage;
 
 import static org.neo4j.util.Preconditions.checkState;
@@ -77,7 +77,7 @@ public class FailedState implements BoltStateMachineState
 
     private static boolean shouldIgnore( RequestMessage message )
     {
-        return message instanceof RunMessage || message instanceof PullNMessage || message instanceof DiscardAllMessage
+        return message instanceof RunMessage || message instanceof PullNMessage || message instanceof DiscardNMessage
                 || message instanceof CommitMessage || message instanceof RollbackMessage;
     }
 }

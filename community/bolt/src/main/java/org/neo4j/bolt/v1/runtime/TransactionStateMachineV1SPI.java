@@ -126,7 +126,7 @@ public class TransactionStateMachineV1SPI implements TransactionStateMachineSPI
     }
 
     @Override
-    public boolean nestedStatementsInTransactionSupported()
+    public boolean supportsNestedStatementsInTransaction()
     {
         return false;
     }

@@ -39,14 +39,10 @@ import org.neo4j.bolt.v3.messaging.request.RunMessage;
 import org.neo4j.bolt.v3.runtime.InterruptedState;
 import org.neo4j.bolt.v3.runtime.ReadyState;
 import org.neo4j.bolt.v4.BoltStateMachineV4;
-import org.neo4j.bolt.v4.messaging.DiscardNMessage;
-import org.neo4j.bolt.v4.messaging.PullNMessage;
-import org.neo4j.bolt.v4.runtime.StreamingState;
+import org.neo4j.bolt.v4.runtime.AutoCommitState;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.values.storable.BooleanValue;
 
-import static java.util.Collections.singletonMap;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -61,17 +57,17 @@ import static org.neo4j.bolt.v3.messaging.request.CommitMessage.COMMIT_MESSAGE;
 import static org.neo4j.bolt.v3.messaging.request.GoodbyeMessage.GOODBYE_MESSAGE;
 import static org.neo4j.bolt.v3.messaging.request.RollbackMessage.ROLLBACK_MESSAGE;
 
-class StreamingStateIT extends BoltStateMachineV4StateTestBase
+class AutoCommitStateIT extends BoltStateMachineV4StateTestBase
 {
     @Test
-    void shouldMoveFromStreamingToReadyOnPullN_succ() throws Throwable
+    void shouldMoveFromAutoCommitToReadyOnPullN_succ() throws Throwable
     {
         // Given
-        BoltStateMachineV4 machine = getBoltStateMachineInStreamingState();
+        BoltStateMachineV4 machine = getBoltStateMachineInAutoCommitState();
 
         // When
         BoltResponseRecorder recorder = new BoltResponseRecorder();
-        machine.process( new PullNMessage( ValueUtils.asMapValue( singletonMap( "n", 100L ) ) ), recorder );
+        machine.process( newPullNMessage( 100L ), recorder );
 
         // Then
         RecordedBoltResponse response = recorder.nextResponse();
@@ -83,21 +79,21 @@ class StreamingStateIT extends BoltStateMachineV4StateTestBase
     }
 
     @Test
-    void shouldMoveFromStreamingToReadyOnPullN_succ_hasMore() throws Throwable
+    void shouldMoveFromAutoCommitToReadyOnPullN_succ_hasMore() throws Throwable
     {
         // Given
-        BoltStateMachineV4 machine = getBoltStateMachineInStreamingState( "Unwind [1, 2, 3] as n return n" );
+        BoltStateMachineV4 machine = getBoltStateMachineInAutoCommitState( "Unwind [1, 2, 3] as n return n" );
 
         // When
         BoltResponseRecorder recorder = new BoltResponseRecorder();
-        machine.process( new PullNMessage( ValueUtils.asMapValue( singletonMap( "n", 2L ) ) ), recorder );
+        machine.process( newPullNMessage( 2L ), recorder );
 
         // Then
         RecordedBoltResponse response = recorder.nextResponse();
         assertThat( response, containsRecord( 1L ) );
         assertThat( response, succeededWithMetadata( "has_more", BooleanValue.TRUE ) );
 
-        machine.process( new PullNMessage( ValueUtils.asMapValue( singletonMap( "n", 2L ) ) ), recorder );
+        machine.process( newPullNMessage( 2L ), recorder );
         response = recorder.nextResponse();
         assertThat( response, containsRecord( 3L ) );
         assertTrue( response.hasMetadata( "type" ) );
@@ -107,14 +103,14 @@ class StreamingStateIT extends BoltStateMachineV4StateTestBase
     }
 
     @Test
-    void shouldMoveFromStreamingToReadyOnDiscardAll_succ() throws Throwable
+    void shouldMoveFromAutoCommitToReadyOnDiscardAll_succ() throws Throwable
     {
         // Given
-        BoltStateMachineV4 machine = getBoltStateMachineInStreamingState();
+        BoltStateMachineV4 machine = getBoltStateMachineInAutoCommitState();
 
         // When
         BoltResponseRecorder recorder = new BoltResponseRecorder();
-        machine.process( new DiscardNMessage( ValueUtils.asMapValue( singletonMap( "n", 2L ) ) ), recorder );
+        machine.process( newDiscardNMessage( 2L ), recorder );
 
         // Then
         RecordedBoltResponse response = recorder.nextResponse();
@@ -124,10 +120,10 @@ class StreamingStateIT extends BoltStateMachineV4StateTestBase
     }
 
     @Test
-    void shouldMoveFromStreamingToInterruptedOnInterrupt() throws Throwable
+    void shouldMoveFromAutoCommitToInterruptedOnInterrupt() throws Throwable
     {
         // Given
-        BoltStateMachineV4 machine = getBoltStateMachineInStreamingState();
+        BoltStateMachineV4 machine = getBoltStateMachineInAutoCommitState();
 
         // When
         BoltResponseRecorder recorder = new BoltResponseRecorder();
@@ -139,19 +135,19 @@ class StreamingStateIT extends BoltStateMachineV4StateTestBase
 
     @ParameterizedTest
     @MethodSource( "illegalV4Messages" )
-    void shouldCloseConnectionOnIllegalV3MessagesInStreamingState( RequestMessage message ) throws Throwable
+    void shouldCloseConnectionOnIllegalV3MessagesInAutoCommitState( RequestMessage message ) throws Throwable
     {
-        shouldThrowExceptionOnIllegalMessagesInStreamingState( message );
+        shouldThrowExceptionOnIllegalMessagesInAutoCommitState( message );
     }
 
-    private void shouldThrowExceptionOnIllegalMessagesInStreamingState( RequestMessage message ) throws Throwable
+    private void shouldThrowExceptionOnIllegalMessagesInAutoCommitState( RequestMessage message ) throws Throwable
     {
         // Given
         BoltStateMachineV4 machine = newStateMachine();
         machine.process( newHelloMessage(), nullResponseHandler() );
 
         machine.process( new RunMessage( "CREATE (n {k:'k'}) RETURN n.k", EMPTY_PARAMS ), nullResponseHandler() );
-        assertThat( machine.state(), instanceOf( StreamingState.class ) );
+        assertThat( machine.state(), instanceOf( AutoCommitState.class ) );
 
         // when
         BoltResponseRecorder recorder = new BoltResponseRecorder();
@@ -168,18 +164,18 @@ class StreamingStateIT extends BoltStateMachineV4StateTestBase
                 GOODBYE_MESSAGE, PullAllMessage.INSTANCE, DiscardAllMessage.INSTANCE );
     }
 
-    private BoltStateMachineV4 getBoltStateMachineInStreamingState() throws BoltConnectionFatality, BoltIOException
+    private BoltStateMachineV4 getBoltStateMachineInAutoCommitState() throws BoltConnectionFatality, BoltIOException
     {
-        return getBoltStateMachineInStreamingState( "CREATE (n {k:'k'}) RETURN n.k" );
+        return getBoltStateMachineInAutoCommitState( "CREATE (n {k:'k'}) RETURN n.k" );
     }
 
-    private BoltStateMachineV4 getBoltStateMachineInStreamingState( String query ) throws BoltConnectionFatality, BoltIOException
+    private BoltStateMachineV4 getBoltStateMachineInAutoCommitState( String query ) throws BoltConnectionFatality, BoltIOException
     {
         BoltStateMachineV4 machine = newStateMachine();
         machine.process( newHelloMessage(), nullResponseHandler() );
 
         machine.process( new RunMessage( query, EMPTY_PARAMS ), nullResponseHandler() );
-        assertThat( machine.state(), instanceOf( StreamingState.class ) );
+        assertThat( machine.state(), instanceOf( AutoCommitState.class ) );
         return machine;
     }
 }

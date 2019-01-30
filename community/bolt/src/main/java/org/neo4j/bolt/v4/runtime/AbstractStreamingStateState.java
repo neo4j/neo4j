@@ -23,7 +23,7 @@ import org.neo4j.bolt.messaging.RequestMessage;
 import org.neo4j.bolt.runtime.BoltStateMachineState;
 import org.neo4j.bolt.runtime.StateMachineContext;
 import org.neo4j.bolt.v3.runtime.FailSafeBoltStateMachineState;
-import org.neo4j.bolt.v4.messaging.DiscardAllResultConsumer;
+import org.neo4j.bolt.v4.messaging.DiscardResultConsumer;
 import org.neo4j.bolt.v4.messaging.DiscardNMessage;
 import org.neo4j.bolt.v4.messaging.PullNMessage;
 import org.neo4j.bolt.v4.messaging.PullResultConsumer;
@@ -36,22 +36,22 @@ import static org.neo4j.util.Preconditions.checkState;
  * These must be PULLed or DISCARDed before any further statements
  * can be executed.
  */
-public abstract class AbstractStreamingState extends FailSafeBoltStateMachineState
+public abstract class AbstractStreamingStateState extends FailSafeBoltStateMachineState
 {
     protected BoltStateMachineState readyState;
 
     @Override
-    public BoltStateMachineState processUnsafe( RequestMessage message, StateMachineContext context ) throws Throwable
+    protected BoltStateMachineState processUnsafe( RequestMessage message, StateMachineContext context ) throws Throwable
     {
-        if ( message instanceof DiscardNMessage )
-        {
-            long size = ((DiscardNMessage) message).n();
-            return processStreamResultMessage( new DiscardAllResultConsumer( context, size ), context );
-        }
         if ( message instanceof PullNMessage )
         {
-            long size = ((PullNMessage) message).n();
-            return processStreamResultMessage( new PullResultConsumer( context, size ), context );
+            PullNMessage pullNMessage = (PullNMessage) message;
+            return processStreamResultMessage( pullNMessage.statementId(), new PullResultConsumer( context, pullNMessage.n() ), context );
+        }
+        if ( message instanceof DiscardNMessage )
+        {
+            DiscardNMessage discardNMessage = (DiscardNMessage) message;
+            return processStreamResultMessage( discardNMessage.statementId(), new DiscardResultConsumer( context, discardNMessage.n() ), context );
         }
         return null;
     }
@@ -61,7 +61,8 @@ public abstract class AbstractStreamingState extends FailSafeBoltStateMachineSta
         this.readyState = readyState;
     }
 
-    protected abstract BoltStateMachineState processStreamResultMessage( ResultConsumer resultConsumer, StateMachineContext context ) throws Throwable;
+    protected abstract BoltStateMachineState processStreamResultMessage( int statementId, ResultConsumer resultConsumer, StateMachineContext context )
+            throws Throwable;
 
     @Override
     protected void assertInitialized()

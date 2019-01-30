@@ -23,7 +23,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import java.util.Collections;
 import java.util.stream.Stream;
 
 import org.neo4j.bolt.messaging.BoltIOException;
@@ -39,12 +38,9 @@ import org.neo4j.bolt.v3.messaging.request.RunMessage;
 import org.neo4j.bolt.v3.runtime.InterruptedState;
 import org.neo4j.bolt.v3.runtime.ReadyState;
 import org.neo4j.bolt.v4.BoltStateMachineV4;
-import org.neo4j.bolt.v4.messaging.DiscardNMessage;
-import org.neo4j.bolt.v4.messaging.PullNMessage;
 import org.neo4j.bolt.v4.runtime.FailedState;
 import org.neo4j.bolt.v4.runtime.InTransactionState;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.values.storable.BooleanValue;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
@@ -68,7 +64,7 @@ import static org.neo4j.bolt.v3.messaging.request.CommitMessage.COMMIT_MESSAGE;
 import static org.neo4j.bolt.v3.messaging.request.GoodbyeMessage.GOODBYE_MESSAGE;
 import static org.neo4j.bolt.v3.messaging.request.RollbackMessage.ROLLBACK_MESSAGE;
 
-class TransactionInTransactionStateIT extends BoltStateMachineV4StateTestBase
+class InTransactionStateIT extends BoltStateMachineV4StateTestBase
 {
     @Test
     void shouldMoveFromInTxToReadyOnCommit_succ() throws Throwable
@@ -308,15 +304,4 @@ class TransactionInTransactionStateIT extends BoltStateMachineV4StateTestBase
         assertThat( machine.state(), instanceOf( InTransactionState.class ) ); // tx streaming state
         return machine;
     }
-
-    private static PullNMessage newPullNMessage( long size ) throws BoltIOException
-    {
-        return new PullNMessage( ValueUtils.asMapValue( Collections.singletonMap( "n", size ) ) );
-    }
-
-    private static DiscardNMessage newDiscardNMessage( long size ) throws BoltIOException
-    {
-        return new DiscardNMessage( ValueUtils.asMapValue( Collections.singletonMap( "n", size ) ) );
-    }
-
 }

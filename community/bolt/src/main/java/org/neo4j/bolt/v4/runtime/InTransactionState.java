@@ -28,31 +28,21 @@ import org.neo4j.bolt.v1.runtime.bookmarking.Bookmark;
 import org.neo4j.bolt.v3.messaging.request.CommitMessage;
 import org.neo4j.bolt.v3.messaging.request.RollbackMessage;
 import org.neo4j.bolt.v3.messaging.request.RunMessage;
-import org.neo4j.bolt.v3.runtime.FailSafeBoltStateMachineState;
-import org.neo4j.bolt.v4.messaging.DiscardAllResultConsumer;
-import org.neo4j.bolt.v4.messaging.DiscardNMessage;
-import org.neo4j.bolt.v4.messaging.PullNMessage;
-import org.neo4j.bolt.v4.messaging.PullResultConsumer;
 import org.neo4j.bolt.v4.messaging.ResultConsumer;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.values.storable.Values;
 
 import static org.neo4j.bolt.v3.runtime.ReadyState.FIELDS_KEY;
 import static org.neo4j.bolt.v3.runtime.ReadyState.FIRST_RECORD_AVAILABLE_KEY;
-import static org.neo4j.util.Preconditions.checkState;
 import static org.neo4j.values.storable.Values.stringArray;
 
-public class InTransactionState extends FailSafeBoltStateMachineState
+public class InTransactionState extends AbstractStreamingStateState
 {
-    private static final String STATEMENT_ID_KEY = "stmt_id";
-
-    private BoltStateMachineState readyState;
+    public static final String STATEMENT_ID_KEY = "stmt_id";
 
     @Override
     protected BoltStateMachineState processUnsafe( RequestMessage message, StateMachineContext context ) throws Throwable
     {
-        checkState( readyState != null, "Ready state not set" );
-
         if ( message instanceof RunMessage )
         {
             return processRunMessage( (RunMessage) message, context );
@@ -65,17 +55,10 @@ public class InTransactionState extends FailSafeBoltStateMachineState
         {
             return processRollbackMessage( context );
         }
-        if ( message instanceof PullNMessage )
+        else
         {
-            PullNMessage pullNMessage = (PullNMessage) message;
-            return processStreamResultMessage( pullNMessage.statementId(), new PullResultConsumer( context, pullNMessage.n() ), context );
+            return super.processUnsafe( message, context );
         }
-        if ( message instanceof DiscardNMessage )
-        {
-            DiscardNMessage discardNMessage = (DiscardNMessage) message;
-            return processStreamResultMessage( discardNMessage.statementId(), new DiscardAllResultConsumer( context, discardNMessage.n() ), context );
-        }
-        return null;
     }
 
     @Override
@@ -84,9 +67,11 @@ public class InTransactionState extends FailSafeBoltStateMachineState
         return "IN_TRANSACTION";
     }
 
-    public void setReadyState( BoltStateMachineState readyState )
+    @Override
+    protected BoltStateMachineState processStreamResultMessage( int statementId, ResultConsumer resultConsumer, StateMachineContext context ) throws Throwable
     {
-        this.readyState = readyState;
+        context.connectionState().getStatementProcessor().streamResult( statementId, resultConsumer );
+        return this;
     }
 
     private BoltStateMachineState processRunMessage( RunMessage message, StateMachineContext context ) throws KernelException
@@ -116,11 +101,5 @@ public class InTransactionState extends FailSafeBoltStateMachineState
         StatementProcessor statementProcessor = context.connectionState().getStatementProcessor();
         statementProcessor.rollbackTransaction();
         return readyState;
-    }
-
-    private BoltStateMachineState processStreamResultMessage( int statementId, ResultConsumer resultConsumer, StateMachineContext context ) throws Throwable
-    {
-        context.connectionState().getStatementProcessor().streamResult( statementId, resultConsumer );
-        return this;
     }
 }

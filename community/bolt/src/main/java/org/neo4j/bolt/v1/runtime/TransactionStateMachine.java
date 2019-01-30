@@ -417,7 +417,7 @@ public class TransactionStateMachine implements StatementProcessor
                         else
                         {
                             // generate real statement ID only when nested statements in transaction are supported
-                            int statementId = spi.nestedStatementsInTransactionSupported() ? ctx.nextStatementId() : StatementMetadata.ABSENT_STATEMENT_ID;
+                            int statementId = spi.supportsNestedStatementsInTransaction() ? ctx.nextStatementId() : StatementMetadata.ABSENT_STATEMENT_ID;
 
                             BoltResultHandle resultHandle = spi.executeQuery( ctx.loginContext, statement, params, null, null /*ignored in explict tx run*/ );
                             BoltResult result = startExecution( resultHandle );

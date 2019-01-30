@@ -29,7 +29,7 @@ import org.neo4j.bolt.v4.runtime.FailedState;
 import org.neo4j.bolt.v3.runtime.InterruptedState;
 import org.neo4j.bolt.v3.runtime.ReadyState;
 import org.neo4j.bolt.v4.runtime.InTransactionState;
-import org.neo4j.bolt.v4.runtime.StreamingState;
+import org.neo4j.bolt.v4.runtime.AutoCommitState;
 
 public class BoltStateMachineV4 extends BoltStateMachineV1
 {
@@ -43,7 +43,7 @@ public class BoltStateMachineV4 extends BoltStateMachineV1
     {
         ConnectedState connected = new ConnectedState();
         ReadyState ready = new ReadyState();
-        StreamingState streaming = new StreamingState(); // v4
+        AutoCommitState autoCommitState = new AutoCommitState(); // v4
         InTransactionState inTransaction = new InTransactionState(); // v4
         FailedState failed = new FailedState(); // v4
         InterruptedState interrupted = new InterruptedState();
@@ -51,13 +51,13 @@ public class BoltStateMachineV4 extends BoltStateMachineV1
         connected.setReadyState( ready );
 
         ready.setTransactionReadyState( inTransaction );
-        ready.setStreamingState( streaming );
+        ready.setStreamingState( autoCommitState );
         ready.setFailedState( failed );
         ready.setInterruptedState( interrupted );
 
-        streaming.setReadyState( ready );
-        streaming.setFailedState( failed );
-        streaming.setInterruptedState( interrupted );
+        autoCommitState.setReadyState( ready );
+        autoCommitState.setFailedState( failed );
+        autoCommitState.setInterruptedState( interrupted );
 
         inTransaction.setReadyState( ready );
         inTransaction.setFailedState( failed );

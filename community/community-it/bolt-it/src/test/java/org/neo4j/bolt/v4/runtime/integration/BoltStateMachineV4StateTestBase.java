@@ -21,13 +21,19 @@ package org.neo4j.bolt.v4.runtime.integration;
 
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import java.util.Collections;
+
 import org.neo4j.bolt.BoltChannel;
+import org.neo4j.bolt.messaging.BoltIOException;
 import org.neo4j.bolt.testing.BoltTestUtil;
 import org.neo4j.bolt.v3.messaging.request.HelloMessage;
 import org.neo4j.bolt.v3.runtime.integration.SessionExtension;
 import org.neo4j.bolt.v4.BoltProtocolV4;
 import org.neo4j.bolt.v4.BoltStateMachineV4;
+import org.neo4j.bolt.v4.messaging.DiscardNMessage;
+import org.neo4j.bolt.v4.messaging.PullNMessage;
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.VirtualValues;
 
@@ -48,5 +54,15 @@ public class BoltStateMachineV4StateTestBase
     protected static HelloMessage newHelloMessage()
     {
         return new HelloMessage( MapUtil.map( "user_agent", USER_AGENT ) );
+    }
+
+    protected static PullNMessage newPullNMessage( long size ) throws BoltIOException
+    {
+        return new PullNMessage( ValueUtils.asMapValue( Collections.singletonMap( "n", size ) ) );
+    }
+
+    protected static DiscardNMessage newDiscardNMessage( long size ) throws BoltIOException
+    {
+        return new DiscardNMessage( ValueUtils.asMapValue( Collections.singletonMap( "n", size ) ) );
     }
 }

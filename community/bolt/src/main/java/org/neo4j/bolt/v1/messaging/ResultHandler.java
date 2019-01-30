@@ -38,13 +38,13 @@ public class ResultHandler extends MessageProcessingHandler
     @Override
     public boolean onPullRecords( final BoltResult result, final long size ) throws Exception
     {
-        return hasMore( result.handleRecords( new RecordWritingBoltResultVisitor(), size ) );
+        return markHasMore( result.handleRecords( new RecordWritingBoltResultVisitor(), size ) );
     }
 
     @Override
     public boolean onDiscardRecords( BoltResult result, long size ) throws Exception
     {
-        return hasMore( result.handleRecords( new RecordDiscardingBoltResultVisitor(), size ) );
+        return markHasMore( result.handleRecords( new RecordDiscardingBoltResultVisitor(), size ) );
     }
 
     private class RecordWritingBoltResultVisitor implements BoltResult.Visitor
@@ -76,7 +76,7 @@ public class ResultHandler extends MessageProcessingHandler
         }
     }
 
-    private boolean hasMore( boolean hasMore )
+    private boolean markHasMore( boolean hasMore )
     {
         if ( hasMore )
         {

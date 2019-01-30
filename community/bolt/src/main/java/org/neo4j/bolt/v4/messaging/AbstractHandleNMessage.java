@@ -32,11 +32,11 @@ import org.neo4j.values.virtual.MapValue;
 
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
+import static org.neo4j.bolt.v4.runtime.InTransactionState.STATEMENT_ID_KEY;
 
 public abstract class AbstractHandleNMessage implements RequestMessage
 {
     private static final String PULL_N_KEY = "n";
-    private static final String STATEMENT_ID_KEY = "stmt_id";
     private static final long MINIMAL_N_SIZE = 1;
 
     private final MapValue meta;

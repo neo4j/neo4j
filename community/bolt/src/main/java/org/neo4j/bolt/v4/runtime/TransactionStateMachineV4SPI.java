@@ -45,7 +45,7 @@ public class TransactionStateMachineV4SPI extends TransactionStateMachineV1SPI
     }
 
     @Override
-    public boolean nestedStatementsInTransactionSupported()
+    public boolean supportsNestedStatementsInTransaction()
     {
         return true;
     }

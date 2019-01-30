@@ -22,13 +22,13 @@ package org.neo4j.bolt.v4.messaging;
 import org.neo4j.bolt.runtime.BoltResult;
 import org.neo4j.bolt.runtime.StateMachineContext;
 
-public class DiscardAllResultConsumer implements ResultConsumer
+public class DiscardResultConsumer implements ResultConsumer
 {
     private final StateMachineContext context;
     private final long size;
     private boolean hasMore;
 
-    public DiscardAllResultConsumer( StateMachineContext context, long size )
+    public DiscardResultConsumer( StateMachineContext context, long size )
     {
         this.context = context;
         this.size = size;

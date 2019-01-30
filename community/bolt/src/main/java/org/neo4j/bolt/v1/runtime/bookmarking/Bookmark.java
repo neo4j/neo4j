@@ -37,12 +37,8 @@ public class Bookmark
     private static final String BOOKMARKS_KEY = "bookmarks";
     static final String BOOKMARK_TX_PREFIX = "neo4j:bookmark:v1:tx";
 
-    public static final Bookmark EMPTY_BOOKMARK = new Bookmark( -1 )
-    {
-        public void attachTo( BoltResponseHandler state )
-        {
-        }
-    };
+    private static final Long ABSENT_BOOKMARK_ID = -1L;
+    public static final Bookmark EMPTY_BOOKMARK = new Bookmark( ABSENT_BOOKMARK_ID );
 
     private final long txId;
 
@@ -108,7 +104,7 @@ public class Bookmark
         {
             ListValue bookmarks = (ListValue) bookmarksObject;
 
-            long maxTxId = -1;
+            long maxTxId = ABSENT_BOOKMARK_ID;
             for ( AnyValue bookmark : bookmarks )
             {
                 if ( bookmark != Values.NO_VALUE )
@@ -120,7 +116,7 @@ public class Bookmark
                     }
                 }
             }
-            return maxTxId == -1 ? null : new Bookmark( maxTxId );
+            return maxTxId == ABSENT_BOOKMARK_ID ? null : new Bookmark( maxTxId );
         }
         else
         {
@@ -163,6 +159,9 @@ public class Bookmark
 
     public void attachTo( BoltResponseHandler state )
     {
-        state.onMetadata( BOOKMARK_KEY, stringValue( toString() ) );
+        if ( !equals( EMPTY_BOOKMARK ) )
+        {
+            state.onMetadata( BOOKMARK_KEY, stringValue( toString() ) );
+        }
     }
 }
