@@ -218,8 +218,7 @@ Apache Software License, Version 2.0
 
 ------------------------------------------------------------------------------
 BSD License
-  Hamcrest Core
-  Hamcrest library
+  Hamcrest
 ------------------------------------------------------------------------------
 
 Copyright (c) <year>, <copyright holder>
@@ -354,7 +353,6 @@ This Agreement is governed by the laws of the State of New York and the intellec
 Eclipse Public License v2.0
   JUnit Jupiter API
   JUnit Jupiter Engine
-  JUnit Jupiter Migration Support
   JUnit Platform Commons
   JUnit Platform Engine API
   JUnit Platform Launcher
