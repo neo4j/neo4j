@@ -19,8 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.neo4j.cypher.internal.runtime.interpreted.MutableMaps
-import org.neo4j.cypher.internal.runtime.{ExecutionContext, ValuePopulation}
+import org.neo4j.cypher.internal.runtime.{ExecutionContext, MutableMaps, ValuePopulation}
 import org.neo4j.cypher.internal.v4_0.util.attribution.Id
 import org.neo4j.values.AnyValue
 

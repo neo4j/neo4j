@@ -37,7 +37,7 @@ object ExecutionContext {
     context
   }
 
-  def apply(m: MutableMap[String, AnyValue] = MutableMap.empty): MapExecutionContext = new MapExecutionContext(m, null)
+  def apply(m: MutableMap[String, AnyValue] = MutableMaps.empty): MapExecutionContext = new MapExecutionContext(m, null)
 }
 
 case class ResourceLinenumber(filename: String, linenumber: Long, last: Boolean = false)
