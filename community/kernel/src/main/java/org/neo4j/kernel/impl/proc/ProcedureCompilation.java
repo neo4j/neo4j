@@ -171,7 +171,7 @@ public final class ProcedureCompilation
      *
      *         public AnyValue apply(Context ctx, AnyValue[] input) {
      *              try {
-     *                  UDF.log = (Log) SETTER_0.get(ctx);
+     *                  USER_CLASS.log = (Log) SETTER_0.get(ctx);
      *                  return Values.doubleValue(UDF.addPi( ((NumberValue) input[0]).longValue() );
      *              } catch (Throwable T) {
      *                  throw new ProcedureException([appropriate error msg], T);
