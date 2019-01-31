@@ -1,3 +1,22 @@
+/*
+ * Copyright (c) 2002-2019 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 package org.neo4j.kernel.impl.storemigration.legacy;
 
 import java.io.File;
@@ -18,7 +37,6 @@ import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
-import org.neo4j.kernel.impl.store.record.SchemaRuleSerialization;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.storageengine.api.SchemaRule;
 
@@ -50,9 +68,15 @@ public class SchemaStore35 extends AbstractDynamicStore
     }
 
     @Override
-    public <FAILURE extends Exception> void accept( RecordStore.Processor<FAILURE> processor, DynamicRecord record ) throws FAILURE
+    public <FAILURE extends Exception> void accept( RecordStore.Processor<FAILURE> processor, DynamicRecord record )
     {
-        processor.processSchema( this, record );
+        throw new UnsupportedOperationException( "Not needed for store migration." );
+    }
+
+    @Override
+    public void checkAndLoadStorage( boolean createIfNotExists )
+    {
+        super.checkAndLoadStorage( createIfNotExists );
     }
 
     public List<DynamicRecord> allocateFrom( SchemaRule rule )
@@ -60,7 +84,7 @@ public class SchemaStore35 extends AbstractDynamicStore
         List<DynamicRecord> records = new ArrayList<>();
         DynamicRecord record = getRecord( rule.getId(), nextRecord(), CHECK );
         DynamicRecordAllocator recordAllocator = new ReusableRecordsCompositeAllocator( singleton( record ), this );
-        allocateRecordsFromBytes( records, SchemaRuleSerialization.serialize( rule ), recordAllocator );
+        allocateRecordsFromBytes( records, SchemaRuleSerialization35.serialize( rule ), recordAllocator );
         return records;
     }
 
@@ -68,6 +92,6 @@ public class SchemaStore35 extends AbstractDynamicStore
             throws MalformedSchemaRuleException
     {
         ByteBuffer scratchBuffer = concatData( records, buffer );
-        return SchemaRuleSerialization.deserialize( id, scratchBuffer );
+        return SchemaRuleSerialization35.deserialize( id, scratchBuffer );
     }
 }

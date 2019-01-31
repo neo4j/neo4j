@@ -20,7 +20,6 @@
 package org.neo4j.consistency.checking;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 
 import org.neo4j.internal.recordstorage.Command;
@@ -35,6 +34,7 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
+import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.kernel.impl.store.record.TokenRecord;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
@@ -154,24 +154,16 @@ public class TransactionWriter
         add( group, new RelationshipGroupRecord( group.getId(), group.getType() ) );
     }
 
-    public void createSchema( Collection<DynamicRecord> beforeRecord, Collection<DynamicRecord> afterRecord,
-            SchemaRule rule )
+    public void createSchema( SchemaRecord before, SchemaRecord after, SchemaRule rule )
     {
-        for ( DynamicRecord record : afterRecord )
-        {
-            record.setCreated();
-        }
-        updateSchema( beforeRecord, afterRecord, rule );
+        after.setCreated();
+        updateSchema( before, after, rule );
     }
 
-    public void updateSchema( Collection<DynamicRecord> beforeRecords, Collection<DynamicRecord> afterRecords,
-            SchemaRule rule )
+    public void updateSchema( SchemaRecord before, SchemaRecord after, SchemaRule rule )
     {
-        for ( DynamicRecord record : afterRecords )
-        {
-            record.setInUse( true );
-        }
-        addSchema( beforeRecords, afterRecords, rule );
+        after.setInUse( true );
+        addSchema( before, after, rule );
     }
 
     public void update( RelationshipRecord before, RelationshipRecord after )
@@ -204,6 +196,10 @@ public class TransactionWriter
         {
             before.setRelId( property.getRelId() );
         }
+        if ( property.isSchemaSet() )
+        {
+            before.setSchemaRuleId( property.getSchemaRuleId() );
+        }
         update( before, property );
     }
 
@@ -221,10 +217,9 @@ public class TransactionWriter
 
     // Internals
 
-    private void addSchema( Collection<DynamicRecord> beforeRecords, Collection<DynamicRecord> afterRecords,
-            SchemaRule rule )
+    private void addSchema( SchemaRecord before, SchemaRecord after, SchemaRule rule )
     {
-        otherCommands.add( new Command.SchemaRuleCommand( beforeRecords, afterRecords, rule ) );
+        otherCommands.add( new Command.SchemaRuleCommand( before, after, rule ) );
     }
 
     public void add( NodeRecord before, NodeRecord after )

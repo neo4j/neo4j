@@ -46,7 +46,6 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.TestLabels;
 import org.neo4j.test.rule.OtherThreadRule;
 import org.neo4j.test.rule.VerboseTimeout;
-import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
@@ -86,8 +85,6 @@ public class CheckPointerConstraintCreationDeadlockIT
 
     @Rule
     public final VerboseTimeout timeout = VerboseTimeout.builder().withTimeout( 30, SECONDS ).build();
-    @Rule
-    public final EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
     @Rule
     public final OtherThreadRule<Void> t2 = new OtherThreadRule<>( "T2" );
     @Rule

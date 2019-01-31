@@ -21,13 +21,10 @@ package org.neo4j.helpers;
 
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import java.util.function.Supplier;
 
 @Deprecated
 public abstract class FutureAdapter<V> implements Future<V>
@@ -90,85 +87,6 @@ public abstract class FutureAdapter<V> implements Future<V>
     public static <T> Present<T> present( T value )
     {
         return new Present<>( value );
-    }
-
-    @Deprecated
-    public static <T> Future<T> latchGuardedValue( final Supplier<T> supplier, final CountDownLatch guardedByLatch,
-                                                   final String jobDescription )
-    {
-        return new FutureAdapter<T>()
-        {
-            @Override
-            public boolean isDone()
-            {
-                return guardedByLatch.getCount() == 0;
-            }
-
-            @Override
-            public T get() throws InterruptedException
-            {
-                guardedByLatch.await();
-                return supplier.get();
-            }
-
-            @Override
-            public T get( long timeout, TimeUnit unit ) throws InterruptedException, TimeoutException
-            {
-                if ( !guardedByLatch.await( timeout, unit ) )
-                {
-                    throw new TimeoutException( jobDescription + " didn't complete within " +
-                            timeout + " " + unit );
-                }
-                return supplier.get();
-            }
-        };
-    }
-
-    @Deprecated
-    public static Future<Integer> processFuture( final Process process )
-    {
-        return new FutureAdapter<Integer>()
-        {
-            @Override
-            public boolean isDone()
-            {
-                return tryGetExitValue( process ) != null;
-            }
-
-            private Integer tryGetExitValue( final Process process )
-            {
-                try
-                {
-                    return process.exitValue();
-                }
-                catch ( IllegalThreadStateException e )
-                {   // Thrown if this process hasn't exited yet.
-                    return null;
-                }
-            }
-
-            @Override
-            public Integer get() throws InterruptedException
-            {
-                return process.waitFor();
-            }
-
-            @Override
-            public Integer get( long timeout, TimeUnit unit ) throws InterruptedException, TimeoutException
-            {
-                long end = System.currentTimeMillis() + unit.toMillis( timeout );
-                while ( System.currentTimeMillis() < end )
-                {
-                    Integer result = tryGetExitValue( process );
-                    if ( result != null )
-                    {
-                        return result;
-                    }
-                    Thread.sleep( 10 );
-                }
-                throw new TimeoutException( "Process '" + process + "' didn't exit within " + timeout + " " + unit );
-            }
-        };
     }
 
     @Deprecated

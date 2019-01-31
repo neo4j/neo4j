@@ -528,6 +528,21 @@ public abstract class ArrayUtil
         }
     }
 
+    @Deprecated
+    public static <T> T single( T[] array )
+    {
+        if ( array.length == 0 )
+        {
+            throw new IllegalArgumentException( "Expected an array with one element, but the array was empty: " + array.getClass().getSimpleName() );
+        }
+        if ( array.length > 1 )
+        {
+            throw new IllegalArgumentException( "Expected an array with one element, but the array had " +
+                    array.length + " elements: " + Arrays.toString( array ) );
+        }
+        return array[0];
+    }
+
     private ArrayUtil()
     {   // No instances allowed
     }

@@ -19,33 +19,67 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import java.io.File;
-import java.nio.ByteBuffer;
-import java.nio.file.OpenOption;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
+import org.eclipse.collections.api.map.primitive.IntObjectMap;
+import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
+import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
 
+import java.io.File;
+import java.nio.file.OpenOption;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Optional;
+
+import org.neo4j.common.EntityType;
+import org.neo4j.internal.kernel.api.NamedToken;
 import org.neo4j.internal.kernel.api.exceptions.schema.MalformedSchemaRuleException;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.api.index.IndexProviderDescriptor;
+import org.neo4j.kernel.api.properties.PropertyKeyValue;
+import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
+import org.neo4j.kernel.api.schema.constraints.ConstraintDescriptor;
+import org.neo4j.kernel.api.schema.constraints.ConstraintDescriptorFactory;
+import org.neo4j.kernel.api.schema.constraints.NodeKeyConstraintDescriptor;
+import org.neo4j.kernel.api.schema.constraints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.store.allocator.ReusableRecordsCompositeAllocator;
+import org.neo4j.kernel.impl.core.TokenHolder;
+import org.neo4j.kernel.impl.core.TokenHolders;
+import org.neo4j.kernel.impl.core.TokenNotFoundException;
+import org.neo4j.kernel.impl.index.schema.IndexDescriptorFactory;
+import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
+import org.neo4j.kernel.impl.store.format.Capability;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdType;
-import org.neo4j.kernel.impl.store.record.DynamicRecord;
-import org.neo4j.kernel.impl.store.record.SchemaRuleSerialization;
+import org.neo4j.kernel.impl.store.record.ConstraintRule;
+import org.neo4j.kernel.impl.store.record.PropertyBlock;
+import org.neo4j.kernel.impl.store.record.PropertyRecord;
+import org.neo4j.kernel.impl.store.record.RecordLoad;
+import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.storageengine.api.SchemaRule;
+import org.neo4j.storageengine.api.schema.SchemaDescriptor;
+import org.neo4j.values.storable.IntArray;
+import org.neo4j.values.storable.LongValue;
+import org.neo4j.values.storable.TextValue;
+import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.Values;
 
-import static java.util.Collections.singleton;
-import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
+import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
 
-public class SchemaStore extends AbstractDynamicStore
+public class SchemaStore extends CommonAbstractStore<SchemaRecord,IntStoreHeader>
 {
-    // store version, each store ends with this string (byte encoded)
+    // We technically don't need a store header, but we reserve record id 0 anyway, both to stay compatible with the old schema store,
+    // and to have it in reserve, just in case we might need it in the future.
+    private static final IntStoreHeaderFormat VALID_STORE_HEADER = new IntStoreHeaderFormat( 0 );
+
+    // When the store format does not support the flexible schema store feature, then we won't even pretend to have a header,
+    // since that can run afoul of the id generators, which will be initialised with a max id of zero.
+    private static final IntStoreHeaderFormat DISABLED_STORE_HEADER = new ConstantIntStoreHeaderFormat( 0 );
+
     public static final String TYPE_DESCRIPTOR = "SchemaStore";
-    public static final int BLOCK_SIZE = 56;
+    private final PropertyStore propertyStore;
 
     public SchemaStore(
             File file,
@@ -55,32 +89,430 @@ public class SchemaStore extends AbstractDynamicStore
             IdGeneratorFactory idGeneratorFactory,
             PageCache pageCache,
             LogProvider logProvider,
+            PropertyStore propertyStore,
             RecordFormats recordFormats,
             OpenOption... openOptions )
     {
-        super( file, idFile, conf, idType, idGeneratorFactory, pageCache, logProvider, TYPE_DESCRIPTOR, BLOCK_SIZE,
-                recordFormats.dynamic(), recordFormats.storeVersion(), openOptions );
+        super( file, idFile, conf, idType, idGeneratorFactory, pageCache, logProvider, TYPE_DESCRIPTOR, recordFormats.schemaRecord(),
+                getStoreHeaderFormat( recordFormats ), recordFormats.storeVersion(), openOptions );
+        this.propertyStore = propertyStore;
+    }
+
+    private static IntStoreHeaderFormat getStoreHeaderFormat( RecordFormats recordFormats )
+    {
+        return recordFormats.hasCapability( Capability.FLEXIBLE_SCHEMA_STORE ) ? VALID_STORE_HEADER : DISABLED_STORE_HEADER;
     }
 
     @Override
-    public <FAILURE extends Exception> void accept( Processor<FAILURE> processor, DynamicRecord record ) throws FAILURE
+    public <FAILURE extends Exception> void accept( Processor<FAILURE> processor, SchemaRecord record ) throws FAILURE
     {
         processor.processSchema( this, record );
     }
 
-    public List<DynamicRecord> allocateFrom( SchemaRule rule )
+    public PropertyStore propertyStore()
     {
-        List<DynamicRecord> records = new ArrayList<>();
-        DynamicRecord record = getRecord( rule.getId(), nextRecord(), CHECK );
-        DynamicRecordAllocator recordAllocator = new ReusableRecordsCompositeAllocator( singleton( record ), this );
-        allocateRecordsFromBytes( records, SchemaRuleSerialization.serialize( rule ), recordAllocator );
-        return records;
+        return propertyStore;
     }
 
-    public static SchemaRule readSchemaRule( long id, Collection<DynamicRecord> records, byte[] buffer )
+    private static final String PROP_SCHEMA_RULE_PREFIX = "__org.neo4j.SchemaRule.";
+    private static final String PROP_SCHEMA_RULE_TYPE = PROP_SCHEMA_RULE_PREFIX + "schemaRuleType"; // index / constraint
+    private static final String PROP_INDEX_RULE_TYPE = PROP_SCHEMA_RULE_PREFIX + "indexRuleType"; // Uniqueness
+    private static final String PROP_CONSTRAINT_RULE_TYPE = PROP_SCHEMA_RULE_PREFIX + "constraintRuleType"; // Existence / Uniqueness / ...
+    private static final String PROP_SCHEMA_RULE_NAME = PROP_SCHEMA_RULE_PREFIX + "name";
+    private static final String PROP_OWNED_INDEX = PROP_SCHEMA_RULE_PREFIX + "ownedIndex";
+    private static final String PROP_OWNING_CONSTRAINT = PROP_SCHEMA_RULE_PREFIX + "owningConstraint";
+    private static final String PROP_INDEX_PROVIDER_NAME = PROP_SCHEMA_RULE_PREFIX + "indexProviderName";
+    private static final String PROP_INDEX_PROVIDER_VERSION = PROP_SCHEMA_RULE_PREFIX + "indexProviderVersion";
+    private static final String PROP_SCHEMA_DESCRIPTOR_ENTITY_TYPE = PROP_SCHEMA_RULE_PREFIX + "schemaEntityType";
+    private static final String PROP_SCHEMA_DESCRIPTOR_ENTITY_IDS = PROP_SCHEMA_RULE_PREFIX + "schemaEntityIds";
+    private static final String PROP_SCHEMA_DESCRIPTOR_PROPERTY_IDS = PROP_SCHEMA_RULE_PREFIX + "schemaPropertyIds";
+    private static final String PROP_SCHEMA_DESCRIPTOR_PROPERTY_SCHEMA_TYPE = PROP_SCHEMA_RULE_PREFIX + "schemaPropertySchemaType";
+
+    private static final String PROP_INDEX_TYPE = PROP_SCHEMA_RULE_PREFIX + "indexType";
+    private static final String PROP_INDEX_CONFIG_PREFIX = PROP_SCHEMA_RULE_PREFIX + "IndexConfig.";
+
+    public static int getOwningConstraintPropertyKeyId( TokenHolders tokenHolders )
+    {
+        return tokenHolders.propertyKeyTokens().getOrCreateId( PROP_OWNING_CONSTRAINT );
+    }
+
+    /**
+     * Turn a {@link SchemaRule} into a map-of-string-to-value representation.
+     * @param rule the schema rule to convert.
+     * @return a map representation of the given schema rule.
+     * @see #unmapifySchemaRule(long, Map)
+     */
+    public static Map<String,Value> mapifySchemaRule( SchemaRule rule )
+    {
+        Map<String,Value> map = new HashMap<>();
+        putStringProperty( map, PROP_SCHEMA_RULE_NAME, rule.getName() );
+
+        // Schema
+        schemaDescriptorToMap( rule.schema(), map );
+
+        // Rule
+        if ( rule instanceof StoreIndexDescriptor )
+        {
+            schemaIndexToMap( (StoreIndexDescriptor) rule, map );
+        }
+        else if ( rule instanceof ConstraintRule )
+        {
+            schemaConstraintToMap( (ConstraintRule) rule, map );
+        }
+        return map;
+    }
+
+    public static IntObjectMap<Value> convertSchemaRuleToMap( SchemaRule rule, TokenHolders tokenHolders )
+    {
+        // The dance we do in here with amp to arrays to another map, allows us to resolve (and allocate) all of the tokens in a single batch operation.
+        Map<String,Value> stringlyMap = mapifySchemaRule( rule );
+
+        int size = stringlyMap.size();
+        String[] keys = new String[size];
+        int[] keyIds = new int[size];
+        Value[] values = new Value[size];
+
+        Iterator<Map.Entry<String,Value>> itr = stringlyMap.entrySet().iterator();
+        for ( int i = 0; i < size; i++ )
+        {
+            Map.Entry<String,Value> entry = itr.next();
+            keys[i] = entry.getKey();
+            values[i] = entry.getValue();
+        }
+
+        TokenHolder tokens = tokenHolders.propertyKeyTokens();
+        tokens.getOrCreateIds( keys, keyIds );
+
+        MutableIntObjectMap<Value> tokenisedMap = new IntObjectHashMap<>();
+        for ( int i = 0; i < size; i++ )
+        {
+            tokenisedMap.put( keyIds[i], values[i] );
+        }
+
+        return tokenisedMap;
+    }
+
+    // todo Add IndexType and IndexConfig to SchemaDescriptor
+    private static void schemaDescriptorToMap( SchemaDescriptor schemaDescriptor, Map<String,Value> map )
+    {
+        EntityType entityType = schemaDescriptor.entityType();
+        SchemaDescriptor.PropertySchemaType propertySchemaType = schemaDescriptor.propertySchemaType();
+        int[] entityTokenIds = schemaDescriptor.getEntityTokenIds();
+        int[] propertyIds = schemaDescriptor.getPropertyIds();
+        putStringProperty( map, PROP_SCHEMA_DESCRIPTOR_ENTITY_TYPE, entityType.name() );
+        putStringProperty( map, PROP_SCHEMA_DESCRIPTOR_PROPERTY_SCHEMA_TYPE, propertySchemaType.name() );
+        putIntArrayProperty( map, PROP_SCHEMA_DESCRIPTOR_ENTITY_IDS, entityTokenIds );
+        putIntArrayProperty( map, PROP_SCHEMA_DESCRIPTOR_PROPERTY_IDS, propertyIds );
+    }
+
+    private static void schemaIndexToMap( StoreIndexDescriptor rule, Map<String,Value> map )
+    {
+        // Rule
+        putStringProperty( map, PROP_SCHEMA_RULE_TYPE, "INDEX" );
+        if ( rule.isUnique() )
+        {
+            putStringProperty( map, PROP_INDEX_RULE_TYPE, "UNIQUE" );
+            if ( rule.isUnique() && rule.hasOwningConstraintReference() )
+            {
+                map.put( PROP_OWNING_CONSTRAINT, Values.longValue( rule.owningConstraintReference() ) );
+            }
+        }
+        else
+        {
+            putStringProperty( map, PROP_INDEX_RULE_TYPE, "NON_UNIQUE" );
+        }
+
+        // Provider
+        IndexProviderDescriptor indexProviderDescriptor = rule.providerDescriptor();
+        indexProviderToMap( indexProviderDescriptor, map );
+    }
+
+    private static void indexProviderToMap( IndexProviderDescriptor indexProviderDescriptor, Map<String,Value> map )
+    {
+        String name = indexProviderDescriptor.getKey();
+        String version = indexProviderDescriptor.getVersion();
+        putStringProperty( map, PROP_INDEX_PROVIDER_NAME, name );
+        putStringProperty( map, PROP_INDEX_PROVIDER_VERSION, version );
+    }
+
+    private static void schemaConstraintToMap( ConstraintRule rule, Map<String,Value> map )
+    {
+        // Rule
+        putStringProperty( map, PROP_SCHEMA_RULE_TYPE, "CONSTRAINT" );
+        org.neo4j.storageengine.api.schema.ConstraintDescriptor.Type type = rule.getConstraintDescriptor().type();
+        switch ( type )
+        {
+        case UNIQUE:
+            putStringProperty( map, PROP_CONSTRAINT_RULE_TYPE, "UNIQUE" );
+            putLongProperty( map, PROP_OWNED_INDEX, rule.ownedIndexReference() );
+            break;
+        case EXISTS:
+            putStringProperty( map, PROP_CONSTRAINT_RULE_TYPE, "EXISTS" );
+            break;
+        case UNIQUE_EXISTS:
+            putStringProperty( map, PROP_CONSTRAINT_RULE_TYPE, "UNIQUE_EXISTS" );
+            putLongProperty( map, PROP_OWNED_INDEX, rule.ownedIndexReference() );
+            break;
+        default:
+            throw new UnsupportedOperationException( "Unrecognized constraint type: " + type );
+        }
+    }
+
+    public static SchemaRule readSchemaRule( SchemaRecord record, PropertyStore propertyStore, TokenHolders tokenHolders ) throws MalformedSchemaRuleException
+    {
+        Map<String,Value> map = schemaRecordToMap( record, propertyStore, tokenHolders );
+        return unmapifySchemaRule( record.getId(), map );
+    }
+
+    /**
+     * Turn a map-of-string-to-value representation of a schema rule, into an actual {@link SchemaRule} object.
+     * @param ruleId the id of the rule.
+     * @param map the map representation of the schema rule.
+     * @return the schema rule object represented by the given map.
+     * @throws MalformedSchemaRuleException if the map cannot be cleanly converted to a schema rule.
+     * @see #mapifySchemaRule(SchemaRule)
+     */
+    public static SchemaRule unmapifySchemaRule( long ruleId, Map<String,Value> map ) throws MalformedSchemaRuleException
+    {
+        String schemaRuleType = getString( PROP_SCHEMA_RULE_TYPE, map );
+        switch ( schemaRuleType )
+        {
+        case "INDEX":
+            return buildIndexRule( ruleId, map );
+        case "CONSTRAINT":
+            return buildConstraintRule( ruleId, map );
+        default:
+            throw new MalformedSchemaRuleException( "Can not create a schema rule of type: " + schemaRuleType );
+        }
+
+        // All
+        // schemaRuleType - index / constraint
+        // name
+
+        // CONSTRAINTS
+        // ownedIndex
+        // constraintDescriptor (schema and type)
+
+        // INDEXES
+        // indexProvider - providerName, providerVersion
+        // indexRuleType (uniqueness)
+        // schema - labels/relTypes, properties
+        // owningConstraint
+        // indexType
+        // indexConfig
+
+        // IMPLEMENTATION
+
+        // SchemaRuleType: String
+        // name: String
+        // ownedIndex: long
+        // constraintDescriptor:
+        //      type: String
+        //      schema: Schema
+        // indexProviderName: String
+        // indexProviderVersion: String
+        // indexRuleType: String
+        // owningConstraint: long
+        // indexType: String
+
+        // IndexConfig:
+        //      "IndexConfig.<x>"
+        //      "IndexConfig.<y>"
+        //      "IndexConfig.<z>"
+        // Schema:
+        //      entityType: String
+        //      entities (labelIds or repTypeIds): long[]
+        //      propertyKeyIds: long[]
+        //      propertySchemaType: String
+    }
+
+    private static SchemaRule buildIndexRule( long schemaRuleId, Map<String,Value> props ) throws MalformedSchemaRuleException
+    {
+        SchemaDescriptor schema = buildSchemaDescriptor( props );
+        IndexProviderDescriptor indexProviderDescriptor = buildIndexProviderDescriptor( props );
+        String name = getString( PROP_SCHEMA_RULE_NAME, props );
+        String indexRuleType = getString( PROP_INDEX_RULE_TYPE, props );
+        StoreIndexDescriptor indexRule;
+        switch ( indexRuleType )
+        {
+        case "NON_UNIQUE":
+            indexRule = IndexDescriptorFactory.forSchema( schema, Optional.of( name ), indexProviderDescriptor ).withId( schemaRuleId );
+            break;
+        case "UNIQUE":
+            indexRule = IndexDescriptorFactory.uniqueForSchema( schema, Optional.of( name ), indexProviderDescriptor ).withId( schemaRuleId );
+            break;
+        default:
+            throw new MalformedSchemaRuleException( "Did not recognize index rule type: " + indexRuleType );
+        }
+        if ( props.containsKey( PROP_OWNING_CONSTRAINT ) )
+        {
+            indexRule = indexRule.withOwningConstraint( getLong( PROP_OWNING_CONSTRAINT, props ) );
+        }
+        return indexRule;
+    }
+
+    private static SchemaRule buildConstraintRule( long id, Map<String,Value> props ) throws MalformedSchemaRuleException
+    {
+        SchemaDescriptor schema = buildSchemaDescriptor( props );
+        String constraintRuleType = getString( PROP_CONSTRAINT_RULE_TYPE, props );
+        String name = getString( PROP_SCHEMA_RULE_NAME, props );
+        switch ( constraintRuleType )
+        {
+        case "UNIQUE":
+            UniquenessConstraintDescriptor uniquenessDescriptor = ConstraintDescriptorFactory.uniqueForSchema( schema );
+            return ConstraintRule.constraintRule( id, uniquenessDescriptor, getLong( PROP_OWNED_INDEX, props ), name );
+        case "EXISTS":
+            ConstraintDescriptor existsDescriptor = ConstraintDescriptorFactory.existsForSchema( schema );
+            return ConstraintRule.constraintRule( id, existsDescriptor, name );
+        case "UNIQUE_EXISTS":
+            NodeKeyConstraintDescriptor nodeKeyDescriptor = ConstraintDescriptorFactory.nodeKeyForSchema( schema );
+            return ConstraintRule.constraintRule( id, nodeKeyDescriptor, getLong( PROP_OWNED_INDEX, props ), name );
+        default:
+            throw new MalformedSchemaRuleException( "Did not recognize constraint rule type: " + constraintRuleType );
+        }
+    }
+
+    private static Map<String,Value> schemaRecordToMap( SchemaRecord record, PropertyStore propertyStore, TokenHolders tokenHolders )
             throws MalformedSchemaRuleException
     {
-        ByteBuffer scratchBuffer = concatData( records, buffer );
-        return SchemaRuleSerialization.deserialize( id, scratchBuffer );
+        Map<String,Value> props = new HashMap<>();
+        PropertyRecord propRecord = propertyStore.newRecord();
+        long nextProp = record.getNextProp();
+        while ( nextProp != NO_NEXT_PROPERTY.longValue() )
+        {
+            try
+            {
+                propertyStore.getRecord( nextProp, propRecord, RecordLoad.NORMAL );
+            }
+            catch ( InvalidRecordException e )
+            {
+                throw new MalformedSchemaRuleException(
+                        "Cannot read schema rule because it is referencing a property record (id " + nextProp + ") that is invalid: " + propRecord, e );
+            }
+            for ( PropertyBlock propertyBlock : propRecord )
+            {
+                PropertyKeyValue propertyKeyValue = propertyBlock.newPropertyKeyValue( propertyStore );
+                insertPropertyIntoMap( propertyKeyValue, props, tokenHolders );
+            }
+            nextProp = propRecord.getNextProp();
+        }
+        return props;
+    }
+
+    private static void insertPropertyIntoMap( PropertyKeyValue propertyKeyValue, Map<String,Value> props, TokenHolders tokenHolders )
+            throws MalformedSchemaRuleException
+    {
+        try
+        {
+            NamedToken propertyKeyTokenName = tokenHolders.propertyKeyTokens().getTokenById( propertyKeyValue.propertyKeyId() );
+            props.put( propertyKeyTokenName.name(), propertyKeyValue.value() );
+        }
+        catch ( TokenNotFoundException | InvalidRecordException e )
+        {
+            int id = propertyKeyValue.propertyKeyId();
+            throw new MalformedSchemaRuleException(
+                    "Cannot read schema rule because it is referring to a property key token (id " + id + ") that does not exist.", e );
+        }
+    }
+
+    // todo Add IndexType and IndexConfig to SchemaDescriptor
+    private static SchemaDescriptor buildSchemaDescriptor( Map<String,Value> props ) throws MalformedSchemaRuleException
+    {
+        String propertySchemaType = getString( PROP_SCHEMA_DESCRIPTOR_PROPERTY_SCHEMA_TYPE, props );
+        EntityType entityType = getEntityType( getString( PROP_SCHEMA_DESCRIPTOR_ENTITY_TYPE, props ) );
+        int[] entityIds = getIntArray( PROP_SCHEMA_DESCRIPTOR_ENTITY_IDS, props );
+        int[] propertyIds = getIntArray( PROP_SCHEMA_DESCRIPTOR_PROPERTY_IDS, props );
+
+        switch ( propertySchemaType )
+        {
+        case "COMPLETE_ALL_TOKENS": // "normal" index
+            switch ( entityType )
+            {
+            case NODE:
+                return SchemaDescriptorFactory.forLabel( singleEntityId( entityIds ), propertyIds );
+            case RELATIONSHIP:
+                return SchemaDescriptorFactory.forRelType( singleEntityId( entityIds ), propertyIds );
+            default:
+                throw new MalformedSchemaRuleException( "Unrecognised entity type: " + entityType );
+            }
+        case "PARTIAL_ANY_TOKEN": // multitoken index
+            return SchemaDescriptorFactory.multiToken( entityIds, entityType, propertyIds );
+        default:
+            throw new MalformedSchemaRuleException( "Did not recognize property schema type: " + propertySchemaType );
+        }
+    }
+
+    private static IndexProviderDescriptor buildIndexProviderDescriptor( Map<String,Value> props ) throws MalformedSchemaRuleException
+    {
+        String key = getString( PROP_INDEX_PROVIDER_NAME, props );
+        String version = getString( PROP_INDEX_PROVIDER_VERSION, props );
+        return new IndexProviderDescriptor( key, version );
+    }
+
+    private static int singleEntityId( int[] entityIds ) throws MalformedSchemaRuleException
+    {
+        if ( entityIds.length != 1 )
+        {
+            throw new MalformedSchemaRuleException( "Expected to only have a single entity id, but was: " + Arrays.toString( entityIds ) );
+        }
+        return entityIds[0];
+    }
+
+    private static EntityType getEntityType( String entityType ) throws MalformedSchemaRuleException
+    {
+        switch ( entityType )
+        {
+        case "NODE":
+            return EntityType.NODE;
+        case "RELATIONSHIP":
+            return EntityType.RELATIONSHIP;
+        default:
+            throw new MalformedSchemaRuleException( "Did not recognize entity type: " + entityType );
+        }
+    }
+
+    private static int[] getIntArray( String property, Map<String,Value> props ) throws MalformedSchemaRuleException
+    {
+        Value value = props.get( property );
+        if ( value instanceof IntArray )
+        {
+            return ((IntArray) value).asObject();
+        }
+        throw new MalformedSchemaRuleException( "Expected property " + property + " to be a IntArray but was " + value );
+    }
+
+    private static long getLong( String property, Map<String,Value> props ) throws MalformedSchemaRuleException
+    {
+        Value value = props.get( property );
+        if ( value instanceof LongValue )
+        {
+            return ((LongValue) value).value();
+        }
+        throw new MalformedSchemaRuleException( "Expected property " + property + " to be a LongValue but was " + value );
+    }
+
+    private static String getString( String property, Map<String,Value> map ) throws MalformedSchemaRuleException
+    {
+        Value value = map.get( property );
+        if ( value instanceof TextValue )
+        {
+            return ((TextValue) value).stringValue();
+        }
+        throw new MalformedSchemaRuleException( "Expected property " + property + " to be a TextValue but was " + value );
+    }
+
+    private static void putLongProperty( Map<String,Value> map, String property, long value )
+    {
+        map.put( property, Values.longValue( value ) );
+    }
+
+    private static void putIntArrayProperty( Map<String,Value> map, String property, int[] value )
+    {
+        map.put( property, Values.intArray( value ) );
+    }
+
+    private static void putStringProperty( Map<String,Value> map, String property, String value )
+    {
+        map.put( property, Values.stringValue( value ) );
     }
 }

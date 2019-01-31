@@ -21,6 +21,7 @@ package org.neo4j.consistency.checking.full;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.mutable.MutableInt;
+import org.eclipse.collections.api.map.primitive.IntObjectMap;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Rule;
@@ -82,7 +83,6 @@ import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.core.TokenHolders;
 import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
-import org.neo4j.kernel.impl.store.AbstractDynamicStore;
 import org.neo4j.kernel.impl.store.DynamicRecordAllocator;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.PropertyStore;
@@ -91,7 +91,6 @@ import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.store.allocator.ReusableRecordsAllocator;
-import org.neo4j.kernel.impl.store.allocator.ReusableRecordsCompositeAllocator;
 import org.neo4j.kernel.impl.store.record.ConstraintRule;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
@@ -102,7 +101,7 @@ import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
-import org.neo4j.kernel.impl.store.record.SchemaRuleSerialization;
+import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.kernel.impl.util.Bits;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.FormattedLog;
@@ -116,7 +115,6 @@ import org.neo4j.values.storable.Values;
 
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
-import static java.util.Collections.singleton;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.consistency.ConsistencyCheckService.defaultConsistencyCheckThreadsNumber;
@@ -1008,14 +1006,12 @@ public class FullCheckIntegrationTest
             protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
                                             GraphStoreFixture.IdGenerator next )
             {
-                DynamicRecord schema = new DynamicRecord( next.schema() );
-                DynamicRecord schemaBefore = schema.clone();
+                SchemaRecord before = new SchemaRecord( next.schema() );
+                SchemaRecord after = before.clone();
+                after.initialize( true, next.property() ); // Point to a record that isn't in use.
 
-                schema.setNextBlock( next.schema() ); // Point to a record that isn't in use.
-                StoreIndexDescriptor rule = indexRule( schema.getId(), label1, key1, DESCRIPTOR );
-                schema.setData( SchemaRuleSerialization.serialize( rule ) );
-
-                tx.createSchema( asList( schemaBefore ), asList( schema ), rule );
+                StoreIndexDescriptor rule = indexRule( after.getId(), label1, key1, DESCRIPTOR );
+                tx.createSchema( before, after, rule );
             }
         } );
 
@@ -1023,8 +1019,7 @@ public class FullCheckIntegrationTest
         ConsistencySummaryStatistics stats = check();
 
         // then
-        on( stats ).verify( RecordType.SCHEMA, 3 )
-                   .andThatsAllFolks();
+        on( stats ).verify( RecordType.SCHEMA, 1 ).andThatsAllFolks();
     }
 
     @Test
@@ -1042,25 +1037,22 @@ public class FullCheckIntegrationTest
                 int labelId = next.label();
                 int propertyKeyId = next.propertyKey();
 
-                DynamicRecord record1 = new DynamicRecord( ruleId1 );
-                DynamicRecord record2 = new DynamicRecord( ruleId2 );
-                DynamicRecord record1Before = record1.clone();
-                DynamicRecord record2Before = record2.clone();
+                SchemaRecord before1 = new SchemaRecord( ruleId1 );
+                SchemaRecord before2 = new SchemaRecord( ruleId2 );
+                SchemaRecord after1 = before1.clone().initialize( true, 0 );
+                SchemaRecord after2 = before2.clone().initialize( true, 0 );
 
                 StoreIndexDescriptor rule1 = constraintIndexRule( ruleId1, labelId, propertyKeyId, DESCRIPTOR, ruleId1 );
                 StoreIndexDescriptor rule2 = constraintIndexRule( ruleId2, labelId, propertyKeyId, DESCRIPTOR, ruleId1 );
 
-                Collection<DynamicRecord> records1 = serializeRule( rule1, record1 );
-                Collection<DynamicRecord> records2 = serializeRule( rule2, record2 );
-
-                assertEquals( asList( record1 ), records1 );
-                assertEquals( asList( record2 ), records2 );
+                serializeRule( rule1, after1, tx, next );
+                serializeRule( rule2, after2, tx, next );
 
                 tx.nodeLabel( labelId, "label" );
                 tx.propertyKey( propertyKeyId, "property" );
 
-                tx.createSchema( asList(record1Before), records1, rule1 );
-                tx.createSchema( asList(record2Before), records2, rule2 );
+                tx.createSchema( before1, after1, rule1 );
+                tx.createSchema( before2, after2, rule2 );
             }
         } );
 
@@ -1068,8 +1060,7 @@ public class FullCheckIntegrationTest
         ConsistencySummaryStatistics stats = check();
 
         // then
-        on( stats ).verify( RecordType.SCHEMA, 4 )
-                   .andThatsAllFolks();
+        on( stats ).verify( RecordType.SCHEMA, 4 ).andThatsAllFolks();
     }
 
     @Test
@@ -1087,25 +1078,22 @@ public class FullCheckIntegrationTest
                 int labelId = next.label();
                 int propertyKeyId = next.propertyKey();
 
-                DynamicRecord record1 = new DynamicRecord( ruleId1 );
-                DynamicRecord record2 = new DynamicRecord( ruleId2 );
-                DynamicRecord record1Before = record1.clone();
-                DynamicRecord record2Before = record2.clone();
+                SchemaRecord before1 = new SchemaRecord( ruleId1 );
+                SchemaRecord before2 = new SchemaRecord( ruleId2 );
+                SchemaRecord after1 = before1.clone().initialize( true, 0 );
+                SchemaRecord after2 = before2.clone().initialize( true, 0 );
 
                 StoreIndexDescriptor rule1 = constraintIndexRule( ruleId1, labelId, propertyKeyId, DESCRIPTOR, ruleId2 );
                 ConstraintRule rule2 = uniquenessConstraintRule( ruleId2, labelId, propertyKeyId, ruleId2 );
 
-                Collection<DynamicRecord> records1 = serializeRule( rule1, record1 );
-                Collection<DynamicRecord> records2 = serializeRule( rule2, record2 );
-
-                assertEquals( asList( record1 ), records1 );
-                assertEquals( asList( record2 ), records2 );
+                serializeRule( rule1, after1, tx, next );
+                serializeRule( rule2, after2, tx, next );
 
                 tx.nodeLabel( labelId, "label" );
                 tx.propertyKey( propertyKeyId, "property" );
 
-                tx.createSchema( asList(record1Before), records1, rule1 );
-                tx.createSchema( asList(record2Before), records2, rule2 );
+                tx.createSchema( before1, after1, rule1 );
+                tx.createSchema( before2, after2, rule2 );
             }
         } );
 
@@ -1113,8 +1101,7 @@ public class FullCheckIntegrationTest
         ConsistencySummaryStatistics stats = check();
 
         // then
-        on( stats ).verify( RecordType.SCHEMA, 2 )
-                   .andThatsAllFolks();
+        on( stats ).verify( RecordType.SCHEMA, 2 ).andThatsAllFolks();
     }
 
     @Test
@@ -2309,25 +2296,24 @@ public class FullCheckIntegrationTest
         fixture.apply( new GraphStoreFixture.Transaction()
         {
             @Override
-            protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
-                    GraphStoreFixture.IdGenerator next )
+            protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx, GraphStoreFixture.IdGenerator next )
             {
                 int id = (int) next.schema();
-
-                DynamicRecord recordBefore = new DynamicRecord( id );
-                DynamicRecord recordAfter = recordBefore.clone();
-
                 StoreIndexDescriptor index = forSchema( forLabel( labelId, propertyKeyIds ), DESCRIPTOR ).withId( id );
-                Collection<DynamicRecord> records = serializeRule( index, recordAfter );
 
-                tx.createSchema( singleton( recordBefore ), records, index );
+                SchemaRecord before = new SchemaRecord( id );
+                SchemaRecord after = before.clone();
+
+                serializeRule( index, after, tx, next );
+
+                tx.createSchema( before, after, index );
             }
         } );
     }
 
     private void createUniquenessConstraintRule( final int labelId, final int... propertyKeyIds )
     {
-        SchemaStore schemaStore = (SchemaStore) fixture.directStoreAccess().nativeStores().getSchemaStore();
+        SchemaStore schemaStore = fixture.directStoreAccess().nativeStores().getSchemaStore();
 
         long ruleId1 = schemaStore.nextId();
         long ruleId2 = schemaStore.nextId();
@@ -2343,7 +2329,7 @@ public class FullCheckIntegrationTest
 
     private void createNodeKeyConstraintRule( final int labelId, final int... propertyKeyIds )
     {
-        SchemaStore schemaStore = (SchemaStore) fixture.directStoreAccess().nativeStores().getSchemaStore();
+        SchemaStore schemaStore = fixture.directStoreAccess().nativeStores().getSchemaStore();
 
         long ruleId1 = schemaStore.nextId();
         long ruleId2 = schemaStore.nextId();
@@ -2359,25 +2345,22 @@ public class FullCheckIntegrationTest
 
     private void createNodePropertyExistenceConstraint( int labelId, int propertyKeyId )
     {
-        SchemaStore schemaStore = (SchemaStore) fixture.directStoreAccess().nativeStores().getSchemaStore();
+        SchemaStore schemaStore = fixture.directStoreAccess().nativeStores().getSchemaStore();
         ConstraintRule rule = nodePropertyExistenceConstraintRule( schemaStore.nextId(), labelId, propertyKeyId );
         writeToSchemaStore( schemaStore, rule );
     }
 
     private void createRelationshipPropertyExistenceConstraint( int relTypeId, int propertyKeyId )
     {
-        SchemaStore schemaStore = (SchemaStore) fixture.directStoreAccess().nativeStores().getSchemaStore();
+        SchemaStore schemaStore = fixture.directStoreAccess().nativeStores().getSchemaStore();
         ConstraintRule rule = relPropertyExistenceConstraintRule( schemaStore.nextId(), relTypeId, propertyKeyId );
         writeToSchemaStore( schemaStore, rule );
     }
 
     private void writeToSchemaStore( SchemaStore schemaStore, SchemaRule rule )
     {
-        Collection<DynamicRecord> records = schemaStore.allocateFrom( rule );
-        for ( DynamicRecord record : records )
-        {
-            schemaStore.updateRecord( record );
-        }
+        SchemaRuleAccess schemaRuleAccess = SchemaRuleAccess.getSchemaRuleAccess( schemaStore, fixture.writableTokenHolders() );
+        schemaRuleAccess.writeSchemaRule( rule );
     }
 
     private Iterator<StoreIndexDescriptor> getIndexDescriptors()
@@ -2450,30 +2433,54 @@ public class FullCheckIntegrationTest
         }
     }
 
-    private static Collection<DynamicRecord> serializeRule( SchemaRule rule, DynamicRecord... records )
+    private void serializeRule( SchemaRule rule, SchemaRecord schemaRecord, TransactionDataBuilder tx, IdGenerator next )
     {
-        byte[] data = SchemaRuleSerialization.serialize( rule );
-        DynamicRecordAllocator dynamicRecordAllocator =
-                new ReusableRecordsCompositeAllocator( asList( records ), schemaAllocator );
-        Collection<DynamicRecord> result = new ArrayList<>();
-        AbstractDynamicStore.allocateRecordsFromBytes( result, data, dynamicRecordAllocator );
-        return result;
+        IntObjectMap<Value> protoProperties = SchemaStore.convertSchemaRuleToMap( rule, tx.tokenHolders() );
+        Collection<PropertyBlock> blocks = new ArrayList<>();
+        DynamicRecordAllocator stringAllocator = null;
+        DynamicRecordAllocator arrayAllocator = null;
+        protoProperties.forEachKeyValue( ( keyId, value ) ->
+        {
+            PropertyBlock block = new PropertyBlock();
+            PropertyStore.encodeValue( block, keyId, value, stringAllocator, arrayAllocator, true );
+            blocks.add( block );
+        } );
+
+        long nextPropId = Record.NO_NEXT_PROPERTY.longValue();
+        PropertyRecord currRecord = newInitialisedPropertyRecord( next, rule );
+
+        for ( PropertyBlock block : blocks )
+        {
+            if ( !currRecord.hasSpaceFor( block ) )
+            {
+                PropertyRecord nextRecord = newInitialisedPropertyRecord( next, rule );
+                linkAndWritePropertyRecord( currRecord, nextRecord.getId(), nextPropId, tx );
+                nextPropId = currRecord.getId();
+                currRecord = nextRecord;
+            }
+            currRecord.addPropertyBlock( block );
+        }
+
+        linkAndWritePropertyRecord( currRecord, Record.NO_PREVIOUS_PROPERTY.longValue(), nextPropId, tx );
+        nextPropId = currRecord.getId();
+
+        schemaRecord.initialize( true, nextPropId );
+        schemaRecord.setId( rule.getId() );
+        tx.createSchema( schemaRecord.clone().initialize( false, Record.NO_PREVIOUS_PROPERTY.longValue() ), schemaRecord, rule );
     }
 
-    private static DynamicRecordAllocator schemaAllocator = new DynamicRecordAllocator()
+    private PropertyRecord newInitialisedPropertyRecord( IdGenerator next, SchemaRule rule )
     {
-        private int next = 10000; // we start high to not conflict with real ids
+        PropertyRecord record = new PropertyRecord( next.property() );
+        record.setSchemaRuleId( rule.getId() );
+        return record;
+    }
 
-        @Override
-        public int getRecordDataSize()
-        {
-            return SchemaStore.BLOCK_SIZE;
-        }
-
-        @Override
-        public DynamicRecord nextRecord()
-        {
-            return new DynamicRecord( next++ );
-        }
-    };
+    private void linkAndWritePropertyRecord( PropertyRecord record, long prevPropId, long nextProp, TransactionDataBuilder tx )
+    {
+        record.setInUse( true );
+        record.setPrevProp( prevPropId );
+        record.setNextProp( nextProp );
+        tx.update( record.clone().initialize( false, Record.NO_PREVIOUS_PROPERTY.longValue(), Record.NO_PREVIOUS_PROPERTY.longValue() ), record );
+    }
 }

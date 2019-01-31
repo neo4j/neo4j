@@ -20,17 +20,15 @@
 package org.neo4j.kernel.impl.api.index;
 
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Future;
 
-import org.neo4j.function.Suppliers;
 import org.neo4j.internal.kernel.api.PopulationProgress;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.impl.index.schema.CapableIndexDescriptor;
+import org.neo4j.scheduler.JobHandle;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 
 import static java.lang.Thread.currentThread;
-import static org.neo4j.helpers.FutureAdapter.latchGuardedValue;
 
 /**
  * A background job for initially populating one or more index over existing data in the database.
@@ -47,6 +45,7 @@ public class IndexPopulationJob implements Runnable
 
     private volatile StoreScan<IndexPopulationFailedKernelException> storeScan;
     private volatile boolean cancelled;
+    private volatile JobHandle jobHandle;
 
     public IndexPopulationJob( MultipleIndexPopulator multiPopulator, IndexingService.Monitor monitor, boolean verifyBeforeFlipping )
     {
@@ -139,16 +138,15 @@ public class IndexPopulationJob implements Runnable
         return storeScan.getProgress();
     }
 
-    public Future<Void> cancel()
+    public void cancel()
     {
         // Stop the population
         if ( storeScan != null )
         {
             cancelled = true;
             storeScan.stop();
+            jobHandle.cancel( false );
         }
-
-        return latchGuardedValue( Suppliers.singleton( null ), doneSignal, "Index population job cancel" );
     }
 
     void cancelPopulation( MultipleIndexPopulator.IndexPopulation population )
@@ -173,8 +171,16 @@ public class IndexPopulationJob implements Runnable
         return getClass().getSimpleName() + "[populator:" + multiPopulator + "]";
     }
 
+    /**
+     * Wait for the population job to either complete successfully, or for it to shut down if it was cancelled.
+     */
     public void awaitCompletion() throws InterruptedException
     {
         doneSignal.await();
+    }
+
+    public void setHandle( JobHandle handle )
+    {
+        this.jobHandle = handle;
     }
 }

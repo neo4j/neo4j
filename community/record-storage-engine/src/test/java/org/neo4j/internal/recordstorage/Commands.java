@@ -44,10 +44,11 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
+import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
-import org.neo4j.kernel.impl.store.record.SchemaRuleSerialization;
+import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.kernel.impl.store.record.TokenRecord;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
@@ -148,11 +149,9 @@ public class Commands
             long id, LabelSchemaDescriptor descriptor )
     {
         SchemaRule rule = IndexDescriptorFactory.forSchema( descriptor, provider ).withId( id );
-        DynamicRecord record = new DynamicRecord( id );
-        record.setInUse( true );
-        record.setCreated();
-        record.setData( SchemaRuleSerialization.serialize( rule ) );
-        return new SchemaRuleCommand( Collections.emptyList(), singletonList( record ), rule );
+        SchemaRecord before = new SchemaRecord( id ).initialize( false, Record.NO_NEXT_PROPERTY.longValue() );
+        SchemaRecord after = new SchemaRecord( id ).initialize( true, 33 );
+        return new SchemaRuleCommand( before, after, rule );
     }
 
     public static PropertyCommand createProperty( long id, PropertyType type, int key,

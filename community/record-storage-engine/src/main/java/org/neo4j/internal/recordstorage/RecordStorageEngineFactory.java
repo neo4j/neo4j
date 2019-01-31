@@ -43,6 +43,7 @@ import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.StoreType;
+import org.neo4j.kernel.impl.store.TokenStore;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
@@ -201,6 +202,13 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
         return MetaDataStore.getStoreId( pageCache, neoStoreFile );
     }
 
+    /**
+     * Set the initial tokens of all the token holders, by reading the relevant token stores from the given {@link NeoStores}.
+     * Note that this will ignore any tokens that cannot be read, for instance due to a store inconsistency, or if the store needs to be recovered.
+     * If you would rather have an exception thrown, then you need to {@link TokenHolder#setInitialTokens(List) set the initial tokens} on each of the token
+     * holders, using tokens read via the {@link TokenStore#getTokens()} method, instead of the {@link TokenStore#getAllReadableTokens()} method.
+     * @param neoStores The {@link NeoStores} to read tokens from.
+     */
     public static void setInitialTokens( TokenHolders tokenHolders, NeoStores neoStores )
     {
         tokenHolders.propertyKeyTokens().setInitialTokens( neoStores.getPropertyKeyTokenStore().getAllReadableTokens() );
@@ -227,7 +235,12 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
         return tokenHolders;
     }
 
-    private static TokenHolder createReadOnlyTokenHolder( String tokenType )
+    /**
+     * Create an empty read-only token holder if the given type.
+     * @param tokenType one of {@link TokenHolder#TYPE_LABEL}, {@link TokenHolder#TYPE_RELATIONSHIP_TYPE}, or {@link TokenHolder#TYPE_PROPERTY_KEY}.
+     * @return An empty read-only token holder.
+     */
+    public static TokenHolder createReadOnlyTokenHolder( String tokenType )
     {
         return new DelegatingTokenHolder( new ReadOnlyTokenCreator(), tokenType );
     }

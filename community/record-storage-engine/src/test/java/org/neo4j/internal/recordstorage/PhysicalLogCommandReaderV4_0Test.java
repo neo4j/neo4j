@@ -19,10 +19,14 @@
  */
 package org.neo4j.internal.recordstorage;
 
+import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.util.concurrent.ThreadLocalRandom;
 
+import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
+import org.neo4j.kernel.impl.index.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.store.PropertyType;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.NeoStoreRecord;
@@ -30,9 +34,13 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
+import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
 import org.neo4j.storageengine.api.CommandReader;
+import org.neo4j.storageengine.api.SchemaRule;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -360,6 +368,69 @@ class PhysicalLogCommandReaderV4_0Test
         assertTrue( reader.read( channel ) instanceof Command.RelationshipCommand );
         assertTrue( reader.read( channel ) instanceof Command.PropertyKeyTokenCommand );
         assertTrue( reader.read( channel ) instanceof Command.PropertyCommand );
+    }
+
+    @RepeatedTest( 100 )
+    void shouldReadSchemaCommand() throws Exception
+    {
+        // given
+        InMemoryClosableChannel channel = new InMemoryClosableChannel();
+        SchemaRecord before = createRandomSchemaRecord();
+        SchemaRecord after = createRandomSchemaRecord();
+        if ( !before.inUse() && after.inUse() )
+        {
+            after.setCreated();
+        }
+
+        SchemaRule rule = IndexDescriptorFactory.forSchema( SchemaDescriptorFactory.forLabel( 1, 2, 3 ) ).withId( after.getId() );
+        new Command.SchemaRuleCommand( before, after, rule ).serialize( channel );
+
+        CommandReader reader = createReader();
+        Command.SchemaRuleCommand command = (Command.SchemaRuleCommand) reader.read( channel );
+
+        String commandString = command.toString();
+        assertSchemaRecordEquals( commandString + " (before) ", before, command.getBefore() );
+        assertSchemaRecordEquals( commandString + " ( after) ", after, command.getAfter() );
+    }
+
+    private void assertSchemaRecordEquals( String commandString, SchemaRecord expectedRecord, SchemaRecord actualRecord )
+    {
+        assertThat( commandString + ".getId", actualRecord.getId(), is( expectedRecord.getId() ) );
+        assertThat( commandString + ".inUse", actualRecord.inUse(), is( expectedRecord.inUse() ) );
+        assertThat( commandString + ".isCreated", actualRecord.isCreated(), is( expectedRecord.isCreated() ) );
+        assertThat( commandString + ".isUseFixedReferences", actualRecord.isUseFixedReferences(), is( expectedRecord.isUseFixedReferences() ) );
+        assertThat( commandString + ".hasSecondaryUnitId", actualRecord.hasSecondaryUnitId(), is( expectedRecord.hasSecondaryUnitId() ) );
+        assertThat( commandString + ".getSecondaryUnitId", actualRecord.getSecondaryUnitId(), is( expectedRecord.getSecondaryUnitId() ) );
+        assertThat( commandString + ".isConstraint", actualRecord.isConstraint(), is( expectedRecord.isConstraint() ) );
+        assertThat( commandString + ".getNextProp", actualRecord.getNextProp(), is( expectedRecord.getNextProp() ) );
+    }
+
+    private SchemaRecord createRandomSchemaRecord()
+    {
+        ThreadLocalRandom rng = ThreadLocalRandom.current();
+        SchemaRecord record = new SchemaRecord( 42 );
+        boolean inUse = rng.nextBoolean();
+        if ( inUse )
+        {
+            record.initialize( inUse, rng.nextLong() );
+            if ( rng.nextBoolean() )
+            {
+                record.setCreated();
+            }
+            record.setConstraint( rng.nextBoolean() );
+            record.setUseFixedReferences( rng.nextBoolean() );
+            boolean requiresSecondaryUnit = rng.nextBoolean();
+            if ( requiresSecondaryUnit )
+            {
+                record.setRequiresSecondaryUnit( rng.nextBoolean() );
+                record.setSecondaryUnitId( rng.nextLong() );
+            }
+        }
+        else
+        {
+            record.clear();
+        }
+        return record;
     }
 
     private BaseCommandReader createReader()

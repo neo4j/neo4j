@@ -45,7 +45,7 @@ import org.neo4j.logging.NullLogProvider;
 public class StoreAccess
 {
     // Top level stores
-    private RecordStore<DynamicRecord> schemaStore;
+    private SchemaStore schemaStore;
     private RecordStore<NodeRecord> nodeStore;
     private RecordStore<RelationshipRecord> relStore;
     private RecordStore<RelationshipTypeTokenRecord> relationshipTypeTokenStore;
@@ -86,7 +86,7 @@ public class StoreAccess
      */
     public StoreAccess initialize()
     {
-        this.schemaStore = wrapStore( neoStores.getSchemaStore() );
+        this.schemaStore = neoStores.getSchemaStore();
         this.nodeStore = wrapStore( neoStores.getNodeStore() );
         this.relStore = wrapStore( neoStores.getRelationshipStore() );
         this.propStore = wrapStore( neoStores.getPropertyStore() );
@@ -108,7 +108,7 @@ public class StoreAccess
         return neoStores;
     }
 
-    public RecordStore<DynamicRecord> getSchemaStore()
+    public SchemaStore getSchemaStore()
     {
         return schemaStore;
     }

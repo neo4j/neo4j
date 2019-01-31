@@ -53,6 +53,7 @@ import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.index_background_sampling_enabled;
+import static org.neo4j.helpers.ArrayUtil.single;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 import static org.neo4j.register.Registers.newDoubleLongRegister;
 
@@ -99,7 +100,7 @@ public class IndexStatisticsIT
         // where ALIEN and SPECIMEN are both the first ids of their kind
         IndexDescriptor index = TestIndexDescriptorFactory.forLabel( labelId( ALIEN ), pkId( SPECIMEN ) );
         SchemaRuleAccess schemaRuleAccess = SchemaRuleAccess.getSchemaRuleAccess( neoStores().getSchemaStore(), resolveDependency( TokenHolders.class ) );
-        long indexId = schemaRuleAccess.indexGetForSchema( index ).getId();
+        long indexId = single( schemaRuleAccess.indexGetForSchema( index ) ).getId();
 
         // for which we don't have index counts
         resetIndexCounts( indexId );

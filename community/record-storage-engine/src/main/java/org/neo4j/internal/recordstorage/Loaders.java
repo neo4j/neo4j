@@ -25,7 +25,6 @@ import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
-import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
@@ -263,36 +262,31 @@ public class Loaders
         };
     }
 
-    public static Loader<SchemaRecord,SchemaRule> schemaRuleLoader( final SchemaStore store )
+    private static Loader<SchemaRecord, SchemaRule> schemaRuleLoader( final SchemaStore store )
     {
         return new Loader<SchemaRecord, SchemaRule>()
         {
             @Override
             public SchemaRecord newUnused( long key, SchemaRule additionalData )
             {
-                // Don't blindly mark as created here since some records may be reused.
-                return new SchemaRecord( store.allocateFrom( additionalData ) );
+                return andMarkAsCreated( new SchemaRecord( key ) );
             }
 
             @Override
             public SchemaRecord load( long key, SchemaRule additionalData )
             {
-                return new SchemaRecord( store.getRecords( key, RecordLoad.NORMAL, false ) );
+                return store.getRecord( key, store.newRecord(), RecordLoad.NORMAL );
             }
 
             @Override
-            public void ensureHeavy( SchemaRecord records )
+            public void ensureHeavy( SchemaRecord record )
             {
-                for ( DynamicRecord record : records )
-                {
-                    store.ensureHeavy(record);
-                }
             }
 
             @Override
-            public SchemaRecord clone( SchemaRecord records )
+            public SchemaRecord clone( SchemaRecord record )
             {
-                return records.clone();
+                return record.clone();
             }
         };
     }

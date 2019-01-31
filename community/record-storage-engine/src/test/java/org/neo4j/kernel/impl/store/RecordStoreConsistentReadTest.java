@@ -95,7 +95,7 @@ abstract class RecordStoreConsistentReadTest<R extends AbstractBaseRecord, S ext
 
     protected abstract void assertRecordsEqual( R actualRecord, R expectedRecord );
 
-    protected R getHeavy( S store, int id )
+    protected R getHeavy( S store, long id )
     {
         R record = store.getRecord( id, store.newRecord(), NORMAL );
         store.ensureHeavy( record );

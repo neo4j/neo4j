@@ -22,8 +22,11 @@ package org.neo4j.internal.recordstorage;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
+import java.util.EnumMap;
 import java.util.List;
+import java.util.function.Function;
 
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.recordstorage.Command.Mode;
@@ -36,7 +39,6 @@ import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
-import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
@@ -76,6 +78,7 @@ public class TransactionRecordState implements RecordState
 {
     private static final CommandComparator COMMAND_COMPARATOR = new CommandComparator();
     private static final Command[] EMPTY_COMMANDS = new Command[0];
+    private static final Function<Mode,List<Command>> MODE_TO_ARRAY_LIST = mode -> new ArrayList<>();
 
     private final NeoStores neoStores;
     private final IntegrityValidator integrityValidator;
@@ -84,7 +87,6 @@ public class TransactionRecordState implements RecordState
     private final PropertyStore propertyStore;
     private final RecordStore<RelationshipGroupRecord> relationshipGroupStore;
     private final MetaDataStore metaDataStore;
-    private final SchemaStore schemaStore;
     private final RecordAccessSet recordChangeSet;
     private final long lastCommittedTxWhenTransactionStarted;
     private final ResourceLocker locks;
@@ -113,7 +115,6 @@ public class TransactionRecordState implements RecordState
         this.propertyStore = neoStores.getPropertyStore();
         this.relationshipGroupStore = neoStores.getRelationshipGroupStore();
         this.metaDataStore = neoStores.getMetaDataStore();
-        this.schemaStore = neoStores.getSchemaStore();
         this.integrityValidator = integrityValidator;
         this.recordChangeSet = recordChangeSet;
         this.lastCommittedTxWhenTransactionStarted = lastCommittedTxWhenTransactionStarted;
@@ -242,7 +243,7 @@ public class TransactionRecordState implements RecordState
 
         addFiltered( commands, Mode.CREATE, propCommands, relCommands, relGroupCommands, nodeCommands );
         addFiltered( commands, Mode.UPDATE, propCommands, relCommands, relGroupCommands, nodeCommands );
-        addFiltered( commands, Mode.DELETE, propCommands, relCommands, relGroupCommands, nodeCommands );
+        addFiltered( commands, Mode.DELETE, relCommands, relGroupCommands, nodeCommands );
 
         if ( neoStoreRecord != null )
         {
@@ -251,24 +252,30 @@ public class TransactionRecordState implements RecordState
                 commands.add( new Command.NeoStoreCommand( change.getBefore(), change.forReadingData() ) );
             }
         }
-        //noinspection unchecked
-        List<Command>[] schemaChangeByMode = new List[Mode.values().length];
-        for ( int i = 0; i < schemaChangeByMode.length; i++ )
+
+        EnumMap<Mode,List<Command>> schemaChangeByMode = new EnumMap<>( Mode.class );
+        for ( RecordProxy<SchemaRecord,SchemaRule> change : recordChangeSet.getSchemaRuleChanges().changes() )
         {
-            schemaChangeByMode[i] = new ArrayList<>();
-        }
-        for ( RecordProxy<SchemaRecord, SchemaRule> change : recordChangeSet.getSchemaRuleChanges().changes() )
-        {
-            if ( change.forReadingLinkage().inUse() )
+            SchemaRecord schemaRecord = change.forReadingLinkage();
+            SchemaRule rule = change.getAdditionalData();
+            if ( schemaRecord.inUse() )
             {
-                integrityValidator.validateSchemaRule( change.getAdditionalData() );
+                integrityValidator.validateSchemaRule( rule );
             }
-            Command.SchemaRuleCommand cmd = new Command.SchemaRuleCommand( change.getBefore(), change.forChangingData(), change.getAdditionalData() );
-            schemaChangeByMode[cmd.getMode().ordinal()].add( cmd );
+            Command.SchemaRuleCommand cmd = new Command.SchemaRuleCommand( change.getBefore(), change.forChangingData(), rule );
+            schemaChangeByMode.computeIfAbsent( cmd.getMode(), MODE_TO_ARRAY_LIST ).add( cmd );
         }
-        commands.addAll( schemaChangeByMode[Mode.DELETE.ordinal()] );
-        commands.addAll( schemaChangeByMode[Mode.CREATE.ordinal()] );
-        commands.addAll( schemaChangeByMode[Mode.UPDATE.ordinal()] );
+
+        commands.addAll( schemaChangeByMode.getOrDefault( Mode.DELETE, Collections.emptyList() ) );
+        commands.addAll( schemaChangeByMode.getOrDefault( Mode.CREATE, Collections.emptyList() ) );
+        commands.addAll( schemaChangeByMode.getOrDefault( Mode.UPDATE, Collections.emptyList() ) );
+
+        // Add deleted property commands last, so they happen after the schema record changes.
+        // This extends the lifetime of property records just past the last moment of use,
+        // and prevents reading and deleting of schema records from racing, and making the
+        // schema records look malformed.
+        addFiltered( commands, Mode.DELETE, propCommands );
+
         assert commands.size() == noOfCommands - skippedCommands : format( "Expected %d final commands, got %d " +
                 "instead, with %d skipped", noOfCommands, commands.size(), skippedCommands );
 
@@ -564,49 +571,47 @@ public class TransactionRecordState implements RecordState
         propertyDeleter.removeProperty( recordChange, propertyKey, recordChangeSet.getPropertyRecords() );
     }
 
-    void createSchemaRule( SchemaRule schemaRule )
+    // Property based schema rules:
+    void schemaRuleCreate( long ruleId, boolean isConstraint, SchemaRule rule )
     {
-        for ( DynamicRecord change : recordChangeSet.getSchemaRuleChanges()
-                .create( schemaRule.getId(), schemaRule )
-                .forChangingData() )
-        {
-            change.setInUse( true );
-            change.setCreated();
-        }
+        SchemaRecord record = recordChangeSet.getSchemaRuleChanges().create( ruleId, rule ).forChangingData();
+        record.setInUse( true );
+        record.setCreated();
+        record.setConstraint( isConstraint );
     }
 
-    void dropSchemaRule( SchemaRule rule )
+    void schemaRuleDelete( long ruleId, SchemaRule rule )
     {
-        RecordProxy<SchemaRecord, SchemaRule> change =
-                recordChangeSet.getSchemaRuleChanges().getOrLoad( rule.getId(), rule );
-        SchemaRecord records = change.forChangingData();
-        for ( DynamicRecord record : records )
+        RecordProxy<SchemaRecord,SchemaRule> proxy = recordChangeSet.getSchemaRuleChanges().getOrLoad( ruleId, rule );
+        SchemaRecord record = proxy.forReadingData();
+        if ( record.inUse() )
         {
+            record = proxy.forChangingData();
             record.setInUse( false );
+            getAndDeletePropertyChain( record );
         }
-        records.setInUse( false );
+        // Index schema rules may be deleted twice, if they were owned by a constraint; once for dropping the index, and then again as part of
+        // dropping the constraint. To preserve support for the legacy schema store, we keep this method idempotent.
     }
 
-    private void changeSchemaRule( SchemaRule rule, SchemaRule updatedRule )
+    void schemaRuleSetProperty( long ruleId, int propertyKeyId, Value value, SchemaRule rule )
     {
-        //Read the current record
-        RecordProxy<SchemaRecord,SchemaRule> change = recordChangeSet.getSchemaRuleChanges()
-                .getOrLoad( rule.getId(), rule );
-        SchemaRecord records = change.forReadingData();
-
-        //Register the change of the record
-        RecordProxy<SchemaRecord,SchemaRule> recordChange = recordChangeSet.getSchemaRuleChanges()
-                .setRecord( rule.getId(), records, updatedRule );
-        SchemaRecord dynamicRecords = recordChange.forChangingData();
-
-        //Update the record
-        dynamicRecords.setDynamicRecords( schemaStore.allocateFrom( updatedRule ) );
+        RecordProxy<SchemaRecord, SchemaRule> record = recordChangeSet.getSchemaRuleChanges().getOrLoad( ruleId, rule );
+        propertyCreator.primitiveSetProperty( record, propertyKeyId, value, recordChangeSet.getPropertyRecords() );
     }
 
-    void setConstraintIndexOwner( StoreIndexDescriptor storeIndex, long constraintId )
+    void setIndexOwner( StoreIndexDescriptor rule, long constraintId, int propertyKeyId, Value value )
     {
-        StoreIndexDescriptor updatedStoreIndex = storeIndex.withOwningConstraint( constraintId );
-        changeSchemaRule( storeIndex, updatedStoreIndex );
+        // It is possible that the added property will only modify the property chain and leave the owning record untouched.
+        // However, we need the schema record to be marked as updated so that an UPDATE schema command is generated.
+        // Otherwise, the command appliers, who are responsible for activating index proxies and clearing the schema cache,
+        // will not notice our change.
+        long ruleId = rule.getId();
+        rule = rule.withOwningConstraint( constraintId );
+        RecordAccess<SchemaRecord,SchemaRule> changes = recordChangeSet.getSchemaRuleChanges();
+        RecordProxy<SchemaRecord,SchemaRule> record = changes.getOrLoad( ruleId, rule );
+        changes.setRecord( ruleId, record.forReadingData(), rule ).forChangingData();
+        propertyCreator.primitiveSetProperty( record, propertyKeyId, value, recordChangeSet.getPropertyRecords() );
     }
 
     public interface PropertyReceiver<P extends StorageProperty>

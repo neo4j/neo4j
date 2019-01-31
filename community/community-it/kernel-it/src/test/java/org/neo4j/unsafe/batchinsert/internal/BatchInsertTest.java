@@ -85,9 +85,9 @@ import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.record.ConstraintRule;
-import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
+import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
@@ -490,7 +490,7 @@ public class BatchInsertTest
         batchInserter.setNodeProperty( nodeId, key, secondValue );
 
         // THEN
-        assertTrue( Arrays.equals( secondValue, (String[]) getNodeProperties( batchInserter, nodeId ).get( key ) ) );
+        assertArrayEquals( secondValue, (String[]) getNodeProperties( batchInserter, nodeId ).get( key ) );
     }
 
     @Test
@@ -754,11 +754,11 @@ public class BatchInsertTest
             TokenHolders tokenHolders = graphdb.getDependencyResolver().resolveDependency( TokenHolders.class );
             SchemaRuleAccess schemaRuleAccess = SchemaRuleAccess.getSchemaRuleAccess( store, tokenHolders );
             List<Long> inUse = new ArrayList<>();
-            DynamicRecord record = store.nextRecord();
+            SchemaRecord record = store.newRecord();
             for ( long i = 1, high = store.getHighestPossibleIdInUse(); i <= high; i++ )
             {
                 store.getRecord( i, record, RecordLoad.FORCE );
-                if ( record.inUse() && record.isStartRecord() )
+                if ( record.inUse() )
                 {
                     inUse.add( i );
                 }
@@ -1491,7 +1491,7 @@ public class BatchInsertTest
         Object readValue = inserter.getNodeProperties( nodeId ).get( "key" );
         if ( readValue.getClass().isArray() )
         {
-            assertTrue( Arrays.equals( (int[])value, (int[])readValue ) );
+            assertArrayEquals( (int[]) value, (int[]) readValue );
         }
         else
         {

@@ -36,13 +36,11 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
-import static org.neo4j.consistency.store.RecordAccessStub.SCHEMA_RECORD_TYPE;
 
 @RunWith( Suite.class )
 @Suite.SuiteClasses( {
         DynamicRecordCheckTest.StringDynamicRecordCheckTest.class,
         DynamicRecordCheckTest.ArrayDynamicRecordCheckTest.class,
-        DynamicRecordCheckTest.SchemaDynamicRecordCheckTest.class
 } )
 public abstract class DynamicRecordCheckTest
         extends RecordCheckTestBase<DynamicRecord,ConsistencyReport.DynamicConsistencyReport,DynamicRecordCheck>
@@ -254,31 +252,6 @@ public abstract class DynamicRecordCheckTest
         DynamicRecord record( long id )
         {
             return array( new DynamicRecord( id ) );
-        }
-
-        @Override
-        DynamicRecord fill( DynamicRecord record, int size )
-        {
-            record.setLength( size );
-            return record;
-        }
-    }
-
-    @RunWith( JUnit4.class )
-    public static class SchemaDynamicRecordCheckTest extends DynamicRecordCheckTest
-    {
-        public SchemaDynamicRecordCheckTest()
-        {
-            super( new DynamicRecordCheck( configureDynamicStore( SchemaStore.BLOCK_SIZE ), DynamicStore.SCHEMA ),
-                   SchemaStore.BLOCK_SIZE );
-        }
-
-        @Override
-        DynamicRecord record( long id )
-        {
-            DynamicRecord result = new DynamicRecord( id );
-            result.setType( SCHEMA_RECORD_TYPE );
-            return result;
         }
 
         @Override

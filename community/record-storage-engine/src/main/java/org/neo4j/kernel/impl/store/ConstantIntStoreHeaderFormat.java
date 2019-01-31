@@ -17,28 +17,36 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.internal.recordstorage;
+package org.neo4j.kernel.impl.store;
 
-import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
-import org.neo4j.storageengine.api.SchemaRule;
+import org.neo4j.io.pagecache.PageCursor;
 
-public class LegacySchemaRecordChangeTranslator implements SchemaRecordChangeTranslator
+/**
+ * Similar to the {@link IntStoreHeaderFormat}, except the int header is always a constant defined up front via code,
+ * so this format does not actually take up any space in the store.
+ */
+public class ConstantIntStoreHeaderFormat extends IntStoreHeaderFormat
 {
-    @Override
-    public void createSchemaRule( TransactionRecordState recordState, SchemaRule rule )
+    public ConstantIntStoreHeaderFormat( int header )
     {
-        recordState.createSchemaRule( rule );
+        super( header );
     }
 
     @Override
-    public void dropSchemaRule( TransactionRecordState recordState, SchemaRule rule )
+    public int numberOfReservedRecords()
     {
-        recordState.dropSchemaRule( rule );
+        return 0;
     }
 
     @Override
-    public void setConstraintIndexOwner( TransactionRecordState recordState, StoreIndexDescriptor indexRule, long constraintId )
+    public void writeHeader( PageCursor cursor )
     {
-        recordState.setConstraintIndexOwner( indexRule, constraintId );
+        // Do nothing.
+    }
+
+    @Override
+    public IntStoreHeader readHeader( PageCursor cursor )
+    {
+        return new IntStoreHeader( super.header );
     }
 }

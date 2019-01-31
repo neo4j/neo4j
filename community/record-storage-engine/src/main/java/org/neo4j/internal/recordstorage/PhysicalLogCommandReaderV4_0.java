@@ -20,14 +20,14 @@
 package org.neo4j.internal.recordstorage;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 
-import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.internal.kernel.api.exceptions.schema.MalformedSchemaRuleException;
-import org.neo4j.kernel.impl.store.AbstractDynamicStore;
 import org.neo4j.kernel.impl.store.PropertyType;
+import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.NeoStoreRecord;
@@ -39,10 +39,14 @@ import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
-import org.neo4j.kernel.impl.store.record.SchemaRuleSerialization;
+import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion;
 import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.SchemaRule;
+import org.neo4j.storageengine.api.WritableChannel;
+import org.neo4j.string.UTF8;
+import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.Values;
 
 import static org.neo4j.helpers.Numbers.unsignedShortToInt;
 import static org.neo4j.internal.recordstorage.CommandReading.COLLECTION_DYNAMIC_RECORD_ADDER;
@@ -78,14 +82,14 @@ public class PhysicalLogCommandReaderV4_0 extends BaseCommandReader
             return visitLabelTokenCommand( channel );
         case NeoCommandType.NEOSTORE_COMMAND:
             return visitNeoStoreCommand( channel );
-        case NeoCommandType.SCHEMA_RULE_COMMAND:
-            return visitSchemaRuleCommand( channel );
         case NeoCommandType.REL_GROUP_COMMAND:
             return visitRelationshipGroupCommand( channel );
         case NeoCommandType.UPDATE_RELATIONSHIP_COUNTS_COMMAND:
             return visitRelationshipCountsCommand( channel );
         case NeoCommandType.UPDATE_NODE_COUNTS_COMMAND:
             return visitNodeCountsCommand( channel );
+        case NeoCommandType.SCHEMA_RULE_COMMAND:
+            return visitSchemaRuleCommand( channel );
         default:
             throw unknownCommandType( commandType, channel );
         }
@@ -326,22 +330,225 @@ public class PhysicalLogCommandReaderV4_0 extends BaseCommandReader
 
     private Command visitSchemaRuleCommand( ReadableChannel channel ) throws IOException
     {
-        Collection<DynamicRecord> recordsBefore = new ArrayList<>();
-        readDynamicRecords( channel, recordsBefore, COLLECTION_DYNAMIC_RECORD_ADDER );
-        Collection<DynamicRecord> recordsAfter = new ArrayList<>();
-        readDynamicRecords( channel, recordsAfter, COLLECTION_DYNAMIC_RECORD_ADDER );
-        byte isCreated = channel.get();
-        if ( 1 == isCreated )
+        long id = channel.getLong();
+        byte schemaRulePresence = channel.get();
+        boolean hasSchemaRule = schemaRulePresence == SchemaRecord.COMMAND_HAS_SCHEMA_RULE;
+        SchemaRecord before = readSchemaRecord( id, channel );
+        SchemaRecord after = readSchemaRecord( id, channel );
+        if ( !before.inUse() && after.inUse() )
         {
-            for ( DynamicRecord record : recordsAfter )
+            after.setCreated();
+        }
+        SchemaRule schemaRule = null;
+        if ( hasSchemaRule )
+        {
+            schemaRule = readSchemaRule( id, channel );
+        }
+        return new Command.SchemaRuleCommand( before, after, schemaRule );
+    }
+
+    private SchemaRecord readSchemaRecord( long id, ReadableChannel channel ) throws IOException
+    {
+        SchemaRecord schemaRecord = new SchemaRecord( id );
+        byte flags = channel.get();
+        boolean inUse = bitFlag( flags, Record.IN_USE.byteValue() );
+        if ( inUse )
+        {
+            schemaRecord.setInUse( inUse );
+            if ( bitFlag( flags, Record.CREATED_IN_TX ) )
             {
-                record.setCreated();
+                schemaRecord.setCreated();
+            }
+            schemaRecord.setUseFixedReferences( bitFlag( flags, Record.USES_FIXED_REFERENCE_FORMAT ) );
+
+            byte schemaFlags = channel.get();
+            schemaRecord.setConstraint( bitFlag( schemaFlags, SchemaRecord.SCHEMA_FLAG_IS_CONSTRAINT ) );
+            schemaRecord.setNextProp( channel.getLong() );
+            if ( bitFlag( flags, Record.HAS_SECONDARY_UNIT ) )
+            {
+                schemaRecord.setSecondaryUnitId( channel.getLong() );
             }
         }
-        SchemaRule rule = Iterables.first( recordsAfter ).inUse()
-                          ? readSchemaRule( recordsAfter )
-                          : readSchemaRule( recordsBefore );
-        return new Command.SchemaRuleCommand( recordsBefore, recordsAfter, rule );
+        else
+        {
+            schemaRecord.clear();
+        }
+        return schemaRecord;
+    }
+
+    private SchemaRule readSchemaRule( long id, ReadableChannel channel ) throws IOException
+    {
+        Map<String,Value> ruleMap = readStringValueMap( channel );
+        try
+        {
+            return SchemaStore.unmapifySchemaRule( id, ruleMap );
+        }
+        catch ( MalformedSchemaRuleException e )
+        {
+            throw new IOException( "Failed to create a schema rule from string-value map: " + ruleMap, e );
+        }
+    }
+
+    /**
+     * @see Command.SchemaRuleCommand#writeStringValueMap(WritableChannel, Map)
+     */
+    Map<String,Value> readStringValueMap( ReadableChannel channel ) throws IOException
+    {
+        Map<String,Value> map = new HashMap<>();
+        int size = channel.getInt();
+        for ( int i = 0; i < size; i++ )
+        {
+            byte[] keyBytes = readMapKeyByteArray( channel );
+            String key = UTF8.decode( keyBytes );
+            Value value = readMapValue( channel );
+            map.put( key, value );
+        }
+        return map;
+    }
+
+    private byte[] readMapKeyByteArray( ReadableChannel channel ) throws IOException
+    {
+        int size = channel.getInt();
+        byte[] bytes = new byte[size];
+        channel.get( bytes, size );
+        return bytes;
+    }
+
+    private Value readMapValue( ReadableChannel channel ) throws IOException
+    {
+        Command.SchemaRuleCommand.SchemaMapValueType type = Command.SchemaRuleCommand.SchemaMapValueType.map( channel.get() );
+        switch ( type )
+        {
+        case BOOL_LITERAL_TRUE:
+            return Values.booleanValue( true );
+        case BOOL_LITERAL_FALSE:
+            return Values.booleanValue( false );
+        case BOOL_ARRAY_ELEMENT:
+            throw new IOException( "Cannot read schema rule map value of type boolean array element as a top-level type." );
+        case BYTE:
+            return Values.byteValue( channel.get() );
+        case SHORT:
+            return Values.shortValue( channel.getShort() );
+        case INT:
+            return Values.intValue( channel.getInt() );
+        case LONG:
+            return Values.longValue( channel.getLong() );
+        case FLOAT:
+            return Values.floatValue( channel.getFloat() );
+        case DOUBLE:
+            return Values.doubleValue( channel.getDouble() );
+        case STRING:
+        {
+            int size = channel.getInt();
+            byte[] bytes = new byte[size];
+            channel.get( bytes, size );
+            return Values.utf8Value( bytes );
+        }
+        case CHAR:
+            return Values.charValue( (char) channel.getInt() );
+        case ARRAY:
+        {
+            int arraySize = channel.getInt();
+            Command.SchemaRuleCommand.SchemaMapValueType elementType = Command.SchemaRuleCommand.SchemaMapValueType.map( channel.get() );
+            switch ( elementType )
+            {
+            case BOOL_LITERAL_TRUE:
+                throw new IOException( "BOOL_LITERAL_TRUE cannot be a schema rule map value array element type." );
+            case BOOL_LITERAL_FALSE:
+                throw new IOException( "BOOL_LITERAL_FALSE cannot be a schema rule map value array element type." );
+            case BOOL_ARRAY_ELEMENT:
+            {
+                boolean[] array = new boolean[arraySize];
+                for ( int i = 0; i < arraySize; i++ )
+                {
+                    array[i] = channel.get() == Command.SchemaRuleCommand.SchemaMapValueType.BOOL_LITERAL_TRUE.type();
+                }
+                return Values.booleanArray( array );
+            }
+            case BYTE:
+            {
+                byte[] array = new byte[arraySize];
+                for ( int i = 0; i < arraySize; i++ )
+                {
+                    array[i] = channel.get();
+                }
+                return Values.byteArray( array );
+            }
+            case SHORT:
+            {
+                short[] array = new short[arraySize];
+                for ( int i = 0; i < arraySize; i++ )
+                {
+                    array[i] = channel.getShort();
+                }
+                return Values.shortArray( array );
+            }
+            case INT:
+            {
+                int[] array = new int[arraySize];
+                for ( int i = 0; i < arraySize; i++ )
+                {
+                    array[i] = channel.getInt();
+                }
+                return Values.intArray( array );
+            }
+            case LONG:
+            {
+                long[] array = new long[arraySize];
+                for ( int i = 0; i < arraySize; i++ )
+                {
+                    array[i] = channel.getLong();
+                }
+                return Values.longArray( array );
+            }
+            case FLOAT:
+            {
+                float[] array = new float[arraySize];
+                for ( int i = 0; i < arraySize; i++ )
+                {
+                    array[i] = channel.getFloat();
+                }
+                return Values.floatArray( array );
+            }
+            case DOUBLE:
+            {
+                double[] array = new double[arraySize];
+                for ( int i = 0; i < arraySize; i++ )
+                {
+                    array[i] = channel.getDouble();
+                }
+                return Values.doubleArray( array );
+            }
+            case STRING:
+            {
+                String[] array = new String[arraySize];
+                for ( int i = 0; i < arraySize; i++ )
+                {
+                    int size = channel.getInt();
+                    byte[] bytes = new byte[size];
+                    channel.get( bytes, size );
+                    array[i] = UTF8.decode( bytes );
+                }
+                return Values.stringArray( array );
+            }
+            case CHAR:
+            {
+                char[] array = new char[arraySize];
+                for ( int i = 0; i < arraySize; i++ )
+                {
+                    array[i] = (char) channel.getInt();
+                }
+                return Values.charArray( array );
+            }
+            case ARRAY:
+                throw new IOException( "Nested arrays are not support for schema rule map values." );
+            default:
+                throw new IOException( "Unknown array element type: " + elementType );
+            }
+        } // array case
+        default:
+            throw new IOException( "Unknown schema map value type: " + type );
+        } // switch clause
     }
 
     private Command visitNeoStoreCommand( ReadableChannel channel ) throws IOException
@@ -588,21 +795,6 @@ public class PhysicalLogCommandReaderV4_0 extends BaseCommandReader
             result[i] = channel.getLong();
         }
         return result;
-    }
-
-    private SchemaRule readSchemaRule( Collection<DynamicRecord> recordsBefore )
-    {
-        SchemaRule rule;
-        ByteBuffer deserialized = AbstractDynamicStore.concatData( recordsBefore, new byte[100] );
-        try
-        {
-            rule = SchemaRuleSerialization.deserialize( Iterables.first( recordsBefore ).getId(), deserialized );
-        }
-        catch ( MalformedSchemaRuleException e )
-        {
-            return null;
-        }
-        return rule;
     }
 
     private Command visitNodeCountsCommand( ReadableChannel channel ) throws IOException

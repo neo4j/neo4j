@@ -36,6 +36,7 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
+import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.storageengine.api.format.Capability;
 import org.neo4j.storageengine.api.format.CapabilityType;
 
@@ -136,6 +137,12 @@ public class RecordFormatPropertyConfiguratorTest
 
         @Override
         public RecordFormat<PropertyRecord> property()
+        {
+            return null;
+        }
+
+        @Override
+        public RecordFormat<SchemaRecord> schemaRecord()
         {
             return null;
         }

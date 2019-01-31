@@ -41,6 +41,7 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
+import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.storageengine.api.SchemaRule;
 
 public interface ConsistencyReport
@@ -53,8 +54,8 @@ public interface ConsistencyReport
 
     interface Reporter
     {
-        void forSchema( DynamicRecord schema,
-                        RecordCheck<DynamicRecord, SchemaConsistencyReport> checker );
+        void forSchema( SchemaRecord schema,
+                        RecordCheck<SchemaRecord, SchemaConsistencyReport> checker );
 
         void forNode( NodeRecord node,
                       RecordCheck<NodeRecord, NodeConsistencyReport> checker );
@@ -137,31 +138,30 @@ public interface ConsistencyReport
         void propertyKeyNotInUse( PropertyKeyTokenRecord propertyKey );
 
         @Documented( "The uniqueness constraint does not reference back to the given record" )
-        void uniquenessConstraintNotReferencingBack( DynamicRecord ruleRecord );
+        void uniquenessConstraintNotReferencingBack( SchemaRecord ruleRecord );
 
         @Documented( "The constraint index does not reference back to the given record" )
-        void constraintIndexRuleNotReferencingBack( DynamicRecord ruleRecord );
+        void constraintIndexRuleNotReferencingBack( SchemaRecord ruleRecord );
 
-        @Documented( "This record is required to reference some other record of the given kind but no such obligation " +
-                "was found" )
+        @Documented( "This record is required to reference some other record of the given kind but no such obligation was found" )
         void missingObligation( SchemaRule.Kind kind );
 
         @Documented( "This record requires some other record to reference back to it but there already was such " +
                 "a conflicting obligation created by the record given as a parameter" )
-        void duplicateObligation( DynamicRecord record );
+        void duplicateObligation( SchemaRecord record );
 
         @Documented( "This record contains a schema rule which has the same content as the schema rule contained " +
                 "in the record given as parameter" )
-        void duplicateRuleContent( DynamicRecord record );
+        void duplicateRuleContent( SchemaRecord record );
 
-        @Documented( "The schema rule contained in the DynamicRecord chain is malformed (not deserializable)" )
+        @Documented( "The schema rule is malformed (not deserializable)" )
         void malformedSchemaRule();
 
-        @Documented( "The schema rule contained in the DynamicRecord chain is of an unrecognized Kind" )
+        @Documented( "The schema rule is of an unrecognized Kind" )
         void unsupportedSchemaRuleKind( SchemaRule.Kind kind );
 
         @Warning
-        @Documented( "The schema rule contained in the DynamicRecord chain has a reference to a schema rule that is not online." )
+        @Documented( "The schema rule has a reference to another schema rule that is not online." )
         void schemaRuleNotOnline( SchemaRule schemaRule );
     }
 

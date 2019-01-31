@@ -32,6 +32,7 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
+import org.neo4j.kernel.impl.store.record.SchemaRecord;
 
 public class DelegatingRecordAccess implements RecordAccess
 {
@@ -43,7 +44,7 @@ public class DelegatingRecordAccess implements RecordAccess
     }
 
     @Override
-    public RecordReference<DynamicRecord> schema( long id )
+    public RecordReference<SchemaRecord> schema( long id )
     {
         return delegate.schema( id );
     }

@@ -32,40 +32,60 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 
 import org.neo4j.common.ProgressReporter;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.internal.recordstorage.RecordNodeCursor;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.internal.recordstorage.RecordStorageReader;
+import org.neo4j.internal.recordstorage.SchemaRuleAccess;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.layout.DatabaseFile;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.core.DelegatingTokenHolder;
+import org.neo4j.kernel.impl.core.TokenCreator;
+import org.neo4j.kernel.impl.core.TokenHolder;
+import org.neo4j.kernel.impl.core.TokenHolders;
+import org.neo4j.kernel.impl.store.AbstractDynamicStore;
 import org.neo4j.kernel.impl.store.CommonAbstractStore;
+import org.neo4j.kernel.impl.store.DynamicStringStore;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.MetaDataStore.Position;
 import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.store.PropertyKeyTokenStore;
+import org.neo4j.kernel.impl.store.PropertyStore;
+import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.StoreHeader;
 import org.neo4j.kernel.impl.store.StoreType;
+import org.neo4j.kernel.impl.store.format.Capability;
 import org.neo4j.kernel.impl.store.format.FormatFamily;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat;
+import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
+import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.store.id.ReadOnlyIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
+import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
+import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
+import org.neo4j.kernel.impl.storemigration.legacy.SchemaStorage35;
+import org.neo4j.kernel.impl.storemigration.legacy.SchemaStore35;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.storageengine.api.SchemaRule;
 import org.neo4j.storageengine.api.StorageRelationshipScanCursor;
 import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.storageengine.api.TransactionIdStore;
@@ -87,6 +107,7 @@ import org.neo4j.unsafe.impl.batchimport.staging.CoarseBoundedProgressExecutionM
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitor;
 
 import static java.util.Arrays.asList;
+import static org.neo4j.internal.recordstorage.RecordStorageEngineFactory.createReadOnlyTokenHolder;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForVersion;
 import static org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat.FIELD_NOT_PRESENT;
 import static org.neo4j.kernel.impl.storemigration.FileOperation.COPY;
@@ -173,17 +194,33 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
         if ( FormatFamily.isHigherFamilyFormat( newFormat, oldFormat ) ||
              (FormatFamily.isSameFamily( oldFormat, newFormat ) && isDifferentCapabilities( oldFormat, newFormat )) )
         {
-            // TODO if this store has relationship indexes then warn user about that they will be incorrect
-            // after migration, because now we're rewriting the relationship ids.
-
             // Some form of migration is required (a fallback/catch-all option)
             migrateWithBatchImporter( directoryLayout, migrationLayout,
                     lastTxId, lastTxInfo.checksum(), lastTxLogPosition.getLogVersion(),
                     lastTxLogPosition.getByteOffset(), progressReporter, oldFormat, newFormat );
         }
+
         // update necessary neostore records
         LogPosition logPosition = readLastTxLogPosition( migrationLayout );
         updateOrAddNeoStoreFieldsAsPartOfMigration( migrationLayout, directoryLayout, versionToMigrateTo, logPosition );
+
+        if ( requiresSchemaStoreMigration( oldFormat, newFormat ) )
+        {
+            // Migration with the batch importer would have copied the property, property key token, and property key name stores
+            // into the migration directory, which is needed for the schema store migration. However, it might choose to skip
+            // store files that it did not change, or didn't migrate. It could also be that we didn't do a normal store
+            // format migration. Then those files will be missing and the schema store migration would create empty ones that
+            // ended up overwriting the real ones. Those are then deleted by the migration afterwards, to avoid overwriting the
+            // actual files in the final copy from the migration directory, to the real store directory. When do a schema store
+            // migration, we will be reading and writing properties, and property key tokens, so we need those files.
+            // To get them, we just copy them again with the SKIP strategy, so we avoid overwriting any files that might have
+            // been migrated earlier.
+            List<DatabaseFile> databaseFiles = asList(
+                    DatabaseFile.PROPERTY_STORE, DatabaseFile.PROPERTY_ARRAY_STORE, DatabaseFile.PROPERTY_STRING_STORE,
+                    DatabaseFile.PROPERTY_KEY_TOKEN_STORE, DatabaseFile.PROPERTY_KEY_TOKEN_NAMES_STORE );
+            fileOperation( COPY, fileSystem, directoryLayout, migrationLayout, databaseFiles, true, ExistingTargetStrategy.SKIP );
+            migrateSchemaStore( directoryLayout, migrationLayout, oldFormat, newFormat );
+        }
     }
 
     private static boolean isDifferentCapabilities( RecordFormats oldFormat, RecordFormats newFormat )
@@ -384,7 +421,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
             }
             if ( !requiresDynamicStoreMigration )
             {
-                // We didn't migrate labels (dynamic node labels) or any other dynamic store
+                // We didn't migrate labels (dynamic node labels) or any other dynamic store.
                 storesToDeleteFromMigratedDirectory.addAll( asList(
                         DatabaseFile.NODE_LABEL_STORE,
                         DatabaseFile.LABEL_TOKEN_STORE,
@@ -395,8 +432,8 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
                         DatabaseFile.PROPERTY_KEY_TOKEN_NAMES_STORE,
                         DatabaseFile.SCHEMA_STORE ) );
             }
-            fileOperation( DELETE, fileSystem, migrationDirectoryStructure, migrationDirectoryStructure, storesToDeleteFromMigratedDirectory,
-                    true, null );
+
+            fileOperation( DELETE, fileSystem, migrationDirectoryStructure, migrationDirectoryStructure, storesToDeleteFromMigratedDirectory, true, null );
         }
     }
 
@@ -434,19 +471,18 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
         if ( newFormat.dynamic().equals( oldFormat.dynamic() ) )
         {
             fileOperation( COPY, fileSystem, sourceDirectoryStructure, migrationStrcuture,
-                    Arrays.asList( storesFilesToMigrate ), true, ExistingTargetStrategy.OVERWRITE);
+                    Arrays.asList( storesFilesToMigrate ), true, ExistingTargetStrategy.OVERWRITE );
         }
         else
         {
-            // Migrate all token stores, schema store and dynamic node label ids, keeping their ids intact
+            // Migrate all token stores and dynamic node label ids, keeping their ids intact
             DirectRecordStoreMigrator migrator = new DirectRecordStoreMigrator( pageCache, fileSystem, config );
 
             StoreType[] storesToMigrate = {
                     StoreType.LABEL_TOKEN, StoreType.LABEL_TOKEN_NAME,
                     StoreType.PROPERTY_KEY_TOKEN, StoreType.PROPERTY_KEY_TOKEN_NAME,
                     StoreType.RELATIONSHIP_TYPE_TOKEN, StoreType.RELATIONSHIP_TYPE_TOKEN_NAME,
-                    StoreType.NODE_LABEL,
-                    StoreType.SCHEMA};
+                    StoreType.NODE_LABEL};
 
             // Migrate these stores silently because they are usually very small
             ProgressReporter progressReporter = ProgressReporter.SILENT;
@@ -457,11 +493,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
 
     private void createStore( DatabaseLayout migrationDirectoryStructure, RecordFormats newFormat )
     {
-        IdGeneratorFactory idGeneratorFactory = new ReadOnlyIdGeneratorFactory( fileSystem );
-        NullLogProvider logProvider = NullLogProvider.getInstance();
-        StoreFactory storeFactory = new StoreFactory(
-                migrationDirectoryStructure, config, idGeneratorFactory, pageCache, fileSystem, newFormat, logProvider,
-                EmptyVersionContextSupplier.EMPTY );
+        StoreFactory storeFactory = createStoreFactory( migrationDirectoryStructure, newFormat, true );
         try ( NeoStores neoStores = storeFactory.openAllNeoStores( true ) )
         {
             neoStores.getMetaDataStore();
@@ -470,8 +502,22 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
             neoStores.getPropertyStore();
             neoStores.getRelationshipGroupStore();
             neoStores.getRelationshipStore();
-            neoStores.getSchemaStore();
         }
+    }
+
+    private StoreFactory createStoreFactory( DatabaseLayout databaseLayout, RecordFormats formats, boolean readOnlyIds )
+    {
+        IdGeneratorFactory idGeneratorFactory;
+        if ( readOnlyIds )
+        {
+            idGeneratorFactory = new ReadOnlyIdGeneratorFactory( fileSystem );
+        }
+        else
+        {
+            idGeneratorFactory = new DefaultIdGeneratorFactory( fileSystem );
+        }
+        NullLogProvider logProvider = NullLogProvider.getInstance();
+        return new StoreFactory( databaseLayout, config, idGeneratorFactory, pageCache, fileSystem, formats, logProvider, EmptyVersionContextSupplier.EMPTY );
     }
 
     private static AdditionalInitialIds readAdditionalIds( final long lastTxId, final long lastTxChecksum, final long lastTxLogVersion,
@@ -592,6 +638,80 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
         // Upgrade version in NeoStore
         MetaDataStore.setRecord( pageCache, migrationDirNeoStore, Position.STORE_VERSION,
                 MetaDataStore.versionStringToLong( versionToMigrateTo ) );
+    }
+
+    private boolean requiresSchemaStoreMigration( RecordFormats oldFormat, RecordFormats newFormat )
+    {
+        return oldFormat.hasCapability( Capability.FLEXIBLE_SCHEMA_STORE ) != newFormat.hasCapability( Capability.FLEXIBLE_SCHEMA_STORE );
+    }
+
+    /**
+     * Migration of the schema store is invoked if the old and new formats differ in their {@link Capability#FLEXIBLE_SCHEMA_STORE} capability.
+     */
+    private void migrateSchemaStore( DatabaseLayout directoryLayout, DatabaseLayout migrationLayout, RecordFormats oldFormat, RecordFormats newFormat )
+            throws IOException
+    {
+        StoreFactory srcFactory = createStoreFactory( directoryLayout, oldFormat, true );
+        StoreFactory dstFactory = createStoreFactory( migrationLayout, newFormat, false );
+
+        if ( newFormat.hasCapability( Capability.FLEXIBLE_SCHEMA_STORE ) )
+        {
+            try ( NeoStores srcStore = srcFactory.openNeoStores( StoreType.PROPERTY_KEY_TOKEN, StoreType.PROPERTY_KEY_TOKEN_NAME );
+                  SchemaStore35 srcSchema = new SchemaStore35(
+                          directoryLayout.schemaStore(),
+                          directoryLayout.idSchemaStore(),
+                          config,
+                          IdType.SCHEMA,
+                          new ReadOnlyIdGeneratorFactory( fileSystem ),
+                          pageCache,
+                          NullLogProvider.getInstance(),
+                          oldFormat );
+                  NeoStores dstStore = dstFactory.openNeoStores( true, StoreType.SCHEMA, StoreType.PROPERTY_KEY_TOKEN, StoreType.PROPERTY ) )
+            {
+                TokenHolders srcTokenHolders = new TokenHolders(
+                        createReadOnlyTokenHolder( TokenHolder.TYPE_PROPERTY_KEY ),
+                        createReadOnlyTokenHolder( TokenHolder.TYPE_LABEL ),
+                        createReadOnlyTokenHolder( TokenHolder.TYPE_RELATIONSHIP_TYPE ) );
+                srcTokenHolders.propertyKeyTokens().setInitialTokens( srcStore.getPropertyKeyTokenStore().getTokens() );
+                srcSchema.checkAndLoadStorage( true );
+                SchemaStorage35 srcAccess = new SchemaStorage35( srcSchema );
+
+                SchemaStore dstSchema = dstStore.getSchemaStore();
+                TokenCreator propertyKeyTokenCreator = name ->
+                {
+                    PropertyKeyTokenStore keyTokenStore = dstStore.getPropertyKeyTokenStore();
+                    DynamicStringStore nameStore = keyTokenStore.getNameStore();
+                    byte[] bytes = PropertyStore.encodeString( name );
+                    List<DynamicRecord> nameRecords = new ArrayList<>();
+                    AbstractDynamicStore.allocateRecordsFromBytes( nameRecords, bytes, nameStore );
+                    nameRecords.forEach( nameStore::prepareForCommit );
+                    nameRecords.forEach( nameStore::updateRecord );
+                    nameRecords.forEach( record -> nameStore.setHighestPossibleIdInUse( record.getId() ) );
+                    int nameId = Iterables.first( nameRecords ).getIntId();
+                    PropertyKeyTokenRecord keyTokenRecord = keyTokenStore.newRecord();
+                    long tokenId = keyTokenStore.nextId();
+                    keyTokenRecord.setId( tokenId );
+                    keyTokenRecord.initialize( true, nameId );
+                    keyTokenStore.prepareForCommit( keyTokenRecord );
+                    keyTokenStore.updateRecord( keyTokenRecord );
+                    keyTokenStore.setHighestPossibleIdInUse( keyTokenRecord.getId() );
+                    return Math.toIntExact( tokenId );
+                };
+                TokenHolder propertyKeyTokens = new DelegatingTokenHolder( propertyKeyTokenCreator, TokenHolder.TYPE_PROPERTY_KEY );
+                TokenHolders dstTokenHolders = new TokenHolders( propertyKeyTokens,
+                        createReadOnlyTokenHolder( TokenHolder.TYPE_LABEL ), createReadOnlyTokenHolder( TokenHolder.TYPE_RELATIONSHIP_TYPE ) );
+                dstTokenHolders.propertyKeyTokens().setInitialTokens( dstStore.getPropertyKeyTokenStore().getTokens() );
+                SchemaRuleAccess dstAccess = SchemaRuleAccess.getSchemaRuleAccess( dstSchema, dstTokenHolders );
+
+                Iterable<SchemaRule> rules = srcAccess.getAll();
+                for ( SchemaRule rule : rules )
+                {
+                    dstAccess.writeSchemaRule( rule );
+                }
+
+                dstStore.flush( IOLimiter.UNLIMITED );
+            }
+        }
     }
 
     @Override

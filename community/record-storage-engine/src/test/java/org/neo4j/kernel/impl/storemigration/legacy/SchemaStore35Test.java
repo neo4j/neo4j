@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.store;
+package org.neo4j.kernel.impl.storemigration.legacy;
 
 import org.junit.After;
 import org.junit.Before;
@@ -26,27 +26,38 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.stream.IntStream;
 
 import org.neo4j.common.EntityType;
-import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
+import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.api.index.IndexProviderDescriptor;
+import org.neo4j.kernel.api.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.index.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
+import org.neo4j.kernel.impl.store.format.standard.StandardV3_4;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
-import org.neo4j.kernel.impl.store.record.SchemaRuleSerialization;
+import org.neo4j.kernel.impl.store.id.IdType;
+import org.neo4j.kernel.impl.store.record.ConstraintRule;
+import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.storageengine.api.SchemaRule;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static java.nio.ByteBuffer.wrap;
 import static org.junit.Assert.assertEquals;
+import static org.neo4j.helpers.collection.Iterables.asCollection;
 import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forLabel;
 import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.multiToken;
 import static org.neo4j.kernel.impl.api.index.TestIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 import static org.neo4j.kernel.impl.index.schema.IndexDescriptorFactory.forSchema;
 
-public class SchemaStoreTest
+public class SchemaStore35Test
 {
     @ClassRule
     public static final PageCacheRule pageCacheRule = new PageCacheRule();
@@ -55,26 +66,24 @@ public class SchemaStoreTest
     @Rule
     public final RuleChain ruleChain = RuleChain.outerRule( fs ).around( testDirectory );
 
-    private Config config;
-    private SchemaStore store;
-    private NeoStores neoStores;
-    private StoreFactory storeFactory;
+    private SchemaStore35 store;
 
     @Before
     public void before()
     {
-        config = Config.defaults();
+        Config config = Config.defaults();
         DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs.get() );
-        storeFactory = new StoreFactory( testDirectory.databaseLayout(), config, idGeneratorFactory, pageCacheRule.getPageCache( fs.get() ),
-                fs.get(), NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY );
-        neoStores = storeFactory.openAllNeoStores( true );
-        store = neoStores.getSchemaStore();
+        PageCache pageCache = pageCacheRule.getPageCache( fs.get() );
+        NullLogProvider logProvider = NullLogProvider.getInstance();
+        store = new SchemaStore35( testDirectory.createFile( "schema35.db" ), testDirectory.createFile( "schema35.db.id" ), config, IdType.SCHEMA,
+                idGeneratorFactory, pageCache, logProvider, StandardV3_4.RECORD_FORMATS );
+        store.checkAndLoadStorage( true );
     }
 
     @After
     public void after()
     {
-        neoStores.close();
+        store.close();
     }
 
     @Test
@@ -84,8 +93,8 @@ public class SchemaStoreTest
         StoreIndexDescriptor indexRule = forSchema( forLabel( 1, 4 ), PROVIDER_DESCRIPTOR ).withId( store.nextId() );
 
         // WHEN
-        StoreIndexDescriptor readIndexRule = (StoreIndexDescriptor) SchemaRuleSerialization.deserialize(
-                indexRule.getId(), wrap( SchemaRuleSerialization.serialize( indexRule ) ) );
+        StoreIndexDescriptor readIndexRule = (StoreIndexDescriptor) SchemaRuleSerialization35.deserialize(
+                indexRule.getId(), wrap( SchemaRuleSerialization35.serialize( indexRule ) ) );
 
         // THEN
         assertEquals( indexRule.getId(), readIndexRule.getId() );
@@ -102,8 +111,8 @@ public class SchemaStoreTest
         StoreIndexDescriptor indexRule = forSchema( forLabel( 2, propertyIds ), PROVIDER_DESCRIPTOR ).withId( store.nextId() );
 
         // WHEN
-        StoreIndexDescriptor readIndexRule = (StoreIndexDescriptor) SchemaRuleSerialization.deserialize(
-                indexRule.getId(), wrap( SchemaRuleSerialization.serialize( indexRule ) ) );
+        StoreIndexDescriptor readIndexRule = (StoreIndexDescriptor) SchemaRuleSerialization35.deserialize(
+                indexRule.getId(), wrap( SchemaRuleSerialization35.serialize( indexRule ) ) );
 
         // THEN
         assertEquals( indexRule.getId(), readIndexRule.getId() );
@@ -123,8 +132,8 @@ public class SchemaStoreTest
 
         // WHEN
         StoreIndexDescriptor readIndexRule =
-                (StoreIndexDescriptor) SchemaRuleSerialization.deserialize( indexRule.getId(),
-                        wrap( SchemaRuleSerialization.serialize( indexRule ) ) );
+                (StoreIndexDescriptor) SchemaRuleSerialization35.deserialize( indexRule.getId(),
+                        wrap( SchemaRuleSerialization35.serialize( indexRule ) ) );
 
         // THEN
         assertEquals( indexRule.getId(), readIndexRule.getId() );
@@ -142,8 +151,8 @@ public class SchemaStoreTest
         StoreIndexDescriptor indexRule = forSchema( multiToken( entityTokens, EntityType.NODE, propertyIds ), PROVIDER_DESCRIPTOR ).withId( store.nextId() );
 
         // WHEN
-        StoreIndexDescriptor readIndexRule = (StoreIndexDescriptor) SchemaRuleSerialization.deserialize( indexRule.getId(),
-                wrap( SchemaRuleSerialization.serialize( indexRule ) ) );
+        StoreIndexDescriptor readIndexRule = (StoreIndexDescriptor) SchemaRuleSerialization35.deserialize( indexRule.getId(),
+                wrap( SchemaRuleSerialization35.serialize( indexRule ) ) );
 
         // THEN
         assertEquals( indexRule.getId(), readIndexRule.getId() );
@@ -159,8 +168,8 @@ public class SchemaStoreTest
         StoreIndexDescriptor indexRule = forSchema( forLabel( 2, IntStream.range( 1, 200 ).toArray() ), PROVIDER_DESCRIPTOR ).withId( store.nextId() );
 
         // WHEN
-        StoreIndexDescriptor readIndexRule = (StoreIndexDescriptor) SchemaRuleSerialization.deserialize(
-                indexRule.getId(), wrap( SchemaRuleSerialization.serialize( indexRule ) ) );
+        StoreIndexDescriptor readIndexRule = (StoreIndexDescriptor) SchemaRuleSerialization35.deserialize(
+                indexRule.getId(), wrap( SchemaRuleSerialization35.serialize( indexRule ) ) );
 
         // THEN
         assertEquals( indexRule.getId(), readIndexRule.getId() );
@@ -178,13 +187,70 @@ public class SchemaStoreTest
                         PROVIDER_DESCRIPTOR ).withId( store.nextId() );
 
         // WHEN
-        StoreIndexDescriptor readIndexRule = (StoreIndexDescriptor) SchemaRuleSerialization.deserialize( indexRule.getId(),
-                wrap( SchemaRuleSerialization.serialize( indexRule ) ) );
+        StoreIndexDescriptor readIndexRule = (StoreIndexDescriptor) SchemaRuleSerialization35.deserialize( indexRule.getId(),
+                wrap( SchemaRuleSerialization35.serialize( indexRule ) ) );
 
         // THEN
         assertEquals( indexRule.getId(), readIndexRule.getId() );
         assertEquals( indexRule.schema(), readIndexRule.schema() );
         assertEquals( indexRule, readIndexRule );
         assertEquals( indexRule.providerDescriptor(), readIndexRule.providerDescriptor() );
+    }
+
+    @Test
+    public void storeAndLoadAllRules()
+    {
+        // GIVEN
+        long indexId = store.nextId();
+        long constraintId = store.nextId();
+        Collection<SchemaRule> rules = Arrays.asList(
+                uniqueIndexRule( indexId, constraintId, PROVIDER_DESCRIPTOR, 2, 5, 3 ),
+                constraintUniqueRule( constraintId, indexId, 2, 5, 3 ),
+                indexRule( store.nextId(), PROVIDER_DESCRIPTOR, 0, 5 ),
+                indexRule( store.nextId(), PROVIDER_DESCRIPTOR, 1, 6, 10, 99 ),
+                constraintExistsRule( store.nextId(), 5, 1 )
+        );
+
+        for ( SchemaRule rule : rules )
+        {
+            storeRule( rule );
+        }
+
+        // WHEN
+        SchemaStorage35 storage35 = new SchemaStorage35( store );
+        Collection<SchemaRule> readRules = asCollection( storage35.getAll() );
+
+        // THEN
+        assertEquals( rules, readRules );
+    }
+
+    private long storeRule( SchemaRule rule )
+    {
+        Collection<DynamicRecord> records = store.allocateFrom( rule );
+        for ( DynamicRecord record : records )
+        {
+            store.updateRecord( record );
+        }
+        return Iterables.first( records ).getId();
+    }
+
+    private StoreIndexDescriptor indexRule( long ruleId, IndexProviderDescriptor descriptor, int labelId, int... propertyIds )
+    {
+        return IndexDescriptorFactory.forSchema( forLabel( labelId, propertyIds ), descriptor ).withId( ruleId );
+    }
+
+    private StoreIndexDescriptor uniqueIndexRule( long ruleId, long owningConstraint, IndexProviderDescriptor descriptor, int labelId, int... propertyIds )
+    {
+        return IndexDescriptorFactory.uniqueForSchema( forLabel( labelId, propertyIds ), descriptor ).withIds( ruleId, owningConstraint );
+    }
+
+    private ConstraintRule constraintUniqueRule( long ruleId, long ownedIndexId, int labelId, int... propertyIds )
+    {
+        return ConstraintRule.constraintRule( ruleId, ConstraintDescriptorFactory.uniqueForLabel( labelId, propertyIds ), ownedIndexId );
+    }
+
+    private ConstraintRule constraintExistsRule( long ruleId, int labelId, int... propertyIds )
+    {
+        return ConstraintRule.constraintRule( ruleId, ConstraintDescriptorFactory.existsForLabel( labelId, propertyIds ) );
     }
 }

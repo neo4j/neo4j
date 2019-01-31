@@ -27,10 +27,8 @@ import org.neo4j.kernel.api.exceptions.schema.DuplicateSchemaRuleException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.impl.core.TokenHolders;
 import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
-import org.neo4j.kernel.impl.store.RecordStore;
-import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
+import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.record.ConstraintRule;
-import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.storageengine.api.SchemaRule;
 import org.neo4j.storageengine.api.schema.ConstraintDescriptor;
 import org.neo4j.storageengine.api.schema.SchemaDescriptorSupplier;
@@ -38,17 +36,9 @@ import org.neo4j.util.VisibleForTesting;
 
 public interface SchemaRuleAccess
 {
-    @SuppressWarnings( "unchecked" )
-    static SchemaRuleAccess getSchemaRuleAccess( RecordStore<?> store,
-            @SuppressWarnings( "unused" ) TokenHolders tokenHolders /* we'll need this for a future schema store refactoring */ )
+    static SchemaRuleAccess getSchemaRuleAccess( SchemaStore store, TokenHolders tokenHolders )
     {
-        AbstractBaseRecord record = store.newRecord();
-        if ( record instanceof DynamicRecord )
-        {
-            RecordStore<DynamicRecord> schemaStore = (RecordStore<DynamicRecord>) store;
-            return new SchemaStorage( schemaStore );
-        }
-        throw new IllegalArgumentException( "Cannot create SchemaRuleAccess for schema store: " + store );
+        return new SchemaStorage( store, tokenHolders );
     }
 
     long newRuleId();
@@ -62,11 +52,10 @@ public interface SchemaRuleAccess
     /**
      * Find the IndexRule that matches the given {@link SchemaDescriptorSupplier}.
      *
-     * @return  the matching IndexRule, or null if no matching IndexRule was found
-     * @throws  IllegalStateException if more than one matching rule.
+     * @return an array of all the matching index rules.
      * @param index the target {@link IndexReference}
      */
-    StoreIndexDescriptor indexGetForSchema( SchemaDescriptorSupplier index );
+    StoreIndexDescriptor[] indexGetForSchema( SchemaDescriptorSupplier index );
 
     /**
      * Find the IndexRule that has the given user supplied name.

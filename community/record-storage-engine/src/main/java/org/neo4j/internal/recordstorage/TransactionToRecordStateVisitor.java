@@ -22,6 +22,7 @@ package org.neo4j.internal.recordstorage;
 import org.eclipse.collections.api.IntIterable;
 import org.eclipse.collections.api.set.primitive.LongSet;
 
+import java.util.Arrays;
 import java.util.Iterator;
 
 import org.neo4j.internal.kernel.api.exceptions.schema.CreateConstraintFailureException;
@@ -39,6 +40,8 @@ import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.storageengine.api.schema.ConstraintDescriptor;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
+
+import static org.neo4j.helpers.ArrayUtil.single;
 
 class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
 {
@@ -170,15 +173,29 @@ class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
     @Override
     public void visitRemovedIndex( IndexDescriptor index )
     {
-        StoreIndexDescriptor rule;
-        if ( index.hasUserSuppliedName() )
+        StoreIndexDescriptor rule = null;
+        if ( index instanceof StoreIndexDescriptor )
+        {
+            rule = (StoreIndexDescriptor) index;
+        }
+        else if ( index.hasUserSuppliedName() )
         {
             String indexName = index.name();
             rule = schemaStorage.indexGetForName( indexName );
         }
         else
         {
-            rule = schemaStorage.indexGetForSchema( index );
+            // TODO we'll need to rethink this whole thing once multiple identical schemas are allowed.
+            StoreIndexDescriptor[] rules = schemaStorage.indexGetForSchema( index );
+            if ( rules.length > 1 )
+            {
+                throw new IllegalStateException( "More than one index matched schema '" + index +
+                        "', don't know which one to remove: " + Arrays.toString( rules ) );
+            }
+            if ( rules.length > 0 )
+            {
+                rule = rules[0];
+            }
         }
         if ( rule != null )
         {
@@ -214,7 +231,7 @@ class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
 
     private void visitAddedUniquenessConstraint( UniquenessConstraintDescriptor uniqueConstraint, long constraintId )
     {
-        StoreIndexDescriptor indexRule = schemaStorage.indexGetForSchema( uniqueConstraint.ownedIndexDescriptor() );
+        StoreIndexDescriptor indexRule = firstUniqueConstraintIndex( schemaStorage.indexGetForSchema( uniqueConstraint.ownedIndexDescriptor() ) );
         ConstraintRule constraintRule = constraintSemantics.createUniquenessConstraintRule( constraintId, uniqueConstraint, indexRule.getId() );
         schemaStateChanger.createSchemaRule( recordState, constraintRule );
         schemaStateChanger.setConstraintIndexOwner( recordState, indexRule, constraintId );
@@ -223,10 +240,22 @@ class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
     private void visitAddedNodeKeyConstraint( NodeKeyConstraintDescriptor uniqueConstraint, long constraintId )
             throws CreateConstraintFailureException
     {
-        StoreIndexDescriptor indexRule = schemaStorage.indexGetForSchema( uniqueConstraint.ownedIndexDescriptor() );
+        StoreIndexDescriptor indexRule = firstUniqueConstraintIndex( schemaStorage.indexGetForSchema( uniqueConstraint.ownedIndexDescriptor() ) );
         ConstraintRule constraintRule = constraintSemantics.createNodeKeyConstraintRule( constraintId, uniqueConstraint, indexRule.getId() );
         schemaStateChanger.createSchemaRule( recordState, constraintRule );
         schemaStateChanger.setConstraintIndexOwner( recordState, indexRule, constraintId );
+    }
+
+    private StoreIndexDescriptor firstUniqueConstraintIndex( StoreIndexDescriptor[] indexGetForSchema )
+    {
+        for ( StoreIndexDescriptor descriptor : indexGetForSchema )
+        {
+            if ( descriptor.isUnique() )
+            {
+                return descriptor;
+            }
+        }
+        return null;
     }
 
     @Override

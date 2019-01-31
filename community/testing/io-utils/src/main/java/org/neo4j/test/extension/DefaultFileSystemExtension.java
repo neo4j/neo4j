@@ -25,7 +25,6 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 
 public class DefaultFileSystemExtension extends FileSystemExtension<DefaultFileSystemAbstraction>
 {
-
     @Override
     protected Class<DefaultFileSystemAbstraction> getFieldType()
     {

@@ -250,6 +250,8 @@ public class RecordStorageMigratorIT
         assertTrue( txIdComparator.apply( migrator.readLastTxInformation( migrationLayout ) ) );
     }
 
+    // TODO must migrate schema store to new format
+
     private String checkUpgradable( RecordStoreVersionCheck check )
     {
         StoreVersionCheck.Result result = check.checkUpgrade( check.configuredVersion() );

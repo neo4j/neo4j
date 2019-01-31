@@ -48,6 +48,7 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
+import org.neo4j.kernel.impl.store.record.SchemaRecord;
 
 import static java.util.Arrays.asList;
 import static org.neo4j.helpers.Exceptions.stringify;
@@ -371,8 +372,8 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
     }
 
     @Override
-    public void forSchema( DynamicRecord schema,
-                           RecordCheck<DynamicRecord, ConsistencyReport.SchemaConsistencyReport> checker )
+    public void forSchema( SchemaRecord schema,
+                           RecordCheck<SchemaRecord, ConsistencyReport.SchemaConsistencyReport> checker )
     {
         dispatch( RecordType.SCHEMA, SCHEMA_REPORT, schema, checker );
     }

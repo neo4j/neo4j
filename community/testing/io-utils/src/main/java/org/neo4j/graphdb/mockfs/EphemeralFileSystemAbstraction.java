@@ -1182,7 +1182,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
                 buf = null;
                 freeCall = new Exception(
                         "You're most likely seeing this exception because there was an attempt to use this buffer " +
-                        "after it was freed. This stack trace may help you figure out where and why it was freed" );
+                        "after it was freed. This stack trace may help you figure out where and why it was freed." );
             }
         }
 
@@ -1271,7 +1271,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
         {
             if ( this.buf == null )
             {
-                throw new IllegalStateException( "This buffer have been freed", freeCall );
+                throw new IllegalStateException( "This buffer have been freed.", freeCall );
             }
         }
 

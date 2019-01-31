@@ -51,8 +51,7 @@ public class SchemaRuleUtil
                 ConstraintDescriptorFactory.existsForRelType( labelId, propertyId ) );
     }
 
-    public static StoreIndexDescriptor indexRule( long ruleId, int labelId, int propertyId, IndexProviderDescriptor
-            descriptor )
+    public static StoreIndexDescriptor indexRule( long ruleId, int labelId, int propertyId, IndexProviderDescriptor descriptor )
     {
         return IndexDescriptorFactory.forSchema( forLabel( labelId, propertyId ), descriptor ).withId( ruleId );
     }

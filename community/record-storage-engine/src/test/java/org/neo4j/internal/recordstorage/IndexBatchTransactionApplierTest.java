@@ -21,11 +21,6 @@ package org.neo4j.internal.recordstorage;
 
 import org.junit.Test;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-
 import org.neo4j.internal.recordstorage.Command.NodeCommand;
 import org.neo4j.kernel.api.index.IndexProviderDescriptor;
 import org.neo4j.kernel.impl.api.TransactionToApply;
@@ -34,8 +29,8 @@ import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
-import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
+import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.storageengine.api.IndexUpdateListener;
 import org.neo4j.storageengine.api.NodeLabelUpdate;
 import org.neo4j.storageengine.api.NodeLabelUpdateListener;
@@ -112,16 +107,16 @@ public class IndexBatchTransactionApplierTest
             {
                 // WHEN
                 // activate index 1
-                txApplier.visitSchemaRuleCommand( new Command.SchemaRuleCommand( Collections.emptyList(), asRecords( rule1, true ), rule1 ) );
+                txApplier.visitSchemaRuleCommand( new Command.SchemaRuleCommand( new SchemaRecord( rule1.getId() ), asSchemaRecord( rule1, true ), rule1 ) );
 
                 // activate index 2
-                txApplier.visitSchemaRuleCommand( new Command.SchemaRuleCommand( Collections.emptyList(), asRecords( rule2, true ), rule2 ) );
+                txApplier.visitSchemaRuleCommand( new Command.SchemaRuleCommand( new SchemaRecord( rule2.getId() ), asSchemaRecord( rule2, true ), rule2 ) );
 
                 // activate index 3
-                txApplier.visitSchemaRuleCommand( new Command.SchemaRuleCommand( Collections.emptyList(), asRecords( rule3, true ), rule3 ) );
+                txApplier.visitSchemaRuleCommand( new Command.SchemaRuleCommand( new SchemaRecord( rule3.getId() ), asSchemaRecord( rule3, true ), rule3 ) );
 
                 // drop index 2
-                txApplier.visitSchemaRuleCommand( new Command.SchemaRuleCommand( asRecords( rule2, true ), asRecords( rule2, false ), rule2 ) );
+                txApplier.visitSchemaRuleCommand( new Command.SchemaRuleCommand( asSchemaRecord( rule2, true ), asSchemaRecord( rule2, false ), rule2 ) );
             }
         }
 
@@ -132,14 +127,10 @@ public class IndexBatchTransactionApplierTest
         verifyNoMoreInteractions( indexUpdateListener );
     }
 
-    private Collection<DynamicRecord> asRecords( SchemaRule rule, boolean inUse )
+    private SchemaRecord asSchemaRecord( SchemaRule rule, boolean inUse )
     {
         // Only used to transfer
-        List<DynamicRecord> records = new ArrayList<>();
-        DynamicRecord dynamicRecord = new DynamicRecord( rule.getId() );
-        dynamicRecord.setInUse( inUse );
-        records.add( dynamicRecord );
-        return records;
+        return new SchemaRecord( rule.getId() ).initialize( inUse, NO_NEXT_PROPERTY.longValue() );
     }
 
     private NodeCommand node( long nodeId )

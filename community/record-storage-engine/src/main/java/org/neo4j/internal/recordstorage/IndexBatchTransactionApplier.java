@@ -33,6 +33,7 @@ import org.neo4j.storageengine.api.CommandsToApply;
 import org.neo4j.storageengine.api.IndexUpdateListener;
 import org.neo4j.storageengine.api.NodeLabelUpdate;
 import org.neo4j.storageengine.api.NodeLabelUpdateListener;
+import org.neo4j.storageengine.api.SchemaRule;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.util.concurrent.AsyncApply;
@@ -219,7 +220,14 @@ public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapte
         @Override
         public boolean visitSchemaRuleCommand( Command.SchemaRuleCommand command ) throws IOException
         {
-            if ( command.getSchemaRule() instanceof StorageIndexReference )
+            SchemaRule schemaRule = command.getSchemaRule();
+            processSchemaCommand( command.getMode(), schemaRule );
+            return false;
+        }
+
+        private void processSchemaCommand( Command.Mode commandMode, SchemaRule schemaRule ) throws IOException
+        {
+            if ( schemaRule instanceof StorageIndexReference )
             {
                 // Why apply index updates here? Here's the thing... this is a batch applier, which means that
                 // index updates are gathered throughout the batch and applied in the end of the batch.
@@ -230,33 +238,32 @@ public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapte
                 // apply pending index updates up to this point in this batch before index schema changes occur.
                 applyPendingLabelAndIndexUpdates();
 
-                switch ( command.getMode() )
+                switch ( commandMode )
                 {
                 case UPDATE:
                     // Shouldn't we be more clear about that we are waiting for an index to come online here?
                     // right now we just assume that an update to index records means wait for it to be online.
-                    if ( ((StorageIndexReference) command.getSchemaRule()).isUnique() )
+                    if ( ((StorageIndexReference) schemaRule).isUnique() )
                     {
                         // Register activations into the IndexActivator instead of IndexingService to avoid deadlock
                         // that could insue for applying batches of transactions where a previous transaction in the same
                         // batch acquires a low-level commit lock that prevents the very same index population to complete.
-                        indexActivator.activateIndex( (StorageIndexReference) command.getSchemaRule() );
+                        indexActivator.activateIndex( (StorageIndexReference) schemaRule );
                     }
                     break;
                 case CREATE:
                     // Add to list so that all these indexes will be created in one call later
                     createdIndexes = createdIndexes == null ? new ArrayList<>() : createdIndexes;
-                    createdIndexes.add( (StorageIndexReference) command.getSchemaRule() );
+                    createdIndexes.add( (StorageIndexReference) schemaRule );
                     break;
                 case DELETE:
-                    indexUpdateListener.dropIndex( (StorageIndexReference) command.getSchemaRule() );
-                    indexActivator.indexDropped( (StorageIndexReference) command.getSchemaRule() );
+                    indexUpdateListener.dropIndex( (StorageIndexReference) schemaRule );
+                    indexActivator.indexDropped( (StorageIndexReference) schemaRule );
                     break;
                 default:
-                    throw new IllegalStateException( command.getMode().name() );
+                    throw new IllegalStateException( commandMode.name() );
                 }
             }
-            return false;
         }
     }
 }

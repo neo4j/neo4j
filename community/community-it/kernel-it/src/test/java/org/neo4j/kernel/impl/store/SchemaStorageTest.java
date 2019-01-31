@@ -46,6 +46,7 @@ import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.kernel.impl.core.TokenHolders;
 import org.neo4j.kernel.impl.index.schema.IndexDescriptor;
 import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.store.record.ConstraintRule;
@@ -54,10 +55,13 @@ import org.neo4j.test.GraphDatabaseServiceCleaner;
 import org.neo4j.test.rule.DbmsRule;
 import org.neo4j.test.rule.ImpermanentDbmsRule;
 
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.neo4j.helpers.ArrayUtil.single;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.kernel.api.index.IndexProvider.EMPTY;
 import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forLabel;
@@ -93,7 +97,7 @@ public class SchemaStorageTest
             transaction.success();
         }
         SchemaStore schemaStore = resolveDependency( RecordStorageEngine.class ).testAccessNeoStores().getSchemaStore();
-        storage = new SchemaStorage( schemaStore );
+        storage = new SchemaStorage( schemaStore, resolveDependency( TokenHolders.class ) );
     }
 
     @Before
@@ -112,7 +116,7 @@ public class SchemaStorageTest
                 index( LABEL2, PROP1 ) );
 
         // When
-        StoreIndexDescriptor rule = storage.indexGetForSchema( indexDescriptor( LABEL1, PROP2 ) );
+        StoreIndexDescriptor rule = single( storage.indexGetForSchema( indexDescriptor( LABEL1, PROP2 ) ) );
 
         // Then
         assertNotNull( rule );
@@ -131,8 +135,8 @@ public class SchemaStorageTest
         createSchema( db -> db.schema().indexFor( Label.label( LABEL1 ) )
           .on( a ).on( b ).on( c ).on( d ).on( e ).on( f ).create() );
 
-        StoreIndexDescriptor rule = storage.indexGetForSchema( TestIndexDescriptorFactory.forLabel(
-                labelId( LABEL1 ), propId( a ), propId( b ), propId( c ), propId( d ), propId( e ), propId( f ) ) );
+        StoreIndexDescriptor rule = single( storage.indexGetForSchema( TestIndexDescriptorFactory.forLabel(
+                labelId( LABEL1 ), propId( a ), propId( b ), propId( c ), propId( d ), propId( e ), propId( f ) ) ) );
 
         assertNotNull( rule );
         assertTrue( SchemaDescriptorPredicates.hasLabel( rule, labelId( LABEL1 ) ) );
@@ -159,8 +163,8 @@ public class SchemaStorageTest
             indexCreator.create();
         } );
 
-        StoreIndexDescriptor rule = storage.indexGetForSchema( TestIndexDescriptorFactory.forLabel(
-                labelId( LABEL1 ), Arrays.stream( props ).mapToInt( this::propId ).toArray() ) );
+        StoreIndexDescriptor rule = single( storage.indexGetForSchema( TestIndexDescriptorFactory.forLabel(
+                labelId( LABEL1 ), Arrays.stream( props ).mapToInt( this::propId ).toArray() ) ) );
 
         assertNotNull( rule );
         assertTrue( SchemaDescriptorPredicates.hasLabel( rule, labelId( LABEL1 ) ) );
@@ -172,17 +176,17 @@ public class SchemaStorageTest
     }
 
     @Test
-    public void shouldReturnNullIfIndexRuleForLabelAndPropertyDoesNotExist()
+    public void shouldReturnEmptyArrayIfIndexRuleForLabelAndPropertyDoesNotExist()
     {
         // Given
         createSchema(
                 index( LABEL1, PROP1 ) );
 
         // When
-        StoreIndexDescriptor rule = storage.indexGetForSchema( indexDescriptor( LABEL1, PROP2 ) );
+        StoreIndexDescriptor[] rules = storage.indexGetForSchema( indexDescriptor( LABEL1, PROP2 ) );
 
         // Then
-        assertNull( rule );
+        assertThat( rules.length, is( 0 ) );
     }
 
     @Test
@@ -194,7 +198,7 @@ public class SchemaStorageTest
                 index( LABEL1, PROP2 ) );
 
         // When
-        StoreIndexDescriptor rule = storage.indexGetForSchema( uniqueIndexDescriptor( LABEL1, PROP1 ) );
+        StoreIndexDescriptor rule = single( storage.indexGetForSchema( uniqueIndexDescriptor( LABEL1, PROP1 ) ) );
 
         // Then
         assertNotNull( rule );

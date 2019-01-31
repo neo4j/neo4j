@@ -41,6 +41,7 @@ import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
+import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.storageengine.api.format.Capability;
 import org.neo4j.storageengine.api.format.CapabilityType;
 
@@ -51,6 +52,7 @@ public class PrepareTrackingRecordFormats implements RecordFormats
     private final Set<RelationshipRecord> relationshipPrepare = new HashSet<>();
     private final Set<RelationshipGroupRecord> relationshipGroupPrepare = new HashSet<>();
     private final Set<PropertyRecord> propertyPrepare = new HashSet<>();
+    private final Set<SchemaRecord> schemaPrepare = new HashSet<>();
     private final Set<DynamicRecord> dynamicPrepare = new HashSet<>();
     private final Set<PropertyKeyTokenRecord> propertyKeyTokenPrepare = new HashSet<>();
     private final Set<LabelTokenRecord> labelTokenPrepare = new HashSet<>();
@@ -96,6 +98,12 @@ public class PrepareTrackingRecordFormats implements RecordFormats
     public PrepareTrackingRecordFormat<PropertyRecord> property()
     {
         return new PrepareTrackingRecordFormat<>( actual.property(), propertyPrepare );
+    }
+
+    @Override
+    public RecordFormat<SchemaRecord> schemaRecord()
+    {
+        return new PrepareTrackingRecordFormat<>( actual.schemaRecord(), schemaPrepare );
     }
 
     @Override

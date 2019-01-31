@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.api.index;
 
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
 
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobScheduler;
@@ -36,18 +35,42 @@ class IndexPopulationJobController
         this.scheduler = scheduler;
     }
 
-    void stop() throws ExecutionException, InterruptedException
+    void stop() throws InterruptedException
     {
         for ( IndexPopulationJob job : populationJobs )
         {
-            job.cancel().get();
+            job.cancel();
+        }
+
+        InterruptedException interrupted = null;
+        for ( IndexPopulationJob job : populationJobs )
+        {
+            try
+            {
+                job.awaitCompletion();
+            }
+            catch ( InterruptedException e )
+            {
+                if ( interrupted == null )
+                {
+                    interrupted = e;
+                }
+                else
+                {
+                    interrupted.addSuppressed( interrupted );
+                }
+            }
+        }
+        if ( interrupted != null )
+        {
+            throw interrupted;
         }
     }
 
     void startIndexPopulation( IndexPopulationJob job )
     {
         populationJobs.add( job );
-        scheduler.schedule( Group.INDEX_POPULATION, new IndexPopulationJobWrapper( job, this ) );
+        job.setHandle( scheduler.schedule( Group.INDEX_POPULATION, new IndexPopulationJobWrapper( job, this ) ) );
     }
 
     void indexPopulationCompleted( IndexPopulationJob populationJob )

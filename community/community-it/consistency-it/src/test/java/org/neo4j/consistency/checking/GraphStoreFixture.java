@@ -19,6 +19,7 @@
  */
 package org.neo4j.consistency.checking;
 
+import org.apache.commons.lang3.mutable.MutableInt;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
@@ -26,7 +27,10 @@ import org.junit.runners.model.Statement;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.util.Collection;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.consistency.statistics.AccessStatistics;
@@ -39,8 +43,10 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
+import org.neo4j.internal.kernel.api.NamedToken;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
+import org.neo4j.internal.recordstorage.RecordStorageEngineFactory;
 import org.neo4j.internal.recordstorage.RecordStorageReader;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -59,6 +65,7 @@ import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.kernel.impl.api.scan.FullLabelStream;
 import org.neo4j.kernel.impl.core.DelegatingTokenHolder;
 import org.neo4j.kernel.impl.core.ReadOnlyTokenCreator;
+import org.neo4j.kernel.impl.core.TokenCreator;
 import org.neo4j.kernel.impl.core.TokenHolder;
 import org.neo4j.kernel.impl.core.TokenHolders;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
@@ -70,14 +77,15 @@ import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.store.StoreFactory;
+import org.neo4j.kernel.impl.store.TokenStore;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
-import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NeoStoreRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
+import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.state.DefaultIndexProviderMap;
@@ -110,6 +118,9 @@ import static org.neo4j.consistency.internal.SchemaIndexExtensionLoader.instanti
 public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implements TestRule
 {
     private DirectStoreAccess directStoreAccess;
+    private final List<NamedToken> propertyKeyTokens = new ArrayList<>();
+    private final List<NamedToken> labelTokens = new ArrayList<>();
+    private final List<NamedToken> relationshipTypeTokens = new ArrayList<>();
     private Statistics statistics;
     private final boolean keepStatistics;
     private NeoStores neoStore;
@@ -276,6 +287,53 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
         }
     }
 
+    interface TokenChange
+    {
+        int createToken( String name, TransactionDataBuilder tx, IdGenerator next );
+    }
+
+    public TokenHolders writableTokenHolders()
+    {
+        TokenHolder propertyKeyTokens = new DelegatingTokenHolder( buildTokenCreator( ( name, tx, next ) ->
+        {
+            int id = next.propertyKey();
+            tx.propertyKey( id, name );
+            return id;
+        } ), TokenHolder.TYPE_PROPERTY_KEY );
+        TokenHolder labelTokens = new DelegatingTokenHolder( buildTokenCreator( ( name, tx, next ) ->
+        {
+            int id = next.label();
+            tx.nodeLabel( id, name );
+            return id;
+        } ), TokenHolder.TYPE_LABEL );
+        TokenHolder relationshipTypeTokens = new DelegatingTokenHolder( buildTokenCreator( ( name, tx, next ) ->
+        {
+            int id = next.relationshipType();
+            tx.relationshipType( id, name );
+            return id;
+        } ), TokenHolder.TYPE_RELATIONSHIP_TYPE );
+        TokenHolders tokenHolders = new TokenHolders( propertyKeyTokens, labelTokens, relationshipTypeTokens );
+        RecordStorageEngineFactory.setInitialTokens( tokenHolders, directStoreAccess().nativeStores().getRawNeoStores() );
+        return tokenHolders;
+    }
+
+    private TokenCreator buildTokenCreator( TokenChange propChange )
+    {
+        return name ->
+        {
+            MutableInt keyId = new MutableInt();
+            applyTransaction( new Transaction()
+            {
+                @Override
+                protected void transactionData( TransactionDataBuilder tx, IdGenerator next )
+                {
+                    keyId.setValue( propChange.createToken( name, tx, next ) );
+                }
+            } );
+            return keyId.intValue();
+        };
+    }
+
     public abstract static class Transaction
     {
         final long startTimestamp = currentTimeMillis();
@@ -286,7 +344,7 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
                                                          long lastCommittedTx, NeoStores neoStores )
         {
             TransactionWriter writer = new TransactionWriter( neoStores );
-            transactionData( new TransactionDataBuilder( writer, neoStores.getNodeStore() ), idGenerator );
+            transactionData( new TransactionDataBuilder( writer, neoStores, idGenerator ), idGenerator );
             idGenerator.updateCorrespondingIdGenerators( neoStores );
             return writer.representation( new byte[0], masterId, authorId, startTimestamp, lastCommittedTx,
                    currentTimeMillis() );
@@ -367,35 +425,87 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
     {
         private final TransactionWriter writer;
         private final NodeStore nodes;
+        private final TokenHolders tokenHolders;
+        private final AtomicInteger propKeyDynIds = new AtomicInteger( 1 );
+        private final AtomicInteger labelDynIds = new AtomicInteger( 1 );
+        private final AtomicInteger relTypeDynIds = new AtomicInteger( 1 );
 
-        TransactionDataBuilder( TransactionWriter writer, NodeStore nodes )
+        TransactionDataBuilder( TransactionWriter writer, NeoStores neoStores, IdGenerator next )
         {
             this.writer = writer;
-            this.nodes = nodes;
+            this.nodes = neoStores.getNodeStore();
+
+            TokenHolder propTokens = new DelegatingTokenHolder( name ->
+            {
+                int id = next.propertyKey();
+                writer.propertyKey( id, name, dynIds( 0, propKeyDynIds, name ) );
+                return id;
+            }, TokenHolder.TYPE_PROPERTY_KEY );
+
+            TokenHolder labelTokens = new DelegatingTokenHolder( name ->
+            {
+                int id = next.label();
+                writer.label( id, name, dynIds( 0, labelDynIds, name ) );
+                return id;
+            }, TokenHolder.TYPE_LABEL );
+
+            TokenHolder relTypeTokens = new DelegatingTokenHolder( name ->
+            {
+                int id = next.relationshipType();
+                writer.relationshipType( id, name, dynIds( 0, relTypeDynIds, name ) );
+                return id;
+            }, TokenHolder.TYPE_RELATIONSHIP_TYPE );
+
+            this.tokenHolders = new TokenHolders( propTokens, labelTokens, relTypeTokens );
+            RecordStorageEngineFactory.setInitialTokens( tokenHolders, neoStores );
+            tokenHolders.propertyKeyTokens().getAllTokens().forEach( token -> propKeyDynIds.getAndUpdate( id -> Math.max( id, token.id() + 1 ) ) );
+            tokenHolders.labelTokens().getAllTokens().forEach( token -> labelDynIds.getAndUpdate( id -> Math.max( id, token.id() + 1 ) ) );
+            tokenHolders.relationshipTypeTokens().getAllTokens().forEach( token -> relTypeDynIds.getAndUpdate( id -> Math.max( id, token.id() + 1 ) ) );
         }
 
-        public void createSchema( Collection<DynamicRecord> beforeRecords, Collection<DynamicRecord> afterRecords,
-                SchemaRule rule )
+        private int[] dynIds( int externalBase, AtomicInteger idGenerator, String name )
         {
-            writer.createSchema( beforeRecords, afterRecords, rule );
+            if ( idGenerator.get() <= externalBase )
+            {
+                idGenerator.set( externalBase + 1 );
+            }
+            byte[] bytes = name.getBytes( StandardCharsets.UTF_8 );
+            int blocks = 1 + ( bytes.length / TokenStore.NAME_STORE_BLOCK_SIZE );
+            int base = idGenerator.getAndAdd( blocks );
+            int[] ids = new int[blocks];
+            for ( int i = 0; i < blocks; i++ )
+            {
+                ids[i] = base + i;
+            }
+            return ids;
         }
 
-        // In the following three methods there's an assumption that all tokens use one dynamic record
-        // and since the first record in a dynamic store the id starts at 1 instead of 0... hence the +1
+        public TokenHolders tokenHolders()
+        {
+            return tokenHolders;
+        }
+
+        public void createSchema( SchemaRecord before, SchemaRecord after, SchemaRule rule )
+        {
+            writer.createSchema( before, after, rule );
+        }
 
         public void propertyKey( int id, String key )
         {
-            writer.propertyKey( id, key, id + 1 );
+            writer.propertyKey( id, key, dynIds( id, propKeyDynIds, key ) );
+            tokenHolders.propertyKeyTokens().addToken( new NamedToken( key, id ) );
         }
 
         public void nodeLabel( int id, String name )
         {
-            writer.label( id, name, id + 1 );
+            writer.label( id, name, dynIds( id, labelDynIds, name ) );
+            tokenHolders.labelTokens().addToken( new NamedToken( name, id ) );
         }
 
         public void relationshipType( int id, String relationshipType )
         {
-            writer.relationshipType( id, relationshipType, id + 1 );
+            writer.relationshipType( id, relationshipType, dynIds( id, relTypeDynIds, relationshipType ) );
+            tokenHolders.relationshipTypeTokens().addToken( new NamedToken( relationshipType, id ) );
         }
 
         public void update( NeoStoreRecord before, NeoStoreRecord after )

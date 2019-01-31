@@ -29,6 +29,7 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
+import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.storageengine.api.format.Capability;
 import org.neo4j.storageengine.api.format.CapabilityType;
 
@@ -79,6 +80,8 @@ public interface RecordFormats
     RecordFormat<RelationshipRecord> relationship();
 
     RecordFormat<PropertyRecord> property();
+
+    RecordFormat<SchemaRecord> schemaRecord();
 
     RecordFormat<LabelTokenRecord> labelToken();
 

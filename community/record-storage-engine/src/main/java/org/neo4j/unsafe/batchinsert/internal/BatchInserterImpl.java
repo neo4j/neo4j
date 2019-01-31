@@ -204,6 +204,7 @@ public class BatchInserterImpl implements BatchInserter
     private final Monitors monitors;
     private final JobScheduler jobScheduler;
     private final CountsTracker counts;
+    private final SchemaRuleAccess schemaRuleAccess;
     private boolean labelsTouched;
     private boolean isShutdown;
 
@@ -324,7 +325,8 @@ public class BatchInserterImpl implements BatchInserter
         labelTokenHolder.setInitialTokens( labelTokenStore.getTokens() );
         tokenHolders = new TokenHolders( propertyKeyTokenHolder, labelTokenHolder, relationshipTypeTokenHolder );
 
-        schemaCache = new SchemaCache( getConstraintSemantics(), SchemaRuleAccess.getSchemaRuleAccess( schemaStore, tokenHolders ) );
+        schemaRuleAccess = SchemaRuleAccess.getSchemaRuleAccess( schemaStore, tokenHolders );
+        schemaCache = new SchemaCache( getConstraintSemantics(), schemaRuleAccess );
         schemaCache.loadAllRules();
 
         actions = new BatchSchemaActions();
@@ -505,10 +507,7 @@ public class BatchInserterImpl implements BatchInserter
                     "Unable to create index. The index configuration was refused by the '" + providerDescriptor + "' index provider.", e );
         }
 
-        for ( DynamicRecord record : schemaStore.allocateFrom( schemaRule ) )
-        {
-            schemaStore.updateRecord( record );
-        }
+        schemaRuleAccess.writeSchemaRule( schemaRule );
         schemaCache.addSchemaRule( schemaRule );
         labelsTouched = true;
         flushStrategy.forceFlush();
@@ -614,15 +613,9 @@ public class BatchInserterImpl implements BatchInserter
 
         ConstraintRule constraintRule = ConstraintRule.constraintRule( constraintRuleId, constraintDescriptor, indexId );
 
-        for ( DynamicRecord record : schemaStore.allocateFrom( constraintRule ) )
-        {
-            schemaStore.updateRecord( record );
-        }
+        schemaRuleAccess.writeSchemaRule( constraintRule );
         schemaCache.addSchemaRule( constraintRule );
-        for ( DynamicRecord record : schemaStore.allocateFrom( storeIndexDescriptor ) )
-        {
-            schemaStore.updateRecord( record );
-        }
+        schemaRuleAccess.writeSchemaRule( storeIndexDescriptor );
         schemaCache.addSchemaRule( storeIndexDescriptor );
         labelsTouched = true;
         flushStrategy.forceFlush();
@@ -643,10 +636,7 @@ public class BatchInserterImpl implements BatchInserter
         SchemaRule rule = ConstraintRule.constraintRule( schemaStore.nextId(),
                 ConstraintDescriptorFactory.existsForLabel( labelId, propertyKeyIds ) );
 
-        for ( DynamicRecord record : schemaStore.allocateFrom( rule ) )
-        {
-            schemaStore.updateRecord( record );
-        }
+        schemaRuleAccess.writeSchemaRule( rule );
         schemaCache.addSchemaRule( rule );
         labelsTouched = true;
         flushStrategy.forceFlush();
@@ -657,10 +647,7 @@ public class BatchInserterImpl implements BatchInserter
         SchemaRule rule = ConstraintRule.constraintRule( schemaStore.nextId(),
                 ConstraintDescriptorFactory.existsForRelType( relTypeId, propertyKeyIds ) );
 
-        for ( DynamicRecord record : schemaStore.allocateFrom( rule ) )
-        {
-            schemaStore.updateRecord( record );
-        }
+        schemaRuleAccess.writeSchemaRule( rule );
         schemaCache.addSchemaRule( rule );
         flushStrategy.forceFlush();
     }

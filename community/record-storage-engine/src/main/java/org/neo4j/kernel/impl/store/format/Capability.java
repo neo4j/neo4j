@@ -57,7 +57,12 @@ public enum Capability implements org.neo4j.storageengine.api.format.Capability
     /**
      * Records can spill over into secondary units (another record with a header saying it's a secondary unit to another record).
      */
-    SECONDARY_RECORD_UNITS( CapabilityType.FORMAT );
+    SECONDARY_RECORD_UNITS( CapabilityType.FORMAT ),
+
+    /**
+     * The schema store can store arbitrary properties of schema elements, such as index configurations.
+     */
+    FLEXIBLE_SCHEMA_STORE( CapabilityType.STORE );
 
     private final CapabilityType[] types;
     private boolean additive;

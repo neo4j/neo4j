@@ -55,9 +55,9 @@ public class StubSchemaRuleAccess implements SchemaRuleAccess
     }
 
     @Override
-    public StoreIndexDescriptor indexGetForSchema( SchemaDescriptorSupplier supplier )
+    public StoreIndexDescriptor[] indexGetForSchema( SchemaDescriptorSupplier supplier )
     {
-        return null;
+        return new StoreIndexDescriptor[0];
     }
 
     @Override

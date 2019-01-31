@@ -81,6 +81,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.runners.Parameterized.Parameter;
 import static org.junit.runners.Parameterized.Parameters;
+import static org.neo4j.helpers.ArrayUtil.single;
 import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forLabel;
 
@@ -217,7 +218,7 @@ public class IndexStatisticsTest
         awaitIndexesOnline();
 
         SchemaRuleAccess schemaRuleAccess = SchemaRuleAccess.getSchemaRuleAccess( neoStores().getSchemaStore(), resolveDependency( TokenHolders.class ) );
-        long indexId = schemaRuleAccess.indexGetForSchema( index ).getId();
+        long indexId = single( schemaRuleAccess.indexGetForSchema( index ) ).getId();
 
         // when
         dropIndex( index );

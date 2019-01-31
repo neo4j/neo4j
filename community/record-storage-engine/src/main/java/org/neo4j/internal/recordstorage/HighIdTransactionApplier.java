@@ -127,10 +127,7 @@ public class HighIdTransactionApplier extends TransactionApplier.Adapter
     public boolean visitSchemaRuleCommand( SchemaRuleCommand command )
     {
         SchemaStore schemaStore = neoStores.getSchemaStore();
-        for ( DynamicRecord record : command.getRecordsAfter() )
-        {
-            track( schemaStore, record );
-        }
+        track( schemaStore, command.getAfter() );
         return false;
     }
 

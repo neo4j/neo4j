@@ -34,6 +34,7 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
+import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.storageengine.api.format.Capability;
 import org.neo4j.storageengine.api.format.CapabilityType;
 
@@ -100,6 +101,12 @@ public class ForcedSecondaryUnitRecordFormats implements RecordFormats
     public RecordFormat<PropertyRecord> property()
     {
         return withForcedSecondaryUnit( actual.property() );
+    }
+
+    @Override
+    public RecordFormat<SchemaRecord> schemaRecord()
+    {
+        return withForcedSecondaryUnit( actual.schemaRecord() );
     }
 
     @Override

@@ -21,7 +21,8 @@ package org.neo4j.consistency;
 
 public enum RecordType
 {
-    NEO_STORE, SCHEMA,
+    NEO_STORE,
+    SCHEMA,
     NODE,
 
     PROPERTY,

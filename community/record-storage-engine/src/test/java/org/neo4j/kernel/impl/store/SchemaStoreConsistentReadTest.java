@@ -19,20 +19,14 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import org.opentest4j.TestAbortedException;
-
-import org.neo4j.kernel.impl.store.record.DynamicRecord;
+import org.neo4j.kernel.impl.store.record.SchemaRecord;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-// This one might be good enough to cover all AbstractDynamicStore subclasses,
-// including DynamicArrayStore and DynamicStringStore.
-class SchemaStoreConsistentReadTest extends RecordStoreConsistentReadTest<DynamicRecord, SchemaStore>
+class SchemaStoreConsistentReadTest extends RecordStoreConsistentReadTest<SchemaRecord, SchemaStore>
 {
-    private static final byte[] EXISTING_RECORD_DATA = "Random bytes".getBytes();
-
     @Override
     protected SchemaStore getStore( NeoStores neoStores )
     {
@@ -40,42 +34,33 @@ class SchemaStoreConsistentReadTest extends RecordStoreConsistentReadTest<Dynami
     }
 
     @Override
-    protected DynamicRecord createNullRecord( long id )
+    protected SchemaRecord createNullRecord( long id )
     {
-        DynamicRecord record = new DynamicRecord( id );
-        record.setNextBlock( 0 );
-        record.setData( new byte[0] );
+        return new SchemaRecord( id ).initialize( false, 0 ); // This is what it looks like when an unused record is force-read from the store.
+    }
+
+    @Override
+    protected SchemaRecord createExistingRecord( boolean light )
+    {
+        SchemaRecord record = new SchemaRecord( ID );
+        record.initialize( true, 42 );
         return record;
     }
 
     @Override
-    protected DynamicRecord createExistingRecord( boolean light )
+    protected SchemaRecord getLight( long id, SchemaStore store )
     {
-        DynamicRecord record = new DynamicRecord( ID );
-        record.setInUse( true );
-        record.setStartRecord( true );
-        record.setLength( EXISTING_RECORD_DATA.length );
-        record.setData( EXISTING_RECORD_DATA );
-        return record;
+        return getHeavy( store, id );
     }
 
     @Override
-    protected DynamicRecord getLight( long id, SchemaStore store )
-    {
-        throw new TestAbortedException( "Light loading of DynamicRecords is a little different" );
-    }
-
-    @Override
-    protected void assertRecordsEqual( DynamicRecord actualRecord, DynamicRecord expectedRecord )
+    protected void assertRecordsEqual( SchemaRecord actualRecord, SchemaRecord expectedRecord )
     {
         assertNotNull( actualRecord, "actualRecord" );
         assertNotNull( expectedRecord, "expectedRecord" );
-        assertThat( "getData", actualRecord.getData(), is( expectedRecord.getData() ) );
-        assertThat( "getLength", actualRecord.getLength(), is( expectedRecord.getLength() ) );
-        assertThat( "getNextBlock", actualRecord.getNextBlock(), is( expectedRecord.getNextBlock() ) );
-        assertThat( "getType", actualRecord.getType(), is( expectedRecord.getType() ) );
+        assertThat( "isConstraint", actualRecord.isConstraint(), is( expectedRecord.isConstraint() ) );
+        assertThat( "getNextProp", actualRecord.getNextProp(), is( expectedRecord.getNextProp() ) );
         assertThat( "getId", actualRecord.getId(), is( expectedRecord.getId() ) );
         assertThat( "getLongId", actualRecord.getId(), is( expectedRecord.getId() ) );
-        assertThat( "isStartRecord", actualRecord.isStartRecord(), is( expectedRecord.isStartRecord() ) );
     }
 }

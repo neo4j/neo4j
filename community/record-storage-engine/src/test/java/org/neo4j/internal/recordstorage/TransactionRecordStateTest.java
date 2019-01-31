@@ -215,10 +215,10 @@ public class TransactionRecordStateTest
         long nodeRuleId = 0;
         TransactionRecordState recordState = newTransactionRecordState( neoStores );
         SchemaRule nodeRule = forSchema( forLabel( labelId, propertyKeyId ), PROVIDER_DESCRIPTOR ).withId( nodeRuleId );
-        recordState.createSchemaRule( nodeRule );
+        recordState.schemaRuleCreate( nodeRuleId, false, nodeRule );
         long relRuleId = 1;
         SchemaRule relRule = forSchema( forRelType( relTypeId, propertyKeyId ), PROVIDER_DESCRIPTOR ).withId( relRuleId );
-        recordState.createSchemaRule( relRule );
+        recordState.schemaRuleCreate( relRuleId, false, relRule );
         apply( neoStores, recordState );
 
         // -- and a tx creating a node and a rel for those indexes
@@ -698,10 +698,11 @@ public class TransactionRecordStateTest
         // updated node to point to the group after the deleted one
         assertCommand( commandIterator.next(), NodeCommand.class );
         // rest is deletions below...
-        assertCommand( commandIterator.next(), PropertyCommand.class );
         assertCommand( commandIterator.next(), RelationshipCommand.class );
         assertCommand( commandIterator.next(), Command.RelationshipGroupCommand.class );
         assertCommand( commandIterator.next(), NodeCommand.class );
+        // property deletes come last.
+        assertCommand( commandIterator.next(), PropertyCommand.class );
         assertFalse( commandIterator.hasNext() );
     }
 
@@ -715,7 +716,7 @@ public class TransactionRecordStateTest
         final long indexId = neoStores.getSchemaStore().nextId();
         final long constraintId = neoStores.getSchemaStore().nextId();
 
-        recordState.createSchemaRule( constraintRule( constraintId, uniqueForLabel( 1, 1 ), indexId ) );
+        recordState.schemaRuleCreate( constraintId, true, constraintRule( constraintId, uniqueForLabel( 1, 1 ), indexId ) );
 
         // WHEN
         recordState.extractCommands( new ArrayList<>() );
@@ -1214,6 +1215,8 @@ public class TransactionRecordStateTest
         assertEquals( 3, rels );
         assertEquals( 1, groups );
     }
+
+    // TODO add tests for the new schema store
 
     private void addLabelsToNode( TransactionRecordState recordState, long nodeId, long[] labelIds )
     {

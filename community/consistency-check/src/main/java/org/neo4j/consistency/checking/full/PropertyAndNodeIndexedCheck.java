@@ -82,7 +82,7 @@ public class PropertyAndNodeIndexedCheck implements RecordCheck<NodeRecord, Cons
         try
         {
             Collection<PropertyRecord> properties = propertyReader.getPropertyRecordChain( record.getNextProp() );
-            cacheAccess.client().putPropertiesToCache(properties);
+            cacheAccess.client().putPropertiesToCache( properties );
             if ( indexes != null )
             {
                 matchIndexesToNode( record, engine, records, properties );

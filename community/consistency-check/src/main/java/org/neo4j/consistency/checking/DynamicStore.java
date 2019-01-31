@@ -26,14 +26,6 @@ import org.neo4j.kernel.impl.store.record.DynamicRecord;
 
 public enum DynamicStore
 {
-    SCHEMA( RecordType.SCHEMA )
-    {
-        @Override
-        RecordReference<DynamicRecord> lookup( RecordAccess records, long block )
-        {
-            return records.schema( block );
-        }
-    },
     STRING( RecordType.STRING_PROPERTY )
     {
         @Override

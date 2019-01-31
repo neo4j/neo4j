@@ -170,8 +170,7 @@ public class StoreUpgraderTest
     }
 
     @Test
-    public void shouldRefuseToUpgradeIfAnyOfTheStoresWereNotShutDownCleanly()
-            throws IOException
+    public void shouldRefuseToUpgradeIfAnyOfTheStoresWereNotShutDownCleanly() throws IOException
     {
         File comparisonDirectory = directory.directory(
                 "shouldRefuseToUpgradeIfAnyOfTheStoresWereNotShutDownCleanly-comparison" );
@@ -195,8 +194,7 @@ public class StoreUpgraderTest
     }
 
     @Test
-    public void shouldRefuseToUpgradeIfAllOfTheStoresWereNotShutDownCleanly()
-            throws IOException
+    public void shouldRefuseToUpgradeIfAllOfTheStoresWereNotShutDownCleanly() throws IOException
     {
         File comparisonDirectory = directory.directory(
                 "shouldRefuseToUpgradeIfAllOfTheStoresWereNotShutDownCleanly-comparison" );

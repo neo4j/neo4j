@@ -43,6 +43,7 @@ import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
+import org.neo4j.kernel.impl.store.record.SchemaRecord;
 
 /**
  * A store for {@link #updateRecord(AbstractBaseRecord) updating} and
@@ -468,7 +469,7 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequen
             shouldStop = true;
         }
 
-        public abstract void processSchema( RecordStore<DynamicRecord> store, DynamicRecord schema ) throws FAILURE;
+        public abstract void processSchema( RecordStore<SchemaRecord> store, SchemaRecord schema ) throws FAILURE;
 
         public abstract void processNode( RecordStore<NodeRecord> store, NodeRecord node ) throws FAILURE;
 

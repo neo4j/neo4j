@@ -20,9 +20,15 @@
 package org.neo4j.internal.recordstorage;
 
 import java.io.IOException;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.OffsetTime;
+import java.time.ZonedDateTime;
 import java.util.Collection;
+import java.util.Map;
 
-import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
@@ -37,9 +43,14 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.kernel.impl.store.record.TokenRecord;
+import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.SchemaRule;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.WritableChannel;
+import org.neo4j.string.UTF8;
+import org.neo4j.values.storable.CoordinateReferenceSystem;
+import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.ValueWriter;
 
 import static java.lang.Math.toIntExact;
 import static java.lang.String.format;
@@ -127,7 +138,7 @@ public abstract class Command implements StorageCommand
 
     protected String beforeAndAfterToString( AbstractBaseRecord before, AbstractBaseRecord after )
     {
-        return format( " -%s%n         +%s", before, after );
+        return format( "\t-%s%n\t+%s", before, after );
     }
 
     void writeDynamicRecords( WritableChannel channel, Collection<DynamicRecord> records ) throws IOException
@@ -602,35 +613,25 @@ public abstract class Command implements StorageCommand
         }
     }
 
-    public static class SchemaRuleCommand extends Command
+    public static class SchemaRuleCommand extends BaseCommand<SchemaRecord>
     {
-        private final SchemaRecord recordsBefore;
-        private final SchemaRecord recordsAfter;
         private final SchemaRule schemaRule;
 
-        public SchemaRuleCommand( Collection<DynamicRecord> recordsBefore, Collection<DynamicRecord> recordsAfter,
-                SchemaRule schemaRule )
+        public SchemaRuleCommand( SchemaRecord recordBefore, SchemaRecord recordAfter, SchemaRule schemaRule )
         {
-            this( new SchemaRecord( recordsBefore ), new SchemaRecord( recordsAfter ), schemaRule );
-        }
-
-        public SchemaRuleCommand( SchemaRecord recordsBefore, SchemaRecord recordsAfter,
-                SchemaRule schemaRule )
-        {
-            setup( Iterables.first( recordsAfter ).getId(), Mode.fromRecordState( Iterables.first( recordsAfter ) ) );
-            this.recordsBefore = recordsBefore;
-            this.recordsAfter = recordsAfter;
+            super( recordBefore, recordAfter );
             this.schemaRule = schemaRule;
         }
 
         @Override
         public String toString()
         {
+            String beforeAndAfterRecords = super.toString();
             if ( schemaRule != null )
             {
-                return getMode() + ":" + schemaRule.toString();
+                return beforeAndAfterRecords + " : " + schemaRule.toString();
             }
-            return "SchemaRule" + recordsAfter;
+            return beforeAndAfterRecords;
         }
 
         @Override
@@ -639,28 +640,308 @@ public abstract class Command implements StorageCommand
             return handler.visitSchemaRuleCommand( this );
         }
 
-        public SchemaRecord getRecordsAfter()
-        {
-            return recordsAfter;
-        }
-
         public SchemaRule getSchemaRule()
         {
             return schemaRule;
-        }
-
-        public SchemaRecord getRecordsBefore()
-        {
-            return recordsBefore;
         }
 
         @Override
         public void serialize( WritableChannel channel ) throws IOException
         {
             channel.put( NeoCommandType.SCHEMA_RULE_COMMAND );
-            writeDynamicRecords( channel, recordsBefore, recordsBefore.size() );
-            writeDynamicRecords( channel, recordsAfter, recordsAfter.size() );
-            channel.put( Iterables.first( recordsAfter ).isCreated() ? (byte) 1 : 0 );
+            channel.putLong( before.getId() );
+            boolean hasSchemaRule = schemaRule != null;
+            channel.put( hasSchemaRule ? SchemaRecord.COMMAND_HAS_SCHEMA_RULE : SchemaRecord.COMMAND_HAS_NO_SCHEMA_RULE );
+            writeSchemaRecord( channel, before );
+            writeSchemaRecord( channel, after );
+            if ( hasSchemaRule )
+            {
+                writeSchemaRule( channel );
+            }
+        }
+
+        private void writeSchemaRecord( WritableChannel channel, SchemaRecord record ) throws IOException
+        {
+            byte flags = bitFlags( bitFlag( record.inUse(), Record.IN_USE.byteValue() ),
+                                   bitFlag( record.isCreated(), Record.CREATED_IN_TX ),
+                                   bitFlag( record.isUseFixedReferences(), Record.USES_FIXED_REFERENCE_FORMAT ),
+                                   bitFlag( record.hasSecondaryUnitId(), Record.HAS_SECONDARY_UNIT ) );
+            channel.put( flags );
+            if ( record.inUse() )
+            {
+                byte schemaFlags = bitFlags( bitFlag( record.isConstraint(), SchemaRecord.SCHEMA_FLAG_IS_CONSTRAINT ) );
+                channel.put( schemaFlags );
+                channel.putLong( record.getNextProp() );
+                if ( record.hasSecondaryUnitId() )
+                {
+                    channel.putLong( record.getSecondaryUnitId() );
+                }
+            }
+        }
+
+        private void writeSchemaRule( WritableChannel channel ) throws IOException
+        {
+            Map<String,Value> ruleMap = SchemaStore.mapifySchemaRule( schemaRule );
+            writeStringValueMap( channel, ruleMap );
+        }
+
+        /**
+         * @see PhysicalLogCommandReaderV4_0#readStringValueMap(ReadableChannel)
+         */
+        void writeStringValueMap( WritableChannel channel, Map<String,Value> ruleMap ) throws IOException
+        {
+            channel.putInt( ruleMap.size() );
+            for ( Map.Entry<String,Value> entry : ruleMap.entrySet() )
+            {
+                writeMapKeyByteArray( channel, UTF8.encode( entry.getKey() ) );
+                writeMapValue( channel, entry.getValue() );
+            }
+        }
+
+        private void writeMapKeyByteArray( WritableChannel channel, byte[] bytes ) throws IOException
+        {
+            channel.putInt( bytes.length );
+            channel.put( bytes, bytes.length );
+        }
+
+        enum SchemaMapValueType
+        {
+            // NOTE: Enum order (specifically, the enum ordinal) is part of the binary format!
+            BOOL_LITERAL_TRUE,
+            BOOL_LITERAL_FALSE,
+            BOOL_ARRAY_ELEMENT,
+            BYTE,
+            SHORT,
+            INT,
+            LONG,
+            FLOAT,
+            DOUBLE,
+            STRING,
+            CHAR,
+            ARRAY;
+
+            private static final SchemaMapValueType[] TYPE_ID_TO_ENUM = values(); // This works because 'type' is equal to ordinal.
+
+            public static SchemaMapValueType map( byte type )
+            {
+                return TYPE_ID_TO_ENUM[type];
+            }
+
+            public static SchemaMapValueType map( ValueWriter.ArrayType arrayType ) throws IOException
+            {
+                switch ( arrayType )
+                {
+                case BYTE:
+                    return BYTE;
+                case SHORT:
+                    return SHORT;
+                case INT:
+                    return INT;
+                case LONG:
+                    return LONG;
+                case FLOAT:
+                    return FLOAT;
+                case DOUBLE:
+                    return DOUBLE;
+                case BOOLEAN:
+                    return BOOL_ARRAY_ELEMENT;
+                case STRING:
+                    return STRING;
+                case CHAR:
+                    return CHAR;
+                case POINT:
+                case ZONED_DATE_TIME:
+                case LOCAL_DATE_TIME:
+                case DATE:
+                case ZONED_TIME:
+                case LOCAL_TIME:
+                case DURATION:
+                default:
+                    throw new IOException( "Unsupported schema record map value type: " + arrayType );
+                }
+            }
+
+            public byte type()
+            {
+                return (byte) ordinal();
+            }
+        }
+
+        private void writeMapValue( WritableChannel channel, Value value ) throws IOException
+        {
+            value.writeTo( new ValueWriter<IOException>()
+            {
+                private boolean arrayContext;
+
+                @Override
+                public void writeNull() throws IOException
+                {
+                    throw new IOException( "Cannot write null entry value in schema record map representation." );
+                }
+
+                @Override
+                public void writeBoolean( boolean value ) throws IOException
+                {
+                    if ( value )
+                    {
+                        channel.put( SchemaMapValueType.BOOL_LITERAL_TRUE.type() );
+                    }
+                    else
+                    {
+                        channel.put( SchemaMapValueType.BOOL_LITERAL_FALSE.type() );
+                    }
+                }
+
+                @Override
+                public void writeInteger( byte value ) throws IOException
+                {
+                    if ( !arrayContext )
+                    {
+                        channel.put( SchemaMapValueType.BYTE.type() );
+                    }
+                    channel.put( value );
+                }
+
+                @Override
+                public void writeInteger( short value ) throws IOException
+                {
+                    if ( !arrayContext )
+                    {
+                        channel.put( SchemaMapValueType.SHORT.type() );
+                    }
+                    channel.putShort( value );
+                }
+
+                @Override
+                public void writeInteger( int value ) throws IOException
+                {
+                    if ( !arrayContext )
+                    {
+                        channel.put( SchemaMapValueType.INT.type() );
+                    }
+                    channel.putInt( value );
+                }
+
+                @Override
+                public void writeInteger( long value ) throws IOException
+                {
+                    if ( !arrayContext )
+                    {
+                        channel.put( SchemaMapValueType.LONG.type() );
+                    }
+                    channel.putLong( value );
+                }
+
+                @Override
+                public void writeFloatingPoint( float value ) throws IOException
+                {
+                    if ( !arrayContext )
+                    {
+                        channel.put( SchemaMapValueType.FLOAT.type() );
+                    }
+                    channel.putFloat( value );
+                }
+
+                @Override
+                public void writeFloatingPoint( double value ) throws IOException
+                {
+                    if ( !arrayContext )
+                    {
+                        channel.put( SchemaMapValueType.DOUBLE.type() );
+                    }
+                    channel.putDouble( value );
+                }
+
+                @Override
+                public void writeString( String value ) throws IOException
+                {
+                    if ( !arrayContext )
+                    {
+                        channel.put( SchemaMapValueType.STRING.type() );
+                    }
+                    byte[] bytes = UTF8.encode( value );
+                    channel.putInt( bytes.length );
+                    channel.put( bytes, bytes.length );
+                }
+
+                @Override
+                public void writeString( char value ) throws IOException
+                {
+                    if ( !arrayContext )
+                    {
+                        channel.put( SchemaMapValueType.CHAR.type() );
+                    }
+                    channel.putInt( value );
+                }
+
+                @Override
+                public void beginArray( int size, ArrayType arrayType ) throws IOException
+                {
+                    arrayContext = true;
+                    channel.put( SchemaMapValueType.ARRAY.type() );
+                    channel.putInt( size );
+                    channel.put( SchemaMapValueType.map( arrayType ).type() );
+                }
+
+                @Override
+                public void endArray()
+                {
+                    arrayContext = false;
+                }
+
+                @Override
+                public void writeByteArray( byte[] value ) throws IOException
+                {
+                    beginArray( value.length, ArrayType.BYTE );
+                    for ( byte b : value )
+                    {
+                        writeInteger( b );
+                    }
+                    endArray();
+                }
+
+                @Override
+                public void writePoint( CoordinateReferenceSystem crs, double[] coordinate ) throws IOException
+                {
+                    throw new IOException( "Point is not a supported schema map value type." );
+                }
+
+                @Override
+                public void writeDuration( long months, long days, long seconds, int nanos ) throws IOException
+                {
+                    throw new IOException( "Duration is not a supported schema map value type." );
+                }
+
+                @Override
+                public void writeDate( LocalDate localDate ) throws IOException
+                {
+                    throw new IOException( "Date is not a supported schema map value type." );
+                }
+
+                @Override
+                public void writeLocalTime( LocalTime localTime ) throws IOException
+                {
+                    throw new IOException( "LocalTime is not a supported schema map value type." );
+                }
+
+                @Override
+                public void writeTime( OffsetTime offsetTime ) throws IOException
+                {
+                    throw new IOException( "OffsetTime is not a supported schema map value type." );
+                }
+
+                @Override
+                public void writeLocalDateTime( LocalDateTime localDateTime ) throws IOException
+                {
+                    throw new IOException( "LocalDateTime is not a supported schema map value type." );
+                }
+
+                @Override
+                public void writeDateTime( ZonedDateTime zonedDateTime ) throws IOException
+                {
+                    throw new IOException( "DateTime is not a supported schema map value type." );
+                }
+            } );
         }
     }
 

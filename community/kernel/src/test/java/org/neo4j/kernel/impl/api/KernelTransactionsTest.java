@@ -100,6 +100,7 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.empty;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -432,7 +433,7 @@ public class KernelTransactionsTest
         when( loginContext.authorize( any(), any() ) ).thenThrow( new AuthorizationExpiredException( "Freeze failed." ) );
 
         assertException( () -> kernelTransactions.newInstance( KernelTransaction.Type.explicit, loginContext, EMBEDDED_CONNECTION, 0L ),
-                AuthorizationExpiredException.class, "Freeze failed.");
+                AuthorizationExpiredException.class, "Freeze failed." );
 
         assertThat("We should not have any transaction", kernelTransactions.activeTransactions(), is(empty()));
     }

@@ -42,6 +42,7 @@ public class PropertyRecord extends AbstractBaseRecord implements Iterable<Prope
 {
     private static final byte TYPE_NODE = 1;
     private static final byte TYPE_REL = 2;
+    private static final byte TYPE_SCHEMA_RULE = 3;
 
     private long nextProp;
     private long prevProp;
@@ -112,6 +113,12 @@ public class PropertyRecord extends AbstractBaseRecord implements Iterable<Prope
         entityId = relId;
     }
 
+    public void setSchemaRuleId( long id )
+    {
+        entityType = TYPE_SCHEMA_RULE;
+        entityId = id;
+    }
+
     public boolean isNodeSet()
     {
         return entityType == TYPE_NODE;
@@ -120,6 +127,11 @@ public class PropertyRecord extends AbstractBaseRecord implements Iterable<Prope
     public boolean isRelSet()
     {
         return entityType == TYPE_REL;
+    }
+
+    public boolean isSchemaSet()
+    {
+        return entityType == TYPE_SCHEMA_RULE;
     }
 
     public long getNodeId()
@@ -134,6 +146,15 @@ public class PropertyRecord extends AbstractBaseRecord implements Iterable<Prope
     public long getRelId()
     {
         if ( isRelSet() )
+        {
+            return entityId;
+        }
+        return -1;
+    }
+
+    public long getSchemaRuleId()
+    {
+        if ( isSchemaSet() )
         {
             return entityId;
         }

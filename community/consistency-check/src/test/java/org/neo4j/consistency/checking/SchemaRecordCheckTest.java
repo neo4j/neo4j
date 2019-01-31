@@ -23,15 +23,14 @@ import org.junit.jupiter.api.Test;
 
 import org.neo4j.consistency.checking.index.IndexAccessors;
 import org.neo4j.consistency.report.ConsistencyReport;
-import org.neo4j.consistency.store.RecordAccessStub;
 import org.neo4j.internal.kernel.api.exceptions.schema.MalformedSchemaRuleException;
 import org.neo4j.internal.recordstorage.SchemaRuleAccess;
 import org.neo4j.kernel.api.index.IndexProviderDescriptor;
 import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.store.record.ConstraintRule;
-import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
+import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.storageengine.api.SchemaRule;
 
 import static org.mockito.Mockito.mock;
@@ -43,7 +42,7 @@ import static org.neo4j.consistency.checking.SchemaRuleUtil.indexRule;
 import static org.neo4j.consistency.checking.SchemaRuleUtil.uniquenessConstraintRule;
 
 class SchemaRecordCheckTest
-        extends RecordCheckTestBase<DynamicRecord, ConsistencyReport.SchemaConsistencyReport, SchemaRecordCheck>
+        extends RecordCheckTestBase<SchemaRecord, ConsistencyReport.SchemaConsistencyReport, SchemaRecordCheck>
 {
     private final int labelId = 1;
     private final int propertyKeyId = 2;
@@ -58,10 +57,9 @@ class SchemaRecordCheckTest
     void shouldReportMalformedSchemaRule() throws Exception
     {
         // given
-        DynamicRecord badRecord = inUse( new DynamicRecord( 0 ) );
-        badRecord.setType( RecordAccessStub.SCHEMA_RECORD_TYPE );
+        SchemaRecord badRecord = inUse( new SchemaRecord( 21 ) );
 
-        when( checker().ruleAccess.loadSingleSchemaRule( 0 ) ).thenThrow( new MalformedSchemaRuleException( "Bad Record" ) );
+        when( checker().ruleAccess.loadSingleSchemaRule( 21 ) ).thenThrow( new MalformedSchemaRuleException( "Bad Record" ) );
 
         // when
         ConsistencyReport.SchemaConsistencyReport report = check( badRecord );
@@ -74,15 +72,15 @@ class SchemaRecordCheckTest
     void shouldReportInvalidLabelReferences() throws Exception
     {
         // given
-        int schemaRuleId = 0;
+        int schemaRuleId = 21;
 
-        DynamicRecord record = inUse( dynamicRecord( schemaRuleId ) );
+        SchemaRecord record = inUse( new SchemaRecord( schemaRuleId ) );
         IndexProviderDescriptor providerDescriptor = new IndexProviderDescriptor( "in-memory", "1.0" );
         StoreIndexDescriptor rule = indexRule( schemaRuleId, labelId, propertyKeyId, providerDescriptor );
         when( checker().ruleAccess.loadSingleSchemaRule( schemaRuleId ) ).thenReturn( rule );
 
         LabelTokenRecord labelTokenRecord = add( notInUse( new LabelTokenRecord( labelId ) ) );
-        add(inUse( new PropertyKeyTokenRecord( propertyKeyId ) ) );
+        add( inUse( new PropertyKeyTokenRecord( propertyKeyId ) ) );
 
         // when
         ConsistencyReport.SchemaConsistencyReport report = check( record );
@@ -95,9 +93,9 @@ class SchemaRecordCheckTest
     void shouldReportInvalidPropertyReferenceFromIndexRule() throws Exception
     {
         // given
-        int schemaRuleId = 0;
+        int schemaRuleId = 21;
 
-        DynamicRecord record = inUse( dynamicRecord( schemaRuleId ) );
+        SchemaRecord record = inUse( new SchemaRecord( schemaRuleId ) );
         IndexProviderDescriptor providerDescriptor = new IndexProviderDescriptor( "in-memory", "1.0" );
         StoreIndexDescriptor rule = indexRule( schemaRuleId, labelId, propertyKeyId, providerDescriptor );
         when( checker().ruleAccess.loadSingleSchemaRule( schemaRuleId ) ).thenReturn( rule );
@@ -116,10 +114,10 @@ class SchemaRecordCheckTest
     void shouldReportInvalidPropertyReferenceFromUniquenessConstraintRule() throws Exception
     {
         // given
-        int schemaRuleId = 0;
+        int schemaRuleId = 21;
         int indexRuleId = 1;
 
-        DynamicRecord record = inUse( dynamicRecord( schemaRuleId ) );
+        SchemaRecord record = inUse( new SchemaRecord( schemaRuleId ) );
 
         ConstraintRule rule = uniquenessConstraintRule( schemaRuleId, labelId, propertyKeyId, indexRuleId );
 
@@ -139,11 +137,11 @@ class SchemaRecordCheckTest
     void shouldReportUniquenessConstraintNotReferencingBack() throws Exception
     {
         // given
-        int ruleId1 = 0;
-        int ruleId2 = 1;
+        int ruleId1 = 1;
+        int ruleId2 = 2;
 
-        DynamicRecord record1 = inUse( dynamicRecord( ruleId1 ) );
-        DynamicRecord record2 = inUse( dynamicRecord( ruleId2 ) );
+        SchemaRecord record1 = inUse( new SchemaRecord( ruleId1 ) );
+        SchemaRecord record2 = inUse( new SchemaRecord( ruleId2 ) );
 
         IndexProviderDescriptor providerDescriptor = new IndexProviderDescriptor( "in-memory", "1.0" );
 
@@ -173,7 +171,7 @@ class SchemaRecordCheckTest
         // given
         int ruleId = 1;
 
-        DynamicRecord record = inUse( dynamicRecord( ruleId ) );
+        SchemaRecord record = inUse( new SchemaRecord( ruleId ) );
 
         IndexProviderDescriptor providerDescriptor = new IndexProviderDescriptor( "in-memory", "1.0" );
 
@@ -197,11 +195,11 @@ class SchemaRecordCheckTest
     void shouldReportTwoUniquenessConstraintsReferencingSameIndex() throws Exception
     {
         // given
-        int ruleId1 = 0;
-        int ruleId2 = 1;
+        int ruleId1 = 1;
+        int ruleId2 = 2;
 
-        DynamicRecord record1 = inUse( dynamicRecord( ruleId1 ) );
-        DynamicRecord record2 = inUse( dynamicRecord( ruleId2 ) );
+        SchemaRecord record1 = inUse( new SchemaRecord( ruleId1 ) );
+        SchemaRecord record2 = inUse( new SchemaRecord( ruleId2 ) );
 
         ConstraintRule rule1 = uniquenessConstraintRule( ruleId1, labelId, propertyKeyId, ruleId2 );
         ConstraintRule rule2 = uniquenessConstraintRule( ruleId2, labelId, propertyKeyId, ruleId2 );
@@ -224,9 +222,9 @@ class SchemaRecordCheckTest
     void shouldReportUnreferencedUniquenessConstraint() throws Exception
     {
         // given
-        int ruleId = 0;
+        int ruleId = 1;
 
-        DynamicRecord record = inUse( dynamicRecord( ruleId ) );
+        SchemaRecord record = inUse( new SchemaRecord( ruleId ) );
 
         ConstraintRule rule = uniquenessConstraintRule( ruleId, labelId, propertyKeyId, ruleId );
 
@@ -251,8 +249,8 @@ class SchemaRecordCheckTest
         int ruleId1 = 0;
         int ruleId2 = 1;
 
-        DynamicRecord record1 = inUse( dynamicRecord( ruleId1 ) );
-        DynamicRecord record2 = inUse( dynamicRecord( ruleId2) );
+        SchemaRecord record1 = inUse( new SchemaRecord( ruleId1 ) );
+        SchemaRecord record2 = inUse( new SchemaRecord( ruleId2 ) );
 
         IndexProviderDescriptor providerDescriptor = new IndexProviderDescriptor( "in-memory", "1.0" );
 
@@ -283,8 +281,8 @@ class SchemaRecordCheckTest
         int ruleId1 = 0;
         int ruleId2 = 1;
 
-        DynamicRecord record1 = inUse( dynamicRecord( ruleId1 ) );
-        DynamicRecord record2 = inUse( dynamicRecord( ruleId2 ) );
+        SchemaRecord record1 = inUse( new SchemaRecord( (long) ruleId1 ) );
+        SchemaRecord record2 = inUse( new SchemaRecord( (long) ruleId2 ) );
 
         IndexProviderDescriptor providerDescriptor = new IndexProviderDescriptor( "in-memory", "1.0" );
 
@@ -311,7 +309,7 @@ class SchemaRecordCheckTest
         // given
         int ruleId = 0;
 
-        DynamicRecord record = inUse( dynamicRecord( ruleId ) );
+        SchemaRecord record = inUse( new SchemaRecord( (long) ruleId ) );
 
         IndexProviderDescriptor providerDescriptor = new IndexProviderDescriptor( "in-memory", "1.0" );
 
@@ -338,8 +336,8 @@ class SchemaRecordCheckTest
         int ruleId1 = 0;
         int ruleId2 = 1;
 
-        DynamicRecord record1 = inUse( dynamicRecord( ruleId1 ) );
-        DynamicRecord record2 = inUse( dynamicRecord( ruleId2 ) );
+        SchemaRecord record1 = inUse( new SchemaRecord( (long) ruleId1 ) );
+        SchemaRecord record2 = inUse( new SchemaRecord( (long) ruleId2 ) );
 
         IndexProviderDescriptor providerDescriptor = new IndexProviderDescriptor( "in-memory", "1.0" );
 
@@ -368,12 +366,5 @@ class SchemaRecordCheckTest
     private static SchemaRuleAccess configureSchemaStore()
     {
         return mock( SchemaRuleAccess.class );
-    }
-
-    private static DynamicRecord dynamicRecord( long id )
-    {
-        DynamicRecord record = new DynamicRecord( id );
-        record.setType( RecordAccessStub.SCHEMA_RECORD_TYPE );
-        return record;
     }
 }

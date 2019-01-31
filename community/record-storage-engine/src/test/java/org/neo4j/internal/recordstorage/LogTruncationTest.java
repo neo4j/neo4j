@@ -30,6 +30,7 @@ import java.util.Map;
 import org.neo4j.internal.recordstorage.Command.NodeCountsCommand;
 import org.neo4j.internal.recordstorage.Command.RelationshipCountsCommand;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
+import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.NeoStoreRecord;
@@ -38,6 +39,7 @@ import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
+import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
@@ -53,7 +55,6 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.neo4j.kernel.impl.store.record.DynamicRecord.dynamicRecord;
 
 /**
  * At any point, a power outage may stop us from writing to the log, which means that, at any point, all our commands
@@ -82,10 +83,12 @@ class LogTruncationTest
         permutations.put( Command.RelationshipGroupCommand.class,
                 new Command[] { new Command.LabelTokenCommand( new LabelTokenRecord( 1 ),
                         createLabelTokenRecord( 1 ) ) } );
-        permutations.put( Command.SchemaRuleCommand.class, new Command[] { new Command.SchemaRuleCommand(
-                singletonList( dynamicRecord( 1L, false, true, -1L, 1, "hello".getBytes() ) ),
-                singletonList( dynamicRecord( 1L, true, true, -1L, 1, "hello".getBytes() ) ),
-                TestIndexDescriptorFactory.forLabel( 3, 4 ).withId( 1 ) ) } );
+        StoreIndexDescriptor schemaRule = TestIndexDescriptorFactory.forLabel( 3, 4 ).withId( 1 );
+        permutations.put( Command.SchemaRuleCommand.class, new Command[]{
+                new Command.SchemaRuleCommand( new SchemaRecord( 1 ).initialize( true, 41 ), new SchemaRecord( 1 ).initialize( true, 42 ), schemaRule ),
+                new Command.SchemaRuleCommand( new SchemaRecord( 1 ), new SchemaRecord( 1 ).initialize( true, 42 ), schemaRule ),
+                new Command.SchemaRuleCommand( new SchemaRecord( 1 ).initialize( true, 41 ), new SchemaRecord( 1 ), null ),
+                new Command.SchemaRuleCommand( new SchemaRecord( 1 ), new SchemaRecord( 1 ), null ),} );
         permutations
                 .put( Command.RelationshipTypeTokenCommand.class,
                         new Command[] { new Command.RelationshipTypeTokenCommand(

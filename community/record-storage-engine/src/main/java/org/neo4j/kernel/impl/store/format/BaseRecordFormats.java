@@ -23,9 +23,11 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 import org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat;
+import org.neo4j.kernel.impl.store.format.standard.NoRecordFormat;
 import org.neo4j.kernel.impl.store.record.MetaDataRecord;
 import org.neo4j.storageengine.api.format.Capability;
 import org.neo4j.storageengine.api.format.CapabilityType;
+import org.neo4j.kernel.impl.store.record.SchemaRecord;
 
 import static java.util.stream.Collectors.toSet;
 import static org.neo4j.helpers.ArrayUtil.contains;
@@ -153,5 +155,11 @@ public abstract class BaseRecordFormats implements RecordFormats
     public boolean hasCompatibleCapabilities( RecordFormats other, CapabilityType type )
     {
         return hasCompatibleCapabilities( this, other, type );
+    }
+
+    @Override
+    public RecordFormat<SchemaRecord> schemaRecord()
+    {
+        return new NoRecordFormat<>();
     }
 }

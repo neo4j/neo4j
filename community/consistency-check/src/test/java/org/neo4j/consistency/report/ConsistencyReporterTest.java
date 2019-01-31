@@ -67,6 +67,7 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
+import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.storageengine.api.SchemaRule;
 import org.neo4j.storageengine.api.schema.SchemaDescriptor;
 
@@ -102,7 +103,6 @@ public class ConsistencyReporterTest
         {
             // given
             ConsistencySummaryStatistics summary = mock( ConsistencySummaryStatistics.class );
-            @SuppressWarnings( "unchecked" )
             RecordAccess records = mock( RecordAccess.class );
             ConsistencyReporter.ReportHandler handler = new ConsistencyReporter.ReportHandler(
                     new InconsistencyReport( mock( InconsistencyLogger.class ), summary ),
@@ -395,6 +395,10 @@ public class ConsistencyReporterTest
             if ( type == SchemaRule.class )
             {
                 return simpleSchemaRule();
+            }
+            if ( type == SchemaRecord.class )
+            {
+                return new SchemaRecord( 42 );
             }
             if ( type == RelationshipGroupRecord.class )
             {

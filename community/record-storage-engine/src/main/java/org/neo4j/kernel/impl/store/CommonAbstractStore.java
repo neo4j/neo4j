@@ -999,7 +999,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
     @Override
     public RECORD getRecord( long id, RECORD record, RecordLoad mode )
     {
-        try ( PageCursor cursor = pagedFile.io( getNumberOfReservedLowIds(), PF_SHARED_READ_LOCK ) )
+        try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_READ_LOCK ) )
         {
             readIntoRecord( id, record, mode, cursor );
             return record;

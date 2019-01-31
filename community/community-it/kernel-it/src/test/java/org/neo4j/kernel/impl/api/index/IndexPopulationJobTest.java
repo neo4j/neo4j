@@ -65,6 +65,7 @@ import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.AssertableLogProvider.LogMatcherBuilder;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.scheduler.JobHandle;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.NodeLabelUpdate;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
@@ -372,6 +373,8 @@ public class IndexPopulationJobTest
 
         final IndexPopulationJob job =
                 newIndexPopulationJob( populator, index, storeView, NullLogProvider.getInstance(), EntityType.NODE, indexDescriptor( FIRST, name, false ) );
+        JobHandle jobHandle = mock( JobHandle.class );
+        job.setHandle( jobHandle );
 
         OtherThreadExecutor<Void> populationJobRunner = cleanup.add( new OtherThreadExecutor<>(
                 "Population job test runner", null ) );
@@ -383,7 +386,8 @@ public class IndexPopulationJobTest
                 } );
 
         storeScan.latch.waitForAllToStart();
-        job.cancel().get();
+        job.cancel();
+        job.awaitCompletion();
         storeScan.latch.waitForAllToFinish();
 
         // WHEN
@@ -392,6 +396,7 @@ public class IndexPopulationJobTest
         // THEN
         verify( populator ).close( false );
         verify( index, never() ).flip( any(), any() );
+        verify( jobHandle ).cancel( false );
     }
 
     @Test

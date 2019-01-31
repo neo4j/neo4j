@@ -27,12 +27,13 @@ import org.junit.rules.ExpectedException;
 import org.mockito.Mockito;
 
 import java.io.IOException;
+import java.util.stream.Stream;
 
 import org.neo4j.common.TokenNameLookup;
-import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.exceptions.schema.DuplicateSchemaRuleException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.schema.constraints.ConstraintDescriptorFactory;
+import org.neo4j.kernel.impl.core.TokenHolders;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.StoreType;
@@ -41,10 +42,9 @@ import org.neo4j.test.mockito.matcher.KernelExceptionUserMessageMatcher;
 import org.neo4j.test.rule.NeoStoresRule;
 import org.neo4j.test.rule.PageCacheAndDependenciesRule;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.internal.recordstorage.RecordStorageEngineFactory.readOnlyTokenHolders;
 
 public class SchemaStorageTest
 {
@@ -59,12 +59,12 @@ public class SchemaStorageTest
     public PageCacheAndDependenciesRule storageRule = new PageCacheAndDependenciesRule();
 
     @Rule
-    public NeoStoresRule storesRule = new NeoStoresRule( SchemaStorageTest.class, StoreType.SCHEMA );
+    public NeoStoresRule storesRule = new NeoStoresRule( SchemaStorageTest.class,
+            StoreType.SCHEMA, StoreType.PROPERTY_KEY_TOKEN, StoreType.LABEL_TOKEN, StoreType.RELATIONSHIP_TYPE_TOKEN );
 
     @Rule
     public ExpectedException expectedException = ExpectedException.none();
 
-    private SchemaStore store;
     private SchemaStorage storage;
     private NeoStores neoStores;
 
@@ -72,8 +72,8 @@ public class SchemaStorageTest
     public void setup() throws IOException
     {
         neoStores = storesRule.builder().with( storageRule.fileSystem() ).with( storageRule.pageCache() ).build();
-        store = neoStores.getSchemaStore();
-        storage = new SchemaStorage( store );
+        SchemaStore store = neoStores.getSchemaStore();
+        storage = new SchemaStorage( store, readOnlyTokenHolders( neoStores ) );
     }
 
     @After
@@ -106,8 +106,8 @@ public class SchemaStorageTest
         TokenNameLookup tokenNameLookup = getDefaultTokenNameLookup();
 
         SchemaStorage schemaStorageSpy = Mockito.spy( storage );
-        Mockito.when( schemaStorageSpy.loadAllSchemaRules( any(), any(), anyBoolean() ) ).thenReturn(
-                Iterators.iterator(
+        Mockito.when( schemaStorageSpy.streamAllSchemaRules( false ) ).thenReturn(
+                Stream.of(
                         getUniquePropertyConstraintRule( 1L, LABEL1_ID, PROP1_ID ),
                         getUniquePropertyConstraintRule( 2L, LABEL1_ID, PROP1_ID ) ) );
 
@@ -145,8 +145,8 @@ public class SchemaStorageTest
         TokenNameLookup tokenNameLookup = getDefaultTokenNameLookup();
 
         SchemaStorage schemaStorageSpy = Mockito.spy( storage );
-        when( schemaStorageSpy.loadAllSchemaRules( any(), any(), anyBoolean() ) ).thenReturn(
-                Iterators.iterator(
+        when( schemaStorageSpy.streamAllSchemaRules( false ) ).thenReturn(
+                Stream.of(
                         getRelationshipPropertyExistenceConstraintRule( 1L, TYPE1_ID, PROP1_ID ),
                         getRelationshipPropertyExistenceConstraintRule( 2L, TYPE1_ID, PROP1_ID ) ) );
 

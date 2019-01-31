@@ -21,6 +21,7 @@ package org.neo4j.test.assertion;
 
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
+import org.hamcrest.Matchers;
 import org.hamcrest.StringDescription;
 
 import java.util.Objects;
@@ -32,8 +33,7 @@ import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.helpers.ArrayUtil;
 import org.neo4j.helpers.Strings;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.core.StringContains.containsString;
+import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.fail;
 
 public final class Assert
@@ -44,11 +44,17 @@ public final class Assert
 
     public static <E extends Exception> void assertException( ThrowingAction<E> f, Class<?> typeOfException )
     {
-        assertException( f, typeOfException, null );
+        assertException( f, typeOfException, (Matcher<String>) null );
     }
 
     public static <E extends Exception> void assertException( ThrowingAction<E> f, Class<?> typeOfException,
-            String partOfErrorMessage )
+            String partOfMessage )
+    {
+        assertException( f, typeOfException, partOfMessage == null ? null : containsString( partOfMessage ) );
+    }
+
+    public static <E extends Exception> void assertException( ThrowingAction<E> f, Class<?> typeOfException,
+            Matcher<String> messageMatcher )
     {
         try
         {
@@ -59,14 +65,24 @@ public final class Assert
         {
             if ( typeOfException.isInstance( e ) )
             {
-                if ( partOfErrorMessage != null )
+                if ( messageMatcher != null )
                 {
-                    assertThat( e.getMessage(), containsString( partOfErrorMessage ) );
+                    String message = e.getMessage();
+                    if ( !messageMatcher.matches( message ) )
+                    {
+                        StringBuilder sb = new StringBuilder();
+                        Description description = new StringDescription( sb );
+                        messageMatcher.describeTo( description );
+                        description.appendText( System.lineSeparator() );
+                        description.appendText( "but " );
+                        messageMatcher.describeMismatch( message, description );
+                        throw new AssertionError( "Exception (attached as cause) did not match expected message '" + sb + "'.", e );
+                    }
                 }
             }
             else
             {
-                fail( "Got unexpected exception " + e.getClass() + "\nExpected: " + typeOfException );
+                throw new AssertionError( "Expected exception of type '" + typeOfException + "', but instead got the attached cause.", e );
             }
         }
     }

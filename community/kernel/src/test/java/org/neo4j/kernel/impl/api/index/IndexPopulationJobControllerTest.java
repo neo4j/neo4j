@@ -19,10 +19,8 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-
 import org.junit.Test;
 
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
 import org.neo4j.test.OnDemandJobScheduler;
@@ -33,7 +31,6 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 public class IndexPopulationJobControllerTest
 {
@@ -85,8 +82,6 @@ public class IndexPopulationJobControllerTest
 
     private IndexPopulationJob getIndexPopulationJob()
     {
-        IndexPopulationJob populationJob = mock( IndexPopulationJob.class );
-        when( populationJob.cancel() ).thenReturn( CompletableFuture.completedFuture( null ) );
-        return populationJob;
+        return mock( IndexPopulationJob.class );
     }
 }

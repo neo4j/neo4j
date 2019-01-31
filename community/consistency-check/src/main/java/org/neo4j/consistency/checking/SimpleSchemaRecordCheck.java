@@ -17,24 +17,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.store.format.standard;
+package org.neo4j.consistency.checking;
 
-/**
- * Common low limit format settings.
- */
-public final class StandardFormatSettings
+import org.neo4j.consistency.report.ConsistencyReport;
+import org.neo4j.consistency.store.RecordAccess;
+import org.neo4j.kernel.impl.store.record.SchemaRecord;
+
+public class SimpleSchemaRecordCheck implements RecordCheck<SchemaRecord,ConsistencyReport.SchemaConsistencyReport>
 {
-    public static final int PROPERTY_TOKEN_MAXIMUM_ID_BITS = 24;
-    static final int NODE_MAXIMUM_ID_BITS = 35;
-    static final int RELATIONSHIP_MAXIMUM_ID_BITS = 35;
-    static final int PROPERTY_MAXIMUM_ID_BITS = 36;
-    public static final int DYNAMIC_MAXIMUM_ID_BITS = 36;
-    public static final int LABEL_TOKEN_MAXIMUM_ID_BITS = 32;
-    public static final int RELATIONSHIP_TYPE_TOKEN_MAXIMUM_ID_BITS = 16;
-    static final int RELATIONSHIP_GROUP_MAXIMUM_ID_BITS = 35;
-    public static final int SCHEMA_RECORD_ID_BITS = 32; // Should ideally be less than PROPERTY_MAXIMUM_ID_BITS.
-
-    private StandardFormatSettings()
+    /**
+     * TODO check all the things in {@link ConsistencyReport.SchemaConsistencyReport} that {@link SchemaRecordCheck} doesn't look for.
+     * @param record
+     * @param engine
+     * @param records
+     */
+    @Override
+    public void check( SchemaRecord record, CheckerEngine<SchemaRecord,ConsistencyReport.SchemaConsistencyReport> engine, RecordAccess records )
     {
+        // TODO
     }
 }

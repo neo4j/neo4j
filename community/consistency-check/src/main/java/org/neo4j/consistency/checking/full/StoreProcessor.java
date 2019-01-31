@@ -43,6 +43,7 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
+import org.neo4j.kernel.impl.store.record.SchemaRecord;
 
 import static org.neo4j.consistency.checking.cache.DefaultCacheAccess.DEFAULT_QUEUE_SIZE;
 import static org.neo4j.consistency.checking.full.CloningRecordIterator.cloned;
@@ -83,8 +84,8 @@ public class StoreProcessor extends AbstractStoreProcessor
         super.processNode( store, node );
     }
 
-    protected void checkSchema( RecordType type, RecordStore<DynamicRecord> store, DynamicRecord schema,
-            RecordCheck<DynamicRecord,ConsistencyReport.SchemaConsistencyReport> checker )
+    protected void checkSchema( RecordType type, RecordStore<SchemaRecord> store, SchemaRecord schema,
+            RecordCheck<SchemaRecord,ConsistencyReport.SchemaConsistencyReport> checker )
     {
         report.forSchema( schema, checker );
     }
@@ -189,7 +190,7 @@ public class StoreProcessor extends AbstractStoreProcessor
     }
 
     @Override
-    public void processSchema( RecordStore<DynamicRecord> store, DynamicRecord schema )
+    public void processSchema( RecordStore<SchemaRecord> store, SchemaRecord schema )
     {
         if ( null == schemaRecordCheck )
         {

@@ -35,18 +35,17 @@ import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
+import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.storageengine.api.IndexUpdateListener;
 import org.neo4j.storageengine.api.NodeLabelUpdateListener;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.util.concurrent.WorkSync;
 
-import static java.util.Collections.singleton;
 import static org.junit.Assert.assertFalse;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forLabel;
-import static org.neo4j.kernel.impl.store.record.DynamicRecord.dynamicRecord;
 
 public class NeoTransactionIndexApplierTest
 {
@@ -55,7 +54,6 @@ public class NeoTransactionIndexApplierTest
     private final IndexingService indexingService = mock( IndexingService.class );
     private final IndexUpdateListener indexUpdateListener = mock( IndexUpdateListener.class );
     private final SchemaCache schemaCache = mock( SchemaCache.class );
-    @SuppressWarnings( "unchecked" )
     private final NodeLabelUpdateListener labelUpdateListener = mock( NodeLabelUpdateListener.class );
     private final Collection<DynamicRecord> emptyDynamicRecords = Collections.emptySet();
     private final WorkSync<NodeLabelUpdateListener,LabelUpdateWork> labelScanStoreSynchronizer = new WorkSync<>( labelUpdateListener );
@@ -105,8 +103,11 @@ public class NeoTransactionIndexApplierTest
 
         final IndexBatchTransactionApplier applier = newIndexTransactionApplier();
 
+        SchemaRecord before = new SchemaRecord( 1 );
+        SchemaRecord after = before.clone().initialize( true, 39 );
+        after.setCreated();
         final Command.SchemaRuleCommand command =
-                new Command.SchemaRuleCommand( emptyDynamicRecords, singleton( createdDynamicRecord( 1 ) ), indexRule );
+                new Command.SchemaRuleCommand( before, after, indexRule );
 
         // When
         boolean result;
@@ -133,8 +134,10 @@ public class NeoTransactionIndexApplierTest
 
         final IndexBatchTransactionApplier applier = newIndexTransactionApplier();
 
+        SchemaRecord before = new SchemaRecord( 1 ).initialize( true, 39 );
+        SchemaRecord after = new SchemaRecord( 1 );
         final Command.SchemaRuleCommand command = new Command.SchemaRuleCommand(
-                singleton( createdDynamicRecord( 1 ) ), singleton( dynamicRecord( 1, false ) ), indexRule );
+                before, after, indexRule );
 
         // When
         boolean result;
@@ -146,12 +149,5 @@ public class NeoTransactionIndexApplierTest
         // Then
         assertFalse( result );
         verify( indexingService ).dropIndex( indexRule );
-    }
-
-    private static DynamicRecord createdDynamicRecord( long id )
-    {
-        DynamicRecord record = dynamicRecord( id, true );
-        record.setCreated();
-        return record;
     }
 }

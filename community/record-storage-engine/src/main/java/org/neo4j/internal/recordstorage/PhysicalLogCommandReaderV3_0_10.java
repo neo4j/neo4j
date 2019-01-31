@@ -51,7 +51,8 @@ import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
-import org.neo4j.kernel.impl.store.record.SchemaRuleSerialization;
+import org.neo4j.kernel.impl.store.record.SchemaRecord;
+import org.neo4j.kernel.impl.storemigration.legacy.SchemaRuleSerialization35;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion;
 import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.SchemaRule;
@@ -93,7 +94,7 @@ public class PhysicalLogCommandReaderV3_0_10 extends BaseCommandReader
             return visitLabelTokenCommand( channel );
         case NeoCommandType.NEOSTORE_COMMAND:
             return visitNeoStoreCommand( channel );
-        case NeoCommandType.SCHEMA_RULE_COMMAND:
+        case NeoCommandType.LEGACY_SCHEMA_RULE_COMMAND:
             return visitSchemaRuleCommand( channel );
         case NeoCommandType.REL_GROUP_COMMAND:
             return visitRelationshipGroupCommand( channel );
@@ -391,7 +392,7 @@ public class PhysicalLogCommandReaderV3_0_10 extends BaseCommandReader
         SchemaRule rule = Iterables.first( recordsAfter ).inUse()
                           ? readSchemaRule( recordsAfter )
                           : readSchemaRule( recordsBefore );
-        return new Command.SchemaRuleCommand( recordsBefore, recordsAfter, rule );
+        return new Command.SchemaRuleCommand( new SchemaRecord( 0 ), new SchemaRecord( 0 ), rule );
     }
 
     private Command visitNeoStoreCommand( ReadableChannel channel ) throws IOException
@@ -649,7 +650,7 @@ public class PhysicalLogCommandReaderV3_0_10 extends BaseCommandReader
         ByteBuffer deserialized = AbstractDynamicStore.concatData( recordsBefore, new byte[100] );
         try
         {
-            rule = SchemaRuleSerialization.deserialize( Iterables.first( recordsBefore ).getId(), deserialized );
+            rule = SchemaRuleSerialization35.deserialize( Iterables.first( recordsBefore ).getId(), deserialized );
         }
         catch ( MalformedSchemaRuleException e )
         {

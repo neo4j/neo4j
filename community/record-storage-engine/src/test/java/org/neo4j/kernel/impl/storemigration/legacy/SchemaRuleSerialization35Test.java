@@ -535,7 +535,7 @@ public class SchemaRuleSerialization35Test
         assertThat( deserialized.getId(), equalTo( ruleId ) );
         assertThat( deserialized.getConstraintDescriptor(), equalTo( constraint ) );
         assertThat( deserialized.schema(), equalTo( constraint.schema() ) );
-        assertThat( deserialized.getOwnedIndex(), equalTo( ownedIndexId ) );
+        assertThat( deserialized.ownedIndexReference(), equalTo( ownedIndexId ) );
         assertThat( deserialized.getName(), is( name ) );
     }
 
@@ -556,7 +556,7 @@ public class SchemaRuleSerialization35Test
         assertThat( deserialized.getId(), equalTo( ruleId ) );
         assertThat( deserialized.getConstraintDescriptor(), equalTo( constraint ) );
         assertThat( deserialized.schema(), equalTo( constraint.schema() ) );
-        assertThat( deserialized.getOwnedIndex(), equalTo( ownedIndexId ) );
+        assertThat( deserialized.ownedIndexReference(), equalTo( ownedIndexId ) );
         assertThat( deserialized.getName(), is( name ) );
     }
 
@@ -576,7 +576,7 @@ public class SchemaRuleSerialization35Test
         assertThat( deserialized.getId(), equalTo( ruleId ) );
         assertThat( deserialized.getConstraintDescriptor(), equalTo( constraint ) );
         assertThat( deserialized.schema(), equalTo( constraint.schema() ) );
-        assertException( deserialized::getOwnedIndex, IllegalStateException.class );
+        assertException( deserialized::ownedIndexReference, IllegalStateException.class );
         assertThat( deserialized.getName(), is( name ) );
     }
 
@@ -596,7 +596,7 @@ public class SchemaRuleSerialization35Test
         assertThat( deserialized.getId(), equalTo( ruleId ) );
         assertThat( deserialized.getConstraintDescriptor(), equalTo( constraint ) );
         assertThat( deserialized.schema(), equalTo( constraint.schema() ) );
-        assertException( deserialized::getOwnedIndex, IllegalStateException.class );
+        assertException( deserialized::ownedIndexReference, IllegalStateException.class );
         assertThat( deserialized.getName(), is( name ) );
     }
 

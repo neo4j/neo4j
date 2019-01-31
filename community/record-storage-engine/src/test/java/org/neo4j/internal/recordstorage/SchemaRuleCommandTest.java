@@ -21,7 +21,6 @@ package org.neo4j.internal.recordstorage;
 
 import org.junit.Test;
 
-import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptorPredicates;
 import org.neo4j.internal.recordstorage.Command.SchemaRuleCommand;
 import org.neo4j.kernel.api.schema.constraints.ConstraintDescriptorFactory;
@@ -36,14 +35,11 @@ import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.record.ConstraintRule;
-import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
-import org.neo4j.kernel.impl.store.record.SchemaRuleSerialization;
 import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.storageengine.api.IndexUpdateListener;
 import org.neo4j.storageengine.api.NodeLabelUpdateListener;
-import org.neo4j.storageengine.api.SchemaRule;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.util.concurrent.WorkSync;
 
@@ -55,6 +51,7 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
 
 public class SchemaRuleCommandTest
 {
@@ -69,7 +66,6 @@ public class SchemaRuleCommandTest
     private final IndexUpdateListener indexUpdateListener = mock( IndexUpdateListener.class );
     private final SchemaCache schemaCache = mock( SchemaCache.class );
     private final StorageEngine storageEngine = mock( StorageEngine.class );
-    @SuppressWarnings( "unchecked" )
     private final NodeLabelUpdateListener labelUpdateListener = mock( NodeLabelUpdateListener.class );
     private final NeoStoreBatchTransactionApplier storeApplier = new NeoStoreBatchTransactionApplier( neoStores,
             mock( CacheAccessBackDoor.class ), LockService.NO_LOCK_SERVICE );
@@ -80,36 +76,37 @@ public class SchemaRuleCommandTest
             new IndexBatchTransactionApplier( indexUpdateListener, labelScanStoreSynchronizer, indexUpdatesSync, mock( NodeStore.class ),
                     neoStores.getRelationshipStore(), new PropertyPhysicalToLogicalConverter( propertyStore ), storageEngine, schemaCache,
                     new IndexActivator( indexes ) );
-    private final BaseCommandReader reader = new PhysicalLogCommandReaderV3_0_10();
+    private final BaseCommandReader reader = new PhysicalLogCommandReaderV4_0();
     private final StoreIndexDescriptor rule = TestIndexDescriptorFactory.forLabel( labelId, propertyKey ).withId( id );
 
     @Test
     public void shouldWriteCreatedSchemaRuleToStore() throws Exception
     {
         // GIVEN
-        SchemaRecord beforeRecords = serialize( rule, id, false, false);
-        SchemaRecord afterRecords = serialize( rule, id, true, true);
+        SchemaRecord before = new SchemaRecord( id ).initialize( false, NO_NEXT_PROPERTY.longValue() );
+        SchemaRecord after = new SchemaRecord( id ).initialize( true, 42 );
 
         when( neoStores.getSchemaStore() ).thenReturn( schemaStore );
 
         // WHEN
-        visitSchemaRuleCommand( storeApplier, new SchemaRuleCommand( beforeRecords, afterRecords, rule ) );
+        visitSchemaRuleCommand( storeApplier, new SchemaRuleCommand( before, after, rule ) );
 
         // THEN
-        verify( schemaStore ).updateRecord( Iterables.first( afterRecords ) );
+        verify( schemaStore ).updateRecord( after );
     }
 
     @Test
     public void shouldCreateIndexForCreatedSchemaRule() throws Exception
     {
         // GIVEN
-        SchemaRecord beforeRecords = serialize( rule, id, false, false);
-        SchemaRecord afterRecords = serialize( rule, id, true, true);
+        SchemaRecord before = new SchemaRecord( id ).initialize( false, NO_NEXT_PROPERTY.longValue() );
+        SchemaRecord after = new SchemaRecord( id ).initialize( true, 42 );
+        after.setCreated();
 
         when( neoStores.getSchemaStore() ).thenReturn( schemaStore );
 
         // WHEN
-        visitSchemaRuleCommand( indexApplier, new SchemaRuleCommand( beforeRecords, afterRecords, rule ) );
+        visitSchemaRuleCommand( indexApplier, new SchemaRuleCommand( before, after, rule ) );
 
         // THEN
         verify( indexUpdateListener ).createIndexes( rule );
@@ -119,8 +116,10 @@ public class SchemaRuleCommandTest
     public void shouldSetLatestConstraintRule() throws Exception
     {
         // Given
-        SchemaRecord beforeRecords = serialize( rule, id, true, true);
-        SchemaRecord afterRecords = serialize( rule, id, true, false);
+        SchemaRecord before = new SchemaRecord( id ).initialize( true, 42 );
+        before.setCreated();
+        SchemaRecord after = new SchemaRecord( id ).initialize( true, 42 );
+        after.setConstraint( true );
 
         when( neoStores.getSchemaStore() ).thenReturn( schemaStore );
         when( neoStores.getMetaDataStore() ).thenReturn( metaDataStore );
@@ -129,10 +128,10 @@ public class SchemaRuleCommandTest
                 ConstraintDescriptorFactory.uniqueForLabel( labelId, propertyKey ), 0 );
 
         // WHEN
-        visitSchemaRuleCommand( storeApplier, new SchemaRuleCommand( beforeRecords, afterRecords, schemaRule ) );
+        visitSchemaRuleCommand( storeApplier, new SchemaRuleCommand( before, after, schemaRule ) );
 
         // THEN
-        verify( schemaStore ).updateRecord( Iterables.first( afterRecords ) );
+        verify( schemaStore ).updateRecord( after );
         verify( metaDataStore ).setLatestConstraintIntroducingTx( txId );
     }
 
@@ -140,42 +139,45 @@ public class SchemaRuleCommandTest
     public void shouldDropSchemaRuleFromStore() throws Exception
     {
         // GIVEN
-        SchemaRecord beforeRecords = serialize( rule, id, true, true);
-        SchemaRecord afterRecords = serialize( rule, id, false, false);
+        SchemaRecord before = new SchemaRecord( id ).initialize( true, 42 );
+        before.setCreated();
+        SchemaRecord after = new SchemaRecord( id ).initialize( false, NO_NEXT_PROPERTY.longValue() );
 
         when( neoStores.getSchemaStore() ).thenReturn( schemaStore );
 
         // WHEN
-        visitSchemaRuleCommand( storeApplier, new SchemaRuleCommand( beforeRecords, afterRecords, rule ) );
+        visitSchemaRuleCommand( storeApplier, new SchemaRuleCommand( before, after, rule ) );
 
         // THEN
-        verify( schemaStore ).updateRecord( Iterables.first( afterRecords ) );
+        verify( schemaStore ).updateRecord( after );
     }
 
     @Test
     public void shouldDropSchemaRuleFromIndex() throws Exception
     {
         // GIVEN
-        SchemaRecord beforeRecords = serialize( rule, id, true, true);
-        SchemaRecord afterRecords = serialize( rule, id, false, false);
+        SchemaRecord before = new SchemaRecord( id ).initialize( true, 42 );
+        before.setCreated();
+        SchemaRecord after = new SchemaRecord( id ).initialize( false, NO_NEXT_PROPERTY.longValue() );
 
         when( neoStores.getSchemaStore() ).thenReturn( schemaStore );
 
         // WHEN
-        visitSchemaRuleCommand( indexApplier, new SchemaRuleCommand( beforeRecords, afterRecords, rule ) );
+        visitSchemaRuleCommand( indexApplier, new SchemaRuleCommand( before, after, rule ) );
 
         // THEN
         verify( indexUpdateListener ).dropIndex( rule );
     }
 
     @Test
-    public void shouldWriteSchemaRuleToLog() throws Exception
+    public void shouldWriteSchemaRuleToLog() throws Exception // TODO more of this, but using randomly generated schema rules!
     {
         // GIVEN
-        SchemaRecord beforeRecords = serialize( rule, id, false, false);
-        SchemaRecord afterRecords = serialize( rule, id, true, true);
+        SchemaRecord before = new SchemaRecord( id ).initialize( false, NO_NEXT_PROPERTY.longValue() );
+        SchemaRecord after = new SchemaRecord( id ).initialize( true, 42 );
+        after.setCreated();
 
-        SchemaRuleCommand command = new SchemaRuleCommand( beforeRecords, afterRecords, rule );
+        SchemaRuleCommand command = new SchemaRuleCommand( before, after, rule );
         InMemoryClosableChannel buffer = new InMemoryClosableChannel();
 
         when( neoStores.getSchemaStore() ).thenReturn( schemaStore );
@@ -194,10 +196,11 @@ public class SchemaRuleCommandTest
     public void shouldRecreateSchemaRuleWhenDeleteCommandReadFromDisk() throws Exception
     {
         // GIVEN
-        SchemaRecord beforeRecords = serialize( rule, id, true, true);
-        SchemaRecord afterRecords = serialize( rule, id, false, false);
+        SchemaRecord before = new SchemaRecord( id ).initialize( true, 42 );
+        before.setCreated();
+        SchemaRecord after = new SchemaRecord( id ).initialize( false, NO_NEXT_PROPERTY.longValue() );
 
-        SchemaRuleCommand command = new SchemaRuleCommand( beforeRecords, afterRecords, rule );
+        SchemaRuleCommand command = new SchemaRuleCommand( before, after, rule );
         InMemoryClosableChannel buffer = new InMemoryClosableChannel();
         when( neoStores.getSchemaStore() ).thenReturn( schemaStore );
 
@@ -208,22 +211,7 @@ public class SchemaRuleCommandTest
         // THEN
         assertThat( readCommand, instanceOf( SchemaRuleCommand.class ) );
 
-        assertSchemaRule( (SchemaRuleCommand)readCommand );
-    }
-
-    private SchemaRecord serialize( SchemaRule rule, long id, boolean inUse, boolean created )
-    {
-        DynamicRecord record = new DynamicRecord( id );
-        record.setData( SchemaRuleSerialization.serialize( rule ) );
-        if ( created )
-        {
-            record.setCreated();
-        }
-        if ( inUse )
-        {
-            record.setInUse( true );
-        }
-        return new SchemaRecord( singletonList( record ) );
+        assertSchemaRule( (SchemaRuleCommand) readCommand );
     }
 
     private void assertSchemaRule( SchemaRuleCommand readSchemaCommand )

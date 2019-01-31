@@ -155,6 +155,7 @@ public class MigrationTestUtils
 
         LogPosition logPosition = logTailInformation.lastCheckPoint.getLogPosition();
         File logFile = logFiles.getLogFileForVersion( logPosition.getLogVersion() );
-        fileSystem.truncate( logFile, logPosition.getByteOffset() );
+        long byteOffset = logPosition.getByteOffset();
+        fileSystem.truncate( logFile, byteOffset );
     }
 }

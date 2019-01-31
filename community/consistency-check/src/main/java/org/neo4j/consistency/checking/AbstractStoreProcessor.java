@@ -38,11 +38,11 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
+import org.neo4j.kernel.impl.store.record.SchemaRecord;
 
 import static java.lang.String.format;
 import static org.neo4j.consistency.checking.DynamicStore.ARRAY;
 import static org.neo4j.consistency.checking.DynamicStore.NODE_LABEL;
-import static org.neo4j.consistency.checking.DynamicStore.SCHEMA;
 
 public abstract class AbstractStoreProcessor extends RecordStore.Processor<RuntimeException>
 {
@@ -124,11 +124,14 @@ public abstract class AbstractStoreProcessor extends RecordStore.Processor<Runti
             RecordStore<RelationshipGroupRecord> store, RelationshipGroupRecord record,
             RecordCheck<RelationshipGroupRecord, RelationshipGroupConsistencyReport> checker );
 
+    protected abstract void checkSchema( RecordType type, RecordStore<SchemaRecord> store, SchemaRecord schema,
+            RecordCheck<SchemaRecord,ConsistencyReport.SchemaConsistencyReport> checker );
+
     @Override
-    public void processSchema( RecordStore<DynamicRecord> store, DynamicRecord schema )
+    public void processSchema( RecordStore<SchemaRecord> store, SchemaRecord schema )
     {
         // cf. StoreProcessor
-        checkDynamic( RecordType.SCHEMA, store, schema, new DynamicRecordCheck( store, SCHEMA ) );
+        checkSchema( RecordType.SCHEMA, store, schema, new SimpleSchemaRecordCheck() );
     }
 
     @Override

@@ -260,6 +260,7 @@ public class StoreUpgrader
 
     private void assertCleanlyShutDownByCheckPoint()
     {
+        Throwable suppressibleException = null;
         try
         {
             if ( !logTailScanner.getTailInformation().commitsAfterLastCheckpoint() )
@@ -271,8 +272,14 @@ public class StoreUpgrader
         catch ( Throwable throwable )
         {
             // ignore exception and throw db not cleanly shutdown
+            suppressibleException = throwable;
         }
-        throw new StoreUpgrader.DatabaseNotCleanlyShutDownException();
+        DatabaseNotCleanlyShutDownException exception = new DatabaseNotCleanlyShutDownException();
+        if ( suppressibleException != null )
+        {
+            exception.addSuppressed( suppressibleException );
+        }
+        throw exception;
     }
 
     List<StoreMigrationParticipant> getParticipants()
@@ -337,8 +344,8 @@ public class StoreUpgrader
             for ( StoreMigrationParticipant participant : participants )
             {
                 ProgressReporter progressReporter = progressMonitor.startSection( participant.getName() );
-                participant.migrate( directoryLayout, migrationLayout, progressReporter, versionToMigrateFrom,
-                        storeVersionCheck.configuredVersion() );
+                String versionToMigrateTo = storeVersionCheck.configuredVersion();
+                participant.migrate( directoryLayout, migrationLayout, progressReporter, versionToMigrateFrom, versionToMigrateTo );
                 progressReporter.completed();
             }
         }

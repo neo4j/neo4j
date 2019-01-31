@@ -73,6 +73,7 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
+import org.neo4j.kernel.impl.store.record.SchemaRecord;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
@@ -349,7 +350,7 @@ public class ExecutionOrderIntegrationTest
         }
 
         @Override
-        public RecordReference<DynamicRecord> schema( long id )
+        public RecordReference<SchemaRecord> schema( long id )
         {
             return logging( access.schema( id ) );
         }

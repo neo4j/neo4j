@@ -37,6 +37,7 @@ import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
+import org.neo4j.kernel.impl.store.record.SchemaRecord;
 
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 
@@ -52,7 +53,7 @@ public class DirectRecordAccess implements RecordAccess
     }
 
     @Override
-    public RecordReference<DynamicRecord> schema( long id )
+    public RecordReference<SchemaRecord> schema( long id )
     {
         return referenceTo( access.getSchemaStore(), id );
     }

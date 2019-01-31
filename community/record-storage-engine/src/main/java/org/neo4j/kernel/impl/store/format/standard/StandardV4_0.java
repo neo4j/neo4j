@@ -34,6 +34,7 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
+import org.neo4j.kernel.impl.store.record.SchemaRecord;
 
 public class StandardV4_0 extends BaseRecordFormats
 {
@@ -44,7 +45,8 @@ public class StandardV4_0 extends BaseRecordFormats
     public StandardV4_0()
     {
         super( STORE_VERSION, StoreVersion.STANDARD_V4_0.introductionVersion(), 9, Capability.SCHEMA,
-                Capability.DENSE_NODES, LuceneCapability.LUCENE_7, Capability.POINT_PROPERTIES, Capability.TEMPORAL_PROPERTIES );
+                Capability.DENSE_NODES, LuceneCapability.LUCENE_7, Capability.POINT_PROPERTIES, Capability.TEMPORAL_PROPERTIES,
+                Capability.FLEXIBLE_SCHEMA_STORE );
     }
 
     @Override
@@ -99,6 +101,12 @@ public class StandardV4_0 extends BaseRecordFormats
     public FormatFamily getFormatFamily()
     {
         return StandardFormatFamily.INSTANCE;
+    }
+
+    @Override
+    public RecordFormat<SchemaRecord> schemaRecord()
+    {
+        return new SchemaRecordFormat();
     }
 
     @Override

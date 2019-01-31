@@ -19,65 +19,55 @@
  */
 package org.neo4j.kernel.impl.store.record;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.List;
-
-import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
-
-public class SchemaRecord extends AbstractBaseRecord implements Iterable<DynamicRecord>
+public class SchemaRecord extends PrimitiveRecord
 {
-    private Collection<DynamicRecord> records;
+    public static final byte COMMAND_HAS_NO_SCHEMA_RULE = 0;
+    public static final byte COMMAND_HAS_SCHEMA_RULE = 1;
+    public static final byte SCHEMA_FLAG_IS_CONSTRAINT = 1;
 
-    public SchemaRecord( Collection<DynamicRecord> records )
+    private boolean constraint;
+
+    public SchemaRecord( long id )
     {
-        super( -1 );
-        initialize( records );
+        super( id );
     }
 
-    public SchemaRecord initialize( Collection<DynamicRecord> records )
+    @Override
+    public void setIdTo( PropertyRecord property )
     {
-        initialize( true );
-        Iterator<DynamicRecord> iterator = records.iterator();
-        long id = iterator.hasNext() ? iterator.next().getId() : NULL_REFERENCE.intValue();
-        setId( id );
-        this.records = records;
+        property.setSchemaRuleId( getId() );
+    }
+
+    @Override
+    public SchemaRecord initialize( boolean inUse, long nextProp )
+    {
+        super.initialize( inUse, nextProp );
         return this;
-    }
-
-    public void setDynamicRecords( Collection<DynamicRecord> records )
-    {
-        this.records.clear();
-        this.records.addAll( records );
-    }
-
-    @Override
-    public void clear()
-    {
-        super.clear();
-        this.records = null;
-    }
-
-    @Override
-    public Iterator<DynamicRecord> iterator()
-    {
-        return records.iterator();
-    }
-
-    public int size()
-    {
-        return records.size();
     }
 
     @Override
     public SchemaRecord clone()
     {
-        List<DynamicRecord> list = new ArrayList<>( records.size() );
-        for ( DynamicRecord record : records )
-        {
-            list.add( record.clone() );
-        }
-        return new SchemaRecord( list );
+        SchemaRecord clone = new SchemaRecord( getId() );
+        clone.setInUse( inUse() );
+        clone.setNextProp( getNextProp() );
+        clone.setConstraint( constraint );
+        return clone;
+    }
+
+    @Override
+    public String toString()
+    {
+        return "SchemaRecord[" + getId() + ",used=" + inUse() + ",nextProp=" + nextProp + ",constraint=" + constraint + "]";
+    }
+
+    public boolean isConstraint()
+    {
+        return constraint;
+    }
+
+    public void setConstraint( boolean constraint )
+    {
+        this.constraint = constraint;
     }
 }

@@ -226,7 +226,7 @@ class StoreMigratorTest
         MyProgressReporter progressReporter = new MyProgressReporter();
         // Migrate with two storeversions that have the same FORMAT capabilities
         migrator.migrate( dbLayout, testDirectory.databaseLayout( "migrationDir" ), progressReporter,
-                StandardV3_4.STORE_VERSION, StandardV4_0.STORE_VERSION );
+                StandardV4_0.STORE_VERSION, StandardV4_0.STORE_VERSION );
 
         // Should not have started any migration
         assertFalse( progressReporter.started );

@@ -23,6 +23,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
+import java.util.Arrays;
 
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Label;
@@ -35,7 +36,6 @@ import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.test.rule.EmbeddedDbmsRule;
 
 import static org.hamcrest.Matchers.array;
-import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;

@@ -79,7 +79,7 @@ class PropertyStoreConsistentReadTest extends RecordStoreConsistentReadTest<Prop
     }
 
     @Override
-    protected PropertyRecord getHeavy( PropertyStore store, int id )
+    protected PropertyRecord getHeavy( PropertyStore store, long id )
     {
         PropertyRecord record = super.getHeavy( store, id );
         ensureHeavy( store, record );

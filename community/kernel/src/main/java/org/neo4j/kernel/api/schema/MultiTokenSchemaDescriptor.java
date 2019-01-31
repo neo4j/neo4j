@@ -141,11 +141,11 @@ public class MultiTokenSchemaDescriptor implements SchemaDescriptor
         {
             return true;
         }
-        if ( !(o instanceof SchemaDescriptor) )
+        if ( !(o instanceof MultiTokenSchemaDescriptor) )
         {
             return false;
         }
-        SchemaDescriptor that = (SchemaDescriptor) o;
+        MultiTokenSchemaDescriptor that = (MultiTokenSchemaDescriptor) o;
         return Arrays.equals( entityTokens, that.getEntityTokenIds() ) && entityType == that.entityType() &&
                Arrays.equals( propertyIds, that.getPropertyIds() );
     }

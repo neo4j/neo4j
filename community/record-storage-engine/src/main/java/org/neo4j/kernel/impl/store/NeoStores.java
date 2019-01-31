@@ -563,9 +563,9 @@ public class NeoStores implements AutoCloseable
 
     CommonAbstractStore createSchemaStore()
     {
-        return initialize(
-                new SchemaStore( layout.schemaStore(), layout.idSchemaStore(), config, IdType.SCHEMA, idGeneratorFactory, pageCache,
-                        logProvider, recordFormats, openOptions ) );
+        return initialize( new SchemaStore( layout.schemaStore(), layout.idSchemaStore(), config, IdType.SCHEMA, idGeneratorFactory, pageCache, logProvider,
+                (PropertyStore) getOrCreateStore( StoreType.PROPERTY ),
+                recordFormats, openOptions ) );
     }
 
     CommonAbstractStore createRelationshipGroupStore()

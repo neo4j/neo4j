@@ -19,34 +19,47 @@
  */
 package org.neo4j.internal.recordstorage;
 
+import org.eclipse.collections.api.block.procedure.primitive.IntObjectProcedure;
+import org.eclipse.collections.api.map.primitive.IntObjectMap;
+
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
-import java.util.List;
-import java.util.function.Predicate;
+import java.util.stream.LongStream;
+import java.util.stream.Stream;
 
-import org.neo4j.function.Predicates;
-import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.internal.kernel.api.exceptions.schema.MalformedSchemaRuleException;
 import org.neo4j.kernel.api.exceptions.schema.DuplicateSchemaRuleException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
+import org.neo4j.kernel.impl.core.TokenHolders;
 import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
-import org.neo4j.kernel.impl.store.InvalidRecordException;
-import org.neo4j.kernel.impl.store.RecordStore;
+import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.SchemaStore;
+import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.ConstraintRule;
-import org.neo4j.kernel.impl.store.record.DynamicRecord;
+import org.neo4j.kernel.impl.store.record.PropertyBlock;
+import org.neo4j.kernel.impl.store.record.PropertyRecord;
+import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
+import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.storageengine.api.SchemaRule;
 import org.neo4j.storageengine.api.schema.ConstraintDescriptor;
+import org.neo4j.storageengine.api.schema.SchemaDescriptor;
 import org.neo4j.storageengine.api.schema.SchemaDescriptorSupplier;
+import org.neo4j.util.VisibleForTesting;
+import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.Values;
 
 public class SchemaStorage implements SchemaRuleAccess
 {
-    private final RecordStore<DynamicRecord> schemaStore;
+    private final SchemaStore schemaStore;
+    private final TokenHolders tokenHolders;
 
-    public SchemaStorage( RecordStore<DynamicRecord> schemaStore )
+    public SchemaStorage( SchemaStore schemaStore, TokenHolders tokenHolders )
     {
         this.schemaStore = schemaStore;
+        this.tokenHolders = tokenHolders;
     }
 
     @Override
@@ -58,209 +71,205 @@ public class SchemaStorage implements SchemaRuleAccess
     @Override
     public Iterable<SchemaRule> getAll()
     {
-        return this::loadAllSchemaRules;
+        return streamAllSchemaRules( false )::iterator;
     }
 
     @Override
     public SchemaRule loadSingleSchemaRule( long ruleId ) throws MalformedSchemaRuleException
     {
-        Collection<DynamicRecord> records;
-        try
-        {
-            records = schemaStore.getRecords( ruleId, RecordLoad.NORMAL, false );
-        }
-        catch ( Exception e )
-        {
-            throw new MalformedSchemaRuleException( e.getMessage(), e );
-        }
-        return SchemaStore.readSchemaRule( ruleId, records, newRecordBuffer() );
+        SchemaRecord record = schemaStore.newRecord();
+        schemaStore.getRecord( ruleId, record, RecordLoad.NORMAL );
+        return readSchemaRule( record );
     }
 
     @Override
     public Iterator<StoreIndexDescriptor> indexesGetAll()
     {
-        return loadAllSchemaRules( Predicates.alwaysTrue(), StoreIndexDescriptor.class, false );
+        return indexRules( streamAllSchemaRules( false ) ).iterator();
     }
 
     @Override
-    public StoreIndexDescriptor indexGetForSchema( final SchemaDescriptorSupplier index )
+    public StoreIndexDescriptor[] indexGetForSchema( SchemaDescriptorSupplier supplier )
     {
-        Iterator<StoreIndexDescriptor> indexes = loadAllSchemaRules( index::equals, StoreIndexDescriptor.class, false );
-
-        StoreIndexDescriptor foundRule = null;
-
-        while ( indexes.hasNext() )
-        {
-            StoreIndexDescriptor candidate = indexes.next();
-            if ( foundRule != null )
-            {
-                throw new IllegalStateException( String.format(
-                        "Found more than one matching index, %s and %s", foundRule, candidate ) );
-            }
-            foundRule = candidate;
-        }
-
-        return foundRule;
+        SchemaDescriptor schema = supplier.schema();
+        return indexRules( streamAllSchemaRules( false ) )
+                .filter( rule -> rule.schema().equals( schema ) )
+                .toArray( StoreIndexDescriptor[]::new );
     }
 
     @Override
     public StoreIndexDescriptor indexGetForName( String indexName )
     {
-        Iterator<StoreIndexDescriptor> itr = indexesGetAll();
-        while ( itr.hasNext() )
-        {
-            StoreIndexDescriptor sid = itr.next();
-            if ( sid.hasUserSuppliedName() && sid.name().equals( indexName ) )
-            {
-                return sid;
-            }
-        }
-        return null;
+        return indexRules( streamAllSchemaRules( false ) )
+                .filter( idx -> idx.hasUserSuppliedName() && idx.name().equals( indexName ) )
+                .findAny().orElse( null );
     }
 
     @Override
-    public ConstraintRule constraintsGetSingle( final ConstraintDescriptor descriptor )
-            throws SchemaRuleNotFoundException, DuplicateSchemaRuleException
+    public ConstraintRule constraintsGetSingle( ConstraintDescriptor descriptor ) throws SchemaRuleNotFoundException, DuplicateSchemaRuleException
     {
-        Iterator<ConstraintRule> rules = loadAllSchemaRules( descriptor::isSame, ConstraintRule.class, false );
-
-        if ( !rules.hasNext() )
+        ConstraintRule[] rules = constraintRules( streamAllSchemaRules( false ) )
+                .filter( descriptor::isSame )
+                .toArray( ConstraintRule[]::new );
+        if ( rules.length == 0 )
         {
             throw new SchemaRuleNotFoundException( SchemaRule.Kind.map( descriptor ), descriptor.schema() );
         }
-
-        ConstraintRule rule = rules.next();
-
-        if ( rules.hasNext() )
+        if ( rules.length > 1 )
         {
             throw new DuplicateSchemaRuleException( SchemaRule.Kind.map( descriptor ), descriptor.schema() );
         }
-        return rule;
+        return rules[0];
     }
 
     @Override
     public Iterator<ConstraintRule> constraintsGetAllIgnoreMalformed()
     {
-        return loadAllSchemaRules( Predicates.alwaysTrue(), ConstraintRule.class, true );
+        return constraintRules( streamAllSchemaRules( true ) ).iterator();
     }
 
     @Override
     public SchemaRecordChangeTranslator getSchemaRecordChangeTranslator()
     {
-        return new LegacySchemaRecordChangeTranslator();
+        return new PropertyBasedSchemaRecordChangeTranslator()
+        {
+            @Override
+            protected IntObjectMap<Value> asMap( SchemaRule rule )
+            {
+                return SchemaStore.convertSchemaRuleToMap( rule, tokenHolders );
+            }
+
+            @Override
+            protected void setConstraintIndexOwnerProperty( long constraintId, IntObjectProcedure<Value> proc )
+            {
+                int propertyId = SchemaStore.getOwningConstraintPropertyKeyId( tokenHolders );
+                proc.value( propertyId, Values.longValue( constraintId ) );
+            }
+        };
     }
 
     @Override
     public void writeSchemaRule( SchemaRule rule )
     {
-        SchemaStore store = (SchemaStore) schemaStore;
-        List<DynamicRecord> records = store.allocateFrom( rule );
-        records.forEach( store::prepareForCommit );
-        records.forEach( store::updateRecord );
+        IntObjectMap<Value> protoProperties = SchemaStore.convertSchemaRuleToMap( rule, tokenHolders );
+        PropertyStore propertyStore = schemaStore.propertyStore();
+        Collection<PropertyBlock> blocks = new ArrayList<>();
+        protoProperties.forEachKeyValue( ( keyId, value ) ->
+        {
+            PropertyBlock block = new PropertyBlock();
+            propertyStore.encodeValue( block, keyId, value );
+            blocks.add( block );
+        } );
+
+        assert !blocks.isEmpty() : "Property blocks should have been produced for schema rule: " + rule;
+
+        long nextPropId = Record.NO_NEXT_PROPERTY.longValue();
+        PropertyRecord currRecord = newInitialisedPropertyRecord( propertyStore, rule );
+
+        for ( PropertyBlock block : blocks )
+        {
+            if ( !currRecord.hasSpaceFor( block ) )
+            {
+                PropertyRecord nextRecord = newInitialisedPropertyRecord( propertyStore, rule );
+                linkAndWritePropertyRecord( propertyStore, currRecord, nextRecord.getId(), nextPropId );
+                nextPropId = currRecord.getId();
+                currRecord = nextRecord;
+            }
+            currRecord.addPropertyBlock( block );
+        }
+
+        linkAndWritePropertyRecord( propertyStore, currRecord, Record.NO_PREVIOUS_PROPERTY.longValue(), nextPropId );
+        nextPropId = currRecord.getId();
+
+        SchemaRecord schemaRecord = schemaStore.newRecord();
+        schemaRecord.initialize( true, nextPropId );
+        schemaRecord.setId( rule.getId() );
+        schemaStore.updateRecord( schemaRecord );
+        schemaStore.setHighestPossibleIdInUse( rule.getId() );
+    }
+
+    private PropertyRecord newInitialisedPropertyRecord( PropertyStore propertyStore, SchemaRule rule )
+    {
+        PropertyRecord record = propertyStore.newRecord();
+        record.setId( propertyStore.nextId() );
+        record.setSchemaRuleId( rule.getId() );
+        return record;
+    }
+
+    private void linkAndWritePropertyRecord( PropertyStore propertyStore, PropertyRecord record, long prevPropId, long nextProp )
+    {
+        record.setInUse( true );
+        record.setPrevProp( prevPropId );
+        record.setNextProp( nextProp );
+        propertyStore.updateRecord( record );
+        propertyStore.setHighestPossibleIdInUse( record.getId() );
     }
 
     @Override
     public void deleteSchemaRule( SchemaRule rule )
     {
-        long id = rule.getId();
-        DynamicRecord record = schemaStore.newRecord();
-        schemaStore.getRecord( id, record, RecordLoad.FORCE );
-        if ( record.inUse() && record.isStartRecord() )
+        SchemaRecord record = schemaStore.newRecord();
+        schemaStore.getRecord( rule.getId(), record, RecordLoad.FORCE );
+        if ( record.inUse() )
         {
-            try
+            long nextProp = record.getNextProp();
+            record.setInUse( false );
+            schemaStore.updateRecord( record );
+            PropertyStore propertyStore = schemaStore.propertyStore();
+            PropertyRecord props = propertyStore.newRecord();
+            while ( nextProp != Record.NO_NEXT_PROPERTY.longValue() && propertyStore.getRecord( nextProp, props, RecordLoad.NORMAL ).inUse() )
             {
-                Collection<DynamicRecord> records = schemaStore.getRecords( id, RecordLoad.NORMAL, false );
-                record.setInUse( false );
-                schemaStore.updateRecord( record );
-                for ( DynamicRecord dynamicRecord : records )
-                {
-                    dynamicRecord.setInUse( false );
-                    schemaStore.updateRecord( dynamicRecord );
-                }
-            }
-            catch ( InvalidRecordException e )
-            {
-                // This may have been due to a concurrent drop of this rule.
+                nextProp = props.getNextProp();
+                props.setInUse( false );
+                propertyStore.updateRecord( props );
             }
         }
     }
 
-    Iterator<SchemaRule> loadAllSchemaRules()
+    @VisibleForTesting
+    Stream<SchemaRule> streamAllSchemaRules( boolean ignoreMalformed )
     {
-        return loadAllSchemaRules( Predicates.alwaysTrue(), SchemaRule.class, false );
+        long startId = schemaStore.getNumberOfReservedLowIds();
+        long endId = schemaStore.getHighId();
+        return LongStream.range( startId, endId )
+                .mapToObj( id -> schemaStore.getRecord( id, schemaStore.newRecord(), RecordLoad.FORCE ) )
+                .filter( AbstractBaseRecord::inUse )
+                .flatMap( record -> readSchemaRuleThrowingRuntimeException( record, ignoreMalformed ) );
     }
 
-    /**
-     * Scans the schema store and loads all {@link SchemaRule rules} in it. This method is written with the assumption
-     * that there's no id reuse on schema records.
-     *
-     * @param predicate filter when loading.
-     * @param returnType type of {@link SchemaRule} to load.
-     * @param ignoreMalformed whether or not to ignore inconsistent records (used in consistency checking).
-     * @return {@link Iterator} of the loaded schema rules, lazily loaded when advancing the iterator.
-     */
-    <ReturnType extends SchemaRule> Iterator<ReturnType> loadAllSchemaRules(
-            final Predicate<ReturnType> predicate,
-            final Class<ReturnType> returnType,
-            final boolean ignoreMalformed )
+    private Stream<StoreIndexDescriptor> indexRules( Stream<SchemaRule> stream )
     {
-        return new PrefetchingIterator<ReturnType>()
+        return stream
+                .filter( rule -> rule instanceof StoreIndexDescriptor )
+                .map( rule -> (StoreIndexDescriptor) rule );
+    }
+
+    private Stream<ConstraintRule> constraintRules( Stream<SchemaRule> stream )
+    {
+        return stream
+                .filter( rule -> rule instanceof ConstraintRule )
+                .map( rule -> (ConstraintRule) rule );
+    }
+
+    private Stream<SchemaRule> readSchemaRuleThrowingRuntimeException( SchemaRecord record, boolean ignoreMalformed )
+    {
+        try
         {
-            private final long highestId = schemaStore.getHighestPossibleIdInUse();
-            private long currentId = 1; /*record 0 contains the block size*/
-            private final byte[] scratchData = newRecordBuffer();
-            private final DynamicRecord record = schemaStore.newRecord();
-
-            @Override
-            protected ReturnType fetchNextOrNull()
+            return Stream.of( readSchemaRule( record ) );
+        }
+        catch ( MalformedSchemaRuleException e )
+        {
+            // In case we've raced with a record deletion, ignore malformed records that no longer appear to be in use.
+            if ( !ignoreMalformed && schemaStore.isInUse( record.getId() ) )
             {
-                while ( currentId <= highestId )
-                {
-                    long id = currentId++;
-                    schemaStore.getRecord( id, record, RecordLoad.FORCE );
-                    if ( record.inUse() && record.isStartRecord() )
-                    {
-                        // It may be that concurrently to our reading there's a transaction dropping the schema rule
-                        // that we're reading and that rule may have spanned multiple dynamic records.
-                        try
-                        {
-                            Collection<DynamicRecord> records;
-                            try
-                            {
-                                records = schemaStore.getRecords( id, RecordLoad.NORMAL, false );
-                            }
-                            catch ( InvalidRecordException e )
-                            {
-                                // This may have been due to a concurrent drop of this rule.
-                                continue;
-                            }
-
-                            SchemaRule schemaRule = SchemaStore.readSchemaRule( id, records, scratchData );
-                            if ( returnType.isInstance( schemaRule ) )
-                            {
-                                ReturnType returnRule = returnType.cast( schemaRule );
-                                if ( predicate.test( returnRule ) )
-                                {
-                                    return returnRule;
-                                }
-                            }
-                        }
-                        catch ( MalformedSchemaRuleException e )
-                        {
-                            if ( !ignoreMalformed )
-                            {
-                                throw new RuntimeException( e );
-                            }
-                        }
-                    }
-                }
-                return null;
+                throw new RuntimeException( e );
             }
-        };
+        }
+        return Stream.empty();
     }
 
-    private byte[] newRecordBuffer()
+    private SchemaRule readSchemaRule( SchemaRecord record ) throws MalformedSchemaRuleException
     {
-        return new byte[schemaStore.getRecordSize() * 4];
+        return SchemaStore.readSchemaRule( record, schemaStore.propertyStore(), tokenHolders );
     }
 }

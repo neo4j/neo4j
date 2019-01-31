@@ -41,7 +41,7 @@ public class StoreAssertions
         Config configuration = Config.defaults( GraphDatabaseSettings.pagecache_memory, "8m" );
         AssertableLogProvider logger = new AssertableLogProvider();
         ConsistencyCheckService.Result result = new ConsistencyCheckService().runFullConsistencyCheck(
-                databaseLayout, configuration, ProgressMonitorFactory.NONE, NullLogProvider.getInstance(), false );
+                databaseLayout, configuration, ProgressMonitorFactory.NONE, logger, false );
 
         assertTrue( "Consistency check for " + databaseLayout + " found inconsistencies:\n\n" + logger.serialize(),
                 result.isSuccessful() );

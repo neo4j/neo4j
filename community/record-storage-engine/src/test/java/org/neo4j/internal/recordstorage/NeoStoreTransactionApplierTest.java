@@ -22,17 +22,12 @@ package org.neo4j.internal.recordstorage;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.util.Collection;
-import java.util.Collections;
-
 import org.neo4j.internal.kernel.api.NamedToken;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.recordstorage.Command.LabelTokenCommand;
 import org.neo4j.internal.recordstorage.Command.PropertyKeyTokenCommand;
 import org.neo4j.internal.recordstorage.Command.RelationshipTypeTokenCommand;
 import org.neo4j.internal.recordstorage.CommandHandlerContract.ApplyFunction;
-import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelException;
-import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexProviderDescriptor;
 import org.neo4j.kernel.api.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.impl.api.TransactionToApply;
@@ -58,9 +53,11 @@ import org.neo4j.kernel.impl.store.record.NeoStoreRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
+import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
+import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.storageengine.api.IndexUpdateListener;
 import org.neo4j.storageengine.api.NodeLabelUpdateListener;
 import org.neo4j.storageengine.api.StorageEngine;
@@ -85,7 +82,6 @@ public class NeoStoreTransactionApplierTest
     private final NeoStores neoStores = mock( NeoStores.class );
     private final IndexingService indexingService = mock( IndexingService.class );
     private final IndexUpdateListener indexUpdateListener = mock( IndexUpdateListener.class );
-    @SuppressWarnings( "unchecked" )
     private final NodeLabelUpdateListener labelUpdateListener = mock( NodeLabelUpdateListener.class );
     private final CacheAccessBackDoor cacheAccess = mock( CacheAccessBackDoor.class );
     private final LockService lockService = mock( LockService.class );
@@ -555,11 +551,11 @@ public class NeoStoreTransactionApplierTest
     {
         // given
         final BatchTransactionApplier applier = newApplierFacade( newApplier( false ), newIndexApplier() );
-        final DynamicRecord record = DynamicRecord.dynamicRecord( 21, true );
-        record.setCreated();
-        final Collection<DynamicRecord> recordsAfter = singletonList( record );
         final StoreIndexDescriptor rule = indexRule( 0, 1, 2, new IndexProviderDescriptor( "K", "X.Y" ) );
-        final Command.SchemaRuleCommand command = new Command.SchemaRuleCommand( Collections.emptyList(), recordsAfter, rule );
+        SchemaRecord before = new SchemaRecord( rule.getId() );
+        SchemaRecord after = before.clone().initialize( true, Record.NO_NEXT_PROPERTY.longValue() );
+        after.setCreated();
+        final Command.SchemaRuleCommand command = new Command.SchemaRuleCommand( before, after, rule );
 
         // when
         boolean result = apply( applier, command::handle, transactionToApply );
@@ -567,7 +563,7 @@ public class NeoStoreTransactionApplierTest
         // then
         assertFalse( result );
 
-        verify( schemaStore ).updateRecord( record );
+        verify( schemaStore ).updateRecord( after );
         verify( indexingService ).createIndexes( rule );
         verify( cacheAccess ).addSchemaRule( rule );
     }
@@ -577,11 +573,11 @@ public class NeoStoreTransactionApplierTest
     {
         // given
         final BatchTransactionApplier applier = newApplierFacade( newIndexApplier(), newApplier( true ) );
-        final DynamicRecord record = DynamicRecord.dynamicRecord( 21, true );
-        record.setCreated();
-        final Collection<DynamicRecord> recordsAfter = singletonList( record );
-        final StoreIndexDescriptor rule = indexRule( 0, 1, 2, new IndexProviderDescriptor( "K", "X.Y" ) );
-        final Command.SchemaRuleCommand command = new Command.SchemaRuleCommand( Collections.emptyList(), recordsAfter, rule );
+        SchemaRecord before = new SchemaRecord( 21 );
+        SchemaRecord after = before.clone().initialize( true, Record.NO_NEXT_PROPERTY.longValue() );
+        after.setCreated();
+        final StoreIndexDescriptor rule = indexRule( 21, 1, 2, new IndexProviderDescriptor( "K", "X.Y" ) );
+        final Command.SchemaRuleCommand command = new Command.SchemaRuleCommand( before, after, rule );
 
         // when
         boolean result = apply( applier, command::handle, transactionToApply );
@@ -589,8 +585,8 @@ public class NeoStoreTransactionApplierTest
         // then
         assertFalse( result );
 
-        verify( schemaStore ).setHighestPossibleIdInUse( record.getId() );
-        verify( schemaStore ).updateRecord( record );
+        verify( schemaStore ).setHighestPossibleIdInUse( after.getId() );
+        verify( schemaStore ).updateRecord( after );
         verify( indexingService ).createIndexes( rule );
         verify( cacheAccess ).addSchemaRule( rule );
     }
@@ -600,10 +596,11 @@ public class NeoStoreTransactionApplierTest
     {
         // given
         final BatchTransactionApplier applier = newApplierFacade( newIndexApplier(), newApplier( false ) );
-        final DynamicRecord record = DynamicRecord.dynamicRecord( 21, true );
-        final Collection<DynamicRecord> recordsAfter = singletonList( record );
-        final StoreIndexDescriptor rule = constraintIndexRule( 0, 1, 2, new IndexProviderDescriptor( "K", "X.Y" ), 42L );
-        final Command.SchemaRuleCommand command = new Command.SchemaRuleCommand( Collections.emptyList(), recordsAfter, rule );
+        SchemaRecord before = new SchemaRecord( 21 );
+        SchemaRecord after = before.clone().initialize( true, Record.NO_NEXT_PROPERTY.longValue() );
+        after.setConstraint( true );
+        final StoreIndexDescriptor rule = constraintIndexRule( 21, 1, 2, new IndexProviderDescriptor( "K", "X.Y" ), 42L );
+        final Command.SchemaRuleCommand command = new Command.SchemaRuleCommand( before, after, rule );
 
         // when
         boolean result = apply( applier, command::handle, transactionToApply );
@@ -611,7 +608,7 @@ public class NeoStoreTransactionApplierTest
         // then
         assertFalse( result );
 
-        verify( schemaStore ).updateRecord( record );
+        verify( schemaStore ).updateRecord( after );
         verify( indexingService ).activateIndex( rule );
         verify( cacheAccess ).addSchemaRule( rule );
     }
@@ -621,10 +618,10 @@ public class NeoStoreTransactionApplierTest
     {
         // given
         final BatchTransactionApplier applier = newApplierFacade( newIndexApplier(), newApplier( true ) );
-        final DynamicRecord record = DynamicRecord.dynamicRecord( 21, true );
-        final Collection<DynamicRecord> recordsAfter = singletonList( record );
+        SchemaRecord before = new SchemaRecord( 21 );
+        SchemaRecord after = before.clone().initialize( true, Record.NO_NEXT_PROPERTY.longValue() );
         final StoreIndexDescriptor rule = constraintIndexRule( 0, 1, 2, new IndexProviderDescriptor( "K", "X.Y" ), 42L );
-        final Command.SchemaRuleCommand command = new Command.SchemaRuleCommand( Collections.emptyList(), recordsAfter, rule );
+        final Command.SchemaRuleCommand command = new Command.SchemaRuleCommand( before, after, rule );
 
         // when
         boolean result = apply( applier, command::handle, transactionToApply );
@@ -632,25 +629,23 @@ public class NeoStoreTransactionApplierTest
         // then
         assertFalse( result );
 
-        verify( schemaStore ).setHighestPossibleIdInUse( record.getId() );
-        verify( schemaStore ).updateRecord( record );
+        verify( schemaStore ).setHighestPossibleIdInUse( after.getId() );
+        verify( schemaStore ).updateRecord( after );
         verify( indexingService ).activateIndex( rule );
         verify( cacheAccess ).addSchemaRule( rule );
     }
 
     @Test
-    public void shouldApplyUpdateIndexRuleSchemaRuleCommandToTheStoreThrowingIndexProblem()
-            throws IndexNotFoundKernelException,
-            IndexPopulationFailedKernelException, IndexActivationFailedKernelException
+    public void shouldApplyUpdateIndexRuleSchemaRuleCommandToTheStoreThrowingIndexProblem() throws Exception
     {
         // given
         final BatchTransactionApplier applier = newIndexApplier( );
         doThrow( new IndexNotFoundKernelException( "" ) ).when( indexingService ).activateIndex( any() );
 
-        final DynamicRecord record = DynamicRecord.dynamicRecord( 21, true );
-        final Collection<DynamicRecord> recordsAfter = singletonList( record );
+        SchemaRecord before = new SchemaRecord( 21 );
+        SchemaRecord after = before.clone().initialize( true, Record.NO_NEXT_PROPERTY.longValue() );
         final StoreIndexDescriptor rule = constraintIndexRule( 0, 1, 2, new IndexProviderDescriptor( "K", "X.Y" ), 42L );
-        final Command.SchemaRuleCommand command = new Command.SchemaRuleCommand( Collections.emptyList(), recordsAfter, rule );
+        final Command.SchemaRuleCommand command = new Command.SchemaRuleCommand( before, after, rule );
 
         // when
         try
@@ -672,11 +667,10 @@ public class NeoStoreTransactionApplierTest
         final BatchTransactionApplier base = newApplier( false );
         final BatchTransactionApplier indexApplier = newIndexApplier();
         final BatchTransactionApplierFacade applier = new BatchTransactionApplierFacade( base, indexApplier );
-        final DynamicRecord record = DynamicRecord.dynamicRecord( 21, true );
-        record.setInUse( false );
-        final Collection<DynamicRecord> recordsAfter = singletonList( record );
+        SchemaRecord before = new SchemaRecord( 21 ).initialize( true, Record.NO_NEXT_PROPERTY.longValue() );
+        SchemaRecord after = before.clone().initialize( false, Record.NO_NEXT_PROPERTY.longValue() );
         final StoreIndexDescriptor rule = indexRule( 0, 1, 2, new IndexProviderDescriptor( "K", "X.Y" ) );
-        final Command.SchemaRuleCommand command = new Command.SchemaRuleCommand( Collections.emptyList(), recordsAfter, rule );
+        final Command.SchemaRuleCommand command = new Command.SchemaRuleCommand( before, after, rule );
 
         // when
         boolean result = apply( applier, command::handle, transactionToApply );
@@ -684,7 +678,7 @@ public class NeoStoreTransactionApplierTest
         // then
         assertFalse( result );
 
-        verify( schemaStore ).updateRecord( record );
+        verify( schemaStore ).updateRecord( after );
         verify( indexingService ).dropIndex( rule );
         verify( cacheAccess ).removeSchemaRuleFromCache( command.getKey() );
     }
@@ -694,11 +688,10 @@ public class NeoStoreTransactionApplierTest
     {
         // given
         final BatchTransactionApplier applier = newApplierFacade( newIndexApplier(), newApplier( true ) );
-        final DynamicRecord record = DynamicRecord.dynamicRecord( 21, true );
-        record.setInUse( false );
-        final Collection<DynamicRecord> recordsAfter = singletonList( record );
+        SchemaRecord before = new SchemaRecord( 21 ).initialize( true, Record.NO_NEXT_PROPERTY.longValue() );
+        SchemaRecord after = before.clone().initialize( false, Record.NO_NEXT_PROPERTY.longValue() );
         final StoreIndexDescriptor rule = indexRule( 0, 1, 2, new IndexProviderDescriptor( "K", "X.Y" ) );
-        final Command.SchemaRuleCommand command = new Command.SchemaRuleCommand( Collections.emptyList(), recordsAfter, rule );
+        final Command.SchemaRuleCommand command = new Command.SchemaRuleCommand( before, after, rule );
 
         // when
         boolean result = apply( applier, command::handle, transactionToApply );
@@ -706,8 +699,8 @@ public class NeoStoreTransactionApplierTest
         // then
         assertFalse( result );
 
-        verify( schemaStore ).setHighestPossibleIdInUse( record.getId() );
-        verify( schemaStore ).updateRecord( record );
+        verify( schemaStore ).setHighestPossibleIdInUse( after.getId() );
+        verify( schemaStore ).updateRecord( after );
         verify( indexingService ).dropIndex( rule );
         verify( cacheAccess ).removeSchemaRuleFromCache( command.getKey() );
     }
@@ -717,11 +710,12 @@ public class NeoStoreTransactionApplierTest
     {
         // given
         final BatchTransactionApplier applier = newApplier( false );
-        final DynamicRecord record = DynamicRecord.dynamicRecord( 21, true );
-        record.setCreated();
-        final Collection<DynamicRecord> recordsAfter = singletonList( record );
+        SchemaRecord before = new SchemaRecord( 21 );
+        SchemaRecord after = before.clone().initialize( true, Record.NO_NEXT_PROPERTY.longValue() );
+        after.setCreated();
+        after.setConstraint( true );
         final ConstraintRule rule = uniquenessConstraintRule( 0L, 1, 2, 3L );
-        final Command.SchemaRuleCommand command = new Command.SchemaRuleCommand( Collections.emptyList(), recordsAfter, rule );
+        final Command.SchemaRuleCommand command = new Command.SchemaRuleCommand( before, after, rule );
 
         // when
         boolean result = apply( applier, command::handle, transactionToApply );
@@ -729,7 +723,7 @@ public class NeoStoreTransactionApplierTest
         // then
         assertFalse( result );
 
-        verify( schemaStore ).updateRecord( record );
+        verify( schemaStore ).updateRecord( after );
         verify( metaDataStore ).setLatestConstraintIntroducingTx( transactionId );
         verify( cacheAccess ).addSchemaRule( rule );
     }
@@ -739,11 +733,12 @@ public class NeoStoreTransactionApplierTest
     {
         // given
         final BatchTransactionApplier applier = newApplier( true );
-        final DynamicRecord record = DynamicRecord.dynamicRecord( 21, true );
-        record.setCreated();
-        final Collection<DynamicRecord> recordsAfter = singletonList( record );
+        SchemaRecord before = new SchemaRecord( 21 );
+        SchemaRecord after = before.clone().initialize( true, Record.NO_NEXT_PROPERTY.longValue() );
+        after.setCreated();
+        after.setConstraint( true );
         final ConstraintRule rule = uniquenessConstraintRule( 0L, 1, 2, 3L );
-        final Command.SchemaRuleCommand command = new Command.SchemaRuleCommand( Collections.emptyList(), recordsAfter, rule );
+        final Command.SchemaRuleCommand command = new Command.SchemaRuleCommand( before, after, rule );
 
         // when
         boolean result = apply( applier, command::handle, transactionToApply );
@@ -751,8 +746,8 @@ public class NeoStoreTransactionApplierTest
         // then
         assertFalse( result );
 
-        verify( schemaStore ).setHighestPossibleIdInUse( record.getId() );
-        verify( schemaStore ).updateRecord( record );
+        verify( schemaStore ).setHighestPossibleIdInUse( after.getId() );
+        verify( schemaStore ).updateRecord( after );
         verify( metaDataStore ).setLatestConstraintIntroducingTx( transactionId );
         verify( cacheAccess ).addSchemaRule( rule );
     }
@@ -762,10 +757,11 @@ public class NeoStoreTransactionApplierTest
     {
         // given
         final BatchTransactionApplier applier = newApplier( false );
-        final DynamicRecord record = DynamicRecord.dynamicRecord( 21, true );
-        final Collection<DynamicRecord> recordsAfter = singletonList( record );
+        SchemaRecord before = new SchemaRecord( 21 );
+        SchemaRecord after = before.clone().initialize( true, Record.NO_NEXT_PROPERTY.longValue() );
+        after.setConstraint( true );
         final ConstraintRule rule = uniquenessConstraintRule( 0L, 1, 2, 3L );
-        final Command.SchemaRuleCommand command = new Command.SchemaRuleCommand( Collections.emptyList(), recordsAfter, rule );
+        final Command.SchemaRuleCommand command = new Command.SchemaRuleCommand( before, after, rule );
 
         // when
         boolean result = apply( applier, command::handle, transactionToApply );
@@ -773,7 +769,7 @@ public class NeoStoreTransactionApplierTest
         // then
         assertFalse( result );
 
-        verify( schemaStore ).updateRecord( record );
+        verify( schemaStore ).updateRecord( after );
         verify( metaDataStore ).setLatestConstraintIntroducingTx( transactionId );
         verify( cacheAccess ).addSchemaRule( rule );
     }
@@ -783,10 +779,11 @@ public class NeoStoreTransactionApplierTest
     {
         // given
         final BatchTransactionApplier applier = newApplier( true );
-        final DynamicRecord record = DynamicRecord.dynamicRecord( 21, true );
-        final Collection<DynamicRecord> recordsAfter = singletonList( record );
+        SchemaRecord before = new SchemaRecord( 21 );
+        SchemaRecord after = before.clone().initialize( true, Record.NO_NEXT_PROPERTY.longValue() );
+        after.setConstraint( true );
         final ConstraintRule rule = uniquenessConstraintRule( 0L, 1, 2, 3L );
-        final Command.SchemaRuleCommand command = new Command.SchemaRuleCommand( Collections.emptyList(), recordsAfter, rule );
+        final Command.SchemaRuleCommand command = new Command.SchemaRuleCommand( before, after, rule );
 
         // when
         boolean result = apply( applier, command::handle, transactionToApply );
@@ -794,8 +791,8 @@ public class NeoStoreTransactionApplierTest
         // then
         assertFalse( result );
 
-        verify( schemaStore ).setHighestPossibleIdInUse( record.getId() );
-        verify( schemaStore ).updateRecord( record );
+        verify( schemaStore ).setHighestPossibleIdInUse( after.getId() );
+        verify( schemaStore ).updateRecord( after );
         verify( metaDataStore ).setLatestConstraintIntroducingTx( transactionId );
         verify( cacheAccess ).addSchemaRule( rule );
     }
@@ -805,11 +802,10 @@ public class NeoStoreTransactionApplierTest
     {
         // given
         final BatchTransactionApplier applier = newApplier( false );
-        final DynamicRecord record = DynamicRecord.dynamicRecord( 21, true );
-        record.setInUse( false );
-        final Collection<DynamicRecord> recordsAfter = singletonList( record );
+        SchemaRecord before = new SchemaRecord( 21 ).initialize( true, Record.NO_NEXT_PROPERTY.longValue() );
+        SchemaRecord after = before.clone().initialize( false, Record.NO_NEXT_PROPERTY.longValue() );
         final ConstraintRule rule = uniquenessConstraintRule( 0L, 1, 2, 3L );
-        final Command.SchemaRuleCommand command = new Command.SchemaRuleCommand( Collections.emptyList(), recordsAfter, rule );
+        final Command.SchemaRuleCommand command = new Command.SchemaRuleCommand( before, after, rule );
 
         // when
         boolean result = apply( applier, command::handle, transactionToApply );
@@ -817,7 +813,7 @@ public class NeoStoreTransactionApplierTest
         // then
         assertFalse( result );
 
-        verify( schemaStore ).updateRecord( record );
+        verify( schemaStore ).updateRecord( after );
         verify( metaDataStore, never() ).setLatestConstraintIntroducingTx( transactionId );
         verify( cacheAccess ).removeSchemaRuleFromCache( command.getKey() );
     }
@@ -827,11 +823,10 @@ public class NeoStoreTransactionApplierTest
     {
         // given
         final BatchTransactionApplier applier = newApplier( true );
-        final DynamicRecord record = DynamicRecord.dynamicRecord( 21, true );
-        record.setInUse( false );
-        final Collection<DynamicRecord> recordsAfter = singletonList( record );
+        SchemaRecord before = new SchemaRecord( 21 ).initialize( true, Record.NO_NEXT_PROPERTY.longValue() );
+        SchemaRecord after = before.clone().initialize( false, Record.NO_NEXT_PROPERTY.longValue() );
         final ConstraintRule rule = uniquenessConstraintRule( 0L, 1, 2, 3L );
-        final Command.SchemaRuleCommand command = new Command.SchemaRuleCommand( Collections.emptyList(), recordsAfter, rule );
+        final Command.SchemaRuleCommand command = new Command.SchemaRuleCommand( before, after, rule );
 
         // when
         boolean result = apply( applier, command::handle, transactionToApply );
@@ -839,8 +834,8 @@ public class NeoStoreTransactionApplierTest
         // then
         assertFalse( result );
 
-        verify( schemaStore ).setHighestPossibleIdInUse( record.getId() );
-        verify( schemaStore ).updateRecord( record );
+        verify( schemaStore ).setHighestPossibleIdInUse( after.getId() );
+        verify( schemaStore ).updateRecord( after );
         verify( metaDataStore, never() ).setLatestConstraintIntroducingTx( transactionId );
         verify( cacheAccess ).removeSchemaRuleFromCache( command.getKey() );
     }
@@ -922,7 +917,7 @@ public class NeoStoreTransactionApplierTest
 
     // SCHEMA RULE COMMAND
 
-    public static StoreIndexDescriptor indexRule( long id, int label, int propertyKeyId, IndexProviderDescriptor providerDescriptor )
+    private static StoreIndexDescriptor indexRule( long id, int label, int propertyKeyId, IndexProviderDescriptor providerDescriptor )
     {
         return IndexDescriptorFactory.forSchema( forLabel( label, propertyKeyId ), providerDescriptor ).withId( id );
     }

@@ -158,7 +158,7 @@ public class RecordChanges<RECORD,ADDITIONAL> implements RecordAccess<RECORD,ADD
         @Override
         public String toString()
         {
-            return "RecordChange{" + "record=" + record + "key=" + key + "created=" + created + '}';
+            return "RecordChange{record=" + record + ",key=" + key + ",created=" + created + '}';
         }
 
         @Override
