@@ -62,6 +62,7 @@
     <plugins>
       <plugin>
         <artifactId>maven-surefire-plugin</artifactId>
+        <version>2.22.1</version>
         <configuration>
           <forkCount>${forkCounts}</forkCount>
           <reuseForks>true</reuseForks>
@@ -75,6 +76,7 @@
       </plugin>
       <plugin>
         <artifactId>maven-failsafe-plugin</artifactId>
+        <version>2.22.1</version>
         <configuration>
           <argLine>${test.runner.jvm.settings}</argLine>
           <forkCount>${forkCounts}</forkCount>
