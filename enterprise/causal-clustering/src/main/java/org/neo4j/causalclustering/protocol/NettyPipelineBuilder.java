@@ -62,7 +62,6 @@ public abstract class NettyPipelineBuilder<O extends ProtocolInstaller.Orientati
     private final List<HandlerInfo> handlerInfos = new ArrayList<>();
 
     private Predicate<Object> gatePredicate;
-    private Runnable closeHandler;
 
     @SuppressWarnings( "unchecked" )
     private BUILDER self = (BUILDER) this;
@@ -150,16 +149,6 @@ public abstract class NettyPipelineBuilder<O extends ProtocolInstaller.Orientati
         return self;
     }
 
-    public BUILDER onClose( Runnable closeHandler )
-    {
-        if ( this.closeHandler != null )
-        {
-            throw new IllegalStateException( "Cannot have more than one close handler." );
-        }
-        this.closeHandler = closeHandler;
-        return self;
-    }
-
     /**
      * Installs the built pipeline and removes any old pipeline.
      */
@@ -228,79 +217,9 @@ public abstract class NettyPipelineBuilder<O extends ProtocolInstaller.Orientati
         }
 
         // inbound goes in the direction from first->last
-        pipeline.addLast( ERROR_HANDLER_TAIL, new ChannelDuplexHandler()
-        {
-            @Override
-            public void exceptionCaught( ChannelHandlerContext ctx, Throwable cause )
-            {
-                log.error( format( "Exception in inbound for channel: %s", ctx.channel() ), cause );
-                ctx.close();
-            }
+        pipeline.addLast( ERROR_HANDLER_TAIL, new ErrorHandlerTail( log ) );
 
-            @Override
-            public void channelRead( ChannelHandlerContext ctx, Object msg )
-            {
-                log.error( "Unhandled inbound message: %s for channel: %s", msg, ctx.channel() );
-                ctx.close();
-            }
-
-            // this is the first handler for an outbound message, and attaches a listener to its promise if possible
-            @Override
-            public void write( ChannelHandlerContext ctx, Object msg, ChannelPromise promise )
-            {
-                // if the promise is a void-promise, then exceptions will instead propagate to the
-                // exceptionCaught handler on the outbound handler further below
-
-                if ( !promise.isVoid() )
-                {
-                    promise.addListener( (ChannelFutureListener) future -> {
-                        if ( !future.isSuccess() )
-                        {
-                            log.error( format( "Exception in outbound for channel: %s", future.channel() ), future.cause() );
-                            ctx.close();
-                        }
-                    } );
-                }
-                ctx.write( msg, promise );
-            }
-
-            @Override
-            public void channelInactive( ChannelHandlerContext ctx )
-            {
-                if ( closeHandler != null )
-                {
-                    closeHandler.run();
-                }
-                ctx.fireChannelInactive();
-            }
-        } );
-
-        pipeline.addFirst( ERROR_HANDLER_HEAD, new ChannelOutboundHandlerAdapter()
-        {
-            // exceptions which did not get fulfilled on the promise of a write, etc.
-            @Override
-            public void exceptionCaught( ChannelHandlerContext ctx, Throwable cause )
-            {
-                log.error( format( "Exception in outbound for channel: %s", ctx.channel() ), cause );
-                ctx.close();
-            }
-
-            // netty can only handle bytes in the form of ByteBuf, so if you reach this then you are
-            // perhaps trying to send a POJO without having a suitable encoder
-            @Override
-            public void write( ChannelHandlerContext ctx, Object msg, ChannelPromise promise )
-            {
-                if ( !(msg instanceof ByteBuf) )
-                {
-                    log.error( "Unhandled outbound message: %s for channel: %s", msg, ctx.channel() );
-                    ctx.close();
-                }
-                else
-                {
-                    ctx.write( msg, promise );
-                }
-            }
-        } );
+        pipeline.addFirst( ERROR_HANDLER_HEAD, new ErrorHandlerHead( log ) );
     }
 
     private static class HandlerInfo
@@ -312,6 +231,85 @@ public abstract class NettyPipelineBuilder<O extends ProtocolInstaller.Orientati
         {
             this.name = name;
             this.handler = handler;
+        }
+    }
+
+    private static class ErrorHandlerTail extends ChannelDuplexHandler
+    {
+        private final Log log;
+
+        private ErrorHandlerTail( Log log )
+        {
+            this.log = log;
+        }
+
+        @Override
+        public void exceptionCaught( ChannelHandlerContext ctx, Throwable cause )
+        {
+            log.error( format( "Exception in inbound for channel: %s", ctx.channel() ), cause );
+            ctx.close();
+        }
+
+        @Override
+        public void channelRead( ChannelHandlerContext ctx, Object msg )
+        {
+            log.error( "Unhandled inbound message: %s for channel: %s", msg, ctx.channel() );
+            ctx.close();
+        }
+
+        // this is the first handler for an outbound message, and attaches a listener to its promise if possible
+        @Override
+        public void write( ChannelHandlerContext ctx, Object msg, ChannelPromise promise )
+        {
+            // if the promise is a void-promise, then exceptions will instead propagate to the
+            // exceptionCaught handler on the outbound handler further below
+
+            if ( !promise.isVoid() )
+            {
+                promise.addListener( (ChannelFutureListener) future ->
+                {
+                    if ( !future.isSuccess() )
+                    {
+                        log.error( format( "Exception in outbound for channel: %s", future.channel() ), future.cause() );
+                        ctx.close();
+                    }
+                } );
+            }
+            ctx.write( msg, promise );
+        }
+    }
+
+    private class ErrorHandlerHead extends ChannelOutboundHandlerAdapter
+    {
+        private final Log log;
+
+        private ErrorHandlerHead( Log log )
+        {
+            this.log = log;
+        }
+
+        // exceptions which did not get fulfilled on the promise of a write, etc.
+        @Override
+        public void exceptionCaught( ChannelHandlerContext ctx, Throwable cause )
+        {
+            log.error( format( "Exception in outbound for channel: %s", ctx.channel() ), cause );
+            ctx.close();
+        }
+
+        // netty can only handle bytes in the form of ByteBuf, so if you reach this then you are
+        // perhaps trying to send a POJO without having a suitable encoder
+        @Override
+        public void write( ChannelHandlerContext ctx, Object msg, ChannelPromise promise )
+        {
+            if ( !(msg instanceof ByteBuf) )
+            {
+                log.error( "Unhandled outbound message: %s for channel: %s", msg, ctx.channel() );
+                ctx.close();
+            }
+            else
+            {
+                ctx.write( msg, promise );
+            }
         }
     }
 }

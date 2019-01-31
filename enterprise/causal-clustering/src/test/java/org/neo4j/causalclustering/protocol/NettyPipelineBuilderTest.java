@@ -228,34 +228,6 @@ public class NettyPipelineBuilderTest
                         NettyPipelineBuilder.ERROR_HANDLER_TAIL ) );
     }
 
-    @Test
-    public void shouldInvokeCloseHandlerOnClose() throws InterruptedException
-    {
-        Semaphore semaphore = new Semaphore( 0 );
-        NettyPipelineBuilder.server( channel.pipeline(), log ).onClose( semaphore::release ).install();
-
-        // when
-        channel.close();
-
-        // then
-        assertTrue( semaphore.tryAcquire( 1, TimeUnit.MINUTES ) );
-        assertFalse( channel.isOpen() );
-    }
-
-    @Test
-    public void shouldInvokeCloseHandlerOnPeerDisconnect() throws InterruptedException
-    {
-        Semaphore semaphore = new Semaphore( 0 );
-        NettyPipelineBuilder.server( channel.pipeline(), log ).onClose( semaphore::release ).install();
-
-        // when
-        channel.disconnect();
-
-        // then
-        assertTrue( semaphore.tryAcquire( 1, TimeUnit.MINUTES ) );
-        assertFalse( channel.isOpen() );
-    }
-
     private List<ChannelHandler> getHandlers( ChannelPipeline pipeline )
     {
         return pipeline.names().stream().map( pipeline::get ).filter( Objects::nonNull ).collect( Collectors.toList() );
