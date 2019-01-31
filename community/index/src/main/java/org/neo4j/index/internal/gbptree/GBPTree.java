@@ -1027,19 +1027,29 @@ public class GBPTree<KEY,VALUE> implements Closeable
     }
 
     /**
+     * Use default value for ratioToKeepInLeftOnSplit
+     * @see GBPTree#writer(double)
+     */
+    public Writer<KEY,VALUE> writer() throws IOException
+    {
+        return writer( InternalTreeLogic.DEFAULT_SPLIT_RATIO );
+    }
+
+    /**
      * Returns a {@link Writer} able to modify the index, i.e. insert and remove keys/values.
      * After usage the returned writer must be closed, typically by using try-with-resource clause.
      *
+     * @param ratioToKeepInLeftOnSplit Decide how much to keep in left node on split, 0=keep nothing, 0.5=split 50-50, 1=keep everything.
      * @return the single {@link Writer} for this index. The returned writer must be
      * {@link Writer#close() closed} before another caller can acquire this writer.
      * @throws IOException on error accessing the index.
      * @throws IllegalStateException for calls made between a successful call to this method and closing the
      * returned writer.
      */
-    public Writer<KEY,VALUE> writer() throws IOException
+    public Writer<KEY,VALUE> writer( double ratioToKeepInLeftOnSplit ) throws IOException
     {
         assertRecoveryCleanSuccessful();
-        writer.initialize();
+        writer.initialize( ratioToKeepInLeftOnSplit );
         changesSinceLastCheckpoint = true;
         return writer;
     }
@@ -1232,8 +1242,9 @@ public class GBPTree<KEY,VALUE> implements Closeable
          * </ul>
          *
          * @throws IOException if fail to open {@link PageCursor}
+         * @param ratioToKeepInLeftOnSplit Decide how much to keep in left node on split, 0=keep nothing, 0.5=split 50-50, 1=keep everything.
          */
-        void initialize() throws IOException
+        void initialize( double ratioToKeepInLeftOnSplit ) throws IOException
         {
             if ( !writerTaken.compareAndSet( false, true ) )
             {
@@ -1250,7 +1261,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
                 stableGeneration = stableGeneration( generation );
                 unstableGeneration = unstableGeneration( generation );
                 assert assertNoSuccessor( cursor, stableGeneration, unstableGeneration );
-                treeLogic.initialize( cursor );
+                treeLogic.initialize( cursor, ratioToKeepInLeftOnSplit );
                 success = true;
             }
             catch ( Throwable e )
