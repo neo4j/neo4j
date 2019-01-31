@@ -105,7 +105,7 @@ abstract class Read implements TxStateHolder,
         ktx.assertOpen();
         DefaultNodeValueIndexCursor cursorImpl = (DefaultNodeValueIndexCursor) cursor;
         IndexReader reader = indexReader( index, true );
-        cursorImpl.setRead( this, null );
+        cursorImpl.setRead( this );
         try ( CursorPropertyAccessor accessor = new CursorPropertyAccessor( cursors.allocateNodeCursor(), cursors.allocatePropertyCursor(), this ) )
         {
             reader.distinctValues( cursorImpl, accessor );
