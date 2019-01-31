@@ -71,6 +71,7 @@ public abstract class InternalTreeLogicTestBase<KEY,VALUE>
 
     private static long stableGeneration = GenerationSafePointer.MIN_GENERATION;
     private static long unstableGeneration = stableGeneration + 1;
+    private double ratioToKeepInLeftOnSplit = InternalTreeLogic.DEFAULT_SPLIT_RATIO;
 
     @Parameterized.Parameters( name = "{0}" )
     public static Collection<Object[]> generators()
@@ -356,6 +357,81 @@ public abstract class InternalTreeLogicTestBase<KEY,VALUE>
         long child2 = childAt( readCursor, 2, stableGeneration, unstableGeneration ); // <- right sibling to split-node before split
 
         assertSiblingOrderAndPointers( child0, child1, child2 );
+    }
+
+    // todo randomize me and verify "can't fit" any more in right / left instead of key counts
+    @Test
+    public void splitWithSplitRatio0() throws IOException
+    {
+        // given
+        ratioToKeepInLeftOnSplit = 0;
+        initialize();
+        int keyCount = 0;
+        int someHighSeed = 1000;
+        KEY key = key( someHighSeed - keyCount );
+        VALUE value = value( someHighSeed - keyCount );
+        while ( node.leafOverflow( cursor, keyCount, key, value ) == NO )
+        {
+            insert( key, value );
+            assertFalse( structurePropagation.hasRightKeyInsert );
+
+            keyCount++;
+            key = key( someHighSeed - keyCount );
+            value = value( someHighSeed - keyCount );
+        }
+
+        // when
+        insert( key, value );
+        keyCount++;
+
+        // then
+        goTo( readCursor, rootId );
+        long child0 = childAt( readCursor, 0, stableGeneration, unstableGeneration );
+        long child1 = childAt( readCursor, 1, stableGeneration, unstableGeneration );
+        assertEquals( 1, numberOfRootSplits );
+
+        // Left node after split only singel key and right node the rest.
+        int leftKeyCount = keyCount( child0 );
+        int rightKeyCount = keyCount( child1 );
+        assertEquals( 1, leftKeyCount );
+        assertEquals( keyCount - leftKeyCount, rightKeyCount );
+    }
+
+    @Test
+    public void splitWithSplitRatio1() throws IOException
+    {
+        // given
+        ratioToKeepInLeftOnSplit = 1;
+        initialize();
+        int keyCount = 0;
+        int someLowSeed = 1000;
+        KEY key = key( someLowSeed + keyCount );
+        VALUE value = value( someLowSeed + keyCount );
+        while ( node.leafOverflow( cursor, keyCount, key, value ) == NO )
+        {
+            insert( key, value );
+            assertFalse( structurePropagation.hasRightKeyInsert );
+
+            keyCount++;
+            key = key( someLowSeed + keyCount );
+            value = value( someLowSeed + keyCount );
+        }
+
+        // when
+        insert( key, value );
+        keyCount++;
+
+        // then
+        goTo( readCursor, rootId );
+        long child0 = childAt( readCursor, 0, stableGeneration, unstableGeneration );
+        long child1 = childAt( readCursor, 1, stableGeneration, unstableGeneration );
+        assertEquals( 1, numberOfRootSplits );
+
+        // Left node after split only singel key and right node the rest.
+        int leftKeyCount = keyCount( child0 );
+        int rightKeyCount = keyCount( child1 );
+        assertEquals( 1, rightKeyCount );
+        assertEquals( keyCount - rightKeyCount, leftKeyCount );
     }
 
     /* REMOVE */
@@ -1607,7 +1683,7 @@ public abstract class InternalTreeLogicTestBase<KEY,VALUE>
     {
         rootId = cursor.getCurrentPageId();
         rootGeneration = unstableGeneration;
-        treeLogic.initialize( cursor );
+        treeLogic.initialize( cursor, ratioToKeepInLeftOnSplit );
     }
 
     private void assertSuccessorPointerNotCrashOrBroken()

@@ -73,6 +73,7 @@ public abstract class GBPTreeITBase<KEY,VALUE>
 
     abstract Class<KEY> getKeyClass();
 
+    // todo randomize this test to use different split ratios
     @Test
     public void shouldStayCorrectAfterRandomModifications() throws Exception
     {

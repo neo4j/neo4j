@@ -400,8 +400,8 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
         int neededSpace = totalSpaceOfKeyChild( newKey );
 
         // There is your answer!
-        return neededSpace < allocSpace ? Overflow.NO :
-               neededSpace < allocSpace + deadSpace ? Overflow.NO_NEED_DEFRAG : Overflow.YES;
+        return neededSpace <= allocSpace ? Overflow.NO :
+               neededSpace <= allocSpace + deadSpace ? Overflow.NO_NEED_DEFRAG : Overflow.YES;
     }
 
     @Override
@@ -415,8 +415,8 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
         int neededSpace = totalSpaceOfKeyValue( newKey, newValue );
 
         // There is your answer!
-        return neededSpace < allocSpace ? Overflow.NO :
-               neededSpace < allocSpace + deadSpace ? Overflow.NO_NEED_DEFRAG : Overflow.YES;
+        return neededSpace <= allocSpace ? Overflow.NO :
+               neededSpace <= allocSpace + deadSpace ? Overflow.NO_NEED_DEFRAG : Overflow.YES;
     }
 
     @Override
@@ -593,8 +593,8 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
     @Override
     int canRebalanceLeaves( PageCursor leftCursor, int leftKeyCount, PageCursor rightCursor, int rightKeyCount )
     {
-        int leftActiveSpace = totalActiveSpace( leftCursor, leftKeyCount );
-        int rightActiveSpace = totalActiveSpace( rightCursor, rightKeyCount );
+        int leftActiveSpace = totalActiveSpace( leftCursor, leftKeyCount, LEAF );
+        int rightActiveSpace = totalActiveSpace( rightCursor, rightKeyCount, LEAF );
 
         if ( leftActiveSpace + rightActiveSpace < totalSpace )
         {
@@ -634,31 +634,31 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
     @Override
     boolean canMergeLeaves( PageCursor leftCursor, int leftKeyCount, PageCursor rightCursor, int rightKeyCount )
     {
-        int leftActiveSpace = totalActiveSpace( leftCursor, leftKeyCount );
-        int rightActiveSpace = totalActiveSpace( rightCursor, rightKeyCount );
+        int leftActiveSpace = totalActiveSpace( leftCursor, leftKeyCount, LEAF );
+        int rightActiveSpace = totalActiveSpace( rightCursor, rightKeyCount, LEAF );
         int totalSpace = this.totalSpace;
         return totalSpace >= leftActiveSpace + rightActiveSpace;
     }
 
     @Override
     void doSplitLeaf( PageCursor leftCursor, int leftKeyCount, PageCursor rightCursor, int insertPos, KEY newKey,
-            VALUE newValue, KEY newSplitter )
+            VALUE newValue, KEY newSplitter, double ratioToKeepInLeftOnSplit )
     {
-        // Find middle
+        // Find split position
         int keyCountAfterInsert = leftKeyCount + 1;
-        int middlePos = middlePosInLeaf( leftCursor, insertPos, newKey, newValue, keyCountAfterInsert );
+        int splitPos = splitPosInLeaf( leftCursor, insertPos, newKey, newValue, keyCountAfterInsert, ratioToKeepInLeftOnSplit );
 
         KEY leftInSplit;
         KEY rightInSplit;
-        if ( middlePos == insertPos )
+        if ( splitPos == insertPos )
         {
-            leftInSplit = keyAt( leftCursor, tmpKeyLeft, middlePos - 1, LEAF );
+            leftInSplit = keyAt( leftCursor, tmpKeyLeft, splitPos - 1, LEAF );
             rightInSplit = newKey;
 
         }
         else
         {
-            int rightPos = insertPos < middlePos ? middlePos - 1 : middlePos;
+            int rightPos = insertPos < splitPos ? splitPos - 1 : splitPos;
             rightInSplit = keyAt( leftCursor, tmpKeyRight, rightPos, LEAF );
 
             if ( rightPos == insertPos )
@@ -673,17 +673,17 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
         }
         layout.minimalSplitter( leftInSplit, rightInSplit, newSplitter );
 
-        int rightKeyCount = keyCountAfterInsert - middlePos;
+        int rightKeyCount = keyCountAfterInsert - splitPos;
 
-        if ( insertPos < middlePos )
+        if ( insertPos < splitPos )
         {
-            //                  v-------v       copy
+            //                v---------v       copy
             // before _,_,_,_,_,_,_,_,_,_
             // insert _,_,_,X,_,_,_,_,_,_,_
-            // middle           ^
-            moveKeysAndValues( leftCursor, middlePos - 1, rightCursor, 0, rightKeyCount );
+            // split            ^
+            moveKeysAndValues( leftCursor, splitPos - 1, rightCursor, 0, rightKeyCount );
             defragmentLeaf( leftCursor );
-            insertKeyValueAt( leftCursor, newKey, newValue, insertPos, middlePos - 1 );
+            insertKeyValueAt( leftCursor, newKey, newValue, insertPos, splitPos - 1 );
         }
         else
         {
@@ -691,75 +691,75 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
             //                        v-v       second copy
             // before _,_,_,_,_,_,_,_,_,_
             // insert _,_,_,_,_,_,_,_,X,_,_
-            // middle           ^
+            // split            ^
 
             // Copy everything in one go
-            int newInsertPos = insertPos - middlePos;
-            int keysToMove = leftKeyCount - middlePos;
-            moveKeysAndValues( leftCursor, middlePos, rightCursor, 0, keysToMove );
+            int newInsertPos = insertPos - splitPos;
+            int keysToMove = leftKeyCount - splitPos;
+            moveKeysAndValues( leftCursor, splitPos, rightCursor, 0, keysToMove );
             defragmentLeaf( leftCursor );
             insertKeyValueAt( rightCursor, newKey, newValue, newInsertPos, keysToMove );
         }
-        TreeNode.setKeyCount( leftCursor, middlePos );
+        TreeNode.setKeyCount( leftCursor, splitPos );
         TreeNode.setKeyCount( rightCursor, rightKeyCount );
     }
 
     @Override
     void doSplitInternal( PageCursor leftCursor, int leftKeyCount, PageCursor rightCursor, int insertPos, KEY newKey,
-            long newRightChild, long stableGeneration, long unstableGeneration, KEY newSplitter )
+            long newRightChild, long stableGeneration, long unstableGeneration, KEY newSplitter, double ratioToKeepInLeftOnSplit )
     {
         int keyCountAfterInsert = leftKeyCount + 1;
-        int middlePos = middleInternal( leftCursor, insertPos, newKey, keyCountAfterInsert );
+        int splitPos = splitPosInternal( leftCursor, insertPos, newKey, keyCountAfterInsert, ratioToKeepInLeftOnSplit );
 
-        if ( middlePos == insertPos )
+        if ( splitPos == insertPos )
         {
             layout.copyKey( newKey, newSplitter );
         }
         else
         {
-            keyAt( leftCursor, newSplitter, insertPos < middlePos ? middlePos - 1 : middlePos, INTERNAL );
+            keyAt( leftCursor, newSplitter, insertPos < splitPos ? splitPos - 1 : splitPos, INTERNAL );
         }
-        int rightKeyCount = keyCountAfterInsert - middlePos - 1; // -1 because don't keep prim key in internal
+        int rightKeyCount = keyCountAfterInsert - splitPos - 1; // -1 because don't keep prim key in internal
 
-        if ( insertPos < middlePos )
+        if ( insertPos < splitPos )
         {
             //                         v-------v       copy
             // before key    _,_,_,_,_,_,_,_,_,_
             // before child -,-,-,-,-,-,-,-,-,-,-
             // insert key    _,_,X,_,_,_,_,_,_,_,_
             // insert child -,-,-,x,-,-,-,-,-,-,-,-
-            // middle key              ^
+            // split key               ^
 
-            moveKeysAndChildren( leftCursor, middlePos, rightCursor, 0, rightKeyCount, true );
+            moveKeysAndChildren( leftCursor, splitPos, rightCursor, 0, rightKeyCount, true );
             // Rightmost key in left is the one we send up to parent, remove it from here.
-            removeKeyAndRightChildAt( leftCursor, middlePos - 1, middlePos );
+            removeKeyAndRightChildAt( leftCursor, splitPos - 1, splitPos );
             defragmentInternal( leftCursor );
-            insertKeyAndRightChildAt( leftCursor, newKey, newRightChild, insertPos, middlePos - 1, stableGeneration, unstableGeneration );
+            insertKeyAndRightChildAt( leftCursor, newKey, newRightChild, insertPos, splitPos - 1, stableGeneration, unstableGeneration );
         }
         else
         {
-            // pos > middlePos
+            // pos > splitPos
             //                         v-v          first copy
             //                             v-v-v    second copy
             // before key    _,_,_,_,_,_,_,_,_,_
             // before child -,-,-,-,-,-,-,-,-,-,-
             // insert key    _,_,_,_,_,_,_,X,_,_,_
             // insert child -,-,-,-,-,-,-,-,x,-,-,-
-            // middle key              ^
+            // split key               ^
 
-            // pos == middlePos
+            // pos == splitPos
             //                                      first copy
             //                         v-v-v-v-v    second copy
             // before key    _,_,_,_,_,_,_,_,_,_
             // before child -,-,-,-,-,-,-,-,-,-,-
             // insert key    _,_,_,_,_,X,_,_,_,_,_
             // insert child -,-,-,-,-,-,x,-,-,-,-,-
-            // middle key              ^
+            // split key               ^
 
             // Keys
-            if ( insertPos == middlePos )
+            if ( insertPos == splitPos )
             {
-                int copyFrom = middlePos;
+                int copyFrom = splitPos;
                 int copyCount = leftKeyCount - copyFrom;
                 moveKeysAndChildren( leftCursor, copyFrom, rightCursor, 0, copyCount, false );
                 defragmentInternal( leftCursor );
@@ -767,17 +767,17 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
             }
             else
             {
-                int copyFrom = middlePos + 1;
+                int copyFrom = splitPos + 1;
                 int copyCount = leftKeyCount - copyFrom;
                 moveKeysAndChildren( leftCursor, copyFrom, rightCursor, 0, copyCount, true );
                 // Rightmost key in left is the one we send up to parent, remove it from here.
-                removeKeyAndRightChildAt( leftCursor, middlePos, middlePos + 1 );
+                removeKeyAndRightChildAt( leftCursor, splitPos, splitPos + 1 );
                 defragmentInternal( leftCursor );
                 insertKeyAndRightChildAt( rightCursor, newKey, newRightChild, insertPos - copyFrom, copyCount,
                         stableGeneration, unstableGeneration );
             }
         }
-        TreeNode.setKeyCount( leftCursor, middlePos );
+        TreeNode.setKeyCount( leftCursor, splitPos );
         TreeNode.setKeyCount( rightCursor, rightKeyCount );
     }
 
@@ -1008,18 +1008,27 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
         return toAllocOffset;
     }
 
-    private int middleInternal( PageCursor cursor, int insertPos, KEY newKey, int keyCountAfterInsert )
+    /**
+     * @see TreeNodeDynamicSize#splitPosInLeaf(PageCursor, int, Object, Object, int, double)
+     */
+    private int splitPosInternal( PageCursor cursor, int insertPos, KEY newKey, int keyCountAfterInsert, double ratioToKeepInLeftOnSplit )
     {
-        int halfSpace = this.halfSpace;
-        int middle = 0;
+        int targetLeftSpace = (int) (this.totalSpace * ratioToKeepInLeftOnSplit);
+        int splitPos = 0;
         int currentPos = 0;
-        int middleSpace = childSize(); // Leftmost child will always be included in left side
-        int currentDelta = Math.abs( middleSpace - halfSpace );
+        int accumulatedLeftSpace = childSize(); // Leftmost child will always be included in left side
+        int currentDelta = Math.abs( accumulatedLeftSpace - targetLeftSpace );
         int prevDelta;
+        int spaceOfNewKeyAndChild = totalSpaceOfKeyChild( newKey );
+        int totalSpaceIncludingNewKeyAndChild = totalActiveSpace( cursor, keyCountAfterInsert - 1, INTERNAL ) + spaceOfNewKeyAndChild;
         boolean includedNew = false;
+        boolean prevPosPossible;
+        boolean thisPosPossible = false;
 
         do
         {
+            prevPosPossible = thisPosPossible;
+
             // We may come closer to split by keeping one more in left
             int space;
             if ( currentPos == insertPos & !includedNew )
@@ -1032,44 +1041,62 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
             {
                 space = totalSpaceOfKeyChild( cursor, currentPos );
             }
-            middleSpace += space;
+            accumulatedLeftSpace += space;
             prevDelta = currentDelta;
-            currentDelta = Math.abs( middleSpace - halfSpace );
-            middle++;
+            currentDelta = Math.abs( accumulatedLeftSpace - targetLeftSpace );
+            splitPos++;
             currentPos++;
+            thisPosPossible = totalSpaceIncludingNewKeyAndChild - accumulatedLeftSpace < totalSpace;
         }
-        while ( currentDelta < prevDelta && currentPos < keyCountAfterInsert );
-        middle--; // Step back to the pos that most equally divide the available space in two
-        return middle;
+        while ( (currentDelta < prevDelta && splitPos < keyCountAfterInsert && accumulatedLeftSpace < totalSpace) || !thisPosPossible );
+        if ( prevPosPossible )
+        {
+            splitPos--; // Step back to the pos that most equally divide the available space in two
+        }
+        return splitPos;
     }
 
     /**
-     * Calculates a valid and as optimal as possible position where to split a leaf if inserting a key overflows.
-     * There are a couple of goals/conditions which drives the search for it:
+     * Calculates a valid and as optimal as possible position where to split a leaf if inserting a key overflows, trying to come as close as possible to
+     * ratioToKeepInLeftOnSplit. There are a couple of goals/conditions which drives the search for it:
      * <ul>
      *     <li>The returned position will be one where the keys ending up in the left and right leaves respectively are guaranteed to fit.</li>
-     *     <li>Out of those possible positions the one which is closest to the "halfSpace" of a leaf will be selected</li>
+     *     <li>Out of those possible positions the one will be selected which leaves left node filled with with space closest to "targetLeftSpace".</li>
      * </ul>
+     *
+     * We loop over an imaginary range of keys where newKey has already been inserted at insertPos in the current node. splitPos point to position in the
+     * imaginary range while currentPos point to the node. In the loop we "move" splitPos from left to right, accumulating space for left node as we go and
+     * calculate delta towards targetLeftSpace. We want to continue loop as long as:
+     * <ul>
+     *     <li>We are still moving closer to optimal divide (currentDelta < prevDelta) and</li>
+     *     <li>We are still inside end of range (splitPost < keyCountAfterInsert) and</li>
+     *     <li>We have not accumulated to much space to fit in left node (accumulatedLeftSpace <= totalSpace).</li>
+     * </ul>
+     * But we also have to force loop to continue if the current position does not give a possible divide because right node will be given to much data to
+     * fit (!thisPosPossible). Exiting loop means we've gone too far and thus we move one step back after loop, but only if the previous position gave us a
+     * possible divide.
      *
      * @param cursor {@link PageCursor} to use for reading sizes of existing entries.
      * @param insertPos the pos which the new key will be inserted at.
      * @param newKey key to be inserted.
      * @param newValue value to be inserted.
      * @param keyCountAfterInsert key count including the new key.
+     * @param ratioToKeepInLeftOnSplit What ratio of keys to try and keep in left node, 1=keep as much as possible, 0=move as much as possible to right
      * @return the pos where to split.
      */
-    private int middlePosInLeaf( PageCursor cursor, int insertPos, KEY newKey, VALUE newValue, int keyCountAfterInsert )
+    private int splitPosInLeaf( PageCursor cursor, int insertPos, KEY newKey, VALUE newValue, int keyCountAfterInsert, double ratioToKeepInLeftOnSplit )
     {
-        int halfSpace = this.halfSpace;
-        int middle = 0;
+        int targetLeftSpace = (int) (this.totalSpace * ratioToKeepInLeftOnSplit);
+        int splitPos = 0;
         int currentPos = 0;
-        int accumulatedSpace = 0;
-        int currentDelta = halfSpace;
+        int accumulatedLeftSpace = 0;
+        int currentDelta = targetLeftSpace;
         int prevDelta;
         int spaceOfNewKey = totalSpaceOfKeyValue( newKey, newValue );
-        int totalSpaceIncludingNewKey = totalActiveSpace( cursor, keyCountAfterInsert - 1 ) + spaceOfNewKey;
+        int totalSpaceIncludingNewKey = totalActiveSpace( cursor, keyCountAfterInsert - 1, LEAF ) + spaceOfNewKey;
         boolean includedNew = false;
         boolean prevPosPossible;
+        boolean thisPosPossible = false;
 
         if ( totalSpaceIncludingNewKey > totalSpace * 2 )
         {
@@ -1080,7 +1107,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
 
         do
         {
-            prevPosPossible = totalSpaceIncludingNewKey - accumulatedSpace <= totalSpace;
+            prevPosPossible = thisPosPossible;
 
             // We may come closer to split by keeping one more in left
             int currentSpace;
@@ -1094,25 +1121,26 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
             {
                 currentSpace = totalSpaceOfKeyValue( cursor, currentPos );
             }
-            accumulatedSpace += currentSpace;
+            accumulatedLeftSpace += currentSpace;
             prevDelta = currentDelta;
-            currentDelta = Math.abs( accumulatedSpace - halfSpace );
+            currentDelta = Math.abs( accumulatedLeftSpace - targetLeftSpace );
             currentPos++;
-            middle++;
+            splitPos++;
+            thisPosPossible = totalSpaceIncludingNewKey - accumulatedLeftSpace <= totalSpace;
         }
-        while ( currentDelta < prevDelta && currentPos < keyCountAfterInsert );
+        while ( (currentDelta < prevDelta && splitPos < keyCountAfterInsert && accumulatedLeftSpace <= totalSpace) || !thisPosPossible );
         // If previous position is possible then step back one pos since it divides the space most equally
         if ( prevPosPossible )
         {
-            middle--;
+            splitPos--;
         }
-        return middle;
+        return splitPos;
     }
 
-    private int totalActiveSpace( PageCursor cursor, int keyCount )
+    private int totalActiveSpace( PageCursor cursor, int keyCount, Type type )
     {
         int deadSpace = getDeadSpace( cursor );
-        int allocSpace = getAllocSpace( cursor, keyCount, LEAF );
+        int allocSpace = getAllocSpace( cursor, keyCount, type );
         return totalSpace - deadSpace - allocSpace;
     }
 
@@ -1188,8 +1216,8 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
 
     private void readUnreliableKeyValueSize( PageCursor cursor, int keySize, int valueSize, long keyValueSize, int pos )
     {
-        cursor.setCursorException( format( "Read unreliable key, keySize=%d, valueSize=%d, keyValueSizeCap=%d, keyHasTombstone=%b, pos=%d",
-                keySize, valueSize, keyValueSizeCap(), extractTombstone( keyValueSize ), pos ) );
+        cursor.setCursorException( format( "Read unreliable key, id=%d, keySize=%d, valueSize=%d, keyValueSizeCap=%d, keyHasTombstone=%b, pos=%d",
+                cursor.getCurrentPageId(), keySize, valueSize, keyValueSizeCap(), extractTombstone( keyValueSize ), pos ) );
     }
 
     private boolean keyValueSizeTooLarge( int keySize, int valueSize )
@@ -1322,6 +1350,75 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
     void printNode( PageCursor cursor, boolean includeValue, boolean includeAllocSpace, long stableGeneration, long unstableGeneration )
     {
         System.out.println( asString( cursor, includeValue, includeAllocSpace, stableGeneration, unstableGeneration ) );
+    }
+
+    @Override
+    void checkMetaConsistency( PageCursor cursor, int keyCount, Type type )
+    {
+        // Reminder: Header layout
+        // TotalSpace  |----------------------------------------|
+        // ActiveSpace |-----------|   +    |---------|  + |----|
+        // DeadSpace                                  |----|
+        // AllocSpace              |--------|
+        // AllocOffset                      v
+        //     [Header][OffsetArray]........[_________,XXXX,____] (_ = alive key, X = dead key)
+
+        long nodeId = cursor.getCurrentPageId();
+        StringJoiner joiner = new StringJoiner( ", ", "Inconsistent node, id=" + nodeId + ": ", "" );
+        boolean hasInconsistency = false;
+
+        // Verify activeSpace + deadSpace + allocSpace == totalSpace
+        int activeSpace = totalActiveSpaceRaw( cursor, keyCount, type );
+        int deadSpace = getDeadSpace( cursor );
+        int allocSpace = getAllocSpace( cursor, keyCount, type );
+        if ( activeSpace + deadSpace + allocSpace != totalSpace )
+        {
+            hasInconsistency = true;
+            joiner.add( format( "Space areas did not sum to total space; activeSpace=%d, deadSpace=%d, allocSpace=%d, totalSpace=%d",
+                    activeSpace, deadSpace, allocSpace, totalSpace ) );
+        }
+
+        // Verify allocOffset >= offsetArray
+        int allocOffset = getAllocOffset( cursor );
+        int offsetArray = keyPosOffset( keyCount, type );
+        if ( allocOffset < offsetArray )
+        {
+            hasInconsistency = true;
+            joiner.add( format( "Overlap between offsetArray and allocSpace, offsetArray=%d, allocOffset=%d", offsetArray, allocOffset ) );
+        }
+
+        // Report inconsistencies as cursor exception
+        if ( hasInconsistency )
+        {
+            cursor.setCursorException( joiner.toString() );
+        }
+    }
+
+    // Calculated by reading data instead of extrapolate from allocSpace and deadSpace
+    private int totalActiveSpaceRaw( PageCursor cursor, int keyCount, Type type )
+    {
+        // Offset array
+        int offsetArrayStart = HEADER_LENGTH_DYNAMIC;
+        int offsetArrayEnd = keyPosOffset( keyCount, type );
+        int offsetArraySize = offsetArrayEnd - offsetArrayStart;
+
+        // Alive keys
+        int aliveKeySize = 0;
+        int nextKeyOffset = getAllocOffset( cursor );
+        while ( nextKeyOffset < pageSize )
+        {
+            cursor.setOffset( nextKeyOffset );
+            long keyValueSize = readKeyValueSize( cursor );
+            int keySize = extractKeySize( keyValueSize );
+            int valueSize = extractValueSize( keyValueSize );
+            boolean tombstone = extractTombstone( keyValueSize );
+            if ( !tombstone )
+            {
+                aliveKeySize += getOverhead( keySize, valueSize ) + keySize + valueSize;
+            }
+            nextKeyOffset = cursor.getOffset() + keySize + valueSize;
+        }
+        return offsetArraySize + aliveKeySize;
     }
 
     private String readAllocSpace( PageCursor cursor, int allocOffset, Type type )
