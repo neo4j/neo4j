@@ -36,7 +36,7 @@ import static org.neo4j.util.Preconditions.checkState;
  * These must be PULLed or DISCARDed before any further statements
  * can be executed.
  */
-public abstract class AbstractStreamingStateState extends FailSafeBoltStateMachineState
+public abstract class AbstractStreamingState extends FailSafeBoltStateMachineState
 {
     protected BoltStateMachineState readyState;
 

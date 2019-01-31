@@ -27,7 +27,7 @@ import org.neo4j.bolt.v4.messaging.ResultConsumer;
 /**
  * When AUTOCOMMIT, additionally attach bookmark to PULL, DISCARD result
  */
-public class AutoCommitState extends AbstractStreamingStateState
+public class AutoCommitState extends AbstractStreamingState
 {
     @Override
     public String name()

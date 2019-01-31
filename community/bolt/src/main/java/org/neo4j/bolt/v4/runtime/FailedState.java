@@ -35,9 +35,8 @@ import static org.neo4j.util.Preconditions.checkState;
 /**
  * The FAILED state occurs when a recoverable error is encountered.
  * This might be something like a Cypher SyntaxError or
- * ConstraintViolation. To exit the FAILED state, either a RESET
- * or and ACK_FAILURE must be issued. All stream will be IGNORED
- * until this is done.
+ * ConstraintViolation. To exit the FAILED state, a RESET must be issued.
+ * All stream will be IGNORED until this is done.
  */
 public class FailedState implements BoltStateMachineState
 {

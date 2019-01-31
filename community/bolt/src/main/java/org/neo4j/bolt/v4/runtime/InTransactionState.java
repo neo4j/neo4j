@@ -36,7 +36,7 @@ import static org.neo4j.bolt.v3.runtime.ReadyState.FIELDS_KEY;
 import static org.neo4j.bolt.v3.runtime.ReadyState.FIRST_RECORD_AVAILABLE_KEY;
 import static org.neo4j.values.storable.Values.stringArray;
 
-public class InTransactionState extends AbstractStreamingStateState
+public class InTransactionState extends AbstractStreamingState
 {
     public static final String STATEMENT_ID_KEY = "stmt_id";
 

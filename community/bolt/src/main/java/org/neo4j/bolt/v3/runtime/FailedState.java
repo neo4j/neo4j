@@ -35,9 +35,8 @@ import static org.neo4j.util.Preconditions.checkState;
 /**
  * The FAILED state occurs when a recoverable error is encountered.
  * This might be something like a Cypher SyntaxError or
- * ConstraintViolation. To exit the FAILED state, either a RESET
- * or and ACK_FAILURE must be issued. All stream will be IGNORED
- * until this is done.
+ * ConstraintViolation. To exit the FAILED state, a RESET must be issued.
+ * All stream will be IGNORED until this is done.
  */
 public class FailedState implements BoltStateMachineState
 {
@@ -77,6 +76,9 @@ public class FailedState implements BoltStateMachineState
 
     private static boolean shouldIgnore( RequestMessage message )
     {
+        // We assume when a connection is in a FAILED state,
+        // the user on the client side should not be allowed to start another transaction (e.g. Session#run or Session#BeginTx).
+        // Thus the BEGIN message is not considered to be one of ignored message but an illegal message.
         return message instanceof RunMessage || message instanceof PullAllMessage || message instanceof DiscardAllMessage
                 || message instanceof CommitMessage || message instanceof RollbackMessage;
     }
