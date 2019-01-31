@@ -52,6 +52,7 @@ import static org.neo4j.helpers.collection.Iterables.single;
 import static org.neo4j.internal.kernel.api.procs.DefaultParameterValue.nullValue;
 import static org.neo4j.internal.kernel.api.procs.FieldSignature.inputField;
 import static org.neo4j.values.storable.Values.NO_VALUE;
+import static org.neo4j.values.storable.Values.stringArray;
 import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
 
 public abstract class TemporalFunction<T extends AnyValue> implements CallableUserFunction
@@ -273,7 +274,7 @@ public abstract class TemporalFunction<T extends AnyValue> implements CallableUs
     {
         private static final List<FieldSignature> SIGNATURE = Arrays.asList(
                 inputField( "unit", Neo4jTypes.NTString ),
-                inputField( "input", Neo4jTypes.NTAny ),
+                inputField( "input", Neo4jTypes.NTAny, DEFAULT_PARAMETER_VALUE ),
                 inputField( "fields", Neo4jTypes.NTMap, nullValue( Neo4jTypes.NTMap ) ) );
 
         Truncate( TemporalFunction<T> function )
@@ -286,11 +287,14 @@ public abstract class TemporalFunction<T extends AnyValue> implements CallableUs
         @Override
         public T apply( Context ctx, AnyValue[] args ) throws ProcedureException
         {
-            if ( args != null && args.length >= 2 && args.length <= 3 )
+            if ( args != null && args.length >= 1 && args.length <= 3 )
             {
                 AnyValue unit = args[0];
-                AnyValue input = args[1];
-                AnyValue fields = args.length == 2 || args[2] == NO_VALUE ? EMPTY_MAP : args[2];
+
+                AnyValue input = args.length < 2 || args[1].equals(  DEFAULT_TEMPORAL_ARGUMENT_VALUE ) ?
+                                 function.apply( ctx, new AnyValue[]{DEFAULT_TEMPORAL_ARGUMENT_VALUE}) : args[1];
+
+                AnyValue fields = args.length < 3 || args[2] == NO_VALUE ? EMPTY_MAP : args[2];
                 if ( unit instanceof TextValue && input instanceof TemporalValue && fields instanceof MapValue )
                 {
                     return function.truncate(
