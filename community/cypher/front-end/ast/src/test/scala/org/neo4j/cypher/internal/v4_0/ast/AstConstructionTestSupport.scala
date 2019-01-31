@@ -39,9 +39,11 @@ trait AstConstructionTestSupport extends CypherTestSupport {
   def hasLabels(v: LogicalVariable, labels: String*): HasLabels =
     HasLabels(v, labels.map(labelName))(pos)
 
-  def prop(variable: String, propKey: String): Property = Property(varFor(variable), PropertyKeyName(propKey)(pos))(pos)
+  def prop(variable: String, propKey: String): Property =
+    Property(varFor(variable), PropertyKeyName(propKey)(pos))(pos)
 
-  def property(map: Expression, key: String): Expression = Property(map, PropertyKeyName(key)(pos))(pos)
+  def property(map: Expression, key: String): Expression =
+    Property(map, PropertyKeyName(key)(pos))(pos)
 
   def propEquality(variable: String, propKey: String, intValue: Int): Equals =
     Equals(prop(variable, propKey), literalInt(intValue))(pos)
@@ -54,6 +56,9 @@ trait AstConstructionTestSupport extends CypherTestSupport {
 
   def literalInt(intValue: Int): SignedDecimalIntegerLiteral =
     SignedDecimalIntegerLiteral(intValue.toString)(pos)
+
+  def literalUnsignedInt(intValue: Int): UnsignedDecimalIntegerLiteral =
+    UnsignedDecimalIntegerLiteral(intValue.toString)(pos)
 
   def literalFloat(floatValue: Double): DecimalDoubleLiteral =
     DecimalDoubleLiteral(floatValue.toString)(pos)
@@ -69,14 +74,15 @@ trait AstConstructionTestSupport extends CypherTestSupport {
 
   def literalIntMap(keyValues: (String, Int)*): MapExpression =
     MapExpression(keyValues.map {
-      case (k, v) => (PropertyKeyName(k)(pos), SignedDecimalIntegerLiteral(v.toString)(pos))
+      case (k, v) => (PropertyKeyName(k)(pos), literalInt(v))
     })(pos)
 
   def listOf(expressions: Expression*): ListLiteral = ListLiteral(expressions)(pos)
 
-  def mapOf(keysAndValues: (String, Expression)*): MapExpression = MapExpression(keysAndValues.map {
-    case (k, v) => PropertyKeyName(k)(pos) -> v
-  })(pos)
+  def mapOf(keysAndValues: (String, Expression)*): MapExpression =
+    MapExpression(keysAndValues.map {
+      case (k, v) => PropertyKeyName(k)(pos) -> v
+    })(pos)
 
   def TRUE: Expression = True()(pos)
 
@@ -97,20 +103,26 @@ trait AstConstructionTestSupport extends CypherTestSupport {
     case l: Long => SignedDecimalIntegerLiteral(l.toString)(pos)
   }
 
-  def function(name: String, args: Expression*): FunctionInvocation =  FunctionInvocation(FunctionName(name)(pos),
-                                                                                          distinct = false, args.toIndexedSeq)(pos)
+  def function(name: String, args: Expression*): FunctionInvocation =
+    FunctionInvocation(FunctionName(name)(pos), distinct = false, args.toIndexedSeq)(pos)
 
-  def count(expression: Expression): FunctionInvocation = FunctionInvocation(expression, FunctionName(Count.name)(pos))
+  def count(expression: Expression): FunctionInvocation =
+    FunctionInvocation(expression, FunctionName(Count.name)(pos))
 
-  def avg(expression: Expression): FunctionInvocation = FunctionInvocation(expression, FunctionName(Avg.name)(pos))
+  def avg(expression: Expression): FunctionInvocation =
+    FunctionInvocation(expression, FunctionName(Avg.name)(pos))
 
-  def collect(expression: Expression): FunctionInvocation = FunctionInvocation(expression, FunctionName(Collect.name)(pos))
+  def collect(expression: Expression): FunctionInvocation =
+    FunctionInvocation(expression, FunctionName(Collect.name)(pos))
 
-  def max(expression: Expression): FunctionInvocation = FunctionInvocation(expression, FunctionName(Max.name)(pos))
+  def max(expression: Expression): FunctionInvocation =
+    FunctionInvocation(expression, FunctionName(Max.name)(pos))
 
-  def min(expression: Expression): FunctionInvocation = FunctionInvocation(expression, FunctionName(Min.name)(pos))
+  def min(expression: Expression): FunctionInvocation =
+    FunctionInvocation(expression, FunctionName(Min.name)(pos))
 
-  def sum(expression: Expression): FunctionInvocation = FunctionInvocation(expression, FunctionName(Sum.name)(pos))
+  def sum(expression: Expression): FunctionInvocation =
+    FunctionInvocation(expression, FunctionName(Sum.name)(pos))
 
   def literalMap(keyValues: (String,Expression)*): MapExpression =
     MapExpression(keyValues.map(kv => (PropertyKeyName(kv._1)(pos), kv._2)))(pos)
@@ -149,7 +161,8 @@ trait AstConstructionTestSupport extends CypherTestSupport {
 
   def sliceTo(list: Expression, to: Expression): ListSlice = ListSlice(list, None, Some(to))(pos)
 
-  def sliceFull(list: Expression, from: Expression, to: Expression): ListSlice = ListSlice(list, Some(from), Some(to))(pos)
+  def sliceFull(list: Expression, from: Expression, to: Expression): ListSlice =
+    ListSlice(list, Some(from), Some(to))(pos)
 
   def singleInList(variable: String, collection: Expression, predicate: Expression): SingleIterablePredicate =
     SingleIterablePredicate(varFor(variable), collection, Some(predicate) )(pos)
@@ -169,14 +182,17 @@ trait AstConstructionTestSupport extends CypherTestSupport {
   def extract(variable: String, collection: Expression, extract: Expression): ExtractExpression =
     ExtractExpression(varFor(variable), collection, None, Some(extract) )(pos)
 
-  def reduce(accumulator: LogicalVariable, init: Expression, variable: LogicalVariable, collection: Expression, expression: Expression): ReduceExpression =
-    ReduceExpression(ReduceScope(accumulator, variable, expression)(pos), init,
-                     collection)(pos)
+  def reduce(accumulator: LogicalVariable,
+             init: Expression,
+             variable: LogicalVariable,
+             collection: Expression,
+             expression: Expression): ReduceExpression =
+    ReduceExpression(ReduceScope(accumulator, variable, expression)(pos), init, collection)(pos)
 
   def listComprehension(variable: String,
-                                collection: Expression,
-                                predicate: Option[Expression],
-                                extractExpression: Option[Expression]): ListComprehension =
+                        collection: Expression,
+                        predicate: Option[Expression],
+                        extractExpression: Option[Expression]): ListComprehension =
     ListComprehension(varFor(variable), collection, predicate, extractExpression)(pos)
 
   def add(l: Expression, r: Expression): Expression = expressions.Add(l, r)(pos)

@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.v4_0.expressions.{Add, Multiply}
 import org.neo4j.cypher.internal.v4_0.logical.plans._
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 
-class SortPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 with PlanMatchHelp {
+class SortPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
   test("should return None for an already sorted plan") {
     new given().withLogicalPlanningContext { (_, context) =>

@@ -20,22 +20,19 @@
 package org.neo4j.cypher.internal.compiler.v4_0.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v4_0.planner._
-import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.PlanMatchHelp
 import org.neo4j.cypher.internal.ir.v4_0.{AggregatingQueryProjection, InterestingOrder}
 import org.neo4j.cypher.internal.v4_0.logical.plans.{Aggregation, LogicalPlan, Projection}
-import org.neo4j.cypher.internal.v4_0.ast.ASTAnnotationMap
-import org.neo4j.cypher.internal.v4_0.ast.semantics.{ExpressionTypeInfo, SemanticTable}
 import org.neo4j.cypher.internal.v4_0.expressions._
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 
-class AggregationTest extends CypherFunSuite with LogicalPlanningTestSupport with PlanMatchHelp {
+class AggregationTest extends CypherFunSuite with LogicalPlanningTestSupport {
   val aggregatingMap: Map[String, Expression] = Map("count(*)" -> CountStar()(pos))
 
-  val propExp: Expression = Property(varFor("n"), PropertyKeyName("prop")(pos))(pos)
-  val countExp: Expression = FunctionInvocation(FunctionName("count")(pos), propExp)(pos)
+  val propExp: Expression = prop("n", "prop")
+  val countExp: Expression = function("count", propExp)
   val aggregatingMap2: Map[String, Expression] = Map("count(n.prop)" -> countExp)
 
-  val propExp2: Expression = Property(varFor("n"), PropertyKeyName("bar")(pos))(pos)
+  val propExp2: Expression = prop("n", "bar")
   val groupingMap: Map[String, Expression] = Map("n.bar" -> propExp2)
 
   test("should introduce aggregation when needed") {
@@ -77,8 +74,8 @@ class AggregationTest extends CypherFunSuite with LogicalPlanningTestSupport wit
 
   test("RETURN x.prop, count(*) => WITH x.prop as `x.prop` RETURN `x.prop`, count(*)") {
     // Given RETURN x.prop, count(*) => WITH x.prop as `x.prop` RETURN `x.prop`, count(*)
-    val groupingMap = Map("x.prop" -> Property(Variable("x")(pos), PropertyKeyName("prop")(pos))(pos))
-    val groupingKeyMap = Map("x.prop" -> Variable("x.prop")(pos))
+    val groupingMap = Map("x.prop" -> prop("x", "prop"))
+    val groupingKeyMap = Map("x.prop" -> varFor("x.prop"))
     val projection = AggregatingQueryProjection(
       groupingExpressions = groupingKeyMap,
       aggregationExpressions = aggregatingMap

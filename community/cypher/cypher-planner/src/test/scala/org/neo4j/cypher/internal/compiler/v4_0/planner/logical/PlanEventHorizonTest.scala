@@ -27,12 +27,12 @@ import org.neo4j.cypher.internal.v4_0.logical.plans._
 import org.neo4j.cypher.internal.v4_0.util.symbols._
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 
-class PlanEventHorizonTest extends CypherFunSuite with LogicalPlanningTestSupport2 with PlanMatchHelp {
+class PlanEventHorizonTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
   test("should do projection if necessary") {
     // Given
     new given().withLogicalPlanningContextWithFakeAttributes { (_, context) =>
-      val literal = SignedDecimalIntegerLiteral("42")(pos)
+      val literal = literalInt(42)
       val pq = RegularPlannerQuery(horizon = RegularQueryProjection(Map("a" -> literal)))
       val inputPlan = Argument()
 
@@ -70,7 +70,7 @@ class PlanEventHorizonTest extends CypherFunSuite with LogicalPlanningTestSuppor
   test("should plan entire projection if there is no pre-projection") {
     // Given
     new given().withLogicalPlanningContext { (_, context) =>
-      val literal = SignedDecimalIntegerLiteral("42")(pos)
+      val literal = literalInt(42)
       val interestingOrder = InterestingOrder.required(RequiredOrderCandidate.asc(varFor("a"), Map("a" -> varFor("a"))))
       val horizon = RegularQueryProjection(Map("a" -> varFor("a"), "b" -> literal, "c" -> literal), QueryPagination())
       val pq = RegularPlannerQuery(interestingOrder = interestingOrder, horizon = horizon)
@@ -88,7 +88,7 @@ class PlanEventHorizonTest extends CypherFunSuite with LogicalPlanningTestSuppor
   test("should plan partial projection if there is a pre-projection for sorting") {
     // Given
     new given().withLogicalPlanningContext { (_, context) =>
-      val literal = SignedDecimalIntegerLiteral("42")(pos)
+      val literal = literalInt(42)
       val interestingOrder = InterestingOrder.required(RequiredOrderCandidate.asc(varFor("a"), Map("a" -> literal)))
       val horizon = RegularQueryProjection(Map("a" -> literal, "b" -> literal, "c" -> literal), QueryPagination())
       val pq = RegularPlannerQuery(interestingOrder = interestingOrder, horizon = horizon)
@@ -105,8 +105,8 @@ class PlanEventHorizonTest extends CypherFunSuite with LogicalPlanningTestSuppor
 
   test("should add the correct plans when query uses both ORDER BY, SKIP and LIMIT") {
     // given
-    val x: Expression = UnsignedDecimalIntegerLiteral("110")(pos)
-    val y: Expression = UnsignedDecimalIntegerLiteral("10")(pos)
+    val x: Expression = literalUnsignedInt(110)
+    val y: Expression = literalUnsignedInt(10)
     new given().withLogicalPlanningContext { (_, context) =>
       val interestingOrder = InterestingOrder.required(RequiredOrderCandidate.asc(varFor("x")))
       val horizon = RegularQueryProjection(Map("x" -> varFor("x")), queryPagination = QueryPagination(skip = Some(y), limit = Some(x)))
@@ -126,12 +126,12 @@ class PlanEventHorizonTest extends CypherFunSuite with LogicalPlanningTestSuppor
 
   test("should add sort without pre-projection for DistinctQueryProjection") {
     // [WITH DISTINCT n, m] WITH n AS n, m AS m, 5 AS notSortColumn ORDER BY m
-    val mSortVar = Variable("m")(pos)
+    val mSortVar = varFor("m")
     val projectionsMap = Map(
       "n" -> varFor("n"),
       mSortVar.name -> mSortVar,
       // a projection that sort will not take care of
-      "notSortColumn" -> UnsignedDecimalIntegerLiteral("5")(pos))
+      "notSortColumn" -> literalUnsignedInt(5))
     new given().withLogicalPlanningContext { (_, context) =>
       val interestingOrder = InterestingOrder.required(RequiredOrderCandidate.asc(varFor("m")))
       val horizon = DistinctQueryProjection(groupingKeys = projectionsMap)
@@ -147,6 +147,7 @@ class PlanEventHorizonTest extends CypherFunSuite with LogicalPlanningTestSuppor
       result should equal(sorted)
     }
   }
+
   test("should add sort without pre-projection for AggregatingQueryProjection") {
     // [WITH n, m, o] // o is an aggregating expression
     // WITH o, n AS n, m AS m, 5 AS notSortColumn ORDER BY m, o
@@ -154,7 +155,7 @@ class PlanEventHorizonTest extends CypherFunSuite with LogicalPlanningTestSuppor
       "n" -> varFor("n"),
       "m" -> varFor("m"),
       // a projection that sort will not take care of
-      "notSortColumn" -> UnsignedDecimalIntegerLiteral("5")(pos))
+      "notSortColumn" -> literalUnsignedInt(5))
     val aggregating = Map("o" -> varFor("o"))
 
     val projection = AggregatingQueryProjection(

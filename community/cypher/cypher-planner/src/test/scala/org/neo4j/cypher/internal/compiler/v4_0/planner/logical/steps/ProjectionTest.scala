@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v4_0.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v4_0.planner._
-import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.{LogicalPlanningContext, PlanMatchHelp}
+import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.ir.v4_0._
 import org.neo4j.cypher.internal.v4_0.logical.plans.Ascending
 import org.neo4j.cypher.internal.v4_0.logical.plans.ColumnOrder
@@ -34,16 +34,16 @@ import org.neo4j.cypher.internal.v4_0.ast.AscSortItem
 import org.neo4j.cypher.internal.v4_0.expressions._
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 
-class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport with PlanMatchHelp {
+class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport{
 
-  val x: Expression = UnsignedDecimalIntegerLiteral("110") _
-  val y: Expression = UnsignedDecimalIntegerLiteral("10") _
-  val variableSortItem: AscSortItem = ast.AscSortItem(Variable("n") _) _
+  val x: Expression = literalUnsignedInt(110)
+  val y: Expression = literalUnsignedInt(10)
+  val variableSortItem: AscSortItem = ast.AscSortItem(varFor("n")) _
   val columnOrder: ColumnOrder = Ascending("n")
 
   test("should add projection for expressions not already covered") {
     // given
-    val projections: Map[String, Expression] = Map("42" -> SignedDecimalIntegerLiteral("42") _)
+    val projections: Map[String, Expression] = Map("42" -> literalInt(42))
 
     val (context, startPlan) = queryGraphWith(projectionsMap = projections)
 
@@ -57,8 +57,8 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport with
 
   test("should mark as solved according to projectionsToMarkSolved argument") {
     // given
-    val projections: Map[String, Expression] = Map("42" -> SignedDecimalIntegerLiteral("42")(pos), "43" -> SignedDecimalIntegerLiteral("43")(pos))
-    val projectionsToMarkSolved: Map[String, Expression] = Map("42" -> SignedDecimalIntegerLiteral("42")(pos))
+    val projections: Map[String, Expression] = Map("42" -> literalInt(42), "43" -> literalInt(43))
+    val projectionsToMarkSolved: Map[String, Expression] = Map("42" -> literalInt(42))
 
     val (context, startPlan) = queryGraphWith(projectionsMap = projections)
 
@@ -72,7 +72,7 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport with
 
   test("does not add projection when not needed") {
     // given
-    val projections: Map[String, Expression] = Map("n" -> Variable("n") _)
+    val projections: Map[String, Expression] = Map("n" -> varFor("n"))
     val (context, startPlan) = queryGraphWith(projectionsMap = projections)
 
     // when
@@ -85,21 +85,21 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport with
 
   test("only adds the set difference of projections needed") {
     // given
-    val projections: Map[String, Expression] = Map("n" -> Variable("n") _, "42" -> SignedDecimalIntegerLiteral("42") _)
+    val projections: Map[String, Expression] = Map("n" -> varFor("n"), "42" -> literalInt(42))
     val (context, startPlan) = queryGraphWith(projectionsMap = projections)
 
     // when
     val result = projection(startPlan, projections, projections, InterestingOrder.empty, context)
 
     // then
-    val actualProjections = Map("42" -> SignedDecimalIntegerLiteral("42")(pos))
+    val actualProjections = Map("42" -> literalInt(42))
     result should equal(Projection(startPlan, actualProjections))
     context.planningAttributes.solveds.get(result.id).horizon should equal(RegularQueryProjection(projections))
   }
 
   test("does projection when renaming columns") {
     // given
-    val projections: Map[String, Expression] = Map("  n@34" -> Variable("n") _)
+    val projections: Map[String, Expression] = Map("  n@34" -> varFor("n"))
     val (context, startPlan) = queryGraphWith(projectionsMap = projections)
 
     // when
@@ -113,7 +113,7 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport with
   private def queryGraphWith(skip: Option[Expression] = None,
                              limit: Option[Expression] = None,
                              sortItems: Seq[ast.SortItem] = Seq.empty,
-                             projectionsMap: Map[String, Expression] = Map("n" -> Variable("n")(pos)),
+                             projectionsMap: Map[String, Expression] = Map("n" -> varFor("n")),
                              availablePropertiesFromIndexes: Map[Property, String] = Map.empty):
   (LogicalPlanningContext, LogicalPlan) = {
     val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext, semanticTable = new SemanticTable(types = mock[ASTAnnotationMap[Expression, ExpressionTypeInfo]]))
