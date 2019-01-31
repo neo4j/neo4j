@@ -107,17 +107,18 @@ class RecordStoreVersionCheckTest
     {
         // given
         File neoStore = emptyFile( fileSystem );
-        long v1 = MetaDataStore.versionStringToLong( "V1" );
+        String storeVersion = "V1";
+        long v1 = MetaDataStore.versionStringToLong( storeVersion );
         MetaDataStore.setRecord( pageCache, neoStore, MetaDataStore.Position.STORE_VERSION, v1 );
         RecordStoreVersionCheck storeVersionCheck = newStoreVersionCheck();
 
         // when
-        StoreVersionCheck.Result result = storeVersionCheck.checkUpgrade( "V1" );
+        StoreVersionCheck.Result result = storeVersionCheck.checkUpgrade( storeVersion );
 
         // then
         assertTrue( result.outcome.isSuccessful() );
         assertEquals( Outcome.ok, result.outcome );
-        assertNull( result.actualVersion );
+        assertEquals( storeVersion, result.actualVersion );
     }
 
     private File emptyFile( FileSystemAbstraction fs ) throws IOException

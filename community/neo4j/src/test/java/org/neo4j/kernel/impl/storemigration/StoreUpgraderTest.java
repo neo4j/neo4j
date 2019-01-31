@@ -223,7 +223,7 @@ public class StoreUpgraderTest
         PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
         StoreVersionCheck check = getVersionCheck( pageCache );
 
-        String versionToMigrateTo = check.storeVersion();
+        String versionToMigrateTo = check.configuredVersion();
         StoreVersionCheck.Result upgradeResult = check.checkUpgrade( check.configuredVersion() );
         assertTrue( upgradeResult.outcome.isSuccessful() );
         String versionToMigrateFrom = upgradeResult.actualVersion;
