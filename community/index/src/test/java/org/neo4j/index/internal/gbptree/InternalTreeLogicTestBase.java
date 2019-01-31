@@ -49,6 +49,7 @@ import static org.junit.Assume.assumeTrue;
 import static org.neo4j.index.internal.gbptree.ConsistencyChecker.assertNoCrashOrBrokenPointerInGSPP;
 import static org.neo4j.index.internal.gbptree.GenerationSafePointerPair.pointer;
 import static org.neo4j.index.internal.gbptree.TreeNode.Overflow.NO;
+import static org.neo4j.index.internal.gbptree.TreeNode.Overflow.YES;
 import static org.neo4j.index.internal.gbptree.TreeNode.Type.INTERNAL;
 import static org.neo4j.index.internal.gbptree.TreeNode.Type.LEAF;
 import static org.neo4j.index.internal.gbptree.ValueMergers.overwrite;
@@ -359,7 +360,6 @@ public abstract class InternalTreeLogicTestBase<KEY,VALUE>
         assertSiblingOrderAndPointers( child0, child1, child2 );
     }
 
-    // todo randomize me and verify "can't fit" any more in right / left instead of key counts
     @Test
     public void splitWithSplitRatio0() throws IOException
     {
@@ -367,34 +367,34 @@ public abstract class InternalTreeLogicTestBase<KEY,VALUE>
         ratioToKeepInLeftOnSplit = 0;
         initialize();
         int keyCount = 0;
-        int someHighSeed = 1000;
-        KEY key = key( someHighSeed - keyCount );
-        VALUE value = value( someHighSeed - keyCount );
+        KEY key = key( random.nextLong() );
+        VALUE value = value( random.nextLong() );
         while ( node.leafOverflow( cursor, keyCount, key, value ) == NO )
         {
             insert( key, value );
             assertFalse( structurePropagation.hasRightKeyInsert );
 
             keyCount++;
-            key = key( someHighSeed - keyCount );
-            value = value( someHighSeed - keyCount );
+            key = key( random.nextLong() );
+            value = value( random.nextLong() );
         }
 
         // when
         insert( key, value );
-        keyCount++;
 
         // then
         goTo( readCursor, rootId );
         long child0 = childAt( readCursor, 0, stableGeneration, unstableGeneration );
         long child1 = childAt( readCursor, 1, stableGeneration, unstableGeneration );
-        assertEquals( 1, numberOfRootSplits );
-
-        // Left node after split only singel key and right node the rest.
         int leftKeyCount = keyCount( child0 );
         int rightKeyCount = keyCount( child1 );
-        assertEquals( 1, leftKeyCount );
-        assertEquals( keyCount - leftKeyCount, rightKeyCount );
+        assertEquals( 1, numberOfRootSplits );
+
+        // Left node should hold as few keys as possible, such that nothing more can be moved to right.
+        KEY rightmostKeyInLeftChild = keyAt( child0,leftKeyCount - 1, LEAF );
+        VALUE rightmostValueInLeftChild = valueAt( child0, leftKeyCount - 1 );
+        goTo( readCursor, child1 );
+        assertEquals( YES, node.leafOverflow( readCursor, rightKeyCount, rightmostKeyInLeftChild, rightmostValueInLeftChild ) );
     }
 
     @Test
@@ -404,34 +404,33 @@ public abstract class InternalTreeLogicTestBase<KEY,VALUE>
         ratioToKeepInLeftOnSplit = 1;
         initialize();
         int keyCount = 0;
-        int someLowSeed = 1000;
-        KEY key = key( someLowSeed + keyCount );
-        VALUE value = value( someLowSeed + keyCount );
+        KEY key = key( random.nextLong() );
+        VALUE value = value( random.nextLong() );
         while ( node.leafOverflow( cursor, keyCount, key, value ) == NO )
         {
             insert( key, value );
             assertFalse( structurePropagation.hasRightKeyInsert );
 
             keyCount++;
-            key = key( someLowSeed + keyCount );
-            value = value( someLowSeed + keyCount );
+            key = key( random.nextLong() );
+            value = value( random.nextLong() );
         }
 
         // when
         insert( key, value );
-        keyCount++;
 
         // then
         goTo( readCursor, rootId );
         long child0 = childAt( readCursor, 0, stableGeneration, unstableGeneration );
         long child1 = childAt( readCursor, 1, stableGeneration, unstableGeneration );
+        int leftKeyCount = keyCount( child0 );
         assertEquals( 1, numberOfRootSplits );
 
-        // Left node after split only singel key and right node the rest.
-        int leftKeyCount = keyCount( child0 );
-        int rightKeyCount = keyCount( child1 );
-        assertEquals( 1, rightKeyCount );
-        assertEquals( keyCount - rightKeyCount, leftKeyCount );
+        // Right node should hold as few keys as possible, such that nothing more can be moved to left.
+        KEY leftmostKeyInRightChild = keyAt( child1,0, LEAF );
+        VALUE leftmostValueInRightChild = valueAt( child1, 0 );
+        goTo( readCursor, child0 );
+        assertEquals( YES, node.leafOverflow( readCursor, leftKeyCount, leftmostKeyInRightChild, leftmostValueInRightChild ) );
     }
 
     /* REMOVE */
@@ -1808,6 +1807,21 @@ public abstract class InternalTreeLogicTestBase<KEY,VALUE>
     private KEY keyAt( int pos, TreeNode.Type type )
     {
         return node.keyAt( readCursor, layout.newKey(), pos, type );
+    }
+
+    private VALUE valueAt( long nodeId, int pos )
+    {
+        VALUE readValue = layout.newValue();
+        long prevId = readCursor.getCurrentPageId();
+        try
+        {
+            readCursor.next( nodeId );
+            return node.valueAt( readCursor, readValue, pos );
+        }
+        finally
+        {
+            readCursor.next( prevId );
+        }
     }
 
     private VALUE valueAt( int pos )
