@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
+import java.util
+
 import org.neo4j.cypher.internal.runtime.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{Pipe, QueryState}
 import org.neo4j.values.AnyValue
@@ -32,11 +34,14 @@ case class NestedPipeExpression(pipe: Pipe, inner: Expression) extends Expressio
   override def apply(ctx: ExecutionContext, state: QueryState): AnyValue = {
     val innerState = state.withInitialContext(ctx).withDecorator(state.decorator.innerDecorator(owningPipe))
     val results = pipe.createResults(innerState)
-    val map = results.map(ctx => inner(ctx, state))
-    VirtualValues.list(map.toArray:_*)
+    val all = new util.ArrayList[AnyValue]()
+    while (results.hasNext) {
+      all.add(inner(results.next(), state))
+    }
+    VirtualValues.fromList(all)
   }
 
-  override def rewrite(f: (Expression) => Expression) = f(NestedPipeExpression(pipe, inner.rewrite(f)))
+  override def rewrite(f: Expression => Expression) = f(NestedPipeExpression(pipe, inner.rewrite(f)))
 
   override def arguments = List(inner)
 
