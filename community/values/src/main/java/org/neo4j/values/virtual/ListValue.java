@@ -876,6 +876,18 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
         return new PrependList( this, values );
     }
 
+    public boolean contains( AnyValue toFind )
+    {
+        for ( AnyValue value : this )
+        {
+            if ( value.equals( toFind ) )
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private AnyValue[] iterationAsArray()
     {
         ArrayList<AnyValue> values = new ArrayList<>();
