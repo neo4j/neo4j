@@ -20,7 +20,6 @@
 package org.neo4j.io.pagecache;
 
 import java.io.File;
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
@@ -60,7 +59,12 @@ public class ByteArrayPageCursor extends PageCursor
 
     public ByteArrayPageCursor( byte[] array, int offset, int length )
     {
-        this.buffer = ByteBuffer.wrap( array, offset, length );
+        this( ByteBuffer.wrap( array, offset, length ) );
+    }
+
+    public ByteArrayPageCursor( ByteBuffer buffer )
+    {
+        this.buffer = buffer;
     }
 
     @Override

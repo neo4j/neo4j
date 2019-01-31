@@ -134,7 +134,7 @@ class NativeIndexUpdater<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIn
         conflictDetectingValueMerger.checkConflict( update.values() );
     }
 
-    private static <KEY extends NativeIndexKey<KEY>> void initializeKeyFromUpdate( KEY treeKey, long entityId, Value[] values )
+    static <KEY extends NativeIndexKey<KEY>> void initializeKeyFromUpdate( KEY treeKey, long entityId, Value[] values )
     {
         treeKey.initialize( entityId );
         for ( int i = 0; i < values.length; i++ )

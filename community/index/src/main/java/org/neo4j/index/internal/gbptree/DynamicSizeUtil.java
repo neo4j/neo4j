@@ -83,7 +83,7 @@ import static org.neo4j.index.internal.gbptree.PageCursorUtil.putUnsignedShort;
  * Tombstone
  * First bit in keyValueSize is used as a tombstone, set to 1 if key is dead.
  */
-class DynamicSizeUtil
+public class DynamicSizeUtil
 {
     static final int SIZE_OFFSET = 2;
     static final int SIZE_KEY_SIZE = 2;
@@ -121,7 +121,7 @@ class DynamicSizeUtil
         putKeyValueSize( cursor, keySize, 0 );
     }
 
-    static void putKeyValueSize( PageCursor cursor, int keySize, int valueSize )
+    public static void putKeyValueSize( PageCursor cursor, int keySize, int valueSize )
     {
         boolean hasAdditionalKeySize = keySize > MASK_ONE_BYTE_KEY_SIZE;
         boolean hasValueSize = valueSize > 0;
@@ -177,7 +177,7 @@ class DynamicSizeUtil
         }
     }
 
-    static long readKeyValueSize( PageCursor cursor )
+    public static long readKeyValueSize( PageCursor cursor )
     {
         byte firstByte = cursor.getByte();
         boolean hasTombstone = hasTombstone( firstByte );
@@ -219,17 +219,17 @@ class DynamicSizeUtil
         return (hasTombstone ? FLAG_READ_TOMBSTONE : 0) | (keySize << Integer.SIZE) | valueSize;
     }
 
-    static int extractValueSize( long keyValueSize )
+    public static int extractValueSize( long keyValueSize )
     {
         return (int) keyValueSize;
     }
 
-    static int extractKeySize( long keyValueSize )
+    public static int extractKeySize( long keyValueSize )
     {
         return (int) ((keyValueSize & ~FLAG_READ_TOMBSTONE) >>> Integer.SIZE);
     }
 
-    static int getOverhead( int keySize, int valueSize )
+    public static int getOverhead( int keySize, int valueSize )
     {
         return 1 + (keySize > MASK_ONE_BYTE_KEY_SIZE ? 1 : 0) + (valueSize > 0 ? 1 : 0) + (valueSize > MASK_ONE_BYTE_VALUE_SIZE ? 1 : 0);
     }
