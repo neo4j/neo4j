@@ -95,7 +95,6 @@ public class RandomRule implements TestRule
                 {
                     setSeed( globalSeed );
                 }
-                reset();
                 try
                 {
                     base.evaluate();
@@ -316,6 +315,7 @@ public class RandomRule implements TestRule
     public void setSeed( long seed )
     {
         this.seed = seed;
+        reset();
     }
 
     @Retention( RetentionPolicy.RUNTIME )
