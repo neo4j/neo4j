@@ -377,7 +377,9 @@ public class Database extends LifecycleAdapter
             IndexStatisticsStore indexStatisticsStore = new IndexStatisticsStore( databasePageCache, databaseLayout, recoveryCleanupWorkCollector );
             IndexingService indexingService = buildIndexingService( storageEngine, databaseSchemaState, indexStoreView, indexStatisticsStore );
 
-            TransactionIdStore transactionIdStore = databaseDependencies.resolveDependency( TransactionIdStore.class );
+            TransactionIdStore transactionIdStore = storageEngine.transactionIdStore();
+            databaseDependencies.satisfyDependency( transactionIdStore );
+            databaseDependencies.satisfyDependency( storageEngine.logVersionRepository() );
 
             versionContextSupplier.init( transactionIdStore::getLastClosedTransactionId );
 

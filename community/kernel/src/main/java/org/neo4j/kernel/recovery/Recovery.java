@@ -274,14 +274,15 @@ public final class Recovery
         IndexingService indexingService = Database.buildIndexingService( storageEngine, schemaState, indexStoreView, indexStatisticsStore,
                 config, scheduler, indexProviderMap, tokenNameLookup, logProvider, logProvider, monitors.newMonitor( IndexingService.Monitor.class ) );
 
+        TransactionIdStore transactionIdStore = storageEngine.transactionIdStore();
+        LogVersionRepository logVersionRepository = storageEngine.logVersionRepository();
+        storageEngineDependencies.satisfyDependencies( transactionIdStore, logVersionRepository );
+
         LogFiles logFiles = LogFilesBuilder.builder( databaseLayout, fs )
                 .withLogEntryReader( logEntryReader )
                 .withConfig( config )
                 .withDependencies( storageEngineDependencies )
                 .build();
-
-        TransactionIdStore transactionIdStore = storageEngineDependencies.resolveDependency( TransactionIdStore.class );
-        LogVersionRepository logVersionRepository = storageEngineDependencies.resolveDependency( LogVersionRepository.class );
 
         Boolean failOnCorruptedLogFiles = config.get( GraphDatabaseSettings.fail_on_corrupted_log_files );
         LogTailScanner logTailScanner = providedLogScanner.orElseGet( () -> new LogTailScanner( logFiles, logEntryReader, monitors, failOnCorruptedLogFiles ) );
