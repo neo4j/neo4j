@@ -31,17 +31,11 @@ import java.util.Comparator;
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.ByteArrayPageCursor;
-import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.kernel.impl.transaction.log.ReadAheadChannel;
 
-import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.extractKeySize;
-import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.extractValueSize;
 import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.getOverhead;
 import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.putKeyValueSize;
-import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.readKeyValueSize;
 
 class BlockStorage<KEY, VALUE> implements Closeable
 {
@@ -58,7 +52,6 @@ class BlockStorage<KEY, VALUE> implements Closeable
     private final int bufferSize;
     private final ByteBufferFactory bufferFactory;
     private int currentBufferSize;
-    private long currentKeyCount;
     private int mergeIteration;
 
     BlockStorage( Layout<KEY,VALUE> layout, ByteBufferFactory bufferFactory, FileSystemAbstraction fs, File blockFile, Monitor monitor, int bufferSize )
@@ -92,13 +85,12 @@ class BlockStorage<KEY, VALUE> implements Closeable
 
         bufferedEntries.add( new BlockEntry<>( key, value ) );
         currentBufferSize += entrySize;
-        currentKeyCount++;
         monitor.entryAdded( entrySize );
     }
 
     public void doneAdding() throws IOException
     {
-        if ( currentKeyCount > 0 )
+        if ( !bufferedEntries.isEmpty() )
         {
             flushAndResetBuffer();
         }
@@ -109,7 +101,6 @@ class BlockStorage<KEY, VALUE> implements Closeable
         byteBuffer.clear();
         bufferedEntries.clear();
         currentBufferSize = BLOCK_HEADER_SIZE;
-        currentKeyCount = 0;
     }
 
     private void flushAndResetBuffer() throws IOException
@@ -118,7 +109,7 @@ class BlockStorage<KEY, VALUE> implements Closeable
         ByteArrayPageCursor pageCursor = new ByteArrayPageCursor( byteBuffer );
 
         // Header
-        pageCursor.putLong( currentKeyCount );
+        pageCursor.putLong( bufferedEntries.size() );
 
         // Entries
         for ( BlockEntry<KEY,VALUE> entry : bufferedEntries )
@@ -130,13 +121,14 @@ class BlockStorage<KEY, VALUE> implements Closeable
             layout.writeValue( pageCursor, entry.value() );
         }
 
+        // TODO solve the BIG padding problem
         // Zero pad
         pageCursor.putBytes( bufferSize - currentBufferSize, (byte) 0 );
 
         // Append to file
         byteBuffer.flip();
         storeChannel.writeAll( byteBuffer );
-        monitor.blockFlushed( currentKeyCount, currentBufferSize, storeChannel.position() );
+        monitor.blockFlushed( bufferedEntries.size(), currentBufferSize, storeChannel.position() );
         resetBuffer();
     }
 
@@ -151,93 +143,9 @@ class BlockStorage<KEY, VALUE> implements Closeable
         return (long) Math.pow( 2, mergeIteration ) * bufferSize;
     }
 
-    public BlockReader reader() throws IOException
+    public BlockStorageReader<KEY,VALUE> reader() throws IOException
     {
-        return new BlockReader( fs.open( blockFile, OpenMode.READ ) );
-    }
-
-    public class BlockReader implements Closeable
-    {
-        private final StoreChannel channel;
-
-        BlockReader( StoreChannel channel )
-        {
-            this.channel = channel;
-        }
-
-        public EntryReader nextBlock() throws IOException
-        {
-            long position = channel.position();
-            if ( position >= channel.size() )
-            {
-                return null;
-            }
-            StoreChannel blockChannel = fs.open( blockFile, OpenMode.READ );
-            blockChannel.position( position );
-            channel.position( position + calculateBlockSize() );
-            PageCursor pageCursor = new ReadableChannelPageCursor( new ReadAheadChannel<>( blockChannel ) );
-            EntryReader entryReader = new EntryReader( pageCursor );
-            return entryReader;
-        }
-
-        @Override
-        public void close() throws IOException
-        {
-            channel.close();
-        }
-    }
-
-    public class EntryReader implements Closeable
-    {
-        private final long entryCount;
-        private final PageCursor pageCursor;
-        private final KEY key;
-        private final VALUE value;
-        private long readEntries;
-
-        EntryReader( PageCursor pageCursor )
-        {
-            this.pageCursor = pageCursor;
-            this.entryCount = pageCursor.getLong();
-            this.key = layout.newKey();
-            this.value = layout.newValue();
-        }
-
-        public boolean next() throws IOException
-        {
-            if ( readEntries >= entryCount )
-            {
-                return false;
-            }
-
-            long entrySize = readKeyValueSize( pageCursor );
-            layout.readKey( pageCursor, key, extractKeySize( entrySize ) );
-            layout.readValue( pageCursor, value, extractValueSize( entrySize ) );
-
-            readEntries++;
-            return true;
-        }
-
-        public long entryCount()
-        {
-            return entryCount;
-        }
-
-        KEY key()
-        {
-            return key;
-        }
-
-        VALUE value()
-        {
-            return value;
-        }
-
-        @Override
-        public void close() throws IOException
-        {
-            pageCursor.close();
-        }
+        return new BlockStorageReader<>( fs, blockFile, calculateBlockSize(), layout );
     }
 
     public interface Monitor

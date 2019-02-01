@@ -22,6 +22,7 @@ import org.neo4j.test.rule.TestDirectory;
 import static java.lang.Math.toIntExact;
 import static java.nio.ByteBuffer.allocate;
 import static java.util.Collections.singletonList;
+import static java.util.Comparator.comparingLong;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -107,31 +108,76 @@ class BlockStorageTest
             storage.doneAdding();
 
             // then
-
+            sortExpectedBlock( expected );
+            assertContents( layout, storage, expected );
         }
     }
 
-    // TODO shouldNotAcceptAddedEntriesAfterDoneAdding
-    // TODO shouldNotFlushAnythingOnEmptyBufferInDoneAdding
-    // TODO shouldFlushMultipleBlocks
+    @Test
+    void shouldSortAndAddMultipleEntriesInMultipleBlocks() throws IOException
+    {
+        // given
+        SimpleLongLayout layout = layout( 0 );
+        TrackingMonitor monitor = new TrackingMonitor();
+        int bufferSize = 1_000;
+        List<List<Pair<MutableLong,MutableLong>>> expected = new ArrayList<>();
+        try ( BlockStorage<MutableLong,MutableLong> storage = new BlockStorage<>( layout, BUFFER_FACTORY, fileSystem, file, monitor, bufferSize ) )
+        {
+            // when
+            List<Pair<MutableLong,MutableLong>> currentExpected = new ArrayList<>();
+            long currentBlock = 0;
+            for ( long i = 0; monitor.blockFlushedCallCount < 10; i++ )
+            {
+                long keyNumber = random.nextLong( 10_000_000 );
+                MutableLong key = new MutableLong( keyNumber );
+                MutableLong value = new MutableLong( i );
+
+                storage.add( key, value );
+                if ( monitor.blockFlushedCallCount > currentBlock )
+                {
+                    sortExpectedBlock( currentExpected );
+                    expected.add( currentExpected );
+                    currentExpected = new ArrayList<>();
+                    currentBlock = monitor.blockFlushedCallCount;
+                }
+                currentExpected.add( Pair.of( key, value ) );
+            }
+            storage.doneAdding();
+            sortExpectedBlock( currentExpected );
+            expected.add( currentExpected );
+
+            // then
+            assertContents( layout, storage, expected.toArray( new List[0] ) );
+        }
+    }
+
+    private void sortExpectedBlock( List<Pair<MutableLong,MutableLong>> currentExpected )
+    {
+        currentExpected.sort( comparingLong( p -> p.getKey().longValue() ) );
+    }
+
     // TODO shouldFlushSortedEntriesOnFullBuffer
     // TODO shouldFlushPaddedBlocks
+    // TODO shouldNotAcceptAddedEntriesAfterDoneAdding
+    // TODO shouldNotFlushAnythingOnEmptyBufferInDoneAdding
 
     private void assertContents( SimpleLongLayout layout, BlockStorage<MutableLong,MutableLong> storage, List<Pair<MutableLong,MutableLong>>... expectedBlocks )
             throws IOException
     {
-        try ( BlockStorage<MutableLong,MutableLong>.BlockReader reader = storage.reader() )
+        try ( BlockStorageReader<MutableLong,MutableLong> reader = storage.reader() )
         {
             for ( List<Pair<MutableLong,MutableLong>> expectedBlock : expectedBlocks )
             {
-                BlockStorage<MutableLong,MutableLong>.EntryReader block = reader.nextBlock();
-                assertNotNull( block );
-                assertEquals( expectedBlock.size(), block.entryCount() );
-                for ( Pair<MutableLong,MutableLong> expectedEntry : expectedBlock )
+                try ( BlockReader<MutableLong,MutableLong> block = reader.nextBlock() )
                 {
-                    assertTrue( block.next() );
-                    assertEquals( 0, layout.compare( block.key(), expectedEntry.getKey() ) );
-                    assertEquals( block.value(), expectedEntry.getValue() );
+                    assertNotNull( block );
+                    assertEquals( expectedBlock.size(), block.entryCount() );
+                    for ( Pair<MutableLong,MutableLong> expectedEntry : expectedBlock )
+                    {
+                        assertTrue( block.next() );
+                        assertEquals( 0, layout.compare( block.key(), expectedEntry.getKey() ) );
+                        assertEquals( block.value(), expectedEntry.getValue() );
+                    }
                 }
             }
         }
