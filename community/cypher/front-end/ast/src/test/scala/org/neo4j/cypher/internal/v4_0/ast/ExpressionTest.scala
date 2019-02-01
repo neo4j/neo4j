@@ -17,22 +17,18 @@
 package org.neo4j.cypher.internal.v4_0.ast
 
 import org.neo4j.cypher.internal.v4_0.expressions._
-import org.neo4j.cypher.internal.v4_0.util.symbols._
+import org.neo4j.cypher.internal.v4_0.util.IdentityMap
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.v4_0.util.{DummyPosition, IdentityMap}
-import org.neo4j.cypher.internal.v4_0.expressions._
 
 class ExpressionTest extends CypherFunSuite with AstConstructionTestSupport {
 
-  val expression = DummyExpression(CTAny, DummyPosition(0))
-
   test("should compute dependencies of simple expressions") {
     varFor("a").dependencies should equal(Set(varFor("a")))
-    SignedDecimalIntegerLiteral("1")(pos).dependencies should equal(Set())
+    literalInt(1).dependencies should equal(Set())
   }
 
   test("should compute dependencies of composite expressions") {
-    Add(varFor("a"), Subtract(SignedDecimalIntegerLiteral("1")(pos), varFor("b"))_)(pos).dependencies should equal(Set(varFor("a"), varFor("b")))
+    Add(varFor("a"), Subtract(literalInt(1), varFor("b"))_)(pos).dependencies should equal(Set(varFor("a"), varFor("b")))
   }
 
   test("should compute dependencies for filtering expressions") {
@@ -48,7 +44,7 @@ class ExpressionTest extends CypherFunSuite with AstConstructionTestSupport {
       varFor("x"),
       PatternExpression(pat),
       None,
-      Some(FunctionInvocation(FunctionName("head")_, FunctionInvocation(FunctionName("nodes")_, varFor("x"))_)_)
+      Some(function("head", function("nodes", varFor("x"))))
     )_
 
     expr.dependencies should equal(Set(varFor("n"), varFor("k")))
@@ -65,7 +61,7 @@ class ExpressionTest extends CypherFunSuite with AstConstructionTestSupport {
     )_
     val innerExpr: Expression = ExtractExpression(
       varFor("y"),
-      ListLiteral(Seq(literalInt(1), literalInt(2), literalInt(3)))_,
+      listOf(literalInt(1), literalInt(2), literalInt(3)),
       None,
       Some(varFor("y"))
     )_
@@ -102,7 +98,7 @@ class ExpressionTest extends CypherFunSuite with AstConstructionTestSupport {
   test("should compute inputs of composite expressions") {
     val identA = varFor("a")
     val identB = varFor("b")
-    val lit1 = SignedDecimalIntegerLiteral("1")(pos)
+    val lit1 = literalInt(1)
     val sub = Subtract(lit1, identB)(pos)
     val add = Add(identA, sub)(pos)
 
@@ -125,8 +121,8 @@ class ExpressionTest extends CypherFunSuite with AstConstructionTestSupport {
       )_
     )_)
 
-    val callNodes: Expression = FunctionInvocation(FunctionName("nodes") _, varFor("x"))_
-    val callHead: Expression = FunctionInvocation(FunctionName("head") _, callNodes) _
+    val callNodes: Expression = function("nodes", varFor("x"))
+    val callHead: Expression = function("head", callNodes)
 
     // extract(x IN (n)-->(k) | head(nodes(x)) )
     val expr: Expression = ExtractExpression(

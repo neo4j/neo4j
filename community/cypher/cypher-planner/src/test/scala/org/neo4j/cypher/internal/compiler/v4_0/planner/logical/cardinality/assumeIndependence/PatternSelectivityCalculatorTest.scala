@@ -27,14 +27,13 @@ import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.cardinality.IndependenceCombiner
 import org.neo4j.cypher.internal.v4_0.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
-import org.neo4j.cypher.internal.ir.v4_0.{VarPatternLength, _}
+import org.neo4j.cypher.internal.ir.v4_0._
 import org.neo4j.cypher.internal.planner.v4_0.spi.GraphStatistics
 import org.neo4j.cypher.internal.v4_0.util.{Cardinality, LabelId, Selectivity}
-import org.neo4j.cypher.internal.v4_0.expressions.{HasLabels, LabelName, SemanticDirection}
-
+import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
 import scala.collection.mutable
 
-class PatternSelectivityCalculatorTest extends CypherFunSuite  with AstConstructionTestSupport {
+class PatternSelectivityCalculatorTest extends CypherFunSuite with AstConstructionTestSupport {
 
   test("should return zero if there are no nodes with the given labels") {
     val stats: GraphStatistics = mock[GraphStatistics]
@@ -45,11 +44,9 @@ class PatternSelectivityCalculatorTest extends CypherFunSuite  with AstConstruct
     val calculator = PatternSelectivityCalculator(stats, IndependenceCombiner)
     val relationship = PatternRelationship("r", ("a", "b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
 
-    val label = LabelName("L")(pos)
-
-    implicit val semanticTable = new SemanticTable(resolvedLabelNames = mutable.Map("L" -> LabelId(0)))
-    implicit val selections = Selections(Set(Predicate(Set[String]("a"), HasLabels(varFor("a"), Seq(label))(pos))))
-    val result = calculator.apply(relationship, Map("a" -> Set(label)))
+    implicit val semanticTable: SemanticTable = new SemanticTable(resolvedLabelNames = mutable.Map("L" -> LabelId(0)))
+    implicit val selections: Selections = Selections(Set(Predicate(Set("a"), hasLabels("a", "L"))))
+    val result = calculator.apply(relationship, Map("a" -> Set(labelName("L"))))
 
     result should equal(Selectivity.ZERO)
   }
@@ -63,11 +60,9 @@ class PatternSelectivityCalculatorTest extends CypherFunSuite  with AstConstruct
     val calculator = PatternSelectivityCalculator(stats, IndependenceCombiner)
     val relationship = PatternRelationship("r", ("a", "b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
 
-    val label = LabelName("L")(pos)
-
-    implicit val semanticTable = new SemanticTable(resolvedLabelNames = mutable.Map("L" -> LabelId(0)))
-    implicit val selections = Selections(Set(Predicate(Set[String]("a"), HasLabels(varFor("a"), Seq(label))(pos))))
-    val result = calculator.apply(relationship, Map("a" -> Set(label)))
+    implicit val semanticTable: SemanticTable = new SemanticTable(resolvedLabelNames = mutable.Map("L" -> LabelId(0)))
+    implicit val selections: Selections = Selections(Set(Predicate(Set("a"), hasLabels("a", "L"))))
+    val result = calculator.apply(relationship, Map("a" -> Set(labelName("L"))))
 
     result should equal(Selectivity.ONE)
   }
@@ -81,11 +76,9 @@ class PatternSelectivityCalculatorTest extends CypherFunSuite  with AstConstruct
     val calculator = PatternSelectivityCalculator(stats, IndependenceCombiner)
     val relationship = PatternRelationship("r", ("a", "b"), SemanticDirection.OUTGOING, Seq.empty, VarPatternLength(33, Some(33)))
 
-    val label = LabelName("L")(pos)
-
-    implicit val semanticTable = new SemanticTable(resolvedLabelNames = mutable.Map("L" -> LabelId(0)))
-    implicit val selections = Selections(Set(Predicate(Set[String]("a"), HasLabels(varFor("a"), Seq(label))(pos))))
-    val result = calculator.apply(relationship, Map("a" -> Set(label)))
+    implicit val semanticTable: SemanticTable = new SemanticTable(resolvedLabelNames = mutable.Map("L" -> LabelId(0)))
+    implicit val selections: Selections = Selections(Set(Predicate(Set("a"), hasLabels("a", "L"))))
+    val result = calculator.apply(relationship, Map("a" -> Set(labelName("L"))))
 
     result should equal(Selectivity.ONE)
   }
@@ -109,11 +102,10 @@ class PatternSelectivityCalculatorTest extends CypherFunSuite  with AstConstruct
 
     val labels = new mutable.HashMap[String, LabelId]()
     for (i <- 1 to 100) labels.put(i.toString, LabelId(i))
-    val labelNames = labels.keys.map(LabelName(_)(pos))
-    val predicates = labelNames.map(l => Predicate(Set[String]("a"), HasLabels(varFor("a"), Seq(l))(pos))).toSet
+    val predicates = labels.keys.map(l => Predicate(Set("a"), hasLabels("a", l))).toSet
 
-    implicit val semanticTable = new SemanticTable(resolvedLabelNames = labels)
-    implicit val selections = Selections(predicates)
+    implicit val semanticTable: SemanticTable = new SemanticTable(resolvedLabelNames = labels)
+    implicit val selections: Selections = Selections(predicates)
     val result = calculator.apply(relationship, Map.empty)
 
     result should equal(Selectivity.ONE)

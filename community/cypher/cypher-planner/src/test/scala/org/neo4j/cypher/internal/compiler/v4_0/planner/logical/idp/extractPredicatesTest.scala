@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.compiler.v4_0.planner.logical.idp
 import org.neo4j.cypher.internal.v4_0.ast._
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.v4_0.expressions._
-import org.neo4j.graphdb.Direction
 
 class extractPredicatesTest extends CypherFunSuite with AstConstructionTestSupport {
   test("()-[*]->()") {
@@ -42,27 +41,27 @@ class extractPredicatesTest extends CypherFunSuite with AstConstructionTestSuppo
       extractPredicates(Seq(rewrittenPredicate), "r", "r-edge", "r-node", "n")
 
     nodePredicates shouldBe empty
-    edgePredicates shouldBe List(Equals(Property(varFor("r-edge"), PropertyKeyName("prop")(pos))(pos), literalInt(42))(pos))
-    legacyPredicates shouldBe List((varFor("  FRESHID15"), Equals(Property(varFor("  FRESHID15"), PropertyKeyName("prop")(pos))(pos), literalInt(42))(pos)))
+    edgePredicates shouldBe List(propEquality("r-edge", "prop", 42))
+    legacyPredicates shouldBe List((varFor("  FRESHID15"), propEquality("  FRESHID15", "prop", 42)))
     solvedPredicates shouldBe List(rewrittenPredicate)
   }
 
   test("(n)-[x*]->(m) WHERE ALL(r in x WHERE r.prop < 4)") {
     val rewrittenPredicate = AllIterablePredicate(
       FilterScope(varFor("r"), Some(propLessThan("r", "prop", 4)))(pos),
-      FunctionInvocation(
-        FunctionName("relationships")(pos),
+      function(
+        "relationships",
         PathExpression(
           NodePathStep(
             varFor("n"),
-            MultiRelationshipPathStep(varFor("x"), SemanticDirection.OUTGOING, Some(varFor("m")), NilPathStep)))(pos))(pos))(pos)
+            MultiRelationshipPathStep(varFor("x"), SemanticDirection.OUTGOING, Some(varFor("m")), NilPathStep)))(pos)))(pos)
 
     val (nodePredicates: Seq[Expression], edgePredicates: Seq[Expression], legacyPredicates: Seq[(LogicalVariable, Expression)], solvedPredicates: Seq[Expression]) =
       extractPredicates(Seq(rewrittenPredicate), "x", "x-edge", "x-node", "n")
 
     nodePredicates shouldBe empty
-    edgePredicates shouldBe List(LessThan(Property(varFor("x-edge"), PropertyKeyName("prop")(pos))(pos), literalInt(4))(pos))
-    legacyPredicates shouldBe List((varFor("r"), LessThan(Property(varFor("r"), PropertyKeyName("prop")(pos))(pos), literalInt(4))(pos)))
+    edgePredicates shouldBe List(propLessThan("x-edge", "prop", 4))
+    legacyPredicates shouldBe List((varFor("r"), propLessThan("r", "prop", 4)))
     solvedPredicates shouldBe List(rewrittenPredicate)
   }
 
@@ -70,30 +69,30 @@ class extractPredicatesTest extends CypherFunSuite with AstConstructionTestSuppo
 
     val rewrittenRelPredicate = NoneIterablePredicate(
       FilterScope(varFor("r"), Some(propLessThan("r", "prop", 4)))(pos),
-      FunctionInvocation(
-        FunctionName("relationships")(pos),
+      function(
+        "relationships",
         PathExpression(
           NodePathStep(
             varFor("n"),
-            MultiRelationshipPathStep(varFor("x"), SemanticDirection.OUTGOING, Some(varFor("0")), NilPathStep)))(pos))(pos))(pos)
+            MultiRelationshipPathStep(varFor("x"), SemanticDirection.OUTGOING, Some(varFor("0")), NilPathStep)))(pos)))(pos)
 
     val rewrittenNodePredicate = AllIterablePredicate(
-      FilterScope(varFor("m"), Some(FunctionInvocation(FunctionName("exists")(pos), Property(Variable("m")(pos),PropertyKeyName("prop")(pos))(pos))(pos)))(pos),
-      FunctionInvocation(
-        FunctionName("nodes")(pos),
+      FilterScope(varFor("m"), Some(function("exists", prop("m", "prop"))))(pos),
+      function(
+        "nodes",
         PathExpression(
           NodePathStep(
             varFor("n"),
-            MultiRelationshipPathStep(varFor("x"), SemanticDirection.OUTGOING, Some(varFor("o")), NilPathStep)))(pos))(pos))(pos)
+            MultiRelationshipPathStep(varFor("x"), SemanticDirection.OUTGOING, Some(varFor("o")), NilPathStep)))(pos)))(pos)
 
     val (nodePredicates: Seq[Expression], edgePredicates: Seq[Expression], legacyPredicates: Seq[(LogicalVariable, Expression)], solvedPredicates: Seq[Expression]) =
       extractPredicates(Seq(rewrittenRelPredicate, rewrittenNodePredicate), "x", "x-edge", "x-node", "n")
 
-    nodePredicates shouldBe List(FunctionInvocation(FunctionName("exists")(pos),Property(Variable("x-node")(pos),PropertyKeyName("prop")(pos))(pos))(pos))
-    edgePredicates shouldBe List(Not(LessThan(Property(varFor("x-edge"), PropertyKeyName("prop")(pos))(pos), literalInt(4))(pos))(pos))
+    nodePredicates shouldBe List(function("exists", prop("x-node", "prop")))
+    edgePredicates shouldBe List(Not(propLessThan("x-edge", "prop", 4))(pos))
     legacyPredicates shouldBe List(
-      (varFor("r"), Not(LessThan(Property(varFor("r"), PropertyKeyName("prop")(pos))(pos), literalInt(4))(pos))(pos)),
-      (varFor("m"), FunctionInvocation(FunctionName("exists")(pos),Property(Variable("m")(pos),PropertyKeyName("prop")(pos))(pos))(pos))
+      (varFor("r"), Not(propLessThan("r", "prop", 4))(pos)),
+      (varFor("m"), function("exists", prop("m", "prop")))
     )
     solvedPredicates shouldBe List(rewrittenRelPredicate, rewrittenNodePredicate)
   }
@@ -104,19 +103,17 @@ class extractPredicatesTest extends CypherFunSuite with AstConstructionTestSuppo
         varFor("n"),
         MultiRelationshipPathStep(varFor("r"),SemanticDirection.OUTGOING, Some(varFor("m")), NilPathStep)))(pos)
 
-    val nodePredicate = Equals(prop("x", "prop"), prop("n", "prop"))(pos)
+    val nodePredicate = equals(prop("x", "prop"), prop("n", "prop"))
     val rewrittenPredicate = AllIterablePredicate(
       FilterScope(varFor("x"), Some(nodePredicate))(pos),
-      FunctionInvocation(
-        FunctionName("nodes")(pos),
-        pathExpression)(pos))(pos)
+      function("nodes", pathExpression))(pos)
 
     val (nodePredicates: Seq[Expression], edgePredicates: Seq[Expression], legacyPredicates: Seq[(LogicalVariable, Expression)], solvedPredicates: Seq[Expression]) =
       extractPredicates(Seq(rewrittenPredicate), "r", "r-edge", "r-node", "n")
 
-    nodePredicates shouldBe List(Equals(Property(varFor("r-node"),PropertyKeyName("prop")(pos))(pos),Property(varFor("n"),PropertyKeyName("prop")(pos))(pos))(pos))
+    nodePredicates shouldBe List(equals(prop("r-node", "prop"), prop("n", "prop")))
     edgePredicates shouldBe empty
-    legacyPredicates shouldBe List((varFor("x"), Equals(Property(varFor("x"),PropertyKeyName("prop")(pos))(pos),Property(varFor("n"),PropertyKeyName("prop")(pos))(pos))(pos)))
+    legacyPredicates shouldBe List((varFor("x"), equals(prop("x", "prop"), prop("n", "prop"))))
     solvedPredicates shouldBe List(rewrittenPredicate)
   }
 
@@ -127,10 +124,8 @@ class extractPredicatesTest extends CypherFunSuite with AstConstructionTestSuppo
         MultiRelationshipPathStep(varFor("r"),SemanticDirection.OUTGOING, Some(varFor("m")), NilPathStep)))(pos)
 
     val rewrittenPredicate = AllIterablePredicate(
-      FilterScope(varFor("x"), Some(Equals(FunctionInvocation(FunctionName("length")(pos), pathExpression)(pos), literalInt(1))(pos)))(pos),
-      FunctionInvocation(
-        FunctionName("nodes")(pos),
-        pathExpression)(pos))(pos)
+      FilterScope(varFor("x"), Some(equals(function("length", pathExpression), literalInt(1))))(pos),
+      function("nodes", pathExpression))(pos)
 
     val (nodePredicates: Seq[Expression], edgePredicates: Seq[Expression], legacyPredicates: Seq[(LogicalVariable, Expression)], solvedPredicates: Seq[Expression]) =
       extractPredicates(Seq(rewrittenPredicate), "r", "r-edge", "r-node", "n")
@@ -148,10 +143,8 @@ class extractPredicatesTest extends CypherFunSuite with AstConstructionTestSuppo
         MultiRelationshipPathStep(varFor("r"),SemanticDirection.OUTGOING, Some(varFor("m")), NilPathStep)))(pos)
 
     val rewrittenPredicate = AllIterablePredicate(
-      FilterScope(varFor("x"), Some(Equals(FunctionInvocation(FunctionName("length")(pos), pathExpression)(pos), literalInt(1))(pos)))(pos),
-      FunctionInvocation(
-        FunctionName("relationships")(pos),
-        pathExpression)(pos))(pos)
+      FilterScope(varFor("x"), Some(equals(function("length", pathExpression), literalInt(1))))(pos),
+      function("relationships", pathExpression))(pos)
 
     val (nodePredicates: Seq[Expression], edgePredicates: Seq[Expression], legacyPredicates: Seq[(LogicalVariable, Expression)], solvedPredicates: Seq[Expression]) =
       extractPredicates(Seq(rewrittenPredicate), "r", "r-edge", "r-node", "n")
@@ -169,10 +162,8 @@ class extractPredicatesTest extends CypherFunSuite with AstConstructionTestSuppo
         MultiRelationshipPathStep(varFor("r"), SemanticDirection.OUTGOING, Some(varFor("m")), NilPathStep)))(pos)
 
     val rewrittenPredicate = NoneIterablePredicate(
-      FilterScope(varFor("x"), Some(Equals(FunctionInvocation(FunctionName("length")(pos), pathExpression)(pos), literalInt(1))(pos)))(pos),
-      FunctionInvocation(
-        FunctionName("nodes")(pos),
-        pathExpression)(pos))(pos)
+      FilterScope(varFor("x"), Some(equals(function("length", pathExpression), literalInt(1))))(pos),
+      function("nodes", pathExpression))(pos)
 
     val (nodePredicates: Seq[Expression], edgePredicates: Seq[Expression], legacyPredicates: Seq[(LogicalVariable, Expression)], solvedPredicates: Seq[Expression]) =
       extractPredicates(Seq(rewrittenPredicate), "r", "r-edge", "r-node", "n")
@@ -190,10 +181,8 @@ class extractPredicatesTest extends CypherFunSuite with AstConstructionTestSuppo
         MultiRelationshipPathStep(varFor("r"),SemanticDirection.OUTGOING, Some(varFor("m")), NilPathStep)))(pos)
 
     val rewrittenPredicate = NoneIterablePredicate(
-      FilterScope(varFor("x"), Some(Equals(FunctionInvocation(FunctionName("length")(pos), pathExpression)(pos), literalInt(1))(pos)))(pos),
-      FunctionInvocation(
-        FunctionName("relationships")(pos),
-        pathExpression)(pos))(pos)
+      FilterScope(varFor("x"), Some(equals(function("length", pathExpression), literalInt(1))))(pos),
+      function("relationships", pathExpression))(pos)
 
     val (nodePredicates: Seq[Expression], edgePredicates: Seq[Expression], legacyPredicates: Seq[(LogicalVariable, Expression)], solvedPredicates: Seq[Expression]) =
       extractPredicates(Seq(rewrittenPredicate), "r", "r-edge", "r-node", "n")

@@ -63,8 +63,8 @@ trait AstConstructionTestSupport extends CypherTestSupport {
   def literalFloat(floatValue: Double): DecimalDoubleLiteral =
     DecimalDoubleLiteral(floatValue.toString)(pos)
 
-  def literalList(expressions: Expression*): ListLiteral =
-    ListLiteral(expressions.toSeq)(pos)
+  def listOf(expressions: Expression*): ListLiteral =
+    ListLiteral(expressions)(pos)
 
   def literalIntList(intValues: Int*): ListLiteral =
     ListLiteral(intValues.toSeq.map(literalInt))(pos)
@@ -76,8 +76,6 @@ trait AstConstructionTestSupport extends CypherTestSupport {
     MapExpression(keyValues.map {
       case (k, v) => (PropertyKeyName(k)(pos), literalInt(v))
     })(pos)
-
-  def listOf(expressions: Expression*): ListLiteral = ListLiteral(expressions)(pos)
 
   def mapOf(keysAndValues: (String, Expression)*): MapExpression =
     MapExpression(keysAndValues.map {
@@ -106,6 +104,9 @@ trait AstConstructionTestSupport extends CypherTestSupport {
   def function(name: String, args: Expression*): FunctionInvocation =
     FunctionInvocation(FunctionName(name)(pos), distinct = false, args.toIndexedSeq)(pos)
 
+  def distinctFunction(name: String, args: Expression*): FunctionInvocation =
+    FunctionInvocation(FunctionName(name)(pos), distinct = true, args.toIndexedSeq)(pos)
+
   def count(expression: Expression): FunctionInvocation =
     FunctionInvocation(expression, FunctionName(Count.name)(pos))
 
@@ -123,9 +124,6 @@ trait AstConstructionTestSupport extends CypherTestSupport {
 
   def sum(expression: Expression): FunctionInvocation =
     FunctionInvocation(expression, FunctionName(Sum.name)(pos))
-
-  def literalMap(keyValues: (String,Expression)*): MapExpression =
-    MapExpression(keyValues.map(kv => (PropertyKeyName(kv._1)(pos), kv._2)))(pos)
 
   def not(e: Expression): Expression = expressions.Not(e)(pos)
 

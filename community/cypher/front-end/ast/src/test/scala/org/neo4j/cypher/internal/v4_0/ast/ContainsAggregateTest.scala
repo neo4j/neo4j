@@ -16,19 +16,19 @@
  */
 package org.neo4j.cypher.internal.v4_0.ast
 
-import org.neo4j.cypher.internal.v4_0.expressions._
+import org.neo4j.cypher.internal.v4_0.expressions.{Add, CountStar, Expression, containsAggregate}
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 
 class ContainsAggregateTest extends CypherFunSuite with AstConstructionTestSupport {
 
   test("finds nested aggregate expressions") {
-    val expr: Expression = Add(SignedDecimalIntegerLiteral("1")_, CountStar()_)_
+    val expr: Expression = Add(literalInt(1), CountStar()_)_
 
     containsAggregate(expr) should equal(true)
   }
 
   test("does not match non-aggregate expressions") {
-    val expr: Expression = Add(SignedDecimalIntegerLiteral("1")_, SignedDecimalIntegerLiteral("2")_)_
+    val expr: Expression = Add(literalInt(1), literalInt(2))_
 
     containsAggregate(expr) should equal(false)
   }

@@ -20,9 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v4_0.planner
 
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.v4_0.ast.{AstConstructionTestSupport, SortItem}
+import org.neo4j.cypher.internal.v4_0.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ir.v4_0._
-import org.neo4j.cypher.internal.v4_0.expressions.UnsignedDecimalIntegerLiteral
 
 class PlannerQueryTest extends CypherFunSuite with AstConstructionTestSupport {
 
@@ -58,7 +57,7 @@ class PlannerQueryTest extends CypherFunSuite with AstConstructionTestSupport {
     val input = RegularPlannerQuery(queryGraph = QueryGraph.empty, tail = None)
 
     val result = input.foldMap {
-      case (pq1: PlannerQuery, pq2: PlannerQuery) =>
+      case (_: PlannerQuery, _: PlannerQuery) =>
         fail("should not pass through here")
     }
 
@@ -73,7 +72,7 @@ class PlannerQueryTest extends CypherFunSuite with AstConstructionTestSupport {
     val input = RegularPlannerQuery(queryGraph = firstQueryGraph, tail = Some(tail))
 
     val result = input.foldMap {
-      case (pq1: PlannerQuery, pq2: PlannerQuery) =>
+      case (_: PlannerQuery, pq2: PlannerQuery) =>
         pq2.withQueryGraph(secondQueryGraph)
     }
 
@@ -86,7 +85,7 @@ class PlannerQueryTest extends CypherFunSuite with AstConstructionTestSupport {
     val noLimit = RegularPlannerQuery(horizon = QueryProjection.empty)
     noLimit.preferredStrictness should equal(None)
 
-    val paginationWithLimit = QueryProjection.empty.withPagination(QueryPagination(limit = Some(UnsignedDecimalIntegerLiteral("42")(pos))))
+    val paginationWithLimit = QueryProjection.empty.withPagination(QueryPagination(limit = Some(literalUnsignedInt(42))))
     val hasLimit = RegularPlannerQuery(horizon = paginationWithLimit, interestingOrder = InterestingOrder.empty)
     hasLimit.preferredStrictness should equal(Some(LazyMode))
 
@@ -95,7 +94,7 @@ class PlannerQueryTest extends CypherFunSuite with AstConstructionTestSupport {
   }
 
   test("should consider planner query tails when computing laziness preference") {
-    val paginationWithLimit = QueryProjection.empty.withPagination(QueryPagination(limit = Some(UnsignedDecimalIntegerLiteral("42")(pos))))
+    val paginationWithLimit = QueryProjection.empty.withPagination(QueryPagination(limit = Some(literalUnsignedInt(42))))
 
     // pq -> pqWithLimit -> pqWithLimitAndSort
 

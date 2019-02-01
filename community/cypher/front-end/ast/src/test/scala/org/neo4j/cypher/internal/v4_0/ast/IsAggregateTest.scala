@@ -16,9 +16,8 @@
  */
 package org.neo4j.cypher.internal.v4_0.ast
 
-import org.neo4j.cypher.internal.v4_0.expressions._
+import org.neo4j.cypher.internal.v4_0.expressions.{CountStar, Expression, IsAggregate, Null}
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.v4_0.expressions.Namespace
 
 class IsAggregateTest extends CypherFunSuite with AstConstructionTestSupport {
 
@@ -29,25 +28,25 @@ class IsAggregateTest extends CypherFunSuite with AstConstructionTestSupport {
   }
 
   test("max(null) is an aggregate expression") {
-    val expr: Expression = FunctionInvocation(FunctionName("max")_, Null()_)_
+    val expr: Expression = function("max", Null()_)
 
     IsAggregate.unapply(expr) should equal(Some(expr))
   }
 
   test("distinct id(null) an aggregate expression") {
-    val expr: Expression = FunctionInvocation(Namespace()_, FunctionName("id")_, distinct = true, Vector(Null()_))(pos)
+    val expr: Expression = distinctFunction("id", Null()_)
 
     IsAggregate.unapply(expr) should equal(Some(expr))
   }
 
   test("id(null) is not an aggregate expression") {
-    val expr: Expression = FunctionInvocation(Namespace()_, FunctionName("id")_, distinct = false, Vector(Null()_))(pos)
+    val expr: Expression = function("id", Null()_)
 
     IsAggregate.unapply(expr) should equal(None)
   }
 
   test("1 is not an aggregate expression") {
-    val expr: Expression = SignedDecimalIntegerLiteral("1")_
+    val expr: Expression = literalInt(1)
 
     IsAggregate.unapply(expr) should equal(None)
   }

@@ -23,15 +23,15 @@ import org.neo4j.cypher.internal.v4_0.ast._
 import org.neo4j.cypher.internal.v4_0.ast.semantics.{SemanticCheckResult, SemanticState}
 import org.neo4j.cypher.internal.v4_0.util.symbols._
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.v4_0.expressions._
+import org.neo4j.cypher.internal.v4_0.expressions.{Namespace, Parameter, ProcedureName, ProcedureOutput}
 import org.neo4j.cypher.internal.v4_0.logical.plans._
 
 class CallClauseTest extends CypherFunSuite with AstConstructionTestSupport {
 
-  val ns = Namespace(List("my", "proc"))(pos)
-  val name = ProcedureName("foo")(pos)
-  val qualifiedName = QualifiedName(ns.parts, name.name)
-  val ID = 1337
+  private val ns = Namespace(List("my", "proc"))(pos)
+  private val name = ProcedureName("foo")(pos)
+  private val qualifiedName = QualifiedName(ns.parts, name.name)
+  private val ID = 1337
 
   test("should resolve CALL my.proc.foo") {
     val unresolved = UnresolvedCall(ns, name, None, None)(pos)
@@ -217,7 +217,7 @@ class CallClauseTest extends CypherFunSuite with AstConstructionTestSupport {
     coerced should equal(
       ResolvedCall(
         signature,
-        Seq(CoerceTo(Parameter("a", CTAny)(pos), CTInteger)),
+        Seq(coerceTo(Parameter("a", CTAny)(pos), CTInteger)),
         callResults,
         declaredArguments = true,
         declaredResults = true
@@ -290,7 +290,7 @@ class CallClauseTest extends CypherFunSuite with AstConstructionTestSupport {
     val signatureOutputs = Some(IndexedSeq(FieldSignature("x", CTInteger), FieldSignature("y", CTList(CTNode))))
     val signature = ProcedureSignature(qualifiedName, signatureInputs, signatureOutputs, None,
                                        ProcedureReadOnlyAccess(Array.empty), id = ID)
-    val callArguments = Seq(StringLiteral("nope")(pos))
+    val callArguments = Seq(literalString("nope"))
     val callResults = IndexedSeq(
       ProcedureResultItem(varFor("x"))(pos),
       ProcedureResultItem(ProcedureOutput("y")(pos), varFor("z"))(pos)

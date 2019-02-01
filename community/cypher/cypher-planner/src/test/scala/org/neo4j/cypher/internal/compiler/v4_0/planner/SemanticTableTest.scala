@@ -28,17 +28,20 @@ import org.neo4j.cypher.internal.v4_0.util.{InputPosition, InternalException}
 
 class SemanticTableTest extends CypherFunSuite with AstConstructionTestSupport {
 
-  override implicit def varFor(name: String): Variable = Variable(name)(pos)
+  private val position123 = InputPosition(1, 2, 3)
+  private val position000 = InputPosition(0, 0, 0)
+
+  private def varFor(name: String, position: InputPosition) = Variable(name)(position)
 
   test("can add nodes to a SemanticTable") {
-    val table = SemanticTable().addNode("x")
+    val table = SemanticTable().addNode(varFor("x"))
 
     table.isNode("x") should be(true)
     table.isRelationship("x") should be(false)
   }
 
   test("can add rels to a SemanticTable") {
-    val table = SemanticTable().addRelationship("r")
+    val table = SemanticTable().addRelationship(varFor("r"))
 
     table.isRelationship("r") should be(true)
     table.isNode("r") should be(false)
@@ -55,8 +58,8 @@ class SemanticTableTest extends CypherFunSuite with AstConstructionTestSupport {
 
   test("should be able to tell the type of an variable") {
     val table = SemanticTable().
-      addNode(Variable("a")(InputPosition(1,2,3))).
-      addRelationship(Variable("b")(InputPosition(1,2,3)))
+      addNode(varFor("a", position123)).
+      addRelationship(varFor("b", position123))
 
     table.getTypeFor("a") should be (CTNode.invariant)
     table.getTypeFor("b") should be (CTRelationship.invariant)
@@ -64,16 +67,16 @@ class SemanticTableTest extends CypherFunSuite with AstConstructionTestSupport {
 
   test("should be able to tell the type of an variable if there is an unknown type involved") {
     val table = SemanticTable(ASTAnnotationMap.empty.
-      updated(Variable("a")(InputPosition(0,0,0)), ExpressionTypeInfo(TypeSpec.all, None))).
-      addNode(Variable("a")(InputPosition(1, 2, 3)))
+      updated(varFor("a", position000), ExpressionTypeInfo(TypeSpec.all, None))).
+      addNode(varFor("a", position123))
 
     table.getTypeFor("a") should be (CTNode.invariant)
   }
 
   test("should be able to tell the type of an variable if there is an unknown type involved other order") {
     val table = SemanticTable(ASTAnnotationMap.empty[Expression, ExpressionTypeInfo].
-      updated(Variable("a")(InputPosition(1, 2, 3)), ExpressionTypeInfo(CTNode.invariant, None)).
-      updated(Variable("a")(InputPosition(0, 0, 0)), ExpressionTypeInfo(TypeSpec.all, None)))
+      updated(varFor("a", position123), ExpressionTypeInfo(CTNode.invariant, None)).
+      updated(varFor("a", position000), ExpressionTypeInfo(TypeSpec.all, None)))
 
     table.getTypeFor("a") should be (CTNode.invariant)
   }
@@ -86,8 +89,8 @@ class SemanticTableTest extends CypherFunSuite with AstConstructionTestSupport {
 
   test("should fail if the semantic table is confusing") {
     val table = SemanticTable(ASTAnnotationMap.empty[Expression, ExpressionTypeInfo].
-      updated(Variable("a")(InputPosition(1, 2, 3)), ExpressionTypeInfo(CTNode.invariant, None)).
-      updated(Variable("a")(InputPosition(0, 0, 0)), ExpressionTypeInfo(CTRelationship.invariant, None)))
+      updated(varFor("a", position123), ExpressionTypeInfo(CTNode.invariant, None)).
+      updated(varFor("a", position000), ExpressionTypeInfo(CTRelationship.invariant, None)))
 
     intercept[InternalException](table.getTypeFor("a"))
   }

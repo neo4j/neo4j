@@ -30,26 +30,25 @@ import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 
 class SargableTest extends CypherFunSuite with AstConstructionTestSupport {
 
-  val expr1 = mock[Expression]
-  val expr2 = mock[Expression]
+  private val expr1 = mock[Expression]
+  private val expr2 = mock[Expression]
 
-  val nodeA = varFor("a")
+  private val nodeA = varFor("a")
 
   test("StringRangeSeekable finds n.prop STARTS WITH 'prefix'") {
-    val propKey: PropertyKeyName = PropertyKeyName("prop") _
-    val leftExpr: Property = Property(nodeA, propKey) _
-    val startsWith: StartsWith = StartsWith(leftExpr, StringLiteral("prefix") _) _
+    val leftExpr = prop("a", "prop")
+    val startsWith = super.startsWith(leftExpr, literalString("prefix"))
     assertMatches(startsWith) {
       case AsStringRangeSeekable(PrefixRangeSeekable(range, expr, ident, propertyKey)) =>
-        range should equal(PrefixRange(StringLiteral("prefix")(pos)))
+        range should equal(PrefixRange(literalString("prefix")))
         expr should equal(startsWith)
         ident should equal(nodeA)
-        propertyKey should equal(propKey)
+        propertyKey should equal(leftExpr.propertyKey)
     }
   }
 
   test("Seekable finds Equals") {
-    assertMatches(Equals(expr1, expr2)_) {
+    assertMatches(equals(expr1, expr2)) {
       case WithSeekableArgs(lhs, rhs) =>
         lhs should equal(expr1)
         rhs should equal(SingleSeekableArg(expr2))
@@ -57,7 +56,7 @@ class SargableTest extends CypherFunSuite with AstConstructionTestSupport {
   }
 
   test("Seekable finds In") {
-    assertMatches(In(expr1, expr2)_) {
+    assertMatches(in(expr1, expr2)) {
       case WithSeekableArgs(lhs, rhs) =>
         lhs should equal(expr1)
         rhs should equal(ManySeekableArgs(expr2))
@@ -65,15 +64,14 @@ class SargableTest extends CypherFunSuite with AstConstructionTestSupport {
   }
 
   test("ManySeekableArgs has size hint for collections") {
-    ManySeekableArgs(ListLiteral(Seq(expr1, expr2))_).sizeHint should equal(Some(2))
+    ManySeekableArgs(listOf(expr1, expr2)).sizeHint should equal(Some(2))
   }
 
   test("IdSeekable works") {
-    val leftExpr: FunctionInvocation = FunctionInvocation(FunctionName("id") _, nodeA)_
+    val leftExpr = function("id", nodeA)
     when(expr2.dependencies).thenReturn(Set.empty[LogicalVariable])
-    val expr: Equals = Equals(leftExpr, expr2) _
 
-    assertMatches(expr) {
+    assertMatches(equals(leftExpr, expr2)) {
       case AsIdSeekable(seekable) =>
         seekable.ident should equal(nodeA)
         seekable.expr should equal(leftExpr)
@@ -84,31 +82,26 @@ class SargableTest extends CypherFunSuite with AstConstructionTestSupport {
   }
 
   test("IdSeekable does not match if rhs depends on lhs variable") {
-    val leftExpr: FunctionInvocation = FunctionInvocation(FunctionName("id") _, nodeA)_
     when(expr2.dependencies).thenReturn(Set[LogicalVariable](nodeA))
-    val expr: Equals = Equals(leftExpr, expr2) _
 
-    assertDoesNotMatch(expr) {
+    assertDoesNotMatch(equals(function("id", nodeA), expr2)) {
       case AsIdSeekable(_) => (/* oh noes */)
     }
   }
 
   test("IdSeekable does not match if function is not the id function") {
-    val leftExpr: FunctionInvocation = FunctionInvocation(FunctionName("rand") _, nodeA)_
     when(expr2.dependencies).thenReturn(Set.empty[LogicalVariable])
-    val expr: Equals = Equals(leftExpr, expr2) _
 
-    assertDoesNotMatch(expr) {
+    assertDoesNotMatch(equals(function("rand", nodeA), expr2)) {
       case AsIdSeekable(_) => (/* oh noes */)
     }
   }
 
   test("PropertySeekable works with plain expressions") {
-    val leftExpr: Property = Property(nodeA, PropertyKeyName("id")_)_
-    val expr: Expression = In(leftExpr, expr2)_
+    val leftExpr = prop("a", "id")
     when(expr2.dependencies).thenReturn(Set.empty[LogicalVariable])
 
-    assertMatches(expr) {
+    assertMatches(in(leftExpr, expr2)) {
       case AsPropertySeekable(seekable) =>
         seekable.ident should equal(nodeA)
         seekable.expr should equal(leftExpr)
@@ -119,13 +112,12 @@ class SargableTest extends CypherFunSuite with AstConstructionTestSupport {
   }
 
   test("PropertySeekable works with collection expressions") {
-    val leftExpr: Property = Property(nodeA, PropertyKeyName("id")_)_
-    val rightExpr: ListLiteral = ListLiteral(Seq(expr1, expr2))_
-    val expr: Expression = In(leftExpr, rightExpr)_
+    val leftExpr = prop("a", "id")
+    val rightExpr = listOf(expr1, expr2)
     when(expr1.dependencies).thenReturn(Set.empty[LogicalVariable])
     when(expr2.dependencies).thenReturn(Set.empty[LogicalVariable])
 
-    assertMatches(expr) {
+    assertMatches(in(leftExpr, rightExpr)) {
       case AsPropertySeekable(seekable) =>
         seekable.ident should equal(nodeA)
         seekable.expr should equal(leftExpr)
@@ -136,9 +128,6 @@ class SargableTest extends CypherFunSuite with AstConstructionTestSupport {
   }
 
   test("PropertySeekable propertyValueType with ListLiteral") {
-    val leftExpr: Property = Property(nodeA, PropertyKeyName("id")_)_
-    val rightExpr: ListLiteral = ListLiteral(Seq(expr1, expr2))_
-    val expr: Expression = In(leftExpr, rightExpr)_
     when(expr1.dependencies).thenReturn(Set.empty[LogicalVariable])
     when(expr2.dependencies).thenReturn(Set.empty[LogicalVariable])
 
@@ -146,64 +135,56 @@ class SargableTest extends CypherFunSuite with AstConstructionTestSupport {
         .updated(expr1, ExpressionTypeInfo(TypeSpec.exact(CTFloat)))
         .updated(expr2, ExpressionTypeInfo(TypeSpec.exact(CTInteger)))
 
-    val AsPropertySeekable(seekable) = expr
+    val AsPropertySeekable(seekable) = in(prop("a", "id"), listOf(expr1, expr2))
 
     seekable.propertyValueType(SemanticTable(types)) should be(CTNumber)
   }
 
   test("PropertySeekable propertyValueType with equals") {
-    val propExpr = Property(nodeA, PropertyKeyName("id")_)_
-    val expr: Expression = Equals(propExpr, expr1)_
     when(expr1.dependencies).thenReturn(Set.empty[LogicalVariable])
 
     val types = ASTAnnotationMap[Expression, ExpressionTypeInfo]()
       .updated(expr1, ExpressionTypeInfo(TypeSpec.exact(CTFloat)))
 
-    val AsPropertySeekable(seekable) = expr
+    val AsPropertySeekable(seekable) = equals(prop("a", "id"), expr1)
 
     seekable.propertyValueType(SemanticTable(types)) should be(CTFloat)
   }
 
   test("PropertySeekable propertyValueType with Parameter") {
-    val leftExpr: Property = Property(nodeA, PropertyKeyName("id")_)_
-    val rightExpr: Parameter = Parameter("foo", CTString)(pos)
-    val expr: Expression = In(leftExpr, rightExpr)_
-
+    val rightExpr = Parameter("foo", CTString)(pos)
     val types = ASTAnnotationMap[Expression, ExpressionTypeInfo]()
       .updated(rightExpr, ExpressionTypeInfo(TypeSpec.exact(CTList(CTString))))
 
-    val AsPropertySeekable(seekable) = expr
+    val AsPropertySeekable(seekable) = in(prop("a", "id"), rightExpr)
 
     seekable.propertyValueType(SemanticTable(types)) should be(CTString)
   }
 
   test("InequalityRangeSeekable propertyValueType") {
-    val leftExpr: Property = Property(nodeA, PropertyKeyName("id")_)_
-    val min = SignedDecimalIntegerLiteral("10")(pos)
-    val max = DecimalDoubleLiteral("20.5")(pos)
-    val expr: Expression = AndedPropertyInequalities(nodeA, leftExpr, NonEmptyList(GreaterThan(leftExpr, min)(pos), LessThanOrEqual(leftExpr, max)(pos)))
-
+    val leftExpr = prop("a", "id")
+    val min = literalInt(10)
+    val max = literalFloat(20.5)
     val table = mock[SemanticTable]
     when(table.getActualTypeFor(min)).thenReturn(CTInteger.invariant)
     when(table.getActualTypeFor(max)).thenReturn(CTFloat.invariant)
-    val AsValueRangeSeekable(seekable) = expr
+    val AsValueRangeSeekable(seekable) = AndedPropertyInequalities(
+      nodeA, leftExpr, NonEmptyList(greaterThan(leftExpr, min), lessThanOrEqual(leftExpr, max)))
 
     seekable.propertyValueType(table) should be(CTNumber)
   }
 
   test("PropertySeekable does not match if rhs depends on lhs variable") {
-    val leftExpr: Property = Property(nodeA, PropertyKeyName("id")_)_
     when(expr2.dependencies).thenReturn(Set[LogicalVariable](nodeA))
-    val expr: Expression = In(leftExpr, expr2)_
 
-    assertDoesNotMatch(expr) {
+    assertDoesNotMatch(in(prop("a", "id"), expr2)) {
       case AsPropertySeekable(_) => (/* oh noes */)
     }
   }
 
   test("PropertyScannable works") {
-    val propertyExpr: Property = Property(nodeA, PropertyKeyName("name")_)_
-    val expr: FunctionInvocation = FunctionInvocation(FunctionName("exists") _, propertyExpr)_
+    val propertyExpr = prop("a", "name")
+    val expr = function("exists", propertyExpr)
 
     assertMatches(expr) {
       case AsPropertyScannable(scannable) =>
@@ -372,9 +353,9 @@ class SargableTest extends CypherFunSuite with AstConstructionTestSupport {
     typ should equal(CTAny)
   }
 
-  def assertMatches[T](item: Expression)(pf: PartialFunction[Expression, T]) =
+  private def assertMatches[T](item: Expression)(pf: PartialFunction[Expression, T]) =
     if (pf.isDefinedAt(item)) pf(item) else fail(s"Failed to match: $item")
 
-  def assertDoesNotMatch[T](item: Expression)(pf: PartialFunction[Expression, T]) =
+  private def assertDoesNotMatch[T](item: Expression)(pf: PartialFunction[Expression, T]): Unit =
     if (pf.isDefinedAt(item)) fail(s"Erroneously matched: $item")
 }

@@ -388,7 +388,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
     plan._2 should equal(
       UnwindCollection(
         IndexSeek("n:Awesome(prop = 'foo')", GetValue),
-        "foo", literalList(cachedNodeProperty("n", "prop"))
+        "foo", listOf(cachedNodeProperty("n", "prop"))
       )
     )
   }
