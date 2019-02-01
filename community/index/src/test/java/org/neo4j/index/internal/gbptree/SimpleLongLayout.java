@@ -43,37 +43,37 @@ public class SimpleLongLayout extends TestLayout<MutableLong,MutableLong>
         private String customNameAsMetaData = "test";
         private boolean fixedSize = true;
 
-        Builder withKeyPadding( int keyPadding )
+        public Builder withKeyPadding( int keyPadding )
         {
             this.keyPadding = keyPadding;
             return this;
         }
 
-        Builder withIdentifier( int identifier )
+        public Builder withIdentifier( int identifier )
         {
             this.identifier = identifier;
             return this;
         }
 
-        Builder withMajorVersion( int majorVersion )
+        public Builder withMajorVersion( int majorVersion )
         {
             this.majorVersion = majorVersion;
             return this;
         }
 
-        Builder withMinorVersion( int minorVersion )
+        public Builder withMinorVersion( int minorVersion )
         {
             this.minorVersion = minorVersion;
             return this;
         }
 
-        Builder withCustomerNameAsMetaData( String customNameAsMetaData )
+        public Builder withCustomerNameAsMetaData( String customNameAsMetaData )
         {
             this.customNameAsMetaData = customNameAsMetaData;
             return this;
         }
 
-        Builder withFixedSize( boolean fixedSize )
+        public Builder withFixedSize( boolean fixedSize )
         {
             this.fixedSize = fixedSize;
             return this;
