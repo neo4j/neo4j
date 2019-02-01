@@ -44,6 +44,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.HttpConnector;
 import org.neo4j.configuration.connectors.HttpConnector.Encryption;
+import org.neo4j.configuration.ssl.BaseSslPolicyConfig;
 import org.neo4j.configuration.ssl.ClientAuth;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -140,6 +141,7 @@ class InProcessServerBuilderIT
                 // override legacy policy
                 .withConfig( "https.ssl_policy", "test" )
                 .withConfig( "dbms.ssl.policy.test.base_directory", directory.directory( "certificates" ).getAbsolutePath() )
+                .withConfig( "dbms.ssl.policy.test.format", BaseSslPolicyConfig.Format.PEM.name() )
                 .withConfig( "dbms.ssl.policy.test.allow_key_generation", "true" )
                 .withConfig( "dbms.ssl.policy.test.ciphers", String.join( ",", defaultCiphers ) )
                 .withConfig( "dbms.ssl.policy.test.tls_versions", "TLSv1.2, TLSv1.1, TLSv1" )

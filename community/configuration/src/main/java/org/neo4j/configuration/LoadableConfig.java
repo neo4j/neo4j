@@ -44,7 +44,7 @@ public interface LoadableConfig
     default List<ConfigOptions> getConfigOptions()
     {
         ArrayList<ConfigOptions> configOptions = new ArrayList<>();
-        for ( Field f : getClass().getDeclaredFields() )
+        for ( Field f : getClass().getFields() )
         {
             try
             {

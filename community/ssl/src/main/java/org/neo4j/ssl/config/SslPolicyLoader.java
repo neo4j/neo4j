@@ -24,14 +24,19 @@ import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
 import org.bouncycastle.operator.OperatorCreationException;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
+import java.security.UnrecoverableKeyException;
 import java.security.cert.CRLException;
 import java.security.cert.CertStore;
+import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.CollectionCertStoreParameters;
@@ -40,6 +45,7 @@ import java.security.cert.X509CRL;
 import java.security.cert.X509CertSelector;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -50,9 +56,11 @@ import javax.net.ssl.TrustManagerFactory;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.configuration.ssl.BaseSslPolicyConfig;
 import org.neo4j.configuration.ssl.ClientAuth;
+import org.neo4j.configuration.ssl.KeyStoreSslPolicyConfig;
 import org.neo4j.configuration.ssl.LegacySslPolicyConfig;
-import org.neo4j.configuration.ssl.SslPolicyConfig;
+import org.neo4j.configuration.ssl.PemSslPolicyConfig;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.ssl.PkiUtils;
@@ -60,8 +68,8 @@ import org.neo4j.ssl.SslPolicy;
 
 import static java.lang.String.format;
 import static org.neo4j.configuration.ssl.LegacySslPolicyConfig.LEGACY_POLICY_NAME;
-import static org.neo4j.configuration.ssl.SslPolicyConfig.CIPHER_SUITES_DEFAULTS;
-import static org.neo4j.configuration.ssl.SslPolicyConfig.TLS_VERSION_DEFAULTS;
+import static org.neo4j.configuration.ssl.BaseSslPolicyConfig.CIPHER_SUITES_DEFAULTS;
+import static org.neo4j.configuration.ssl.BaseSslPolicyConfig.TLS_VERSION_DEFAULTS;
 
 /**
  * Each component which utilises SSL policies is recommended to provide a component
@@ -70,7 +78,7 @@ import static org.neo4j.configuration.ssl.SslPolicyConfig.TLS_VERSION_DEFAULTS;
  * be put into place. What this means practically is up to the component, but it could for
  * example mean that the traffic will be plaintext over TCP in such case.
  *
- * @see SslPolicyConfig
+ * @see BaseSslPolicyConfig
  */
 public class SslPolicyLoader
 {
@@ -170,7 +178,7 @@ public class SslPolicyLoader
 
     private void load( Config config, Log log )
     {
-        Set<String> policyNames = config.identifiersFromGroup( SslPolicyConfig.class );
+        Set<String> policyNames = config.identifiersFromGroup( PemSslPolicyConfig.class );
 
         for ( String policyName : policyNames )
         {
@@ -180,58 +188,174 @@ public class SslPolicyLoader
                 throw new IllegalArgumentException( "Legacy policy cannot be configured. Please migrate to new SSL policy system." );
             }
 
-            SslPolicyConfig policyConfig = new SslPolicyConfig( policyName );
-            File baseDirectory = config.get( policyConfig.base_directory );
-            File trustedCertificatesDir = config.get( policyConfig.trusted_dir );
-            File revokedCertificatesDir = config.get( policyConfig.revoked_dir );
-
-            if ( !baseDirectory.exists() )
+            SslPolicy sslPolicy;
+            if ( BaseSslPolicyConfig.Format.PEM.equals( config.get( new BaseSslPolicyConfig.StubSslPolicyConfig( policyName ).format ) ) )
             {
-                throw new IllegalArgumentException(
-                        format( "Base directory '%s' for SSL policy with name '%s' does not exist.", baseDirectory, policyName ) );
+                sslPolicy = pemSslPolicy( config, log, policyName );
+            }
+            else
+            {
+                sslPolicy = keyStoreSslPolicy( config, log, policyName );
             }
 
-            boolean allowKeyGeneration = config.get( policyConfig.allow_key_generation );
-
-            File privateKeyFile = config.get( policyConfig.private_key );
-            String privateKeyPassword = config.get( policyConfig.private_key_password );
-            PrivateKey privateKey;
-
-            X509Certificate[] keyCertChain;
-            File keyCertChainFile = config.get( policyConfig.public_certificate );
-
-            if ( allowKeyGeneration && !privateKeyFile.exists() && !keyCertChainFile.exists() )
-            {
-                generatePrivateKeyAndCertificate( log, policyName, keyCertChainFile, privateKeyFile, trustedCertificatesDir, revokedCertificatesDir );
-            }
-
-            privateKey = loadPrivateKey( privateKeyFile, privateKeyPassword );
-            keyCertChain = loadCertificateChain( keyCertChainFile );
-
-            ClientAuth clientAuth = config.get( policyConfig.client_auth );
-            boolean trustAll = config.get( policyConfig.trust_all );
-            boolean verifyHostname = config.get( policyConfig.verify_hostname );
-            TrustManagerFactory trustManagerFactory;
-
-            Collection<X509CRL> crls = getCRLs( revokedCertificatesDir );
-
-            try
-            {
-                trustManagerFactory = createTrustManagerFactory( trustAll, trustedCertificatesDir, crls, clientAuth );
-            }
-            catch ( Exception e )
-            {
-                throw new RuntimeException( "Failed to create trust manager based on: " + trustedCertificatesDir, e );
-            }
-
-            List<String> tlsVersions = config.get( policyConfig.tls_versions );
-            List<String> ciphers = config.get( policyConfig.ciphers );
-
-            SslPolicy sslPolicy =
-                    new SslPolicy( privateKey, keyCertChain, tlsVersions, ciphers, clientAuth, trustManagerFactory, sslProvider, verifyHostname, logProvider );
             log.info( format( "Loaded SSL policy '%s' = %s", policyName, sslPolicy ) );
             policies.put( policyName, sslPolicy );
         }
+    }
+
+    private SslPolicy pemSslPolicy( Config config, Log log, String policyName )
+    {
+        PemSslPolicyConfig policyConfig = new PemSslPolicyConfig( policyName );
+        File baseDirectory = config.get( policyConfig.base_directory );
+        File revokedCertificatesDir = config.get( policyConfig.revoked_dir );
+
+        if ( !baseDirectory.exists() )
+        {
+            throw new IllegalArgumentException(
+                    format( "Base directory '%s' for SSL policy with name '%s' does not exist.", baseDirectory, policyName ) );
+        }
+
+        KeyAndChain keyAndChain = pemKeyAndChain( config, log, policyName, policyConfig, revokedCertificatesDir );
+
+        return sslPolicy( config, policyConfig, revokedCertificatesDir, keyAndChain );
+    }
+
+    private KeyAndChain pemKeyAndChain( Config config, Log log, String policyName, PemSslPolicyConfig policyConfig, File revokedCertificatesDir )
+    {
+        boolean allowKeyGeneration = config.get( policyConfig.allow_key_generation );
+
+        File privateKeyFile = config.get( policyConfig.private_key );
+        String privateKeyPassword = config.get( policyConfig.private_key_password );
+        File trustedCertificatesDir = config.get( policyConfig.trusted_dir );
+
+        PrivateKey privateKey;
+
+        X509Certificate[] keyCertChain;
+        File keyCertChainFile = config.get( policyConfig.public_certificate );
+
+        if ( allowKeyGeneration && !privateKeyFile.exists() && !keyCertChainFile.exists() )
+        {
+            generatePrivateKeyAndCertificate( log, policyName, keyCertChainFile, privateKeyFile, trustedCertificatesDir, revokedCertificatesDir );
+        }
+
+        privateKey = loadPrivateKey( privateKeyFile, privateKeyPassword );
+        keyCertChain = loadCertificateChain( keyCertChainFile );
+
+        ClientAuth clientAuth = config.get( policyConfig.client_auth );
+        KeyStore trustStore;
+        try
+        {
+            trustStore = createTrustStoreFromPem( trustedCertificatesDir, clientAuth );
+        }
+        catch ( Exception e )
+        {
+            throw new RuntimeException( "Failed to create trust manager based on: " + trustedCertificatesDir, e );
+        }
+
+        return new KeyAndChain( privateKey, keyCertChain, trustStore );
+    }
+
+    private SslPolicy keyStoreSslPolicy( Config config, Log log, String policyName )
+    {
+        KeyStoreSslPolicyConfig policyConfig = new KeyStoreSslPolicyConfig( policyName );
+        File baseDirectory = config.get( policyConfig.base_directory );
+        File revokedCertificatesDir = config.get( policyConfig.revoked_dir );
+
+        if ( !baseDirectory.exists() )
+        {
+            throw new IllegalArgumentException(
+                    format( "Base directory '%s' for SSL policy with name '%s' does not exist.", baseDirectory, policyName ) );
+        }
+
+        KeyAndChain keyAndChain = keyStoreKeyAndChain( config, policyConfig );
+
+        return sslPolicy( config, policyConfig, revokedCertificatesDir, keyAndChain );
+    }
+
+    private KeyAndChain keyStoreKeyAndChain( Config config, KeyStoreSslPolicyConfig policyConfig )
+    {
+        File keyStoreFile = config.get( policyConfig.keystore );
+
+        String storePass = config.get( policyConfig.keystore_pass );
+
+        String keyPass = config.get( policyConfig.entry_pass );
+        String keyAlias = config.get( policyConfig.entry_alias );
+
+        KeyStore keyStore = null;
+        String type = config.get( policyConfig.format ).name();
+        try
+        {
+            keyStore = KeyStore.getInstance( type );
+        }
+        catch ( KeyStoreException e )
+        {
+            throw new RuntimeException( "Unable to create keystore with type: " + type, e );
+        }
+
+        try ( FileInputStream fis = new FileInputStream( keyStoreFile ) )
+        {
+            keyStore.load( fis, storePass == null ? null : storePass.toCharArray() );
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( "Unable to open file: " + keyStoreFile, e );
+        }
+        catch ( CertificateException | NoSuchAlgorithmException e )
+        {
+            throw new RuntimeException( "Unable to load keystore from file: " + keyStoreFile, e );
+        }
+
+        X509Certificate[] certificateChain;
+        PrivateKey key;
+        try
+        {
+            Certificate[] chain = keyStore.getCertificateChain( keyAlias );
+            certificateChain = Arrays.copyOf( chain, chain.length, X509Certificate[].class );
+        }
+        catch ( KeyStoreException e )
+        {
+            throw new RuntimeException( String.format( "Unable to load certificate chain from: %s alias %s ", keyStoreFile, keyAlias ), e );
+        }
+        try
+        {
+            key = (PrivateKey)keyStore.getKey( keyAlias, keyPass == null ? null : keyPass.toCharArray() );
+        }
+        catch ( KeyStoreException | NoSuchAlgorithmException | UnrecoverableKeyException | ClassCastException e )
+        {
+            throw new RuntimeException( String.format( "Unable to load private key from: %s alias %s ", keyStoreFile, keyAlias ), e );
+        }
+
+        return new KeyAndChain( key, certificateChain, keyStore );
+    }
+
+    private SslPolicy sslPolicy( Config config, BaseSslPolicyConfig policyConfig, File revokedCertificatesDir, KeyAndChain keyAndChain )
+    {
+        Collection<X509CRL> crls = getCRLs( revokedCertificatesDir );
+        TrustManagerFactory trustManagerFactory;
+        try
+        {
+            trustManagerFactory = createTrustManagerFactory( config.get( policyConfig.trust_all ), crls, keyAndChain.trustStore );
+        }
+        catch ( Exception e )
+        {
+            throw new RuntimeException( "Failed to create trust manager", e );
+        }
+
+        boolean verifyHostname = config.get( policyConfig.verify_hostname );
+        ClientAuth clientAuth = config.get( policyConfig.client_auth );
+        List<String> tlsVersions = config.get( policyConfig.tls_versions );
+        List<String> ciphers = config.get( policyConfig.ciphers );
+
+        return new SslPolicy(
+                keyAndChain.privateKey,
+                keyAndChain.keyCertChain,
+                tlsVersions,
+                ciphers,
+                clientAuth,
+                trustManagerFactory,
+                sslProvider,
+                verifyHostname,
+                logProvider );
     }
 
     private void generatePrivateKeyAndCertificate( Log log, String policyName, File keyCertChainFile, File privateKeyFile, File trustedCertificatesDir,
@@ -325,14 +449,35 @@ public class SslPolicyLoader
         }
     }
 
-    private TrustManagerFactory createTrustManagerFactory( boolean trustAll, File trustedCertificatesDir,
-            Collection<X509CRL> crls, ClientAuth clientAuth ) throws Exception
+    private TrustManagerFactory createTrustManagerFactory( boolean trustAll, Collection<X509CRL> crls, KeyStore trustStore ) throws Exception
     {
         if ( trustAll )
         {
             return InsecureTrustManagerFactory.INSTANCE;
         }
 
+        TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance( TrustManagerFactory.getDefaultAlgorithm() );
+
+        if ( !crls.isEmpty() )
+        {
+            PKIXBuilderParameters pkixParamsBuilder = new PKIXBuilderParameters( trustStore, new X509CertSelector() );
+            pkixParamsBuilder.setRevocationEnabled( true );
+
+            pkixParamsBuilder.addCertStore( CertStore.getInstance( "Collection",
+                    new CollectionCertStoreParameters( crls ) ) );
+
+            trustManagerFactory.init( new CertPathTrustManagerParameters( pkixParamsBuilder ) );
+        }
+        else
+        {
+            trustManagerFactory.init( trustStore );
+        }
+        return trustManagerFactory;
+    }
+
+    private KeyStore createTrustStoreFromPem( File trustedCertificatesDir, ClientAuth clientAuth )
+            throws KeyStoreException, IOException, NoSuchAlgorithmException, CertificateException
+    {
         KeyStore trustStore = KeyStore.getInstance( KeyStore.getDefaultType() );
         trustStore.load( null, null );
 
@@ -367,24 +512,20 @@ public class SslPolicyLoader
                 }
             }
         }
+        return trustStore;
+    }
 
-        TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance( TrustManagerFactory.getDefaultAlgorithm() );
+    private static class KeyAndChain
+    {
+        final PrivateKey privateKey;
+        final X509Certificate[] keyCertChain;
+        final KeyStore trustStore;
 
-        if ( !crls.isEmpty() )
+        private KeyAndChain( PrivateKey privateKey, X509Certificate[] keyCertChain, KeyStore trustStore )
         {
-            PKIXBuilderParameters pkixParamsBuilder = new PKIXBuilderParameters( trustStore, new X509CertSelector() );
-            pkixParamsBuilder.setRevocationEnabled( true );
-
-            pkixParamsBuilder.addCertStore( CertStore.getInstance( "Collection",
-                    new CollectionCertStoreParameters( crls ) ) );
-
-            trustManagerFactory.init( new CertPathTrustManagerParameters( pkixParamsBuilder ) );
+            this.privateKey = privateKey;
+            this.keyCertChain = keyCertChain;
+            this.trustStore = trustStore;
         }
-        else
-        {
-            trustManagerFactory.init( trustStore );
-        }
-
-        return trustManagerFactory;
     }
 }

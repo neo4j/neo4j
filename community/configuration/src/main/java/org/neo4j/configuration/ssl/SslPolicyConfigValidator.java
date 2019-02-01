@@ -45,15 +45,19 @@ public class SslPolicyConfigValidator implements SettingGroup<Object>
     @Override
     public Map<String,String> validate( Map<String,String> params, Consumer<String> warningConsumer ) throws InvalidSettingException
     {
+           return _validate( params, warningConsumer );
+    }
+
+    private Map<String,String> _validate( Map<String,String> params, Consumer<String> warningConsumer ) throws InvalidSettingException
+    {
         Map<String,String> validatedParams = new HashMap<>();
 
-        Set<String> validShortKeys = extractValidShortKeys();
         String groupSettingPrefix = groupPrefix();
 
         Pattern groupSettingPattern = Pattern.compile(
                 Pattern.quote( groupSettingPrefix ) + "\\.([^.]+)\\.?(.+)?" );
 
-        Set<String> policyNames = new HashSet<>();
+        Map<String,Set<String>> policyNames = new HashMap<>();
 
         for ( Map.Entry<String,String> paramsEntry : params.entrySet() )
         {
@@ -64,8 +68,14 @@ public class SslPolicyConfigValidator implements SettingGroup<Object>
                 continue;
             }
 
-            policyNames.add( matcher.group( 1 ) );
+            String policyName = matcher.group( 1 );
             String shortKey = matcher.group( 2 );
+
+            String formatString = getFormatAsString( params, policyName );
+
+            BaseSslPolicyConfig.Format format = getFormat( formatString );
+
+            Set<String> validShortKeys = policyNames.computeIfAbsent( policyName, ignored -> validKeys( format ) );
 
             if ( !validShortKeys.contains( shortKey ) )
             {
@@ -75,9 +85,9 @@ public class SslPolicyConfigValidator implements SettingGroup<Object>
             validatedParams.put( settingName, paramsEntry.getValue() );
         }
 
-        for ( String policyName : policyNames )
+        for ( String policyName : policyNames.keySet() )
         {
-            SslPolicyConfig policy = new SslPolicyConfig( policyName );
+            PemSslPolicyConfig policy = new PemSslPolicyConfig( policyName );
 
             if ( !params.containsKey( policy.base_directory.name() ) )
             {
@@ -88,20 +98,75 @@ public class SslPolicyConfigValidator implements SettingGroup<Object>
         return validatedParams;
     }
 
-    private String groupPrefix()
+    private Set<String> validKeys( BaseSslPolicyConfig.Format format )
     {
-        return SslPolicyConfig.class.getDeclaredAnnotation( Group.class ).value();
+        Set<String> validShortKeys;
+        if ( format.equals( BaseSslPolicyConfig.Format.PEM ) )
+        {
+            validShortKeys = extractValidPemShortKeys();
+        }
+        else
+        {
+            validShortKeys = extractValidKeyStoreShortKeys();
+        }
+        return validShortKeys;
     }
 
-    private Set<String> extractValidShortKeys()
+    private BaseSslPolicyConfig.Format getFormat( String formatString )
     {
-        Set<String> validSettingNames = new HashSet<>();
+        BaseSslPolicyConfig.Format format;
+        try
+        {
+            format = BaseSslPolicyConfig.Format.valueOf( formatString );
+        }
+        catch ( IllegalArgumentException e )
+        {
+            throw new InvalidSettingException( "Unrecognised format: " + formatString );
+        }
+        return format;
+    }
 
+    private String getFormatAsString( Map<String,String> params, String policyName )
+    {
+        String formatKey = "dbms.ssl.policy." + policyName + ".format";
+        String formatStringRaw = params.get( formatKey );
+        if ( formatStringRaw == null )
+        {
+            throw new InvalidSettingException( "Missing format: " + formatKey );
+        }
+        return formatStringRaw.toUpperCase();
+    }
+
+    private String groupPrefix()
+    {
+        return PemSslPolicyConfig.class.getDeclaredAnnotation( Group.class ).value();
+    }
+
+    private Set<String> extractValidPemShortKeys()
+    {
         String policyName = "example";
         int prefixLength = groupPrefix().length() + 1 + policyName.length() + 1; // dbms.ssl.policy.example.
 
-        SslPolicyConfig examplePolicy = new SslPolicyConfig( policyName );
-        Field[] fields = examplePolicy.getClass().getDeclaredFields();
+        PemSslPolicyConfig examplePolicy = new PemSslPolicyConfig( policyName );
+
+        return extractValidShortKeys( examplePolicy, prefixLength );
+    }
+
+    private Set<String> extractValidKeyStoreShortKeys()
+    {
+        String policyName = "example";
+        int prefixLength = groupPrefix().length() + 1 + policyName.length() + 1; // dbms.ssl.policy.example.
+
+        KeyStoreSslPolicyConfig examplePolicy = new KeyStoreSslPolicyConfig( policyName );
+
+        return extractValidShortKeys( examplePolicy, prefixLength );
+    }
+
+    private Set<String> extractValidShortKeys( BaseSslPolicyConfig examplePolicy, int prefixLength )
+    {
+        Set<String> validSettingNames = new HashSet<>();
+
+        Field[] fields = examplePolicy.getClass().getFields();
         for ( Field field : fields )
         {
             if ( Modifier.isStatic( field.getModifiers() ) )

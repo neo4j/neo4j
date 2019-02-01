@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.ssl.config;
+package org.neo4j.ssl;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -28,13 +28,12 @@ import java.io.FileNotFoundException;
 import java.util.Map;
 
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.configuration.ssl.BaseSslPolicyConfig;
 import org.neo4j.configuration.ssl.LegacySslPolicyConfig;
-import org.neo4j.configuration.ssl.SslPolicyConfig;
+import org.neo4j.configuration.ssl.PemSslPolicyConfig;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.ssl.PkiUtils;
-import org.neo4j.ssl.SslPolicy;
+import org.neo4j.ssl.config.SslPolicyLoader;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
@@ -44,10 +43,11 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 @ExtendWith( TestDirectoryExtension.class )
-class SslPolicyLoaderTest
+class PemSslPolicyLoaderTest
 {
     @Inject
     private TestDirectory testDirectory;
@@ -79,10 +79,11 @@ class SslPolicyLoaderTest
         // given
         Map<String,String> params = stringMap();
 
-        SslPolicyConfig policyConfig = new SslPolicyConfig( "default" );
+        PemSslPolicyConfig policyConfig = new PemSslPolicyConfig( "default" );
 
-        params.put( GraphDatabaseSettings.neo4j_home.name(), home.getAbsolutePath() );
+        params.put( neo4j_home.name(), home.getAbsolutePath() );
         params.put( policyConfig.base_directory.name(), "certificates/default" );
+        params.put( policyConfig.format.name(), BaseSslPolicyConfig.Format.PEM.name() );
         Config config = Config.defaults( params );
 
         // when
@@ -116,10 +117,11 @@ class SslPolicyLoaderTest
 
         Map<String,String> params = stringMap();
 
-        SslPolicyConfig policyConfig = new SslPolicyConfig( "default" );
+        PemSslPolicyConfig policyConfig = new PemSslPolicyConfig( "default" );
 
-        params.put( GraphDatabaseSettings.neo4j_home.name(), home.getAbsolutePath() );
+        params.put( neo4j_home.name(), home.getAbsolutePath() );
         params.put( policyConfig.base_directory.name(), "certificates/default" );
+        params.put( policyConfig.format.name(), BaseSslPolicyConfig.Format.PEM.name() );
 
         Config config = Config.defaults( params );
 
@@ -134,10 +136,12 @@ class SslPolicyLoaderTest
         // given
         Map<String,String> params = stringMap();
 
-        SslPolicyConfig policyConfig = new SslPolicyConfig( "default" );
+        PemSslPolicyConfig policyConfig = new PemSslPolicyConfig( "default" );
 
-        params.put( GraphDatabaseSettings.neo4j_home.name(), home.getAbsolutePath() );
+        params.put( neo4j_home.name(), home.getAbsolutePath() );
         params.put( policyConfig.base_directory.name(), "certificates/default" );
+        params.put( policyConfig.format.name(), BaseSslPolicyConfig.Format.PEM.name() );
+
         Config config = Config.defaults( params );
 
         SslPolicyLoader sslPolicyLoader = SslPolicyLoader.create( config, NullLogProvider.getInstance() );
@@ -165,10 +169,12 @@ class SslPolicyLoaderTest
         // given
         Map<String,String> params = stringMap();
 
-        SslPolicyConfig policyConfig = new SslPolicyConfig( LegacySslPolicyConfig.LEGACY_POLICY_NAME );
+        PemSslPolicyConfig policyConfig = new PemSslPolicyConfig( LegacySslPolicyConfig.LEGACY_POLICY_NAME );
 
-        params.put( GraphDatabaseSettings.neo4j_home.name(), home.getAbsolutePath() );
+        params.put( neo4j_home.name(), home.getAbsolutePath() );
         params.put( policyConfig.base_directory.name(), "certificates/default" );
+        params.put( policyConfig.format.name(), BaseSslPolicyConfig.Format.PEM.name() );
+
         Config config = Config.defaults( params );
 
         assertThrows( IllegalArgumentException.class, () -> SslPolicyLoader.create( config, NullLogProvider.getInstance() ) );

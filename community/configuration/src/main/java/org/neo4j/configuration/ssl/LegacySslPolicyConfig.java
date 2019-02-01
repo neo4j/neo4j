@@ -31,7 +31,7 @@ import static org.neo4j.configuration.Settings.derivedSetting;
 import static org.neo4j.configuration.Settings.pathSetting;
 
 /**
- * To be removed in favour of {@link SslPolicyConfig}. The settings below are still
+ * To be removed in favour of {@link BaseSslPolicyConfig}. The settings below are still
  * incorporated in a backwards compatible manner, under the "legacy" policy name.
  */
 @Description( "Legacy SSL policy settings" )

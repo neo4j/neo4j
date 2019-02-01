@@ -42,7 +42,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 @ExtendWith( TestDirectoryExtension.class )
-class SslPolicyConfigTest
+class PemSslPolicyConfigTest
 {
     @Inject
     private TestDirectory testDirectory;
@@ -54,12 +54,13 @@ class SslPolicyConfigTest
         Map<String,String> params = stringMap();
 
         String policyName = "XYZ";
-        SslPolicyConfig policyConfig = new SslPolicyConfig( policyName );
+        PemSslPolicyConfig policyConfig = new PemSslPolicyConfig( policyName );
 
         File homeDir = testDirectory.directory( "home" );
 
         params.put( GraphDatabaseSettings.neo4j_home.name(), homeDir.getAbsolutePath() );
         params.put( policyConfig.base_directory.name(), "certificates/XYZ" );
+        params.put( policyConfig.format.name(), BaseSslPolicyConfig.Format.PEM.name() );
         Config config = Config.defaults( params );
 
         // derived defaults
@@ -100,11 +101,12 @@ class SslPolicyConfigTest
         Map<String,String> params = stringMap();
 
         String policyName = "XYZ";
-        SslPolicyConfig policyConfig = new SslPolicyConfig( policyName );
+        PemSslPolicyConfig policyConfig = new PemSslPolicyConfig( policyName );
 
         File homeDir = testDirectory.directory( "home" );
 
         params.put( GraphDatabaseSettings.neo4j_home.name(), homeDir.getAbsolutePath() );
+        params.put( policyConfig.format.name(), BaseSslPolicyConfig.Format.PEM.name() );
         params.put( policyConfig.base_directory.name(), "certificates/XYZ" );
 
         File privateKey = testDirectory.directory( "/path/to/my.key" );
@@ -161,13 +163,13 @@ class SslPolicyConfigTest
         Map<String,String> params = stringMap();
 
         String policyName = "XYZ";
-        SslPolicyConfig policyConfig = new SslPolicyConfig( policyName );
+        PemSslPolicyConfig policyConfig = new PemSslPolicyConfig( policyName );
 
         File homeDir = testDirectory.directory( "home" );
 
         params.put( GraphDatabaseSettings.neo4j_home.name(), homeDir.getAbsolutePath() );
         params.put( policyConfig.base_directory.name(), "certificates" );
-
+        params.put( policyConfig.format.name(), BaseSslPolicyConfig.Format.PEM.name() );
         params.put( policyConfig.private_key.name(), "my.key" );
         params.put( policyConfig.public_certificate.name(), "path/to/my.crt" );
 

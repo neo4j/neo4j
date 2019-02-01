@@ -25,8 +25,7 @@ import java.util.List;
 import org.neo4j.configuration.Description;
 import org.neo4j.configuration.Group;
 import org.neo4j.configuration.GroupSettingSupport;
-import org.neo4j.configuration.Internal;
-import org.neo4j.configuration.LoadableConfig;
+import org.neo4j.configuration.Settings;
 import org.neo4j.graphdb.config.Setting;
 
 import static java.lang.String.join;
@@ -35,46 +34,32 @@ import static org.neo4j.configuration.Settings.BOOLEAN;
 import static org.neo4j.configuration.Settings.FALSE;
 import static org.neo4j.configuration.Settings.NO_DEFAULT;
 import static org.neo4j.configuration.Settings.PATH;
-import static org.neo4j.configuration.Settings.STRING;
 import static org.neo4j.configuration.Settings.STRING_LIST;
 import static org.neo4j.configuration.Settings.derivedSetting;
 import static org.neo4j.configuration.Settings.optionsIgnoreCase;
 import static org.neo4j.configuration.Settings.pathSetting;
 import static org.neo4j.configuration.Settings.setting;
 
-@Group( "dbms.ssl.policy" )
-public class SslPolicyConfig implements LoadableConfig
+public abstract class BaseSslPolicyConfig
 {
     public static final List<String> TLS_VERSION_DEFAULTS = singletonList( "TLSv1.2" );
     public static final List<String> CIPHER_SUITES_DEFAULTS = null;
+
+    final GroupSettingSupport group;
+
+    @Description( "Path to directory of CRLs (Certificate Revocation Lists) in PEM format." )
+    public final Setting<File> revoked_dir;
 
     @Description( "The mandatory base directory for cryptographic objects of this policy." +
                   " It is also possible to override each individual configuration with absolute paths." )
     public final Setting<File> base_directory;
 
-    @Description( "Allows the generation of a private key and associated self-signed certificate." +
-                  " Only performed when both objects cannot be found." )
-    public final Setting<Boolean> allow_key_generation;
+    @Description( "Format of private key and certificates. Determines which other settings are needed." )
+    public final Setting<Format> format;
 
     @Description( "Makes this policy trust all remote parties." +
                   " Enabling this is not recommended and the trusted directory will be ignored." )
     public final Setting<Boolean> trust_all;
-
-    @Description( "Private PKCS#8 key in PEM format." )
-    public final Setting<File> private_key;
-
-    @Internal // not yet implemented
-    @Description( "The password for the private key." )
-    public final Setting<String> private_key_password;
-
-    @Description( "X.509 certificate (chain) of this server in PEM format." )
-    public final Setting<File> public_certificate;
-
-    @Description( "Path to directory of X.509 certificates in PEM format for trusted parties." )
-    public final Setting<File> trusted_dir;
-
-    @Description( "Path to directory of CRLs (Certificate Revocation Lists) in PEM format." )
-    public final Setting<File> revoked_dir;
 
     @Description( "Client authentication stance." )
     public final Setting<ClientAuth> client_auth;
@@ -89,33 +74,24 @@ public class SslPolicyConfig implements LoadableConfig
             "and the patterns described in the remote hosts public certificate Subject Alternative Names" )
     public final Setting<Boolean> verify_hostname;
 
-    public SslPolicyConfig()
+    public BaseSslPolicyConfig( GroupSettingSupport group, Format defaultFormat )
     {
-        this( "<policyname>" );
-    }
-
-    public SslPolicyConfig( String policyName )
-    {
-        GroupSettingSupport group = new GroupSettingSupport( SslPolicyConfig.class, policyName );
+        this.group = group;
 
         this.base_directory = group.scope( pathSetting( "base_directory", NO_DEFAULT ) );
-        this.allow_key_generation = group.scope( setting( "allow_key_generation", BOOLEAN, FALSE ) );
+        this.format = group.scope( setting( "format", Settings.optionsIgnoreCase( Format.class), defaultFormat.name() ) );
+
         this.trust_all = group.scope( setting( "trust_all", BOOLEAN, FALSE ) );
 
-        this.private_key = group.scope( derivedDefault( "private_key", base_directory, "private.key" ) );
-        this.public_certificate = group.scope( derivedDefault( "public_certificate", base_directory, "public.crt" ) );
-        this.trusted_dir = group.scope( derivedDefault( "trusted_dir", base_directory, "trusted" ) );
-        this.revoked_dir = group.scope( derivedDefault( "revoked_dir", base_directory, "revoked" ) );
-
-        this.private_key_password = group.scope( setting( "private_key_password", STRING, NO_DEFAULT ) );
         this.client_auth = group.scope( setting( "client_auth", optionsIgnoreCase( ClientAuth.class ), ClientAuth.REQUIRE.name() ) );
         this.tls_versions = group.scope( setting( "tls_versions", STRING_LIST, joinList( TLS_VERSION_DEFAULTS ) ) );
         this.ciphers = group.scope( setting( "ciphers", STRING_LIST, joinList( CIPHER_SUITES_DEFAULTS ) ) );
         this.verify_hostname = group.scope( setting( "verify_hostname", BOOLEAN, FALSE ) );
+        this.revoked_dir = group.scope( derivedDefault( "revoked_dir", base_directory, "revoked" ) );
     }
 
     // TODO: can we make this handle relative paths?
-    private Setting<File> derivedDefault( String settingName, Setting<File> baseDirectory, String defaultFilename )
+    Setting<File> derivedDefault( String settingName, Setting<File> baseDirectory, String defaultFilename )
     {
         return derivedSetting( settingName, baseDirectory, base -> new File( base, defaultFilename ), PATH );
     }
@@ -129,6 +105,20 @@ public class SslPolicyConfig implements LoadableConfig
         else
         {
             return join( ",", list );
+        }
+    }
+
+    public enum Format
+    {
+        PEM, JKS, PKCS12
+    }
+
+    @Group( "dbms.ssl.policy" )
+    public static class StubSslPolicyConfig extends BaseSslPolicyConfig
+    {
+        public StubSslPolicyConfig( String policyName )
+        {
+            super( new GroupSettingSupport( StubSslPolicyConfig.class, policyName ), Format.PEM );
         }
     }
 }
