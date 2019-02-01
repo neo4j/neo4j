@@ -58,6 +58,7 @@ public class BlockStorageReader<KEY,VALUE> implements Closeable
         blockChannel.position( position );
         channel.position( position + blockSize );
         PageCursor pageCursor = new ReadableChannelPageCursor( new ReadAheadChannel<>( blockChannel ) );
+        System.out.println( "Opening block reader at " + position );
         return new BlockReader<>( pageCursor, layout );
     }
 

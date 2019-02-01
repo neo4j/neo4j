@@ -33,6 +33,7 @@ import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.ByteArrayPageCursor;
+import org.neo4j.util.Preconditions;
 
 import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.getOverhead;
 import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.putKeyValueSize;
@@ -49,22 +50,23 @@ class BlockStorage<KEY, VALUE> implements Closeable
     private final Comparator<BlockEntry<KEY,VALUE>> comparator;
     private final StoreChannel storeChannel;
     private final Monitor monitor;
-    private final int bufferSize;
+    private final int blockSize;
     private final ByteBufferFactory bufferFactory;
     private int currentBufferSize;
     private int mergeIteration;
+    private boolean doneAdding;
 
-    BlockStorage( Layout<KEY,VALUE> layout, ByteBufferFactory bufferFactory, FileSystemAbstraction fs, File blockFile, Monitor monitor, int bufferSize )
+    BlockStorage( Layout<KEY,VALUE> layout, ByteBufferFactory bufferFactory, FileSystemAbstraction fs, File blockFile, Monitor monitor, int blockSize )
             throws IOException
     {
         this.layout = layout;
         this.fs = fs;
         this.blockFile = blockFile;
         this.monitor = monitor;
-        this.bufferSize = bufferSize;
+        this.blockSize = blockSize;
         this.bufferedEntries = Lists.mutable.empty();
         this.bufferFactory = bufferFactory;
-        this.byteBuffer = bufferFactory.newBuffer( bufferSize );
+        this.byteBuffer = bufferFactory.newBuffer( blockSize );
         this.comparator = ( e0, e1 ) -> layout.compare( e0.key(), e1.key() );
         this.storeChannel = fs.create( blockFile );
         resetBuffer();
@@ -72,12 +74,14 @@ class BlockStorage<KEY, VALUE> implements Closeable
 
     public void add( KEY key, VALUE value ) throws IOException
     {
+        Preconditions.checkState( !doneAdding, "Cannot add more after done adding" );
+
         int keySize = layout.keySize( key );
         int valueSize = layout.valueSize( value );
         int overhead = getOverhead( keySize, valueSize );
         int entrySize = keySize + valueSize + overhead;
 
-        if ( currentBufferSize + entrySize > bufferSize )
+        if ( currentBufferSize + entrySize > blockSize )
         {
             // append buffer to file and clear buffers
             flushAndResetBuffer();
@@ -94,6 +98,7 @@ class BlockStorage<KEY, VALUE> implements Closeable
         {
             flushAndResetBuffer();
         }
+        doneAdding = true;
     }
 
     private void resetBuffer()
@@ -108,6 +113,7 @@ class BlockStorage<KEY, VALUE> implements Closeable
         bufferedEntries.sortThis( comparator );
         ByteArrayPageCursor pageCursor = new ByteArrayPageCursor( byteBuffer );
 
+        System.out.println( "Writing block at " + storeChannel.position() );
         // Header
         pageCursor.putLong( bufferedEntries.size() );
 
@@ -123,7 +129,7 @@ class BlockStorage<KEY, VALUE> implements Closeable
 
         // TODO solve the BIG padding problem
         // Zero pad
-        pageCursor.putBytes( bufferSize - currentBufferSize, (byte) 0 );
+        pageCursor.putBytes( blockSize - currentBufferSize, (byte) 0 );
 
         // Append to file
         byteBuffer.flip();
@@ -140,7 +146,7 @@ class BlockStorage<KEY, VALUE> implements Closeable
 
     private long calculateBlockSize()
     {
-        return (long) Math.pow( 2, mergeIteration ) * bufferSize;
+        return (long) Math.pow( 2, mergeIteration ) * blockSize;
     }
 
     public BlockStorageReader<KEY,VALUE> reader() throws IOException
@@ -152,7 +158,7 @@ class BlockStorage<KEY, VALUE> implements Closeable
     {
         void entryAdded( int entrySize );
 
-        void blockFlushed( long keyCount, int bufferSize, long positionAfterFlush );
+        void blockFlushed( long keyCount, int numberOfBytes, long positionAfterFlush );
 
         class Adapter implements Monitor
         {
@@ -162,7 +168,7 @@ class BlockStorage<KEY, VALUE> implements Closeable
             }
 
             @Override
-            public void blockFlushed( long keyCount, int bufferSize, long positionAfterFlush )
+            public void blockFlushed( long keyCount, int numberOfBytes, long positionAfterFlush )
             {   // no-op
             }
         }

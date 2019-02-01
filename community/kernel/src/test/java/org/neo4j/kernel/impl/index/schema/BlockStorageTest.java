@@ -23,9 +23,12 @@ import static java.lang.Math.toIntExact;
 import static java.nio.ByteBuffer.allocate;
 import static java.util.Collections.singletonList;
 import static java.util.Comparator.comparingLong;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.lessThan;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.kernel.impl.index.schema.BlockStorage.Monitor.NO_MONITOR;
 
@@ -68,10 +71,10 @@ class BlockStorageTest
         // given
         SimpleLongLayout layout = layout( 0 );
         TrackingMonitor monitor = new TrackingMonitor();
-        int bufferSize = 100;
+        int blockSize = 100;
         MutableLong key = new MutableLong( 10 );
         MutableLong value = new MutableLong( 20 );
-        try ( BlockStorage<MutableLong,MutableLong> storage = new BlockStorage<>( layout, BUFFER_FACTORY, fileSystem, file, monitor, bufferSize ) )
+        try ( BlockStorage<MutableLong,MutableLong> storage = new BlockStorage<>( layout, BUFFER_FACTORY, fileSystem, file, monitor, blockSize ) )
         {
             // when
             storage.add( key, value );
@@ -80,8 +83,9 @@ class BlockStorageTest
             // then
             assertEquals( 1, monitor.blockFlushedCallCount );
             assertEquals( 1, monitor.lastKeyCount );
-            assertEquals( BlockStorage.BLOCK_HEADER_SIZE + monitor.totalEntrySize, monitor.lastBufferSize );
-            assertEquals( bufferSize, monitor.lastPositionAfterFlush );
+            assertEquals( BlockStorage.BLOCK_HEADER_SIZE + monitor.totalEntrySize, monitor.lastNumberOfBytes );
+            assertEquals( blockSize, monitor.lastPositionAfterFlush );
+            assertThat( monitor.lastNumberOfBytes, lessThan( blockSize ) );
             assertContents( layout, storage, singletonList( Pair.of( key, value ) ) );
         }
     }
@@ -92,9 +96,9 @@ class BlockStorageTest
         // given
         SimpleLongLayout layout = layout( 0 );
         TrackingMonitor monitor = new TrackingMonitor();
-        int bufferSize = 1_000;
+        int blockSize = 1_000;
         List<Pair<MutableLong,MutableLong>> expected = new ArrayList<>();
-        try ( BlockStorage<MutableLong,MutableLong> storage = new BlockStorage<>( layout, BUFFER_FACTORY, fileSystem, file, monitor, bufferSize ) )
+        try ( BlockStorage<MutableLong,MutableLong> storage = new BlockStorage<>( layout, BUFFER_FACTORY, fileSystem, file, monitor, blockSize ) )
         {
             // when
             for ( int i = 0; i < 10; i++ )
@@ -117,16 +121,16 @@ class BlockStorageTest
     void shouldSortAndAddMultipleEntriesInMultipleBlocks() throws IOException
     {
         // given
-        SimpleLongLayout layout = layout( 0 );
+        SimpleLongLayout layout = layout( random.nextInt( 900 ) );
         TrackingMonitor monitor = new TrackingMonitor();
-        int bufferSize = 1_000;
+        int blockSize = 1_000;
         List<List<Pair<MutableLong,MutableLong>>> expected = new ArrayList<>();
-        try ( BlockStorage<MutableLong,MutableLong> storage = new BlockStorage<>( layout, BUFFER_FACTORY, fileSystem, file, monitor, bufferSize ) )
+        try ( BlockStorage<MutableLong,MutableLong> storage = new BlockStorage<>( layout, BUFFER_FACTORY, fileSystem, file, monitor, blockSize ) )
         {
             // when
             List<Pair<MutableLong,MutableLong>> currentExpected = new ArrayList<>();
             long currentBlock = 0;
-            for ( long i = 0; monitor.blockFlushedCallCount < 10; i++ )
+            for ( long i = 0; monitor.blockFlushedCallCount < 3; i++ )
             {
                 long keyNumber = random.nextLong( 10_000_000 );
                 MutableLong key = new MutableLong( keyNumber );
@@ -151,15 +155,41 @@ class BlockStorageTest
         }
     }
 
+    @Test
+    void shouldNotAcceptAddedEntriesAfterDoneAdding() throws IOException
+    {
+        // given
+        SimpleLongLayout layout = layout( 0 );
+        try ( BlockStorage<MutableLong,MutableLong> storage = new BlockStorage<>( layout, BUFFER_FACTORY, fileSystem, file, NO_MONITOR, 100 ) )
+        {
+            // when
+            storage.doneAdding();
+
+            // then
+            assertThrows( IllegalStateException.class, () -> storage.add( new MutableLong( 0 ), new MutableLong( 1 ) ) );
+        }
+    }
+
+    @Test
+    void shouldNotFlushAnythingOnEmptyBufferInDoneAdding() throws IOException
+    {
+        // given
+        SimpleLongLayout layout = layout( 0 );
+        TrackingMonitor monitor = new TrackingMonitor();
+        try ( BlockStorage<MutableLong,MutableLong> storage = new BlockStorage<>( layout, BUFFER_FACTORY, fileSystem, file, monitor, 100 ) )
+        {
+            // when
+            storage.doneAdding();
+
+            // then
+            assertEquals( 0, monitor.blockFlushedCallCount );
+        }
+    }
+
     private void sortExpectedBlock( List<Pair<MutableLong,MutableLong>> currentExpected )
     {
         currentExpected.sort( comparingLong( p -> p.getKey().longValue() ) );
     }
-
-    // TODO shouldFlushSortedEntriesOnFullBuffer
-    // TODO shouldFlushPaddedBlocks
-    // TODO shouldNotAcceptAddedEntriesAfterDoneAdding
-    // TODO shouldNotFlushAnythingOnEmptyBufferInDoneAdding
 
     private void assertContents( SimpleLongLayout layout, BlockStorage<MutableLong,MutableLong> storage, List<Pair<MutableLong,MutableLong>>... expectedBlocks )
             throws IOException
@@ -175,8 +205,8 @@ class BlockStorageTest
                     for ( Pair<MutableLong,MutableLong> expectedEntry : expectedBlock )
                     {
                         assertTrue( block.next() );
-                        assertEquals( 0, layout.compare( block.key(), expectedEntry.getKey() ) );
-                        assertEquals( block.value(), expectedEntry.getValue() );
+                        assertEquals( 0, layout.compare( expectedEntry.getKey(), block.key() ) );
+                        assertEquals( expectedEntry.getValue(), block.value() );
                     }
                 }
             }
@@ -198,7 +228,7 @@ class BlockStorageTest
         // For blockFlushed
         private int blockFlushedCallCount;
         private long lastKeyCount;
-        private int lastBufferSize;
+        private int lastNumberOfBytes;
         private long lastPositionAfterFlush;
 
         @Override
@@ -210,11 +240,11 @@ class BlockStorageTest
         }
 
         @Override
-        public void blockFlushed( long keyCount, int bufferSize, long positionAfterFlush )
+        public void blockFlushed( long keyCount, int numberOfBytes, long positionAfterFlush )
         {
             blockFlushedCallCount++;
             lastKeyCount = keyCount;
-            lastBufferSize = bufferSize;
+            lastNumberOfBytes = numberOfBytes;
             lastPositionAfterFlush = positionAfterFlush;
         }
     }

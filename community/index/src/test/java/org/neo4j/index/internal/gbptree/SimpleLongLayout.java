@@ -148,6 +148,7 @@ public class SimpleLongLayout extends TestLayout<MutableLong,MutableLong>
     public void writeKey( PageCursor cursor, MutableLong key )
     {
         cursor.putLong( key.longValue() );
+        cursor.putBytes( keyPadding, (byte) 0 );
     }
 
     @Override
@@ -160,6 +161,7 @@ public class SimpleLongLayout extends TestLayout<MutableLong,MutableLong>
     public void readKey( PageCursor cursor, MutableLong into, int keySize )
     {
         into.setValue( cursor.getLong() );
+        cursor.getBytes( new byte[keyPadding] );
     }
 
     @Override
