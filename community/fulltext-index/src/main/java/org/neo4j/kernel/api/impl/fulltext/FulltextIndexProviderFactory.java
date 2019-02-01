@@ -26,6 +26,7 @@ import org.neo4j.helpers.Service;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.schema.IndexProviderDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.txstate.auxiliary.AuxiliaryTransactionStateManager;
@@ -117,8 +118,13 @@ public class FulltextIndexProviderFactory extends KernelExtensionFactory<Fulltex
                 "updated like normal, but it might not be possible to query any fulltext indexes. The reason given is: ";
         try
         {
-            dependencies.procedures().registerComponent( FulltextAdapter.class, procContext -> provider, true );
-            dependencies.procedures().registerProcedure( FulltextProcedures.class );
+            //This is known to be terrible (this component shouldn't care about whether the context is for the system db or not), the fix which makes procedure
+            // registration correctly multi-db aware is 4.0+ only
+            if ( !contextForSystemDatabase( context ) )
+            {
+                dependencies.procedures().registerComponent( FulltextAdapter.class, procContext -> provider, true );
+                dependencies.procedures().registerProcedure( FulltextProcedures.class );
+            }
         }
         catch ( KernelException e )
         {
@@ -148,5 +154,10 @@ public class FulltextIndexProviderFactory extends KernelExtensionFactory<Fulltex
             // If we are not in a "TOOL" context, then we log this at the "DBMS" level, since it might be important for correctness.
             dbmsLog.log( message );
         }
+    }
+
+    private static boolean contextForSystemDatabase( KernelContext context )
+    {
+        return DatabaseLayout.of( context.directory() ).getDatabaseName().equals( GraphDatabaseSettings.SYSTEM_DATABASE_NAME );
     }
 }
