@@ -94,4 +94,7 @@ public interface DbAccess
     AnyValue callFunction( int id, AnyValue[] args, String[] allowed );
 
     AnyValue callFunction( QualifiedName name, AnyValue[] args, String[] allowed );
+
+    boolean hasTxStatePropertyForCachedNodeProperty( long nodeId, int propertyKeyId );
+
 }
