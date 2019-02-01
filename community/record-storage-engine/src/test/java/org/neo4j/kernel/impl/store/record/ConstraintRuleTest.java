@@ -45,7 +45,7 @@ public class ConstraintRuleTest extends SchemaRuleTestBase
         assertThat( constraintRule.getId(), equalTo( RULE_ID ) );
         assertThat( constraintRule.schema(), equalTo( descriptor.schema() ) );
         assertThat( constraintRule, equalTo( descriptor ) );
-        assertException( constraintRule::getOwnedIndex, IllegalStateException.class );
+        assertException( constraintRule::ownedIndexReference, IllegalStateException.class );
     }
 
     @Test
@@ -57,7 +57,7 @@ public class ConstraintRuleTest extends SchemaRuleTestBase
 
         // THEN
         assertThat( constraintRule, equalTo( descriptor ) );
-        assertThat( constraintRule.getOwnedIndex(), equalTo( RULE_ID_2 ) );
+        assertThat( constraintRule.ownedIndexReference(), equalTo( RULE_ID_2 ) );
     }
 
     @Test
@@ -71,7 +71,7 @@ public class ConstraintRuleTest extends SchemaRuleTestBase
         assertThat( constraintRule.getId(), equalTo( RULE_ID ) );
         assertThat( constraintRule.schema(), equalTo( descriptor.schema() ) );
         assertThat( constraintRule, equalTo( descriptor ) );
-        assertException( constraintRule::getOwnedIndex, IllegalStateException.class );
+        assertException( constraintRule::ownedIndexReference, IllegalStateException.class );
     }
 
     @Test
@@ -83,7 +83,7 @@ public class ConstraintRuleTest extends SchemaRuleTestBase
 
         // THEN
         assertThat( constraintRule, equalTo( descriptor ) );
-        assertThat( constraintRule.getOwnedIndex(), equalTo( RULE_ID_2 ) );
+        assertThat( constraintRule.ownedIndexReference(), equalTo( RULE_ID_2 ) );
     }
 
     @Test
@@ -97,7 +97,7 @@ public class ConstraintRuleTest extends SchemaRuleTestBase
         assertThat( constraintRule.getId(), equalTo( RULE_ID ) );
         assertThat( constraintRule.schema(), equalTo( descriptor.schema() ) );
         assertThat( constraintRule, equalTo( descriptor ) );
-        assertException( constraintRule::getOwnedIndex, IllegalStateException.class );
+        assertException( constraintRule::ownedIndexReference, IllegalStateException.class );
     }
 
     @Test

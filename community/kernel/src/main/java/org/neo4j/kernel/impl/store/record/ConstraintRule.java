@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.store.record;
 
-import org.neo4j.common.TokenNameLookup;
 import org.neo4j.kernel.api.schema.constraints.IndexBackedConstraintDescriptor;
 import org.neo4j.storageengine.api.SchemaRule;
 import org.neo4j.storageengine.api.StorageConstraintReference;
@@ -85,23 +84,19 @@ public class ConstraintRule implements SchemaRule, StorageConstraintReference
         return descriptor.schema();
     }
 
-    @SuppressWarnings( "NumberEquality" )
-    public long getOwnedIndex()
+    @Override
+    public ConstraintDescriptor getConstraintDescriptor()
     {
-        if ( ownedIndex == null )
-        {
-            throw new IllegalStateException( "This constraint does not own an index." );
-        }
-        return ownedIndex;
+        return descriptor;
     }
 
     @Override
     public boolean equals( Object o )
     {
-        if ( o instanceof ConstraintRule )
+        if ( o instanceof ConstraintDescriptor )
         {
-            ConstraintRule that = (ConstraintRule) o;
-            return this.descriptor.equals( that.descriptor );
+            ConstraintDescriptor that = (ConstraintDescriptor) o;
+            return this.descriptor.equals( that );
         }
         return false;
     }
@@ -133,6 +128,10 @@ public class ConstraintRule implements SchemaRule, StorageConstraintReference
     @Override
     public long ownedIndexReference()
     {
+        if ( ownedIndex == null )
+        {
+            throw new IllegalStateException( "This constraint does not own an index." );
+        }
         return ownedIndex;
     }
 
@@ -140,41 +139,5 @@ public class ConstraintRule implements SchemaRule, StorageConstraintReference
     public long constraintReference()
     {
         return id;
-    }
-
-    @Override
-    public Type type()
-    {
-        return descriptor.type();
-    }
-
-    @Override
-    public boolean enforcesUniqueness()
-    {
-        return descriptor.enforcesUniqueness();
-    }
-
-    @Override
-    public boolean enforcesPropertyExistence()
-    {
-        return descriptor.enforcesPropertyExistence();
-    }
-
-    @Override
-    public String userDescription( TokenNameLookup tokenNameLookup )
-    {
-        return descriptor.userDescription( tokenNameLookup );
-    }
-
-    @Override
-    public boolean isSame( ConstraintDescriptor descriptor )
-    {
-        return this.descriptor.isSame( descriptor );
-    }
-
-    @Override
-    public String prettyPrint( TokenNameLookup tokenNameLookup )
-    {
-        return descriptor.prettyPrint( tokenNameLookup );
     }
 }

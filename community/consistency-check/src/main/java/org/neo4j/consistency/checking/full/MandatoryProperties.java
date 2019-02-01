@@ -59,7 +59,7 @@ public class MandatoryProperties
         SchemaRuleAccess schemaRuleAccess = SchemaRuleAccess.getSchemaRuleAccess( storeAccess.getSchemaStore(), tokenHolders );
         for ( ConstraintRule constraint : constraintsIgnoringMalformed( schemaRuleAccess ) )
         {
-            if ( constraint.enforcesPropertyExistence() )
+            if ( constraint.getConstraintDescriptor().enforcesPropertyExistence() )
             {
                 constraint.schema().processWith( constraintRecorder );
             }

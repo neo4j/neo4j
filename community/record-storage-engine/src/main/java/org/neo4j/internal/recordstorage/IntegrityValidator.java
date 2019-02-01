@@ -30,6 +30,7 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.storageengine.api.IndexUpdateListener;
 import org.neo4j.storageengine.api.SchemaRule;
+import org.neo4j.storageengine.api.schema.ConstraintDescriptor;
 import org.neo4j.util.Preconditions;
 
 /**
@@ -91,9 +92,10 @@ class IntegrityValidator
         if ( schemaRule instanceof ConstraintRule )
         {
             ConstraintRule constraintRule = (ConstraintRule) schemaRule;
-            if ( constraintRule.enforcesUniqueness() )
+            ConstraintDescriptor constraintDescriptor = constraintRule.getConstraintDescriptor();
+            if ( constraintDescriptor.enforcesUniqueness() )
             {
-                long ownedIndex = constraintRule.getOwnedIndex();
+                long ownedIndex = constraintRule.ownedIndexReference();
                 try
                 {
                     indexValidator.validateIndex( ownedIndex );

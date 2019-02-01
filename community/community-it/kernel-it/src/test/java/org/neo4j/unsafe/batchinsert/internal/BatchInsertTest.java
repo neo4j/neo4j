@@ -781,7 +781,7 @@ public class BatchInsertTest
             assertEquals( "index should reference constraint",
                           constraintRule.getId(), indexRule.owningConstraintReference() );
             assertEquals( "constraint should reference index",
-                          indexRule.getId(), constraintRule.getOwnedIndex() );
+                          indexRule.getId(), constraintRule.ownedIndexReference() );
         }
         finally
         {

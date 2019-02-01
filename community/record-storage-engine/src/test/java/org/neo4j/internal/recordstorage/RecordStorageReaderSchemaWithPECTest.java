@@ -62,7 +62,7 @@ public class RecordStorageReaderSchemaWithPECTest extends RecordStorageReaderTes
             @Override
             protected ConstraintDescriptor readNonStandardConstraint( ConstraintRule constraint, String errorMessage )
             {
-                return constraint;
+                return constraint.getConstraintDescriptor();
             }
         } );
     }

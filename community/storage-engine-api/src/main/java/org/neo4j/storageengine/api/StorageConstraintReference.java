@@ -21,7 +21,7 @@ package org.neo4j.storageengine.api;
 
 import org.neo4j.storageengine.api.schema.ConstraintDescriptor;
 
-public interface StorageConstraintReference extends ConstraintDescriptor
+public interface StorageConstraintReference extends ConstraintDescriptor.Supplier
 {
     boolean hasOwnedIndexReference();
 

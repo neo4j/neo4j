@@ -77,14 +77,15 @@ public class StandardConstraintSemantics extends ConstraintSemantics
     @Override
     public ConstraintDescriptor readConstraint( ConstraintRule rule )
     {
-        switch ( rule.type() )
+        ConstraintDescriptor descriptor = rule.getConstraintDescriptor();
+        switch ( descriptor.type() )
         {
         case EXISTS:
             return readNonStandardConstraint( rule, ERROR_MESSAGE_EXISTS );
         case UNIQUE_EXISTS:
             return readNonStandardConstraint( rule, ERROR_MESSAGE_NODE_KEY );
         default:
-            return rule;
+            return descriptor;
         }
     }
 

@@ -34,6 +34,7 @@ import org.neo4j.kernel.impl.index.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
 import org.neo4j.storageengine.api.SchemaRule;
 import org.neo4j.storageengine.api.StorageIndexReference;
+import org.neo4j.storageengine.api.schema.ConstraintDescriptor;
 import org.neo4j.storageengine.api.schema.LabelSchemaDescriptor;
 import org.neo4j.storageengine.api.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.storageengine.api.schema.SchemaComputer;
@@ -154,12 +155,13 @@ public class SchemaRuleSerialization
 
     /**
      * Serialize the provided ConstraintRule onto the target buffer
-     * @param constraint the ConstraintRule to serialize
+     * @param rule the ConstraintRule to serialize
      * @throws IllegalStateException if the ConstraintRule is of type unique, but the owned index has not been set
      */
-    public static byte[] serialize( ConstraintRule constraint )
+    public static byte[] serialize( ConstraintRule rule )
     {
-        ByteBuffer target = ByteBuffer.allocate( lengthOf( constraint ) );
+        ConstraintDescriptor constraint = rule.getConstraintDescriptor();
+        ByteBuffer target = ByteBuffer.allocate( lengthOf( rule ) );
         target.putInt( LEGACY_LABEL_OR_REL_TYPE_ID );
         target.put( CONSTRAINT_RULE );
 
@@ -171,12 +173,12 @@ public class SchemaRuleSerialization
 
         case UNIQUE:
             target.put( UNIQUE_CONSTRAINT );
-            target.putLong( constraint.getOwnedIndex() );
+            target.putLong( rule.ownedIndexReference() );
             break;
 
         case UNIQUE_EXISTS:
             target.put( UNIQUE_EXISTS_CONSTRAINT );
-            target.putLong( constraint.getOwnedIndex() );
+            target.putLong( rule.ownedIndexReference() );
             break;
 
         default:
@@ -185,7 +187,7 @@ public class SchemaRuleSerialization
         }
 
         constraint.schema().processWith( new SchemaDescriptorSerializer( target ) );
-        UTF8.putEncodedStringInto( constraint.getName(), target );
+        UTF8.putEncodedStringInto( rule.getName(), target );
         return target.array();
     }
 
@@ -215,22 +217,22 @@ public class SchemaRuleSerialization
 
     /**
      * Compute the byte size needed to serialize the provided ConstraintRule using serialize.
-     * @param constraint the ConstraintRule
+     * @param rule the ConstraintRule
      * @return the byte size of ConstraintRule
      */
-    static int lengthOf( ConstraintRule constraint )
+    static int lengthOf( ConstraintRule rule )
     {
         int length = 4; // legacy label or relType id
         length += 1; // schema rule type
 
         length += 1; // constraint type
-        if ( constraint.enforcesUniqueness() )
+        if ( rule.getConstraintDescriptor().enforcesUniqueness() )
         {
             length += 8; // owned index id
         }
 
-        length += constraint.schema().computeWith( schemaSizeComputer );
-        length += UTF8.computeRequiredByteBufferSize( constraint.getName() );
+        length += rule.schema().computeWith( schemaSizeComputer );
+        length += UTF8.computeRequiredByteBufferSize( rule.getName() );
         return length;
     }
 

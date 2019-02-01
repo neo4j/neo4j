@@ -252,7 +252,7 @@ public class SchemaCacheTest
         Set<ConstraintDescriptor> listed = asSet( cache.constraintsForLabel( 1 ) );
 
         // Then
-        Set<ConstraintDescriptor> expected = asSet( rule1, rule3 );
+        Set<ConstraintDescriptor> expected = asSet( rule1.getConstraintDescriptor(), rule3.getConstraintDescriptor() );
         assertEquals( expected, listed );
     }
 
@@ -293,7 +293,7 @@ public class SchemaCacheTest
         Set<ConstraintDescriptor> listed = asSet( cache.constraintsForRelationshipType( 1 ) );
 
         // Then
-        Set<ConstraintDescriptor> expected = asSet( rule1, rule3 );
+        Set<ConstraintDescriptor> expected = asSet( rule1.getConstraintDescriptor(), rule3.getConstraintDescriptor() );
         assertEquals( expected, listed );
     }
 
@@ -510,11 +510,11 @@ public class SchemaCacheTest
         @Override
         protected ConstraintDescriptor readNonStandardConstraint( ConstraintRule rule, String errorMessage )
         {
-            if ( !rule.enforcesPropertyExistence() )
+            if ( !rule.getConstraintDescriptor().enforcesPropertyExistence() )
             {
                 throw new IllegalStateException( "Unsupported constraint type: " + rule );
             }
-            return rule;
+            return rule.getConstraintDescriptor();
         }
     }
 }

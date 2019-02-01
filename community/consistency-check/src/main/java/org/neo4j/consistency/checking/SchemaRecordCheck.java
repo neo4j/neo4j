@@ -160,9 +160,9 @@ public class SchemaRecordCheck implements RecordCheck<DynamicRecord, Consistency
         {
             checkSchema( constraint, record, records, engine );
 
-            if ( constraint.enforcesUniqueness() )
+            if ( constraint.getConstraintDescriptor().enforcesUniqueness() )
             {
-                DynamicRecord previousObligation = indexObligations.put( constraint.getOwnedIndex(), record.clone() );
+                DynamicRecord previousObligation = indexObligations.put( constraint.ownedIndexReference(), record.clone() );
                 if ( previousObligation != null )
                 {
                     engine.report().duplicateObligation( previousObligation );
@@ -209,7 +209,7 @@ public class SchemaRecordCheck implements RecordCheck<DynamicRecord, Consistency
         public void checkConstraintRule( ConstraintRule constraint, DynamicRecord record,
                 RecordAccess records, CheckerEngine<DynamicRecord,ConsistencyReport.SchemaConsistencyReport> engine )
         {
-            if ( constraint.enforcesUniqueness() )
+            if ( constraint.getConstraintDescriptor().enforcesUniqueness() )
             {
                 DynamicRecord obligation = constraintObligations.get( constraint.getId() );
                 if ( obligation == null )
@@ -218,7 +218,7 @@ public class SchemaRecordCheck implements RecordCheck<DynamicRecord, Consistency
                 }
                 else
                 {
-                    if ( obligation.getId() != constraint.getOwnedIndex() )
+                    if ( obligation.getId() != constraint.ownedIndexReference() )
                     {
                         engine.report().uniquenessConstraintNotReferencingBack( obligation );
                     }

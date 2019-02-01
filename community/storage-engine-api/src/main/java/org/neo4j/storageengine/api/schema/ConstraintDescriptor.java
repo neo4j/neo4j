@@ -62,10 +62,15 @@ public interface ConstraintDescriptor extends SchemaDescriptorSupplier
 
     /**
      * Checks whether a constraint descriptor Supplier supplies this constraint descriptor.
-     * @param descriptor constraint descriptor to compare with
+     * @param supplier supplier to get a constraint descriptor from
      * @return true if the supplied constraint descriptor equals this constraint descriptor
      */
-    boolean isSame( ConstraintDescriptor descriptor );
+    boolean isSame( Supplier supplier );
 
     String prettyPrint( TokenNameLookup tokenNameLookup );
+
+    interface Supplier
+    {
+        ConstraintDescriptor getConstraintDescriptor();
+    }
 }

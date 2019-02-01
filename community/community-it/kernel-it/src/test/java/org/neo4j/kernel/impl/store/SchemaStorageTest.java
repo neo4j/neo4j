@@ -247,8 +247,9 @@ public class SchemaStorageTest
         assertEquals( type, rule.type() );
     }
 
-    private void assertRule( ConstraintRule constraint, String label, String propertyKey, ConstraintDescriptor.Type type )
+    private void assertRule( ConstraintRule rule, String label, String propertyKey, ConstraintDescriptor.Type type )
     {
+        ConstraintDescriptor constraint = rule.getConstraintDescriptor();
         assertTrue( SchemaDescriptorPredicates.hasLabel( constraint, labelId( label ) ) );
         assertTrue( SchemaDescriptorPredicates.hasProperty( constraint, propId( propertyKey ) ) );
         assertEquals( type, constraint.type() );
