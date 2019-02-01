@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.v3_5.frontend.phases.{BaseContext, VisitorPhase
 import org.neo4j.cypher.internal.v3_5.util.InternalNotification
 
 import org.neo4j.values.storable.TemporalValue.TemporalFields
-import org.neo4j.values.storable.{DurationFields, PointFields, TemporalValue}
+import org.neo4j.values.storable.{DurationFields, PointFields}
 
 import scala.collection.JavaConverters._
 
@@ -36,7 +36,7 @@ object CheckForUnresolvedTokens extends VisitorPhase[BaseContext, LogicalPlanSta
   private val specialPropertyKey: Set[String] =
     (TemporalFields.allFields().asScala ++
       DurationFields.values().map(_.propertyKey) ++
-      PointFields.values().map(_.propertyKey)).toSet.map((_: String).toLowerCase)
+      PointFields.values().map(_.propertyKey)).map(_.toLowerCase).toSet
 
   override def visit(value: LogicalPlanState, context: BaseContext): Unit = {
     val table = value.semanticTable()
