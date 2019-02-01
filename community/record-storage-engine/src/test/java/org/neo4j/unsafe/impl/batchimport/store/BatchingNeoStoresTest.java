@@ -387,7 +387,7 @@ class BatchingNeoStoresTest
         }
     }
 
-    private static abstract class DeferredInitializedTokenCreator implements TokenCreator
+    private abstract static class DeferredInitializedTokenCreator implements TokenCreator
     {
         TokenStore store;
         TransactionState txState;

@@ -242,7 +242,7 @@ public class CountsDelta implements CountsAccessor, CountsAccessor.Updater
     }
 
     @VisibleForTesting
-    public static abstract class Key
+    public abstract static class Key
     {
         final long[] tokens;
 

@@ -274,7 +274,8 @@ public class FailingGenericNativeIndexProviderFactory extends ExtensionFactory<G
             }
 
             @Override
-            public StoreMigrationParticipant storeMigrationParticipant( FileSystemAbstraction fs, PageCache pageCache, StorageEngineFactory storageEngineFactory )
+            public StoreMigrationParticipant storeMigrationParticipant( FileSystemAbstraction fs, PageCache pageCache,
+                    StorageEngineFactory storageEngineFactory )
             {
                 return actualProvider.storeMigrationParticipant( fs, pageCache, storageEngineFactory );
             }
