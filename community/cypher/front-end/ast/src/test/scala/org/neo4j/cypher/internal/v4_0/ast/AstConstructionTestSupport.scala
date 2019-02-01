@@ -66,20 +66,20 @@ trait AstConstructionTestSupport extends CypherTestSupport {
   def listOf(expressions: Expression*): ListLiteral =
     ListLiteral(expressions)(pos)
 
-  def literalIntList(intValues: Int*): ListLiteral =
+  def listOfInt(intValues: Int*): ListLiteral =
     ListLiteral(intValues.toSeq.map(literalInt))(pos)
 
-  def literalFloatList(floatValues: Double*): ListLiteral =
+  def listOfFloat(floatValues: Double*): ListLiteral =
     ListLiteral(floatValues.toSeq.map(literalFloat))(pos)
-
-  def literalIntMap(keyValues: (String, Int)*): MapExpression =
-    MapExpression(keyValues.map {
-      case (k, v) => (PropertyKeyName(k)(pos), literalInt(v))
-    })(pos)
 
   def mapOf(keysAndValues: (String, Expression)*): MapExpression =
     MapExpression(keysAndValues.map {
       case (k, v) => PropertyKeyName(k)(pos) -> v
+    })(pos)
+
+  def mapOfInt(keyValues: (String, Int)*): MapExpression =
+    MapExpression(keyValues.map {
+      case (k, v) => (PropertyKeyName(k)(pos), literalInt(v))
     })(pos)
 
   def TRUE: Expression = True()(pos)

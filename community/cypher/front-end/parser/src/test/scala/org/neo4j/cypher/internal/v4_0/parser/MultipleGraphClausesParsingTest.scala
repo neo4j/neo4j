@@ -70,7 +70,7 @@ class MultipleGraphClausesParsingTest
   test("CONSTRUCT CLONE x CREATE ({prop: 1})") {
     val clone: ast.Clone = ast.Clone(List(ast.UnaliasedReturnItem(varFor("x"), "x")(pos)))(pos)
 
-    val properties = literalIntMap("prop" -> 1)
+    val properties = mapOfInt("prop" -> 1)
     val pattern = exp.Pattern(List(exp.EveryPath(exp.NodePattern(None, List(), Some(properties))(pos))))(pos)
     val newClause: ast.CreateInConstruct = ast.CreateInConstruct(pattern)(pos)
 
