@@ -52,10 +52,6 @@ case class SingleComponentPlanner(monitor: IDPQueryGraphSolverMonitor,
     val bestPlan =
       if (qg.patternRelationships.nonEmpty) {
 
-        val generators = solverConfig.solvers(qg).map(_ (qg))
-        val selectingGenerators = generators.map(_.map(plan => kit.select(plan, qg)))
-        val sortingGenerators = selectingGenerators.map(_.flatMap(plan => SortPlanner.maybeSortedPlan(plan, interestingOrder, context)))
-        val generator = (selectingGenerators ++ sortingGenerators).foldLeft(IDPSolverStep.empty[PatternRelationship, InterestingOrder, LogicalPlan, LogicalPlanningContext])(_ ++ _)
         val orderRequirement = new ExtraRequirement[InterestingOrder, LogicalPlan]() {
           override def none: InterestingOrder = InterestingOrder.empty
 
@@ -67,7 +63,17 @@ case class SingleComponentPlanner(monitor: IDPQueryGraphSolverMonitor,
           }
 
           override def is(requirement: InterestingOrder): Boolean = requirement == interestingOrder
+
+          override def isEmpty: Boolean = interestingOrder.isEmpty
         }
+
+        val generators = solverConfig.solvers(qg).map(_ (qg))
+        val selectingGenerators = generators.map(_.map(plan => kit.select(plan, qg)))
+        val combinedGenerators = if (orderRequirement.isEmpty) selectingGenerators else {
+          val sortingGenerators = selectingGenerators.map(_.flatMap(plan => SortPlanner.maybeSortedPlan(plan, interestingOrder, context)))
+          selectingGenerators ++ sortingGenerators
+        }
+        val generator = combinedGenerators.foldLeft(IDPSolverStep.empty[PatternRelationship, InterestingOrder, LogicalPlan, LogicalPlanningContext])(_ ++ _)
 
         val solver = new IDPSolver[PatternRelationship, InterestingOrder, LogicalPlan, LogicalPlanningContext](
           generator = generator,
@@ -109,25 +115,23 @@ case class SingleComponentPlanner(monitor: IDPQueryGraphSolverMonitor,
   private def initTable(qg: QueryGraph, kit: QueryPlannerKit, leaves: Set[LogicalPlan], context: LogicalPlanningContext, interestingOrder: InterestingOrder): Set[((Set[PatternRelationship], InterestingOrder), LogicalPlan)] = {
     for (pattern <- qg.patternRelationships)
       yield {
-        val input = planSinglePattern(qg, pattern, leaves, context).map(plan => kit.select(plan, qg))
-        val plans = if (interestingOrder.requiredOrderCandidate.nonEmpty) {
-          input ++ input.flatMap(plan => SortPlanner.maybeSortedPlan(plan, interestingOrder, context))
-        } else {
-          input
-        }
+        val plans = planSinglePattern(qg, pattern, leaves, context).map(plan => kit.select(plan, qg))
+        val best = kit.pickBest(plans).map(p => ((Set(pattern), InterestingOrder.empty), p))
 
-        val ordered = plans.filter { plan =>
-          SortPlanner.orderSatisfaction(interestingOrder, context, plan) match {
-            case FullSatisfaction() => true
-            case _ => false
+        val result: Iterable[((Set[PatternRelationship], InterestingOrder), LogicalPlan)] =
+          if (interestingOrder.isEmpty) {
+            best
+          } else {
+            val orderedPlans = plans.flatMap(plan => SortPlanner.maybeSortedPlan(plan, interestingOrder, context))
+            val ordered = (plans ++ orderedPlans).filter{ plan =>
+              SortPlanner.orderSatisfaction(interestingOrder, context, plan) match {
+                case FullSatisfaction() => true
+                case _ => false
+              }
+            }
+            val bestWithSort = kit.pickBest(ordered).map(p => ((Set(pattern), interestingOrder), p))
+            best ++ bestWithSort
           }
-        }
-
-        val best = kit.pickBest(plans)
-        val bestWithSort = kit.pickBest(ordered)
-
-        val result = best.map(p => ((Set(pattern), InterestingOrder.empty), p)) ++
-          bestWithSort.map(p => ((Set(pattern), interestingOrder), p))
 
         if (result.isEmpty)
           throw new InternalException("Found no access plan for a pattern relationship in a connected component. This must not happen.")

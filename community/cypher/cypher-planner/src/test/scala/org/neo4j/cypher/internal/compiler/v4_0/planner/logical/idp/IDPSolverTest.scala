@@ -35,6 +35,8 @@ class IDPSolverTest extends CypherFunSuite {
     override def forResult(plan: String): Null = null
 
     override def is(requirement: Null): Boolean = requirement == null
+
+    override def isEmpty: Boolean = true
   }
 
   test("Solves a small toy problem") {
@@ -214,6 +216,8 @@ class IDPSolverTest extends CypherFunSuite {
     override def forResult(result: String): Capitalization = if (result.equals(capitalization.normalize(result))) capitalization else none
 
     override def is(requirement: Capitalization): Boolean = requirement == capitalization
+
+    override def isEmpty: Boolean = false
   }
 
   private case class Capitalization(upper: Boolean) {
