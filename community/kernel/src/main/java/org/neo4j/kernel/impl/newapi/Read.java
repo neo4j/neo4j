@@ -100,7 +100,7 @@ abstract class Read implements TxStateHolder,
     }
 
     @Override
-    public void nodeIndexDistinctValues( IndexReference index, NodeValueIndexCursor cursor ) throws IndexNotFoundKernelException
+    public void nodeIndexDistinctValues( IndexReference index, NodeValueIndexCursor cursor, boolean needsValues ) throws IndexNotFoundKernelException
     {
         ktx.assertOpen();
         DefaultNodeValueIndexCursor cursorImpl = (DefaultNodeValueIndexCursor) cursor;
@@ -108,7 +108,7 @@ abstract class Read implements TxStateHolder,
         cursorImpl.setRead( this );
         try ( CursorPropertyAccessor accessor = new CursorPropertyAccessor( cursors.allocateNodeCursor(), cursors.allocatePropertyCursor(), this ) )
         {
-            reader.distinctValues( cursorImpl, accessor );
+            reader.distinctValues( cursorImpl, accessor, needsValues );
         }
     }
 

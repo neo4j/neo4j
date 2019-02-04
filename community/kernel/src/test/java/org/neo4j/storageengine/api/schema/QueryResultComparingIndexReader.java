@@ -172,9 +172,9 @@ public class QueryResultComparingIndexReader implements IndexReader
     }
 
     @Override
-    public void distinctValues( IndexProgressor.NodeValueClient client, NodePropertyAccessor propertyAccessor )
+    public void distinctValues( IndexProgressor.NodeValueClient client, NodePropertyAccessor propertyAccessor, boolean needsValues )
     {
-        actual.distinctValues( client, propertyAccessor );
+        actual.distinctValues( client, propertyAccessor, needsValues );
     }
 
     @Override

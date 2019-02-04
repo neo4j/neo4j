@@ -138,7 +138,7 @@ abstract class NativeIndexReader<KEY extends NativeIndexKey<KEY>, VALUE extends 
     public abstract boolean hasFullValuePrecision( IndexQuery... predicates );
 
     @Override
-    public void distinctValues( IndexProgressor.NodeValueClient client, NodePropertyAccessor propertyAccessor )
+    public void distinctValues( IndexProgressor.NodeValueClient client, NodePropertyAccessor propertyAccessor, boolean needsValues )
     {
         KEY lowest = layout.newKey();
         lowest.initialize( Long.MIN_VALUE );
@@ -150,7 +150,7 @@ abstract class NativeIndexReader<KEY extends NativeIndexKey<KEY>, VALUE extends 
         {
             RawCursor<Hit<KEY,VALUE>,IOException> seeker = tree.seek( lowest, highest );
             client.initialize( descriptor, new NativeDistinctValuesProgressor<>( seeker, client, openSeekers, layout, layout::compareValue ),
-                    new IndexQuery[0], IndexOrder.NONE, client.needsValues() );
+                    new IndexQuery[0], IndexOrder.NONE, needsValues );
         }
         catch ( IOException e )
         {

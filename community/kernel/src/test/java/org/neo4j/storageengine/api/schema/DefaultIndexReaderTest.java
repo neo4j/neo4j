@@ -75,7 +75,7 @@ class DefaultIndexReaderTest
             }
 
             @Override
-            public void distinctValues( IndexProgressor.NodeValueClient client, NodePropertyAccessor propertyAccessor )
+            public void distinctValues( IndexProgressor.NodeValueClient client, NodePropertyAccessor propertyAccessor, boolean needsValues )
             {
             }
 

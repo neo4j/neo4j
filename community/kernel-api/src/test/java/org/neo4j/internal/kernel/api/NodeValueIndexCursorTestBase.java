@@ -1478,7 +1478,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         try ( org.neo4j.internal.kernel.api.Transaction tx = beginTransaction();
                 NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
         {
-            tx.dataRead().nodeIndexDistinctValues( index, node );
+            tx.dataRead().nodeIndexDistinctValues( index, node, true );
             long totalCount = 0;
             boolean hasValues = true;
             while ( node.next() )
@@ -1522,7 +1522,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         try ( org.neo4j.internal.kernel.api.Transaction tx = beginTransaction();
                 NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
         {
-            tx.dataRead().nodeIndexDistinctValues( index, node );
+            tx.dataRead().nodeIndexDistinctValues( index, node, true );
 
             // then
             while ( node.next() )

@@ -74,9 +74,9 @@ public class TrackingIndexReader implements IndexReader
     }
 
     @Override
-    public void distinctValues( IndexProgressor.NodeValueClient client, NodePropertyAccessor propertyAccessor )
+    public void distinctValues( IndexProgressor.NodeValueClient client, NodePropertyAccessor propertyAccessor, boolean needsValues )
     {
-        delegate.distinctValues( client, propertyAccessor );
+        delegate.distinctValues( client, propertyAccessor, needsValues );
     }
 
     @Override

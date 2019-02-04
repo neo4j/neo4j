@@ -42,7 +42,6 @@ import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import org.neo4j.values.storable.Value;
-import org.neo4j.values.storable.Values;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -98,7 +97,7 @@ public class SimpleIndexReaderDistinctValuesTest
         NodePropertyAccessor propertyAccessor = mock( NodePropertyAccessor.class );
         try ( IndexReader reader = index.getIndexReader() )
         {
-            reader.distinctValues( client, propertyAccessor );
+            reader.distinctValues( client, propertyAccessor, true );
             while ( client.progressor.next() )
             {
                 Value value = client.values[0];
@@ -119,7 +118,7 @@ public class SimpleIndexReaderDistinctValuesTest
         int expectedCount = 10_000;
         for ( int i = 0; i < expectedCount; i++ )
         {
-            Value value = Values.of( random.nextValue() );
+            Value value = random.nextValue();
             writer.addDocument( documentRepresentingProperties( i, value ) );
         }
         index.maybeRefreshBlocking();
@@ -129,7 +128,7 @@ public class SimpleIndexReaderDistinctValuesTest
         NodePropertyAccessor propertyAccessor = mock( NodePropertyAccessor.class );
         try ( IndexReader reader = index.getIndexReader() )
         {
-            reader.distinctValues( client, propertyAccessor );
+            reader.distinctValues( client, propertyAccessor, true );
             int actualCount = 0;
             while ( client.progressor.next() )
             {

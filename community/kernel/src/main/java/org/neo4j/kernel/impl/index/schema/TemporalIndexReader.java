@@ -127,14 +127,14 @@ class TemporalIndexReader extends TemporalIndexCache<TemporalIndexPartReader<?>>
     }
 
     @Override
-    public void distinctValues( IndexProgressor.NodeValueClient cursor, NodePropertyAccessor propertyAccessor )
+    public void distinctValues( IndexProgressor.NodeValueClient cursor, NodePropertyAccessor propertyAccessor, boolean needsValues )
     {
         loadAll();
         BridgingIndexProgressor multiProgressor = new BridgingIndexProgressor( cursor, descriptor.schema().getPropertyIds() );
         cursor.initialize( descriptor, multiProgressor, new IndexQuery[0], IndexOrder.NONE, cursor.needsValues() );
         for ( NativeIndexReader<?,NativeIndexValue> reader : this )
         {
-            reader.distinctValues( multiProgressor, propertyAccessor );
+            reader.distinctValues( multiProgressor, propertyAccessor, needsValues );
         }
     }
 

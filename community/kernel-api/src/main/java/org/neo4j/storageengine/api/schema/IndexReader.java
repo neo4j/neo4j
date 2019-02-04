@@ -77,11 +77,11 @@ public interface IndexReader extends Resource
      * {@link IndexProgressor.NodeValueClient#needsValues()} decides whether or not values will be materialized and given to the client.
      * The use-case for setting this to {@code false} is to have a more efficient counting of distinct values in an index,
      * regardless of the actual values.
-     *
      * @param client {@link IndexProgressor.NodeValueClient} to get initialized with this progression.
      * @param propertyAccessor used for distinguishing between lossy indexed values.
+     * @param needsValues whether or not values should be loaded.
      */
-    void distinctValues( IndexProgressor.NodeValueClient client, NodePropertyAccessor propertyAccessor );
+    void distinctValues( IndexProgressor.NodeValueClient client, NodePropertyAccessor propertyAccessor, boolean needsValues );
 
     IndexReader EMPTY = new IndexReader()
     {
@@ -122,7 +122,7 @@ public interface IndexReader extends Resource
         }
 
         @Override
-        public void distinctValues( IndexProgressor.NodeValueClient client, NodePropertyAccessor propertyAccessor )
+        public void distinctValues( IndexProgressor.NodeValueClient client, NodePropertyAccessor propertyAccessor, boolean needsValues )
         {
             // do nothing
         }

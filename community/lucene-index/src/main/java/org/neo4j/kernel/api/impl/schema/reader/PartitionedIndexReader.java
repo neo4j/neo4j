@@ -116,10 +116,10 @@ public class PartitionedIndexReader extends AbstractIndexReader
     }
 
     @Override
-    public void distinctValues( IndexProgressor.NodeValueClient client, NodePropertyAccessor propertyAccessor )
+    public void distinctValues( IndexProgressor.NodeValueClient client, NodePropertyAccessor propertyAccessor, boolean needsValues )
     {
         BridgingIndexProgressor bridgingIndexProgressor = new BridgingIndexProgressor( client, descriptor.schema().getPropertyIds() );
-        indexReaders.parallelStream().forEach( reader -> reader.distinctValues( bridgingIndexProgressor, propertyAccessor ) );
+        indexReaders.parallelStream().forEach( reader -> reader.distinctValues( bridgingIndexProgressor, propertyAccessor, needsValues ) );
         client.initialize( descriptor, bridgingIndexProgressor, new IndexQuery[0], IndexOrder.NONE, client.needsValues() );
     }
 

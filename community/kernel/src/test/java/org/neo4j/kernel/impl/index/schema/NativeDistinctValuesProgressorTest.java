@@ -33,6 +33,8 @@ import java.util.Map;
 
 import org.neo4j.cursor.RawCursor;
 import org.neo4j.index.internal.gbptree.Hit;
+import org.neo4j.internal.kernel.api.IndexOrder;
+import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
@@ -62,6 +64,7 @@ public class NativeDistinctValuesProgressorTest
         // when
         NativeDistinctValuesProgressor<StringIndexKey,NativeIndexValue> progressor =
                 new NativeDistinctValuesProgressor<>( source, client, new ArrayList<>(), layout, layout::compareValue );
+        client.initialize( null, progressor, new IndexQuery[0], IndexOrder.NONE, true );
         Map<Value,MutableInt> expectedCounts = asDistinctCounts( strings );
 
         // then

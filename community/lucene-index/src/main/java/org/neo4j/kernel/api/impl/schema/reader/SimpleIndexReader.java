@@ -203,12 +203,12 @@ public class SimpleIndexReader extends AbstractIndexReader
      * OBS this implementation can only provide values for properties of type {@link String}.
      * Other property types will still be counted as distinct, but {@code client} won't receive {@link Value}
      * instances for those.
-     *
      * @param client {@link IndexProgressor.NodeValueClient} to get initialized with this progression.
      * @param propertyAccessor {@link NodePropertyAccessor} for reading property values.
+     * @param needsValues whether or not to load string values.
      */
     @Override
-    public void distinctValues( IndexProgressor.NodeValueClient client, NodePropertyAccessor propertyAccessor )
+    public void distinctValues( IndexProgressor.NodeValueClient client, NodePropertyAccessor propertyAccessor, boolean needsValues )
     {
         try
         {
@@ -220,7 +220,7 @@ public class SimpleIndexReader extends AbstractIndexReader
                 Terms terms = fields.terms( valueEncoding.key() );
                 if ( terms != null )
                 {
-                    Function<BytesRef,Value> valueMaterializer = valueEncoding == ValueEncoding.String && client.needsValues()
+                    Function<BytesRef,Value> valueMaterializer = valueEncoding == ValueEncoding.String && needsValues
                                                                  ? term -> Values.stringValue( term.utf8ToString() )
                                                                  : term -> null;
                     TermsEnum termsIterator = terms.iterator();

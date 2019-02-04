@@ -54,32 +54,27 @@ public class NativeDistinctValuesProgressor<KEY extends NativeIndexKey<KEY>, VAL
             while ( seeker.next() )
             {
                 KEY key = seeker.get().key();
-                try
+                if ( first )
                 {
-                    if ( first )
-                    {
-                        first = false;
-                        countForCurrentValue = 1;
-                    }
-                    else if ( comparator.compare( prev, key ) == 0 )
-                    {
-                        // same as previous
-                        countForCurrentValue++;
-                    }
-                    else
-                    {
-                        // different from previous
-                        boolean accepted = client.acceptNode( countForCurrentValue, extractValues( prev ) );
-                        countForCurrentValue = 1;
-                        if ( accepted )
-                        {
-                            return true;
-                        }
-                    }
-                }
-                finally
-                {
+                    first = false;
+                    countForCurrentValue = 1;
                     layout.copyKey( key, prev );
+                }
+                else if ( comparator.compare( prev, key ) == 0 )
+                {
+                    // same as previous
+                    countForCurrentValue++;
+                }
+                else
+                {
+                    // different from previous
+                    boolean accepted = client.acceptNode( countForCurrentValue, extractValues( prev ) );
+                    countForCurrentValue = 1;
+                    layout.copyKey( key, prev );
+                    if ( accepted )
+                    {
+                        return true;
+                    }
                 }
             }
             boolean finalResult = !first && !last && client.acceptNode( countForCurrentValue, extractValues( prev ) );

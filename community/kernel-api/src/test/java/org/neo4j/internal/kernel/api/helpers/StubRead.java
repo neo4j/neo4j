@@ -43,7 +43,7 @@ public class StubRead implements Read
     }
 
     @Override
-    public void nodeIndexDistinctValues( IndexReference index, NodeValueIndexCursor cursor )
+    public void nodeIndexDistinctValues( IndexReference index, NodeValueIndexCursor cursor, boolean needsValues )
     {
         throw new UnsupportedOperationException();
     }

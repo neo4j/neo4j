@@ -110,7 +110,7 @@ public class SpatialIndexPartReader<VALUE extends NativeIndexValue> extends Nati
     }
 
     @Override
-    public void distinctValues( IndexProgressor.NodeValueClient client, NodePropertyAccessor propertyAccessor )
+    public void distinctValues( IndexProgressor.NodeValueClient client, NodePropertyAccessor propertyAccessor, boolean needsValues )
     {
         // This is basically a version of the basic implementation, but with added consulting of the PropertyAccessor
         // since these are lossy spatial values.
