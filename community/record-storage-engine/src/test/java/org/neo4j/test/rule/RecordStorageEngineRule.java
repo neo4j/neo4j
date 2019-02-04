@@ -47,6 +47,7 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.monitoring.DatabaseEventHandlers;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.DatabasePanicEventGenerator;
+import org.neo4j.monitoring.SingleDatabaseHealth;
 import org.neo4j.storageengine.api.ConstraintRule;
 import org.neo4j.storageengine.api.ConstraintRuleAccessor;
 import org.neo4j.storageengine.api.IndexUpdateListener;
@@ -108,7 +109,7 @@ public class RecordStorageEngineRule extends ExternalResource
     {
         private final FileSystemAbstraction fs;
         private final PageCache pageCache;
-        private DatabaseHealth databaseHealth = new DatabaseHealth(
+        private DatabaseHealth databaseHealth = new SingleDatabaseHealth(
                 new DatabasePanicEventGenerator( new DatabaseEventHandlers( NullLog.getInstance() ) ),
                 NullLog.getInstance() );
         private final DatabaseLayout databaseLayout;

@@ -30,6 +30,7 @@ import org.neo4j.bolt.v1.runtime.BoltStateMachineV1SPI;
 import org.neo4j.bolt.v2.BoltProtocolV2;
 import org.neo4j.bolt.v3.BoltProtocolV3;
 import org.neo4j.bolt.v3.BoltStateMachineV3;
+import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.bolt.v4.BoltProtocolV4;
 import org.neo4j.bolt.v4.BoltStateMachineV4;
 import org.neo4j.configuration.Config;
@@ -39,14 +40,15 @@ import org.neo4j.logging.internal.LogService;
 
 public class BoltStateMachineFactoryImpl implements BoltStateMachineFactory
 {
-    private final DatabaseManager databaseManager;
+    private final DatabaseManager<? extends DatabaseContext> databaseManager;
     private final LogService logging;
     private final Authentication authentication;
     private final Config config;
     private final Clock clock;
     private final String defaultDatabaseName;
 
-    public BoltStateMachineFactoryImpl( DatabaseManager databaseManager, Authentication authentication, Clock clock, Config config, LogService logging )
+    public BoltStateMachineFactoryImpl( DatabaseManager<? extends DatabaseContext> databaseManager,
+            Authentication authentication, Clock clock, Config config, LogService logging )
     {
         this.databaseManager = databaseManager;
         this.logging = logging;

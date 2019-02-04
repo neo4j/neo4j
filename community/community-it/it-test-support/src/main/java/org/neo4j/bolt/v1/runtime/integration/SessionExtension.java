@@ -37,6 +37,7 @@ import org.neo4j.bolt.security.auth.BasicAuthentication;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.io.IOUtils;
@@ -96,9 +97,11 @@ public class SessionExtension implements BeforeEachCallback, AfterEachCallback
         DependencyResolver resolver = gdb.getDependencyResolver();
         Authentication authentication = authentication( resolver.resolveDependency( AuthManager.class ),
                 resolver.resolveDependency( UserManagerSupplier.class ) );
+        @SuppressWarnings( "unchecked" )
+        DatabaseManager<? extends DatabaseContext> databaseManager = resolver.resolveDependency( DatabaseManager.class );
         Config config = resolver.resolveDependency( Config.class );
         boltFactory = new BoltStateMachineFactoryImpl(
-                resolver.resolveDependency( DatabaseManager.class ),
+                databaseManager,
                 authentication,
                 Clock.systemUTC(),
                 config,

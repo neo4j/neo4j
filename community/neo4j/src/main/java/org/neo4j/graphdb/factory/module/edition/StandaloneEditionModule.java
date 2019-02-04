@@ -22,15 +22,20 @@ package org.neo4j.graphdb.factory.module.edition;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import org.neo4j.graphdb.factory.module.edition.context.DefaultEditionDatabaseContext;
-import org.neo4j.graphdb.factory.module.edition.context.EditionDatabaseContext;
+import org.neo4j.dbms.database.DatabaseManager;
+import org.neo4j.dmbs.database.DefaultDatabaseManager;
+import org.neo4j.graphdb.factory.module.GlobalModule;
+import org.neo4j.graphdb.factory.module.edition.context.StandaloneDatabaseComponents;
+import org.neo4j.graphdb.factory.module.edition.context.DatabaseComponents;
 import org.neo4j.graphdb.factory.module.id.IdContextFactory;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.StatementLocksFactory;
 import org.neo4j.token.TokenHolders;
+import org.neo4j.logging.Logger;
 
-public abstract class DefaultEditionModule extends AbstractEditionModule
+public abstract class StandaloneEditionModule extends AbstractEditionModule
 {
     protected CommitProcessFactory commitProcessFactory;
     protected IdContextFactory idContextFactory;
@@ -39,9 +44,9 @@ public abstract class DefaultEditionModule extends AbstractEditionModule
     protected Function<Locks,StatementLocksFactory> statementLocksFactoryProvider;
 
     @Override
-    public EditionDatabaseContext createDatabaseContext( String databaseName )
+    public DatabaseComponents createDatabaseComponents( String databaseName )
     {
-        return new DefaultEditionDatabaseContext( this, databaseName );
+        return new StandaloneDatabaseComponents( this, databaseName );
     }
 
     public CommitProcessFactory getCommitProcessFactory()
@@ -67,5 +72,11 @@ public abstract class DefaultEditionModule extends AbstractEditionModule
     public Function<Locks,StatementLocksFactory> getStatementLocksFactoryProvider()
     {
         return statementLocksFactoryProvider;
+    }
+
+    @Override
+    public DatabaseManager<?> createDatabaseManager( GraphDatabaseFacade graphDatabaseFacade, GlobalModule globalModule, Logger msgLog )
+    {
+        return new DefaultDatabaseManager( globalModule, this, msgLog, graphDatabaseFacade );
     }
 }

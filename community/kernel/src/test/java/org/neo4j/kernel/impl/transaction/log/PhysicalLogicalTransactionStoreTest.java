@@ -42,6 +42,7 @@ import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
+import org.neo4j.monitoring.SingleDatabaseHealth;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.recovery.CorruptedLogsTruncator;
@@ -74,7 +75,7 @@ import static org.neo4j.kernel.impl.transaction.log.rotation.LogRotation.NO_ROTA
 @ExtendWith( {DefaultFileSystemExtension.class, TestDirectoryExtension.class} )
 class PhysicalLogicalTransactionStoreTest
 {
-    private static final DatabaseHealth DATABASE_HEALTH = mock( DatabaseHealth.class );
+    private static final DatabaseHealth DATABASE_HEALTH = mock( SingleDatabaseHealth.class );
 
     @Inject
     private DefaultFileSystemAbstraction fileSystem;

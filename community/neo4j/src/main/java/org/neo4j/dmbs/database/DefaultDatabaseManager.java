@@ -19,44 +19,56 @@
  */
 package org.neo4j.dmbs.database;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.Collections;
 import java.util.Optional;
+import java.util.SortedMap;
+import java.util.concurrent.ConcurrentSkipListMap;
 
-import org.neo4j.dbms.database.DatabaseContext;
+import org.neo4j.dbms.database.StandaloneDatabaseContext;
 import org.neo4j.graphdb.factory.module.GlobalModule;
 import org.neo4j.graphdb.factory.module.edition.AbstractEditionModule;
-import org.neo4j.kernel.api.procedure.GlobalProcedures;
+import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.logging.Logger;
 
 import static java.util.Objects.requireNonNull;
 import static org.neo4j.util.Preconditions.checkState;
 
-public final class DefaultDatabaseManager extends AbstractDatabaseManager
+public final class DefaultDatabaseManager extends AbstractDatabaseManager<StandaloneDatabaseContext>
 {
-    private final Map<String,DatabaseContext> databases = new HashMap<>();
+    private final SortedMap<String,StandaloneDatabaseContext> databases = new ConcurrentSkipListMap<>();
 
-    public DefaultDatabaseManager( GlobalModule globalModule, AbstractEditionModule edition, GlobalProcedures globalProcedures,
-            Logger log, GraphDatabaseFacade graphDatabaseFacade )
+    public DefaultDatabaseManager( GlobalModule globalModule, AbstractEditionModule edition, Logger log, GraphDatabaseFacade graphDatabaseFacade )
     {
-        super( globalModule, edition, globalProcedures, log, graphDatabaseFacade );
+        super( globalModule, edition, log, graphDatabaseFacade );
     }
 
     @Override
-    public Optional<DatabaseContext> getDatabaseContext( String name )
+    public Optional<StandaloneDatabaseContext> getDatabaseContext( String name )
     {
         return Optional.ofNullable( databases.get( name ) );
     }
 
     @Override
-    public DatabaseContext createDatabase( String databaseName )
+    public synchronized StandaloneDatabaseContext createDatabase( String databaseName )
     {
         requireNonNull( databaseName );
         checkState( databases.size() < 2, "System and default database are already created. Fail to create another database:" + databaseName );
-        DatabaseContext databaseContext = createNewDatabaseContext( databaseName );
+        StandaloneDatabaseContext databaseContext = createNewDatabaseContext( databaseName );
         databases.put( databaseName, databaseContext );
         return databaseContext;
+    }
+
+    @Override
+    protected StandaloneDatabaseContext databaseContextFactory( Database database, GraphDatabaseFacade facade )
+    {
+        return new StandaloneDatabaseContext( database, facade );
+    }
+
+    @Override
+    public SortedMap<String,StandaloneDatabaseContext> registeredDatabases()
+    {
+        return Collections.unmodifiableSortedMap( databases );
     }
 
     @Override
@@ -75,11 +87,5 @@ public final class DefaultDatabaseManager extends AbstractDatabaseManager
     public void startDatabase( String databaseName )
     {
         throw new UnsupportedOperationException( "Default database manager does not support starting databases." );
-    }
-
-    @Override
-    protected Map<String,DatabaseContext> getDatabaseMap()
-    {
-        return databases;
     }
 }

@@ -76,6 +76,7 @@ import org.neo4j.kernel.impl.transaction.state.storeview.DynamicIndexStoreView;
 import org.neo4j.kernel.impl.transaction.state.storeview.NeoStoreIndexStoreView;
 import org.neo4j.kernel.impl.transaction.tracing.CheckPointTracer;
 import org.neo4j.kernel.impl.util.monitoring.LogProgressReporter;
+import org.neo4j.monitoring.SingleDatabaseHealth;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.lock.LockService;
@@ -271,7 +272,7 @@ public final class Recovery
         JobScheduler scheduler = JobSchedulerFactory.createInitialisedScheduler();
 
         DatabasePanicEventGenerator panicEventGenerator = new DatabasePanicEventGenerator( new DatabaseEventHandlers( recoveryLog ) );
-        DatabaseHealth databaseHealth = new DatabaseHealth( panicEventGenerator, recoveryLog );
+        DatabaseHealth databaseHealth = new SingleDatabaseHealth( panicEventGenerator, recoveryLog );
 
         TokenHolders tokenHolders = new TokenHolders( new DelegatingTokenHolder( new ReadOnlyTokenCreator(), TYPE_PROPERTY_KEY ),
                 new DelegatingTokenHolder( new ReadOnlyTokenCreator(), TYPE_LABEL ),

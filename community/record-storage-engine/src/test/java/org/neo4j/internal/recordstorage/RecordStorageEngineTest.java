@@ -50,6 +50,7 @@ import org.neo4j.lock.Lock;
 import org.neo4j.lock.LockGroup;
 import org.neo4j.lock.LockService;
 import org.neo4j.monitoring.DatabaseHealth;
+import org.neo4j.monitoring.SingleDatabaseHealth;
 import org.neo4j.storageengine.api.CommandsToApply;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StoreFileMetadata;
@@ -80,7 +81,7 @@ public class RecordStorageEngineTest
     private final EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
     private final PageCacheRule pageCacheRule = new PageCacheRule();
     private final TestDirectory testDirectory = TestDirectory.testDirectory( fsRule );
-    private final DatabaseHealth databaseHealth = mock( DatabaseHealth.class );
+    private final DatabaseHealth databaseHealth = mock( SingleDatabaseHealth.class );
 
     @Rule
     public RuleChain ruleChain = RuleChain.outerRule( fsRule )

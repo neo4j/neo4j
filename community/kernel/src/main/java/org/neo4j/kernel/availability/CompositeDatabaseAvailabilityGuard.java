@@ -20,9 +20,11 @@
 package org.neo4j.kernel.availability;
 
 import java.time.Clock;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -36,13 +38,15 @@ import static java.util.stream.Collectors.joining;
  * Composite availability guard that makes decision about its availability based on multiple underlying database specific availability guards.
  * Any fulfillment, require, available, etc requests will be redistributed to all underlying availability guards.
  *
+ * TODO: add cleanup on database end of life
+ *
  * @see AvailabilityGuard
  */
 public class CompositeDatabaseAvailabilityGuard extends LifecycleAdapter implements AvailabilityGuard
 {
     private final Clock clock;
     private final LogService logService;
-    private final CopyOnWriteArrayList<DatabaseAvailabilityGuard> guards = new CopyOnWriteArrayList<>();
+    private final ConcurrentMap<DatabaseId,DatabaseAvailabilityGuard> guards = new ConcurrentHashMap<>();
     private volatile boolean started = true;
 
     public CompositeDatabaseAvailabilityGuard( Clock clock, LogService logService )
@@ -54,9 +58,7 @@ public class CompositeDatabaseAvailabilityGuard extends LifecycleAdapter impleme
     public DatabaseAvailabilityGuard createDatabaseAvailabilityGuard( DatabaseId databaseId )
     {
         Log guardLog = logService.getInternalLog( DatabaseAvailabilityGuard.class );
-        DatabaseAvailabilityGuard guard = new DatabaseAvailabilityGuard( databaseId, clock, guardLog, this );
-        guards.add( guard );
-        return guard;
+        return guards.computeIfAbsent( databaseId, name -> new DatabaseAvailabilityGuard( name, clock, guardLog, this ) );
     }
 
     /**
@@ -68,21 +70,30 @@ public class CompositeDatabaseAvailabilityGuard extends LifecycleAdapter impleme
         return createDatabaseAvailabilityGuard( new DatabaseId( databaseName ) );
     }
 
-    void removeDatabaseAvailabilityGuard( DatabaseAvailabilityGuard guard )
+    public void removeDatabaseAvailabilityGuard( DatabaseId databaseId )
     {
-        guards.remove( guard );
+        guards.remove( databaseId );
+    }
+
+    /**
+     * TODO remove
+     */
+    @Deprecated
+    public void removeDatabaseAvailabilityGuard( String databaseName )
+    {
+        guards.remove( new DatabaseId( databaseName ) );
     }
 
     @Override
     public void require( AvailabilityRequirement requirement )
     {
-        guards.forEach( guard -> guard.require( requirement ) );
+        guards.values().forEach( guard -> guard.require( requirement ) );
     }
 
     @Override
     public void fulfill( AvailabilityRequirement requirement )
     {
-        guards.forEach( guard -> guard.fulfill( requirement ) );
+        guards.values().forEach( guard -> guard.fulfill( requirement ) );
     }
 
     @Override
@@ -94,7 +105,7 @@ public class CompositeDatabaseAvailabilityGuard extends LifecycleAdapter impleme
     @Override
     public boolean isAvailable()
     {
-        return guards.stream().allMatch( DatabaseAvailabilityGuard::isAvailable ) && started;
+        return guards.values().stream().allMatch( DatabaseAvailabilityGuard::isAvailable ) && started;
     }
 
     @Override
@@ -107,7 +118,7 @@ public class CompositeDatabaseAvailabilityGuard extends LifecycleAdapter impleme
     public boolean isAvailable( long millis )
     {
         long totalWait = 0;
-        for ( DatabaseAvailabilityGuard guard : guards )
+        for ( DatabaseAvailabilityGuard guard : guards.values() )
         {
             long startMillis = clock.millis();
             if ( !guard.isAvailable( Math.max( 0, millis - totalWait ) ) )
@@ -126,7 +137,7 @@ public class CompositeDatabaseAvailabilityGuard extends LifecycleAdapter impleme
     @Override
     public void checkAvailable() throws UnavailableException
     {
-        for ( DatabaseAvailabilityGuard guard : guards )
+        for ( DatabaseAvailabilityGuard guard : guards.values() )
         {
             guard.checkAvailable();
         }
@@ -140,7 +151,7 @@ public class CompositeDatabaseAvailabilityGuard extends LifecycleAdapter impleme
     public void await( long millis ) throws UnavailableException
     {
         long totalWait = 0;
-        for ( DatabaseAvailabilityGuard guard : guards )
+        for ( DatabaseAvailabilityGuard guard : guards.values() )
         {
             long startMillis = clock.millis();
             guard.await( Math.max( 0, millis - totalWait ) );
@@ -171,13 +182,13 @@ public class CompositeDatabaseAvailabilityGuard extends LifecycleAdapter impleme
     @Override
     public String describe()
     {
-        return guards.stream().map( DatabaseAvailabilityGuard::describe ).collect( joining( ", " ) );
+        return guards.values().stream().map( DatabaseAvailabilityGuard::describe ).collect( joining( ", " ) );
     }
 
     @VisibleForTesting
     public List<DatabaseAvailabilityGuard> getGuards()
     {
-        return Collections.unmodifiableList( guards );
+        return Collections.unmodifiableList( new ArrayList<>( guards.values() ) );
     }
 
     private String getUnavailableMessage()

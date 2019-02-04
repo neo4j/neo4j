@@ -32,9 +32,12 @@ import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.StatementLocksFactory;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats;
+import org.neo4j.monitoring.SingleDatabaseHealth;
+import org.neo4j.logging.Log;
+import org.neo4j.monitoring.DatabasePanicEventGenerator;
 import org.neo4j.token.TokenHolders;
 
-public interface EditionDatabaseContext
+public interface DatabaseComponents
 {
     DatabaseIdContext getIdContext();
 
@@ -59,4 +62,7 @@ public interface EditionDatabaseContext
     StatementLocksFactory getStatementLocksFactory();
 
     DatabaseTransactionStats getTransactionMonitor();
+
+    //TODO: Make sure we create instances of database health the same way as availability guards
+    SingleDatabaseHealth createDatabaseHealth( DatabasePanicEventGenerator dbpe, Log log );
 }

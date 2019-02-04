@@ -79,7 +79,7 @@ public class TransactionStateMachineV1SPI implements TransactionStateMachineSPI
         this.queryExecutionEngine = resolveDependency( databaseContext, QueryExecutionEngine.class );
         this.transactionIdTracker = newTransactionIdTracker( databaseContext );
         this.contextFactory = newTransactionalContextFactory( databaseContext );
-        this.databaseFacade = databaseContext.getDatabaseFacade();
+        this.databaseFacade = databaseContext.databaseFacade();
         this.boltChannel = boltChannel;
         this.txAwaitDuration = txAwaitDuration;
         this.clock = clock;
@@ -171,7 +171,7 @@ public class TransactionStateMachineV1SPI implements TransactionStateMachineSPI
 
     private static TransactionIdTracker newTransactionIdTracker( DatabaseContext databaseContext )
     {
-        Supplier<TransactionIdStore> transactionIdStoreSupplier = databaseContext.getDependencies().provideDependency( TransactionIdStore.class );
+        Supplier<TransactionIdStore> transactionIdStoreSupplier = databaseContext.dependencies().provideDependency( TransactionIdStore.class );
         AvailabilityGuard guard = resolveDependency( databaseContext, DatabaseAvailabilityGuard.class );
         return new TransactionIdTracker( transactionIdStoreSupplier, guard );
     }
@@ -184,7 +184,7 @@ public class TransactionStateMachineV1SPI implements TransactionStateMachineSPI
 
     private static <T> T resolveDependency( DatabaseContext databaseContext, Class<T> clazz )
     {
-        return databaseContext.getDependencies().resolveDependency( clazz );
+        return databaseContext.dependencies().resolveDependency( clazz );
     }
 
     public class BoltResultHandleV1 implements BoltResultHandle

@@ -19,10 +19,8 @@
  */
 package org.neo4j.dmbs.database;
 
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
 import java.util.Map;
+import java.util.SortedMap;
 import java.util.function.BiConsumer;
 
 import org.neo4j.configuration.Config;
@@ -33,7 +31,6 @@ import org.neo4j.graphdb.factory.module.DatabaseModule;
 import org.neo4j.graphdb.factory.module.GlobalModule;
 import org.neo4j.graphdb.factory.module.edition.AbstractEditionModule;
 import org.neo4j.helpers.Exceptions;
-import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -41,21 +38,19 @@ import org.neo4j.logging.Logger;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.default_database;
 
-public abstract class AbstractDatabaseManager extends LifecycleAdapter implements DatabaseManager
+public abstract class AbstractDatabaseManager<DB extends DatabaseContext> extends LifecycleAdapter implements DatabaseManager<DB>
 {
     private final GlobalModule globalModule;
     private final AbstractEditionModule edition;
-    private final GlobalProcedures globalProcedures;
     private final GraphDatabaseFacade graphDatabaseFacade;
+
     protected final Logger log;
 
-    public AbstractDatabaseManager( GlobalModule globalModule, AbstractEditionModule edition, GlobalProcedures globalProcedures,
-            Logger log, GraphDatabaseFacade graphDatabaseFacade )
+    public AbstractDatabaseManager( GlobalModule globalModule, AbstractEditionModule edition, Logger log, GraphDatabaseFacade graphDatabaseFacade )
     {
         this.log = log;
         this.globalModule = globalModule;
         this.edition = edition;
-        this.globalProcedures = globalProcedures;
         this.graphDatabaseFacade = graphDatabaseFacade;
     }
 
@@ -72,32 +67,27 @@ public abstract class AbstractDatabaseManager extends LifecycleAdapter implement
     }
 
     @Override
-    public List<String> listDatabases()
-    {
-        ArrayList<String> names = new ArrayList<>( getDatabaseMap().keySet() );
-        names.sort( Comparator.naturalOrder() );
-        return names;
-    }
+    public abstract SortedMap<String,DB> registeredDatabases();
 
-    protected abstract Map<String,DatabaseContext> getDatabaseMap();
-
-    protected DatabaseContext createNewDatabaseContext( String databaseName )
+    protected DB createNewDatabaseContext( String databaseName )
     {
         log.log( "Creating '%s' database.", databaseName );
         Config globalConfig = globalModule.getGlobalConfig();
         GraphDatabaseFacade facade =
                 globalConfig.get( default_database ).equals( databaseName ) ? graphDatabaseFacade : new GraphDatabaseFacade();
-        DatabaseModule dataSource = new DatabaseModule( databaseName, globalModule, edition, globalProcedures, facade );
+        DatabaseModule dataSource = new DatabaseModule( databaseName, globalModule, edition, facade );
         ClassicCoreSPI spi = new ClassicCoreSPI( globalModule, dataSource, log, dataSource.coreAPIAvailabilityGuard, edition.getThreadToTransactionBridge() );
         Database database = dataSource.database;
         facade.init( spi, edition.getThreadToTransactionBridge(), globalConfig, database.getTokenHolders() );
-        return new DatabaseContext( database, facade );
+        return databaseContextFactory( database, facade );
     }
 
-    private void forEachDatabase( BiConsumer<String, DatabaseContext> consumer ) throws Exception
+    protected abstract DB databaseContextFactory( Database database, GraphDatabaseFacade facade );
+
+    protected void forEachDatabase( BiConsumer<String, DB> consumer ) throws Exception
     {
         Throwable error = null;
-        for ( Map.Entry<String,DatabaseContext> databaseContextEntry : getDatabaseMap().entrySet() )
+        for ( Map.Entry<String,DB> databaseContextEntry : registeredDatabases().entrySet() )
         {
             try
             {
@@ -118,17 +108,17 @@ public abstract class AbstractDatabaseManager extends LifecycleAdapter implement
         }
     }
 
-    protected void startDatabase( String databaseName, DatabaseContext context )
+    protected void startDatabase( String databaseName, DB context )
     {
         log.log( "Starting '%s' database.", databaseName );
-        Database database = context.getDatabase();
+        Database database = context.database();
         database.start();
     }
 
-    protected void stopDatabase( String databaseName, DatabaseContext context )
+    protected void stopDatabase( String databaseName, DB context )
     {
         log.log( "Stop '%s' database.", databaseName );
-        Database database = context.getDatabase();
+        Database database = context.database();
         database.stop();
     }
 }

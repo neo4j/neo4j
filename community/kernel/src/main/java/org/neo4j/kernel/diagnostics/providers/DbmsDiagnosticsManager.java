@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.diagnostics.providers;
 
-import java.util.List;
-
 import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.DatabaseContext;
@@ -75,17 +73,16 @@ public class DbmsDiagnosticsManager
 
     public void dump( String databaseName, Log log )
     {
-        getDatabaseManager().getDatabaseContext( databaseName ).map( DatabaseContext::getDatabase )
+        getDatabaseManager().getDatabaseContext( databaseName ).map( DatabaseContext::database )
                 .ifPresent( database -> dumpDatabaseDiagnostics( database, log ) );
     }
 
     private void dumpAllDatabases( Log log )
     {
-        List<String> databases = getDatabaseManager().listDatabases();
-        for ( String database : databases )
-        {
-            dump( database, log );
-        }
+        getDatabaseManager()
+                .registeredDatabases()
+                .values()
+                .forEach( dbCtx -> dumpDatabaseDiagnostics( dbCtx.database(), log ) );
     }
 
     private void dumpSystemDiagnostics( Log log )
@@ -110,7 +107,7 @@ public class DbmsDiagnosticsManager
         storageEngine.dumpDiagnostics( diagnosticsManager, log );
     }
 
-    private DatabaseManager getDatabaseManager()
+    private DatabaseManager<?> getDatabaseManager()
     {
         return dependencies.resolveDependency( DatabaseManager.class );
     }

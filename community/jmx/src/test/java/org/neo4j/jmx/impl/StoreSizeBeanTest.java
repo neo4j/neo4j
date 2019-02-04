@@ -33,8 +33,8 @@ import java.util.Optional;
 
 import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
-import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseManager;
+import org.neo4j.dbms.database.StandaloneDatabaseContext;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.internal.index.label.LabelScanStore;
 import org.neo4j.io.fs.StoreChannel;
@@ -86,8 +86,8 @@ class StoreSizeBeanTest
 
         Dependencies dependencies = new Dependencies();
         Config config = Config.defaults( default_schema_provider, indexProvider.getProviderDescriptor().name() );
-        DatabaseManager databaseManager = mock( DatabaseManager.class );
-        DatabaseContext context = mock( DatabaseContext.class );
+        DatabaseManager<StandaloneDatabaseContext> databaseManager = mock( DatabaseManager.class );
+        StandaloneDatabaseContext context = mock( StandaloneDatabaseContext.class );
         GraphDatabaseAPI db = mock( GraphDatabaseAPI.class );
         Database database = mock( Database.class );
 
@@ -105,7 +105,7 @@ class StoreSizeBeanTest
         dependencies.satisfyDependency( indexProviderMap );
         dependencies.satisfyDependency( labelScanStore );
         when( databaseManager.getDatabaseContext( DEFAULT_DATABASE_NAME ) ).thenReturn( Optional.of( context ) );
-        when( context.getDependencies() ).thenReturn( dependencies );
+        when( context.dependencies() ).thenReturn( dependencies );
         when( db.getDependencyResolver() ).thenReturn( dependencies );
         when( database.getDependencyResolver() ).thenReturn( dependencies );
         when( database.getDatabaseLayout() ).thenReturn( testDirectory.databaseLayout() );

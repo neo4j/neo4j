@@ -21,8 +21,7 @@ package org.neo4j.graphdb.factory.module.edition.context;
 
 import java.util.function.Function;
 
-import org.neo4j.graphdb.factory.module.edition.AbstractEditionModule;
-import org.neo4j.graphdb.factory.module.edition.DefaultEditionModule;
+import org.neo4j.graphdb.factory.module.edition.StandaloneEditionModule;
 import org.neo4j.graphdb.factory.module.id.DatabaseIdContext;
 import org.neo4j.io.fs.watcher.DatabaseLayoutWatcher;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -34,12 +33,14 @@ import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.StatementLocksFactory;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats;
+import org.neo4j.monitoring.SingleDatabaseHealth;
+import org.neo4j.logging.Log;
+import org.neo4j.monitoring.DatabasePanicEventGenerator;
 import org.neo4j.token.TokenHolders;
 
-public class DefaultEditionDatabaseContext implements EditionDatabaseContext
+public class StandaloneDatabaseComponents implements DatabaseComponents
 {
     private final Function<DatabaseLayout,DatabaseLayoutWatcher> watcherServiceFactory;
-    private final String databaseName;
     private final AccessCapability accessCapability;
     private final IOLimiter ioLimiter;
     private final ConstraintSemantics constraintSemantics;
@@ -49,13 +50,11 @@ public class DefaultEditionDatabaseContext implements EditionDatabaseContext
     private final TokenHolders tokenHolders;
     private final Locks locks;
     private final DatabaseTransactionStats transactionMonitor;
-    private final AbstractEditionModule editionModule;
     private final DatabaseIdContext idContext;
     private final StatementLocksFactory statementLocksFactory;
 
-    public DefaultEditionDatabaseContext( DefaultEditionModule editionModule, String databaseName )
+    public StandaloneDatabaseComponents( StandaloneEditionModule editionModule, String databaseName )
     {
-        this.databaseName = databaseName;
         this.transactionStartTimeout = editionModule.getTransactionStartTimeout();
         this.headerInformationFactory = editionModule.getHeaderInformationFactory();
         this.commitProcessFactory = editionModule.getCommitProcessFactory();
@@ -68,7 +67,6 @@ public class DefaultEditionDatabaseContext implements EditionDatabaseContext
         this.locks = editionModule.getLocksSupplier().get();
         this.statementLocksFactory = editionModule.getStatementLocksFactoryProvider().apply( locks );
         this.transactionMonitor = editionModule.createTransactionMonitor();
-        this.editionModule = editionModule;
     }
 
     @Override
@@ -143,4 +141,9 @@ public class DefaultEditionDatabaseContext implements EditionDatabaseContext
         return transactionMonitor;
     }
 
+    @Override
+    public SingleDatabaseHealth createDatabaseHealth( DatabasePanicEventGenerator dbpe, Log log )
+    {
+        return new SingleDatabaseHealth( dbpe, log );
+    }
 }

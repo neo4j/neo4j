@@ -31,6 +31,7 @@ import java.util.concurrent.Executors;
 
 import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseManager;
+import org.neo4j.dbms.database.StandaloneDatabaseContext;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
@@ -72,9 +73,9 @@ class CommunityGlobalTransactionStatsIT
     void useAggregatedTransactionMonitorForSystemAndDefaultDatabase() throws InterruptedException
     {
         ExecutorService transactionExecutor = Executors.newSingleThreadExecutor();
-        DatabaseManager databaseManager = getDatabaseManager();
-        Optional<DatabaseContext> defaultDatabase = databaseManager.getDatabaseContext( DEFAULT_DATABASE_NAME );
-        Optional<DatabaseContext> systemDatabase = databaseManager.getDatabaseContext( SYSTEM_DATABASE_NAME );
+        DatabaseManager<StandaloneDatabaseContext> databaseManager = getDatabaseManager();
+        Optional<StandaloneDatabaseContext> defaultDatabase = databaseManager.getDatabaseContext( DEFAULT_DATABASE_NAME );
+        Optional<StandaloneDatabaseContext> systemDatabase = databaseManager.getDatabaseContext( SYSTEM_DATABASE_NAME );
 
         assertTrue( defaultDatabase.isPresent() );
         assertTrue( systemDatabase.isPresent() );
@@ -84,8 +85,8 @@ class CommunityGlobalTransactionStatsIT
         CountDownLatch startSeparateTransaction = new CountDownLatch( 1 );
         try
         {
-            GraphDatabaseFacade systemFacade = systemDatabase.get().getDatabaseFacade();
-            GraphDatabaseFacade defaultFacade = defaultDatabase.get().getDatabaseFacade();
+            GraphDatabaseFacade systemFacade = systemDatabase.get().databaseFacade();
+            GraphDatabaseFacade defaultFacade = defaultDatabase.get().databaseFacade();
             transactionExecutor.execute( () ->
             {
                 systemFacade.beginTx();
@@ -107,7 +108,8 @@ class CommunityGlobalTransactionStatsIT
         }
     }
 
-    private DatabaseManager getDatabaseManager()
+    @SuppressWarnings( "unchecked" )
+    private DatabaseManager<StandaloneDatabaseContext> getDatabaseManager()
     {
         return ((GraphDatabaseAPI) database).getDependencyResolver().resolveDependency( DatabaseManager.class );
     }

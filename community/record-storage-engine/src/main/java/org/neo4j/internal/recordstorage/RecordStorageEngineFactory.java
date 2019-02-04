@@ -49,7 +49,7 @@ import org.neo4j.lock.LockService;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.internal.LogService;
-import org.neo4j.monitoring.DatabaseHealth;
+import org.neo4j.monitoring.SingleDatabaseHealth;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.ConstraintRuleAccessor;
 import org.neo4j.storageengine.api.LogVersionRepository;
@@ -111,7 +111,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
                 dependencyResolver.resolveDependency( SchemaState.class ),
                 dependencyResolver.resolveDependency( ConstraintRuleAccessor.class ),
                 dependencyResolver.resolveDependency( LockService.class ),
-                dependencyResolver.resolveDependency( DatabaseHealth.class ),
+                dependencyResolver.resolveDependency( SingleDatabaseHealth.class ),
                 dependencyResolver.resolveDependency( IdGeneratorFactory.class ),
                 dependencyResolver.resolveDependency( IdController.class ),
                 dependencyResolver.resolveDependency( VersionContextSupplier.class ) );

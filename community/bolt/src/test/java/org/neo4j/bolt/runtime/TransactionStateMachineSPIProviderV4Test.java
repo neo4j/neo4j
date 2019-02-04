@@ -87,7 +87,7 @@ class TransactionStateMachineSPIProviderV4Test
         GraphDatabaseQueryService queryService = mock( GraphDatabaseQueryService.class );
 
         when( databaseManager.getDatabaseContext( databaseName ) ).thenReturn( Optional.of( databaseContext ) );
-        when( databaseContext.getDependencies() ).thenReturn( dependencies );
+        when( databaseContext.dependencies() ).thenReturn( dependencies );
         when( dependencies.resolveDependency( GraphDatabaseQueryService.class ) ).thenReturn( queryService );
         when( queryService.getDependencyResolver() ).thenReturn( mock( DependencyResolver.class ) );
 

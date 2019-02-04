@@ -23,7 +23,7 @@ import java.util.function.Supplier;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.module.edition.AbstractEditionModule;
-import org.neo4j.graphdb.factory.module.edition.context.EditionDatabaseContext;
+import org.neo4j.graphdb.factory.module.edition.context.DatabaseComponents;
 import org.neo4j.kernel.api.InwardKernel;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.database.Database;
@@ -41,15 +41,16 @@ public class DatabaseModule
 
     public final CoreAPIAvailabilityGuard coreAPIAvailabilityGuard;
 
-    public DatabaseModule( String databaseName, GlobalModule globalModule, AbstractEditionModule editionModule, GlobalProcedures globalProcedures,
-            GraphDatabaseFacade graphDatabaseFacade )
+    public DatabaseModule( String databaseName, GlobalModule globalModule, AbstractEditionModule editionModule, GraphDatabaseFacade graphDatabaseFacade )
     {
-        EditionDatabaseContext editionContext = editionModule.createDatabaseContext( databaseName );
-        ModularDatabaseCreationContext context =
-                new ModularDatabaseCreationContext( databaseName, globalModule, editionContext, globalProcedures, graphDatabaseFacade );
+        DatabaseComponents editionDatabaseComponents = editionModule.createDatabaseComponents( databaseName );
+        GlobalProcedures globalProcedures = editionModule.getGlobalProcedures();
+        ModularDatabaseCreationContext context = new ModularDatabaseCreationContext( databaseName, globalModule, editionDatabaseComponents,
+                globalProcedures, graphDatabaseFacade );
         database = new Database( context );
 
-        this.coreAPIAvailabilityGuard = new CoreAPIAvailabilityGuard( globalModule.getGlobalAvailabilityGuard(), editionContext.getTransactionStartTimeout() );
+        this.coreAPIAvailabilityGuard = new CoreAPIAvailabilityGuard( globalModule.getGlobalAvailabilityGuard(),
+                editionDatabaseComponents.getTransactionStartTimeout() );
         this.storeId = database::getStoreId;
         this.kernelAPI = database::getKernel;
 

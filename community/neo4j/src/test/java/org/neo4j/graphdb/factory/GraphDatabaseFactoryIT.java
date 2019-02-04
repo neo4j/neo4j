@@ -25,6 +25,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.DatabaseManager;
+import org.neo4j.dbms.database.StandaloneDatabaseContext;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.TestDirectoryExtension;
@@ -49,7 +50,8 @@ class GraphDatabaseFactoryIT
         try
         {
             DependencyResolver dependencyResolver = database.getDependencyResolver();
-            DatabaseManager databaseManager = dependencyResolver.resolveDependency( DatabaseManager.class );
+            @SuppressWarnings( "unchecked" )
+            DatabaseManager<StandaloneDatabaseContext> databaseManager = dependencyResolver.resolveDependency( DatabaseManager.class );
             Config config = dependencyResolver.resolveDependency( Config.class );
             assertThat( databaseManager.getDatabaseContext( config.get( default_database ) ), not( empty() ) );
             assertThat( databaseManager.getDatabaseContext( SYSTEM_DATABASE_NAME ), not( empty() ) );

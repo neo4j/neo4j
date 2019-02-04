@@ -39,6 +39,7 @@ import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointerImpl.ForceOp
 import org.neo4j.kernel.impl.transaction.log.pruning.LogPruning;
 import org.neo4j.kernel.impl.transaction.tracing.CheckPointTracer;
 import org.neo4j.kernel.impl.transaction.tracing.LogCheckPointEvent;
+import org.neo4j.monitoring.SingleDatabaseHealth;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.storageengine.api.TransactionIdStore;
@@ -75,7 +76,7 @@ class CheckPointerImplTest
     private final ForceOperation forceOperation = mock( ForceOperation.class );
     private final LogPruning logPruning = mock( LogPruning.class );
     private final TransactionAppender appender = mock( TransactionAppender.class );
-    private final DatabaseHealth health = mock( DatabaseHealth.class );
+    private final DatabaseHealth health = mock( SingleDatabaseHealth.class );
     private final CheckPointTracer tracer = mock( CheckPointTracer.class, RETURNS_MOCKS );
     private IOLimiter limiter = mock( IOLimiter.class );
 

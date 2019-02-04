@@ -25,8 +25,8 @@ import org.neo4j.common.DependencyResolver;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.DatabaseConfig;
+import org.neo4j.graphdb.factory.module.edition.context.DatabaseComponents;
 import org.neo4j.function.Factory;
-import org.neo4j.graphdb.factory.module.edition.context.EditionDatabaseContext;
 import org.neo4j.graphdb.factory.module.id.DatabaseIdContext;
 import org.neo4j.internal.id.IdController;
 import org.neo4j.internal.id.IdGeneratorFactory;
@@ -54,6 +54,7 @@ import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.StoreCopyCheckPointMutex;
 import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier;
+import org.neo4j.monitoring.SingleDatabaseHealth;
 import org.neo4j.kernel.internal.TransactionEventHandlers;
 import org.neo4j.kernel.monitoring.tracing.Tracers;
 import org.neo4j.logging.internal.LogService;
@@ -108,44 +109,45 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     private final DatabaseMigratorFactory databaseMigratorFactory;
     private final StorageEngineFactory storageEngineFactory;
 
-    ModularDatabaseCreationContext( String databaseName, GlobalModule globalModule, EditionDatabaseContext editionContext,
+    ModularDatabaseCreationContext( String databaseName, GlobalModule globalModule, DatabaseComponents perEditionComponents,
             GlobalProcedures globalProcedures, GraphDatabaseFacade facade )
     {
         this.databaseName = databaseName;
         this.globalConfig = globalModule.getGlobalConfig();
         this.databaseConfig = DatabaseConfig.from( globalConfig, databaseName );
-        DatabaseIdContext idContext = editionContext.getIdContext();
+        DatabaseIdContext idContext = perEditionComponents.getIdContext();
         this.idGeneratorFactory = idContext.getIdGeneratorFactory();
         this.idController = idContext.getIdController();
         this.databaseLayout = globalModule.getStoreLayout().databaseLayout( databaseName );
         this.logService = globalModule.getLogService();
         this.scheduler = globalModule.getJobScheduler();
-        this.globalDependencies = globalModule.getGlobalDependencies();
-        this.tokenHolders = editionContext.getTokenHolders();
+        this.globalDependencies =  globalModule.getGlobalDependencies();
+        this.tokenHolders = perEditionComponents.getTokenHolders();
         this.tokenNameLookup = new NonTransactionalTokenNameLookup( tokenHolders );
-        this.locks = editionContext.getLocks();
-        this.statementLocksFactory = editionContext.getStatementLocksFactory();
+        this.locks = perEditionComponents.getLocks();
+        this.statementLocksFactory = perEditionComponents.getStatementLocksFactory();
         this.transactionEventHandlers = new TransactionEventHandlers( facade );
         this.globalMonitors = globalModule.getGlobalMonitors();
         this.fs = globalModule.getFileSystem();
-        this.transactionStats = editionContext.getTransactionMonitor();
+        this.transactionStats = perEditionComponents.getTransactionMonitor();
         this.eventHandlers = new DatabaseEventHandlers( logService.getInternalLog( DatabaseEventHandlers.class ) );
-        this.databaseHealth = new DatabaseHealth( new DatabasePanicEventGenerator( eventHandlers ), logService.getInternalLog( DatabaseHealth.class ) );
-        this.transactionHeaderInformationFactory = editionContext.getHeaderInformationFactory();
-        this.commitProcessFactory = editionContext.getCommitProcessFactory();
+        this.databaseHealth = perEditionComponents.createDatabaseHealth( new DatabasePanicEventGenerator( eventHandlers ),
+                logService.getInternalLog( SingleDatabaseHealth.class ) );
+        this.transactionHeaderInformationFactory = perEditionComponents.getHeaderInformationFactory();
+        this.commitProcessFactory = perEditionComponents.getCommitProcessFactory();
         this.pageCache = globalModule.getPageCache();
-        this.constraintSemantics = editionContext.getConstraintSemantics();
+        this.constraintSemantics = perEditionComponents.getConstraintSemantics();
         this.tracers = globalModule.getTracers();
         this.globalProcedures = globalProcedures;
-        this.ioLimiter = editionContext.getIoLimiter();
+        this.ioLimiter = perEditionComponents.getIoLimiter();
         this.clock = globalModule.getGlobalClock();
-        this.accessCapability = editionContext.getAccessCapability();
+        this.accessCapability = perEditionComponents.getAccessCapability();
         this.storeCopyCheckPointMutex = new StoreCopyCheckPointMutex();
         this.databaseInfo = globalModule.getDatabaseInfo();
         this.versionContextSupplier = globalModule.getVersionContextSupplier();
         this.collectionsFactorySupplier = globalModule.getCollectionsFactorySupplier();
         this.extensionFactories = globalModule.getExtensionFactories();
-        this.watcherServiceFactory = editionContext.getWatcherServiceFactory();
+        this.watcherServiceFactory = perEditionComponents.getWatcherServiceFactory();
         this.facade = facade;
         this.engineProviders = globalModule.getQueryEngineProviders();
         this.databaseAvailabilityGuardFactory = () -> globalModule.getGlobalAvailabilityGuard().createDatabaseAvailabilityGuard( databaseName );

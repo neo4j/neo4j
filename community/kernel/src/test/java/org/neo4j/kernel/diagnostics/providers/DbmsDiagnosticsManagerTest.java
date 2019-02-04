@@ -24,11 +24,12 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.Collections;
+import java.util.TreeMap;
 
 import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
-import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseManager;
+import org.neo4j.dbms.database.StandaloneDatabaseContext;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.database.DatabaseId;
@@ -38,7 +39,7 @@ import org.neo4j.logging.internal.SimpleLogService;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 
-import static java.util.Collections.singletonList;
+import static java.util.Collections.singletonMap;
 import static java.util.Optional.of;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -50,7 +51,7 @@ class DbmsDiagnosticsManagerTest
 
     private DbmsDiagnosticsManager diagnosticsManager;
     private AssertableLogProvider logProvider;
-    private DatabaseManager databaseManager;
+    private DatabaseManager<StandaloneDatabaseContext> databaseManager;
     private StorageEngine storageEngine;
     private StorageEngineFactory storageEngineFactory;
     private Database defaultDatabase;
@@ -70,10 +71,10 @@ class DbmsDiagnosticsManagerTest
         dependencies.satisfyDependency( Config.defaults() );
         dependencies.satisfyDependency( databaseManager );
 
-        when( databaseManager.listDatabases() ).thenReturn( singletonList( DEFAULT_DATABASE_NAME ) );
-        DatabaseContext context = mock( DatabaseContext.class );
-        when( context.getDatabase() ).thenReturn( defaultDatabase );
+        StandaloneDatabaseContext context = mock( StandaloneDatabaseContext.class );
+        when( context.database() ).thenReturn( defaultDatabase );
         when( databaseManager.getDatabaseContext( DEFAULT_DATABASE_NAME ) ).thenReturn( of( context ) );
+        when( databaseManager.registeredDatabases() ).thenReturn( new TreeMap<>( singletonMap( DEFAULT_DATABASE_NAME, context ) ) );
 
         diagnosticsManager = new DbmsDiagnosticsManager( dependencies, new SimpleLogService( logProvider ) );
     }

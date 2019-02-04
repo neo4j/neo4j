@@ -19,24 +19,30 @@
  */
 package org.neo4j.dbms.database;
 
-import java.util.List;
 import java.util.Optional;
+import java.util.SortedMap;
 
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
-public interface DatabaseManager extends Lifecycle
+public interface DatabaseManager<DB extends DatabaseContext> extends Lifecycle
 {
 
-    Optional<DatabaseContext> getDatabaseContext( String name );
+    /**
+     * Returns a given {@link DatabaseContext} object by name, or `Optional.empty()` if the database does not exist
+     *
+     * @param databaseName the name of the database to be returned
+     * @return optionally, the database context instance with name databaseName
+     */
+    Optional<DB> getDatabaseContext( String databaseName );
 
     /**
      * Create database with specified name.
      * Database name should be unique.
-     * In case if database with specified name already exists exception is thrown.
      * @param databaseName name of database to create
+     * @throws DatabaseExistsException In case if database with specified name already exists
      * @return database context for newly created database
      */
-    DatabaseContext createDatabase( String databaseName );
+    DB createDatabase( String databaseName ) throws DatabaseExistsException;
 
     /**
      * Drop database with specified name.
@@ -44,25 +50,29 @@ public interface DatabaseManager extends Lifecycle
      * If database with requested name does not exist exception will be thrown.
      * @param databaseName name of database to drop.
      */
-    void dropDatabase( String databaseName );
+    void dropDatabase( String databaseName ) throws DatabaseNotFoundException;
 
     /**
      * Stop database with specified name.
      * Stopping already stopped database does not have any effect.
      * @param databaseName database name to stop
      */
-    void stopDatabase( String databaseName );
+    void stopDatabase( String databaseName ) throws DatabaseNotFoundException;
 
     /**
      * Start database with specified name.
      * Starting already started database does not have any effect.
      * @param databaseName database name to start
      */
-    void startDatabase( String databaseName );
+    void startDatabase( String databaseName ) throws DatabaseNotFoundException;
 
     /**
-     * Return sorted list of known database names
-     * @return sorted list of known database names
+     * Return all {@link DatabaseContext} instances created by this service, associated with their database names.
+     *
+     * The collection returned from this method must be an immutable view over the registered database and sorted by database name.
+     *
+     * @return a Map from database names to database objects.
      */
-    List<String> listDatabases();
+    SortedMap<String,DB> registeredDatabases();
+
 }

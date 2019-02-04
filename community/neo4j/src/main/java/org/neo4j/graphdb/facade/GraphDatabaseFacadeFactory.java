@@ -26,6 +26,7 @@ import java.util.function.Function;
 import org.neo4j.bolt.BoltServer;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.common.DependencyResolver;
+import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.database.DatabaseManager;
@@ -88,8 +89,7 @@ public class GraphDatabaseFacadeFactory
     protected final DatabaseInfo databaseInfo;
     private final Function<GlobalModule,AbstractEditionModule> editionFactory;
 
-    public GraphDatabaseFacadeFactory( DatabaseInfo databaseInfo,
-            Function<GlobalModule,AbstractEditionModule> editionFactory )
+    public GraphDatabaseFacadeFactory( DatabaseInfo databaseInfo, Function<GlobalModule,AbstractEditionModule> editionFactory )
     {
         this.databaseInfo = databaseInfo;
         this.editionFactory = editionFactory;
@@ -142,14 +142,14 @@ public class GraphDatabaseFacadeFactory
         Dependencies globalDependencies = globalModule.getGlobalDependencies();
         LifeSupport globalLife = globalModule.getGlobalLife();
 
-        GlobalProcedures globalProcedures = setupProcedures( globalModule, edition );
-        globalDependencies.satisfyDependency( new NonTransactionalDbmsOperations( globalProcedures ) );
-
         LogService logService = globalModule.getLogService();
         Logger logger = logService.getInternalLog( getClass() ).infoLogger();
-        DatabaseManager databaseManager = createAndInitializeDatabaseManager( globalModule, edition, graphDatabaseFacade, globalProcedures, logger );
+        DatabaseManager<? extends DatabaseContext> databaseManager = createAndInitializeDatabaseManager( globalModule, edition, graphDatabaseFacade, logger );
 
-        edition.createSecurityModule( globalModule, globalProcedures );
+        GlobalProcedures globalProcedures = setupProcedures( globalModule, edition, databaseManager );
+        globalDependencies.satisfyDependency( new NonTransactionalDbmsOperations( globalProcedures ) );
+
+        edition.createSecurityModule( globalModule );
         SecurityProvider securityProvider = edition.getSecurityProvider();
         globalDependencies.satisfyDependencies( securityProvider.authManager() );
         globalDependencies.satisfyDependencies( securityProvider.userManagerSupplier() );
@@ -168,7 +168,7 @@ public class GraphDatabaseFacadeFactory
             globalLife.start();
             String defaultDatabase = config.get( GraphDatabaseSettings.default_database );
             databaseFacade = databaseManager.getDatabaseContext( defaultDatabase ).orElseThrow( () -> new IllegalStateException(
-                    String.format( "Database %s not found. Please check the logs for startup errors.", defaultDatabase ) ) ).getDatabaseFacade();
+                    String.format( "Database %s not found. Please check the logs for startup errors.", defaultDatabase ) ) ).databaseFacade();
 
         }
         catch ( final Throwable throwable )
@@ -208,7 +208,14 @@ public class GraphDatabaseFacadeFactory
         return new GlobalModule( storeDir, config, databaseInfo, dependencies );
     }
 
-    private static GlobalProcedures setupProcedures( GlobalModule platform, AbstractEditionModule editionModule )
+    /**
+     * Creates and registers the systems procedures, including those which belong to a particular edition.
+     * N.B. This method takes a {@link DatabaseManager} as an unused parameter *intentionally*, in
+     * order to enforce that the databaseManager must be constructed first.
+     */
+    @SuppressWarnings( "unused" )
+    private static GlobalProcedures setupProcedures( GlobalModule platform, AbstractEditionModule editionModule,
+            DatabaseManager<? extends DatabaseContext> databaseManager )
     {
         Config globalConfig = platform.getGlobalConfig();
         File proceduresDirectory = globalConfig.get( GraphDatabaseSettings.plugin_dir );
@@ -264,17 +271,18 @@ public class GraphDatabaseFacadeFactory
         return globalProcedures;
     }
 
-    private static BoltServer createBoltServer( GlobalModule platform, AbstractEditionModule edition, DatabaseManager databaseManager )
+    private static BoltServer createBoltServer( GlobalModule platform, AbstractEditionModule edition,
+            DatabaseManager<? extends DatabaseContext> databaseManager )
     {
         return new BoltServer( databaseManager, platform.getJobScheduler(), platform.getConnectorPortRegister(), edition.getConnectionTracker(),
                 platform.getGlobalConfig(), platform.getGlobalClock(), platform.getGlobalMonitors(), platform.getLogService(),
                 platform.getGlobalDependencies() );
     }
 
-    private static DatabaseManager createAndInitializeDatabaseManager( GlobalModule platform, AbstractEditionModule edition,
-            GraphDatabaseFacade facade, GlobalProcedures globalProcedures, Logger logger )
+    private static DatabaseManager<? extends DatabaseContext> createAndInitializeDatabaseManager( GlobalModule platform,
+            AbstractEditionModule edition, GraphDatabaseFacade facade, Logger logger )
     {
-        DatabaseManager databaseManager = edition.createDatabaseManager( facade, platform, edition, globalProcedures, logger );
+        DatabaseManager<? extends DatabaseContext> databaseManager = edition.createDatabaseManager( facade, platform, logger );
         if ( !edition.handlesDatabaseManagerLifecycle() )
         {
             // only add database manager to the lifecycle when edition doesn't manage it already

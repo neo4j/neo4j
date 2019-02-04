@@ -24,11 +24,13 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import java.util.List;
+import java.util.ArrayList;
+import java.util.Map;
 import java.util.Optional;
 
-import org.neo4j.dbms.database.DatabaseContext;
+import org.neo4j.dbms.database.DatabaseExistsException;
 import org.neo4j.dbms.database.DatabaseManager;
+import org.neo4j.dbms.database.StandaloneDatabaseContext;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -36,8 +38,6 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.hasSize;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -67,16 +67,16 @@ class DefaultDatabaseManagerIT
     @Test
     void createDatabase()
     {
-        DatabaseManager databaseManager = getDatabaseManager();
-        assertThrows( IllegalStateException.class, () -> databaseManager.createDatabase( "any database name" ) );
+        DatabaseManager<StandaloneDatabaseContext> databaseManager = getDatabaseManager();
+        assertThrows( DatabaseExistsException.class, () -> databaseManager.createDatabase( DEFAULT_DATABASE_NAME ) );
     }
 
     @Test
     void lookupExistingDatabase()
     {
-        DatabaseManager databaseManager = getDatabaseManager();
-        Optional<DatabaseContext> defaultDatabaseContext = databaseManager.getDatabaseContext( DEFAULT_DATABASE_NAME );
-        Optional<DatabaseContext> systemDatabaseContext = databaseManager.getDatabaseContext( DEFAULT_DATABASE_NAME );
+        DatabaseManager<StandaloneDatabaseContext> databaseManager = getDatabaseManager();
+        Optional<StandaloneDatabaseContext> defaultDatabaseContext = databaseManager.getDatabaseContext( DEFAULT_DATABASE_NAME );
+        Optional<StandaloneDatabaseContext> systemDatabaseContext = databaseManager.getDatabaseContext( SYSTEM_DATABASE_NAME );
 
         assertTrue( defaultDatabaseContext.isPresent() );
         assertTrue( systemDatabaseContext.isPresent() );
@@ -85,22 +85,24 @@ class DefaultDatabaseManagerIT
     @Test
     void listDatabases()
     {
-        DatabaseManager databaseManager = getDatabaseManager();
-        List<String> databases = databaseManager.listDatabases();
-        assertThat( databases, hasSize( 2 ) );
-        assertEquals( DEFAULT_DATABASE_NAME, databases.get( 0 ) );
-        assertEquals( SYSTEM_DATABASE_NAME, databases.get( 1 ) );
+        DatabaseManager<StandaloneDatabaseContext> databaseManager = getDatabaseManager();
+        Map<String,StandaloneDatabaseContext> databases = databaseManager.registeredDatabases();
+        assertEquals( 2, databases.size()  );
+        ArrayList<String> databaseNames = new ArrayList<>( databases.keySet() );
+        assertEquals( DEFAULT_DATABASE_NAME, databaseNames.get( 0 ) );
+        assertEquals( SYSTEM_DATABASE_NAME, databaseNames.get( 1 ) );
     }
 
     @Test
     void shutdownDatabaseOnStop() throws Throwable
     {
-        DatabaseManager databaseManager = getDatabaseManager();
+        DatabaseManager<StandaloneDatabaseContext> databaseManager = getDatabaseManager();
         databaseManager.stop();
         assertFalse( database.isAvailable( 0 ) );
     }
 
-    private DatabaseManager getDatabaseManager()
+    @SuppressWarnings( "unchecked" )
+    private DatabaseManager<StandaloneDatabaseContext> getDatabaseManager()
     {
         return ((GraphDatabaseAPI)database).getDependencyResolver().resolveDependency( DatabaseManager.class );
     }

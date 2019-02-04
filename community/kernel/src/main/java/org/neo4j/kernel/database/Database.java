@@ -852,6 +852,11 @@ public class Database extends LifecycleAdapter
         return databaseAvailabilityGuard;
     }
 
+    public DatabaseHealth getDatabaseHealth()
+    {
+        return databaseHealth;
+    }
+
     private void prepareForDrop()
     {
         for ( PagedFile pagedFile : databasePageCache.listExistingMappings() )

@@ -71,6 +71,7 @@ import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.StoreCopyCheckPointMutex;
 import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier;
+import org.neo4j.monitoring.SingleDatabaseHealth;
 import org.neo4j.kernel.internal.TransactionEventHandlers;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.monitoring.tracing.Tracers;
@@ -146,8 +147,8 @@ public class DatabaseRule extends ExternalResource
                 deps -> new DefaultIdGeneratorFactory( fs ) );
         IdTypeConfigurationProvider idConfigurationProvider = dependency( mutableDependencies,
                 IdTypeConfigurationProvider.class, deps -> new CommunityIdTypeConfigurationProvider() );
-        DatabaseHealth databaseHealth = dependency( mutableDependencies, DatabaseHealth.class,
-                deps -> new DatabaseHealth( mock( DatabasePanicEventGenerator.class ), NullLog.getInstance() ) );
+        DatabaseHealth databaseHealth = dependency( mutableDependencies, SingleDatabaseHealth.class,
+                deps -> new SingleDatabaseHealth( mock( DatabasePanicEventGenerator.class ), NullLog.getInstance() ) );
         SystemNanoClock clock = dependency( mutableDependencies, SystemNanoClock.class, deps -> Clocks.nanoClock() );
         DatabaseTransactionStats transactionStats = dependency( mutableDependencies, DatabaseTransactionStats.class,
                 deps -> new DatabaseTransactionStats() );

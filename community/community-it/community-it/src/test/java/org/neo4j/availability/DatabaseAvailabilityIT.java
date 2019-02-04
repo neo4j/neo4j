@@ -28,6 +28,7 @@ import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseManager;
+import org.neo4j.dbms.database.StandaloneDatabaseContext;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.kernel.availability.AvailabilityGuard;
 import org.neo4j.kernel.availability.AvailabilityRequirement;
@@ -70,22 +71,23 @@ class DatabaseAvailabilityIT
     {
         AvailabilityRequirement outerSpaceRequirement = () -> "outer space";
         DependencyResolver dependencyResolver = database.getDependencyResolver();
-        DatabaseManager databaseManager = dependencyResolver.resolveDependency( DatabaseManager.class );
+        @SuppressWarnings( "unchecked" )
+        DatabaseManager<StandaloneDatabaseContext> databaseManager = dependencyResolver.resolveDependency( DatabaseManager.class );
         Config config = dependencyResolver.resolveDependency( Config.class );
         CompositeDatabaseAvailabilityGuard compositeGuard = dependencyResolver.resolveDependency( CompositeDatabaseAvailabilityGuard.class );
         assertTrue( compositeGuard.isAvailable() );
 
-        DatabaseContext systemContext = databaseManager.getDatabaseContext( SYSTEM_DATABASE_NAME ).get();
-        DatabaseContext defaultContext = databaseManager.getDatabaseContext( config.get( default_database ) ).get();
+        StandaloneDatabaseContext systemContext = databaseManager.getDatabaseContext( SYSTEM_DATABASE_NAME ).get();
+        StandaloneDatabaseContext defaultContext = databaseManager.getDatabaseContext( config.get( default_database ) ).get();
 
-        AvailabilityGuard systemGuard = systemContext.getDependencies().resolveDependency( DatabaseAvailabilityGuard.class );
+        AvailabilityGuard systemGuard = systemContext.dependencies().resolveDependency( DatabaseAvailabilityGuard.class );
         systemGuard.require( outerSpaceRequirement );
         assertFalse( compositeGuard.isAvailable() );
 
         systemGuard.fulfill( outerSpaceRequirement );
         assertTrue( compositeGuard.isAvailable() );
 
-        AvailabilityGuard defaultGuard = defaultContext.getDependencies().resolveDependency( DatabaseAvailabilityGuard.class );
+        AvailabilityGuard defaultGuard = defaultContext.dependencies().resolveDependency( DatabaseAvailabilityGuard.class );
         defaultGuard.require( outerSpaceRequirement );
         assertFalse( compositeGuard.isAvailable() );
 

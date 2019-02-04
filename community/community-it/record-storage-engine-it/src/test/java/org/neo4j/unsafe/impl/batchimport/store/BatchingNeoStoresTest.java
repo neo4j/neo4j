@@ -60,6 +60,7 @@ import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
+import org.neo4j.monitoring.SingleDatabaseHealth;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.lock.LockService;
 import org.neo4j.lock.ResourceLocker;
@@ -67,7 +68,6 @@ import org.neo4j.logging.NullLog;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.monitoring.DatabaseEventHandlers;
-import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.DatabasePanicEventGenerator;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.CommandCreationContext;
@@ -354,8 +354,9 @@ class BatchingNeoStoresTest
                     new DelegatingTokenHolder( relationshipTypeTokenCreator, TokenHolder.TYPE_RELATIONSHIP_TYPE ) );
             RecordStorageEngine storageEngine = life.add(
                     new RecordStorageEngine( testDirectory.databaseLayout(), Config.defaults(), pageCache, fileSystem, NullLogProvider.getInstance(),
-                            tokenHolders, new DatabaseSchemaState( NullLogProvider.getInstance() ), new StandardConstraintSemantics(),
-                            LockService.NO_LOCK_SERVICE, new DatabaseHealth( new DatabasePanicEventGenerator( new DatabaseEventHandlers( nullLog ) ), nullLog ),
+                            tokenHolders, new DatabaseSchemaState( NullLogProvider.getInstance() ),
+                            new StandardConstraintSemantics(), LockService.NO_LOCK_SERVICE,
+                            new SingleDatabaseHealth( new DatabasePanicEventGenerator( new DatabaseEventHandlers( nullLog ) ), nullLog ),
                             new DefaultIdGeneratorFactory( fileSystem ), new DefaultIdController(), EmptyVersionContextSupplier.EMPTY ) );
             // Create the relationship type token
             TxState txState = new TxState();

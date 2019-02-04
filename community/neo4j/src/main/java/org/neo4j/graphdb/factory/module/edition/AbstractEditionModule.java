@@ -24,12 +24,13 @@ import java.util.function.Predicate;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseManager;
-import org.neo4j.dmbs.database.DefaultDatabaseManager;
+import org.neo4j.dbms.database.DatabaseExistsException;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory;
 import org.neo4j.graphdb.factory.module.GlobalModule;
-import org.neo4j.graphdb.factory.module.edition.context.EditionDatabaseContext;
+import org.neo4j.graphdb.factory.module.edition.context.DatabaseComponents;
 import org.neo4j.internal.collector.DataCollectorProcedures;
 import org.neo4j.io.fs.watcher.DatabaseLayoutWatcher;
 import org.neo4j.io.fs.watcher.FileWatcher;
@@ -77,8 +78,9 @@ public abstract class AbstractEditionModule
     protected IOLimiter ioLimiter;
     protected Function<DatabaseLayout,DatabaseLayoutWatcher> watcherServiceFactory;
     protected SecurityProvider securityProvider;
+    protected GlobalProcedures globalProcedures;
 
-    public abstract EditionDatabaseContext createDatabaseContext( String databaseName );
+    public abstract DatabaseComponents createDatabaseComponents( String databaseName );
 
     protected DatabaseLayoutWatcher createDatabaseFileSystemWatcher( FileWatcher watcher, DatabaseLayout databaseLayout, LogService logging,
             Predicate<String> fileNameFilter )
@@ -99,15 +101,18 @@ public abstract class AbstractEditionModule
         registerTemporalFunctions( globalProcedures, procedureConfig );
 
         registerEditionSpecificProcedures( globalProcedures );
+        this.globalProcedures = globalProcedures;
+    }
+
+    public GlobalProcedures getGlobalProcedures()
+    {
+        return globalProcedures;
     }
 
     protected abstract void registerEditionSpecificProcedures( GlobalProcedures globalProcedures ) throws KernelException;
 
-    public DatabaseManager createDatabaseManager( GraphDatabaseFacade graphDatabaseFacade, GlobalModule globalModule, AbstractEditionModule edition,
-            GlobalProcedures globalProcedures, Logger msgLog )
-    {
-        return new DefaultDatabaseManager( globalModule, edition, globalProcedures, msgLog, graphDatabaseFacade );
-    }
+    public abstract DatabaseManager<? extends DatabaseContext> createDatabaseManager( GraphDatabaseFacade graphDatabaseFacade,
+            GlobalModule globalModule, Logger msgLog );
 
     /**
      * Returns {@code false} because {@link DatabaseManager}'s lifecycle is not managed by any component by default.
@@ -120,7 +125,7 @@ public abstract class AbstractEditionModule
         return false;
     }
 
-    public abstract void createSecurityModule( GlobalModule globalModule, GlobalProcedures globalProcedures );
+    public abstract void createSecurityModule( GlobalModule globalModule );
 
     protected static SecurityModule setupSecurityModule( GlobalModule globalModule, AbstractEditionModule editionModule, Log log,
             GlobalProcedures globalProcedures, String key )
@@ -170,7 +175,7 @@ public abstract class AbstractEditionModule
         return transactionStatistic;
     }
 
-    public void createDatabases( DatabaseManager databaseManager, Config config )
+    public void createDatabases( DatabaseManager<? extends DatabaseContext> databaseManager, Config config ) throws DatabaseExistsException
     {
         databaseManager.createDatabase( GraphDatabaseSettings.SYSTEM_DATABASE_NAME );
         databaseManager.createDatabase( config.get( GraphDatabaseSettings.default_database ) );

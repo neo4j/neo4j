@@ -41,6 +41,7 @@ import org.neo4j.bolt.v1.BoltProtocolV1;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.kernel.api.security.AuthManager;
@@ -69,7 +70,8 @@ public class SessionRule implements TestRule
                 configMap.put( GraphDatabaseSettings.auth_enabled, Boolean.toString( authEnabled ) );
                 gdb = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabase( configMap );
                 DependencyResolver resolver = gdb.getDependencyResolver();
-                DatabaseManager databaseManager = resolver.resolveDependency( DatabaseManager.class );
+                @SuppressWarnings( "unchecked" )
+                DatabaseManager<? extends DatabaseContext> databaseManager = resolver.resolveDependency( DatabaseManager.class );
                 Config config = gdb.getDependencyResolver().resolveDependency( Config.class );
                 Authentication authentication = authentication( resolver.resolveDependency( AuthManager.class ),
                         resolver.resolveDependency( UserManagerSupplier.class ) );

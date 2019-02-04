@@ -63,7 +63,7 @@ public class DatabaseAvailabilityGuard extends LifecycleAdapter implements Avail
     @Override
     public void stop() throws Exception
     {
-        globalGuard.removeDatabaseAvailabilityGuard( this );
+        globalGuard.removeDatabaseAvailabilityGuard( databaseName );
     }
 
     @Override

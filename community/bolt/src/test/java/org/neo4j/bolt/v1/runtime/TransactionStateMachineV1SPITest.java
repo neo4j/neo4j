@@ -32,6 +32,7 @@ import java.util.function.Supplier;
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.dbms.database.DatabaseContext;
+import org.neo4j.dbms.database.StandaloneDatabaseContext;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.availability.CompositeDatabaseAvailabilityGuard;
@@ -144,8 +145,8 @@ public class TransactionStateMachineV1SPITest
         when( dependencyResolver.resolveDependency( DatabaseAvailabilityGuard.class ) ).thenReturn( availabilityGuard );
         when( dependencyResolver.provideDependency( TransactionIdStore.class ) ).thenReturn( txIdStore );
 
-        DatabaseContext context = mock( DatabaseContext.class );
-        when( context.getDependencies() ).thenReturn( dependencyResolver );
+        DatabaseContext context = mock( StandaloneDatabaseContext.class );
+        when( context.dependencies() ).thenReturn( dependencyResolver );
 
         GraphDatabaseQueryService queryService = mock( GraphDatabaseQueryService.class );
         when( queryService.getDependencyResolver() ).thenReturn( dependencyResolver );

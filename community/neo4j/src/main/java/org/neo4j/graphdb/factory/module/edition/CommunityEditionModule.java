@@ -30,6 +30,7 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
 import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseManager;
+import org.neo4j.dbms.database.StandaloneDatabaseContext;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.factory.module.GlobalModule;
 import org.neo4j.graphdb.factory.module.id.IdContextFactory;
@@ -76,7 +77,7 @@ import static org.neo4j.graphdb.factory.EditionLocksFactories.createLockManager;
  * This implementation of {@link AbstractEditionModule} creates the implementations of services
  * that are specific to the Community edition.
  */
-public class CommunityEditionModule extends DefaultEditionModule
+public class CommunityEditionModule extends StandaloneEditionModule
 {
     public static final String COMMUNITY_SECURITY_MODULE_ID = "community-security-module";
 
@@ -136,9 +137,11 @@ public class CommunityEditionModule extends DefaultEditionModule
     protected Function<String,TokenHolders> createTokenHolderProvider( GlobalModule platform )
     {
         Config globalConfig = platform.getGlobalConfig();
-        Supplier<Kernel> kernelSupplier = () -> platform.getGlobalDependencies().resolveDependency( DatabaseManager.class )
+        @SuppressWarnings( "unchecked" )
+        Supplier<Kernel> kernelSupplier = () ->
+                ((DatabaseManager<StandaloneDatabaseContext>) platform.getGlobalDependencies().resolveDependency( DatabaseManager.class ))
                         .getDatabaseContext( config.get( GraphDatabaseSettings.default_database ) )
-                        .map( DatabaseContext::getDatabase)
+                        .map( DatabaseContext::database )
                         .map( Database::getKernel )
                         .orElseThrow( () -> new IllegalStateException( "Default database kernel should be always accessible" ) );
         return ignored -> new TokenHolders(
@@ -226,7 +229,7 @@ public class CommunityEditionModule extends DefaultEditionModule
     }
 
     @Override
-    public void createSecurityModule( GlobalModule globalModule, GlobalProcedures globalProcedures )
+    public void createSecurityModule( GlobalModule globalModule )
     {
         LifeSupport globalLife = globalModule.getGlobalLife();
         if ( globalModule.getGlobalConfig().get( GraphDatabaseSettings.auth_enabled ) )

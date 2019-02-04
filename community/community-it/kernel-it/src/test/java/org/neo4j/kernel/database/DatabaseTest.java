@@ -38,6 +38,7 @@ import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
+import org.neo4j.monitoring.SingleDatabaseHealth;
 import org.neo4j.kernel.lifecycle.LifecycleException;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.NullLogProvider;
@@ -87,8 +88,8 @@ public class DatabaseTest
         Database database = null;
         try
         {
-            DatabaseHealth databaseHealth = new DatabaseHealth( mock( DatabasePanicEventGenerator.class ),
-                    NullLogProvider.getInstance().getLog( DatabaseHealth.class ) );
+            DatabaseHealth databaseHealth = new SingleDatabaseHealth( mock( DatabasePanicEventGenerator.class ),
+                    NullLogProvider.getInstance().getLog( SingleDatabaseHealth.class ) );
             Dependencies dependencies = new Dependencies();
             dependencies.satisfyDependency( databaseHealth );
 
@@ -231,7 +232,7 @@ public class DatabaseTest
     @Test
     public void flushOfThePageCacheOnShutdownDoesNotHappenIfTheDbIsUnhealthy() throws Throwable
     {
-        DatabaseHealth health = mock( DatabaseHealth.class );
+        DatabaseHealth health = mock( SingleDatabaseHealth.class );
         when( health.isHealthy() ).thenReturn( false );
         PageCache pageCache = spy( pageCacheRule.getPageCache( fs.get() ) );
 
@@ -286,7 +287,7 @@ public class DatabaseTest
         // Given
         FileSystemAbstraction fs = this.fs.get();
         PageCache pageCache = pageCacheRule.getPageCache( fs );
-        DatabaseHealth databaseHealth = mock( DatabaseHealth.class );
+        DatabaseHealth databaseHealth = mock( SingleDatabaseHealth.class );
         when( databaseHealth.isHealthy() ).thenReturn( true );
         IOException ex = new IOException( "boom!" );
         doThrow( ex ).when( databaseHealth )

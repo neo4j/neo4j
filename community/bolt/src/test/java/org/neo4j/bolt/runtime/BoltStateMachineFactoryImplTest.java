@@ -36,8 +36,8 @@ import org.neo4j.bolt.v3.BoltStateMachineV3;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseManager;
+import org.neo4j.dbms.database.StandaloneDatabaseContext;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.logging.internal.NullLogService;
 
@@ -93,21 +93,22 @@ class BoltStateMachineFactoryImplTest
         return newBoltFactory( newDbMock() );
     }
 
-    private static BoltStateMachineFactoryImpl newBoltFactory( DatabaseManager databaseManager )
+    private static BoltStateMachineFactoryImpl newBoltFactory( DatabaseManager<StandaloneDatabaseContext> databaseManager )
     {
         Config config = Config.defaults( GraphDatabaseSettings.default_database, CUSTOM_DB_NAME );
         return new BoltStateMachineFactoryImpl( databaseManager, mock( Authentication.class ), CLOCK, config, NullLogService.getInstance() );
     }
 
-    private static DatabaseManager newDbMock()
+    @SuppressWarnings( "unchecked" )
+    private static DatabaseManager<StandaloneDatabaseContext> newDbMock()
     {
-        DatabaseContext db = mock( DatabaseContext.class );
+        StandaloneDatabaseContext db = mock( StandaloneDatabaseContext.class );
         Dependencies dependencies = mock( Dependencies.class );
-        when( db.getDependencies() ).thenReturn( dependencies );
+        when( db.dependencies() ).thenReturn( dependencies );
         GraphDatabaseQueryService queryService = mock( GraphDatabaseQueryService.class );
         when( queryService.getDependencyResolver() ).thenReturn( dependencies );
         when( dependencies.resolveDependency( GraphDatabaseQueryService.class ) ).thenReturn( queryService );
-        DatabaseManager databaseManager = mock( DatabaseManager.class );
+        DatabaseManager<StandaloneDatabaseContext> databaseManager = (DatabaseManager<StandaloneDatabaseContext>) mock( DatabaseManager.class );
         when( databaseManager.getDatabaseContext( CUSTOM_DB_NAME ) ).thenReturn( Optional.of( db ) );
         return databaseManager;
     }
