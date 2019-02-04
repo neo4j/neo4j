@@ -17,18 +17,12 @@
 package org.neo4j.cypher.internal.v4_0.frontend.phases
 
 import org.neo4j.cypher.internal.v4_0.ast.AstConstructionTestSupport
-import org.neo4j.cypher.internal.v4_0.expressions.Equals
 import org.neo4j.cypher.internal.v4_0.expressions.Expression
-import org.neo4j.cypher.internal.v4_0.expressions.ExtractScope
-import org.neo4j.cypher.internal.v4_0.expressions.ListComprehension
-import org.neo4j.cypher.internal.v4_0.expressions.Property
-import org.neo4j.cypher.internal.v4_0.expressions.PropertyKeyName
-import org.neo4j.cypher.internal.v4_0.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 
 class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport with RewritePhaseTest {
 
-  val tests = Seq(
+  private val tests = Seq(
     TestCase(
       "MATCH (n) RETURN n as n",
       "MATCH (n) RETURN n as n",
@@ -45,15 +39,13 @@ class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport with
       List(
         varFor("  x@12"),
         varFor("  x@22"),
-        Equals(varFor("  x@22"), SignedDecimalIntegerLiteral("2")(pos))(pos),
-        ListComprehension(
-          ExtractScope(
-            varFor("  x@22"),
-            Some(Equals(varFor("  x@22"), SignedDecimalIntegerLiteral("2")(pos))(pos)),
-            None
-          )(pos),
-          Property(varFor("n"), PropertyKeyName("prop")(pos))(pos)
-        )(pos)
+        equals(varFor("  x@22"), literalInt(2)),
+        listComprehension(
+          "  x@22",
+          prop("n", "prop"),
+          Some(equals(varFor("  x@22"), literalInt(2))),
+          None
+        )
       )
     ),
     TestCase(
@@ -126,7 +118,7 @@ class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport with
       List(
         varFor("  video@7"),
         varFor("  video@34"),
-        Property(varFor("  video@34"), PropertyKeyName("key")(pos))(pos)
+        prop("  video@34", "key")
       )
     ),
     TestCase(

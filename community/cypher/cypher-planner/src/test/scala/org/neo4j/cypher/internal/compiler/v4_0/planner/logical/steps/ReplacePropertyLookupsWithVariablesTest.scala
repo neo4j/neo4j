@@ -22,10 +22,10 @@ package org.neo4j.cypher.internal.compiler.v4_0.planner.logical.steps
 import org.neo4j.cypher.internal.compiler.v4_0.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.v4_0.phases.PlannerContext
 import org.neo4j.cypher.internal.compiler.v4_0.planner.LogicalPlanConstructionTestSupport
+import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.PlanMatchHelp
 import org.neo4j.cypher.internal.planner.v4_0.spi.IDPPlannerName
-import org.neo4j.cypher.internal.v4_0.logical.plans.{CachedNodeProperty, LogicalPlan, NodeHashJoin, Selection}
+import org.neo4j.cypher.internal.v4_0.logical.plans.{LogicalPlan, NodeHashJoin, Selection}
 import org.neo4j.cypher.internal.v4_0.ast.ASTAnnotationMap
-import org.neo4j.cypher.internal.v4_0.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.v4_0.ast.semantics.ExpressionTypeInfo
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.v4_0.expressions._
@@ -34,13 +34,13 @@ import org.neo4j.cypher.internal.v4_0.util.InputPosition
 import org.neo4j.cypher.internal.v4_0.util.symbols._
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 
-class ReplacePropertyLookupsWithVariablesTest extends CypherFunSuite with AstConstructionTestSupport with LogicalPlanConstructionTestSupport {
+class ReplacePropertyLookupsWithVariablesTest extends CypherFunSuite with PlanMatchHelp with LogicalPlanConstructionTestSupport {
   // Have specific input positions to test semantic table (not DummyPosition)
   private val variable = Variable("n")(InputPosition.NONE)
-  private val propertyKeyName: PropertyKeyName = PropertyKeyName("prop")(InputPosition.NONE)
+  private val propertyKeyName = PropertyKeyName("prop")(InputPosition.NONE)
   private val property = Property(variable, propertyKeyName)(InputPosition.NONE)
 
-  private val newCachedNodeProperty = CachedNodeProperty("n", propertyKeyName)(pos)
+  private val newCachedNodeProperty = cachedNodeProperty("n", "prop")
 
   test("should rewrite prop(n, prop) to CachedNodeProperty(n.prop)") {
     val initialTable = semanticTable(property -> CTInteger)
@@ -52,7 +52,7 @@ class ReplacePropertyLookupsWithVariablesTest extends CypherFunSuite with AstCon
 
     newPlan should equal(
       Selection(
-        Seq(Equals(newCachedNodeProperty, literalInt(1))(pos)),
+        Seq(equals(newCachedNodeProperty, literalInt(1))),
         nodeIndexScan("n", "L", "prop")
       )
     )
@@ -62,14 +62,14 @@ class ReplacePropertyLookupsWithVariablesTest extends CypherFunSuite with AstCon
   test("should rewrite [prop(n, prop)] to [CachedNodeProperty(n.prop)]") {
     val initialTable = semanticTable(property -> CTInteger)
     val plan = Selection(
-      Seq(Equals(listOf(prop("n", "prop")), listOf(literalInt(1)))(pos)),
+      Seq(equals(listOf(prop("n", "prop")), listOf(literalInt(1)))),
       nodeIndexScan("n", "L", "prop")
     )
     val (newPlan, newTable) = replace(plan, initialTable)
 
     newPlan should equal(
       Selection(
-        Seq(Equals(listOf(newCachedNodeProperty), listOf(literalInt(1)))(pos)),
+        Seq(equals(listOf(newCachedNodeProperty), listOf(literalInt(1)))),
         nodeIndexScan("n", "L", "prop")
       )
     )
@@ -79,14 +79,14 @@ class ReplacePropertyLookupsWithVariablesTest extends CypherFunSuite with AstCon
   test("should rewrite {foo: prop(n, prop)} to {foo: CachedNodeProperty(n.prop)}") {
     val initialTable = semanticTable(property -> CTInteger)
     val plan = Selection(
-      Seq(Equals(mapOf("foo" -> prop("n", "prop")), mapOf("foo" -> literalInt(1)))(pos)),
+      Seq(equals(mapOf("foo" -> prop("n", "prop")), mapOf("foo" -> literalInt(1)))),
       nodeIndexScan("n", "L", "prop")
     )
     val (newPlan, newTable) = replace(plan, initialTable)
 
     newPlan should equal(
       Selection(
-        Seq(Equals(mapOf("foo" -> newCachedNodeProperty), mapOf("foo" -> literalInt(1)))(pos)),
+        Seq(equals(mapOf("foo" -> newCachedNodeProperty), mapOf("foo" -> literalInt(1)))),
         nodeIndexScan("n", "L", "prop")
       )
     )
@@ -104,7 +104,7 @@ class ReplacePropertyLookupsWithVariablesTest extends CypherFunSuite with AstCon
         nodeIndexScan("m", "L", "prop")
       )
     )
-    val (newPlan, newTable) = replace(plan, initialTable)
+    val (_, newTable) = replace(plan, initialTable)
     newTable.types(property) should equal(newTable.types(newCachedNodeProperty))
   }
 

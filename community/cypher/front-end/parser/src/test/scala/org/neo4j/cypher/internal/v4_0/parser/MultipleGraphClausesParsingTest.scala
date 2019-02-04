@@ -17,9 +17,7 @@
 package org.neo4j.cypher.internal.v4_0.parser
 
 import org.neo4j.cypher.internal.v4_0.ast.{AstConstructionTestSupport, Clause}
-import org.neo4j.cypher.internal.v4_0.expressions.{Property, PropertyKeyName, RelationshipChain, SignedDecimalIntegerLiteral}
-import org.neo4j.cypher.internal.v4_0.util.DummyPosition
-import org.neo4j.cypher.internal.v4_0.util.symbols.{CTAny, CTMap}
+import org.neo4j.cypher.internal.v4_0.expressions.RelationshipChain
 import org.neo4j.cypher.internal.v4_0.{ast, expressions => exp}
 import org.parboiled.scala._
 
@@ -37,8 +35,8 @@ class MultipleGraphClausesParsingTest
   val fooDiffGraph = ast.CatalogName(List("foo", "diff"))
 
   test("CONSTRUCT CREATE ()") {
-    val patternParts = List(exp.EveryPath(exp.NodePattern(None,List(),None)(pos)))
-    yields(ast.ConstructGraph(news = List(ast.CreateInConstruct(exp.Pattern(patternParts)(pos))(pos))))
+    val pattern = nodePattern(None, List(), None)
+    yields(ast.ConstructGraph(news = List(ast.CreateInConstruct(pattern)(pos))))
   }
 
   test("CONSTRUCT CLONE a") {
@@ -71,7 +69,7 @@ class MultipleGraphClausesParsingTest
     val clone: ast.Clone = ast.Clone(List(ast.UnaliasedReturnItem(varFor("x"), "x")(pos)))(pos)
 
     val properties = mapOfInt("prop" -> 1)
-    val pattern = exp.Pattern(List(exp.EveryPath(exp.NodePattern(None, List(), Some(properties))(pos))))(pos)
+    val pattern = nodePattern(None, List(), Some(properties))
     val newClause: ast.CreateInConstruct = ast.CreateInConstruct(pattern)(pos)
 
     yields(ast.ConstructGraph(
@@ -81,11 +79,11 @@ class MultipleGraphClausesParsingTest
   }
 
   test("CONSTRUCT CREATE (a) SET a.prop = 1") {
-    val pattern = exp.Pattern(List(exp.EveryPath(exp.NodePattern(Some(exp.Variable("a")(pos)), List(), None)(pos))))(pos)
+    val pattern = nodePattern(Some(varFor("a")), List(), None)
     val newClause: ast.CreateInConstruct = ast.CreateInConstruct(pattern)(pos)
 
     val set = ast.SetClause(List(ast.SetPropertyItem(
-      Property(exp.Variable("a")(pos),exp.PropertyKeyName("prop")(pos))(pos),SignedDecimalIntegerLiteral("1")(pos)
+      prop("a", "prop"), literalInt(1)
     )(pos)))(pos)
 
     yields(ast.ConstructGraph(
@@ -95,14 +93,14 @@ class MultipleGraphClausesParsingTest
   }
 
   test("CONSTRUCT CREATE (a) SET a.prop = 1 SET a:Foo") {
-    val pattern = exp.Pattern(List(exp.EveryPath(exp.NodePattern(Some(exp.Variable("a")(pos)), List(), None)(pos))))(pos)
+    val pattern = nodePattern(Some(varFor("a")), List(), None)
     val newClause: ast.CreateInConstruct = ast.CreateInConstruct(pattern)(pos)
 
     val set1 = ast.SetClause(List(ast.SetPropertyItem(
-      Property(exp.Variable("a")(pos),exp.PropertyKeyName("prop")(pos))(pos),SignedDecimalIntegerLiteral("1")(pos)
+      prop("a", "prop"), literalInt(1)
     )(pos)))(pos)
     val set2 = ast.SetClause(List(ast.SetLabelItem(
-      exp.Variable("a")(pos), Seq(exp.LabelName("Foo")(pos))
+      varFor("a"), Seq(labelName("Foo"))
     )(pos)))(pos)
 
     yields(ast.ConstructGraph(
@@ -112,21 +110,21 @@ class MultipleGraphClausesParsingTest
   }
 
   test("CONSTRUCT CREATE (:A)") {
-    val pattern = exp.Pattern(List(exp.EveryPath(exp.NodePattern(None, Seq(exp.LabelName("A")(pos)), None)(pos))))(pos)
+    val pattern = nodePattern(None, Seq(labelName("A")), None)
     val newClause: ast.CreateInConstruct = ast.CreateInConstruct(pattern)(pos)
 
     yields(ast.ConstructGraph(news = List(newClause)))
   }
 
   test("CONSTRUCT CREATE (b COPY OF a:A)") {
-    val pattern = exp.Pattern(List(exp.EveryPath(exp.NodePattern(Some(varFor("b")), Seq(exp.LabelName("A")(pos)), None, Some(varFor("a")))(pos))))(pos)
+    val pattern = nodePattern(Some(varFor("b")), Seq(labelName("A")), None, Some(varFor("a")))
     val newClause: ast.CreateInConstruct = ast.CreateInConstruct(pattern)(pos)
 
     yields(ast.ConstructGraph(news = List(newClause)))
   }
 
   test("CONSTRUCT CREATE (COPY OF a:A)") {
-    val pattern = exp.Pattern(List(exp.EveryPath(exp.NodePattern(None, Seq(exp.LabelName("A")(pos)), None, Some(varFor("a")))(pos))))(pos)
+    val pattern = nodePattern(None, Seq(labelName("A")), None, Some(varFor("a")))
     val newClause: ast.CreateInConstruct = ast.CreateInConstruct(pattern)(pos)
 
     yields(ast.ConstructGraph(news = List(newClause)))
@@ -135,7 +133,8 @@ class MultipleGraphClausesParsingTest
   test("CONSTRUCT CREATE ()-[r2 COPY OF r:REL]->()") {
     val relChain = RelationshipChain(
       exp.NodePattern(None, List.empty, None, None)(pos),
-      exp.RelationshipPattern(Some(varFor("r2")), Seq(exp.RelTypeName("REL")(pos)), None, None, exp.SemanticDirection.OUTGOING, false, Some(varFor("r")))(pos),
+      exp.RelationshipPattern(Some(varFor("r2")), Seq(exp.RelTypeName("REL")(pos)), None, None,
+        exp.SemanticDirection.OUTGOING, legacyTypeSeparator = false, Some(varFor("r")))(pos),
       exp.NodePattern(None, List.empty, None, None)(pos)
     )(pos)
     val pattern = exp.Pattern(List(exp.EveryPath(relChain)))(pos)
@@ -147,7 +146,8 @@ class MultipleGraphClausesParsingTest
   test("CONSTRUCT CREATE ()-[COPY OF r:REL]->()") {
     val relChain = RelationshipChain(
       exp.NodePattern(None, List.empty, None, None)(pos),
-      exp.RelationshipPattern(None, Seq(exp.RelTypeName("REL")(pos)), None, None, exp.SemanticDirection.OUTGOING, false, Some(varFor("r")))(pos),
+      exp.RelationshipPattern(None, Seq(exp.RelTypeName("REL")(pos)), None, None,
+        exp.SemanticDirection.OUTGOING, legacyTypeSeparator = false, Some(varFor("r")))(pos),
       exp.NodePattern(None, List.empty, None, None)(pos)
     )(pos)
     val pattern = exp.Pattern(List(exp.EveryPath(relChain)))(pos)
@@ -159,7 +159,7 @@ class MultipleGraphClausesParsingTest
   test("CONSTRUCT CLONE x AS y CREATE (a:A) CREATE (a)-[:T]->(y)") {
     val clone: ast.Clone = ast.Clone(List(ast.AliasedReturnItem(varFor("x"), varFor("y"))(pos)))(pos)
 
-    val pattern1 = exp.Pattern(List(exp.EveryPath(exp.NodePattern(Some(varFor("a")), Seq(exp.LabelName("A")(pos)), None)(pos))))(pos)
+    val pattern1 = nodePattern(Some(varFor("a")), Seq(labelName("A")), None)
     val new1: ast.CreateInConstruct = ast.CreateInConstruct(pattern1)(pos)
 
     val pattern2 = exp.Pattern(List(exp.EveryPath(exp.RelationshipChain(
@@ -218,19 +218,23 @@ class MultipleGraphClausesParsingTest
   }
 
   test("FROM GRAPH foo.bar(baz(grok))") {
-    yields(ast.ViewInvocation(fooBarGraph, Seq(ast.ViewInvocation(ast.CatalogName("baz"), Seq(ast.GraphLookup(ast.CatalogName("grok"))(pos)))(pos))))
+    yields(ast.ViewInvocation(fooBarGraph,
+      Seq(ast.ViewInvocation(ast.CatalogName("baz"), Seq(ast.GraphLookup(ast.CatalogName("grok"))(pos)))(pos))))
   }
 
   test("FROM GRAPH foo. bar   (baz  (grok   )  )") {
-    yields(ast.ViewInvocation(fooBarGraph, Seq(ast.ViewInvocation(ast.CatalogName("baz"), Seq(ast.GraphLookup(ast.CatalogName("grok"))(pos)))(pos))))
+    yields(ast.ViewInvocation(fooBarGraph,
+      Seq(ast.ViewInvocation(ast.CatalogName("baz"), Seq(ast.GraphLookup(ast.CatalogName("grok"))(pos)))(pos))))
   }
 
   test("FROM GRAPH foo.bar(baz(grok), another.name)") {
-    yields(ast.ViewInvocation(fooBarGraph, Seq(ast.ViewInvocation(ast.CatalogName("baz"), Seq(ast.GraphLookup(ast.CatalogName("grok"))(pos)))(pos), ast.GraphLookup(ast.CatalogName("another", "name"))(pos))))
+    yields(ast.ViewInvocation(fooBarGraph, Seq(ast.ViewInvocation(ast.CatalogName("baz"),
+        Seq(ast.GraphLookup(ast.CatalogName("grok"))(pos)))(pos), ast.GraphLookup(ast.CatalogName("another", "name"))(pos))))
   }
 
   test("FROM foo.bar(baz(grok), another.name)") {
-    yields(ast.ViewInvocation(fooBarGraph, Seq(ast.ViewInvocation(ast.CatalogName("baz"), Seq(ast.GraphLookup(ast.CatalogName("grok"))(pos)))(pos), ast.GraphLookup(ast.CatalogName("another", "name"))(pos))))
+    yields(ast.ViewInvocation(fooBarGraph, Seq(ast.ViewInvocation(ast.CatalogName("baz"),
+      Seq(ast.GraphLookup(ast.CatalogName("grok"))(pos)))(pos), ast.GraphLookup(ast.CatalogName("another", "name"))(pos))))
   }
 
   test("FROM GRAPH graph") {
@@ -281,11 +285,9 @@ class MultipleGraphClausesParsingTest
     yields(ast.ConstructGraph(List.empty, List.empty, List(ast.CatalogName(List("foo.bar", "baz.baz")))))
   }
 
-
-  private val nodePattern = exp.Pattern(List(exp.EveryPath(exp.NodePattern(None, List(), None)(pos))))(pos)
-
-  private val complexPattern = exp.Pattern(List(
-    exp.NamedPatternPart(varFor("p"), exp.EveryPath(exp.NodePattern(None, List(), None)(pos)))(pos),
-    exp.NamedPatternPart(varFor("q"), exp.EveryPath(exp.NodePattern(None, List(), None)(pos)))(pos)
-  ))(pos)
+  private def nodePattern(variable: Option[exp.Variable],
+                          labels: Seq[exp.LabelName],
+                          properties: Option[exp.Expression],
+                          baseNode: Option[exp.LogicalVariable] = None) =
+    exp.Pattern(List(exp.EveryPath(exp.NodePattern(variable, labels, properties, baseNode)(pos))))(pos)
 }

@@ -17,107 +17,102 @@
 package org.neo4j.cypher.internal.v4_0.rewriting
 
 import org.neo4j.cypher.internal.v4_0.ast.AstConstructionTestSupport
-import org.neo4j.cypher.internal.v4_0.expressions._
 import org.neo4j.cypher.internal.v4_0.rewriting.rewriters.normalizeArgumentOrder
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.v4_0.expressions._
 
 class NormalizeArgumentOrderTest extends CypherFunSuite with AstConstructionTestSupport {
 
   test("a.prop = b.prop rewritten to: a.prop = b.prop") {
-    val lhs: Expression = Property(varFor("a"), PropertyKeyName("prop")_)_
-    val rhs: Expression = Property(varFor("b"), PropertyKeyName("prop")_)_
+    val lhs = prop("a", "prop")
+    val rhs = prop("b", "prop")
 
-    val input: Expression = Equals(lhs, rhs)_
+    val input = equals(lhs, rhs)
 
     normalizeArgumentOrder(input) should equal(input)
   }
 
   test("12 = a.prop rewritten to: a.prop = 12") {
-    val lhs: Expression = SignedDecimalIntegerLiteral("12")_
-    val rhs: Expression = Property(varFor("a"), PropertyKeyName("prop")_)_
+    val lhs = literalInt(12)
+    val rhs = prop("a", "prop")
 
-    val input: Expression = Equals(lhs, rhs)_
-    val expected: Expression = Equals(rhs, lhs)_
+    val input = equals(lhs, rhs)
+    val expected = equals(rhs, lhs)
 
     normalizeArgumentOrder(input) should equal(expected)
   }
 
   test("id(a) = id(b) rewritten to: id(a) = id(b)") {
-    val lhs: Expression = id("a")
-    val rhs: Expression = id("b")
+    val lhs = function("id", varFor("a"))
+    val rhs = function("id", varFor("b"))
 
-    val input: Expression = Equals(lhs, rhs)_
+    val input = equals(lhs, rhs)
 
     normalizeArgumentOrder(input) should equal(input)
   }
 
   test("23 = id(a) rewritten to: id(a) = 23") {
-    val lhs: Expression = SignedDecimalIntegerLiteral("12")_
-    val rhs: Expression = id("a")
+    val lhs = literalInt(12)
+    val rhs = function("id", varFor("a"))
 
-    val input: Expression = Equals(lhs, rhs)_
-    val expected: Expression = Equals(rhs, lhs)_
+    val input = equals(lhs, rhs)
+    val expected = equals(rhs, lhs)
 
     normalizeArgumentOrder(input) should equal(expected)
   }
 
   test("a.prop = id(b) rewritten to: id(b) = a.prop") {
-    val lhs: Expression = Property(varFor("a"), PropertyKeyName("prop")_)_
-    val rhs: Expression = id("b")
+    val lhs = prop("a", "prop")
+    val rhs = function("id", varFor("b"))
 
-    val input: Expression = Equals(rhs, lhs)_
+    val input = equals(rhs, lhs)
 
     normalizeArgumentOrder(input) should equal(input)
   }
 
   test("id(a) = b.prop rewritten to: id(a) = b.prop") {
-    val lhs: Expression = id("a")
-    val rhs: Expression = Property(varFor("b"), PropertyKeyName("prop")_)_
+    val lhs = function("id", varFor("a"))
+    val rhs = prop("b", "prop")
 
-    val input: Expression = Equals(lhs, rhs)_
+    val input = equals(lhs, rhs)
 
     normalizeArgumentOrder(input) should equal(input)
   }
 
   test("a < n.prop rewritten to: n.prop > a") {
-    val lhs: Expression = id("a")
-    val rhs: Expression = Property(varFor("n"), PropertyKeyName("prop")_)_
+    val lhs = function("id", varFor("a"))
+    val rhs = prop("n", "prop")
 
-    val input: Expression = LessThan(lhs, rhs)_
+    val input = lessThan(lhs, rhs)
 
-    normalizeArgumentOrder(input) should equal(GreaterThan(rhs, lhs)(pos))
+    normalizeArgumentOrder(input) should equal(greaterThan(rhs, lhs))
   }
 
   test("a <= n.prop rewritten to: n.prop >= a") {
-    val lhs: Expression = id("a")
-    val rhs: Expression = Property(varFor("n"), PropertyKeyName("prop")_)_
+    val lhs = function("id", varFor("a"))
+    val rhs = prop("n", "prop")
 
-    val input: Expression = LessThanOrEqual(lhs, rhs)_
+    val input = lessThanOrEqual(lhs, rhs)
 
-    normalizeArgumentOrder(input) should equal(GreaterThanOrEqual(rhs, lhs)(pos))
+    normalizeArgumentOrder(input) should equal(greaterThanOrEqual(rhs, lhs))
   }
 
   test("a > n.prop rewritten to: n.prop < a") {
-    val lhs: Expression = id("a")
-    val rhs: Expression = Property(varFor("n"), PropertyKeyName("prop")_)_
+    val lhs = function("id", varFor("a"))
+    val rhs = prop("n", "prop")
 
-    val input: Expression = GreaterThan(lhs, rhs)_
+    val input = greaterThan(lhs, rhs)
 
-    normalizeArgumentOrder(input) should equal(LessThan(rhs, lhs)(pos))
+    normalizeArgumentOrder(input) should equal(lessThan(rhs, lhs))
   }
 
   test("a >= n.prop rewritten to: n.prop <= a") {
-    val lhs: Expression = id("a")
-    val rhs: Expression = Property(varFor("n"), PropertyKeyName("prop")_)_
+    val lhs = function("id", varFor("a"))
+    val rhs = prop("n", "prop")
 
-    val input: Expression = GreaterThanOrEqual(lhs, rhs)_
+    val input = greaterThanOrEqual(lhs, rhs)
 
-    normalizeArgumentOrder(input) should equal(LessThanOrEqual(rhs, lhs)(pos))
+    normalizeArgumentOrder(input) should equal(lessThanOrEqual(rhs, lhs))
   }
-
-  private def id(name: String): FunctionInvocation =
-    FunctionInvocation(FunctionName("id")(pos), distinct = false, Array(Variable(name)(pos)))(pos)
 }
 
 

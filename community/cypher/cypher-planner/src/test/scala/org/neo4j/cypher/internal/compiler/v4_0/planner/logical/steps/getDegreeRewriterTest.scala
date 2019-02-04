@@ -31,7 +31,7 @@ class getDegreeRewriterTest extends CypherFunSuite with AstConstructionTestSuppo
       PatternExpression(RelationshipsPattern(RelationshipChain(NodePattern(Some(varFor("a")), Seq.empty, None)(pos),
                                                                RelationshipPattern(None, Seq(RelTypeName("FOO")(pos)), None, None, SemanticDirection.OUTGOING)(pos),
                                                                NodePattern(None, Seq.empty, None)(pos))(pos))(pos)))(pos)
-    val expected = GreaterThan(GetDegree(varFor("a"), Some(RelTypeName("FOO")(pos)), SemanticDirection.OUTGOING)(pos), SignedDecimalIntegerLiteral("0")(pos))(pos)
+    val expected = greaterThan(GetDegree(varFor("a"), Some(RelTypeName("FOO")(pos)), SemanticDirection.OUTGOING)(pos), literalInt(0))
 
     getDegreeRewriter(incoming) should equal(expected)
   }
@@ -41,7 +41,7 @@ class getDegreeRewriterTest extends CypherFunSuite with AstConstructionTestSuppo
       PatternExpression(RelationshipsPattern(RelationshipChain(NodePattern(None, Seq.empty, None)(pos),
                                                                RelationshipPattern(None, Seq(RelTypeName("FOO")(pos)), None, None, SemanticDirection.OUTGOING)(pos),
                                                                NodePattern(Some(varFor("a")), Seq.empty, None)(pos))(pos))(pos)))(pos)
-    val expected = GreaterThan(GetDegree(varFor("a"), Some(RelTypeName("FOO")(pos)), SemanticDirection.INCOMING)(pos), SignedDecimalIntegerLiteral("0")(pos))(pos)
+    val expected = greaterThan(GetDegree(varFor("a"), Some(RelTypeName("FOO")(pos)), SemanticDirection.INCOMING)(pos), literalInt(0))
 
     getDegreeRewriter(incoming) should equal(expected)
   }

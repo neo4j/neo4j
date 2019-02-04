@@ -17,21 +17,20 @@
 package org.neo4j.cypher.internal.v4_0.rewriting
 
 import org.neo4j.cypher.internal.v4_0.ast.AstConstructionTestSupport
-import org.neo4j.cypher.internal.v4_0.expressions._
 import org.neo4j.cypher.internal.v4_0.rewriting.rewriters.normalizeComparisons
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.v4_0.expressions._
 
 class NormalizeComparisonsTest extends CypherFunSuite with AstConstructionTestSupport {
 
-  val expression: Expression = Variable("foo")(pos)
-  val comparisons = List(
-    Equals(expression, expression)(pos),
+  private val expression = varFor("foo")
+  private val comparisons = List(
+    equals(expression, expression),
     NotEquals(expression, expression)(pos),
-    LessThan(expression, expression)(pos),
-    LessThanOrEqual(expression, expression)(pos),
-    GreaterThan(expression, expression)(pos),
-    GreaterThanOrEqual(expression, expression)(pos),
+    lessThan(expression, expression),
+    lessThanOrEqual(expression, expression),
+    greaterThan(expression, expression),
+    greaterThanOrEqual(expression, expression),
     InvalidNotEquals(expression, expression)(pos)
   )
 
@@ -44,16 +43,16 @@ class NormalizeComparisonsTest extends CypherFunSuite with AstConstructionTestSu
   }
 
   test("extract multiple hasLabels") {
-    val original = HasLabels(varFor("a"), Seq(labelName("X"), labelName("Y")))(pos)
+    val original = hasLabels(varFor("a"), "X", "Y")
 
     original.endoRewrite(normalizeComparisons) should equal(
       Ands(Set(
-        HasLabels(varFor("a"), Seq(labelName("X")))(pos),
-        HasLabels(varFor("a"), Seq(labelName("Y")))(pos)))(pos))
+        hasLabels("a", "X"),
+        hasLabels("a", "Y")))(pos))
   }
 
   test("does not extract single hasLabels") {
-    val original = HasLabels(varFor("a"), Seq(labelName("Y")))(pos)
+    val original = hasLabels("a", "Y")
 
     original.endoRewrite(normalizeComparisons) should equal(original)
   }
