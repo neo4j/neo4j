@@ -23,6 +23,6 @@ case object EndNode extends Function with TypeSignatures {
   def name = "endNode"
 
   override val signatures = Vector(
-    TypeSignature(CTRelationship, CTNode, "Returns the end node of a relationship.")
+    TypeSignature(name, CTRelationship, CTNode, "Returns the end node of a relationship.")
   )
 }

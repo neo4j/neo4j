@@ -23,7 +23,7 @@ case object ToFloat extends Function with TypeSignatures {
   override def name = "toFloat"
 
   override val signatures = Vector(
-    TypeSignature(CTString, CTFloat, "Converts a string value to a floating point value."),
-    TypeSignature(CTNumber, CTFloat, "Converts an integer value to a floating point value.")
+    TypeSignature(name, CTString, CTFloat, "Converts a string value to a floating point value."),
+    TypeSignature(name, CTNumber, CTFloat, "Converts an integer value to a floating point value.")
   )
 }

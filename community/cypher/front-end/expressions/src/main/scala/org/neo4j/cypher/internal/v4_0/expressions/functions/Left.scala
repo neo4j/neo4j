@@ -23,6 +23,7 @@ case object Left extends Function with TypeSignatures {
   def name = "left"
 
   override val signatures = Vector(
-    FunctionTypeSignature(names = Vector("original", "length"),argumentTypes = Vector(CTString, CTInteger), outputType = CTString, description = "Returns a string containing the specified number of leftmost characters of the original string.")
+    FunctionTypeSignature(functionName = name, names = Vector("original", "length"),argumentTypes = Vector(CTString, CTInteger), outputType = CTString,
+      description = "Returns a string containing the specified number of leftmost characters of the original string.")
   )
 }

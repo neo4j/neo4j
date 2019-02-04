@@ -23,7 +23,6 @@ case object Acos extends Function with TypeSignatures {
   def name = "acos"
 
   override val signatures = Vector(
-    TypeSignature(argumentType = CTFloat, outputType = CTFloat,
-      description = "Returns the arccosine of a number in radians.")
+    TypeSignature(name, CTFloat, CTFloat, "Returns the arccosine of a number in radians.")
   )
 }

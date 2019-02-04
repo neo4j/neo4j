@@ -23,7 +23,6 @@ case object Asin extends Function with TypeSignatures {
   def name = "asin"
 
   override val signatures = Vector(
-    TypeSignature(argumentType = CTFloat, outputType = CTFloat,
-      description = "Returns the arcsine of a number in radians.")
+    TypeSignature(name, CTFloat, CTFloat, "Returns the arcsine of a number in radians.")
   )
 }

@@ -23,7 +23,7 @@ case object Split extends Function with TypeSignatures {
   def name = "split"
 
   override val signatures = Vector(
-    FunctionTypeSignature(names = Vector("original", "splitDelimiter"), argumentTypes = Vector(CTString, CTString), outputType = CTList(CTString),
+    FunctionTypeSignature(functionName = name, names = Vector("original", "splitDelimiter"), argumentTypes = Vector(CTString, CTString), outputType = CTList(CTString),
       description = "Returns a list of strings resulting from the splitting of the original string around matches of the given delimiter.")
   )
 }

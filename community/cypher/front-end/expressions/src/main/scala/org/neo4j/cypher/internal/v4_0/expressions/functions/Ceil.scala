@@ -23,7 +23,7 @@ case object Ceil extends Function with TypeSignatures {
   def name = "ceil"
 
   override val signatures = Vector(
-    TypeSignature(argumentType = CTFloat, outputType = CTFloat, description =
+    TypeSignature(name, CTFloat, CTFloat,
       "Returns the smallest floating point number that is greater than or equal to a number and equal to a mathematical integer.")
   )
 }

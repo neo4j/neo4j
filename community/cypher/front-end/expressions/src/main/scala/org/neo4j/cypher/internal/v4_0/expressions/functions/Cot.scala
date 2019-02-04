@@ -23,6 +23,6 @@ case object Cot extends Function with TypeSignatures {
   def name = "cot"
 
   override val signatures = Vector(
-    TypeSignature(argumentTypes = Vector(CTFloat), outputType = CTFloat)
+    TypeSignature(name, CTFloat, CTFloat, "Returns the cotangent of a number.")
   )
 }

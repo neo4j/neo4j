@@ -103,11 +103,15 @@ object Function {
         f.signatures.flatMap {
           case signature: FunctionTypeSignature if !signature.deprecated =>
             val info: FunctionInfo = new FunctionInfo(f) {
-              def getDescription: String = signature.toString
+              def getDescription: String = signature.description
 
-              def getSignature: String = signature.toString
+              def getSignature: String = signature.getSignatureAsString
             }
             Seq(info)
+          case signature: FunctionTypeSignature if signature.deprecated =>
+            Seq()
+          case problem =>
+            throw new IllegalStateException("Don't know how to handle the following at this point: "+ problem)
         }
       case func: FunctionWithInfo =>
         Seq(new FunctionInfo(func) {

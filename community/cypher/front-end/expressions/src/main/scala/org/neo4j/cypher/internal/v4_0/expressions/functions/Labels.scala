@@ -23,6 +23,6 @@ case object Labels extends Function with TypeSignatures {
   override def name = "labels"
 
   override val signatures = Vector(
-    TypeSignature(CTNode, CTList(CTString), "Returns a list containing the string representations for all the labels of a node.")
+    TypeSignature(name, CTNode, CTList(CTString), "Returns a list containing the string representations for all the labels of a node.")
   )
 }

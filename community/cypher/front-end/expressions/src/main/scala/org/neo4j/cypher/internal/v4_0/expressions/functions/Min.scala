@@ -23,6 +23,6 @@ case object Min extends AggregatingFunction with TypeSignatures {
   override def name = "min"
 
   override val signatures: Vector[TypeSignature] = Vector(
-    TypeSignature(CTAny, CTAny, "Returns the minimum value in a set of values.")
+    TypeSignature(name, CTAny, CTAny, "Returns the minimum value in a set of values.")
   )
 }

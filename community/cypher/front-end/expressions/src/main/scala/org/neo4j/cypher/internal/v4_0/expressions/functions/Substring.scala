@@ -23,7 +23,9 @@ case object Substring extends Function with TypeSignatures {
   def name = "substring"
 
   override val signatures = Vector(
-    FunctionTypeSignature(names = Vector("original","start", "length"), argumentTypes = Vector(CTString, CTInteger), outputType = CTString, description =  "Returns a substring of the original string, beginning with a 0-based index start."),
-    FunctionTypeSignature(names = Vector("original","start", "length"), argumentTypes = Vector(CTString, CTInteger, CTInteger), outputType = CTString, description = "Returns a substring of the original string, beginning with a 0-based index start and length.")
+    FunctionTypeSignature(functionName = name, names = Vector("original","start", "length"), argumentTypes = Vector(CTString, CTInteger),
+      outputType = CTString, description =  "Returns a substring of the original string, beginning with a 0-based index start."),
+    FunctionTypeSignature(functionName = name, names = Vector("original","start", "length"), argumentTypes = Vector(CTString, CTInteger, CTInteger),
+      outputType = CTString, description = "Returns a substring of the original string, beginning with a 0-based index start and length.")
   )
 }

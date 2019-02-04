@@ -23,6 +23,6 @@ case object RTrim extends Function with TypeSignatures {
   def name = "rtrim"
 
   override val signatures = Vector(
-    TypeSignature(CTString, CTString, "Returns the original string with trailing whitespace removed.")
+    TypeSignature(name, CTString, CTString, "Returns the original string with trailing whitespace removed.")
   )
 }
