@@ -29,7 +29,7 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.values.ValueMapper;
 
 /**
- * The context in which a procedure is invoked. This is a read-only map-like structure.
+ * The context in which a procedure is invoked. This is a read-only structure.
  * For instance, a read-only transactional procedure might have access to the current statement it is being invoked
  * in through this.
  *
@@ -38,39 +38,94 @@ import org.neo4j.values.ValueMapper;
  */
 public interface Context
 {
-    String DEPENDENCY_RESOLVER_NAME = "DependencyResolver";
-    String DATABASE_API_NAME = "DatabaseAPI";
-    String KERNEL_TRANSACTION_NAME = "KernelTransaction";
-    String VALUE_MAPPER_NAME = "ValueMapper";
-    String SECURITY_CONTEXT_NAME = "SecurityContext";
-    String THREAD_NAME = "Thread";
-    String SYSTEM_CLOCK_NAME = "SystemClock";
-    String STATEMENT_CLOCK_NAME = "StatementClock";
-    String TRANSACTION_CLOCK_NAME = "TransactionClock";
-
-    Key<DependencyResolver> DEPENDENCY_RESOLVER = Key.key( DEPENDENCY_RESOLVER_NAME, DependencyResolver.class );
-    Key<GraphDatabaseAPI> DATABASE_API = Key.key( DATABASE_API_NAME, GraphDatabaseAPI.class );
-    Key<KernelTransaction> KERNEL_TRANSACTION = Key.key( KERNEL_TRANSACTION_NAME, KernelTransaction.class );
-    Key<ValueMapper> VALUE_MAPPER = Key.key( VALUE_MAPPER_NAME, ValueMapper.class );
-    Key<SecurityContext> SECURITY_CONTEXT = Key.key( SECURITY_CONTEXT_NAME, SecurityContext.class );
-    Key<Thread> THREAD = Key.key( THREAD_NAME, Thread.class );
-    Key<Clock> SYSTEM_CLOCK = Key.key( SYSTEM_CLOCK_NAME, Clock.class );
-    Key<Clock> STATEMENT_CLOCK = Key.key( STATEMENT_CLOCK_NAME, Clock.class );
-    Key<Clock> TRANSACTION_CLOCK = Key.key( TRANSACTION_CLOCK_NAME, Clock.class );
-
-    <T> T getOrElse( Key<T> key, T orElse );
-
-    //I don't see much of a point of calling via a generic get method
-    //so I think we should move towards real getters.
-
+    /**
+     * Returns the value mapper of this context.
+     * <p>
+     * This method is always safe to call, there should always be a value mapper associated with the context.
+     *
+     * @return the value mapper of this context
+     */
     ValueMapper<Object> valueMapper();
+
+    /**
+     * Returns the security context of this context.
+     * <p>
+     * This method is always safe to call, there should always be a security context associated with the context.
+     *
+     * @return the security context of this context
+     */
     SecurityContext securityContext();
+
+    /**
+     * Returns the dependency resolver of this context.
+     * <p>
+     * This method is always safe to call, there should always be a dependency resolver associated with the context.
+     *
+     * @return the dependency resolver of this context
+     */
     DependencyResolver dependencyResolver();
+
+    /**
+     * Returns the graphdatabase API of this context.
+     * <p>
+     * This method is always safe to call, there should always be a graphdatabase API associated with the context.
+     *
+     * @return the graphdatabase API of this context
+     */
     GraphDatabaseAPI graphDatabaseAPI();
+
+    /**
+     * Returns the thread of this context.
+     * <p>
+     * This method is always safe to call, there should always be a thread associated with the context.
+     *
+     * @return the thread of this context
+     */
     Thread thread();
+
+    /**
+     * Returns the kernel transaction of this context
+     * <p>
+     * If no transaction has been associated with this context this method will throw a {@link ProcedureException}
+     *
+     * @return the kernel transaction of this context
+     * @throws ProcedureException if no transaction has been associated with the context
+     */
     KernelTransaction kernelTransaction() throws ProcedureException;
+
+    /**
+     * @return The kernel transaction of this context or <code>null</code> if no transaction has been associated with
+     * the context.
+     */
     KernelTransaction kernelTransactionOrNull();
+
+    /**
+     * Returns the system clock of this context
+     * <p>
+     * If no clock has been associated with this context this method will throw a {@link ProcedureException}
+     *
+     * @return the system clock of this context
+     * @throws ProcedureException if no clock has been associated with the context
+     */
     Clock systemClock() throws ProcedureException;
+
+    /**
+     * Returns the statement clock of this context
+     * <p>
+     * If no clock has been associated with this context this method will throw a {@link ProcedureException}
+     *
+     * @return the statement clock of this context
+     * @throws ProcedureException if no clock has been associated with the context
+     */
     Clock statementClock() throws ProcedureException;
+
+    /**
+     * Returns the transaction clock of this context
+     * <p>
+     * If no clock has been associated with this context this method will throw a {@link ProcedureException}
+     *
+     * @return the transaction clock of this context
+     * @throws ProcedureException if no clock has been associated with the context
+     */
     Clock transactionClock() throws ProcedureException;
 }

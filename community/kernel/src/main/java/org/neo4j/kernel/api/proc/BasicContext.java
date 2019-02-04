@@ -52,33 +52,6 @@ public class BasicContext implements Context
         this.thread = thread;
     }
 
-    @SuppressWarnings( "unchecked" )
-    @Override
-    public <T> T getOrElse( Key<T> key, T orElse )
-    {
-        switch ( key.name() )
-        {
-        case DEPENDENCY_RESOLVER_NAME:
-            return getOrElse( resolver, orElse );
-        case DATABASE_API_NAME:
-            return getOrElse( resolver, orElse, r -> (T) r.resolveTypeDependencies( GraphDatabaseAPI.class ) );
-        case KERNEL_TRANSACTION_NAME:
-            return getOrElse( kernelTransaction, orElse );
-        case SECURITY_CONTEXT_NAME:
-            return getOrElse( securityContext, orElse );
-        case THREAD_NAME:
-            return getOrElse( thread, orElse );
-        case SYSTEM_CLOCK_NAME:
-            return getOrElse( kernelTransaction, orElse, t -> (T)t.clocks().systemClock() );
-        case STATEMENT_CLOCK_NAME:
-            return getOrElse( kernelTransaction, orElse, t -> (T)t.clocks().statementClock() );
-        case TRANSACTION_CLOCK_NAME:
-            return getOrElse( kernelTransaction, orElse, t -> (T)t.clocks().transactionClock() );
-        default:
-            return orElse;
-        }
-    }
-
     @Override
     public ValueMapper<Object> valueMapper()
     {
@@ -112,7 +85,7 @@ public class BasicContext implements Context
     @Override
     public KernelTransaction kernelTransaction() throws ProcedureException
     {
-        return throwIfNull( KERNEL_TRANSACTION, kernelTransaction );
+        return throwIfNull( "KernelTransaction", kernelTransaction );
     }
 
     @Override
@@ -124,19 +97,19 @@ public class BasicContext implements Context
     @Override
     public Clock systemClock() throws ProcedureException
     {
-        return throwIfNull( SYSTEM_CLOCK, kernelTransaction, t -> t.clocks().systemClock() );
+        return throwIfNull( "SystemClock", kernelTransaction, t -> t.clocks().systemClock() );
     }
 
     @Override
     public Clock statementClock() throws ProcedureException
     {
-        return throwIfNull( STATEMENT_CLOCK, kernelTransaction, t -> t.clocks().statementClock() );
+        return throwIfNull( "StatementClock", kernelTransaction, t -> t.clocks().statementClock() );
     }
 
     @Override
     public Clock transactionClock() throws ProcedureException
     {
-        return throwIfNull( TRANSACTION_CLOCK, kernelTransaction, t -> t.clocks().transactionClock() );
+        return throwIfNull( "TransactionClock", kernelTransaction, t -> t.clocks().transactionClock() );
     }
 
     public static ContextBuilder buildContext( DependencyResolver dependencyResolver, ValueMapper<Object> valueMapper )
@@ -145,32 +118,17 @@ public class BasicContext implements Context
     }
 
     @SuppressWarnings( "unchecked" )
-    private <T, U> T throwIfNull( Key<T> key, U value ) throws ProcedureException
+    private <T, U> T throwIfNull( String name, U value ) throws ProcedureException
     {
-        return throwIfNull( key, value, v -> (T) v );
+        return throwIfNull( name, value, v -> (T) v );
     }
 
-    private <T, U> T throwIfNull( Key<T> key, U value, Function<U,T> producer ) throws ProcedureException
+    private <T, U> T throwIfNull( String name, U value, Function<U,T> producer ) throws ProcedureException
     {
         if ( value == null )
         {
             throw new ProcedureException( Status.Procedure.ProcedureCallFailed,
-                    "There is no `%s` in the current procedure call context.", key.name() );
-        }
-        return producer.apply( value );
-    }
-
-    @SuppressWarnings( "unchecked" )
-    private <T,U> T getOrElse( U value, T orElse )
-    {
-        return getOrElse( value, orElse, v -> (T)v );
-    }
-
-    private <T,U> T getOrElse( U value, T orElse, Function<U,T> producer )
-    {
-        if ( value == null )
-        {
-            return orElse;
+                    "There is no `%s` in the current procedure call context.", name );
         }
         return producer.apply( value );
     }
@@ -209,6 +167,5 @@ public class BasicContext implements Context
             requireNonNull( thread );
             return new BasicContext( resolver, kernelTransaction, securityContext, valueMapper, thread );
         }
-
     }
 }

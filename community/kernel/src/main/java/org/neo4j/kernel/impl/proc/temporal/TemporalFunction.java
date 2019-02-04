@@ -38,7 +38,6 @@ import org.neo4j.internal.kernel.api.procs.UserFunctionSignature;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.proc.CallableUserFunction;
 import org.neo4j.kernel.api.proc.Context;
-import org.neo4j.kernel.api.proc.Key;
 import org.neo4j.kernel.impl.proc.GlobalProcedures;
 import org.neo4j.kernel.impl.proc.ProcedureConfig;
 import org.neo4j.procedure.Description;
@@ -60,7 +59,6 @@ public abstract class TemporalFunction<T extends AnyValue> implements CallableUs
     private static final String DEFAULT_TEMPORAL_ARGUMENT = "DEFAULT_TEMPORAL_ARGUMENT";
     private static final TextValue DEFAULT_TEMPORAL_ARGUMENT_VALUE = Values.stringValue( DEFAULT_TEMPORAL_ARGUMENT );
     private static final DefaultParameterValue DEFAULT_PARAMETER_VALUE = new DefaultParameterValue( DEFAULT_TEMPORAL_ARGUMENT, Neo4jTypes.NTAny );
-    private static final Key<Clock> DEFAULT_CLOCK = Context.STATEMENT_CLOCK;
 
     public static void registerTemporalFunctions( GlobalProcedures globalProcedures, ProcedureConfig procedureConfig ) throws ProcedureException
     {
