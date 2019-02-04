@@ -16,14 +16,12 @@
  */
 package org.neo4j.cypher.internal.v4_0.rewriting
 
-import org.neo4j.cypher.internal.v4_0.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.v4_0.rewriting.rewriters.expandCallWhere
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 
+class ExpandCallWhereTest extends CypherFunSuite with RewriteTest {
 
-class ExpandCallWhereTest extends CypherFunSuite with RewriteTest with AstConstructionTestSupport {
-
-  override val rewriterUnderTest = expandCallWhere
+  override val rewriterUnderTest: expandCallWhere.type = expandCallWhere
 
   test("rewrite call yield where") {
     assertRewrite("CALL foo() YIELD a, b WHERE a > b RETURN *", "CALL foo() YIELD a, b WITH * WHERE a > b RETURN *")

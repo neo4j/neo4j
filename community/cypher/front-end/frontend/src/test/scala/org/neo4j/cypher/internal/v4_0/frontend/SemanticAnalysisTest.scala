@@ -17,18 +17,18 @@
 package org.neo4j.cypher.internal.v4_0.frontend
 
 import org.neo4j.cypher.internal.v4_0.frontend.ErrorCollectingContext.failWith
-import org.neo4j.cypher.internal.v4_0.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticErrorDef
 import org.neo4j.cypher.internal.v4_0.frontend.phases._
+import org.neo4j.cypher.internal.v4_0.util.{CypherException, InputPosition}
 import org.neo4j.cypher.internal.v4_0.util.symbols._
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.scalatest.matchers.MatchResult
 import org.scalatest.matchers.Matcher
 
-class SemanticAnalysisTest extends CypherFunSuite with AstConstructionTestSupport {
+class SemanticAnalysisTest extends CypherFunSuite {
 
   // This test invokes SemanticAnalysis twice because that's what the production pipeline does
-  val pipeline = Parsing andThen SemanticAnalysis(warn = true) andThen SemanticAnalysis(warn = false)
+  private val pipeline = Parsing andThen SemanticAnalysis(warn = true) andThen SemanticAnalysis(warn = false)
 
   test("can inject starting semantic state") {
     val query = "RETURN name AS name"
@@ -101,11 +101,11 @@ class ErrorCollectingContext extends BaseContext {
 
   var errors: Seq[SemanticErrorDef] = Seq.empty
 
-  override def tracer = CompilationPhaseTracer.NO_TRACING
-  override def notificationLogger = devNullLogger
-  override def exceptionCreator = ???
-  override def monitors = ???
-  override def errorHandler = (errs: Seq[SemanticErrorDef]) =>
+  override def tracer: CompilationPhaseTracer = CompilationPhaseTracer.NO_TRACING
+  override def notificationLogger: devNullLogger.type = devNullLogger
+  override def exceptionCreator: (String, InputPosition) => CypherException = ???
+  override def monitors: Monitors = ???
+  override def errorHandler: Seq[SemanticErrorDef] => Unit = (errs: Seq[SemanticErrorDef]) =>
     errors = errs
 }
 
