@@ -55,9 +55,9 @@ public class ProcedureGDSFactory implements ThrowingFunction<Context,GraphDataba
     }
 
     @Override
-    public GraphDatabaseService apply( Context context ) throws ProcedureException
+    public GraphDatabaseService apply( Context context )
     {
-        KernelTransaction tx = context.getOrElse( Context.KERNEL_TRANSACTION, null );
+        KernelTransaction tx = context.kernelTransactionOrNull();
         SecurityContext securityContext;
         if ( tx != null )
         {

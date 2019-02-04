@@ -69,6 +69,7 @@ public interface Context
     GraphDatabaseAPI graphDatabaseAPI();
     Thread thread();
     KernelTransaction kernelTransaction() throws ProcedureException;
+    KernelTransaction kernelTransactionOrNull();
     Clock systemClock() throws ProcedureException;
     Clock statementClock() throws ProcedureException;
     Clock transactionClock() throws ProcedureException;

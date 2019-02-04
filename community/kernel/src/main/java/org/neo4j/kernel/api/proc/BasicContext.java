@@ -116,6 +116,12 @@ public class BasicContext implements Context
     }
 
     @Override
+    public KernelTransaction kernelTransactionOrNull()
+    {
+        return kernelTransaction;
+    }
+
+    @Override
     public Clock systemClock() throws ProcedureException
     {
         return throwIfNull( SYSTEM_CLOCK, kernelTransaction, t -> t.clocks().systemClock() );
@@ -192,12 +198,6 @@ public class BasicContext implements Context
         public ContextBuilder withSecurityContext( SecurityContext securityContext )
         {
             this.securityContext = securityContext;
-            return this;
-        }
-
-        public ContextBuilder withThread( Thread thread )
-        {
-            this.thread = thread;
             return this;
         }
 
