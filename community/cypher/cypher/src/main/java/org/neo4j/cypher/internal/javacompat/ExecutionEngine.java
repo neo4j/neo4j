@@ -117,7 +117,7 @@ public class ExecutionEngine implements QueryExecutionEngine
     }
 
     @Override
-    public List<FunctionInformation> getProvidedCypherFunctions()
+    public List<FunctionInformation> getProvidedLanguageFunctions()
     {
         return inner.getCypherFunctions();
     }

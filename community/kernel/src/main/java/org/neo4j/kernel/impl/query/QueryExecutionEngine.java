@@ -36,6 +36,6 @@ public interface QueryExecutionEngine
 
     long clearQueryCaches();
 
-    List<FunctionInformation> getProvidedCypherFunctions();
+    List<FunctionInformation> getProvidedLanguageFunctions();
 }
 

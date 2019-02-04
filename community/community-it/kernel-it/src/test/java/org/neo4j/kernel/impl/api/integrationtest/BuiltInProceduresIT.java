@@ -174,7 +174,7 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
                         "List all relationship types in the database and their total count.", "READ" ),
                 proc( "dbms.procedures", "() :: (name :: STRING?, signature :: " + "STRING?, description :: STRING?, mode :: STRING?)",
                         "List all procedures in the DBMS.", "DBMS" ),
-                proc( "dbms.functions", "() :: (name :: STRING?, signature :: " + "STRING?, description :: STRING?, isAggregationFunction :: BOOLEAN?)",
+                proc( "dbms.functions", "() :: (name :: STRING?, signature :: " + "STRING?, description :: STRING?, aggregating :: BOOLEAN?)",
                         "List all functions in the DBMS.", "DBMS" ),
                 proc( "dbms.components", "() :: (name :: STRING?, versions :: LIST? OF" + " STRING?, edition :: STRING?)",
                         "List DBMS components and their versions.", "DBMS" ),

@@ -53,7 +53,7 @@ enum NoQueryEngine implements QueryExecutionEngine
     }
 
     @Override
-    public List<FunctionInformation> getProvidedCypherFunctions()
+    public List<FunctionInformation> getProvidedLanguageFunctions()
     {
         throw noQueryEngine();
     }

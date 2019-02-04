@@ -52,6 +52,10 @@ BSD - Scala License
 
 BSD License
   ANTLR 4 Runtime
+  asm
+  asm-analysis
+  asm-tree
+  asm-util
   ParaNamer Core
   Scala Compiler
 
