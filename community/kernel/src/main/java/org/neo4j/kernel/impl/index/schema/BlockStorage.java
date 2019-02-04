@@ -36,7 +36,6 @@ import org.neo4j.io.pagecache.ByteArrayPageCursor;
 import org.neo4j.util.Preconditions;
 
 import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.getOverhead;
-import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.putKeyValueSize;
 
 class BlockStorage<KEY, VALUE> implements Closeable
 {
@@ -119,11 +118,7 @@ class BlockStorage<KEY, VALUE> implements Closeable
         // Entries
         for ( BlockEntry<KEY,VALUE> entry : bufferedEntries )
         {
-            int keySize = layout.keySize( entry.key() );
-            int valueSize = layout.valueSize( entry.value() );
-            putKeyValueSize( pageCursor, keySize, valueSize );
-            layout.writeKey( pageCursor, entry.key() );
-            layout.writeValue( pageCursor, entry.value() );
+            BlockEntry.write( pageCursor, layout, entry );
         }
 
         // TODO solve the BIG padding problem

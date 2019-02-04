@@ -19,6 +19,14 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import org.neo4j.index.internal.gbptree.Layout;
+import org.neo4j.io.pagecache.PageCursor;
+
+import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.extractKeySize;
+import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.extractValueSize;
+import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.putKeyValueSize;
+import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.readKeyValueSize;
+
 class BlockEntry<KEY,VALUE>
 {
     private KEY key;
@@ -38,5 +46,34 @@ class BlockEntry<KEY,VALUE>
     VALUE value()
     {
         return value;
+    }
+
+    static <KEY, VALUE> BlockEntry<KEY,VALUE> read( PageCursor pageCursor, Layout<KEY,VALUE> layout )
+    {
+        KEY key = layout.newKey();
+        VALUE value = layout.newValue();
+        read( pageCursor, layout, key, value );
+        return new BlockEntry<>( key, value );
+    }
+
+    static <KEY, VALUE> void read( PageCursor pageCursor, Layout<KEY,VALUE> layout, KEY key, VALUE value )
+    {
+        long entrySize = readKeyValueSize( pageCursor );
+        layout.readKey( pageCursor, key, extractKeySize( entrySize ) );
+        layout.readValue( pageCursor, value, extractValueSize( entrySize ) );
+    }
+
+    static <KEY, VALUE> void write( PageCursor pageCursor, Layout<KEY,VALUE> layout, BlockEntry<KEY,VALUE> entry )
+    {
+        write( pageCursor, layout, entry.key(), entry.value() );
+    }
+
+    static <KEY, VALUE> void write( PageCursor pageCursor, Layout<KEY,VALUE> layout, KEY key, VALUE value )
+    {
+        int keySize = layout.keySize( key );
+        int valueSize = layout.valueSize( value );
+        putKeyValueSize( pageCursor, keySize, valueSize );
+        layout.writeKey( pageCursor, key );
+        layout.writeValue( pageCursor, value );
     }
 }

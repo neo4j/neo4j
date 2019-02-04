@@ -25,10 +25,6 @@ import java.io.IOException;
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.io.pagecache.PageCursor;
 
-import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.extractKeySize;
-import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.extractValueSize;
-import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.readKeyValueSize;
-
 public class BlockReader<KEY,VALUE> implements Closeable
 {
     private final long entryCount;
@@ -53,11 +49,7 @@ public class BlockReader<KEY,VALUE> implements Closeable
         {
             return false;
         }
-
-        long entrySize = readKeyValueSize( pageCursor );
-        layout.readKey( pageCursor, key, extractKeySize( entrySize ) );
-        layout.readValue( pageCursor, value, extractValueSize( entrySize ) );
-
+        BlockEntry.read( pageCursor, layout, key, value );
         readEntries++;
         return true;
     }
