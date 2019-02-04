@@ -20,58 +20,50 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import java.io.Closeable;
+import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.index.internal.gbptree.Layout;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.OpenMode;
+import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.kernel.impl.transaction.log.ReadAheadChannel;
 
 public class BlockReader<KEY,VALUE> implements Closeable
 {
-    private final long entryCount;
-    private final PageCursor pageCursor;
-    private final KEY key;
-    private final VALUE value;
+    private final StoreChannel channel;
+    private final long blockSize;
+    private final FileSystemAbstraction fs;
+    private final File file;
     private final Layout<KEY,VALUE> layout;
-    private long readEntries;
 
-    BlockReader( PageCursor pageCursor, Layout<KEY,VALUE> layout )
+    BlockReader( FileSystemAbstraction fs, File file, long blockSize, Layout<KEY,VALUE> layout ) throws IOException
     {
-        this.pageCursor = pageCursor;
-        this.entryCount = pageCursor.getLong();
+        this.fs = fs;
+        this.file = file;
         this.layout = layout;
-        this.key = layout.newKey();
-        this.value = layout.newValue();
+        this.channel = fs.open( file, OpenMode.READ );
+        this.blockSize = blockSize;
     }
 
-    public boolean next() throws IOException
+    BlockEntryReader<KEY,VALUE> nextBlock() throws IOException
     {
-        if ( readEntries >= entryCount )
+        long position = channel.position();
+        if ( position >= channel.size() )
         {
-            return false;
+            return null;
         }
-        BlockEntry.read( pageCursor, layout, key, value );
-        readEntries++;
-        return true;
-    }
-
-    public long entryCount()
-    {
-        return entryCount;
-    }
-
-    KEY key()
-    {
-        return key;
-    }
-
-    VALUE value()
-    {
-        return value;
+        StoreChannel blockChannel = fs.open( file, OpenMode.READ );
+        blockChannel.position( position );
+        channel.position( position + blockSize );
+        PageCursor pageCursor = new ReadableChannelPageCursor( new ReadAheadChannel<>( blockChannel ) );
+        return new BlockEntryReader<>( pageCursor, layout );
     }
 
     @Override
     public void close() throws IOException
     {
-        pageCursor.close();
+        channel.close();
     }
 }

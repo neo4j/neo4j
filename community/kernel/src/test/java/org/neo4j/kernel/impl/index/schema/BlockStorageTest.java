@@ -215,11 +215,11 @@ class BlockStorageTest
             List<Pair<MutableLong,MutableLong>>... expectedBlocks )
             throws IOException
     {
-        try ( BlockStorageReader<MutableLong,MutableLong> reader = storage.reader() )
+        try ( BlockReader<MutableLong,MutableLong> reader = storage.reader() )
         {
             for ( List<Pair<MutableLong,MutableLong>> expectedBlock : expectedBlocks )
             {
-                try ( BlockReader<MutableLong,MutableLong> block = reader.nextBlock() )
+                try ( BlockEntryReader<MutableLong,MutableLong> block = reader.nextBlock() )
                 {
                     assertNotNull( block );
                     assertEquals( expectedBlock.size(), block.entryCount() );
