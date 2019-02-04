@@ -22,8 +22,10 @@ package org.neo4j.kernel.impl.index.schema;
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.io.pagecache.PageCursor;
 
+import static java.lang.String.format;
 import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.extractKeySize;
 import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.extractValueSize;
+import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.getOverhead;
 import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.putKeyValueSize;
 import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.readKeyValueSize;
 
@@ -46,6 +48,19 @@ class BlockEntry<KEY,VALUE>
     VALUE value()
     {
         return value;
+    }
+
+    @Override
+    public String toString()
+    {
+        return format( "[%s=%s]", key, value );
+    }
+
+    static <VALUE, KEY> int entrySize( Layout<KEY,VALUE> layout, KEY key, VALUE value )
+    {
+        int keySize = layout.keySize( key );
+        int valueSize = layout.valueSize( value );
+        return keySize + valueSize + getOverhead( keySize, valueSize );
     }
 
     static <KEY, VALUE> BlockEntry<KEY,VALUE> read( PageCursor pageCursor, Layout<KEY,VALUE> layout )

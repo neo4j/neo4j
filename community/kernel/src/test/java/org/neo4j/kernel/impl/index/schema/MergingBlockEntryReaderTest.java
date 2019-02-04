@@ -26,7 +26,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.Iterator;
 import java.util.List;
 
 import org.neo4j.index.internal.gbptree.SimpleLongLayout;
@@ -103,8 +102,8 @@ class MergingBlockEntryReaderTest
     {
         // given
         MergingBlockEntryReader<MutableLong,MutableLong> merger = new MergingBlockEntryReader<>( layout );
-        ListBasedBlockEntryCursor<MutableLong,MutableLong> empty = newReader( emptyList() );
-        ListBasedBlockEntryCursor<MutableLong,MutableLong> nonEmpty = newReader( someBlockEntries() );
+        CloseTrackingBlockEntryCursor empty = newReader( emptyList() );
+        CloseTrackingBlockEntryCursor nonEmpty = newReader( someBlockEntries() );
         merger.addSource( empty );
         merger.addSource( nonEmpty );
 
@@ -121,8 +120,8 @@ class MergingBlockEntryReaderTest
     {
         // given
         MergingBlockEntryReader<MutableLong,MutableLong> merger = new MergingBlockEntryReader<>( layout );
-        ListBasedBlockEntryCursor<MutableLong,MutableLong> empty = newReader( emptyList() );
-        ListBasedBlockEntryCursor<MutableLong,MutableLong> nonEmpty = newReader( someBlockEntries() );
+        CloseTrackingBlockEntryCursor empty = newReader( emptyList() );
+        CloseTrackingBlockEntryCursor nonEmpty = newReader( someBlockEntries() );
         merger.addSource( empty );
         merger.addSource( nonEmpty );
 
@@ -159,9 +158,9 @@ class MergingBlockEntryReaderTest
         return result;
     }
 
-    private ListBasedBlockEntryCursor<MutableLong,MutableLong> newReader( List<BlockEntry<MutableLong,MutableLong>> expected )
+    private CloseTrackingBlockEntryCursor newReader( List<BlockEntry<MutableLong,MutableLong>> expected )
     {
-        return new ListBasedBlockEntryCursor<>( expected );
+        return new CloseTrackingBlockEntryCursor( expected );
     }
 
     private List<BlockEntry<MutableLong,MutableLong>> someBlockEntries()
@@ -177,43 +176,19 @@ class MergingBlockEntryReaderTest
         return entries;
     }
 
-    private class ListBasedBlockEntryCursor<KEY,VALUE> implements BlockEntryCursor<KEY,VALUE>
+    private class CloseTrackingBlockEntryCursor extends ListBasedBlockEntryCursor<MutableLong,MutableLong>
     {
-        private Iterator<BlockEntry<KEY,VALUE>> entries;
-        private BlockEntry<KEY,VALUE> next;
         private boolean closed;
 
-        ListBasedBlockEntryCursor( List<BlockEntry<KEY,VALUE>> entries )
+        CloseTrackingBlockEntryCursor( Iterable<BlockEntry<MutableLong,MutableLong>> blockEntries )
         {
-            this.entries = entries.iterator();
-        }
-
-        @Override
-        public boolean next()
-        {
-            if ( entries.hasNext() )
-            {
-                next = entries.next();
-                return true;
-            }
-            return false;
-        }
-
-        @Override
-        public KEY key()
-        {
-            return next.key();
-        }
-
-        @Override
-        public VALUE value()
-        {
-            return next.value();
+            super( blockEntries );
         }
 
         @Override
         public void close()
         {
+            super.close();
             closed = true;
         }
     }

@@ -33,18 +33,16 @@ import org.neo4j.kernel.impl.transaction.log.ReadAheadChannel;
 public class BlockReader<KEY,VALUE> implements Closeable
 {
     private final StoreChannel channel;
-    private final long blockSize;
     private final FileSystemAbstraction fs;
     private final File file;
     private final Layout<KEY,VALUE> layout;
 
-    BlockReader( FileSystemAbstraction fs, File file, long blockSize, Layout<KEY,VALUE> layout ) throws IOException
+    BlockReader( FileSystemAbstraction fs, File file, Layout<KEY,VALUE> layout ) throws IOException
     {
         this.fs = fs;
         this.file = file;
         this.layout = layout;
         this.channel = fs.open( file, OpenMode.READ );
-        this.blockSize = blockSize;
     }
 
     BlockEntryReader<KEY,VALUE> nextBlock() throws IOException
@@ -56,9 +54,11 @@ public class BlockReader<KEY,VALUE> implements Closeable
         }
         StoreChannel blockChannel = fs.open( file, OpenMode.READ );
         blockChannel.position( position );
-        channel.position( position + blockSize );
         PageCursor pageCursor = new ReadableChannelPageCursor( new ReadAheadChannel<>( blockChannel ) );
-        return new BlockEntryReader<>( pageCursor, layout );
+        BlockEntryReader<KEY,VALUE> blockEntryReader = new BlockEntryReader<>( pageCursor, layout );
+        long blockSize = blockEntryReader.blockSize();
+        channel.position( position + blockSize );
+        return blockEntryReader;
     }
 
     @Override

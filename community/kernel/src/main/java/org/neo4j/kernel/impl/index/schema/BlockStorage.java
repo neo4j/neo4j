@@ -31,19 +31,20 @@ import java.util.Comparator;
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.ByteArrayPageCursor;
 import org.neo4j.util.Preconditions;
+import org.neo4j.util.VisibleForTesting;
 
-import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.getOverhead;
-
+// TODO potentially remove padding altogether!!!!!
 class BlockStorage<KEY, VALUE> implements Closeable
 {
-    static final int BLOCK_HEADER_SIZE = Long.BYTES; // keyCount
+    static final int BLOCK_HEADER_SIZE = Long.BYTES  // blockSize
+                                       + Long.BYTES; // entryCount
 
     private final Layout<KEY,VALUE> layout;
     private final FileSystemAbstraction fs;
-    private final File blockFile;
     private final MutableList<BlockEntry<KEY,VALUE>> bufferedEntries;
     private final ByteBuffer byteBuffer;
     private final Comparator<BlockEntry<KEY,VALUE>> comparator;
@@ -51,8 +52,9 @@ class BlockStorage<KEY, VALUE> implements Closeable
     private final Monitor monitor;
     private final int blockSize;
     private final ByteBufferFactory bufferFactory;
+    private File blockFile;
+    private int numberOfBlocksInCurrentFile;
     private int currentBufferSize;
-    private int mergeIteration;
     private boolean doneAdding;
 
     BlockStorage( Layout<KEY,VALUE> layout, ByteBufferFactory bufferFactory, FileSystemAbstraction fs, File blockFile, Monitor monitor, int blockSize )
@@ -68,22 +70,20 @@ class BlockStorage<KEY, VALUE> implements Closeable
         this.byteBuffer = bufferFactory.newBuffer( blockSize );
         this.comparator = ( e0, e1 ) -> layout.compare( e0.key(), e1.key() );
         this.storeChannel = fs.create( blockFile );
-        resetBuffer();
+        resetBufferedEntries();
     }
 
     public void add( KEY key, VALUE value ) throws IOException
     {
         Preconditions.checkState( !doneAdding, "Cannot add more after done adding" );
 
-        int keySize = layout.keySize( key );
-        int valueSize = layout.valueSize( value );
-        int overhead = getOverhead( keySize, valueSize );
-        int entrySize = keySize + valueSize + overhead;
+        int entrySize = BlockEntry.entrySize( layout, key, value );
 
         if ( currentBufferSize + entrySize > blockSize )
         {
             // append buffer to file and clear buffers
             flushAndResetBuffer();
+            numberOfBlocksInCurrentFile++;
         }
 
         bufferedEntries.add( new BlockEntry<>( key, value ) );
@@ -96,13 +96,13 @@ class BlockStorage<KEY, VALUE> implements Closeable
         if ( !bufferedEntries.isEmpty() )
         {
             flushAndResetBuffer();
+            numberOfBlocksInCurrentFile++;
         }
         doneAdding = true;
     }
 
-    private void resetBuffer()
+    private void resetBufferedEntries()
     {
-        byteBuffer.clear();
         bufferedEntries.clear();
         currentBufferSize = BLOCK_HEADER_SIZE;
     }
@@ -110,26 +110,134 @@ class BlockStorage<KEY, VALUE> implements Closeable
     private void flushAndResetBuffer() throws IOException
     {
         bufferedEntries.sortThis( comparator );
-        ByteArrayPageCursor pageCursor = new ByteArrayPageCursor( byteBuffer );
 
-        // Header
-        pageCursor.putLong( bufferedEntries.size() );
-
-        // Entries
-        for ( BlockEntry<KEY,VALUE> entry : bufferedEntries )
-        {
-            BlockEntry.write( pageCursor, layout, entry );
-        }
-
-        // TODO solve the BIG padding problem
-        // Zero pad
-        pageCursor.putBytes( blockSize - currentBufferSize, (byte) 0 );
+        ListBasedBlockEntryCursor<KEY,VALUE> entries = new ListBasedBlockEntryCursor<>( bufferedEntries );
+        writeBlock( storeChannel, entries, blockSize, bufferedEntries.size() );
 
         // Append to file
-        byteBuffer.flip();
-        storeChannel.writeAll( byteBuffer );
         monitor.blockFlushed( bufferedEntries.size(), currentBufferSize, storeChannel.position() );
-        resetBuffer();
+        resetBufferedEntries();
+    }
+
+    public void merge() throws IOException
+    {
+        int mergeFactor = 2;
+        File sourceFile = blockFile;
+        File targetFile = new File( blockFile.getParent(), blockFile.getName() + ".b" );
+        while ( numberOfBlocksInCurrentFile > 1 )
+        {
+            // Perform one complete merge iteration, merging all blocks from source into target.
+            // After this step, target will contain fewer blocks than source, but may need another merge iteration.
+            try ( BlockReader<KEY,VALUE> reader = reader( sourceFile );
+                  StoreChannel targetChannel = fs.open( targetFile, OpenMode.READ_WRITE ) )
+            {
+                int blocksMergedSoFar = 0;
+                int blocksInMergedFile = 0;
+                while ( blocksMergedSoFar < numberOfBlocksInCurrentFile )
+                {
+                    blocksMergedSoFar += performSingleMerge( mergeFactor, reader, targetChannel );
+                    blocksInMergedFile++;
+                }
+                numberOfBlocksInCurrentFile = blocksInMergedFile;
+                monitor.mergeIterationFinished( blocksMergedSoFar, blocksInMergedFile );
+            }
+
+            // Flip and restore the channelz
+            File tmpSourceFile = sourceFile;
+            sourceFile = targetFile;
+            targetFile = tmpSourceFile;
+        }
+        blockFile = sourceFile;
+        // todo Clean away the other file
+    }
+
+    private int performSingleMerge( int mergeFactor, BlockReader<KEY,VALUE> reader, StoreChannel targetChannel )
+            throws IOException
+    {
+        try ( MergingBlockEntryReader<KEY,VALUE> merger = new MergingBlockEntryReader<>( layout ) )
+        {
+            long blockSize = 0;
+            long entryCount = 0;
+            int blocksMerged = 0;
+            for ( int i = 0; i < mergeFactor; i++ )
+            {
+                BlockEntryReader<KEY,VALUE> source = reader.nextBlock();
+                if ( source != null )
+                {
+                    blockSize += source.blockSize();
+                    entryCount += source.entryCount();
+                    blocksMerged++;
+                    merger.addSource( source );
+                }
+                else
+                {
+                    break;
+                }
+            }
+
+            writeBlock( targetChannel, merger, blockSize, entryCount );
+            monitor.mergedBlocks( blockSize, entryCount, blocksMerged );
+            return blocksMerged;
+        }
+    }
+
+    private void writeBlock( StoreChannel targetChannel, BlockEntryCursor<KEY,VALUE> merger, long blockSize, long entryCount ) throws IOException
+    {
+        writeHeader( byteBuffer, blockSize, entryCount );
+        long actualDataSize = writeMergedBlock( targetChannel, byteBuffer, layout, merger );
+        writeLastEntriesWithPadding( targetChannel, byteBuffer, blockSize - actualDataSize );
+    }
+
+    private static void writeHeader( ByteBuffer byteBuffer, long blockSize, long entryCount )
+    {
+        byteBuffer.putLong( blockSize );
+        byteBuffer.putLong( entryCount );
+    }
+
+    private static <KEY, VALUE> long writeMergedBlock( StoreChannel targetChannel, ByteBuffer byteBuffer, Layout<KEY,VALUE> layout,
+            BlockEntryCursor<KEY,VALUE> merger ) throws IOException
+    {
+        // Loop over block entries
+        long actualDataSize = BLOCK_HEADER_SIZE;
+        ByteArrayPageCursor pageCursor = new ByteArrayPageCursor( byteBuffer );
+        while ( merger.next() )
+        {
+            KEY key = merger.key();
+            VALUE value = merger.value();
+            int entrySize = BlockEntry.entrySize( layout, key, value );
+            actualDataSize += entrySize;
+
+            if ( byteBuffer.remaining() < entrySize )
+            {
+                // flush and reset + DON'T PAD!!!
+                byteBuffer.flip();
+                targetChannel.writeAll( byteBuffer );
+                byteBuffer.clear();
+            }
+
+            BlockEntry.write( pageCursor, layout, key, value );
+        }
+        return actualDataSize;
+    }
+
+    private static void writeLastEntriesWithPadding( StoreChannel channel, ByteBuffer byteBuffer, long padding ) throws IOException
+    {
+        boolean didWrite;
+        do
+        {
+            int toPadThisTime = (int) Math.min( byteBuffer.remaining(), padding );
+            byte[] padArray = new byte[toPadThisTime];
+            byteBuffer.put( padArray );
+            padding -= toPadThisTime;
+            didWrite = byteBuffer.position() > 0;
+            if ( didWrite )
+            {
+                byteBuffer.flip();
+                channel.writeAll( byteBuffer );
+                byteBuffer.clear();
+            }
+        }
+        while ( didWrite );
     }
 
     @Override
@@ -138,14 +246,15 @@ class BlockStorage<KEY, VALUE> implements Closeable
         IOUtils.closeAll( storeChannel );
     }
 
-    private long calculateBlockSize()
+    @VisibleForTesting
+    BlockReader<KEY,VALUE> reader() throws IOException
     {
-        return (long) Math.pow( 2, mergeIteration ) * blockSize;
+        return reader( blockFile );
     }
 
-    public BlockStorageReader<KEY,VALUE> reader() throws IOException
+    private BlockReader<KEY,VALUE> reader( File file ) throws IOException
     {
-        return new BlockStorageReader<>( fs, blockFile, calculateBlockSize(), layout );
+        return new BlockReader<>( fs, file, layout );
     }
 
     public interface Monitor
@@ -153,6 +262,10 @@ class BlockStorage<KEY, VALUE> implements Closeable
         void entryAdded( int entrySize );
 
         void blockFlushed( long keyCount, int numberOfBytes, long positionAfterFlush );
+
+        void mergeIterationFinished( int numberOfBlocksBefore, int numberOfBlocksAfter );
+
+        void mergedBlocks( long resultingBlockSize, long resultingEntryCount, int numberOfBlocks );
 
         class Adapter implements Monitor
         {
@@ -163,6 +276,16 @@ class BlockStorage<KEY, VALUE> implements Closeable
 
             @Override
             public void blockFlushed( long keyCount, int numberOfBytes, long positionAfterFlush )
+            {   // no-op
+            }
+
+            @Override
+            public void mergeIterationFinished( int numberOfBlocksBefore, int numberOfBlocksAfter )
+            {   // no-op
+            }
+
+            @Override
+            public void mergedBlocks( long resultingBlockSize, long resultingEntryCount, int numberOfBlocks )
             {   // no-op
             }
         }

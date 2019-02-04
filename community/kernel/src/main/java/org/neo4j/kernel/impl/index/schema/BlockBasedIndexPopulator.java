@@ -76,8 +76,10 @@ public class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,VALUE exte
         }
     }
 
-    void finishUp()
+    void finishUp() throws IOException
     {
+        blockStorage.doneAdding();
+        blockStorage.merge();
 //         for ( ... ) // Multi thread
 //        blockStorage.merge();
 //        Iterator<KEY,VALUE> iter = blockStorage.read();

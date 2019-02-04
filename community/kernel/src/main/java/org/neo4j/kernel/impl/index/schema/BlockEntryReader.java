@@ -26,6 +26,7 @@ import org.neo4j.io.pagecache.PageCursor;
 
 public class BlockEntryReader<KEY,VALUE> implements BlockEntryCursor<KEY,VALUE>
 {
+    private final long blockSize;
     private final long entryCount;
     private final PageCursor pageCursor;
     private final KEY key;
@@ -36,6 +37,7 @@ public class BlockEntryReader<KEY,VALUE> implements BlockEntryCursor<KEY,VALUE>
     BlockEntryReader( PageCursor pageCursor, Layout<KEY,VALUE> layout )
     {
         this.pageCursor = pageCursor;
+        this.blockSize = pageCursor.getLong();
         this.entryCount = pageCursor.getLong();
         this.layout = layout;
         this.key = layout.newKey();
@@ -51,6 +53,11 @@ public class BlockEntryReader<KEY,VALUE> implements BlockEntryCursor<KEY,VALUE>
         BlockEntry.read( pageCursor, layout, key, value );
         readEntries++;
         return true;
+    }
+
+    public long blockSize()
+    {
+        return blockSize;
     }
 
     public long entryCount()
