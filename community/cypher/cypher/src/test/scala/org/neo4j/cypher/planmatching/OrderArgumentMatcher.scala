@@ -35,9 +35,8 @@ case class OrderArgumentMatcher(expected: ProvidedOrder) extends Matcher[Interna
     val anonArgs = args.map(arg => ProvidedOrder(arg.columns.map(col => {
       col.expression match {
         case variable@Variable(varName) => ProvidedOrder.Column(Variable(removeGeneratedNames(varName))(variable.position), col.isAscending)
-        case prop@Property(Variable(varName), PropertyKeyName(propName)) =>
-          val pos = prop.position
-          ProvidedOrder.Column(Property(Variable(removeGeneratedNames(varName))(pos), PropertyKeyName(propName)(pos))(pos), col.isAscending)
+        case prop@Property(v@Variable(varName), p@PropertyKeyName(propName)) =>
+          ProvidedOrder.Column(Property(Variable(removeGeneratedNames(varName))(v.position), PropertyKeyName(propName)(p.position))(prop.position), col.isAscending)
       }
     })))
     MatchResult(

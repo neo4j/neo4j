@@ -835,13 +835,12 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     */
   private def renameProvidedOrderColumns(columns: Seq[ProvidedOrder.Column], projectExpressions: Map[String, Expression]): Seq[ProvidedOrder.Column] = {
     columns.map {
-      case columnOrder@ProvidedOrder.Column(Property(Variable(varName), PropertyKeyName(propName))) =>
-          val pos = columnOrder.expression.position
+      case columnOrder@ProvidedOrder.Column(e@Property(v@Variable(varName), p@PropertyKeyName(propName))) =>
           projectExpressions.collectFirst {
             case (newName, Property(Variable(`varName`), PropertyKeyName(`propName`)) | CachedNodeProperty(`varName`, PropertyKeyName(`propName`))) =>
-              ProvidedOrder.Column(Variable(newName)(pos), columnOrder.isAscending)
+              ProvidedOrder.Column(Variable(newName)(v.position), columnOrder.isAscending)
             case (newName, Variable(`varName`)) =>
-              ProvidedOrder.Column(Property(Variable(newName)(pos), PropertyKeyName(propName)(pos))(pos), columnOrder.isAscending)
+              ProvidedOrder.Column(Property(Variable(newName)(v.position), PropertyKeyName(propName)(p.position))(e.position), columnOrder.isAscending)
           }.getOrElse(columnOrder)
       case columnOrder@ProvidedOrder.Column(expression) =>
         projectExpressions.collectFirst {
