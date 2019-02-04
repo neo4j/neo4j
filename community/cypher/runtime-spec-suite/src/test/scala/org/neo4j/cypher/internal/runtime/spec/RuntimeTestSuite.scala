@@ -239,12 +239,11 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
               equalWithoutOrder(expectedRows, rows),
               s"""Expected rows:
                  |
-            |${pretty(expectedRows)}
+                 |${pretty(expectedRows)}
                  |
-            |but got
+                 |but got
                  |
-            |${pretty(rows)}
-          """.stripMargin,
+                 |${pretty(rows)}""".stripMargin,
               ""
             )
         }
