@@ -249,7 +249,7 @@ public class OutputMappers
                 userClass.getSimpleName() );
     }
 
-    private List<Field> instanceFields( Class<?> userClass )
+    static List<Field> instanceFields( Class<?> userClass )
     {
         return Arrays.stream( userClass.getDeclaredFields() )
                 .filter( f -> !isStatic( f.getModifiers() ) &&

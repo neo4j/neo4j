@@ -23,6 +23,7 @@ import org.apache.commons.lang3.exception.ExceptionUtils;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.lang.reflect.ParameterizedType;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -33,23 +34,29 @@ import java.time.temporal.TemporalAmount;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 
 import org.neo4j.codegen.ClassGenerator;
 import org.neo4j.codegen.ClassHandle;
 import org.neo4j.codegen.CodeBlock;
 import org.neo4j.codegen.CodeGenerationNotSupportedException;
 import org.neo4j.codegen.CodeGenerator;
+import org.neo4j.codegen.CompilationFailureException;
 import org.neo4j.codegen.Expression;
 import org.neo4j.codegen.FieldReference;
 import org.neo4j.codegen.MethodDeclaration;
 import org.neo4j.codegen.TypeReference;
+import org.neo4j.collection.RawIterator;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.spatial.Point;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
 import org.neo4j.internal.kernel.api.procs.UserFunctionSignature;
+import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.CallableUserFunction;
 import org.neo4j.kernel.api.proc.Context;
 import org.neo4j.kernel.impl.util.DefaultValueMapper;
@@ -88,13 +95,16 @@ import static org.neo4j.codegen.Expression.constant;
 import static org.neo4j.codegen.Expression.equal;
 import static org.neo4j.codegen.Expression.getStatic;
 import static org.neo4j.codegen.Expression.invoke;
+import static org.neo4j.codegen.Expression.newInstance;
 import static org.neo4j.codegen.Expression.ternary;
 import static org.neo4j.codegen.Expression.unbox;
 import static org.neo4j.codegen.FieldReference.field;
 import static org.neo4j.codegen.MethodDeclaration.method;
+import static org.neo4j.codegen.MethodReference.constructorReference;
 import static org.neo4j.codegen.MethodReference.methodReference;
 import static org.neo4j.codegen.Parameter.param;
 import static org.neo4j.codegen.TypeReference.OBJECT;
+import static org.neo4j.codegen.TypeReference.parameterizedType;
 import static org.neo4j.codegen.TypeReference.toBoxedType;
 import static org.neo4j.codegen.TypeReference.typeReference;
 import static org.neo4j.codegen.bytecode.ByteCode.BYTECODE;
@@ -137,6 +147,13 @@ public final class ProcedureCompilation
     private static final MethodDeclaration.Builder USER_FUNCTION = method( AnyValue.class, "apply",
             param( Context.class, "ctx" ),
             param( AnyValue[].class, "input" ) )
+            .throwsException( typeReference( ProcedureException.class ) );
+    private static final MethodDeclaration.Builder USER_PROCEDURE = method(
+            parameterizedType( RawIterator.class, typeReference( AnyValue[].class), typeReference( ProcedureException.class ) ),
+            "apply",
+            param( Context.class, "ctx" ),
+            param( AnyValue[].class, "input" ),
+            param( ResourceTracker.class, "tracker" ))
             .throwsException( typeReference( ProcedureException.class ) );
 
     private ProcedureCompilation()
@@ -249,9 +266,169 @@ public final class ProcedureCompilation
         }
     }
 
+    /**
+     * Generates code for a user-defined function.
+     * <p>
+     * Given a user-defined function defined by
+     *
+     * <pre>
+     *     class MyClass {
+     *       {@literal @}Context
+     *        public Log log;
+
+     *       {@literal @}UserFunction
+     *        public double addPi(long value) {
+     *            return value + Math.PI;
+     *        }
+     *     }
+     * </pre>
+     * <p>
+     * we will generate something like
+     *
+     * <pre>
+     *     class GeneratedAddPi implements CallableUserFunction {
+     *         public static UserFunctionSignature SIGNATURE;
+     *         public static MyClass USER_CLASS;
+     *         public static FieldSetter SETTER_0;
+     *
+     *         public AnyValue apply(Context ctx, AnyValue[] input) {
+     *              try {
+     *                  USER_CLASS.log = (Log) SETTER_0.get(ctx);
+     *                  return Values.doubleValue(UDF.addPi( ((NumberValue) input[0]).longValue() );
+     *              } catch (Throwable T) {
+     *                  throw new ProcedureException([appropriate error msg], T);
+     *              }
+     *         }
+     *
+     *         public UserFunctionSignature signature() {return SIGNATURE;}
+     *     }
+     * </pre>
+     * <p>
+     * where the static fields are set once during loading via reflection.
+     *
+     * @param signature the signature of the user-defined function
+     * @param fieldSetters the fields to set before each call.
+     * @param methodToCall the method to call
+     * @return a CallableUserFunction delegating to the underlying user-defined function.
+     * @throws ProcedureException if something went wrong when compiling the user-defined function.
+     */
+    static CallableProcedure compileProcedure(
+            ProcedureSignature signature, List<FieldSetter> fieldSetters,
+            Method methodToCall ) throws ProcedureException
+    {
+
+        ClassHandle handle;
+        try
+        {
+            CodeGenerator codeGenerator = codeGenerator();
+            Class<?> iterator = generateIterator( codeGenerator, procedureType( methodToCall ) );
+
+            try ( ClassGenerator generator = codeGenerator.generateClass( PACKAGE, className( signature ), CallableProcedure.class ) )
+            {
+                //static fields
+                FieldReference signatureField = generator.publicStaticField( typeReference( ProcedureSignature.class ), SIGNATURE_NAME );
+                FieldReference userClass = generator.publicStaticField( typeReference( methodToCall.getDeclaringClass() ), USER_CLASS );
+                List<FieldReference> fieldsToSet = new ArrayList<>( fieldSetters.size() );
+                for ( int i = 0; i < fieldSetters.size(); i++ )
+                {
+                    fieldsToSet.add( generator.publicStaticField( typeReference( FieldSetter.class ), "SETTER_" + i ) );
+                }
+
+                //CallableProcedure::apply
+                try ( CodeBlock method = generator.generate( USER_PROCEDURE ) )
+                {
+                    method.tryCatch(
+                            body -> {
+                                procedureBody( body, fieldSetters, fieldsToSet, userClass, signatureField, methodToCall, iterator );
+                            },
+                            onError ->
+                                    onError( onError, format( "procedure `%s`", signature.name() ) ),
+                            param( Throwable.class, "T" )
+                    );
+                }
+
+                //CallableUserFunction::signature
+                try ( CodeBlock method = generator.generateMethod( ProcedureSignature.class, "signature" ) )
+                {
+                    method.returns( getStatic( signatureField ) );
+                }
+
+                handle = generator.handle();
+            }
+            Class<?> clazz = handle.loadClass();
+
+            //set all static fields
+            clazz.getDeclaredField( SIGNATURE_NAME ).set( null, signature );
+            clazz.getDeclaredField( USER_CLASS ).set( null, methodToCall.getDeclaringClass().newInstance() );
+            for ( int i = 0; i < fieldSetters.size(); i++ )
+            {
+                clazz.getDeclaredField( "SETTER_" + i ).set(null, fieldSetters.get( i ));
+            }
+
+            return (CallableProcedure) clazz.newInstance();
+        }
+        catch ( Throwable e )
+        {
+            throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed, e,
+                    "Failed to compile function defined in `%s`: %s", methodToCall.getDeclaringClass().getSimpleName(),
+                    e.getMessage() );
+        }
+    }
+
+    private static Class<?> generateIterator( CodeGenerator codeGenerator, Class<?> outputType )
+    {
+        ClassHandle handle;
+
+        try ( ClassGenerator generator = codeGenerator.generateClass( BaseStreamIterator.class, PACKAGE, iteratorName( outputType ) ) )
+        {
+            try ( CodeBlock constructor = generator.generateConstructor( param( Stream.class, "stream" ),
+                    param( ResourceTracker.class, "tracker" ), param( ProcedureSignature.class, "signature" ) ) )
+            {
+                constructor.expression(
+                        Expression.invokeSuper( typeReference( BaseStreamIterator.class ), constructor.load( "stream" ),
+                                constructor.load( "tracker" ), constructor.load( "signature" ) ) );
+            }
+
+            try ( CodeBlock method = generator
+                    .generate( method( AnyValue[].class, "map", param( Object.class, "in" ) ) ) )
+            {
+                method.assign( outputType, "foo", cast( outputType, method.load( "in" ) ) );
+                //we know all fields are properly typed
+                List<Field> fields = OutputMappers.instanceFields( outputType );
+                Expression[] mapped = new Expression[fields.size()];
+                for ( int i = 0; i < fields.size(); i++ )
+                {
+                    Field f = fields.get( i );
+                    mapped[i] = toAnyValue( Expression.get( method.load( "foo" ), field( f ) ) );
+                }
+                method.returns( Expression.newArray( typeReference( AnyValue.class ), mapped ) );
+            }
+            handle = generator.handle();
+        }
+
+        try
+        {
+            return handle.loadClass();
+        }
+        catch ( CompilationFailureException e )
+        {
+            throw new RuntimeException( "Failed to generate iterator", e );
+        }
+    }
+
     private static String className( UserFunctionSignature signature )
     {
-        return format( "Generated_%s%d", signature.name().name(), System.nanoTime() );
+        return format( "GeneratedFunction_%s%d", signature.name().name(), System.nanoTime() );
+    }
+
+    private static String className( ProcedureSignature signature )
+    {
+        return format( "GeneratedProcedure_%s%d", signature.name().name(), System.nanoTime() );
+    }
+
+    private static String iteratorName( Class<?> out )
+    {
+        return format( "Iterator_%s%d", out.getSimpleName(), System.nanoTime() );
     }
 
     /**
@@ -263,33 +440,47 @@ public final class ProcedureCompilation
      * return [CONVERT TO AnyVALUE](USER_CLASS.call( [CONVERT_TO_JAVA] input[0], ... );
      */
     private static void functionBody( CodeBlock block,
-            List<FieldSetter> fieldSetters, List<FieldReference> fieldsToSet, FieldReference udfField,
+            List<FieldSetter> fieldSetters, List<FieldReference> fieldsToSet, FieldReference userClass,
             Method methodToCall )
     {
-        for ( int i = 0; i < fieldSetters.size(); i++ )
-        {
-            FieldSetter setter = fieldSetters.get( i );
-            Field field = setter.field();
-            Class<?> fieldType = field.getType();
-            block.put( getStatic( udfField ), field( field ),
-                    unboxIfNecessary( fieldType,
-                            invoke(
-                                    getStatic( fieldsToSet.get( i ) ),
-                                    methodReference( typeReference( FieldSetter.class ), OBJECT, "get",
-                                            typeReference( Context.class ) ),
-                                    block.load( "ctx" ) ) ) );
-        }
-        Class<?>[] parameterTypes = methodToCall.getParameterTypes();
-        Expression[] parameters = new Expression[parameterTypes.length];
-        for ( int i = 0; i < parameterTypes.length; i++ )
-        {
-            parameters[i] = fromAnyValue(
-                    typeReference( parameterTypes[i] ), arrayLoad( block.load( "input" ), constant( i ) ), block );
-        }
+        //inject fileds in user class
+        injectFields( block, fieldSetters, fieldsToSet, userClass );
+
+        //get parameters to the user-method to call
+        Expression[] parameters = parameters( block, methodToCall );
+
+        //call the actual function
         block.assign( methodToCall.getReturnType(), "fromFunction",
-                invoke( getStatic( udfField ), methodReference( methodToCall ), parameters ) );
-        block.returns(
-                toAnyValue( block.load( "fromFunction" ) ) );
+                invoke( getStatic( userClass ), methodReference( methodToCall ), parameters ) );
+        block.returns( toAnyValue( block.load( "fromFunction" ) ) );
+    }
+
+    private static void procedureBody( CodeBlock block,
+            List<FieldSetter> fieldSetters, List<FieldReference> fieldsToSet, FieldReference userClass,
+            FieldReference signature, Method methodToCall, Class<?> iterator )
+    {
+        injectFields( block, fieldSetters, fieldsToSet, userClass );
+        Expression[] parameters = parameters( block, methodToCall );
+
+        block.assign( parameterizedType( Stream.class, procedureType( methodToCall )), "fromProcedure",
+                invoke( getStatic( userClass ), methodReference( methodToCall ), parameters ) );
+
+        block.returns( invoke( newInstance( iterator ), constructorReference( iterator, Stream.class, ResourceTracker.class, ProcedureSignature.class ),
+                block.load( "fromProcedure" ), block.load( "tracker" ), getStatic( signature ) ) );
+    }
+
+    private static Class<?> procedureType( Method method )
+    {
+        //return type is always Stream<> or void
+        if ( method.getReturnType().equals( Void.class ) )
+        {
+            return Void.class;
+        }
+        else
+        {
+            ParameterizedType returnType = (ParameterizedType) method.getGenericReturnType();
+            return (Class<?>) returnType.getActualTypeArguments()[0];
+        }
     }
 
     /**
@@ -424,7 +615,7 @@ public final class ProcedureCompilation
      * it into the corresponding AnyValue
      *
      * @param expression the expression to evaluate
-     * @return an expression propery mapped to AnyValue
+     * @return an expression properly mapped to AnyValue
      */
     private static Expression toAnyValue( Expression expression )
     {
@@ -669,4 +860,35 @@ public final class ProcedureCompilation
     {
         return getStatic( field( typeReference( Values.class ), typeReference( Value.class ), "NO_VALUE" ) );
     }
+
+    private static Expression[] parameters( CodeBlock block, Method methodToCall )
+    {
+        Class<?>[] parameterTypes = methodToCall.getParameterTypes();
+        Expression[] parameters = new Expression[parameterTypes.length];
+        for ( int i = 0; i < parameterTypes.length; i++ )
+        {
+            parameters[i] = fromAnyValue(
+                    typeReference( parameterTypes[i] ), arrayLoad( block.load( "input" ), constant( i ) ), block );
+        }
+        return parameters;
+    }
+
+    private static void injectFields( CodeBlock block, List<FieldSetter> fieldSetters,
+            List<FieldReference> fieldsToSet, FieldReference userClass )
+    {
+        for ( int i = 0; i < fieldSetters.size(); i++ )
+        {
+            FieldSetter setter = fieldSetters.get( i );
+            Field field = setter.field();
+            Class<?> fieldType = field.getType();
+            block.put( getStatic( userClass ), field( field ),
+                    unboxIfNecessary( fieldType,
+                            invoke(
+                                    getStatic( fieldsToSet.get( i ) ),
+                                    methodReference( typeReference( FieldSetter.class ), OBJECT, "get",
+                                            typeReference( Context.class ) ),
+                                    block.load( "ctx" ) ) ) );
+        }
+    }
+
 }

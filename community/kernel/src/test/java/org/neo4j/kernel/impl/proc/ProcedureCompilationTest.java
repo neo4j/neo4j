@@ -38,11 +38,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.stream.Stream;
 
+import org.neo4j.collection.RawIterator;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.Neo4jTypes;
+import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
 import org.neo4j.internal.kernel.api.procs.UserFunctionSignature;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.ResourceTracker;
+import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.CallableUserFunction;
 import org.neo4j.kernel.api.proc.Context;
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
@@ -53,20 +58,27 @@ import org.neo4j.values.storable.Values;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.internal.kernel.api.procs.FieldSignature.inputField;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTAny;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTBoolean;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTByteArray;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTFloat;
+import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTInteger;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTList;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTNumber;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTString;
 import static org.neo4j.internal.kernel.api.procs.UserFunctionSignature.functionSignature;
 import static org.neo4j.kernel.impl.proc.ProcedureCompilation.compileFunction;
+import static org.neo4j.kernel.impl.proc.ProcedureCompilation.compileProcedure;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 import static org.neo4j.values.storable.Values.PI;
 import static org.neo4j.values.storable.Values.TRUE;
@@ -84,6 +96,7 @@ public class ProcedureCompilationTest
     private static final AnyValue[] EMPTY = new AnyValue[0];
     private static final DefaultValueMapper VALUE_MAPPER = new DefaultValueMapper( mock( EmbeddedProxySPI.class ) );
     private static final KernelTransaction TRANSACTION = mock( KernelTransaction.class );
+    public static final ResourceTracker RESOURCE_TRACKER = mock( ResourceTracker.class );
 
     private Context ctx;
 
@@ -111,7 +124,7 @@ public class ProcedureCompilationTest
     }
 
     @Test
-    void shouldExposeSignature() throws ProcedureException
+    void shouldExposeUserFunctionSignature() throws ProcedureException
     {
         // Given
         UserFunctionSignature signature = functionSignature( "test", "foo" ).out( Neo4jTypes.NTInteger ).build();
@@ -123,7 +136,7 @@ public class ProcedureCompilationTest
     }
 
     @Test
-    void shouldAccessContext() throws ProcedureException, NoSuchFieldException, IllegalAccessException
+    void functionShouldAccessContext() throws ProcedureException, NoSuchFieldException, IllegalAccessException
     {
         // Given
         UserFunctionSignature signature = functionSignature( "test", "foo" ).out( Neo4jTypes.NTInteger ).build();
@@ -303,6 +316,80 @@ public class ProcedureCompilationTest
         }
     }
 
+    @Test
+    void shouldCallSimpleProcedure() throws ProcedureException
+    {
+        // Given
+        ProcedureSignature signature = ProcedureSignature.procedureSignature(  "test", "foo" )
+                .in( "in", NTInteger )
+                .out( singletonList( inputField( "name", NTInteger ) ) ).build();
+        // When
+        CallableProcedure longStream =
+                compileProcedure( signature, emptyList(), method( "longStream", long.class ) );
+
+        // Then
+        RawIterator<AnyValue[],ProcedureException> iterator =
+                longStream.apply( ctx, new AnyValue[]{longValue( 1337L )}, RESOURCE_TRACKER );
+        assertArrayEquals( new AnyValue[]{longValue( 1337L )}, iterator.next() );
+        assertFalse( iterator.hasNext() );
+    }
+
+    @Test
+    void shouldExposeProcedureSignature() throws ProcedureException
+    {
+        // Given
+        ProcedureSignature signature = ProcedureSignature.procedureSignature(  "test", "foo" )
+                .in( "in", NTInteger )
+                .out( singletonList( inputField( "name", NTInteger ) ) ).build();
+        // When
+        CallableProcedure longStream =
+                compileProcedure( signature, emptyList(), method( "longStream", long.class ) );
+
+        // Then
+       assertEquals( signature, longStream.signature() );
+    }
+
+    @Test
+    void procedureShouldAccessContext() throws ProcedureException, NoSuchFieldException, IllegalAccessException
+    {
+        // Given
+        ProcedureSignature signature = ProcedureSignature.procedureSignature(  "test", "foo" )
+                .in( "in", NTString )
+                .out( singletonList( inputField( "name", NTString ) ) ).build();
+        FieldSetter setter1 = createSetter( InnerClass.class, "transaction", Context::kernelTransaction );
+        FieldSetter setter2 = createSetter( InnerClass.class, "thread", Context::thread );
+        Method stringStream = method( InnerClass.class, "stringStream" );
+
+        // Then
+        String threadName = Thread.currentThread().getName();
+        assertEquals( stringValue( "NULL AND NULL" ),
+                compileProcedure( signature, emptyList(), stringStream ).apply( ctx, EMPTY, RESOURCE_TRACKER ).next()[0] );
+        assertEquals( stringValue( "I'm transaction AND NULL" ),
+                compileProcedure( signature, singletonList( setter1 ), stringStream ).apply( ctx, EMPTY, RESOURCE_TRACKER ).next()[0] );
+        assertEquals( stringValue( "NULL AND " + threadName ),
+                compileProcedure( signature, singletonList( setter2 ), stringStream ).apply( ctx, EMPTY, RESOURCE_TRACKER ).next()[0] );
+        assertEquals( stringValue( "I'm transaction AND " + threadName ),
+                compileProcedure( signature, asList( setter1, setter2 ), stringStream ).apply( ctx, EMPTY, RESOURCE_TRACKER ).next()[0] );
+    }
+
+    @Test
+    void shouldHandleThrowingProcedure() throws ProcedureException
+    {
+        // Given
+        ResourceTracker tracker = mock( ResourceTracker.class );
+        ProcedureSignature signature = ProcedureSignature.procedureSignature(  "test", "foo" )
+                .in( "in", NTString )
+                .out( singletonList( inputField( "name", NTString ) ) ).build();
+
+        // When
+        CallableProcedure longMethod = compileProcedure( signature, emptyList(), method( "throwingLongStreamMethod" ) );
+
+        // Then
+        assertThrows( ProcedureException.class, () -> longMethod.apply( ctx, EMPTY, tracker ).next() );
+        verify( tracker ).registerCloseableResource( any( Stream.class ) );
+        verify( tracker ).unregisterCloseableResource( any( Stream.class ) );
+    }
+
     private <T> FieldSetter createSetter( Class<?> owner, String field, ComponentRegistry.Provider<T> provider )
             throws NoSuchFieldException, IllegalAccessException
     {
@@ -348,6 +435,13 @@ public class ProcedureCompilationTest
             String first = transaction != null ? transaction.toString() : "NULL";
             String second = thread != null ? thread.getName() : "NULL";
             return first + " AND " + second;
+        }
+
+        public Stream<StringOut> stringStream()
+        {
+            String first = transaction != null ? transaction.toString() : "NULL";
+            String second = thread != null ? thread.getName() : "NULL";
+            return Stream.of( new StringOut( first + " AND " + second ) );
         }
     }
 
@@ -503,5 +597,37 @@ public class ProcedureCompilationTest
             assertTrue( methodHashMap.containsKey( type ), type + " is not being tested!" );
         }
         return methodHashMap;
+    }
+
+    public Stream<LongOut> longStream( long in )
+    {
+        return Stream.of( new LongOut( in ) );
+    }
+
+    public Stream<LongOut> throwingLongStreamMethod()
+    {
+        return Stream.generate( () -> {
+            throw new RuntimeException( "wut!" );
+        } );
+    }
+
+    public static class LongOut
+    {
+        public long field;
+
+        public LongOut( long field )
+        {
+            this.field = field;
+        }
+    }
+
+    public static class StringOut
+    {
+        public String field;
+
+        public StringOut( String field )
+        {
+            this.field = field;
+        }
     }
 }
