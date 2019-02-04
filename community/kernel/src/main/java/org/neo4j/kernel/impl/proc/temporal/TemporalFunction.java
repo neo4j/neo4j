@@ -28,6 +28,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.function.Supplier;
 
+import org.neo4j.function.ThrowingFunction;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.DefaultParameterValue;
 import org.neo4j.internal.kernel.api.procs.FieldSignature;
@@ -147,7 +148,7 @@ public abstract class TemporalFunction<T extends AnyValue> implements CallableUs
         }
         else if ( input.length == 0 || input[0].equals( DEFAULT_TEMPORAL_ARGUMENT_VALUE ) )
         {
-            return now( ctx.get( DEFAULT_CLOCK ), null, defaultZone );
+            return now( ctx.statementClock(), null, defaultZone );
         }
         else if ( input[0] instanceof TextValue )
         {
@@ -163,7 +164,7 @@ public abstract class TemporalFunction<T extends AnyValue> implements CallableUs
             String timezone = onlyTimezone( map );
             if ( timezone != null )
             {
-                return now( ctx.get( DEFAULT_CLOCK ), timezone, defaultZone );
+                return now( ctx.statementClock(), timezone, defaultZone );
             }
             return build( map, defaultZone );
         }
@@ -223,7 +224,7 @@ public abstract class TemporalFunction<T extends AnyValue> implements CallableUs
     private static class Now<T extends AnyValue> extends SubFunction<T>
     {
         private static final List<FieldSignature> SIGNATURE = singletonList( inputField( "timezone", Neo4jTypes.NTAny, DEFAULT_PARAMETER_VALUE ) );
-        private final Key<Clock> key;
+        private final ThrowingFunction<Context,Clock, ProcedureException> clockSupplier;
 
         Now( TemporalFunction<T> function, String clock )
         {
@@ -233,13 +234,13 @@ public abstract class TemporalFunction<T extends AnyValue> implements CallableUs
             switch ( clock )
             {
             case "transaction":
-                this.key = Context.TRANSACTION_CLOCK;
+                this.clockSupplier = Context::transactionClock;
                 break;
             case "statement":
-                this.key = Context.STATEMENT_CLOCK;
+                this.clockSupplier = Context::statementClock;
                 break;
             case "realtime":
-                this.key = Context.SYSTEM_CLOCK;
+                this.clockSupplier = Context::systemClock;
                 break;
             default:
                 throw new IllegalArgumentException( "Unrecognized clock: " + clock );
@@ -255,12 +256,12 @@ public abstract class TemporalFunction<T extends AnyValue> implements CallableUs
             }
             else if ( input.length == 0 || input[0].equals( DEFAULT_TEMPORAL_ARGUMENT_VALUE ) )
             {
-                return function.now( ctx.get( key ), null, function.defaultZone );
+                return function.now( clockSupplier.apply( ctx ), null, function.defaultZone );
             }
             else if ( input.length == 1 && input[0] instanceof TextValue )
             {
                 TextValue timezone = (TextValue) input[0];
-                return function.now( ctx.get( key ), timezone.stringValue(), function.defaultZone );
+                return function.now( clockSupplier.apply( ctx ), timezone.stringValue(), function.defaultZone );
             }
             else
             {

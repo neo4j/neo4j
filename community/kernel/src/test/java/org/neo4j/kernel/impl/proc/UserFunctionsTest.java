@@ -151,7 +151,7 @@ class UserFunctionsTest
             @Override
             public AnyValue apply( Context ctx, AnyValue[] input ) throws ProcedureException
             {
-                return Values.stringValue( ctx.get( Context.THREAD ).getName() );
+                return Values.stringValue( ctx.thread().getName() );
             }
         } );
 

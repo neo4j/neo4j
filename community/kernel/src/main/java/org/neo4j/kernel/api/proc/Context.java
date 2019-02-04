@@ -58,11 +58,18 @@ public interface Context
     Key<Clock> STATEMENT_CLOCK = Key.key( STATEMENT_CLOCK_NAME, Clock.class );
     Key<Clock> TRANSACTION_CLOCK = Key.key( TRANSACTION_CLOCK_NAME, Clock.class );
 
-    <T> T get( Key<T> key ) throws ProcedureException;
     <T> T getOrElse( Key<T> key, T orElse );
 
     //I don't see much of a point of calling via a generic get method
     //so I think we should move towards real getters.
 
     ValueMapper<Object> valueMapper();
+    SecurityContext securityContext();
+    DependencyResolver dependencyResolver();
+    GraphDatabaseAPI graphDatabaseAPI();
+    Thread thread();
+    KernelTransaction kernelTransaction() throws ProcedureException;
+    Clock systemClock() throws ProcedureException;
+    Clock statementClock() throws ProcedureException;
+    Clock transactionClock() throws ProcedureException;
 }

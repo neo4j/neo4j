@@ -40,6 +40,7 @@ import org.neo4j.internal.collector.DataCollector;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.impl.fulltext.FulltextAdapter;
+import org.neo4j.kernel.api.proc.Context;
 import org.neo4j.kernel.api.security.provider.SecurityProvider;
 import org.neo4j.kernel.availability.StartupWaiter;
 import org.neo4j.kernel.builtinprocs.SpecialBuiltInProcedures;
@@ -66,10 +67,6 @@ import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTNode;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTPath;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTPoint;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTRelationship;
-import static org.neo4j.kernel.api.proc.Context.DATABASE_API;
-import static org.neo4j.kernel.api.proc.Context.DEPENDENCY_RESOLVER;
-import static org.neo4j.kernel.api.proc.Context.KERNEL_TRANSACTION;
-import static org.neo4j.kernel.api.proc.Context.SECURITY_CONTEXT;
 
 /**
  * This is the main factory for creating database instances. It delegates creation to three different modules
@@ -233,17 +230,17 @@ public class GraphDatabaseFacadeFactory
         //  - Group-transaction writes (same pattern as above, but rather than splitting large transactions,
         //                              combine lots of small ones)
         //  - Bleeding-edge performance (KernelTransaction, to bypass overhead of working with Core API)
-        globalProcedures.registerComponent( DependencyResolver.class, ctx -> ctx.get( DEPENDENCY_RESOLVER ), false );
-        globalProcedures.registerComponent( KernelTransaction.class, ctx -> ctx.get( KERNEL_TRANSACTION ), false );
-        globalProcedures.registerComponent( GraphDatabaseAPI.class, ctx -> ctx.get( DATABASE_API ), false );
+        globalProcedures.registerComponent( DependencyResolver.class, Context::dependencyResolver, false );
+        globalProcedures.registerComponent( KernelTransaction.class, Context::kernelTransaction, false );
+        globalProcedures.registerComponent( GraphDatabaseAPI.class, Context::graphDatabaseAPI, false );
 
         // Register injected public API components
         globalProcedures.registerComponent( Log.class, ctx -> proceduresLog, true );
         globalProcedures.registerComponent( ProcedureTransaction.class, new ProcedureTransactionProvider(), true );
         globalProcedures.registerComponent( org.neo4j.procedure.TerminationGuard.class, new TerminationGuardProvider(), true );
-        globalProcedures.registerComponent( SecurityContext.class, ctx -> ctx.get( SECURITY_CONTEXT ), true );
-        globalProcedures.registerComponent( FulltextAdapter.class, ctx -> ctx.get( DEPENDENCY_RESOLVER ).resolveDependency( FulltextAdapter.class ), true );
-        globalProcedures.registerComponent( DataCollector.class, ctx -> ctx.get( DEPENDENCY_RESOLVER ).resolveDependency( DataCollector.class ), false );
+        globalProcedures.registerComponent( SecurityContext.class, Context::securityContext, true );
+        globalProcedures.registerComponent( FulltextAdapter.class, ctx -> ctx.dependencyResolver().resolveDependency( FulltextAdapter.class ), true );
+        globalProcedures.registerComponent( DataCollector.class, ctx -> ctx.dependencyResolver().resolveDependency( DataCollector.class ), false );
 
         // Edition procedures
         try

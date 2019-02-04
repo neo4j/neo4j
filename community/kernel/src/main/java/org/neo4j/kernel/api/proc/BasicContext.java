@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api.proc;
 
+import java.time.Clock;
 import java.util.function.Function;
 
 import org.neo4j.common.DependencyResolver;
@@ -53,34 +54,6 @@ public class BasicContext implements Context
 
     @SuppressWarnings( "unchecked" )
     @Override
-    public <T> T get( Key<T> key ) throws ProcedureException
-    {
-        switch ( key.name() )
-        {
-        case VALUE_MAPPER_NAME:
-            return (T) valueMapper;
-        case DEPENDENCY_RESOLVER_NAME:
-            return (T) resolver;
-        case DATABASE_API_NAME:
-            return (T) resolver.resolveDependency( GraphDatabaseAPI.class );
-        case KERNEL_TRANSACTION_NAME:
-            return throwIfNull( key, kernelTransaction );
-        case SECURITY_CONTEXT_NAME:
-            return (T) securityContext;
-        case THREAD_NAME:
-            return (T) thread;
-        case SYSTEM_CLOCK_NAME:
-            return throwIfNull( key, kernelTransaction, t -> (T)t.clocks().systemClock() );
-        case STATEMENT_CLOCK_NAME:
-            return throwIfNull( key, kernelTransaction,  t -> (T)t.clocks().statementClock());
-        case TRANSACTION_CLOCK_NAME:
-            return throwIfNull( key, kernelTransaction,  t -> (T)t.clocks().transactionClock() );
-        default:
-            throw new ProcedureException( Status.Procedure.ProcedureCallFailed, "There is no `%s` in the current procedure call context.", key.name() );
-        }
-    }
-    @SuppressWarnings( "unchecked" )
-    @Override
     public <T> T getOrElse( Key<T> key, T orElse )
     {
         switch ( key.name() )
@@ -110,6 +83,54 @@ public class BasicContext implements Context
     public ValueMapper<Object> valueMapper()
     {
         return valueMapper;
+    }
+
+    @Override
+    public SecurityContext securityContext()
+    {
+        return securityContext;
+    }
+
+    @Override
+    public DependencyResolver dependencyResolver()
+    {
+        return resolver;
+    }
+
+    @Override
+    public GraphDatabaseAPI graphDatabaseAPI()
+    {
+        return resolver.resolveDependency( GraphDatabaseAPI.class );
+    }
+
+    @Override
+    public Thread thread()
+    {
+        return thread;
+    }
+
+    @Override
+    public KernelTransaction kernelTransaction() throws ProcedureException
+    {
+        return throwIfNull( KERNEL_TRANSACTION, kernelTransaction );
+    }
+
+    @Override
+    public Clock systemClock() throws ProcedureException
+    {
+        return throwIfNull( SYSTEM_CLOCK, kernelTransaction, t -> t.clocks().systemClock() );
+    }
+
+    @Override
+    public Clock statementClock() throws ProcedureException
+    {
+        return throwIfNull( STATEMENT_CLOCK, kernelTransaction, t -> t.clocks().statementClock() );
+    }
+
+    @Override
+    public Clock transactionClock() throws ProcedureException
+    {
+        return throwIfNull( TRANSACTION_CLOCK, kernelTransaction, t -> t.clocks().transactionClock() );
     }
 
     public static ContextBuilder buildContext( DependencyResolver dependencyResolver, ValueMapper<Object> valueMapper )

@@ -24,14 +24,12 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.proc.Context;
 import org.neo4j.procedure.TerminationGuard;
 
-import static org.neo4j.kernel.api.proc.Context.KERNEL_TRANSACTION;
-
 public class TerminationGuardProvider implements ComponentRegistry.Provider<TerminationGuard>
 {
     @Override
     public TerminationGuard apply( Context ctx ) throws ProcedureException
     {
-        KernelTransaction ktx = ctx.get( KERNEL_TRANSACTION );
+        KernelTransaction ktx = ctx.kernelTransaction();
         return new TransactionTerminationGuard( ktx );
     }
 

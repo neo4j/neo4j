@@ -629,7 +629,7 @@ class ReflectiveProcedureCompiler
                 // Admin check
                 if ( signature.admin() )
                 {
-                    SecurityContext securityContext = ctx.get( Context.SECURITY_CONTEXT );
+                    SecurityContext securityContext = ctx.securityContext();
                     securityContext.assertCredentialsNotExpired();
                     if ( !securityContext.isAdmin() )
                     {

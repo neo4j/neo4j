@@ -162,7 +162,7 @@ class ProceduresTest
             @Override
             public RawIterator<AnyValue[], ProcedureException> apply( Context ctx, AnyValue[] input, ResourceTracker resourceTracker ) throws ProcedureException
             {
-                return RawIterator.<AnyValue[], ProcedureException>of( new AnyValue[]{stringValue(ctx.get( Context.THREAD ).getName())} );
+                return RawIterator.<AnyValue[], ProcedureException>of( new AnyValue[]{stringValue(ctx.thread().getName())} );
             }
         } );
 

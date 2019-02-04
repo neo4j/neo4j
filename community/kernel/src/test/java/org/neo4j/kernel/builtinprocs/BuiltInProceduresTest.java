@@ -87,10 +87,6 @@ import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTPath;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTRelationship;
 import static org.neo4j.kernel.api.index.IndexProvider.EMPTY;
 import static org.neo4j.kernel.api.proc.BasicContext.buildContext;
-import static org.neo4j.kernel.api.proc.Context.DATABASE_API;
-import static org.neo4j.kernel.api.proc.Context.DEPENDENCY_RESOLVER;
-import static org.neo4j.kernel.api.proc.Context.KERNEL_TRANSACTION;
-import static org.neo4j.kernel.api.proc.Context.SECURITY_CONTEXT;
 import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forLabel;
 
 class BuiltInProceduresTest
@@ -118,10 +114,10 @@ class BuiltInProceduresTest
     @BeforeEach
     void setup() throws Exception
     {
-        procs.registerComponent( KernelTransaction.class, ctx -> ctx.get( KERNEL_TRANSACTION ), false );
-        procs.registerComponent( DependencyResolver.class, ctx -> ctx.get( DEPENDENCY_RESOLVER ), false );
-        procs.registerComponent( GraphDatabaseAPI.class, ctx -> ctx.get( DATABASE_API ), false );
-        procs.registerComponent( SecurityContext.class, ctx -> ctx.get( SECURITY_CONTEXT ), true );
+        procs.registerComponent( KernelTransaction.class, Context::kernelTransaction, false );
+        procs.registerComponent( DependencyResolver.class, Context::dependencyResolver, false );
+        procs.registerComponent( GraphDatabaseAPI.class, Context::graphDatabaseAPI, false );
+        procs.registerComponent( SecurityContext.class, ctx -> ctx.securityContext(), true );
 
         procs.registerComponent( Log.class, ctx -> log, false );
         procs.registerType( Node.class, NTNode );

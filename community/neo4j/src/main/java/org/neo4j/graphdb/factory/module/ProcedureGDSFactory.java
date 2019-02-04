@@ -65,7 +65,7 @@ public class ProcedureGDSFactory implements ThrowingFunction<Context,GraphDataba
         }
         else
         {
-            securityContext = context.get( Context.SECURITY_CONTEXT );
+            securityContext = context.securityContext();
         }
         GraphDatabaseFacade facade = new GraphDatabaseFacade();
         ProcedureGDBFacadeSPI procedureGDBFacadeSPI = new ProcedureGDBFacadeSPI( dataSource, dataSource.database.getDependencyResolver(),

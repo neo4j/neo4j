@@ -25,14 +25,12 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.proc.Context;
 import org.neo4j.procedure.ProcedureTransaction;
 
-import static org.neo4j.kernel.api.proc.Context.KERNEL_TRANSACTION;
-
 public class ProcedureTransactionProvider implements ComponentRegistry.Provider<ProcedureTransaction>
 {
     @Override
     public ProcedureTransaction apply( Context ctx ) throws ProcedureException
     {
-        KernelTransaction ktx = ctx.get( KERNEL_TRANSACTION );
+        KernelTransaction ktx = ctx.kernelTransaction();
         return new ProcedureTransactionImpl( ktx );
     }
 

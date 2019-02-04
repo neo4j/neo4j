@@ -42,9 +42,9 @@ import java.util.Set;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.Neo4jTypes;
 import org.neo4j.internal.kernel.api.procs.UserFunctionSignature;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.proc.CallableUserFunction;
 import org.neo4j.kernel.api.proc.Context;
-import org.neo4j.kernel.api.proc.Key;
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
 import org.neo4j.kernel.impl.util.DefaultValueMapper;
 import org.neo4j.values.AnyValue;
@@ -81,19 +81,20 @@ import static org.neo4j.values.virtual.VirtualValues.list;
 @SuppressWarnings( {"unused", "WeakerAccess"} )
 public class ProcedureCompilationTest
 {
-    private static final Key<Long> KEY_1 = Key.key( "long1", Long.class );
-    private static final Key<Long> KEY_2 = Key.key( "long2", Long.class );
     private static final AnyValue[] EMPTY = new AnyValue[0];
+    private static final DefaultValueMapper VALUE_MAPPER = new DefaultValueMapper( mock( EmbeddedProxySPI.class ) );
+    private static final KernelTransaction TRANSACTION = mock( KernelTransaction.class );
+
     private Context ctx;
 
     @BeforeEach
     void setUp() throws ProcedureException
     {
-        DefaultValueMapper mapper = new DefaultValueMapper( mock( EmbeddedProxySPI.class ) );
         ctx = mock( Context.class );
-        when( ctx.get( KEY_1 ) ).thenReturn( 42L );
-        when( ctx.get( KEY_2 ) ).thenReturn( 1337L );
-        when( ctx.valueMapper() ).thenReturn( mapper );
+        when( ctx.thread() ).thenReturn( Thread.currentThread() );
+        when( ctx.kernelTransaction()).thenReturn( TRANSACTION );
+        when( ctx.valueMapper() ).thenReturn( VALUE_MAPPER );
+        when( TRANSACTION.toString() ).thenReturn( "I'm transaction" );
     }
 
     @Test
@@ -126,18 +127,19 @@ public class ProcedureCompilationTest
     {
         // Given
         UserFunctionSignature signature = functionSignature( "test", "foo" ).out( Neo4jTypes.NTInteger ).build();
-        FieldSetter setter1 = createSetter( InnerClass.class, "field1", KEY_1 );
-        FieldSetter setter2 = createSetter( InnerClass.class, "field2", KEY_2 );
-        Method longMethod = method( InnerClass.class, "longMethod" );
+        FieldSetter setter1 = createSetter( InnerClass.class, "transaction", Context::kernelTransaction );
+        FieldSetter setter2 = createSetter( InnerClass.class, "thread", Context::thread );
+        Method longMethod = method( InnerClass.class, "stringMethod" );
 
         // Then
-        assertEquals( longValue( 0L ),
+        String threadName = Thread.currentThread().getName();
+        assertEquals( stringValue( "NULL AND NULL" ),
                 compileFunction( signature, emptyList(), longMethod ).apply( ctx, EMPTY ) );
-        assertEquals( longValue( 42L ),
+        assertEquals( stringValue( "I'm transaction AND NULL" ),
                 compileFunction( signature, singletonList( setter1 ), longMethod ).apply( ctx, EMPTY ) );
-        assertEquals( longValue( 1337L ),
+        assertEquals( stringValue( "NULL AND " + threadName ),
                 compileFunction( signature, singletonList( setter2 ), longMethod ).apply( ctx, EMPTY ) );
-        assertEquals( longValue( 1379L ),
+        assertEquals( stringValue( "I'm transaction AND " + threadName ),
                 compileFunction( signature, asList( setter1, setter2 ), longMethod ).apply( ctx, EMPTY ) );
     }
 
@@ -301,13 +303,12 @@ public class ProcedureCompilationTest
         }
     }
 
-    private FieldSetter createSetter( Class<?> owner, String field, Key<Long> key )
+    private <T> FieldSetter createSetter( Class<?> owner, String field, ComponentRegistry.Provider<T> provider )
             throws NoSuchFieldException, IllegalAccessException
     {
         Field declaredField = owner.getDeclaredField( field );
         MethodHandle setter = MethodHandles.lookup().unreflectSetter( declaredField );
-        return new FieldSetter( declaredField, setter,
-                (ComponentRegistry.Provider<Long>) context -> context.get( key ) );
+        return new FieldSetter( declaredField, setter, provider );
     }
 
     private Method method( String name, Class<?>... types )
@@ -339,12 +340,14 @@ public class ProcedureCompilationTest
 
     public static class InnerClass
     {
-        public long field1;
-        public Long field2 = 0L;
+        public KernelTransaction transaction;
+        public Thread thread;
 
-        public long longMethod()
+        public String stringMethod()
         {
-            return field1 + field2;
+            String first = transaction != null ? transaction.toString() : "NULL";
+            String second = thread != null ? thread.getName() : "NULL";
+            return first + " AND " + second;
         }
     }
 
