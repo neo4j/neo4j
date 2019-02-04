@@ -390,6 +390,23 @@ public class ProcedureCompilationTest
         verify( tracker ).unregisterCloseableResource( any( Stream.class ) );
     }
 
+    @Test
+    void shouldCallVoidProcedure() throws ProcedureException, NoSuchFieldException, IllegalAccessException
+    {
+        // Given
+        ProcedureSignature signature = ProcedureSignature.procedureSignature(  "test", "foo" ).build();
+        // When
+        FieldSetter setter = createSetter( InnerClass.class, "transaction", Context::kernelTransaction );
+        CallableProcedure voidMethod =
+                compileProcedure( signature, singletonList( setter ), method( InnerClass.class, "voidMethod" ) );
+
+        // Then
+        RawIterator<AnyValue[],ProcedureException> iterator =
+                voidMethod.apply( ctx, EMPTY, RESOURCE_TRACKER );
+        assertFalse( iterator.hasNext() );
+        verify( TRANSACTION ).startTime();
+    }
+
     private <T> FieldSetter createSetter( Class<?> owner, String field, ComponentRegistry.Provider<T> provider )
             throws NoSuchFieldException, IllegalAccessException
     {
@@ -442,6 +459,11 @@ public class ProcedureCompilationTest
             String first = transaction != null ? transaction.toString() : "NULL";
             String second = thread != null ? thread.getName() : "NULL";
             return Stream.of( new StringOut( first + " AND " + second ) );
+        }
+
+        public void voidMethod()
+        {
+            transaction.startTime();
         }
     }
 
@@ -610,6 +632,7 @@ public class ProcedureCompilationTest
             throw new RuntimeException( "wut!" );
         } );
     }
+
 
     public static class LongOut
     {

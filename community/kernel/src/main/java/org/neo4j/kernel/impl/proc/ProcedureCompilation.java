@@ -118,6 +118,22 @@ import static org.neo4j.values.SequenceValue.IterationPreference.RANDOM_ACCESS;
 @SuppressWarnings( {"WeakerAccess", "unused"} )
 public final class ProcedureCompilation
 {
+    public final static RawIterator<AnyValue[],ProcedureException> VOID_ITERATOR = new RawIterator<AnyValue[],ProcedureException>()
+    {
+        @Override
+        public boolean hasNext()
+        {
+            return false;
+        }
+
+        @Override
+        public AnyValue[] next()
+        {
+            return EMPTY_ARRAY;
+        }
+    };
+
+    private static final boolean DEBUG = false;
     private static final String LONG = long.class.getCanonicalName();
     private static final String BOXED_LONG = Long.class.getCanonicalName();
     private static final String DOUBLE = double.class.getCanonicalName();
@@ -140,10 +156,11 @@ public final class ProcedureCompilation
     private static final String LOCAL_TIME = LocalTime.class.getCanonicalName();
     private static final String TEMPORAL_AMOUNT = TemporalAmount.class.getCanonicalName();
     private static final String PACKAGE = "org.neo4j.kernel.impl.proc";
-    private static final boolean DEBUG = false;
     private static final String SIGNATURE_NAME = "SIGNATURE";
     private static final String USER_CLASS = "USER_CLASS";
     private static final String VALUE_MAPPER_NAME = "MAPPER";
+    private static final AnyValue[] EMPTY_ARRAY = new AnyValue[0];
+
     private static final MethodDeclaration.Builder USER_FUNCTION = method( AnyValue.class, "apply",
             param( Context.class, "ctx" ),
             param( AnyValue[].class, "input" ) )
@@ -377,8 +394,12 @@ public final class ProcedureCompilation
 
     private static Class<?> generateIterator( CodeGenerator codeGenerator, Class<?> outputType )
     {
-        ClassHandle handle;
+        if ( outputType.equals( void.class ) )
+        {
+            return VOID_ITERATOR.getClass();
+        }
 
+        ClassHandle handle;
         try ( ClassGenerator generator = codeGenerator.generateClass( BaseStreamIterator.class, PACKAGE, iteratorName( outputType ) ) )
         {
             try ( CodeBlock constructor = generator.generateConstructor( param( Stream.class, "stream" ),
@@ -462,19 +483,28 @@ public final class ProcedureCompilation
         injectFields( block, fieldSetters, fieldsToSet, userClass );
         Expression[] parameters = parameters( block, methodToCall );
 
-        block.assign( parameterizedType( Stream.class, procedureType( methodToCall )), "fromProcedure",
-                invoke( getStatic( userClass ), methodReference( methodToCall ), parameters ) );
-
-        block.returns( invoke( newInstance( iterator ), constructorReference( iterator, Stream.class, ResourceTracker.class, ProcedureSignature.class ),
-                block.load( "fromProcedure" ), block.load( "tracker" ), getStatic( signature ) ) );
+        if ( iterator.equals( VOID_ITERATOR.getClass() ) )
+        { //if we are calling a void method we just need to call and return empty
+            block.expression( invoke( getStatic( userClass ), methodReference( methodToCall ), parameters ) );
+            block.returns( getStatic( FieldReference.field( typeReference( ProcedureCompilation.class ),
+                    typeReference( RawIterator.class ), "VOID_ITERATOR" ) ) );
+        }
+        else
+        {//here we must both call and map stream to an iterator
+            block.assign( parameterizedType( Stream.class, procedureType( methodToCall ) ), "fromProcedure",
+                    invoke( getStatic( userClass ), methodReference( methodToCall ), parameters ) );
+            block.returns( invoke( newInstance( iterator ),
+                    constructorReference( iterator, Stream.class, ResourceTracker.class, ProcedureSignature.class ),
+                    block.load( "fromProcedure" ), block.load( "tracker" ), getStatic( signature ) ) );
+        }
     }
 
     private static Class<?> procedureType( Method method )
     {
         //return type is always Stream<> or void
-        if ( method.getReturnType().equals( Void.class ) )
+        if ( method.getReturnType().equals( void.class ) )
         {
-            return Void.class;
+            return void.class;
         }
         else
         {
