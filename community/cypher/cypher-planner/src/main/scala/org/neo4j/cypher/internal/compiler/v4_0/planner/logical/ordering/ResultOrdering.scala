@@ -57,6 +57,7 @@ object ResultOrdering {
       val indexOrderCapability: IndexOrderCapability = capabilityLookup(orderTypes)
       val candidates = interestingOrder.requiredOrderCandidate +: interestingOrder.interestingOrderCandidates
 
+      // TODO: This code (mainly indexProperties.head) probably needs to change when we start supporting composite range scans
       val maybeProvidedOrder = candidates.map(_.headOption).collectFirst {
         case Some(Desc(expression, projection)) if indexOrderCapability.desc && satisfies(indexProperties.head, expression, projection) =>
           ProvidedOrder(indexProperties.map { prop => ProvidedOrder.Desc(prop) })

@@ -61,7 +61,7 @@ import org.neo4j.cypher.internal.v3_5.util.{InputPosition => InputPositionV3_5}
 import org.neo4j.cypher.internal.v3_5.util.{Cardinality => CardinalityV3_5}
 import org.neo4j.cypher.internal.v3_5.{ast => astV3_5}
 import org.neo4j.cypher.internal.v3_5.{util => nfV3_5}
-import org.neo4j.cypher.internal.v4_0.expressions.{Expression, Property, PropertyKeyName, Variable}
+import org.neo4j.cypher.internal.v4_0.expressions.Variable
 
 object helpers {
   implicit def monitorFailure(t: Throwable)(implicit monitor: QueryExecutionMonitor, tc: TransactionalContext): Unit = {
