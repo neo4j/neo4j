@@ -169,6 +169,19 @@ class CheckForUnresolvedTokensTest extends CypherFunSuite with AstRewritingTestS
     }
   }
 
+  test("don't warn when using special property keys, independent of case") {
+    //given
+    val semanticTable = new SemanticTable
+    semanticTable.resolvedPropertyKeyNames.put("prop", PropertyKeyId(42))
+
+    Seq("X", "yEaRs", "DAY", "epochMillis").foreach { property =>
+      //when
+      val ast = parse(s"MATCH (a) WHERE a.prop.$property = 42 RETURN a")
+      //then
+      checkForTokens(ast, semanticTable) shouldBe empty
+    }
+  }
+
   private def checkForTokens(ast: Query, semanticTable: SemanticTable): Set[InternalNotification] = {
     val notificationLogger = new RecordingNotificationLogger
     val compilationState = LogicalPlanState(queryText = "apa", startPosition = None, plannerName = IDPPlannerName, PlanningAttributes(new StubSolveds, new StubCardinalities, new StubProvidedOrders), maybeStatement = Some(ast), maybeSemanticTable = Some(semanticTable))
