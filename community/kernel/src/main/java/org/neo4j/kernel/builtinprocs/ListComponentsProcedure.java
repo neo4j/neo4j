@@ -53,7 +53,7 @@ import static org.neo4j.values.storable.Values.stringValue;
  */
 public class ListComponentsProcedure extends CallableProcedure.BasicProcedure
 {
-    private static final TextValue NEO_4J_KERNEL = stringValue( "Neo4j Kernel" );
+    private static final TextValue NEO4J_KERNEL = stringValue( "Neo4j Kernel" );
     private final TextValue neo4jVersion;
     private final TextValue neo4jEdition;
 
@@ -77,6 +77,6 @@ public class ListComponentsProcedure extends CallableProcedure.BasicProcedure
             throws ProcedureException
     {
         return asRawIterator( singletonList(
-                new AnyValue[]{NEO_4J_KERNEL, VirtualValues.list( neo4jVersion ),  neo4jEdition }).iterator() );
+                new AnyValue[]{NEO4J_KERNEL, VirtualValues.list( neo4jVersion ),  neo4jEdition }).iterator() );
     }
 }
