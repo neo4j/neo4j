@@ -92,7 +92,7 @@ class BlockStorage<KEY, VALUE> implements Closeable
         monitor.entryAdded( entrySize );
     }
 
-    public void doneAdding() throws IOException
+    void doneAdding() throws IOException
     {
         if ( !bufferedEntries.isEmpty() )
         {
@@ -113,7 +113,6 @@ class BlockStorage<KEY, VALUE> implements Closeable
         bufferedEntries.sortThis( comparator );
         ByteArrayPageCursor pageCursor = new ByteArrayPageCursor( byteBuffer );
 
-        System.out.println( "Writing block at " + storeChannel.position() );
         // Header
         pageCursor.putLong( bufferedEntries.size() );
 

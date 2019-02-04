@@ -58,7 +58,7 @@ class BlockStorageTest
         // given
         SimpleLongLayout layout = layout( 0 );
         assertFalse( fileSystem.fileExists( file ) );
-        try ( BlockStorage<MutableLong,MutableLong> storage = new BlockStorage<>( layout, BUFFER_FACTORY, fileSystem, file, NO_MONITOR, 100 ) )
+        try ( BlockStorage<MutableLong,MutableLong> ignored = new BlockStorage<>( layout, BUFFER_FACTORY, fileSystem, file, NO_MONITOR, 100 ) )
         {
             // then
             assertTrue( fileSystem.fileExists( file ) );
@@ -191,7 +191,9 @@ class BlockStorageTest
         currentExpected.sort( comparingLong( p -> p.getKey().longValue() ) );
     }
 
-    private void assertContents( SimpleLongLayout layout, BlockStorage<MutableLong,MutableLong> storage, List<Pair<MutableLong,MutableLong>>... expectedBlocks )
+    @SafeVarargs
+    private final void assertContents( SimpleLongLayout layout, BlockStorage<MutableLong,MutableLong> storage,
+            List<Pair<MutableLong,MutableLong>>... expectedBlocks )
             throws IOException
     {
         try ( BlockStorageReader<MutableLong,MutableLong> reader = storage.reader() )
