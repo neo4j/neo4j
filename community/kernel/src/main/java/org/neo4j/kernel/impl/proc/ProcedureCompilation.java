@@ -50,10 +50,12 @@ import org.neo4j.collection.RawIterator;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.graphdb.spatial.Point;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
 import org.neo4j.internal.kernel.api.procs.UserFunctionSignature;
+import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.proc.CallableProcedure;
@@ -110,6 +112,7 @@ import static org.neo4j.codegen.TypeReference.typeReference;
 import static org.neo4j.codegen.bytecode.ByteCode.BYTECODE;
 import static org.neo4j.codegen.source.SourceCode.PRINT_SOURCE;
 import static org.neo4j.codegen.source.SourceCode.SOURCECODE;
+import static org.neo4j.graphdb.security.AuthorizationViolationException.PERMISSION_DENIED;
 import static org.neo4j.values.SequenceValue.IterationPreference.RANDOM_ACCESS;
 
 /**
@@ -357,7 +360,8 @@ public final class ProcedureCompilation
                 {
                     method.tryCatch(
                             body -> {
-                                procedureBody( body, fieldSetters, fieldsToSet, userClass, signatureField, methodToCall, iterator );
+                                procedureBody( body, fieldSetters, fieldsToSet, userClass, signatureField, methodToCall, iterator,
+                                        signature.admin() );
                             },
                             onError ->
                                     onError( onError, format( "procedure `%s`", signature.name() ) ),
@@ -390,6 +394,85 @@ public final class ProcedureCompilation
             throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed, e,
                     "Failed to compile function defined in `%s`: %s", methodToCall.getDeclaringClass().getSimpleName(),
                     e.getMessage() );
+        }
+    }
+
+    /**
+     * Used by generated code. Needs to be public.
+     * @param throwable The thrown exception
+     * @param typeAndName the type and name of the caller, e.g "function `my.udf`"
+     * @return an exception with an appropriate message.
+     */
+    public static ProcedureException rethrowProcedureException( Throwable throwable, String typeAndName )
+    {
+        if ( throwable instanceof Status.HasStatus )
+        {
+            return new ProcedureException( ((Status.HasStatus) throwable).status(), throwable,
+                    throwable.getMessage(), throwable );
+        }
+        else
+        {
+            Throwable cause = ExceptionUtils.getRootCause( throwable );
+            return new ProcedureException( Status.Procedure.ProcedureCallFailed, throwable,
+                    "Failed to invoke %s: %s", typeAndName,
+                    "Caused by: " + (cause != null ? cause : throwable) );
+        }
+    }
+
+    /**
+     * Byte arrays needs special treatment since it is not a proper Cypher type
+     * @param input either a ByteArray or ListValue of bytes
+     * @return input value converted to a byte[]
+     */
+    public static byte[] toByteArray( AnyValue input )
+    {
+        if ( input instanceof ByteArray )
+        {
+            return ((ByteArray) input).asObjectCopy();
+        }
+        if ( input instanceof SequenceValue )
+        {
+            SequenceValue list = (SequenceValue) input;
+            if ( list.iterationPreference() == RANDOM_ACCESS )
+            {
+                byte[] bytes = new byte[list.length()];
+                for ( int a = 0; a < bytes.length; a++ )
+                {
+                    bytes[a] = asByte( list.value( a ) );
+                }
+                return  bytes;
+            }
+            else
+            {
+                //list.length may have linear complexity, still worth doing it upfront
+                byte[] bytes = new byte[list.length()];
+                int i = 0;
+                for ( AnyValue anyValue : list )
+                {
+                    bytes[i++] = asByte( anyValue );
+                }
+
+                return bytes;
+            }
+        }
+        else
+        {
+            throw new IllegalArgumentException(
+                    "Cannot convert " + input.getClass().getSimpleName() + " to byte[] for input to procedure" );
+        }
+    }
+
+    /**
+     * Used from generated code to check if a user is allowed to call a procedure
+     * @param ctx the current context
+     */
+    public static void assertAllowed( Context ctx )
+    {
+        SecurityContext securityContext = ctx.securityContext();
+        securityContext.assertCredentialsNotExpired();
+        if ( !securityContext.isAdmin() )
+        {
+            throw new AuthorizationViolationException( PERMISSION_DENIED );
         }
     }
 
@@ -479,11 +562,16 @@ public final class ProcedureCompilation
 
     private static void procedureBody( CodeBlock block,
             List<FieldSetter> fieldSetters, List<FieldReference> fieldsToSet, FieldReference userClass,
-            FieldReference signature, Method methodToCall, Class<?> iterator )
+            FieldReference signature, Method methodToCall, Class<?> iterator, boolean isAdmin )
     {
         injectFields( block, fieldSetters, fieldsToSet, userClass );
         Expression[] parameters = parameters( block, methodToCall );
 
+        if ( isAdmin )
+        {
+            block.expression( invoke( methodReference( ProcedureCompilation.class, void.class, "assertAllowed", Context.class ),
+                    block.load( "ctx" ) ) );
+        }
         if ( iterator.equals( VOID_ITERATOR.getClass() ) )
         {   //if we are calling a void method we just need to call and return empty
             block.expression( invoke( getStatic( userClass ), methodReference( methodToCall ), parameters ) );
@@ -560,71 +648,6 @@ public final class ProcedureCompilation
         else
         {
             return generateCode( CallableUserFunction.class.getClassLoader(), BYTECODE );
-        }
-    }
-
-    /**
-     * Used by generated code. Needs to be public.
-     * @param throwable The thrown exception
-     * @param typeAndName the type and name of the caller, e.g "function `my.udf`"
-     * @return an exception with an appropriate message.
-     */
-    public static ProcedureException rethrowProcedureException( Throwable throwable, String typeAndName )
-    {
-        if ( throwable instanceof Status.HasStatus )
-        {
-            return new ProcedureException( ((Status.HasStatus) throwable).status(), throwable,
-                    throwable.getMessage(), throwable );
-        }
-        else
-        {
-            Throwable cause = ExceptionUtils.getRootCause( throwable );
-            return new ProcedureException( Status.Procedure.ProcedureCallFailed, throwable,
-                    "Failed to invoke %s: %s", typeAndName,
-                    "Caused by: " + (cause != null ? cause : throwable) );
-        }
-    }
-
-    /**
-     * Byte arrays needs special treatment since it is not a proper Cypher type
-     * @param input either a ByteArray or ListValue of bytes
-     * @return input value converted to a byte[]
-     */
-    public static byte[] toByteArray( AnyValue input )
-    {
-        if ( input instanceof ByteArray )
-        {
-            return ((ByteArray) input).asObjectCopy();
-        }
-        if ( input instanceof SequenceValue )
-        {
-            SequenceValue list = (SequenceValue) input;
-            if ( list.iterationPreference() == RANDOM_ACCESS )
-            {
-                byte[] bytes = new byte[list.length()];
-                for ( int a = 0; a < bytes.length; a++ )
-                {
-                    bytes[a] = asByte( list.value( a ) );
-                }
-                return  bytes;
-            }
-            else
-            {
-                //list.length may have linear complexity, still worth doing it upfront
-                byte[] bytes = new byte[list.length()];
-                int i = 0;
-                for ( AnyValue anyValue : list )
-                {
-                    bytes[i++] = asByte( anyValue );
-                }
-
-                return bytes;
-            }
-        }
-        else
-        {
-            throw new IllegalArgumentException(
-                    "Cannot convert " + input.getClass().getSimpleName() + " to byte[] for input to procedure" );
         }
     }
 
