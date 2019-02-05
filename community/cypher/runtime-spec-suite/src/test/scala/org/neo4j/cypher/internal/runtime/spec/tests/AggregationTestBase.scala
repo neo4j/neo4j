@@ -311,7 +311,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
 
     // then
     runtimeResult should beColumns("c").withResultMatching {
-      case Seq(Array(d:DurationValue)) if 5000.0 === d.get(ChronoUnit.NANOS) =>
+      case Seq(Array(d:DurationValue)) if 5000.000001 === d.get(ChronoUnit.NANOS).toDouble =>
     }
   }
 
