@@ -36,8 +36,6 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
                                                                runtime: CypherRuntime[CONTEXT]
                                                              ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
-  implicit val doubleEquality: Equality[Double] = TolerantNumerics.tolerantDoubleEquality(0.0001)
-
   test("should count(*)") {
     // given
     nodeGraph(10000, "Honey")
@@ -255,7 +253,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
 
     // then
     runtimeResult should beColumns("c").withResultMatching {
-      case Seq(Array(d:DoubleValue)) if 5000.0 === d.value() =>
+      case Seq(Array(d:DoubleValue)) if tolerantEquals(5000.0, d.value()) =>
     }
   }
 
@@ -289,7 +287,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
     )
     runtimeResult should beColumns("name", "c").withResultMatching {
       case rows:Seq[Array[AnyValue]] if rows.size == expectedBobCounts.size && rows.forall {
-        case Array(s:StringValue, d:DoubleValue) => expectedBobCounts(s.stringValue()) === d.value()
+        case Array(s:StringValue, d:DoubleValue) => tolerantEquals(expectedBobCounts(s.stringValue()), d.value())
       } =>
     }
   }
@@ -311,7 +309,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
 
     // then
     runtimeResult should beColumns("c").withResultMatching {
-      case Seq(Array(d:DurationValue)) if 5000.000001 === d.get(ChronoUnit.NANOS).toDouble =>
+      case Seq(Array(d:DurationValue)) if tolerantEquals(5000.0, d.get(ChronoUnit.NANOS)) =>
     }
   }
 
@@ -333,7 +331,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
 
     // then
     runtimeResult should beColumns("c").withResultMatching {
-      case Seq(Array(d:DoubleValue)) if Double.MaxValue - 1.5 === d.value() =>
+      case Seq(Array(d:DoubleValue)) if tolerantEquals(Double.MaxValue - 1.5, d.value()) =>
     }
   }
 

@@ -31,6 +31,7 @@ import org.neo4j.graphdb.{GraphDatabaseService, Label, Node}
 import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.values.virtual.VirtualValues
 import org.neo4j.values.{AnyValue, AnyValues}
+import org.scalactic.{Equality, TolerantNumerics}
 import org.scalatest.matchers.{MatchResult, Matcher}
 import org.scalatest.{BeforeAndAfterEach, Tag}
 
@@ -186,6 +187,11 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
   }
 
   // MATCHERS
+
+  private val doubleEquality: Equality[Double] = TolerantNumerics.tolerantDoubleEquality(0.0001)
+
+  def tolerantEquals(expected: Double, x: Number): Boolean =
+    doubleEquality.areEqual(expected + 0.00001, x.doubleValue())
 
   protected def beColumns(columns: String*): RuntimeResultMatcher =
     new RuntimeResultMatcher(columns)
