@@ -39,7 +39,6 @@ import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyAccessor;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettingsCache;
 import org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettingsWriter;
-import org.neo4j.storageengine.api.schema.IndexSample;
 import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
 import org.neo4j.util.FeatureToggles;
 import org.neo4j.util.Preconditions;
@@ -137,7 +136,8 @@ public class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,VALUE exte
         storeUpdate( update.getEntityId(), update.values(), blockStorage );
     }
 
-    void finishUp() throws IndexEntryConflictException
+    @Override
+    public void scanCompleted() throws IndexEntryConflictException
     {
         try
         {
@@ -155,20 +155,6 @@ public class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,VALUE exte
         catch ( IOException e )
         {
             throw new UncheckedIOException( e );
-        }
-    }
-
-    @Override
-    public IndexSample sampleResult()
-    {
-        try
-        {
-            finishUp();
-            return super.sampleResult();
-        }
-        catch ( IndexEntryConflictException e )
-        {
-            throw new IllegalStateException( e );
         }
     }
 
@@ -221,14 +207,6 @@ public class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,VALUE exte
                 }
             }
         }
-    }
-
-    @Override
-    public void verifyDeferredConstraints( NodePropertyAccessor nodePropertyAccessor ) throws IndexEntryConflictException
-    {
-        // On building tree
-        finishUp(); // TODO just kidding, perhaps not here
-        super.verifyDeferredConstraints( nodePropertyAccessor );
     }
 
     @Override

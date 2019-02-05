@@ -137,6 +137,12 @@ class WorkSyncedNativeIndexPopulator<KEY extends NativeIndexKey<KEY>, VALUE exte
         actual.consistencyCheck();
     }
 
+    @Override
+    public void scanCompleted() throws IndexEntryConflictException
+    {
+        actual.scanCompleted();
+    }
+
     private class IndexUpdateApply
     {
         void process( Collection<? extends IndexEntryUpdate<?>> indexEntryUpdates ) throws Exception

@@ -125,7 +125,7 @@ class BlockStorage<KEY, VALUE> implements Closeable
         File tempFile = new File( blockFile.getParent(), blockFile.getName() + ".b" );
         try
         {
-            int mergeFactor = 10;
+            int mergeFactor = 16;
             File targetFile = tempFile;
             while ( numberOfBlocksInCurrentFile > 1 )
             {

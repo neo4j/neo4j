@@ -141,6 +141,10 @@ public interface IndexPopulator
 
     IndexPopulator EMPTY = new Adapter();
 
+    default void scanCompleted() throws IndexEntryConflictException
+    {   // no-op by default
+    }
+
     class Adapter implements IndexPopulator
     {
         @Override
@@ -162,6 +166,11 @@ public interface IndexPopulator
         public IndexUpdater newPopulatingUpdater( NodePropertyAccessor accessor )
         {
             return SwallowingIndexUpdater.INSTANCE;
+        }
+
+        @Override
+        public void scanCompleted()
+        {
         }
 
         @Override

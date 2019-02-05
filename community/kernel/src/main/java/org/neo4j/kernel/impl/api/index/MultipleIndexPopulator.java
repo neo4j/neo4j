@@ -293,6 +293,12 @@ public class MultipleIndexPopulator implements IndexPopulator
         throw new UnsupportedOperationException( "Multiple index populator can't perform index sampling." );
     }
 
+    @Override
+    public void scanCompleted()
+    {
+        throw new UnsupportedOperationException( "Not supposed to be called" );
+    }
+
     void resetIndexCounts()
     {
         forEachPopulation( this::resetIndexCountsForPopulation );
@@ -309,6 +315,7 @@ public class MultipleIndexPopulator implements IndexPopulator
         {
             try
             {
+                population.scanCompleted();
                 population.flip( verifyBeforeFlipping );
             }
             catch ( Throwable t )
@@ -633,6 +640,11 @@ public class MultipleIndexPopulator implements IndexPopulator
             Collection<IndexEntryUpdate<?>> batch = batchedUpdates;
             batchedUpdates = new ArrayList<>( BATCH_SIZE );
             return batch;
+        }
+
+        void scanCompleted() throws IndexEntryConflictException
+        {
+            populator.scanCompleted();
         }
     }
 
