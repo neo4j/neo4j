@@ -163,9 +163,10 @@ public class GenericNativeIndexProvider extends NativeIndexProvider<GenericKey,N
         }
         else
         {
-            return new WorkSyncedNativeIndexPopulator<>(
-                    new GenericNativeIndexPopulator( pageCache, fs, storeFile, layout, monitor, descriptor, layout.getSpaceFillingCurveSettings(),
-                            directoryStructure(), configuration, archiveFailedIndex, false ) );
+            NativeIndexPopulator actualPopulator =
+                    new BlockBasedIndexPopulator( pageCache, fs, storeFile, layout, monitor, descriptor, layout.getSpaceFillingCurveSettings(),
+                            directoryStructure(), configuration, archiveFailedIndex );
+            return new WorkSyncedNativeIndexPopulator<>( actualPopulator );
         }
     }
 

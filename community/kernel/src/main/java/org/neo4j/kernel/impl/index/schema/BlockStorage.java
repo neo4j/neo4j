@@ -35,7 +35,6 @@ import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.ByteArrayPageCursor;
 import org.neo4j.util.Preconditions;
-import org.neo4j.util.VisibleForTesting;
 
 // TODO potentially remove padding altogether!!!!!
 class BlockStorage<KEY, VALUE> implements Closeable
@@ -246,10 +245,55 @@ class BlockStorage<KEY, VALUE> implements Closeable
         IOUtils.closeAll( storeChannel );
     }
 
-    @VisibleForTesting
     BlockReader<KEY,VALUE> reader() throws IOException
     {
         return reader( blockFile );
+    }
+
+    BlockEntryCursor<KEY,VALUE> stream() throws IOException
+    {
+        BlockReader<KEY,VALUE> reader = reader();
+        return new BlockEntryCursor<KEY,VALUE>()
+        {
+            private BlockEntryCursor<KEY,VALUE> block = reader.nextBlock();
+
+            @Override
+            public boolean next() throws IOException
+            {
+                while ( block != null )
+                {
+                    if ( block.next() )
+                    {
+                        return true;
+                    }
+                    block.close();
+                    block = reader.nextBlock();
+                }
+                return false;
+            }
+
+            @Override
+            public KEY key()
+            {
+                return block.key();
+            }
+
+            @Override
+            public VALUE value()
+            {
+                return block.value();
+            }
+
+            @Override
+            public void close() throws IOException
+            {
+                if ( block != null )
+                {
+                    block.close();
+                    block = null;
+                }
+            }
+        };
     }
 
     private BlockReader<KEY,VALUE> reader( File file ) throws IOException

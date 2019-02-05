@@ -23,5 +23,5 @@ import java.nio.ByteBuffer;
 
 interface ByteBufferFactory
 {
-    ByteBuffer newBuffer( long bufferSize );
+    ByteBuffer newBuffer( int bufferSize );
 }
