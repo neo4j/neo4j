@@ -16,7 +16,6 @@
  */
 package org.neo4j.cypher.internal.v4_0.ast
 
-import org.neo4j.cypher.internal.v4_0.expressions
 import org.neo4j.cypher.internal.v4_0.expressions._
 import org.neo4j.cypher.internal.v4_0.expressions.functions.{Avg, Collect, Count, Max, Min, Sum}
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherTestSupport
@@ -42,7 +41,7 @@ trait AstConstructionTestSupport extends CypherTestSupport {
   def prop(variable: String, propKey: String): Property =
     Property(varFor(variable), PropertyKeyName(propKey)(pos))(pos)
 
-  def property(map: Expression, key: String): Expression =
+  def property(map: Expression, key: String): Property =
     Property(map, PropertyKeyName(key)(pos))(pos)
 
   def propEquality(variable: String, propKey: String, intValue: Int): Equals =
@@ -81,8 +80,6 @@ trait AstConstructionTestSupport extends CypherTestSupport {
     MapExpression(keyValues.map {
       case (k, v) => (PropertyKeyName(k)(pos), literalInt(v))
     })(pos)
-
-  def TRUE: Expression = True()(pos)
 
   def nullLiteral: Null = Null()(pos)
 
@@ -125,11 +122,11 @@ trait AstConstructionTestSupport extends CypherTestSupport {
   def sum(expression: Expression): FunctionInvocation =
     FunctionInvocation(expression, FunctionName(Sum.name)(pos))
 
-  def not(e: Expression): Expression = expressions.Not(e)(pos)
+  def not(expression: Expression): Not = Not(expression)(pos)
 
   def equals(lhs: Expression, rhs: Expression): Equals = Equals(lhs, rhs)(pos)
 
-  def notEquals(lhs: Expression, rhs: Expression): Expression = NotEquals(lhs, rhs)(pos)
+  def notEquals(lhs: Expression, rhs: Expression): NotEquals = NotEquals(lhs, rhs)(pos)
 
   def lessThan(lhs: Expression, rhs: Expression): LessThan = LessThan(lhs, rhs)(pos)
 
@@ -151,9 +148,9 @@ trait AstConstructionTestSupport extends CypherTestSupport {
 
   def coerceTo(expression: Expression, typ: symbols.CypherType): CoerceTo = CoerceTo(expression, typ)
 
-  def isNull(expression: Expression): IsNull = expressions.IsNull(expression)(pos)
+  def isNull(expression: Expression): IsNull = IsNull(expression)(pos)
 
-  def isNotNull(expression: Expression): IsNotNull = expressions.IsNotNull(expression)(pos)
+  def isNotNull(expression: Expression): IsNotNull = IsNotNull(expression)(pos)
 
   def sliceFrom(list: Expression, from: Expression): ListSlice = ListSlice(list, Some(from), None)(pos)
 
@@ -193,33 +190,33 @@ trait AstConstructionTestSupport extends CypherTestSupport {
                         extractExpression: Option[Expression]): ListComprehension =
     ListComprehension(varFor(variable), collection, predicate, extractExpression)(pos)
 
-  def add(l: Expression, r: Expression): Expression = expressions.Add(l, r)(pos)
+  def add(lhs: Expression, rhs: Expression): Add = Add(lhs, rhs)(pos)
 
-  def unaryAdd(source: Expression): Expression = UnaryAdd(source)(pos)
+  def unaryAdd(source: Expression): UnaryAdd = UnaryAdd(source)(pos)
 
-  def subtract(l: Expression, r: Expression): Expression = expressions.Subtract(l, r)(pos)
+  def subtract(lhs: Expression, rhs: Expression): Subtract = Subtract(lhs, rhs)(pos)
 
-  def unarySubtract(source: Expression): Expression = UnarySubtract(source)(pos)
+  def unarySubtract(source: Expression): UnarySubtract = UnarySubtract(source)(pos)
 
-  def multiply(l: Expression, r: Expression): Expression = Multiply(l, r)(pos)
+  def multiply(lhs: Expression, rhs: Expression): Multiply = Multiply(lhs, rhs)(pos)
 
-  def divide(l: Expression, r: Expression): Expression = Divide(l, r)(pos)
+  def divide(lhs: Expression, rhs: Expression): Divide = Divide(lhs, rhs)(pos)
 
-  def modulo(l: Expression, r: Expression): Expression = Modulo(l, r)(pos)
+  def modulo(lhs: Expression, rhs: Expression): Modulo = Modulo(lhs, rhs)(pos)
 
-  def pow(l: Expression, r: Expression): Expression = Pow(l, r)(pos)
+  def pow(lhs: Expression, rhs: Expression): Pow = Pow(lhs, rhs)(pos)
 
-  def parameter(key: String): Expression = Parameter(key, symbols.CTAny)(pos)
+  def parameter(key: String): Parameter = Parameter(key, symbols.CTAny)(pos)
 
-  def or(l: Expression, r: Expression): Expression = Or(l, r)(pos)
+  def or(lhs: Expression, rhs: Expression): Or = Or(lhs, rhs)(pos)
 
-  def xor(l: Expression, r: Expression): Expression = Xor(l, r)(pos)
+  def xor(lhs: Expression, rhs: Expression): Xor = Xor(lhs, rhs)(pos)
 
-  def ors(es: Expression*): Expression = Ors(es.toSet)(pos)
+  def ors(expressions: Expression*): Ors = Ors(expressions.toSet)(pos)
 
-  def and(l: Expression, r: Expression): Expression = And(l, r)(pos)
+  def and(lhs: Expression, rhs: Expression): And = And(lhs, rhs)(pos)
 
-  def ands(es: Expression*): Expression = Ands(es.toSet)(pos)
+  def ands(expressions: Expression*): Ands = Ands(expressions.toSet)(pos)
 
-  def containerIndex(container: Expression, index: Expression): Expression = ContainerIndex(container, index)(pos)
+  def containerIndex(container: Expression, index: Expression): ContainerIndex = ContainerIndex(container, index)(pos)
 }

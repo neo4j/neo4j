@@ -196,14 +196,14 @@ class UnnestApplyTest extends CypherFunSuite with LogicalPlanningTestSupport {
     // Given
     val lhs = newMockedLogicalPlan("a")
     val arg = Argument(Set("a"))
-    val expand = VarExpand(arg, "a", SemanticDirection.OUTGOING, SemanticDirection.OUTGOING, Seq.empty, "b", "r", VarPatternLength(1, None), ExpandAll, "tempNode", "tempEdge", TRUE, TRUE, Seq.empty)
+    val expand = VarExpand(arg, "a", SemanticDirection.OUTGOING, SemanticDirection.OUTGOING, Seq.empty, "b", "r", VarPatternLength(1, None), ExpandAll, "tempNode", "tempEdge", trueLiteral, trueLiteral, Seq.empty)
     val apply = Apply(lhs, expand)
 
     // When
     val result = rewrite(apply)
 
     // Then
-    result should equal(VarExpand(lhs, "a", SemanticDirection.OUTGOING, SemanticDirection.OUTGOING, Seq.empty, "b", "r", VarPatternLength(1, None), ExpandAll, "tempNode", "tempEdge", TRUE, TRUE, Seq.empty))
+    result should equal(VarExpand(lhs, "a", SemanticDirection.OUTGOING, SemanticDirection.OUTGOING, Seq.empty, "b", "r", VarPatternLength(1, None), ExpandAll, "tempNode", "tempEdge", trueLiteral, trueLiteral, Seq.empty))
   }
 
   test("apply on apply on optional should be OK") {

@@ -72,9 +72,9 @@ class ReplaceAliasedFunctionInvocationsTest extends CypherFunSuite with AstConst
 
   test("should rewrite filter() in V2") {
     val scopePosition = InputPosition(30, 1, 31)
-    val before = FilterExpression(FilterScope(varFor("a"), Some(TRUE))(scopePosition),
+    val before = FilterExpression(FilterScope(varFor("a"), Some(trueLiteral))(scopePosition),
                                   literalFloat(3.0))(pos)
-    val expected = ListComprehension(ExtractScope(varFor("a"), Some(TRUE), None)(scopePosition),
+    val expected = ListComprehension(ExtractScope(varFor("a"), Some(trueLiteral), None)(scopePosition),
                                      literalFloat(3.0))(pos)
 
     replaceAliasedFunctionInvocations(Deprecations.V1)(before) should equal(before)

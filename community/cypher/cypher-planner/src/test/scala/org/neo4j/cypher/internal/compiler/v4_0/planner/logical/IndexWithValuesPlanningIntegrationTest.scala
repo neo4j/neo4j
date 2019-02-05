@@ -264,7 +264,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
       Projection(
         Projection(
           IndexSeek("n:Awesome(prop = 42)", GetValue),
-          Map(cachedNodePropertyProj("foo", "n", "prop"), "bar" -> TRUE)),
+          Map(cachedNodePropertyProj("foo", "n", "prop"), "bar" -> trueLiteral)),
         Map("baz" -> varFor("bar")))
     )
   }
