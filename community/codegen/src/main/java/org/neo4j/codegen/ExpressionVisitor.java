@@ -29,6 +29,8 @@ public interface ExpressionVisitor
 
     void arrayLoad( Expression array, Expression index );
 
+    void arraySet( Expression array, Expression index, Expression value );
+
     void getField( Expression target, FieldReference field );
 
     void constant( Object value );
@@ -73,7 +75,9 @@ public interface ExpressionVisitor
 
     void instanceOf( TypeReference type, Expression expression );
 
-    void newArray( TypeReference type, Expression... constants );
+    void newInitializedArray( TypeReference type, Expression... constants );
+
+    void newArray( TypeReference type, int size );
 
     void longToDouble( Expression expression );
 

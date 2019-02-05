@@ -395,6 +395,20 @@ public abstract class Expression extends ExpressionTemplate
         };
     }
 
+    public static Expression arraySet( Expression array, Expression index, Expression value )
+    {
+        assert array.type().isArray();
+
+        return new Expression( array.type() )
+        {
+            @Override
+            public void accept( ExpressionVisitor visitor )
+            {
+                visitor.arraySet( array, index, value);
+            }
+        };
+    }
+
     public static Expression add( final Expression lhs, final Expression rhs )
     {
         if ( !lhs.type.equals( rhs.type ) )
@@ -527,15 +541,27 @@ public abstract class Expression extends ExpressionTemplate
         }
     }
 
-    //TODO deduce type from constants
-    public static Expression newArray( TypeReference baseType, Expression... constants )
+    public static Expression newArray( TypeReference baseType, int size )
     {
         return new Expression( arrayOf( baseType ) )
         {
             @Override
             public void accept( ExpressionVisitor visitor )
             {
-                visitor.newArray( baseType, constants );
+                visitor.newArray( baseType, size );
+            }
+        };
+    }
+
+    //TODO deduce type from constants
+    public static Expression newInitializedArray( TypeReference baseType, Expression... constants )
+    {
+        return new Expression( arrayOf( baseType ) )
+        {
+            @Override
+            public void accept( ExpressionVisitor visitor )
+            {
+                visitor.newInitializedArray( baseType, constants );
             }
         };
     }

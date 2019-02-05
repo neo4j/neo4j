@@ -76,6 +76,13 @@ class JumpVisitor implements ExpressionVisitor
     }
 
     @Override
+    public void arraySet( Expression array, Expression index, Expression value )
+    {
+        eval.arraySet( array, index, value );
+        methodVisitor.visitJumpInsn( IFEQ, this.target );
+    }
+
+    @Override
     public void getField( Expression target, FieldReference field )
     {
         eval.getField( target, field );
@@ -232,7 +239,13 @@ class JumpVisitor implements ExpressionVisitor
     }
 
     @Override
-    public void newArray( TypeReference type, Expression... constants )
+    public void newInitializedArray( TypeReference type, Expression... constants )
+    {
+        throw new IllegalArgumentException( "'new' (array) is not a boolean expression" );
+    }
+
+    @Override
+    public void newArray( TypeReference type, int size )
     {
         throw new IllegalArgumentException( "'new' (array) is not a boolean expression" );
     }

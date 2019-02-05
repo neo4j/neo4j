@@ -242,6 +242,17 @@ class ByteCodeExpressionVisitor implements ExpressionVisitor
     }
 
     @Override
+    public void arraySet( Expression array, Expression index, Expression value )
+    {
+        assert array.type().isArray();
+
+        array.accept( this );
+        index.accept( this );
+        value.accept( this );
+        arrayStore( value.type() );
+    }
+
+    @Override
     public void getField( Expression target, FieldReference field )
     {
         target.accept( this );
@@ -593,7 +604,7 @@ class ByteCodeExpressionVisitor implements ExpressionVisitor
     }
 
     @Override
-    public void newArray( TypeReference type, Expression... exprs )
+    public void newInitializedArray( TypeReference type, Expression... exprs )
     {
         pushInteger( exprs.length );
         createArray( type );
@@ -604,6 +615,13 @@ class ByteCodeExpressionVisitor implements ExpressionVisitor
             exprs[i].accept( this );
             arrayStore( type );
         }
+    }
+
+    @Override
+    public void newArray( TypeReference type, int size )
+    {
+        pushInteger( size );
+        createArray( type );
     }
 
     @Override

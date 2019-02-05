@@ -289,6 +289,16 @@ class MethodSourceWriter implements MethodEmitter, ExpressionVisitor
     }
 
     @Override
+    public void arraySet( Expression array, Expression index, Expression value )
+    {
+        array.accept( this );
+        append( "[" );
+        index.accept( this );
+        append( "] = " );
+        value.accept( this );
+    }
+
+    @Override
     public void getField( Expression target, FieldReference field )
     {
         target.accept( this );
@@ -508,7 +518,7 @@ class MethodSourceWriter implements MethodEmitter, ExpressionVisitor
     }
 
     @Override
-    public void newArray( TypeReference type, Expression... constants )
+    public void newInitializedArray( TypeReference type, Expression... constants )
     {
         append( "new " ).append( type.fullName() ).append( "[]{" );
         String sep = "";
@@ -519,6 +529,12 @@ class MethodSourceWriter implements MethodEmitter, ExpressionVisitor
             sep = ", ";
         }
         append( "}" );
+    }
+
+    @Override
+    public void newArray( TypeReference type, int size )
+    {
+        append( "new " ).append( type.fullName() ).append( "[" ).append( size ).append( "]" );
     }
 
     @Override

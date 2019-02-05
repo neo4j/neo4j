@@ -63,12 +63,14 @@ import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.neo4j.codegen.Expression.add;
 import static org.neo4j.codegen.Expression.and;
 import static org.neo4j.codegen.Expression.arrayLoad;
+import static org.neo4j.codegen.Expression.arraySet;
 import static org.neo4j.codegen.Expression.constant;
 import static org.neo4j.codegen.Expression.equal;
 import static org.neo4j.codegen.Expression.invoke;
 import static org.neo4j.codegen.Expression.isNull;
 import static org.neo4j.codegen.Expression.multiply;
 import static org.neo4j.codegen.Expression.newArray;
+import static org.neo4j.codegen.Expression.newInitializedArray;
 import static org.neo4j.codegen.Expression.newInstance;
 import static org.neo4j.codegen.Expression.not;
 import static org.neo4j.codegen.Expression.notNull;
@@ -241,7 +243,7 @@ public class CodeGenerationTest
         {
 
             simple.generate( MethodTemplate.method( int[].class, "value" )
-                    .returns( newArray( typeReference( int.class ), constant( 1 ), constant( 2 ), constant( 3 ) ) )
+                    .returns( newInitializedArray( typeReference( int.class ), constant( 1 ), constant( 2 ), constant( 3 ) ) )
                     .build() );
             handle = simple.handle();
         }
@@ -266,7 +268,7 @@ public class CodeGenerationTest
                     .returns(
                             Expression.invoke(
                                     methodReference( Arrays.class, stringList, "asList", Object[].class ),
-                                    newArray( typeReference( String.class ), constant( "a" ), constant( "b" ) ) ) )
+                                    newInitializedArray( typeReference( String.class ), constant( "a" ), constant( "b" ) ) ) )
                     .build() );
             handle = simple.handle();
         }
@@ -332,7 +334,7 @@ public class CodeGenerationTest
             TypeReference stringList = TypeReference.parameterizedType( List.class, String.class );
             FieldReference foo = simple.privateStaticFinalField( stringList, "FOO", Expression.invoke(
                     methodReference( Arrays.class, stringList, "asList", Object[].class ),
-                    newArray( typeReference( String.class ),
+                    newInitializedArray( typeReference( String.class ),
                             constant( "FOO" ), constant( "BAR" ), constant( "BAZ" ) ) ) );
             try ( CodeBlock get = simple.generateMethod( stringList, "get" ) )
             {
@@ -2156,7 +2158,51 @@ public class CodeGenerationTest
         assertArrayLoad( String.class, String[].class, new String[]{"a", "b", "c"}, 2, "c" );
     }
 
-    private <T, U> void assertArrayLoad( Class<T> returnType, Class<U> arrayType, U array, int index, T expexted )
+    @Test
+    public void shouldCreateAndPopulatePrimitiveArray() throws Throwable
+    {
+        ClassHandle handle;
+        try ( ClassGenerator simple = generateClass( "LongArrayClass" ) )
+        {
+            try ( CodeBlock body = simple.generateMethod( long[].class, "get", param( long.class, "p1" ),
+                    param( long.class, "p2" ) ) )
+            {
+                body.assign( typeReference( long[].class ), "array", newArray( typeReference( long.class ), 2 ) );
+                body.expression( arraySet( body.load( "array" ), constant(1), body.load("p1") ) );
+                body.expression( arraySet( body.load( "array" ), constant(0), body.load("p2") ) );
+                body.returns( body.load( "array" ) );
+            }
+            handle = simple.handle();
+        }
+
+        assertArrayEquals( new long[]{4L, 3L},
+                (long[]) instanceMethod( handle.newInstance(), "get", long.class, long.class )
+                        .invoke( 3L, 4L ) );
+    }
+
+    @Test
+    public void shouldCreateAndPopulateNonPrimitiveArray() throws Throwable
+    {
+        ClassHandle handle;
+        try ( ClassGenerator simple = generateClass( "StringArrayClass" ) )
+        {
+            try ( CodeBlock body = simple.generateMethod( String[].class, "get", param( String.class, "p1" ),
+                    param( String.class, "p2" ) ) )
+            {
+                body.assign( typeReference( String[].class ), "array", newArray( typeReference( String.class ), 2 ) );
+                body.expression( arraySet( body.load( "array" ), constant(1), body.load("p1") ) );
+                body.expression( arraySet( body.load( "array" ), constant(0), body.load("p2") ) );
+                body.returns( body.load( "array" ) );
+            }
+            handle = simple.handle();
+        }
+
+        assertArrayEquals( new String[]{"b", "a"},
+                (String[]) instanceMethod( handle.newInstance(), "get", String.class, String.class )
+                        .invoke( "a","b" ) );
+    }
+
+    private <T, U> void assertArrayLoad( Class<T> returnType, Class<U> arrayType, U array, int index, T expected )
             throws Throwable
     {
         ClassHandle handle;
@@ -2170,7 +2216,7 @@ public class CodeGenerationTest
             handle = simple.handle();
         }
 
-        assertEquals( expexted,
+        assertEquals( expected,
                 instanceMethod( handle.newInstance(), "get", arrayType, int.class ).invoke( array, index ) );
     }
 
