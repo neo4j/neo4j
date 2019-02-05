@@ -25,9 +25,9 @@ import org.neo4j.cypher.internal.v4_0.expressions._
 
 class SelectionsTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
-  val aIsPerson: HasLabels = identHasLabel("a", "Person")
-  val aIsProgrammer: HasLabels = identHasLabel("a", "Programmer")
-  val bIsAnimal: HasLabels = identHasLabel("b", "Animal")
+  val aIsPerson: HasLabels = hasLabels("a", "Person")
+  val aIsProgrammer: HasLabels = hasLabels("a", "Programmer")
+  val bIsAnimal: HasLabels = hasLabels("b", "Animal")
   val compareTwoNodes: Equals = compareBothSides("a", "b")
 
   test("can flat predicates to a sequence") {

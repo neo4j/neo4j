@@ -29,18 +29,18 @@ class noUnnamedPatternElementsInPatternComprehensionTest extends CypherFunSuite 
     val input: ASTNode = PatternComprehension(None, RelationshipsPattern(
       RelationshipChain(NodePattern(None, Seq.empty, None) _,
                         RelationshipPattern(None, Seq.empty, None, None, SemanticDirection.OUTGOING) _,
-                        NodePattern(None, Seq.empty, None) _) _) _, None, StringLiteral("foo") _)(pos, Set.empty)
+                        NodePattern(None, Seq.empty, None) _) _) _,
+      None, literalString("foo"))(pos, Set.empty)
 
     condition(input) should equal(Seq(s"Expression $input contains pattern elements which are not named"))
   }
 
   test("should not react to fully named pattern comprehension") {
-    val input: PatternComprehension = PatternComprehension(Some(varFor("p")),
-                                                           RelationshipsPattern(RelationshipChain(NodePattern(Some(varFor("a")), Seq.empty, None) _,
-                                                                                                  RelationshipPattern(Some(varFor("r")), Seq.empty, None, None, SemanticDirection.OUTGOING) _,
-                                                                                                  NodePattern(Some(varFor("b")), Seq.empty, None) _) _) _,
-                                                           None,
-                                                           StringLiteral("foo")_)(pos, Set.empty)
+    val input: PatternComprehension = PatternComprehension(Some(varFor("p")), RelationshipsPattern(
+      RelationshipChain(NodePattern(Some(varFor("a")), Seq.empty, None) _,
+                        RelationshipPattern(Some(varFor("r")), Seq.empty, None, None, SemanticDirection.OUTGOING) _,
+                        NodePattern(Some(varFor("b")), Seq.empty, None) _) _) _,
+      None, literalString("foo"))(pos, Set.empty)
 
     condition(input) shouldBe empty
   }

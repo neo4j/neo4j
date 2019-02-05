@@ -48,29 +48,23 @@ class ReplaceAliasedFunctionInvocationsTest extends CypherFunSuite with AstConst
   }
 
   test("should rewrite timestamp()") {
-    val before = FunctionInvocation(FunctionName("timestamp")(pos), distinct = false, IndexedSeq.empty)(pos)
+    val before = function("timestamp")
 
-    val after =
-      Property(
-        FunctionInvocation(Namespace()(pos), FunctionName("datetime")(pos), distinct = false, IndexedSeq.empty)(pos),
-        PropertyKeyName("epochMillis")(pos))(pos)
+    val after = Property(function("datetime"), PropertyKeyName("epochMillis")(pos))(pos)
     rewriter(before) should equal(after)
   }
 
   test("should also rewrite TiMeStAmP()") {
-    val before = FunctionInvocation(FunctionName("TiMeStAmP")(pos), distinct = false, IndexedSeq.empty)(pos)
+    val before = function("TiMeStAmP")
 
-    val after =
-      Property(
-        FunctionInvocation(Namespace()(pos), FunctionName("datetime")(pos), distinct = false, IndexedSeq.empty)(pos),
-        PropertyKeyName("epochMillis")(pos))(pos)
+    val after = Property(function("datetime"), PropertyKeyName("epochMillis")(pos))(pos)
     rewriter(before) should equal(after)
   }
 
   test("should rewrite extract() in V2") {
-    val scope = ExtractScope(varFor("a"), None, None)(pos)
-    val before = ExtractExpression(scope, literalFloat(3.0))(pos)
-    val expected = ListComprehension(scope, literalFloat(3.0))(pos)
+    val before = ExtractExpression(ExtractScope(varFor("a"), None, None)(pos),
+                                   literalFloat(3.0))(pos)
+    val expected = listComprehension("a", literalFloat(3.0), None, None)
 
     replaceAliasedFunctionInvocations(Deprecations.V1)(before) should equal(before)
     replaceAliasedFunctionInvocations(Deprecations.V2)(before) should equal(expected)
@@ -78,9 +72,10 @@ class ReplaceAliasedFunctionInvocationsTest extends CypherFunSuite with AstConst
 
   test("should rewrite filter() in V2") {
     val scopePosition = InputPosition(30, 1, 31)
-    val scope = FilterScope(varFor("a"), Some(TRUE))(scopePosition)
-    val before = FilterExpression(scope, literalFloat(3.0))(pos)
-    val expected = ListComprehension(ExtractScope(varFor("a"), Some(TRUE), None)(scopePosition), literalFloat(3.0))(pos)
+    val before = FilterExpression(FilterScope(varFor("a"), Some(TRUE))(scopePosition),
+                                  literalFloat(3.0))(pos)
+    val expected = ListComprehension(ExtractScope(varFor("a"), Some(TRUE), None)(scopePosition),
+                                     literalFloat(3.0))(pos)
 
     replaceAliasedFunctionInvocations(Deprecations.V1)(before) should equal(before)
     replaceAliasedFunctionInvocations(Deprecations.V2)(before) should equal(expected)

@@ -287,11 +287,6 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
 
     output.unionQuery
   }
-
-  def identHasLabel(name: String, labelName: String): HasLabels = {
-    val labelNameObj: LabelName = LabelName(labelName)_
-    HasLabels(Variable(name)_, Seq(labelNameObj))_
-  }
 }
 
 case object namePatternPredicatePatternElements extends Rewriter {

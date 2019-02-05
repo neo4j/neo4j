@@ -124,13 +124,13 @@ class QueryGraphConnectedComponentsTest
     val graph = QueryGraph(
       patternNodes = Set(A, B),
       selections = Selections.from(Seq(
-        identHasLabel("a", "Label"),
-        identHasLabel("b", "Label"))
+        hasLabels("a", "Label"),
+        hasLabels("b", "Label"))
     ))
 
     graph.connectedComponents should equal(Seq(
-      QueryGraph(patternNodes = Set(A), selections = Selections.from(identHasLabel("a", "Label"))),
-      QueryGraph(patternNodes = Set(B), selections = Selections.from(identHasLabel("b", "Label")))
+      QueryGraph(patternNodes = Set(A), selections = Selections.from(hasLabels("a", "Label"))),
+      QueryGraph(patternNodes = Set(B), selections = Selections.from(hasLabels("b", "Label")))
     ))
   }
 

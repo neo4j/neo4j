@@ -17,17 +17,16 @@
 package org.neo4j.cypher.internal.v4_0.rewriting
 
 import org.neo4j.cypher.internal.v4_0.ast.AstConstructionTestSupport
-import org.neo4j.cypher.internal.v4_0.expressions.{ContainerIndex, Property, StringLiteral}
+import org.neo4j.cypher.internal.v4_0.expressions.ContainerIndex
 import org.neo4j.cypher.internal.v4_0.util.ASTNode
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.v4_0.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.v4_0.rewriting.rewriters.replaceLiteralDynamicPropertyLookups
 
 class ReplaceLiteralDynamicPropertyLookupsTest extends CypherFunSuite with AstConstructionTestSupport {
 
   test("Replaces literal dynamic property lookups") {
-    val input: ASTNode = ContainerIndex(varFor("a"), StringLiteral("name")_)_
-    val output: ASTNode = Property(varFor("a"), PropertyKeyName("name")_)_
+    val input: ASTNode = ContainerIndex(varFor("a"), literalString("name"))_
+    val output: ASTNode = prop("a", "name")
 
     replaceLiteralDynamicPropertyLookups(input) should equal(output)
   }

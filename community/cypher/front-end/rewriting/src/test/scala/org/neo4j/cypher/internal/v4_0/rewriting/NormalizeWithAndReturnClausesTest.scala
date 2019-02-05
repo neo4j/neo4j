@@ -353,7 +353,7 @@ class NormalizeWithAndReturnClausesTest extends CypherFunSuite with RewriteTest 
 
   test("WITH: does not attach ORDER BY expressions to unaliased items") {
     // Note: unaliased items in WITH are invalid, and will be caught during semantic check
-    assertNotRewritittenAndSemanticErrors(
+    assertNotRewrittenAndSemanticErrors(
       """MATCH (n)
         |WITH n.prop ORDER BY n.prop
         |RETURN prop AS prop
@@ -382,7 +382,7 @@ class NormalizeWithAndReturnClausesTest extends CypherFunSuite with RewriteTest 
 
   test("does not attach WHERE expression to unaliased items") {
     // Note: unaliased items in WITH are invalid, and will be caught during semantic check
-    assertNotRewritittenAndSemanticErrors(
+    assertNotRewrittenAndSemanticErrors(
       """MATCH (n)
         |WITH n.prop WHERE n.prop
         |RETURN prop AS prop
@@ -457,7 +457,7 @@ class NormalizeWithAndReturnClausesTest extends CypherFunSuite with RewriteTest 
 
   test("does not introduce alias for WHERE containing aggregate") {
     // Note: aggregations in WHERE are invalid, and will be caught during semantic check
-    assertNotRewritittenAndSemanticErrors(
+    assertNotRewrittenAndSemanticErrors(
       """MATCH (n)
         |WITH n.prop AS prop WHERE max(n.foo)
         |RETURN prop AS prop
@@ -608,13 +608,13 @@ class NormalizeWithAndReturnClausesTest extends CypherFunSuite with RewriteTest 
 
   test("WITH: aggregating: does not change grouping set when introducing aliases for ORDER BY with non-grouping expression") {
     // Note: using a non-grouping expression for ORDER BY when aggregating is invalid, and will be caught during semantic check
-    assertNotRewritittenAndSemanticErrors(
+    assertNotRewrittenAndSemanticErrors(
       """MATCH (n)
         |WITH DISTINCT n.prop AS prop ORDER BY n.foo
         |RETURN prop AS prop
       """.stripMargin, "In a WITH/RETURN with DISTINCT or an aggregation, it is not possible to access variables declared before the WITH/RETURN: n (line 2, column 39 (offset: 48))")
 
-    assertNotRewritittenAndSemanticErrors(
+    assertNotRewrittenAndSemanticErrors(
       """MATCH (n)
         |WITH n.prop AS prop, collect(n.foo) AS foos ORDER BY n.foo
         |RETURN prop AS prop, foos AS foos
@@ -623,12 +623,12 @@ class NormalizeWithAndReturnClausesTest extends CypherFunSuite with RewriteTest 
 
   test("RETURN: aggregating: does not change grouping set when introducing aliases for ORDER BY with non-grouping expression") {
     // Note: using a non-grouping expression for ORDER BY when aggregating is invalid, and will be caught during semantic check
-    assertNotRewritittenAndSemanticErrors(
+    assertNotRewrittenAndSemanticErrors(
       """MATCH (n)
         |RETURN DISTINCT n.prop AS prop ORDER BY n.foo
       """.stripMargin, "In a WITH/RETURN with DISTINCT or an aggregation, it is not possible to access variables declared before the WITH/RETURN: n (line 2, column 41 (offset: 50))")
 
-    assertNotRewritittenAndSemanticErrors(
+    assertNotRewrittenAndSemanticErrors(
       """MATCH (n)
         |RETURN n.prop AS prop, collect(n.foo) AS foos ORDER BY n.foo
       """.stripMargin, "In a WITH/RETURN with DISTINCT or an aggregation, it is not possible to access variables declared before the WITH/RETURN: n (line 2, column 56 (offset: 65))")
@@ -636,14 +636,14 @@ class NormalizeWithAndReturnClausesTest extends CypherFunSuite with RewriteTest 
 
   test("aggregating: does not change grouping set when introducing aliases for WHERE with non-grouping expression") {
     // Note: using a non-grouping expression for ORDER BY when aggregating is invalid, and will be caught during semantic check
-    assertNotRewritittenAndSemanticErrors(
+    assertNotRewrittenAndSemanticErrors(
       """MATCH (n)
         |WITH DISTINCT n.prop AS prop WHERE n.foo
         |RETURN prop AS prop
       """.stripMargin, "In a WITH/RETURN with DISTINCT or an aggregation, it is not possible to access variables declared before the WITH/RETURN: n (line 2, column 36 (offset: 45))")
 
 
-    assertNotRewritittenAndSemanticErrors(
+    assertNotRewrittenAndSemanticErrors(
       """MATCH (n)
         |WITH n.prop AS prop, collect(n.foo) AS foos WHERE n.foo
         |RETURN prop AS prop, foos AS foos
@@ -782,7 +782,7 @@ class NormalizeWithAndReturnClausesTest extends CypherFunSuite with RewriteTest 
     assert(checkResult.errors === Seq())
   }
 
-  protected def assertNotRewritittenAndSemanticErrors(query: String, semanticErrors: String*): Unit = {
+  protected def assertNotRewrittenAndSemanticErrors(query: String, semanticErrors: String*): Unit = {
     val original = parser.parse(query)
     val result = endoRewrite(original)
     assert(result === original, s"\n$query\nshould not have been rewritten but was to:\n${prettifier.asString(result.asInstanceOf[Statement])}")
