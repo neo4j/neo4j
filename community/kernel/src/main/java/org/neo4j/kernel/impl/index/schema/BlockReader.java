@@ -36,12 +36,14 @@ public class BlockReader<KEY,VALUE> implements Closeable
     private final FileSystemAbstraction fs;
     private final File file;
     private final Layout<KEY,VALUE> layout;
+    private final int blockSize;
 
-    BlockReader( FileSystemAbstraction fs, File file, Layout<KEY,VALUE> layout ) throws IOException
+    BlockReader( FileSystemAbstraction fs, File file, Layout<KEY,VALUE> layout, int blockSize ) throws IOException
     {
         this.fs = fs;
         this.file = file;
         this.layout = layout;
+        this.blockSize = blockSize;
         this.channel = fs.open( file, OpenMode.READ );
     }
 
@@ -54,7 +56,7 @@ public class BlockReader<KEY,VALUE> implements Closeable
         }
         StoreChannel blockChannel = fs.open( file, OpenMode.READ );
         blockChannel.position( position );
-        PageCursor pageCursor = new ReadableChannelPageCursor( new ReadAheadChannel<>( blockChannel ) );
+        PageCursor pageCursor = new ReadableChannelPageCursor( new ReadAheadChannel<>( blockChannel, blockSize ) );
         BlockEntryReader<KEY,VALUE> blockEntryReader = new BlockEntryReader<>( pageCursor, layout );
         long blockSize = blockEntryReader.blockSize();
         channel.position( position + blockSize );

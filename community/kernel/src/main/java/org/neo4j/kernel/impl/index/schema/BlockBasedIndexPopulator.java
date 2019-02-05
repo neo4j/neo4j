@@ -28,6 +28,7 @@ import java.util.Collection;
 import org.neo4j.gis.spatial.index.curves.SpaceFillingCurveConfiguration;
 import org.neo4j.index.internal.gbptree.Writer;
 import org.neo4j.io.ByteUnit;
+import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
@@ -107,12 +108,6 @@ public class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,VALUE exte
     }
 
     @Override
-    public void drop()
-    {
-        // TODO Make responsive
-    }
-
-    @Override
     public void add( Collection<? extends IndexEntryUpdate<?>> updates )
     {
         for ( IndexEntryUpdate<?> update : updates )
@@ -142,18 +137,39 @@ public class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,VALUE exte
         storeUpdate( update.getEntityId(), update.values(), blockStorage );
     }
 
-    void finishUp() throws IOException, IndexEntryConflictException
+    void finishUp() throws IndexEntryConflictException
     {
-        scanUpdates.doneAdding();
-        scanUpdates.merge();
-        externalUpdates.doneAdding();
-        // don't merge and sort the external updates
+        try
+        {
+            scanUpdates.doneAdding();
+            scanUpdates.merge();
+            externalUpdates.doneAdding();
+            // don't merge and sort the external updates
 
-        // Build the tree from the scan updates
-        writeScanUpdatesToTree();
+            // Build the tree from the scan updates
+            writeScanUpdatesToTree();
 
-        // Apply the external updates
-        writeExternalUpdatesToTree();
+            // Apply the external updates
+            writeExternalUpdatesToTree();
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
+        }
+    }
+
+    @Override
+    public IndexSample sampleResult()
+    {
+        try
+        {
+            finishUp();
+            return super.sampleResult();
+        }
+        catch ( IndexEntryConflictException e )
+        {
+            throw new IllegalStateException( e );
+        }
     }
 
     private void writeExternalUpdatesToTree() throws IOException
@@ -211,6 +227,8 @@ public class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,VALUE exte
     public void verifyDeferredConstraints( NodePropertyAccessor nodePropertyAccessor ) throws IndexEntryConflictException
     {
         // On building tree
+        finishUp(); // TODO just kidding, perhaps not here
+        super.verifyDeferredConstraints( nodePropertyAccessor );
     }
 
     @Override
@@ -247,25 +265,8 @@ public class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,VALUE exte
     @Override
     public void close( boolean populationCompletedSuccessfully )
     {
-        // Make responsive
-    }
-
-    @Override
-    public void markAsFailed( String failure )
-    {
-
-    }
-
-    @Override
-    public void includeSample( IndexEntryUpdate<?> update )
-    {
-        // leave for now, can either sample when we build tree in the end or when updates come in
-    }
-
-    @Override
-    public IndexSample sampleResult()
-    {
-        // leave for now, look at what NativeIndexPopulator does
-        return null;
+        // TODO Make responsive
+        IOUtils.closeAllSilently( externalUpdates, scanUpdates );
+        super.close( populationCompletedSuccessfully );
     }
 }

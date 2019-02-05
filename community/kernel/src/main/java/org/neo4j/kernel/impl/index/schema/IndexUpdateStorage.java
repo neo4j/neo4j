@@ -125,5 +125,6 @@ public class IndexUpdateStorage<KEY extends NativeIndexKey<KEY>,VALUE extends Na
     public void close() throws IOException
     {
         storeChannel.close();
+        fs.deleteFile( file );
     }
 }

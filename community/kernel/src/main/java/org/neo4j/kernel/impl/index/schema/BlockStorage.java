@@ -98,6 +98,7 @@ class BlockStorage<KEY, VALUE> implements Closeable
             numberOfBlocksInCurrentFile++;
         }
         doneAdding = true;
+        storeChannel.close();
     }
 
     private void resetBufferedEntries()
@@ -120,34 +121,47 @@ class BlockStorage<KEY, VALUE> implements Closeable
 
     public void merge() throws IOException
     {
-        int mergeFactor = 2;
         File sourceFile = blockFile;
-        File targetFile = new File( blockFile.getParent(), blockFile.getName() + ".b" );
-        while ( numberOfBlocksInCurrentFile > 1 )
+        File tempFile = new File( blockFile.getParent(), blockFile.getName() + ".b" );
+        try
         {
-            // Perform one complete merge iteration, merging all blocks from source into target.
-            // After this step, target will contain fewer blocks than source, but may need another merge iteration.
-            try ( BlockReader<KEY,VALUE> reader = reader( sourceFile );
-                  StoreChannel targetChannel = fs.open( targetFile, OpenMode.READ_WRITE ) )
+            int mergeFactor = 10;
+            File targetFile = tempFile;
+            while ( numberOfBlocksInCurrentFile > 1 )
             {
-                int blocksMergedSoFar = 0;
-                int blocksInMergedFile = 0;
-                while ( blocksMergedSoFar < numberOfBlocksInCurrentFile )
+                // Perform one complete merge iteration, merging all blocks from source into target.
+                // After this step, target will contain fewer blocks than source, but may need another merge iteration.
+                try ( BlockReader<KEY,VALUE> reader = reader( sourceFile ); StoreChannel targetChannel = fs.open( targetFile, OpenMode.READ_WRITE ) )
                 {
-                    blocksMergedSoFar += performSingleMerge( mergeFactor, reader, targetChannel );
-                    blocksInMergedFile++;
+                    int blocksMergedSoFar = 0;
+                    int blocksInMergedFile = 0;
+                    while ( blocksMergedSoFar < numberOfBlocksInCurrentFile )
+                    {
+                        blocksMergedSoFar += performSingleMerge( mergeFactor, reader, targetChannel );
+                        blocksInMergedFile++;
+                    }
+                    numberOfBlocksInCurrentFile = blocksInMergedFile;
+                    monitor.mergeIterationFinished( blocksMergedSoFar, blocksInMergedFile );
                 }
-                numberOfBlocksInCurrentFile = blocksInMergedFile;
-                monitor.mergeIterationFinished( blocksMergedSoFar, blocksInMergedFile );
-            }
 
-            // Flip and restore the channelz
-            File tmpSourceFile = sourceFile;
-            sourceFile = targetFile;
-            targetFile = tmpSourceFile;
+                // Flip and restore the channelz
+                File tmpSourceFile = sourceFile;
+                sourceFile = targetFile;
+                targetFile = tmpSourceFile;
+            }
         }
-        blockFile = sourceFile;
-        // todo Clean away the other file
+        finally
+        {
+            if ( sourceFile == blockFile )
+            {
+                fs.deleteFile( tempFile );
+            }
+            else
+            {
+                fs.deleteFile( blockFile );
+                fs.renameFile( tempFile, blockFile );
+            }
+        }
     }
 
     private int performSingleMerge( int mergeFactor, BlockReader<KEY,VALUE> reader, StoreChannel targetChannel )
@@ -243,6 +257,7 @@ class BlockStorage<KEY, VALUE> implements Closeable
     public void close() throws IOException
     {
         IOUtils.closeAll( storeChannel );
+        fs.deleteFile( blockFile );
     }
 
     BlockReader<KEY,VALUE> reader() throws IOException
@@ -298,7 +313,7 @@ class BlockStorage<KEY, VALUE> implements Closeable
 
     private BlockReader<KEY,VALUE> reader( File file ) throws IOException
     {
-        return new BlockReader<>( fs, file, layout );
+        return new BlockReader<>( fs, file, layout, blockSize );
     }
 
     public interface Monitor
