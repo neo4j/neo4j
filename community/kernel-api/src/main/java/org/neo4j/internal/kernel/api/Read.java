@@ -56,7 +56,7 @@ public interface Read
      *
      * NOTE distinct values may not be 100% accurate for point values that are very close to each other. In those cases they can be
      * reported as a single distinct values with a higher count instead of several separate values.
-     *  @param index {@link IndexReference} referencing index.
+     * @param index {@link IndexReference} referencing index.
      * @param cursor {@link NodeValueIndexCursor} receiving distinct count data.
      * @param needsValues whether or not values should be loaded and given to the cursor.
      */
