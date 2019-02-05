@@ -24,23 +24,35 @@ import java.io.UncheckedIOException;
 import java.util.Collection;
 
 import org.neo4j.index.internal.gbptree.Layout;
+import org.neo4j.io.ByteUnit;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyAccessor;
 import org.neo4j.storageengine.api.schema.IndexSample;
+import org.neo4j.util.FeatureToggles;
 
 import static org.neo4j.kernel.impl.index.schema.NativeIndexUpdater.initializeKeyFromUpdate;
 
 public class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,VALUE extends NativeIndexValue> implements IndexPopulator
 {
+    private static final String BLOCK_SIZE = FeatureToggles.getString( BlockBasedIndexPopulator.class, "blockSize", "1M" );
+
     private final Layout<KEY,VALUE> layout;
+    private final int blockSize;
     private BlockStorage<KEY,VALUE> blockStorage;
 
     BlockBasedIndexPopulator( Layout<KEY,VALUE> layout )
     {
         this.layout = layout;
+
+        long parse = ByteUnit.parse( BLOCK_SIZE );
+        if ( (parse & ~0xFFFF_FFFFL) != 0 )
+        {
+            throw new IllegalArgumentException( "Block size need to fit in int. Was " + parse );
+        }
+        blockSize = (int) parse;
     }
 
     @Override
