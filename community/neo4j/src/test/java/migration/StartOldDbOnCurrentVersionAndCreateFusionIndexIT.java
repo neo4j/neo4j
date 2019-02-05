@@ -79,7 +79,7 @@ import static org.neo4j.test.Unzip.unzip;
 @ExtendWith( TestDirectoryExtension.class )
 class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
 {
-    private static final String ZIP_FILE_3_4 = "3_4-db.zip";
+    private static final String ZIP_FILE_3_5 = "3_5-db.zip";
 
     private static final String KEY1 = "key1";
     private static final String KEY2 = "key2";
@@ -109,9 +109,9 @@ class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
     @Inject
     private TestDirectory directory;
 
-    @Disabled( "Here as reference for how 3.4 db was created" )
+    @Disabled( "Here as reference for how 3.5 db was created" )
     @Test
-    void create3_4Database() throws Exception
+    void create3_5Database() throws Exception
     {
         File storeDir = tempStoreDirectory();
         GraphDatabaseFactory factory = new GraphDatabaseFactory();
@@ -132,18 +132,21 @@ class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
     }
 
     @Test
-    void shouldOpen3_4DbAndCreateAndWorkWithSomeFusionIndexes() throws Exception
+    void shouldOpen3_5DbAndCreateAndWorkWithSomeFusionIndexes() throws Exception
     {
-        shouldOpenOldDbAndCreateAndWorkWithSomeFusionIndexes( ZIP_FILE_3_4, Provider.FUSION_20 );
+        // 3.5 actually supports BTREE_10, but our test database does not have such an index, so we exclude it here.
+        Provider highestProviderInOldVersion = Provider.FUSION_20;
+        shouldOpenOldDbAndCreateAndWorkWithSomeFusionIndexes( ZIP_FILE_3_5, highestProviderInOldVersion );
     }
 
     private void shouldOpenOldDbAndCreateAndWorkWithSomeFusionIndexes( String zippedDbName, Provider highestProviderInOldVersion ) throws Exception
     {
         // given
-        unzip( getClass(), zippedDbName, directory.databaseDir() );
+        File targetDirectory = directory.databaseDir();
+        unzip( getClass(), zippedDbName, targetDirectory );
         IndexRecoveryTracker indexRecoveryTracker = new IndexRecoveryTracker();
         // when
-        GraphDatabaseAPI db = setupDb( directory.databaseDir(), indexRecoveryTracker );
+        GraphDatabaseAPI db = setupDb( targetDirectory, indexRecoveryTracker );
 
         // then
         Provider[] providers = providersUpToAndIncluding( highestProviderInOldVersion );
@@ -186,7 +189,7 @@ class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
         }
 
         // when
-        db = setupDb( directory.databaseDir(), indexRecoveryTracker );
+        db = setupDb( targetDirectory, indexRecoveryTracker );
         try
         {
             // then
