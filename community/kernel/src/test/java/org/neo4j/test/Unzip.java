@@ -57,12 +57,10 @@ public class Unzip
                 {
                     try ( OutputStream file = new BufferedOutputStream( new FileOutputStream( new File( targetDirectory, entry.getName() ) ) ) )
                     {
-                        long toCopy = entry.getSize();
-                        while ( toCopy > 0 )
+                        int read;
+                        while ( ( read = zipStream.read( scratch ) ) != -1 )
                         {
-                            int read = zipStream.read( scratch );
                             file.write( scratch, 0, read );
-                            toCopy -= read;
                         }
                     }
                 }
