@@ -484,8 +484,8 @@ class ReflectiveProcedureCompiler
         catch ( IllegalAccessException | NoSuchMethodException e )
         {
             throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed, e,
-                    "Unable to find a usable public no-argument assertValidConstructor in the class `%s`. " +
-                    "Please add a valid, public assertValidConstructor, recompile the class and try again.",
+                    "Unable to find a usable public no-argument constructor in the class `%s`. " +
+                    "Please add a valid, public constructor, recompile the class and try again.",
                     procDefinition.getSimpleName() );
         }
     }
