@@ -92,6 +92,19 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
                        ): (RuntimeResult, CONTEXT) =
     runtimeTestSupport.run(logicalQuery, runtime, input.stream(), (context, result) => (result, context))
 
+  def executeUntil(logicalQuery: LogicalQuery,
+                   input: InputValues,
+                   condition: ContextCondition[CONTEXT]): RuntimeResult = {
+    val nAttempts = 100
+    for (i <- 0 until nAttempts) {
+      val (result, context) = executeAndContext(logicalQuery, runtime, input)
+      if (condition.test(context)) {
+        return result
+      }
+    }
+    fail(s"${condition.errorMsg} in $nAttempts attempts!")
+  }
+
   // INPUT
 
   val NO_INPUT = new InputValues
@@ -280,3 +293,5 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
     }
   }
 }
+
+case class ContextCondition[CONTEXT <: RuntimeContext](test: CONTEXT => Boolean, errorMsg: String)
