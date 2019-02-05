@@ -208,7 +208,9 @@ public class ByteCodeUtilsTest
 
     class Inner
     {
-        class InnerInner{}
+        class InnerInner
+        {
+        }
     }
 
     private void assertTypeName( Class<?> type, String expected )

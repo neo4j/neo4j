@@ -91,7 +91,7 @@ public class TypeReference
         {
             packageName = innerType.getPackage().getName();
             Class<?> declaringClass = innerType.getDeclaringClass();
-            if (declaringClass != null )
+            if ( declaringClass != null )
             {
                 declaringTypeReference = typeReference( declaringClass );
             }

@@ -660,7 +660,6 @@ public class ProcedureCompilationTest
         } );
     }
 
-
     public static class LongOut
     {
         public long field;

@@ -118,20 +118,21 @@ import static org.neo4j.values.SequenceValue.IterationPreference.RANDOM_ACCESS;
 @SuppressWarnings( {"WeakerAccess", "unused"} )
 public final class ProcedureCompilation
 {
-    public final static RawIterator<AnyValue[],ProcedureException> VOID_ITERATOR = new RawIterator<AnyValue[],ProcedureException>()
-    {
-        @Override
-        public boolean hasNext()
-        {
-            return false;
-        }
+    public static final RawIterator<AnyValue[],ProcedureException> VOID_ITERATOR =
+            new RawIterator<AnyValue[],ProcedureException>()
+            {
+                @Override
+                public boolean hasNext()
+                {
+                    return false;
+                }
 
-        @Override
-        public AnyValue[] next()
-        {
-            return EMPTY_ARRAY;
-        }
-    };
+                @Override
+                public AnyValue[] next()
+                {
+                    return EMPTY_ARRAY;
+                }
+            };
 
     private static final boolean DEBUG = false;
     private static final String LONG = long.class.getCanonicalName();
@@ -484,13 +485,13 @@ public final class ProcedureCompilation
         Expression[] parameters = parameters( block, methodToCall );
 
         if ( iterator.equals( VOID_ITERATOR.getClass() ) )
-        { //if we are calling a void method we just need to call and return empty
+        {   //if we are calling a void method we just need to call and return empty
             block.expression( invoke( getStatic( userClass ), methodReference( methodToCall ), parameters ) );
             block.returns( getStatic( FieldReference.field( typeReference( ProcedureCompilation.class ),
                     typeReference( RawIterator.class ), "VOID_ITERATOR" ) ) );
         }
         else
-        {//here we must both call and map stream to an iterator
+        {   //here we must both call and map stream to an iterator
             block.assign( parameterizedType( Stream.class, procedureType( methodToCall ) ), "fromProcedure",
                     invoke( getStatic( userClass ), methodReference( methodToCall ), parameters ) );
             block.returns( invoke( newInstance( iterator ),
