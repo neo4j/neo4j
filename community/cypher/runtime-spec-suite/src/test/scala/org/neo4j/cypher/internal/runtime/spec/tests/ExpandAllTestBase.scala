@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.runtime.spec.tests
 
 import org.neo4j.cypher.internal.runtime.spec._
 import org.neo4j.cypher.internal.{CypherRuntime, RuntimeContext}
+import org.neo4j.graphdb.RelationshipType
 
 abstract class ExpandAllTestBase[CONTEXT <: RuntimeContext](
   edition: Edition[CONTEXT],
@@ -32,17 +33,17 @@ abstract class ExpandAllTestBase[CONTEXT <: RuntimeContext](
     // given
     val n = sizeHint
     val nodes = nodeGraph(n, "Honey")
-    val rels = (for(i <- 0 until n) yield {
+    val relTuples = (for(i <- 0 until n) yield {
       Seq(
         (i, (2 * i) % n, "OTHER"),
         (i, (i + 1) % n, "NEXT")
       )
     }).reduce(_ ++ _)
 
-    val relIds = connect(nodes, rels)
+    val rels = connect(nodes, relTuples)
 
     // when
-    val logicalQuery = new LogicalQueryBuilder(graphDb)
+    val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y", "r")
       .expand("(x)-[r]->(y)")
       .allNodeScan("x")
@@ -51,7 +52,7 @@ abstract class ExpandAllTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    val expected = rels.zip(relIds).map {
+    val expected = relTuples.zip(rels).map {
       case ((f, t, _), rel) => Array(nodes(f), nodes(t), rel)
     }
 
@@ -62,17 +63,17 @@ abstract class ExpandAllTestBase[CONTEXT <: RuntimeContext](
     // given
     val n = sizeHint
     val nodes = nodeGraph(n, "Honey")
-    val rels = (for(i <- 0 until n) yield {
+    val relTuples = (for(i <- 0 until n) yield {
       Seq(
         (i, (2 * i) % n, "OTHER"),
         (i, (i + 1) % n, "NEXT")
       )
     }).reduce(_ ++ _)
 
-    val relIds = connect(nodes, rels)
+    val rels = connect(nodes, relTuples)
 
     // when
-    val logicalQuery = new LogicalQueryBuilder(graphDb)
+    val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y", "r")
       .expand("(x)-[r:OTHER]->(y)")
       .allNodeScan("x")
@@ -81,8 +82,8 @@ abstract class ExpandAllTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    val expected = rels.zip(relIds).zipWithIndex.collect {
-      case (((f, t, _), rel), i) if i % 2 == 0 => Array(nodes(f), nodes(t), rel)
+    val expected = relTuples.zip(rels).collect {
+      case ((f, t, typ), rel) if typ == "OTHER" => Array(nodes(f), nodes(t), rel)
     }
 
     runtimeResult should beColumns("x", "y", "r").withRows(expected)
@@ -92,17 +93,18 @@ abstract class ExpandAllTestBase[CONTEXT <: RuntimeContext](
     // given
     val n = sizeHint
     val nodes = nodeGraph(n, "Honey")
-    val rels = (for(i <- 0 until n) yield {
+    val relTuples = (for(i <- 0 until n) yield {
       Seq(
         (i, (2 * i) % n, "OTHER"),
-        (i, (i + 1) % n, "NEXT")
+        (i, (i + 1) % n, "NEXT"),
+        (i, (3 * i + 5) % n, "BLACKHOLE")
       )
     }).reduce(_ ++ _)
 
-    val relIds = connect(nodes, rels)
+    val rels = connect(nodes, relTuples)
 
     // when
-    val logicalQuery = new LogicalQueryBuilder(graphDb)
+    val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y", "r")
       .expand("(x)-[r:OTHER|NEXT]->(y)")
       .allNodeScan("x")
@@ -111,8 +113,8 @@ abstract class ExpandAllTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    val expected = rels.zip(relIds).map {
-      case ((f, t, _), rel) => Array(nodes(f), nodes(t), rel)
+    val expected = relTuples.zip(rels).collect {
+      case ((f, t, typ), rel) if typ == "OTHER" || typ == "NEXT" => Array(nodes(f), nodes(t), rel)
     }
 
     runtimeResult should beColumns("x", "y", "r").withRows(expected)
@@ -122,16 +124,16 @@ abstract class ExpandAllTestBase[CONTEXT <: RuntimeContext](
     // given
     val n = sizeHint
     val nodes = nodeGraph(n, "Honey")
-    val rels = (for(i <- 0 until n) yield {
+    val relTuples = (for(i <- 0 until n) yield {
       Seq(
         (i, i, "ME")
       )
     }).reduce(_ ++ _)
 
-    val relIds = connect(nodes, rels)
+    val rels = connect(nodes, relTuples)
 
     // when
-    val logicalQuery = new LogicalQueryBuilder(graphDb)
+    val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y", "r")
       .expand("(x)-[r:ME]->(y)")
       .allNodeScan("x")
@@ -140,7 +142,7 @@ abstract class ExpandAllTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    val expected = rels.zip(relIds).map {
+    val expected = relTuples.zip(rels).map {
       case ((f, t, _), rel) => Array(nodes(f), nodes(t), rel)
     }
 
@@ -150,7 +152,7 @@ abstract class ExpandAllTestBase[CONTEXT <: RuntimeContext](
   test("should expand given an empty input") {
     // given
     // when
-    val logicalQuery = new LogicalQueryBuilder(graphDb)
+    val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y", "r")
       .expand("(x)-[r]->(y)")
       .allNodeScan("x")
@@ -170,7 +172,7 @@ trait ExpandAllWithOptionalTestBase[CONTEXT <: RuntimeContext] {
   test("given a null start point, returns an empty iterator") {
     // given
     // when
-    val logicalQuery = new LogicalQueryBuilder(graphDb)
+    val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y", "r")
       .expand("(x)-[r]->(y)")
       .optional()

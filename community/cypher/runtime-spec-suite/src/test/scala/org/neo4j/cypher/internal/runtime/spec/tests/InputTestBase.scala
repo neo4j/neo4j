@@ -33,7 +33,7 @@ abstract class InputTestBase[CONTEXT <: RuntimeContext](
     val nodes = nodeGraph(3)
 
     // when
-    val logicalQuery = new LogicalQueryBuilder(graphDb)
+    val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y", "z")
       .input("x", "y", "z")
       .build()
@@ -56,9 +56,9 @@ abstract class InputTestBase[CONTEXT <: RuntimeContext](
 
   test("should retain input value order") {
     // when
-    val columns = (0 until sizeHint).map(i => "c"+i)
+    val columns = (0 until 100).map(i => "c"+i)
 
-    val logicalQuery = new LogicalQueryBuilder(graphDb)
+    val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults(columns:_*)
       .input(columns:_*)
       .build()
@@ -72,7 +72,7 @@ abstract class InputTestBase[CONTEXT <: RuntimeContext](
 
   test("should return no rows on no input") {
     // when
-    val logicalQuery = new LogicalQueryBuilder(graphDb)
+    val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y", "z")
       .input("x", "y", "z")
       .build()

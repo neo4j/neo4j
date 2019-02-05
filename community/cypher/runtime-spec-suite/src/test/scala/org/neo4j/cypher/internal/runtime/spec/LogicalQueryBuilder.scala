@@ -27,15 +27,23 @@ import org.neo4j.cypher.internal.v4_0.expressions.{Expression, LabelName, Variab
 import org.neo4j.cypher.internal.v4_0.logical.plans._
 import org.neo4j.cypher.internal.v4_0.util.InputPosition
 import org.neo4j.cypher.internal.v4_0.util.attribution.{IdGen, SequentialIdGen}
-import org.neo4j.graphdb.GraphDatabaseService
-import org.neo4j.kernel.impl.coreapi.InternalTransaction
 
 import scala.collection.mutable.ArrayBuffer
 
 /**
+  * Used by LogicalQueryBuilder to resolve tokens
+  */
+trait TokenResolver {
+  /**
+    * Obtain the token of a label by name.
+    */
+  def labelId(label: String): Int
+}
+
+/**
   * Test help utility for hand-writing logical queries.
   */
-class LogicalQueryBuilder(graphDb: GraphDatabaseService)
+class LogicalQueryBuilder(tokenResolver: TokenResolver)
 {
   private sealed trait OperatorBuilder
   private case class LeafOperator(plan: LogicalPlan) extends OperatorBuilder
@@ -167,7 +175,7 @@ class LogicalQueryBuilder(graphDb: GraphDatabaseService)
                         propIds: Map[String, Int] = Map.empty,
                         unique: Boolean = false,
                         customQueryExpression: Option[QueryExpression[Expression]] = None): LogicalQueryBuilder = {
-    val label = labelId(IndexSeek.labelFromIndexSeekString(indexSeekString))
+    val label = tokenResolver.labelId(IndexSeek.labelFromIndexSeekString(indexSeekString))
     val plan = IndexSeek(indexSeekString, getValue, indexOrder, paramExpr, argumentIds, propIds, label, unique, customQueryExpression)
     appendAtCurrentIndent(LeafOperator(plan))
   }
@@ -232,13 +240,5 @@ class LogicalQueryBuilder(graphDb: GraphDatabaseService)
     }
     indent = 0
     this
-  }
-
-  def labelId(label: String): Int = {
-    val tx = graphDb.beginTx()
-    try {
-      tx.success()
-      tx.asInstanceOf[InternalTransaction].kernelTransaction().tokenRead().nodeLabel(label)
-    } finally tx.close()
   }
 }

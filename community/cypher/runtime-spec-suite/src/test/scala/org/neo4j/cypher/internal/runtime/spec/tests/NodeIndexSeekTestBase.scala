@@ -41,9 +41,9 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     index("Honey", "prop")
 
     // when
-    val logicalQuery = new LogicalQueryBuilder(graphDb)
+    val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .nodeIndexOperator(s"x:Honey(prop = 20)")
+      .nodeIndexOperator("x:Honey(prop = 20)")
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -62,9 +62,9 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     index("Honey", "prop")
 
     // when
-    val logicalQuery = new LogicalQueryBuilder(graphDb)
+    val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .nodeIndexOperator(s"x:Honey(prop = 20 OR 30)")
+      .nodeIndexOperator("x:Honey(prop = 20 OR 30)")
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -83,9 +83,9 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     index("Honey", "prop")
 
     // when
-    val logicalQuery = new LogicalQueryBuilder(graphDb)
+    val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .nodeIndexOperator(s"x:Honey(prop)", customQueryExpression = Some(ManyQueryExpression(ListLiteral(Seq.empty)(InputPosition.NONE))))
+      .nodeIndexOperator("x:Honey(prop)", customQueryExpression = Some(ManyQueryExpression(ListLiteral(Seq.empty)(InputPosition.NONE))))
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -103,9 +103,9 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     index("Honey", "prop")
 
     // when
-    val logicalQuery = new LogicalQueryBuilder(graphDb)
+    val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .nodeIndexOperator(s"x:Honey(prop = 20 OR ???)", paramExpr = Some(Null()(InputPosition.NONE)))
+      .nodeIndexOperator("x:Honey(prop = 20 OR ???)", paramExpr = Some(Null()(InputPosition.NONE)))
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -123,9 +123,9 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     index("Honey", "prop")
 
     // when
-    val logicalQuery = new LogicalQueryBuilder(graphDb)
+    val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .nodeIndexOperator(s"x:Honey(prop = 20 OR 20)")
+      .nodeIndexOperator("x:Honey(prop = 20 OR 20)")
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -144,9 +144,9 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     uniqueIndex("Honey", "prop")
 
     // when
-    val logicalQuery = new LogicalQueryBuilder(graphDb)
+    val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .nodeIndexOperator(s"x:Honey(prop = 20)", unique = true)
+      .nodeIndexOperator("x:Honey(prop = 20)", unique = true)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -165,9 +165,9 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     uniqueIndex("Honey", "prop")
 
     // when
-    val logicalQuery = new LogicalQueryBuilder(graphDb)
+    val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .nodeIndexOperator(s"x:Honey(prop = 20 OR 20)", unique = true)
+      .nodeIndexOperator("x:Honey(prop = 20 OR 20)", unique = true)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -186,9 +186,9 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     uniqueIndex("Honey", "prop")
 
     // when
-    val logicalQuery = new LogicalQueryBuilder(graphDb)
+    val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .nodeIndexOperator(s"x:Honey(prop = 20 OR ???)", paramExpr = Some(Null()(InputPosition.NONE)))
+      .nodeIndexOperator("x:Honey(prop = 20 OR ???)", paramExpr = Some(Null()(InputPosition.NONE)))
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -212,9 +212,9 @@ trait NodeLockingUniqueIndexSeekTestBase[CONTEXT <: RuntimeContext] {
     uniqueIndex("Honey", "prop")
 
     // when
-    val logicalQuery = new LogicalQueryBuilder(graphDb)
+    val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .nodeIndexOperator(s"x:Honey(prop = 20)", unique = true)
+      .nodeIndexOperator("x:Honey(prop = 20)", unique = true)
       .build(readOnly = false)
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -233,9 +233,9 @@ trait NodeLockingUniqueIndexSeekTestBase[CONTEXT <: RuntimeContext] {
     uniqueIndex("Honey", "prop")
 
     // when
-    val logicalQuery = new LogicalQueryBuilder(graphDb)
+    val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .nodeIndexOperator(s"x:Honey(prop = 20 OR 20)", unique = true)
+      .nodeIndexOperator("x:Honey(prop = 20 OR 20)", unique = true)
       .build(readOnly = false)
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -256,10 +256,10 @@ trait NodeLockingUniqueIndexSeekTestBase[CONTEXT <: RuntimeContext] {
     uniqueIndex("Honey", "prop")
 
     // when
-    val logicalQuery = new LogicalQueryBuilder(graphDb)
+    val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "prop")
       .projection("cached[x.prop] AS prop")
-      .nodeIndexOperator(s"x:Honey(prop = 10)", GetValue)
+      .nodeIndexOperator("x:Honey(prop = 10)", GetValue)
       .build(readOnly = false)
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -282,7 +282,7 @@ trait NodeIndexSeekRangeAndCompositeTestBase[CONTEXT <: RuntimeContext] {
     index("Honey", "prop")
 
     // when
-    val logicalQuery = new LogicalQueryBuilder(graphDb)
+    val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
       .nodeIndexOperator(s"x:Honey(prop > ${sizeHint / 2})")
       .build()
@@ -303,7 +303,7 @@ trait NodeIndexSeekRangeAndCompositeTestBase[CONTEXT <: RuntimeContext] {
     uniqueIndex("Honey", "prop")
 
     // when
-    val logicalQuery = new LogicalQueryBuilder(graphDb)
+    val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
       .nodeIndexOperator(s"x:Honey(prop > ${sizeHint / 2})", unique = true)
       .build()
@@ -324,7 +324,7 @@ trait NodeIndexSeekRangeAndCompositeTestBase[CONTEXT <: RuntimeContext] {
     index("Honey", "prop", "prop2")
 
     // when
-    val logicalQuery = new LogicalQueryBuilder(graphDb)
+    val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
       .nodeIndexOperator("x:Honey(prop = 10, prop2 = '10')")
       .build()
@@ -345,7 +345,7 @@ trait NodeIndexSeekRangeAndCompositeTestBase[CONTEXT <: RuntimeContext] {
     index("Honey", "prop", "prop2")
 
     // when
-    val logicalQuery = new LogicalQueryBuilder(graphDb)
+    val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
       .nodeIndexOperator("x:Honey(prop = 0, prop2 = 0)")
       .build()
@@ -366,7 +366,7 @@ trait NodeIndexSeekRangeAndCompositeTestBase[CONTEXT <: RuntimeContext] {
     index("Honey", "prop", "prop2")
 
     // when
-    val logicalQuery = new LogicalQueryBuilder(graphDb)
+    val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
       .nodeIndexOperator("x:Honey(prop = 10 OR 20, prop2 = '10' OR '30')")
       .build()
@@ -387,7 +387,7 @@ trait NodeIndexSeekRangeAndCompositeTestBase[CONTEXT <: RuntimeContext] {
     index("Honey", "prop")
 
     // when
-    val logicalQuery = new LogicalQueryBuilder(graphDb)
+    val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "prop")
       .projection("cached[x.prop] AS prop")
       .nodeIndexOperator(s"x:Honey(prop > ${sizeHint / 2})", GetValue)
@@ -409,10 +409,10 @@ trait NodeIndexSeekRangeAndCompositeTestBase[CONTEXT <: RuntimeContext] {
     index("Honey", "prop", "prop2")
 
     // when
-    val logicalQuery = new LogicalQueryBuilder(graphDb)
+    val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "prop", "prop2")
       .projection("cached[x.prop] AS prop", "cached[x.prop2] AS prop2")
-      .nodeIndexOperator(s"x:Honey(prop = 10, prop2 = '10')", GetValue)
+      .nodeIndexOperator("x:Honey(prop = 10, prop2 = '10')", GetValue)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -430,10 +430,10 @@ trait NodeIndexSeekRangeAndCompositeTestBase[CONTEXT <: RuntimeContext] {
     index("Honey", "prop")
 
     // when
-    val logicalQuery = new LogicalQueryBuilder(graphDb)
+    val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
       .apply()
-      .|.nodeIndexOperator(s"x:Honey(prop = ???)", GetValue, paramExpr = Some(Variable("value")(InputPosition.NONE)), argumentIds = Set("value"))
+      .|.nodeIndexOperator("x:Honey(prop = ???)", GetValue, paramExpr = Some(Variable("value")(InputPosition.NONE)), argumentIds = Set("value"))
       .input("value")
       .build()
 
@@ -454,7 +454,7 @@ trait NodeIndexSeekRangeAndCompositeTestBase[CONTEXT <: RuntimeContext] {
     index("Honey", "prop")
 
     // when
-    val logicalQuery = new LogicalQueryBuilder(graphDb)
+    val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
       .nodeIndexOperator(s"x:Honey(prop > ${sizeHint / 2})", indexOrder = IndexOrderAscending)
       .build()
@@ -475,7 +475,7 @@ trait NodeIndexSeekRangeAndCompositeTestBase[CONTEXT <: RuntimeContext] {
     index("Honey", "prop")
 
     // when
-    val logicalQuery = new LogicalQueryBuilder(graphDb)
+    val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
       .nodeIndexOperator(s"x:Honey(prop > ${sizeHint / 2})", indexOrder = IndexOrderDescending)
       .build()

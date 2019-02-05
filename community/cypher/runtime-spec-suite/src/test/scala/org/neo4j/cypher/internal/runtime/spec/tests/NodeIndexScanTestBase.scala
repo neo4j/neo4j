@@ -33,20 +33,20 @@ abstract class NodeIndexScanTestBase[CONTEXT <: RuntimeContext](
     // given
     nodeGraph(5, "Milk")
     val nodes = nodePropertyGraph(sizeHint, {
-      case i if i % 10 == 0 => Map("prop" -> i)
+      case i if i % 10 == 0 => Map("calories" -> i)
     },"Honey")
-    index("Honey", "prop")
+    index("Honey", "calories")
 
     // when
-    val logicalQuery = new LogicalQueryBuilder(graphDb)
+    val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .nodeIndexOperator("x:Honey(prop)")
+      .nodeIndexOperator("x:Honey(calories)")
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    val expected = nodes.zipWithIndex.filter{ case (_, i) => i % 10 == 0}.map(_._1)
+    val expected = nodes.filter{ _.hasProperty("calories") }
     runtimeResult should beColumns("x").withSingleValueRows(expected)
   }
 
@@ -54,20 +54,20 @@ abstract class NodeIndexScanTestBase[CONTEXT <: RuntimeContext](
     // given
     nodeGraph(5, "Milk")
     val nodes = nodePropertyGraph(sizeHint, {
-      case i if i % 10 == 0 => Map("prop" -> i)
+      case i if i % 10 == 0 => Map("calories" -> i)
     },"Honey")
-    uniqueIndex("Honey", "prop")
+    uniqueIndex("Honey", "calories")
 
     // when
-    val logicalQuery = new LogicalQueryBuilder(graphDb)
+    val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .nodeIndexOperator("x:Honey(prop)")
+      .nodeIndexOperator("x:Honey(calories)")
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    val expected = nodes.zipWithIndex.filter{ case (_, i) => i % 10 == 0}.map(_._1)
+    val expected = nodes.filter{ _.hasProperty("calories") }
     runtimeResult should beColumns("x").withSingleValueRows(expected)
   }
 
@@ -75,43 +75,43 @@ abstract class NodeIndexScanTestBase[CONTEXT <: RuntimeContext](
     // given
     nodeGraph(5, "Milk")
     val nodes = nodePropertyGraph(sizeHint, {
-      case i if i % 10 == 0 => Map("prop" -> i)
+      case i if i % 10 == 0 => Map("calories" -> i)
     },"Honey")
-    index("Honey", "prop")
+    index("Honey", "calories")
 
     // when
-    val logicalQuery = new LogicalQueryBuilder(graphDb)
-      .produceResults("x", "prop")
-      .projection("cached[x.prop] AS prop")
-      .nodeIndexOperator("x:Honey(prop)", GetValue)
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "calories")
+      .projection("cached[x.calories] AS calories")
+      .nodeIndexOperator("x:Honey(calories)", GetValue)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    val expected = nodes.zipWithIndex.collect{ case (n, i) if (i % 10) == 0 => Array(n, i)}
-    runtimeResult should beColumns("x", "prop").withRows(expected)
+    val expected = nodes.zipWithIndex.collect{ case (n, i) if n.hasProperty("calories") => Array(n, i)}
+    runtimeResult should beColumns("x", "calories").withRows(expected)
   }
 
   test("should cache properties with a unique index") {
     // given
     nodeGraph(5, "Milk")
     val nodes = nodePropertyGraph(sizeHint, {
-      case i if i % 10 == 0 => Map("prop" -> i)
+      case i if i % 10 == 0 => Map("calories" -> i)
     },"Honey")
-    uniqueIndex("Honey", "prop")
+    uniqueIndex("Honey", "calories")
 
     // when
-    val logicalQuery = new LogicalQueryBuilder(graphDb)
-      .produceResults("x", "prop")
-      .projection("cached[x.prop] AS prop")
-      .nodeIndexOperator("x:Honey(prop)", GetValue)
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "calories")
+      .projection("cached[x.calories] AS calories")
+      .nodeIndexOperator("x:Honey(calories)", GetValue)
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    val expected = nodes.zipWithIndex.collect{ case (n, i) if (i % 10) == 0 => Array(n, i)}
-    runtimeResult should beColumns("x", "prop").withRows(expected)
+    val expected = nodes.zipWithIndex.collect{ case (n, i) if n.hasProperty("calories") => Array(n, i)}
+    runtimeResult should beColumns("x", "calories").withRows(expected)
   }
 }

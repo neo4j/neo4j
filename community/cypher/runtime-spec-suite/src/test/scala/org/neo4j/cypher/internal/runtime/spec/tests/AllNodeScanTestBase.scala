@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.runtime.spec.tests
 
-import org.neo4j.cypher.internal.{CypherRuntime, InterpretedRuntime, RuntimeContext}
 import org.neo4j.cypher.internal.runtime.spec._
+import org.neo4j.cypher.internal.{CypherRuntime, RuntimeContext}
 
 abstract class AllNodeScanTestBase[CONTEXT <: RuntimeContext](
                                                                edition: Edition[CONTEXT],
@@ -35,7 +35,7 @@ abstract class AllNodeScanTestBase[CONTEXT <: RuntimeContext](
       nodeGraph(sizeHint, "Almond")
 
     // when
-    val logicalQuery = new LogicalQueryBuilder(graphDb)
+    val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
       .allNodeScan("x")
       .build()
@@ -52,7 +52,7 @@ abstract class AllNodeScanTestBase[CONTEXT <: RuntimeContext](
     val nodes = nodeGraph(sizeHint)
 
     // when
-    val logicalQuery = new LogicalQueryBuilder(graphDb)
+    val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
       .allNodeScan("x")
       .build()
@@ -65,7 +65,7 @@ abstract class AllNodeScanTestBase[CONTEXT <: RuntimeContext](
 
   test("should scan empty graph") {
     // when
-    val logicalQuery = new LogicalQueryBuilder(graphDb)
+    val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
       .allNodeScan("x")
       .build()
@@ -81,7 +81,7 @@ abstract class AllNodeScanTestBase[CONTEXT <: RuntimeContext](
     val nodes = nodeGraph(10, "Honey")
 
     // when
-    val logicalQuery = new LogicalQueryBuilder(graphDb)
+    val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("y", "z", "x")
       .apply()
       .|.allNodeScan("z")

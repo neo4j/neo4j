@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.{CypherRuntime, LogicalQuery, RuntimeContext}
 import org.neo4j.cypher.result.{QueryResult, RuntimeResult}
 import org.neo4j.graphdb.{GraphDatabaseService, Label, Node, Relationship, RelationshipType}
+import org.neo4j.kernel.impl.coreapi.InternalTransaction
 import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.values.virtual.VirtualValues
 import org.neo4j.values.{AnyValue, AnyValues}
@@ -54,8 +55,8 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
                                                            val runtime: CypherRuntime[CONTEXT])
   extends CypherFunSuite
   with AstConstructionTestSupport
-    with BeforeAndAfterEach
-{
+  with BeforeAndAfterEach
+  with TokenResolver {
 
   var graphDb: GraphDatabaseService = _
   var runtimeTestSupport: RuntimeTestSupport[CONTEXT] = _
@@ -73,6 +74,16 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
 
   override def test(testName: String, testTags: Tag*)(testFun: => Unit): Unit = {
     super.test(s"[${runtime.name}] $testName", testTags:_*)(testFun)
+  }
+
+  // HELPERS
+
+  override def labelId(label: String): Int = {
+    val tx = graphDb.beginTx()
+    try {
+      tx.success()
+      tx.asInstanceOf[InternalTransaction].kernelTransaction().tokenRead().nodeLabel(label)
+    } finally tx.close()
   }
 
   // EXECUTE
@@ -300,7 +311,7 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
       val columns = left.fieldNames().toSeq
       if (columns != expectedColumns) {
         MatchResult(matches = false, s"Expected result columns $expectedColumns, got $columns", "")
-      } else if (maybeStatisticts.isDefined && maybeStatisticts.get != left.queryStatistics()) {
+      } else if (maybeStatisticts.exists(_ != left.queryStatistics())) {
         MatchResult(matches = false, s"Expected statistics ${left.queryStatistics()}, got ${maybeStatisticts.get}", "")
       } else {
         val rows = new ArrayBuffer[Array[AnyValue]]

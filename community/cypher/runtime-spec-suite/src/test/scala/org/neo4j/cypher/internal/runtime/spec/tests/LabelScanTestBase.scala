@@ -35,7 +35,7 @@ abstract class LabelScanTestBase[CONTEXT <: RuntimeContext](
     nodeGraph(sizeHint, "Almond")
 
     // when
-    val logicalQuery = new LogicalQueryBuilder(graphDb)
+    val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
       .nodeByLabelScan("x", "Honey")
       .build()
@@ -48,7 +48,7 @@ abstract class LabelScanTestBase[CONTEXT <: RuntimeContext](
 
   test("should scan empty graph") {
     // when
-    val logicalQuery = new LogicalQueryBuilder(graphDb)
+    val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
       .nodeByLabelScan("x", "Honey")
       .build()
@@ -64,7 +64,7 @@ abstract class LabelScanTestBase[CONTEXT <: RuntimeContext](
     val nodes = nodeGraph(10, "Honey")
 
     // when
-    val logicalQuery = new LogicalQueryBuilder(graphDb)
+    val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("y", "z", "x")
       .apply()
       .|.nodeByLabelScan("x", "Honey")

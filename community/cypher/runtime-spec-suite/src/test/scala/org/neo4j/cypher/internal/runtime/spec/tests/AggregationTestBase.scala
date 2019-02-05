@@ -42,7 +42,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
     nodeGraph(sizeHint, "Honey")
 
     // when
-    val logicalQuery = new LogicalQueryBuilder(graphDb)
+    val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("c")
       .aggregation(Map.empty, Map("c" -> CountStar()(pos)))
       .allNodeScan("x")
@@ -61,7 +61,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
     }, "Honey")
 
     // when
-    val logicalQuery = new LogicalQueryBuilder(graphDb)
+    val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("name", "c")
       .aggregation(Map("name" -> prop("x", "name")), Map("c" -> CountStar()(pos)))
       .allNodeScan("x")
@@ -83,7 +83,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
     }, "Honey")
 
     // when
-    val logicalQuery = new LogicalQueryBuilder(graphDb)
+    val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("name", "c")
       .aggregation(Map("name" -> prop("x", "name")), Map("c" -> CountStar()(pos)))
       .allNodeScan("x")
@@ -104,7 +104,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
     }, "Honey")
 
     // when
-    val logicalQuery = new LogicalQueryBuilder(graphDb)
+    val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("name", "surname", "c")
       .aggregation(Map("name" -> prop("x", "name"), "surname" -> prop("x", "surname")), Map("c" -> CountStar()(pos)))
       .allNodeScan("x")
@@ -125,7 +125,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
     }, "Honey")
 
     // when
-    val logicalQuery = new LogicalQueryBuilder(graphDb)
+    val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("name", "surname", "dead", "c")
       .aggregation(Map("name" -> prop("x", "name"), "surname" -> prop("x", "surname"), "dead" -> prop("x", "dead")), Map("c" -> CountStar()(pos)))
       .allNodeScan("x")
@@ -146,7 +146,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
     }, "Honey")
 
     // when
-    val logicalQuery = new LogicalQueryBuilder(graphDb)
+    val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("c")
       .aggregation(Map.empty, Map("c" -> count(prop("x", "num"))))
       .allNodeScan("x")
@@ -165,7 +165,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
     }, "Honey")
 
     // when
-    val logicalQuery = new LogicalQueryBuilder(graphDb)
+    val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("c")
       .aggregation(Map.empty, Map("c" -> collect(prop("x", "num"))))
       .allNodeScan("x")
@@ -187,7 +187,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
     }, "Honey")
 
     // when
-    val logicalQuery = new LogicalQueryBuilder(graphDb)
+    val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("c")
       .aggregation(Map.empty, Map("c" -> sum(prop("x", "num"))))
       .allNodeScan("x")
@@ -206,7 +206,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
     }, "Honey")
 
     // when
-    val logicalQuery = new LogicalQueryBuilder(graphDb)
+    val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("c")
       .aggregation(Map.empty, Map("c" -> min(prop("x", "num"))))
       .allNodeScan("x")
@@ -225,7 +225,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
     }, "Honey")
 
     // when
-    val logicalQuery = new LogicalQueryBuilder(graphDb)
+    val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("c")
       .aggregation(Map.empty, Map("c" -> max(prop("x", "num"))))
       .allNodeScan("x")
@@ -244,7 +244,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
     }, "Honey")
 
     // when
-    val logicalQuery = new LogicalQueryBuilder(graphDb)
+    val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("c")
       .aggregation(Map.empty, Map("c" -> avg(prop("x", "num"))))
       .allNodeScan("x")
@@ -265,7 +265,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
     }, "Honey")
 
     // when
-    val logicalQuery = new LogicalQueryBuilder(graphDb)
+    val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("name", "c")
       .aggregation(Map("name" -> prop("x", "name")), Map("c" -> avg(prop("x", "num"))))
       .allNodeScan("x")
@@ -301,7 +301,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
     }, "Honey")
 
     // when
-    val logicalQuery = new LogicalQueryBuilder(graphDb)
+    val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("c")
       .aggregation(Map.empty, Map("c" -> avg(prop("x", "num"))))
       .allNodeScan("x")
@@ -323,7 +323,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
     }, "Honey")
 
     // when
-    val logicalQuery = new LogicalQueryBuilder(graphDb)
+    val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("c")
       .aggregation(Map.empty, Map("c" -> avg(prop("x", "num"))))
       .allNodeScan("x")
@@ -341,7 +341,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
     // given nothing
 
     // when
-    val logicalQuery = new LogicalQueryBuilder(graphDb)
+    val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("countStar", "count", "avg", "collect", "max", "min", "sum")
       .aggregation(Map.empty, Map(
         "countStar" -> CountStar()(pos),

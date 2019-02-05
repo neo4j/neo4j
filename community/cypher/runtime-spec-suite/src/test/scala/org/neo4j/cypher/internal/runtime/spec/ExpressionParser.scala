@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.v4_0.util.{InputPosition, Rewriter, topDown}
 import org.parboiled.scala.{ReportingParseRunner, Rule1}
 
 object ExpressionParser {
-  val findCachedNodeProperties: Rewriter = topDown(Rewriter.lift {
+  val injectCachedNodeProperties: Rewriter = topDown(Rewriter.lift {
     case ContainerIndex(Variable("cached"), Property(Variable(node), PropertyKeyName(prop))) =>
       CachedNodeProperty(node, PropertyKeyName(prop)(InputPosition.NONE))(InputPosition.NONE)
   })
@@ -35,7 +35,7 @@ object ExpressionParser {
 
   def parseProjections(projections: String*): Map[String, Expression] = {
     projections.map {
-      case regex(ExpressionParser(expression), alias) => (alias, findCachedNodeProperties(expression).asInstanceOf[Expression])
+      case regex(ExpressionParser(expression), alias) => (alias, injectCachedNodeProperties(expression).asInstanceOf[Expression])
       case x => throw new IllegalArgumentException(s"'$x' cannot be parsed as a projection")
     }.toMap
   }
