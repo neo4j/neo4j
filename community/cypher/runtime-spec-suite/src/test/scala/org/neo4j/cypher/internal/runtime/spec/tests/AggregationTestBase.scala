@@ -36,6 +36,8 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
                                                                runtime: CypherRuntime[CONTEXT]
                                                              ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
 
+  implicit val doubleEquality: Equality[Double] = TolerantNumerics.tolerantDoubleEquality(0.0001)
+
   test("should count(*)") {
     // given
     nodeGraph(10000, "Honey")
@@ -252,9 +254,8 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    implicit val doubleEquality: Equality[Double] = TolerantNumerics.tolerantDoubleEquality(0.0001)
     runtimeResult should beColumns("c").withResultMatching {
-      case Seq(Array(d:DoubleValue)) if d.value() === 5000.0 =>
+      case Seq(Array(d:DoubleValue)) if 5000.0 === d.value() =>
     }
   }
 
@@ -274,7 +275,6 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    implicit val doubleEquality: Equality[Double] = TolerantNumerics.tolerantDoubleEquality(0.0001)
     val expectedBobCounts = Map(
       "bob0" -> 4996.0,
       "bob1" -> 4997.0,
@@ -310,9 +310,8 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    implicit val doubleEquality: Equality[Double] = TolerantNumerics.tolerantDoubleEquality(0.0001)
     runtimeResult should beColumns("c").withResultMatching {
-      case Seq(Array(d:DurationValue)) if d.get(ChronoUnit.NANOS) === 5000.0 =>
+      case Seq(Array(d:DurationValue)) if 5000.0 === d.get(ChronoUnit.NANOS) =>
     }
   }
 
@@ -333,9 +332,8 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    implicit val doubleEquality: Equality[Double] = TolerantNumerics.tolerantDoubleEquality(0.0001)
     runtimeResult should beColumns("c").withResultMatching {
-      case Seq(Array(d:DoubleValue)) if d.value() === Double.MaxValue - 1.5 =>
+      case Seq(Array(d:DoubleValue)) if Double.MaxValue - 1.5 === d.value() =>
     }
   }
 
