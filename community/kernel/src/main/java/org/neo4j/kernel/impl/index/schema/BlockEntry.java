@@ -63,6 +63,12 @@ class BlockEntry<KEY,VALUE>
         return keySize + valueSize + getOverhead( keySize, valueSize );
     }
 
+    static <VALUE, KEY> int keySize( Layout<KEY,VALUE> layout, KEY key )
+    {
+        int keySize = layout.keySize( key );
+        return keySize + getOverhead( keySize, 0 );
+    }
+
     static <KEY, VALUE> BlockEntry<KEY,VALUE> read( PageCursor pageCursor, Layout<KEY,VALUE> layout )
     {
         KEY key = layout.newKey();
@@ -78,6 +84,12 @@ class BlockEntry<KEY,VALUE>
         layout.readValue( pageCursor, value, extractValueSize( entrySize ) );
     }
 
+    static <KEY, VALUE> void read( PageCursor pageCursor, Layout<KEY,VALUE> layout, KEY key )
+    {
+        long entrySize = readKeyValueSize( pageCursor );
+        layout.readKey( pageCursor, key, extractKeySize( entrySize ) );
+    }
+
     static <KEY, VALUE> void write( PageCursor pageCursor, Layout<KEY,VALUE> layout, BlockEntry<KEY,VALUE> entry )
     {
         write( pageCursor, layout, entry.key(), entry.value() );
@@ -90,5 +102,12 @@ class BlockEntry<KEY,VALUE>
         putKeyValueSize( pageCursor, keySize, valueSize );
         layout.writeKey( pageCursor, key );
         layout.writeValue( pageCursor, value );
+    }
+
+    static <KEY, VALUE> void write( PageCursor pageCursor, Layout<KEY,VALUE> layout, KEY key )
+    {
+        int keySize = layout.keySize( key );
+        putKeyValueSize( pageCursor, keySize, 0 );
+        layout.writeKey( pageCursor, key );
     }
 }

@@ -134,20 +134,25 @@ class ReadableChannelPageCursor extends PageCursor
     @Override
     public void getBytes( byte[] data )
     {
-        try
-        {
-            channel.get( data, data.length );
-        }
-        catch ( IOException e )
-        {
-            throw new UncheckedIOException( e );
-        }
+        getBytes( data, 0, data.length );
     }
 
     @Override
     public void getBytes( byte[] data, int arrayOffset, int length )
     {
-        throw new UnsupportedOperationException();
+        if ( arrayOffset != 0 )
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        try
+        {
+            channel.get( data, length );
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
+        }
     }
 
     @Override
