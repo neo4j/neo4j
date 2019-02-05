@@ -35,9 +35,10 @@ public final class ByteCodeUtils
         {
             builder.append( reference.packageName().replaceAll( "\\.", "/" ) ).append( '/' );
         }
-        if ( reference.isInnerClass() )
+
+        for ( TypeReference parent : reference.declaringClasses() )
         {
-            builder.append( reference.declaringClassName() ).append( '$' );
+            builder.append( parent.name() ).append( '$' );
         }
         builder.append( reference.name() );
         return builder.toString();
@@ -204,9 +205,9 @@ public final class ByteCodeUtils
                 {
                     builder.append( packageName ).append( "/" );
                 }
-                if ( reference.isInnerClass() )
+                for ( TypeReference parent : reference.declaringClasses() )
                 {
-                    builder.append( reference.declaringClassName() ).append( '$' );
+                    builder.append( parent.name() ).append( '$' );
                 }
                 builder.append( name.replaceAll( "\\.", "\\/" ) );
             }

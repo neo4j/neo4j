@@ -407,6 +407,23 @@ public class ProcedureCompilationTest
         verify( TRANSACTION ).startTime();
     }
 
+    @Test
+    void shouldHandleNonStaticInnerClasses() throws ProcedureException
+    {
+        // Given
+        ProcedureSignature signature = ProcedureSignature.procedureSignature(  "test", "foo" )
+                .out( singletonList( inputField( "name", NTString ) ) ).build();
+        // When
+        CallableProcedure stringStream =
+                compileProcedure( signature, emptyList(), method( InnerClass.class, "innerStream" ) );
+
+        // Then
+        RawIterator<AnyValue[],ProcedureException> iterator =
+                stringStream.apply( ctx, EMPTY, RESOURCE_TRACKER );
+        assertArrayEquals( new AnyValue[]{stringValue( "hello" )}, iterator.next() );
+        assertFalse( iterator.hasNext() );
+    }
+
     private <T> FieldSetter createSetter( Class<?> owner, String field, ComponentRegistry.Provider<T> provider )
             throws NoSuchFieldException, IllegalAccessException
     {
@@ -464,6 +481,16 @@ public class ProcedureCompilationTest
         public void voidMethod()
         {
             transaction.startTime();
+        }
+
+        public Stream<NonStaticInner> innerStream()
+        {
+            return Stream.of( new NonStaticInner() );
+        }
+
+        public class NonStaticInner
+        {
+            public String value = "hello";
         }
     }
 

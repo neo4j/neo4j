@@ -193,6 +193,24 @@ public class ByteCodeUtilsTest
         assertThat( exceptions, equalTo(new String[]{"java/lang/Exception"} ));
     }
 
+    @Test
+    public void shouldHandleNestedInnerClasses()
+    {
+        // Given
+        TypeReference innerInner = typeReference( Inner.InnerInner.class );
+
+        // When
+        String byteCodeName = ByteCodeUtils.byteCodeName( innerInner );
+
+        // Then
+        assertThat( byteCodeName, equalTo( "org/neo4j/codegen/ByteCodeUtilsTest$Inner$InnerInner" ));
+    }
+
+    class Inner
+    {
+        class InnerInner{}
+    }
+
     private void assertTypeName( Class<?> type, String expected )
     {
         // GIVEN

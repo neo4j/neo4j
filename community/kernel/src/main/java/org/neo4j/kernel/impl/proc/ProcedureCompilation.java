@@ -413,14 +413,14 @@ public final class ProcedureCompilation
             try ( CodeBlock method = generator
                     .generate( method( AnyValue[].class, "map", param( Object.class, "in" ) ) ) )
             {
-                method.assign( outputType, "foo", cast( outputType, method.load( "in" ) ) );
+                method.assign( outputType, "casted", cast( outputType, method.load( "in" ) ) );
                 //we know all fields are properly typed
                 List<Field> fields = OutputMappers.instanceFields( outputType );
                 Expression[] mapped = new Expression[fields.size()];
                 for ( int i = 0; i < fields.size(); i++ )
                 {
                     Field f = fields.get( i );
-                    mapped[i] = toAnyValue( Expression.get( method.load( "foo" ), field( f ) ) );
+                    mapped[i] = toAnyValue( Expression.get( method.load( "casted" ), field( f ) ) );
                 }
                 method.returns( Expression.newArray( typeReference( AnyValue.class ), mapped ) );
             }
