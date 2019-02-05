@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v4_0.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v4_0.planner.{LogicalPlanningTestSupport2, ProcedureCallProjection}
 import org.neo4j.cypher.internal.ir.v4_0._
-import org.neo4j.cypher.internal.v4_0.ast.{AscSortItem, ProcedureResultItem}
+import org.neo4j.cypher.internal.v4_0.ast.ProcedureResultItem
 import org.neo4j.cypher.internal.v4_0.expressions._
 import org.neo4j.cypher.internal.v4_0.logical.plans._
 import org.neo4j.cypher.internal.v4_0.util.symbols._
@@ -118,9 +118,9 @@ class PlanEventHorizonTest extends CypherFunSuite with LogicalPlanningTestSuppor
 
       // Then
       val sorted = Sort(inputPlan, Seq(Ascending("x")))
-      val skipped = Skip(sorted, y)
-      val limited = Limit(skipped, x, DoNotIncludeTies)
-      result should equal(limited)
+      val limited = Limit(sorted, Add(x, y)(pos), DoNotIncludeTies)
+      val skipped = Skip(limited, y)
+      result should equal(skipped)
     }
   }
 
