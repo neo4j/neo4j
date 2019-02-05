@@ -23,33 +23,23 @@ import org.apache.commons.lang3.exception.ExceptionUtils;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
-import java.util.Iterator;
 import java.util.List;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
-import org.neo4j.collection.RawIterator;
 import org.neo4j.exceptions.KernelException;
-import org.neo4j.graphdb.Resource;
-import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.FieldSignature;
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
 import org.neo4j.internal.kernel.api.procs.QualifiedName;
 import org.neo4j.internal.kernel.api.procs.UserAggregator;
 import org.neo4j.internal.kernel.api.procs.UserFunctionSignature;
-import org.neo4j.internal.kernel.api.security.SecurityContext;
-import org.neo4j.io.IOUtils;
-import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.exceptions.ComponentInjectionException;
-import org.neo4j.kernel.api.exceptions.ResourceCloseFailureException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.CallableUserAggregationFunction;
@@ -71,11 +61,8 @@ import org.neo4j.procedure.UserFunction;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.ValueMapper;
 
-import static java.util.Collections.emptyIterator;
 import static java.util.Collections.emptyList;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.procedure_unrestricted;
-import static org.neo4j.graphdb.security.AuthorizationViolationException.PERMISSION_DENIED;
-import static org.neo4j.helpers.collection.Iterators.asRawIterator;
 
 /**
  * Handles converting a class into one or more callable {@link CallableProcedure}.
@@ -140,7 +127,7 @@ class ReflectiveProcedureCompiler
             }
 
             //used for proper error handling
-            constructor( fcnDefinition );
+            assertValidConstructor( fcnDefinition );
 
             ArrayList<CallableUserFunction> out = new ArrayList<>( functionMethods.size() );
             for ( Method method : functionMethods )
@@ -185,7 +172,7 @@ class ReflectiveProcedureCompiler
                 return emptyList();
             }
 
-            MethodHandle constructor = constructor( fcnDefinition );
+            MethodHandle constructor = assertValidConstructor( fcnDefinition );
 
             ArrayList<CallableUserAggregationFunction> out = new ArrayList<>( methods.size() );
             for ( Method method : methods )
@@ -233,8 +220,7 @@ class ReflectiveProcedureCompiler
                 return emptyList();
             }
 
-            MethodHandle constructor = constructor( procDefinition );
-
+            assertValidConstructor( procDefinition );
             ArrayList<CallableProcedure> out = new ArrayList<>( procedureMethods.size() );
             for ( Method method : procedureMethods )
             {
@@ -244,7 +230,7 @@ class ReflectiveProcedureCompiler
 
                 if ( fullAccess || config.isWhitelisted( procName.toString() ) )
                 {
-                    out.add( compileProcedure( procDefinition, constructor, method, warning, fullAccess, procName ) );
+                    out.add( compileProcedure( procDefinition, method, warning, fullAccess, procName ) );
                 }
                 else
                 {
@@ -266,7 +252,7 @@ class ReflectiveProcedureCompiler
         }
     }
 
-    private CallableProcedure compileProcedure( Class<?> procDefinition, MethodHandle constructor, Method method,
+    private CallableProcedure compileProcedure( Class<?> procDefinition, Method method,
             String warning, boolean fullAccess, QualifiedName procName  )
             throws ProcedureException
     {
@@ -300,7 +286,8 @@ class ReflectiveProcedureCompiler
         ProcedureSignature signature =
                 new ProcedureSignature( procName, inputSignature, outputMapper.signature(), mode, admin, deprecated,
                         config.rolesFor( procName.toString() ), description, warning, procedure.eager(), false );
-        return new ReflectiveProcedure( signature, constructor, method, outputMapper, setters );
+
+        return ProcedureCompilation.compileProcedure( signature, setters, method );
     }
 
     private String describeAndLogLoadFailure( QualifiedName name )
@@ -488,7 +475,7 @@ class ReflectiveProcedureCompiler
         }
     }
 
-    private MethodHandle constructor( Class<?> procDefinition ) throws ProcedureException
+    private MethodHandle assertValidConstructor( Class<?> procDefinition ) throws ProcedureException
     {
         try
         {
@@ -497,8 +484,8 @@ class ReflectiveProcedureCompiler
         catch ( IllegalAccessException | NoSuchMethodException e )
         {
             throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed, e,
-                    "Unable to find a usable public no-argument constructor in the class `%s`. " +
-                    "Please add a valid, public constructor, recompile the class and try again.",
+                    "Unable to find a usable public no-argument assertValidConstructor in the class `%s`. " +
+                    "Please add a valid, public assertValidConstructor, recompile the class and try again.",
                     procDefinition.getSimpleName() );
         }
     }
@@ -577,190 +564,6 @@ class ReflectiveProcedureCompiler
                 args[i] = inputSignature.get( i ).map( input[i], mapper );
             }
             return args;
-        }
-    }
-
-    private static class ReflectiveProcedure extends ReflectiveBase implements CallableProcedure
-    {
-        private final ProcedureSignature signature;
-        private final OutputMapper outputMapper;
-        private final MethodHandle constructor;
-        private final Method procedureMethod;
-
-        ReflectiveProcedure( ProcedureSignature signature, MethodHandle constructor,
-                Method procedureMethod, OutputMapper outputMapper,
-                List<FieldSetter> fieldSetters )
-        {
-            super( fieldSetters );
-            this.constructor = constructor;
-            this.procedureMethod = procedureMethod;
-            this.signature = signature;
-            this.outputMapper = outputMapper;
-        }
-
-        @Override
-        public ProcedureSignature signature()
-        {
-            return signature;
-        }
-
-        @Override
-        public RawIterator<AnyValue[],ProcedureException> apply( Context ctx, AnyValue[] input,
-                ResourceTracker resourceTracker ) throws ProcedureException
-        {
-            // For now, create a new instance of the class for each invocation. In the future, we'd like to keep
-            // instances local to
-            // at least the executing session, but we don't yet have good interfaces to the kernel to model that with.
-            try
-            {
-                List<FieldSignature> inputSignature = signature.inputSignature();
-                if ( inputSignature.size() != input.length )
-                {
-                    throw new ProcedureException( Status.Procedure.ProcedureCallFailed,
-                            "Procedure `%s` takes %d arguments but %d was provided.",
-                            signature.name(),
-                            inputSignature.size(), input.length );
-                }
-
-                Object cls = constructor.invoke();
-                //API injection
-                inject( ctx, cls );
-
-                // Admin check
-                if ( signature.admin() )
-                {
-                    SecurityContext securityContext = ctx.securityContext();
-                    securityContext.assertCredentialsNotExpired();
-                    if ( !securityContext.isAdmin() )
-                    {
-                        throw new AuthorizationViolationException( PERMISSION_DENIED );
-                    }
-                }
-
-                // Call the method
-                ValueMapper<Object> mapper = ctx.valueMapper();
-                Object rs = procedureMethod.invoke( cls,
-                        mapToObjects( "Procedure", signature.name(), mapper, signature.inputSignature(), input ) );
-
-                // This also handles VOID
-                if ( rs == null )
-                {
-                    return asRawIterator( emptyIterator() );
-                }
-                else
-                {
-                    return new MappingIterator( ((Stream<?>) rs).iterator(), ((Stream<?>) rs)::close, resourceTracker );
-                }
-            }
-            catch ( Throwable throwable )
-            {
-                throw newProcedureException( throwable );
-            }
-        }
-
-        private class MappingIterator implements RawIterator<AnyValue[],ProcedureException>, Resource
-        {
-            private final Iterator<?> out;
-            private Resource closeableResource;
-            private ResourceTracker resourceTracker;
-
-            MappingIterator( Iterator<?> out, Resource closeableResource, ResourceTracker resourceTracker )
-            {
-                this.out = out;
-                this.closeableResource = closeableResource;
-                this.resourceTracker = resourceTracker;
-                resourceTracker.registerCloseableResource( closeableResource );
-            }
-
-            @Override
-            public boolean hasNext() throws ProcedureException
-            {
-                try
-                {
-                    boolean hasNext = out.hasNext();
-                    if ( !hasNext )
-                    {
-                        close();
-                    }
-                    return hasNext;
-                }
-                catch ( Throwable throwable )
-                {
-                    throw closeAndCreateProcedureException( throwable );
-                }
-            }
-
-            @Override
-            public AnyValue[] next() throws ProcedureException
-            {
-                try
-                {
-                    Object record = out.next();
-                    return outputMapper.apply( record );
-                }
-                catch ( Throwable throwable )
-                {
-                    throw closeAndCreateProcedureException( throwable );
-                }
-            }
-
-            @Override
-            public void close()
-            {
-                if ( closeableResource != null )
-                {
-                    // Make sure we reset closeableResource before doing anything which may throw an exception that may
-                    // result in a recursive call to this close-method
-                    Resource resourceToClose = closeableResource;
-                    closeableResource = null;
-
-                    IOUtils.close( ResourceCloseFailureException::new,
-                            () -> resourceTracker.unregisterCloseableResource( resourceToClose ),
-                            resourceToClose );
-                }
-            }
-
-            private ProcedureException closeAndCreateProcedureException( Throwable t )
-            {
-                ProcedureException procedureException = newProcedureException( t );
-
-                try
-                {
-                    close();
-                }
-                catch ( Exception exceptionDuringClose )
-                {
-                    try
-                    {
-                        procedureException.addSuppressed( exceptionDuringClose );
-                    }
-                    catch ( Throwable ignore )
-                    {
-                    }
-                }
-                return procedureException;
-            }
-        }
-
-        private ProcedureException newProcedureException( Throwable throwable )
-        {
-            // Unwrap the wrapped exception we get from invocation by reflection
-            if ( throwable instanceof InvocationTargetException )
-            {
-                throwable = throwable.getCause();
-            }
-
-            if ( throwable instanceof Status.HasStatus )
-            {
-                return new ProcedureException( ((Status.HasStatus) throwable).status(), throwable, throwable.getMessage() );
-            }
-            else
-            {
-                Throwable cause = ExceptionUtils.getRootCause( throwable );
-                return new ProcedureException( Status.Procedure.ProcedureCallFailed, throwable,
-                        "Failed to invoke procedure `%s`: %s", signature.name(),
-                        "Caused by: " + (cause != null ? cause : throwable) );
-            }
         }
     }
 
