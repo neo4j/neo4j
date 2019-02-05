@@ -335,7 +335,6 @@ public class Database extends LifecycleAdapter
             upgradeStore();
 
             // Check the tail of transaction logs and validate version
-            StorageEngineFactory storageEngineFactory = selectStorageEngine();
             final LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader = new VersionAwareLogEntryReader<>();
 
             LogFiles logFiles =
@@ -359,6 +358,7 @@ public class Database extends LifecycleAdapter
             Supplier<KernelTransactionsSnapshot> transactionsSnapshotSupplier = () -> kernelModule.kernelTransactions().get();
             idController.initialize( transactionsSnapshotSupplier );
 
+            StorageEngineFactory storageEngineFactory = selectStorageEngine();
             storageEngine = buildStorageEngine( databasePageCache, databaseSchemaState, versionContextSupplier, storageEngineFactory );
             life.add( logFiles );
 
@@ -493,6 +493,7 @@ public class Database extends LifecycleAdapter
 
         StorageEngine storageEngine = storageEngineFactory.instantiate( storageEngineDependencies, databaseDependencies );
         life.add( storageEngine );
+        life.add( storageEngine.schemaAndTokensLifecycle() );
         return storageEngine;
     }
 

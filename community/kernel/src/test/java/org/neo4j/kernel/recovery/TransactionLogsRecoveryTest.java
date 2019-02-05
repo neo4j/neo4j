@@ -60,6 +60,8 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.lifecycle.LifeSupport;
+import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
@@ -103,6 +105,7 @@ class RecoveryTest
     private final SimpleLogVersionRepository versionRepository = new SimpleLogVersionRepository();
     private LogFiles logFiles;
     private File storeDir;
+    private Lifecycle schemaLife;
 
     @BeforeEach
     void setUp() throws Exception
@@ -113,6 +116,7 @@ class RecoveryTest
                 .withTransactionIdStore( transactionIdStore )
                 .withLogEntryReader( logEntryReader() )
                 .build();
+        schemaLife = new LifecycleAdapter();
     }
 
     @Test
@@ -212,7 +216,7 @@ class RecoveryTest
                         }
                     };
                 }
-            }, logPruner, monitor, ProgressReporter.SILENT, false ) );
+            }, logPruner, schemaLife, monitor, ProgressReporter.SILENT, false ) );
 
             life.start();
 
@@ -270,7 +274,7 @@ class RecoveryTest
                 {
                     fail( "Recovery should not be required" );
                 }
-            }, logPruner, monitor, ProgressReporter.SILENT, false ) );
+            }, logPruner, schemaLife, monitor, ProgressReporter.SILENT, false ) );
 
             life.start();
 
@@ -424,7 +428,7 @@ class RecoveryTest
                 {
                     recoveryRequired.set( true );
                 }
-            }, logPruner, monitor, ProgressReporter.SILENT, false ) );
+            }, logPruner, schemaLife, monitor, ProgressReporter.SILENT, false ) );
 
             life.start();
         }

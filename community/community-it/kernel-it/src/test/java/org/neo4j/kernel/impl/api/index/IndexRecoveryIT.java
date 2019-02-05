@@ -31,6 +31,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.Semaphore;
 
+import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -241,8 +242,7 @@ class IndexRecoveryIT
         when( populator.sampleResult() ).thenReturn( new IndexSample() );
         IndexAccessor mockedAccessor = mock( IndexAccessor.class );
         when( mockedAccessor.newUpdater( any( IndexUpdateMode.class ) ) ).thenReturn( SwallowingIndexUpdater.INSTANCE );
-        when( mockedIndexProvider.getOnlineAccessor( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ) )
-        ).thenReturn( mockedAccessor );
+        when( mockedIndexProvider.getOnlineAccessor( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ) ) ).thenReturn( mockedAccessor );
         createIndexAndAwaitPopulation( myLabel );
         // rotate logs
         rotateLogsAndCheckPoint();
@@ -286,8 +286,7 @@ class IndexRecoveryIT
 
         // And Given
         killDb();
-        when( mockedIndexProvider.getInitialState( any( StoreIndexDescriptor.class ) ) )
-                .thenReturn( InternalIndexState.FAILED );
+        when( mockedIndexProvider.getInitialState( any( StoreIndexDescriptor.class ) ) ).thenReturn( InternalIndexState.FAILED );
 
         // When
         startDb();
@@ -295,8 +294,53 @@ class IndexRecoveryIT
         // Then
         assertThat( getIndexes( db, myLabel ), inTx( db, hasSize( 1 ) ) );
         assertThat( getIndexes( db, myLabel ), inTx( db, haveState( db, Schema.IndexState.FAILED ) ) );
-        verify( mockedIndexProvider, times( 2 ) )
-                .getPopulator( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ) );
+        verify( mockedIndexProvider, times( 2 ) ).getPopulator( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ) );
+    }
+
+    @Test
+    void mustRecoverEvenWhenTokenChangessAreIncompletelyFlushed() throws Exception
+    {
+        // Given
+        IndexPopulator indexPopulator = mock( IndexPopulator.class );
+        when( mockedIndexProvider.getPopulator( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ) ) )
+                .thenReturn( indexPopulator );
+        IndexAccessor indexAccessor = mock( IndexAccessor.class );
+        when( mockedIndexProvider.getOnlineAccessor( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ) ) )
+                .thenReturn( indexAccessor );
+        startDb();
+
+        int indexCount = 100;
+        int indexesCreated = 0;
+        int midPoint = indexCount / 2;
+        Future<Void> killFuture = null;
+        for ( int i = 0; i < indexCount; i++ )
+        {
+            if ( i == midPoint )
+            {
+                killFuture = killDbInSeparateThread();
+            }
+            try
+            {
+                createIndex( Label.label( "LBL" + i ) );
+                try ( Transaction tx = db.beginTx() )
+                {
+                    db.createNode().setProperty( "PRP" + i, i );
+                    tx.success();
+                }
+                indexesCreated++;
+            }
+            catch ( DatabaseShutdownException e )
+            {
+                // We just observed that the database has been killed. This is perfectly fine to ignore.
+            }
+        }
+        assert killFuture != null;
+        killFuture.get();
+        when( mockedIndexProvider.getInitialState( any( StoreIndexDescriptor.class ) ) ).thenReturn( InternalIndexState.POPULATING );
+
+        startDb();
+
+        assertThat( getIndexes( db ), inTx( db, hasSize( indexesCreated ) ) );
     }
 
     private void startDb()

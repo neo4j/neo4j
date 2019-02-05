@@ -22,13 +22,14 @@ package org.neo4j.kernel.recovery;
 import java.io.IOException;
 import java.nio.channels.ClosedByInterruptException;
 
+import org.neo4j.common.ProgressReporter;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.TransactionCursor;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
-import org.neo4j.common.ProgressReporter;
+import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 import static org.neo4j.kernel.recovery.Recovery.throwUnableToCleanRecover;
@@ -45,16 +46,18 @@ public class TransactionLogsRecovery extends LifecycleAdapter
     private final RecoveryService recoveryService;
     private final RecoveryMonitor monitor;
     private final CorruptedLogsTruncator logsTruncator;
+    private final Lifecycle schemaLife;
     private final ProgressReporter progressReporter;
     private final boolean failOnCorruptedLogFiles;
     private int numberOfRecoveredTransactions;
 
-    public TransactionLogsRecovery( RecoveryService recoveryService, CorruptedLogsTruncator logsTruncator, RecoveryMonitor monitor,
-            ProgressReporter progressReporter, boolean failOnCorruptedLogFiles )
+    public TransactionLogsRecovery( RecoveryService recoveryService, CorruptedLogsTruncator logsTruncator, Lifecycle schemaLife,
+            RecoveryMonitor monitor, ProgressReporter progressReporter, boolean failOnCorruptedLogFiles )
     {
         this.recoveryService = recoveryService;
         this.monitor = monitor;
         this.logsTruncator = logsTruncator;
+        this.schemaLife = schemaLife;
         this.progressReporter = progressReporter;
         this.failOnCorruptedLogFiles = failOnCorruptedLogFiles;
     }
@@ -97,6 +100,11 @@ public class TransactionLogsRecovery extends LifecycleAdapter
             }
 
             monitor.reverseStoreRecoveryCompleted( lowestRecoveredTxId );
+
+            // We cannot initialise the schema (tokens, schema cache, indexing service, etc.) until we have returned the store to a consistent state.
+            // We need to be able to read the store before we can even figure out what indexes, tokens, etc. we have. Hence we defer the initialisation
+            // of the schema life until after we've done the reverse recovery.
+            schemaLife.init();
 
             try ( TransactionCursor transactionsToRecover = recoveryService.getTransactions( recoveryPosition );
                     RecoveryApplier recoveryVisitor = recoveryService.getRecoveryApplier( RECOVERY ) )
@@ -164,5 +172,23 @@ public class TransactionLogsRecovery extends LifecycleAdapter
     {
         return lastReversedTransaction.getCommitEntry().getTxId() -
                 recoveryStartInformation.getFirstTxIdAfterLastCheckPoint() + 1;
+    }
+
+    @Override
+    public void start() throws Throwable
+    {
+        schemaLife.start();
+    }
+
+    @Override
+    public void stop() throws Throwable
+    {
+        schemaLife.stop();
+    }
+
+    @Override
+    public void shutdown() throws Throwable
+    {
+        schemaLife.shutdown();
     }
 }

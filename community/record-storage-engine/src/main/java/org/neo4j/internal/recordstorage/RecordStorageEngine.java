@@ -63,6 +63,7 @@ import org.neo4j.kernel.impl.store.kvstore.DataInitializer;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.storageengine.api.CommandCreationContext;
@@ -143,9 +144,6 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             schemaCache = new SchemaCache( constraintSemantics, schemaRuleAccess );
 
             countsStore = openCountsStore( fs, pageCache, databaseLayout, config, logProvider, versionContextSupplier );
-
-            // We need to load the property tokens here, since we need them before we load the indexes.
-            tokenHolders.propertyKeyTokens().setInitialTokens( neoStores.getPropertyKeyTokenStore().getTokens() );
 
             integrityValidator = new IntegrityValidator( neoStores );
             cacheAccess = new BridgingCacheAccess( schemaCache, schemaState, tokenHolders );
@@ -336,27 +334,13 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     public void init() throws Throwable
     {
         countsStore.init();
-
-        // Load the schema cache since indexing needs this in its own init().
-        // This is a known weakness of the indexing design in that it will read from the store before recovery has taken place.
-        // The schema cache will be invalidated and re-read after recovery in start()
-        loadSchemaCache();
     }
 
     @Override
     public void start() throws Throwable
     {
         neoStores.makeStoreOk();
-
-        tokenHolders.propertyKeyTokens().setInitialTokens(
-                neoStores.getPropertyKeyTokenStore().getTokens() );
-        tokenHolders.relationshipTypeTokens().setInitialTokens(
-                neoStores.getRelationshipTypeTokenStore().getTokens() );
-        tokenHolders.labelTokens().setInitialTokens(
-                neoStores.getLabelTokenStore().getTokens() );
-
         countsStore.start();
-        loadSchemaCache();
         idController.start();
     }
 
@@ -468,5 +452,24 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     public StoreId getStoreId()
     {
         return neoStores.getMetaDataStore().getStoreId();
+    }
+
+    @Override
+    public Lifecycle schemaAndTokensLifecycle()
+    {
+        return new LifecycleAdapter()
+        {
+            @Override
+            public void init()
+            {
+                tokenHolders.propertyKeyTokens().setInitialTokens(
+                        neoStores.getPropertyKeyTokenStore().getTokens() );
+                tokenHolders.relationshipTypeTokens().setInitialTokens(
+                        neoStores.getRelationshipTypeTokenStore().getTokens() );
+                tokenHolders.labelTokens().setInitialTokens(
+                        neoStores.getLabelTokenStore().getTokens() );
+                loadSchemaCache();
+            }
+        };
     }
 }

@@ -44,6 +44,7 @@ import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.LifeSupport;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.kernel.recovery.CorruptedLogsTruncator;
 import org.neo4j.kernel.recovery.RecoveryApplier;
@@ -232,7 +233,7 @@ class PhysicalLogicalTransactionStoreTest
                     LogPosition positionAfterLastRecoveredTransaction )
             {
             }
-        }, logPruner, mock( RecoveryMonitor.class ), ProgressReporter.SILENT, false ) );
+        }, logPruner, new LifecycleAdapter(), mock( RecoveryMonitor.class ), ProgressReporter.SILENT, false ) );
 
         // WHEN
         try

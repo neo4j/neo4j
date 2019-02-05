@@ -87,6 +87,7 @@ import org.neo4j.kernel.impl.util.monitoring.LogProgressReporter;
 import org.neo4j.kernel.internal.DatabaseEventHandlers;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.LifeSupport;
+import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -290,10 +291,14 @@ public final class Recovery
         BatchingTransactionAppender transactionAppender = new BatchingTransactionAppender( logFiles, LogRotation.NO_ROTATION, metadataCache,
                 transactionIdStore, databaseHealth );
 
+        LifeSupport schemaLife = new LifeSupport();
+        schemaLife.add( storageEngine.schemaAndTokensLifecycle() );
+        schemaLife.add( indexingService );
+
         TransactionLogsRecovery transactionLogsRecovery =
                 transactionLogRecovery( fs, transactionIdStore, logTailScanner, monitors.newMonitor( RecoveryMonitor.class ),
                         monitors.newMonitor( RecoveryStartInformationProvider.Monitor.class ), logFiles, storageEngine, transactionStore, logVersionRepository,
-                        databaseLayout, failOnCorruptedLogFiles, recoveryLog );
+                        schemaLife, databaseLayout, failOnCorruptedLogFiles, recoveryLog );
 
         CheckPointerImpl.ForceOperation forceOperation = new DefaultForceOperation( indexingService, labelScanStore, storageEngine );
         CheckPointerImpl checkPointer =
@@ -307,7 +312,6 @@ public final class Recovery
         recoveryLife.add( indexProviderMap );
         recoveryLife.add( storageEngine );
         recoveryLife.add( labelScanStore );
-        recoveryLife.add( indexingService );
         recoveryLife.add( transactionLogsRecovery );
         recoveryLife.add( logFiles );
         recoveryLife.add( transactionAppender );
@@ -324,13 +328,13 @@ public final class Recovery
     private static TransactionLogsRecovery transactionLogRecovery( FileSystemAbstraction fileSystemAbstraction, TransactionIdStore transactionIdStore,
             LogTailScanner tailScanner, RecoveryMonitor recoveryMonitor, RecoveryStartInformationProvider.Monitor positionMonitor, LogFiles logFiles,
             StorageEngine storageEngine, LogicalTransactionStore logicalTransactionStore, LogVersionRepository logVersionRepository,
-            DatabaseLayout databaseLayout, boolean failOnCorruptedLogFiles, Log log )
+            Lifecycle schemaLife, DatabaseLayout databaseLayout, boolean failOnCorruptedLogFiles, Log log )
     {
         RecoveryService recoveryService =
                 new DefaultRecoveryService( storageEngine, tailScanner, transactionIdStore, logicalTransactionStore, logVersionRepository, positionMonitor );
         CorruptedLogsTruncator logsTruncator = new CorruptedLogsTruncator( databaseLayout.databaseDirectory(), logFiles, fileSystemAbstraction );
         ProgressReporter progressReporter = new LogProgressReporter( log );
-        return new TransactionLogsRecovery( recoveryService, logsTruncator, recoveryMonitor, progressReporter, failOnCorruptedLogFiles );
+        return new TransactionLogsRecovery( recoveryService, logsTruncator, schemaLife, recoveryMonitor, progressReporter, failOnCorruptedLogFiles );
     }
 
     private static Iterable<ExtensionFactory<?>> loadExtensions()

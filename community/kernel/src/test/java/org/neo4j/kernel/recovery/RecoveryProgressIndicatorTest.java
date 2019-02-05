@@ -24,11 +24,12 @@ import org.mockito.Answers;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
+import org.neo4j.common.ProgressReporter;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.TransactionCursor;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
-import org.neo4j.common.ProgressReporter;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -66,7 +67,8 @@ class RecoveryProgressIndicatorTest
         when( recoveryService.getTransactions( recoveryStartPosition ) ).thenReturn( transactionCursor );
 
         AssertableProgressReporter progressReporter = new AssertableProgressReporter( expectedMax );
-        TransactionLogsRecovery recovery = new TransactionLogsRecovery( recoveryService, logsTruncator, recoveryMonitor, progressReporter, true );
+        TransactionLogsRecovery recovery = new TransactionLogsRecovery(
+                recoveryService, logsTruncator, new LifecycleAdapter(), recoveryMonitor, progressReporter, true );
         recovery.init();
 
         progressReporter.verify();
