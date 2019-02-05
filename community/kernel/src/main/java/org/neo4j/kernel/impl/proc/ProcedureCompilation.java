@@ -242,11 +242,7 @@ public final class ProcedureCompilation
                 //static fields
                 FieldReference signatureField = generator.publicStaticField( typeReference( UserFunctionSignature.class ), SIGNATURE_NAME );
                 FieldReference userClass = generator.publicStaticField( typeReference( methodToCall.getDeclaringClass() ), USER_CLASS );
-                List<FieldReference> fieldsToSet = new ArrayList<>( fieldSetters.size() );
-                for ( int i = 0; i < fieldSetters.size(); i++ )
-                {
-                    fieldsToSet.add( generator.publicStaticField( typeReference( FieldSetter.class ), "SETTER_" + i ) );
-                }
+                List<FieldReference> fieldsToSet = createContextSetters( fieldSetters, generator );
 
                 //CallableUserFunction::apply
                 try ( CodeBlock method = generator.generate( USER_FUNCTION ) )
@@ -270,12 +266,7 @@ public final class ProcedureCompilation
             Class<?> clazz = handle.loadClass();
 
             //set all static fields
-            clazz.getDeclaredField( SIGNATURE_NAME ).set( null, signature );
-            clazz.getDeclaredField( USER_CLASS ).set( null, methodToCall.getDeclaringClass().newInstance() );
-            for ( int i = 0; i < fieldSetters.size(); i++ )
-            {
-                clazz.getDeclaredField( "SETTER_" + i ).set(null, fieldSetters.get( i ));
-            }
+            setAllStaticFields( signature, fieldSetters, methodToCall, clazz );
 
             return (CallableUserFunction) clazz.newInstance();
         }
@@ -288,7 +279,7 @@ public final class ProcedureCompilation
     }
 
     /**
-     * Generates code for a user-defined function.
+     * Generates code for a user-defined procedure.
      * <p>
      * Given a user-defined function defined by
      *
@@ -297,9 +288,9 @@ public final class ProcedureCompilation
      *       {@literal @}Context
      *        public Log log;
 
-     *       {@literal @}UserFunction
-     *        public double addPi(long value) {
-     *            return value + Math.PI;
+     *       {@literal @}Procedure
+     *        public Stream<MyOut> myStream(long value) {
+     *            ...
      *        }
      *     }
      * </pre>
@@ -307,30 +298,32 @@ public final class ProcedureCompilation
      * we will generate something like
      *
      * <pre>
-     *     class GeneratedAddPi implements CallableUserFunction {
-     *         public static UserFunctionSignature SIGNATURE;
+     *     class GeneratedMyStream implements CallableProcedure {
+     *         public static ProcedureSignature SIGNATURE;
      *         public static MyClass USER_CLASS;
      *         public static FieldSetter SETTER_0;
      *
-     *         public AnyValue apply(Context ctx, AnyValue[] input) {
+     *          RawIterator<AnyValue[], ProcedureException> apply( Context ctx, AnyValue[] in, ResourceTracker tracker ) throws ProcedureException {
      *              try {
      *                  USER_CLASS.log = (Log) SETTER_0.get(ctx);
-     *                  return Values.doubleValue(UDF.addPi( ((NumberValue) input[0]).longValue() );
+     *                  Stream<MyOut> fromUser = USER_CLASS.myStream(((NumberValue) input[0]).longValue() );
+     *                  return new GeneratedIterator(fromUser, tracker, SIGNATURE);
      *              } catch (Throwable T) {
      *                  throw new ProcedureException([appropriate error msg], T);
      *              }
      *         }
      *
-     *         public UserFunctionSignature signature() {return SIGNATURE;}
+     *         public ProcedureSignature signature() {return SIGNATURE;}
      *     }
      * </pre>
      * <p>
-     * where the static fields are set once during loading via reflection.
+     * where the static fields are set once during loading via reflection and where the <tt>GeneratedIterator</tt>
+     * implements the appropriate mapping from user-types Object[] to AnyValue[].
      *
-     * @param signature the signature of the user-defined function
+     * @param signature the signature of the procedure
      * @param fieldSetters the fields to set before each call.
      * @param methodToCall the method to call
-     * @return a CallableUserFunction delegating to the underlying user-defined function.
+     * @return a CallableProcedure delegating to the underlying procedure method.
      * @throws ProcedureException if something went wrong when compiling the user-defined function.
      */
     static CallableProcedure compileProcedure(
@@ -349,22 +342,15 @@ public final class ProcedureCompilation
                 //static fields
                 FieldReference signatureField = generator.publicStaticField( typeReference( ProcedureSignature.class ), SIGNATURE_NAME );
                 FieldReference userClass = generator.publicStaticField( typeReference( methodToCall.getDeclaringClass() ), USER_CLASS );
-                List<FieldReference> fieldsToSet = new ArrayList<>( fieldSetters.size() );
-                for ( int i = 0; i < fieldSetters.size(); i++ )
-                {
-                    fieldsToSet.add( generator.publicStaticField( typeReference( FieldSetter.class ), "SETTER_" + i ) );
-                }
+                List<FieldReference> fieldsToSet = createContextSetters( fieldSetters, generator );
 
                 //CallableProcedure::apply
                 try ( CodeBlock method = generator.generate( USER_PROCEDURE ) )
                 {
                     method.tryCatch(
-                            body -> {
-                                procedureBody( body, fieldSetters, fieldsToSet, userClass, signatureField, methodToCall, iterator,
-                                        signature.admin() );
-                            },
-                            onError ->
-                                    onError( onError, format( "procedure `%s`", signature.name() ) ),
+                            body -> procedureBody( body, fieldSetters, fieldsToSet, userClass, signatureField, methodToCall,
+                                            iterator, signature.admin() ),
+                            onError -> onError( onError, format( "procedure `%s`", signature.name() ) ),
                             param( Throwable.class, "T" )
                     );
                 }
@@ -380,19 +366,13 @@ public final class ProcedureCompilation
             Class<?> clazz = handle.loadClass();
 
             //set all static fields
-            clazz.getDeclaredField( SIGNATURE_NAME ).set( null, signature );
-            clazz.getDeclaredField( USER_CLASS ).set( null, methodToCall.getDeclaringClass().newInstance() );
-            for ( int i = 0; i < fieldSetters.size(); i++ )
-            {
-                clazz.getDeclaredField( "SETTER_" + i ).set(null, fieldSetters.get( i ));
-            }
-
+            setAllStaticFields( signature, fieldSetters, methodToCall, clazz );
             return (CallableProcedure) clazz.newInstance();
         }
         catch ( Throwable e )
         {
             throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed, e,
-                    "Failed to compile function defined in `%s`: %s", methodToCall.getDeclaringClass().getSimpleName(),
+                    "Failed to compile procedure defined in `%s`: %s", methodToCall.getDeclaringClass().getSimpleName(),
                     e.getMessage() );
         }
     }
@@ -476,6 +456,16 @@ public final class ProcedureCompilation
         }
     }
 
+    /**
+     * Generates a tailored iterator mapping from the user-stream to the internal RawIterator
+     *
+     * The generated iterator extends {@link BaseStreamIterator} and generates a tailored
+     * {@link BaseStreamIterator#map(Object)} method based on the signature of the user procedure.
+     *
+     * @param codeGenerator the current generator
+     * @param outputType the output type of the user procedure
+     * @return a tailored iterator with appropriate code mappings
+     */
     private static Class<?> generateIterator( CodeGenerator codeGenerator, Class<?> outputType )
     {
         if ( outputType.equals( void.class ) )
@@ -506,7 +496,7 @@ public final class ProcedureCompilation
                     Field f = fields.get( i );
                     mapped[i] = toAnyValue( Expression.get( method.load( "casted" ), field( f ) ) );
                 }
-                method.returns( Expression.newArray( typeReference( AnyValue.class ), mapped ) );
+                method.returns( Expression.newInitializedArray( typeReference( AnyValue.class ), mapped ) );
             }
             handle = generator.handle();
         }
@@ -516,7 +506,7 @@ public final class ProcedureCompilation
             return handle.loadClass();
         }
         catch ( CompilationFailureException e )
-        {
+        {   //We are being called from a lambda so it'll have to do with runtime exceptions here
             throw new RuntimeException( "Failed to generate iterator", e );
         }
     }
@@ -942,6 +932,28 @@ public final class ProcedureCompilation
                                     methodReference( typeReference( FieldSetter.class ), OBJECT, "get",
                                             typeReference( Context.class ) ),
                                     block.load( "ctx" ) ) ) );
+        }
+    }
+
+    private static List<FieldReference> createContextSetters( List<FieldSetter> fieldSetters, ClassGenerator generator )
+    {
+        List<FieldReference> fieldsToSet = new ArrayList<>( fieldSetters.size() );
+        for ( int i = 0; i < fieldSetters.size(); i++ )
+        {
+            fieldsToSet.add( generator.publicStaticField( typeReference( FieldSetter.class ), "SETTER_" + i ) );
+        }
+        return fieldsToSet;
+    }
+
+    private static void setAllStaticFields( Object signature, List<FieldSetter> fieldSetters,
+            Method methodToCall, Class<?> clazz )
+            throws IllegalAccessException, NoSuchFieldException, InstantiationException
+    {
+        clazz.getDeclaredField( SIGNATURE_NAME ).set( null, signature );
+        clazz.getDeclaredField( USER_CLASS ).set( null, methodToCall.getDeclaringClass().newInstance() );
+        for ( int i = 0; i < fieldSetters.size(); i++ )
+        {
+            clazz.getDeclaredField( "SETTER_" + i ).set(null, fieldSetters.get( i ));
         }
     }
 
