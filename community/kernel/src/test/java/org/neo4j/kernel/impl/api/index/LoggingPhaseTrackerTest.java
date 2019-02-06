@@ -43,15 +43,15 @@ public class LoggingPhaseTrackerTest
     {
         LoggingPhaseTracker phaseTracker = getPhaseTracker();
 
-        phaseTracker.enterPhase( LoggingPhaseTracker.Phase.SCAN );
+        phaseTracker.enterPhase( PhaseTracker.Phase.SCAN );
         sleep( 100 );
         phaseTracker.stop();
 
-        EnumMap<LoggingPhaseTracker.Phase,LoggingPhaseTracker.Logger> times = phaseTracker.times();
-        for ( LoggingPhaseTracker.Phase phase : times.keySet() )
+        EnumMap<PhaseTracker.Phase,LoggingPhaseTracker.Logger> times = phaseTracker.times();
+        for ( PhaseTracker.Phase phase : times.keySet() )
         {
             LoggingPhaseTracker.Logger logger = times.get( phase );
-            if ( phase == LoggingPhaseTracker.Phase.SCAN )
+            if ( phase == PhaseTracker.Phase.SCAN )
             {
                 assertTrue( logger.totalTime >= TimeUnit.MILLISECONDS.toNanos( 100 ) );
                 assertTrue( logger.totalTime < TimeUnit.MILLISECONDS.toNanos( 500 ) );
@@ -68,18 +68,18 @@ public class LoggingPhaseTrackerTest
     {
         LoggingPhaseTracker phaseTracker = getPhaseTracker();
 
-        phaseTracker.enterPhase( LoggingPhaseTracker.Phase.SCAN );
+        phaseTracker.enterPhase( PhaseTracker.Phase.SCAN );
         sleep( 100 );
-        phaseTracker.enterPhase( LoggingPhaseTracker.Phase.WRITE );
+        phaseTracker.enterPhase( PhaseTracker.Phase.WRITE );
         sleep( 100 );
         phaseTracker.stop();
 
-        EnumMap<LoggingPhaseTracker.Phase,LoggingPhaseTracker.Logger> times = phaseTracker.times();
-        for ( LoggingPhaseTracker.Phase phase : times.keySet() )
+        EnumMap<PhaseTracker.Phase,LoggingPhaseTracker.Logger> times = phaseTracker.times();
+        for ( PhaseTracker.Phase phase : times.keySet() )
         {
             LoggingPhaseTracker.Logger logger = times.get( phase );
-            if ( phase == LoggingPhaseTracker.Phase.SCAN ||
-                    phase == LoggingPhaseTracker.Phase.WRITE )
+            if ( phase == PhaseTracker.Phase.SCAN ||
+                    phase == PhaseTracker.Phase.WRITE )
             {
                 assertTrue( logger.totalTime >= TimeUnit.MILLISECONDS.toNanos( 100 ) );
                 assertTrue( logger.totalTime < TimeUnit.MILLISECONDS.toNanos( 500 ) );
@@ -96,12 +96,12 @@ public class LoggingPhaseTrackerTest
     {
         LoggingPhaseTracker phaseTracker = getPhaseTracker();
 
-        phaseTracker.enterPhase( LoggingPhaseTracker.Phase.SCAN );
+        phaseTracker.enterPhase( PhaseTracker.Phase.SCAN );
         sleep( 100 );
-        phaseTracker.enterPhase( LoggingPhaseTracker.Phase.WRITE );
-        LoggingPhaseTracker.Logger scanLogger = phaseTracker.times().get( LoggingPhaseTracker.Phase.SCAN );
+        phaseTracker.enterPhase( PhaseTracker.Phase.WRITE );
+        LoggingPhaseTracker.Logger scanLogger = phaseTracker.times().get( PhaseTracker.Phase.SCAN );
         long firstCount = scanLogger.totalTime;
-        phaseTracker.enterPhase( LoggingPhaseTracker.Phase.SCAN );
+        phaseTracker.enterPhase( PhaseTracker.Phase.SCAN );
         sleep( 100 );
         phaseTracker.stop();
 
@@ -115,7 +115,7 @@ public class LoggingPhaseTrackerTest
         phaseTracker.stop();
         try
         {
-            phaseTracker.enterPhase( LoggingPhaseTracker.Phase.SCAN );
+            phaseTracker.enterPhase( PhaseTracker.Phase.SCAN );
             fail( "Should have failed" );
         }
         catch ( IllegalStateException e )
@@ -131,11 +131,11 @@ public class LoggingPhaseTrackerTest
         AssertableLogProvider logProvider = new AssertableLogProvider( true );
         Log log = logProvider.getLog( IndexPopulationJob.class );
         PhaseTracker phaseTracker = getPhaseTracker( log );
-        phaseTracker.enterPhase( LoggingPhaseTracker.Phase.SCAN );
+        phaseTracker.enterPhase( PhaseTracker.Phase.SCAN );
         sleep( 100 );
-        phaseTracker.enterPhase( LoggingPhaseTracker.Phase.WRITE );
+        phaseTracker.enterPhase( PhaseTracker.Phase.WRITE );
         sleep( 100 );
-        phaseTracker.enterPhase( LoggingPhaseTracker.Phase.FLIP );
+        phaseTracker.enterPhase( PhaseTracker.Phase.FLIP );
         sleep( 100 );
 
         // when
@@ -164,11 +164,11 @@ public class LoggingPhaseTrackerTest
         AssertableLogProvider logProvider = new AssertableLogProvider( true );
         Log log = logProvider.getLog( IndexPopulationJob.class );
         PhaseTracker phaseTracker = getPhaseTracker( 1, log );
-        phaseTracker.enterPhase( LoggingPhaseTracker.Phase.SCAN );
+        phaseTracker.enterPhase( PhaseTracker.Phase.SCAN );
 
         // when
         sleep( 1000 );
-        phaseTracker.enterPhase( LoggingPhaseTracker.Phase.WRITE );
+        phaseTracker.enterPhase( PhaseTracker.Phase.WRITE );
 
         // then
         //noinspection unchecked

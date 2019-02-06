@@ -27,7 +27,6 @@ import java.util.function.LongFunction;
 import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.impl.api.index.EntityUpdates;
-import org.neo4j.kernel.impl.api.index.LoggingPhaseTracker;
 import org.neo4j.kernel.impl.api.index.MultipleIndexPopulator;
 import org.neo4j.kernel.impl.api.index.PhaseTracker;
 import org.neo4j.kernel.impl.api.index.StoreScan;
@@ -110,7 +109,7 @@ public abstract class PropertyAwareEntityStoreScan<CURSOR extends StorageEntityS
             continueScanning = true;
             while ( continueScanning && entityIdIterator.hasNext() )
             {
-                phaseTracker.enterPhase( LoggingPhaseTracker.Phase.SCAN );
+                phaseTracker.enterPhase( PhaseTracker.Phase.SCAN );
                 long id = entityIdIterator.next();
                 try ( Lock ignored = lockFunction.apply( id ) )
                 {

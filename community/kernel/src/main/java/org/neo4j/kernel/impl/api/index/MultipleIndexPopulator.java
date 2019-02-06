@@ -360,7 +360,7 @@ public class MultipleIndexPopulator implements IndexPopulator
 
     protected void flush( IndexPopulation population )
     {
-        phaseTracker.enterPhase( LoggingPhaseTracker.Phase.WRITE );
+        phaseTracker.enterPhase( PhaseTracker.Phase.WRITE );
         doFlush( population );
     }
 
@@ -563,7 +563,7 @@ public class MultipleIndexPopulator implements IndexPopulator
 
         void flip( boolean verifyBeforeFlipping ) throws FlipFailedKernelException
         {
-            phaseTracker.enterPhase( LoggingPhaseTracker.Phase.FLIP );
+            phaseTracker.enterPhase( PhaseTracker.Phase.FLIP );
             flipper.flip( () ->
             {
                 populatorLock.lock();
