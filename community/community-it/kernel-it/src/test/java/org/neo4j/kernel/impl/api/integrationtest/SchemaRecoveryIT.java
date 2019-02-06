@@ -33,7 +33,9 @@ import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.extension.EphemeralFileSystemExtension;
 import org.neo4j.test.extension.Inject;
@@ -92,8 +94,33 @@ public class SchemaRecoveryIT
         // then
         assertEquals( 1, constraints( db ).size() );
         assertEquals( 1, indexes( db ).size() );
+    }
 
-        db.shutdown();
+    @Test
+    void inconsistentlyFlushedTokensShouldBeRecovered()
+    {
+        // given
+        Label label = label( "User" );
+        String property = "email";
+        startDb();
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.schema().constraintFor( label ).assertPropertyIsUnique( property ).create();
+            tx.success();
+        }
+
+        // Flush the property token store, but NOT the property token ~name~ store. This means tokens will refer to unused dynamic records for their names.
+        RecordStorageEngine storageEngine = db.getDependencyResolver().resolveDependency( RecordStorageEngine.class );
+        storageEngine.testAccessNeoStores().getPropertyKeyTokenStore().flush();
+
+        killDb();
+
+        // when
+        startDb();
+
+        // then assert that we can still read the schema correctly.
+        assertEquals( 1, constraints( db ).size() );
+        assertEquals( 1, indexes( db ).size() );
     }
 
     private void startDb()
