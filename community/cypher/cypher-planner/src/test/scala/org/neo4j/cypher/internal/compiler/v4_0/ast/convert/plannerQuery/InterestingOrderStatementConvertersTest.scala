@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v4_0.ast.convert.plannerQuery
 import org.neo4j.cypher.internal.compiler.v4_0.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.ir.v4_0.InterestingOrder.{Asc, Desc}
 import org.neo4j.cypher.internal.ir.v4_0._
-import org.neo4j.cypher.internal.v4_0.expressions._
+import org.neo4j.cypher.internal.v4_0.expressions.CountStar
 import org.neo4j.cypher.internal.v4_0.logical.plans._
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 
@@ -67,7 +67,7 @@ class InterestingOrderStatementConvertersTest extends CypherFunSuite with Logica
   test("Extracts interesting order from min") {
     val result = buildPlannerQuery("MATCH (n) RETURN min(n.prop)")
 
-    val func = FunctionInvocation(Namespace(List())(pos), FunctionName("min")(pos), distinct = false, Vector(prop("n", "prop")))(pos)
+    val func = min(prop("n", "prop"))
     val interestingOrderCandidate = InterestingOrderCandidate(Seq(Asc(prop("n", "prop"))))
     val interestingOrder = new InterestingOrder(RequiredOrderCandidate.empty, Seq(interestingOrderCandidate))
     val expectation = RegularPlannerQuery(
@@ -83,7 +83,7 @@ class InterestingOrderStatementConvertersTest extends CypherFunSuite with Logica
   test("Extracts interesting order from max") {
     val result = buildPlannerQuery("MATCH (n) RETURN max(n.prop)")
 
-    val func = FunctionInvocation(Namespace(List())(pos), FunctionName("max")(pos), distinct = false, Vector(prop("n", "prop")))(pos)
+    val func = max(prop("n", "prop"))
     val interestingOrderCandidate = InterestingOrderCandidate(Seq(Desc(prop("n", "prop"))))
     val interestingOrder = new InterestingOrder(RequiredOrderCandidate.empty, Seq(interestingOrderCandidate))
     val expectation = RegularPlannerQuery(
@@ -99,7 +99,7 @@ class InterestingOrderStatementConvertersTest extends CypherFunSuite with Logica
   test("Extracts interesting order from min order by min") {
     val result = buildPlannerQuery("MATCH (n) RETURN min(n.prop) ORDER BY min(n.prop)")
 
-    val func = FunctionInvocation(Namespace(List())(pos), FunctionName("min")(pos), distinct = false, Vector(prop("n", "prop")))(pos)
+    val func = min(prop("n", "prop"))
     val interestingOrderCandidate = InterestingOrderCandidate(Seq(Asc(prop("n", "prop"))))
     val interestingOrder = new InterestingOrder(RequiredOrderCandidate(Seq(Asc(varFor("min(n.prop)")))), Seq(interestingOrderCandidate))
     val expectation = RegularPlannerQuery(
@@ -144,7 +144,7 @@ class InterestingOrderStatementConvertersTest extends CypherFunSuite with Logica
     val expectation = RegularPlannerQuery(
       queryGraph = QueryGraph(patternNodes = Set("n")),
       interestingOrder = InterestingOrder.required(RequiredOrderCandidate.desc(prop("n", "prop2"))),
-      horizon = RegularQueryProjection(projections = Map("n.prop" -> Property(Variable("n")(pos), PropertyKeyName("prop")(pos))(pos)))
+      horizon = RegularQueryProjection(projections = Map("n.prop" -> prop("n", "prop")))
     )
 
     result should equal(expectation)
@@ -325,7 +325,7 @@ class InterestingOrderStatementConvertersTest extends CypherFunSuite with Logica
       queryGraph = QueryGraph(patternNodes = Set("n")),
       interestingOrder = InterestingOrder.required(
         RequiredOrderCandidate.asc(
-          Multiply(varFor("n.prop"), SignedDecimalIntegerLiteral("2")(pos))(pos),
+          multiply(varFor("n.prop"), literalInt(2)),
           Map("n.prop" -> prop("n", "prop"))
         )
       ),
@@ -342,10 +342,10 @@ class InterestingOrderStatementConvertersTest extends CypherFunSuite with Logica
       queryGraph = QueryGraph(patternNodes = Set("n")),
       interestingOrder = InterestingOrder.required(
         RequiredOrderCandidate.asc(varFor("n.prop * 2"),
-          Map("n.prop * 2" -> Multiply(prop("n", "prop"), SignedDecimalIntegerLiteral("2")(pos))(pos))
+          Map("n.prop * 2" -> multiply(prop("n", "prop"), literalInt(2)))
         )
       ),
-      horizon = RegularQueryProjection(Map("n.prop * 2" -> Multiply(prop("n", "prop"), SignedDecimalIntegerLiteral("2")(pos))(pos)))
+      horizon = RegularQueryProjection(Map("n.prop * 2" -> multiply(prop("n", "prop"), literalInt(2))))
     )
 
     result should equal(expectation)
@@ -358,7 +358,7 @@ class InterestingOrderStatementConvertersTest extends CypherFunSuite with Logica
       queryGraph = QueryGraph(patternNodes = Set("n")),
       interestingOrder = InterestingOrder.required(RequiredOrderCandidate
         .asc(prop("n", "foo"), Map("n" -> varFor("n")))
-        .desc(Multiply(varFor("n.prop"), SignedDecimalIntegerLiteral("2")(pos))(pos), Map("n.prop" -> prop("n", "prop")))
+        .desc(multiply(varFor("n.prop"), literalInt(2)), Map("n.prop" -> prop("n", "prop")))
       ),
       horizon = RegularQueryProjection(Map("n" -> varFor("n"), "n.prop" -> prop("n", "prop")))
     )

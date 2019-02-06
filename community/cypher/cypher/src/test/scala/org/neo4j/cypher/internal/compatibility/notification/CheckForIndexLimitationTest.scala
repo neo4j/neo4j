@@ -25,14 +25,11 @@ import org.neo4j.cypher.internal.compiler.v4_0.planner.LogicalPlanningTestSuppor
 import org.neo4j.cypher.internal.compiler.v4_0.{SuboptimalIndexForConstainsQueryNotification, SuboptimalIndexForEndsWithQueryNotification}
 import org.neo4j.cypher.internal.planner.v4_0.spi
 import org.neo4j.cypher.internal.planner.v4_0.spi.{IndexDescriptor, IndexLimitation, PlanContext, SlowContains}
-import org.neo4j.cypher.internal.v4_0.expressions._
 import org.neo4j.cypher.internal.v4_0.logical.plans._
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.v4_0.util.{LabelId, PropertyKeyId}
 
 class CheckForIndexLimitationTest extends CypherFunSuite with LogicalPlanningTestSupport {
-
-  private val url = StringLiteral("file:///tmp/foo.csv")(pos)
 
   test("should notify for NodeIndexContainsScan backed by limited index") {
     val planContext = mock[PlanContext]

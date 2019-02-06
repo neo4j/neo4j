@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.compiler.v4_0.ast.convert.plannerQuery
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v4_0.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.ir.v4_0.RegularQueryProjection
-import org.neo4j.cypher.internal.v4_0.expressions.SignedDecimalIntegerLiteral
 
 class UnionStatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
@@ -33,11 +32,11 @@ class UnionStatementConvertersTest extends CypherFunSuite with LogicalPlanningTe
 
     val q1 = query.queries.head
     q1.queryGraph.patternNodes shouldBe empty
-    q1.horizon should equal(RegularQueryProjection(Map("x" -> SignedDecimalIntegerLiteral("1")(pos))))
+    q1.horizon should equal(RegularQueryProjection(Map("x" -> literalInt(1))))
 
     val q2 = query.queries.last
     q2.queryGraph.patternNodes shouldBe empty
-    q2.horizon should equal(RegularQueryProjection(Map("x" -> SignedDecimalIntegerLiteral("2")(pos))))
+    q2.horizon should equal(RegularQueryProjection(Map("x" -> literalInt(2))))
   }
 
   test("RETURN 1 as x UNION ALL RETURN 2 as x UNION ALL RETURN 3 as x") {
@@ -47,15 +46,15 @@ class UnionStatementConvertersTest extends CypherFunSuite with LogicalPlanningTe
 
     val q1 = query.queries.head
     q1.queryGraph.patternNodes shouldBe empty
-    q1.horizon should equal(RegularQueryProjection(Map("x" -> SignedDecimalIntegerLiteral("1")(pos))))
+    q1.horizon should equal(RegularQueryProjection(Map("x" -> literalInt(1))))
 
     val q2 = query.queries.tail.head
     q2.queryGraph.patternNodes shouldBe empty
-    q2.horizon should equal(RegularQueryProjection(Map("x" -> SignedDecimalIntegerLiteral("2")(pos))))
+    q2.horizon should equal(RegularQueryProjection(Map("x" -> literalInt(2))))
 
     val q3 = query.queries.last
     q3.queryGraph.patternNodes shouldBe empty
-    q3.horizon should equal(RegularQueryProjection(Map("x" -> SignedDecimalIntegerLiteral("3")(pos))))
+    q3.horizon should equal(RegularQueryProjection(Map("x" -> literalInt(3))))
   }
 
 }

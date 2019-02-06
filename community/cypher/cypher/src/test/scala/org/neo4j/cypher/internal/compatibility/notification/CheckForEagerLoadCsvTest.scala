@@ -23,13 +23,12 @@ import org.neo4j.cypher.internal.compiler.v4_0.EagerLoadCsvNotification
 import org.neo4j.cypher.internal.compiler.v4_0.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.ir.v4_0.NoHeaders
 import org.neo4j.cypher.internal.runtime.interpreted.CSVResources
-import org.neo4j.cypher.internal.v4_0.expressions.StringLiteral
 import org.neo4j.cypher.internal.v4_0.logical.plans.{AllNodesScan, Eager, LoadCSV}
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 
 class CheckForEagerLoadCsvTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
-  private val url = StringLiteral("file:///tmp/foo.csv")(pos)
+  private val url = literalString("file:///tmp/foo.csv")
 
   test("should notify for EagerPipe on top of LoadCsvPipe") {
     val plan =

@@ -27,20 +27,15 @@ import org.neo4j.cypher.internal.ir.v4_0.helpers.ExpressionConverters._
 
 class PatternExpressionConverterTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
-  val aNode: NodePattern = NodePattern(Some(Variable("a")(pos)), Seq.empty, None)_
-  val bNode: NodePattern = NodePattern(Some(Variable("b")(pos)), Seq.empty, None)_
-  val unnamedVariable: Variable = Variable("  UNNAMED1")_
-  val anonymousNode: NodePattern = NodePattern(Some(unnamedVariable), Seq.empty, None)_
-  val rRel: RelationshipPattern = RelationshipPattern(Some(Variable("r")(pos)), Seq.empty, None, None, SemanticDirection.OUTGOING)_
-  val TYP: RelTypeName = RelTypeName("TYP")_
+  private val aNode = NodePattern(Some(varFor("a")), Seq.empty, None)_
+  private val bNode = NodePattern(Some(varFor("b")), Seq.empty, None)_
+  private val anonymousNode = NodePattern(Some(varFor("  UNNAMED1")), Seq.empty, None)_
+  private val rRel = RelationshipPattern(Some(varFor("r")), Seq.empty, None, None, SemanticDirection.OUTGOING)_
+  private val TYP: RelTypeName = RelTypeName("TYP")_
 
-  val rRelWithType: RelationshipPattern = rRel.copy(types = Seq(TYP)) _
-  val planRel = PatternRelationship("r", ("a", "b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
-  val planRelWithType = PatternRelationship("r", ("a", "b"), SemanticDirection.OUTGOING, Seq(TYP), SimplePatternLength)
-
-  private def projections(names: String*): Map[String, Expression] = names.map {
-    case x => x -> Variable(x)(pos)
-  }.toMap
+  private val rRelWithType = rRel.copy(types = Seq(TYP)) _
+  private val planRel = PatternRelationship("r", ("a", "b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
+  private val planRelWithType = PatternRelationship("r", ("a", "b"), SemanticDirection.OUTGOING, Seq(TYP), SimplePatternLength)
 
   test("(a)-[r]->(b)") {
     // Given
@@ -85,15 +80,14 @@ class PatternExpressionConverterTest extends CypherFunSuite with LogicalPlanning
   }
 
   test("(a)-[r]->(b:Label)") {
-    val labelName: LabelName = LabelName("Label")_
     // Given
-    val patternExpression = createPatternExpression(aNode, rRel, bNode.copy(labels = Seq(labelName))(pos))
+    val patternExpression = createPatternExpression(aNode, rRel, bNode.copy(labels = Seq(labelName("Label")))(pos))
 
     // When
     val qg = patternExpression.asQueryGraph
 
     // Then
-    val predicate: HasLabels = HasLabels(Variable("b")(pos), Seq(labelName))_
+    val predicate = hasLabels("b", "Label")
     qg.selections should equal(Selections(Set(Predicate(Set("b"), predicate))))
     qg.patternRelationships should equal(Set(planRel))
     qg.argumentIds should equal(Set("a", "r", "b"))

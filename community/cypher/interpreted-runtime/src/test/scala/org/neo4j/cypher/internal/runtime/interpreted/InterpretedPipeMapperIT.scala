@@ -25,14 +25,13 @@ import org.neo4j.cypher.internal.ir.v4_0._
 import org.neo4j.cypher.internal.planner.v4_0.spi.{PlanContext, TokenContext}
 import org.neo4j.cypher.internal.runtime.QueryIndexes
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
-import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Literal
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.True
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.KeyToken.Resolved
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.TokenType
 import org.neo4j.cypher.internal.runtime.interpreted.commands.{expressions => legacy}
 import org.neo4j.cypher.internal.runtime.interpreted.pipes._
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
-import org.neo4j.cypher.internal.v4_0.expressions._
+import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
 import org.neo4j.cypher.internal.v4_0.logical.plans._
 import org.neo4j.cypher.internal.v4_0.util.RelTypeId
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
@@ -58,7 +57,7 @@ class InterpretedPipeMapperIT extends CypherFunSuite with LogicalPlanningTestSup
 
   test("projection only query") {
     val logicalPlan = Projection(
-      Argument(), Map("42" -> SignedDecimalIntegerLiteral("42")(pos)))
+      Argument(), Map("42" -> literalInt(42)))
     val pipe = build(logicalPlan)
 
     pipe should equal(ProjectionPipe(ArgumentPipe()(), Map("42" -> legacy.Literal(42))))
@@ -79,17 +78,15 @@ class InterpretedPipeMapperIT extends CypherFunSuite with LogicalPlanningTestSup
   }
 
   test("simple node by id seek query") {
-    val astLiteral: Expression = ListLiteral(Seq(SignedDecimalIntegerLiteral("42")_))_
+    val astLiteral = listOfInt(42)
     val logicalPlan = NodeByIdSeek("n", ManySeekableArgs(astLiteral), Set.empty)
     val pipe = build(logicalPlan)
 
-    pipe should equal(NodeByIdSeekPipe("n", SingleSeekArg(Literal(42)))())
+    pipe should equal(NodeByIdSeekPipe("n", SingleSeekArg(legacy.Literal(42)))())
   }
 
   test("simple node by id seek query with multiple values") {
-    val astCollection: ListLiteral = ListLiteral(
-      Seq(SignedDecimalIntegerLiteral("42")_, SignedDecimalIntegerLiteral("43")_, SignedDecimalIntegerLiteral("43")_)
-    )_
+    val astCollection = listOfInt(42, 43, 43)
     val logicalPlan = NodeByIdSeek("n", ManySeekableArgs(astCollection), Set.empty)
     val pipe = build(logicalPlan)
 
@@ -97,18 +94,17 @@ class InterpretedPipeMapperIT extends CypherFunSuite with LogicalPlanningTestSup
   }
 
   test("simple relationship by id seek query") {
-    val astLiteral: Expression = ListLiteral(Seq(SignedDecimalIntegerLiteral("42")_))_
+    val astLiteral = listOfInt(42)
     val fromNode = "from"
     val toNode = "to"
     val logicalPlan = DirectedRelationshipByIdSeek("r", ManySeekableArgs(astLiteral), fromNode, toNode, Set.empty)
     val pipe = build(logicalPlan)
 
-    pipe should equal(DirectedRelationshipByIdSeekPipe("r", SingleSeekArg(Literal(42)), toNode, fromNode)())
+    pipe should equal(DirectedRelationshipByIdSeekPipe("r", SingleSeekArg(legacy.Literal(42)), toNode, fromNode)())
   }
 
   test("simple relationship by id seek query with multiple values") {
-    val astCollection: Expression =
-      ListLiteral(Seq(SignedDecimalIntegerLiteral("42")_, SignedDecimalIntegerLiteral("43")_, SignedDecimalIntegerLiteral("43")_))_
+    val astCollection = listOfInt(42, 43, 43)
 
     val fromNode = "from"
     val toNode = "to"
@@ -119,8 +115,7 @@ class InterpretedPipeMapperIT extends CypherFunSuite with LogicalPlanningTestSup
   }
 
   test("simple undirected relationship by id seek query with multiple values") {
-    val astCollection: Expression =
-      ListLiteral(Seq(SignedDecimalIntegerLiteral("42")_, SignedDecimalIntegerLiteral("43")_, SignedDecimalIntegerLiteral("43")_))_
+    val astCollection = listOfInt(42, 43, 43)
 
     val fromNode = "from"
     val toNode = "to"
@@ -184,7 +179,7 @@ class InterpretedPipeMapperIT extends CypherFunSuite with LogicalPlanningTestSup
     val token = 42
     when(planContext.getOptPropertyKeyId("prop")).thenReturn(Some(token))
     val allNodesScan = AllNodesScan("n", Set.empty)
-    val expressions = Map("n.prop" -> Property(Variable("n")(pos), PropertyKeyName("prop")(pos))(pos))
+    val expressions = Map("n.prop" -> prop("n", "prop"))
     val projection = Projection(allNodesScan, expressions)
     val aggregation = Aggregation(projection, expressions, Map.empty)
 
