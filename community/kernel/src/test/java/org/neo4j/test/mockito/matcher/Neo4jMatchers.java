@@ -332,18 +332,6 @@ public class Neo4jMatchers
         };
     }
 
-    public static Deferred<IndexDefinition> getIndexes( final GraphDatabaseService db )
-    {
-        return new Deferred<IndexDefinition>( db )
-        {
-            @Override
-            protected Iterable<IndexDefinition> manifest()
-            {
-                return db.schema().getIndexes();
-            }
-        };
-    }
-
     public static Deferred<IndexDefinition> getIndexes( final GraphDatabaseService db, final Label label )
     {
         return new Deferred<IndexDefinition>( db )
