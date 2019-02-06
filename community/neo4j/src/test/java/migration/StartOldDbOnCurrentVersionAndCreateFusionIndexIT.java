@@ -90,7 +90,8 @@ class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
         LUCENE_10( "Label1", GraphDatabaseSettings.SchemaIndex.LUCENE10, LuceneIndexProviderFactory.PROVIDER_DESCRIPTOR ),
         FUSION_10( "Label2", GraphDatabaseSettings.SchemaIndex.NATIVE10, NativeLuceneFusionIndexProviderFactory10.DESCRIPTOR ),
         FUSION_20( "Label3", GraphDatabaseSettings.SchemaIndex.NATIVE20, NativeLuceneFusionIndexProviderFactory20.DESCRIPTOR ),
-        BTREE_10( "Label4", GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10, GenericNativeIndexProvider.DESCRIPTOR );
+        BTREE_10( "Label4", GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10, GenericNativeIndexProvider.DESCRIPTOR ),
+        BTREE_10_35( "Label5", GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10, GenericNativeIndexProvider.DESCRIPTOR );
 
         private final Label label;
         private final GraphDatabaseSettings.SchemaIndex setting;
@@ -104,7 +105,7 @@ class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
         }
     }
 
-    private static final Provider DEFAULT_PROVIDER = Provider.BTREE_10;
+    private static final Provider DEFAULT_PROVIDER = Provider.BTREE_10_35;
 
     @Inject
     private TestDirectory directory;
@@ -128,14 +129,17 @@ class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
         builder.setConfig( GraphDatabaseSettings.default_schema_provider, GraphDatabaseSettings.SchemaIndex.NATIVE20.providerName() );
         db = builder.newGraphDatabase();
         createIndexDataAndShutdown( db, Provider.FUSION_20.label );
+
+        builder.setConfig( GraphDatabaseSettings.default_schema_provider, GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10.providerName() );
+        db = builder.newGraphDatabase();
+        createIndexDataAndShutdown( db, Provider.BTREE_10.label );
         System.out.println( "Db created in " + storeDir.getAbsolutePath() );
     }
 
     @Test
     void shouldOpen3_5DbAndCreateAndWorkWithSomeFusionIndexes() throws Exception
     {
-        // 3.5 actually supports BTREE_10, but our test database does not have such an index, so we exclude it here.
-        Provider highestProviderInOldVersion = Provider.FUSION_20;
+        Provider highestProviderInOldVersion = Provider.BTREE_10;
         shouldOpenOldDbAndCreateAndWorkWithSomeFusionIndexes( ZIP_FILE_3_5, highestProviderInOldVersion );
     }
 
