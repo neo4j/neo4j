@@ -19,14 +19,22 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
+import org.neo4j.gis.spatial.index.curves.SpaceFillingCurve;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursorTestBase;
 import org.neo4j.internal.kernel.api.SchemaWrite;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.kernel.impl.index.schema.config.ConfiguredSpaceFillingCurveSettingsCache;
+import org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettings;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.values.storable.CoordinateReferenceSystem;
+import org.neo4j.values.storable.PointValue;
+
+import static org.junit.Assert.assertEquals;
 
 abstract class AbstractNodeValueIndexCursorTest extends NodeValueIndexCursorTestBase<ReadTestSupport>
 {
@@ -44,5 +52,14 @@ abstract class AbstractNodeValueIndexCursorTest extends NodeValueIndexCursorTest
                 SchemaDescriptorFactory.forLabel( token.labelGetOrCreateForName( "Person" ),
                         token.propertyKeyGetOrCreateForName( "firstname" ),
                         token.propertyKeyGetOrCreateForName( "surname" ) ) );
+    }
+
+    @Override
+    protected void assertSameDerivedValue( PointValue p1, PointValue p2 )
+    {
+        ConfiguredSpaceFillingCurveSettingsCache settingsFactory = new ConfiguredSpaceFillingCurveSettingsCache( Config.defaults() );
+        SpaceFillingCurveSettings spaceFillingCurveSettings = settingsFactory.forCRS( CoordinateReferenceSystem.WGS84 );
+        SpaceFillingCurve curve = spaceFillingCurveSettings.curve();
+        assertEquals( curve.derivedValueFor( p1.coordinate() ), curve.derivedValueFor( p2.coordinate() ) );
     }
 }

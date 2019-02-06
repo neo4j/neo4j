@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.index.schema;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.util.Comparator;
 import java.util.List;
 
 import org.neo4j.cursor.RawCursor;
@@ -33,9 +34,11 @@ import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexQuery.ExactPredicate;
 import org.neo4j.internal.kernel.api.IndexQuery.GeometryRangePredicate;
 import org.neo4j.internal.kernel.api.QueryContext;
+import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.api.index.IndexProgressor.EntityValueClient;
 import org.neo4j.kernel.impl.api.schema.BridgingIndexProgressor;
+import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
@@ -105,6 +108,47 @@ public class SpatialIndexPartReader<VALUE extends NativeIndexValue> extends Nati
             break;
         default:
             throw new IllegalArgumentException( "IndexQuery of type " + predicate.type() + " is not supported." );
+        }
+    }
+
+    @Override
+    public void distinctValues( IndexProgressor.EntityValueClient client, NodePropertyAccessor propertyAccessor, boolean needsValues )
+    {
+        // This is basically a version of the basic implementation, but with added consulting of the PropertyAccessor
+        // since these are lossy spatial values.
+        SpatialIndexKey lowest = layout.newKey();
+        lowest.initialize( Long.MIN_VALUE );
+        lowest.initValuesAsLowest();
+        SpatialIndexKey highest = layout.newKey();
+        highest.initialize( Long.MAX_VALUE );
+        highest.initValuesAsHighest();
+        try
+        {
+            RawCursor<Hit<SpatialIndexKey,VALUE>,IOException> seeker = tree.seek( lowest, highest );
+            Comparator<SpatialIndexKey> comparator =
+                    new PropertyLookupFallbackComparator<>( layout, propertyAccessor, descriptor.schema().getPropertyId() );
+            NativeDistinctValuesProgressor<SpatialIndexKey,VALUE> progressor =
+                    new NativeDistinctValuesProgressor<SpatialIndexKey,VALUE>( seeker, client, layout, comparator )
+                    {
+                        @Override
+                        Value[] extractValues( SpatialIndexKey key )
+                        {
+                            try
+                            {
+                                return new Value[]{propertyAccessor.getNodePropertyValue( key.getEntityId(), descriptor.schema().getPropertyId() )};
+                            }
+                            catch ( EntityNotFoundException e )
+                            {
+                                // We couldn't get the value due to the entity not being there. Concurrently deleted?
+                                return null;
+                            }
+                        }
+                    };
+            client.initialize( descriptor, progressor, new IndexQuery[0], IndexOrder.NONE, needsValues, false );
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
         }
     }
 

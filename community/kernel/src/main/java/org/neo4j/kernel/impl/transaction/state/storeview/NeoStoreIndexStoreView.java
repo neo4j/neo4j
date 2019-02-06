@@ -23,12 +23,12 @@ import java.util.function.IntPredicate;
 import java.util.function.Supplier;
 
 import org.neo4j.helpers.collection.Visitor;
-import org.neo4j.kernel.api.index.NodePropertyAccessor;
 import org.neo4j.kernel.impl.api.index.EntityUpdates;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.storageengine.api.NodeLabelUpdate;
+import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.storageengine.api.StorageReader;
 
 /**

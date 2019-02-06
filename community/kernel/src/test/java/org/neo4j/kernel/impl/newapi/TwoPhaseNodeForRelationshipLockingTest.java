@@ -73,7 +73,7 @@ public class TwoPhaseNodeForRelationshipLockingTest
         InOrder inOrder = inOrder( locks );
 
         // when
-        locking.lockAllNodesAndConsumeRelationships( nodeId, transaction, new StubNodeCursor( false ) );
+        locking.lockAllNodesAndConsumeRelationships( nodeId, transaction, new StubNodeCursor( false ).withNode( nodeId ) );
 
         // then
         inOrder.verify( locks ).acquireExclusive( NONE, NODE, 3L, 40L, 41L, nodeId, 43L, 49L );
@@ -97,7 +97,7 @@ public class TwoPhaseNodeForRelationshipLockingTest
         InOrder inOrder = inOrder( locks );
 
         // when
-        locking.lockAllNodesAndConsumeRelationships( nodeId, transaction, new StubNodeCursor( false ) );
+        locking.lockAllNodesAndConsumeRelationships( nodeId, transaction, new StubNodeCursor( false ).withNode( nodeId ) );
 
         // then
         inOrder.verify( locks ).acquireExclusive( NONE, NODE,  40L, 41L, nodeId );
@@ -115,7 +115,7 @@ public class TwoPhaseNodeForRelationshipLockingTest
         TwoPhaseNodeForRelationshipLocking locking = new TwoPhaseNodeForRelationshipLocking( collector, locks, NONE );
         returnRelationships( transaction, false, new TestRelationshipChain( 42 ) );
 
-        locking.lockAllNodesAndConsumeRelationships( nodeId, transaction, new StubNodeCursor( false ) );
+        locking.lockAllNodesAndConsumeRelationships( nodeId, transaction, new StubNodeCursor( false ).withNode( nodeId ) );
 
         verify( locks ).acquireExclusive( NONE, NODE, nodeId );
         verifyNoMoreInteractions( locks );

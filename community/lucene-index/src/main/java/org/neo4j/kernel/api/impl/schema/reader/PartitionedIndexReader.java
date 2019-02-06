@@ -36,6 +36,7 @@ import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.api.index.IndexSampler;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.schema.BridgingIndexProgressor;
+import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
 import org.neo4j.values.storable.Value;
 
@@ -47,7 +48,6 @@ import org.neo4j.values.storable.Value;
  */
 public class PartitionedIndexReader extends AbstractIndexReader
 {
-
     private final List<SimpleIndexReader> indexReaders;
 
     public PartitionedIndexReader( List<SearcherReference> partitionSearchers,
@@ -97,6 +97,14 @@ public class PartitionedIndexReader extends AbstractIndexReader
     public boolean hasFullValuePrecision( IndexQuery... predicates )
     {
         return false;
+    }
+
+    @Override
+    public void distinctValues( IndexProgressor.EntityValueClient client, NodePropertyAccessor propertyAccessor, boolean needsValues )
+    {
+        BridgingIndexProgressor bridgingIndexProgressor = new BridgingIndexProgressor( client, descriptor.schema().getPropertyIds() );
+        indexReaders.parallelStream().forEach( reader -> reader.distinctValues( bridgingIndexProgressor, propertyAccessor, needsValues ) );
+        client.initialize( descriptor, bridgingIndexProgressor, new IndexQuery[0], IndexOrder.NONE, needsValues, false );
     }
 
     private static final class InnerException extends RuntimeException

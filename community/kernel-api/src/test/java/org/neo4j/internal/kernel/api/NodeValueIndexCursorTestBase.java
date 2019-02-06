@@ -25,23 +25,32 @@ import org.eclipse.collections.impl.factory.primitive.LongLists;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 import org.junit.jupiter.api.Test;
 
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ThreadLocalRandom;
+
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.DateValue;
+import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueCategory;
 import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.Values;
 
+import static java.lang.Math.toIntExact;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.neo4j.graphdb.Label.label;
@@ -63,12 +72,19 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     private static long[] nodesOfAllPropertyTypes;
     private static long whateverPoint;
 
+    private static final PointValue POINT_1 =
+            PointValue.parse( "{latitude: 40.7128, longitude: -74.0060, crs: 'wgs-84'}" );
+    private static final PointValue POINT_2 =
+            PointValue.parse( "{latitude: 40.7128, longitude: -74.006000001, crs: 'wgs-84'}" );
+
     @Override
     public void createTestGraph( GraphDatabaseService graphDb )
     {
         try ( Transaction tx = graphDb.beginTx() )
         {
             graphDb.schema().indexFor( label( "Node" ) ).on( "prop" ).create();
+            graphDb.schema().indexFor( label( "Node" ) ).on( "prop2" ).create();
+            graphDb.schema().indexFor( label( "Node" ) ).on( "prop3" ).create();
             tx.success();
         }
         try ( Transaction tx = graphDb.beginTx() )
@@ -146,6 +162,12 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
             listOfIds.add(nodeWithWhatever( graphDb, new String[]{"first", "second", "third"} ));
 
             nodesOfAllPropertyTypes = listOfIds.toArray();
+
+            assertSameDerivedValue( POINT_1, POINT_2 );
+            nodeWithProp( graphDb, "prop3", POINT_1.asObjectCopy() );
+            nodeWithProp( graphDb, "prop3", POINT_2.asObjectCopy() );
+            nodeWithProp( graphDb, "prop3", POINT_2.asObjectCopy() );
+
             tx.success();
         }
     }
@@ -178,6 +200,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     {
         return true;
     }
+    protected abstract void assertSameDerivedValue( PointValue p1, PointValue p2 );
 
     protected boolean indexProvidesSpatialValues()
     {
@@ -770,7 +793,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     @Test
     void shouldProvideValuesForPoints() throws Exception
     {
-        // give
+        // given
         assumeTrue( indexProvidesAllValues() );
 
         int label = token.nodeLabel( "What" );
@@ -1430,10 +1453,100 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         }
     }
 
+    @Test
+    public void shouldCountDistinctValues() throws Exception
+    {
+        // Given
+        int label = token.nodeLabel( "Node" );
+        int key = token.propertyKey( "prop2" );
+        IndexReference index = schemaRead.index( label, key );
+        int expectedCount = 100;
+        Map<Value,Set<Long>> expected = new HashMap<>();
+        try ( org.neo4j.internal.kernel.api.Transaction tx = beginTransaction() )
+        {
+            Write write = tx.dataWrite();
+            ThreadLocalRandom random = ThreadLocalRandom.current();
+            for ( int i = 0; i < expectedCount; i++ )
+            {
+                Object value = random.nextBoolean() ? String.valueOf( i % 10 ) : (i % 10);
+                long nodeId = write.nodeCreate();
+                write.nodeAddLabel( nodeId, label );
+                write.nodeSetProperty( nodeId, key, Values.of( value ) );
+                expected.computeIfAbsent( Values.of( value ), v -> new HashSet<>() ).add( nodeId );
+            }
+            tx.success();
+        }
+
+        // then
+        try ( org.neo4j.internal.kernel.api.Transaction tx = beginTransaction();
+                NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
+        {
+            tx.dataRead().nodeIndexDistinctValues( index, node, true );
+            long totalCount = 0;
+            boolean hasValues = true;
+            while ( node.next() )
+            {
+                long count = node.nodeReference();
+                if ( node.hasValue() && node.propertyValue( 0 ) != null )
+                {
+                    Value value = node.propertyValue( 0 );
+                    Set<Long> expectedNodes = expected.remove( value );
+                    assertNotNull( expectedNodes );
+                    assertEquals( count, expectedNodes.size() );
+                }
+                else
+                {
+                    // Some providers just can't serve the values for all types, which makes this test unable to do detailed checks for those values
+                    // and the total count
+                    hasValues = false;
+                }
+                totalCount += count;
+            }
+            if ( hasValues )
+            {
+                assertTrue( expected.isEmpty(), expected.toString() );
+            }
+            assertEquals( expectedCount, totalCount );
+        }
+    }
+
+    @Test
+    public void shouldCountDistinctButSimilarPointValues() throws Exception
+    {
+        // given
+        int label = token.nodeLabel( "Node" );
+        int key = token.propertyKey( "prop3" );
+        IndexReference index = schemaRead.index( label, key );
+
+        // when
+        Map<Value,Integer> expected = new HashMap<>();
+        expected.put( POINT_1, 1 );
+        expected.put( POINT_2, 2 );
+        try ( org.neo4j.internal.kernel.api.Transaction tx = beginTransaction();
+                NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
+        {
+            tx.dataRead().nodeIndexDistinctValues( index, node, true );
+
+            // then
+            while ( node.next() )
+            {
+                assertTrue( node.hasValue() );
+                assertTrue( expected.containsKey( node.propertyValue( 0 ) ) );
+                assertEquals( expected.remove( node.propertyValue( 0 ) ).intValue(), toIntExact( node.nodeReference() ) );
+            }
+            assertTrue( expected.isEmpty() );
+        }
+    }
+
     private long nodeWithProp( GraphDatabaseService graphDb, Object value )
     {
+        return nodeWithProp( graphDb, "prop", value );
+    }
+
+    private long nodeWithProp( GraphDatabaseService graphDb, String key, Object value )
+    {
         Node node = graphDb.createNode( label( "Node" ) );
-        node.setProperty( "prop", value );
+        node.setProperty( key, value );
         return node.getId();
     }
 

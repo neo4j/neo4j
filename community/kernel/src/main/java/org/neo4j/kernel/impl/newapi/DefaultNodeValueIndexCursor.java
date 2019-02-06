@@ -28,7 +28,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 
-import org.neo4j.graphdb.Resource;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.NodeCursor;
@@ -85,7 +84,7 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
                             boolean needsValues,
                             boolean indexIncludesTransactionState )
     {
-        assert query != null && query.length > 0;
+        assert query != null;
         super.initialize( progressor );
         sortedMergeJoin.initialize( indexOrder );
 
@@ -93,7 +92,7 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
         this.needsValues = needsValues;
         this.query = query;
 
-        if ( !indexIncludesTransactionState && read.hasTxStateWithChanges() )
+        if ( !indexIncludesTransactionState && read.hasTxStateWithChanges() && query.length > 0 )
         {
             IndexQuery firstPredicate = query[0];
             switch ( firstPredicate.type() )

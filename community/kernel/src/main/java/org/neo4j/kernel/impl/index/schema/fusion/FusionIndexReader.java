@@ -31,6 +31,7 @@ import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.IndexSampler;
 import org.neo4j.kernel.impl.api.schema.BridgingIndexProgressor;
+import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
 import org.neo4j.values.storable.Value;
 
@@ -117,6 +118,14 @@ class FusionIndexReader extends FusionIndexBase<IndexReader> implements IndexRea
         {
             return (IndexNotApplicableKernelException) super.getCause();
         }
+    }
+
+    @Override
+    public void distinctValues( IndexProgressor.EntityValueClient cursor, NodePropertyAccessor propertyAccessor, boolean needsValues )
+    {
+        BridgingIndexProgressor multiProgressor = new BridgingIndexProgressor( cursor, descriptor.schema().getPropertyIds() );
+        cursor.initialize( descriptor, multiProgressor, new IndexQuery[0], IndexOrder.NONE, needsValues, false );
+        instanceSelector.forAll( reader -> reader.distinctValues( multiProgressor, propertyAccessor, needsValues ) );
     }
 
     @Override
