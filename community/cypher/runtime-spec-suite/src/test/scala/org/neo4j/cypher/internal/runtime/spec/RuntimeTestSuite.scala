@@ -73,7 +73,7 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
   }
 
   override def test(testName: String, testTags: Tag*)(testFun: => Unit): Unit = {
-    super.test(s"[${runtime.name}] $testName", testTags:_*)(testFun)
+    super.test(testName, Tag(runtime.name)+:testTags:_*)(testFun)
   }
 
   // HELPERS
@@ -199,7 +199,6 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
         val b = nodes((i+1)%nNodes)
         rels += a.createRelationshipTo(b, rType)
       }
-      rels += nodes.last.createRelationshipTo(nodes.head, rType)
     }
     (nodes, rels)
   }
@@ -280,10 +279,10 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
 
   class RuntimeResultMatcher(expectedColumns: Seq[String]) extends Matcher[RuntimeResult] {
 
-    val expectedRows = new ArrayBuffer[Array[AnyValue]]
-    var maybeResultMatcher: Option[Matcher[Seq[Array[AnyValue]]]] = None
-    var maybeStatisticts: Option[QueryStatistics] = None
-    var expectResultsInOrder = false
+    private val expectedRows = new ArrayBuffer[Array[AnyValue]]
+    private var maybeResultMatcher: Option[Matcher[Seq[Array[AnyValue]]]] = None
+    private var maybeStatisticts: Option[QueryStatistics] = None
+    private var expectResultsInOrder = false
 
     def withRow(values: Any*): RuntimeResultMatcher = {
       rowModifier()
@@ -372,6 +371,9 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
 
     private def pretty(a: ArrayBuffer[Array[AnyValue]]): String = {
       val sb = new StringBuilder
+      if (a.isEmpty)
+        sb ++= "<NO ROWS>"
+
       for (row <- a)
         sb ++= row.map(value => value.toString).mkString("", ", ", "\n")
       sb.result()

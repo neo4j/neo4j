@@ -195,6 +195,12 @@ class LogicalQueryBuilder(tokenResolver: TokenResolver)
     appendAtCurrentIndent(UnaryOperator(source => Expand(source, p.from, p.dir, p.relTypes, p.to, p.relName, ExpandAll)))
   }
 
+  def sort(sortItems: ColumnOrder*): LogicalQueryBuilder =
+    appendAtCurrentIndent(UnaryOperator(source => Sort(source, sortItems)))
+
+  def argument(): LogicalQueryBuilder =
+    appendAtCurrentIndent(LeafOperator(Argument()))
+
   def input(variables: String*): LogicalQueryBuilder = {
     if (indent != 0)
       throw new IllegalStateException("The input operator has to be the left-most leaf of the plan")
