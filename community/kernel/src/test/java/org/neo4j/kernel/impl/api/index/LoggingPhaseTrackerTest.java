@@ -27,19 +27,21 @@ import java.util.concurrent.TimeUnit;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLog;
+import org.neo4j.time.FakeClock;
 
-import static java.lang.Thread.sleep;
-import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.neo4j.kernel.impl.api.index.LoggingPhaseTracker.PERIOD_INTERVAL;
 
 public class LoggingPhaseTrackerTest
 {
+    private FakeClock clock = new FakeClock();
+
     @Test
-    public void shouldLogSingleTime() throws InterruptedException
+    public void shouldLogSingleTime()
     {
         LoggingPhaseTracker phaseTracker = getPhaseTracker();
 
@@ -53,8 +55,8 @@ public class LoggingPhaseTrackerTest
             LoggingPhaseTracker.Logger logger = times.get( phase );
             if ( phase == PhaseTracker.Phase.SCAN )
             {
-                assertTrue( logger.totalTime >= TimeUnit.MILLISECONDS.toNanos( 100 ) );
-                assertTrue( logger.totalTime < TimeUnit.MILLISECONDS.toNanos( 500 ) );
+                assertTrue( logger.totalTime >= 100 );
+                assertTrue( logger.totalTime < 500 );
             }
             else
             {
@@ -64,7 +66,7 @@ public class LoggingPhaseTrackerTest
     }
 
     @Test
-    public void shouldLogMultipleTimes() throws InterruptedException
+    public void shouldLogMultipleTimes()
     {
         LoggingPhaseTracker phaseTracker = getPhaseTracker();
 
@@ -81,8 +83,8 @@ public class LoggingPhaseTrackerTest
             if ( phase == PhaseTracker.Phase.SCAN ||
                     phase == PhaseTracker.Phase.WRITE )
             {
-                assertTrue( logger.totalTime >= TimeUnit.MILLISECONDS.toNanos( 100 ) );
-                assertTrue( logger.totalTime < TimeUnit.MILLISECONDS.toNanos( 500 ) );
+                assertTrue( logger.totalTime >= 100 );
+                assertTrue( logger.totalTime < 500 );
             }
             else
             {
@@ -92,7 +94,7 @@ public class LoggingPhaseTrackerTest
     }
 
     @Test
-    public void shouldAccumulateTimes() throws InterruptedException
+    public void shouldAccumulateTimes()
     {
         LoggingPhaseTracker phaseTracker = getPhaseTracker();
 
@@ -125,7 +127,7 @@ public class LoggingPhaseTrackerTest
     }
 
     @Test
-    public void mustReportMain() throws InterruptedException
+    public void mustReportMain()
     {
         // given
         AssertableLogProvider logProvider = new AssertableLogProvider( true );
@@ -142,23 +144,17 @@ public class LoggingPhaseTrackerTest
         phaseTracker.stop();
 
         // then
-        //noinspection unchecked
-        logProvider.assertContainsMessageMatching( allOf(
-                containsString( "TIME/PHASE" ),
-                containsString( "Final: " ),
-                containsString( "SCAN" ),
-                containsString( "WRITE" ),
-                containsString( "FLIP" ),
-                containsString( "totalTime=" ),
-                containsString( "avgTime=" ),
-                containsString( "minTime=" ),
-                containsString( "maxTime=" ),
-                containsString( "nbrOfReports=" )
-        ) );
+        AssertableLogProvider.LogMatcher logMatcher = AssertableLogProvider.
+                inLog( IndexPopulationJob.class )
+                .info( "TIME/PHASE Final: " +
+                        "SCAN[totalTime=100ms, avgTime=100ms, minTime=0ns, maxTime=100ms, nbrOfReports=1], " +
+                        "WRITE[totalTime=100ms, avgTime=100ms, minTime=0ns, maxTime=100ms, nbrOfReports=1], " +
+                        "FLIP[totalTime=100ms, avgTime=100ms, minTime=0ns, maxTime=100ms, nbrOfReports=1]" );
+        logProvider.assertAtLeastOnce( logMatcher );
     }
 
     @Test
-    public void mustReportPeriod() throws InterruptedException
+    public void mustReportPeriod()
     {
         // given
         AssertableLogProvider logProvider = new AssertableLogProvider( true );
@@ -171,19 +167,17 @@ public class LoggingPhaseTrackerTest
         phaseTracker.enterPhase( PhaseTracker.Phase.WRITE );
 
         // then
-        //noinspection unchecked
-        logProvider.assertContainsMessageMatching( allOf(
-                containsString( "TIME/PHASE" ),
-                containsString( "Total:" ),
-                containsString( "SCAN" ),
-                containsString( "WRITE" ),
-                containsString( "FLIP" ),
-                containsString( "totalTime=" ),
-                containsString( "avgTime=" ),
-                containsString( "minTime=" ),
-                containsString( "maxTime=" ),
-                containsString( "nbrOfReports=" )
-        ) );
+        AssertableLogProvider.LogMatcher logMatcher = AssertableLogProvider.
+                inLog( IndexPopulationJob.class )
+                .debug( "TIME/PHASE Total: " +
+                        "SCAN[totalTime=1s, avgTime=1s, minTime=0ns, maxTime=1s, nbrOfReports=1], " +
+                        "WRITE[nbrOfReports=0], " +
+                        "FLIP[nbrOfReports=0], " +
+                        "Last 1 sec: " +
+                        "SCAN[totalTime=1s, avgTime=1s, minTime=1s, maxTime=1s, nbrOfReports=1], " +
+                        "WRITE[nbrOfReports=0], " +
+                        "FLIP[nbrOfReports=0]" );
+        logProvider.assertAtLeastOnce( logMatcher );
     }
 
     private LoggingPhaseTracker getPhaseTracker()
@@ -193,11 +187,16 @@ public class LoggingPhaseTrackerTest
 
     private LoggingPhaseTracker getPhaseTracker( Log log )
     {
-        return new LoggingPhaseTracker( log );
+        return getPhaseTracker( PERIOD_INTERVAL, log );
     }
 
-    private PhaseTracker getPhaseTracker( int periodIntervalInSeconds, Log log )
+    private LoggingPhaseTracker getPhaseTracker( int periodIntervalInSeconds, Log log )
     {
-        return new LoggingPhaseTracker( periodIntervalInSeconds, log );
+        return new LoggingPhaseTracker( periodIntervalInSeconds, log, clock );
+    }
+
+    private void sleep( int i )
+    {
+        clock.forward( i, TimeUnit.MILLISECONDS );
     }
 }

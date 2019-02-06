@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import java.time.Clock;
 import java.util.EnumMap;
 import java.util.StringJoiner;
 import java.util.concurrent.TimeUnit;
@@ -26,14 +27,16 @@ import java.util.concurrent.TimeUnit;
 import org.neo4j.helpers.TimeUtil;
 import org.neo4j.logging.Log;
 import org.neo4j.util.FeatureToggles;
+import org.neo4j.util.VisibleForTesting;
 
 public class LoggingPhaseTracker implements PhaseTracker
 {
-    private static final int PERIOD_INTERVAL = FeatureToggles.getInteger( LoggingPhaseTracker.class, "period_interval", 600 );
     private static final String MESSAGE_PREFIX = "TIME/PHASE ";
+    static final int PERIOD_INTERVAL = FeatureToggles.getInteger( LoggingPhaseTracker.class, "period_interval", 600 );
 
-    private final long periodIntervalInSeconds;
+    private final long periodInterval;
     private final Log log;
+    private final Clock clock;
 
     private EnumMap<Phase,Logger> times = new EnumMap<>( Phase.class );
     private Phase currentPhase;
@@ -43,13 +46,15 @@ public class LoggingPhaseTracker implements PhaseTracker
 
     LoggingPhaseTracker( Log log )
     {
-        this( PERIOD_INTERVAL, log );
+        this( PERIOD_INTERVAL, log, Clock.systemUTC() );
     }
 
-    LoggingPhaseTracker( long periodIntervalInSeconds, Log log )
+    @VisibleForTesting
+    LoggingPhaseTracker( long periodIntervalInSeconds, Log log, Clock clock )
     {
-        this.periodIntervalInSeconds = periodIntervalInSeconds;
+        this.periodInterval = TimeUnit.SECONDS.toMillis( periodIntervalInSeconds );
         this.log = log;
+        this.clock = clock;
         for ( Phase phase : Phase.values() )
         {
             times.put( phase, new Logger( phase ) );
@@ -74,11 +79,11 @@ public class LoggingPhaseTracker implements PhaseTracker
                 lastPeriodReport = now;
             }
 
-            long secondsSinceLastPeriodReport = TimeUnit.NANOSECONDS.toSeconds( now - lastPeriodReport );
-            if ( secondsSinceLastPeriodReport >= periodIntervalInSeconds )
+            long millisSinceLastPeriodReport = now - lastPeriodReport;
+            if ( millisSinceLastPeriodReport >= periodInterval )
             {
                 // Report period
-                periodReport( secondsSinceLastPeriodReport );
+                periodReport( millisSinceLastPeriodReport );
                 lastPeriodReport = now;
             }
         }
@@ -103,9 +108,9 @@ public class LoggingPhaseTracker implements PhaseTracker
         log.info( MESSAGE_PREFIX + mainReportString( "Final" ) );
     }
 
-    private void periodReport( long secondsSinceLastPeriodReport )
+    private void periodReport( long millisSinceLastPerioReport )
     {
-        String periodReportString = periodReportString( secondsSinceLastPeriodReport );
+        String periodReportString = periodReportString( millisSinceLastPerioReport );
         String mainReportString = mainReportString( "Total" );
         log.debug( MESSAGE_PREFIX + mainReportString + ", " + periodReportString );
     }
@@ -117,8 +122,9 @@ public class LoggingPhaseTracker implements PhaseTracker
         return joiner.toString();
     }
 
-    private String periodReportString( long secondsSinceLastPeriodReport )
+    private String periodReportString( long millisSinceLastPeriodReport )
     {
+        long secondsSinceLastPeriodReport = TimeUnit.MILLISECONDS.toSeconds( millisSinceLastPeriodReport );
         StringJoiner joiner = new StringJoiner( ", ", "Last " + secondsSinceLastPeriodReport + " sec: ", "" );
         times.values().forEach( logger ->
         {
@@ -130,12 +136,12 @@ public class LoggingPhaseTracker implements PhaseTracker
 
     private long logCurrentTime()
     {
-        long now = System.nanoTime();
+        long now = clock.millis();
         if ( currentPhase != null )
         {
             Logger logger = times.get( currentPhase );
-            long nanoTime = now - timeEnterPhase;
-            logger.log( nanoTime );
+            long timeMillis = now - timeEnterPhase;
+            logger.log( timeMillis );
         }
         return now;
     }
@@ -151,10 +157,10 @@ public class LoggingPhaseTracker implements PhaseTracker
             periodCounter.reset();
         }
 
-        void log( long nanoTime )
+        void log( long timeMillis )
         {
-            super.log( nanoTime );
-            periodCounter.log( nanoTime );
+            super.log( timeMillis );
+            periodCounter.log( timeMillis );
         }
 
         Counter period()
@@ -176,12 +182,12 @@ public class LoggingPhaseTracker implements PhaseTracker
             this.phase = phase;
         }
 
-        void log( long nanoTime )
+        void log( long timeMillis )
         {
-            totalTime += nanoTime;
+            totalTime += timeMillis;
             nbrOfReports++;
-            maxTime = Math.max( maxTime, nanoTime );
-            minTime = Math.min( minTime, nanoTime );
+            maxTime = Math.max( maxTime, timeMillis );
+            minTime = Math.min( minTime, timeMillis );
         }
 
         void reset()
@@ -217,8 +223,8 @@ public class LoggingPhaseTracker implements PhaseTracker
             String measurementString;
             if ( isTime )
             {
-                long timeRoundedToMillis = TimeUnit.MILLISECONDS.toNanos( TimeUnit.NANOSECONDS.toMillis( measurement ) );
-                measurementString = TimeUtil.nanosToString( timeRoundedToMillis );
+                long timeInNanos = TimeUnit.MILLISECONDS.toNanos( measurement );
+                measurementString = TimeUtil.nanosToString( timeInNanos );
             }
             else
             {
