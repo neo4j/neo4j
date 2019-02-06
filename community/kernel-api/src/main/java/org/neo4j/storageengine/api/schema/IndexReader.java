@@ -74,7 +74,7 @@ public interface IndexReader extends Resource
      * is used because it has a perfect method signature, even if the {@code reference} argument will instead be used
      * as number of index entries for the specific indexed value.
      *
-     * {@link IndexProgressor.NodeValueClient#needsValues()} decides whether or not values will be materialized and given to the client.
+     * {@code needsValues} decides whether or not values will be materialized and given to the client.
      * The use-case for setting this to {@code false} is to have a more efficient counting of distinct values in an index,
      * regardless of the actual values.
      * @param client {@link IndexProgressor.NodeValueClient} to get initialized with this progression.
