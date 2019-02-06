@@ -62,7 +62,7 @@ class SearchEnvelope
         }
     }
 
-    SearchEnvelope quadrant( int[] quadNbrs )
+    SearchEnvelope quadrant( int quadNbrs )
     {
         long[] newMin = new long[nbrDim];
         long[] newMax = new long[nbrDim];
@@ -70,8 +70,9 @@ class SearchEnvelope
         for ( int dim = 0; dim < nbrDim; dim++ )
         {
             long extent = (max[dim] - min[dim]) / 2;
-            newMin[dim] = this.min[dim] + quadNbrs[dim] * extent;
-            newMax[dim] = this.min[dim] + (quadNbrs[dim] + 1) * extent;
+            int v = (quadNbrs >> nbrDim - dim - 1) & 1;
+            newMin[dim] = this.min[dim] + v * extent;
+            newMax[dim] = this.min[dim] + (v + 1) * extent;
         }
         return new SearchEnvelope( newMin, newMax );
     }
