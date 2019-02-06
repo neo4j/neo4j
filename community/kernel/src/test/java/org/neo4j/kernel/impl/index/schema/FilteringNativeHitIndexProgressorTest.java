@@ -72,7 +72,7 @@ public class FilteringNativeHitIndexProgressorTest
         try ( FilteringNativeHitIndexProgressor<StringIndexKey,NativeIndexValue> progressor = new FilteringNativeHitIndexProgressor<>( cursor, valueClient,
                 predicates ) )
         {
-            valueClient.initialize( TestIndexDescriptorFactory.forLabel( 0, 0 ), progressor, predicates, IndexOrder.NONE, valueClient.needsValues(), false );
+            valueClient.initialize( TestIndexDescriptorFactory.forLabel( 0, 0 ), progressor, predicates, IndexOrder.NONE, true, false );
             List<Long> result = new ArrayList<>();
 
             // when

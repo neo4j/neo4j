@@ -144,7 +144,7 @@ public class SpatialIndexPartReader<VALUE extends NativeIndexValue> extends Nati
                             }
                         }
                     };
-            client.initialize( descriptor, progressor, new IndexQuery[0], IndexOrder.NONE, needsValues, false );
+            client.initialize( descriptor, progressor, new IndexQuery[0], IndexOrder.NONE, false, false );
         }
         catch ( IOException e )
         {
