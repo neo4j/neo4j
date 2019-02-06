@@ -229,10 +229,10 @@ public class SimpleIndexReader extends AbstractIndexReader
                         termsIterator = NumericUtils.filterPrefixCodedLongs( termsIterator );
                     }
                     multiProgressor.initialize( descriptor, new LuceneDistinctValuesProgressor( termsIterator, client, valueMaterializer ), noQueries,
-                            IndexOrder.NONE, client.needsValues() );
+                            IndexOrder.NONE, needsValues );
                 }
             }
-            client.initialize( descriptor, multiProgressor, noQueries, IndexOrder.NONE, client.needsValues() );
+            client.initialize( descriptor, multiProgressor, noQueries, IndexOrder.NONE, needsValues );
         }
         catch ( IOException e )
         {

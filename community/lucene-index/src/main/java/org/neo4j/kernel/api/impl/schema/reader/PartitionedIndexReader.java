@@ -120,7 +120,7 @@ public class PartitionedIndexReader extends AbstractIndexReader
     {
         BridgingIndexProgressor bridgingIndexProgressor = new BridgingIndexProgressor( client, descriptor.schema().getPropertyIds() );
         indexReaders.parallelStream().forEach( reader -> reader.distinctValues( bridgingIndexProgressor, propertyAccessor, needsValues ) );
-        client.initialize( descriptor, bridgingIndexProgressor, new IndexQuery[0], IndexOrder.NONE, client.needsValues() );
+        client.initialize( descriptor, bridgingIndexProgressor, new IndexQuery[0], IndexOrder.NONE, needsValues );
     }
 
     private PrimitiveLongResourceIterator innerQuery( IndexReader reader, IndexQuery[] predicates )
