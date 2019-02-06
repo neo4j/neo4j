@@ -517,10 +517,11 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
         }
         else
         {
+            // We need to auto-index even if not actually changing the value.
+            autoIndexing.nodes().propertyChanged( this, node, propertyKey, existingValue, value );
             if ( propertyHasChanged( value, existingValue ) )
             {
                 //the value has changed to a new value
-                autoIndexing.nodes().propertyChanged( this, node, propertyKey, existingValue, value );
                 ktx.txState().nodeDoChangeProperty( node, propertyKey, existingValue, value );
                 updater.onPropertyChange( nodeCursor, propertyCursor, propertyKey, existingValue, value );
             }
