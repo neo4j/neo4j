@@ -25,7 +25,12 @@ public class RelationshipTypeTokenRecordFormat extends TokenRecordFormat<Relatio
 {
     public RelationshipTypeTokenRecordFormat()
     {
-        super( BASE_RECORD_SIZE, StandardFormatSettings.RELATIONSHIP_TYPE_TOKEN_MAXIMUM_ID_BITS );
+        this( StandardFormatSettings.RELATIONSHIP_TYPE_TOKEN_MAXIMUM_ID_BITS );
+    }
+
+    public RelationshipTypeTokenRecordFormat( int maxIdBits )
+    {
+        super( BASE_RECORD_SIZE, maxIdBits );
     }
 
     @Override
