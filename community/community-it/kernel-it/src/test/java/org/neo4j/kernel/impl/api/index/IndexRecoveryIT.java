@@ -297,52 +297,6 @@ class IndexRecoveryIT
         verify( mockedIndexProvider, times( 2 ) ).getPopulator( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ) );
     }
 
-    @Test
-    void mustRecoverEvenWhenTokenChangessAreIncompletelyFlushed() throws Exception
-    {
-        // Given
-        IndexPopulator indexPopulator = mock( IndexPopulator.class );
-        when( mockedIndexProvider.getPopulator( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ) ) )
-                .thenReturn( indexPopulator );
-        IndexAccessor indexAccessor = mock( IndexAccessor.class );
-        when( mockedIndexProvider.getOnlineAccessor( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ) ) )
-                .thenReturn( indexAccessor );
-        startDb();
-
-        int indexCount = 100;
-        int indexesCreated = 0;
-        int midPoint = indexCount / 2;
-        Future<Void> killFuture = null;
-        for ( int i = 0; i < indexCount; i++ )
-        {
-            if ( i == midPoint )
-            {
-                killFuture = killDbInSeparateThread();
-            }
-            try
-            {
-                createIndex( Label.label( "LBL" + i ) );
-                try ( Transaction tx = db.beginTx() )
-                {
-                    db.createNode().setProperty( "PRP" + i, i );
-                    tx.success();
-                }
-                indexesCreated++;
-            }
-            catch ( DatabaseShutdownException e )
-            {
-                // We just observed that the database has been killed. This is perfectly fine to ignore.
-            }
-        }
-        assert killFuture != null;
-        killFuture.get();
-        when( mockedIndexProvider.getInitialState( any( StoreIndexDescriptor.class ) ) ).thenReturn( InternalIndexState.POPULATING );
-
-        startDb();
-
-        assertThat( getIndexes( db ), inTx( db, hasSize( indexesCreated ) ) );
-    }
-
     private void startDb()
     {
         if ( db != null )
