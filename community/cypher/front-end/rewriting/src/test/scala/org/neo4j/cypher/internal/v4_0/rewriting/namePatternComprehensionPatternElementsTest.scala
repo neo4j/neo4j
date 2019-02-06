@@ -21,7 +21,6 @@ import org.neo4j.cypher.internal.v4_0.expressions._
 import org.neo4j.cypher.internal.v4_0.rewriting.rewriters.namePatternComprehensionPatternElements
 import org.neo4j.cypher.internal.v4_0.util.ASTNode
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.v4_0.expressions.{NodePattern, RelationshipChain, RelationshipPattern, RelationshipsPattern}
 
 class namePatternComprehensionPatternElementsTest extends CypherFunSuite with AstConstructionTestSupport {
 

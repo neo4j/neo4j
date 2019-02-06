@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.v4_0.ast._
 import org.neo4j.cypher.internal.v4_0.ast.semantics.{SemanticCheckResult, SemanticState}
 import org.neo4j.cypher.internal.v4_0.util.symbols._
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.v4_0.expressions.{Namespace, Parameter, ProcedureName, ProcedureOutput}
+import org.neo4j.cypher.internal.v4_0.expressions.{Namespace, ProcedureName, ProcedureOutput}
 import org.neo4j.cypher.internal.v4_0.logical.plans._
 
 class CallClauseTest extends CypherFunSuite with AstConstructionTestSupport {
@@ -39,7 +39,7 @@ class CallClauseTest extends CypherFunSuite with AstConstructionTestSupport {
     val signatureOutputs = Some(IndexedSeq(FieldSignature("x", CTInteger), FieldSignature("y", CTList(CTNode))))
     val signature = ProcedureSignature(qualifiedName, signatureInputs, signatureOutputs, None,
                                        ProcedureReadOnlyAccess(Array.empty), id = ID)
-    val callArguments = IndexedSeq(Parameter("a", CTAny)(pos))
+    val callArguments = IndexedSeq(parameter("a", CTAny))
     val callResults = IndexedSeq(ProcedureResultItem(varFor("x"))(pos), ProcedureResultItem(varFor("y"))(pos))
 
     val resolved = ResolvedCall(_ => signature)(unresolved)
@@ -65,7 +65,7 @@ class CallClauseTest extends CypherFunSuite with AstConstructionTestSupport {
     val signatureOutputs = None
     val signature = ProcedureSignature(qualifiedName, signatureInputs, signatureOutputs, None,
                                        ProcedureReadOnlyAccess(Array.empty), id = ID)
-    val callArguments = Seq(Parameter("a", CTAny)(pos))
+    val callArguments = Seq(parameter("a", CTAny))
     val callResults = IndexedSeq.empty
 
     val resolved = ResolvedCall(_ => signature)(unresolved)
@@ -90,7 +90,7 @@ class CallClauseTest extends CypherFunSuite with AstConstructionTestSupport {
     val signatureOutputs = Some(IndexedSeq(FieldSignature("x", CTInteger), FieldSignature("y", CTList(CTNode))))
     val signature = ProcedureSignature(qualifiedName, signatureInputs, signatureOutputs, None,
                                        ProcedureReadOnlyAccess(Array.empty), id = ID)
-    val callArguments = Seq(Parameter("a", CTAny)(pos))
+    val callArguments = Seq(parameter("a", CTAny))
     val callResults = IndexedSeq(ProcedureResultItem(varFor("x"))(pos), ProcedureResultItem(varFor("y"))(pos))
     val unresolved = UnresolvedCall(ns, name, None, Some(ProcedureResult(callResults)(pos)))(pos)
 
@@ -116,7 +116,7 @@ class CallClauseTest extends CypherFunSuite with AstConstructionTestSupport {
     val signatureOutputs = Some(IndexedSeq(FieldSignature("x", CTInteger), FieldSignature("y", CTList(CTNode))))
     val signature = ProcedureSignature(qualifiedName, signatureInputs, signatureOutputs, None,
                                        ProcedureReadOnlyAccess(Array.empty), id = ID)
-    val callArguments = Seq(Parameter("a", CTAny)(pos))
+    val callArguments = Seq(parameter("a", CTAny))
     val callResults = IndexedSeq(ProcedureResultItem(varFor("x"))(pos), ProcedureResultItem(varFor("y"))(pos))
     val unresolved = UnresolvedCall(ns, name, Some(callArguments), None)(pos)
 
@@ -142,7 +142,7 @@ class CallClauseTest extends CypherFunSuite with AstConstructionTestSupport {
     val signatureOutputs = None
     val signature = ProcedureSignature(qualifiedName, signatureInputs, signatureOutputs, None,
                                        ProcedureReadOnlyAccess(Array.empty), id = ID)
-    val callArguments = Seq(Parameter("a", CTAny)(pos))
+    val callArguments = Seq(parameter("a", CTAny))
     val callResults = IndexedSeq.empty
     val unresolved = UnresolvedCall(ns, name, Some(callArguments), None)(pos)
 
@@ -168,7 +168,7 @@ class CallClauseTest extends CypherFunSuite with AstConstructionTestSupport {
     val signatureOutputs = Some(IndexedSeq(FieldSignature("x", CTInteger), FieldSignature("y", CTList(CTNode))))
     val signature = ProcedureSignature(qualifiedName, signatureInputs, signatureOutputs, None,
                                        ProcedureReadOnlyAccess(Array.empty), id = ID)
-    val callArguments = Seq(Parameter("a", CTAny)(pos))
+    val callArguments = Seq(parameter("a", CTAny))
     val callResults = IndexedSeq(
       ProcedureResultItem(varFor("x"))(pos),
       ProcedureResultItem(ProcedureOutput("y")(pos), varFor("z"))(pos)
@@ -204,7 +204,7 @@ class CallClauseTest extends CypherFunSuite with AstConstructionTestSupport {
     val signatureOutputs = Some(IndexedSeq(FieldSignature("x", CTInteger), FieldSignature("y", CTList(CTNode))))
     val signature = ProcedureSignature(qualifiedName, signatureInputs, signatureOutputs, None,
                                        ProcedureReadOnlyAccess(Array.empty), id = ID)
-    val callArguments = Seq(Parameter("a", CTAny)(pos))
+    val callArguments = Seq(parameter("a", CTAny))
     val callResults = IndexedSeq(
       ProcedureResultItem(varFor("x"))(pos),
       ProcedureResultItem(ProcedureOutput("y")(pos), varFor("z"))(pos)
@@ -217,7 +217,7 @@ class CallClauseTest extends CypherFunSuite with AstConstructionTestSupport {
     coerced should equal(
       ResolvedCall(
         signature,
-        Seq(coerceTo(Parameter("a", CTAny)(pos), CTInteger)),
+        Seq(coerceTo(parameter("a", CTAny), CTInteger)),
         callResults,
         declaredArguments = true,
         declaredResults = true
@@ -254,7 +254,7 @@ class CallClauseTest extends CypherFunSuite with AstConstructionTestSupport {
     val signatureOutputs = Some(IndexedSeq(FieldSignature("x", CTInteger), FieldSignature("y", CTList(CTNode))))
     val signature = ProcedureSignature(qualifiedName, signatureInputs, signatureOutputs, None,
                                        ProcedureReadOnlyAccess(Array.empty), id = ID)
-    val callArguments = Seq(Parameter("a", CTAny)(pos))
+    val callArguments = Seq(parameter("a", CTAny))
     val callResults = IndexedSeq(
       ProcedureResultItem(varFor("x"))(pos),
       ProcedureResultItem(ProcedureOutput("y")(pos), varFor("x"))(pos)
@@ -272,7 +272,7 @@ class CallClauseTest extends CypherFunSuite with AstConstructionTestSupport {
     val signatureOutputs = Some(IndexedSeq(FieldSignature("x", CTInteger), FieldSignature("y", CTList(CTNode))))
     val signature = ProcedureSignature(qualifiedName, signatureInputs, signatureOutputs, None,
                                        ProcedureReadOnlyAccess(Array.empty), id = ID)
-    val callArguments = Seq(Parameter("a", CTAny)(pos))
+    val callArguments = Seq(parameter("a", CTAny))
     val callResults = IndexedSeq(
       ProcedureResultItem(varFor("x"))(pos),
       ProcedureResultItem(ProcedureOutput("p")(pos), varFor("y"))(pos)

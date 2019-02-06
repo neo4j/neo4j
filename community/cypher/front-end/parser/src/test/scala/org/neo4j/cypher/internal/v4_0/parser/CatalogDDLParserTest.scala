@@ -16,19 +16,18 @@
  */
 package org.neo4j.cypher.internal.v4_0.parser
 
-import org.neo4j.cypher.internal.v4_0.ast.{AstConstructionTestSupport, CatalogName, ReturnGraph}
+import org.neo4j.cypher.internal.v4_0.ast
+import org.neo4j.cypher.internal.v4_0.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.v4_0.util.symbols._
-import org.neo4j.cypher.internal.v4_0.{ast, expressions => exp}
 import org.parboiled.scala.Rule1
 
 class CatalogDDLParserTest
   extends ParserAstTest[ast.Statement] with Statement with AstConstructionTestSupport {
 
-
   implicit val parser: Rule1[ast.Statement] = Statement
 
   private val singleQuery = ast.SingleQuery(Seq(ast.ConstructGraph()(pos)))(pos)
-  private val returnGraph: ReturnGraph = ast.ReturnGraph(None)(pos)
+  private val returnGraph: ast.ReturnGraph = ast.ReturnGraph(None)(pos)
   private val returnQuery = ast.SingleQuery(Seq(returnGraph))(pos)
 
   test("CATALOG CREATE GRAPH foo.bar { RETURN GRAPH }") {
@@ -73,28 +72,28 @@ class CatalogDDLParserTest
 
   test("CATALOG CREATE GRAPH `foo.bar.baz.baz` { CONSTRUCT }"){
     yields(ast.CreateGraph(
-      new CatalogName(List("foo.bar.baz.baz")),
+      new ast.CatalogName(List("foo.bar.baz.baz")),
       singleQuery
     ))
   }
 
   test("CATALOG CREATE GRAPH `foo.bar`.baz { CONSTRUCT }"){
     yields(ast.CreateGraph(
-      new CatalogName(List("foo.bar", "baz")),
+      new ast.CatalogName(List("foo.bar", "baz")),
       singleQuery
     ))
   }
 
   test("CATALOG CREATE GRAPH foo.`bar.baz` { CONSTRUCT }"){
     yields(ast.CreateGraph(
-      new CatalogName(List("foo", "bar.baz")),
+      new ast.CatalogName(List("foo", "bar.baz")),
       singleQuery
     ))
   }
 
   test("CATALOG CREATE GRAPH `foo.bar`.`baz.baz` { CONSTRUCT }"){
     yields(ast.CreateGraph(
-      new CatalogName(List("foo.bar", "baz.baz")),
+      new ast.CatalogName(List("foo.bar", "baz.baz")),
       singleQuery
     ))
   }
@@ -124,9 +123,9 @@ class CatalogDDLParserTest
   }
 
   test("CATALOG CREATE VIEW foo.bar($graph1, $graph2) { FROM $graph1 RETURN GRAPH }") {
-    val query = ast.SingleQuery(Seq(ast.GraphByParameter(exp.Parameter("graph1", CTAny)(pos))(pos),  returnGraph))(pos)
+    val query = ast.SingleQuery(Seq(ast.GraphByParameter(parameter("graph1", CTAny))(pos),  returnGraph))(pos)
     val graphName = ast.CatalogName("foo", List("bar"))
-    val params = Seq(exp.Parameter("graph1", CTAny)(pos), exp.Parameter("graph2", CTAny)(pos))
+    val params = Seq(parameter("graph1", CTAny), parameter("graph2", CTAny))
 
     yields(ast.CreateView(graphName, params, query, "FROM $graph1 RETURN GRAPH"))
   }

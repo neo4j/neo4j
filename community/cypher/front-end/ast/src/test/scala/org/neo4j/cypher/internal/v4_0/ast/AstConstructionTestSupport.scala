@@ -18,8 +18,9 @@ package org.neo4j.cypher.internal.v4_0.ast
 
 import org.neo4j.cypher.internal.v4_0.expressions._
 import org.neo4j.cypher.internal.v4_0.expressions.functions.{Avg, Collect, Count, Max, Min, Sum}
+import org.neo4j.cypher.internal.v4_0.util.symbols.CypherType
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherTestSupport
-import org.neo4j.cypher.internal.v4_0.util.{DummyPosition, InputPosition, symbols}
+import org.neo4j.cypher.internal.v4_0.util.{DummyPosition, InputPosition}
 
 import scala.language.implicitConversions
 
@@ -146,7 +147,7 @@ trait AstConstructionTestSupport extends CypherTestSupport {
 
   def in(lhs: Expression, rhs: Expression): In = In(lhs, rhs)(pos)
 
-  def coerceTo(expression: Expression, typ: symbols.CypherType): CoerceTo = CoerceTo(expression, typ)
+  def coerceTo(expression: Expression, typ: CypherType): CoerceTo = CoerceTo(expression, typ)
 
   def isNull(expression: Expression): IsNull = IsNull(expression)(pos)
 
@@ -206,7 +207,7 @@ trait AstConstructionTestSupport extends CypherTestSupport {
 
   def pow(lhs: Expression, rhs: Expression): Pow = Pow(lhs, rhs)(pos)
 
-  def parameter(key: String): Parameter = Parameter(key, symbols.CTAny)(pos)
+  def parameter(key: String, typ: CypherType): Parameter = Parameter(key, typ)(pos)
 
   def or(lhs: Expression, rhs: Expression): Or = Or(lhs, rhs)(pos)
 

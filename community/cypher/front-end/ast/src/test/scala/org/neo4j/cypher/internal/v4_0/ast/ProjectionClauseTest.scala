@@ -17,7 +17,7 @@
 package org.neo4j.cypher.internal.v4_0.ast
 
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticState
-import org.neo4j.cypher.internal.v4_0.expressions.{Add, And, CountStar}
+import org.neo4j.cypher.internal.v4_0.expressions.CountStar
 import org.neo4j.cypher.internal.v4_0.util.symbols._
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 
@@ -82,7 +82,7 @@ class ProjectionClauseTest extends CypherFunSuite with AstConstructionTestSuppor
   test("test order by scoping 2") {
     // GIVEN MATCH n WITH n.prop AS introducedVariable ORDER BY introducedVariable + 2
     val orderBy: OrderBy = OrderBy(Seq(
-      AscSortItem(Add(varFor("introducedVariable"), literalInt(2))_)_
+      AscSortItem(add(varFor("introducedVariable"), literalInt(2)))_
     ))_
 
     val returnItem = AliasedReturnItem(prop("n", "prop"), varFor("introducedVariable"))_
@@ -101,10 +101,10 @@ class ProjectionClauseTest extends CypherFunSuite with AstConstructionTestSuppor
 
   test("test where and order by scoping referring to previous scope items") {
     // GIVEN MATCH n, m WITH m AS X ORDER BY n.foo, X.bar WHERE n.foo = 10 AND X.bar = 2
-    val where: Where = Where(And(
+    val where: Where = Where(and(
      equals(prop("n", "foo"), literalUnsignedInt(10)),
      equals(prop("X", "bar"), literalUnsignedInt(2))
-    )(pos))(pos)
+    ))(pos)
 
     val orderBy: OrderBy = OrderBy(Seq(
       AscSortItem(prop("n", "foo"))_,
@@ -130,7 +130,7 @@ class ProjectionClauseTest extends CypherFunSuite with AstConstructionTestSuppor
   test("test order by scoping & shadowing 2") {
     // GIVEN MATCH n WITH n AS n ORDER BY n + 2
     val orderBy: OrderBy = OrderBy(Seq(
-      AscSortItem(Add(varFor("n"), literalInt(2))_)_
+      AscSortItem(add(varFor("n"), literalInt(2)))_
     ))_
 
     val returnItem = AliasedReturnItem(varFor("n"), varFor("n"))_

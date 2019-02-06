@@ -22,9 +22,7 @@ package org.neo4j.cypher.internal.compiler.v4_0.planner.logical
 import org.neo4j.cypher.internal.compiler.v4_0.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.v4_0.ast.ProcedureResultItem
 import org.neo4j.cypher.internal.v4_0.logical.plans._
-import org.neo4j.cypher.internal.v4_0.logical.plans.Union
-import org.neo4j.cypher.internal.v4_0.logical.plans.UnwindCollection
-import org.neo4j.cypher.internal.v4_0.expressions._
+import org.neo4j.cypher.internal.v4_0.expressions.{AndedPropertyInequalities, LabelToken, SemanticDirection}
 import org.neo4j.cypher.internal.v4_0.util._
 import org.neo4j.cypher.internal.v4_0.util.symbols.CTString
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
@@ -184,7 +182,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
     plan._2 should equal(
       Projection(
-        Selection(Ands(Set(equals(Modulo(cached("n.prop"), literalInt(2))(pos), literalInt(0))))(pos),
+        Selection(ands(equals(modulo(cached("n.prop"), literalInt(2)), literalInt(0))),
           IndexSeek("n:Awesome(prop <= 42)", GetValue)),
         Map(propertyProj("n", "foo")))
     )
@@ -197,7 +195,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
     plan._2 should equal(
       Projection(
-        Selection(Ands(Set(equals(Modulo(cached("n.prop"), prop("m", "foo"))(pos), literalInt(0))))(pos),
+        Selection(ands(equals(modulo(cached("n.prop"), prop("m", "foo")), literalInt(0))),
           Expand(
             IndexSeek("n:Awesome(prop <= 42)", GetValue),
             "n", SemanticDirection.OUTGOING, Seq.empty, "m", "r")
@@ -235,7 +233,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
     plan._2 should equal(
       Expand(
-        Selection(Ands(Set(AndedPropertyInequalities(varFor("m"), prop("m", "prop"), NonEmptyList(lessThan(prop("m", "prop"), literalInt(50))))))(pos),
+        Selection(ands(AndedPropertyInequalities(varFor("m"), prop("m", "prop"), NonEmptyList(lessThan(prop("m", "prop"), literalInt(50))))),
           Projection(
             IndexSeek("n:Awesome(prop > 42)", GetValue),
             Map("m" -> varFor("n")))),
@@ -347,7 +345,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
       Aggregation(
         IndexSeek("n:Awesome(prop = 42)", GetValue),
         Map("nums" -> prop("n", "foo")),
-        Map("sum(n.prop)" -> function("sum", cachedNodeProperty("n", "prop")))
+        Map("sum(n.prop)" -> sum(cachedNodeProperty("n", "prop")))
       )
     )
   }
@@ -362,7 +360,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
         Aggregation(
           IndexSeek("n:Awesome(prop = 'foo')", GetValue),
           Map(cachedNodePropertyProj("n.prop", "n", "prop")),
-          Map("sum(n.foo)" -> function("sum", prop("n", "foo")))
+          Map("sum(n.foo)" -> sum(prop("n", "foo")))
         ),
         Seq(Ascending("n.prop")))
     )
@@ -410,7 +408,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
       ProcedureCall(
         IndexSeek("n:Awesome(prop = 'foo')", GetValue),
         ResolvedCall(signature,
-          IndexedSeq(CoerceTo(cachedNodeProperty("n", "prop"), CTString)),
+          IndexedSeq(coerceTo(cachedNodeProperty("n", "prop"), CTString)),
           IndexedSeq(ProcedureResultItem(None, varFor("value"))(pos)))(pos))
     )
   }
@@ -906,7 +904,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
           Set.empty,
           IndexOrderNone),
         Map.empty,
-        Map(s"avg(n.prop)" -> function("avg", cachedNodeProperty("n", "prop")))
+        Map(s"avg(n.prop)" -> avg(cachedNodeProperty("n", "prop")))
       )
     )
   }
@@ -925,7 +923,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
           Set.empty,
           IndexOrderNone),
         Map.empty,
-        Map("avg(n.prop)" -> function("avg", prop("n", "prop")))
+        Map("avg(n.prop)" -> avg(prop("n", "prop")))
       )
     )
   }
@@ -944,7 +942,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
           Set.empty,
           IndexOrderNone),
         Map.empty,
-        Map("sum(n.prop)" -> function("sum", cachedNodeProperty("n", "prop")))
+        Map("sum(n.prop)" -> sum(cachedNodeProperty("n", "prop")))
       )
     )
   }
@@ -963,7 +961,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
           Set.empty,
           IndexOrderNone),
         Map.empty,
-        Map("sum(n.prop)" -> function("sum", prop("n", "prop")))
+        Map("sum(n.prop)" -> sum(prop("n", "prop")))
       )
     )
   }

@@ -89,9 +89,9 @@ class extractPredicatesTest extends CypherFunSuite with AstConstructionTestSuppo
       extractPredicates(Seq(rewrittenRelPredicate, rewrittenNodePredicate), "x", "x-edge", "x-node", "n")
 
     nodePredicates shouldBe List(function("exists", prop("x-node", "prop")))
-    edgePredicates shouldBe List(Not(propLessThan("x-edge", "prop", 4))(pos))
+    edgePredicates shouldBe List(not(propLessThan("x-edge", "prop", 4)))
     legacyPredicates shouldBe List(
-      (varFor("r"), Not(propLessThan("r", "prop", 4))(pos)),
+      (varFor("r"), not(propLessThan("r", "prop", 4))),
       (varFor("m"), function("exists", prop("m", "prop")))
     )
     solvedPredicates shouldBe List(rewrittenRelPredicate, rewrittenNodePredicate)

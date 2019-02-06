@@ -19,7 +19,6 @@ package org.neo4j.cypher.internal.v4_0.rewriting
 import org.neo4j.cypher.internal.v4_0.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.v4_0.rewriting.rewriters.normalizeSargablePredicates
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.v4_0.expressions.{Expression, Not}
 import org.neo4j.cypher.internal.v4_0.expressions.functions.Exists
 
 class NormalizeSargablePredicatesTest extends CypherFunSuite with AstConstructionTestSupport {

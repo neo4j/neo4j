@@ -50,14 +50,14 @@ class ReplaceAliasedFunctionInvocationsTest extends CypherFunSuite with AstConst
   test("should rewrite timestamp()") {
     val before = function("timestamp")
 
-    val after = Property(function("datetime"), PropertyKeyName("epochMillis")(pos))(pos)
+    val after = property(function("datetime"), "epochMillis")
     rewriter(before) should equal(after)
   }
 
   test("should also rewrite TiMeStAmP()") {
     val before = function("TiMeStAmP")
 
-    val after = Property(function("datetime"), PropertyKeyName("epochMillis")(pos))(pos)
+    val after = property(function("datetime"), "epochMillis")
     rewriter(before) should equal(after)
   }
 

@@ -20,20 +20,18 @@ import org.neo4j.cypher.internal.v4_0.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.v4_0.expressions._
 import org.neo4j.cypher.internal.v4_0.rewriting.rewriters.InliningContext
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.v4_0.expressions.{NodePattern, RelationshipPattern}
 
 class InliningContextTest extends CypherFunSuite with AstConstructionTestSupport {
 
-  val identN = varFor("n")
-  val identM = varFor("m")
-  val identA = varFor("a")
-  val astNull: Null = Null()_
+  private val identN = varFor("n")
+  private val identM = varFor("m")
+  private val identA = varFor("a")
 
-  val mapN = Map[LogicalVariable, Expression](identN -> astNull)
-  val mapM = Map[LogicalVariable, Expression](identM -> astNull)
-  val mapA = Map[LogicalVariable, Expression](identA -> astNull)
+  private val mapN = Map[LogicalVariable, Expression](identN -> nullLiteral)
+  private val mapM = Map[LogicalVariable, Expression](identM -> nullLiteral)
+  private val mapA = Map[LogicalVariable, Expression](identA -> nullLiteral)
 
-  val mapAtoN = Map[LogicalVariable, Expression](identA -> identN)
+  private val mapAtoN = Map[LogicalVariable, Expression](identA -> identN)
 
   test("update projections on enterQueryPart") {
     val ctx = InliningContext(mapM).enterQueryPart(mapN)

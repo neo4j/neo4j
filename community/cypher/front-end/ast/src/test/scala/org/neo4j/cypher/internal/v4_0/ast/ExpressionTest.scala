@@ -28,7 +28,7 @@ class ExpressionTest extends CypherFunSuite with AstConstructionTestSupport {
   }
 
   test("should compute dependencies of composite expressions") {
-    Add(varFor("a"), Subtract(literalInt(1), varFor("b"))_)(pos).dependencies should equal(Set(varFor("a"), varFor("b")))
+    add(varFor("a"), subtract(literalInt(1), varFor("b"))).dependencies should equal(Set(varFor("a"), varFor("b")))
   }
 
   test("should compute dependencies for filtering expressions") {
@@ -99,15 +99,15 @@ class ExpressionTest extends CypherFunSuite with AstConstructionTestSupport {
     val identA = varFor("a")
     val identB = varFor("b")
     val lit1 = literalInt(1)
-    val sub = Subtract(lit1, identB)(pos)
-    val add = Add(identA, sub)(pos)
+    val subExpr = subtract(lit1, identB)
+    val addExpr = add(identA, subExpr)
 
-    IdentityMap(add.inputs: _*) should equal(IdentityMap(
+    IdentityMap(addExpr.inputs: _*) should equal(IdentityMap(
       identA -> Set.empty,
       identB -> Set.empty,
       lit1 -> Set.empty,
-      sub -> Set.empty,
-      add -> Set.empty
+      subExpr -> Set.empty,
+      addExpr -> Set.empty
     ))
   }
 

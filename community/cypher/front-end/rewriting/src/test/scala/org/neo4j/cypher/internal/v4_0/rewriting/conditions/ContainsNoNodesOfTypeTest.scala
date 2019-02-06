@@ -20,7 +20,6 @@ import org.neo4j.cypher.internal.v4_0.ast._
 import org.neo4j.cypher.internal.v4_0.expressions.EveryPath
 import org.neo4j.cypher.internal.v4_0.expressions.NodePattern
 import org.neo4j.cypher.internal.v4_0.expressions.Pattern
-import org.neo4j.cypher.internal.v4_0.expressions.Variable
 import org.neo4j.cypher.internal.v4_0.util.ASTNode
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 

@@ -118,7 +118,7 @@ class PlanEventHorizonTest extends CypherFunSuite with LogicalPlanningTestSuppor
 
       // Then
       val sorted = Sort(inputPlan, Seq(Ascending("x")))
-      val limited = Limit(sorted, Add(x, y)(pos), DoNotIncludeTies)
+      val limited = Limit(sorted, add(x, y), DoNotIncludeTies)
       val skipped = Skip(limited, y)
       result should equal(skipped)
     }

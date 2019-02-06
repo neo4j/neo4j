@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v4_0.planner.LogicalPlanningTestSuppor
 import org.neo4j.cypher.internal.ir.v4_0.RegularPlannerQuery
 import org.neo4j.cypher.internal.planner.v4_0.spi.IndexOrderCapability
 import org.neo4j.cypher.internal.planner.v4_0.spi.IndexOrderCapability.{ASC, BOTH, DESC}
-import org.neo4j.cypher.internal.v4_0.expressions._
+import org.neo4j.cypher.internal.v4_0.expressions.{LabelToken, SemanticDirection}
 import org.neo4j.cypher.internal.v4_0.logical.plans.{Limit => LimitPlan, Skip => SkipPlan, _}
 import org.neo4j.cypher.internal.v4_0.util._
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
@@ -302,7 +302,7 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
             IndexSeek(
               "a:A(prop > 'foo')", indexOrder = plannedOrder),
             "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r"),
-          Map("a.prop" -> prop("a", "prop")), Map("count(b)" -> function("count", varFor("b"))))
+          Map("a.prop" -> prop("a", "prop")), Map("count(b)" -> count(varFor("b"))))
       )
     }
 
@@ -569,7 +569,7 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
           IndexSeek("n:Awesome(prop > 0)", indexOrder = expectedIndexOrder, getValue = GetValue),
           Map.empty,
           Map(s"$functionName(n.prop)" -> function(functionName, cachedNodeProperty("n", "prop")),
-            "count(n.prop)" -> function("count", cachedNodeProperty("n", "prop")))
+            "count(n.prop)" -> count(cachedNodeProperty("n", "prop")))
         )
       )
     }
