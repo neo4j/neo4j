@@ -18,7 +18,6 @@ package org.neo4j.cypher.internal.v4_0.rewriting
 
 import org.neo4j.cypher.internal.v4_0.ast._
 import org.neo4j.cypher.internal.v4_0.ast.semantics.{SemanticState, SyntaxExceptionCreator}
-import org.neo4j.cypher.internal.v4_0.expressions.{Add, SignedDecimalIntegerLiteral, Variable}
 import org.neo4j.cypher.internal.v4_0.rewriting.rewriters.{expandStar, inlineProjections, normalizeWithAndReturnClauses}
 import org.neo4j.cypher.internal.v4_0.util.helpers.StringHelper.RichString
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
@@ -138,7 +137,9 @@ class InlineProjectionsTest extends CypherFunSuite with AstRewritingTestSupport 
     result should equal(Query(None,
       SingleQuery(List(
         With(distinct = false, ReturnItems(includeExisting = false, items = Vector())(pos), None, None, None, None)(pos),
-        Return(distinct = false, returnItems = ReturnItems(includeExisting = false, List(AliasedReturnItem(Add(SignedDecimalIntegerLiteral("1")(pos), SignedDecimalIntegerLiteral("1")(pos))(pos), Variable("1 + x")(pos))(pos)))(pos), orderBy = None, skip = None, limit = None, excludedNames = Set())(pos)
+        Return(distinct = false,
+          returnItems = ReturnItems(includeExisting = false, List(AliasedReturnItem(add(literalInt(1), literalInt(1)), varFor("1 + x"))(pos)))(pos),
+          orderBy = None, skip = None, limit = None, excludedNames = Set())(pos)
       ))(pos))(pos))
   }
 
@@ -153,8 +154,11 @@ class InlineProjectionsTest extends CypherFunSuite with AstRewritingTestSupport 
     result should equal(Query(None,
       SingleQuery(List(
         With(distinct = false, ReturnItems(includeExisting = false, items = Vector())(pos), None, None, None, None)(pos),
-        With(distinct = true, ReturnItems(includeExisting = false, items = List(AliasedReturnItem(SignedDecimalIntegerLiteral("1")(pos), Variable("c")(pos))(pos)))(pos), None, None, None, None)(pos),
-        Return(distinct = false, returnItems = ReturnItems(includeExisting = false, items = List(AliasedReturnItem(Variable("c")(pos), Variable("c")(pos))(pos)))(pos), orderBy = None, skip = None, limit = None, excludedNames = Set())(pos)
+        With(distinct = true, ReturnItems(includeExisting = false,
+          items = List(AliasedReturnItem(literalInt(1), varFor("c"))(pos)))(pos), None, None, None, None)(pos),
+        Return(distinct = false,
+          returnItems = ReturnItems(includeExisting = false, items = List(AliasedReturnItem(varFor("c"), varFor("c"))(pos)))(pos),
+          orderBy = None, skip = None, limit = None, excludedNames = Set())(pos)
       ))(pos))(pos))
   }
 
@@ -184,7 +188,9 @@ class InlineProjectionsTest extends CypherFunSuite with AstRewritingTestSupport 
       SingleQuery(List(
         With(distinct = false, ReturnItems(includeExisting = false, items = Vector())(pos), None, None, None, None)(pos),
         With(distinct = false, ReturnItems(includeExisting = false, items = Vector())(pos), None, None, None, None)(pos),
-        Return(distinct = false, returnItems = ReturnItems(includeExisting = false, items = List(AliasedReturnItem(Add(SignedDecimalIntegerLiteral("1")(pos),SignedDecimalIntegerLiteral("1")(pos))(pos), Variable("m")(pos))(pos)))(pos), orderBy = None, skip = None, limit = None, excludedNames = Set())(pos)
+        Return(distinct = false,
+          returnItems = ReturnItems(includeExisting = false, items = List(AliasedReturnItem(add(literalInt(1),literalInt(1)), varFor("m"))(pos)))(pos),
+          orderBy = None, skip = None, limit = None, excludedNames = Set())(pos)
       ))(pos))(pos))
   }
 
@@ -350,7 +356,9 @@ class InlineProjectionsTest extends CypherFunSuite with AstRewritingTestSupport 
     result should equal(Query(None,
       SingleQuery(List(
         With(distinct = false, ReturnItems(includeExisting = false, items = Vector())(pos), None, None, None, None)(pos),
-        Return(distinct = false, returnItems = ReturnItems(includeExisting = false, List(AliasedReturnItem(SignedDecimalIntegerLiteral("1")(pos), Variable("b")(pos))(pos)))(pos), orderBy = None, skip = None, limit = None, excludedNames = Set())(pos)
+        Return(distinct = false,
+          returnItems = ReturnItems(includeExisting = false, List(AliasedReturnItem(literalInt(1), varFor("b"))(pos)))(pos),
+          orderBy = None, skip = None, limit = None, excludedNames = Set())(pos)
       ))(pos))(pos))
   }
 
