@@ -17,14 +17,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.index;
+package org.neo4j.storageengine.api;
 
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.values.storable.Value;
 
-/**
- * Used by the {@link IndexPopulator} for verifying constraints, if need be.
- */
 public interface NodePropertyAccessor
 {
     Value getNodePropertyValue( long nodeId, int propertyKeyId ) throws EntityNotFoundException;

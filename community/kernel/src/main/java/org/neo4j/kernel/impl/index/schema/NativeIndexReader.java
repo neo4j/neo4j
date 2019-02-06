@@ -31,6 +31,7 @@ import org.neo4j.index.internal.gbptree.Hit;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.io.IOUtils;
+import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
 import org.neo4j.storageengine.api.schema.IndexProgressor;
 import org.neo4j.storageengine.api.schema.IndexReader;
@@ -45,7 +46,7 @@ abstract class NativeIndexReader<KEY extends NativeIndexKey<KEY>, VALUE extends 
     protected final IndexDescriptor descriptor;
     final IndexLayout<KEY,VALUE> layout;
     final Set<RawCursor<Hit<KEY,VALUE>,IOException>> openSeekers;
-    private final GBPTree<KEY,VALUE> tree;
+    final GBPTree<KEY,VALUE> tree;
 
     NativeIndexReader( GBPTree<KEY,VALUE> tree, IndexLayout<KEY,VALUE> layout, IndexDescriptor descriptor )
     {
@@ -135,6 +136,27 @@ abstract class NativeIndexReader<KEY extends NativeIndexKey<KEY>, VALUE extends 
 
     @Override
     public abstract boolean hasFullValuePrecision( IndexQuery... predicates );
+
+    @Override
+    public void distinctValues( IndexProgressor.NodeValueClient client, NodePropertyAccessor propertyAccessor, boolean needsValues )
+    {
+        KEY lowest = layout.newKey();
+        lowest.initialize( Long.MIN_VALUE );
+        lowest.initValuesAsLowest();
+        KEY highest = layout.newKey();
+        highest.initialize( Long.MAX_VALUE );
+        highest.initValuesAsHighest();
+        try
+        {
+            RawCursor<Hit<KEY,VALUE>,IOException> seeker = tree.seek( lowest, highest );
+            client.initialize( descriptor, new NativeDistinctValuesProgressor<>( seeker, client, openSeekers, layout, layout::compareValue ),
+                    new IndexQuery[0], IndexOrder.NONE, needsValues );
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
+        }
+    }
 
     abstract void validateQuery( IndexOrder indexOrder, IndexQuery[] predicates );
 

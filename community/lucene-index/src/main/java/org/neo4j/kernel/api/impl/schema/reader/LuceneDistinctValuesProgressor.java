@@ -17,22 +17,29 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.index.schema;
+package org.neo4j.kernel.api.impl.schema.reader;
+
+import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.util.BytesRef;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.util.Collection;
+import java.util.function.Function;
 
-import org.neo4j.cursor.RawCursor;
-import org.neo4j.index.internal.gbptree.Hit;
+import org.neo4j.storageengine.api.schema.IndexProgressor;
 import org.neo4j.values.storable.Value;
 
-public class NativeHitIndexProgressor<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue> extends NativeIndexProgressor<KEY,VALUE>
+class LuceneDistinctValuesProgressor implements IndexProgressor
 {
-    NativeHitIndexProgressor( RawCursor<Hit<KEY,VALUE>,IOException> seeker, NodeValueClient client,
-            Collection<RawCursor<Hit<KEY,VALUE>,IOException>> toRemoveFromOnClose )
+    private final TermsEnum terms;
+    private final NodeValueClient client;
+    private final Function<BytesRef,Value> valueMaterializer;
+
+    LuceneDistinctValuesProgressor( TermsEnum terms, NodeValueClient client, Function<BytesRef,Value> valueMaterializer ) throws IOException
     {
-        super( seeker, client, toRemoveFromOnClose );
+        this.terms = terms;
+        this.client = client;
+        this.valueMaterializer = valueMaterializer;
     }
 
     @Override
@@ -40,11 +47,9 @@ public class NativeHitIndexProgressor<KEY extends NativeIndexKey<KEY>, VALUE ext
     {
         try
         {
-            while ( seeker.next() )
+            while ( (terms.next()) != null )
             {
-                KEY key = seeker.get().key();
-                Value[] values = extractValues( key );
-                if ( acceptValue( values ) && client.acceptNode( key.getEntityId(), values ) )
+                if ( client.acceptNode( terms.docFreq(), valueMaterializer.apply( terms.term() ) ) )
                 {
                     return true;
                 }
@@ -57,8 +62,8 @@ public class NativeHitIndexProgressor<KEY extends NativeIndexKey<KEY>, VALUE ext
         }
     }
 
-    protected boolean acceptValue( Value[] values )
+    @Override
+    public void close()
     {
-        return true;
     }
 }

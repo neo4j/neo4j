@@ -99,8 +99,21 @@ abstract class Read implements TxStateHolder,
         reader.query( withFullPrecision, indexOrder, needsValues, query );
     }
 
+    @Override
+    public void nodeIndexDistinctValues( IndexReference index, NodeValueIndexCursor cursor, boolean needsValues ) throws IndexNotFoundKernelException
+    {
+        ktx.assertOpen();
+        DefaultNodeValueIndexCursor cursorImpl = (DefaultNodeValueIndexCursor) cursor;
+        IndexReader reader = indexReader( index, true );
+        cursorImpl.setRead( this );
+        try ( CursorPropertyAccessor accessor = new CursorPropertyAccessor( cursors.allocateNodeCursor(), cursors.allocatePropertyCursor(), this ) )
+        {
+            reader.distinctValues( cursorImpl, accessor, needsValues );
+        }
+    }
+
     private IndexProgressor.NodeValueClient injectFullValuePrecision( IndexProgressor.NodeValueClient cursor,
-                                                                      IndexQuery[] query, IndexReader reader )
+            IndexQuery[] query, IndexReader reader )
     {
         IndexProgressor.NodeValueClient target = cursor;
         if ( !reader.hasFullValuePrecision( query ) )

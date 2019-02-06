@@ -29,6 +29,7 @@ import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexQuery.ExistsPredicate;
 import org.neo4j.kernel.impl.api.schema.BridgingIndexProgressor;
 import org.neo4j.kernel.impl.index.schema.fusion.FusionIndexSampler;
+import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
 import org.neo4j.storageengine.api.schema.IndexProgressor;
 import org.neo4j.storageengine.api.schema.IndexReader;
@@ -123,6 +124,18 @@ class TemporalIndexReader extends TemporalIndexCache<TemporalIndexPartReader<?>>
     public boolean hasFullValuePrecision( IndexQuery... predicates )
     {
         return true;
+    }
+
+    @Override
+    public void distinctValues( IndexProgressor.NodeValueClient cursor, NodePropertyAccessor propertyAccessor, boolean needsValues )
+    {
+        loadAll();
+        BridgingIndexProgressor multiProgressor = new BridgingIndexProgressor( cursor, descriptor.schema().getPropertyIds() );
+        cursor.initialize( descriptor, multiProgressor, new IndexQuery[0], IndexOrder.NONE, cursor.needsValues() );
+        for ( NativeIndexReader<?,NativeIndexValue> reader : this )
+        {
+            reader.distinctValues( multiProgressor, propertyAccessor, needsValues );
+        }
     }
 
     private boolean validPredicate( IndexQuery predicate )

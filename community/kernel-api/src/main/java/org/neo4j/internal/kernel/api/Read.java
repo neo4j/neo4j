@@ -20,6 +20,7 @@
 package org.neo4j.internal.kernel.api;
 
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
+import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
@@ -42,6 +43,24 @@ public interface Read
      */
     void nodeIndexSeek( IndexReference index, NodeValueIndexCursor cursor, IndexOrder indexOrder, boolean needsValues, IndexQuery... query )
             throws KernelException;
+
+    /**
+     * Access all distinct counts in an index. Entries fed to the {@code cursor} will be (count,Value[]),
+     * where the count (number of nodes having the particular value) will be accessed using {@link NodeValueIndexCursor#nodeReference()}
+     * and the value (if the index can provide it) using {@link NodeValueIndexCursor#propertyValue(int)}.
+     * Before accessing a property value the caller should check {@link NodeValueIndexCursor#hasValue()} to see
+     * whether or not the index could yield values.
+     *
+     * For merely counting distinct values in an index, loop over and sum iterations.
+     * For counting number of indexed nodes in an index, loop over and sum all counts.
+     *
+     * NOTE distinct values may not be 100% accurate for point values that are very close to each other. In those cases they can be
+     * reported as a single distinct values with a higher count instead of several separate values.
+     * @param index {@link IndexReference} referencing index.
+     * @param cursor {@link NodeValueIndexCursor} receiving distinct count data.
+     * @param needsValues whether or not values should be loaded and given to the cursor.
+     */
+    void nodeIndexDistinctValues( IndexReference index, NodeValueIndexCursor cursor, boolean needsValues ) throws IndexNotFoundKernelException;
 
     /**
      * Returns node id of node found in unique index or -1 if no node was found.

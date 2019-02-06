@@ -24,6 +24,7 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.values.storable.Value;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -71,6 +72,11 @@ class DefaultIndexReaderTest
             public boolean hasFullValuePrecision( IndexQuery... predicates )
             {
                 return false;
+            }
+
+            @Override
+            public void distinctValues( IndexProgressor.NodeValueClient client, NodePropertyAccessor propertyAccessor, boolean needsValues )
+            {
             }
 
             @Override

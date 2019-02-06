@@ -526,7 +526,7 @@ public class OperationsLockTest
     {
         long nodeId = 1L;
         returnRelationships( transaction, false, new TestRelationshipChain( nodeId ) );
-        when( transaction.ambientNodeCursor() ).thenReturn( new StubNodeCursor( false ) );
+        when( transaction.ambientNodeCursor() ).thenReturn( new StubNodeCursor( false ).withNode( nodeId ) );
         when( nodeCursor.next() ).thenReturn( true );
         LabelSet labels = mock( LabelSet.class );
         when( labels.all() ).thenReturn( EMPTY_LONG_ARRAY );
@@ -545,7 +545,7 @@ public class OperationsLockTest
         long nodeId = 1L;
         returnRelationships( transaction, false,
                 new TestRelationshipChain( nodeId ).outgoing( 1, 2L, 42 ) );
-        when( transaction.ambientNodeCursor() ).thenReturn( new StubNodeCursor( false ) );
+        when( transaction.ambientNodeCursor() ).thenReturn( new StubNodeCursor( false ).withNode( nodeId ) );
         LabelSet labels = mock( LabelSet.class );
         when( labels.all() ).thenReturn( EMPTY_LONG_ARRAY );
         when( nodeCursor.labels() ).thenReturn( labels );
@@ -591,7 +591,7 @@ public class OperationsLockTest
         long labelId2 = 2;
 
         returnRelationships( transaction, false, new TestRelationshipChain( nodeId ) );
-        when( transaction.ambientNodeCursor() ).thenReturn( new StubNodeCursor( false ) );
+        when( transaction.ambientNodeCursor() ).thenReturn( new StubNodeCursor( false ).withNode( nodeId ) );
         when( nodeCursor.next() ).thenReturn( true );
         LabelSet labels = mock( LabelSet.class );
         when( labels.all() ).thenReturn( new long[]{labelId1, labelId2} );

@@ -25,40 +25,44 @@ import java.util.Collection;
 
 import org.neo4j.cursor.RawCursor;
 import org.neo4j.index.internal.gbptree.Hit;
+import org.neo4j.storageengine.api.schema.IndexProgressor;
 import org.neo4j.values.storable.Value;
 
-public class NativeHitIndexProgressor<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue> extends NativeIndexProgressor<KEY,VALUE>
+abstract class NativeIndexProgressor<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue> implements IndexProgressor
 {
-    NativeHitIndexProgressor( RawCursor<Hit<KEY,VALUE>,IOException> seeker, NodeValueClient client,
+    final RawCursor<Hit<KEY,VALUE>,IOException> seeker;
+    final NodeValueClient client;
+    private final Collection<RawCursor<Hit<KEY,VALUE>,IOException>> toRemoveFromOnClose;
+    private boolean closed;
+
+    NativeIndexProgressor( RawCursor<Hit<KEY,VALUE>,IOException> seeker, NodeValueClient client,
             Collection<RawCursor<Hit<KEY,VALUE>,IOException>> toRemoveFromOnClose )
     {
-        super( seeker, client, toRemoveFromOnClose );
+        this.seeker = seeker;
+        this.client = client;
+        this.toRemoveFromOnClose = toRemoveFromOnClose;
     }
 
     @Override
-    public boolean next()
+    public void close()
     {
-        try
+        if ( !closed )
         {
-            while ( seeker.next() )
+            closed = true;
+            try
             {
-                KEY key = seeker.get().key();
-                Value[] values = extractValues( key );
-                if ( acceptValue( values ) && client.acceptNode( key.getEntityId(), values ) )
-                {
-                    return true;
-                }
+                seeker.close();
+                toRemoveFromOnClose.remove( seeker );
             }
-            return false;
-        }
-        catch ( IOException e )
-        {
-            throw new UncheckedIOException( e );
+            catch ( IOException e )
+            {
+                throw new UncheckedIOException( e );
+            }
         }
     }
 
-    protected boolean acceptValue( Value[] values )
+    Value[] extractValues( KEY key )
     {
-        return true;
+        return client.needsValues() ? key.asValues() : null;
     }
 }

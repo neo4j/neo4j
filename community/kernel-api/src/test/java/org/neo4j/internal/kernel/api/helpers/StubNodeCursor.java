@@ -153,6 +153,10 @@ public class StubNodeCursor implements NodeCursor
     @Override
     public boolean next()
     {
+        if ( offset == Integer.MAX_VALUE )
+        {
+            return false;
+        }
         return ++offset < nodes.size();
     }
 
