@@ -90,8 +90,8 @@ public class MultipleIndexPopulator implements IndexPopulator
     public static final String QUEUE_THRESHOLD_NAME = "queue_threshold";
     static final String BATCH_SIZE_NAME = "batch_size";
 
-    private final int QUEUE_THRESHOLD = FeatureToggles.getInteger( getClass(), QUEUE_THRESHOLD_NAME, 20_000 );
-    private final int BATCH_SIZE_SCAN = FeatureToggles.getInteger( BatchingMultipleIndexPopulator.class, BATCH_SIZE_NAME, 10_000 );
+    final int QUEUE_THRESHOLD = FeatureToggles.getInteger( getClass(), QUEUE_THRESHOLD_NAME, 20_000 );
+    final int BATCH_SIZE_SCAN = FeatureToggles.getInteger( BatchingMultipleIndexPopulator.class, BATCH_SIZE_NAME, 10_000 );
 
     // Concurrency queue since multiple concurrent threads may enqueue updates into it. It is important for this queue
     // to have fast #size() method since it might be drained in batches
@@ -109,6 +109,7 @@ public class MultipleIndexPopulator implements IndexPopulator
     private final EntityType type;
     private final SchemaState schemaState;
     private final IndexStatisticsStore indexStatisticsStore;
+    private final PhaseTracker phaseTracker;
     private StoreScan<IndexPopulationFailedKernelException> storeScan;
 
     public MultipleIndexPopulator( IndexStoreView storeView, LogProvider logProvider, EntityType type, SchemaState schemaState,
@@ -121,6 +122,7 @@ public class MultipleIndexPopulator implements IndexPopulator
         this.type = type;
         this.schemaState = schemaState;
         this.indexStatisticsStore = indexStatisticsStore;
+        this.phaseTracker = new LoggingPhaseTracker( logProvider.getLog( IndexPopulationJob.class ) );
     }
 
     IndexPopulation addPopulator( IndexPopulator populator, CapableIndexDescriptor capableIndexDescriptor, FlippableIndexProxy flipper,
@@ -178,6 +180,7 @@ public class MultipleIndexPopulator implements IndexPopulator
         {
             storeScan = storeView.visitNodes( entityTokenIds, propertyKeyIdFilter, new EntityPopulationVisitor(), null, false );
         }
+        storeScan.setPhaseTracker( phaseTracker );
         return new DelegatingStoreScan<IndexPopulationFailedKernelException>( storeScan )
         {
             @Override
@@ -274,6 +277,7 @@ public class MultipleIndexPopulator implements IndexPopulator
     @Override
     public void close( boolean populationCompletedSuccessfully )
     {
+        phaseTracker.stop();
         // closing the populators happens in flip, fail or individually when they are completed
         propertyAccessor.close();
     }
@@ -362,6 +366,12 @@ public class MultipleIndexPopulator implements IndexPopulator
     }
 
     protected void applyBatchFromScan( IndexPopulation population )
+    {
+        phaseTracker.enterPhase( PhaseTracker.Phase.WRITE );
+        doFlush( population );
+    }
+
+    void doFlush( IndexPopulation population )
     {
         try
         {
@@ -558,6 +568,7 @@ public class MultipleIndexPopulator implements IndexPopulator
 
         void flip( boolean verifyBeforeFlipping ) throws FlipFailedKernelException
         {
+            phaseTracker.enterPhase( PhaseTracker.Phase.FLIP );
             flipper.flip( () ->
             {
                 populatorLock.lock();
@@ -682,6 +693,12 @@ public class MultipleIndexPopulator implements IndexPopulator
         public PopulationProgress getProgress()
         {
             return delegate.getProgress();
+        }
+
+        @Override
+        public void setPhaseTracker( PhaseTracker phaseTracker )
+        {
+            delegate.setPhaseTracker( phaseTracker );
         }
     }
 }

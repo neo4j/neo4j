@@ -156,6 +156,7 @@ public class BatchingMultipleIndexPopulator extends MultipleIndexPopulator
 
     /**
      * Insert the given batch of updates into the index defined by the given {@link IndexPopulation}.
+     * Called from {@link MultipleIndexPopulator#applyBatchesFromAllScans()}.
      *
      * @param population the index population.
      */
