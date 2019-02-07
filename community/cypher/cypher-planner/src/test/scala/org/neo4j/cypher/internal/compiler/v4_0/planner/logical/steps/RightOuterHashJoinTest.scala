@@ -21,30 +21,21 @@ package org.neo4j.cypher.internal.compiler.v4_0.planner.logical.steps
 
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compiler.v4_0.planner._
-import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.ExpressionEvaluator
+import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.{ExpressionEvaluator, PlanMatchHelp}
 import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.Metrics.QueryGraphSolverInput
 import org.neo4j.cypher.internal.ir.v4_0._
 import org.neo4j.cypher.internal.planner.v4_0.spi.PlanningAttributes.Cardinalities
-import org.neo4j.cypher.internal.v4_0.logical.plans.{AllNodesScan, LogicalPlan, RightOuterHashJoin, _}
+import org.neo4j.cypher.internal.v4_0.logical.plans.{AllNodesScan, LogicalPlan, RightOuterHashJoin}
 import org.neo4j.cypher.internal.v4_0.ast.{Hint, UsingJoinHint}
-import org.neo4j.cypher.internal.v4_0.expressions.{PatternExpression, PropertyKeyName, SemanticDirection, Variable}
+import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
 import org.neo4j.cypher.internal.v4_0.util.Cost
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 
-class RightOuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSupport {
+class RightOuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSupport with PlanMatchHelp {
 
-  private implicit val subQueryLookupTable = Map.empty[PatternExpression, QueryGraph]
-
-  val aNode = "a"
-  val bNode = "b"
-  val cNode = "c"
-  val dNode = "d"
-  val r1Name = "r1"
-  val r2Name = "r2"
-  val r3Name = "r3"
-  val r1Rel = PatternRelationship(r1Name, (aNode, bNode), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
-  val r2Rel = PatternRelationship(r2Name, (bNode, cNode), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
-  val r3Rel = PatternRelationship(r3Name, (cNode, dNode), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
+  private val aNode = "a"
+  private val bNode = "b"
+  private val r1Rel = PatternRelationship("r1", (aNode, bNode), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
 
   test("solve optional match with right outer join") {
     // MATCH a OPTIONAL MATCH a-->b
@@ -55,12 +46,12 @@ class RightOuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSupp
     )
 
     val factory = newMockedMetricsFactory
-    when(factory.newCostModel(config)).thenReturn((plan: LogicalPlan, input: QueryGraphSolverInput, _: Cardinalities) => plan match {
-      case AllNodesScan("b", _) => Cost(1) // Make sure we start the inner plan using b
+    when(factory.newCostModel(config)).thenReturn((plan: LogicalPlan, _: QueryGraphSolverInput, _: Cardinalities) => plan match {
+      case AllNodesScan(`bNode`, _) => Cost(1) // Make sure we start the inner plan using b
       case _ => Cost(1000)
     })
 
-    val innerPlan = newMockedLogicalPlan("b")
+    val innerPlan = newMockedLogicalPlan(bNode)
 
     val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext,
@@ -73,7 +64,7 @@ class RightOuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSupp
   }
 
   test("solve optional match with hint") {
-    val theHint: Seq[Hint] = Seq(UsingJoinHint(Seq(Variable("a")(pos)))(pos))
+    val theHint: Seq[Hint] = Seq(UsingJoinHint(Seq(varFor(aNode)))(pos))
     // MATCH a OPTIONAL MATCH a-->b
     val optionalQg = QueryGraph(
       patternNodes = Set(aNode, bNode),
@@ -83,12 +74,12 @@ class RightOuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSupp
     )
 
     val factory = newMockedMetricsFactory
-    when(factory.newCostModel(config)).thenReturn((plan: LogicalPlan, input: QueryGraphSolverInput, _: Cardinalities) => plan match {
-      case AllNodesScan("b", _) => Cost(1) // Make sure we start the inner plan using b
+    when(factory.newCostModel(config)).thenReturn((plan: LogicalPlan, _: QueryGraphSolverInput, _: Cardinalities) => plan match {
+      case AllNodesScan(`bNode`, _) => Cost(1) // Make sure we start the inner plan using b
       case _ => Cost(1000)
     })
 
-    val innerPlan = newMockedLogicalPlan("b")
+    val innerPlan = newMockedLogicalPlan(bNode)
 
     val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext,
@@ -103,22 +94,23 @@ class RightOuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSupp
 
   test("should not expose cached node properties from lhs where node is join key") {
     def cachedProp(node: String, propertyKey: String) =
-      prop(node, propertyKey) -> CachedNodeProperty(node, PropertyKeyName(propertyKey)(pos))(pos)
+      prop(node, propertyKey) -> cachedNodeProperty(node, propertyKey)
 
     // given
+    val cNode = "c"
     val lhs = mock[LogicalPlan]
-    when(lhs.availableSymbols).thenReturn(Set("a", "b"))
-    when(lhs.availableCachedNodeProperties).thenReturn(Map(cachedProp("a", "lhs"), cachedProp("b", "lhs")))
+    when(lhs.availableSymbols).thenReturn(Set(aNode, bNode))
+    when(lhs.availableCachedNodeProperties).thenReturn(Map(cachedProp(aNode, "lhs"), cachedProp(bNode, "lhs")))
     val rhs = mock[LogicalPlan]
-    when(rhs.availableSymbols).thenReturn(Set("b", "c"))
-    when(rhs.availableCachedNodeProperties).thenReturn(Map(cachedProp("b", "rhs"), cachedProp("c", "rhs")))
-    val join = RightOuterHashJoin(Set("b"), lhs, rhs)
+    when(rhs.availableSymbols).thenReturn(Set(bNode, cNode))
+    when(rhs.availableCachedNodeProperties).thenReturn(Map(cachedProp(bNode, "rhs"), cachedProp(cNode, "rhs")))
+    val join = RightOuterHashJoin(Set(bNode), lhs, rhs)
 
     // then
     join.availableCachedNodeProperties should be(Map(
-      cachedProp("a", "lhs"),
-      cachedProp("b", "rhs"),
-      cachedProp("c", "rhs")
+      cachedProp(aNode, "lhs"),
+      cachedProp(bNode, "rhs"),
+      cachedProp(cNode, "rhs")
     ))
   }
 }

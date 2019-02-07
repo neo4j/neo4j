@@ -22,28 +22,20 @@ package org.neo4j.cypher.internal.compiler.v4_0.planner.logical.steps
 import org.neo4j.cypher.internal.compiler.v4_0.planner._
 import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.ir.v4_0._
-import org.neo4j.cypher.internal.v4_0.logical.plans.Ascending
-import org.neo4j.cypher.internal.v4_0.logical.plans.ColumnOrder
 import org.neo4j.cypher.internal.v4_0.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.v4_0.logical.plans.Projection
 import org.neo4j.cypher.internal.v4_0.ast
 import org.neo4j.cypher.internal.v4_0.ast.semantics.ExpressionTypeInfo
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.v4_0.ast.ASTAnnotationMap
-import org.neo4j.cypher.internal.v4_0.ast.AscSortItem
-import org.neo4j.cypher.internal.v4_0.expressions._
+import org.neo4j.cypher.internal.v4_0.expressions.{Expression, Property}
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 
 class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport{
 
-  val x: Expression = literalUnsignedInt(110)
-  val y: Expression = literalUnsignedInt(10)
-  val variableSortItem: AscSortItem = ast.AscSortItem(varFor("n")) _
-  val columnOrder: ColumnOrder = Ascending("n")
-
   test("should add projection for expressions not already covered") {
     // given
-    val projections: Map[String, Expression] = Map("42" -> literalInt(42))
+    val projections = Map("42" -> literalInt(42))
 
     val (context, startPlan) = queryGraphWith(projectionsMap = projections)
 
@@ -57,8 +49,8 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport{
 
   test("should mark as solved according to projectionsToMarkSolved argument") {
     // given
-    val projections: Map[String, Expression] = Map("42" -> literalInt(42), "43" -> literalInt(43))
-    val projectionsToMarkSolved: Map[String, Expression] = Map("42" -> literalInt(42))
+    val projections = Map("42" -> literalInt(42), "43" -> literalInt(43))
+    val projectionsToMarkSolved = Map("42" -> literalInt(42))
 
     val (context, startPlan) = queryGraphWith(projectionsMap = projections)
 
@@ -72,7 +64,7 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport{
 
   test("does not add projection when not needed") {
     // given
-    val projections: Map[String, Expression] = Map("n" -> varFor("n"))
+    val projections = Map("n" -> varFor("n"))
     val (context, startPlan) = queryGraphWith(projectionsMap = projections)
 
     // when
@@ -85,7 +77,7 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport{
 
   test("only adds the set difference of projections needed") {
     // given
-    val projections: Map[String, Expression] = Map("n" -> varFor("n"), "42" -> literalInt(42))
+    val projections = Map("n" -> varFor("n"), "42" -> literalInt(42))
     val (context, startPlan) = queryGraphWith(projectionsMap = projections)
 
     // when
@@ -99,7 +91,7 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport{
 
   test("does projection when renaming columns") {
     // given
-    val projections: Map[String, Expression] = Map("  n@34" -> varFor("n"))
+    val projections = Map("  n@34" -> varFor("n"))
     val (context, startPlan) = queryGraphWith(projectionsMap = projections)
 
     // when
@@ -113,7 +105,7 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport{
   private def queryGraphWith(skip: Option[Expression] = None,
                              limit: Option[Expression] = None,
                              sortItems: Seq[ast.SortItem] = Seq.empty,
-                             projectionsMap: Map[String, Expression] = Map("n" -> varFor("n")),
+                             projectionsMap: Map[String, Expression],
                              availablePropertiesFromIndexes: Map[Property, String] = Map.empty):
   (LogicalPlanningContext, LogicalPlan) = {
     val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext, semanticTable = new SemanticTable(types = mock[ASTAnnotationMap[Expression, ExpressionTypeInfo]]))

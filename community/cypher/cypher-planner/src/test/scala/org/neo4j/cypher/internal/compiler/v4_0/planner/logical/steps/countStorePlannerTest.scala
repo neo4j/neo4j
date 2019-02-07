@@ -20,11 +20,10 @@
 package org.neo4j.cypher.internal.compiler.v4_0.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v4_0.planner.LogicalPlanningTestSupport
-import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.{LogicalPlanningContext, QueryGraphProducer}
-import org.neo4j.cypher.internal.ir.v4_0.{AggregatingQueryProjection, PlannerQuery}
+import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.QueryGraphProducer
+import org.neo4j.cypher.internal.ir.v4_0.AggregatingQueryProjection
 import org.neo4j.cypher.internal.planner.v4_0.spi.PlanContext
 import org.neo4j.cypher.internal.v4_0.logical.plans.{LogicalPlan, NodeCountFromCountStore, RelationshipCountFromCountStore}
-import org.neo4j.cypher.internal.v4_0.expressions.{FunctionInvocation, FunctionName, Variable}
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.scalatest.matchers.{MatchResult, Matcher}
 
@@ -173,7 +172,7 @@ class countStorePlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
   private def producePlannerQuery(query: String, variable: String) = {
     val (pq, _) = producePlannerQueryForPattern(query)
     pq.withHorizon(AggregatingQueryProjection(
-      aggregationExpressions = Map(s"count($variable)" -> FunctionInvocation(FunctionName("count") _, Variable(variable) _) _)))
+      aggregationExpressions = Map(s"count($variable)" -> count(varFor(variable)))))
   }
 
   case class IsCountPlan(variable: String, noneExpected: Boolean) extends Matcher[Option[LogicalPlan]] {

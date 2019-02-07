@@ -22,14 +22,13 @@ package org.neo4j.cypher.internal.compiler.v4_0.planner.logical.plans.rewriter
 import org.neo4j.cypher.internal.compiler.v4_0.planner.{FakePlan, LogicalPlanningTestSupport}
 import org.neo4j.cypher.internal.v4_0.util.symbols.CTAny
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.v4_0.expressions._
 import org.neo4j.cypher.internal.v4_0.logical.plans.{DropResult, LogicalPlan, Selection}
 import org.neo4j.cypher.internal.v4_0.expressions.DummyExpression
 
 class SimplifySelectionsTest extends CypherFunSuite with LogicalPlanningTestSupport {
   test("should rewrite Selection(false, source) to DropResult(source)") {
     val source: LogicalPlan = FakePlan(Set.empty)
-    val selection = Selection(Seq(False()(pos)), source)
+    val selection = Selection(Seq(falseLiteral), source)
 
     selection.endoRewrite(simplifySelections) should equal(
       DropResult( source))
@@ -37,7 +36,7 @@ class SimplifySelectionsTest extends CypherFunSuite with LogicalPlanningTestSupp
 
   test("should rewrite Selection(true, source) to source") {
     val source: LogicalPlan = FakePlan(Set.empty)
-    val selection = Selection(Seq(True()(pos)), source)
+    val selection = Selection(Seq(trueLiteral), source)
 
     selection.endoRewrite(simplifySelections) should equal(source)
   }

@@ -51,7 +51,7 @@ class PatternExpressionSolverTest extends CypherFunSuite with LogicalPlanningTes
     val expectedInnerPlan = Projection(otherSide, Map("  FRESHID0" -> PathExpression(pathStep)(pos)))
 
     resultPlan should equal(RollUpApply(source, expectedInnerPlan, "x", "  FRESHID0", Set("a")))
-    expressions should equal(Map("x" -> Variable("x")(pos)))
+    expressions should equal(Map("x" -> varFor("x")))
   }
 
   private def mockStrategyWithMultiplePlans(strategy: QueryGraphSolver, plans: LogicalPlan*): Unit = {
@@ -87,7 +87,7 @@ class PatternExpressionSolverTest extends CypherFunSuite with LogicalPlanningTes
     val rollUp2 = RollUpApply(rollUp1, expectedInnerPlan2, "y", "  FRESHID3", Set("a"))
 
     resultPlan should equal(rollUp2)
-    expressions should equal(Map("x" -> Variable("x")(pos), "y" -> Variable("y")(pos)))
+    expressions should equal(Map("x" -> varFor("x"), "y" -> varFor("y")))
   }
 
   test("Rewrites pattern expression inside complex expression") {
@@ -104,7 +104,7 @@ class PatternExpressionSolverTest extends CypherFunSuite with LogicalPlanningTes
     // when
     val expressionSolver = createPatternExpressionBuilder(Map(namedPatExpr1 -> pathStep1, namedPatExpr2 -> pathStep2))
 
-    val stringToEquals1: Map[String, Expression] = Map("x" -> Equals(patExpr1, patExpr2)(pos))
+    val stringToEquals1 = Map("x" -> equals(patExpr1, patExpr2))
     val (resultPlan, expressions) = expressionSolver(source, stringToEquals1, InterestingOrder.empty, context)
 
     // then
@@ -115,7 +115,7 @@ class PatternExpressionSolverTest extends CypherFunSuite with LogicalPlanningTes
     val rollUp2 = RollUpApply(rollUp1, expectedInnerPlan2, "  FRESHID4", "  FRESHID3", Set("a"))
 
     resultPlan should equal(rollUp2)
-    expressions should equal(Map("x" -> Equals(Variable("  FRESHID1")(pos), Variable("  FRESHID4")(pos))(pos)))
+    expressions should equal(Map("x" -> equals(varFor("  FRESHID1"), varFor("  FRESHID4"))))
   }
 
   test("Rewrites pattern expression inside complex expression, as a WHERE predicate") {
@@ -132,7 +132,7 @@ class PatternExpressionSolverTest extends CypherFunSuite with LogicalPlanningTes
     // when
     val expressionSolver = createPatternExpressionBuilder(Map(namedPatExpr1 -> pathStep1, namedPatExpr2 -> pathStep2))
 
-    val predicate = Equals(patExpr1, patExpr2)(pos)
+    val predicate = equals(patExpr1, patExpr2)
     val (resultPlan, expressions) = expressionSolver(source, Seq(predicate), InterestingOrder.empty, context)
 
     // then
@@ -143,7 +143,7 @@ class PatternExpressionSolverTest extends CypherFunSuite with LogicalPlanningTes
     val rollUp2 = RollUpApply(rollUp1, expectedInnerPlan2, "  FRESHID4", "  FRESHID3", Set("a"))
 
     resultPlan should equal(rollUp2)
-    expressions should equal(Seq(Equals(Variable("  FRESHID1")(pos), Variable("  FRESHID4")(pos))(pos)))
+    expressions should equal(Seq(equals(varFor("  FRESHID1"), varFor("  FRESHID4"))))
   }
 
 
@@ -165,8 +165,8 @@ class PatternExpressionSolverTest extends CypherFunSuite with LogicalPlanningTes
   private def newPatExpr(left: String, position: Int, rightE: Either[Int, String], relNameE: Either[Int, String], dir: SemanticDirection): PatternExpression = {
 
     def getNameAndPosition(rightE: Either[Int, String]) = rightE match {
-      case (Left(i)) => (None, DummyPosition(i))
-      case (Right(name)) => (Some(Variable(name)(pos)), pos)
+      case Left(i) => (None, DummyPosition(i))
+      case Right(name) => (Some(varFor(name)), pos)
     }
 
     val (right, rightPos) = getNameAndPosition(rightE)

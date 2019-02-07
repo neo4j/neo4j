@@ -21,19 +21,17 @@ package org.neo4j.cypher.internal.compiler.v4_0.planner.logical.steps
 
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compiler.v4_0.planner._
-import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.ExpressionEvaluator
+import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.{ExpressionEvaluator, PlanMatchHelp}
 import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.Metrics.QueryGraphSolverInput
 import org.neo4j.cypher.internal.ir.v4_0._
 import org.neo4j.cypher.internal.planner.v4_0.spi.PlanningAttributes.Cardinalities
-import org.neo4j.cypher.internal.v4_0.logical.plans.{AllNodesScan, CachedNodeProperty, LeftOuterHashJoin, LogicalPlan}
+import org.neo4j.cypher.internal.v4_0.logical.plans.{AllNodesScan, LeftOuterHashJoin, LogicalPlan}
 import org.neo4j.cypher.internal.v4_0.ast.{Hint, UsingJoinHint}
-import org.neo4j.cypher.internal.v4_0.expressions.{PatternExpression, PropertyKeyName, SemanticDirection, Variable}
+import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
 import org.neo4j.cypher.internal.v4_0.util.Cost
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 
-class LeftOuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSupport {
-
-  private implicit val subQueryLookupTable = Map.empty[PatternExpression, QueryGraph]
+class LeftOuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSupport with PlanMatchHelp {
 
   val aNode = "a"
   val bNode = "b"
@@ -56,7 +54,7 @@ class LeftOuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSuppo
 
     val factory = newMockedMetricsFactory
 
-    when(factory.newCostModel(config)).thenReturn((plan: LogicalPlan, input: QueryGraphSolverInput, _: Cardinalities) => plan match {
+    when(factory.newCostModel(config)).thenReturn((plan: LogicalPlan, _: QueryGraphSolverInput, _: Cardinalities) => plan match {
       case AllNodesScan("b", _) => Cost(1) // Make sure we start the inner plan using b
       case _ => Cost(1000)
     })
@@ -74,7 +72,7 @@ class LeftOuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSuppo
   }
 
   test("solve optional match with hint") {
-    val theHint: Seq[Hint] = Seq(UsingJoinHint(Seq(Variable("a")(pos)))(pos))
+    val theHint: Seq[Hint] = Seq(UsingJoinHint(Seq(varFor("a")))(pos))
     // MATCH a OPTIONAL MATCH a-->b
     val optionalQg = QueryGraph(
       patternNodes = Set(aNode, bNode),
@@ -84,7 +82,7 @@ class LeftOuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSuppo
     )
 
     val factory = newMockedMetricsFactory
-    when(factory.newCostModel(config)).thenReturn((plan: LogicalPlan, input: QueryGraphSolverInput, _: Cardinalities) => plan match {
+    when(factory.newCostModel(config)).thenReturn((plan: LogicalPlan, _: QueryGraphSolverInput, _: Cardinalities) => plan match {
       case AllNodesScan("b", _) => Cost(1) // Make sure we start the inner plan using b
       case _ => Cost(1000)
     })
@@ -104,7 +102,7 @@ class LeftOuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSuppo
 
   test("should not expose cached node properties from rhs where node is join key") {
     def cachedProp(node: String, propertyKey: String) =
-      prop(node, propertyKey) -> CachedNodeProperty(node, PropertyKeyName(propertyKey)(pos))(pos)
+      prop(node, propertyKey) -> cachedNodeProperty(node, propertyKey)
 
     // given
     val lhs = mock[LogicalPlan]

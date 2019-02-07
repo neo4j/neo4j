@@ -19,13 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v4_0.planner.logical.plans.rewriter
 
-import org.neo4j.csv.reader.Configuration
 import org.neo4j.csv.reader.Configuration.DEFAULT_BUFFER_SIZE_4MB
 import org.neo4j.cypher.internal.compiler.v4_0.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.ir.v4_0.NoHeaders
 import org.neo4j.cypher.internal.v4_0.logical.plans._
-import org.neo4j.cypher.internal.v4_0.logical.plans.UnwindCollection
-import org.neo4j.cypher.internal.v4_0.expressions.StringLiteral
 import org.neo4j.cypher.internal.v4_0.util.attribution.Attributes
 import org.neo4j.cypher.internal.v4_0.util.helpers.fixedPoint
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
@@ -81,12 +78,17 @@ class cleanUpEagerTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
   test("should move eager on top of load csv to below it") {
     val leaf = newMockedLogicalPlan()
-    val url = StringLiteral("file:///tmp/foo.csv")(pos)
+    val url = literalString("file:///tmp/foo.csv")
     val loadCSV = LoadCSV(leaf, url, "a", NoHeaders, None, legacyCsvQuoteEscaping = false, DEFAULT_BUFFER_SIZE_4MB)
     val eager = Eager(loadCSV)
     val topPlan = Projection(eager, Map.empty)
 
-    rewrite(topPlan) should equal(Projection(LoadCSV(Eager(leaf), url, "a", NoHeaders, None, false, DEFAULT_BUFFER_SIZE_4MB), Map.empty))
+    rewrite(topPlan) should equal(
+      Projection(
+        LoadCSV(Eager(leaf), url, "a", NoHeaders, None, legacyCsvQuoteEscaping = false, DEFAULT_BUFFER_SIZE_4MB),
+        Map.empty
+      )
+    )
   }
 
   test("should move eager on top of limit to below it") {
@@ -104,7 +106,8 @@ class cleanUpEagerTest extends CypherFunSuite with LogicalPlanningTestSupport {
   test("should not rewrite plan with eager below load csv") {
     val leaf = newMockedLogicalPlan()
     val eager = Eager(leaf)
-    val loadCSV = LoadCSV(eager, StringLiteral("file:///tmp/foo.csv")(pos), "a", NoHeaders, None, false, DEFAULT_BUFFER_SIZE_4MB)
+    val loadCSV = LoadCSV(eager, literalString("file:///tmp/foo.csv"), "a", NoHeaders, None,
+                                                legacyCsvQuoteEscaping = false, DEFAULT_BUFFER_SIZE_4MB)
     val topPlan = Projection(loadCSV, Map.empty)
 
     rewrite(topPlan) should equal(topPlan)

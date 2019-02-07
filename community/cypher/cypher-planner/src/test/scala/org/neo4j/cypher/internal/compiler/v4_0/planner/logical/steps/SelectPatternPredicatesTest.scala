@@ -19,58 +19,35 @@
  */
 package org.neo4j.cypher.internal.compiler.v4_0.planner.logical.steps
 
-import org.mockito.ArgumentMatchers._
-import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compiler.v4_0.planner._
-import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.Metrics.{CardinalityModel, QueryGraphSolverInput}
 import org.neo4j.cypher.internal.ir.v4_0._
 import org.neo4j.cypher.internal.v4_0.logical.plans._
-import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.v4_0.expressions._
-import org.neo4j.cypher.internal.v4_0.util.Cardinality
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 
 class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
-  val sdir = SemanticDirection.OUTGOING
-  val dir = SemanticDirection.OUTGOING
-  val types = Seq.empty[RelTypeName]
-  val relName = "  UNNAMED1"
-  val nodeName = "  UNNAMED2"
-  val patternRel = PatternRelationship(relName, ("a", nodeName), dir, types, SimplePatternLength)
+  private val dir = SemanticDirection.OUTGOING
+  private val types = Seq.empty[RelTypeName]
+  private val nodeName = "  UNNAMED2"
+  private val patternRel = PatternRelationship("  UNNAMED1", ("a", nodeName), dir, types, SimplePatternLength)
 
   // MATCH (a) WHERE (a)-->()
-  val patternExp = PatternExpression(RelationshipsPattern(RelationshipChain(
+  private val patternExp = PatternExpression(RelationshipsPattern(RelationshipChain(
     NodePattern(Some(varFor("a")), Seq(), None)_,
-    RelationshipPattern(Some(varFor(relName)), types, None, None, sdir) _,
+    RelationshipPattern(Some(varFor("  UNNAMED1")), types, None, None, dir) _,
     NodePattern(Some(varFor(nodeName)), Seq(), None)_
   )_)_)
-
-  val factory = newMockedMetricsFactory
-  doReturn(new CardinalityModel {
-    override def apply(query: PlannerQuery, input: QueryGraphSolverInput, semanticTable: SemanticTable): Cardinality = {
-      query match {
-        case _ => Cardinality(1000)
-      }
-    }
-  }, Nil: _*).when(factory).newCardinalityEstimator(any(), any())
 
   test("should introduce semi apply for unsolved exclusive pattern predicate") {
     // Given
     val predicate = Predicate(Set("a"), patternExp)
     val selections = Selections(Set(predicate))
-    val patternQG = QueryGraph(
-      patternRelationships = Set(patternRel),
-      argumentIds = Set("a"),
-      patternNodes = Set("a", nodeName)
-    )
 
     val qg = QueryGraph(
       patternNodes = Set("a"),
       selections = selections
     )
-
-    implicit val subQueryLookupTable = Map(patternExp -> patternQG)
 
     val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext)
 
@@ -85,22 +62,15 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
   }
 
   test("should introduce anti semi apply for unsolved exclusive negated pattern predicate") {
-    val notExpr = Not(patternExp)_
+    val notExpr = not(patternExp)
     // Given
     val predicate = Predicate(Set("a"), notExpr)
     val selections = Selections(Set(predicate))
-    val patternQG = QueryGraph(
-      patternRelationships = Set(patternRel),
-      argumentIds = Set("a"),
-      patternNodes = Set("a", nodeName)
-    )
 
     val qg = QueryGraph(
       patternNodes = Set("a"),
       selections = selections
     )
-
-    implicit val subQueryLookupTable = Map(patternExp -> patternQG)
 
     val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext)
 
@@ -118,19 +88,11 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     // Given
     val predicate = Predicate(Set("a"), patternExp)
     val selections = Selections(Set(predicate))
-    val patternQG = QueryGraph(
-      patternRelationships = Set(patternRel),
-      argumentIds = Set("a"),
-      patternNodes = Set("a", nodeName)
-    )
-
 
     val qg = QueryGraph(
       patternNodes = Set("b"),
       selections = selections
     )
-
-    implicit val subQueryLookupTable = Map(patternExp -> patternQG)
 
     val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext)
 
@@ -144,25 +106,15 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
 
   test("should introduce select or semi apply for unsolved pattern predicates in disjunction with expressions") {
     // Given
-    val equals = Equals(
-      Property(varFor("a"), PropertyKeyName("prop")_)_,
-      StringLiteral("42")_
-    )_
-    val orsExp: Ors = Ors(Set(patternExp, equals))_
+    val equalsExp = equals(prop("a", "prop"), literalString("42"))
+    val orsExp = ors(patternExp, equalsExp)
     val orPredicate = Predicate(Set("a"), orsExp)
     val selections = Selections(Set(orPredicate))
-    val patternQG = QueryGraph(
-      patternRelationships = Set(patternRel),
-      argumentIds = Set("a"),
-      patternNodes = Set("a", nodeName)
-    )
 
     val qg = QueryGraph(
       patternNodes = Set("a"),
       selections = selections
     )
-
-    implicit val subQueryLookupTable = Map(patternExp -> patternQG)
 
     val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext)
 
@@ -174,30 +126,20 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     val result = selectPatternPredicates(aPlan, qg, InterestingOrder.empty, context)
 
     // Then
-    result should equal(Seq(SelectOrSemiApply(aPlan, inner, equals)))
+    result should equal(Seq(SelectOrSemiApply(aPlan, inner, equalsExp)))
   }
 
   test("should introduce select or anti semi apply for unsolved negated pattern predicates in disjunction with an expression") {
     // Given
-    val equals = Equals(
-      Property(varFor("a"), PropertyKeyName("prop")_)_,
-      StringLiteral("42")_
-    )_
-    val orsExp = Ors(Set(Not(patternExp)(pos), equals))_
+    val equalsExp = equals(prop("a", "prop"), literalString("42"))
+    val orsExp = ors(not(patternExp), equalsExp)
     val orPredicate = Predicate(Set("a"), orsExp)
     val selections = Selections(Set(orPredicate))
-    val patternQG = QueryGraph(
-      patternRelationships = Set(patternRel),
-      argumentIds = Set("a"),
-      patternNodes = Set("a", nodeName)
-    )
 
     val qg = QueryGraph(
       patternNodes = Set("a"),
       selections = selections
     )
-
-    implicit val subQueryLookupTable = Map(patternExp -> patternQG)
 
     val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext)
 
@@ -208,40 +150,27 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     val result = selectPatternPredicates(aPlan, qg, InterestingOrder.empty, context)
 
     // Then
-    result should equal(Seq(SelectOrAntiSemiApply(aPlan, inner, equals)))
+    result should equal(Seq(SelectOrAntiSemiApply(aPlan, inner, equalsExp)))
   }
 
   test("should introduce let semi apply and select or semi apply for multiple pattern predicates in or") {
     // Given
     val patternExp2 = PatternExpression(RelationshipsPattern(RelationshipChain(
       NodePattern(Some(varFor("a")), Seq(), None)_,
-      RelationshipPattern(Some(varFor("  UNNAMED3")), types, None, None, sdir) _,
+      RelationshipPattern(Some(varFor("  UNNAMED3")), types, None, None, dir) _,
       NodePattern(Some(varFor("  UNNAMED4")), Seq(), None)_
     )_)_)
 
     val patternRel2 = PatternRelationship("  UNNAMED3", ("a", "  UNNAMED4"), dir, types, SimplePatternLength)
 
-    val orsExp = Ors(Set(patternExp, patternExp2))_
+    val orsExp = ors(patternExp, patternExp2)
     val orPredicate = Predicate(Set("a"), orsExp)
     val selections = Selections(Set(orPredicate))
-    val patternQG = QueryGraph(
-      patternRelationships = Set(patternRel),
-      argumentIds = Set("a"),
-      patternNodes = Set("a", nodeName)
-    )
-
-    val patternQG2 = QueryGraph(
-      patternRelationships = Set(patternRel2),
-      argumentIds = Set("a"),
-      patternNodes = Set("a", "  UNNAMED4")
-    )
 
     val qg = QueryGraph(
       patternNodes = Set("a"),
       selections = selections
     )
-
-    implicit val subQueryLookupTable = Map(patternExp -> patternQG, patternExp2 -> patternQG2)
 
     val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext)
 
@@ -253,39 +182,28 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     val result = selectPatternPredicates(aPlan, qg, InterestingOrder.empty, context)
 
     // Then
-    result should equal(Seq(SelectOrSemiApply(LetSemiApply(aPlan, inner, "  FRESHID0"), inner2, varFor("  FRESHID0"))))
+    result should equal(
+      Seq(SelectOrSemiApply(LetSemiApply(aPlan, inner, "  FRESHID0"), inner2, varFor("  FRESHID0")))
+    )
   }
 
   test("should introduce let semi apply and select or anti semi apply for multiple pattern predicates in or") {
     // Given
     val patternExp2: PatternExpression = PatternExpression(RelationshipsPattern(RelationshipChain(
       NodePattern(Some(varFor("a")), Seq(), None)_,
-      RelationshipPattern(Some(varFor("  UNNAMED3")), types, None, None, sdir) _,
+      RelationshipPattern(Some(varFor("  UNNAMED3")), types, None, None, dir) _,
       NodePattern(Some(varFor("  UNNAMED4")), Seq(), None)_
     )_)_)
     val patternRel2 = PatternRelationship("  UNNAMED3", ("a", "  UNNAMED4"), dir, types, SimplePatternLength)
 
-    val orsExp = Ors(Set(patternExp, Not(patternExp2)_))_
+    val orsExp = ors(patternExp, not(patternExp2))
     val orPredicate = Predicate(Set("a"), orsExp)
     val selections = Selections(Set(orPredicate))
-    val patternQG = QueryGraph(
-      patternRelationships = Set(patternRel),
-      argumentIds = Set("a"),
-      patternNodes = Set("a", nodeName)
-    )
-
-    val patternQG2 = QueryGraph(
-      patternRelationships = Set(patternRel2),
-      argumentIds = Set("a"),
-      patternNodes = Set("a", "  UNNAMED4")
-    )
 
     val qg = QueryGraph(
       patternNodes = Set("a"),
       selections = selections
     )
-
-    implicit val subQueryLookupTable = Map(patternExp -> patternQG, patternExp2 -> patternQG2)
 
     val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext)
 
@@ -297,39 +215,28 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     val result = selectPatternPredicates(aPlan, qg, InterestingOrder.empty, context)
 
     // Then
-    result should equal(Seq(SelectOrAntiSemiApply(LetSemiApply(aPlan, inner, "  FRESHID0"), inner2, varFor("  FRESHID0"))))
+    result should equal(
+      Seq(SelectOrAntiSemiApply(LetSemiApply(aPlan, inner, "  FRESHID0"), inner2, varFor("  FRESHID0")))
+    )
   }
 
   test("should introduce let anti semi apply and select or semi apply for multiple pattern predicates in or") {
     // Given
     val patternExp2: PatternExpression = PatternExpression(RelationshipsPattern(RelationshipChain(
       NodePattern(Some(varFor("a")), Seq(), None)_,
-      RelationshipPattern(Some(varFor("  UNNAMED3")), types, None, None, sdir) _,
+      RelationshipPattern(Some(varFor("  UNNAMED3")), types, None, None, dir) _,
       NodePattern(Some(varFor("  UNNAMED4")), Seq(), None)_
     )_)_)
     val patternRel2 = PatternRelationship("  UNNAMED3", ("a", "  UNNAMED4"), dir, types, SimplePatternLength)
 
-    val orsExp = Ors(Set(Not(patternExp)_, patternExp2))_
+    val orsExp = ors(not(patternExp), patternExp2)
     val orPredicate = Predicate(Set("a"), orsExp)
     val selections = Selections(Set(orPredicate))
-    val patternQG = QueryGraph(
-      patternRelationships = Set(patternRel),
-      argumentIds = Set("a"),
-      patternNodes = Set("a", nodeName)
-    )
-
-    val patternQG2 = QueryGraph(
-      patternRelationships = Set(patternRel2),
-      argumentIds = Set("a"),
-      patternNodes = Set("a", "  UNNAMED4")
-    )
 
     val qg = QueryGraph(
       patternNodes = Set("a"),
       selections = selections
     )
-
-    implicit val subQueryLookupTable = Map(patternExp -> patternQG, patternExp2 -> patternQG2)
 
     val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext)
 
@@ -341,44 +248,30 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     val result = selectPatternPredicates(aPlan, qg, InterestingOrder.empty, context)
 
     // Then
-    result should equal(Seq(SelectOrSemiApply(LetAntiSemiApply(aPlan, inner, "  FRESHID0"), inner2, varFor("  FRESHID0"))))
+    result should equal(
+      Seq(SelectOrSemiApply(LetAntiSemiApply(aPlan, inner, "  FRESHID0"), inner2, varFor("  FRESHID0")))
+    )
   }
 
   test("should introduce let select or semi apply and select or anti semi apply for multiple pattern predicates in or") {
     // Given
-    val equals = Equals(
-      Property(varFor("a"), PropertyKeyName("prop")_)_,
-      StringLiteral("42")_
-    )_
+    val equalsExp = equals(prop("a", "prop"), literalString("42"))
 
     val patternExp2: PatternExpression = PatternExpression(RelationshipsPattern(RelationshipChain(
       NodePattern(Some(varFor("a")), Seq(), None)_,
-      RelationshipPattern(Some(varFor("  UNNAMED3")), types, None, None, sdir) _,
+      RelationshipPattern(Some(varFor("  UNNAMED3")), types, None, None, dir) _,
       NodePattern(Some(varFor("  UNNAMED4")), Seq(), None)_
     )_)_)
     val patternRel2 = PatternRelationship("  UNNAMED3", ("a", "  UNNAMED4"), dir, types, SimplePatternLength)
 
-    val orsExp = Ors(Set(equals, patternExp, Not(patternExp2)_))_
+    val orsExp = ors(equalsExp, patternExp, not(patternExp2))
     val orPredicate = Predicate(Set("a"), orsExp)
     val selections = Selections(Set(orPredicate))
-    val patternQG = QueryGraph(
-      patternRelationships = Set(patternRel),
-      argumentIds = Set("a"),
-      patternNodes = Set("a", nodeName)
-    )
-
-    val patternQG2 = QueryGraph(
-      patternRelationships = Set(patternRel2),
-      argumentIds = Set("a"),
-      patternNodes = Set("a", "  UNNAMED4")
-    )
 
     val qg = QueryGraph(
       patternNodes = Set("a"),
       selections = selections
     )
-
-    implicit val subQueryLookupTable = Map(patternExp -> patternQG, patternExp2 -> patternQG2)
 
     val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext)
 
@@ -390,44 +283,32 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     val result = selectPatternPredicates(aPlan, qg, InterestingOrder.empty, context)
 
     // Then
-    result should equal(Seq(SelectOrAntiSemiApply(LetSelectOrSemiApply(aPlan, inner, "  FRESHID0", equals), inner2, varFor("  FRESHID0"))))
+    result should equal(
+      Seq(SelectOrAntiSemiApply(
+        LetSelectOrSemiApply(aPlan, inner, "  FRESHID0", equalsExp), inner2, varFor("  FRESHID0")
+      ))
+    )
   }
 
   test("should introduce let anti select or semi apply and select or semi apply for multiple pattern predicates in or") {
     // Given
-    val equals = Equals(
-      Property(varFor("a"), PropertyKeyName("prop")_)_,
-      StringLiteral("42")_
-    )_
+    val equalsExp = equals(prop("a", "prop"), literalString("42"))
 
     val patternExp2: PatternExpression = PatternExpression(RelationshipsPattern(RelationshipChain(
       NodePattern(Some(varFor("a")), Seq(), None)_,
-      RelationshipPattern(Some(varFor("  UNNAMED3")), types, None, None, sdir) _,
+      RelationshipPattern(Some(varFor("  UNNAMED3")), types, None, None, dir) _,
       NodePattern(Some(varFor("  UNNAMED4")), Seq(), None)_
     )_)_)
     val patternRel2 = PatternRelationship("  UNNAMED3", ("a", "  UNNAMED4"), dir, types, SimplePatternLength)
 
-    val orsExp = Ors(Set(equals, Not(patternExp)_, patternExp2))_
+    val orsExp = ors(equalsExp, not(patternExp), patternExp2)
     val orPredicate = Predicate(Set("a"), orsExp)
     val selections = Selections(Set(orPredicate))
-    val patternQG = QueryGraph(
-      patternRelationships = Set(patternRel),
-      argumentIds = Set("a"),
-      patternNodes = Set("a", nodeName)
-    )
-
-    val patternQG2 = QueryGraph(
-      patternRelationships = Set(patternRel2),
-      argumentIds = Set("a"),
-      patternNodes = Set("a", "  UNNAMED4")
-    )
 
     val qg = QueryGraph(
       patternNodes = Set("a"),
       selections = selections
     )
-
-    implicit val subQueryLookupTable = Map(patternExp -> patternQG, patternExp2 -> patternQG2)
 
     val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext)
 
@@ -439,6 +320,10 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     val result = selectPatternPredicates(aPlan, qg, InterestingOrder.empty, context)
 
     // Then
-    result should equal(Seq(SelectOrSemiApply(LetSelectOrAntiSemiApply(aPlan, inner, "  FRESHID0", equals), inner2, varFor("  FRESHID0"))))
+    result should equal(
+      Seq(SelectOrSemiApply(
+        LetSelectOrAntiSemiApply(aPlan, inner, "  FRESHID0", equalsExp), inner2, varFor("  FRESHID0")
+      ))
+    )
   }
 }

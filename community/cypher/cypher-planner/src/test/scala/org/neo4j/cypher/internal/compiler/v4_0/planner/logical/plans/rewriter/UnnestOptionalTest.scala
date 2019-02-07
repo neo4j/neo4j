@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v4_0.planner.logical.plans.rewriter
 import org.neo4j.cypher.internal.compiler.v4_0.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.ir.v4_0.VarPatternLength
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.v4_0.expressions._
+import org.neo4j.cypher.internal.v4_0.expressions.{RelTypeName, SemanticDirection}
 import org.neo4j.cypher.internal.v4_0.logical.plans._
 
 class UnnestOptionalTest extends CypherFunSuite with LogicalPlanningTestSupport {
@@ -42,7 +42,7 @@ class UnnestOptionalTest extends CypherFunSuite with LogicalPlanningTestSupport 
   test("should not rewrite Apply/Optional/Selection/Expand to OptionalExpand when expansion is variable length") {
     val argument: LogicalPlan = Argument(Set("a"))
     val expand = VarExpand(argument, "a", SemanticDirection.OUTGOING, SemanticDirection.OUTGOING, Seq.empty, "b", "r", VarPatternLength(1, None), ExpandAll, "tempNode", "tempEdge", trueLiteral, trueLiteral, Seq.empty)
-    val predicate: Equals = Equals(Property(varFor("b"), PropertyKeyName("prop")(pos))(pos), SignedDecimalIntegerLiteral("1")(pos))(pos)
+    val predicate = propEquality("b", "prop", 1)
     val selection = Selection(Seq(predicate), expand)
     val rhs: LogicalPlan = Optional(selection)
     val lhs = newMockedLogicalPlan("a")

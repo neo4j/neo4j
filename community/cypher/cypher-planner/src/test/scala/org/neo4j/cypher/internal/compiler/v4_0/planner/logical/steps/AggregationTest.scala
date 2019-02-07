@@ -22,18 +22,11 @@ package org.neo4j.cypher.internal.compiler.v4_0.planner.logical.steps
 import org.neo4j.cypher.internal.compiler.v4_0.planner._
 import org.neo4j.cypher.internal.ir.v4_0.{AggregatingQueryProjection, InterestingOrder}
 import org.neo4j.cypher.internal.v4_0.logical.plans.{Aggregation, LogicalPlan, Projection}
-import org.neo4j.cypher.internal.v4_0.expressions._
+import org.neo4j.cypher.internal.v4_0.expressions.CountStar
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 
 class AggregationTest extends CypherFunSuite with LogicalPlanningTestSupport {
-  val aggregatingMap: Map[String, Expression] = Map("count(*)" -> CountStar()(pos))
-
-  val propExp: Expression = prop("n", "prop")
-  val countExp: Expression = function("count", propExp)
-  val aggregatingMap2: Map[String, Expression] = Map("count(n.prop)" -> countExp)
-
-  val propExp2: Expression = prop("n", "bar")
-  val groupingMap: Map[String, Expression] = Map("n.bar" -> propExp2)
+  private val aggregatingMap = Map("count(*)" -> CountStar()(pos))
 
   test("should introduce aggregation when needed") {
     val projection = AggregatingQueryProjection(
@@ -54,9 +47,11 @@ class AggregationTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
   test("should introduce variables when needed") {
     //match (n) return n.y, sum(n.x)
+    val aggregationMap = Map("count(n.prop)" -> count(prop("n", "prop")))
+    val groupingMap = Map("n.bar" -> prop("n", "bar"))
     val projectionPlan = AggregatingQueryProjection(
       groupingExpressions = groupingMap,
-      aggregationExpressions = aggregatingMap2
+      aggregationExpressions = aggregationMap
     )
 
     val context = newMockedLogicalPlanningContextWithFakeAttributes(
@@ -68,7 +63,7 @@ class AggregationTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val result = aggregation(startPlan, projectionPlan, InterestingOrder.empty, context)
     result should equal(
       Aggregation(
-       startPlan, groupingMap, aggregatingMap2)
+       startPlan, groupingMap, aggregationMap)
     )
   }
 

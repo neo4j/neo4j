@@ -23,16 +23,13 @@ import org.neo4j.cypher.internal.compiler.v4_0.planner._
 import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.ir.v4_0._
 import org.neo4j.cypher.internal.v4_0.logical.plans._
-import org.neo4j.cypher.internal.v4_0.expressions._
+import org.neo4j.cypher.internal.v4_0.expressions.Expression
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 
 class SkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
-  val x: Expression = UnsignedDecimalIntegerLiteral("110") _
-  val y: Expression = UnsignedDecimalIntegerLiteral("10") _
-  val sortVariable: Variable = Variable("n")(pos)
-  val columnOrder: ColumnOrder = Ascending("n")
-  val projectionsMap: Map[String, Expression] = Map("n" -> sortVariable)
+  private val x = literalUnsignedInt(110)
+  private val y = literalUnsignedInt(10)
 
   test("should add skip if query graph contains skip") {
     // given
@@ -46,7 +43,9 @@ class SkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
     // then
     result should equal(Skip(startPlan, x))
-    context.planningAttributes.solveds.get(result.id).horizon should equal(RegularQueryProjection(Map.empty, QueryPagination(skip = Some(x))))
+    context.planningAttributes.solveds.get(result.id).horizon should equal(
+      RegularQueryProjection(Map.empty, QueryPagination(skip = Some(x)))
+    )
   }
 
   test("should add limit if query graph contains limit") {
@@ -61,7 +60,9 @@ class SkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
     // then
     result should equal(Limit(startPlan, x, DoNotIncludeTies))
-    context.planningAttributes.solveds.get(result.id).horizon should equal(RegularQueryProjection(Map.empty, QueryPagination(limit = Some(x))))
+    context.planningAttributes.solveds.get(result.id).horizon should equal(
+      RegularQueryProjection(Map.empty, QueryPagination(limit = Some(x)))
+    )
   }
 
   test("should add skip first and then limit if the query graph contains both") {
@@ -76,13 +77,16 @@ class SkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
     // then
     result should equal(Skip(Limit(startPlan, add(x, y), DoNotIncludeTies), y))
-    context.planningAttributes.solveds.get(result.id).horizon should equal(RegularQueryProjection(Map.empty, QueryPagination(limit = Some(x), skip = Some(y))))
+    context.planningAttributes.solveds.get(result.id).horizon should equal(
+      RegularQueryProjection(Map.empty, QueryPagination(limit = Some(x), skip = Some(y)))
+    )
   }
 
-  private def regularProjection(skip: Option[Expression] = None, limit: Option[Expression] = None, projectionsMap: Map[String, Expression] = projectionsMap) =
-    RegularQueryProjection(projections = projectionsMap, queryPagination = QueryPagination(skip, limit))
+  private def regularProjection(skip: Option[Expression] = None, limit: Option[Expression] = None) =
+    RegularQueryProjection(projections = Map("n" -> varFor("n")), queryPagination = QueryPagination(skip, limit))
 
-  private def solved(patternNodes: String*): PlannerQuery = RegularPlannerQuery(QueryGraph.empty.addPatternNodes(patternNodes: _*))
+  private def solved(patternNodes: String*): PlannerQuery =
+    RegularPlannerQuery(QueryGraph.empty.addPatternNodes(patternNodes: _*))
 
   private def queryGraphWith(patternNodesInQG: Set[String],
                              solved: PlannerQuery,

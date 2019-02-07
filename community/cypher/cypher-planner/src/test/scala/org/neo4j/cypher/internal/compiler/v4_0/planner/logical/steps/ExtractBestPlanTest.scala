@@ -28,16 +28,14 @@ import org.neo4j.cypher.internal.ir.v4_0.{PatternRelationship, VarPatternLength,
 import org.neo4j.cypher.internal.planner.v4_0.spi.PlanContext
 import org.neo4j.cypher.internal.v4_0.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.v4_0.ast._
-import org.neo4j.cypher.internal.v4_0.expressions.{LabelName, PatternExpression, PropertyKeyName, SemanticDirection}
+import org.neo4j.cypher.internal.v4_0.expressions.{PropertyKeyName, SemanticDirection}
 import org.neo4j.cypher.internal.v4_0.frontend.phases.RecordingNotificationLogger
 import org.neo4j.cypher.internal.v4_0.util._
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 
 class ExtractBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
-  private val subQueryLookupTable = Map.empty[PatternExpression, QueryGraph]
-
-  private def newIndexHint(): Hint = { UsingIndexHint(varFor("a"), LabelName("User")_, Seq(PropertyKeyName("name")(pos)))_ }
+  private def newIndexHint(): Hint = { UsingIndexHint(varFor("a"), labelName("User"), Seq(PropertyKeyName("name")(pos)))_ }
 
   private def newJoinHint(): Hint = { UsingJoinHint(Seq(varFor("a")))_ }
 

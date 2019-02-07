@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.ir.v4_0._
 import org.neo4j.cypher.internal.planner.v4_0.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.v4_0.logical.plans.{LogicalPlan, NodeByLabelScan}
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
-import org.neo4j.cypher.internal.v4_0.expressions._
+import org.neo4j.cypher.internal.v4_0.expressions.PatternExpression
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.v4_0.util.{Cost, LabelId}
 
@@ -36,18 +36,17 @@ class LabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
 
   val statistics: HardcodedGraphStatistics.type = hardcodedStatistics
 
-  private implicit val subQueryLookupTable = Map.empty[PatternExpression, QueryGraph]
+  private implicit val subQueryLookupTable: Map[PatternExpression, QueryGraph] = Map.empty
 
   test("simple label scan without compile-time label id") {
     // given
     val idName = "n"
-    val hasLabels = HasLabels(Variable("n")_, Seq(LabelName("Awesome")_))_
     val qg = QueryGraph(
-      selections = Selections(Set(Predicate(Set(idName), hasLabels))),
+      selections = Selections(Set(Predicate(Set(idName), hasLabels(idName, "Awesome")))),
       patternNodes = Set(idName))
 
     val factory = newMockedMetricsFactory
-    when(factory.newCostModel(config)).thenReturn((plan: LogicalPlan, input: QueryGraphSolverInput, _: Cardinalities) => plan match {
+    when(factory.newCostModel(config)).thenReturn((plan: LogicalPlan, _: QueryGraphSolverInput, _: Cardinalities) => plan match {
       case _: NodeByLabelScan => Cost(1)
       case _                  => Cost(Double.MaxValue)
     })
@@ -74,12 +73,12 @@ class LabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
       patternNodes = Set(idName))
 
     val factory = newMockedMetricsFactory
-    when(factory.newCostModel(config)).thenReturn((plan: LogicalPlan, input: QueryGraphSolverInput, _: Cardinalities) => plan match {
+    when(factory.newCostModel(config)).thenReturn((plan: LogicalPlan, _: QueryGraphSolverInput, _: Cardinalities) => plan match {
       case _: NodeByLabelScan => Cost(100)
       case _                  => Cost(Double.MaxValue)
     })
 
-    implicit val semanticTable = newMockedSemanticTable
+    implicit val semanticTable: SemanticTable = newMockedSemanticTable
     when(semanticTable.id(labelName("Awesome"))).thenReturn(Some(labelId))
 
     val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext, metrics = factory.newMetrics(statistics, mock[ExpressionEvaluator], config), semanticTable = semanticTable)

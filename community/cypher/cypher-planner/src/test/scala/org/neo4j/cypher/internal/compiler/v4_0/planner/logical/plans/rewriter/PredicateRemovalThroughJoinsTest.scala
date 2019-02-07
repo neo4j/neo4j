@@ -23,15 +23,14 @@ import org.neo4j.cypher.internal.compiler.v4_0.planner._
 import org.neo4j.cypher.internal.ir.v4_0._
 import org.neo4j.cypher.internal.planner.v4_0.spi.PlanningAttributes
 import org.neo4j.cypher.internal.v4_0.logical.plans.{NodeHashJoin, Selection}
-import org.neo4j.cypher.internal.v4_0.expressions.{Equals, Expression, SignedDecimalIntegerLiteral}
+import org.neo4j.cypher.internal.v4_0.expressions.Expression
 import org.neo4j.cypher.internal.v4_0.util.Cardinality
 import org.neo4j.cypher.internal.v4_0.util.attribution.Attributes
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 
 class PredicateRemovalThroughJoinsTest extends CypherFunSuite with LogicalPlanningTestSupport {
-  val aHasLabel = hasLabels("a", "LABEL")
-  val pred1: Expression = Equals(SignedDecimalIntegerLiteral("42")_, SignedDecimalIntegerLiteral("42")_)_
-  val pred2: Expression = Equals(SignedDecimalIntegerLiteral("44")_, SignedDecimalIntegerLiteral("44")_)_
+  private val aHasLabel = hasLabels("a", "LABEL")
+  private val pred = equals(literalInt(42), literalInt(42))
 
   test("same predicate on both sides - Selection is removed entirely") {
     // Given
@@ -50,17 +49,18 @@ class PredicateRemovalThroughJoinsTest extends CypherFunSuite with LogicalPlanni
 
   test("multiple predicates on both sides - only one is common on both sides and is removed") {
     // Given
+    val predEquals = equals(literalInt(44), literalInt(44))
     val planningAttributes = newAttributes()
-    val lhsSelection = selectionOp("a", planningAttributes, aHasLabel, pred1)
+    val lhsSelection = selectionOp("a", planningAttributes, aHasLabel, pred)
     val rhsLeaf = newMockedLogicalPlan(planningAttributes, "a")
-    val rhsSelection = Selection(Seq(aHasLabel, pred2), rhsLeaf)
+    val rhsSelection = Selection(Seq(aHasLabel, predEquals), rhsLeaf)
     val join = NodeHashJoin(Set("a"), lhsSelection, rhsSelection)
 
     // When rewritten
     val result = join.endoRewrite(predicateRemovalThroughJoins(planningAttributes.solveds, planningAttributes.cardinalities, Attributes(idGen, planningAttributes.providedOrders)))
 
     // Then the predicate is removed from the RHS selection operator
-    val newRhsSelection = Selection(Seq(pred2), rhsLeaf)
+    val newRhsSelection = Selection(Seq(predEquals), rhsLeaf)
 
     result should equal(
       NodeHashJoin(Set("a"), lhsSelection, newRhsSelection))
@@ -69,9 +69,9 @@ class PredicateRemovalThroughJoinsTest extends CypherFunSuite with LogicalPlanni
   test("same predicate on both sides, but not depending on the join ids - nothing should be removed") {
     // Given
     val planningAttributes = newAttributes()
-    val lhsSelection = selectionOp("a", planningAttributes, pred1)
+    val lhsSelection = selectionOp("a", planningAttributes, pred)
     val rhsLeaf = newMockedLogicalPlan(planningAttributes, "a")
-    val rhsSelection = Selection(Seq(pred1), rhsLeaf)
+    val rhsSelection = Selection(Seq(pred), rhsLeaf)
     val join = NodeHashJoin(Set("a"), lhsSelection, rhsSelection)
 
     // When rewritten

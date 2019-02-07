@@ -29,34 +29,29 @@ import org.neo4j.cypher.internal.planner.v4_0.spi.PlanningAttributes.Cardinaliti
 import org.neo4j.cypher.internal.v4_0.logical.plans._
 import org.neo4j.cypher.internal.v4_0.ast._
 import org.neo4j.cypher.internal.v4_0.ast.semantics.{ExpressionTypeInfo, SemanticTable}
-import org.neo4j.cypher.internal.v4_0.expressions._
+import org.neo4j.cypher.internal.v4_0.expressions.{PatternExpression, RelTypeName, SemanticDirection}
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.v4_0.util.{Cost, RelTypeId, symbols}
 
 class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupport {
 
   private val statistics = hardcodedStatistics
-  private implicit val subQueryLookupTable = Map.empty[PatternExpression, QueryGraph]
+  private implicit val subQueryLookupTable: Map[PatternExpression, QueryGraph] = Map.empty
 
   // NOTE: the ronja rewriters make sure that all EQUALS will be rewritten to IN so here only the latter should be tested
 
   private val evaluator = mock[ExpressionEvaluator]
   test("simple node by id seek with a collection of node ids") {
     // given
-    val variable: Variable = Variable("n")_
-    val expr = In(
-      FunctionInvocation(FunctionName("id")_, distinct = false, Array(variable))_,
-      ListLiteral(
-        Seq(SignedDecimalIntegerLiteral("42")_, SignedDecimalIntegerLiteral("43")_, SignedDecimalIntegerLiteral("43")_)
-      )_
-    )_
+    val variable = varFor("n")
+    val expr = in(function("id", variable), listOfInt(42, 43, 43))
     val qg = QueryGraph(
       selections = Selections(Set(Predicate(Set("n"), expr))),
       patternNodes = Set("n")
     )
 
     val factory = newMockedMetricsFactory
-    when(factory.newCostModel(config)).thenReturn((plan: LogicalPlan, input: QueryGraphSolverInput, _: Cardinalities) => plan match {
+    when(factory.newCostModel(config)).thenReturn((plan: LogicalPlan, _: QueryGraphSolverInput, _: Cardinalities) => plan match {
       case _: NodeByIdSeek => Cost(1)
       case _               => Cost(Double.MaxValue)
     })
@@ -68,19 +63,14 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
 
     // then
     resultPlans should equal(
-      Seq(NodeByIdSeek("n", ManySeekableArgs(ListLiteral(Seq(
-        SignedDecimalIntegerLiteral("42")_, SignedDecimalIntegerLiteral("43")_, SignedDecimalIntegerLiteral("43")_
-      ))_), Set.empty))
+      Seq(NodeByIdSeek("n", ManySeekableArgs(listOfInt(42, 43, 43)), Set.empty))
     )
   }
 
   test("node by id seek with a collection of node ids via previous variable") {
     // given
-    val variable: Variable = Variable("n")_
-    val expr = In(
-      FunctionInvocation(FunctionName("id")_, variable)_,
-      Variable("arr")_
-    )_
+    val variable = varFor("n")
+    val expr = in(function("id", variable), varFor("arr"))
     val qg = QueryGraph(
       selections = Selections(Set(Predicate(Set("n"), expr))),
       patternNodes = Set("n"),
@@ -88,7 +78,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     )
 
     val factory = newMockedMetricsFactory
-    when(factory.newCostModel(config)).thenReturn((plan: LogicalPlan, input: QueryGraphSolverInput, _: Cardinalities) => plan match {
+    when(factory.newCostModel(config)).thenReturn((plan: LogicalPlan, _: QueryGraphSolverInput, _: Cardinalities) => plan match {
       case _: NodeByIdSeek => Cost(1)
       case _               => Cost(Double.MaxValue)
     })
@@ -100,17 +90,14 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
 
     // then
     resultPlans should equal(
-      Seq(NodeByIdSeek("n", ManySeekableArgs(Variable("arr")_), Set("arr")))
+      Seq(NodeByIdSeek("n", ManySeekableArgs(varFor("arr")), Set("arr")))
     )
   }
 
   test("node by id seek should not be produced when the argument expression is an unbound variable") {
     // given match (n) where id(n) in arr
-    val variable: Variable = Variable("n")_
-    val expr = In(
-      FunctionInvocation(FunctionName("id")_, variable)_,
-      Variable("arr")_
-    )_
+    val variable = varFor("n")
+    val expr = in(function("id", variable), varFor("arr"))
     val qg = QueryGraph(
       selections = Selections(Set(Predicate(Set("n"), expr))),
       patternNodes = Set("n"),
@@ -118,7 +105,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     )
 
     val factory = newMockedMetricsFactory
-    when(factory.newCostModel(config)).thenReturn((plan: LogicalPlan, input: QueryGraphSolverInput, _: Cardinalities) => plan match {
+    when(factory.newCostModel(config)).thenReturn((plan: LogicalPlan, _: QueryGraphSolverInput, _: Cardinalities) => plan match {
       case _: NodeByIdSeek => Cost(1)
       case _               => Cost(Double.MaxValue)
     })
@@ -134,11 +121,8 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
 
   test("node by id seek should not be produced when the node variable is an argument") {
     // given match (n) where id(n) in arr
-    val variable: Variable = Variable("n")_
-    val expr = In(
-      FunctionInvocation(FunctionName("id")_, variable)_,
-      Variable("arr")_
-    )_
+    val variable = varFor("n")
+    val expr = in(function("id", variable), varFor("arr"))
     val qg = QueryGraph(
       selections = Selections(Set(Predicate(Set("n"), expr))),
       patternNodes = Set("n"),
@@ -146,7 +130,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     )
 
     val factory = newMockedMetricsFactory
-    when(factory.newCostModel(config)).thenReturn((plan: LogicalPlan, input: QueryGraphSolverInput, _: Cardinalities) => plan match {
+    when(factory.newCostModel(config)).thenReturn((plan: LogicalPlan, _: QueryGraphSolverInput, _: Cardinalities) => plan match {
       case _: NodeByIdSeek => Cost(1)
       case _               => Cost(Double.MaxValue)
     })
@@ -162,13 +146,8 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
 
   test("simple directed relationship by id seek with a collection of relationship ids") {
     // given
-    val rIdent: Variable = Variable("r")_
-    val expr = In(
-      FunctionInvocation(FunctionName("id")_, distinct = false, Array(rIdent))_,
-      ListLiteral(
-        Seq(SignedDecimalIntegerLiteral("42")_, SignedDecimalIntegerLiteral("43")_, SignedDecimalIntegerLiteral("43")_)
-      )_
-    )_
+    val rIdent = varFor("r")
+    val expr = in(function("id", rIdent), listOfInt(42, 43, 43))
     val from = "from"
     val end = "to"
     val patternRel = PatternRelationship("r", (from, end), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
@@ -179,7 +158,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     )
 
     val factory = newMockedMetricsFactory
-    when(factory.newCostModel(config)).thenReturn((plan: LogicalPlan, input: QueryGraphSolverInput, _: Cardinalities) => plan match {
+    when(factory.newCostModel(config)).thenReturn((plan: LogicalPlan, _: QueryGraphSolverInput, _: Cardinalities) => plan match {
       case _: DirectedRelationshipByIdSeek => Cost(1)
       case _                               => Cost(Double.MaxValue)
     })
@@ -190,20 +169,15 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     val resultPlans = idSeekLeafPlanner(qg, InterestingOrder.empty, context)
 
     // then
-    resultPlans should equal(Seq(DirectedRelationshipByIdSeek("r", ManySeekableArgs(ListLiteral(Seq(
-      SignedDecimalIntegerLiteral("42")_, SignedDecimalIntegerLiteral("43")_, SignedDecimalIntegerLiteral("43")_
-    ))_), from, end, Set.empty)))
+    resultPlans should equal(
+      Seq(DirectedRelationshipByIdSeek("r", ManySeekableArgs(listOfInt(42, 43, 43)), from, end, Set.empty))
+    )
   }
 
   test("simple undirected relationship by id seek with a collection of relationship ids") {
     // given
-    val rIdent: Variable = Variable("r")_
-    val expr = In(
-      FunctionInvocation(FunctionName("id")_, distinct = false, Array(rIdent))_,
-      ListLiteral(
-        Seq(SignedDecimalIntegerLiteral("42")_, SignedDecimalIntegerLiteral("43")_, SignedDecimalIntegerLiteral("43")_)
-      )_
-    )_
+    val rIdent = varFor("r")
+    val expr = in(function("id", rIdent), listOfInt(42, 43, 43))
     val from = "from"
     val end = "to"
     val patternRel = PatternRelationship("r", (from, end), SemanticDirection.BOTH, Seq.empty, SimplePatternLength)
@@ -213,7 +187,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
       patternRelationships = Set(patternRel))
 
     val factory = newMockedMetricsFactory
-    when(factory.newCostModel(config)).thenReturn((plan: LogicalPlan, input: QueryGraphSolverInput, _: Cardinalities) => plan match {
+    when(factory.newCostModel(config)).thenReturn((plan: LogicalPlan, _: QueryGraphSolverInput, _: Cardinalities) => plan match {
       case _: UndirectedRelationshipByIdSeek => Cost(2)
       case _                                 => Cost(Double.MaxValue)
     })
@@ -224,18 +198,15 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     val resultPlans = idSeekLeafPlanner(qg, InterestingOrder.empty, context)
 
     // then
-    resultPlans should equal(Seq(UndirectedRelationshipByIdSeek("r", ManySeekableArgs(ListLiteral(Seq(
-      SignedDecimalIntegerLiteral("42")_, SignedDecimalIntegerLiteral("43")_, SignedDecimalIntegerLiteral("43")_
-    ))_), from, end, Set.empty)))
+    resultPlans should equal(
+      Seq(UndirectedRelationshipByIdSeek("r", ManySeekableArgs(listOfInt(42, 43, 43)), from, end, Set.empty))
+    )
   }
 
   test("simple undirected typed relationship by id seek with a collection of relationship ids") {
     // given
-    val rIdent: Variable = Variable("r")_
-    val expr = In(
-      FunctionInvocation(FunctionName("id")_, distinct = false, Array(rIdent))_,
-      ListLiteral(Seq(SignedDecimalIntegerLiteral("42")_))_
-    )_
+    val rIdent = varFor("r")
+    val expr = in(function("id", rIdent), listOfInt(42))
     val from = "from"
     val end = "to"
     val relTypeX = RelTypeName("X")(pos)
@@ -257,7 +228,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
       patternRelationships = Set(patternRel))
 
     val factory = newMockedMetricsFactory
-    when(factory.newCostModel(config)).thenReturn((plan: LogicalPlan, input: QueryGraphSolverInput, _: Cardinalities) => plan match {
+    when(factory.newCostModel(config)).thenReturn((plan: LogicalPlan, _: QueryGraphSolverInput, _: Cardinalities) => plan match {
       case _: UndirectedRelationshipByIdSeek => Cost(2)
       case _                                 => Cost(Double.MaxValue)
     })
@@ -269,19 +240,16 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     // then
     resultPlans should equal(
       Seq(Selection(
-        Ands(Set(Equals(FunctionInvocation(FunctionName("type")_, rIdent)_, StringLiteral("X")_)_))_,
-        UndirectedRelationshipByIdSeek("r", ManySeekableArgs(ListLiteral(Seq(SignedDecimalIntegerLiteral("42")_))_), from, end, Set.empty)
+        ands(equals(function("type", rIdent), literalString("X"))),
+        UndirectedRelationshipByIdSeek("r", ManySeekableArgs(listOfInt(42)), from, end, Set.empty)
       ))
     )
   }
 
   test("simple undirected multi-typed relationship by id seek with  a collection of relationship ids") {
     // given
-    val rIdent: Variable = Variable("r")_
-    val expr = In(
-      FunctionInvocation(FunctionName("id")_, distinct = false, Array(rIdent))_,
-      ListLiteral(Seq(SignedDecimalIntegerLiteral("42")_))_
-    )_
+    val rIdent = varFor("r")
+    val expr = in(function("id", rIdent), listOfInt(42))
     val from = "from"
     val end = "to"
     val relTypeX = RelTypeName("X") _
@@ -305,7 +273,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
       patternRelationships = Set(patternRel))
 
     val factory = newMockedMetricsFactory
-    when(factory.newCostModel(config)).thenReturn((plan: LogicalPlan, input: QueryGraphSolverInput, _: Cardinalities) => plan match {
+    when(factory.newCostModel(config)).thenReturn((plan: LogicalPlan, _: QueryGraphSolverInput, _: Cardinalities) => plan match {
       case _: UndirectedRelationshipByIdSeek => Cost(2)
       case _                                 => Cost(Double.MaxValue)
     })
@@ -317,13 +285,13 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     // then
     resultPlans should equal(
       Seq(Selection(
-        Ands(Set(
-          Ors(Set(
-            Equals(FunctionInvocation(FunctionName("type")_, rIdent)_, StringLiteral("X")_)(pos),
-            Equals(FunctionInvocation(FunctionName("type")_, rIdent)_, StringLiteral("Y")_)(pos)
-          ))_
-        ))_,
-        UndirectedRelationshipByIdSeek("r", ManySeekableArgs(ListLiteral(Seq(SignedDecimalIntegerLiteral("42")_))_), from, end, Set.empty)
+        ands(
+          ors(
+            equals(function("type", rIdent), literalString("X")),
+            equals(function("type", rIdent), literalString("Y"))
+          )
+        ),
+        UndirectedRelationshipByIdSeek("r", ManySeekableArgs(listOfInt(42)), from, end, Set.empty)
     )))
   }
 }

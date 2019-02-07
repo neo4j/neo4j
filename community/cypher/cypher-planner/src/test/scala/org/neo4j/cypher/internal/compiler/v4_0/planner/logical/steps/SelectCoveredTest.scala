@@ -22,18 +22,17 @@ package org.neo4j.cypher.internal.compiler.v4_0.planner.logical.steps
 import org.neo4j.cypher.internal.compiler.v4_0.planner._
 import org.neo4j.cypher.internal.ir.v4_0._
 import org.neo4j.cypher.internal.v4_0.logical.plans.Selection
-import org.neo4j.cypher.internal.v4_0.expressions.{Equals, Expression, PatternExpression, SignedDecimalIntegerLiteral}
+import org.neo4j.cypher.internal.v4_0.expressions.Expression
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 
 class SelectCoveredTest extends CypherFunSuite with LogicalPlanningTestSupport {
-  private implicit val planContext = newMockedPlanContext
-  private implicit val subQueryLookupTable = Map.empty[PatternExpression, QueryGraph]
+  private val planContext = newMockedPlanContext
 
   test("when a predicate that isn't already solved is solvable it should be applied") {
     // Given
     val context = newMockedLogicalPlanningContext(planContext)
 
-    val predicate = Equals(literalInt(10), literalInt(10))(pos)
+    val predicate = equals(literalInt(10), literalInt(10))
     val inner = newMockedLogicalPlan(context.planningAttributes, "x")
     val selections = Selections(Set(Predicate(inner.availableSymbols, predicate)))
 
@@ -68,8 +67,8 @@ class SelectCoveredTest extends CypherFunSuite with LogicalPlanningTestSupport {
     // Given
     val context = newMockedLogicalPlanningContext(planContext)
 
-    val predicate1 = Equals(literalInt(10), literalInt(10))(pos)
-    val predicate2 = Equals(literalInt(30), literalInt(10))(pos)
+    val predicate1 = equals(literalInt(10), literalInt(10))
+    val predicate2 = equals(literalInt(30), literalInt(10))
 
     val selections = Selections.from(Seq(predicate1, predicate2))
     val inner = newMockedLogicalPlanWithProjections(context.planningAttributes, "x")
@@ -88,7 +87,7 @@ class SelectCoveredTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val context = newMockedLogicalPlanningContext(planContext)
 
     val coveredIds = Set("x")
-    val qg = QueryGraph(selections = Selections(Set(Predicate(coveredIds, SignedDecimalIntegerLiteral("1") _))))
+    val qg = QueryGraph(selections = Selections(Set(Predicate(coveredIds, literalInt(1)))))
     val solved = RegularPlannerQuery(qg)
     val inner = newMockedLogicalPlanWithSolved(context.planningAttributes, idNames = Set("x"), solved = solved)
 

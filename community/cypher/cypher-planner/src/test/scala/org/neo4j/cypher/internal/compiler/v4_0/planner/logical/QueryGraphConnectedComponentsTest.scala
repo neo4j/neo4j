@@ -22,28 +22,19 @@ package org.neo4j.cypher.internal.compiler.v4_0.planner.logical
 import org.neo4j.cypher.internal.compiler.v4_0.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.ir.v4_0._
 import org.neo4j.cypher.internal.v4_0.ast.UsingScanHint
-import org.neo4j.cypher.internal.v4_0.expressions._
+import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 
 class QueryGraphConnectedComponentsTest
   extends CypherFunSuite with LogicalPlanningTestSupport {
 
-  private val labelA = LabelName("A")(pos)
-  private val prop = varFor("prop")
-  private val propKeyName = PropertyKeyName(prop.name)(pos)
   private val A = "a"
   private val B = "b"
   private val C = "c"
-  private val D = "d"
   private val X = "x"
-  private val Y = "y"
   private val A_to_B = PatternRelationship("r1", (A, B), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
-  private val B_to_A = PatternRelationship("r3", (B, A), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
   private val C_to_X = PatternRelationship("r7", (C, X), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
   private val B_to_X = PatternRelationship("r12", (B, X), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
-  private val D_to_Y = PatternRelationship("r12", (D, Y), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
-  private val identA = varFor(A)
-  private val identB = varFor(B)
 
   test("empty query graph returns no connected querygraphs") {
     QueryGraph().connectedComponents shouldBe empty
@@ -124,20 +115,18 @@ class QueryGraphConnectedComponentsTest
     val graph = QueryGraph(
       patternNodes = Set(A, B),
       selections = Selections.from(Seq(
-        hasLabels("a", "Label"),
-        hasLabels("b", "Label"))
+        hasLabels(A, "Label"),
+        hasLabels(B, "Label"))
     ))
 
     graph.connectedComponents should equal(Seq(
-      QueryGraph(patternNodes = Set(A), selections = Selections.from(hasLabels("a", "Label"))),
-      QueryGraph(patternNodes = Set(B), selections = Selections.from(hasLabels("b", "Label")))
+      QueryGraph(patternNodes = Set(A), selections = Selections.from(hasLabels(A, "Label"))),
+      QueryGraph(patternNodes = Set(B), selections = Selections.from(hasLabels(B, "Label")))
     ))
   }
 
   test("two disconnected pattern nodes with one predicate connecting them") {
-    val propA = Property(identA, propKeyName)(pos)
-    val propB = Property(identB, propKeyName)(pos)
-    val predicate = Equals(propA, propB)(pos)
+    val predicate = equals(prop(A, "prop"), prop(B, "prop"))
 
     val graph = QueryGraph(patternNodes = Set(A, B), selections = Selections.from(predicate))
 
@@ -148,8 +137,7 @@ class QueryGraphConnectedComponentsTest
   }
 
   test("two disconnected relationships with each predicate on one of the relationships") {
-    val propA = Property(varFor(A_to_B.name), propKeyName)(pos)
-    val predicate = Equals(propA, StringLiteral("something")(pos))(pos)
+    val predicate = equals(prop(A_to_B.name, "prop"), literalString("something"))
 
     val graph = QueryGraph(
       patternNodes = Set(A, B, C, X),
@@ -164,10 +152,11 @@ class QueryGraphConnectedComponentsTest
   }
 
   test("two disconnected pattern relationships with hints on one side") {
-    val graph = QueryGraph(patternNodes = Set(A, B), hints = Seq(UsingScanHint(identA, labelA)(pos)))
+    val usingScanHint = UsingScanHint(varFor(A), labelName("A"))(pos)
+    val graph = QueryGraph(patternNodes = Set(A, B), hints = Seq(usingScanHint))
 
     graph.connectedComponents should equal(Seq(
-      QueryGraph(patternNodes = Set(A), hints = Seq(UsingScanHint(identA, labelA)(pos))),
+      QueryGraph(patternNodes = Set(A), hints = Seq(usingScanHint)),
       QueryGraph(patternNodes = Set(B))
     ))
   }
@@ -184,6 +173,7 @@ class QueryGraphConnectedComponentsTest
   }
 
   test("a connected pattern that has a shortest path in it") {
+    val B_to_A = PatternRelationship("r3", (B, A), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
     val shortestPath: ShortestPathPattern = ShortestPathPattern(Some("r"), A_to_B, single = true)(null)
 
     val graph = QueryGraph(
@@ -237,7 +227,7 @@ class QueryGraphConnectedComponentsTest
       argumentIds = Set(X),
       patternNodes = Set(A, B),
       patternRelationships = Set(A_to_B),
-      selections = Selections.from(Equals(Variable(A_to_B.name)(pos), Variable(X)(pos))(pos))
+      selections = Selections.from(equals(varFor(A_to_B.name), varFor(X)))
     )
 
     val components = graph.connectedComponents
@@ -245,6 +235,10 @@ class QueryGraphConnectedComponentsTest
   }
 
   test("two pattern with same rel name should be in the same connected component") {
+    val D = "d"
+    val Y = "y"
+    val D_to_Y = PatternRelationship("r12", (D, Y), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
+
     // MATCH (d)-[r]->(y), (b)-[r]->(x)
     val graph = QueryGraph(
       patternNodes = Set(B, X, D, Y),
@@ -259,7 +253,7 @@ class QueryGraphConnectedComponentsTest
       patternNodes = Set(A, B, C),
       argumentIds = Set(A),
       patternRelationships = Set(A_to_B),
-      selections = Selections.from(Equals(prop("a", "foo"), prop("c", "bar"))(pos))
+      selections = Selections.from(equals(prop(A, "foo"), prop(C, "bar")))
     )
 
     graph.connectedComponents.size should equal(2)

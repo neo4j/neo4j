@@ -35,13 +35,13 @@ class patternExpressionRewriterTest extends CypherFunSuite with LogicalPlanningT
 
   test("Rewrites pattern expressions") {
     // given
-    val expr: Expression = And(patExpr1, patExpr2)_
+    val expr = and(patExpr1, patExpr2)
     val strategy = createStrategy
     val context = newMockedLogicalPlanningContext(newMockedPlanContext, strategy = strategy)
     val rewriter = patternExpressionRewriter(Set.empty, InterestingOrder.empty, context)
 
     // when
-    val result = expr.endoRewrite(rewriter)
+    expr.endoRewrite(rewriter)
 
     // then
     verify(strategy).planPatternExpression(Set.empty, patExpr1, InterestingOrder.empty, context)
@@ -51,13 +51,13 @@ class patternExpressionRewriterTest extends CypherFunSuite with LogicalPlanningT
 
   test("Does not rewrite pattern expressions on nested plans") {
     // given
-    val expr: Expression = Or(And(patExpr1, NestedPlanExpression(dummyPlan, patExpr2)_)_, patExpr3)_
+    val expr = or(and(patExpr1, NestedPlanExpression(dummyPlan, patExpr2)_), patExpr3)
     val strategy = createStrategy
     val context = newMockedLogicalPlanningContext(newMockedPlanContext, strategy = strategy)
     val rewriter = patternExpressionRewriter(Set.empty, InterestingOrder.empty, context)
 
     // when
-    val result = expr.endoRewrite(rewriter)
+    expr.endoRewrite(rewriter)
 
     // then
     verify(strategy).planPatternExpression(Set.empty, patExpr1, InterestingOrder.empty, context)
@@ -68,13 +68,13 @@ class patternExpressionRewriterTest extends CypherFunSuite with LogicalPlanningT
   test("Does rewrite pattern expressions inside nested plans") {
     // given
     val plan = Selection(Seq(patExpr3), dummyPlan)
-    val expr: Expression = Or(And(patExpr1, NestedPlanExpression(plan, patExpr2)_)_, patExpr4)_
+    val expr = or(and(patExpr1, NestedPlanExpression(plan, patExpr2)_), patExpr4)
     val strategy = createStrategy
     val context = newMockedLogicalPlanningContext(newMockedPlanContext, strategy = strategy)
     val rewriter = patternExpressionRewriter(Set.empty, InterestingOrder.empty, context)
 
     // when
-    val result = expr.endoRewrite(rewriter)
+    expr.endoRewrite(rewriter)
 
     // then
     verify(strategy).planPatternExpression(Set.empty, patExpr1, InterestingOrder.empty, context)

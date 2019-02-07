@@ -21,17 +21,18 @@ package org.neo4j.cypher.internal.compiler.v4_0.planner
 
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.ir.v4_0.{Predicate, Selections}
-import org.neo4j.cypher.internal.v4_0.expressions._
+import org.neo4j.cypher.internal.v4_0.expressions.PartialPredicate
 
 class SelectionsTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
-  val aIsPerson: HasLabels = hasLabels("a", "Person")
-  val aIsProgrammer: HasLabels = hasLabels("a", "Programmer")
-  val bIsAnimal: HasLabels = hasLabels("b", "Animal")
-  val compareTwoNodes: Equals = compareBothSides("a", "b")
+  private val aIsPerson = hasLabels("a", "Person")
+  private val bIsAnimal = hasLabels("b", "Animal")
+
+  private val aId = idNames("a")
+  private val bId = idNames("b")
 
   test("can flat predicates to a sequence") {
-    val selections = Selections(Set(Predicate(idNames("a"), aIsPerson)))
+    val selections = Selections(Set(Predicate(aId, aIsPerson)))
 
     selections.flatPredicates should equal(Seq(aIsPerson))
   }
@@ -42,8 +43,8 @@ class SelectionsTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
   test("should be able to sense that predicates are not covered") {
     val selections = Selections(Set(
-      Predicate(idNames("a"), aIsPerson),
-      Predicate(idNames("b"), bIsAnimal)
+      Predicate(aId, aIsPerson),
+      Predicate(bId, bIsAnimal)
     ))
 
     selections.coveredBy(Seq(aIsPerson)) should be(right = false)
@@ -51,7 +52,7 @@ class SelectionsTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
   test("should be able to tell when all predicates are covered") {
     val selections = Selections(Set(
-      Predicate(idNames("a"), aIsPerson)
+      Predicate(aId, aIsPerson)
     ))
 
     selections.coveredBy(Seq(aIsPerson)) should be(right = true)
@@ -59,10 +60,10 @@ class SelectionsTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
   test("can extract HasLabels Predicates") {
     val selections = Selections(Set(
-      Predicate(idNames("a"), aIsPerson),
-      Predicate(idNames("a"), aIsPerson),
-      Predicate(idNames("b"), bIsAnimal),
-      Predicate(idNames("c"), Equals(Variable("c") _, SignedDecimalIntegerLiteral("42") _) _)
+      Predicate(aId, aIsPerson),
+      Predicate(aId, aIsPerson),
+      Predicate(bId, bIsAnimal),
+      Predicate(idNames("c"), equals(varFor("c"), literalInt(42)))
     ))
 
     selections.labelPredicates should equal(Map(
@@ -72,53 +73,42 @@ class SelectionsTest extends CypherFunSuite with LogicalPlanningTestSupport {
   }
 
   test("can find predicates given covered ids") {
-    val a = idNames("a")
-    val b = idNames("b")
-
     val selections = Selections(Set(
-      Predicate(a, aIsPerson),
-      Predicate(b, bIsAnimal)
+      Predicate(aId, aIsPerson),
+      Predicate(bId, bIsAnimal)
     ))
 
-    selections.predicatesGiven(a) should equal(Seq(aIsPerson))
+    selections.predicatesGiven(aId) should equal(Seq(aIsPerson))
   }
 
   test("returns no predicates if no ids are covered") {
-    val a = idNames("a")
-    val b = idNames("b")
-
     val selections = Selections(Set(
-      Predicate(a, aIsPerson),
-      Predicate(b, bIsAnimal)
+      Predicate(aId, aIsPerson),
+      Predicate(bId, bIsAnimal)
     ))
 
     selections.predicatesGiven(Set.empty) should equal(Seq.empty)
   }
 
   test("does not take on a predicate if it is only half covered") {
-    val aAndB = idNames("a", "b")
-    val a = Set(aAndB.head)
+    val compare = equals(prop("a", "prop1"), prop("b", "prop1"))
 
     val selections = Selections(Set(
-      Predicate(aAndB, compareTwoNodes)
+      Predicate(idNames("a", "b"), compare)
     ))
 
-    selections.predicatesGiven(a) should equal(Seq.empty)
+    selections.predicatesGiven(aId) should equal(Seq.empty)
   }
 
   test("prunes away sub predicates") {
-    val covering = And(aIsPerson, aIsProgrammer)(pos)
-    val covered = aIsProgrammer
-    val selections = Selections(Set(Predicate(idNames("a"), PartialPredicate(covered, covering))))
+    val covered = hasLabels("a", "Programmer")
+    val covering = and(aIsPerson, covered)
+    val selections = Selections(Set(Predicate(aId, PartialPredicate(covered, covering))))
 
-    val result = selections ++ Selections(Set(Predicate(idNames("a"), covering)))
+    val result = selections ++ Selections(Set(Predicate(aId, covering)))
 
-    result should equal(Selections(Set(Predicate(idNames("a"), covering))))
+    result should equal(Selections(Set(Predicate(aId, covering))))
   }
 
-
   private def idNames(names: String*) = names.toSet
-
-  private def compareBothSides(left: String, right: String) =
-    Equals(prop(left, "prop1"), prop(right, "prop1"))(pos)
 }
