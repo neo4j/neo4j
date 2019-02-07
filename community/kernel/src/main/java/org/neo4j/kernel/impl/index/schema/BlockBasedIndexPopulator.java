@@ -19,13 +19,20 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
-import org.neo4j.gis.spatial.index.curves.SpaceFillingCurveConfiguration;
 import org.neo4j.index.internal.gbptree.Writer;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.IOUtils;
@@ -44,35 +51,53 @@ import org.neo4j.util.FeatureToggles;
 import org.neo4j.util.Preconditions;
 import org.neo4j.values.storable.Value;
 
+import static org.neo4j.helpers.collection.Iterables.asList;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexUpdater.initializeKeyFromUpdate;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexes.deleteIndex;
 
-public class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,VALUE extends NativeIndexValue> extends NativeIndexPopulator<KEY,VALUE>
+public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,VALUE extends NativeIndexValue> extends NativeIndexPopulator<KEY,VALUE>
 {
     private static final String BLOCK_SIZE = FeatureToggles.getString( BlockBasedIndexPopulator.class, "blockSize", "1M" );
+    private static final int MERGE_FACTOR = FeatureToggles.getInteger( BlockBasedIndexPopulator.class, "mergeFactor", 8 );
 
     // TODO some better ByteBuffers, right?
     private static final ByteBufferFactory BYTE_BUFFER_FACTORY = ByteBuffer::allocate;
 
-    private final IndexSpecificSpaceFillingCurveSettingsCache spatialSettings;
     private final IndexDirectoryStructure directoryStructure;
-    private final SpaceFillingCurveConfiguration configuration;
     private final boolean archiveFailedIndex;
     private final int blockSize;
-    private BlockStorage<KEY,VALUE> scanUpdates;
+    private ThreadLocal<BlockStorage<KEY,VALUE>> scanUpdates;
+    private List<BlockStorage<KEY,VALUE>> allScanUpdates = new ArrayList<>();
     private IndexUpdateStorage<KEY,VALUE> externalUpdates;
     private boolean merged;
 
     BlockBasedIndexPopulator( PageCache pageCache, FileSystemAbstraction fs, File file, IndexLayout<KEY,VALUE> layout, IndexProvider.Monitor monitor,
             StoreIndexDescriptor descriptor, IndexSpecificSpaceFillingCurveSettingsCache spatialSettings,
-            IndexDirectoryStructure directoryStructure, SpaceFillingCurveConfiguration configuration, boolean archiveFailedIndex )
+            IndexDirectoryStructure directoryStructure, boolean archiveFailedIndex )
     {
         super( pageCache, fs, file, layout, monitor, descriptor, new SpaceFillingCurveSettingsWriter( spatialSettings ) );
-        this.spatialSettings = spatialSettings;
         this.directoryStructure = directoryStructure;
-        this.configuration = configuration;
         this.archiveFailedIndex = archiveFailedIndex;
         this.blockSize = parseBlockSize();
+        this.scanUpdates = ThreadLocal.withInitial( this::newThreadLocalBlockStorage );
+    }
+
+    private synchronized BlockStorage<KEY,VALUE> newThreadLocalBlockStorage()
+    {
+        Preconditions.checkState( !merged, "Already merged" );
+        try
+        {
+            int id = allScanUpdates.size();
+            BlockStorage<KEY,VALUE> blockStorage =
+                    new BlockStorage<>( layout, BYTE_BUFFER_FACTORY, fileSystem, new File( storeFile.getParentFile(), storeFile.getName() + ".scan-" + id ),
+                            BlockStorage.Monitor.NO_MONITOR, blockSize );
+            allScanUpdates.add( blockStorage );
+            return blockStorage;
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
+        }
     }
 
     private static int parseBlockSize()
@@ -96,8 +121,6 @@ public class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,VALUE exte
         super.create();
         try
         {
-            scanUpdates = new BlockStorage<>( layout, BYTE_BUFFER_FACTORY, fileSystem, new File( storeFile.getParentFile(), storeFile.getName() + ".temp" ),
-                    BlockStorage.Monitor.NO_MONITOR, blockSize );
             externalUpdates = new IndexUpdateStorage<>( layout, fileSystem, new File( storeFile.getParent(), storeFile.getName() + ".ext" ),
                     BYTE_BUFFER_FACTORY.newBuffer( blockSize ) );
         }
@@ -110,9 +133,10 @@ public class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,VALUE exte
     @Override
     public void add( Collection<? extends IndexEntryUpdate<?>> updates )
     {
+        BlockStorage<KEY,VALUE> blockStorage = scanUpdates.get();
         for ( IndexEntryUpdate<?> update : updates )
         {
-            storeUpdate( update, scanUpdates );
+            storeUpdate( update, blockStorage );
         }
     }
 
@@ -142,8 +166,29 @@ public class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,VALUE exte
     {
         try
         {
-            scanUpdates.doneAdding();
-            scanUpdates.merge();
+            ExecutorService executorService = Executors.newFixedThreadPool( allScanUpdates.size() );
+            List<Future<?>> mergeFutures = new ArrayList<>();
+            for ( BlockStorage<KEY,VALUE> scanUpdates : allScanUpdates )
+            {
+                mergeFutures.add( executorService.submit( () ->
+                {
+                    scanUpdates.doneAdding();
+                    scanUpdates.merge( MERGE_FACTOR );
+                    return null;
+                } ) );
+            }
+            executorService.shutdown();
+            while ( !executorService.awaitTermination( 1, TimeUnit.SECONDS ) )
+            {
+                // just wait longer
+                // TODO check drop/close
+            }
+            // Let potential exceptions in the merge threads have a chance to propagate
+            for ( Future<?> mergeFuture : mergeFutures )
+            {
+                mergeFuture.get();
+            }
+
             externalUpdates.doneAdding();
             // don't merge and sort the external updates
 
@@ -157,6 +202,21 @@ public class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,VALUE exte
         catch ( IOException e )
         {
             throw new UncheckedIOException( e );
+        }
+        catch ( InterruptedException e )
+        {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException( "Got interrupted, so merge not completed", e );
+        }
+        catch ( ExecutionException e )
+        {
+            // Propagating merge exception from other thread
+            Throwable executionException = e.getCause();
+            if ( executionException instanceof RuntimeException )
+            {
+                throw (RuntimeException) executionException;
+            }
+            throw new RuntimeException( executionException );
         }
     }
 
@@ -189,23 +249,33 @@ public class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,VALUE exte
     private void writeScanUpdatesToTree() throws IOException, IndexEntryConflictException
     {
         ConflictDetectingValueMerger<KEY,VALUE> conflictDetector = getMainConflictDetector();
-        try ( Writer<KEY,VALUE> writer = tree.writer();
-              BlockReader<KEY,VALUE> reader = scanUpdates.reader() )
+        MergingBlockEntryReader<KEY,VALUE> allEntries = new MergingBlockEntryReader<>( layout );
+        for ( BlockStorage<KEY,VALUE> scanUpdates : allScanUpdates )
         {
-            BlockEntryReader<KEY,VALUE> maybeBlock = reader.nextBlock();
-            if ( maybeBlock != null )
+            try ( BlockReader<KEY,VALUE> reader = scanUpdates.reader() )
             {
-                try ( BlockEntryReader<KEY,VALUE> block = maybeBlock )
+                BlockEntryReader<KEY,VALUE> singleMergedBlock = reader.nextBlock();
+                if ( singleMergedBlock != null )
                 {
-                    while ( block.next() )
+                    allEntries.addSource( singleMergedBlock );
+                    if ( reader.nextBlock() != null )
                     {
-                        conflictDetector.controlConflictDetection( block.key() );
-                        writer.merge( block.key(), block.value(), conflictDetector );
-                        if ( conflictDetector.wasConflicting() )
-                        {
-                            conflictDetector.reportConflict( block.key().asValues() );
-                        }
+                        throw new IllegalStateException( "Final BlockStorage had multiple blocks" );
                     }
+                }
+            }
+        }
+
+        try ( Writer<KEY,VALUE> writer = tree.writer();
+              BlockEntryCursor<KEY,VALUE> reader = allEntries )
+        {
+            while ( reader.next() )
+            {
+                conflictDetector.controlConflictDetection( reader.key() );
+                writer.merge( reader.key(), reader.value(), conflictDetector );
+                if ( conflictDetector.wasConflicting() )
+                {
+                    conflictDetector.reportConflict( reader.key().asValues() );
                 }
             }
         }
@@ -216,6 +286,7 @@ public class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,VALUE exte
     {
         if ( merged )
         {
+            // Will need the reader from newReader, which a sub-class of this class implements
             return super.newPopulatingUpdater( accessor );
         }
 
@@ -242,16 +313,12 @@ public class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,VALUE exte
     }
 
     @Override
-    NativeIndexReader<KEY,VALUE> newReader()
-    {
-        throw new UnsupportedOperationException( "Should not be needed because we're overriding the populating updater anyway" );
-    }
-
-    @Override
     public void close( boolean populationCompletedSuccessfully )
     {
         // TODO Make responsive
-        IOUtils.closeAllSilently( externalUpdates, scanUpdates );
+        List<Closeable> toClose = new ArrayList<>( asList( allScanUpdates ) );
+        toClose.add( externalUpdates );
+        IOUtils.closeAllUnchecked( toClose );
         super.close( populationCompletedSuccessfully );
     }
 }

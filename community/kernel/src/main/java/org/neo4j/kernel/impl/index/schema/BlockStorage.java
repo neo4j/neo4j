@@ -119,19 +119,19 @@ class BlockStorage<KEY, VALUE> implements Closeable
         resetBufferedEntries();
     }
 
-    public void merge() throws IOException
+    public void merge( int mergeFactor ) throws IOException
     {
         File sourceFile = blockFile;
         File tempFile = new File( blockFile.getParent(), blockFile.getName() + ".b" );
         try
         {
-            int mergeFactor = 16;
             File targetFile = tempFile;
             while ( numberOfBlocksInCurrentFile > 1 )
             {
                 // Perform one complete merge iteration, merging all blocks from source into target.
                 // After this step, target will contain fewer blocks than source, but may need another merge iteration.
-                try ( BlockReader<KEY,VALUE> reader = reader( sourceFile ); StoreChannel targetChannel = fs.open( targetFile, OpenMode.READ_WRITE ) )
+                try ( BlockReader<KEY,VALUE> reader = reader( sourceFile );
+                      StoreChannel targetChannel = fs.open( targetFile, OpenMode.READ_WRITE ) )
                 {
                     int blocksMergedSoFar = 0;
                     int blocksInMergedFile = 0;

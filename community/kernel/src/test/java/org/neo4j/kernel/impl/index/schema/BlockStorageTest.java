@@ -165,7 +165,7 @@ class BlockStorageTest
         try ( BlockStorage<MutableLong,MutableLong> storage = new BlockStorage<>( layout, BUFFER_FACTORY, fileSystem, file, monitor, blockSize ) )
         {
             // when
-            storage.merge();
+            storage.merge( randomMergeFactor() );
 
             // then
             assertEquals( 0, monitor.mergeIterationCallCount );
@@ -185,7 +185,7 @@ class BlockStorageTest
             storage.doneAdding();
 
             // when
-            storage.merge();
+            storage.merge( randomMergeFactor() );
 
             // then
             assertEquals( 0, monitor.mergeIterationCallCount );
@@ -206,7 +206,7 @@ class BlockStorageTest
             storage.doneAdding();
 
             // when
-            storage.merge();
+            storage.merge( randomMergeFactor() );
 
             // then
             assertContents( layout, storage, asOneBigBlock( expectedBlocks ) );
@@ -272,6 +272,11 @@ class BlockStorageTest
         }
         sort( all );
         return singletonList( all );
+    }
+
+    private int randomMergeFactor()
+    {
+        return random.nextInt( 2, 8 );
     }
 
     private void print( List<List<BlockEntry<MutableLong,MutableLong>>> expectedBlocks )
