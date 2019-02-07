@@ -19,26 +19,31 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import org.neo4j.kernel.api.index.IndexEntryUpdate;
-import org.neo4j.storageengine.api.schema.PopulationProgress;
-
-public interface StoreScan<FAILURE extends Exception>
+public interface PhaseTracker
 {
-    void run() throws FAILURE;
+    void enterPhase( Phase phase );
 
     void stop();
 
-    void acceptUpdate( MultipleIndexPopulator.MultipleIndexUpdater updater, IndexEntryUpdate<?> update,
-            long currentlyIndexedNodeId );
+    PhaseTracker nullInstance = new NullPhaseTracker();
 
-    PopulationProgress getProgress();
+    enum Phase
+    {
+        SCAN,
+        WRITE,
+        FLIP
+    }
 
-    /**
-     * Give this {@link StoreScan} a {@link PhaseTracker} to report to.
-     * Must not be called once scan has already started.
-     * @param phaseTracker {@link PhaseTracker} this store scan shall report to.
-     */
-    default void setPhaseTracker( PhaseTracker phaseTracker )
-    {   // no-op
+    class NullPhaseTracker implements PhaseTracker
+    {
+        @Override
+        public void enterPhase( Phase phase )
+        {
+        }
+
+        @Override
+        public void stop()
+        {
+        }
     }
 }

@@ -39,7 +39,6 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.impl.api.index.IndexPopulationJob;
@@ -48,6 +47,8 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.values.storable.RandomValues;
 
+import static org.hamcrest.Matchers.allOf;
+import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
 
 public class IndexPopulationIT
@@ -58,11 +59,15 @@ public class IndexPopulationIT
     private static final int TEST_TIMEOUT = 120_000;
     private static GraphDatabaseService database;
     private static ExecutorService executorService;
+    private static AssertableLogProvider logProvider;
 
     @BeforeClass
     public static void setUp()
     {
-        database = new GraphDatabaseFactory().newEmbeddedDatabase( directory.storeDir() );
+        TestGraphDatabaseFactory factory = new TestGraphDatabaseFactory();
+        logProvider = new AssertableLogProvider( true );
+        factory.setInternalLogProvider( logProvider );
+        database = factory.newEmbeddedDatabase( directory.storeDir() );
         executorService = Executors.newCachedThreadPool();
     }
 
@@ -155,6 +160,44 @@ public class IndexPopulationIT
         }
         shutDownDb.shutdown();
         assertableLogProvider.assertNone( AssertableLogProvider.inLog( IndexPopulationJob.class ).anyError() );
+    }
+
+    @Test
+    public void mustLogPhaseTracker()
+    {
+        Label nodeLabel = Label.label( "testLabel5" );
+        try ( Transaction transaction = database.beginTx() )
+        {
+            database.createNode( nodeLabel ).setProperty( "key", "hej" );
+            transaction.success();
+        }
+
+        // when
+        try ( Transaction tx = database.beginTx() )
+        {
+            database.schema().indexFor( nodeLabel ).on( "key" ).create();
+            tx.success();
+        }
+        try ( Transaction tx = database.beginTx() )
+        {
+            database.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
+            tx.success();
+        }
+
+        // then
+        //noinspection unchecked
+        logProvider.assertContainsMessageMatching( allOf(
+                containsString( "TIME/PHASE" ),
+                containsString( "Final: " ),
+                containsString( "SCAN" ),
+                containsString( "WRITE" ),
+                containsString( "FLIP" ),
+                containsString( "totalTime=" ),
+                containsString( "avgTime=" ),
+                containsString( "minTime=" ),
+                containsString( "maxTime=" ),
+                containsString( "nbrOfReports=" )
+        ) );
     }
 
     private void prePopulateDatabase( GraphDatabaseService database, Label testLabel, String propertyName )
