@@ -28,6 +28,7 @@ import org.neo4j.cypher.ExecutionEngineFunSuite
 import org.neo4j.graphdb.factory.{GraphDatabaseFactory, GraphDatabaseSettings}
 import org.neo4j.graphdb.{GraphDatabaseService, Result}
 import org.neo4j.io.fs.FileUtils
+import org.neo4j.test.TestGraphDatabaseFactory
 
 class AutoIndexAcceptanceTest extends ExecutionEngineFunSuite {
 
@@ -36,19 +37,16 @@ class AutoIndexAcceptanceTest extends ExecutionEngineFunSuite {
 
     createDB(file)
 
-    val db = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder(file)
+    val db = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder(file)
       .setConfig(GraphDatabaseSettings.node_auto_indexing, "true")
       .setConfig(GraphDatabaseSettings.node_keys_indexable, "name")
       .newGraphDatabase()
 
     try {
       val setSameQuery = "MATCH (p) WITH p, p.name as name SET p.name = name RETURN count(p)"
-      run(db, setSameQuery)
-
+      runExpectARowAndClose(db, setSameQuery)
       val startQuery = "START i=node:node_auto_index('name:test') return i limit 1"
-
-      val result = run(db, startQuery) // should find the index and not fail
-      result.hasNext should be(true) // we expect one row
+      runExpectARowAndClose(db, startQuery) // should find the index and not fail
     } finally {
       db.shutdown()
       FileUtils.deleteRecursively(file)
@@ -60,7 +58,7 @@ class AutoIndexAcceptanceTest extends ExecutionEngineFunSuite {
 
     val tx = db.beginTx()
     try {
-      db.execute("CREATE ({name:'test'}), ({name:'test2'})")
+      db.execute("CREATE ({name:'test'}), ({name:'test2'})").close()
       tx.success()
     } finally {
       tx.close()
@@ -68,12 +66,13 @@ class AutoIndexAcceptanceTest extends ExecutionEngineFunSuite {
     }
   }
 
-  private def run(db: GraphDatabaseService, query: String): Result = {
+  private def runExpectARowAndClose(db: GraphDatabaseService, query: String): Unit = {
     val tx = db.beginTx()
     try {
-      val r = db.execute(query)
+      val result = db.execute(query)
+      result.hasNext should be(true) // we expect one row
+      result.close()
       tx.success()
-      r
     } finally {
       tx.close()
     }
