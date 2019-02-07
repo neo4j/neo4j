@@ -61,6 +61,7 @@ public class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,VALUE exte
     private final int blockSize;
     private BlockStorage<KEY,VALUE> scanUpdates;
     private IndexUpdateStorage<KEY,VALUE> externalUpdates;
+    private boolean merged;
 
     BlockBasedIndexPopulator( PageCache pageCache, FileSystemAbstraction fs, File file, IndexLayout<KEY,VALUE> layout, IndexProvider.Monitor monitor,
             StoreIndexDescriptor descriptor, IndexSpecificSpaceFillingCurveSettingsCache spatialSettings,
@@ -151,6 +152,7 @@ public class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,VALUE exte
 
             // Apply the external updates
             writeExternalUpdatesToTree();
+            merged = true;
         }
         catch ( IOException e )
         {
@@ -175,7 +177,7 @@ public class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,VALUE exte
                     break;
                 case CHANGED:
                     writer.remove( updates.key() );
-                    writer.put( updates.key(), updates.value() );
+                    writer.put( updates.key2(), updates.value() );
                     break;
                 default:
                     throw new IllegalArgumentException( "Unknown update mode " + updates.updateMode() );
@@ -212,6 +214,11 @@ public class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,VALUE exte
     @Override
     public IndexUpdater newPopulatingUpdater( NodePropertyAccessor accessor )
     {
+        if ( merged )
+        {
+            return super.newPopulatingUpdater( accessor );
+        }
+
         return new IndexUpdater()
         {
             @Override
