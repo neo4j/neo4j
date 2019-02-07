@@ -39,7 +39,7 @@ case class RollUpApply(left: LogicalPlan,
                        variableToCollect: String,
                        nullableVariables: Set[String]
                       )(implicit idGen: IdGen)
-  extends LogicalPlan(idGen) with LazyLogicalPlan {
+  extends LogicalPlan(idGen) with ApplyPlan {
 
   override def lhs = Some(left)
 

@@ -50,7 +50,7 @@ case class AntiSemiApply(left: LogicalPlan, right: LogicalPlan)(implicit idGen: 
   extends AbstractSemiApply(left, right)(idGen)
 
 abstract class AbstractSemiApply(left: LogicalPlan, right: LogicalPlan)(idGen: IdGen)
-  extends LogicalPlan(idGen) with LazyLogicalPlan {
+  extends LogicalPlan(idGen) with ApplyPlan {
   val lhs = Some(left)
   val rhs = Some(right)
 

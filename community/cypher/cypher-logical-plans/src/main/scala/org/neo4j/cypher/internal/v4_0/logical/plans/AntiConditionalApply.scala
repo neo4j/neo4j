@@ -37,7 +37,7 @@ import org.neo4j.cypher.internal.v4_0.util.attribution.IdGen
   * }
   */
 case class AntiConditionalApply(left: LogicalPlan, right: LogicalPlan, items: Seq[String])(implicit idGen: IdGen)
-  extends LogicalPlan(idGen) with LazyLogicalPlan {
+  extends LogicalPlan(idGen) with ApplyPlan {
 
   override val lhs = Some(left)
   override val rhs = Some(right)

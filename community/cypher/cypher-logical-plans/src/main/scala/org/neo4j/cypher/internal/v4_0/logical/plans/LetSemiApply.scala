@@ -45,7 +45,8 @@ case class LetSemiApply(left: LogicalPlan, right: LogicalPlan, idName: String)(i
   */
 case class LetAntiSemiApply(left: LogicalPlan, right: LogicalPlan, idName: String)(implicit idGen: IdGen) extends AbstractLetSemiApply(left, right, idName)(idGen)
 
-abstract class AbstractLetSemiApply(left: LogicalPlan, right: LogicalPlan, idName: String)(implicit idGen: IdGen) extends LogicalPlan(idGen) with LazyLogicalPlan {
+abstract class AbstractLetSemiApply(left: LogicalPlan, right: LogicalPlan, idName: String)(implicit idGen: IdGen)
+  extends LogicalPlan(idGen) with ApplyPlan {
   val lhs = Some(left)
   val rhs = Some(right)
 

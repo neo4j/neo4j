@@ -107,24 +107,4 @@ object LogicalPlans {
     assert(resultStack.isEmpty, "Should have emptied the stack of pipes by now!")
     result
   }
-
-  /**
-    * Return true if the provided plan is an apply plan
-    */
-  def isApplyPlan(logicalPlan: LogicalPlan): Boolean =
-    logicalPlan match {
-      case _: AntiConditionalApply |
-           _: Apply |
-           _: TriadicSelection |
-           _: AbstractSemiApply |
-           _: AbstractSelectOrSemiApply |
-           _: AbstractLetSelectOrSemiApply |
-           _: AbstractLetSemiApply |
-           _: ConditionalApply |
-           _: ForeachApply |
-           _: RollUpApply =>
-        true
-
-      case _ => false
-    }
 }

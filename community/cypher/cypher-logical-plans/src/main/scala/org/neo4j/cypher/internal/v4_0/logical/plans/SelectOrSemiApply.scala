@@ -59,7 +59,7 @@ case class SelectOrAntiSemiApply(left: LogicalPlan, right: LogicalPlan, expr: Ex
   extends AbstractSelectOrSemiApply(left, right, expr)(idGen)
 
 abstract class AbstractSelectOrSemiApply(left: LogicalPlan, right: LogicalPlan, expr: Expression)(idGen: IdGen)
-  extends LogicalPlan(idGen) with LazyLogicalPlan {
+  extends LogicalPlan(idGen) with ApplyPlan {
   val lhs = Some(left)
   val rhs = Some(right)
 

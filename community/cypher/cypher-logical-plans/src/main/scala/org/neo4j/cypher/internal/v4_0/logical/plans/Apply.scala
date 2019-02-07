@@ -31,7 +31,8 @@ import org.neo4j.cypher.internal.v4_0.util.attribution.IdGen
   *   }
   * }
   */
-case class Apply(left: LogicalPlan, right: LogicalPlan)(implicit idGen: IdGen) extends LogicalPlan(idGen) with LazyLogicalPlan {
+case class Apply(left: LogicalPlan, right: LogicalPlan)(implicit idGen: IdGen)
+  extends LogicalPlan(idGen) with ApplyPlan {
 
   val lhs = Some(left)
   val rhs = Some(right)

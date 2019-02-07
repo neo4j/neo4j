@@ -36,7 +36,7 @@ import org.neo4j.cypher.internal.v4_0.util.attribution.IdGen
   *   produce leftRow
   */
 case class ForeachApply(left: LogicalPlan, right: LogicalPlan, variable: String, expression: Expression)(implicit idGen: IdGen)
-  extends LogicalPlan(idGen) with LazyLogicalPlan {
+  extends LogicalPlan(idGen) with ApplyPlan {
 
   val lhs = Some(left)
   val rhs = Some(right)

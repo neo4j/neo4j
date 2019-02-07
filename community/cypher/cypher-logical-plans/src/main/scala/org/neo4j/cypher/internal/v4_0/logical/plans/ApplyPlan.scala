@@ -19,27 +19,10 @@
  */
 package org.neo4j.cypher.internal.v4_0.logical.plans
 
-import org.neo4j.cypher.internal.v4_0.util.attribution.IdGen
-
 /**
-  * This is a variation of apply, which only executes 'right' if all variables in 'items' != NO_VALUE.
-  *
-  * for ( leftRow <- left ) {
-  *   if ( condition( leftRow ) ) {
-  *     produce leftRow
-  *   } else {
-  *     right.setArgument( leftRow )
-  *     for ( rightRow <- right ) {
-  *       produce rightRow
-  *     }
-  *   }
-  * }
+  * Marker trait for all Apply plans. These are plans that execute their rhs
+  * once for every lhs row, and pass the lhs as the argument to the rhs.
   */
-case class ConditionalApply(left: LogicalPlan, right: LogicalPlan, items: Seq[String])
-                           (implicit idGen: IdGen) extends LogicalPlan(idGen) with ApplyPlan {
-
-  override val lhs = Some(left)
-  override val rhs = Some(right)
-
-  override val availableSymbols: Set[String] = left.availableSymbols ++ right.availableSymbols ++ items
+trait ApplyPlan extends LazyLogicalPlan {
+  self: LogicalPlan =>
 }
