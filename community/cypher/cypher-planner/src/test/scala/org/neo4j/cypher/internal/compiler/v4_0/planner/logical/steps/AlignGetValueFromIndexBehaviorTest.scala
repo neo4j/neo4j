@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v4_0.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v4_0.planner.LogicalPlanningTestSupport2
+import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.PlanMatchHelp
 import org.neo4j.cypher.internal.ir.v4_0.PassthroughAllHorizon
 import org.neo4j.cypher.internal.ir.v4_0.Predicate
 import org.neo4j.cypher.internal.ir.v4_0.QueryGraph
@@ -28,29 +29,28 @@ import org.neo4j.cypher.internal.ir.v4_0.RegularPlannerQuery
 import org.neo4j.cypher.internal.ir.v4_0.RegularQueryProjection
 import org.neo4j.cypher.internal.v4_0.logical.plans._
 import org.neo4j.cypher.internal.v4_0.logical.plans.Union
-import org.neo4j.cypher.internal.v4_0.expressions._
+import org.neo4j.cypher.internal.v4_0.expressions.LabelToken
 import org.neo4j.cypher.internal.v4_0.util.attribution.Attributes
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.v4_0.util.LabelId
-import org.neo4j.cypher.internal.v4_0.util.PropertyKeyId
 
-class AlignGetValueFromIndexBehaviorTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
+class AlignGetValueFromIndexBehaviorTest extends CypherFunSuite with LogicalPlanningTestSupport2 with PlanMatchHelp {
 
   type IndexOperator = GetValueFromIndexBehavior => IndexLeafPlan
 
-  val indexSeek: IndexOperator = getValue => IndexSeek("n:Awesome(prop = 42)", getValue)
-  val uniqueIndexSeek: IndexOperator = getValue => NodeUniqueIndexSeek(
+  private val indexSeek: IndexOperator = getValue => IndexSeek("n:Awesome(prop = 42)", getValue)
+  private val uniqueIndexSeek: IndexOperator = getValue => NodeUniqueIndexSeek(
     "n",
     LabelToken("Awesome", LabelId(0)),
-    Seq(IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), getValue)),
-    SingleQueryExpression(SignedDecimalIntegerLiteral("42") _),
+    Seq(indexedProperty("prop", 0, getValue)),
+    SingleQueryExpression(literalInt(42)),
     Set.empty,
     IndexOrderNone)
-  val indexContainsScan: IndexOperator = getValue => IndexSeek("n:Awesome(prop CONTAINS 'foo')", getValue)
-  val indexEndsWithScan: IndexOperator = getValue => IndexSeek("n:Awesome(prop ENDS WITH 'foo')", getValue)
-  val indexScan: IndexOperator = getValue => IndexSeek("n:Awesome(prop)", getValue)
+  private val indexContainsScan: IndexOperator = getValue => IndexSeek("n:Awesome(prop CONTAINS 'foo')", getValue)
+  private val indexEndsWithScan: IndexOperator = getValue => IndexSeek("n:Awesome(prop ENDS WITH 'foo')", getValue)
+  private val indexScan: IndexOperator = getValue => IndexSeek("n:Awesome(prop)", getValue)
 
-  val indexOperators = Seq(indexSeek, uniqueIndexSeek, indexContainsScan, indexEndsWithScan, indexScan)
+  private val indexOperators = Seq(indexSeek, uniqueIndexSeek, indexContainsScan, indexEndsWithScan, indexScan)
 
   for (indexOperator <- indexOperators) {
 
@@ -129,25 +129,25 @@ class AlignGetValueFromIndexBehaviorTest extends CypherFunSuite with LogicalPlan
 
     test(s"should set GetValue on $operatorName if plan inside a selection inside union") {
       new given().withLogicalPlanningContext { (_, context) =>
-        val ands = Ands(Set(ListLiteral(Seq.empty)(pos)))(pos)
-        val plan = Union(Selection(ands, canGetValues), Selection(ands, canGetValues))
+        val andsPred = ands(listOf())
+        val plan = Union(Selection(andsPred, canGetValues), Selection(andsPred, canGetValues))
         context.planningAttributes.solveds.set(plan.id, RegularPlannerQuery())
         context.planningAttributes.solveds.set(canGetValues.id, RegularPlannerQuery())
 
         val query = RegularPlannerQuery(horizon = RegularQueryProjection(Map("foo" -> prop("n", "prop"))))
-        alignGetValueFromIndexBehavior(query, plan, context.logicalPlanProducer, context.planningAttributes.solveds, Attributes(idGen)) should equal(Union(Selection(ands, getValues), Selection(ands, getValues)))
+        alignGetValueFromIndexBehavior(query, plan, context.logicalPlanProducer, context.planningAttributes.solveds, Attributes(idGen)) should equal(Union(Selection(andsPred, getValues), Selection(andsPred, getValues)))
       }
     }
 
     test(s"should set GetValue on $operatorName if plan inside union left deep tree") {
       new given().withLogicalPlanningContext { (_, context) =>
-        val ands = Ands(Set(ListLiteral(Seq.empty)(pos)))(pos)
-        val plan = Union(Union(Selection(ands, canGetValues), canGetValues), Selection(ands, canGetValues))
+        val andsPred = ands(listOf())
+        val plan = Union(Union(Selection(andsPred, canGetValues), canGetValues), Selection(andsPred, canGetValues))
         context.planningAttributes.solveds.set(plan.id, RegularPlannerQuery())
         context.planningAttributes.solveds.set(canGetValues.id, RegularPlannerQuery())
 
         val query = RegularPlannerQuery(horizon = RegularQueryProjection(Map("foo" -> prop("n", "prop"))))
-        alignGetValueFromIndexBehavior(query, plan, context.logicalPlanProducer, context.planningAttributes.solveds, Attributes(idGen)) should equal(Union(Union(Selection(ands, getValues), getValues), Selection(ands, getValues)))
+        alignGetValueFromIndexBehavior(query, plan, context.logicalPlanProducer, context.planningAttributes.solveds, Attributes(idGen)) should equal(Union(Union(Selection(andsPred, getValues), getValues), Selection(andsPred, getValues)))
       }
     }
 
@@ -180,7 +180,7 @@ class AlignGetValueFromIndexBehaviorTest extends CypherFunSuite with LogicalPlan
         context.planningAttributes.solveds.set(canGetValues.id, RegularPlannerQuery(queryGraph = QueryGraph(selections = Selections(Set(predicate)))))
 
         val query = RegularPlannerQuery(
-          queryGraph = QueryGraph(selections = Selections(Set(predicate, Predicate(Set("n"), Equals(prop("n", "prop"), literalInt(1))(pos))))),
+          queryGraph = QueryGraph(selections = Selections(Set(predicate, Predicate(Set("n"), propEquality("n", "prop", 1))))),
           horizon = RegularQueryProjection(Map("foo" -> prop("n", "foo"))))
         alignGetValueFromIndexBehavior(query, canGetValues, context.logicalPlanProducer, context.planningAttributes.solveds, Attributes(idGen)) should equal(getValues)
       }

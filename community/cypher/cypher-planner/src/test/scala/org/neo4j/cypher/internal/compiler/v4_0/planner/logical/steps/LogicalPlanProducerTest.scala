@@ -20,12 +20,11 @@
 package org.neo4j.cypher.internal.compiler.v4_0.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v4_0.planner.LogicalPlanningTestSupport2
+import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.PlanMatchHelp
 import org.neo4j.cypher.internal.ir.v4_0.ProvidedOrder
-import org.neo4j.cypher.internal.v4_0.logical.plans.CachedNodeProperty
-import org.neo4j.cypher.internal.v4_0.expressions._
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 
-class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
+class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSupport2 with PlanMatchHelp{
 
   test("should rename provided order of property columns in projection if property projected") {
     new given().withLogicalPlanningContext { (_, context) =>
@@ -85,7 +84,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
       val plan = fakeLogicalPlanFor(context.planningAttributes, "x.foo")
       context.planningAttributes.providedOrders.set(plan.id, ProvidedOrder(Seq(ProvidedOrder.Asc(prop("x","foo")))))
       // projection
-      val projections = Map("carrot" -> cachedProp("x", "foo"))
+      val projections = Map("carrot" -> cachedNodeProperty("x", "foo"))
 
       //when
       val result = lpp.planRegularProjection(plan, projections, projections, context)
@@ -227,7 +226,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
       context.planningAttributes.providedOrders.set(plan.id, ProvidedOrder(Seq(ProvidedOrder.Asc(prop("y","bar")), ProvidedOrder.Asc(prop("x","foo")))))
 
       val aggregations = Map("xfoo" -> prop("x", "foo"))
-      val groupings = Map("z" -> cachedProp("y", "bar"))
+      val groupings = Map("z" -> cachedNodeProperty("y", "bar"))
 
       //when
       val result = lpp.planAggregation(plan, groupings, aggregations, groupings, aggregations, context)
@@ -282,7 +281,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
       // plan with provided order
       val plan = fakeLogicalPlanFor(context.planningAttributes, "x.foo.bar", "y")
 
-      val propOfProp = Property(prop("x","foo"),PropertyKeyName("bar")(pos))(pos)
+      val propOfProp = prop(prop("x","foo"), "bar")
 
       context.planningAttributes.providedOrders.set(plan.id, ProvidedOrder(Seq(ProvidedOrder.Asc(varFor("y")), ProvidedOrder.Asc(propOfProp))))
 
@@ -296,7 +295,4 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
       context.planningAttributes.providedOrders.get(result.id) should be(ProvidedOrder(Seq(ProvidedOrder.Asc(varFor("y")))))
     }
   }
-
-  private def cachedProp(node: String, prop: String) =
-    CachedNodeProperty(node, PropertyKeyName(prop)(pos))(pos)
 }

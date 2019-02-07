@@ -965,4 +965,8 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
       )
     )
   }
+
+  private def propertyProj(node: String, property: String ) =
+    s"$node.$property" -> prop(node, property)
+
 }

@@ -25,17 +25,16 @@ import org.neo4j.cypher.internal.planner.v4_0.spi.PlanningAttributes
 import org.neo4j.cypher.internal.planner.v4_0.spi.PlanningAttributes.{Cardinalities, ProvidedOrders, Solveds}
 import org.neo4j.cypher.internal.v4_0.logical.plans._
 import org.neo4j.cypher.internal.v4_0.logical.plans.ValueHashJoin
-import org.neo4j.cypher.internal.v4_0.expressions.{Contains, Equals}
 import org.neo4j.cypher.internal.v4_0.util.Cardinality
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 
 class CartesianProductsOrValueJoinsTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
-  val planA = allNodesScan("a")
-  val planB = allNodesScan("b")
-  val planC = allNodesScan("c")
+  private val planA = allNodesScan("a")
+  private val planB = allNodesScan("b")
+  private val planC = allNodesScan("c")
 
   private def allNodesScan(n: String, planningAttributes: PlanningAttributes = PlanningAttributes(new Solveds, new Cardinalities, new ProvidedOrders)): LogicalPlan = {
-    val solved = RegularPlannerQuery(queryGraph = QueryGraph(patternNodes = Set((n))))
+    val solved = RegularPlannerQuery(queryGraph = QueryGraph(patternNodes = Set(n)))
     val cardinality = Cardinality(0)
     val res = AllNodesScan(n, Set.empty)
     planningAttributes.solveds.set(res.id, solved)
@@ -54,8 +53,8 @@ class CartesianProductsOrValueJoinsTest extends CypherFunSuite with LogicalPlann
         List(planA, planB).permutations.map { l =>
           val (a, b) = (l.head, l(1))
           CartesianProduct(
-            planA,
-            planB
+            a,
+            b
           )
         }.toSeq: _*)
   }
@@ -101,21 +100,21 @@ class CartesianProductsOrValueJoinsTest extends CypherFunSuite with LogicalPlann
     testThis(
       graph = QueryGraph(
         patternNodes = Set("a", "b"),
-        selections = Selections.from(Equals(prop("a", "id"), prop("b", "id"))(pos))),
+        selections = Selections.from(equals(prop("a", "id"), prop("b", "id")))),
       input = (planningAttributes: PlanningAttributes) =>  Set(
         PlannedComponent(QueryGraph(patternNodes = Set("a")), allNodesScan("a", planningAttributes)),
         PlannedComponent(QueryGraph(patternNodes = Set("b")), allNodesScan("b", planningAttributes))),
       expectedPlans =
         List((planA, "a"), (planB, "b")).permutations.map { l =>
           val ((a, aName), (b, bName)) = (l.head, l(1))
-            ValueHashJoin(a, b, Equals(prop(aName, "id"), prop(bName, "id"))(pos))
+            ValueHashJoin(a, b, equals(prop(aName, "id"), prop(bName, "id")))
         }.toSeq : _*)
   }
 
   test("should plan hash joins between 3 pattern nodes") {
-    val eq1 = Equals(prop("b", "id"), prop("a", "id"))(pos)
-    val eq2 = Equals(prop("b", "id"), prop("c", "id"))(pos)
-    val eq3 = Equals(prop("a", "id"), prop("c", "id"))(pos)
+    val eq1 = equals(prop("b", "id"), prop("a", "id"))
+    val eq2 = equals(prop("b", "id"), prop("c", "id"))
+    val eq3 = equals(prop("a", "id"), prop("c", "id"))
 
     testThis(
       graph = QueryGraph(
@@ -131,9 +130,14 @@ class CartesianProductsOrValueJoinsTest extends CypherFunSuite with LogicalPlann
           // permutate equals order
           List(prop(bName, "id"), prop(cName, "id")).permutations.map { l2 =>
             val (prop1, prop2) = (l2.head, l2(1))
-            Selection(Seq(Equals(prop(aName, "id"), prop2)(pos)),
-              ValueHashJoin(a,
-                ValueHashJoin(b, c, Equals(prop(bName, "id"), prop(cName, "id"))(pos)), Equals(prop(aName, "id"), prop1)(pos)))
+            Selection(Seq(
+              equals(prop(aName, "id"), prop2)),
+              ValueHashJoin(
+                a,
+                ValueHashJoin(b, c, equals(prop(bName, "id"), prop(cName, "id"))),
+                equals(prop(aName, "id"), prop1)
+              )
+            )
           }
         }.toSeq : _*)
   }
@@ -142,8 +146,7 @@ class CartesianProductsOrValueJoinsTest extends CypherFunSuite with LogicalPlann
     // given WHERE x.id = z.id
     val lhs = prop("x", "id")
     val rhs = prop("z", "id")
-    val equalityComparison = Equals(lhs, rhs)(pos)
-    val selections = Selections.from(equalityComparison)
+    val equalityComparison = equals(lhs, rhs)
 
     // when
     val result = cartesianProductsOrValueJoins.valueJoins(Seq(equalityComparison))
@@ -167,8 +170,7 @@ class CartesianProductsOrValueJoinsTest extends CypherFunSuite with LogicalPlann
     // given WHERE x.id1 = x.id2
     val lhs = prop("x", "id1")
     val rhs = prop("x", "id2")
-    val equalityComparison = Equals(lhs, rhs)(pos)
-    val selections = Selections.from(equalityComparison)
+    val equalityComparison = equals(lhs, rhs)
 
     // when
     val result = cartesianProductsOrValueJoins.valueJoins(Seq(equalityComparison))
@@ -184,9 +186,9 @@ class CartesianProductsOrValueJoinsTest extends CypherFunSuite with LogicalPlann
     val z_id = prop("z", "id")
     val lit = literalInt(42)
 
-    val pred1 = Equals(x_id1, x_id2)(pos)
-    val pred2 = Equals(x_id1, z_id)(pos)
-    val pred3 = Equals(x_id2, lit)(pos)
+    val pred1 = equals(x_id1, x_id2)
+    val pred2 = equals(x_id1, z_id)
+    val pred3 = equals(x_id2, lit)
 
     // when
     val result = cartesianProductsOrValueJoins.valueJoins(Seq(pred1, pred2, pred3))
@@ -200,7 +202,7 @@ class CartesianProductsOrValueJoinsTest extends CypherFunSuite with LogicalPlann
     val nProp = prop("n", "prop")
     val xProp = prop("x", "prop")
 
-    val predicate1 = Contains(nProp, xProp)(pos) -> Array("n", "x")
+    val predicate1 = contains(nProp, xProp) -> Array("n", "x")
     val predicate2 = propEquality("n", "prop", 42) -> Array("n")
 
     val idsFromLeft = Set("n")
@@ -213,7 +215,7 @@ class CartesianProductsOrValueJoinsTest extends CypherFunSuite with LogicalPlann
     result should be(List(predicate1._1))
   }
 
-  private def testThis(graph: QueryGraph, input: (PlanningAttributes) => Set[PlannedComponent], assertion: LogicalPlan => Unit): Unit = {
+  private def testThis(graph: QueryGraph, input: PlanningAttributes => Set[PlannedComponent], assertion: LogicalPlan => Unit): Unit = {
     new given {
       qg = graph
       cardinality = mapCardinality {
@@ -236,6 +238,6 @@ class CartesianProductsOrValueJoinsTest extends CypherFunSuite with LogicalPlann
     }
   }
 
-  private def testThis(graph: QueryGraph, input: (PlanningAttributes) => Set[PlannedComponent], expectedPlans: LogicalPlan*): Unit =
+  private def testThis(graph: QueryGraph, input: PlanningAttributes => Set[PlannedComponent], expectedPlans: LogicalPlan*): Unit =
     testThis(graph, input, (result: LogicalPlan) => expectedPlans should contain(result))
 }

@@ -25,28 +25,27 @@ import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.steps.indexScanLe
 import org.neo4j.cypher.internal.ir.v4_0._
 import org.neo4j.cypher.internal.v4_0.logical.plans._
 import org.neo4j.cypher.internal.v4_0.ast.UsingIndexHint
-import org.neo4j.cypher.internal.v4_0.expressions.{functions, _}
+import org.neo4j.cypher.internal.v4_0.expressions.{Expression, PartialPredicate, PropertyKeyName}
+import org.neo4j.cypher.internal.v4_0.expressions.functions.Exists
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 
 class IndexScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
-  val idName = "n"
-  val hasLabels: Expression = HasLabels(varFor("n"), Seq(LabelName("Awesome") _)) _
-  val property: Expression = Property(varFor("n"), PropertyKeyName("prop") _) _
-
-  val existsPredicate: Expression = FunctionInvocation(FunctionName(functions.Exists.name) _, property) _
-  val startsWithPredicate: Expression = StartsWith(property, StringLiteral("") _) _
-  val ltPredicate: Expression = LessThan(property, SignedDecimalIntegerLiteral("12") _) _
-  val neqPredicate: Expression = NotEquals(property, SignedDecimalIntegerLiteral("12") _) _
-  val eqPredicate: Expression = Equals(property, SignedDecimalIntegerLiteral("12") _) _
-  val regexPredicate: Expression = RegexMatch(property, StringLiteral("Johnny") _) _
-  val stringLiteral: Expression = StringLiteral("apa") _
-  val containsPredicate: Expression = Contains(property, stringLiteral) _
-  val endsWithPredicate: Expression = EndsWith(property, stringLiteral) _
+  private val idName = "n"
+  private val hasLabelsPredicate = super.hasLabels("n", "Awesome")
+  private val existsPredicate = function(Exists.name, prop("n", "prop"))
+  private val startsWithPredicate = startsWith(prop("n", "prop"), literalString(""))
+  private val ltPredicate = propLessThan("n", "prop", 12)
+  private val neqPredicate = notEquals(prop("n", "prop"), literalInt(12))
+  private val eqPredicate = propEquality("n", "prop", 12)
+  private val regexPredicate = regex(prop("n", "prop"), literalString("Johnny"))
+  private val stringLiteral = literalString("apa")
+  private val containsPredicate = contains(prop("n", "prop"), stringLiteral)
+  private val endsWithPredicate = endsWith(prop("n", "prop"), stringLiteral)
 
   test("does not plan index scan when no index exist") {
     new given {
-      qg = queryGraph(existsPredicate, hasLabels)
+      qg = queryGraph(existsPredicate, hasLabelsPredicate)
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
       val resultPlans = indexScanLeafPlanner(cfg.qg, InterestingOrder.empty, ctx)
@@ -58,7 +57,7 @@ class IndexScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
 
   test("index scan when there is an index on the property") {
     new given {
-      qg = queryGraph(existsPredicate, hasLabels)
+      qg = queryGraph(existsPredicate, hasLabelsPredicate)
 
       indexOn("Awesome", "prop")
     }.withLogicalPlanningContext { (cfg, ctx) =>
@@ -74,7 +73,7 @@ class IndexScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
 
   test("index scan with values when there is an index on the property") {
     new given {
-      qg = queryGraph(existsPredicate, hasLabels)
+      qg = queryGraph(existsPredicate, hasLabelsPredicate)
 
       indexOn("Awesome", "prop").providesValues()
     }.withLogicalPlanningContext { (cfg, ctx) =>
@@ -90,7 +89,7 @@ class IndexScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
 
   test("unique index scan when there is an unique index on the property") {
     new given {
-      qg = queryGraph(existsPredicate, hasLabels)
+      qg = queryGraph(existsPredicate, hasLabelsPredicate)
 
       uniqueIndexOn("Awesome", "prop")
     }.withLogicalPlanningContext { (cfg, ctx) =>
@@ -106,7 +105,7 @@ class IndexScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
 
   test("unique index scan with values when there is an unique index on the property") {
     new given {
-      qg = queryGraph(existsPredicate, hasLabels)
+      qg = queryGraph(existsPredicate, hasLabelsPredicate)
 
       uniqueIndexOn("Awesome", "prop").providesValues()
     }.withLogicalPlanningContext { (cfg, ctx) =>
@@ -121,10 +120,10 @@ class IndexScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
   }
 
   test("plans index scans such that it solves hints") {
-    val hint: UsingIndexHint = UsingIndexHint(varFor("n"), LabelName("Awesome") _, Seq(PropertyKeyName("prop")(pos))) _
+    val hint: UsingIndexHint = UsingIndexHint(varFor("n"), labelName("Awesome"), Seq(PropertyKeyName("prop")(pos))) _
 
     new given {
-      qg = queryGraph(existsPredicate, hasLabels).addHints(Some(hint))
+      qg = queryGraph(existsPredicate, hasLabelsPredicate).addHints(Some(hint))
 
       indexOn("Awesome", "prop")
     }.withLogicalPlanningContext { (cfg, ctx) =>
@@ -143,10 +142,10 @@ class IndexScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
   }
 
   test("plans unique index scans such that it solves hints") {
-    val hint: UsingIndexHint = UsingIndexHint(varFor("n"), LabelName("Awesome") _, Seq(PropertyKeyName("prop")(pos))) _
+    val hint: UsingIndexHint = UsingIndexHint(varFor("n"), labelName("Awesome"), Seq(PropertyKeyName("prop")(pos))) _
 
     new given {
-      qg = queryGraph(existsPredicate, hasLabels).addHints(Some(hint))
+      qg = queryGraph(existsPredicate, hasLabelsPredicate).addHints(Some(hint))
 
       uniqueIndexOn("Awesome", "prop")
     }.withLogicalPlanningContext { (cfg, ctx) =>
@@ -166,7 +165,7 @@ class IndexScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
 
   test("plans index scans for: n.prop STARTS WITH <pattern>") {
     new given {
-      qg = queryGraph(startsWithPredicate, hasLabels)
+      qg = queryGraph(startsWithPredicate, hasLabelsPredicate)
       indexOn("Awesome", "prop")
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
@@ -186,7 +185,7 @@ class IndexScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
 
   test("plans index scans with value for: n.prop STARTS WITH <pattern>") {
     new given {
-      qg = queryGraph(startsWithPredicate, hasLabels)
+      qg = queryGraph(startsWithPredicate, hasLabelsPredicate)
       indexOn("Awesome", "prop").providesValues()
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
@@ -205,7 +204,7 @@ class IndexScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
 
   test("plans index scans for: n.prop < <value>") {
     new given {
-      qg = queryGraph(ltPredicate, hasLabels)
+      qg = queryGraph(ltPredicate, hasLabelsPredicate)
       indexOn("Awesome", "prop")
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
@@ -224,7 +223,7 @@ class IndexScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
 
   test("plans index scans with values for: n.prop < <value>") {
     new given {
-      qg = queryGraph(ltPredicate, hasLabels)
+      qg = queryGraph(ltPredicate, hasLabelsPredicate)
       indexOn("Awesome", "prop").providesValues()
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
@@ -243,7 +242,7 @@ class IndexScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
 
   test("plans index scans for: n.prop <> <value>") {
     new given {
-      qg = queryGraph(neqPredicate, hasLabels)
+      qg = queryGraph(neqPredicate, hasLabelsPredicate)
       indexOn("Awesome", "prop")
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
@@ -262,7 +261,7 @@ class IndexScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
 
   test("plans index scans with values for: n.prop <> <value>") {
     new given {
-      qg = queryGraph(neqPredicate, hasLabels)
+      qg = queryGraph(neqPredicate, hasLabelsPredicate)
       indexOn("Awesome", "prop").providesValues()
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
@@ -281,7 +280,7 @@ class IndexScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
 
   test("plans index scans for: n.prop = <value>") {
     new given {
-      qg = queryGraph(eqPredicate, hasLabels)
+      qg = queryGraph(eqPredicate, hasLabelsPredicate)
       indexOn("Awesome", "prop")
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
@@ -300,7 +299,7 @@ class IndexScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
 
   test("plans index scans with values for: n.prop = <value>") {
     new given {
-      qg = queryGraph(eqPredicate, hasLabels)
+      qg = queryGraph(eqPredicate, hasLabelsPredicate)
       indexOn("Awesome", "prop").providesValues()
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
@@ -319,7 +318,7 @@ class IndexScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
 
   test("plans index scans for: n.prop = <pattern>") {
     new given {
-      qg = queryGraph(regexPredicate, hasLabels)
+      qg = queryGraph(regexPredicate, hasLabelsPredicate)
       indexOn("Awesome", "prop")
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
@@ -338,7 +337,7 @@ class IndexScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
 
   test("plans index scans with values for: n.prop = <pattern>") {
     new given {
-      qg = queryGraph(regexPredicate, hasLabels)
+      qg = queryGraph(regexPredicate, hasLabelsPredicate)
       indexOn("Awesome", "prop").providesValues()
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
@@ -357,7 +356,7 @@ class IndexScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
 
   test("does not plan index contains scan when no index exist") {
     new given {
-      qg = queryGraph(containsPredicate, hasLabels)
+      qg = queryGraph(containsPredicate, hasLabelsPredicate)
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
       val resultPlans = indexScanLeafPlanner(cfg.qg, InterestingOrder.empty, ctx)
@@ -369,7 +368,7 @@ class IndexScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
 
   test("index contains scan when there is an index on the property") {
     new given {
-      qg = queryGraph(containsPredicate, hasLabels)
+      qg = queryGraph(containsPredicate, hasLabelsPredicate)
 
       indexOn("Awesome", "prop")
     }.withLogicalPlanningContext { (cfg, ctx) =>
@@ -385,7 +384,7 @@ class IndexScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
 
   test("index contains scan with values when there is an index on the property") {
     new given {
-      qg = queryGraph(containsPredicate, hasLabels)
+      qg = queryGraph(containsPredicate, hasLabelsPredicate)
 
       indexOn("Awesome", "prop").providesValues()
     }.withLogicalPlanningContext { (cfg, ctx) =>
@@ -401,7 +400,7 @@ class IndexScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
 
   test("unique index contains scan when there is an unique index on the property") {
     new given {
-      qg = queryGraph(containsPredicate, hasLabels)
+      qg = queryGraph(containsPredicate, hasLabelsPredicate)
 
       uniqueIndexOn("Awesome", "prop")
     }.withLogicalPlanningContext { (cfg, ctx) =>
@@ -417,7 +416,7 @@ class IndexScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
 
   test("unique index contains scan with values when there is an unique index on the property") {
     new given {
-      qg = queryGraph(containsPredicate, hasLabels)
+      qg = queryGraph(containsPredicate, hasLabelsPredicate)
 
       uniqueIndexOn("Awesome", "prop").providesValues()
     }.withLogicalPlanningContext { (cfg, ctx) =>
@@ -432,10 +431,10 @@ class IndexScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
   }
 
   test("plans index contains scans such that it solves hints") {
-    val hint: UsingIndexHint = UsingIndexHint(varFor("n"), LabelName("Awesome") _, Seq(PropertyKeyName("prop")(pos))) _
+    val hint: UsingIndexHint = UsingIndexHint(varFor("n"), labelName("Awesome"), Seq(PropertyKeyName("prop")(pos))) _
 
     new given {
-      qg = queryGraph(containsPredicate, hasLabels).addHints(Some(hint))
+      qg = queryGraph(containsPredicate, hasLabelsPredicate).addHints(Some(hint))
 
       indexOn("Awesome", "prop")
     }.withLogicalPlanningContext { (cfg, ctx) =>
@@ -454,10 +453,10 @@ class IndexScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
   }
 
   test("plans unique index contains scans such that it solves hints") {
-    val hint: UsingIndexHint = UsingIndexHint(varFor("n"), LabelName("Awesome") _, Seq(PropertyKeyName("prop")(pos))) _
+    val hint: UsingIndexHint = UsingIndexHint(varFor("n"), labelName("Awesome"), Seq(PropertyKeyName("prop")(pos))) _
 
     new given {
-      qg = queryGraph(containsPredicate, hasLabels).addHints(Some(hint))
+      qg = queryGraph(containsPredicate, hasLabelsPredicate).addHints(Some(hint))
 
       uniqueIndexOn("Awesome", "prop")
     }.withLogicalPlanningContext { (cfg, ctx) =>
@@ -477,7 +476,7 @@ class IndexScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
 
   test("index ends with scan when there is an index on the property") {
     new given {
-      qg = queryGraph(endsWithPredicate, hasLabels)
+      qg = queryGraph(endsWithPredicate, hasLabelsPredicate)
 
       indexOn("Awesome", "prop")
     }.withLogicalPlanningContext { (cfg, ctx) =>
@@ -493,7 +492,7 @@ class IndexScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
 
   test("index ends with scan with values when there is an index on the property") {
     new given {
-      qg = queryGraph(endsWithPredicate, hasLabels)
+      qg = queryGraph(endsWithPredicate, hasLabelsPredicate)
 
       indexOn("Awesome", "prop").providesValues()
     }.withLogicalPlanningContext { (cfg, ctx) =>
