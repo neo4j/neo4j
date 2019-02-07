@@ -174,6 +174,16 @@ public class GBPTree<KEY,VALUE> implements Closeable
             public void startupState( boolean clean )
             {   // no-op
             }
+
+            @Override
+            public void treeGrowth()
+            {   // no-op
+            }
+
+            @Override
+            public void treeShrink()
+            {   // no-op
+            }
         }
 
         /**
@@ -223,6 +233,16 @@ public class GBPTree<KEY,VALUE> implements Closeable
          * @param clean true if tree was clean on startup.
          */
         void startupState( boolean clean );
+
+        /**
+         * Report tree growth, meaning split in root.
+         */
+        void treeGrowth();
+
+        /**
+         * Report tree shrink, when root becomes empty.
+         */
+        void treeShrink();
     }
 
     /**
@@ -483,7 +503,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
             }
             this.bTreeNode = format.create( pageSize, layout );
             this.freeList = new FreeListIdProvider( pagedFile, pageSize, rootId, FreeListIdProvider.NO_MONITOR );
-            this.writer = new SingleWriter( new InternalTreeLogic<>( freeList, bTreeNode, layout ) );
+            this.writer = new SingleWriter( new InternalTreeLogic<>( freeList, bTreeNode, layout, monitor ) );
 
             // Create or load state
             if ( created )
@@ -1027,19 +1047,29 @@ public class GBPTree<KEY,VALUE> implements Closeable
     }
 
     /**
+     * Use default value for ratioToKeepInLeftOnSplit
+     * @see GBPTree#writer(double)
+     */
+    public Writer<KEY,VALUE> writer() throws IOException
+    {
+        return writer( InternalTreeLogic.DEFAULT_SPLIT_RATIO );
+    }
+
+    /**
      * Returns a {@link Writer} able to modify the index, i.e. insert and remove keys/values.
      * After usage the returned writer must be closed, typically by using try-with-resource clause.
      *
+     * @param ratioToKeepInLeftOnSplit Decide how much to keep in left node on split, 0=keep nothing, 0.5=split 50-50, 1=keep everything.
      * @return the single {@link Writer} for this index. The returned writer must be
      * {@link Writer#close() closed} before another caller can acquire this writer.
      * @throws IOException on error accessing the index.
      * @throws IllegalStateException for calls made between a successful call to this method and closing the
      * returned writer.
      */
-    public Writer<KEY,VALUE> writer() throws IOException
+    public Writer<KEY,VALUE> writer( double ratioToKeepInLeftOnSplit ) throws IOException
     {
         assertRecoveryCleanSuccessful();
-        writer.initialize();
+        writer.initialize( ratioToKeepInLeftOnSplit );
         changesSinceLastCheckpoint = true;
         return writer;
     }
@@ -1100,6 +1130,15 @@ public class GBPTree<KEY,VALUE> implements Closeable
         }
     }
 
+    void visit( GBPTreeVisitor<KEY,VALUE> visitor ) throws IOException
+    {
+        try ( PageCursor cursor = openRootCursor( PagedFile.PF_SHARED_READ_LOCK ) )
+        {
+            new GBPTreeStructure<>( bTreeNode, layout, stableGeneration( generation ), unstableGeneration( generation ) )
+                    .visitTree( cursor, writer.cursor, visitor );
+        }
+    }
+
     @SuppressWarnings( "unused" )
     public void printTree() throws IOException
     {
@@ -1119,11 +1158,8 @@ public class GBPTree<KEY,VALUE> implements Closeable
     @SuppressWarnings( "SameParameterValue" )
     void printTree( boolean printValues, boolean printPosition, boolean printState, boolean printHeader ) throws IOException
     {
-        try ( PageCursor cursor = openRootCursor( PagedFile.PF_SHARED_READ_LOCK ) )
-        {
-            new TreePrinter<>( bTreeNode, layout, stableGeneration( generation ), unstableGeneration( generation ) )
-                .printTree( cursor, writer.cursor, System.out, printValues, printPosition, printState, printHeader );
-        }
+        PrintingGBPTreeVisitor<KEY,VALUE> printingVisitor = new PrintingGBPTreeVisitor<>( System.out, printValues, printPosition, printState, printHeader );
+        visit( printingVisitor );
     }
 
     // Utility method
@@ -1131,7 +1167,8 @@ public class GBPTree<KEY,VALUE> implements Closeable
     {
         try ( PageCursor cursor = openRootCursor( PagedFile.PF_SHARED_READ_LOCK ) )
         {
-            TreePrinter.printTreeState( cursor, System.out );
+            PrintingGBPTreeVisitor<KEY,VALUE> printingVisitor = new PrintingGBPTreeVisitor<>( System.out, false, false, true, false );
+            GBPTreeStructure.visitTreeState( cursor, printingVisitor );
         }
     }
 
@@ -1208,6 +1245,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
         // therefore safe to locally cache these generation fields from the volatile generation in the tree
         private long stableGeneration;
         private long unstableGeneration;
+        private double ratioToKeepInLeftOnSplit;
 
         SingleWriter( InternalTreeLogic<KEY,VALUE> treeLogic )
         {
@@ -1232,8 +1270,9 @@ public class GBPTree<KEY,VALUE> implements Closeable
          * </ul>
          *
          * @throws IOException if fail to open {@link PageCursor}
+         * @param ratioToKeepInLeftOnSplit Decide how much to keep in left node on split, 0=keep nothing, 0.5=split 50-50, 1=keep everything.
          */
-        void initialize() throws IOException
+        void initialize( double ratioToKeepInLeftOnSplit ) throws IOException
         {
             if ( !writerTaken.compareAndSet( false, true ) )
             {
@@ -1249,8 +1288,9 @@ public class GBPTree<KEY,VALUE> implements Closeable
                 cursor = openRootCursor( PagedFile.PF_SHARED_WRITE_LOCK );
                 stableGeneration = stableGeneration( generation );
                 unstableGeneration = unstableGeneration( generation );
+                this.ratioToKeepInLeftOnSplit = ratioToKeepInLeftOnSplit;
                 assert assertNoSuccessor( cursor, stableGeneration, unstableGeneration );
-                treeLogic.initialize( cursor );
+                treeLogic.initialize( cursor, ratioToKeepInLeftOnSplit );
                 success = true;
             }
             catch ( Throwable e )
@@ -1301,7 +1341,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
         {
             long rootId = GenerationSafePointerPair.pointer( rootPointer );
             GBPTree.this.setRoot( rootId, unstableGeneration );
-            treeLogic.initialize( cursor );
+            treeLogic.initialize( cursor, ratioToKeepInLeftOnSplit );
         }
 
         @Override
@@ -1345,6 +1385,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
                         stableGeneration, unstableGeneration );
                 TreeNode.setKeyCount( cursor, 1 );
                 setRoot( newRootId );
+                monitor.treeGrowth();
             }
             else if ( structurePropagation.hasMidChildUpdate )
             {

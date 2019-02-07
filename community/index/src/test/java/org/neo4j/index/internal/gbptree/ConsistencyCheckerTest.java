@@ -31,6 +31,7 @@ import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.index.internal.gbptree.ConsistencyChecker.assertNoCrashOrBrokenPointerInGSPP;
+import static org.neo4j.index.internal.gbptree.GBPTree.NO_MONITOR;
 import static org.neo4j.index.internal.gbptree.GenerationSafePointer.MIN_GENERATION;
 import static org.neo4j.index.internal.gbptree.PageCursorUtil.goTo;
 import static org.neo4j.index.internal.gbptree.SimpleLongLayout.longLayout;
@@ -78,7 +79,7 @@ class ConsistencyCheckerTest
         long unstableGeneration = stableGeneration + 1;
         PageAwareByteArrayCursor cursor = new PageAwareByteArrayCursor( pageSize );
         SimpleIdProvider idProvider = new SimpleIdProvider( cursor::duplicate );
-        InternalTreeLogic<MutableLong,MutableLong> logic = new InternalTreeLogic<>( idProvider, node, layout );
+        InternalTreeLogic<MutableLong,MutableLong> logic = new InternalTreeLogic<>( idProvider, node, layout, NO_MONITOR );
         cursor.next( idProvider.acquireNewId( stableGeneration, unstableGeneration ) );
         node.initializeLeaf( cursor, stableGeneration, unstableGeneration );
         logic.initialize( cursor );

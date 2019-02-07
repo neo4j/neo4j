@@ -47,8 +47,10 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 import static org.neo4j.index.internal.gbptree.ConsistencyChecker.assertNoCrashOrBrokenPointerInGSPP;
+import static org.neo4j.index.internal.gbptree.GBPTree.NO_MONITOR;
 import static org.neo4j.index.internal.gbptree.GenerationSafePointerPair.pointer;
 import static org.neo4j.index.internal.gbptree.TreeNode.Overflow.NO;
+import static org.neo4j.index.internal.gbptree.TreeNode.Overflow.YES;
 import static org.neo4j.index.internal.gbptree.TreeNode.Type.INTERNAL;
 import static org.neo4j.index.internal.gbptree.TreeNode.Type.LEAF;
 import static org.neo4j.index.internal.gbptree.ValueMergers.overwrite;
@@ -71,6 +73,7 @@ public abstract class InternalTreeLogicTestBase<KEY,VALUE>
 
     private static long stableGeneration = GenerationSafePointer.MIN_GENERATION;
     private static long unstableGeneration = stableGeneration + 1;
+    private double ratioToKeepInLeftOnSplit = InternalTreeLogic.DEFAULT_SPLIT_RATIO;
 
     @Parameterized.Parameters( name = "{0}" )
     public static Collection<Object[]> generators()
@@ -115,7 +118,7 @@ public abstract class InternalTreeLogicTestBase<KEY,VALUE>
         layout = getLayout();
         node = getTreeNode( pageSize, layout );
         adder = getAdder();
-        treeLogic = new InternalTreeLogic<>( id, node, layout );
+        treeLogic = new InternalTreeLogic<>( id, node, layout, NO_MONITOR );
         dontCare = layout.newValue();
         structurePropagation = new StructurePropagation<>( layout.newKey(), layout.newKey(), layout.newKey() );
     }
@@ -356,6 +359,79 @@ public abstract class InternalTreeLogicTestBase<KEY,VALUE>
         long child2 = childAt( readCursor, 2, stableGeneration, unstableGeneration ); // <- right sibling to split-node before split
 
         assertSiblingOrderAndPointers( child0, child1, child2 );
+    }
+
+    @Test
+    public void splitWithSplitRatio0() throws IOException
+    {
+        // given
+        ratioToKeepInLeftOnSplit = 0;
+        initialize();
+        int keyCount = 0;
+        KEY key = key( random.nextLong() );
+        VALUE value = value( random.nextLong() );
+        while ( node.leafOverflow( cursor, keyCount, key, value ) == NO )
+        {
+            insert( key, value );
+            assertFalse( structurePropagation.hasRightKeyInsert );
+
+            keyCount++;
+            key = key( random.nextLong() );
+            value = value( random.nextLong() );
+        }
+
+        // when
+        insert( key, value );
+
+        // then
+        goTo( readCursor, rootId );
+        long child0 = childAt( readCursor, 0, stableGeneration, unstableGeneration );
+        long child1 = childAt( readCursor, 1, stableGeneration, unstableGeneration );
+        int leftKeyCount = keyCount( child0 );
+        int rightKeyCount = keyCount( child1 );
+        assertEquals( 1, numberOfRootSplits );
+
+        // Left node should hold as few keys as possible, such that nothing more can be moved to right.
+        KEY rightmostKeyInLeftChild = keyAt( child0,leftKeyCount - 1, LEAF );
+        VALUE rightmostValueInLeftChild = valueAt( child0, leftKeyCount - 1 );
+        goTo( readCursor, child1 );
+        assertEquals( YES, node.leafOverflow( readCursor, rightKeyCount, rightmostKeyInLeftChild, rightmostValueInLeftChild ) );
+    }
+
+    @Test
+    public void splitWithSplitRatio1() throws IOException
+    {
+        // given
+        ratioToKeepInLeftOnSplit = 1;
+        initialize();
+        int keyCount = 0;
+        KEY key = key( random.nextLong() );
+        VALUE value = value( random.nextLong() );
+        while ( node.leafOverflow( cursor, keyCount, key, value ) == NO )
+        {
+            insert( key, value );
+            assertFalse( structurePropagation.hasRightKeyInsert );
+
+            keyCount++;
+            key = key( random.nextLong() );
+            value = value( random.nextLong() );
+        }
+
+        // when
+        insert( key, value );
+
+        // then
+        goTo( readCursor, rootId );
+        long child0 = childAt( readCursor, 0, stableGeneration, unstableGeneration );
+        long child1 = childAt( readCursor, 1, stableGeneration, unstableGeneration );
+        int leftKeyCount = keyCount( child0 );
+        assertEquals( 1, numberOfRootSplits );
+
+        // Right node should hold as few keys as possible, such that nothing more can be moved to left.
+        KEY leftmostKeyInRightChild = keyAt( child1,0, LEAF );
+        VALUE leftmostValueInRightChild = valueAt( child1, 0 );
+        goTo( readCursor, child0 );
+        assertEquals( YES, node.leafOverflow( readCursor, leftKeyCount, leftmostKeyInRightChild, leftmostValueInRightChild ) );
     }
 
     /* REMOVE */
@@ -1607,7 +1683,7 @@ public abstract class InternalTreeLogicTestBase<KEY,VALUE>
     {
         rootId = cursor.getCurrentPageId();
         rootGeneration = unstableGeneration;
-        treeLogic.initialize( cursor );
+        treeLogic.initialize( cursor, ratioToKeepInLeftOnSplit );
     }
 
     private void assertSuccessorPointerNotCrashOrBroken()
@@ -1658,8 +1734,8 @@ public abstract class InternalTreeLogicTestBase<KEY,VALUE>
     {
         long currentPageId = cursor.getCurrentPageId();
         cursor.next( rootId );
-        new TreePrinter<>( node, layout, stableGeneration, unstableGeneration )
-                .printTree( cursor, cursor, System.out, false, false, false, false );
+        PrintingGBPTreeVisitor<KEY,VALUE> printingVisitor = new PrintingGBPTreeVisitor<>( System.out, false, false, false, false );
+        new GBPTreeStructure<>( node, layout, stableGeneration, unstableGeneration ).visitTree( cursor, cursor, printingVisitor );
         cursor.next( currentPageId );
     }
 
@@ -1732,6 +1808,21 @@ public abstract class InternalTreeLogicTestBase<KEY,VALUE>
     private KEY keyAt( int pos, TreeNode.Type type )
     {
         return node.keyAt( readCursor, layout.newKey(), pos, type );
+    }
+
+    private VALUE valueAt( long nodeId, int pos )
+    {
+        VALUE readValue = layout.newValue();
+        long prevId = readCursor.getCurrentPageId();
+        try
+        {
+            readCursor.next( nodeId );
+            return node.valueAt( readCursor, readValue, pos );
+        }
+        finally
+        {
+            readCursor.next( prevId );
+        }
     }
 
     private VALUE valueAt( int pos )

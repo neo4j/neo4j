@@ -19,6 +19,7 @@
  */
 package org.neo4j.index.internal.gbptree;
 
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -57,8 +58,15 @@ public abstract class GBPTreeITBase<KEY,VALUE>
     @Rule
     public final RuleChain rules = outerRule( fs ).around( directory ).around( pageCacheRule ).around( random );
 
+    private double ratioToKeepInLeftOnSplit;
     private TestLayout<KEY,VALUE> layout;
     private GBPTree<KEY,VALUE> index;
+
+    @Before
+    public void setup()
+    {
+        ratioToKeepInLeftOnSplit = random.nextBoolean() ? InternalTreeLogic.DEFAULT_SPLIT_RATIO : random.nextDouble();
+    }
 
     private GBPTree<KEY,VALUE> createIndex()
             throws IOException
@@ -67,6 +75,11 @@ public abstract class GBPTreeITBase<KEY,VALUE>
         layout = getLayout( random );
         PageCache pageCache = pageCacheRule.getPageCache( fs.get(), config().withPageSize( 512 ).withAccessChecks( true ) );
         return index = new GBPTreeBuilder<>( pageCache, directory.file( "index" ), layout ).build();
+    }
+
+    private Writer<KEY,VALUE> createWriter( GBPTree<KEY,VALUE> index ) throws IOException
+    {
+        return index.writer( ratioToKeepInLeftOnSplit );
     }
 
     abstract TestLayout<KEY,VALUE> getLayout( RandomRule random );
@@ -89,7 +102,7 @@ public abstract class GBPTreeITBase<KEY,VALUE>
             }
 
             // WHEN
-            try ( Writer<KEY,VALUE> writer = index.writer() )
+            try ( Writer<KEY,VALUE> writer = createWriter( index ) )
             {
                 for ( Map.Entry<KEY,VALUE> entry : data.entrySet() )
                 {
@@ -157,7 +170,7 @@ public abstract class GBPTreeITBase<KEY,VALUE>
         try ( GBPTree<KEY,VALUE> index = createIndex() )
         {
             int numberOfNodes = 200_000;
-            try ( Writer<KEY,VALUE> writer = index.writer() )
+            try ( Writer<KEY,VALUE> writer = createWriter( index ) )
             {
                 for ( int i = 0; i < numberOfNodes; i++ )
                 {
@@ -167,7 +180,7 @@ public abstract class GBPTreeITBase<KEY,VALUE>
 
             // when
             BitSet removed = new BitSet();
-            try ( Writer<KEY,VALUE> writer = index.writer() )
+            try ( Writer<KEY,VALUE> writer = createWriter( index ) )
             {
                 for ( int i = 0; i < numberOfNodes - numberOfNodes / 10; i++ )
                 {
@@ -184,7 +197,7 @@ public abstract class GBPTreeITBase<KEY,VALUE>
             }
 
             int next = 0;
-            try ( Writer<KEY,VALUE> writer = index.writer() )
+            try ( Writer<KEY,VALUE> writer = createWriter( index ) )
             {
                 for ( int i = 0; i < numberOfNodes / 10; i++ )
                 {
@@ -213,7 +226,7 @@ public abstract class GBPTreeITBase<KEY,VALUE>
         try ( GBPTree<KEY,VALUE> index = createIndex() )
         {
             // Write
-            try ( Writer<KEY, VALUE> writer = index.writer() )
+            try ( Writer<KEY, VALUE> writer = createWriter( index ) )
             {
                 for ( long seed : seeds )
                 {
@@ -237,7 +250,7 @@ public abstract class GBPTreeITBase<KEY,VALUE>
             throws IOException
     {
         int changeCount = random.nextInt( 10 ) + 10;
-        try ( Writer<KEY,VALUE> writer = index.writer() )
+        try ( Writer<KEY,VALUE> writer = createWriter( index ) )
         {
             for ( int i = 0; i < changeCount; i++ )
             {
