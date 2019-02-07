@@ -63,13 +63,11 @@ case class SingleComponentPlanner(monitor: IDPQueryGraphSolverMonitor,
           }
 
           override def is(requirement: InterestingOrder): Boolean = requirement == interestingOrder
-
-          override def isEmpty: Boolean = interestingOrder.isEmpty
         }
 
         val generators = solverConfig.solvers(qg).map(_ (qg))
         val selectingGenerators = generators.map(_.map(plan => kit.select(plan, qg)))
-        val combinedGenerators = if (orderRequirement.isEmpty) selectingGenerators else {
+        val combinedGenerators = if (interestingOrder.isEmpty) selectingGenerators else {
           val sortingGenerators = selectingGenerators.map(_.flatMap(plan => SortPlanner.maybeSortedPlan(plan, interestingOrder, context)))
           selectingGenerators ++ sortingGenerators
         }

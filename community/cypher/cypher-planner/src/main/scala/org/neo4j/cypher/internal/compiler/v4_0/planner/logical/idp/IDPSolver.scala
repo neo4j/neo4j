@@ -34,7 +34,6 @@ trait ExtraRequirement[Requirement, Result] {
   def none: Requirement
   def is(requirement: Requirement): Boolean
   def forResult(result: Result): Requirement
-  def isEmpty: Boolean
 }
 
 /**
@@ -80,11 +79,9 @@ class IDPSolver[Solvable, Requirement, Result, Context](generator: IDPSolverStep
               foundNoCandidate = false
               table.put(goal, extraRequirement.none, candidate)
             }
-            if (!extraRequirement.isEmpty) {
-              projectingSelector(extraCandidates).foreach { candidate =>
-                foundNoCandidate = false
-                table.put(goal, extraRequirement.forResult(candidate), candidate)
-              }
+            projectingSelector(extraCandidates).foreach { candidate =>
+              foundNoCandidate = false
+              table.put(goal, extraRequirement.forResult(candidate), candidate)
             }
             keepGoing = blockSize == 2 ||
               (table.size <= maxTableSize && (System.currentTimeMillis() - start) < iterationDurationLimit)
