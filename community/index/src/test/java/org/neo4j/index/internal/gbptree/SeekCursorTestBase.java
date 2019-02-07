@@ -50,6 +50,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.index.internal.gbptree.GBPTree.NO_MONITOR;
 import static org.neo4j.index.internal.gbptree.GenerationSafePointerPair.pointer;
 import static org.neo4j.index.internal.gbptree.SeekCursor.DEFAULT_MAX_READ_AHEAD;
 import static org.neo4j.index.internal.gbptree.TreeNode.Type.INTERNAL;
@@ -95,7 +96,7 @@ abstract class SeekCursorTestBase<KEY, VALUE>
 
         layout = getLayout();
         node = getTreeNode( PAGE_SIZE, layout );
-        treeLogic = new InternalTreeLogic<>( id, node, layout );
+        treeLogic = new InternalTreeLogic<>( id, node, layout, NO_MONITOR );
         structurePropagation = new StructurePropagation<>( layout.newKey(), layout.newKey(), layout.newKey() );
 
         long firstPage = id.acquireNewId( stableGeneration, unstableGeneration );
@@ -2396,8 +2397,8 @@ abstract class SeekCursorTestBase<KEY, VALUE>
     {
         long currentPageId = cursor.getCurrentPageId();
         cursor.next( rootId );
-        new TreePrinter<>( node, layout, stableGeneration, unstableGeneration )
-                .printTree( cursor, cursor, System.out, false, false, false, false );
+        PrintingGBPTreeVisitor<KEY,VALUE> printingVisitor = new PrintingGBPTreeVisitor<>( System.out, false, false, false, false );
+        new GBPTreeStructure<>( node, layout, stableGeneration, unstableGeneration ).visitTree( cursor, cursor, printingVisitor );
         cursor.next( currentPageId );
     }
 }

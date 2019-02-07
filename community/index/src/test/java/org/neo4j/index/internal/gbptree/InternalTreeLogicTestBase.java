@@ -47,6 +47,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
 import static org.neo4j.index.internal.gbptree.ConsistencyChecker.assertNoCrashOrBrokenPointerInGSPP;
+import static org.neo4j.index.internal.gbptree.GBPTree.NO_MONITOR;
 import static org.neo4j.index.internal.gbptree.GenerationSafePointerPair.pointer;
 import static org.neo4j.index.internal.gbptree.TreeNode.Overflow.NO;
 import static org.neo4j.index.internal.gbptree.TreeNode.Overflow.YES;
@@ -117,7 +118,7 @@ public abstract class InternalTreeLogicTestBase<KEY,VALUE>
         layout = getLayout();
         node = getTreeNode( pageSize, layout );
         adder = getAdder();
-        treeLogic = new InternalTreeLogic<>( id, node, layout );
+        treeLogic = new InternalTreeLogic<>( id, node, layout, NO_MONITOR );
         dontCare = layout.newValue();
         structurePropagation = new StructurePropagation<>( layout.newKey(), layout.newKey(), layout.newKey() );
     }
@@ -1733,8 +1734,8 @@ public abstract class InternalTreeLogicTestBase<KEY,VALUE>
     {
         long currentPageId = cursor.getCurrentPageId();
         cursor.next( rootId );
-        new TreePrinter<>( node, layout, stableGeneration, unstableGeneration )
-                .printTree( cursor, cursor, System.out, false, false, false, false );
+        PrintingGBPTreeVisitor<KEY,VALUE> printingVisitor = new PrintingGBPTreeVisitor<>( System.out, false, false, false, false );
+        new GBPTreeStructure<>( node, layout, stableGeneration, unstableGeneration ).visitTree( cursor, cursor, printingVisitor );
         cursor.next( currentPageId );
     }
 

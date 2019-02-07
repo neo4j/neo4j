@@ -92,6 +92,7 @@ class InternalTreeLogic<KEY,VALUE>
     private final KEY newKeyPlaceHolder;
     private final KEY readKey;
     private final VALUE readValue;
+    private final GBPTree.Monitor monitor;
 
     /**
      * Current path down the tree
@@ -155,7 +156,7 @@ class InternalTreeLogic<KEY,VALUE>
         }
     }
 
-    InternalTreeLogic( IdProvider idProvider, TreeNode<KEY,VALUE> bTreeNode, Layout<KEY,VALUE> layout )
+    InternalTreeLogic( IdProvider idProvider, TreeNode<KEY,VALUE> bTreeNode, Layout<KEY,VALUE> layout, GBPTree.Monitor monitor )
     {
         this.idProvider = idProvider;
         this.bTreeNode = bTreeNode;
@@ -163,6 +164,7 @@ class InternalTreeLogic<KEY,VALUE>
         this.newKeyPlaceHolder = layout.newKey();
         this.readKey = layout.newKey();
         this.readValue = layout.newValue();
+        this.monitor = monitor;
 
         // an arbitrary depth slightly bigger than an unimaginably big tree
         ensureStackCapacity( 10 );
@@ -873,6 +875,7 @@ class InternalTreeLogic<KEY,VALUE>
             TreeNode.goTo( cursor, "child", onlyChildOfRoot );
 
             rootKeyCount = TreeNode.keyCount( cursor );
+            monitor.treeShrink();
         }
     }
 
