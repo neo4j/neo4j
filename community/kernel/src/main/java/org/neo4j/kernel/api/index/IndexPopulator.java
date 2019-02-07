@@ -24,6 +24,7 @@ import java.util.Collection;
 
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
+import org.neo4j.kernel.impl.api.index.PhaseTracker;
 import org.neo4j.kernel.impl.api.index.UpdateMode;
 import org.neo4j.kernel.impl.api.index.updater.SwallowingIndexUpdater;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
@@ -141,7 +142,7 @@ public interface IndexPopulator
 
     IndexPopulator EMPTY = new Adapter();
 
-    default void scanCompleted() throws IndexEntryConflictException
+    default void scanCompleted( PhaseTracker phaseTracker ) throws IndexEntryConflictException
     {   // no-op by default
     }
 
@@ -169,7 +170,7 @@ public interface IndexPopulator
         }
 
         @Override
-        public void scanCompleted()
+        public void scanCompleted( PhaseTracker phaseTracker )
         {
         }
 

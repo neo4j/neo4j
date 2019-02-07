@@ -137,7 +137,9 @@ public class LoggingPhaseTrackerTest
         sleep( 100 );
         phaseTracker.enterPhase( PhaseTracker.Phase.WRITE );
         sleep( 100 );
-        phaseTracker.enterPhase( PhaseTracker.Phase.SCAN_COMPLETE );
+        phaseTracker.enterPhase( PhaseTracker.Phase.MERGE );
+        sleep( 100 );
+        phaseTracker.enterPhase( PhaseTracker.Phase.BUILD );
         sleep( 100 );
         phaseTracker.enterPhase( PhaseTracker.Phase.FLIP );
         sleep( 100 );
@@ -151,7 +153,8 @@ public class LoggingPhaseTrackerTest
                 .info( "TIME/PHASE Final: " +
                         "SCAN[totalTime=100ms, avgTime=100ms, minTime=0ns, maxTime=100ms, nbrOfReports=1], " +
                         "WRITE[totalTime=100ms, avgTime=100ms, minTime=0ns, maxTime=100ms, nbrOfReports=1], " +
-                        "SCAN_COMPLETE[totalTime=100ms, avgTime=100ms, minTime=0ns, maxTime=100ms, nbrOfReports=1], " +
+                        "MERGE[totalTime=100ms, avgTime=100ms, minTime=0ns, maxTime=100ms, nbrOfReports=1], " +
+                        "BUILD[totalTime=100ms, avgTime=100ms, minTime=0ns, maxTime=100ms, nbrOfReports=1], " +
                         "FLIP[totalTime=100ms, avgTime=100ms, minTime=0ns, maxTime=100ms, nbrOfReports=1]" );
         logProvider.assertAtLeastOnce( logMatcher );
     }
@@ -175,12 +178,14 @@ public class LoggingPhaseTrackerTest
                 .debug( "TIME/PHASE Total: " +
                         "SCAN[totalTime=1s, avgTime=1s, minTime=0ns, maxTime=1s, nbrOfReports=1], " +
                         "WRITE[nbrOfReports=0], " +
-                        "SCAN_COMPLETE[nbrOfReports=0], " +
+                        "MERGE[nbrOfReports=0], " +
+                        "BUILD[nbrOfReports=0], " +
                         "FLIP[nbrOfReports=0], " +
                         "Last 1 sec: " +
                         "SCAN[totalTime=1s, avgTime=1s, minTime=1s, maxTime=1s, nbrOfReports=1], " +
                         "WRITE[nbrOfReports=0], " +
-                        "SCAN_COMPLETE[nbrOfReports=0], " +
+                        "MERGE[nbrOfReports=0], " +
+                        "BUILD[nbrOfReports=0], " +
                         "FLIP[nbrOfReports=0]" );
         logProvider.assertAtLeastOnce( logMatcher );
     }

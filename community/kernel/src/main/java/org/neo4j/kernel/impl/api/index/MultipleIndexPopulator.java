@@ -294,7 +294,7 @@ public class MultipleIndexPopulator implements IndexPopulator
     }
 
     @Override
-    public void scanCompleted()
+    public void scanCompleted( PhaseTracker phaseTracker )
     {
         throw new UnsupportedOperationException( "Not supposed to be called" );
     }
@@ -648,8 +648,7 @@ public class MultipleIndexPopulator implements IndexPopulator
 
         void scanCompleted() throws IndexEntryConflictException
         {
-            phaseTracker.enterPhase( PhaseTracker.Phase.SCAN_COMPLETE );
-            populator.scanCompleted();
+            populator.scanCompleted( phaseTracker );
         }
     }
 

@@ -43,6 +43,7 @@ import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexUpdater;
+import org.neo4j.kernel.impl.api.index.PhaseTracker;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettingsCache;
 import org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettingsWriter;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
@@ -162,10 +163,11 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
     }
 
     @Override
-    public void scanCompleted() throws IndexEntryConflictException
+    public void scanCompleted( PhaseTracker phaseTracker ) throws IndexEntryConflictException
     {
         try
         {
+            phaseTracker.enterPhase( PhaseTracker.Phase.MERGE );
             ExecutorService executorService = Executors.newFixedThreadPool( allScanUpdates.size() );
             List<Future<?>> mergeFutures = new ArrayList<>();
             for ( BlockStorage<KEY,VALUE> scanUpdates : allScanUpdates )
@@ -193,6 +195,7 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
             // don't merge and sort the external updates
 
             // Build the tree from the scan updates
+            phaseTracker.enterPhase( PhaseTracker.Phase.BUILD );
             writeScanUpdatesToTree();
 
             // Apply the external updates
