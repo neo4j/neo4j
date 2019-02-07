@@ -192,6 +192,7 @@ public class IndexPopulationIT
                 containsString( "SCAN" ),
                 containsString( "WRITE" ),
                 containsString( "FLIP" ),
+                containsString( "SCAN_COMPLETE" ),
                 containsString( "totalTime=" ),
                 containsString( "avgTime=" ),
                 containsString( "minTime=" ),

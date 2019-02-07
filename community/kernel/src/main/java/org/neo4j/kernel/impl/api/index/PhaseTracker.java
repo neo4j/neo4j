@@ -31,6 +31,7 @@ public interface PhaseTracker
     {
         SCAN,
         WRITE,
+        SCAN_COMPLETE,
         FLIP
     }
 

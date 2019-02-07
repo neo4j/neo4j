@@ -45,11 +45,11 @@ import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelExceptio
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.kernel.impl.api.SchemaState;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.storageengine.api.EntityType;
+import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.storageengine.api.schema.CapableIndexDescriptor;
 import org.neo4j.storageengine.api.schema.IndexSample;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
@@ -648,6 +648,7 @@ public class MultipleIndexPopulator implements IndexPopulator
 
         void scanCompleted() throws IndexEntryConflictException
         {
+            phaseTracker.enterPhase( PhaseTracker.Phase.SCAN_COMPLETE );
             populator.scanCompleted();
         }
     }
