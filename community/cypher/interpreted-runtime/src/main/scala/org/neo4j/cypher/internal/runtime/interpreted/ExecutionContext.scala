@@ -98,9 +98,19 @@ class MapExecutionContext(private val m: MutableMap[String, AnyValue], private v
 
   override def copyFrom(input: ExecutionContext, nLongs: Int, nRefs: Int): Unit = fail()
 
-  def copyCachedFrom(input: ExecutionContext): Unit = input match {
+  override def copyCachedFrom(input: ExecutionContext): Unit = input match {
     case context : MapExecutionContext =>
-      cachedProperties = if (context.cachedProperties == null) null else context.cachedProperties.clone()
+      val oldCachedProperties = context.cachedProperties
+      if (oldCachedProperties == null) cachedProperties = null
+      else
+      {
+        cachedProperties = oldCachedProperties.clone()
+        oldCachedProperties.foreach {
+          case (CachedNodeProperty(varName,_),_) =>
+            set(varName, context.getOrElse(varName, throw new IllegalStateException("The variable of a cached node property should be in the context.")))
+        }
+      }
+
     case _ =>
       fail()
   }
