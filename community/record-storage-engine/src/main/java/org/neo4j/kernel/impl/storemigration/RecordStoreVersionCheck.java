@@ -99,13 +99,22 @@ public class RecordStoreVersionCheck implements StoreVersionCheck
     @Override
     public Result checkUpgrade( String desiredVersion )
     {
-        Optional<String> storeVersion = storeVersion();
-        if ( !storeVersion.isPresent() )
+        String version;
+        try
         {
+            version = readVersion();
+        }
+        catch ( IllegalStateException e )
+        {
+            // somehow a corrupt neostore file
             return new Result( Outcome.storeVersionNotFound, null, metaDataFile.getName() );
         }
+        catch ( IOException e )
+        {
+            // since we cannot read let's assume the file is not there
+            return new Result( Outcome.missingStoreFile, null, metaDataFile.getName() );
+        }
 
-        String version = storeVersion.get();
         if ( desiredVersion.equals( version ) )
         {
             return new Result( Outcome.ok, version, metaDataFile.getName() );
