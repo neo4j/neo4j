@@ -84,12 +84,15 @@ import static org.neo4j.index.internal.gbptree.TreeNode.Type.LEAF;
  */
 class InternalTreeLogic<KEY,VALUE>
 {
+    static final double DEFAULT_SPLIT_RATIO = 0.5;
+
     private final IdProvider idProvider;
     private final TreeNode<KEY,VALUE> bTreeNode;
     private final Layout<KEY,VALUE> layout;
     private final KEY newKeyPlaceHolder;
     private final KEY readKey;
     private final VALUE readValue;
+    private final GBPTree.Monitor monitor;
 
     /**
      * Current path down the tree
@@ -97,7 +100,7 @@ class InternalTreeLogic<KEY,VALUE>
      * - level: 0 is at root
      * - level: 1 is at first level below root
      * ... a.s.o
-     *
+     * <p>
      * Calling {@link #insert(PageCursor, StructurePropagation, Object, Object, ValueMerger, long, long)}
      * or {@link #remove(PageCursor, StructurePropagation, Object, Object, long, long)} leaves the cursor
      * at the last updated page (tree node id) and remembers the path down the tree to where it is.
@@ -107,6 +110,7 @@ class InternalTreeLogic<KEY,VALUE>
     @SuppressWarnings( "unchecked" )
     private Level<KEY>[] levels = new Level[0]; // grows on demand
     private int currentLevel = -1;
+    private double ratioToKeepInLeftOnSplit;
 
     /**
      * Keeps information about one level in a path down the tree where the {@link PageCursor} is currently at.
@@ -152,7 +156,7 @@ class InternalTreeLogic<KEY,VALUE>
         }
     }
 
-    InternalTreeLogic( IdProvider idProvider, TreeNode<KEY,VALUE> bTreeNode, Layout<KEY,VALUE> layout )
+    InternalTreeLogic( IdProvider idProvider, TreeNode<KEY,VALUE> bTreeNode, Layout<KEY,VALUE> layout, GBPTree.Monitor monitor )
     {
         this.idProvider = idProvider;
         this.bTreeNode = bTreeNode;
@@ -160,6 +164,7 @@ class InternalTreeLogic<KEY,VALUE>
         this.newKeyPlaceHolder = layout.newKey();
         this.readKey = layout.newKey();
         this.readValue = layout.newValue();
+        this.monitor = monitor;
 
         // an arbitrary depth slightly bigger than an unimaginably big tree
         ensureStackCapacity( 10 );
@@ -180,11 +185,22 @@ class InternalTreeLogic<KEY,VALUE>
 
     protected void initialize( PageCursor cursorAtRoot )
     {
+        initialize( cursorAtRoot, DEFAULT_SPLIT_RATIO );
+    }
+
+    /**
+     * Prepare for starting over with new updates.
+     * @param cursorAtRoot {@link PageCursor} pointing at root of tree.
+     * @param ratioToKeepInLeftOnSplit Decide how much to keep in left node on split, 0=keep nothing, 0.5=split 50-50, 1=keep everything.
+     */
+    protected void initialize( PageCursor cursorAtRoot, double ratioToKeepInLeftOnSplit )
+    {
         currentLevel = 0;
         Level<KEY> level = levels[currentLevel];
         level.treeNodeId = cursorAtRoot.getCurrentPageId();
         level.lowerIsOpenEnded = true;
         level.upperIsOpenEnded = true;
+        this.ratioToKeepInLeftOnSplit = ratioToKeepInLeftOnSplit;
     }
 
     private boolean popLevel( PageCursor cursor ) throws IOException
@@ -469,7 +485,7 @@ class InternalTreeLogic<KEY,VALUE>
 
             // Do split
             bTreeNode.doSplitInternal( cursor, keyCount, rightCursor, pos, newKey, newRightChild, stableGeneration, unstableGeneration,
-                    structurePropagation.rightKey );
+                    structurePropagation.rightKey, ratioToKeepInLeftOnSplit );
         }
 
         // Update old right with new left sibling (newRight)
@@ -654,7 +670,7 @@ class InternalTreeLogic<KEY,VALUE>
             TreeNode.setLeftSibling( rightCursor, current, stableGeneration, unstableGeneration );
 
             // Do split
-            bTreeNode.doSplitLeaf( cursor, keyCount, rightCursor, pos, newKey, newValue, structurePropagation.rightKey );
+            bTreeNode.doSplitLeaf( cursor, keyCount, rightCursor, pos, newKey, newValue, structurePropagation.rightKey, ratioToKeepInLeftOnSplit );
         }
 
         // Update old right with new left sibling (newRight)
@@ -859,6 +875,7 @@ class InternalTreeLogic<KEY,VALUE>
             TreeNode.goTo( cursor, "child", onlyChildOfRoot );
 
             rootKeyCount = TreeNode.keyCount( cursor );
+            monitor.treeShrink();
         }
     }
 

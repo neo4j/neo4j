@@ -290,6 +290,13 @@ class ConsistencyChecker<KEY>
         while ( cursor.shouldRetry() );
         checkAfterShouldRetry( cursor );
 
+        do
+        {
+            node.checkMetaConsistency( cursor, keyCount, isLeaf ? LEAF : INTERNAL );
+        }
+        while ( cursor.shouldRetry() );
+        checkAfterShouldRetry( cursor );
+
         assertPointerGenerationMatchesGeneration( cursor, currentNodeGeneration, expectedGeneration );
         assertSiblings( cursor, currentNodeGeneration, leftSiblingPointer, leftSiblingPointerGeneration, rightSiblingPointer,
                 rightSiblingPointerGeneration, level );
@@ -443,7 +450,7 @@ class ConsistencyChecker<KEY>
             {
                 if ( comparator.compare( prev, readKey ) >= 0 )
                 {
-                    cursor.setCursorException( "Non-unique key " + readKey );
+                    cursor.setCursorException( format( "Non-unique key, id=%d, key=%s ", cursor.getCurrentPageId(), readKey ) );
                 }
             }
             else

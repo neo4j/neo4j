@@ -23,26 +23,16 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.PrintStream;
 import java.nio.file.StandardOpenOption;
 
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
-import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
-import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
-import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
-import org.neo4j.scheduler.JobScheduler;
 
-import static java.lang.String.format;
-import static org.neo4j.graphdb.config.Configuration.EMPTY;
 import static org.neo4j.index.internal.gbptree.ConsistencyChecker.assertOnTreeNode;
 import static org.neo4j.index.internal.gbptree.GenerationSafePointerPair.pointer;
 import static org.neo4j.index.internal.gbptree.TreeNode.Type.INTERNAL;
 import static org.neo4j.index.internal.gbptree.TreeNode.Type.LEAF;
-import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 
 /**
  * Utility class for printing a {@link GBPTree}, either whole or sub-tree.
@@ -50,14 +40,14 @@ import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
  * @param <KEY> type of keys in the tree.
  * @param <VALUE> type of values in the tree.
  */
-public class TreePrinter<KEY, VALUE>
+public class GBPTreeStructure<KEY, VALUE>
 {
     private final TreeNode<KEY,VALUE> node;
     private final Layout<KEY,VALUE> layout;
     private final long stableGeneration;
     private final long unstableGeneration;
 
-    TreePrinter( TreeNode<KEY,VALUE> node, Layout<KEY,VALUE> layout, long stableGeneration, long unstableGeneration )
+    GBPTreeStructure( TreeNode<KEY,VALUE> node, Layout<KEY,VALUE> layout, long stableGeneration, long unstableGeneration )
     {
         this.node = node;
         this.layout = layout;
@@ -66,75 +56,49 @@ public class TreePrinter<KEY, VALUE>
     }
 
     /**
-     * Prints the header, that is tree state and meta information, about the tree present in the given {@code file}.
-     *
-     * @param fs {@link FileSystemAbstraction} where the {@code file} exists.
-     * @param jobScheduler {@link JobScheduler} job scheduler to run page cache related tasks
-     * @param file {@link File} containing the tree to print header for.
-     * @param out {@link PrintStream} to print at.
-     * @throws IOException on I/O error.
-     */
-    public static void printHeader( FileSystemAbstraction fs, JobScheduler jobScheduler, File file, PrintStream out ) throws IOException
-    {
-        SingleFilePageSwapperFactory swapper = new SingleFilePageSwapperFactory();
-        swapper.open( fs, EMPTY );
-        PageCursorTracerSupplier cursorTracerSupplier = PageCursorTracerSupplier.NULL;
-        try ( PageCache pageCache = new MuninnPageCache( swapper, 100, NULL, cursorTracerSupplier, EmptyVersionContextSupplier.EMPTY, jobScheduler ) )
-        {
-            printHeader( pageCache, file, out );
-        }
-    }
-
-    /**
-     * Prints the header, that is tree state and meta information, about the tree present in the given {@code file}.
+     * Visit the header, that is tree state and meta information, about the tree present in the given {@code file}.
      *
      * @param pageCache {@link PageCache} able to map tree contained in {@code file}.
      * @param file {@link File} containing the tree to print header for.
-     * @param out {@link PrintStream} to print at.
+     * @param visitor {@link GBPTreeVisitor} that shall visit header.
      * @throws IOException on I/O error.
      */
-    private static void printHeader( PageCache pageCache, File file, PrintStream out ) throws IOException
+    public static void visitHeader( PageCache pageCache, File file, GBPTreeVisitor visitor ) throws IOException
     {
         try ( PagedFile pagedFile = pageCache.map( file, pageCache.pageSize(), StandardOpenOption.READ ) )
         {
             try ( PageCursor cursor = pagedFile.io( IdSpace.STATE_PAGE_A, PagedFile.PF_SHARED_READ_LOCK ) )
             {
                 // TODO add printing of meta information here when that abstraction has been merged.
-                printTreeState( cursor, out );
+                visitTreeState( cursor, visitor );
             }
         }
     }
 
-    static void printTreeState( PageCursor cursor, PrintStream out ) throws IOException
+    static void visitTreeState( PageCursor cursor, GBPTreeVisitor visitor ) throws IOException
     {
         Pair<TreeState,TreeState> statePair = TreeStatePair.readStatePages(
                 cursor, IdSpace.STATE_PAGE_A, IdSpace.STATE_PAGE_B );
-        out.println( "StateA: " + statePair.getLeft() );
-        out.println( "StateB: " + statePair.getRight() );
+        visitor.treeState( statePair );
     }
 
     /**
-     * Prints a {@link GBPTree} in human readable form, very useful for debugging.
-     * Let the passed in {@code cursor} point to the root or sub-tree (internal node) of what to print.
-     * Will print sub-tree from that point. Leaves cursor at same page as when called. No guarantees on offset.
+     * Let the passed in {@code cursor} point to the root or sub-tree (internal node) of what to visit.
      *
      * @param cursor {@link PageCursor} placed at root of tree or sub-tree.
      * @param writeCursor Currently active {@link PageCursor write cursor} in tree.
-     * @param out target to print tree at.
-     * @param printPosition whether or not to include positional (slot number) information.
-     * @param printState whether or not to also print state pages
-     * @param printHeader whether or not to also print header (type, generation, keyCount) of every node
+     * @param visitor {@link GBPTreeVisitor} that should visit the tree.
      * @throws IOException on page cache access error.
      */
-    void printTree( PageCursor cursor, PageCursor writeCursor, PrintStream out, boolean printValues, boolean printPosition,
-            boolean printState, boolean printHeader ) throws IOException
+    void visitTree( PageCursor cursor, PageCursor writeCursor, GBPTreeVisitor<KEY,VALUE> visitor ) throws IOException
     {
-        if ( printState )
-        {
-            long currentPage = cursor.getCurrentPageId();
-            printTreeState( cursor, out );
-            TreeNode.goTo( cursor, "back to tree node from reading state", currentPage );
-        }
+        // TreeState
+        long currentPage = cursor.getCurrentPageId();
+        Pair<TreeState,TreeState> statePair = TreeStatePair.readStatePages(
+                cursor, IdSpace.STATE_PAGE_A, IdSpace.STATE_PAGE_B );
+        visitor.treeState( statePair );
+        TreeNode.goTo( cursor, "back to tree node from reading state", currentPage );
+
         assertOnTreeNode( select( cursor, writeCursor ) );
 
         // Traverse the tree
@@ -142,11 +106,14 @@ public class TreePrinter<KEY, VALUE>
         do
         {
             // One level at the time
-            out.println( "Level " + level++ );
+            visitor.beginLevel( level );
             long leftmostSibling = cursor.getCurrentPageId();
 
             // Go right through all siblings
-            printLevel( cursor, writeCursor, out, printValues, printPosition, printHeader );
+            visitLevel( cursor, writeCursor, visitor );
+
+            visitor.endLevel( level );
+            level++;
 
             // Then go back to the left-most node on this level
             TreeNode.goTo( cursor, "back", leftmostSibling );
@@ -155,11 +122,12 @@ public class TreePrinter<KEY, VALUE>
         while ( goToLeftmostChild( cursor, writeCursor ) );
     }
 
-    void printTreeNode( PageCursor cursor, PrintStream out, boolean printValues, boolean printPosition,
-            boolean printHeader ) throws IOException
+    private void visitTreeNode( PageCursor cursor, GBPTreeVisitor<KEY,VALUE> visitor ) throws IOException
     {
+        //[TYPE][GEN][KEYCOUNT] ([RIGHTSIBLING][LEFTSIBLING][SUCCESSOR]))
         boolean isLeaf;
         int keyCount;
+        long generation = -1;
         do
         {
             isLeaf = TreeNode.isLeaf( cursor );
@@ -168,27 +136,11 @@ public class TreePrinter<KEY, VALUE>
             {
                 cursor.setCursorException( "Unexpected keyCount " + keyCount );
             }
+            generation = TreeNode.generation( cursor );
         }
         while ( cursor.shouldRetry() );
+        visitor.beginNode( cursor.getCurrentPageId(), isLeaf, generation, keyCount );
 
-        if ( printHeader )
-        {
-            //[TYPE][GEN][KEYCOUNT] ([RIGHTSIBLING][LEFTSIBLING][SUCCESSOR]))
-            long generation;
-            do
-            {
-                generation = TreeNode.generation( cursor );
-
-            }
-            while ( cursor.shouldRetry() );
-            String treeNodeType = isLeaf ? "leaf" : "internal";
-            out.print( format( "{%d,%s,generation=%d,keyCount=%d}",
-                    cursor.getCurrentPageId(), treeNodeType, generation, keyCount ) );
-        }
-        else
-        {
-            out.print( "{" + cursor.getCurrentPageId() + "} " );
-        }
         KEY key = layout.newKey();
         VALUE value = layout.newValue();
         for ( int i = 0; i < keyCount; i++ )
@@ -208,24 +160,17 @@ public class TreePrinter<KEY, VALUE>
             }
             while ( cursor.shouldRetry() );
 
-            if ( printPosition )
-            {
-                out.print( "#" + i + " " );
-            }
-
+            visitor.position( i );
             if ( isLeaf )
             {
-                out.print( key );
-                if ( printValues )
-                {
-                    out.print( "=" + value );
-                }
+                visitor.key( key, isLeaf );
+                visitor.value( value );
             }
             else
             {
-                out.print( "/" + child + "\\ [" + key + "]" );
+                visitor.child( child );
+                visitor.key( key, isLeaf );
             }
-            out.print( " " );
         }
         if ( !isLeaf )
         {
@@ -235,14 +180,10 @@ public class TreePrinter<KEY, VALUE>
                 child = pointer( node.childAt( cursor, keyCount, stableGeneration, unstableGeneration ) );
             }
             while ( cursor.shouldRetry() );
-
-            if ( printPosition )
-            {
-                out.print( "#" + keyCount + " " );
-            }
-            out.print( "/" + child + "\\" );
+            visitor.position( keyCount );
+            visitor.child( child );
         }
-        out.println();
+        visitor.endNode( cursor.getCurrentPageId() );
     }
 
     private boolean goToLeftmostChild( PageCursor readCursor, PageCursor writeCursor ) throws IOException
@@ -267,14 +208,13 @@ public class TreePrinter<KEY, VALUE>
         return isInternal;
     }
 
-    private void printLevel( PageCursor readCursor, PageCursor writeCursor, PrintStream out, boolean printValues, boolean printPosition,
-            boolean printHeader ) throws IOException
+    private void visitLevel( PageCursor readCursor, PageCursor writeCursor, GBPTreeVisitor<KEY,VALUE> visitor ) throws IOException
     {
         long rightSibling;
         do
         {
             PageCursor cursor = select( readCursor, writeCursor );
-            printTreeNode( cursor, out, printValues, printPosition, printHeader );
+            visitTreeNode( cursor, visitor );
 
             do
             {
@@ -295,4 +235,5 @@ public class TreePrinter<KEY, VALUE>
         return writeCursor == null ? readCursor :
                readCursor.getCurrentPageId() == writeCursor.getCurrentPageId() ? writeCursor : readCursor;
     }
+
 }
