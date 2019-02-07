@@ -147,6 +147,8 @@ class IndexUpdateStorageTest
             case CHANGED:
                 updates.add( IndexEntryUpdate.change( entityId, descriptor, random.nextValue(), random.nextValue() ) );
                 break;
+            default:
+                throw new IllegalArgumentException();
             }
         }
         return updates;
