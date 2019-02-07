@@ -19,10 +19,6 @@
  */
 package org.neo4j.bolt.v1.messaging;
 
-import org.eclipse.collections.api.iterator.MutableLongIterator;
-import org.eclipse.collections.api.map.primitive.MutableLongIntMap;
-import org.eclipse.collections.impl.map.mutable.primitive.LongIntHashMap;
-
 import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -35,6 +31,7 @@ import java.util.List;
 import org.neo4j.bolt.messaging.BoltIOException;
 import org.neo4j.bolt.messaging.Neo4jPack;
 import org.neo4j.bolt.messaging.StructType;
+import org.neo4j.bolt.messaging.util.PrimitiveLongIntKeyValueArray;
 import org.neo4j.bolt.v1.packstream.PackInput;
 import org.neo4j.bolt.v1.packstream.PackOutput;
 import org.neo4j.bolt.v1.packstream.PackStream;
@@ -104,8 +101,14 @@ public class Neo4jPackV1 implements Neo4jPack
     {
         private static final int INITIAL_PATH_CAPACITY = 500;
         private static final int NO_SUCH_ID = -1;
-        private MutableLongIntMap nodeIndexes = new LongIntHashMap( INITIAL_PATH_CAPACITY + 1 );
-        private MutableLongIntMap relationshipIndexes = new LongIntHashMap( INITIAL_PATH_CAPACITY );
+        // Used by Path which requires a map that 1) reserves insertion order,
+        // 2) contains no duplicate of keys, 3) can use long as keys without boxing and unboxing.
+        private final PrimitiveLongIntKeyValueArray nodeIndexes =
+                new PrimitiveLongIntKeyValueArray( INITIAL_PATH_CAPACITY + 1 );
+        // Used by Path which requires a map that 1) reserves insertion order,
+        // 2) contains no duplicate of keys, 3) can use long as keys without boxing and unboxing.
+        private final PrimitiveLongIntKeyValueArray relationshipIndexes =
+                new PrimitiveLongIntKeyValueArray( INITIAL_PATH_CAPACITY );
 
         protected PackerV1( PackOutput output )
         {
@@ -220,13 +223,13 @@ public class Neo4jPackV1 implements Neo4jPack
                 if ( i % 2 == 0 )
                 {
                     node = nodes[i / 2];
-                    int index = nodeIndexes.getIfAbsent( node.id(), NO_SUCH_ID );
+                    int index = nodeIndexes.getOrDefault( node.id(), NO_SUCH_ID );
                     pack( index );
                 }
                 else
                 {
                     RelationshipValue r = relationships[i / 2];
-                    int index = relationshipIndexes.getIfAbsent( r.id(), NO_SUCH_ID );
+                    int index = relationshipIndexes.getOrDefault( r.id(), NO_SUCH_ID );
 
                     if ( node.id() == r.startNode().id() )
                     {
@@ -243,21 +246,19 @@ public class Neo4jPackV1 implements Neo4jPack
 
         private void writeNodesForPath( NodeValue[] nodes ) throws IOException
         {
-            nodeIndexes = new LongIntHashMap( nodes.length );
+            nodeIndexes.reset( nodes.length );
             for ( NodeValue node : nodes )
             {
-                nodeIndexes.getIfAbsentPut( node.id(), nodeIndexes.size() );
+                nodeIndexes.putIfAbsent( node.id(), nodeIndexes.size() );
             }
 
             int size = nodeIndexes.size();
             packListHeader( size );
             if ( size > 0 )
             {
-                MutableLongIterator keyIterator = nodeIndexes.keySet().longIterator();
-                while ( keyIterator.hasNext() )
+                NodeValue node = nodes[0];
+                for ( long id : nodeIndexes.keys() )
                 {
-                    NodeValue node = nodes[0];
-                    long id = keyIterator.next();
                     int i = 1;
                     while ( node.id() != id )
                     {
@@ -270,11 +271,11 @@ public class Neo4jPackV1 implements Neo4jPack
 
         private void writeRelationshipsForPath( RelationshipValue[] relationships ) throws IOException
         {
-            relationshipIndexes = new LongIntHashMap( relationships.length );
+            relationshipIndexes.reset( relationships.length );
             for ( RelationshipValue node : relationships )
             {
                 // relationship indexes are one-based
-                relationshipIndexes.getIfAbsentPut( node.id(), relationshipIndexes.size() + 1 );
+                relationshipIndexes.putIfAbsent( node.id(), relationshipIndexes.size() + 1 );
             }
 
             int size = relationshipIndexes.size();
@@ -282,11 +283,9 @@ public class Neo4jPackV1 implements Neo4jPack
             if ( size > 0 )
             {
                 {
-                    MutableLongIterator keyIterator = relationshipIndexes.keySet().longIterator();
-                    while ( keyIterator.hasNext() )
+                    RelationshipValue edge = relationships[0];
+                    for ( long id : relationshipIndexes.keys() )
                     {
-                        RelationshipValue edge = relationships[0];
-                        long id = keyIterator.next();
                         int i = 1;
                         while ( edge.id() != id )
                         {
@@ -441,8 +440,8 @@ public class Neo4jPackV1 implements Neo4jPack
         void throwUnsupportedTypeError( String type ) throws BoltIOException
         {
             throw new BoltIOException( Status.Request.Invalid, type + " is not supported as a return type in Bolt protocol version 1. " +
-                                                               "Please make sure driver supports at least protocol version 2. " +
-                                                               "Driver upgrade is most likely required." );
+                    "Please make sure driver supports at least protocol version 2. " +
+                    "Driver upgrade is most likely required." );
         }
     }
 
