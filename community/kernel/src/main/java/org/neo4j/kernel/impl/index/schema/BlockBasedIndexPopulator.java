@@ -269,7 +269,8 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
             }
         }
 
-        try ( Writer<KEY,VALUE> writer = tree.writer();
+        int asMuchAsPossibleToTheLeft = 1;
+        try ( Writer<KEY,VALUE> writer = tree.writer( asMuchAsPossibleToTheLeft );
               BlockEntryCursor<KEY,VALUE> reader = allEntries )
         {
             while ( reader.next() )
