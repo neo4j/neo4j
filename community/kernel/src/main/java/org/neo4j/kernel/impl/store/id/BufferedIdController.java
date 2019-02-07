@@ -55,7 +55,10 @@ public class BufferedIdController extends LifecycleAdapter implements IdControll
     @Override
     public void stop()
     {
-        jobHandle.cancel( false );
+        if ( jobHandle != null )
+        {
+            jobHandle.cancel( false );
+        }
     }
 
     @Override
