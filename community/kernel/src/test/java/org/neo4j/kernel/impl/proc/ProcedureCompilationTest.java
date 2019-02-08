@@ -43,13 +43,14 @@ import java.util.stream.Stream;
 import org.neo4j.collection.RawIterator;
 import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
-import org.neo4j.internal.kernel.api.procs.Neo4jTypes;
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
+import org.neo4j.internal.kernel.api.procs.UserAggregator;
 import org.neo4j.internal.kernel.api.procs.UserFunctionSignature;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.proc.CallableProcedure;
+import org.neo4j.kernel.api.proc.CallableUserAggregationFunction;
 import org.neo4j.kernel.api.proc.CallableUserFunction;
 import org.neo4j.kernel.api.proc.Context;
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
@@ -57,6 +58,7 @@ import org.neo4j.kernel.impl.util.DefaultValueMapper;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.Values;
 
+import static java.lang.String.format;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
@@ -79,6 +81,7 @@ import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTList;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTNumber;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTString;
 import static org.neo4j.internal.kernel.api.procs.UserFunctionSignature.functionSignature;
+import static org.neo4j.kernel.impl.proc.ProcedureCompilation.compileAggregation;
 import static org.neo4j.kernel.impl.proc.ProcedureCompilation.compileFunction;
 import static org.neo4j.kernel.impl.proc.ProcedureCompilation.compileProcedure;
 import static org.neo4j.values.storable.Values.NO_VALUE;
@@ -116,7 +119,7 @@ public class ProcedureCompilationTest
     void shouldCallSimpleMethod() throws ProcedureException
     {
         // Given
-        UserFunctionSignature signature = functionSignature( "test", "foo" ).out( Neo4jTypes.NTInteger ).build();
+        UserFunctionSignature signature = functionSignature( "test", "foo" ).out( NTInteger ).build();
         // When
         CallableUserFunction longMethod =
                 compileFunction( signature, emptyList(), method( "longMethod" ) );
@@ -129,7 +132,7 @@ public class ProcedureCompilationTest
     void shouldExposeUserFunctionSignature() throws ProcedureException
     {
         // Given
-        UserFunctionSignature signature = functionSignature( "test", "foo" ).out( Neo4jTypes.NTInteger ).build();
+        UserFunctionSignature signature = functionSignature( "test", "foo" ).out( NTInteger ).build();
         // When
         CallableUserFunction function = compileFunction( signature, emptyList(), method( "longMethod" ) );
 
@@ -141,7 +144,7 @@ public class ProcedureCompilationTest
     void functionShouldAccessContext() throws ProcedureException, NoSuchFieldException, IllegalAccessException
     {
         // Given
-        UserFunctionSignature signature = functionSignature( "test", "foo" ).out( Neo4jTypes.NTInteger ).build();
+        UserFunctionSignature signature = functionSignature( "test", "foo" ).out( NTInteger ).build();
         FieldSetter setter1 = createSetter( InnerClass.class, "transaction", Context::kernelTransaction );
         FieldSetter setter2 = createSetter( InnerClass.class, "thread", Context::thread );
         Method longMethod = method( InnerClass.class, "stringMethod" );
@@ -162,7 +165,7 @@ public class ProcedureCompilationTest
     void shouldHandleThrowingUDF() throws ProcedureException
     {
         // Given
-        UserFunctionSignature signature = functionSignature( "test", "foo" ).out( Neo4jTypes.NTInteger ).build();
+        UserFunctionSignature signature = functionSignature( "test", "foo" ).out( NTInteger ).build();
 
         // When
         CallableUserFunction longMethod = compileFunction( signature, emptyList(), method( "throwingLongMethod" ) );
@@ -176,7 +179,7 @@ public class ProcedureCompilationTest
     {
         // Given
         UserFunctionSignature signature = functionSignature( "test", "foo" )
-                .in( "l", Neo4jTypes.NTInteger )
+                .in( "l", NTInteger )
                 .in( "d", NTFloat )
                 .in( "b", NTBoolean )
                 .out( NTString ).build();
@@ -290,14 +293,14 @@ public class ProcedureCompilationTest
     @Test
     void shouldHandleAllTypes() throws ProcedureException
     {
-        Map<Class<?>,Method> allTypes = typeMaps();
+        Map<Type,Method> allTypes = typeMaps();
         UserFunctionSignature signature = functionSignature( "test", "foo" ).in( "in", NTAny  ).out( NTAny  ).build();
 
-        for ( Entry<Class<?>,Method> entry : allTypes.entrySet() )
+        for ( Entry<Type,Method> entry : allTypes.entrySet() )
         {
 
             CallableUserFunction function = compileFunction( signature, emptyList(), entry.getValue() );
-            Class<?> type = entry.getKey();
+            Type type = entry.getKey();
 
             if ( type.equals( long.class ) )
             {
@@ -447,6 +450,83 @@ public class ProcedureCompilationTest
         verify( securityContext ).assertCredentialsNotExpired();
     }
 
+    @Test
+    void shouldCallAggregationFunction() throws ProcedureException
+    {
+        // Given
+        UserFunctionSignature signature = functionSignature( "test", "foo" )
+                        .in( "in", NTInteger )
+                        .out( NTInteger ).build();
+
+        // When
+        CallableUserAggregationFunction adder =
+                compileAggregation( signature, emptyList(), method( "createAdder" ),
+                        method( Adder.class, "update", long.class ), method( Adder.class, "result" ) );
+
+        // Then
+        UserAggregator aggregator = adder.create( ctx );
+        for ( int i = 1; i <= 10; i++ )
+        {
+            aggregator.update( new AnyValue[]{longValue( i )} );
+        }
+
+        assertEquals( longValue( 55 ), aggregator.result() );
+    }
+
+    @Test
+    void shouldExposeUserFunctionSignatureOnAggregations() throws ProcedureException
+    {
+        // Given
+        UserFunctionSignature signature = functionSignature( "test", "foo" )
+                .in( "in", NTInteger )
+                .out( NTInteger ).build();
+
+        // When
+        CallableUserAggregationFunction adder =
+                compileAggregation( signature, emptyList(), method( "createAdder" ),
+                        method( Adder.class, "update", long.class ), method( Adder.class, "result" ) );
+
+        // Then
+        assertEquals( adder.signature(), signature );
+    }
+
+    @Test
+    void aggregationShouldAccessContext() throws ProcedureException, NoSuchFieldException, IllegalAccessException
+    {
+        // Given
+        UserFunctionSignature signature = functionSignature( "test", "foo" )
+                .in( "in", NTString )
+                .out( NTString ).build();
+        FieldSetter setter = createSetter( InnerClass.class, "thread", Context::thread );
+        String threadName = Thread.currentThread().getName();
+        UserAggregator aggregator = compileAggregation( signature, singletonList( setter ), method( InnerClass.class, "create" ),
+                method( InnerClass.Aggregator.class, "update", String.class ),
+                method( InnerClass.Aggregator.class, "result" ) ).create( ctx );
+
+        // When
+        aggregator.update( new AnyValue[]{stringValue( "1:" )} );
+        aggregator.update( new AnyValue[]{stringValue( "2:" )} );
+        aggregator.update( new AnyValue[]{stringValue( "3:" )} );
+
+        // Then
+        assertEquals( stringValue( format( "1: %s, 2: %s, 3: %s", threadName, threadName, threadName ) ),
+                aggregator.result() );
+    }
+
+    @Test
+    void shouldHandleThrowingAggregations() throws ProcedureException
+    {
+        UserFunctionSignature signature = functionSignature( "test", "foo" )
+                .out( NTInteger ).build();
+
+        UserAggregator aggregator = compileAggregation( signature, emptyList(), method("blackAdder" ),
+                method( BlackAdder.class, "update" ),
+                method( BlackAdder.class, "result" ) ).create( ctx );
+
+        assertThrows( ProcedureException.class, () -> aggregator.update( EMPTY ) );
+        assertThrows( ProcedureException.class, aggregator::result );
+    }
+
     private <T> FieldSetter createSetter( Class<?> owner, String field, ComponentRegistry.Provider<T> provider )
             throws NoSuchFieldException, IllegalAccessException
     {
@@ -501,6 +581,11 @@ public class ProcedureCompilationTest
             return Stream.of( new StringOut( first + " AND " + second ) );
         }
 
+        public Aggregator create()
+        {
+            return new Aggregator();
+        }
+
         public void voidMethod()
         {
             transaction.startTime();
@@ -514,6 +599,28 @@ public class ProcedureCompilationTest
         public class NonStaticInner
         {
             public String value = "hello";
+        }
+
+        public class Aggregator
+        {
+            StringBuilder aggregator = new StringBuilder(  );
+            private boolean first = true;
+
+            public void update( String in )
+            {
+                String string = thread != null ? thread.getName() : "NULL";
+                if ( !first )
+                {
+                    aggregator.append( ", " );
+                }
+                first = false;
+                aggregator.append( in ).append( " " ).append( string );
+            }
+
+            public String result()
+            {
+                return aggregator.toString();
+            }
         }
     }
 
@@ -640,9 +747,9 @@ public class ProcedureCompilationTest
         return in;
     }
 
-    private Map<Class<?>,Method> typeMaps()
+    private Map<Type,Method> typeMaps()
     {
-        HashMap<Class<?>,Method> methodHashMap = new HashMap<>();
+        HashMap<Type,Method> methodHashMap = new HashMap<>();
         methodHashMap.put( String.class, method( "testMethod", String.class ) );
         methodHashMap.put( long.class, method( "testMethod", long.class ) );
         methodHashMap.put( Long.class, method( "testMethod", Long.class ) );
@@ -700,6 +807,44 @@ public class ProcedureCompilationTest
         public StringOut( String field )
         {
             this.field = field;
+        }
+    }
+
+    public Adder createAdder()
+    {
+        return new Adder();
+    }
+
+    public BlackAdder blackAdder()
+    {
+        return new BlackAdder();
+    }
+
+    public static class Adder
+    {
+        private long sum;
+
+        public void update( long in )
+        {
+            sum += in;
+        }
+
+        public long result()
+        {
+            return sum;
+        }
+    }
+
+    public static class BlackAdder
+    {
+        public void update()
+        {
+            throw new RuntimeException( "you can't update" );
+        }
+
+        public long result()
+        {
+            throw new RuntimeException( "you can't result" );
         }
     }
 }

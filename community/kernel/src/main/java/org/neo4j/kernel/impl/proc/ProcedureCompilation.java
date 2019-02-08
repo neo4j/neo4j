@@ -54,11 +54,13 @@ import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.graphdb.spatial.Point;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
+import org.neo4j.internal.kernel.api.procs.UserAggregator;
 import org.neo4j.internal.kernel.api.procs.UserFunctionSignature;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.proc.CallableProcedure;
+import org.neo4j.kernel.api.proc.CallableUserAggregationFunction;
 import org.neo4j.kernel.api.proc.CallableUserFunction;
 import org.neo4j.kernel.api.proc.Context;
 import org.neo4j.kernel.impl.util.DefaultValueMapper;
@@ -95,8 +97,10 @@ import static org.neo4j.codegen.Expression.box;
 import static org.neo4j.codegen.Expression.cast;
 import static org.neo4j.codegen.Expression.constant;
 import static org.neo4j.codegen.Expression.equal;
+import static org.neo4j.codegen.Expression.get;
 import static org.neo4j.codegen.Expression.getStatic;
 import static org.neo4j.codegen.Expression.invoke;
+import static org.neo4j.codegen.Expression.invokeSuper;
 import static org.neo4j.codegen.Expression.newInstance;
 import static org.neo4j.codegen.Expression.ternary;
 import static org.neo4j.codegen.Expression.unbox;
@@ -175,6 +179,14 @@ public final class ProcedureCompilation
             param( Context.class, "ctx" ),
             param( AnyValue[].class, "input" ),
             param( ResourceTracker.class, "tracker" ))
+            .throwsException( typeReference( ProcedureException.class ) );
+    private static final MethodDeclaration.Builder AGGREGATION_CREATE = method( UserAggregator.class, "create",
+            param( Context.class, "ctx" ))
+            .throwsException( typeReference( ProcedureException.class ) );
+    private static final MethodDeclaration.Builder AGGREGATION_UPDATE = method( void.class, "update",
+            param( AnyValue[].class, "input" ))
+            .throwsException( typeReference( ProcedureException.class ) );
+    private static final MethodDeclaration.Builder AGGREGATION_RESULT = method( AnyValue.class, "result")
             .throwsException( typeReference( ProcedureException.class ) );
 
     private ProcedureCompilation()
@@ -377,6 +389,57 @@ public final class ProcedureCompilation
         }
     }
 
+    static CallableUserAggregationFunction compileAggregation(
+            UserFunctionSignature signature, List<FieldSetter> fieldSetters,
+            Method create, Method update, Method result ) throws ProcedureException
+    {
+
+        ClassHandle handle;
+        try
+        {
+            CodeGenerator codeGenerator = codeGenerator();
+            Class<?> aggregator = generateAggregator( codeGenerator,update, result, signature );
+            try ( ClassGenerator generator = codeGenerator.generateClass( PACKAGE, className( signature ), CallableUserAggregationFunction.class ) )
+            {
+                //static fields
+                FieldReference signatureField = generator.publicStaticField( typeReference( UserFunctionSignature.class ), SIGNATURE_NAME );
+                FieldReference userClass = generator.publicStaticField( typeReference( create.getDeclaringClass() ), USER_CLASS );
+                List<FieldReference> fieldsToSet = createContextSetters( fieldSetters, generator );
+
+                //CallableUserAggregationFunction::create
+                try ( CodeBlock method = generator.generate( AGGREGATION_CREATE ) )
+                {
+                    method.tryCatch(
+                            body -> createAggregationBody( body, fieldSetters, fieldsToSet, userClass, create, aggregator ),
+                            onError ->
+                                    onError( onError, format( "function `%s`", signature.name() ) ),
+                            param( Throwable.class, "T" )
+                    );
+                }
+
+                //CallableUserFunction::signature
+                try ( CodeBlock method = generator.generateMethod( UserFunctionSignature.class, "signature" ) )
+                {
+                    method.returns( getStatic( signatureField ) );
+                }
+
+                handle = generator.handle();
+            }
+            Class<?> clazz = handle.loadClass();
+
+            //set all static fields
+            setAllStaticFields( signature, fieldSetters, create, clazz );
+
+            return (CallableUserAggregationFunction) clazz.newInstance();
+        }
+        catch ( Throwable e )
+        {
+            throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed, e,
+                    "Failed to compile function defined in `%s`: %s", create.getDeclaringClass().getSimpleName(),
+                    e.getMessage() );
+        }
+    }
+
     /**
      * Used by generated code. Needs to be public.
      * @param throwable The thrown exception
@@ -480,7 +543,7 @@ public final class ProcedureCompilation
                     param( ResourceTracker.class, "tracker" ), param( ProcedureSignature.class, "signature" ) ) )
             {
                 constructor.expression(
-                        Expression.invokeSuper( typeReference( BaseStreamIterator.class ), constructor.load( "stream" ),
+                        invokeSuper( typeReference( BaseStreamIterator.class ), constructor.load( "stream" ),
                                 constructor.load( "tracker" ), constructor.load( "signature" ) ) );
             }
 
@@ -494,10 +557,68 @@ public final class ProcedureCompilation
                 for ( int i = 0; i < fields.size(); i++ )
                 {
                     Field f = fields.get( i );
-                    mapped[i] = toAnyValue( Expression.get( method.load( "casted" ), field( f ) ) );
+                    mapped[i] = toAnyValue( get( method.load( "casted" ), field( f ) ) );
                 }
                 method.returns( Expression.newInitializedArray( typeReference( AnyValue.class ), mapped ) );
             }
+            handle = generator.handle();
+        }
+
+        try
+        {
+            return handle.loadClass();
+        }
+        catch ( CompilationFailureException e )
+        {   //We are being called from a lambda so it'll have to do with runtime exceptions here
+            throw new RuntimeException( "Failed to generate iterator", e );
+        }
+    }
+
+    private static Class<?> generateAggregator( CodeGenerator codeGenerator, Method update, Method result, UserFunctionSignature signature )
+    {
+       assert update.getDeclaringClass().equals( result.getDeclaringClass() );
+
+       Class<?> userAggregatorClass = update.getDeclaringClass();
+
+        ClassHandle handle;
+        try ( ClassGenerator generator = codeGenerator
+                .generateClass( PACKAGE, "Aggregator" + userAggregatorClass.getSimpleName() + System.nanoTime(),
+                        UserAggregator.class ) )
+        {
+            FieldReference aggregator = generator.field( userAggregatorClass, "aggregator" );
+            //constructor
+            try ( CodeBlock constructor = generator.generateConstructor( param( userAggregatorClass, "aggregator" ) ) )
+            {
+                constructor.expression( invokeSuper( OBJECT ) );
+                constructor.put( constructor.self(), aggregator, constructor.load( "aggregator" ) );
+            }
+
+            //update
+            try ( CodeBlock block = generator.generate( AGGREGATION_UPDATE ) )
+            {
+                block.tryCatch(
+                        onSuccess -> onSuccess
+                                .expression( invoke( get( onSuccess.self(), aggregator ), methodReference( update ),
+                                        parameters( onSuccess, update ) ) ),
+                        onError ->
+                                onError( onError, format( "function `%s`", signature.name() ) ),
+                        param( Throwable.class, "T" )
+                );
+            }
+
+            //result
+            try ( CodeBlock block = generator.generate( AGGREGATION_RESULT ) )
+            {
+
+                block.tryCatch(
+                        onSuccess ->
+                                onSuccess.returns( toAnyValue(
+                                        invoke( get( onSuccess.self(), aggregator ), methodReference( result ) ) ) ),
+                        onError ->
+                                onError( onError, format( "function `%s`", signature.name() ) ),
+                        param( Throwable.class, "T" ) );
+            }
+
             handle = generator.handle();
         }
 
@@ -538,7 +659,7 @@ public final class ProcedureCompilation
             List<FieldSetter> fieldSetters, List<FieldReference> fieldsToSet, FieldReference userClass,
             Method methodToCall )
     {
-        //inject fileds in user class
+        //inject fields in user class
         injectFields( block, fieldSetters, fieldsToSet, userClass );
 
         //get parameters to the user-method to call
@@ -590,6 +711,21 @@ public final class ProcedureCompilation
             ParameterizedType returnType = (ParameterizedType) method.getGenericReturnType();
             return (Class<?>) returnType.getActualTypeArguments()[0];
         }
+    }
+
+    private static void createAggregationBody( CodeBlock block,
+            List<FieldSetter> fieldSetters, List<FieldReference> fieldsToSet, FieldReference userClass,
+            Method createMethod,  Class<?> aggregator )
+    {
+        //inject fields in user class
+        injectFields( block, fieldSetters, fieldsToSet, userClass );
+
+        //call the actual function
+        block.assign( createMethod.getReturnType(), "fromUser",
+                invoke( getStatic( userClass ), methodReference( createMethod ) ) );
+        block.returns( invoke( newInstance( aggregator ),
+                constructorReference( aggregator, createMethod.getReturnType() ),
+                block.load( "fromUser" ) ) );
     }
 
     /**
