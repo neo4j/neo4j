@@ -31,7 +31,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.Semaphore;
 
-import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -65,6 +64,7 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.kernel.recovery.Recovery;
 import org.neo4j.kernel.recovery.RecoveryMonitor;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
+import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.schema.LabelSchemaDescriptor;
 import org.neo4j.storageengine.migration.StoreMigrationParticipant;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -139,6 +139,7 @@ class IndexRecoveryIT
             // Given
             startDb();
 
+            StorageEngineFactory storageEngineFactory = db.getDependencyResolver().resolveDependency( StorageEngineFactory.class );
             Semaphore populationSemaphore = new Semaphore( 0 );
             when( mockedIndexProvider.getPopulator( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ) ) ).thenReturn(
                     indexPopulatorWithControlledCompletionTiming( populationSemaphore ) );
@@ -164,7 +165,7 @@ class IndexRecoveryIT
                         recoverySemaphore.release();
                     }
                 } );
-                boolean recoveryRequired = Recovery.isRecoveryRequired( fs, testDirectory.databaseLayout(), defaults() );
+                boolean recoveryRequired = Recovery.isRecoveryRequired( fs, testDirectory.databaseLayout(), defaults(), storageEngineFactory );
                 // When
                 startDb();
 

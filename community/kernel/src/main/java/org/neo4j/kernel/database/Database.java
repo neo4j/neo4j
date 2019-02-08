@@ -35,7 +35,6 @@ import org.neo4j.dbms.database.DatabaseConfig;
 import org.neo4j.dbms.database.DatabasePageCache;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.Service;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -214,7 +213,7 @@ public class Database extends LifecycleAdapter
     private final VersionContextSupplier versionContextSupplier;
     private final AccessCapability accessCapability;
 
-    private StorageEngineFactory storageEngineFactory;
+    private final StorageEngineFactory storageEngineFactory;
     private StorageEngine storageEngine;
     private QueryExecutionEngine executionEngine;
     private DatabaseKernelModule kernelModule;
@@ -275,6 +274,7 @@ public class Database extends LifecycleAdapter
         this.collectionsFactorySupplier = context.getCollectionsFactorySupplier();
         this.databaseAvailability = context.getDatabaseAvailability();
         this.databaseMigratorFactory = context.getDatabaseMigratorFactory();
+        this.storageEngineFactory = context.getStorageEngineFactory();
     }
 
     @Override
@@ -325,9 +325,6 @@ public class Database extends LifecycleAdapter
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector = RecoveryCleanupWorkCollector.immediate();
             databaseDependencies.satisfyDependency( recoveryCleanupWorkCollector );
 
-            storageEngineFactory = selectStorageEngine();
-            databaseDependencies.satisfyDependency( storageEngineFactory );
-
             life.add( new PageCacheLifecycle( databasePageCache ) );
             life.add( initializeExtensions( databaseDependencies ) );
 
@@ -353,7 +350,7 @@ public class Database extends LifecycleAdapter
                     new LogTailScanner( logFiles, logEntryReader, databaseMonitors, config.get( GraphDatabaseSettings.fail_on_corrupted_log_files ) );
             LogVersionUpgradeChecker.check( tailScanner, config );
 
-            performRecovery( fs, databasePageCache, config, databaseLayout, logProvider, databaseMonitors, extensionFactories,
+            performRecovery( fs, databasePageCache, config, databaseLayout, storageEngineFactory, logProvider, databaseMonitors, extensionFactories,
                     Optional.of( tailScanner ) );
 
             // Build all modules and their services
@@ -362,7 +359,6 @@ public class Database extends LifecycleAdapter
             Supplier<KernelTransactionsSnapshot> transactionsSnapshotSupplier = () -> kernelModule.kernelTransactions().get();
             idController.initialize( transactionsSnapshotSupplier );
 
-            StorageEngineFactory storageEngineFactory = selectStorageEngine();
             storageEngine = buildStorageEngine( databasePageCache, databaseSchemaState, versionContextSupplier, storageEngineFactory );
             life.add( logFiles );
 
@@ -501,11 +497,6 @@ public class Database extends LifecycleAdapter
         life.add( storageEngine );
         life.add( storageEngine.schemaAndTokensLifecycle() );
         return storageEngine;
-    }
-
-    public static StorageEngineFactory selectStorageEngine()
-    {
-        return StorageEngineFactory.selectStorageEngine( Service.load( StorageEngineFactory.class ) );
     }
 
     /**

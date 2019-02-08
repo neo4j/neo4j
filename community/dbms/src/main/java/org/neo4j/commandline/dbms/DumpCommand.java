@@ -35,10 +35,12 @@ import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.commandline.arguments.Arguments;
 import org.neo4j.dbms.archive.Dumper;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.Service;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.StoreLockException;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.Validators;
+import org.neo4j.storageengine.api.StorageEngineFactory;
 
 import static java.lang.String.format;
 import static org.neo4j.commandline.arguments.common.Database.ARG_DATABASE;
@@ -74,6 +76,7 @@ public class DumpCommand implements AdminCommand
         Config config = buildConfig( database );
         Path databaseDirectory = getDatabaseDirectory( config );
         DatabaseLayout databaseLayout = DatabaseLayout.of( databaseDirectory.toFile(), of( config ) );
+        StorageEngineFactory storageEngineFactory = StorageEngineFactory.selectStorageEngine( Service.load( StorageEngineFactory.class ) );
 
         try
         {
@@ -86,7 +89,7 @@ public class DumpCommand implements AdminCommand
 
         try ( Closeable ignored = StoreLockChecker.check( databaseLayout.getStoreLayout() ) )
         {
-            checkDbState( databaseLayout, config );
+            checkDbState( databaseLayout, config, storageEngineFactory );
             dump( database, databaseLayout, archive );
         }
         catch ( StoreLockException e )
@@ -151,9 +154,10 @@ public class DumpCommand implements AdminCommand
         }
     }
 
-    private static void checkDbState( DatabaseLayout databaseLayout, Config additionalConfiguration ) throws CommandFailed
+    private static void checkDbState( DatabaseLayout databaseLayout, Config additionalConfiguration,
+            StorageEngineFactory storageEngineFactory ) throws CommandFailed
     {
-        if ( checkRecoveryState( databaseLayout, additionalConfiguration ) )
+        if ( checkRecoveryState( databaseLayout, additionalConfiguration, storageEngineFactory ) )
         {
             throw new CommandFailed( joinAsLines( "Active logical log detected, this might be a source of inconsistencies.",
                     "Please recover database before running the dump.",
@@ -161,11 +165,12 @@ public class DumpCommand implements AdminCommand
         }
     }
 
-    private static boolean checkRecoveryState( DatabaseLayout databaseLayout, Config additionalConfiguration ) throws CommandFailed
+    private static boolean checkRecoveryState( DatabaseLayout databaseLayout, Config additionalConfiguration,
+            StorageEngineFactory storageEngineFactory ) throws CommandFailed
     {
         try
         {
-            return isRecoveryRequired( databaseLayout, additionalConfiguration );
+            return isRecoveryRequired( databaseLayout, additionalConfiguration, storageEngineFactory );
         }
         catch ( Exception e )
         {

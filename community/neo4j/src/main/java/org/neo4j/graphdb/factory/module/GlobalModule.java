@@ -29,6 +29,7 @@ import org.neo4j.graphdb.facade.ExternalDependencies;
 import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.security.URLAccessRule;
+import org.neo4j.helpers.Service;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.internal.diagnostics.DiagnosticsManager;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
@@ -79,6 +80,7 @@ import org.neo4j.logging.internal.StoreLogService;
 import org.neo4j.scheduler.DeferredExecutor;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.SystemNanoClock;
 import org.neo4j.udc.UsageData;
@@ -117,6 +119,8 @@ public class GlobalModule
     private final UsageData usageData;
     private final ConnectorPortRegister connectorPortRegister;
     private final FileSystemWatcherService fileSystemWatcher;
+    // In the future this may not be a global decision, but for now this is a good central place to make the decision about which storage engine to use
+    private final StorageEngineFactory storageEngineFactory;
 
     public GlobalModule( File providedStoreDir, Config globalConfig, DatabaseInfo databaseInfo,
             ExternalDependencies externalDependencies )
@@ -194,6 +198,11 @@ public class GlobalModule
 
         connectorPortRegister = new ConnectorPortRegister();
         globalDependencies.satisfyDependency( connectorPortRegister );
+
+        // There's no way of actually configuring storage engine right now and this is on purpose since
+        // we have neither figured out the surface, use cases nor other storage engines.
+        storageEngineFactory = StorageEngineFactory.selectStorageEngine( Service.load( StorageEngineFactory.class ) );
+        globalDependencies.satisfyDependency( storageEngineFactory );
 
         publishPlatformInfo( globalDependencies.resolveDependency( UsageData.class ) );
     }
@@ -464,5 +473,10 @@ public class GlobalModule
     public LogService getLogService()
     {
         return logService;
+    }
+
+    public StorageEngineFactory getStorageEngineFactory()
+    {
+        return storageEngineFactory;
     }
 }

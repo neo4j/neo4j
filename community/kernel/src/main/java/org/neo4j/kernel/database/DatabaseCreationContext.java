@@ -60,6 +60,7 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.kernel.monitoring.tracing.Tracers;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.time.SystemNanoClock;
 
 public interface DatabaseCreationContext
@@ -145,4 +146,6 @@ public interface DatabaseCreationContext
     DatabaseEventHandlers getEventHandlers();
 
     DatabaseMigratorFactory getDatabaseMigratorFactory();
+
+    StorageEngineFactory getStorageEngineFactory();
 }

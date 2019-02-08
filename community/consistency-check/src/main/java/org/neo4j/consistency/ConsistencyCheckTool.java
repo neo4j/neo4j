@@ -29,6 +29,7 @@ import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.consistency.checking.full.ConsistencyFlags;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Args;
+import org.neo4j.helpers.Service;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -37,6 +38,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.LayoutConfig;
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.storageengine.api.StorageEngineFactory;
 
 import static java.lang.String.format;
 import static org.neo4j.helpers.Args.jarUsage;
@@ -109,7 +111,8 @@ public class ConsistencyCheckTool
         boolean verbose = isVerbose( arguments );
 
         DatabaseLayout databaseLayout = DatabaseLayout.of( storeDir, LayoutConfig.of( tuningConfiguration ) );
-        checkDbState( databaseLayout, tuningConfiguration );
+        StorageEngineFactory storageEngineFactory = StorageEngineFactory.selectStorageEngine( Service.load( StorageEngineFactory.class ) );
+        checkDbState( databaseLayout, tuningConfiguration, storageEngineFactory );
 
         ZoneId logTimeZone = tuningConfiguration.get( GraphDatabaseSettings.db_timezone ).getZoneId();
         LogProvider logProvider = FormattedLogProvider.withZoneId( logTimeZone ).toOutputStream( systemOut );
@@ -130,9 +133,10 @@ public class ConsistencyCheckTool
         return arguments.getBoolean( VERBOSE, false, true );
     }
 
-    private void checkDbState( DatabaseLayout databaseLayout, Config additionalConfiguration ) throws ToolFailureException
+    private void checkDbState( DatabaseLayout databaseLayout, Config additionalConfiguration, StorageEngineFactory storageEngineFactory )
+            throws ToolFailureException
     {
-        if ( checkRecoveryState( databaseLayout, additionalConfiguration ) )
+        if ( checkRecoveryState( databaseLayout, additionalConfiguration, storageEngineFactory ) )
         {
             throw new ToolFailureException( joinAsLines( "Active logical log detected, this might be a source of inconsistencies.",
                     "Please recover database before running the consistency check.",
@@ -140,11 +144,11 @@ public class ConsistencyCheckTool
         }
     }
 
-    private boolean checkRecoveryState( DatabaseLayout databaseLayout, Config additionalConfiguration )
+    private boolean checkRecoveryState( DatabaseLayout databaseLayout, Config additionalConfiguration, StorageEngineFactory storageEngineFactory )
     {
         try
         {
-            return isRecoveryRequired( databaseLayout, additionalConfiguration );
+            return isRecoveryRequired( databaseLayout, additionalConfiguration, storageEngineFactory );
         }
         catch ( Exception e )
         {

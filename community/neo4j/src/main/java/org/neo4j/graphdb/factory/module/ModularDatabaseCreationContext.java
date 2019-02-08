@@ -67,8 +67,8 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.kernel.monitoring.tracing.Tracers;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.time.SystemNanoClock;
-import org.neo4j.unsafe.impl.batchimport.input.csv.Data;
 
 public class ModularDatabaseCreationContext implements DatabaseCreationContext
 {
@@ -113,6 +113,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     private final DatabaseAvailability databaseAvailability;
     private final DatabaseEventHandlers eventHandlers;
     private final DatabaseMigratorFactory databaseMigratorFactory;
+    private final StorageEngineFactory storageEngineFactory;
 
     ModularDatabaseCreationContext( String databaseName, GlobalModule globalModule, EditionDatabaseContext editionContext,
             GlobalProcedures globalProcedures, GraphDatabaseFacade facade )
@@ -126,7 +127,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
         this.databaseLayout = globalModule.getStoreLayout().databaseLayout( databaseName );
         this.logService = globalModule.getLogService();
         this.scheduler = globalModule.getJobScheduler();
-        this.globalDependencies =  globalModule.getGlobalDependencies();
+        this.globalDependencies = globalModule.getGlobalDependencies();
         this.tokenHolders = editionContext.getTokenHolders();
         this.tokenNameLookup = new NonTransactionalTokenNameLookup( tokenHolders );
         this.locks = editionContext.getLocks();
@@ -160,6 +161,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
         this.facade = facade;
         this.engineProviders = globalModule.getQueryEngineProviders();
         this.databaseMigratorFactory = new DatabaseMigratorFactory( fs, globalConfig, logService, pageCache, scheduler );
+        this.storageEngineFactory = globalModule.getStorageEngineFactory();
     }
 
     @Override
@@ -411,5 +413,11 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     public DatabaseMigratorFactory getDatabaseMigratorFactory()
     {
         return databaseMigratorFactory;
+    }
+
+    @Override
+    public StorageEngineFactory getStorageEngineFactory()
+    {
+        return storageEngineFactory;
     }
 }

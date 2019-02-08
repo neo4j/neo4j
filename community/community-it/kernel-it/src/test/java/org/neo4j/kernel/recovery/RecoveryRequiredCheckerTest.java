@@ -30,11 +30,13 @@ import java.io.IOException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
+import org.neo4j.helpers.Service;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.extension.EphemeralFileSystemExtension;
 import org.neo4j.test.extension.Inject;
@@ -62,6 +64,7 @@ class RecoveryRequiredCheckerTest
 
     private File storeDir;
     private DatabaseLayout databaseLayout;
+    private final StorageEngineFactory storageEngineFactory = StorageEngineFactory.selectStorageEngine( Service.load( StorageEngineFactory.class ) );
 
     @BeforeEach
     void setup()
@@ -75,7 +78,7 @@ class RecoveryRequiredCheckerTest
     void shouldNotWantToRecoverIntactStore() throws Exception
     {
         PageCache pageCache = pageCacheExtension.getPageCache( fileSystem );
-        RecoveryRequiredChecker recoverer = getRecoveryCheckerWithDefaultConfig( fileSystem, pageCache );
+        RecoveryRequiredChecker recoverer = getRecoveryCheckerWithDefaultConfig( fileSystem, pageCache, storageEngineFactory );
 
         assertThat( recoverer.isRecoveryRequiredAt( databaseLayout ), is( false ) );
     }
@@ -87,7 +90,7 @@ class RecoveryRequiredCheckerTest
         {
 
             PageCache pageCache = pageCacheExtension.getPageCache( fileSystemAbstraction );
-            RecoveryRequiredChecker recoverer = getRecoveryCheckerWithDefaultConfig( fileSystemAbstraction, pageCache );
+            RecoveryRequiredChecker recoverer = getRecoveryCheckerWithDefaultConfig( fileSystemAbstraction, pageCache, storageEngineFactory );
 
             assertThat( recoverer.isRecoveryRequiredAt( databaseLayout ), is( true ) );
         }
@@ -100,7 +103,7 @@ class RecoveryRequiredCheckerTest
         {
             PageCache pageCache = pageCacheExtension.getPageCache( fileSystemAbstraction );
 
-            RecoveryRequiredChecker recoverer = getRecoveryCheckerWithDefaultConfig( fileSystemAbstraction, pageCache );
+            RecoveryRequiredChecker recoverer = getRecoveryCheckerWithDefaultConfig( fileSystemAbstraction, pageCache, storageEngineFactory );
 
             assertThat( recoverer.isRecoveryRequiredAt( databaseLayout ), is( true ) );
 
@@ -125,7 +128,7 @@ class RecoveryRequiredCheckerTest
         {
             PageCache pageCache = pageCacheExtension.getPageCache( fileSystemAbstraction );
 
-            RecoveryRequiredChecker recoveryChecker = getRecoveryChecker( fileSystemAbstraction, pageCache, config );
+            RecoveryRequiredChecker recoveryChecker = getRecoveryChecker( fileSystemAbstraction, pageCache, storageEngineFactory, config );
 
             assertThat( recoveryChecker.isRecoveryRequiredAt( testDirectory.databaseLayout( of( config ) ) ), is( true ) );
 
@@ -145,14 +148,16 @@ class RecoveryRequiredCheckerTest
         return createSomeDataAndCrash( storeDir, fileSystem, Config.defaults() );
     }
 
-    private static RecoveryRequiredChecker getRecoveryCheckerWithDefaultConfig( FileSystemAbstraction fileSystem, PageCache pageCache )
+    private static RecoveryRequiredChecker getRecoveryCheckerWithDefaultConfig( FileSystemAbstraction fileSystem, PageCache pageCache,
+            StorageEngineFactory storageEngineFactory )
     {
-        return getRecoveryChecker( fileSystem, pageCache, Config.defaults() );
+        return getRecoveryChecker( fileSystem, pageCache, storageEngineFactory, Config.defaults() );
     }
 
-    private static RecoveryRequiredChecker getRecoveryChecker( FileSystemAbstraction fileSystem, PageCache pageCache, Config config )
+    private static RecoveryRequiredChecker getRecoveryChecker( FileSystemAbstraction fileSystem, PageCache pageCache,
+            StorageEngineFactory storageEngineFactory, Config config )
     {
-        return new RecoveryRequiredChecker( fileSystem, pageCache, config );
+        return new RecoveryRequiredChecker( fileSystem, pageCache, config, storageEngineFactory );
     }
 
     private static FileSystemAbstraction createSomeDataAndCrash( File store, EphemeralFileSystemAbstraction fileSystem, Config config )

@@ -34,12 +34,14 @@ import org.neo4j.commandline.arguments.common.OptionalCanonicalPath;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.consistency.checking.full.ConsistencyFlags;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.Service;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.FormattedLogProvider;
+import org.neo4j.storageengine.api.StorageEngineFactory;
 
 import static java.lang.String.format;
 import static org.neo4j.commandline.arguments.common.Database.ARG_DATABASE;
@@ -174,7 +176,8 @@ public class CheckConsistencyCommand implements AdminCommand
         {
             File databaseDirectory = backupPath.map( Path::toFile ).orElse( config.get( database_path ) );
             DatabaseLayout databaseLayout = DatabaseLayout.of( databaseDirectory );
-            checkDbState( databaseLayout, config );
+            StorageEngineFactory storageEngineFactory = StorageEngineFactory.selectStorageEngine( Service.load( StorageEngineFactory.class ) );
+            checkDbState( databaseLayout, config, storageEngineFactory );
             ZoneId logTimeZone = config.get( GraphDatabaseSettings.db_timezone ).getZoneId();
             // Only output progress indicator if a console receives the output
             ProgressMonitorFactory progressMonitorFactory = ProgressMonitorFactory.NONE;
@@ -219,9 +222,10 @@ public class CheckConsistencyCommand implements AdminCommand
         return Config.defaults();
     }
 
-    private static void checkDbState( DatabaseLayout databaseLayout, Config additionalConfiguration ) throws CommandFailed
+    private static void checkDbState( DatabaseLayout databaseLayout, Config additionalConfiguration, StorageEngineFactory storageEngineFactory )
+            throws CommandFailed
     {
-        if ( checkRecoveryState( databaseLayout, additionalConfiguration ) )
+        if ( checkRecoveryState( databaseLayout, additionalConfiguration, storageEngineFactory ) )
         {
             throw new CommandFailed( joinAsLines( "Active logical log detected, this might be a source of inconsistencies.",
                     "Please recover database before running the consistency check.",
@@ -229,11 +233,12 @@ public class CheckConsistencyCommand implements AdminCommand
         }
     }
 
-    private static boolean checkRecoveryState( DatabaseLayout databaseLayout, Config additionalConfiguration ) throws CommandFailed
+    private static boolean checkRecoveryState( DatabaseLayout databaseLayout, Config additionalConfiguration, StorageEngineFactory storageEngineFactory )
+            throws CommandFailed
     {
         try
         {
-            return isRecoveryRequired( databaseLayout, additionalConfiguration );
+            return isRecoveryRequired( databaseLayout, additionalConfiguration, storageEngineFactory );
         }
         catch ( Exception e )
         {

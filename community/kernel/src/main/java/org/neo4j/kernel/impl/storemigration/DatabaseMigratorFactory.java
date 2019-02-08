@@ -41,6 +41,7 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.kernel.recovery.LogTailScanner;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.storageengine.api.StorageEngineFactory;
 
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.fail_on_corrupted_log_files;
 
@@ -69,6 +70,7 @@ public class DatabaseMigratorFactory
         final LogFileCreationMonitor logFileCreationMonitor = monitors.newMonitor( LogFileCreationMonitor.class );
         final LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader = new VersionAwareLogEntryReader<>();
         final LegacyTransactionLogsLocator logsLocator = new LegacyTransactionLogsLocator( dbConfig, databaseLayout );
+        final StorageEngineFactory storageEngineFactory = dependencyResolver.resolveDependency( StorageEngineFactory.class );
         final LogFiles logFiles;
         try
         {
@@ -88,7 +90,8 @@ public class DatabaseMigratorFactory
         }
         final LogTailScanner tailScanner = new LogTailScanner( logFiles, logEntryReader, monitors, dbConfig.get( fail_on_corrupted_log_files ) );
         LogVersionUpgradeChecker.check( tailScanner, dbConfig );
-        return new DatabaseMigrator( fs, dbConfig, logService, indexProviderMap, pageCache, tailScanner, jobScheduler, databaseLayout, logsLocator );
+        return new DatabaseMigrator( fs, dbConfig, logService, indexProviderMap, pageCache, tailScanner, jobScheduler, databaseLayout, logsLocator,
+                storageEngineFactory );
     }
 
     private static class LegacyDatabaseLayout extends DatabaseLayout

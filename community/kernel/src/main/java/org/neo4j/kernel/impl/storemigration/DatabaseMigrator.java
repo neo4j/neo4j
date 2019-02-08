@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.storemigration;
 
 import java.io.IOException;
 
-import org.neo4j.helpers.Service;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
@@ -53,9 +52,11 @@ public class DatabaseMigrator
     private final JobScheduler jobScheduler;
     private final DatabaseLayout databaseLayout;
     private final LegacyTransactionLogsLocator legacyLogsLocator;
+    private final StorageEngineFactory storageEngineFactory;
 
     public DatabaseMigrator( FileSystemAbstraction fs, Config config, LogService logService, IndexProviderMap indexProviderMap, PageCache pageCache,
-            LogTailScanner tailScanner, JobScheduler jobScheduler, DatabaseLayout databaseLayout, LegacyTransactionLogsLocator legacyLogsLocator )
+            LogTailScanner tailScanner, JobScheduler jobScheduler, DatabaseLayout databaseLayout, LegacyTransactionLogsLocator legacyLogsLocator,
+            StorageEngineFactory storageEngineFactory )
     {
         this.fs = fs;
         this.config = config;
@@ -66,6 +67,7 @@ public class DatabaseMigrator
         this.jobScheduler = jobScheduler;
         this.databaseLayout = databaseLayout;
         this.legacyLogsLocator = legacyLogsLocator;
+        this.storageEngineFactory = storageEngineFactory;
     }
 
     /**
@@ -76,7 +78,6 @@ public class DatabaseMigrator
     {
         LogProvider logProvider = logService.getInternalLogProvider();
 
-        StorageEngineFactory storageEngineFactory = StorageEngineFactory.selectStorageEngine( Service.load( StorageEngineFactory.class ) );
         Dependencies dependencies = new Dependencies();
         dependencies.satisfyDependencies( fs, pageCache, databaseLayout, config, jobScheduler, logService );
         StoreVersionCheck storeVersionCheck = storageEngineFactory.versionCheck( dependencies );

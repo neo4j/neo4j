@@ -21,7 +21,6 @@ package org.neo4j.kernel.recovery;
 
 import java.io.IOException;
 
-import org.neo4j.helpers.Service;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
@@ -46,13 +45,12 @@ public class RecoveryRequiredChecker
     private final Config config;
     private final StorageEngineFactory storageEngineFactory;
 
-    RecoveryRequiredChecker( FileSystemAbstraction fs, PageCache pageCache, Config config )
+    RecoveryRequiredChecker( FileSystemAbstraction fs, PageCache pageCache, Config config, StorageEngineFactory storageEngineFactory )
     {
         this.fs = fs;
         this.pageCache = pageCache;
         this.config = config;
-        // TODO perhaps pass in from outside?
-        this.storageEngineFactory = StorageEngineFactory.selectStorageEngine( Service.load( StorageEngineFactory.class ) );
+        this.storageEngineFactory = storageEngineFactory;
     }
 
     public boolean isRecoveryRequiredAt( DatabaseLayout databaseLayout ) throws IOException

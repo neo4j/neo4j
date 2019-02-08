@@ -26,6 +26,7 @@ import org.neo4j.common.DependencyResolver;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.dbms.database.DatabaseConfig;
 import org.neo4j.exceptions.UnsatisfiedDependencyException;
+import org.neo4j.helpers.Service;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.watcher.DatabaseLayoutWatcher;
@@ -87,6 +88,7 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.logging.internal.SimpleLogService;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.SystemNanoClock;
 
@@ -155,6 +157,8 @@ public class DatabaseRule extends ExternalResource
                         NullLog.getInstance() ) );
         dependency( mutableDependencies, DbmsDiagnosticsManager.class, deps -> mock( DbmsDiagnosticsManager.class ) );
         dependency( mutableDependencies, IndexProvider.class, deps -> EMPTY );
+        StorageEngineFactory storageEngineFactory = dependency( mutableDependencies, StorageEngineFactory.class,
+                deps -> StorageEngineFactory.selectStorageEngine( Service.load( StorageEngineFactory.class ) ) );
 
         database = new Database( new TestDatabaseCreationContext( databaseName, databaseLayout, config, idGeneratorFactory, logService,
                 mock( JobScheduler.class, RETURNS_MOCKS ), mock( TokenNameLookup.class ), mutableDependencies, mockedTokenHolders(), locksFactory,
@@ -165,8 +169,8 @@ public class DatabaseRule extends ExternalResource
                 mock( GlobalProcedures.class ), IOLimiter.UNLIMITED, databaseAvailabilityGuard, clock, new CanWrite(), new StoreCopyCheckPointMutex(),
                 new BufferedIdController( new BufferingIdGeneratorFactory( idGeneratorFactory, IdReuseEligibility.ALWAYS, idConfigurationProvider ),
                         jobScheduler ), DatabaseInfo.COMMUNITY, new TransactionVersionContextSupplier(), ON_HEAP, Collections.emptyList(),
-            file -> mock( DatabaseLayoutWatcher.class ), new GraphDatabaseFacade(), Iterables.empty(),
-            mockedDatabaseMigratorFactory() ) );
+                file -> mock( DatabaseLayoutWatcher.class ), new GraphDatabaseFacade(), Iterables.empty(),
+                mockedDatabaseMigratorFactory(), storageEngineFactory ) );
         return database;
     }
 
@@ -245,6 +249,7 @@ public class DatabaseRule extends ExternalResource
         private final CoreAPIAvailabilityGuard coreAPIAvailabilityGuard;
         private final DatabaseEventHandlers eventHandlers;
         private final DatabaseMigratorFactory databaseMigratorFactory;
+        private final StorageEngineFactory storageEngineFactory;
 
         TestDatabaseCreationContext( String databaseName, DatabaseLayout databaseLayout, Config config, IdGeneratorFactory idGeneratorFactory,
                 LogService logService, JobScheduler scheduler, TokenNameLookup tokenNameLookup, DependencyResolver dependencyResolver,
@@ -257,7 +262,8 @@ public class DatabaseRule extends ExternalResource
                 SystemNanoClock clock, AccessCapability accessCapability, StoreCopyCheckPointMutex storeCopyCheckPointMutex, IdController idController,
                 DatabaseInfo databaseInfo, VersionContextSupplier versionContextSupplier, CollectionsFactorySupplier collectionsFactorySupplier,
                 Iterable<ExtensionFactory<?>> extensionFactories, Function<DatabaseLayout,DatabaseLayoutWatcher> watcherServiceFactory,
-            GraphDatabaseFacade facade, Iterable<QueryEngineProvider> engineProviders, DatabaseMigratorFactory databaseMigratorFactory )
+                GraphDatabaseFacade facade, Iterable<QueryEngineProvider> engineProviders, DatabaseMigratorFactory databaseMigratorFactory,
+                StorageEngineFactory storageEngineFactory )
         {
             this.databaseName = databaseName;
             this.databaseLayout = databaseLayout;
@@ -299,6 +305,7 @@ public class DatabaseRule extends ExternalResource
             this.coreAPIAvailabilityGuard = new CoreAPIAvailabilityGuard( databaseAvailabilityGuard, 0 );
             this.eventHandlers = mock( DatabaseEventHandlers.class );
             this.databaseMigratorFactory = databaseMigratorFactory;
+            this.storageEngineFactory = storageEngineFactory;
         }
 
         @Override
@@ -549,6 +556,12 @@ public class DatabaseRule extends ExternalResource
         public DatabaseMigratorFactory getDatabaseMigratorFactory()
         {
             return databaseMigratorFactory;
+        }
+
+        @Override
+        public StorageEngineFactory getStorageEngineFactory()
+        {
+            return storageEngineFactory;
         }
     }
 

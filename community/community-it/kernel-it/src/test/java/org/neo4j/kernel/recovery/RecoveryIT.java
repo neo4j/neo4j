@@ -29,6 +29,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.helpers.Service;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.StoreChannel;
@@ -41,6 +42,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
+import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.extension.DefaultFileSystemExtension;
 import org.neo4j.test.extension.Inject;
@@ -64,6 +66,7 @@ class RecoveryIT
     public DefaultFileSystemAbstraction fileSystem;
     @Inject
     public TestDirectory directory;
+    private final StorageEngineFactory storageEngineFactory = StorageEngineFactory.selectStorageEngine( Service.load( StorageEngineFactory.class ) );
 
     @Test
     void recoveryRequiredOnDatabaseWithoutCorrectCheckpoints() throws Exception
@@ -73,14 +76,14 @@ class RecoveryIT
         database.shutdown();
         removeLastCheckpointRecordFromLastLogFile();
 
-        assertTrue( isRecoveryRequired( fileSystem, directory.databaseLayout(), defaults() ) );
+        assertTrue( isRecoveryRequired( fileSystem, directory.databaseLayout(), defaults(), storageEngineFactory ) );
     }
 
     @Test
     void recoveryNotRequiredWhenDatabaseNotFound() throws Exception
     {
         DatabaseLayout absentDatabase = directory.databaseLayout( "absent" );
-        assertFalse( isRecoveryRequired( fileSystem, absentDatabase, defaults() ) );
+        assertFalse( isRecoveryRequired( fileSystem, absentDatabase, defaults(), storageEngineFactory ) );
     }
 
     @Test
@@ -255,9 +258,9 @@ class RecoveryIT
     private void recoverDatabase() throws Exception
     {
         DatabaseLayout databaseLayout = directory.databaseLayout();
-        assertTrue( isRecoveryRequired( databaseLayout, defaults() ) );
-        performRecovery( databaseLayout );
-        assertFalse( isRecoveryRequired( databaseLayout, defaults() ) );
+        assertTrue( isRecoveryRequired( databaseLayout, defaults(), storageEngineFactory ) );
+        performRecovery( databaseLayout, storageEngineFactory );
+        assertFalse( isRecoveryRequired( databaseLayout, defaults(), storageEngineFactory ) );
     }
 
     private void removeLastCheckpointRecordFromLastLogFile() throws IOException
