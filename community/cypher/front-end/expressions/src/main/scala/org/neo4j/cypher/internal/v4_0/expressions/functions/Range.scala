@@ -26,6 +26,6 @@ case object Range extends Function with TypeSignatures {
     FunctionTypeSignature(functionName = name, names = Vector("start", "end"), argumentTypes = Vector(CTInteger, CTInteger),
       outputType = CTList(CTInteger), description = "Returns a list comprising all integer values within a specified range."),
     FunctionTypeSignature(functionName = name, names = Vector("start", "end", "step"), argumentTypes = Vector(CTInteger, CTInteger, CTInteger),
-      outputType = CTList(CTInteger), description = "Returns a list comprising all integer values within a specified range created with optional step length.")
+      outputType = CTList(CTInteger), description = "Returns a list comprising all integer values within a specified range created with step length.")
   )
 }

@@ -111,7 +111,7 @@ object Function {
           case signature: FunctionTypeSignature if signature.deprecated =>
             Seq()
           case problem =>
-            throw new IllegalStateException("Don't know how to handle the following at this point: "+ problem)
+            throw new IllegalStateException("Did not expect the following at this point: "+ problem)
         }
       case func: FunctionWithInfo =>
         Seq(new FunctionInfo(func) {
@@ -131,7 +131,7 @@ abstract case class FunctionInfo(f: Function) extends FunctionInformation {
       case _ => false
     }
 
-  override def toString: String = f.name + " || " + getSignature + " || " + getDescription + " || " + isAggregationFunction
+  override def toString: String = getFunctionName + " || " + getSignature + " || " + getDescription + " || " + isAggregationFunction
 }
 
 abstract class Function {

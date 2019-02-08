@@ -261,7 +261,7 @@ public class ProcedureRegistry
         return procedures.all().stream().map( CallableProcedure::signature ).collect( Collectors.toSet());
     }
 
-    public Stream<UserFunctionSignature> getAllFunctions()
+    public Stream<UserFunctionSignature> getAllNonAggregatingFunctions()
     {
         return functions.all().stream().map( CallableUserFunction::signature );
     }

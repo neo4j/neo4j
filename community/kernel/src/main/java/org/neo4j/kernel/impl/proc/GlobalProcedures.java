@@ -270,12 +270,9 @@ public class GlobalProcedures extends LifecycleAdapter
         return registry.getAllProcedures();
     }
 
-    /*
-    This gets you all non-aggregating functions
-     */
-    public Stream<UserFunctionSignature> getAllFunctions()
+    public Stream<UserFunctionSignature> getAllNonAggregatingFunctions()
     {
-        return registry.getAllFunctions();
+        return registry.getAllNonAggregatingFunctions();
     }
 
     public Stream<UserFunctionSignature> getAllAggregatingFunctions()

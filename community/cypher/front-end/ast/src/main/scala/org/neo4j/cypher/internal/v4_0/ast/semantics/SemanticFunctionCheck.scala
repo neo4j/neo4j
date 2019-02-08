@@ -130,20 +130,17 @@ object SemanticFunctionCheck extends SemanticAnalysisTooling {
         }
 
       case ToBoolean =>
-        checkMinArgs(invocation, 1) ifOkChain
-          checkMaxArgs(invocation, 1) ifOkChain
+        checkArgs(invocation, 1) ifOkChain
           checkToSpecifiedTypeOfArgument(invocation, Seq(CTString, CTBoolean, CTAny)) ifOkChain
           specifyType(CTBoolean, invocation)
 
       case ToString =>
-        checkMinArgs(invocation, 1) ifOkChain
-          checkMaxArgs(invocation, 1) ifOkChain
+        checkArgs(invocation, 1) ifOkChain
           checkToSpecifiedTypeOfArgument(invocation, ToString.validInputTypes) ifOkChain
           specifyType(CTString, invocation)
 
       case Distance =>
-        checkMinArgs(invocation, 2) ifOkChain
-          checkMaxArgs(invocation, 2) ifOkChain
+        checkArgs(invocation, 2) ifOkChain
           specifyType(CTFloat, invocation)
 
       case UnresolvedFunction =>

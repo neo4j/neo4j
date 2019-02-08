@@ -38,7 +38,7 @@ case class FunctionTypeSignature(functionName : String, outputType: CypherType, 
 
 object TypeSignature {
   def deprecated(functionName : String, argumentType: CypherType, outputType: CypherType, description: String) =
-    FunctionTypeSignature(functionName, outputType, Vector("input"), description, Vector(argumentType), Vector(), deprecated = true)
+    FunctionTypeSignature(functionName, outputType, Vector("input"), description, Vector(argumentType), deprecated = true)
 
   def apply(functionName : String, argumentType: CypherType, outputType: CypherType, description: String): FunctionTypeSignature =
     FunctionTypeSignature(functionName, outputType, Vector("input"), description, Vector(argumentType))
