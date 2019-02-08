@@ -47,11 +47,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class RecordStoreVersionCheckTest
 {
     @Inject
-    private TestDirectory testDirectory;
+    protected TestDirectory testDirectory;
     @Inject
-    private FileSystemAbstraction fileSystem;
+    protected FileSystemAbstraction fileSystem;
     @Inject
-    private PageCache pageCache;
+    protected PageCache pageCache;
 
     @Test
     void shouldFailIfFileDoesNotExist()
@@ -72,7 +72,7 @@ class RecordStoreVersionCheckTest
     void shouldReportShortFileDoesNotHaveSpecifiedVersion() throws IOException
     {
         // given
-        File shortFile = metaDataFileContaining( testDirectory.databaseLayout(), fileSystem, "nothing interesting" );
+        metaDataFileContaining( testDirectory.databaseLayout(), fileSystem, "nothing interesting" );
         RecordStoreVersionCheck storeVersionCheck = newStoreVersionCheck();
 
         // when
@@ -129,14 +129,13 @@ class RecordStoreVersionCheckTest
         return shortFile;
     }
 
-    private File metaDataFileContaining( DatabaseLayout layout, FileSystemAbstraction fs, String content ) throws IOException
+    private void metaDataFileContaining( DatabaseLayout layout, FileSystemAbstraction fs, String content ) throws IOException
     {
         File shortFile = layout.metadataStore();
         fs.deleteFile( shortFile );
         try ( OutputStream outputStream = fs.openAsOutputStream( shortFile, false ) )
         {
             outputStream.write( UTF8.encode( content ) );
-            return shortFile;
         }
     }
 
