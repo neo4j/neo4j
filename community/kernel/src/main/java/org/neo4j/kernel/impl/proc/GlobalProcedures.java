@@ -56,7 +56,7 @@ public class GlobalProcedures extends LifecycleAdapter
     private final TypeCheckers typeCheckers;
     private final ComponentRegistry safeComponents = new ComponentRegistry();
     private final ComponentRegistry allComponents = new ComponentRegistry();
-    private final ReflectiveProcedureCompiler compiler;
+    private final ProcedureCompiler compiler;
     private final ThrowingConsumer<GlobalProcedures, ProcedureException> builtin;
     private final File proceduresDirectory;
     private final Log log;
@@ -77,7 +77,7 @@ public class GlobalProcedures extends LifecycleAdapter
         this.proceduresDirectory = proceduresDirectory;
         this.log = log;
         this.typeCheckers = new TypeCheckers();
-        this.compiler = new ReflectiveProcedureCompiler( typeCheckers, safeComponents, allComponents, log, config );
+        this.compiler = new ProcedureCompiler( typeCheckers, safeComponents, allComponents, log, config );
     }
 
     /**

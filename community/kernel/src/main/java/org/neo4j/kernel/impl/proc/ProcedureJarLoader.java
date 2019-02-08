@@ -44,18 +44,18 @@ import org.neo4j.logging.Log;
  * Given the location of a jarfile, reads the contents of the jar and returns compiled {@link CallableProcedure}
  * instances.
  */
-public class ProcedureJarLoader
+class ProcedureJarLoader
 {
-    private final ReflectiveProcedureCompiler compiler;
+    private final ProcedureCompiler compiler;
     private final Log log;
 
-    ProcedureJarLoader( ReflectiveProcedureCompiler compiler, Log log )
+    ProcedureJarLoader( ProcedureCompiler compiler, Log log )
     {
         this.compiler = compiler;
         this.log = log;
     }
 
-    public Callables loadProceduresFromDir( File root ) throws IOException, KernelException
+    Callables loadProceduresFromDir( File root ) throws IOException, KernelException
     {
         if ( root == null || !root.exists() )
         {
@@ -224,7 +224,7 @@ public class ProcedureJarLoader
             functions.addAll( callableFunctions );
         }
 
-        public void addAllAggregationFunctions( List<CallableUserAggregationFunction> callableFunctions )
+        void addAllAggregationFunctions( List<CallableUserAggregationFunction> callableFunctions )
         {
             aggregationFunctions.addAll( callableFunctions );
         }

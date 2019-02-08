@@ -64,9 +64,9 @@ import static org.neo4j.internal.kernel.api.procs.UserFunctionSignature.function
 import static org.neo4j.kernel.api.proc.BasicContext.buildContext;
 
 @SuppressWarnings( "WeakerAccess" )
-public class ReflectiveUserFunctionTest
+public class UserFunctionTest
 {
-    private ReflectiveProcedureCompiler procedureCompiler;
+    private ProcedureCompiler procedureCompiler;
     private ComponentRegistry components;
     private final DependencyResolver dependencyResolver = new Dependencies();
     private final ValueMapper<Object> valueMapper = new DefaultValueMapper( mock( EmbeddedProxySPI.class ) );
@@ -75,7 +75,7 @@ public class ReflectiveUserFunctionTest
     void setUp()
     {
         components = new ComponentRegistry();
-        procedureCompiler = new ReflectiveProcedureCompiler( new TypeCheckers(), components, components,
+        procedureCompiler = new ProcedureCompiler( new TypeCheckers(), components, components,
                 NullLog.getInstance(), ProcedureConfig.DEFAULT );
     }
 
@@ -138,7 +138,7 @@ public class ReflectiveUserFunctionTest
     void shouldRunClassWithMultipleFunctionsDeclared() throws Throwable
     {
         // Given
-        List<CallableUserFunction> compiled = compile( ReflectiveUserFunctionTest.MultiFunction.class );
+        List<CallableUserFunction> compiled = compile( UserFunctionTest.MultiFunction.class );
         CallableUserFunction bananaPeople = compiled.get( 0 );
         CallableUserFunction coolPeople = compiled.get( 1 );
 
@@ -236,7 +236,7 @@ public class ReflectiveUserFunctionTest
     void shouldLoadWhiteListedFunction() throws Throwable
     {
         // Given
-        procedureCompiler = new ReflectiveProcedureCompiler( new TypeCheckers(), components, new ComponentRegistry(),
+        procedureCompiler = new ProcedureCompiler( new TypeCheckers(), components, new ComponentRegistry(),
                 NullLog.getInstance(), new ProcedureConfig( Config.defaults( GraphDatabaseSettings.procedure_whitelist,
                 "org.neo4j.kernel.impl.proc.listCoolPeople" ) ) );
 
@@ -252,7 +252,7 @@ public class ReflectiveUserFunctionTest
     {
         // Given
         Log log = spy(Log.class);
-        procedureCompiler = new ReflectiveProcedureCompiler( new TypeCheckers(), components, new ComponentRegistry(),
+        procedureCompiler = new ProcedureCompiler( new TypeCheckers(), components, new ComponentRegistry(),
                 log, new ProcedureConfig( Config.defaults( GraphDatabaseSettings.procedure_whitelist, "WrongName" ) ) );
 
         List<CallableUserFunction> method = compile( SingleReadOnlyFunction.class );
@@ -265,7 +265,7 @@ public class ReflectiveUserFunctionTest
     {
         // Given
         Log log = spy(Log.class);
-        procedureCompiler = new ReflectiveProcedureCompiler( new TypeCheckers(), components, new ComponentRegistry(),
+        procedureCompiler = new ProcedureCompiler( new TypeCheckers(), components, new ComponentRegistry(),
                 log, new ProcedureConfig( Config.defaults( GraphDatabaseSettings.procedure_whitelist, "" ) ) );
 
         List<CallableUserFunction> method = compile( SingleReadOnlyFunction.class );
@@ -278,7 +278,7 @@ public class ReflectiveUserFunctionTest
     {
         // Given
         Log log = mock(Log.class);
-        ReflectiveProcedureCompiler procedureCompiler = new ReflectiveProcedureCompiler( new TypeCheckers(), components,
+        ProcedureCompiler procedureCompiler = new ProcedureCompiler( new TypeCheckers(), components,
                 new ComponentRegistry(), log, ProcedureConfig.DEFAULT );
 
         // When

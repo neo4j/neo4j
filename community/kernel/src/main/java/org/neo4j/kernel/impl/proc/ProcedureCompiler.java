@@ -59,7 +59,7 @@ import static org.neo4j.graphdb.factory.GraphDatabaseSettings.procedure_unrestri
 /**
  * Handles converting a class into one or more callable {@link CallableProcedure}.
  */
-class ReflectiveProcedureCompiler
+class ProcedureCompiler
 {
     private final ProcedureOutputSignatureCompiler outputMappers;
     private final MethodSignatureCompiler inputSignatureDeterminer;
@@ -70,7 +70,7 @@ class ReflectiveProcedureCompiler
     private final ProcedureConfig config;
     private final NamingRestrictions restrictions;
 
-    ReflectiveProcedureCompiler( TypeCheckers typeCheckers, ComponentRegistry safeComponents,
+    ProcedureCompiler( TypeCheckers typeCheckers, ComponentRegistry safeComponents,
             ComponentRegistry allComponents, Log log, ProcedureConfig config )
     {
         this(
@@ -81,10 +81,10 @@ class ReflectiveProcedureCompiler
                 log,
                 typeCheckers,
                 config,
-                ReflectiveProcedureCompiler::rejectEmptyNamespace );
+                ProcedureCompiler::rejectEmptyNamespace );
     }
 
-    private ReflectiveProcedureCompiler(
+    private ProcedureCompiler(
             MethodSignatureCompiler inputSignatureCompiler,
             ProcedureOutputSignatureCompiler outputMappers,
             FieldInjections safeFieldInjections,
@@ -330,7 +330,7 @@ class ReflectiveProcedureCompiler
     }
 
     private CallableUserAggregationFunction compileAggregationFunction( Class<?> definition, Method create,
-            QualifiedName funcName ) throws ProcedureException, IllegalAccessException
+            QualifiedName funcName ) throws ProcedureException
     {
         restrictions.verify( funcName );
 
@@ -505,9 +505,9 @@ class ReflectiveProcedureCompiler
         return new QualifiedName( namespace, name );
     }
 
-    ReflectiveProcedureCompiler withoutNamingRestrictions()
+    ProcedureCompiler withoutNamingRestrictions()
     {
-        return new ReflectiveProcedureCompiler(
+        return new ProcedureCompiler(
                 inputSignatureDeterminer,
                 outputMappers,
                 safeFieldInjections,

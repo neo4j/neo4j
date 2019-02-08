@@ -64,7 +64,7 @@ import static org.neo4j.values.storable.Values.stringValue;
 @SuppressWarnings( "WeakerAccess" )
 public class ResourceInjectionTest
 {
-    private ReflectiveProcedureCompiler compiler;
+    private ProcedureCompiler compiler;
     private final ResourceTracker resourceTracker = new StubResourceManager();
 
     private final DependencyResolver dependencyResolver = new Dependencies();
@@ -90,7 +90,7 @@ public class ResourceInjectionTest
         allComponents.register( MyAwesomeAPI.class, ctx -> new MyAwesomeAPI() );
         allComponents.register( MyUnsafeAPI.class, ctx -> new MyUnsafeAPI() );
 
-        compiler = new ReflectiveProcedureCompiler( new TypeCheckers(), safeComponents, allComponents, log,
+        compiler = new ProcedureCompiler( new TypeCheckers(), safeComponents, allComponents, log,
                 ProcedureConfig.DEFAULT );
     }
 
@@ -201,7 +201,7 @@ public class ResourceInjectionTest
     }
 
     @Test
-    void shouldFailNicelyWhenAggregationFunctionUsesUnknownAPI() throws Throwable
+    void shouldFailNicelyWhenAggregationFunctionUsesUnknownAPI()
     {
         ProcedureException exception =
                 assertThrows( ProcedureException.class, () -> compiler.compileAggregationFunction( AggregationFunctionWithUnknownAPI.class ) );

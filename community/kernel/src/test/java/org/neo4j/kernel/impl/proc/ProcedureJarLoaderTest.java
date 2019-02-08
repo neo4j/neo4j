@@ -84,7 +84,7 @@ public class ProcedureJarLoaderTest
     private Log log = mock( Log.class );
     private final DependencyResolver dependencyResolver = new Dependencies();
     private final ValueMapper<Object> valueMapper = new DefaultValueMapper( mock( EmbeddedProxySPI.class ) );
-    private final ProcedureJarLoader jarloader = new ProcedureJarLoader( new ReflectiveProcedureCompiler( new TypeCheckers(), new ComponentRegistry(),
+    private final ProcedureJarLoader jarloader = new ProcedureJarLoader( new ProcedureCompiler( new TypeCheckers(), new ComponentRegistry(),
                     registryWithUnsafeAPI(), log, procedureConfig() ), NullLog.getInstance() );
     private final ResourceTracker resourceTracker = new StubResourceManager();
 
@@ -244,7 +244,7 @@ public class ProcedureJarLoaderTest
         AssertableLogProvider logProvider = new AssertableLogProvider( true );
 
         ProcedureJarLoader jarloader = new ProcedureJarLoader(
-                new ReflectiveProcedureCompiler( new TypeCheckers(), new ComponentRegistry(), registryWithUnsafeAPI(), log, procedureConfig() ),
+                new ProcedureCompiler( new TypeCheckers(), new ComponentRegistry(), registryWithUnsafeAPI(), log, procedureConfig() ),
                 logProvider.getLog( ProcedureJarLoader.class ) );
 
         // when
@@ -263,7 +263,7 @@ public class ProcedureJarLoaderTest
         AssertableLogProvider logProvider = new AssertableLogProvider( true );
 
         ProcedureJarLoader jarloader = new ProcedureJarLoader(
-                new ReflectiveProcedureCompiler( new TypeCheckers(), new ComponentRegistry(), registryWithUnsafeAPI(), log, procedureConfig() ),
+                new ProcedureCompiler( new TypeCheckers(), new ComponentRegistry(), registryWithUnsafeAPI(), log, procedureConfig() ),
                 logProvider.getLog( ProcedureJarLoader.class ) );
 
         // when
@@ -276,7 +276,7 @@ public class ProcedureJarLoaderTest
     {
         // given
         ProcedureJarLoader jarloader = new ProcedureJarLoader(
-                new ReflectiveProcedureCompiler( new TypeCheckers(), new ComponentRegistry(), registryWithUnsafeAPI(), log, procedureConfig() ),
+                new ProcedureCompiler( new TypeCheckers(), new ComponentRegistry(), registryWithUnsafeAPI(), log, procedureConfig() ),
                 NullLog.getInstance() );
 
         // when
