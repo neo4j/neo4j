@@ -165,7 +165,7 @@ public class FullCheckIntegrationTest
     private int label2;
     private int label3;
     private int label4;
-    private int  draconian;
+    private int draconian;
     private int key1;
     private int key2;
     private int mandatory;
