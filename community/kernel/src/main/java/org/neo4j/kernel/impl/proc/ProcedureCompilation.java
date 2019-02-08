@@ -389,6 +389,82 @@ public final class ProcedureCompilation
         }
     }
 
+    /**
+     * Generates code for a user-defined aggregation function.
+     * <p>
+     * Given a user-defined aggregation function defined by
+     *
+     * <pre>
+     *     class MyClass {
+     *       {@literal @}Context
+     *        public Log log;
+
+     *       {@literal @}UserAggregationFunction
+     *        public Adder create() {
+     *            return new Adder;
+     *        }
+     *     }
+     *
+     *     class Adder {
+     *       private long sum;
+     *       {@literal @}UserAggregationUpdate
+     *       public void update(long in) {
+     *           sum += in;
+     *       }
+     *       {@literal @}UserAggregationResult
+     *       public long result() {
+     *         return sum;
+     *       }
+     *    }
+     *     }
+     * </pre>
+     * <p>
+     * we will generate two classe looking something like
+     *
+     * <pre>
+     *     class Generated implements CallableUserAggregationFunction {
+     *         public static UserFunctionSignature SIGNATURE;
+     *         public static MyClass USER_CLASS;
+     *         public static FieldSetter SETTER_0;
+     *
+     *         public UserAggregator create(Context ctx) {
+     *              try {
+     *                  USER_CLASS.log = (Log) SETTER_0.get(ctx);
+     *                  return new GeneratedAdder(USER_CLASS.create());
+     *              } catch (Throwable T) {
+     *                  throw new ProcedureException([appropriate error msg], T);
+     *              }
+     *         }
+     *
+     *         public UserFunctionSignature signature() {return SIGNATURE;}
+     *     }
+     *     class GeneratedAdder implements UserAggregator {
+     *       private Adder adder;
+     *
+     *       GeneratedAdder(Adder adder) {
+     *         this.adder = adder;
+     *       }
+     *
+     *       void update(AnyValue[] in) {
+     *          adder.update(((NumberValue) in).longValue());
+     *       }
+     *
+     *       AnyValue result() {
+     *          return adder.result(Values.longValue(adder.result());
+     *       }
+     *     }
+     * </pre>
+     * <p>
+     * where the static fields are set once during loading via reflection.
+     *
+     * @param signature the signature of the user-defined function
+     * @param fieldSetters the fields to set before each call.
+     * @param create the method that creates the aggregator
+     * @param update the update method of the aggregator
+     * @param result the result method of the aggregator
+     * @return a CallableUserFunction delegating to the underlying user-defined function.
+     * @throws ProcedureException if something went wrong when compiling the user-defined function.
+     */
     static CallableUserAggregationFunction compileAggregation(
             UserFunctionSignature signature, List<FieldSetter> fieldSetters,
             Method create, Method update, Method result ) throws ProcedureException

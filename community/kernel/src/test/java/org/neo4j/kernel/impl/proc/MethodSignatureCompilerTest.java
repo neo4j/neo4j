@@ -37,6 +37,7 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+@SuppressWarnings( "WeakerAccess" )
 class MethodSignatureCompilerTest
 {
     public static class MyOutputRecord
@@ -85,7 +86,6 @@ class MethodSignatureCompilerTest
         // THen
         assertThat(signature, contains( FieldSignature.inputField( "name", Neo4jTypes.NTString ) ));
     }
-
 
     @Test
     void shouldGiveHelpfulErrorOnUnmappable() throws Throwable
