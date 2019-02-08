@@ -273,7 +273,7 @@ public class SchemaCacheTest
         Set<ConstraintDescriptor> listed = asSet( cache.constraintsForSchema( rule3.schema() ) );
 
         // Then
-        assertEquals( singleton( rule3 ), listed );
+        assertEquals( singleton( rule3.getConstraintDescriptor() ), listed );
     }
 
     @Test

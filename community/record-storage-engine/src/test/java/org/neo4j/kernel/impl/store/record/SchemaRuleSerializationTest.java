@@ -495,7 +495,7 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
 
         // THEN
         assertThat( deserialized.getId(), equalTo( ruleId ) );
-        assertThat( deserialized, equalTo( constraint ) );
+        assertThat( deserialized.getConstraintDescriptor(), equalTo( constraint ) );
         assertThat( deserialized.schema(), equalTo( constraint.schema() ) );
         assertThat( deserialized.ownedIndexReference(), equalTo( ownedIndexId ) );
         assertThat( deserialized.getName(), is( name ) );
@@ -516,7 +516,7 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
 
         // THEN
         assertThat( deserialized.getId(), equalTo( ruleId ) );
-        assertThat( deserialized, equalTo( constraint ) );
+        assertThat( deserialized.getConstraintDescriptor(), equalTo( constraint ) );
         assertThat( deserialized.schema(), equalTo( constraint.schema() ) );
         assertThat( deserialized.ownedIndexReference(), equalTo( ownedIndexId ) );
         assertThat( deserialized.getName(), is( name ) );
@@ -536,7 +536,7 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
 
         // THEN
         assertThat( deserialized.getId(), equalTo( ruleId ) );
-        assertThat( deserialized, equalTo( constraint ) );
+        assertThat( deserialized.getConstraintDescriptor(), equalTo( constraint ) );
         assertThat( deserialized.schema(), equalTo( constraint.schema() ) );
         assertException( deserialized::ownedIndexReference, IllegalStateException.class );
         assertThat( deserialized.getName(), is( name ) );
@@ -556,7 +556,7 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
 
         // THEN
         assertThat( deserialized.getId(), equalTo( ruleId ) );
-        assertThat( deserialized, equalTo( constraint ) );
+        assertThat( deserialized.getConstraintDescriptor(), equalTo( constraint ) );
         assertThat( deserialized.schema(), equalTo( constraint.schema() ) );
         assertException( deserialized::ownedIndexReference, IllegalStateException.class );
         assertThat( deserialized.getName(), is( name ) );

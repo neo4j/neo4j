@@ -394,7 +394,7 @@ public class SchemaCache
             if ( constraintRuleById.containsKey( id ) )
             {
                 ConstraintRule rule = constraintRuleById.remove( id );
-                constraints.remove( rule );
+                constraints.remove( rule.getConstraintDescriptor() );
             }
             else if ( indexDescriptorById.containsKey( id ) )
             {

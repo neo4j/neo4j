@@ -93,10 +93,10 @@ public class ConstraintRule implements SchemaRule, StorageConstraintReference
     @Override
     public boolean equals( Object o )
     {
-        if ( o instanceof ConstraintDescriptor )
+        if ( o instanceof ConstraintRule )
         {
-            ConstraintDescriptor that = (ConstraintDescriptor) o;
-            return this.descriptor.equals( that );
+            ConstraintRule that = (ConstraintRule) o;
+            return this.descriptor.equals( that.descriptor );
         }
         return false;
     }
