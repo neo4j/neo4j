@@ -32,7 +32,7 @@ import java.util.Map;
  * The methods here are not very optimized and are deliberately simple. If you find yourself using these method
  * for parsing big json documents you should probably rethink your choice.
  */
-public final class ParseUtil
+final class ParseUtil
 {
     private ParseUtil()
     {

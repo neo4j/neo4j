@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.proc;
 
-import java.lang.invoke.MethodHandle;
-import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.LinkedList;
@@ -30,6 +28,8 @@ import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.ComponentInjectionException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.procedure.Context;
+
+import static java.lang.reflect.Modifier.isPublic;
 
 /**
  * Injects annotated fields with appropriate values.
@@ -87,26 +87,23 @@ class FieldInjections
 
     private FieldSetter createInjector( Class<?> cls, Field field ) throws ProcedureException
     {
-        try
-        {
-            ComponentRegistry.Provider<?> provider = components.providerFor( field.getType() );
-            if ( provider == null )
-            {
-                throw new ComponentInjectionException( Status.Procedure.ProcedureRegistrationFailed,
-                        "Unable to set up injection for procedure `%s`, the field `%s` " +
-                        "has type `%s` which is not a known injectable component.",
-                            cls.getSimpleName(), field.getName(), field.getType() );
-            }
 
-            MethodHandle setter = MethodHandles.lookup().unreflectSetter( field );
-            return new FieldSetter( field, setter, provider );
+        ComponentRegistry.Provider<?> provider = components.providerFor( field.getType() );
+        if ( provider == null )
+        {
+            throw new ComponentInjectionException( Status.Procedure.ProcedureRegistrationFailed,
+                    "Unable to set up injection for procedure `%s`, the field `%s` " +
+                    "has type `%s` which is not a known injectable component.",
+                    cls.getSimpleName(), field.getName(), field.getType() );
         }
-        catch ( IllegalAccessException e )
+        if ( !isPublic( field.getModifiers() ) )
         {
             throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed,
-                    "Unable to set up injection for `%s`, failed to access field `%s`: %s",
-                    e, cls.getSimpleName(), field.getName(), e.getMessage() );
+                    "Unable to set up injection for `%s`, failed to access field `%s", cls.getSimpleName(),
+                    field.getName() );
         }
+
+        return new FieldSetter( field, provider );
     }
 
     private void assertValidForInjection( Class<?> cls, Field field ) throws ProcedureException
@@ -120,7 +117,7 @@ class FieldInjections
                     field.getName(), cls.getSimpleName() );
         }
 
-        if ( !Modifier.isPublic( field.getModifiers() ) || Modifier.isFinal( field.getModifiers() ) )
+        if ( !isPublic( field.getModifiers() ) || Modifier.isFinal( field.getModifiers() ) )
         {
             throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed,
                     "Field `%s` on `%s` must be non-final and public.", field.getName(), cls.getSimpleName() );

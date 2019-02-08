@@ -28,6 +28,7 @@ import org.neo4j.procedure.Context;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
+import static org.junit.Assert.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -70,28 +71,6 @@ class FieldInjectionsTest
     }
 
     @Test
-    void inheritanceIsAllowed() throws Throwable
-    {
-        // Given
-        ComponentRegistry components = new ComponentRegistry();
-        components.register( int.class, ctx -> 1337 );
-        FieldInjections injections = new FieldInjections( components );
-
-        // When
-        List<FieldSetter> setters = injections.setters( ChildProcedure.class );
-
-        // Then
-        ChildProcedure childProcedure = new ChildProcedure();
-        for ( FieldSetter setter : setters )
-        {
-            setter.apply( null, childProcedure );
-        }
-
-        assertEquals( 1337, childProcedure.childField );
-        assertEquals( 1337, childProcedure.parentField );
-    }
-
-    @Test
     void syntheticsAllowed() throws Throwable
     {
         // Given
@@ -106,10 +85,8 @@ class FieldInjectionsTest
         Outer.ClassWithSyntheticField syntheticField = new Outer().classWithSyntheticField();
         for ( FieldSetter setter : setters )
         {
-            setter.apply( null, syntheticField );
+            assertFalse( setter.field().isSynthetic() );
         }
-
-        assertEquals( 1337, syntheticField.innerField );
     }
 
     public static class ProcedureWithNonInjectedMemberFields

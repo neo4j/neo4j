@@ -101,7 +101,7 @@ public class ProcedureOutputSignatureCompilerTest
     {
         ProcedureException exception = assertThrows( ProcedureException.class, () -> signatures( UnmappableRecord.class ) );
         assertThat( exception.getMessage(), startsWith( "Field `wat` in record `UnmappableRecord` cannot be converted to a Neo4j type: " +
-                "Don't know how to map `org.neo4j.kernel.impl.proc.OutputMappersTest$UnmappableRecord`" ) );
+                "Don't know how to map `org.neo4j.kernel.impl.proc.ProcedureOutputSignatureCompilerTest$UnmappableRecord`" ) );
     }
 
     @Test
@@ -118,7 +118,7 @@ public class ProcedureOutputSignatureCompilerTest
         ProcedureException exception = assertThrows( ProcedureException.class, () -> signatures( RecordWithNonStringKeyMap.class ) );
         assertThat( exception.getMessage(), equalTo( "Field `wat` in record `RecordWithNonStringKeyMap` cannot be converted " +
                 "to a Neo4j type: Maps are required to have `String` keys - but this map " +
-                "has `org.neo4j.kernel.impl.proc.OutputMappersTest$RecordWithNonStringKeyMap` keys." ) );
+                "has `org.neo4j.kernel.impl.proc.ProcedureOutputSignatureCompilerTest$RecordWithNonStringKeyMap` keys." ) );
     }
 
     @Test

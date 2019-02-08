@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.proc;
 
+import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
@@ -32,6 +33,7 @@ import org.neo4j.internal.kernel.api.procs.Neo4jTypes;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
+import static org.junit.Assert.assertEquals;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTAny;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTBoolean;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTFloat;
@@ -123,6 +125,16 @@ public class TypeCheckersTest
                 new Object[]{Double.class, NTFloat, Double.MIN_VALUE, Double.MIN_VALUE},
                 new Object[]{Double.class, NTFloat, Double.MAX_VALUE, Double.MAX_VALUE}
         );
+    }
+
+    @Test
+    public void shouldDetectCorrectType() throws Throwable
+    {
+        // When
+        Neo4jTypes.AnyType type = new TypeCheckers().checkerFor( javaClass ).type();
+
+        // Then
+        assertEquals( neoType, type );
     }
 
     private static HashMap<String,Object> getKMap()

@@ -22,8 +22,6 @@ package org.neo4j.kernel.impl.proc;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.lang.invoke.MethodHandle;
-import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
@@ -528,11 +526,10 @@ public class ProcedureCompilationTest
     }
 
     private <T> FieldSetter createSetter( Class<?> owner, String field, ComponentRegistry.Provider<T> provider )
-            throws NoSuchFieldException, IllegalAccessException
+            throws NoSuchFieldException
     {
         Field declaredField = owner.getDeclaredField( field );
-        MethodHandle setter = MethodHandles.lookup().unreflectSetter( declaredField );
-        return new FieldSetter( declaredField, setter, provider );
+        return new FieldSetter( declaredField, provider );
     }
 
     private Method method( String name, Class<?>... types )

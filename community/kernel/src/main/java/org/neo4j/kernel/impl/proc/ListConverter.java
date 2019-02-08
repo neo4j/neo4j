@@ -34,7 +34,7 @@ public class ListConverter implements Function<String,DefaultParameterValue>
     private final Type type;
     private final Neo4jTypes.AnyType neoType;
 
-    public ListConverter( Type type, Neo4jTypes.AnyType neoType )
+    ListConverter( Type type, Neo4jTypes.AnyType neoType )
     {
         this.type = type;
         this.neoType = neoType;

@@ -77,7 +77,7 @@ public class TypeCheckers
     private static final DefaultValueConverter TO_BOOLEAN = new DefaultValueConverter( NTBoolean, Boolean.class, s -> ntBoolean( parseBoolean( s ) ) );
     private static final DefaultValueConverter TO_MAP = new DefaultValueConverter( NTMap, Map.class, new MapConverter() );
     private static final DefaultValueConverter TO_LIST = toList( TO_ANY, Object.class );
-    private final DefaultValueConverter TO_BYTEARRAY = new DefaultValueConverter( NTByteArray, byte[].class, new ByteArrayConverter() );
+    private final DefaultValueConverter TO_BYTE_ARRAY = new DefaultValueConverter( NTByteArray, byte[].class, new ByteArrayConverter() );
 
     private final Map<Type,DefaultValueConverter> javaToNeo = new HashMap<>();
 
@@ -107,7 +107,7 @@ public class TypeCheckers
         registerType( Map.class, TO_MAP );
         registerType( List.class, TO_LIST );
         registerType( Object.class, TO_ANY );
-        registerType( byte[].class, TO_BYTEARRAY );
+        registerType( byte[].class, TO_BYTE_ARRAY );
         registerType( ZonedDateTime.class, new DefaultValueConverter( NTDateTime, ZonedDateTime.class ) );
         registerType( LocalDateTime.class, new DefaultValueConverter( NTLocalDateTime, LocalDateTime.class ) );
         registerType( LocalDate.class, new DefaultValueConverter( NTDate, LocalDate.class ) );
