@@ -100,8 +100,8 @@ public abstract class SpaceFillingCurve
             scalingFactor[dim] = this.width / range.getWidth( dim );
         }
         this.valueWidth = 1L << maxLevel * nbrDim;
-        this.initialNormMask = (( 1L << nbrDim ) - 1) << (maxLevel - 1) * nbrDim;
-        this.quadFactor = 1 << nbrDim   ;
+        this.initialNormMask = ((1L << nbrDim) - 1) << (maxLevel - 1) * nbrDim;
+        this.quadFactor = 1 << nbrDim;
     }
 
     public int getMaxLevel()
@@ -354,21 +354,6 @@ public abstract class SpaceFillingCurve
             monitor.addRangeAtDepth( depth );
             monitor.addToCoveredArea( currentExtent.getArea() );
         }
-    }
-
-    /**
-     * Bit index describing the in which quadrant an npoint corresponds to
-     */
-    private int[] bitValues( int npoint )
-    {
-        int[] bitValues = new int[nbrDim];
-
-        for ( int dim = 0; dim < nbrDim; dim++ )
-        {
-            int shift = nbrDim - dim - 1;
-            bitValues[dim] = (npoint & (1 << shift)) >> shift;
-        }
-        return bitValues;
     }
 
     /**
