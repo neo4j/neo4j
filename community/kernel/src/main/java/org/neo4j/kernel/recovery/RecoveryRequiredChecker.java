@@ -31,11 +31,8 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
-import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.monitoring.Monitors;
-import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.storageengine.api.StorageEngineFactory;
-import org.neo4j.storageengine.api.StoreVersionCheck;
 
 import static org.neo4j.kernel.recovery.RecoveryStartInformationProvider.NO_MONITOR;
 
@@ -66,10 +63,7 @@ public class RecoveryRequiredChecker
 
     boolean isRecoveryRequiredAt( DatabaseLayout databaseLayout, LogTailScanner tailScanner )
     {
-        Dependencies dependencies = new Dependencies();
-        dependencies.satisfyDependencies( fs, databaseLayout, pageCache, NullLogService.getInstance(), config );
-        StoreVersionCheck versionCheck = storageEngineFactory.versionCheck( dependencies );
-        if ( !versionCheck.storeVersion().isPresent() )
+        if ( !storageEngineFactory.storageExists( fs, pageCache, databaseLayout ) )
         {
             // There was no store
             return false;
