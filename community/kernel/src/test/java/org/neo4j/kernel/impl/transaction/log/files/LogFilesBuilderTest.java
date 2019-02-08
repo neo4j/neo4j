@@ -34,6 +34,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
 import org.neo4j.kernel.impl.util.Dependencies;
+import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.rule.TestDirectory;
@@ -70,14 +71,17 @@ class LogFilesBuilderTest
     @Test
     void buildActiveFilesOnlyContext() throws IOException
     {
-        TransactionLogFilesContext context =
-                activeFilesBuilder( testDirectory.databaseLayout(), fileSystem, pageCache ).withLogEntryReader( logEntryReader() ).buildContext();
+        TransactionLogFilesContext context = activeFilesBuilder( testDirectory.databaseLayout(), fileSystem, pageCache )
+                .withLogEntryReader( logEntryReader() )
+                .withLogVersionRepository( new SimpleLogVersionRepository() )
+                .withTransactionIdStore( new SimpleTransactionIdStore() )
+                .buildContext();
 
         assertEquals( fileSystem, context.getFileSystem() );
         assertNotNull( context.getLogEntryReader() );
         assertSame( LogFileCreationMonitor.NO_MONITOR, context.getLogFileCreationMonitor() );
         assertEquals( Long.MAX_VALUE, context.getRotationThreshold().get() );
-        assertEquals( 0, context.getLastCommittedTransactionId() );
+        assertEquals( TransactionIdStore.BASE_TX_ID, context.getLastCommittedTransactionId() );
         assertEquals( 0, context.getLogVersionRepository().getCurrentLogVersion() );
     }
 

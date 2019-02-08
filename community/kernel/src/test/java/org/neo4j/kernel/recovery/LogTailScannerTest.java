@@ -36,6 +36,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
+import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.FlushablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogPositionMarker;
@@ -52,6 +53,7 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.kernel.recovery.LogTailScanner.LogTailInformation;
 import org.neo4j.storageengine.api.LogVersionRepository;
+import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
@@ -80,6 +82,7 @@ public class LogTailScannerTest
     private final int endLogVersion;
     private final LogEntryVersion latestLogEntryVersion = LogEntryVersion.CURRENT;
     private LogVersionRepository logVersionRepository;
+    private TransactionIdStore transactionIdStore;
 
     public LogTailScannerTest( Integer startLogVersion, Integer endLogVersion )
     {
@@ -97,9 +100,11 @@ public class LogTailScannerTest
     public void setUp() throws IOException
     {
         logVersionRepository = new SimpleLogVersionRepository();
+        transactionIdStore = new SimpleTransactionIdStore();
         logFiles = LogFilesBuilder
                 .activeFilesBuilder( testDirectory.databaseLayout(), fsRule, pageCacheRule.getPageCache( fsRule ) )
                 .withLogVersionRepository( logVersionRepository )
+                .withTransactionIdStore( transactionIdStore )
                 .withLogEntryReader( logEntryReader() )
                 .build();
         tailScanner = new LogTailScanner( logFiles, reader, monitors );

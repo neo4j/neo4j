@@ -22,8 +22,12 @@ package org.neo4j.kernel.diagnostics.providers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.io.IOException;
+import java.util.stream.Stream;
+
 import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseManager;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
@@ -31,9 +35,11 @@ import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.internal.SimpleLogService;
 import org.neo4j.storageengine.api.StorageEngine;
+import org.neo4j.storageengine.api.StorageEngineFactory;
 
 import static java.util.Collections.singletonList;
 import static java.util.Optional.of;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -45,16 +51,19 @@ class DbmsDiagnosticsManagerTest
     private AssertableLogProvider logProvider;
     private DatabaseManager databaseManager;
     private StorageEngine storageEngine;
+    private StorageEngineFactory storageEngineFactory;
     private Database defaultDatabase;
 
     @BeforeEach
-    void setUp()
+    void setUp() throws IOException
     {
         logProvider = new AssertableLogProvider();
         databaseManager = mock( DatabaseManager.class );
 
         storageEngine = mock( StorageEngine.class );
+        storageEngineFactory = mock( StorageEngineFactory.class );
         defaultDatabase = prepareDatabase();
+        when( storageEngineFactory.listStorageFiles( any(), any() ) ).thenReturn( Stream.empty() );
 
         Dependencies dependencies = new Dependencies();
         dependencies.satisfyDependency( Config.defaults() );
@@ -128,6 +137,8 @@ class DbmsDiagnosticsManagerTest
         Dependencies databaseDependencies = new Dependencies();
         databaseDependencies.satisfyDependency( DatabaseInfo.COMMUNITY );
         databaseDependencies.satisfyDependency( storageEngine );
+        databaseDependencies.satisfyDependency( storageEngineFactory );
+        databaseDependencies.satisfyDependency( new DefaultFileSystemAbstraction() );
         when( database.getDependencyResolver() ).thenReturn( databaseDependencies );
         when( database.getDatabaseName() ).thenReturn( DbmsDiagnosticsManagerTest.DEFAULT_DATABASE_NAME );
         return database;
