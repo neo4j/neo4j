@@ -90,7 +90,7 @@ public class ResourceInjectionTest
         allComponents.register( MyAwesomeAPI.class, ctx -> new MyAwesomeAPI() );
         allComponents.register( MyUnsafeAPI.class, ctx -> new MyUnsafeAPI() );
 
-        compiler = new ReflectiveProcedureCompiler( new TypeMappers(), safeComponents, allComponents, log,
+        compiler = new ReflectiveProcedureCompiler( new TypeCheckers(), safeComponents, allComponents, log,
                 ProcedureConfig.DEFAULT );
     }
 

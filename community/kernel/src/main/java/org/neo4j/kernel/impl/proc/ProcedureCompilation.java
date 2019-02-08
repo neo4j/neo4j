@@ -552,7 +552,7 @@ public final class ProcedureCompilation
             {
                 method.assign( outputType, "casted", cast( outputType, method.load( "in" ) ) );
                 //we know all fields are properly typed
-                List<Field> fields = OutputMappers.instanceFields( outputType );
+                List<Field> fields = ProcedureOutputSignatureCompiler.instanceFields( outputType );
                 Expression[] mapped = new Expression[fields.size()];
                 for ( int i = 0; i < fields.size(); i++ )
                 {

@@ -53,7 +53,7 @@ import org.neo4j.values.AnyValue;
 public class GlobalProcedures extends LifecycleAdapter
 {
     private final ProcedureRegistry registry = new ProcedureRegistry();
-    private final TypeMappers typeMappers;
+    private final TypeCheckers typeCheckers;
     private final ComponentRegistry safeComponents = new ComponentRegistry();
     private final ComponentRegistry allComponents = new ComponentRegistry();
     private final ReflectiveProcedureCompiler compiler;
@@ -76,8 +76,8 @@ public class GlobalProcedures extends LifecycleAdapter
         this.builtin = builtin;
         this.proceduresDirectory = proceduresDirectory;
         this.log = log;
-        this.typeMappers = new TypeMappers();
-        this.compiler = new ReflectiveProcedureCompiler( typeMappers, safeComponents, allComponents, log, config );
+        this.typeCheckers = new TypeCheckers();
+        this.compiler = new ReflectiveProcedureCompiler( typeCheckers, safeComponents, allComponents, log, config );
     }
 
     /**
@@ -231,7 +231,7 @@ public class GlobalProcedures extends LifecycleAdapter
      */
     public void registerType( Class<?> javaClass, Neo4jTypes.AnyType type )
     {
-        typeMappers.registerType( javaClass, new TypeMappers.DefaultValueConverter( type, javaClass ) );
+        typeCheckers.registerType( javaClass, new TypeCheckers.DefaultValueConverter( type, javaClass ) );
     }
 
     /**

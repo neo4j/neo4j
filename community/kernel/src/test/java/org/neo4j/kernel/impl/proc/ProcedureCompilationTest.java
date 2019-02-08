@@ -770,7 +770,7 @@ public class ProcedureCompilationTest
         methodHashMap.put( TemporalAmount.class, method( "testMethod", TemporalAmount.class ) );
 
         //safety check, make sure we are testing all types
-        Set<Type> types = new TypeMappers().allTypes();
+        Set<Type> types = new TypeCheckers().allTypes();
         for ( Type type : types )
         {
             assertTrue( methodHashMap.containsKey( type ), type + " is not being tested!" );

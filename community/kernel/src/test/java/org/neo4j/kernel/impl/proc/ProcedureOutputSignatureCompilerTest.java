@@ -21,24 +21,22 @@ package org.neo4j.kernel.impl.proc;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
 import java.util.Map;
 
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
-import org.neo4j.kernel.impl.proc.OutputMappers.OutputMapper;
+import org.neo4j.internal.kernel.api.procs.FieldSignature;
 
-import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.internal.kernel.api.procs.FieldSignature.outputField;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTString;
-import static org.neo4j.values.storable.Values.stringValue;
 
 @SuppressWarnings( "WeakerAccess" )
-public class OutputMappersTest
+public class ProcedureOutputSignatureCompilerTest
 {
     public static class SingleStringFieldRecord
     {
@@ -87,47 +85,12 @@ public class OutputMappersTest
     }
 
     @Test
-    void shouldMapSimpleRecordWithString() throws Throwable
-    {
-        // When
-        OutputMapper mapper = mapper( SingleStringFieldRecord.class );
-
-        // Then
-        assertThat(
-                mapper.signature(),
-                contains( outputField( "name", NTString ) )
-        );
-        assertThat(
-                asList( mapper.apply( new SingleStringFieldRecord( "hello, world!" ) ) ),
-                contains( stringValue( "hello, world!" ) )
-        );
-    }
-
-    @Test
-    void shouldSkipStaticFields() throws Throwable
-    {
-        // When
-        OutputMapper mapper = mapper( RecordWithStaticFields.class );
-
-        // Then
-        assertThat(
-                mapper.signature(),
-                contains( outputField( "includeMe", NTString ) )
-        );
-        assertThat(
-                asList( mapper.apply( new RecordWithStaticFields( "hello, world!" ) ) ),
-                contains( stringValue( "hello, world!" ) )
-        );
-    }
-
-    @Test
     void shouldNoteDeprecatedFields() throws Exception
     {
         // when
-        OutputMapper mapper = mapper( RecordWithDeprecatedFields.class );
 
         // then
-        assertThat( mapper.signature(), containsInAnyOrder(
+        assertThat( signatures( RecordWithDeprecatedFields.class ), containsInAnyOrder(
                 outputField( "deprecated", NTString, true ),
                 outputField( "alsoDeprecated", NTString, true ),
                 outputField( "replacement", NTString, false ) ) );
@@ -136,7 +99,7 @@ public class OutputMappersTest
     @Test
     void shouldGiveHelpfulErrorOnUnmappable()
     {
-        ProcedureException exception = assertThrows( ProcedureException.class, () -> mapper( UnmappableRecord.class ) );
+        ProcedureException exception = assertThrows( ProcedureException.class, () -> signatures( UnmappableRecord.class ) );
         assertThat( exception.getMessage(), startsWith( "Field `wat` in record `UnmappableRecord` cannot be converted to a Neo4j type: " +
                 "Don't know how to map `org.neo4j.kernel.impl.proc.OutputMappersTest$UnmappableRecord`" ) );
     }
@@ -144,7 +107,7 @@ public class OutputMappersTest
     @Test
     void shouldGiveHelpfulErrorOnPrivateField()
     {
-        ProcedureException exception = assertThrows( ProcedureException.class, () -> mapper( RecordWithPrivateField.class ) );
+        ProcedureException exception = assertThrows( ProcedureException.class, () -> signatures( RecordWithPrivateField.class ) );
         assertThat( exception.getMessage(), startsWith( "Field `wat` in record `RecordWithPrivateField` cannot be accessed. " +
                 "Please ensure the field is marked as `public`." ) );
     }
@@ -152,21 +115,21 @@ public class OutputMappersTest
     @Test
     void shouldGiveHelpfulErrorOnMapWithNonStringKeyMap()
     {
-        ProcedureException exception = assertThrows( ProcedureException.class, () -> mapper( RecordWithNonStringKeyMap.class ) );
+        ProcedureException exception = assertThrows( ProcedureException.class, () -> signatures( RecordWithNonStringKeyMap.class ) );
         assertThat( exception.getMessage(), equalTo( "Field `wat` in record `RecordWithNonStringKeyMap` cannot be converted " +
                 "to a Neo4j type: Maps are required to have `String` keys - but this map " +
                 "has `org.neo4j.kernel.impl.proc.OutputMappersTest$RecordWithNonStringKeyMap` keys." ) );
     }
 
     @Test
-    void shouldWarnAgainstStdLibraryClassesSinceTheseIndicateUserError() throws Throwable
+    void shouldWarnAgainstStdLibraryClassesSinceTheseIndicateUserError()
     {
         // Impl note: We may want to change this behavior and actually allow procedures to return `Long` etc,
         //            with a default column name. So Stream<Long> would become records like (out: Long)
         //            Drawback of that is that it'd cause cognitive dissonance, it's not obvious what's a record
         //            and what is a primitive value..
 
-        ProcedureException exception = assertThrows( ProcedureException.class, () -> mapper(Long.class) );
+        ProcedureException exception = assertThrows( ProcedureException.class, () -> signatures(Long.class) );
         assertThat( exception.getMessage(), equalTo( String.format("Procedures must return a Stream of records, where a record is a concrete class%n" +
                 "that you define, with public non-final fields defining the fields in the record.%n" +
                 "If you''d like your procedure to return `Long`, you could define a record class like:%n" +
@@ -177,9 +140,9 @@ public class OutputMappersTest
                 "And then define your procedure as returning `Stream<Output>`." ) ) );
     }
 
-    private OutputMapper mapper( Class<?> clazz ) throws ProcedureException
+    private List<FieldSignature> signatures( Class<?> clazz ) throws ProcedureException
     {
-        return new OutputMappers( new TypeMappers() ).mapper( clazz );
+        return new ProcedureOutputSignatureCompiler( new TypeCheckers() ).fieldSignatures( clazz );
     }
 
 }

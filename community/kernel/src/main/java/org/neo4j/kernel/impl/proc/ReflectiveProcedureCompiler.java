@@ -19,12 +19,8 @@
  */
 package org.neo4j.kernel.impl.proc;
 
-import org.apache.commons.lang3.exception.ExceptionUtils;
-
-import java.lang.invoke.MethodHandle;
-import java.lang.invoke.MethodHandles;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -37,18 +33,15 @@ import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.FieldSignature;
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
 import org.neo4j.internal.kernel.api.procs.QualifiedName;
-import org.neo4j.internal.kernel.api.procs.UserAggregator;
 import org.neo4j.internal.kernel.api.procs.UserFunctionSignature;
 import org.neo4j.kernel.api.exceptions.ComponentInjectionException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.CallableUserAggregationFunction;
 import org.neo4j.kernel.api.proc.CallableUserFunction;
-import org.neo4j.kernel.api.proc.Context;
 import org.neo4j.kernel.api.proc.FailedLoadAggregatedFunction;
 import org.neo4j.kernel.api.proc.FailedLoadFunction;
 import org.neo4j.kernel.api.proc.FailedLoadProcedure;
-import org.neo4j.kernel.impl.proc.OutputMappers.OutputMapper;
 import org.neo4j.logging.Log;
 import org.neo4j.procedure.Admin;
 import org.neo4j.procedure.Description;
@@ -58,9 +51,8 @@ import org.neo4j.procedure.UserAggregationFunction;
 import org.neo4j.procedure.UserAggregationResult;
 import org.neo4j.procedure.UserAggregationUpdate;
 import org.neo4j.procedure.UserFunction;
-import org.neo4j.values.AnyValue;
-import org.neo4j.values.ValueMapper;
 
+import static java.lang.reflect.Modifier.isPublic;
 import static java.util.Collections.emptyList;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.procedure_unrestricted;
 
@@ -69,37 +61,36 @@ import static org.neo4j.graphdb.factory.GraphDatabaseSettings.procedure_unrestri
  */
 class ReflectiveProcedureCompiler
 {
-    private final MethodHandles.Lookup lookup = MethodHandles.lookup();
-    private final OutputMappers outputMappers;
+    private final ProcedureOutputSignatureCompiler outputMappers;
     private final MethodSignatureCompiler inputSignatureDeterminer;
     private final FieldInjections safeFieldInjections;
     private final FieldInjections allFieldInjections;
     private final Log log;
-    private final TypeMappers typeMappers;
+    private final TypeCheckers typeCheckers;
     private final ProcedureConfig config;
     private final NamingRestrictions restrictions;
 
-    ReflectiveProcedureCompiler( TypeMappers typeMappers, ComponentRegistry safeComponents,
+    ReflectiveProcedureCompiler( TypeCheckers typeCheckers, ComponentRegistry safeComponents,
             ComponentRegistry allComponents, Log log, ProcedureConfig config )
     {
         this(
-                new MethodSignatureCompiler( typeMappers ),
-                new OutputMappers( typeMappers ),
+                new MethodSignatureCompiler( typeCheckers ),
+                new ProcedureOutputSignatureCompiler( typeCheckers ),
                 new FieldInjections( safeComponents ),
                 new FieldInjections( allComponents ),
                 log,
-                typeMappers,
+                typeCheckers,
                 config,
                 ReflectiveProcedureCompiler::rejectEmptyNamespace );
     }
 
     private ReflectiveProcedureCompiler(
             MethodSignatureCompiler inputSignatureCompiler,
-            OutputMappers outputMappers,
+            ProcedureOutputSignatureCompiler outputMappers,
             FieldInjections safeFieldInjections,
             FieldInjections allFieldInjections,
             Log log,
-            TypeMappers typeMappers,
+            TypeCheckers typeCheckers,
             ProcedureConfig config,
             NamingRestrictions restrictions )
     {
@@ -108,7 +99,7 @@ class ReflectiveProcedureCompiler
         this.safeFieldInjections = safeFieldInjections;
         this.allFieldInjections = allFieldInjections;
         this.log = log;
-        this.typeMappers = typeMappers;
+        this.typeCheckers = typeCheckers;
         this.config = config;
         this.restrictions = restrictions;
     }
@@ -172,7 +163,7 @@ class ReflectiveProcedureCompiler
                 return emptyList();
             }
 
-            MethodHandle constructor = assertValidConstructor( fcnDefinition );
+            assertValidConstructor( fcnDefinition );
 
             ArrayList<CallableUserAggregationFunction> out = new ArrayList<>( methods.size() );
             for ( Method method : methods )
@@ -183,7 +174,7 @@ class ReflectiveProcedureCompiler
 
                 if ( config.isWhitelisted( funcName.toString() ) )
                 {
-                    out.add( compileAggregationFunction( fcnDefinition, constructor, method, funcName ) );
+                    out.add( compileAggregationFunction( fcnDefinition, method, funcName ) );
                 }
                 else
                 {
@@ -257,7 +248,7 @@ class ReflectiveProcedureCompiler
             throws ProcedureException
     {
         List<FieldSignature> inputSignature = inputSignatureDeterminer.signatureFor( method );
-        OutputMapper outputMapper = outputMappers.mapper( method );
+        List<FieldSignature> outputSignature = outputMappers.fieldSignatures( method );
 
         String description = description( method );
         Procedure procedure = method.getAnnotation( Procedure.class );
@@ -277,14 +268,14 @@ class ReflectiveProcedureCompiler
             {
                 description = describeAndLogLoadFailure( procName );
                 ProcedureSignature signature =
-                        new ProcedureSignature( procName, inputSignature, outputMapper.signature(), Mode.DEFAULT,
+                        new ProcedureSignature( procName, inputSignature, outputSignature, Mode.DEFAULT,
                                 admin, null, new String[0], description, warning, procedure.eager(), false );
                 return new FailedLoadProcedure( signature );
             }
         }
 
         ProcedureSignature signature =
-                new ProcedureSignature( procName, inputSignature, outputMapper.signature(), mode, admin, deprecated,
+                new ProcedureSignature( procName, inputSignature, outputSignature, mode, admin, deprecated,
                         config.rolesFor( procName.toString() ), description, warning, procedure.eager(), false );
 
         return ProcedureCompilation.compileProcedure( signature, setters, method );
@@ -308,7 +299,7 @@ class ReflectiveProcedureCompiler
 
         List<FieldSignature> inputSignature = inputSignatureDeterminer.signatureFor( method );
         Class<?> returnType = method.getReturnType();
-        TypeMappers.TypeChecker typeChecker = typeMappers.checkerFor( returnType );
+        TypeCheckers.TypeChecker typeChecker = typeCheckers.checkerFor( returnType );
         String description = description( method );
         UserFunction function = method.getAnnotation( UserFunction.class );
         String deprecated = deprecated( method, function::deprecatedBy,
@@ -338,15 +329,15 @@ class ReflectiveProcedureCompiler
         return ProcedureCompilation.compileFunction( signature, setters, method );
     }
 
-    private CallableUserAggregationFunction compileAggregationFunction( Class<?> definition, MethodHandle constructor,
-            Method method, QualifiedName funcName ) throws ProcedureException, IllegalAccessException
+    private CallableUserAggregationFunction compileAggregationFunction( Class<?> definition, Method create,
+            QualifiedName funcName ) throws ProcedureException, IllegalAccessException
     {
         restrictions.verify( funcName );
 
         //find update and result method
         Method update = null;
         Method result = null;
-        Class<?> aggregator = method.getReturnType();
+        Class<?> aggregator = create.getReturnType();
         for ( Method m : aggregator.getDeclaredMethods() )
         {
             if ( m.isAnnotationPresent( UserAggregationUpdate.class ) )
@@ -385,23 +376,23 @@ class ReflectiveProcedureCompiler
                     aggregator.getSimpleName(), update.getReturnType().getSimpleName() );
 
         }
-        if ( !Modifier.isPublic( method.getModifiers() ) )
+        if ( !isPublic( create.getModifiers() ) )
         {
             throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed,
-                    "Aggregation method '%s' in %s must be public.", method.getName(), definition.getSimpleName() );
+                    "Aggregation method '%s' in %s must be public.", create.getName(), definition.getSimpleName() );
         }
-        if ( !Modifier.isPublic( aggregator.getModifiers() ) )
+        if ( !isPublic( aggregator.getModifiers() ) )
         {
             throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed,
                     "Aggregation class '%s' must be public.", aggregator.getSimpleName() );
         }
-        if ( !Modifier.isPublic( update.getModifiers() ) )
+        if ( !isPublic( update.getModifiers() ) )
         {
             throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed,
                     "Aggregation update method '%s' in %s must be public.", update.getName(),
                     aggregator.getSimpleName() );
         }
-        if ( !Modifier.isPublic( result.getModifiers() ) )
+        if ( !isPublic( result.getModifiers() ) )
         {
             throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed,
                     "Aggregation result method '%s' in %s must be public.", result.getName(),
@@ -410,14 +401,11 @@ class ReflectiveProcedureCompiler
 
         List<FieldSignature> inputSignature = inputSignatureDeterminer.signatureFor( update );
         Class<?> returnType = result.getReturnType();
-        TypeMappers.TypeChecker valueConverter = typeMappers.checkerFor( returnType );
-        MethodHandle creator = lookup.unreflect( method );
-        MethodHandle resultMethod = lookup.unreflect( result );
+        TypeCheckers.TypeChecker valueConverter = typeCheckers.checkerFor( returnType );
+        String description = description( create );
+        UserAggregationFunction function = create.getAnnotation( UserAggregationFunction.class );
 
-        String description = description( method );
-        UserAggregationFunction function = method.getAnnotation( UserAggregationFunction.class );
-
-        String deprecated = deprecated( method, function::deprecatedBy,
+        String deprecated = deprecated( create, function::deprecatedBy,
                 "Use of @UserAggregationFunction(deprecatedBy) without @Deprecated in " + funcName );
 
         List<FieldSetter> setters = allFieldInjections.setters( definition );
@@ -442,8 +430,7 @@ class ReflectiveProcedureCompiler
                 new UserFunctionSignature( funcName, inputSignature, valueConverter.type(), deprecated,
                         config.rolesFor( funcName.toString() ), description, false );
 
-        return new ReflectiveUserAggregationFunction( signature, constructor, creator, update, resultMethod,
-                valueConverter, setters );
+        return ProcedureCompilation.compileAggregation( signature, setters, create, update, result );
     }
 
     private String deprecated( Method method, Supplier<String> supplier, String warning )
@@ -475,15 +462,20 @@ class ReflectiveProcedureCompiler
         }
     }
 
-    private MethodHandle assertValidConstructor( Class<?> procDefinition ) throws ProcedureException
+    private void assertValidConstructor( Class<?> procDefinition ) throws ProcedureException
     {
-        try
+        boolean hasValidConstructor = false;
+        for ( Constructor<?> constructor : procDefinition.getConstructors() )
         {
-            return lookup.unreflectConstructor( procDefinition.getConstructor() );
+            if ( isPublic( constructor.getModifiers() ) && constructor.getParameterCount() == 0 )
+            {
+                hasValidConstructor = true;
+                break;
+            }
         }
-        catch ( IllegalAccessException | NoSuchMethodException e )
+        if ( !hasValidConstructor )
         {
-            throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed, e,
+            throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed,
                     "Unable to find a usable public no-argument constructor in the class `%s`. " +
                     "Please add a valid, public constructor, recompile the class and try again.",
                     procDefinition.getSimpleName() );
@@ -513,7 +505,7 @@ class ReflectiveProcedureCompiler
         return new QualifiedName( namespace, name );
     }
 
-    public ReflectiveProcedureCompiler withoutNamingRestrictions()
+    ReflectiveProcedureCompiler withoutNamingRestrictions()
     {
         return new ReflectiveProcedureCompiler(
                 inputSignatureDeterminer,
@@ -521,182 +513,12 @@ class ReflectiveProcedureCompiler
                 safeFieldInjections,
                 allFieldInjections,
                 log,
-                typeMappers,
+                typeCheckers,
                 config,
                 name ->
                 {
                     // all ok
                 } );
-    }
-
-    private abstract static class ReflectiveBase
-    {
-
-        final List<FieldSetter> fieldSetters;
-
-        ReflectiveBase( List<FieldSetter> fieldSetters )
-        {
-            this.fieldSetters = fieldSetters;
-        }
-
-        protected void inject( Context ctx, Object object ) throws ProcedureException
-        {
-            for ( FieldSetter setter : fieldSetters )
-            {
-                setter.apply( ctx, object );
-            }
-        }
-
-        protected Object[] mapToObjects( String type, QualifiedName name, ValueMapper<Object> mapper, List<FieldSignature> inputSignature,
-                AnyValue[] input ) throws ProcedureException
-        {
-            // Verify that the number of passed arguments matches the number expected in the mthod signature
-            if ( inputSignature.size() != input.length )
-            {
-                throw new ProcedureException( Status.Procedure.ProcedureCallFailed,
-                        "%s `%s` takes %d arguments but %d was provided.", type, name,
-                        inputSignature.size(), input.length );
-            }
-
-            Object[] args = new Object[input.length];
-            for ( int i = 0; i < input.length; i++ )
-            {
-                args[i] = inputSignature.get( i ).map( input[i], mapper );
-            }
-            return args;
-        }
-    }
-
-    private static class ReflectiveUserAggregationFunction extends ReflectiveBase implements
-            CallableUserAggregationFunction
-    {
-
-        private final TypeMappers.TypeChecker typeChecker;
-        private final UserFunctionSignature signature;
-        private final MethodHandle constructor;
-        private final MethodHandle creator;
-        private final Method updateMethod;
-        private final MethodHandle resultMethod;
-        private final int[] indexesToMap;
-
-        ReflectiveUserAggregationFunction( UserFunctionSignature signature, MethodHandle constructor,
-                MethodHandle creator, Method updateMethod, MethodHandle resultMethod,
-                TypeMappers.TypeChecker typeChecker,
-                List<FieldSetter> fieldSetters )
-        {
-            super( fieldSetters );
-            this.constructor = constructor;
-            this.creator = creator;
-            this.updateMethod = updateMethod;
-            this.resultMethod = resultMethod;
-            this.signature = signature;
-            this.typeChecker = typeChecker;
-            this.indexesToMap = computeIndexesToMap( signature.inputSignature() );
-        }
-
-        @Override
-        public UserFunctionSignature signature()
-        {
-            return signature;
-        }
-
-        @Override
-        public UserAggregator create( Context ctx ) throws ProcedureException
-        {
-            // For now, create a new instance of the class for each invocation. In the future, we'd like to keep
-            // instances local to
-            // at least the executing session, but we don't yet have good interfaces to the kernel to model that with.
-            try
-            {
-
-                Object cls = constructor.invoke();
-                //API injection
-                inject( ctx, cls );
-                Object aggregator = creator.invoke( cls );
-                List<FieldSignature> inputSignature = signature.inputSignature();
-                int expectedNumberOfInputs = inputSignature.size();
-
-                return new UserAggregator()
-                {
-                    @Override
-                    public void update( AnyValue[] input ) throws ProcedureException
-                    {
-                        try
-                        {
-                            if ( expectedNumberOfInputs != input.length )
-                            {
-                                throw new ProcedureException( Status.Procedure.ProcedureCallFailed,
-                                        "Function `%s` takes %d arguments but %d was provided.",
-                                        signature.name(),
-                                        expectedNumberOfInputs, input.length );
-                            }
-
-                            ValueMapper<Object> mapper = ctx.valueMapper();
-
-                            // Call the method
-                            updateMethod.invoke( aggregator, mapToObjects( "Function", signature.name(), mapper, signature.inputSignature(), input ) );
-                        }
-                        catch ( Throwable throwable )
-                        {
-                            if ( throwable instanceof Status.HasStatus )
-                            {
-                                throw new ProcedureException( ((Status.HasStatus) throwable).status(), throwable,
-                                        throwable.getMessage() );
-                            }
-                            else
-                            {
-                                Throwable cause = ExceptionUtils.getRootCause( throwable );
-                                throw new ProcedureException( Status.Procedure.ProcedureCallFailed, throwable,
-                                        "Failed to invoke function `%s`: %s", signature.name(),
-                                        "Caused by: " + (cause != null ? cause : throwable) );
-                            }
-                        }
-                    }
-
-                    @Override
-                    public AnyValue result() throws ProcedureException
-                    {
-                        try
-                        {
-                            return typeChecker.toValue( resultMethod.invoke(aggregator) );
-                        }
-                        catch ( Throwable throwable )
-                        {
-                            if ( throwable instanceof Status.HasStatus )
-                            {
-                                throw new ProcedureException( ((Status.HasStatus) throwable).status(), throwable,
-                                        throwable.getMessage() );
-                            }
-                            else
-                            {
-                                Throwable cause = ExceptionUtils.getRootCause( throwable );
-                                throw new ProcedureException( Status.Procedure.ProcedureCallFailed, throwable,
-                                        "Failed to invoke function `%s`: %s", signature.name(),
-                                        "Caused by: " + (cause != null ? cause : throwable) );
-                            }
-                        }
-
-                    }
-
-                };
-
-            }
-            catch ( Throwable throwable )
-            {
-                if ( throwable instanceof Status.HasStatus )
-                {
-                    throw new ProcedureException( ((Status.HasStatus) throwable).status(), throwable,
-                            throwable.getMessage() );
-                }
-                else
-                {
-                    Throwable cause = ExceptionUtils.getRootCause( throwable );
-                    throw new ProcedureException( Status.Procedure.ProcedureCallFailed, throwable,
-                            "Failed to invoke function `%s`: %s", signature.name(),
-                            "Caused by: " + (cause != null ? cause : throwable ) );
-                }
-            }
-        }
     }
 
     private static void rejectEmptyNamespace( QualifiedName name ) throws ProcedureException
@@ -709,16 +531,4 @@ class ReflectiveProcedureCompiler
         }
     }
 
-    private static int[] computeIndexesToMap( List<FieldSignature> inputSignature )
-    {
-        ArrayList<Integer> integers = new ArrayList<>();
-        for ( int i = 0; i < inputSignature.size(); i++ )
-        {
-            if ( inputSignature.get( i ).needsMapping() )
-            {
-                integers.add( i );
-            }
-        }
-        return integers.stream().mapToInt( i -> i ).toArray();
-    }
 }

@@ -80,22 +80,12 @@ class MethodSignatureCompilerTest
     {
         // When
         Method echo = ClassWithProcedureWithSimpleArgs.class.getMethod( "echo", String.class );
-        List<FieldSignature> signature = new MethodSignatureCompiler( new TypeMappers() ).signatureFor( echo );
+        List<FieldSignature> signature = new MethodSignatureCompiler( new TypeCheckers() ).signatureFor( echo );
 
         // THen
         assertThat(signature, contains( FieldSignature.inputField( "name", Neo4jTypes.NTString ) ));
     }
 
-    @Test
-    void shouldMapSimpleFunctionWithString() throws Throwable
-    {
-        // When
-        Method echo = ClassWithProcedureWithSimpleArgs.class.getMethod( "echo", String.class );
-        List<Neo4jTypes.AnyType> signature = new MethodSignatureCompiler( new TypeMappers() ).inputTypesFor( echo );
-
-        // THen
-        assertThat(signature, contains( Neo4jTypes.NTString));
-    }
 
     @Test
     void shouldGiveHelpfulErrorOnUnmappable() throws Throwable
@@ -103,7 +93,7 @@ class MethodSignatureCompilerTest
         // Given
         Method echo = ClassWithProcedureWithSimpleArgs.class.getMethod( "echoWithInvalidType", UnmappableRecord.class );
 
-        ProcedureException exception = assertThrows( ProcedureException.class, () -> new MethodSignatureCompiler( new TypeMappers() ).signatureFor( echo ) );
+        ProcedureException exception = assertThrows( ProcedureException.class, () -> new MethodSignatureCompiler( new TypeCheckers() ).signatureFor( echo ) );
         assertThat( exception.getMessage(), startsWith( String.format("Argument `name` at position 0 in `echoWithInvalidType` with%n" +
                                                 "type `UnmappableRecord` cannot be converted to a Neo4j type: Don't know how to map " +
                                                 "`org.neo4j.kernel.impl.proc.MethodSignatureCompilerTest$UnmappableRecord` to " +
@@ -118,7 +108,7 @@ class MethodSignatureCompilerTest
         // Given
         Method echo = ClassWithProcedureWithSimpleArgs.class.getMethod( "echoWithoutAnnotations", String.class, String.class);
 
-        ProcedureException exception = assertThrows( ProcedureException.class, () -> new MethodSignatureCompiler( new TypeMappers() ).signatureFor( echo ) );
+        ProcedureException exception = assertThrows( ProcedureException.class, () -> new MethodSignatureCompiler( new TypeCheckers() ).signatureFor( echo ) );
         assertThat( exception.getMessage(), equalTo( String.format("Argument at position 1 in method `echoWithoutAnnotations` is missing an `@Name` " +
                                                     "annotation.%n" +
                                                     "Please add the annotation, recompile the class and try again." ) ) );

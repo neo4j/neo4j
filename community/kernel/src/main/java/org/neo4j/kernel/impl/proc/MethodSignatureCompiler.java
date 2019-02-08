@@ -29,10 +29,9 @@ import java.util.Optional;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.DefaultParameterValue;
 import org.neo4j.internal.kernel.api.procs.FieldSignature;
-import org.neo4j.internal.kernel.api.procs.Neo4jTypes;
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.impl.proc.TypeMappers.DefaultValueConverter;
+import org.neo4j.kernel.impl.proc.TypeCheckers.DefaultValueConverter;
 import org.neo4j.procedure.Name;
 
 import static org.neo4j.internal.kernel.api.procs.FieldSignature.inputField;
@@ -41,28 +40,16 @@ import static org.neo4j.internal.kernel.api.procs.FieldSignature.inputField;
  * Given a java method, figures out a valid {@link ProcedureSignature} field signature.
  * Basically, it takes the java signature and spits out the same signature described as Neo4j types.
  */
-public class MethodSignatureCompiler
+class MethodSignatureCompiler
 {
-    private final TypeMappers typeMappers;
+    private final TypeCheckers typeCheckers;
 
-    public MethodSignatureCompiler( TypeMappers typeMappers )
+    MethodSignatureCompiler( TypeCheckers typeCheckers )
     {
-        this.typeMappers = typeMappers;
+        this.typeCheckers = typeCheckers;
     }
 
-    public List<Neo4jTypes.AnyType> inputTypesFor( Method method ) throws ProcedureException
-    {
-        Type[] types = method.getGenericParameterTypes();
-        List<Neo4jTypes.AnyType> neoTypes = new ArrayList<>( types.length );
-        for ( Type type : types )
-        {
-            neoTypes.add( typeMappers.toNeo4jType( type ) );
-        }
-
-        return neoTypes;
-    }
-
-    public List<FieldSignature> signatureFor( Method method ) throws ProcedureException
+    List<FieldSignature> signatureFor( Method method ) throws ProcedureException
     {
         Parameter[] params = method.getParameters();
         Type[] types = method.getGenericParameterTypes();
@@ -93,7 +80,7 @@ public class MethodSignatureCompiler
 
             try
             {
-                DefaultValueConverter valueConverter = typeMappers.converterFor( type );
+                DefaultValueConverter valueConverter = typeCheckers.converterFor( type );
                 Optional<DefaultParameterValue> defaultValue = valueConverter.defaultValue( parameter );
                 //it is not allowed to have holes in default values
                 if ( seenDefault && !defaultValue.isPresent() )
@@ -110,9 +97,8 @@ public class MethodSignatureCompiler
                 // Should we add more unsupported types we should generalize this.
                 if ( type == byte[].class )
                 {
-                    FieldSignature.InputMapper mapper = new ByteArrayConverter();
-                    signature.add( defaultValue.map( neo4jValue -> inputField( name, valueConverter.type(), neo4jValue, mapper ) ).orElseGet(
-                            () -> inputField( name, valueConverter.type(), mapper ) ) );
+                    signature.add( defaultValue.map( neo4jValue -> inputField( name, valueConverter.type(), neo4jValue ) ).orElseGet(
+                            () -> inputField( name, valueConverter.type() ) ) );
                 }
                 else
                 {

@@ -23,15 +23,11 @@ import java.util.List;
 import java.util.function.Function;
 
 import org.neo4j.internal.kernel.api.procs.DefaultParameterValue;
-import org.neo4j.internal.kernel.api.procs.FieldSignature;
-import org.neo4j.values.AnyValue;
 
 import static org.neo4j.internal.kernel.api.procs.DefaultParameterValue.ntByteArray;
 import static org.neo4j.kernel.impl.proc.ParseUtil.parseList;
-import static org.neo4j.kernel.impl.proc.ProcedureCompilation.toByteArray;
-import static org.neo4j.values.storable.Values.byteArray;
 
-public class ByteArrayConverter implements Function<String,DefaultParameterValue>, FieldSignature.InputMapper
+public class ByteArrayConverter implements Function<String,DefaultParameterValue>
 {
 
     @Override
@@ -52,43 +48,5 @@ public class ByteArrayConverter implements Function<String,DefaultParameterValue
             }
             return ntByteArray( bytes );
         }
-    }
-
-    @Override
-    public Object map( Object input )
-    {
-        if ( input instanceof byte[] )
-        {
-            return input;
-        }
-        if ( input instanceof List<?> )
-        {
-            List list = (List) input;
-            byte[] bytes = new byte[list.size()];
-            for ( int a = 0; a < bytes.length; a++ )
-            {
-                Object value = list.get( a );
-                if ( value instanceof Byte )
-                {
-                    bytes[a] = (Byte) value;
-                }
-                else
-                {
-                    throw new IllegalArgumentException( "Cannot convert " + value + " to byte for input to procedure" );
-                }
-            }
-            return bytes;
-        }
-        else
-        {
-            throw new IllegalArgumentException(
-                    "Cannot convert " + input.getClass().getSimpleName() + " to byte[] for input to procedure" );
-        }
-    }
-
-    @Override
-    public AnyValue map( AnyValue input )
-    {
-        return byteArray( toByteArray( input ) );
     }
 }

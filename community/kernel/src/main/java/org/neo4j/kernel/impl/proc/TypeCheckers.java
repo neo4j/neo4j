@@ -41,10 +41,8 @@ import org.neo4j.internal.kernel.api.procs.DefaultParameterValue;
 import org.neo4j.internal.kernel.api.procs.Neo4jTypes;
 import org.neo4j.internal.kernel.api.procs.Neo4jTypes.AnyType;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.procedure.Name;
 import org.neo4j.util.VisibleForTesting;
-import org.neo4j.values.AnyValue;
 
 import static java.lang.Boolean.parseBoolean;
 import static java.lang.Double.parseDouble;
@@ -69,13 +67,13 @@ import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTNumber;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTString;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTTime;
 
-public class TypeMappers
+public class TypeCheckers
 {
     private static final DefaultValueConverter TO_ANY = new DefaultValueConverter( NTAny, Object.class );
     private static final DefaultValueConverter TO_STRING = new DefaultValueConverter( NTString, String.class, DefaultParameterValue::ntString );
     private static final DefaultValueConverter TO_INTEGER = new DefaultValueConverter( NTInteger, Long.class, s -> ntInteger( parseLong( s ) ) );
     private static final DefaultValueConverter TO_FLOAT = new DefaultValueConverter( NTFloat, Double.class, s -> ntFloat( parseDouble( s ) ) );
-    private static final DefaultValueConverter TO_NUMBER = new DefaultValueConverter( NTNumber, Number.class, TypeMappers::parseNumber );
+    private static final DefaultValueConverter TO_NUMBER = new DefaultValueConverter( NTNumber, Number.class, TypeCheckers::parseNumber );
     private static final DefaultValueConverter TO_BOOLEAN = new DefaultValueConverter( NTBoolean, Boolean.class, s -> ntBoolean( parseBoolean( s ) ) );
     private static final DefaultValueConverter TO_MAP = new DefaultValueConverter( NTMap, Map.class, new MapConverter() );
     private static final DefaultValueConverter TO_LIST = toList( TO_ANY, Object.class );
@@ -83,7 +81,7 @@ public class TypeMappers
 
     private final Map<Type,DefaultValueConverter> javaToNeo = new HashMap<>();
 
-    public TypeMappers()
+    public TypeCheckers()
     {
         super();
         registerScalarsAndCollections();
@@ -116,11 +114,6 @@ public class TypeMappers
         registerType( OffsetTime.class, new DefaultValueConverter( NTTime, OffsetTime.class ) );
         registerType( LocalTime.class, new DefaultValueConverter( NTLocalTime, LocalTime.class ) );
         registerType( TemporalAmount.class, new DefaultValueConverter( NTDuration, TemporalAmount.class ) );
-    }
-
-    AnyType toNeo4jType( Type type ) throws ProcedureException
-    {
-        return converterFor( type ).type;
     }
 
     TypeChecker checkerFor( Type javaType ) throws ProcedureException
@@ -220,21 +213,6 @@ public class TypeMappers
             return type;
         }
 
-        Object typeCheck( Object javaValue ) throws ProcedureException
-        {
-            if ( javaValue == null || javaClass.isInstance( javaValue ) )
-            {
-                return javaValue;
-            }
-            throw new ProcedureException( Status.Procedure.ProcedureCallFailed,
-                    "Expected `%s` to be a `%s`, found `%s`.", javaValue, javaClass.getSimpleName(),
-                    javaValue.getClass() );
-        }
-
-        public AnyValue toValue( Object obj )
-        {
-            return ValueUtils.of( obj );
-        }
     }
 
     public static final class DefaultValueConverter extends TypeChecker

@@ -40,60 +40,6 @@ public class FieldSignature
         return new FieldSignature( name, type, requireNonNull( defaultValue, "defaultValue" ), false );
     }
 
-    public interface InputMapper
-    {
-        Object map( Object input );
-        AnyValue map( AnyValue input );
-    }
-
-    public static FieldSignature inputField( String name, Neo4jTypes.AnyType type, InputMapper mapper )
-    {
-        return new FieldSignature( name, type, null, false )
-        {
-            @Override
-            public Object map( Object input )
-            {
-                return mapper.map( input );
-            }
-
-            @Override
-            public Object map( AnyValue input, ValueMapper<Object> valueMapper )
-            {
-                return mapper.map( input ).map( valueMapper );
-            }
-
-            @Override
-            public boolean needsMapping()
-            {
-                return true;
-            }
-        };
-    }
-
-    public static FieldSignature inputField( String name, Neo4jTypes.AnyType type, DefaultParameterValue defaultValue, InputMapper mapper )
-    {
-        return new FieldSignature( name, type, requireNonNull( defaultValue, "defaultValue" ), false )
-        {
-            @Override
-            public Object map( Object input )
-            {
-                return mapper.map( input );
-            }
-
-            @Override
-            public Object map( AnyValue input, ValueMapper<Object> valueMapper )
-            {
-                return mapper.map( input ).map( valueMapper );
-            }
-
-            @Override
-            public boolean needsMapping()
-            {
-                return true;
-            }
-        };
-    }
-
     public static FieldSignature outputField( String name, Neo4jTypes.AnyType type )
     {
         return outputField( name, type, false );
@@ -124,11 +70,6 @@ public class FieldSignature
                         type.toString(), defaultValue.neo4jType().toString() ) );
             }
         }
-    }
-
-    public boolean needsMapping()
-    {
-        return false;
     }
 
     /** Fields that are not supported full stack (ie. by Cypher) need to be mapped from Cypher to internal types */

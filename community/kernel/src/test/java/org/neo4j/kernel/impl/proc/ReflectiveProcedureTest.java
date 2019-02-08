@@ -82,7 +82,7 @@ public class ReflectiveProcedureTest
     void setUp()
     {
         components = new ComponentRegistry();
-        procedureCompiler = new ReflectiveProcedureCompiler( new TypeMappers(), components, components,
+        procedureCompiler = new ReflectiveProcedureCompiler( new TypeCheckers(), components, components,
                 NullLog.getInstance(), ProcedureConfig.DEFAULT );
     }
 
@@ -315,7 +315,7 @@ public class ReflectiveProcedureTest
     {
         // Given
         Log log = mock(Log.class);
-        ReflectiveProcedureCompiler procedureCompiler = new ReflectiveProcedureCompiler( new TypeMappers(), components,
+        ReflectiveProcedureCompiler procedureCompiler = new ReflectiveProcedureCompiler( new TypeCheckers(), components,
                 components, log, ProcedureConfig.DEFAULT );
 
         // When
@@ -353,7 +353,7 @@ public class ReflectiveProcedureTest
                 Config.defaults( procedure_whitelist, "org.neo4j.kernel.impl.proc.listCoolPeople" ) );
 
         Log log = mock(Log.class);
-        ReflectiveProcedureCompiler procedureCompiler = new ReflectiveProcedureCompiler( new TypeMappers(), components,
+        ReflectiveProcedureCompiler procedureCompiler = new ReflectiveProcedureCompiler( new TypeCheckers(), components,
                 components, log, config );
 
         // When
@@ -374,7 +374,7 @@ public class ReflectiveProcedureTest
                 Config.defaults( procedure_whitelist, "org.neo4j.kernel.impl.proc.NOTlistCoolPeople" ) );
 
         Log log = mock(Log.class);
-        ReflectiveProcedureCompiler procedureCompiler = new ReflectiveProcedureCompiler( new TypeMappers(), components,
+        ReflectiveProcedureCompiler procedureCompiler = new ReflectiveProcedureCompiler( new TypeCheckers(), components,
                 components, log, config );
 
         // When
@@ -392,7 +392,7 @@ public class ReflectiveProcedureTest
         // Given
         ProcedureConfig config = new ProcedureConfig( Config.defaults( procedure_whitelist, "empty" ) );
         Log log = mock(Log.class);
-        ReflectiveProcedureCompiler procedureCompiler = new ReflectiveProcedureCompiler( new TypeMappers(), components,
+        ReflectiveProcedureCompiler procedureCompiler = new ReflectiveProcedureCompiler( new TypeCheckers(), components,
                 components, log, config );
 
         // When
@@ -409,7 +409,7 @@ public class ReflectiveProcedureTest
         // Given
         ProcedureConfig config = new ProcedureConfig( Config.defaults( procedure_whitelist, "" ) );
         Log log = mock(Log.class);
-        ReflectiveProcedureCompiler procedureCompiler = new ReflectiveProcedureCompiler( new TypeMappers(), components,
+        ReflectiveProcedureCompiler procedureCompiler = new ReflectiveProcedureCompiler( new TypeCheckers(), components,
                 components, log, config );
 
         // When

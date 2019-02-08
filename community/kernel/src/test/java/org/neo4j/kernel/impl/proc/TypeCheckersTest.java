@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.proc;
 
-import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
@@ -30,11 +29,9 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.internal.kernel.api.procs.Neo4jTypes;
-import org.neo4j.kernel.impl.proc.TypeMappers.TypeChecker;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
-import static org.junit.Assert.assertEquals;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTAny;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTBoolean;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTFloat;
@@ -45,7 +42,7 @@ import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTNumber;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTString;
 
 @RunWith( Parameterized.class )
-public class TypeMappersTest
+public class TypeCheckersTest
 {
     @Parameterized.Parameter( 0 )
     public Type javaClass;
@@ -134,29 +131,6 @@ public class TypeMappersTest
         {{
             put( "k", 1 );
         }};
-    }
-
-    @Test
-    public void shouldDetectCorrectType() throws Throwable
-    {
-        // When
-        Neo4jTypes.AnyType type = new TypeMappers().toNeo4jType( javaClass );
-
-        // Then
-        assertEquals( neoType, type );
-    }
-
-    @Test
-    public void shouldMapCorrectly() throws Throwable
-    {
-        // Given
-        TypeChecker mapper = new TypeMappers().checkerFor( javaClass );
-
-        // When
-        Object converted = mapper.typeCheck( javaValue );
-
-        // Then
-        assertEquals( expectedNeoValue, converted );
     }
 
     static Type listOfListOfMap = typeOf( "listOfListOfMap" );
