@@ -26,16 +26,9 @@ import org.neo4j.cypher.internal.v4_0.util.PropertyKeyId
 
 trait PlanMatchHelp extends AstConstructionTestSupport {
 
-  protected def cachedNodePropertyProj(node: String, property: String): (String, CachedNodeProperty) =
-    s"$node.$property" -> cachedNodeProperty(node, property)
-
-  protected def cachedNodePropertyProj(alias: String, node: String, property: String ): (String, CachedNodeProperty) =
-    alias -> cachedNodeProperty(node, property)
-
   protected def cachedNodeProperty(node: String, property: String): CachedNodeProperty =
     CachedNodeProperty(node, PropertyKeyName(property)(pos))(pos)
 
-  protected def indexedProperty(propName: String, keyId: Int, getValueFromIndex: GetValueFromIndexBehavior): IndexedProperty = {
+  protected def indexedProperty(propName: String, keyId: Int, getValueFromIndex: GetValueFromIndexBehavior): IndexedProperty =
     IndexedProperty(PropertyKeyToken(PropertyKeyName(propName) _, PropertyKeyId(keyId)), getValueFromIndex)
-  }
 }

@@ -795,7 +795,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
         patternNodes = Set("a", "b"),
         patternRelationships = Set(PatternRelationship("r", ("a", "b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)),
         selections = Selections.from(
-          in(function("id", varFor("r")), listOfInt(42))
+          in(id(varFor("r")), listOfInt(42))
         )
       )
     }.withLogicalPlanningContext { (cfg, ctx) =>

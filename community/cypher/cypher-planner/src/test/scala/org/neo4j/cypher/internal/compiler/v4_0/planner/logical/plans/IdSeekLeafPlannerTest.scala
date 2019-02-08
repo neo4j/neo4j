@@ -44,7 +44,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
   test("simple node by id seek with a collection of node ids") {
     // given
     val variable = varFor("n")
-    val expr = in(function("id", variable), listOfInt(42, 43, 43))
+    val expr = in(id(variable), listOfInt(42, 43, 43))
     val qg = QueryGraph(
       selections = Selections(Set(Predicate(Set("n"), expr))),
       patternNodes = Set("n")
@@ -70,7 +70,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
   test("node by id seek with a collection of node ids via previous variable") {
     // given
     val variable = varFor("n")
-    val expr = in(function("id", variable), varFor("arr"))
+    val expr = in(id(variable), varFor("arr"))
     val qg = QueryGraph(
       selections = Selections(Set(Predicate(Set("n"), expr))),
       patternNodes = Set("n"),
@@ -97,7 +97,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
   test("node by id seek should not be produced when the argument expression is an unbound variable") {
     // given match (n) where id(n) in arr
     val variable = varFor("n")
-    val expr = in(function("id", variable), varFor("arr"))
+    val expr = in(id(variable), varFor("arr"))
     val qg = QueryGraph(
       selections = Selections(Set(Predicate(Set("n"), expr))),
       patternNodes = Set("n"),
@@ -122,7 +122,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
   test("node by id seek should not be produced when the node variable is an argument") {
     // given match (n) where id(n) in arr
     val variable = varFor("n")
-    val expr = in(function("id", variable), varFor("arr"))
+    val expr = in(id(variable), varFor("arr"))
     val qg = QueryGraph(
       selections = Selections(Set(Predicate(Set("n"), expr))),
       patternNodes = Set("n"),
@@ -147,7 +147,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
   test("simple directed relationship by id seek with a collection of relationship ids") {
     // given
     val rIdent = varFor("r")
-    val expr = in(function("id", rIdent), listOfInt(42, 43, 43))
+    val expr = in(id(rIdent), listOfInt(42, 43, 43))
     val from = "from"
     val end = "to"
     val patternRel = PatternRelationship("r", (from, end), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
@@ -177,7 +177,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
   test("simple undirected relationship by id seek with a collection of relationship ids") {
     // given
     val rIdent = varFor("r")
-    val expr = in(function("id", rIdent), listOfInt(42, 43, 43))
+    val expr = in(id(rIdent), listOfInt(42, 43, 43))
     val from = "from"
     val end = "to"
     val patternRel = PatternRelationship("r", (from, end), SemanticDirection.BOTH, Seq.empty, SimplePatternLength)
@@ -206,7 +206,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
   test("simple undirected typed relationship by id seek with a collection of relationship ids") {
     // given
     val rIdent = varFor("r")
-    val expr = in(function("id", rIdent), listOfInt(42))
+    val expr = in(id(rIdent), listOfInt(42))
     val from = "from"
     val end = "to"
     val relTypeX = RelTypeName("X")(pos)
@@ -249,7 +249,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
   test("simple undirected multi-typed relationship by id seek with  a collection of relationship ids") {
     // given
     val rIdent = varFor("r")
-    val expr = in(function("id", rIdent), listOfInt(42))
+    val expr = in(id(rIdent), listOfInt(42))
     val from = "from"
     val end = "to"
     val relTypeX = RelTypeName("X") _

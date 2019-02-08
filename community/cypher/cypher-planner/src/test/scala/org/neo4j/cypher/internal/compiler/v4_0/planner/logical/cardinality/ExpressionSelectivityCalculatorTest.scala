@@ -750,7 +750,7 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
   }
 
   test("equality with no label, size 2") {
-    val equals = predicate(in(nProp, listOf(literalInt(3), literalInt(4))))
+    val equals = predicate(in(nProp, listOfInt(3, 4)))
 
     val calculator = setUpCalculator(equals, Seq.empty)
     val eqResult = calculator(equals.expr)
@@ -791,7 +791,7 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
   }
 
   test("equality with one label, size 2") {
-    val equals = predicate(in(nProp, listOf(literalInt(3), literalInt(4))))
+    val equals = predicate(in(nProp, listOfInt(3, 4)))
 
     val calculator = setUpCalculator(equals, Seq(nIsPerson))
 
@@ -850,7 +850,7 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
   }
 
   test("equality with two labels, size 2") {
-    val equals = predicate(in(nProp, listOf(literalInt(3), literalInt(4))))
+    val equals = predicate(in(nProp, listOfInt(3, 4)))
 
     val calculator = setUpCalculator(equals, Seq(nIsPerson, nIsAnimal), mockStats(
       labelCardinalities = Map(indexPerson.label -> 1000, indexAnimal.label -> 800.0),

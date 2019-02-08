@@ -68,7 +68,7 @@ class SargableTest extends CypherFunSuite with AstConstructionTestSupport {
   }
 
   test("IdSeekable works") {
-    val leftExpr = function("id", nodeA)
+    val leftExpr = id(nodeA)
     when(expr2.dependencies).thenReturn(Set.empty[LogicalVariable])
 
     assertMatches(equals(leftExpr, expr2)) {
@@ -84,7 +84,7 @@ class SargableTest extends CypherFunSuite with AstConstructionTestSupport {
   test("IdSeekable does not match if rhs depends on lhs variable") {
     when(expr2.dependencies).thenReturn(Set[LogicalVariable](nodeA))
 
-    assertDoesNotMatch(equals(function("id", nodeA), expr2)) {
+    assertDoesNotMatch(equals(id(nodeA), expr2)) {
       case AsIdSeekable(_) => (/* oh noes */)
     }
   }

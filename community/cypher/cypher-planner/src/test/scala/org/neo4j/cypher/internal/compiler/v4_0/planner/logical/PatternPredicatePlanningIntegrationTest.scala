@@ -93,7 +93,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
       Selection(
         ands(ors(
           greaterThan(GetDegree(varFor("a"), Some(RelTypeName("X")_),OUTGOING)_, literalInt(0)),
-          greaterThan(prop("a", "prop"), literalInt(4))
+          propGreaterThan("a", "prop", 4)
         )), AllNodesScan("a", Set.empty)
       )
     )
@@ -104,7 +104,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
       Selection(
         ands(ors(
           greaterThan(GetDegree(varFor("a"), Some(RelTypeName("X")_),OUTGOING)_, literalInt(0)),
-          greaterThan(prop("a", "prop"), literalInt(4)),
+          propGreaterThan("a", "prop", 4),
           in(prop("a", "prop2"), listOfInt(9))
         )), AllNodesScan("a", Set.empty)
       )

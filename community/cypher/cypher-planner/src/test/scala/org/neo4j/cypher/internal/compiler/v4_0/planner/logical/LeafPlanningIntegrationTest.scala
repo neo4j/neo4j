@@ -135,7 +135,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
                   "a",
                   LabelToken("Person", LabelId(0)),
                   Seq(indexedProperty("name", 0, GetValue)),
-                  ManyQueryExpression(listOf(literalString("prefix1"), literalString("prefix2"))),
+                  ManyQueryExpression(listOfString("prefix1", "prefix2")),
                   Set.empty,
                   IndexOrderNone)
       ))
@@ -222,7 +222,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
           AndedPropertyInequalities(
             varFor("a"),
             prop("a", "age"),
-            NonEmptyList(greaterThan(prop("a", "age"), literalInt(40)))
+            NonEmptyList(propGreaterThan("a", "age", 40))
         )),
         IndexSeek("a:Person(name >= 'Cinderella')")
       )

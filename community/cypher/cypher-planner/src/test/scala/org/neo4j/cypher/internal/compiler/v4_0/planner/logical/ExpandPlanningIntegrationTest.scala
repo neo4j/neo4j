@@ -102,7 +102,7 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningT
     } getLogicalPlanFor "MATCH (start)-[rel:x]-(a) WHERE a.name = 'Andres' return a")._2 should equal(
         Expand(
           Selection(
-            ands(in(prop("a", "name"), listOf(literalString("Andres")))),
+            ands(in(prop("a", "name"), listOfString("Andres"))),
             AllNodesScan("a", Set.empty)
           ),
           "a", SemanticDirection.BOTH, Seq(RelTypeName("x")_), "start", "rel"

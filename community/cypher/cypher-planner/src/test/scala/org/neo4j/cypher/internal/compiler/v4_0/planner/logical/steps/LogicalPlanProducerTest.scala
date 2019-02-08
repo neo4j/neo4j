@@ -116,9 +116,9 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
       val lpp = LogicalPlanProducer(context.cardinality, context.planningAttributes, idGen)
       // plan with provided order
       val plan = fakeLogicalPlanFor(context.planningAttributes, "id(n)")
-      context.planningAttributes.providedOrders.set(plan.id, ProvidedOrder(Seq(ProvidedOrder.Asc(function("id",varFor("n"))))))
+      context.planningAttributes.providedOrders.set(plan.id, ProvidedOrder(Seq(ProvidedOrder.Asc(id(varFor("n"))))))
       // projection
-      val projections = Map("id(n)" -> function("id", varFor("n")))
+      val projections = Map("id(n)" -> id(varFor("n")))
 
       //when
       val result = lpp.planDistinct(plan, projections, projections, context)

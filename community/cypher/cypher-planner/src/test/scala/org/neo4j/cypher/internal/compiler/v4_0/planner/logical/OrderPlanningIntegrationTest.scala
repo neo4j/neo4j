@@ -256,7 +256,7 @@ class OrderPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
     val labelScan = NodeByLabelScan("a", labelName("A"), Set.empty)
     val ageProperty = prop("a", "age")
     val nameProperty = prop("a", "name")
-    val ageSum = function("sum", ageProperty)
+    val ageSum = sum(ageProperty)
 
     val aggregation = Aggregation(labelScan, Map("name" -> nameProperty), Map("age" -> ageSum))
     val sort = Sort(aggregation, Seq(Ascending("age")))
@@ -270,7 +270,7 @@ class OrderPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
     val labelScan = NodeByLabelScan("a", labelName("A"), Set.empty)
     val ageProperty = prop("a", "age")
     val nameProperty = prop("a", "name")
-    val ageSum = function("sum", ageProperty)
+    val ageSum = sum(ageProperty)
 
     val aggregation = Aggregation(labelScan, Map("name" -> nameProperty), Map("age" -> ageSum))
     val sort = Sort(aggregation, Seq(Ascending("name")))
@@ -285,7 +285,7 @@ class OrderPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
     val ageProperty = prop("a", "age")
     val nameProperty = prop("a", "name")
     val fooProperty = prop("a", "foo")
-    val ageSum = function("sum", ageProperty)
+    val ageSum = sum(ageProperty)
 
     val aggregation = Aggregation(labelScan, Map("name" -> nameProperty, "a" -> varFor("a")), Map("age" -> ageSum))
     val projection = Projection(aggregation, Map("a.foo" -> fooProperty))

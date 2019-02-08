@@ -36,25 +36,25 @@ class NormalizedEqualsArgumentsTest extends CypherFunSuite with AstConstructionT
   }
 
   test("happy if the Id-function in equals is normalized") {
-    val ast = equals(function("id", varFor("a")), literalInt(12))
+    val ast = equals(id(varFor("a")), literalInt(12))
 
     condition(ast) shouldBe empty
   }
 
   test("unhappy if the Id-function in equals is not normalized") {
-    val ast = equals(literalInt(12), function("id", varFor("a")))
+    val ast = equals(literalInt(12), id(varFor("a")))
 
     condition(ast) should equal(Seq(s"Equals at ${ast.position} is not normalized: $ast"))
   }
 
   test("happy if the Id-function and the property in equals are normalized") {
-    val ast = equals(function("id", varFor("a")), prop("a", "prop"))
+    val ast = equals(id(varFor("a")), prop("a", "prop"))
 
     condition(ast) shouldBe empty
   }
 
   test("unhappy if the Id-function and the property in equals are not normalized") {
-    val ast = equals(prop("a", "prop"), function("id", varFor("a")))
+    val ast = equals(prop("a", "prop"), id(varFor("a")))
 
     condition(ast) should equal(Seq(s"Equals at ${ast.position} is not normalized: $ast"))
   }

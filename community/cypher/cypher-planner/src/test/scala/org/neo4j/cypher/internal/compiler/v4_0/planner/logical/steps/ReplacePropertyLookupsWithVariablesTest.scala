@@ -62,14 +62,14 @@ class ReplacePropertyLookupsWithVariablesTest extends CypherFunSuite with PlanMa
   test("should rewrite [prop(n, prop)] to [CachedNodeProperty(n.prop)]") {
     val initialTable = semanticTable(property -> CTInteger)
     val plan = Selection(
-      Seq(equals(listOf(prop("n", "prop")), listOf(literalInt(1)))),
+      Seq(equals(listOf(prop("n", "prop")), listOfInt(1))),
       nodeIndexScan("n", "L", "prop")
     )
     val (newPlan, newTable) = replace(plan, initialTable)
 
     newPlan should equal(
       Selection(
-        Seq(equals(listOf(newCachedNodeProperty), listOf(literalInt(1)))),
+        Seq(equals(listOf(newCachedNodeProperty), listOfInt(1))),
         nodeIndexScan("n", "L", "prop")
       )
     )
@@ -79,14 +79,14 @@ class ReplacePropertyLookupsWithVariablesTest extends CypherFunSuite with PlanMa
   test("should rewrite {foo: prop(n, prop)} to {foo: CachedNodeProperty(n.prop)}") {
     val initialTable = semanticTable(property -> CTInteger)
     val plan = Selection(
-      Seq(equals(mapOf("foo" -> prop("n", "prop")), mapOf("foo" -> literalInt(1)))),
+      Seq(equals(mapOf("foo" -> prop("n", "prop")), mapOfInt(("foo", 1)))),
       nodeIndexScan("n", "L", "prop")
     )
     val (newPlan, newTable) = replace(plan, initialTable)
 
     newPlan should equal(
       Selection(
-        Seq(equals(mapOf("foo" -> newCachedNodeProperty), mapOf("foo" -> literalInt(1)))),
+        Seq(equals(mapOf("foo" -> newCachedNodeProperty), mapOfInt(("foo", 1)))),
         nodeIndexScan("n", "L", "prop")
       )
     )

@@ -44,7 +44,7 @@ class InequalityRangeSeekableTest extends CypherFunSuite with AstConstructionTes
 
   test("Constructs RangeGreaterThan") {
     valueRangeSeekable(
-      greaterThan(prop("n", "prop"), literalInt(1))
+      propGreaterThan("n", "prop", 1)
     ).range should equal(RangeGreaterThan(NonEmptyList(exclusive(1))))
 
     valueRangeSeekable(
@@ -52,8 +52,8 @@ class InequalityRangeSeekableTest extends CypherFunSuite with AstConstructionTes
     ).range should equal(RangeGreaterThan(NonEmptyList(inclusive(3))))
 
     valueRangeSeekable(
-      greaterThan(prop("n", "prop"), literalInt(1)),
-      greaterThan(prop("n", "prop"), literalInt(2)),
+      propGreaterThan("n", "prop", 1),
+      propGreaterThan("n", "prop", 2),
       greaterThanOrEqual(prop("n", "prop"), literalInt(3))
     ).range should equal(RangeGreaterThan(NonEmptyList(exclusive(1), exclusive(2), inclusive(3))))
   }
@@ -61,14 +61,14 @@ class InequalityRangeSeekableTest extends CypherFunSuite with AstConstructionTes
   test("Constructs RangeBetween") {
     valueRangeSeekable(
       propLessThan("n", "prop", 1),
-      greaterThan(prop("n", "prop"), literalInt(1))
+      propGreaterThan("n", "prop", 1)
     ).range should equal(RangeBetween(
       RangeGreaterThan(NonEmptyList(exclusive(1))),
       RangeLessThan(NonEmptyList(exclusive(1))))
     )
 
     valueRangeSeekable(
-      greaterThan(prop("n", "prop"), literalInt(1)),
+      propGreaterThan("n", "prop", 1),
       propLessThan("n", "prop", 1)
     ).range should equal(RangeBetween(
       RangeGreaterThan(NonEmptyList(exclusive(1))),

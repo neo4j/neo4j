@@ -42,8 +42,8 @@ class NormalizeArgumentOrderTest extends CypherFunSuite with AstConstructionTest
   }
 
   test("id(a) = id(b) rewritten to: id(a) = id(b)") {
-    val lhs = function("id", varFor("a"))
-    val rhs = function("id", varFor("b"))
+    val lhs = id(varFor("a"))
+    val rhs = id(varFor("b"))
 
     val input = equals(lhs, rhs)
 
@@ -52,7 +52,7 @@ class NormalizeArgumentOrderTest extends CypherFunSuite with AstConstructionTest
 
   test("23 = id(a) rewritten to: id(a) = 23") {
     val lhs = literalInt(12)
-    val rhs = function("id", varFor("a"))
+    val rhs = id(varFor("a"))
 
     val input = equals(lhs, rhs)
     val expected = equals(rhs, lhs)
@@ -62,7 +62,7 @@ class NormalizeArgumentOrderTest extends CypherFunSuite with AstConstructionTest
 
   test("a.prop = id(b) rewritten to: id(b) = a.prop") {
     val lhs = prop("a", "prop")
-    val rhs = function("id", varFor("b"))
+    val rhs = id(varFor("b"))
 
     val input = equals(rhs, lhs)
 
@@ -70,7 +70,7 @@ class NormalizeArgumentOrderTest extends CypherFunSuite with AstConstructionTest
   }
 
   test("id(a) = b.prop rewritten to: id(a) = b.prop") {
-    val lhs = function("id", varFor("a"))
+    val lhs = id(varFor("a"))
     val rhs = prop("b", "prop")
 
     val input = equals(lhs, rhs)
@@ -79,7 +79,7 @@ class NormalizeArgumentOrderTest extends CypherFunSuite with AstConstructionTest
   }
 
   test("a < n.prop rewritten to: n.prop > a") {
-    val lhs = function("id", varFor("a"))
+    val lhs = id(varFor("a"))
     val rhs = prop("n", "prop")
 
     val input = lessThan(lhs, rhs)
@@ -88,7 +88,7 @@ class NormalizeArgumentOrderTest extends CypherFunSuite with AstConstructionTest
   }
 
   test("a <= n.prop rewritten to: n.prop >= a") {
-    val lhs = function("id", varFor("a"))
+    val lhs = id(varFor("a"))
     val rhs = prop("n", "prop")
 
     val input = lessThanOrEqual(lhs, rhs)
@@ -97,7 +97,7 @@ class NormalizeArgumentOrderTest extends CypherFunSuite with AstConstructionTest
   }
 
   test("a > n.prop rewritten to: n.prop < a") {
-    val lhs = function("id", varFor("a"))
+    val lhs = id(varFor("a"))
     val rhs = prop("n", "prop")
 
     val input = greaterThan(lhs, rhs)
@@ -106,7 +106,7 @@ class NormalizeArgumentOrderTest extends CypherFunSuite with AstConstructionTest
   }
 
   test("a >= n.prop rewritten to: n.prop <= a") {
-    val lhs = function("id", varFor("a"))
+    val lhs = id(varFor("a"))
     val rhs = prop("n", "prop")
 
     val input = greaterThanOrEqual(lhs, rhs)

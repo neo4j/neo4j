@@ -17,7 +17,7 @@
 package org.neo4j.cypher.internal.v4_0.ast
 
 import org.neo4j.cypher.internal.v4_0.expressions._
-import org.neo4j.cypher.internal.v4_0.expressions.functions.{Avg, Collect, Count, Max, Min, Sum}
+import org.neo4j.cypher.internal.v4_0.expressions.functions.{Avg, Collect, Count, Id, Max, Min, Sum}
 import org.neo4j.cypher.internal.v4_0.util.symbols.CypherType
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherTestSupport
 import org.neo4j.cypher.internal.v4_0.util.{DummyPosition, InputPosition}
@@ -51,6 +51,9 @@ trait AstConstructionTestSupport extends CypherTestSupport {
   def propLessThan(variable: String, propKey: String, intValue: Int): LessThan =
     LessThan(prop(variable, propKey), literalInt(intValue))(pos)
 
+  def propGreaterThan(variable: String, propKey: String, intValue: Int): GreaterThan =
+    greaterThan(prop(variable, propKey), literalInt(intValue))
+
   def literalString(stringValue: String): StringLiteral =
     StringLiteral(stringValue)(pos)
 
@@ -69,8 +72,8 @@ trait AstConstructionTestSupport extends CypherTestSupport {
   def listOfInt(intValues: Int*): ListLiteral =
     ListLiteral(intValues.toSeq.map(literalInt))(pos)
 
-  def listOfFloat(floatValues: Double*): ListLiteral =
-    ListLiteral(floatValues.toSeq.map(literalFloat))(pos)
+  def listOfString(stringValues: String*): ListLiteral =
+    ListLiteral(stringValues.toSeq.map(literalString))(pos)
 
   def mapOf(keysAndValues: (String, Expression)*): MapExpression =
     MapExpression(keysAndValues.map {
@@ -122,6 +125,9 @@ trait AstConstructionTestSupport extends CypherTestSupport {
 
   def sum(expression: Expression): FunctionInvocation =
     FunctionInvocation(expression, FunctionName(Sum.name)(pos))
+
+  def id(expression: Expression): FunctionInvocation =
+    FunctionInvocation(expression, FunctionName(Id.name)(pos))
 
   def not(expression: Expression): Not = Not(expression)(pos)
 

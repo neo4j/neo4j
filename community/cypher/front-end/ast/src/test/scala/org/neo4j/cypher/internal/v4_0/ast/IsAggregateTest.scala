@@ -40,7 +40,7 @@ class IsAggregateTest extends CypherFunSuite with AstConstructionTestSupport {
   }
 
   test("id(null) is not an aggregate expression") {
-    val expr = function("id", nullLiteral)
+    val expr = id(nullLiteral)
 
     IsAggregate.unapply(expr) should equal(None)
   }

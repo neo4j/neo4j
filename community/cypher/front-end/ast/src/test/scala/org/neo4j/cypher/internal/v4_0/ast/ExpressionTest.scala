@@ -61,7 +61,7 @@ class ExpressionTest extends CypherFunSuite with AstConstructionTestSupport {
     )_
     val innerExpr: Expression = ExtractExpression(
       varFor("y"),
-      listOf(literalInt(1), literalInt(2), literalInt(3)),
+      listOfInt(1, 2, 3),
       None,
       Some(varFor("y"))
     )_

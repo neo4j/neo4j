@@ -233,7 +233,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
     plan._2 should equal(
       Expand(
-        Selection(ands(AndedPropertyInequalities(varFor("m"), prop("m", "prop"), NonEmptyList(lessThan(prop("m", "prop"), literalInt(50))))),
+        Selection(ands(AndedPropertyInequalities(varFor("m"), prop("m", "prop"), NonEmptyList(propLessThan("m", "prop", 50)))),
           Projection(
             IndexSeek("n:Awesome(prop > 42)", GetValue),
             Map("m" -> varFor("n")))),
@@ -965,6 +965,12 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
       )
     )
   }
+
+  private def cachedNodePropertyProj(node: String, property: String) =
+    s"$node.$property" -> cachedNodeProperty(node, property)
+
+  private def cachedNodePropertyProj(alias: String, node: String, property: String ) =
+    alias -> cachedNodeProperty(node, property)
 
   private def propertyProj(node: String, property: String ) =
     s"$node.$property" -> prop(node, property)
