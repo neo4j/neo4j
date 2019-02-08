@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v4_0.planner.logical
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v4_0.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.ir.v4_0.RegularPlannerQuery
-import org.neo4j.cypher.internal.v4_0.expressions._
+import org.neo4j.cypher.internal.v4_0.expressions.{RelTypeName, SemanticDirection}
 import org.neo4j.cypher.internal.v4_0.logical.plans._
 
 class NodeHashJoinPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
@@ -43,7 +43,7 @@ class NodeHashJoinPlanningIntegrationTest extends CypherFunSuite with LogicalPla
 
     val expected =
       Selection(
-        Ands(Set(Not(Equals(Variable("r1")_, Variable("r2")_)_)_))_,
+        ands(not(equals(varFor("r1"), varFor("r2")))),
         NodeHashJoin(
           Set("b"),
           Expand(
@@ -77,10 +77,10 @@ class NodeHashJoinPlanningIntegrationTest extends CypherFunSuite with LogicalPla
 
     val expected =
       Selection(
-        Ands(Set(
-          Not(Equals(Variable("r1") _, Variable("r2") _) _) _,
-          Equals(Property(Variable("a") _, PropertyKeyName("prop") _) _, Property(Variable("c") _, PropertyKeyName("prop") _) _) _
-        ))_,
+        ands(
+          not(equals(varFor("r1"), varFor("r2"))),
+          equals(prop("a", "prop"), prop("c", "prop"))
+        ),
         NodeHashJoin(
           Set("b"),
           Expand(

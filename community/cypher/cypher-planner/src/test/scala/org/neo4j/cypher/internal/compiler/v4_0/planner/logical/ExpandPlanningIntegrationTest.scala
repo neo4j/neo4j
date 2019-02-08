@@ -23,9 +23,9 @@ import org.neo4j.cypher.internal.compiler.v4_0.planner.BeLikeMatcher._
 import org.neo4j.cypher.internal.compiler.v4_0.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.ir.v4_0.{PlannerQuery, RegularPlannerQuery}
 import org.neo4j.cypher.internal.v4_0.logical.plans._
-import org.neo4j.cypher.internal.v4_0.expressions._
+import org.neo4j.cypher.internal.v4_0.expressions.{RelTypeName, SemanticDirection}
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.v4_0.util.{Cardinality, LabelId, PropertyKeyId}
+import org.neo4j.cypher.internal.v4_0.util.Cardinality
 
 class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
@@ -80,7 +80,7 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningT
       }
 
     } getLogicalPlanFor "MATCH (a)-[r1]->(b)<-[r2]-(a) RETURN r1, r2")._2 should equal(
-      Selection(Ands(Set(Not(Equals(Variable("r1")_,Variable("r2")_)_)_))_,
+      Selection(ands(not(equals(varFor("r1"), varFor("r2")))),
         Expand(
           Expand(
             AllNodesScan("a",Set.empty),
@@ -102,7 +102,7 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningT
     } getLogicalPlanFor "MATCH (start)-[rel:x]-(a) WHERE a.name = 'Andres' return a")._2 should equal(
         Expand(
           Selection(
-            Ands(Set(In(Property(Variable("a")_, PropertyKeyName("name")_)_, ListLiteral(Seq(StringLiteral("Andres")_))_)_))_,
+            ands(in(prop("a", "name"), listOf(literalString("Andres")))),
             AllNodesScan("a", Set.empty)
           ),
           "a", SemanticDirection.BOTH, Seq(RelTypeName("x")_), "start", "rel"

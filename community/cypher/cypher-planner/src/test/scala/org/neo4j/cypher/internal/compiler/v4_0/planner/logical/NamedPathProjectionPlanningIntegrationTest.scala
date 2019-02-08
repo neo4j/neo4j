@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v4_0.planner.logical
 import org.neo4j.cypher.internal.compiler.v4_0.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.v4_0.logical.plans.{Expand, NodeByLabelScan, Projection, Selection}
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.v4_0.expressions._
+import org.neo4j.cypher.internal.v4_0.expressions.{NodePathStep, PathExpression, SemanticDirection, SingleRelationshipPathStep, NilPathStep}
 
 class NamedPathProjectionPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
@@ -31,45 +31,45 @@ class NamedPathProjectionPlanningIntegrationTest extends CypherFunSuite with Log
       Projection(
         Expand( NodeByLabelScan("a",  labelName("X"), Set.empty), "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r"),
         projectExpressions = Map(
-          "p" -> PathExpression(NodePathStep(Variable("a")_,SingleRelationshipPathStep(Variable("r")_, SemanticDirection.OUTGOING, Some(Variable("b")_), NilPathStep)))_
+          "p" -> PathExpression(NodePathStep(varFor("a"),SingleRelationshipPathStep(varFor("r"), SemanticDirection.OUTGOING, Some(varFor("b")), NilPathStep)))_
         )
       )
     )
   }
 
   test("should build plans containing path projections and path selections") {
-    val pathExpr = PathExpression(NodePathStep(Variable("a")_,SingleRelationshipPathStep(Variable("r")_, SemanticDirection.OUTGOING, Some(Variable("b")_), NilPathStep)))_
+    val pathExpr = PathExpression(NodePathStep(varFor("a"),SingleRelationshipPathStep(varFor("r"), SemanticDirection.OUTGOING, Some(varFor("b")), NilPathStep)))_
 
     val result = planFor("MATCH p = (a:X)-[r]->(b) WHERE head(nodes(p)) = a RETURN b")._2
 
     result should equal(
       Selection(
-        Ands(Set(Equals(
-          FunctionInvocation(FunctionName("head") _, FunctionInvocation(FunctionName("nodes") _, pathExpr) _) _,
+        ands(equals(
+          function("head", function("nodes", pathExpr)),
           varFor("a")
-        ) _))_,
+        )),
           Expand(NodeByLabelScan("a", labelName("X"), Set.empty), "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r")
       )
     )
   }
 
   test("should build plans containing multiple path projections and path selections") {
-    val pathExpr = PathExpression(NodePathStep(Variable("a")_,SingleRelationshipPathStep(Variable("r")_, SemanticDirection.OUTGOING, Some(Variable("b")_), NilPathStep)))_
+    val pathExpr = PathExpression(NodePathStep(varFor("a"),SingleRelationshipPathStep(varFor("r"), SemanticDirection.OUTGOING, Some(varFor("b")), NilPathStep)))_
 
     val result = planFor("MATCH p = (a:X)-[r]->(b) WHERE head(nodes(p)) = a AND length(p) > 10 RETURN b")._2
 
     result should equal(
       Selection(
-        Ands(Set(
-          Equals(
-            FunctionInvocation(FunctionName("head") _, FunctionInvocation(FunctionName("nodes") _, pathExpr) _) _,
-            Variable("a") _
-          ) _,
-          GreaterThan(
-            FunctionInvocation(FunctionName("length") _, pathExpr) _,
-            SignedDecimalIntegerLiteral("10") _
-          ) _
-        ))_,
+        ands(
+          equals(
+            function("head", function("nodes", pathExpr)),
+            varFor("a")
+          ),
+          greaterThan(
+            function("length", pathExpr),
+            literalInt(10)
+          )
+        ),
           Expand(NodeByLabelScan("a", labelName("X"), Set.empty), "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r")
       )
     )

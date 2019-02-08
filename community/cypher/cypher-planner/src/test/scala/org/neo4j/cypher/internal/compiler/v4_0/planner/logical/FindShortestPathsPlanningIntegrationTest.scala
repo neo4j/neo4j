@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v4_0.planner.LogicalPlanningTestSuppor
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.ir.v4_0._
 import org.neo4j.cypher.internal.v4_0.logical.plans._
-import org.neo4j.cypher.internal.v4_0.expressions._
+import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
 
 class FindShortestPathsPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
@@ -44,11 +44,8 @@ class FindShortestPathsPlanningIntegrationTest extends CypherFunSuite with Logic
   }
 
   test("find shortest path with length predicate and WITH should not plan fallback") {
-
-    val lengthOfP = FunctionInvocation(Namespace(List()) _, FunctionName("length") _, distinct = false, Vector(Variable("p") _)) _
-
     planFor("MATCH (a), (b), p = shortestPath((a)-[r]->(b)) WITH p WHERE length(p) > 1 RETURN p")._2 should equal(
-      Selection(Ands(Set(GreaterThan(lengthOfP, SignedDecimalIntegerLiteral("1") _) _)) _,
+      Selection(ands(greaterThan(function("length", varFor("p")), literalInt(1))),
         FindShortestPaths(
           CartesianProduct(
             AllNodesScan("a", Set.empty),
@@ -96,7 +93,7 @@ class FindShortestPathsPlanningIntegrationTest extends CypherFunSuite with Logic
     val expected =
       FindShortestPaths(
         Selection(
-          Ands(Set(Not(Equals(Variable("r1") _, Variable("r2") _) _) _))_,
+          ands(not(equals(varFor("r1"), varFor("r2")))),
           NodeHashJoin(
             Set("b"),
             Expand(

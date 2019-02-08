@@ -22,28 +22,22 @@ package org.neo4j.cypher.internal.compiler.v4_0.planner.logical
 import org.neo4j.cypher.internal.compiler.v4_0.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection.OUTGOING
-import org.neo4j.cypher.internal.v4_0.expressions._
+import org.neo4j.cypher.internal.v4_0.expressions.RelTypeName
 import org.neo4j.cypher.internal.v4_0.logical.plans._
 
 class MergeRelationshipPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
-
-  private val aId = "a"
-  private val bId = "b"
-  private val rId = "r"
-  private val argId = "arg"
-
   test("should plan simple expand") {
-    val nodeByLabelScan = NodeByLabelScan(aId, LabelName("A")(pos), Set.empty)
-    val expand = Expand(nodeByLabelScan, aId, OUTGOING, Seq(RelTypeName("R")(pos)), bId, rId)
+    val nodeByLabelScan = NodeByLabelScan("a", labelName("A"), Set.empty)
+    val expand = Expand(nodeByLabelScan, "a", OUTGOING, Seq(RelTypeName("R")(pos)), "b", "r")
 
     val optional = Optional(expand)
     val argument = Argument()
-    val createNodeA = MergeCreateNode(argument, aId, Seq(LabelName("A")(pos)), None)
-    val createNodeB = MergeCreateNode(createNodeA, bId, Seq.empty, None)
+    val createNodeA = MergeCreateNode(argument, "a", Seq(labelName("A")), None)
+    val createNodeB = MergeCreateNode(createNodeA, "b", Seq.empty, None)
 
-    val onCreate = MergeCreateRelationship(createNodeB, rId, aId, RelTypeName("R")(pos), bId, None)
+    val onCreate = MergeCreateRelationship(createNodeB, "r", "a", RelTypeName("R")(pos), "b", None)
 
-    val mergeNode = AntiConditionalApply(optional, onCreate, Seq(aId, bId, rId))
+    val mergeNode = AntiConditionalApply(optional, onCreate, Seq("a", "b", "r"))
     val emptyResult = EmptyResult(mergeNode)
 
     planFor("MERGE (a:A)-[r:R]->(b)")._2 should equal(emptyResult)
@@ -51,19 +45,19 @@ class MergeRelationshipPlanningIntegrationTest extends CypherFunSuite with Logic
 
   test("should plan simple expand with argument dependency") {
     val leaf = Argument()
-    val projection = Projection(leaf, Map("arg" -> SignedDecimalIntegerLiteral("42")(pos)))
-    val nodeByLabelScan = NodeByLabelScan(aId, LabelName("A")(pos), Set(argId))
-    val selection = Selection(Seq(In(Property(Variable("a")(pos), PropertyKeyName("p")(pos))(pos), ListLiteral(Seq(Variable("arg")(pos)))(pos))(pos)), nodeByLabelScan)
-    val expand = Expand(selection, aId, OUTGOING, Seq(RelTypeName("R")(pos)), bId, rId)
+    val projection = Projection(leaf, Map("arg" -> literalInt(42)))
+    val nodeByLabelScan = NodeByLabelScan("a", labelName("A"), Set("arg"))
+    val selection = Selection(Seq(in(prop("a", "p"), listOf(varFor("arg")))), nodeByLabelScan)
+    val expand = Expand(selection, "a", OUTGOING, Seq(RelTypeName("R")(pos)), "b", "r")
 
-    val optional = Optional(expand, Set(argId))
-    val argument = Argument(Set(argId))
-    val createNodeA = MergeCreateNode(argument, aId, Seq(LabelName("A")(pos)), Some(MapExpression(Seq((PropertyKeyName("p")(pos), Variable("arg")(pos))))(pos)))
-    val createNodeB = MergeCreateNode(createNodeA, bId, Seq.empty, None)
+    val optional = Optional(expand, Set("arg"))
+    val argument = Argument(Set("arg"))
+    val createNodeA = MergeCreateNode(argument, "a", Seq(labelName("A")), Some(mapOf(("p", varFor("arg")))))
+    val createNodeB = MergeCreateNode(createNodeA, "b", Seq.empty, None)
 
-    val onCreate = MergeCreateRelationship(createNodeB, rId, aId, RelTypeName("R")(pos), bId, None)
+    val onCreate = MergeCreateRelationship(createNodeB, "r", "a", RelTypeName("R")(pos), "b", None)
 
-    val mergeNode = AntiConditionalApply(optional, onCreate, Seq(aId, bId, rId))
+    val mergeNode = AntiConditionalApply(optional, onCreate, Seq("a", "b", "r"))
     val apply = Apply(projection, mergeNode)
     val emptyResult = EmptyResult(apply)
 
@@ -159,7 +153,7 @@ class MergeRelationshipPlanningIntegrationTest extends CypherFunSuite with Logic
               AllNodesScan("n", Set()),
               AllNodesScan("m", Set())
             ),
-            Map("a" -> Variable("n")(pos), "b" -> Variable("m")(pos))
+            Map("a" -> varFor("n"), "b" -> varFor("m"))
           ),
           AntiConditionalApply(
             AntiConditionalApply(
@@ -192,7 +186,7 @@ class MergeRelationshipPlanningIntegrationTest extends CypherFunSuite with Logic
         Apply(
           Projection(
             AllNodesScan("n", Set()),
-            Map("a" -> Variable("n")(pos))
+            Map("a" -> varFor("n"))
           ),
           AntiConditionalApply(
             AntiConditionalApply(

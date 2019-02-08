@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.compiler.v4_0.planner.logical
 import org.neo4j.cypher.internal.compiler.v4_0.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.ir.v4_0.CreateNode
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.v4_0.expressions.{MapExpression, PropertyKeyName, SignedDecimalIntegerLiteral}
 import org.neo4j.cypher.internal.v4_0.logical.plans._
 
 class CreateNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
@@ -90,7 +89,7 @@ class CreateNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlann
           List(
             CreateNode("a", Seq.empty,
               Some(
-                MapExpression(Seq((PropertyKeyName("prop")(pos), SignedDecimalIntegerLiteral("42")(pos))))(pos)
+                mapOfInt(("prop", 42))
               )
             )
           ),

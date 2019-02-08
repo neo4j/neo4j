@@ -26,22 +26,21 @@ import org.neo4j.cypher.internal.planner.v4_0.spi.PlanningAttributes
 import org.neo4j.cypher.internal.planner.v4_0.spi.PlanningAttributes.Solveds
 import org.neo4j.cypher.internal.v4_0.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.v4_0.ast.UsingIndexHint
-import org.neo4j.cypher.internal.v4_0.expressions.{LabelName, PropertyKeyName}
+import org.neo4j.cypher.internal.v4_0.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.v4_0.frontend.phases.devNullLogger
 import org.neo4j.cypher.internal.v4_0.util.Cost
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 
 class PickBestPlanUsingHintsAndCostTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
-  val GIVEN_FIXED_COST = new given {
+  private val GIVEN_FIXED_COST = new given {
     cost = {
       case _ => Cost(100)
     }
   }
 
-  val hint1: UsingIndexHint = UsingIndexHint(varFor("n"), LabelName("Person")_, Seq(PropertyKeyName("name")_))_
-  val hint2: UsingIndexHint = UsingIndexHint(varFor("n"), LabelName("Person")_, Seq(PropertyKeyName("age")_))_
-  val hint3: UsingIndexHint = UsingIndexHint(varFor("n"), LabelName("Person")_, Seq(PropertyKeyName("income")_))_
+  private val hint1: UsingIndexHint = UsingIndexHint(varFor("n"), labelName("Person"), Seq(PropertyKeyName("name")_))_
+  private val hint2: UsingIndexHint = UsingIndexHint(varFor("n"), labelName("Person"), Seq(PropertyKeyName("age")_))_
 
   test("picks the right plan by cost, no matter the cardinality") {
     val a = fakeLogicalPlanFor("a")
@@ -88,10 +87,8 @@ class PickBestPlanUsingHintsAndCostTest extends CypherFunSuite with LogicalPlann
 
   test("Prefers plans that solve more hints") {
     val solveds = new Solveds
-    val f: PlannerQuery => PlannerQuery = (query: PlannerQuery) => query.amendQueryGraph(_.addHints(Some(hint1)))
     val a = fakeLogicalPlanFor("a")
     solveds.set(a.id, PlannerQuery.empty.amendQueryGraph(_.addHints(Some(hint1))))
-    val g: PlannerQuery => PlannerQuery = (query: PlannerQuery) => query.amendQueryGraph(_.addHints(Seq(hint1, hint2)))
     val b = fakeLogicalPlanFor("a")
     solveds.set(b.id, PlannerQuery.empty.amendQueryGraph(_.addHints(Seq(hint1, hint2))))
 
@@ -100,17 +97,15 @@ class PickBestPlanUsingHintsAndCostTest extends CypherFunSuite with LogicalPlann
 
   test("Prefers plans that solve more hints in tails") {
     val solveds = new Solveds
-    val f: PlannerQuery => PlannerQuery = (query: PlannerQuery) => query.amendQueryGraph(_.addHints(Some(hint1)))
     val a = fakeLogicalPlanFor("a")
     solveds.set(a.id, PlannerQuery.empty.amendQueryGraph(_.addHints(Some(hint1))))
-    val g: PlannerQuery => PlannerQuery = (query: PlannerQuery) => query.withTail(PlannerQuery.empty.amendQueryGraph(_.addHints(Seq(hint1, hint2))))
     val b = fakeLogicalPlanFor("a")
     solveds.set(b.id, PlannerQuery.empty.withTail(PlannerQuery.empty.amendQueryGraph(_.addHints(Seq(hint1, hint2)))))
 
     assertTopPlan(winner = b, PlanningAttributes(solveds, new StubCardinalities, new StubProvidedOrders), a, b)(GIVEN_FIXED_COST)
   }
 
-  private def assertTopPlan(winner: LogicalPlan, planningAttributes: PlanningAttributes, candidates: LogicalPlan*)(GIVEN: given)= {
+  private def assertTopPlan(winner: LogicalPlan, planningAttributes: PlanningAttributes, candidates: LogicalPlan*)(GIVEN: given): Unit = {
     val environment = LogicalPlanningEnvironment(GIVEN)
     val metrics: Metrics = environment.metricsFactory.newMetrics(GIVEN.statistics, GIVEN.expressionEvaluator, cypherCompilerConfig)
     val producer = LogicalPlanProducer(metrics.cardinality, planningAttributes, idGen)

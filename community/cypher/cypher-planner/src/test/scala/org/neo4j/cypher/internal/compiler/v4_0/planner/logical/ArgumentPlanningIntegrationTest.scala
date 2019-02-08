@@ -21,14 +21,13 @@ package org.neo4j.cypher.internal.compiler.v4_0.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v4_0.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.v4_0.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.v4_0.logical.plans.{Argument, Projection}
 
 class ArgumentPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
   test("should build plans containing single row") {
     planFor("RETURN 42")._2 should equal(
       Projection(
-        Argument(), projectExpressions = Map("42" -> SignedDecimalIntegerLiteral("42")_)
+        Argument(), projectExpressions = Map("42" -> literalInt(42))
       )
     )
   }

@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.compiler.v4_0.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v4_0.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.ir.v4_0._
-import org.neo4j.cypher.internal.v4_0.expressions.{Add, Multiply}
 import org.neo4j.cypher.internal.v4_0.logical.plans._
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 
@@ -128,7 +127,7 @@ class SortPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
   test("should return sorted plan when needed for expression") {
     // [WITH x] WITH x AS x ORDER BY 2 * (42 + x.foo)
     new given().withLogicalPlanningContext { (_, context) =>
-      val sortOn = Multiply(literalInt(2), Add(literalInt(42), prop("x", "foo"))(pos))(pos)
+      val sortOn = multiply(literalInt(2), add(literalInt(42), prop("x", "foo")))
       val io = InterestingOrder.required(RequiredOrderCandidate.asc(sortOn))
       val inputPlan = fakeLogicalPlanFor(context.planningAttributes, "x")
 
@@ -233,7 +232,7 @@ class SortPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
   test("should sort when needed for expression") {
     // [WITH x] WITH x AS x ORDER BY x.foo + 42
     new given().withLogicalPlanningContext { (_, context) =>
-      val sortOn = Add(prop("x", "foo"), literalInt(42))(pos)
+      val sortOn = add(prop("x", "foo"), literalInt(42))
       val io = InterestingOrder.required(RequiredOrderCandidate.asc(sortOn))
       val inputPlan = fakeLogicalPlanFor(context.planningAttributes, "x")
 
@@ -254,7 +253,7 @@ class SortPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
   test("should sort when needed for renamed expression") {
     // [WITH x] WITH x.foo + 42 AS add ORDER BY add
     new given().withLogicalPlanningContext { (_, context) =>
-      val sortOn = Add(prop("x", "foo"), literalInt(42))(pos)
+      val sortOn = add(prop("x", "foo"), literalInt(42))
       val io = InterestingOrder.required(RequiredOrderCandidate.asc(varFor("add"), Map("add" -> sortOn)))
       val inputPlan = fakeLogicalPlanFor(context.planningAttributes, "x")
 
@@ -270,8 +269,8 @@ class SortPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
   test("should sort and two step pre-projection for expressions") {
     // [WITH n] WITH n + 10 AS m ORDER BY m + 5 ASCENDING
-    val mExpr = Add(varFor("n"), literalInt(10))(pos)
-    val sortExpression = Add(varFor("m"), literalInt(5))(pos)
+    val mExpr = add(varFor("n"), literalInt(10))
+    val sortExpression = add(varFor("m"), literalInt(5))
 
     new given().withLogicalPlanningContext { (_, context) =>
       val inputPlan = fakeLogicalPlanFor(context.planningAttributes, "n")

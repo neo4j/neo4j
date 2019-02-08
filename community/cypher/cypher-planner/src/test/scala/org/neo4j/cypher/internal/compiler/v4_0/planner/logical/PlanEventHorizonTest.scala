@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v4_0.planner.logical
 import org.neo4j.cypher.internal.compiler.v4_0.planner.{LogicalPlanningTestSupport2, ProcedureCallProjection}
 import org.neo4j.cypher.internal.ir.v4_0._
 import org.neo4j.cypher.internal.v4_0.ast.ProcedureResultItem
-import org.neo4j.cypher.internal.v4_0.expressions._
+import org.neo4j.cypher.internal.v4_0.expressions.{Namespace, ProcedureName}
 import org.neo4j.cypher.internal.v4_0.logical.plans._
 import org.neo4j.cypher.internal.v4_0.util.symbols._
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
@@ -105,8 +105,8 @@ class PlanEventHorizonTest extends CypherFunSuite with LogicalPlanningTestSuppor
 
   test("should add the correct plans when query uses both ORDER BY, SKIP and LIMIT") {
     // given
-    val x: Expression = literalUnsignedInt(110)
-    val y: Expression = literalUnsignedInt(10)
+    val x = literalUnsignedInt(110)
+    val y = literalUnsignedInt(10)
     new given().withLogicalPlanningContext { (_, context) =>
       val interestingOrder = InterestingOrder.required(RequiredOrderCandidate.asc(varFor("x")))
       val horizon = RegularQueryProjection(Map("x" -> varFor("x")), queryPagination = QueryPagination(skip = Some(y), limit = Some(x)))

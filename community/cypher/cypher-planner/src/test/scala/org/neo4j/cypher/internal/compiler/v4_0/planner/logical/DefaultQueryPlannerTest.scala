@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.planner.v4_0.spi.PlanningAttributes.{Cardinalit
 import org.neo4j.cypher.internal.planner.v4_0.spi.{PlanContext, PlanningAttributes}
 import org.neo4j.cypher.internal.v4_0.ast.semantics.{ExpressionTypeInfo, SemanticTable}
 import org.neo4j.cypher.internal.v4_0.ast.{ASTAnnotationMap, Hint}
-import org.neo4j.cypher.internal.v4_0.expressions._
+import org.neo4j.cypher.internal.v4_0.expressions.Expression
 import org.neo4j.cypher.internal.v4_0.frontend.phases.devNullLogger
 import org.neo4j.cypher.internal.v4_0.logical.plans._
 import org.neo4j.cypher.internal.v4_0.util.attribution.IdGen

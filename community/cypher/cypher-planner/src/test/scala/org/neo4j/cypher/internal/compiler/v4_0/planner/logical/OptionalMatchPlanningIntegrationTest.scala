@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.planner.v4_0.spi.DelegatingGraphStatistics
 import org.neo4j.cypher.internal.v4_0.logical.plans.Limit
 import org.neo4j.cypher.internal.v4_0.logical.plans._
 import org.neo4j.kernel.impl.util.dbstructure.DbStructureLargeOptionalMatchStructure
-import org.neo4j.cypher.internal.v4_0.expressions._
+import org.neo4j.cypher.internal.v4_0.expressions.{RelTypeName, SemanticDirection}
 import org.neo4j.cypher.internal.v4_0.util.Foldable._
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.v4_0.util.Cardinality
@@ -185,7 +185,7 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
       )
       ) =>
         args should equal(Set("r", "a1"))
-        val predicate: Expression = Equals(Variable("a1") _, Variable("a2") _) _
+        val predicate = equals(varFor("a1"), varFor("a2"))
         predicates.exprs should equal(Set(predicate))
     }
   }
@@ -226,16 +226,11 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
         |OPTIONAL MATCH (n)-[r]-(m:Y)
         |WHERE m.prop = 42
         |RETURN m""".stripMargin)._2.endoRewrite(unnestOptional)
-    val allNodesN: LogicalPlan = NodeByLabelScan("n", LabelName("X") _, Set.empty)
-    val propEquality: Expression =
-      In(Property(varFor("m"), PropertyKeyName("prop") _) _, ListLiteral(List(SignedDecimalIntegerLiteral("42") _)) _) _
-
-    val labelCheck: Expression =
-      HasLabels(varFor("m"), List(LabelName("Y") _)) _
+    val allNodesN: LogicalPlan = NodeByLabelScan("n", labelName("X"), Set.empty)
 
     plan should equal(
       OptionalExpand(allNodesN, "n", SemanticDirection.BOTH, Seq.empty, "m", "r", ExpandAll,
-        Seq(propEquality, labelCheck))
+        Seq(in(prop("m", "prop"), listOfInt(42)), hasLabels("m", "Y")))
     )
   }
 

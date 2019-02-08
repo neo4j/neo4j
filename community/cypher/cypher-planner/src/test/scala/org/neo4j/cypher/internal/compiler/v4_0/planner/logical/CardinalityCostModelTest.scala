@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.Metrics.QueryGrap
 import org.neo4j.cypher.internal.ir.v4_0.LazyMode
 import org.neo4j.cypher.internal.planner.v4_0.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.v4_0.logical.plans._
-import org.neo4j.cypher.internal.v4_0.expressions.{Ands, HasLabels, LabelName, SemanticDirection}
+import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
 import org.neo4j.cypher.internal.v4_0.util.Cost
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 
@@ -33,9 +33,9 @@ class CardinalityCostModelTest extends CypherFunSuite with LogicalPlanningTestSu
   test("expand should only be counted once") {
     val cardinalities = new Cardinalities
     val plan =
-      setC(Selection(Ands(Set(HasLabels(varFor("a"), Seq(LabelName("Awesome") _)) _))_,
+      setC(Selection(ands(hasLabels("a", "Awesome")),
         setC(Expand(
-          setC(Selection(Ands(Set(HasLabels(varFor("a"), Seq(LabelName("Awesome") _)) _))_,
+          setC(Selection(ands(hasLabels("a", "Awesome")),
                          setC(Expand(
               setC(Argument(Set("a")), cardinalities, 10.0),
               "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r1"), cardinalities, 100.0)
@@ -65,7 +65,7 @@ class CardinalityCostModelTest extends CypherFunSuite with LogicalPlanningTestSu
     val lazyCardinalities = new Cardinalities
     val lazyPlan = setC(Projection(
       setC(Selection(
-        Seq(HasLabels(varFor("a2"), Seq(LabelName("A")(pos)))(pos)),
+        Seq(hasLabels("a2", "A")),
         setC(Expand(
           setC(Expand(
             setC(NodeByLabelScan("a1", labelName("A"), Set.empty), lazyCardinalities, 10.0),

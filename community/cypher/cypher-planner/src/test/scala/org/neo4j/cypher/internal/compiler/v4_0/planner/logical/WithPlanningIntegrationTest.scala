@@ -22,24 +22,22 @@ package org.neo4j.cypher.internal.compiler.v4_0.planner.logical
 import org.neo4j.cypher.internal.compiler.v4_0.planner.BeLikeMatcher.beLike
 import org.neo4j.cypher.internal.compiler.v4_0.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.ir.v4_0.{SimplePatternLength, VarPatternLength}
-import org.neo4j.cypher.internal.v4_0.util.test_helpers.{CypherFunSuite, WindowsStringSafe}
+import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.v4_0.expressions._
 import org.neo4j.cypher.internal.v4_0.logical.plans._
 
 class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
-  implicit val windowsSafe = WindowsStringSafe
-
   test("should build plans for simple WITH that adds a constant to the rows") {
     val result = planFor("MATCH (a) WITH a LIMIT 1 RETURN 1 as `b`")._2
     val expected =
       Projection(
         Limit(
           AllNodesScan("a", Set.empty),
-          SignedDecimalIntegerLiteral("1")(pos),
+          literalInt(1),
           DoNotIncludeTies
         ),
-        Map[String, Expression]("b" -> SignedDecimalIntegerLiteral("1") _)
+        Map[String, Expression]("b" -> literalInt(1))
       )
 
     result should equal(expected)
@@ -51,11 +49,11 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       Expand(
         Limit(
           AllNodesScan("a", Set()),
-          SignedDecimalIntegerLiteral("1")(pos), DoNotIncludeTies
+          literalInt(1), DoNotIncludeTies
         ),
         "a", OUTGOING, List(), "b", "r1", ExpandAll
       ),
-      SignedDecimalIntegerLiteral("1")(pos), DoNotIncludeTies
+      literalInt(1), DoNotIncludeTies
     )
 
     result should equal(expected)
@@ -64,11 +62,11 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
   test("should build plans with WITH and selections") {
     val result = planFor("MATCH (a) WITH a LIMIT 1 MATCH (a)-[r1]->(b) WHERE r1.prop = 42 RETURN r1")._2
     val expected = Selection(
-      Seq(In(Property(Variable("r1")(pos), PropertyKeyName("prop")(pos))(pos), ListLiteral(List(SignedDecimalIntegerLiteral("42")(pos)))(pos))(pos)),
+      Seq(in(prop("r1", "prop"), listOfInt(42))),
       Expand(
         Limit(
           AllNodesScan("a", Set()),
-          SignedDecimalIntegerLiteral("1")(pos), DoNotIncludeTies
+          literalInt(1), DoNotIncludeTies
         ),
         "a", OUTGOING, List(), "b", "r1", ExpandAll
       )
@@ -82,7 +80,7 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     val expected = Expand(
       Limit(
         AllNodesScan("a", Set()),
-        SignedDecimalIntegerLiteral("1")(pos), DoNotIncludeTies
+        literalInt(1), DoNotIncludeTies
       ),
       "a", OUTGOING, List(), "b", "r", ExpandAll
     )
@@ -98,7 +96,7 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
           AllNodesScan("a", Set()),
           "a", OUTGOING, List(), "b", "r", ExpandAll
         ),
-        SignedDecimalIntegerLiteral("1")(pos), DoNotIncludeTies
+        literalInt(1), DoNotIncludeTies
       ),
       ProjectEndpoints(
         Argument(Set("r")),
@@ -117,7 +115,7 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
           AllNodesScan("a", Set()),
           "a", OUTGOING, List(), "b", "r", ExpandAll
         ),
-        SignedDecimalIntegerLiteral("1")(pos), DoNotIncludeTies
+        literalInt(1), DoNotIncludeTies
       ),
       ProjectEndpoints(
         Argument(Set("a", "r")),
@@ -136,7 +134,7 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
           AllNodesScan("a", Set()),
           "a", OUTGOING, List(), "b", "r", ExpandAll
         ),
-        SignedDecimalIntegerLiteral("1")(pos), DoNotIncludeTies
+        literalInt(1), DoNotIncludeTies
       ),
       ProjectEndpoints(
         Argument(Set("a", "b", "r")),
@@ -155,7 +153,7 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
           AllNodesScan("a", Set()),
           "a", OUTGOING, List(), "b", "r", ExpandAll
         ),
-        SignedDecimalIntegerLiteral("1")(pos), DoNotIncludeTies
+        literalInt(1), DoNotIncludeTies
       ),
       ProjectEndpoints(
         Argument(Set("a", "r")),
@@ -174,7 +172,7 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
           AllNodesScan("a", Set()),
           "a", OUTGOING, List(), "b", "r", ExpandAll
         ),
-        SignedDecimalIntegerLiteral("1")(pos), DoNotIncludeTies
+        literalInt(1), DoNotIncludeTies
       ),
       ProjectEndpoints(
         Argument(Set("a", "r")),
@@ -191,9 +189,9 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       Limit(
         VarExpand(
           AllNodesScan("a", Set()),
-          "a", OUTGOING, OUTGOING, List(), "b", "r", VarPatternLength(1, None), ExpandAll, "r_NODES", "r_RELS", True()(pos), True()(pos), Seq()
+          "a", OUTGOING, OUTGOING, List(), "b", "r", VarPatternLength(1, None), ExpandAll, "r_NODES", "r_RELS", trueLiteral, trueLiteral, Seq()
         ),
-        SignedDecimalIntegerLiteral("1")(pos), DoNotIncludeTies
+        literalInt(1), DoNotIncludeTies
       ),
       ProjectEndpoints(
         Argument(Set("a", "r")),

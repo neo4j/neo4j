@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.compiler.v4_0.planner.logical
 
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v4_0.planner.LogicalPlanningTestSupport2
-import org.neo4j.cypher.internal.v4_0.expressions.Variable
 import org.neo4j.cypher.internal.v4_0.logical.plans.{Distinct, NodeByLabelScan, Projection}
 import org.neo4j.cypher.internal.v4_0.logical.plans.Union
 
@@ -38,11 +37,11 @@ class UnionPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
       Union(
         Projection(
           NodeByLabelScan("  a@7", labelName("A"), Set.empty),
-          Map("a" -> Variable("  a@7") _)
+          Map("a" -> varFor("  a@7"))
         ),
         Projection(
           NodeByLabelScan("  a@43", labelName("B"), Set.empty),
-          Map("a" -> Variable("  a@43") _)
+          Map("a" -> varFor("  a@43"))
         )
       )
     )
@@ -60,11 +59,11 @@ class UnionPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
         source = Union(
           Projection(
             NodeByLabelScan("  a@7", labelName("A"), Set.empty),
-            Map("a" -> Variable("  a@7") _)
+            Map("a" -> varFor("  a@7"))
           ),
           Projection(
             NodeByLabelScan("  a@39", labelName("B"), Set.empty),
-            Map("a" -> Variable("  a@39") _)
+            Map("a" -> varFor("  a@39"))
           )
         ),
         groupingExpressions = Map("a" -> varFor("a"))

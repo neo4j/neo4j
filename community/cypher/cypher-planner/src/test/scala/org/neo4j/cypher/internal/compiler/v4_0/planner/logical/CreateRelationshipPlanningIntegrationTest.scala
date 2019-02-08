@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v4_0.planner.logical
 import org.neo4j.cypher.internal.compiler.v4_0.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.ir.v4_0.{CreateNode, CreateRelationship}
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.v4_0.expressions.{RelTypeName, SemanticDirection, Variable}
+import org.neo4j.cypher.internal.v4_0.expressions.{RelTypeName, SemanticDirection}
 import org.neo4j.cypher.internal.v4_0.logical.plans._
 
 class CreateRelationshipPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
@@ -127,8 +127,8 @@ class CreateRelationshipPlanningIntegrationTest extends CypherFunSuite with Logi
               AllNodesScan("m", Set())
             ),
             Map(
-              "a" -> Variable("n")(pos),
-              "b" -> Variable("m")(pos)
+              "a" -> varFor("n"),
+              "b" -> varFor("m")
             )
           ),
           Nil,
@@ -146,7 +146,7 @@ class CreateRelationshipPlanningIntegrationTest extends CypherFunSuite with Logi
         Create(
           Projection(
             AllNodesScan("n", Set()),
-            Map("a" -> Variable("n")(pos))
+            Map("a" -> varFor("n"))
           ),
           List(
             CreateNode("b", Seq.empty, None)
