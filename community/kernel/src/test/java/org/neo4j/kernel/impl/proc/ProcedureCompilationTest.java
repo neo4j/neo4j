@@ -525,6 +525,28 @@ public class ProcedureCompilationTest
         assertThrows( ProcedureException.class, aggregator::result );
     }
 
+    @Test
+    void shouldCallAggregationFunctionWithObject() throws ProcedureException
+    {
+        // Given
+        UserFunctionSignature signature = functionSignature( "test", "foo" )
+                .in( "in", NTAny )
+                .out( NTAny ).build();
+
+        // When
+        CallableUserAggregationFunction first =
+                compileAggregation( signature, emptyList(), method( "first" ),
+                        method( First.class, "update", Object.class ), method( First.class, "result" ) );
+
+        // Then
+        UserAggregator aggregator = first.create( ctx );
+        aggregator.update( new AnyValue[]{longValue( 3 )} );
+        aggregator.update( new AnyValue[]{longValue( 4 )} );
+        aggregator.update( new AnyValue[]{longValue( 5 )} );
+
+        assertEquals( longValue( 3 ), aggregator.result() );
+    }
+
     private <T> FieldSetter createSetter( Class<?> owner, String field, ComponentRegistry.Provider<T> provider )
             throws NoSuchFieldException
     {
@@ -817,6 +839,11 @@ public class ProcedureCompilationTest
         return new BlackAdder();
     }
 
+    public First first()
+    {
+        return new First();
+    }
+
     public static class Adder
     {
         private long sum;
@@ -842,6 +869,24 @@ public class ProcedureCompilationTest
         public long result()
         {
             throw new RuntimeException( "you can't result" );
+        }
+    }
+
+    public static class First
+    {
+        private Object first;
+
+        public void update( Object in )
+        {
+            if ( first == null )
+            {
+                first = in;
+            }
+        }
+
+        public Object result()
+        {
+            return first;
         }
     }
 }

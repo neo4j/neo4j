@@ -510,6 +510,8 @@ public final class ProcedureCompilation
         }
         catch ( Throwable e )
         {
+            System.out.println(create.getName());
+            System.out.println(update.getDeclaringClass().getSimpleName());
             throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed, e,
                     "Failed to compile function defined in `%s`: %s", create.getDeclaringClass().getSimpleName(),
                     e.getMessage() );
@@ -662,20 +664,23 @@ public final class ProcedureCompilation
                         UserAggregator.class ) )
         {
             FieldReference aggregator = generator.field( userAggregatorClass, "aggregator" );
+            FieldReference context = generator.field( Context.class, "ctx" );
             //constructor
-            try ( CodeBlock constructor = generator.generateConstructor( param( userAggregatorClass, "aggregator" ) ) )
+            try ( CodeBlock constructor = generator.generateConstructor( param( userAggregatorClass, "aggregator" ),
+                    param( Context.class, "ctx" ) ) )
             {
                 constructor.expression( invokeSuper( OBJECT ) );
                 constructor.put( constructor.self(), aggregator, constructor.load( "aggregator" ) );
+                constructor.put( constructor.self(), context, constructor.load( "ctx" ) );
             }
 
             //update
             try ( CodeBlock block = generator.generate( AGGREGATION_UPDATE ) )
             {
                 block.tryCatch(
-                        onSuccess -> onSuccess
-                                .expression( invoke( get( onSuccess.self(), aggregator ), methodReference( update ),
-                                        parameters( onSuccess, update ) ) ),
+                        onSuccess ->
+                                onSuccess.expression( invoke( get( onSuccess.self(), aggregator ), methodReference( update ),
+                                        parameters( onSuccess, update, get( onSuccess.self(), context ) ) ) ),
                         onError ->
                                 onError( onError, format( "function `%s`", signature.name() ) ),
                         param( Throwable.class, "T" )
@@ -739,7 +744,7 @@ public final class ProcedureCompilation
         injectFields( block, fieldSetters, fieldsToSet, userClass );
 
         //get parameters to the user-method to call
-        Expression[] parameters = parameters( block, methodToCall );
+        Expression[] parameters = parameters( block, methodToCall, block.load("ctx") );
 
         //call the actual function
         block.assign( methodToCall.getReturnType(), "fromFunction",
@@ -752,7 +757,7 @@ public final class ProcedureCompilation
             FieldReference signature, Method methodToCall, Class<?> iterator, boolean isAdmin )
     {
         injectFields( block, fieldSetters, fieldsToSet, userClass );
-        Expression[] parameters = parameters( block, methodToCall );
+        Expression[] parameters = parameters( block, methodToCall, block.load("ctx") );
 
         if ( isAdmin )
         {
@@ -800,8 +805,8 @@ public final class ProcedureCompilation
         block.assign( createMethod.getReturnType(), "fromUser",
                 invoke( getStatic( userClass ), methodReference( createMethod ) ) );
         block.returns( invoke( newInstance( aggregator ),
-                constructorReference( aggregator, createMethod.getReturnType() ),
-                block.load( "fromUser" ) ) );
+                constructorReference( aggregator, createMethod.getReturnType(), Context.class ),
+                block.load( "fromUser" ), block.load( "ctx" ) ) );
     }
 
     /**
@@ -987,21 +992,22 @@ public final class ProcedureCompilation
      * <p>
      * In a lot of cases we can figure out the conversion statically, for example `LongValue` will
      * be turned into ((LongValue) value).longValue() etc. For composite types as Lists and Maps and also
-     * for Graph types such as Nodes, Relationships and Paths we will us a ValueMapper.
+     * for Graph types such as Nodes, Relationships and Paths we will use a ValueMapper.
      *
      * @param expectedType the java type expected by the procedure or function
      * @param expression an expression that will evaluate to an AnyValue
      * @param block The current code block.
+     * @param context The current context.
      * @return an expression properly typed to be consumed by function or procedure
      */
-    private static Expression fromAnyValue( TypeReference expectedType, Expression expression, CodeBlock block )
+    private static Expression fromAnyValue( TypeReference expectedType, Expression expression, CodeBlock block,
+            Expression context )
     {
         String type = expectedType.fullName();
         if ( type.equals( LONG ) )
         {
             return invoke( cast( NumberValue.class, expression ),
                     methodReference( NumberValue.class, long.class, "longValue" ) );
-
         }
         else if ( type.equals( BOXED_LONG ) )
         {
@@ -1073,10 +1079,6 @@ public final class ProcedureCompilation
         {
             return noValueCheck( expression, cast( TemporalAmount.class, expression ) );
         }
-        else if ( type.equals( PATH ) )
-        {
-            return noValueCheck( expression, invoke( methodReference( ValueUtils.class, PathValue.class, "fromPath", Path.class ), expression ));
-        }
         else if ( type.equals( POINT ) )
         {
             return noValueCheck( expression, invoke( cast( PointValue.class, expression ),
@@ -1084,12 +1086,10 @@ public final class ProcedureCompilation
         }
         else
         {
-            return
-                    cast( expectedType, invoke(
+            return cast( expectedType, invoke(
                             expression,
                             methodReference( AnyValue.class, Object.class, "map", ValueMapper.class ),
-                            invoke( block.load("ctx"), methodReference( Context.class, ValueMapper.class, "valueMapper" ) ) ) );
-
+                            invoke( context, methodReference( Context.class, ValueMapper.class, "valueMapper" ) ) ) );
         }
     }
 
@@ -1117,14 +1117,15 @@ public final class ProcedureCompilation
         return getStatic( field( typeReference( Values.class ), typeReference( Value.class ), "NO_VALUE" ) );
     }
 
-    private static Expression[] parameters( CodeBlock block, Method methodToCall )
+    private static Expression[] parameters( CodeBlock block, Method methodToCall, Expression context )
     {
         Class<?>[] parameterTypes = methodToCall.getParameterTypes();
         Expression[] parameters = new Expression[parameterTypes.length];
         for ( int i = 0; i < parameterTypes.length; i++ )
         {
             parameters[i] = fromAnyValue(
-                    typeReference( parameterTypes[i] ), arrayLoad( block.load( "input" ), constant( i ) ), block );
+                    typeReference( parameterTypes[i] ), arrayLoad( block.load( "input" ), constant( i ) ), block,
+                    context );
         }
         return parameters;
     }
