@@ -69,7 +69,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val expected = Seq(nodes(20), nodes(30))
-    runtimeResult should beColumns("x").withSingleValueRows(expected)
+    runtimeResult should beColumns("x").withRows(singleColumn(expected))
   }
 
   test("should exact (multiple, but empty) seek nodes of an index with a property") {
@@ -130,7 +130,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val expected = Seq(nodes(20))
-    runtimeResult should beColumns("x").withSingleValueRows(expected)
+    runtimeResult should beColumns("x").withRows(singleColumn(expected))
   }
 
   test("should exact seek nodes of a unique index with a property") {
@@ -172,7 +172,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val expected = Seq(nodes(20))
-    runtimeResult should beColumns("x").withSingleValueRows(expected)
+    runtimeResult should beColumns("x").withRows(singleColumn(expected))
   }
 
   test("should exact (multiple, with null) seek nodes of a unique index with a property") {
@@ -240,7 +240,7 @@ trait NodeLockingUniqueIndexSeekTestBase[CONTEXT <: RuntimeContext] {
 
     // then
     val expected = Seq(nodes(20))
-    runtimeResult should beColumns("x").withSingleValueRows(expected)
+    runtimeResult should beColumns("x").withRows(singleColumn(expected))
   }
 
 
@@ -289,7 +289,7 @@ trait NodeIndexSeekRangeAndCompositeTestBase[CONTEXT <: RuntimeContext] {
 
     // then
     val expected = nodes.zipWithIndex.filter{ case (_, i) => i % 10 == 0 && i > sizeHint / 2}.map(_._1)
-    runtimeResult should beColumns("x").withSingleValueRows(expected)
+    runtimeResult should beColumns("x").withRows(singleColumn(expected))
   }
 
   test("should seek nodes of a unique index with a property") {
@@ -310,7 +310,7 @@ trait NodeIndexSeekRangeAndCompositeTestBase[CONTEXT <: RuntimeContext] {
 
     // then
     val expected = nodes.zipWithIndex.filter{ case (_, i) => i % 10 == 0 && i > sizeHint / 2}.map(_._1)
-    runtimeResult should beColumns("x").withSingleValueRows(expected)
+    runtimeResult should beColumns("x").withRows(singleColumn(expected))
   }
 
   test("should support composite index") {
@@ -352,7 +352,7 @@ trait NodeIndexSeekRangeAndCompositeTestBase[CONTEXT <: RuntimeContext] {
 
     // then
     val expected = nodes.zipWithIndex.collect { case (n, i) if i % 2 == 0 && i % 5 == 0 && i % 3 == 0 => n }
-    runtimeResult should beColumns("x").withSingleValueRows(expected)
+    runtimeResult should beColumns("x").withRows(singleColumn(expected))
   }
 
   test("should support composite index (multiple values)") {
@@ -440,7 +440,7 @@ trait NodeIndexSeekRangeAndCompositeTestBase[CONTEXT <: RuntimeContext] {
     val runtimeResult = execute(logicalQuery, runtime, input)
 
     // then
-    runtimeResult should beColumns("x").withSingleValueRows(Seq(nodes(20), nodes(50)))
+    runtimeResult should beColumns("x").withRows(singleColumn(Seq(nodes(20), nodes(50))))
   }
 
   test("should seek nodes of an index with a property in ascending order") {
@@ -461,7 +461,7 @@ trait NodeIndexSeekRangeAndCompositeTestBase[CONTEXT <: RuntimeContext] {
 
     // then
     val expected = nodes.zipWithIndex.filter{ case (_, i) => i % 10 == 0 && i > sizeHint / 2}.map(_._1)
-    runtimeResult should beColumns("x").withSingleValueRows(expected).inOrder
+    runtimeResult should beColumns("x").withRows(singleColumnInOrder(expected))
   }
 
   test("should seek nodes of an index with a property in descending order") {
@@ -482,6 +482,6 @@ trait NodeIndexSeekRangeAndCompositeTestBase[CONTEXT <: RuntimeContext] {
 
     // then
     val expected = nodes.zipWithIndex.filter{ case (_, i) => i % 10 == 0 && i > sizeHint / 2}.map(_._1).reverse
-    runtimeResult should beColumns("x").withSingleValueRows(expected).inOrder
+    runtimeResult should beColumns("x").withRows(singleColumnInOrder(expected))
   }
 }

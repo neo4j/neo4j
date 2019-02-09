@@ -47,7 +47,7 @@ abstract class NodeIndexScanTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val expected = nodes.filter{ _.hasProperty("calories") }
-    runtimeResult should beColumns("x").withSingleValueRows(expected)
+    runtimeResult should beColumns("x").withRows(singleColumn(expected))
   }
 
   test("should scan all nodes of a unique index with a property") {
@@ -68,7 +68,7 @@ abstract class NodeIndexScanTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val expected = nodes.filter{ _.hasProperty("calories") }
-    runtimeResult should beColumns("x").withSingleValueRows(expected)
+    runtimeResult should beColumns("x").withRows(singleColumn(expected))
   }
 
   test("should cache properties") {

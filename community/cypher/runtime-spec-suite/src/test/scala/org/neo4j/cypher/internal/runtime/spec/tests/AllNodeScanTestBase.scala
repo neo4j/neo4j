@@ -43,7 +43,7 @@ abstract class AllNodeScanTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    runtimeResult should beColumns("x").withSingleValueRows(nodes)
+    runtimeResult should beColumns("x").withRows(singleColumn(nodes))
   }
 
 
@@ -60,7 +60,7 @@ abstract class AllNodeScanTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    runtimeResult should beColumns("x").withSingleValueRows(nodes)
+    runtimeResult should beColumns("x").withRows(singleColumn(nodes))
   }
 
   test("should scan empty graph") {

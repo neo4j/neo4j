@@ -40,7 +40,7 @@ class RuntimeSampleTest extends RuntimeTestSuite(COMMUNITY_EDITION, InterpretedR
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    runtimeResult should beColumns("x").withSingleValueRows(nodes)
+    runtimeResult should beColumns("x").withRows(singleColumn(nodes))
   }
 
   test("sample test II - logical plan with branches") {

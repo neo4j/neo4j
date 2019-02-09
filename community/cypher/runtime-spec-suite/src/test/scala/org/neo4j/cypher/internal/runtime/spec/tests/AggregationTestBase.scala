@@ -23,6 +23,7 @@ import java.time.Duration
 import java.time.temporal.ChronoUnit
 import java.util.Collections
 
+import org.neo4j.cypher.internal.runtime.spec.Rows.ANY_VALUE_ORDERING
 import org.neo4j.cypher.internal.runtime.spec._
 import org.neo4j.cypher.internal.v4_0.expressions.CountStar
 import org.neo4j.cypher.internal.{CypherRuntime, RuntimeContext}
@@ -50,7 +51,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    runtimeResult should beColumns("c").withRow(sizeHint)
+    runtimeResult should beColumns("c").withRows(singleRow(sizeHint))
   }
 
   test("should count(*) on single grouping column") {
@@ -173,10 +174,10 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    runtimeResult should beColumns("c").withResultMatching {
+    runtimeResult should beColumns("c").withRows(matching {
       // The order of the collected elements in the list can differ
       case Seq(Array(d:ListValue)) if d.asArray().toSeq.sorted(ANY_VALUE_ORDERING) == (0 until sizeHint by 2).map(Values.intValue) =>
-    }
+    })
   }
 
   test("should sum(n.prop)") {
@@ -252,9 +253,9 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    runtimeResult should beColumns("c").withResultMatching {
+    runtimeResult should beColumns("c").withRows(matching {
       case Seq(Array(d:DoubleValue)) if tolerantEquals(sizeHint.toDouble / 2, d.value()) =>
-    }
+    })
   }
 
   test("should avg(n.prop) with grouping") {
@@ -286,11 +287,11 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
       "bob8" -> (theMiddle + 4),
       "bob9" -> (theMiddle + 5)
     )
-    runtimeResult should beColumns("name", "c").withResultMatching {
+    runtimeResult should beColumns("name", "c").withRows(matching {
       case rows:Seq[Array[AnyValue]] if rows.size == expectedBobCounts.size && rows.forall {
         case Array(s:StringValue, d:DoubleValue) => tolerantEquals(expectedBobCounts(s.stringValue()), d.value())
       } =>
-    }
+    })
   }
 
   test("should avg(n.prop) with durations") {
@@ -309,10 +310,10 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
     def asMillis(nanos: Double) = nanos / 1000000
     val runtimeResult = execute(logicalQuery, runtime)
     // then
-    runtimeResult should beColumns("c").withResultMatching {
+    runtimeResult should beColumns("c").withRows(matching {
       //convert to millis to be less sensitive to rounding errors
       case Seq(Array(d:DurationValue)) if tolerantEquals(asMillis(sizeHint.toDouble / 2), asMillis(d.get(ChronoUnit.NANOS))) =>
-    }
+    })
   }
 
   test("should not get a numerical overflow in avg(n.prop)") {
@@ -332,9 +333,9 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    runtimeResult should beColumns("c").withResultMatching {
+    runtimeResult should beColumns("c").withRows(matching {
       case Seq(Array(d:DoubleValue)) if tolerantEquals(Double.MaxValue - 1.5, d.value()) =>
-    }
+    })
   }
 
   test("should return zero for empty input") {

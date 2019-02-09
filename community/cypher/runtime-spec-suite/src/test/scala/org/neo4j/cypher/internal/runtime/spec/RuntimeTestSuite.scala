@@ -61,7 +61,6 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
 
   var graphDb: GraphDatabaseService = _
   var runtimeTestSupport: RuntimeTestSupport[CONTEXT] = _
-  val ANY_VALUE_ORDERING = Ordering.comparatorToOrdering(AnyValues.COMPARATOR)
 
   override def beforeEach(): Unit = {
     graphDb = edition.graphDatabaseFactory.newImpermanentDatabase()
@@ -280,61 +279,27 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
 
   class RuntimeResultMatcher(expectedColumns: Seq[String]) extends Matcher[RuntimeResult] {
 
-    private val expectedRows = new ArrayBuffer[Array[AnyValue]]
-    private var maybeResultMatcher: Option[Matcher[Seq[Array[AnyValue]]]] = None
+    private var rowsMatcher: RowsMatcher = AnyRowsMatcher
     private var maybeStatisticts: Option[QueryStatistics] = None
-    private var expectResultsInOrder = false
-
-    def withRow(values: Any*): RuntimeResultMatcher = {
-      rowModifier()
-      expectedRows += values.toArray.map(ValueUtils.of)
-      this
-    }
-
-    def withRows[T](rows: Seq[Array[T]]): RuntimeResultMatcher = {
-      rowModifier()
-      expectedRows ++= rows.map(row => row.map(ValueUtils.of))
-      this
-    }
-
-    def withSingleValueRows(values: Seq[Any]): RuntimeResultMatcher = {
-      rowModifier()
-      expectedRows ++= values.map(x => Array(ValueUtils.of(x)))
-      this
-    }
-
-    def withNoRows(): RuntimeResultMatcher = {
-      rowModifier()
-      this
-    }
-
-    def inOrder: RuntimeResultMatcher = {
-      rowModifier()
-      expectResultsInOrder = true
-      this
-    }
-
-    private def rowModifier(): Unit = {
-      if (maybeResultMatcher.isDefined) {
-        throw new IllegalArgumentException("Cannot use both `withRow` and `withResultMatching`")
-      }
-    }
-
-    def withResultMatching(func: PartialFunction[Any, _]): RuntimeResultMatcher = {
-      if (expectedRows.nonEmpty) {
-        throw new IllegalArgumentException("Cannot use both `withRow` and `withResultMatching`")
-      }
-      maybeResultMatcher = Some(matchPattern(func))
-      this
-    }
 
     def withStatistics(stats: QueryStatistics): RuntimeResultMatcher = {
       maybeStatisticts = Some(stats)
       this
     }
 
+    def withRow(values: Any*): RuntimeResultMatcher = withRows(singleRow(values:_*))
+    def withRows[T](rows: Seq[Array[T]]): RuntimeResultMatcher = withRows(inAnyOrder(rows))
+    def withNoRows(): RuntimeResultMatcher = withRows(NoRowsMatcher)
+
+    def withRows(rowsMatcher: RowsMatcher): RuntimeResultMatcher = {
+      if (this.rowsMatcher != AnyRowsMatcher)
+        throw new IllegalArgumentException("RowsMatcher already set")
+      this.rowsMatcher = rowsMatcher
+      this
+    }
+
     override def apply(left: RuntimeResult): MatchResult = {
-      val columns = left.fieldNames().toSeq
+      val columns = left.fieldNames().toIndexedSeq
       if (columns != expectedColumns) {
         MatchResult(matches = false, s"Expected result columns $expectedColumns, got $columns", "")
       } else if (maybeStatisticts.exists(_ != left.queryStatistics())) {
@@ -348,60 +313,53 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
             true
           }
         })
-        maybeResultMatcher match {
-          case Some(matcher) => matcher(rows)
-          case None =>
-            MatchResult(
-              if (expectResultsInOrder) {
-                equalInOrder(expectedRows, rows)
-              } else {
-                equalWithoutOrder(expectedRows, rows)
-              },
-              s"""Expected rows:
-                 |
-                 |${pretty(expectedRows)}
-                 |
-                 |but got
-                 |
-                 |${pretty(rows)}""".stripMargin,
-              ""
-            )
-        }
+        MatchResult(
+          rowsMatcher.matches(columns, rows),
+          s"""Expected:
+             |
+             |$rowsMatcher
+             |
+             |but got
+             |
+             |${Rows.pretty(rows)}""".stripMargin,
+          ""
+        )
       }
     }
-
-    private def pretty(a: ArrayBuffer[Array[AnyValue]]): String = {
-      val sb = new StringBuilder
-      if (a.isEmpty)
-        sb ++= "<NO ROWS>"
-
-      for (row <- a)
-        sb ++= row.map(value => value.toString).mkString("", ", ", "\n")
-      sb.result()
-    }
-
-    private def equalWithoutOrder(a: ArrayBuffer[Array[AnyValue]], b: ArrayBuffer[Array[AnyValue]]): Boolean = {
-
-      if (a.size != b.size)
-        return false
-
-      val sortedA = a.map(row => VirtualValues.list(row:_*)).sorted(ANY_VALUE_ORDERING)
-      val sortedB = b.map(row => VirtualValues.list(row:_*)).sorted(ANY_VALUE_ORDERING)
-
-      sortedA == sortedB
-    }
-
-    private def equalInOrder(a: ArrayBuffer[Array[AnyValue]], b: ArrayBuffer[Array[AnyValue]]): Boolean = {
-
-      if (a.size != b.size)
-        return false
-
-      val sortedA = a.map(row => VirtualValues.list(row:_*))
-      val sortedB = b.map(row => VirtualValues.list(row:_*))
-
-      sortedA == sortedB
-    }
   }
+
+  def inOrder[T](rows: Seq[Array[T]]): RowsMatcher = {
+    val anyValues = rows.map(row => row.map(ValueUtils.of)).toIndexedSeq
+    EqualInOrder(anyValues)
+  }
+
+  def inAnyOrder[T](rows: Seq[Array[T]]): RowsMatcher = {
+    val anyValues = rows.map(row => row.map(ValueUtils.of)).toIndexedSeq
+    EqualInAnyOrder(anyValues)
+  }
+
+  def singleColumn(values: Seq[Any]): RowsMatcher = {
+    val anyValues = values.map(x => Array(ValueUtils.of(x))).toIndexedSeq
+    EqualInAnyOrder(anyValues)
+  }
+
+  def singleColumnInOrder(values: Seq[Any]): RowsMatcher = {
+    val anyValues = values.map(x => Array(ValueUtils.of(x))).toIndexedSeq
+    EqualInOrder(anyValues)
+  }
+
+  def singleRow(values: Any*): RowsMatcher = {
+    val anyValues = Array(values.toArray.map(ValueUtils.of))
+    EqualInAnyOrder(anyValues)
+  }
+
+  def matching(func: PartialFunction[Any, _]): RowsMatcher = {
+    CustomRowsMatcher(matchPattern(func))
+  }
+
+  def groupedBy(column: String): RowOrderMatcher = new GroupBy(column)
+  def sortedAsc(column: String): RowOrderMatcher = new Ascending(column)
+  def sortedDesc(column: String): RowOrderMatcher = new Descending(column)
 }
 
 case class ContextCondition[CONTEXT <: RuntimeContext](test: CONTEXT => Boolean, errorMsg: String)
