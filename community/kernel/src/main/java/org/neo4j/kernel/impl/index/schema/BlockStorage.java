@@ -265,52 +265,6 @@ class BlockStorage<KEY, VALUE> implements Closeable
         return reader( blockFile );
     }
 
-    BlockEntryCursor<KEY,VALUE> stream() throws IOException
-    {
-        BlockReader<KEY,VALUE> reader = reader();
-        return new BlockEntryCursor<KEY,VALUE>()
-        {
-            private BlockEntryCursor<KEY,VALUE> block = reader.nextBlock();
-
-            @Override
-            public boolean next() throws IOException
-            {
-                while ( block != null )
-                {
-                    if ( block.next() )
-                    {
-                        return true;
-                    }
-                    block.close();
-                    block = reader.nextBlock();
-                }
-                return false;
-            }
-
-            @Override
-            public KEY key()
-            {
-                return block.key();
-            }
-
-            @Override
-            public VALUE value()
-            {
-                return block.value();
-            }
-
-            @Override
-            public void close() throws IOException
-            {
-                if ( block != null )
-                {
-                    block.close();
-                    block = null;
-                }
-            }
-        };
-    }
-
     private BlockReader<KEY,VALUE> reader( File file ) throws IOException
     {
         return new BlockReader<>( fs, file, layout, blockSize );

@@ -61,6 +61,22 @@ class IndexUpdateStorageTest
     private final GenericLayout layout = new GenericLayout( 1, spatialSettings );
 
     @Test
+    void shouldAddZeroEntries() throws IOException
+    {
+        // given
+        try ( IndexUpdateStorage<GenericKey,NativeIndexValue> storage = new IndexUpdateStorage<>( layout, directory.getFileSystem(), directory.file( "file" ),
+                ByteBuffer.allocate( 1_000 ) ) )
+        {
+            // when
+            List<IndexEntryUpdate<SchemaDescriptorSupplier>> expected = generateSomeUpdates( 0 );
+            storeAll( storage, expected );
+
+            // then
+            verify( expected, storage );
+        }
+    }
+
+    @Test
     void shouldAddFewEntries() throws IOException
     {
         // given

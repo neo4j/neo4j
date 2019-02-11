@@ -51,6 +51,7 @@ public class ReadAheadChannel<T extends StoreChannel> implements ReadableClosabl
 
     public ReadAheadChannel( T channel, int readAheadSize )
     {
+        // todo Use ByteBufferFactory here
         this.aheadBuffer = ByteBuffer.allocate( readAheadSize );
         this.aheadBuffer.position( aheadBuffer.capacity() );
         this.channel = channel;

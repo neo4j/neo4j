@@ -252,34 +252,35 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
     private void writeScanUpdatesToTree() throws IOException, IndexEntryConflictException
     {
         ConflictDetectingValueMerger<KEY,VALUE> conflictDetector = getMainConflictDetector();
-        MergingBlockEntryReader<KEY,VALUE> allEntries = new MergingBlockEntryReader<>( layout );
-        for ( BlockStorage<KEY,VALUE> scanUpdates : allScanUpdates )
+        try ( MergingBlockEntryReader<KEY,VALUE> allEntries = new MergingBlockEntryReader<>( layout ) )
         {
-            try ( BlockReader<KEY,VALUE> reader = scanUpdates.reader() )
+            for ( BlockStorage<KEY,VALUE> scanUpdates : allScanUpdates )
             {
-                BlockEntryReader<KEY,VALUE> singleMergedBlock = reader.nextBlock();
-                if ( singleMergedBlock != null )
+                try ( BlockReader<KEY,VALUE> reader = scanUpdates.reader() )
                 {
-                    allEntries.addSource( singleMergedBlock );
-                    if ( reader.nextBlock() != null )
+                    BlockEntryReader<KEY,VALUE> singleMergedBlock = reader.nextBlock();
+                    if ( singleMergedBlock != null )
                     {
-                        throw new IllegalStateException( "Final BlockStorage had multiple blocks" );
+                        allEntries.addSource( singleMergedBlock );
+                        if ( reader.nextBlock() != null )
+                        {
+                            throw new IllegalStateException( "Final BlockStorage had multiple blocks" );
+                        }
                     }
                 }
             }
-        }
 
-        int asMuchAsPossibleToTheLeft = 1;
-        try ( Writer<KEY,VALUE> writer = tree.writer( asMuchAsPossibleToTheLeft );
-              BlockEntryCursor<KEY,VALUE> reader = allEntries )
-        {
-            while ( reader.next() )
+            int asMuchAsPossibleToTheLeft = 1;
+            try ( Writer<KEY,VALUE> writer = tree.writer( asMuchAsPossibleToTheLeft ) )
             {
-                conflictDetector.controlConflictDetection( reader.key() );
-                writer.merge( reader.key(), reader.value(), conflictDetector );
-                if ( conflictDetector.wasConflicting() )
+                while ( allEntries.next() )
                 {
-                    conflictDetector.reportConflict( reader.key().asValues() );
+                    conflictDetector.controlConflictDetection( allEntries.key() );
+                    writer.merge( allEntries.key(), allEntries.value(), conflictDetector );
+                    if ( conflictDetector.wasConflicting() )
+                    {
+                        conflictDetector.reportConflict( allEntries.key().asValues() );
+                    }
                 }
             }
         }
