@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api.index;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 import org.neo4j.function.Suppliers;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
@@ -179,8 +180,14 @@ public class IndexPopulationJob implements Runnable
         return getClass().getSimpleName() + "[populator:" + multiPopulator + "]";
     }
 
-    public void awaitCompletion() throws InterruptedException
+    public boolean awaitCompletion( long time, TimeUnit unit ) throws InterruptedException
     {
-        doneSignal.await();
+        if ( time == 0 )
+        {
+            doneSignal.await();
+            return false;
+        }
+        boolean completed = doneSignal.await( time, unit );
+        return !completed;
     }
 }

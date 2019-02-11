@@ -23,15 +23,16 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import java.io.IOException;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 import org.neo4j.kernel.api.exceptions.index.IndexProxyAlreadyClosedKernelException;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.rule.CleanupRule;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
@@ -155,7 +156,7 @@ public class FlippableIndexProxyTest
         OtherThreadExecutor<Void> waiter = cleanup.add( new OtherThreadExecutor<>( "Waiter", null ) );
 
         // and a thread stuck in the awaitStoreScanCompletion loop
-        Future<Object> waiting = waiter.executeDontWait( state -> flipper.awaitStoreScanCompleted() );
+        Future<Object> waiting = waiter.executeDontWait( state -> flipper.awaitStoreScanCompleted( 0, MILLISECONDS ) );
         while ( !delegate.awaitCalled )
         {
             Thread.sleep( 10 );
@@ -169,7 +170,6 @@ public class FlippableIndexProxyTest
     }
 
     private OtherThreadExecutor.WorkerCommand<Void, Void> dropTheIndex( final FlippableIndexProxy flippable )
-            throws IOException
     {
         return state ->
         {
@@ -214,7 +214,7 @@ public class FlippableIndexProxyTest
         private volatile boolean awaitCalled;
 
         @Override
-        public boolean awaitStoreScanCompleted()
+        public boolean awaitStoreScanCompleted( long time, TimeUnit unit )
         {
             awaitCalled = true;
             return true;

@@ -20,8 +20,10 @@
 package org.neo4j.kernel.impl.api.state;
 
 import java.io.IOException;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
+import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.internal.kernel.api.SchemaRead;
@@ -128,7 +130,7 @@ public class ConstraintIndexCreator
             // has been created. Now it's just the population left, which can take a long time
             locks.releaseExclusive( descriptor.keyType(), descriptor.keyId() );
 
-            awaitConstrainIndexPopulation( constraint, proxy );
+            awaitConstraintIndexPopulation( constraint, proxy, transaction );
             log.info( "Constraint %s populated, starting verification.", constraint.ownedIndexDescriptor() );
 
             // Index population was successful, but at this point we don't know if the uniqueness constraint holds.
@@ -198,12 +200,21 @@ public class ConstraintIndexCreator
         }
     }
 
-    private void awaitConstrainIndexPopulation( UniquenessConstraintDescriptor constraint, IndexProxy proxy )
+    private void awaitConstraintIndexPopulation( UniquenessConstraintDescriptor constraint, IndexProxy proxy, KernelTransactionImplementation transaction )
             throws InterruptedException, UniquePropertyValueValidationException
     {
         try
         {
-            proxy.awaitStoreScanCompleted();
+            boolean stillGoing;
+            do
+            {
+                stillGoing = proxy.awaitStoreScanCompleted( 1, TimeUnit.SECONDS );
+                if ( transaction.isTerminated() )
+                {
+                    throw new TransactionTerminatedException( transaction.getReasonIfTerminated().get() );
+                }
+            }
+            while ( stillGoing );
         }
         catch ( IndexPopulationFailedKernelException e )
         {
