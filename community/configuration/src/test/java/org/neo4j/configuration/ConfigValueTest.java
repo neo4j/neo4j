@@ -24,9 +24,9 @@ import org.junit.jupiter.api.Test;
 import java.time.Duration;
 import java.util.Optional;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.ConfigValue.valueToString;
 
 class ConfigValueTest
@@ -99,7 +99,7 @@ class ConfigValueTest
     }
 
     @Test
-    public void handlesSecretValue() throws Exception
+    void handlesSecretValue()
     {
         ConfigValue value = new ConfigValue( "name", Optional.empty(), Optional.empty(), Optional.of( "secret" ),
                 "description", false, false, false, Optional.empty(), true );
