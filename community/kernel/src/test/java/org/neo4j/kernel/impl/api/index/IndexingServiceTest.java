@@ -321,7 +321,9 @@ public class IndexingServiceTest
         InOrder order = inOrder( populator, accessor, updater);
         order.verify( populator ).create();
         order.verify( populator ).includeSample( add( 1, "value1" ) );
-        order.verify( populator, times( 3 ) ).add( any( Collection.class ) );
+        order.verify( populator, times( 1 ) ).add( any( Collection.class ) );
+        order.verify( populator ).scanCompleted( any( PhaseTracker.class ) );
+        order.verify( populator, times( 1 ) ).add( any( Collection.class ) );
         order.verify( populator ).newPopulatingUpdater( storeView );
         order.verify( updater ).close();
         order.verify( populator ).sampleResult();
