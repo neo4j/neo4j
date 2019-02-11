@@ -168,7 +168,7 @@ class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
     @Override
     public void visitRemovedIndex( IndexDescriptor index )
     {
-        StoreIndexDescriptor rule = null;
+        StoreIndexDescriptor rule;
         Optional<String> name = index.getUserSuppliedName();
         if ( name.isPresent() )
         {
@@ -177,7 +177,15 @@ class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
         }
         else
         {
-            rule = schemaStorage.indexGetForSchema( index );
+            rule = schemaStorage.indexGetForSchema( index, true );
+            if ( rule == null )
+            {
+                // Loosen the filtering a bit. The reason we do this during drop is this scenario where a uniqueness constraint creation
+                // crashed or similar, where the UNIQUE index exists, but not its constraint and so the only way to drop it
+                // (if you don't want to go the route of first creating a constraint and then drop that, where the index would be dropped along with it),
+                // is to do "DROP INDEX ON :Label(name) which has the type as GENERAL and would miss it.
+                rule = schemaStorage.indexGetForSchema( index, false );
+            }
         }
         if ( rule != null )
         {
