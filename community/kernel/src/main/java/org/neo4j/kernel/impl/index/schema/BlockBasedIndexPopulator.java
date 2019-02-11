@@ -134,10 +134,13 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
     @Override
     public void add( Collection<? extends IndexEntryUpdate<?>> updates )
     {
-        BlockStorage<KEY,VALUE> blockStorage = scanUpdates.get();
-        for ( IndexEntryUpdate<?> update : updates )
+        if ( !updates.isEmpty() )
         {
-            storeUpdate( update, blockStorage );
+            BlockStorage<KEY,VALUE> blockStorage = scanUpdates.get();
+            for ( IndexEntryUpdate<?> update : updates )
+            {
+                storeUpdate( update, blockStorage );
+            }
         }
     }
 
@@ -168,27 +171,30 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
         try
         {
             phaseTracker.enterPhase( PhaseTracker.Phase.MERGE );
-            ExecutorService executorService = Executors.newFixedThreadPool( allScanUpdates.size() );
-            List<Future<?>> mergeFutures = new ArrayList<>();
-            for ( BlockStorage<KEY,VALUE> scanUpdates : allScanUpdates )
+            if ( !allScanUpdates.isEmpty() )
             {
-                mergeFutures.add( executorService.submit( () ->
+                ExecutorService executorService = Executors.newFixedThreadPool( allScanUpdates.size() );
+                List<Future<?>> mergeFutures = new ArrayList<>();
+                for ( BlockStorage<KEY,VALUE> scanUpdates : allScanUpdates )
                 {
-                    scanUpdates.doneAdding();
-                    scanUpdates.merge( MERGE_FACTOR );
-                    return null;
-                } ) );
-            }
-            executorService.shutdown();
-            while ( !executorService.awaitTermination( 1, TimeUnit.SECONDS ) )
-            {
-                // just wait longer
-                // TODO check drop/close
-            }
-            // Let potential exceptions in the merge threads have a chance to propagate
-            for ( Future<?> mergeFuture : mergeFutures )
-            {
-                mergeFuture.get();
+                    mergeFutures.add( executorService.submit( () ->
+                    {
+                        scanUpdates.doneAdding();
+                        scanUpdates.merge( MERGE_FACTOR );
+                        return null;
+                    } ) );
+                }
+                executorService.shutdown();
+                while ( !executorService.awaitTermination( 1, TimeUnit.SECONDS ) )
+                {
+                    // just wait longer
+                    // TODO check drop/close
+                }
+                // Let potential exceptions in the merge threads have a chance to propagate
+                for ( Future<?> mergeFuture : mergeFutures )
+                {
+                    mergeFuture.get();
+                }
             }
 
             externalUpdates.doneAdding();

@@ -323,7 +323,7 @@ public class IndexingServiceTest
         order.verify( populator ).includeSample( add( 1, "value1" ) );
         order.verify( populator, times( 1 ) ).add( any( Collection.class ) );
         order.verify( populator ).scanCompleted( any( PhaseTracker.class ) );
-        order.verify( populator, times( 1 ) ).add( any( Collection.class ) );
+        order.verify( populator, times( 2 ) ).add( any( Collection.class ) );
         order.verify( populator ).newPopulatingUpdater( storeView );
         order.verify( updater ).close();
         order.verify( populator ).sampleResult();

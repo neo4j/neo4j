@@ -578,11 +578,7 @@ public class MultipleIndexPopulator implements IndexPopulator
                 {
                     if ( populationOngoing )
                     {
-                        Collection<IndexEntryUpdate<?>> finalBatch = takeCurrentBatch();
-                        if ( !finalBatch.isEmpty() )
-                        {
-                            populator.add( finalBatch );
-                        }
+                        populator.add( takeCurrentBatch() );
                         populateFromQueue( 0, Long.MAX_VALUE );
                         if ( populations.contains( IndexPopulation.this ) )
                         {
