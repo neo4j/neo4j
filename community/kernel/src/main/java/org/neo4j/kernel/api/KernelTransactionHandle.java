@@ -140,4 +140,6 @@ public interface KernelTransactionHandle
      * @return transaction statistics projection
      */
     TransactionExecutionStatistic transactionStatistic();
+
+    boolean isSchemaTransaction();
 }

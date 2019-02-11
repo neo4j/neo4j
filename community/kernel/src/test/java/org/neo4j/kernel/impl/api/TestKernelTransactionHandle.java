@@ -137,6 +137,12 @@ public class TestKernelTransactionHandle implements KernelTransactionHandle
     }
 
     @Override
+    public boolean isSchemaTransaction()
+    {
+        return false;
+    }
+
+    @Override
     public boolean equals( Object o )
     {
         if ( this == o )

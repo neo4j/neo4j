@@ -60,7 +60,7 @@ public class KernelTransactionMonitor implements Runnable
             long transactionTimeoutMillis = activeTransaction.timeoutMillis();
             if ( transactionTimeoutMillis > 0 )
             {
-                if ( isTransactionExpired( activeTransaction, now, transactionTimeoutMillis ) )
+                if ( isTransactionExpired( activeTransaction, now, transactionTimeoutMillis ) && !activeTransaction.isSchemaTransaction() )
                 {
                     if ( activeTransaction.markForTermination( Status.Transaction.TransactionTimedOut ) )
                     {

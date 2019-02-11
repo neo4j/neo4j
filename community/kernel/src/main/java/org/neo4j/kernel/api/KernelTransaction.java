@@ -183,6 +183,8 @@ public interface KernelTransaction extends Transaction, AssertOpen
      */
     Map<String, Object> getMetaData();
 
+    boolean isSchemaTransaction();
+
     @FunctionalInterface
     interface Revertable extends AutoCloseable
     {
