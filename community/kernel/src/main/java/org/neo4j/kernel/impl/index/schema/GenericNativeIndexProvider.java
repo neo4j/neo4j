@@ -109,6 +109,8 @@ public class GenericNativeIndexProvider extends NativeIndexProvider<GenericKey,N
     public static final IndexProviderDescriptor DESCRIPTOR = new IndexProviderDescriptor( KEY, NATIVE_BTREE10.providerVersion() );
     public static final IndexCapability CAPABILITY = new GenericIndexCapability();
     static final boolean parallelPopulation = FeatureToggles.flag( GenericNativeIndexProvider.class, "parallelPopulation", false );
+    // todo turn OFF by default before releasing next patch. For now ON by default to test it.
+    private static final boolean blockBasedPopulation = FeatureToggles.flag( GenericNativeIndexPopulator.class, "blockBasedPopulation", true );
 
     /**
      * Cache of all setting for various specific CRS's found in the config at instantiation of this provider.
@@ -161,11 +163,14 @@ public class GenericNativeIndexProvider extends NativeIndexProvider<GenericKey,N
                     new GenericNativeIndexPopulator( pageCache, fs, file, layout, monitor, descriptor, layout.getSpaceFillingCurveSettings(),
                             directoryStructure(), configuration, archiveFailedIndex, !file.equals( storeFile ) ) );
         }
-        else
+        if ( blockBasedPopulation )
         {
             return new GenericBlockBasedIndexPopulator( pageCache, fs, storeFile, layout, monitor, descriptor, layout.getSpaceFillingCurveSettings(),
                     directoryStructure(), configuration, archiveFailedIndex );
         }
+        return new WorkSyncedNativeIndexPopulator<>(
+                new GenericNativeIndexPopulator( pageCache, fs, storeFile, layout, monitor, descriptor, layout.getSpaceFillingCurveSettings(),
+                        directoryStructure(), configuration, archiveFailedIndex, false ) );
     }
 
     @Override
