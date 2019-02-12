@@ -79,7 +79,7 @@ class HelloMessageDecoderTest extends AuthTokenDecoderTest
     }
 
     @Override
-    protected void testShouldDecodeAuthToken( Map<String,Object> authToken ) throws Exception
+    protected void testShouldDecodeAuthToken( Map<String,Object> authToken, boolean checkDecodingResult ) throws Exception
     {
         Neo4jPack neo4jPack = newNeo4jPack();
         authToken.put( "user_agent", "My Driver" );
@@ -93,32 +93,10 @@ class HelloMessageDecoderTest extends AuthTokenDecoderTest
         unpacker.unpackStructSignature();
 
         RequestMessage deserializedMessage = decoder.decode( unpacker );
-        assertHelloMessageMatches( originalMessage, deserializedMessage );
-    }
 
-    @Override
-    protected void testShouldFailToDecodeAuthToken( Map<String,Object> authToken, String expectedErrorMessage ) throws Exception
-    {
-        Neo4jPack neo4jPack = newNeo4jPack();
-        authToken.put( "user_agent", "My Driver" );
-        HelloMessage originalMessage = new HelloMessage( authToken );
-
-        PackedInputArray input = new PackedInputArray( encode( neo4jPack, originalMessage ) );
-        Neo4jPack.Unpacker unpacker = neo4jPack.newUnpacker( input );
-
-        // these two steps are executed before decoding in order to select a correct decoder
-        unpacker.unpackStructHeader();
-        unpacker.unpackStructSignature();
-
-        try
+        if ( checkDecodingResult )
         {
-            decoder.decode( unpacker );
-            fail( "Expected UnsupportedOperationException" );
-        }
-        catch ( UnsupportedOperationException e )
-        {
-            // Expected
-            assertEquals( e.getMessage(), expectedErrorMessage );
+            assertHelloMessageMatches( originalMessage, deserializedMessage );
         }
     }
 
