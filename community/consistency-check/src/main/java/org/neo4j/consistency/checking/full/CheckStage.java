@@ -28,17 +28,15 @@ import static org.neo4j.consistency.checking.cache.CacheSlots.LABELS_SLOT_SIZE;
 public enum CheckStage implements Stage
 {
     Stage1_NS_PropsLabels( false, true, "NodeStore pass - check its properties, " +
-            "check labels and cache them, skip relationships", 1, LABELS_SLOT_SIZE ),
+            "check labels and cache them, skip relationships", LABELS_SLOT_SIZE, 1 ),
     Stage2_RS_Labels( false, true, "RelationshipStore pass - check label counts using cached labels, check properties, " +
-            "skip nodes and relationships", 1, LABELS_SLOT_SIZE ),
-    Stage3_NS_NextRel( false, true, "NodeStore pass - just cache nextRel and inUse", 1, 1, ID_SLOT_SIZE ),
+            "skip nodes and relationships", LABELS_SLOT_SIZE, 1 ),
+    Stage3_NS_NextRel( false, true, "NodeStore pass - just cache nextRel and inUse", ID_SLOT_SIZE, 1, 1 ),
     Stage4_RS_NextRel( true, true, "RelationshipStore pass - check nodes inUse, FirstInFirst, " +
-            "FirstInSecond using cached info", 1, 1, ID_SLOT_SIZE ),
-    Stage5_Check_NextRel( false, true, "NodeRelationship cache pass - check nextRel", 1, 1, ID_SLOT_SIZE ),
-    Stage6_RS_Forward( true, true, "RelationshipStore pass - forward scan of source chain using the cache", 1, 1,
-            ID_SLOT_SIZE, ID_SLOT_SIZE, 1 ),
-    Stage7_RS_Backward( true, false, "RelationshipStore pass - reverse scan of source chain using the cache", 1, 1,
-            ID_SLOT_SIZE, ID_SLOT_SIZE, 1 ),
+            "FirstInSecond using cached info", ID_SLOT_SIZE, 1, 1 ),
+    Stage5_Check_NextRel( false, true, "NodeRelationship cache pass - check nextRel", ID_SLOT_SIZE, 1, 1 ),
+    Stage6_RS_Forward( true, true, "RelationshipStore pass - forward scan of source chain using the cache", ID_SLOT_SIZE, ID_SLOT_SIZE, 1, 1, 1 ),
+    Stage7_RS_Backward( true, false, "RelationshipStore pass - reverse scan of source chain using the cache", ID_SLOT_SIZE, ID_SLOT_SIZE, 1, 1, 1 ),
     Stage8_PS_Props( true, true, "PropertyStore and Node to Index check pass" ),
     Stage9_RS_Indexes( true, true, "Relationship to Index check pass" ),
     Stage10_NS_LabelCounts( true, true, "NodeStore pass - Label counts" ),

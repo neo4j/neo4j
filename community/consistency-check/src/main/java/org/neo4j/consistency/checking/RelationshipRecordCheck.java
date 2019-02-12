@@ -410,14 +410,12 @@ public class RelationshipRecordCheck extends
                 {
                     if ( cacheAccess.withinBounds( relationship.getFirstNode() ) )
                     {
-                        cacheAccess.putToCache( relationship.getFirstNode(), SOURCE, PREV,
-                                relationship.getId(), relationship.getFirstPrevRel(), 1 );
+                        cacheAccess.putToCache( relationship.getFirstNode(), relationship.getId(), relationship.getFirstPrevRel(), SOURCE, PREV, 1 );
                         updateCacheCounts( cache1Free, cacheAccess );
                     }
                     if ( cacheAccess.withinBounds( relationship.getSecondNode() ) )
                     {
-                        cacheAccess.putToCache( relationship.getSecondNode(), TARGET, PREV,
-                                relationship.getId(), relationship.getSecondPrevRel(), 1 );
+                        cacheAccess.putToCache( relationship.getSecondNode(), relationship.getId(), relationship.getSecondPrevRel(), TARGET, PREV, 1 );
                         updateCacheCounts( cache2Free, cacheAccess );
                     }
                 }
@@ -425,14 +423,12 @@ public class RelationshipRecordCheck extends
                 {
                     if ( cacheAccess.withinBounds( relationship.getFirstNode() ) )
                     {
-                        cacheAccess.putToCache( relationship.getFirstNode(), SOURCE, NEXT,
-                                relationship.getId(), relationship.getFirstNextRel() , 1 );
+                        cacheAccess.putToCache( relationship.getFirstNode(), relationship.getId(), relationship.getFirstNextRel(), SOURCE, NEXT, 1 );
                         updateCacheCounts( cache1Free, cacheAccess );
                     }
                     if ( cacheAccess.withinBounds( relationship.getSecondNode() ) )
                     {
-                        cacheAccess.putToCache( relationship.getSecondNode(), TARGET, NEXT,
-                                relationship.getId(), relationship.getSecondNextRel() , 1 );
+                        cacheAccess.putToCache( relationship.getSecondNode(), relationship.getId(), relationship.getSecondNextRel(), TARGET, NEXT, 1 );
                         updateCacheCounts( cache2Free, cacheAccess );
                     }
                 }

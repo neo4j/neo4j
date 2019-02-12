@@ -20,7 +20,6 @@
 package org.neo4j.consistency.checking;
 
 import org.neo4j.consistency.checking.cache.CacheAccess;
-import org.neo4j.consistency.checking.cache.CacheSlots.RelationshipLink;
 import org.neo4j.consistency.checking.full.MultiPassStore;
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.store.DirectRecordReference;
@@ -29,10 +28,10 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 
+import static org.neo4j.consistency.checking.cache.CacheSlots.NextRelationship.SLOT_FIRST_IN_SOURCE;
+import static org.neo4j.consistency.checking.cache.CacheSlots.NextRelationship.SLOT_FIRST_IN_TARGET;
 import static org.neo4j.consistency.checking.cache.CacheSlots.RelationshipLink.NEXT;
-import static org.neo4j.consistency.checking.cache.CacheSlots.RelationshipLink.SLOT_PREV_OR_NEXT;
 import static org.neo4j.consistency.checking.cache.CacheSlots.RelationshipLink.SLOT_RELATIONSHIP_ID;
-import static org.neo4j.consistency.checking.cache.CacheSlots.RelationshipLink.SLOT_SOURCE_OR_TARGET;
 
 enum NodeField implements
         RecordField<RelationshipRecord, ConsistencyReport.RelationshipConsistencyReport>,
@@ -200,7 +199,7 @@ enum NodeField implements
             // build the node record from cached values with only valid fields as id, inUse, and nextRel.
             NodeRecord node = new NodeRecord( valueFrom( relationship ) );
             CacheAccess.Client client = records.cacheAccess().client();
-            node.setInUse( client.getFromCache( node.getId(), SLOT_SOURCE_OR_TARGET ) != RelationshipLink.SOURCE );
+            node.setInUse( client.getBooleanFromCache( node.getId(), SLOT_FIRST_IN_SOURCE ) );
             node.setNextRel( client.getFromCache( node.getId(), SLOT_RELATIONSHIP_ID ) );
 
             // We use "created" flag here. Consistency checking code revolves around records and so
@@ -246,7 +245,7 @@ enum NodeField implements
                 {
                     if ( relationship.getFirstNode() != relationship.getSecondNode() )
                     {
-                        cacheAccess.putToCacheSingle( node.getId(), SLOT_PREV_OR_NEXT, NEXT );
+                        cacheAccess.putToCacheSingle( node.getId(), SLOT_FIRST_IN_TARGET, NEXT );
                     }
                 }
             }
