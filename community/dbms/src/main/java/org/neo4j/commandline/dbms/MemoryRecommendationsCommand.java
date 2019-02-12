@@ -287,7 +287,7 @@ public class MemoryRecommendationsCommand implements AdminCommand
         FileSystemAbstraction fileSystem = outsideWorld.fileSystem();
         try
         {
-            return storageEngineFactory.listStorageFiles( fileSystem, databaseLayout ).mapToLong( fileSystem::getFileSize ).sum();
+            return storageEngineFactory.listStorageFiles( fileSystem, databaseLayout ).stream().mapToLong( fileSystem::getFileSize ).sum();
         }
         catch ( IOException e )
         {

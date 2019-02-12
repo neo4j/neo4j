@@ -136,7 +136,7 @@ public class StoreFilesDiagnostics extends NamedDiagnosticsProvider
         {
             try
             {
-                storageEngineFactory.listStorageFiles( fs, databaseLayout ).forEach( mappedCandidates::add );
+                mappedCandidates.addAll( storageEngineFactory.listStorageFiles( fs, databaseLayout ) );
             }
             catch ( IOException e )
             {

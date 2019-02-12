@@ -21,6 +21,7 @@ package org.neo4j.storageengine.api;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
 import java.util.stream.Stream;
 
 import org.neo4j.common.DependencyResolver;
@@ -71,7 +72,7 @@ public interface StorageEngineFactory
      * @return a {@link Stream} of {@link File} instances for the storage files.
      * @throws IOException if there was no storage in this location.
      */
-    Stream<File> listStorageFiles( FileSystemAbstraction fileSystem, DatabaseLayout databaseLayout ) throws IOException;
+    List<File> listStorageFiles( FileSystemAbstraction fileSystem, DatabaseLayout databaseLayout ) throws IOException;
 
     boolean storageExists( FileSystemAbstraction fs, PageCache pageCache, DatabaseLayout databaseLayout );
 

@@ -23,7 +23,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Stream;
 
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.common.DependencySatisfier;
@@ -57,8 +56,8 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.scheduler.JobScheduler;
-import org.neo4j.storageengine.api.ReadableStorageEngine;
 import org.neo4j.storageengine.api.LogVersionRepository;
+import org.neo4j.storageengine.api.ReadableStorageEngine;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.StoreId;
@@ -140,7 +139,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
                 dependencyResolver.resolveDependency( VersionContextSupplier.class ) );
     }
 
-    public Stream<File> listStorageFiles( FileSystemAbstraction fileSystem, DatabaseLayout databaseLayout ) throws IOException
+    public List<File> listStorageFiles( FileSystemAbstraction fileSystem, DatabaseLayout databaseLayout ) throws IOException
     {
         if ( !fileSystem.fileExists( databaseLayout.file( META_DATA.getDatabaseFile() ).findFirst().get() ) )
         {
@@ -152,7 +151,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
         {
             databaseLayout.file( type.getDatabaseFile() ).filter( fileSystem::fileExists ).forEach( files::add );
         }
-        return files.stream();
+        return files;
     }
 
     @Override

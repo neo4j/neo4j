@@ -23,7 +23,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
-import java.util.stream.Stream;
+import java.util.Collections;
 
 import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseManager;
@@ -63,7 +63,7 @@ class DbmsDiagnosticsManagerTest
         storageEngine = mock( StorageEngine.class );
         storageEngineFactory = mock( StorageEngineFactory.class );
         defaultDatabase = prepareDatabase();
-        when( storageEngineFactory.listStorageFiles( any(), any() ) ).thenReturn( Stream.empty() );
+        when( storageEngineFactory.listStorageFiles( any(), any() ) ).thenReturn( Collections.emptyList() );
 
         Dependencies dependencies = new Dependencies();
         dependencies.satisfyDependency( Config.defaults() );

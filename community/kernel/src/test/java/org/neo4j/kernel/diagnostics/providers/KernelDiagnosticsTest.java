@@ -26,8 +26,9 @@ import org.mockito.Mockito;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
+import java.util.Collections;
 
-import org.neo4j.helpers.Service;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -38,10 +39,10 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.io.ByteUnit.kibiBytes;
-import static org.neo4j.storageengine.api.StorageEngineFactory.selectStorageEngine;
 
 @ExtendWith( DefaultFileSystemExtension.class )
 @ExtendWith( TestDirectoryExtension.class )
@@ -54,7 +55,7 @@ class KernelDiagnosticsTest
     TestDirectory directory;
 
     @Test
-    void shouldPrintDiskUsage()
+    void shouldPrintDiskUsage() throws IOException
     {
         // Not sure how to get around this w/o spying. The method that we're unit testing will construct
         // other File instances with this guy as parent and internally the File constructor uses the field 'path'
@@ -65,9 +66,11 @@ class KernelDiagnosticsTest
         when( layout.databaseDirectory() ).thenReturn( storeDir );
         when( storeDir.getTotalSpace() ).thenReturn( 100L );
         when( storeDir.getFreeSpace() ).thenReturn( 40L );
+        StorageEngineFactory storageEngineFactory = mock( StorageEngineFactory.class );
+        when( storageEngineFactory.listStorageFiles( any(), any() ) ).thenReturn( Collections.emptyList() );
 
         AssertableLogProvider logProvider = new AssertableLogProvider();
-        StoreFilesDiagnostics storeFiles = new StoreFilesDiagnostics( selectStorageEngine( Service.load( StorageEngineFactory.class ) ), fs, layout );
+        StoreFilesDiagnostics storeFiles = new StoreFilesDiagnostics( storageEngineFactory, fs, layout );
         storeFiles.dump( logProvider.getLog( getClass() ).debugLogger() );
 
         logProvider.assertContainsMessageContaining( "100 / 40 / 40" );
@@ -84,9 +87,11 @@ class KernelDiagnosticsTest
         File indexDir = directory( storeDir, "indexDir" );
         file( indexDir, "indexFile", (int) kibiBytes( 1 ) );
         file( storeDir, layout.metadataStore().getName(), (int) kibiBytes( 3 ) );
+        StorageEngineFactory storageEngineFactory = mock( StorageEngineFactory.class );
+        when( storageEngineFactory.listStorageFiles( any(), any() ) ).thenReturn( Arrays.asList( layout.metadataStore() ) );
 
         AssertableLogProvider logProvider = new AssertableLogProvider();
-        StoreFilesDiagnostics storeFiles = new StoreFilesDiagnostics( selectStorageEngine( Service.load( StorageEngineFactory.class ) ), fs, layout );
+        StoreFilesDiagnostics storeFiles = new StoreFilesDiagnostics( storageEngineFactory, fs, layout );
         storeFiles.dump( logProvider.getLog( getClass() ).debugLogger() );
 
         logProvider.assertContainsMessageContaining( "Total size of store: 4.00 kB" );
