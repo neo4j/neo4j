@@ -342,7 +342,7 @@ class ReadableChannelPageCursor extends PageCursor
     }
 
     @Override
-    public PageCursor openLinkedCursor( long pageId ) throws IOException
+    public PageCursor openLinkedCursor( long pageId )
     {
         throw new UnsupportedOperationException();
     }
