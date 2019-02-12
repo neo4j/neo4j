@@ -279,18 +279,6 @@ class BlockStorageTest
         return random.nextInt( 2, 8 );
     }
 
-    private void print( List<List<BlockEntry<MutableLong,MutableLong>>> expectedBlocks )
-    {
-        for ( List<BlockEntry<MutableLong,MutableLong>> expectedBlock : expectedBlocks )
-        {
-            System.out.println( "===" );
-            for ( BlockEntry<MutableLong,MutableLong> entry : expectedBlock )
-            {
-                System.out.println( entry );
-            }
-        }
-    }
-
     private List<BlockEntry<MutableLong,MutableLong>> addEntries( BlockStorage<MutableLong,MutableLong> storage, int numberOfEntries ) throws IOException
     {
         MutableLongSet uniqueKeys = LongSets.mutable.empty();
@@ -416,7 +404,6 @@ class BlockStorageTest
         @Override
         public void mergeIterationFinished( int numberOfBlocksBefore, int numberOfBlocksAfter )
         {
-            System.out.println( "merge iteration finished " + numberOfBlocksBefore + " --> " + numberOfBlocksAfter );
             mergeIterationCallCount++;
             lastNumberOfBlocksBefore = numberOfBlocksBefore;
             lastNumberOfBlocksAfter = numberOfBlocksAfter;
@@ -425,7 +412,6 @@ class BlockStorageTest
         @Override
         public void mergedBlocks( long resultingBlockSize, long resultingEntryCount, int numberOfBlocks )
         {   // no-op
-            System.out.println( "merged " + numberOfBlocks );
         }
     }
 }
