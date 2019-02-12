@@ -21,28 +21,28 @@ package org.neo4j.consistency.checking.cache;
 
 public interface CacheSlots
 {
-    int LABELS_SLOT_SIZE = 63;
-    int ID_SLOT_SIZE = 35;
+    int LABELS_SLOT_SIZE = 40;
+    int ID_SLOT_SIZE = 40;
 
     interface NodeLabel
     {
-        int SLOT_IN_USE = 0;
-        int SLOT_LABEL_FIELD = 1;
+        int SLOT_LABEL_FIELD = 0;
+        int SLOT_IN_USE = 1;
     }
 
     interface NextRelationship
     {
-        int SLOT_FIRST_IN_SOURCE = 0;
-        int SLOT_FIRST_IN_TARGET = 1;
-        int SLOT_RELATIONSHIP_ID = 2;
+        int SLOT_RELATIONSHIP_ID = 0;
+        int SLOT_FIRST_IN_SOURCE = 1;
+        int SLOT_FIRST_IN_TARGET = 2;
     }
 
     interface RelationshipLink
     {
-        int SLOT_SOURCE_OR_TARGET = 0;
-        int SLOT_PREV_OR_NEXT = 1;
-        int SLOT_RELATIONSHIP_ID = 2;
-        int SLOT_REFERENCE = 3;
+        int SLOT_RELATIONSHIP_ID = 0;
+        int SLOT_REFERENCE = 1;
+        int SLOT_SOURCE_OR_TARGET = 2;
+        int SLOT_PREV_OR_NEXT = 3;
         int SLOT_IN_USE = 4;
         long SOURCE = 0;
         long TARGET = -1;
