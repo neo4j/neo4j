@@ -39,7 +39,7 @@ import static org.neo4j.helpers.collection.Iterators.resourceIterator;
 
 public class SchemaAndIndexingFileIndexListing
 {
-    private static final Function<File,StoreFileMetadata> toStoreFileMetatadata = file -> new StoreFileMetadata( file, 0 );
+    private static final Function<File,StoreFileMetadata> toStoreFileMetatadata = file -> new StoreFileMetadata( file, 1 );
 
     private final LabelScanStore labelScanStore;
     private final IndexingService indexingService;

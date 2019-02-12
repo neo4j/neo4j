@@ -24,7 +24,6 @@ import java.io.File;
 public class StoreFileMetadata
 {
     private final File file;
-    // TODO this recordSize field can be removed, affecting things all the way up to clustering. Please do so at some point.
     private final int recordSize;
     private final boolean isLogFile;
 
