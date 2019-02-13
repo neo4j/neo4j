@@ -2391,9 +2391,7 @@ public abstract class CodeGenerationTest
     public static class MySecondException extends RuntimeException
     {
     }
-
 }
-
 
 class ByteCodeCodeGenerationTest extends CodeGenerationTest
 {
