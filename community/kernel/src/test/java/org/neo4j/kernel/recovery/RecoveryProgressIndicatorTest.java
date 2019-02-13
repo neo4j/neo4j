@@ -29,6 +29,7 @@ import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.TransactionCursor;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.util.monitoring.ProgressReporter;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -66,7 +67,7 @@ public class RecoveryProgressIndicatorTest
         when( recoveryService.getTransactions( recoveryStartPosition ) ).thenReturn( transactionCursor );
 
         AssertableProgressReporter progressReporter = new AssertableProgressReporter( expectedMax );
-        Recovery recovery = new Recovery( recoveryService, logsTruncator, recoveryMonitor,
+        Recovery recovery = new Recovery( recoveryService, logsTruncator, new LifecycleAdapter(), recoveryMonitor,
                 progressReporter, true );
         recovery.init();
 

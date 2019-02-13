@@ -96,6 +96,7 @@ import org.neo4j.kernel.impl.util.DependencySatisfier;
 import org.neo4j.kernel.impl.util.IdOrderingQueue;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.kernel.spi.explicitindex.IndexImplementation;
 import org.neo4j.logging.LogProvider;
@@ -198,9 +199,6 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             monitors.addMonitorListener( new LoggingMonitor( logProvider.getLog( NativeLabelScanStore.class ) ) );
             labelScanStore = new NativeLabelScanStore( pageCache, databaseLayout, fs, new FullLabelStream( neoStoreIndexStoreView ),
                     readOnly, monitors, recoveryCleanupWorkCollector );
-
-            // We need to load the property tokens here, since we need them before we load the indexes.
-            tokenHolders.propertyKeyTokens().setInitialTokens( neoStores.getPropertyKeyTokenStore().getTokens() );
 
             indexStoreView = new DynamicIndexStoreView( neoStoreIndexStoreView, labelScanStore, lockService, neoStores, logProvider );
             this.indexProviderMap = indexProviderMap;
@@ -372,7 +370,6 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     @Override
     public void init() throws Throwable
     {
-        indexingService.init();
         labelScanStore.init();
     }
 
@@ -389,7 +386,6 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
                 neoStores.getLabelTokenStore().getTokens() );
 
         neoStores.startCountStore(); // TODO: move this to counts store lifecycle
-        loadSchemaCache();
         indexingService.start();
         labelScanStore.start();
         idController.start();
@@ -509,5 +505,19 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     public StoreId getStoreId()
     {
         return neoStores.getMetaDataStore().getStoreId();
+    }
+
+    @Override
+    public Lifecycle schemaAndTokensLifecycle()
+    {
+        return new LifecycleAdapter()
+        {
+            @Override
+            public void init()
+            {
+                loadSchemaCache();
+                indexingService.init();
+            }
+        };
     }
 }

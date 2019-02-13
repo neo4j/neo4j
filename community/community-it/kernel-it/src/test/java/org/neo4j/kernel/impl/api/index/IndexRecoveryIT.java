@@ -95,33 +95,44 @@ public class IndexRecoveryIT
         startDb();
 
         CountDownLatch latch = new CountDownLatch( 1 );
-        when( mockedIndexProvider
-                .getPopulator( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ) ) )
-                .thenReturn( indexPopulatorWithControlledCompletionTiming( latch ) );
-        createIndex( myLabel );
+        Future<Void> killFuture;
+        try
+        {
+            when( mockedIndexProvider
+                    .getPopulator( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ) ) )
+                    .thenReturn( indexPopulatorWithControlledCompletionTiming( latch ) );
+            createIndex( myLabel );
 
-        // And Given
-        Future<Void> killFuture = killDbInSeparateThread();
-        latch.countDown();
+            // And Given
+            killFuture = killDbInSeparateThread();
+        }
+        finally
+        {
+            latch.countDown();
+        }
         killFuture.get();
 
         // When
         when( mockedIndexProvider.getInitialState( any( StoreIndexDescriptor.class ) ) )
                 .thenReturn( InternalIndexState.POPULATING );
         latch = new CountDownLatch( 1 );
-        when( mockedIndexProvider
-                .getPopulator( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ) ) )
-                .thenReturn( indexPopulatorWithControlledCompletionTiming( latch ) );
-        startDb();
+        try
+        {
+            when( mockedIndexProvider
+                    .getPopulator( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ) ) )
+                    .thenReturn( indexPopulatorWithControlledCompletionTiming( latch ) );
+            startDb();
 
-        // Then
-        assertThat( getIndexes( db, myLabel ), inTx( db, hasSize( 1 ) ) );
-        assertThat( getIndexes( db, myLabel ), inTx( db, haveState( db, Schema.IndexState.POPULATING ) ) );
-        verify( mockedIndexProvider, times( 2 ) )
-                .getPopulator( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ) );
-        verify( mockedIndexProvider, never() ).getOnlineAccessor( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class )
-        );
-        latch.countDown();
+            // Then
+            assertThat( getIndexes( db, myLabel ), inTx( db, hasSize( 1 ) ) );
+            assertThat( getIndexes( db, myLabel ), inTx( db, haveState( db, Schema.IndexState.POPULATING ) ) );
+            verify( mockedIndexProvider, times( 2 ) ).getPopulator( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ) );
+            verify( mockedIndexProvider, never() ).getOnlineAccessor( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ) );
+        }
+        finally
+        {
+            latch.countDown();
+        }
     }
 
     @Test
