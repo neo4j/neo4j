@@ -24,6 +24,11 @@ import java.io.IOException;
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.io.pagecache.PageCursor;
 
+/**
+ * Reads {@link BlockEntry} from a block in sequential order. Key and value instances are handed out though {@link #key()} and {@link #value()} but are reused
+ * internally so consumer need to either create a copy or finish all operations on key and value before progressing reader.
+ * Reader will figure out when to stop reading based on Block header wish contains total size of this Block in bytes and total number of entries in Block.
+ */
 public class BlockEntryReader<KEY,VALUE> implements BlockEntryCursor<KEY,VALUE>
 {
     private final long blockSize;

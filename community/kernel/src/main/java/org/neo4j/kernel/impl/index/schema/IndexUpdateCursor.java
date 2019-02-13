@@ -28,6 +28,10 @@ import org.neo4j.kernel.impl.transaction.log.ReadAheadChannel;
 
 import static org.neo4j.kernel.impl.index.schema.IndexUpdateStorage.STOP_TYPE;
 
+/**
+ * Cursor over serialized {@link org.neo4j.kernel.api.index.IndexEntryUpdate} represented by {@link UpdateMode}, 2x{@link KEY} and {@link VALUE}.
+ * Reads the updates in sequential order. Field instances are reused, so consumer is responsible for creating copies if result needs to be cached.
+ */
 public class IndexUpdateCursor<KEY, VALUE> implements BlockEntryCursor<KEY,VALUE>
 {
     private final ReadAheadChannel channel;

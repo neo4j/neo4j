@@ -27,9 +27,14 @@ import java.util.PriorityQueue;
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.io.IOUtils;
 
+/**
+ * Take multiple {@link BlockEntryCursor} that each by themselves provide block entries in sorted order and lazily merge join, providing a view over all
+ * entries from given cursors in sorted order.
+ * Merging is done by keeping the cursors in a priority queue with a comparator that compare {@link BlockEntryCursor#key()} (current key on cursor).
+ * Instances handed out from {@link #key()} and {@link #value()} are reused, consumer is responsible for creating copy if there is a need to cache results.
+ */
 public class MergingBlockEntryReader<KEY,VALUE> implements BlockEntryCursor<KEY,VALUE>
 {
-    // todo more or less expensive compared to iterating over heads?
     private final PriorityQueue<BlockEntryCursor<KEY,VALUE>> sortedReaders;
     private List<BlockEntryCursor<KEY,VALUE>> readersToClose = new ArrayList<>();
     private BlockEntryCursor<KEY,VALUE> lastReturned;

@@ -22,6 +22,10 @@ package org.neo4j.kernel.impl.index.schema;
 import java.io.Closeable;
 import java.io.IOException;
 
+/**
+ * Cursor that traverse over {@link BlockEntry} = key-value pairs. Instead of handing out {@link BlockEntry} instances, it provides direct access to key and
+ * value. Implementing classes are allowed to reuse key and value handed out through {@link #key()} and {@link #value()}.
+ */
 public interface BlockEntryCursor<KEY,VALUE> extends Closeable
 {
     boolean next() throws IOException;

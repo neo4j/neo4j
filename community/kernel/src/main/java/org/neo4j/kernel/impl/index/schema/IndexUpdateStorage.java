@@ -37,6 +37,9 @@ import org.neo4j.kernel.impl.transaction.log.ReadAheadChannel;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexUpdater.initializeKeyAndValueFromUpdate;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexUpdater.initializeKeyFromUpdate;
 
+/**
+ * Buffer {@link IndexEntryUpdate} by writing them out to a file. Can be read back in insert order through {@link #reader()}.
+ */
 public class IndexUpdateStorage<KEY extends NativeIndexKey<KEY>,VALUE extends NativeIndexValue> implements Closeable
 {
     private static final int TYPE_SIZE = Byte.BYTES;

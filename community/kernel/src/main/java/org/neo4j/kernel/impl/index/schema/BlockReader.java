@@ -30,6 +30,11 @@ import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.impl.transaction.log.ReadAheadChannel;
 
+/**
+ * Hands out {@link BlockEntryReader} for each Block in file in sequential order. The resulting readers have their own {@link StoreChannel} that they read
+ * from and they need to be closed separately, this class does not take responsibility for created readers. This also mean it's safe to close this
+ * {@link BlockReader} even if there are still child readers alive.
+ */
 public class BlockReader<KEY,VALUE> implements Closeable
 {
     private final StoreChannel channel;

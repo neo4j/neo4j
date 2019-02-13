@@ -36,7 +36,15 @@ import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.ByteArrayPageCursor;
 import org.neo4j.util.Preconditions;
 
-// TODO potentially remove padding altogether!!!!!
+/**
+ * Transforms an unordered stream of key-value pairs ({@link BlockEntry}) to an ordered one. It does so in two phases:
+ * 1. ADD: Entries are added through {@link #add(KEY, VALUE)}. Those entries are buffered in memory until there are enough of them to fill up a Block.
+ * At that point they are sorted and flushed out to a file. This file will eventually contain multiple Blocks that each contain many entries in sorted order.
+ * When there are no more entries to add {@link #doneAdding()} is called and the last Block is flushed to file.
+ * 2. MERGE: By calling {@link #merge(int)} (after {@link #doneAdding()} has been called) the multiple Blocks are merge joined into a new file resulting in
+ * larger blocks of sorted entries. Those larger blocks are then merge joined back to the original file. Merging continues in this ping pong fashion until
+ * there is only a single large block in the resulting file. The entries are now ready to be read in sorted order, call {@link #reader()}.
+ */
 class BlockStorage<KEY, VALUE> implements Closeable
 {
     static final int BLOCK_HEADER_SIZE = Long.BYTES  // blockSize
@@ -119,6 +127,18 @@ class BlockStorage<KEY, VALUE> implements Closeable
         resetBufferedEntries();
     }
 
+    /**
+     * There are two files: sourceFile and targetFile. Blocks are merged, mergeFactor at the time, from source to target. When all blocks from source have
+     * been merged into a larger block one merge iteration is done and source and target are flipped. As long as source contain more than a single block more
+     * merge iterations are needed and we start over again.
+     * When source only contain a single block we are finished and the extra file is deleted and {@link #blockFile} contains the result with a single sorted
+     * block.
+     *
+     * See {@link #performSingleMerge(int, BlockReader, StoreChannel)} for further details.
+     *
+     * @param mergeFactor See {@link #performSingleMerge(int, BlockReader, StoreChannel)}.
+     * @throws IOException If something goes wrong when reading from file.
+     */
     public void merge( int mergeFactor ) throws IOException
     {
         File sourceFile = blockFile;
@@ -164,6 +184,23 @@ class BlockStorage<KEY, VALUE> implements Closeable
         }
     }
 
+    /**
+     * Merge some number of blocks, how many is decided by mergeFactor, into a single sorted block. This is done by opening {@link BlockEntryReader} on each
+     * block that we want to merge and give them to a {@link MergingBlockEntryReader}. The {@link BlockEntryReader}s are pulled from a {@link BlockReader}
+     * that iterate over Blocks in file in sequential order.
+     *
+     * {@link MergingBlockEntryReader} pull head from each {@link BlockEntryReader} and hand them out in sorted order, making the multiple entry readers look
+     * like a single large and sorted entry reader.
+     *
+     * The large block resulting from the merge is written down to targetChannel by calling {@link #writeBlock(StoreChannel, BlockEntryCursor, long, long)}.
+     *
+     * @param mergeFactor How many blocks to merge at the same time. Influence how much memory will be used because each merge block will have it's own
+     * {@link ByteBuffer} that they read from.
+     * @param reader The {@link BlockReader} to pull blocks / {@link BlockEntryReader}s from.
+     * @param targetChannel The {@link StoreChannel} to write the merge result to. Result will be appended to current position.
+     * @return The number of blocks that where merged, most often this will be equal to mergeFactor but can be less if there are fewer blocks left in source.
+     * @throws IOException If something goes wrong when reading from file.
+     */
     private int performSingleMerge( int mergeFactor, BlockReader<KEY,VALUE> reader, StoreChannel targetChannel )
             throws IOException
     {

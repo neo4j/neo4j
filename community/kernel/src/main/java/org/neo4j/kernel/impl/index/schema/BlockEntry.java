@@ -29,6 +29,11 @@ import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.getOverhead;
 import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.putKeyValueSize;
 import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.readKeyValueSize;
 
+/**
+ * A {@link BlockEntry} is a key-value mapping and the smallest unit in the {@link BlockStorage} and {@link IndexUpdateStorage} hierarchy. Except for being a
+ * container class for key-value pairs, it also provide static methods for serializing and deserializing {@link BlockEntry} instances and calculating total
+ * store size of them.
+ */
 class BlockEntry<KEY,VALUE>
 {
     private KEY key;
