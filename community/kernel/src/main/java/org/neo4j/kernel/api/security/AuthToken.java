@@ -66,7 +66,7 @@ public interface AuthToken
         }
         else if ( !(value instanceof byte[]) )
         {
-            throw invalidToken( "the value associated with the key `" + key + "` must be a byte[] but was: "
+            throw invalidToken( "the value associated with the key `" + key + "` must be a UTF-8 encoded string but was: "
                     + value.getClass().getSimpleName() );
         }
         return (byte[]) value;

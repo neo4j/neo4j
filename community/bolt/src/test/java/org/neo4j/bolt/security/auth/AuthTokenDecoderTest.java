@@ -30,63 +30,59 @@ import static org.neo4j.helpers.collection.MapUtil.map;
 
 public abstract class AuthTokenDecoderTest
 {
-    protected abstract void testShouldDecodeAuthToken( Map<String,Object> authToken ) throws Exception;
-
-    protected abstract void testShouldFailToDecodeAuthToken( Map<String,Object> authToken, String expectedErrorMessage ) throws Exception;
+    protected abstract void testShouldDecodeAuthToken( Map<String,Object> authToken, boolean checkDecodingResult ) throws Exception;
 
     @Test
     void shouldDecodeAuthTokenWithStringCredentials() throws Exception
     {
-        testShouldDecodeAuthToken( authTokenMapWith( AuthToken.CREDENTIALS, "password" ) );
+        testShouldDecodeAuthToken( authTokenMapWith( AuthToken.CREDENTIALS, "password" ), true );
     }
 
     @Test
     void shouldDecodeAuthTokenWithEmptyStringCredentials() throws Exception
     {
-        testShouldDecodeAuthToken( authTokenMapWith( AuthToken.CREDENTIALS, "" ) );
+        testShouldDecodeAuthToken( authTokenMapWith( AuthToken.CREDENTIALS, "" ), true );
     }
 
     @Test
     void shouldDecodeAuthTokenWithNullCredentials() throws Exception
     {
-        testShouldDecodeAuthToken( authTokenMapWith( AuthToken.CREDENTIALS, null ) );
+        testShouldDecodeAuthToken( authTokenMapWith( AuthToken.CREDENTIALS, null ), true );
     }
 
     @Test
     void shouldDecodeAuthTokenWithStringNewCredentials() throws Exception
     {
-        testShouldDecodeAuthToken( authTokenMapWith( AuthToken.NEW_CREDENTIALS, "password" ) );
+        testShouldDecodeAuthToken( authTokenMapWith( AuthToken.NEW_CREDENTIALS, "password" ), true );
     }
 
     @Test
     void shouldDecodeAuthTokenWithEmptyStringNewCredentials() throws Exception
     {
-        testShouldDecodeAuthToken( authTokenMapWith( AuthToken.NEW_CREDENTIALS, "" ) );
+        testShouldDecodeAuthToken( authTokenMapWith( AuthToken.NEW_CREDENTIALS, "" ), true );
     }
 
     @Test
     void shouldDecodeAuthTokenWithNullNewCredentials() throws Exception
     {
-        testShouldDecodeAuthToken( authTokenMapWith( AuthToken.NEW_CREDENTIALS, null ) );
+        testShouldDecodeAuthToken( authTokenMapWith( AuthToken.NEW_CREDENTIALS, null ), true );
     }
 
     @Test
-    void shouldFailToDecodeAuthTokenWithCredentialsOfUnsupportedTypes() throws Exception
+    void shouldDecodeAuthTokenWithCredentialsOfUnsupportedTypes() throws Exception
     {
         for ( Object value : valuesWithInvalidTypes )
         {
-            testShouldFailToDecodeAuthToken( authTokenMapWith( AuthToken.CREDENTIALS, value ),
-                    "INIT message authentication token field '" + AuthToken.CREDENTIALS + "' should be a UTF-8 encoded string" );
+            testShouldDecodeAuthToken( authTokenMapWith( AuthToken.NEW_CREDENTIALS, value ), false );
         }
     }
 
     @Test
-    void shouldFailToDecodeAuthTokenWithNewCredentialsOfUnsupportedType() throws Exception
+    void shouldDecodeAuthTokenWithNewCredentialsOfUnsupportedType() throws Exception
     {
         for ( Object value : valuesWithInvalidTypes )
         {
-            testShouldFailToDecodeAuthToken( authTokenMapWith( AuthToken.NEW_CREDENTIALS, value ),
-                    "INIT message authentication token field '" + AuthToken.NEW_CREDENTIALS + "' should be a UTF-8 encoded string" );
+            testShouldDecodeAuthToken( authTokenMapWith( AuthToken.NEW_CREDENTIALS, value ), false );
         }
     }
 

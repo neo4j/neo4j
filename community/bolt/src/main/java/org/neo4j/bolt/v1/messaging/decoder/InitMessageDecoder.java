@@ -68,7 +68,7 @@ public class InitMessageDecoder implements RequestMessageDecoder
         metaDataMapValue.foreach( ( key, value ) ->
         {
             Object convertedValue = AuthToken.containsSensitiveInformation( key ) ?
-                                    writer.sensitiveValueAsObject( value, key ) :
+                                    writer.sensitiveValueAsObject( value ) :
                                     writer.valueAsObject( value );
             metaDataMap.put( key, convertedValue );
         } );
