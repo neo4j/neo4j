@@ -29,7 +29,6 @@ import org.neo4j.cypher.internal.{CypherRuntime, RuntimeContext}
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.{DoubleValue, DurationValue, StringValue, Values}
 import org.neo4j.values.virtual.ListValue
-import org.scalactic.{Equality, TolerantNumerics}
 
 abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
                                                                edition: Edition[CONTEXT],
@@ -307,11 +306,12 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
       .allNodeScan("x")
       .build()
 
+    def asMillis(nanos: Double) = nanos / 1000000
     val runtimeResult = execute(logicalQuery, runtime)
-
     // then
     runtimeResult should beColumns("c").withResultMatching {
-      case Seq(Array(d:DurationValue)) if tolerantEquals(sizeHint.toDouble / 2, d.get(ChronoUnit.NANOS)) =>
+      //convert to millis to be less sensitive to rounding errors
+      case Seq(Array(d:DurationValue)) if tolerantEquals(asMillis(sizeHint.toDouble / 2), asMillis(d.get(ChronoUnit.NANOS))) =>
     }
   }
 

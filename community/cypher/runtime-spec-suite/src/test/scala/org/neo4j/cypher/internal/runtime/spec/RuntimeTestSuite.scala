@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.v4_0.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.{CypherRuntime, LogicalQuery, RuntimeContext}
 import org.neo4j.cypher.result.{QueryResult, RuntimeResult}
-import org.neo4j.graphdb.{GraphDatabaseService, Label, Node, Relationship, RelationshipType}
+import org.neo4j.graphdb._
 import org.neo4j.kernel.impl.coreapi.InternalTransaction
 import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.values.virtual.VirtualValues
@@ -247,7 +247,7 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
   private val doubleEquality: Equality[Double] = TolerantNumerics.tolerantDoubleEquality(0.0001)
 
   def tolerantEquals(expected: Double, x: Number): Boolean =
-    doubleEquality.areEqual(expected + 0.00001, x.doubleValue())
+    doubleEquality.areEqual(expected, x.doubleValue())
 
   protected def beColumns(columns: String*): RuntimeResultMatcher =
     new RuntimeResultMatcher(columns)
