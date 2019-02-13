@@ -27,6 +27,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
@@ -161,7 +162,7 @@ class StoreLogServiceTest
 
         // when
         AtomicLong nextId = new AtomicLong();
-        Map<Level,Long> idAtLevelChange = new HashMap<>();
+        Map<Level,Long> idAtLevelChange = new ConcurrentHashMap<>();
         int loggerThreads = 4;
         ThreadLocalRandom random = ThreadLocalRandom.current();
         // Sometimes instantiate the log here.
