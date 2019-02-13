@@ -61,7 +61,6 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
     private static final String BLOCK_SIZE = FeatureToggles.getString( BlockBasedIndexPopulator.class, "blockSize", "1M" );
     private static final int MERGE_FACTOR = FeatureToggles.getInteger( BlockBasedIndexPopulator.class, "mergeFactor", 8 );
 
-    // TODO some better ByteBuffers, right?
     private static final ByteBufferFactory BYTE_BUFFER_FACTORY = ByteBuffer::allocate;
 
     private final IndexDirectoryStructure directoryStructure;
@@ -188,7 +187,6 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
                 while ( !executorService.awaitTermination( 1, TimeUnit.SECONDS ) )
                 {
                     // just wait longer
-                    // TODO check drop/close
                 }
                 // Let potential exceptions in the merge threads have a chance to propagate
                 for ( Future<?> mergeFuture : mergeFutures )
@@ -326,10 +324,15 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
     @Override
     public void close( boolean populationCompletedSuccessfully )
     {
-        // TODO Make responsive
-        List<Closeable> toClose = new ArrayList<>( asList( allScanUpdates ) );
-        toClose.add( externalUpdates );
-        IOUtils.closeAllUnchecked( toClose );
-        super.close( populationCompletedSuccessfully );
+        try
+        {
+            List<Closeable> toClose = new ArrayList<>( asList( allScanUpdates ) );
+            toClose.add( externalUpdates );
+            IOUtils.closeAllUnchecked( toClose );
+        }
+        finally
+        {
+            super.close( populationCompletedSuccessfully );
+        }
     }
 }
