@@ -135,7 +135,8 @@ public class DynamicSizeUtil
                 if ( keySize > MAX_TWO_BYTE_KEY_SIZE )
                 {
                     throw new IllegalArgumentException(
-                            format( "Max supported key size is %d, but tried to store key of size %d", MAX_TWO_BYTE_KEY_SIZE, keySize ) );
+                            format( "Max supported key size is %d, but tried to store key of size %d. Please see index documentation for limitations.",
+                                    MAX_TWO_BYTE_KEY_SIZE, keySize ) );
                 }
             }
             if ( hasValueSize )
@@ -162,7 +163,8 @@ public class DynamicSizeUtil
                     if ( valueSize > MAX_TWO_BYTE_VALUE_SIZE )
                     {
                         throw new IllegalArgumentException(
-                                format( "Max supported value size is %d, but tried to store value of size %d", MAX_TWO_BYTE_VALUE_SIZE, valueSize ) );
+                                format( "Max supported value size is %d, but tried to store value of size %d. Please see index documentation for limitations.",
+                                        MAX_TWO_BYTE_VALUE_SIZE, valueSize ) );
                     }
                     firstByte |= FLAG_ADDITIONAL_VALUE_SIZE;
                 }
