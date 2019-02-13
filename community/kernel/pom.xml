@@ -69,7 +69,7 @@ the relevant Commercial Agreement.
             </manifest>
             <manifestEntries>
               <!-- This becomes programmatically accessible from the 'org.neo4j.kernel' java.lang.Package object -->
-              <Implementation-Version>${project.version},${git.commit}</Implementation-Version>
+              <Implementation-Version>3.5,${git.commit}</Implementation-Version>
             </manifestEntries>
           </archive>
         </configuration>
