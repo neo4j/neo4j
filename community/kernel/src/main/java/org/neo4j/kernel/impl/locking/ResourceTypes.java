@@ -23,14 +23,11 @@ import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
 import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
 
 import org.neo4j.hashing.HashFunction;
-import org.neo4j.helpers.Strings;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.impl.util.concurrent.LockWaitStrategies;
 import org.neo4j.storageengine.api.lock.ResourceType;
 import org.neo4j.storageengine.api.lock.WaitStrategy;
-import org.neo4j.util.FeatureToggles;
 import org.neo4j.values.storable.Value;
-import org.neo4j.values.storable.Values;
 
 public enum ResourceTypes implements ResourceType
 {
@@ -43,11 +40,7 @@ public enum ResourceTypes implements ResourceType
     LABEL( 6, LockWaitStrategies.INCREMENTAL_BACKOFF ),
     RELATIONSHIP_TYPE( 7, LockWaitStrategies.INCREMENTAL_BACKOFF );
 
-    private static final boolean useStrongHashing =
-            FeatureToggles.flag( ResourceTypes.class, "useStrongHashing", true );
-
     private static final MutableIntObjectMap<ResourceType> idToType = new IntObjectHashMap<>();
-    private static final HashFunction indexEntryHash_2_2_0 = HashFunction.xorShift32();
     private static final HashFunction indexEntryHash_4_x = HashFunction.incrementalXXH64();
 
     static
@@ -81,71 +74,11 @@ public enum ResourceTypes implements ResourceType
     }
 
     /**
-     * The index entry hashing method used for entries in explicit indexes.
-     */
-    public static long explicitIndexResourceId( String name, String key )
-    {
-        return (long) name.hashCode() << 32 | key.hashCode();
-    }
-
-    /**
-     * This is the schema index entry hashing method used since 2.2.0 and onwards.
-     * <p>
-     * Use the {@link ResourceTypes#useStrongHashing} feature toggle to use a stronger hash function.
+     * Produces a 64-bit hashcode for locking index entries.
      */
     public static long indexEntryResourceId( long labelId, IndexQuery.ExactPredicate... predicates )
     {
-        if ( !useStrongHashing )
-        {
-            // Default
-            return indexEntryResourceId_2_2_0( labelId, predicates );
-        }
-        else
-        {
-            // Opt-in
-            return indexEntryResourceId_4_x( labelId, predicates );
-        }
-    }
-
-    static long indexEntryResourceId_2_2_0( long labelId, IndexQuery.ExactPredicate[] predicates )
-    {
-        return indexEntryResourceId_2_2_0( labelId, predicates, 0 );
-    }
-
-    private static long indexEntryResourceId_2_2_0( long labelId, IndexQuery.ExactPredicate[] predicates, int i )
-    {
-        int propertyKeyId = predicates[i].propertyKeyId();
-        Value value = predicates[i].value();
-        // Note:
-        // It is important that single-property indexes only hash with this particular call; no additional hashing!
-        long hash = indexEntryResourceId_2_2_0( labelId, propertyKeyId, stringOf( value ) );
-        i++;
-        if ( i < predicates.length )
-        {
-            hash = hash( hash + indexEntryResourceId_2_2_0( labelId, predicates, i ) );
-        }
-        return hash;
-    }
-
-    private static long indexEntryResourceId_2_2_0( long labelId, long propertyKeyId, String propertyValue )
-    {
-        long hob = hash( labelId + hash( propertyKeyId ) );
-        hob <<= 32;
-        return hob + propertyValue.hashCode();
-    }
-
-    private static String stringOf( Value value )
-    {
-        if ( value != null && value != Values.NO_VALUE )
-        {
-            return Strings.prettyPrint( value.asObject() );
-        }
-        return "";
-    }
-
-    private static int hash( long value )
-    {
-        return indexEntryHash_2_2_0.hashSingleValueToInt( value );
+        return indexEntryResourceId_4_x( labelId, predicates );
     }
 
     public static long graphPropertyResource()

@@ -72,12 +72,6 @@ public class IndexEntryResourceTypesTest
     }
 
     @Test
-    void mustBeAbleToHashAllTypesWith220HashFunction()
-    {
-        verifyCanHashAllTypes( ResourceTypes::indexEntryResourceId_2_2_0 );
-    }
-
-    @Test
     void mustBeAbleToHashAllTypesWith4xHashFunction()
     {
         verifyCanHashAllTypes( ResourceTypes::indexEntryResourceId_4_x );
