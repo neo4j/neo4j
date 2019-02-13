@@ -19,13 +19,14 @@
  */
 package org.neo4j.codegen;
 
-import org.junit.Test;
+
+import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.neo4j.codegen.ByteCodeUtils.desc;
 import static org.neo4j.codegen.ByteCodeUtils.exceptions;
 import static org.neo4j.codegen.ByteCodeUtils.signature;
@@ -36,10 +37,10 @@ import static org.neo4j.codegen.TypeReference.extending;
 import static org.neo4j.codegen.TypeReference.typeParameter;
 import static org.neo4j.codegen.TypeReference.typeReference;
 
-public class ByteCodeUtilsTest
+class ByteCodeUtilsTest
 {
     @Test
-    public void shouldTranslateTypeNames()
+    void shouldTranslateTypeNames()
     {
         //primitive types
         assertTypeName( int.class, "I" );
@@ -68,7 +69,7 @@ public class ByteCodeUtilsTest
     }
 
     @Test
-    public void shouldDescribeMethodWithNoParameters()
+    void shouldDescribeMethodWithNoParameters()
     {
         // GIVEN
         TypeReference owner = typeReference( ByteCodeUtilsTest.class );
@@ -82,7 +83,7 @@ public class ByteCodeUtilsTest
     }
 
     @Test
-    public void shouldDescribeMethodWithParameters()
+    void shouldDescribeMethodWithParameters()
     {
         // GIVEN
         TypeReference owner = typeReference( ByteCodeUtilsTest.class );
@@ -98,7 +99,7 @@ public class ByteCodeUtilsTest
     }
 
     @Test
-    public void signatureShouldBeNullWhenNotGeneric()
+    void signatureShouldBeNullWhenNotGeneric()
     {
         // GIVEN
         TypeReference reference = typeReference( String.class );
@@ -111,7 +112,7 @@ public class ByteCodeUtilsTest
     }
 
     @Test
-    public void signatureShouldBeCorrectWhenGeneric()
+    void signatureShouldBeCorrectWhenGeneric()
     {
         // GIVEN
         TypeReference reference = TypeReference.parameterizedType( List.class, String.class );
@@ -124,7 +125,7 @@ public class ByteCodeUtilsTest
     }
 
     @Test
-    public void methodSignatureShouldBeNullWhenNotGeneric()
+    void methodSignatureShouldBeNullWhenNotGeneric()
     {
         // GIVEN
         TypeReference owner = typeReference( ByteCodeUtilsTest.class );
@@ -140,7 +141,7 @@ public class ByteCodeUtilsTest
     }
 
     @Test
-    public void methodSignatureShouldBeCorrectWhenGeneric()
+    void methodSignatureShouldBeCorrectWhenGeneric()
     {
         // GIVEN
         TypeReference owner = typeReference( ByteCodeUtilsTest.class );
@@ -156,7 +157,7 @@ public class ByteCodeUtilsTest
     }
 
     @Test
-    public void shouldHandleGenericReturnType()
+    void shouldHandleGenericReturnType()
     {
         // GIVEN
         TypeReference owner = typeReference( ByteCodeUtilsTest.class );
@@ -175,7 +176,7 @@ public class ByteCodeUtilsTest
     }
 
     @Test
-    public void shouldHandleGenericThrows()
+    void shouldHandleGenericThrows()
     {
         // GIVEN
         TypeReference owner = typeReference( ByteCodeUtilsTest.class );
@@ -194,7 +195,7 @@ public class ByteCodeUtilsTest
     }
 
     @Test
-    public void shouldHandleNestedInnerClasses()
+    void shouldHandleNestedInnerClasses()
     {
         // Given
         TypeReference innerInner = typeReference( Inner.InnerInner.class );

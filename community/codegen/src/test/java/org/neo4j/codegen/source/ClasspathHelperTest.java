@@ -19,7 +19,7 @@
  */
 package org.neo4j.codegen.source;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.io.IOException;
@@ -28,24 +28,24 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.Set;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.hasItems;
 import static org.hamcrest.Matchers.not;
-import static org.junit.Assert.assertThat;
 import static org.neo4j.codegen.source.ClasspathHelper.fullClasspathFor;
 import static org.neo4j.codegen.source.ClasspathHelper.fullClasspathStringFor;
 
-public class ClasspathHelperTest
+class ClasspathHelperTest
 {
     @Test
-    public void shouldNotFailForNullClassLoader()
+    void shouldNotFailForNullClassLoader()
     {
         assertThat( fullClasspathFor( null ), not( empty() ) );
     }
 
     @Test
-    public void shouldWorkForClassLoaderWithNoParent() throws Exception
+    void shouldWorkForClassLoaderWithNoParent() throws Exception
     {
         // Given
         ClassLoader loader = new URLClassLoader( urls( "file:///file1", "file:///file2" ), null );
@@ -58,7 +58,7 @@ public class ClasspathHelperTest
     }
 
     @Test
-    public void shouldWorkForClassLoaderWithSingleParent() throws Exception
+    void shouldWorkForClassLoaderWithSingleParent() throws Exception
     {
         // Given
         ClassLoader parent = new URLClassLoader( urls( "file:///file1", "file:///file2" ), null );
@@ -72,7 +72,7 @@ public class ClasspathHelperTest
     }
 
     @Test
-    public void shouldWorkForClassLoaderHierarchy() throws Exception
+    void shouldWorkForClassLoaderHierarchy() throws Exception
     {
         // Given
         ClassLoader loader1 = new URLClassLoader( urls( "file:///file1" ), null );
@@ -88,7 +88,7 @@ public class ClasspathHelperTest
     }
 
     @Test
-    public void shouldReturnCorrectClasspathString() throws Exception
+    void shouldReturnCorrectClasspathString() throws Exception
     {
         // Given
         ClassLoader parent = new URLClassLoader( urls( "file:///foo" ), null );

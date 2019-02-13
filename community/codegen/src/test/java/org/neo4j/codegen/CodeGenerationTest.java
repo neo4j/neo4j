@@ -19,10 +19,9 @@
  */
 package org.neo4j.codegen;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 
 import java.io.IOException;
@@ -30,7 +29,6 @@ import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Field;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -44,14 +42,14 @@ import org.neo4j.codegen.source.SourceCode;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
@@ -88,35 +86,21 @@ import static org.neo4j.codegen.TypeReference.parameterizedType;
 import static org.neo4j.codegen.TypeReference.typeParameter;
 import static org.neo4j.codegen.TypeReference.typeReference;
 
-@RunWith( Parameterized.class )
-public class CodeGenerationTest
+@SuppressWarnings( "WeakerAccess" )
+public abstract class CodeGenerationTest
 {
     private static final MethodReference RUN = createMethod( Runnable.class, void.class, "run" );
 
-    @Parameterized.Parameters( name = "{0}" )
-    public static Collection<Object[]> generators()
-    {
-        return Arrays.asList( new Object[]{SourceCode.SOURCECODE}, new Object[]{ByteCode.BYTECODE} );
-    }
+    abstract CodeGenerator getGenerator();
 
-    @Parameterized.Parameter()
-    public CodeGenerationStrategy<?> strategy;
-
-    @Before
-    public void createGenerator()
+    @BeforeEach
+    private void createGenerator()
     {
-        try
-        {
-            generator = CodeGenerator.generateCode( strategy );
-        }
-        catch ( CodeGenerationNotSupportedException e )
-        {
-            throw new AssertionError( "Cannot compile code.", e );
-        }
+        generator = getGenerator();
     }
 
     @Test
-    public void shouldGenerateClass() throws Exception
+    void shouldGenerateClass( ) throws Exception
     {
         // given
         ClassHandle handle;
@@ -129,14 +113,14 @@ public class CodeGenerationTest
         Class<?> aClass = handle.loadClass();
 
         // then
-        assertNotNull( "null class loaded", aClass );
-        assertNotNull( "null package of: " + aClass.getName(), aClass.getPackage() );
+        assertNotNull( aClass, "null class loaded" );
+        assertNotNull( aClass.getPackage(), "null package of: " + aClass.getName() );
         assertEquals( PACKAGE, aClass.getPackage().getName() );
         assertEquals( "SimpleClass", aClass.getSimpleName() );
     }
 
     @Test
-    public void shouldGenerateTwoClassesInTheSamePackage() throws Exception
+    void shouldGenerateTwoClassesInTheSamePackage() throws Exception
     {
         // given
         ClassHandle one;
@@ -162,7 +146,7 @@ public class CodeGenerationTest
     }
 
     @Test
-    public void shouldGenerateDefaultConstructor() throws Throwable
+    void shouldGenerateDefaultConstructor() throws Throwable
     {
         // given
         ClassHandle handle;
@@ -180,7 +164,7 @@ public class CodeGenerationTest
     }
 
     @Test
-    public void shouldGenerateField() throws Exception
+    void shouldGenerateField() throws Exception
     {
         // given
         ClassHandle handle;
@@ -199,7 +183,7 @@ public class CodeGenerationTest
     }
 
     @Test
-    public void shouldGenerateParameterizedTypeField() throws Exception
+    void shouldGenerateParameterizedTypeField() throws Exception
     {
         // given
         ClassHandle handle;
@@ -219,7 +203,7 @@ public class CodeGenerationTest
     }
 
     @Test
-    public void shouldGenerateMethodReturningFieldValue() throws Throwable
+    void shouldGenerateMethodReturningFieldValue() throws Throwable
     {
         assertMethodReturningField( byte.class, (byte) 42 );
         assertMethodReturningField( short.class, (short) 42 );
@@ -234,7 +218,7 @@ public class CodeGenerationTest
     }
 
     @Test
-    public void shouldGenerateMethodReturningArrayValue() throws Throwable
+    void shouldGenerateMethodReturningArrayValue() throws Throwable
     {
         // given
         createGenerator();
@@ -256,7 +240,7 @@ public class CodeGenerationTest
     }
 
     @Test
-    public void shouldGenerateMethodReturningParameterizedTypeValue() throws Throwable
+    void shouldGenerateMethodReturningParameterizedTypeValue() throws Throwable
     {
         // given
         createGenerator();
@@ -281,7 +265,7 @@ public class CodeGenerationTest
     }
 
     @Test
-    public void shouldGenerateStaticPrimitiveField() throws Throwable
+    void shouldGenerateStaticPrimitiveField() throws Throwable
     {
         // given
         ClassHandle handle;
@@ -303,7 +287,7 @@ public class CodeGenerationTest
     }
 
     @Test
-    public void shouldGenerateStaticReferenceTypeField() throws Throwable
+    void shouldGenerateStaticReferenceTypeField() throws Throwable
     {
         // given
         ClassHandle handle;
@@ -325,7 +309,7 @@ public class CodeGenerationTest
     }
 
     @Test
-    public void shouldGenerateStaticParameterizedTypeField() throws Throwable
+    void shouldGenerateStaticParameterizedTypeField() throws Throwable
     {
         // given
         ClassHandle handle;
@@ -356,7 +340,7 @@ public class CodeGenerationTest
     }
 
     @Test
-    public void shouldThrowParameterizedCheckedException() throws Throwable
+    void shouldThrowParameterizedCheckedException() throws Throwable
     {
         // given
         ClassHandle handle;
@@ -391,7 +375,7 @@ public class CodeGenerationTest
     }
 
     @Test
-    public void shouldAssignLocalVariable() throws Throwable
+    void shouldAssignLocalVariable() throws Throwable
     {
         // given
         ClassHandle handle;
@@ -423,7 +407,7 @@ public class CodeGenerationTest
     }
 
     @Test
-    public void shouldDeclareAndAssignLocalVariable() throws Throwable
+    void shouldDeclareAndAssignLocalVariable() throws Throwable
     {
         // given
         ClassHandle handle;
@@ -456,7 +440,7 @@ public class CodeGenerationTest
     }
 
     @Test
-    public void shouldGenerateWhileLoop() throws Throwable
+    void shouldGenerateWhileLoop() throws Throwable
     {
         // given
         ClassHandle handle;
@@ -495,7 +479,7 @@ public class CodeGenerationTest
     }
 
     @Test
-    public void shouldGenerateWhileLoopWithMultipleTestExpressions() throws Throwable
+    void shouldGenerateWhileLoopWithMultipleTestExpressions() throws Throwable
     {
         // given
         ClassHandle handle;
@@ -538,7 +522,7 @@ public class CodeGenerationTest
     }
 
     @Test
-    public void shouldGenerateNestedWhileLoop() throws Throwable
+    void shouldGenerateNestedWhileLoop() throws Throwable
     {
         // given
         ClassHandle handle;
@@ -582,7 +566,7 @@ public class CodeGenerationTest
     }
 
     @Test
-    public void shouldGenerateWhileLoopContinue() throws Throwable
+    void shouldGenerateWhileLoopContinue() throws Throwable
     {
         // given
         ClassHandle handle;
@@ -636,7 +620,7 @@ public class CodeGenerationTest
     }
 
     @Test
-    public void shouldGenerateNestedWhileLoopInnerContinue() throws Throwable
+    void shouldGenerateNestedWhileLoopInnerContinue() throws Throwable
     {
         // given
         ClassHandle handle;
@@ -712,7 +696,7 @@ public class CodeGenerationTest
     }
 
     @Test
-    public void shouldGenerateNestedWhileLoopDoubleContinue() throws Throwable
+    void shouldGenerateNestedWhileLoopDoubleContinue() throws Throwable
     {
         // given
         ClassHandle handle;
@@ -786,7 +770,7 @@ public class CodeGenerationTest
                 Arrays.asList(
                         Arrays.asList( a1, a2 ).iterator(),
                         Arrays.asList( b1, b2, b3, b4 ).iterator(),
-                        Arrays.asList( c1 ).iterator()
+                        Collections.singletonList( c1 ).iterator()
                 ).iterator();
         Iterator<Boolean> skipOuter = Arrays.asList( true, false, true ).iterator();
         Iterator<Boolean> skipInner = Arrays.asList( false, true, false, true ).iterator();
@@ -803,7 +787,7 @@ public class CodeGenerationTest
     }
 
     @Test
-    public void shouldGenerateForEachLoop() throws Throwable
+    void shouldGenerateForEachLoop() throws Throwable
     {
         // given
         ClassHandle handle;
@@ -840,7 +824,7 @@ public class CodeGenerationTest
     }
 
     @Test
-    public void shouldGenerateIfStatement() throws Throwable
+    void shouldGenerateIfStatement() throws Throwable
     {
         // given
         ClassHandle handle;
@@ -873,7 +857,7 @@ public class CodeGenerationTest
     }
 
     @Test
-    public void shouldGenerateIfElseStatement() throws Throwable
+    void shouldGenerateIfElseStatement() throws Throwable
     {
         // given
         ClassHandle handle;
@@ -899,7 +883,7 @@ public class CodeGenerationTest
     }
 
     @Test
-    public void shouldGenerateIfEqualsStatement() throws Throwable
+    void shouldGenerateIfEqualsStatement() throws Throwable
     {
         // given
         ClassHandle handle;
@@ -934,7 +918,7 @@ public class CodeGenerationTest
     }
 
     @Test
-    public void shouldGenerateIfNotEqualsStatement() throws Throwable
+    void shouldGenerateIfNotEqualsStatement() throws Throwable
     {
         // given
         ClassHandle handle;
@@ -969,7 +953,7 @@ public class CodeGenerationTest
     }
 
     @Test
-    public void shouldGenerateIfNotExpressionStatement() throws Throwable
+    void shouldGenerateIfNotExpressionStatement() throws Throwable
     {
         // given
         ClassHandle handle;
@@ -1002,7 +986,7 @@ public class CodeGenerationTest
     }
 
     @Test
-    public void shouldGenerateIfNullStatement() throws Throwable
+    void shouldGenerateIfNullStatement() throws Throwable
     {
         // given
         ClassHandle handle;
@@ -1035,7 +1019,7 @@ public class CodeGenerationTest
     }
 
     @Test
-    public void shouldGenerateIfNonNullStatement() throws Throwable
+    void shouldGenerateIfNonNullStatement() throws Throwable
     {
         // given
         ClassHandle handle;
@@ -1068,7 +1052,7 @@ public class CodeGenerationTest
     }
 
     @Test
-    public void shouldGenerateTryWithNestedWhileIfLoop() throws Throwable
+    void shouldGenerateTryWithNestedWhileIfLoop() throws Throwable
     {
         // given
         ClassHandle handle;
@@ -1124,7 +1108,7 @@ public class CodeGenerationTest
     }
 
     @Test
-    public void shouldGenerateWhileWithNestedIfLoop() throws Throwable
+    void shouldGenerateWhileWithNestedIfLoop() throws Throwable
     {
         // given
         ClassHandle handle;
@@ -1173,7 +1157,7 @@ public class CodeGenerationTest
     }
 
     @Test
-    public void shouldGenerateOr() throws Throwable
+    void shouldGenerateOr() throws Throwable
     {
         // given
         ClassHandle handle;
@@ -1215,7 +1199,7 @@ public class CodeGenerationTest
     }
 
     @Test
-    public void shouldGenerateMethodUsingOr() throws Throwable
+    void shouldGenerateMethodUsingOr() throws Throwable
     {
         // given
         ClassHandle handle;
@@ -1242,7 +1226,7 @@ public class CodeGenerationTest
     }
 
     @Test
-    public void shouldGenerateAnd() throws Throwable
+    void shouldGenerateAnd() throws Throwable
     {
         // given
         ClassHandle handle;
@@ -1284,7 +1268,7 @@ public class CodeGenerationTest
     }
 
     @Test
-    public void shouldGenerateMethodUsingAnd() throws Throwable
+    void shouldGenerateMethodUsingAnd() throws Throwable
     {
         // given
         ClassHandle handle;
@@ -1311,7 +1295,7 @@ public class CodeGenerationTest
     }
 
     @Test
-    public void shouldGenerateMethodUsingMultipleAnds() throws Throwable
+    void shouldGenerateMethodUsingMultipleAnds() throws Throwable
     {
         // given
         ClassHandle handle;
@@ -1347,7 +1331,7 @@ public class CodeGenerationTest
     }
 
     @Test
-    public void shouldGenerateMethodUsingMultipleAnds2() throws Throwable
+    void shouldGenerateMethodUsingMultipleAnds2() throws Throwable
     {
         // given
         ClassHandle handle;
@@ -1383,7 +1367,7 @@ public class CodeGenerationTest
     }
 
     @Test
-    public void shouldGenerateMethodUsingMultipleOrs() throws Throwable
+    void shouldGenerateMethodUsingMultipleOrs() throws Throwable
     {
         // given
         ClassHandle handle;
@@ -1419,7 +1403,7 @@ public class CodeGenerationTest
     }
 
     @Test
-    public void shouldGenerateMethodUsingMultipleOrs2() throws Throwable
+    void shouldGenerateMethodUsingMultipleOrs2() throws Throwable
     {
         // given
         ClassHandle handle;
@@ -1455,7 +1439,7 @@ public class CodeGenerationTest
     }
 
     @Test
-    public void shouldHandleNot() throws Throwable
+    void shouldHandleNot() throws Throwable
     {
         // given
         ClassHandle handle;
@@ -1480,7 +1464,7 @@ public class CodeGenerationTest
     }
 
     @Test
-    public void shouldHandleTernaryOperator() throws Throwable
+    void shouldHandleTernaryOperator() throws Throwable
     {
         // given
         ClassHandle handle;
@@ -1517,7 +1501,7 @@ public class CodeGenerationTest
     }
 
     @Test
-    public void shouldHandleTernaryOnNullOperator() throws Throwable
+    void shouldHandleTernaryOnNullOperator() throws Throwable
     {
         // given
         ClassHandle handle;
@@ -1554,7 +1538,7 @@ public class CodeGenerationTest
     }
 
     @Test
-    public void shouldHandleTernaryOnNonNullOperator() throws Throwable
+    void shouldHandleTernaryOnNonNullOperator() throws Throwable
     {
         // given
         ClassHandle handle;
@@ -1591,7 +1575,7 @@ public class CodeGenerationTest
     }
 
     @Test
-    public void shouldHandleEquality() throws Throwable
+    void shouldHandleEquality() throws Throwable
     {
         // boolean
         assertTrue( compareForType( boolean.class, true, true,
@@ -1671,7 +1655,7 @@ public class CodeGenerationTest
     }
 
     @Test
-    public void shouldHandleGreaterThan() throws Throwable
+    void shouldHandleGreaterThan() throws Throwable
     {
         assertTrue( compareForType( float.class, 43F, 42F,
                 Expression::gt ) );
@@ -1736,7 +1720,7 @@ public class CodeGenerationTest
     }
 
     @Test
-    public void shouldHandleAddition() throws Throwable
+    void shouldHandleAddition() throws Throwable
     {
         assertThat( addForType( int.class, 17, 18 ), equalTo( 35 ) );
         assertThat( addForType( long.class, 17L, 18L ), equalTo( 35L ) );
@@ -1744,7 +1728,7 @@ public class CodeGenerationTest
     }
 
     @Test
-    public void shouldHandleSubtraction() throws Throwable
+    void shouldHandleSubtraction() throws Throwable
     {
         assertThat( subtractForType( int.class, 19, 18 ), equalTo( 1 ) );
         assertThat( subtractForType( long.class, 19L, 18L ), equalTo( 1L ) );
@@ -1752,7 +1736,7 @@ public class CodeGenerationTest
     }
 
     @Test
-    public void shouldHandleMultiplication() throws Throwable
+    void shouldHandleMultiplication() throws Throwable
     {
         assertThat( multiplyForType( int.class, 17, 18 ), equalTo( 306 ) );
         assertThat( multiplyForType( long.class, 17L, 18L ), equalTo( 306L ) );
@@ -1878,7 +1862,7 @@ public class CodeGenerationTest
     }
 
     @Test
-    public void shouldGenerateTryCatch() throws Throwable
+    void shouldGenerateTryCatch() throws Throwable
     {
         // given
         ClassHandle handle;
@@ -1918,7 +1902,7 @@ public class CodeGenerationTest
     }
 
     @Test
-    public void shouldGenerateTryCatchWithNestedBlock() throws Throwable
+    void shouldGenerateTryCatchWithNestedBlock() throws Throwable
     {
         // given
         ClassHandle handle;
@@ -1957,7 +1941,7 @@ public class CodeGenerationTest
     }
 
     @Test
-    public void shouldGenerateTryAndMultipleCatch() throws Throwable
+    void shouldGenerateTryAndMultipleCatch() throws Throwable
     {
         // given
         ClassHandle handle;
@@ -2007,7 +1991,7 @@ public class CodeGenerationTest
     }
 
     @Test
-    public void shouldThrowException() throws Throwable
+    void shouldThrowException() throws Throwable
     {
         // given
         ClassHandle handle;
@@ -2035,7 +2019,7 @@ public class CodeGenerationTest
     }
 
     @Test
-    public void shouldBeAbleToCast() throws Throwable
+    void shouldBeAbleToCast() throws Throwable
     {
         // given
         ClassHandle handle;
@@ -2062,7 +2046,7 @@ public class CodeGenerationTest
     }
 
     @Test
-    public void shouldBeAbleToBox() throws Throwable
+    void shouldBeAbleToBox() throws Throwable
     {
         assertThat( boxTest( boolean.class, true ), equalTo( Boolean.TRUE ) );
         assertThat( boxTest( boolean.class, false ), equalTo( Boolean.FALSE ) );
@@ -2076,7 +2060,7 @@ public class CodeGenerationTest
     }
 
     @Test
-    public void shouldBeAbleToUnbox() throws Throwable
+    void shouldBeAbleToUnbox() throws Throwable
     {
         assertThat( unboxTest( Boolean.class, boolean.class, true ), equalTo( true ) );
         assertThat( unboxTest( Boolean.class, boolean.class, false ), equalTo( false ) );
@@ -2090,7 +2074,7 @@ public class CodeGenerationTest
     }
 
     @Test
-    public void shouldHandleInfinityAndNan() throws Throwable
+    void shouldHandleInfinityAndNan() throws Throwable
     {
         assertTrue( Double.isInfinite( generateDoubleMethod( Double.POSITIVE_INFINITY ).get() ) );
         assertTrue( Double.isInfinite( generateDoubleMethod( Double.NEGATIVE_INFINITY ).get() ) );
@@ -2098,7 +2082,7 @@ public class CodeGenerationTest
     }
 
     @Test
-    public void shouldGenerateInstanceOf() throws Throwable
+    void shouldGenerateInstanceOf() throws Throwable
     {
         // given
         ClassHandle handle;
@@ -2122,7 +2106,7 @@ public class CodeGenerationTest
     }
 
     @Test
-    public void shouldUpdateStaticField() throws Throwable
+    void shouldUpdateStaticField() throws Throwable
     {
         // given
         ClassHandle handle;
@@ -2145,7 +2129,7 @@ public class CodeGenerationTest
     }
 
     @Test
-    public void shouldAccessArray() throws Throwable
+    void shouldAccessArray() throws Throwable
     {
         assertArrayLoad( long.class, long[].class, new long[]{1L, 2L, 3L}, 2, 3L );
         assertArrayLoad( int.class, int[].class, new int[]{1, 2, 3}, 1, 2 );
@@ -2159,7 +2143,7 @@ public class CodeGenerationTest
     }
 
     @Test
-    public void shouldCreateAndPopulatePrimitiveArray() throws Throwable
+    void shouldCreateAndPopulatePrimitiveArray() throws Throwable
     {
         ClassHandle handle;
         try ( ClassGenerator simple = generateClass( "LongArrayClass" ) )
@@ -2181,7 +2165,7 @@ public class CodeGenerationTest
     }
 
     @Test
-    public void shouldCreateAndPopulateNonPrimitiveArray() throws Throwable
+    void shouldCreateAndPopulateNonPrimitiveArray() throws Throwable
     {
         ClassHandle handle;
         try ( ClassGenerator simple = generateClass( "StringArrayClass" ) )
@@ -2408,4 +2392,39 @@ public class CodeGenerationTest
     {
     }
 
+}
+
+
+class ByteCodeCodeGenerationTest extends CodeGenerationTest
+{
+
+    @Override
+    CodeGenerator getGenerator()
+    {
+        try
+        {
+            return CodeGenerator.generateCode( ByteCode.BYTECODE );
+        }
+        catch ( CodeGenerationNotSupportedException e )
+        {
+            throw new AssertionError( e );
+        }
+    }
+}
+
+class SourceCodeCodeGenerationTest extends CodeGenerationTest
+{
+
+    @Override
+    CodeGenerator getGenerator()
+    {
+        try
+        {
+            return CodeGenerator.generateCode( SourceCode.SOURCECODE );
+        }
+        catch ( CodeGenerationNotSupportedException e )
+        {
+            throw new AssertionError( e );
+        }
+    }
 }
