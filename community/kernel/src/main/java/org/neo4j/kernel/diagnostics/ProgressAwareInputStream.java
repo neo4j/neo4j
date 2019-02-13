@@ -26,7 +26,7 @@ import java.io.InputStream;
  * Implements an {@link InputStream} that keeps track of the progress. This assumes that the total size is available
  * before reading starts.
  */
-public class ProgressAwareInputStream extends InputStream
+class ProgressAwareInputStream extends InputStream
 {
     private final OnProgressListener listener;
     private final InputStream wrappedInputStream;
@@ -34,7 +34,7 @@ public class ProgressAwareInputStream extends InputStream
     private long totalRead;
     private int lastReportedPercent;
 
-    public ProgressAwareInputStream( InputStream wrappedInputStream, long size, OnProgressListener listener )
+    ProgressAwareInputStream( InputStream wrappedInputStream, long size, OnProgressListener listener )
     {
         this.wrappedInputStream = wrappedInputStream;
         this.size = size;
@@ -79,7 +79,7 @@ public class ProgressAwareInputStream extends InputStream
 
     private void recalculatePercent()
     {
-        int percent = (int) (totalRead * 100 / size);
+        int percent = size > 0 ? (int) (totalRead * 100 / size) : -1;
         if ( percent > 100 )
         {
             percent = 100;

@@ -20,12 +20,11 @@
 package org.neo4j.kernel.diagnostics;
 
 import java.io.IOException;
-import java.nio.file.Path;
+import java.io.InputStream;
 
 /**
- * A diagnostic source is a pair of a destination and a function to add data to mentioned destination.
- * The destination has to be provided separately since the creation of the file is done outside of the method to
- * make it more flexible in regards to where the file can be placed.
+ * A diagnostic source is a pair of a destination and a function to create input stream of data to be written to that destination.
+ * The destination has to be provided separately to allow flexibility in regards to how data is stored.
  */
 public interface DiagnosticsReportSource
 {
@@ -37,22 +36,15 @@ public interface DiagnosticsReportSource
     String destinationPath();
 
     /**
-     * This method should output the diagnostics source to the provided destination.
-     *
-     * @param archiveDestination the target destination that should be written to.
-     * @param progress a monitor that can track progress.
-     * @throws IOException if any file operations fail, exceptions should be handled by the caller for better error
-     * reporting to the user.
+     * @return input stream to be used for reading data from this provider
      */
-    void addToArchive( Path archiveDestination, DiagnosticsReporterProgress progress ) throws IOException;
+    InputStream newInputStream() throws IOException;
 
     /**
      * Returns an estimated upper bound of the input file size. Since the content will be placed in an archive the final
      * size can actually both increase and decrease.
      *
-     * @param progress a monitor that can track progress.
      * @return the estimated file size in bytes.
-     * @throws IOException if size cannot be determined.
      */
-    long estimatedSize( DiagnosticsReporterProgress progress ) throws IOException;
+    long estimatedSize();
 }

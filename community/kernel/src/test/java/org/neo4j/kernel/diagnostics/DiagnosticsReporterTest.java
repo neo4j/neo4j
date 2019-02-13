@@ -25,6 +25,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.PrintStream;
 import java.net.URI;
 import java.nio.file.FileSystem;
@@ -94,9 +95,8 @@ class DiagnosticsReporterTest
 
             assertThat( baos.toString(), is(String.format(
                     "1/2 fail.txt%n" +
-                    "....................  20%%%n" +
-                    "..........%n" +
-                    "Error: Step failed%n" +
+                            "%n" +
+                            "Error: Failed to write fail.txt%n" +
                     "2/2 logs/a.txt%n" +
                     "....................  20%%%n" +
                     "....................  40%%%n" +
@@ -209,14 +209,13 @@ class DiagnosticsReporterTest
         }
 
         @Override
-        public void addToArchive( Path archiveDestination, DiagnosticsReporterProgress progress )
+        public InputStream newInputStream()
         {
-            progress.percentChanged( 30 );
             throw new RuntimeException( "You had it coming..." );
         }
 
         @Override
-        public long estimatedSize( DiagnosticsReporterProgress progress )
+        public long estimatedSize()
         {
             return 0;
         }

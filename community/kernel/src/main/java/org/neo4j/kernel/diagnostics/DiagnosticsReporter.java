@@ -19,12 +19,12 @@
  */
 package org.neo4j.kernel.diagnostics;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.IOException;
-import java.net.URI;
-import java.nio.file.FileSystem;
-import java.nio.file.FileSystems;
-import java.nio.file.Files;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -32,11 +32,21 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
-import org.neo4j.helpers.Format;
 import org.neo4j.helpers.Service;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
+
+import static java.lang.String.format;
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.nio.file.Files.createDirectories;
+import static java.nio.file.Files.newOutputStream;
+import static java.nio.file.StandardOpenOption.CREATE_NEW;
+import static java.nio.file.StandardOpenOption.WRITE;
+import static org.neo4j.io.ByteUnit.bytes;
+import static org.neo4j.io.ByteUnit.kibiBytes;
 
 public class DiagnosticsReporter
 {
@@ -58,85 +68,77 @@ public class DiagnosticsReporter
 
     public void dump( Set<String> classifiers, Path destination, DiagnosticsReporterProgress progress, boolean force ) throws IOException
     {
-        // Collect sources
-        List<DiagnosticsReportSource> sources = new ArrayList<>();
-        for ( DiagnosticsOfflineReportProvider provider : providers )
+        final List<DiagnosticsReportSource> sources = getAllSources( classifiers );
+        final Path destinationDir = createDirectories( destination.getParent() );
+
+        if ( !force )
         {
-            sources.addAll( provider.getDiagnosticsSources( classifiers ) );
+            estimateSizeAndCheckAvailableDiskSpace( destination, sources, destinationDir );
         }
 
-        // Add additional sources
-        for ( Map.Entry<String,List<DiagnosticsReportSource>> classifier : additionalSources.entrySet() )
+        progress.setTotalSteps( sources.size() );
+        try ( OutputStream out = newOutputStream( destination, CREATE_NEW, WRITE );
+                ZipOutputStream zip = new ZipOutputStream( new BufferedOutputStream( out ), UTF_8 ) )
         {
-            if ( classifiers.contains( "all" ) || classifiers.contains( classifier.getKey() ) )
-            {
-                sources.addAll( classifier.getValue() );
-            }
-        }
-
-        // Make sure target directory exists
-        Path destinationFolder = destination.getParent();
-        Files.createDirectories( destinationFolder );
-
-        // Estimate an upper bound of the final size and make sure it will fit, if not, end reporting
-        estimateSizeAndCheckAvailableDiskSpace( destination, progress, sources, destinationFolder, force );
-
-        // Compress all files to destination
-        Map<String,String> env = new HashMap<>();
-        env.put( "create", "true" );
-
-        // NOTE: we need the toUri() in order to handle windows file paths
-        URI uri = URI.create("jar:file:" + destination.toAbsolutePath().toUri().getRawPath() );
-
-        try ( FileSystem fs = FileSystems.newFileSystem( uri, env ) )
-        {
-            progress.setTotalSteps( sources.size() );
-            for ( int i = 0; i < sources.size(); i++ )
-            {
-                DiagnosticsReportSource source = sources.get( i );
-                Path path = fs.getPath( source.destinationPath() );
-                if ( path.getParent() != null )
-                {
-                    Files.createDirectories( path.getParent() );
-                }
-
-                progress.started( i + 1, path.toString() );
-                try
-                {
-                    source.addToArchive( path, progress );
-                }
-                catch ( Throwable e )
-                {
-                    progress.error( "Step failed", e );
-                    continue;
-                }
-                progress.finished();
-            }
+            writeDiagnostics( zip, sources, progress );
         }
     }
 
-    private void estimateSizeAndCheckAvailableDiskSpace( Path destination,
-            DiagnosticsReporterProgress progress, List<DiagnosticsReportSource> sources,
-            Path destinationFolder, boolean force ) throws IOException
+    private void writeDiagnostics( ZipOutputStream zip, List<DiagnosticsReportSource> sources, DiagnosticsReporterProgress progress )
     {
-        if ( force )
+        int step = 0;
+        final byte[] buf = new byte[(int) kibiBytes( 8 )]; // same as default buf size in buffered streams
+        for ( DiagnosticsReportSource source : sources )
         {
-            return;
-        }
+            ++step;
+            progress.started( step, source.destinationPath() );
+            try ( InputStream rawInput = source.newInputStream();
+                    InputStream input = new ProgressAwareInputStream( new BufferedInputStream( rawInput ), source.estimatedSize(), progress::percentChanged ) )
+            {
+                final ZipEntry entry = new ZipEntry( source.destinationPath() );
+                zip.putNextEntry( entry );
 
-        long estimatedFinalSize = 0;
-        for ( DiagnosticsReportSource source  : sources )
+                int chunkSize;
+                while ( (chunkSize = input.read( buf )) >= 0 )
+                {
+                    zip.write( buf, 0, chunkSize );
+                }
+
+                zip.closeEntry();
+            }
+            catch ( Exception e )
+            {
+                progress.error( "Failed to write " + source.destinationPath(), e );
+                continue;
+            }
+            progress.finished();
+        }
+    }
+
+    private List<DiagnosticsReportSource> getAllSources( Set<String> classifiers )
+    {
+        final List<DiagnosticsReportSource> allSources = new ArrayList<>();
+        providers.forEach( provider -> allSources.addAll( provider.getDiagnosticsSources( classifiers ) ) );
+        additionalSources.forEach( ( classifier, sources ) ->
         {
-            estimatedFinalSize += source.estimatedSize( progress );
-        }
+            if ( classifiers.contains( "all" ) || classifier.contains( classifier ) )
+            {
+                allSources.addAll( sources );
+            }
+        } );
+        return allSources;
+    }
 
-        long freeSpace = destinationFolder.toFile().getFreeSpace();
+    private void estimateSizeAndCheckAvailableDiskSpace( Path destination, List<DiagnosticsReportSource> sources, Path destinationDir )
+    {
+
+        final long estimatedFinalSize = sources.stream().mapToLong( DiagnosticsReportSource::estimatedSize ).sum();
+        final long freeSpace = destinationDir.toFile().getFreeSpace();
         if ( estimatedFinalSize > freeSpace )
         {
-            String message = String.format(
-                    "Free available disk space for %s is %s, worst case estimate is %s. To ignore add '--force' to the command.",
-                    destination.getFileName(), Format.bytes( freeSpace ), Format.bytes( estimatedFinalSize ) );
-            throw new RuntimeException( message );
+            throw new RuntimeException( format( "Free available disk space for %s is %s, worst case estimate is %s. To ignore add '--force' to the command.",
+                    destination.getFileName(), bytes( freeSpace ), bytes( estimatedFinalSize ) )
+            );
         }
     }
 

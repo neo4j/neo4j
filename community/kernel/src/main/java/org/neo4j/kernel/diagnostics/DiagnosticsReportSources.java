@@ -19,13 +19,11 @@
  */
 package org.neo4j.kernel.diagnostics;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
@@ -38,11 +36,11 @@ import static org.neo4j.logging.RotatingFileOutputStreamSupplier.getAllArchives;
 /**
  * Contains helper methods to create create {@link DiagnosticsReportSource}.
  */
-public class DiagnosticsReportSources
+public final class DiagnosticsReportSources
 {
     private DiagnosticsReportSources()
     {
-        throw new AssertionError( "No instances" );
+        // util class
     }
 
     /**
@@ -53,8 +51,7 @@ public class DiagnosticsReportSources
      * @param source source file to archive
      * @return a diagnostics source consuming a file.
      */
-    public static DiagnosticsReportSource newDiagnosticsFile( String destination, FileSystemAbstraction fs,
-            File source )
+    public static DiagnosticsReportSource newDiagnosticsFile( String destination, FileSystemAbstraction fs, File source )
     {
         return new DiagnosticsFileReportSource( destination, fs, source );
     }
@@ -118,21 +115,13 @@ public class DiagnosticsReportSources
         }
 
         @Override
-        public void addToArchive( Path archiveDestination, DiagnosticsReporterProgress progress )
-                throws IOException
+        public InputStream newInputStream() throws IOException
         {
-            long size = fs.getFileSize( source );
-            InputStream in = fs.openAsInputStream( source );
-
-            // Track progress of the file reading, source might be a very large file
-            try ( ProgressAwareInputStream inStream = new ProgressAwareInputStream( in, size, progress::percentChanged ) )
-            {
-                Files.copy( inStream, archiveDestination );
-            }
+            return fs.openAsInputStream( source );
         }
 
         @Override
-        public long estimatedSize( DiagnosticsReporterProgress progress )
+        public long estimatedSize()
         {
             return fs.getFileSize( source );
         }
@@ -156,16 +145,14 @@ public class DiagnosticsReportSources
         }
 
         @Override
-        public void addToArchive( Path archiveDestination, DiagnosticsReporterProgress progress )
-                throws IOException
+        public InputStream newInputStream()
         {
-            String message = messageSupplier.get();
-            Files.write( archiveDestination, message.getBytes( StandardCharsets.UTF_8 ), StandardOpenOption.CREATE,
-                    StandardOpenOption.APPEND );
+            final String message = messageSupplier.get();
+            return new ByteArrayInputStream( message.getBytes( StandardCharsets.UTF_8 ) );
         }
 
         @Override
-        public long estimatedSize( DiagnosticsReporterProgress progress )
+        public long estimatedSize()
         {
             return 0; // Size of strings should be negligible
         }

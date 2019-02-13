@@ -21,13 +21,16 @@ package org.neo4j.dbms.diagnostics.jmx;
 
 import com.sun.management.HotSpotDiagnosticMXBean;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
+import java.io.UncheckedIOException;
 import java.lang.management.ManagementFactory;
 import java.lang.management.MemoryMXBean;
 import java.lang.management.ThreadMXBean;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Properties;
 import javax.management.InstanceNotFoundException;
@@ -43,9 +46,10 @@ import javax.management.remote.JMXServiceURL;
 
 import org.neo4j.kernel.diagnostics.DiagnosticsReportSource;
 import org.neo4j.kernel.diagnostics.DiagnosticsReportSources;
-import org.neo4j.kernel.diagnostics.DiagnosticsReporterProgress;
-import org.neo4j.kernel.diagnostics.ProgressAwareInputStream;
 import org.neo4j.kernel.diagnostics.utils.DumpUtils;
+
+import static java.nio.file.Files.createTempFile;
+import static java.nio.file.Files.deleteIfExists;
 
 /**
  * Encapsulates remoting functionality for collecting diagnostics information on running instances.
@@ -132,35 +136,36 @@ public class JmxDump
             }
 
             @Override
-            public void addToArchive( Path archiveDestination, DiagnosticsReporterProgress progress )
-                    throws IOException
+            public InputStream newInputStream() throws IOException
             {
-                // Heap dump has to target an actual file, we cannot stream directly to the archive
-                progress.info( "dumping..." );
-                Path tempFile = Files.createTempFile("neo4j-heapdump", ".hprof");
-                Files.deleteIfExists( tempFile );
-                heapDump( tempFile.toAbsolutePath().toString() );
-
-                // Track progress of archiving process
-                progress.info( "archiving..." );
-                long size = Files.size( tempFile );
-                InputStream in = Files.newInputStream( tempFile );
-                try ( ProgressAwareInputStream inStream = new ProgressAwareInputStream( in, size, progress::percentChanged ) )
+                final Path heapdumpFile = createTempFile( "neo4j-heapdump", ".hprof" ).toAbsolutePath();
+                heapDump( heapdumpFile.toString() );
+                return new FileInputStream( heapdumpFile.toFile() )
                 {
-                    Files.copy( inStream, archiveDestination );
-                }
-
-                Files.delete( tempFile );
+                    @Override
+                    public void close() throws IOException
+                    {
+                        super.close();
+                        deleteIfExists( heapdumpFile );
+                    }
+                };
             }
 
             @Override
-            public long estimatedSize( DiagnosticsReporterProgress progress ) throws IOException
+            public long estimatedSize()
             {
-                MemoryMXBean bean = ManagementFactory.getPlatformMXBean( mBeanServer, MemoryMXBean.class );
-                long totalMemory = bean.getHeapMemoryUsage().getCommitted() + bean.getNonHeapMemoryUsage().getCommitted();
+                try
+                {
+                    final MemoryMXBean bean = ManagementFactory.getPlatformMXBean( mBeanServer, MemoryMXBean.class );
+                    final long totalMemory = bean.getHeapMemoryUsage().getCommitted() + bean.getNonHeapMemoryUsage().getCommitted();
 
-                // We first write raw to disk then write to archive, 5x compression is a reasonable worst case estimation
-                return (long) (totalMemory * 1.2);
+                    // We first write raw to disk then write to archive, 5x compression is a reasonable worst case estimation
+                    return (long) (totalMemory * 1.2);
+                }
+                catch ( IOException e )
+                {
+                    throw new UncheckedIOException( e );
+                }
             }
         };
     }
@@ -186,17 +191,15 @@ public class JmxDump
             }
 
             @Override
-            public void addToArchive( Path archiveDestination, DiagnosticsReporterProgress progress )
-                    throws IOException
+            public InputStream newInputStream()
             {
-                try ( PrintStream printStream = new PrintStream( Files.newOutputStream( archiveDestination ) ) )
-                {
-                    systemProperties.list( printStream );
-                }
+                final ByteArrayOutputStream out = new ByteArrayOutputStream();
+                systemProperties.list( new PrintStream( out, true ) );
+                return new ByteArrayInputStream( out.toByteArray() );
             }
 
             @Override
-            public long estimatedSize( DiagnosticsReporterProgress progress )
+            public long estimatedSize()
             {
                 return 0;
             }
