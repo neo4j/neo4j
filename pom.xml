@@ -77,7 +77,7 @@
             -Dorg.neo4j.io.pagecache.impl.muninn.usePreciseCursorErrorStackTraces=true
             -Dorg.neo4j.kernel.impl.api.KernelStatement.trackStatements=true
             -Dorg.org.neo4j.kernel.impl.newapi.DefaultCursors.trackCursors=true
-            -XX:+UnlockExperimentalVMOptions -XX:+TrustFinalNonStaticFields ${java.exports} ${test.runner.jvm.settings.additional}
+            -XX:+UnlockExperimentalVMOptions -XX:+TrustFinalNonStaticFields -XX:-MaxFDLimit ${java.exports} ${test.runner.jvm.settings.additional}
         </test.runner.jvm.settings>
         <jetty.version>9.4.11.v20180605</jetty.version>
         <findbugs.version>3.0.1</findbugs.version>
