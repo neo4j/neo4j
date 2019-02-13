@@ -1030,7 +1030,7 @@ public class Operations implements Write, SchemaWrite
         //It is not enough to check equality here since by our equality semantics `int == tofloat(int)` is `true`
         //so by only checking for equality users cannot change type of property without also "changing" the value.
         //Hence the extra type check here.
-        return lhs.getClass() != rhs.getClass() || !lhs.equals( rhs );
+        return !lhs.isSameValueTypeAs( rhs ) || !lhs.equals( rhs );
     }
 
     private void assertNodeExists( long sourceNode ) throws EntityNotFoundException

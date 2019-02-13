@@ -177,6 +177,12 @@ public abstract class StringValue extends TextValue
         return thisString.compareTo( thatString );
     }
 
+    @Override
+    public boolean isSameValueTypeAs( Value value )
+    {
+        return value instanceof StringValue;
+    }
+
     static TextValue EMPTY = new StringValue()
     {
         @Override

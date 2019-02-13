@@ -241,6 +241,19 @@ public abstract class Value extends AnyValue
 
     public abstract NumberType numberType();
 
+    /**
+     * Returns whether or not the type of this value is the same as the type of the given value. Value type is more specific than
+     * what {@link #valueGroup()} returns, but less granular than, say specific class. For example there are specific classes for
+     * representing string values for various scenarios, but they're all strings... same type.
+     *
+     * @param value {@link Value} to compare type against.
+     * @return {@code true} if the given {@code value} is of the same value type as this value.
+     */
+    public boolean isSameValueTypeAs( Value value )
+    {
+        return getClass() == value.getClass();
+    }
+
     public final long hashCode64()
     {
         HashFunction xxh64 = HashFunction.incrementalXXH64();

@@ -21,7 +21,11 @@ package org.neo4j.values.storable;
 
 import org.junit.jupiter.api.Test;
 
+import org.neo4j.string.UTF8;
+
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.values.storable.Values.booleanArray;
 import static org.neo4j.values.storable.Values.booleanValue;
 import static org.neo4j.values.storable.Values.byteArray;
@@ -40,6 +44,7 @@ import static org.neo4j.values.storable.Values.shortArray;
 import static org.neo4j.values.storable.Values.shortValue;
 import static org.neo4j.values.storable.Values.stringArray;
 import static org.neo4j.values.storable.Values.stringValue;
+import static org.neo4j.values.storable.Values.utf8Value;
 import static org.neo4j.values.utils.AnyValueTestUtil.assertEqual;
 
 class ValuesTest
@@ -94,5 +99,21 @@ class ValuesTest
         assertThrows( IllegalArgumentException.class, () -> Values.pointValue( CoordinateReferenceSystem.Cartesian_3D, 1, 2 ) );
         assertThrows( IllegalArgumentException.class, () -> Values.pointValue( CoordinateReferenceSystem.WGS84, 1, 2, 3 ) );
         assertThrows( IllegalArgumentException.class, () -> Values.pointValue( CoordinateReferenceSystem.WGS84_3D, 1, 2 ) );
+    }
+
+    @Test
+    void differentStringSubClassesShouldBeSeenAsOfSameValueType()
+    {
+        // given
+        TextValue stringValue = stringValue( "abc" );
+        TextValue utf8Value = utf8Value( UTF8.encode( "def" ) );
+
+        // when
+        boolean areOfSameClasses = stringValue.getClass().equals( utf8Value );
+        boolean areOfSameValueType = stringValue.isSameValueTypeAs( utf8Value );
+
+        // then
+        assertFalse( areOfSameClasses );
+        assertTrue( areOfSameValueType );
     }
 }
