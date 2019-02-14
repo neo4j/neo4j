@@ -49,6 +49,7 @@ import org.neo4j.procedure.UserAggregationResult;
 import org.neo4j.procedure.UserAggregationUpdate;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.ValueMapper;
+import org.neo4j.values.storable.LongValue;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.VirtualValues;
 
@@ -69,7 +70,7 @@ import static org.neo4j.kernel.api.proc.BasicContext.buildContext;
 import static org.neo4j.values.storable.Values.longValue;
 import static org.neo4j.values.storable.Values.stringValue;
 
-@SuppressWarnings( "WeakerAccess" )
+@SuppressWarnings( {"WeakerAccess", "unused"} )
 public class UserAggregationFunctionTest
 {
     private ProcedureCompiler procedureCompiler;
@@ -250,7 +251,7 @@ public class UserAggregationFunctionTest
     @Test
     void shouldGiveHelpfulErrorOnFunctionReturningInvalidType()
     {
-        ProcedureException exception = assertThrows( ProcedureException.class, () -> compile( FunctionWithInvalidOutput.class ).get( 0 ) );
+        ProcedureException exception = assertThrows( ProcedureException.class, () -> compile( FunctionWithInvalidOutput.class ) );
         assertThat( exception.getMessage(), equalTo( String.format("Don't know how to map `char[]` to the Neo4j Type System.%n" +
                 "Please refer to to the documentation for full details.%n" +
                 "For your reference, known types are: [boolean, byte[], double, java.lang.Boolean, " +
@@ -263,7 +264,7 @@ public class UserAggregationFunctionTest
     @Test
     void shouldGiveHelpfulErrorOnContextAnnotatedStaticField()
     {
-        ProcedureException exception = assertThrows( ProcedureException.class, () -> compile( FunctionWithStaticContextAnnotatedField.class ).get( 0 ) );
+        ProcedureException exception = assertThrows( ProcedureException.class, () -> compile( FunctionWithStaticContextAnnotatedField.class ) );
         assertThat( exception.getMessage(), equalTo( String.format("The field `gdb` in the class named `FunctionWithStaticContextAnnotatedField` is " +
                 "annotated as a @Context field,%n" +
                 "but it is static. @Context fields must be public, non-final and non-static,%n" +
@@ -283,7 +284,7 @@ public class UserAggregationFunctionTest
     @Test
     void shouldNotAllowOverridingFunctionNameWithoutNamespace()
     {
-        ProcedureException exception = assertThrows( ProcedureException.class, () -> compile( FunctionWithSingleName.class ).get( 0 ) );
+        ProcedureException exception = assertThrows( ProcedureException.class, () -> compile( FunctionWithSingleName.class ) );
         assertThat( exception.getMessage(), equalTo( "It is not allowed to define functions in the root namespace please use a " +
                 "namespace, e.g. `@UserFunction(\"org.example.com.singleName\")" ) );
     }
@@ -374,6 +375,26 @@ public class UserAggregationFunctionTest
                 fail( "Unexpected function: " + name );
             }
         }
+    }
+
+    @Test
+    void shouldRunAggregationFunctionWithInternalTypes() throws Throwable
+    {
+        // Given
+        CallableUserAggregationFunction func = compile( InternalTypes.class ).get( 0 );
+
+        // When
+        UserAggregator aggregator = func.create( prepareContext() );
+
+        aggregator.update( new AnyValue[]{longValue( 1 )} );
+        aggregator.update( new AnyValue[]{longValue( 1 )} );
+        aggregator.update( new AnyValue[]{longValue( 1 )} );
+        aggregator.update( new AnyValue[]{longValue( 1 )} );
+        aggregator.update( new AnyValue[]{longValue( 1 )} );
+
+        // Then
+        assertThat( aggregator.result(),
+                equalTo( longValue( 5 ) ) );
     }
 
     private org.neo4j.kernel.api.proc.Context prepareContext()
@@ -823,6 +844,31 @@ public class UserAggregationFunctionTest
             String result()
             {
                 return "Testing";
+            }
+        }
+    }
+
+    public static class InternalTypes
+    {
+        @UserAggregationFunction
+        public InnerAggregator test()
+        {
+            return new InnerAggregator();
+        }
+
+        public static class InnerAggregator
+        {
+            private long sum;
+            @UserAggregationUpdate
+            public void update( @Name( value = "in" ) LongValue in )
+            {
+                sum += in.longValue();
+            }
+
+            @UserAggregationResult
+            public LongValue result()
+            {
+                return longValue( sum );
             }
         }
     }

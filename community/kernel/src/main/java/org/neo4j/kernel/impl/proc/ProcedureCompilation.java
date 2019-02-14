@@ -45,7 +45,6 @@ import org.neo4j.codegen.CompilationFailureException;
 import org.neo4j.codegen.Expression;
 import org.neo4j.codegen.FieldReference;
 import org.neo4j.codegen.MethodDeclaration;
-import org.neo4j.codegen.TypeReference;
 import org.neo4j.collection.RawIterator;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
@@ -633,7 +632,7 @@ public final class ProcedureCompilation
                 for ( int i = 0; i < fields.size(); i++ )
                 {
                     Field f = fields.get( i );
-                    mapped[i] = toAnyValue( get( method.load( "casted" ), field( f ) ) );
+                    mapped[i] = toAnyValue( get( method.load( "casted" ), field( f ) ), f.getType() );
                 }
                 method.returns( Expression.newInitializedArray( typeReference( AnyValue.class ), mapped ) );
             }
@@ -692,7 +691,7 @@ public final class ProcedureCompilation
                 block.tryCatch(
                         onSuccess ->
                                 onSuccess.returns( toAnyValue(
-                                        invoke( get( onSuccess.self(), aggregator ), methodReference( result ) ) ) ),
+                                        invoke( get( onSuccess.self(), aggregator ), methodReference( result ) ), result.getReturnType()) ),
                         onError ->
                                 onError( onError, format( "function `%s`", signature.name() ) ),
                         param( Throwable.class, "T" ) );
@@ -747,7 +746,7 @@ public final class ProcedureCompilation
         //call the actual function
         block.assign( methodToCall.getReturnType(), "fromFunction",
                 invoke( getStatic( userClass ), methodReference( methodToCall ), parameters ) );
-        block.returns( toAnyValue( block.load( "fromFunction" ) ) );
+        block.returns( toAnyValue( block.load( "fromFunction" ), methodToCall.getReturnType() ) );
     }
 
     private static void procedureBody( CodeBlock block,
@@ -874,11 +873,17 @@ public final class ProcedureCompilation
      * it into the corresponding AnyValue
      *
      * @param expression the expression to evaluate
+     * @param userType the type of the expression to map
      * @return an expression properly mapped to AnyValue
      */
-    private static Expression toAnyValue( Expression expression )
+    private static Expression toAnyValue( Expression expression, Class<?> userType )
     {
-        String type = expression.type().fullName();
+        if ( AnyValue.class.isAssignableFrom( userType ) )
+        {
+            return nullCheck( expression, cast( userType, expression ) );
+        }
+
+        String type = userType.getCanonicalName();
         if ( type.equals( LONG ) )
         {
             return invoke( methodReference( Values.class, LongValue.class, "longValue", long.class ), expression );
@@ -998,10 +1003,15 @@ public final class ProcedureCompilation
      * @param context The current context.
      * @return an expression properly typed to be consumed by function or procedure
      */
-    private static Expression fromAnyValue( TypeReference expectedType, Expression expression, CodeBlock block,
+    private static Expression fromAnyValue( Class<?> expectedType, Expression expression, CodeBlock block,
             Expression context )
     {
-        String type = expectedType.fullName();
+        if ( AnyValue.class.isAssignableFrom( expectedType ) )
+        {
+            return cast( expectedType, expression);
+        }
+
+        String type = expectedType.getCanonicalName();
         if ( type.equals( LONG ) )
         {
             return invoke( cast( NumberValue.class, expression ),
@@ -1121,8 +1131,7 @@ public final class ProcedureCompilation
         Expression[] parameters = new Expression[parameterTypes.length];
         for ( int i = 0; i < parameterTypes.length; i++ )
         {
-            parameters[i] = fromAnyValue(
-                    typeReference( parameterTypes[i] ), arrayLoad( block.load( "input" ), constant( i ) ), block,
+            parameters[i] = fromAnyValue( parameterTypes[i] , arrayLoad( block.load( "input" ), constant( i ) ), block,
                     context );
         }
         return parameters;

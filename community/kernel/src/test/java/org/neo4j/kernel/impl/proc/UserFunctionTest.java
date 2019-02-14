@@ -43,9 +43,12 @@ import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLog;
 import org.neo4j.procedure.Context;
+import org.neo4j.procedure.Name;
 import org.neo4j.procedure.UserFunction;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.ValueMapper;
+import org.neo4j.values.storable.LongValue;
+import org.neo4j.values.storable.StringValue;
 import org.neo4j.values.virtual.MapValue;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -62,8 +65,11 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.neo4j.internal.kernel.api.procs.UserFunctionSignature.functionSignature;
 import static org.neo4j.kernel.api.proc.BasicContext.buildContext;
+import static org.neo4j.values.storable.Values.NO_VALUE;
+import static org.neo4j.values.storable.Values.longValue;
+import static org.neo4j.values.storable.Values.stringValue;
 
-@SuppressWarnings( "WeakerAccess" )
+@SuppressWarnings( {"WeakerAccess", "unused"} )
 public class UserFunctionTest
 {
     private ProcedureCompiler procedureCompiler;
@@ -182,7 +188,7 @@ public class UserFunctionTest
     {
 
         // When
-        ProcedureException exception = assertThrows( ProcedureException.class, () -> compile( FunctionWithInvalidOutput.class ).get( 0 ) );
+        ProcedureException exception = assertThrows( ProcedureException.class, () -> compile( FunctionWithInvalidOutput.class ) );
         assertThat( exception.getMessage(), equalTo( String.format( "Don't know how to map `char[]` to the Neo4j Type System.%n" +
                 "Please refer to to the documentation for full details.%n" +
                 "For your reference, known types are: [boolean, byte[], double, java.lang.Boolean, " +
@@ -195,7 +201,7 @@ public class UserFunctionTest
     @Test
     void shouldGiveHelpfulErrorOnContextAnnotatedStaticField()
     {
-        ProcedureException exception = assertThrows( ProcedureException.class, () -> compile( FunctionWithStaticContextAnnotatedField.class ).get( 0 ) );
+        ProcedureException exception = assertThrows( ProcedureException.class, () -> compile( FunctionWithStaticContextAnnotatedField.class ) );
         assertThat( exception.getMessage(), equalTo( String.format( "The field `gdb` in the class named `FunctionWithStaticContextAnnotatedField` is " +
                                                     "annotated as a @Context field,%n" +
                                                     "but it is static. @Context fields must be public, non-final and non-static,%n" +
@@ -215,7 +221,7 @@ public class UserFunctionTest
     @Test
     void shouldNotAllowOverridingFunctionNameWithoutNamespace()
     {
-        ProcedureException exception = assertThrows( ProcedureException.class, () -> compile( FunctionWithSingleName.class ).get( 0 ) );
+        ProcedureException exception = assertThrows( ProcedureException.class, () -> compile( FunctionWithSingleName.class ) );
         assertThat( exception.getMessage(), equalTo( "It is not allowed to define functions in the root namespace please use a " +
                 "namespace, e.g. `@UserFunction(\"org.example.com.singleName\")" ) );
     }
@@ -305,6 +311,32 @@ public class UserFunctionTest
                 fail( "Unexpected function: " + name );
             }
         }
+    }
+
+    @Test
+    void shouldSupportInternalTypes() throws Throwable
+    {
+        // Given
+        CallableUserFunction func = compile( FunctionsWithInternalTypes.class ).get( 0 );
+
+        // When
+        Object out = func.apply( prepareContext(), new AnyValue[]{stringValue("hello")} );
+
+        // Then
+        assertThat(out, equalTo( longValue( 5 ) ) );
+    }
+
+    @Test
+    void shouldSupportInternalTypesWithNull() throws Throwable
+    {
+        // Given
+        CallableUserFunction func = compile( FunctionsWithInternalTypes.class ).get( 1 );
+
+        // When
+        Object out = func.apply( prepareContext(), new AnyValue[]{stringValue("hello")} );
+
+        // Then
+        assertThat(out, equalTo( NO_VALUE ) );
     }
 
     private org.neo4j.kernel.api.proc.Context prepareContext()
@@ -469,6 +501,23 @@ public class UserFunctionTest
 
         @UserFunction( deprecatedBy = "newFunc" )
         public Object badFunc()
+        {
+            return null;
+        }
+    }
+
+
+    public static class FunctionsWithInternalTypes
+    {
+
+        @UserFunction
+        public LongValue countLetters( @Name(value = "text") StringValue text )
+        {
+            return longValue( text.length() );
+        }
+
+        @UserFunction
+        public LongValue nullMethod( @Name(value = "text") StringValue text )
         {
             return null;
         }

@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.proc;
 
+import com.sun.jdi.IntegerValue;
+
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.time.LocalDate;
@@ -43,6 +45,20 @@ import org.neo4j.internal.kernel.api.procs.Neo4jTypes.AnyType;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.procedure.Name;
 import org.neo4j.util.VisibleForTesting;
+import org.neo4j.values.AnyValue;
+import org.neo4j.values.SequenceValue;
+import org.neo4j.values.storable.BooleanValue;
+import org.neo4j.values.storable.ByteArray;
+import org.neo4j.values.storable.DateTimeValue;
+import org.neo4j.values.storable.DateValue;
+import org.neo4j.values.storable.DurationValue;
+import org.neo4j.values.storable.FloatingPointValue;
+import org.neo4j.values.storable.LocalDateTimeValue;
+import org.neo4j.values.storable.LocalTimeValue;
+import org.neo4j.values.storable.NumberValue;
+import org.neo4j.values.storable.TextValue;
+import org.neo4j.values.storable.TimeValue;
+import org.neo4j.values.virtual.MapValue;
 
 import static java.lang.Boolean.parseBoolean;
 import static java.lang.Double.parseDouble;
@@ -69,15 +85,15 @@ import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTTime;
 
 public class TypeCheckers
 {
-    private static final DefaultValueConverter TO_ANY = new DefaultValueConverter( NTAny, Object.class );
-    private static final DefaultValueConverter TO_STRING = new DefaultValueConverter( NTString, String.class, DefaultParameterValue::ntString );
-    private static final DefaultValueConverter TO_INTEGER = new DefaultValueConverter( NTInteger, Long.class, s -> ntInteger( parseLong( s ) ) );
-    private static final DefaultValueConverter TO_FLOAT = new DefaultValueConverter( NTFloat, Double.class, s -> ntFloat( parseDouble( s ) ) );
-    private static final DefaultValueConverter TO_NUMBER = new DefaultValueConverter( NTNumber, Number.class, TypeCheckers::parseNumber );
-    private static final DefaultValueConverter TO_BOOLEAN = new DefaultValueConverter( NTBoolean, Boolean.class, s -> ntBoolean( parseBoolean( s ) ) );
-    private static final DefaultValueConverter TO_MAP = new DefaultValueConverter( NTMap, Map.class, new MapConverter() );
+    private static final DefaultValueConverter TO_ANY = new DefaultValueConverter( NTAny  );
+    private static final DefaultValueConverter TO_STRING = new DefaultValueConverter( NTString, DefaultParameterValue::ntString );
+    private static final DefaultValueConverter TO_INTEGER = new DefaultValueConverter( NTInteger, s -> ntInteger( parseLong( s ) ) );
+    private static final DefaultValueConverter TO_FLOAT = new DefaultValueConverter( NTFloat, s -> ntFloat( parseDouble( s ) ) );
+    private static final DefaultValueConverter TO_NUMBER = new DefaultValueConverter( NTNumber,  TypeCheckers::parseNumber );
+    private static final DefaultValueConverter TO_BOOLEAN = new DefaultValueConverter( NTBoolean, s -> ntBoolean( parseBoolean( s ) ) );
+    private static final DefaultValueConverter TO_MAP = new DefaultValueConverter( NTMap, new MapConverter() );
     private static final DefaultValueConverter TO_LIST = toList( TO_ANY, Object.class );
-    private final DefaultValueConverter TO_BYTE_ARRAY = new DefaultValueConverter( NTByteArray, byte[].class, new ByteArrayConverter() );
+    private final DefaultValueConverter TO_BYTE_ARRAY = new DefaultValueConverter( NTByteArray, new ByteArrayConverter() );
 
     private final Map<Type,DefaultValueConverter> javaToNeo = new HashMap<>();
 
@@ -97,23 +113,38 @@ public class TypeCheckers
     private void registerScalarsAndCollections()
     {
         registerType( String.class, TO_STRING );
+        registerType( TextValue.class, TO_STRING );
         registerType( long.class, TO_INTEGER );
         registerType( Long.class, TO_INTEGER );
+        registerType( IntegerValue.class, TO_INTEGER );
         registerType( double.class, TO_FLOAT );
         registerType( Double.class, TO_FLOAT );
+        registerType( FloatingPointValue.class, TO_FLOAT );
         registerType( Number.class, TO_NUMBER );
+        registerType( NumberValue.class, TO_NUMBER );
         registerType( boolean.class, TO_BOOLEAN );
         registerType( Boolean.class, TO_BOOLEAN );
+        registerType( BooleanValue.class, TO_BOOLEAN );
         registerType( Map.class, TO_MAP );
+        registerType( MapValue.class, TO_MAP );
         registerType( List.class, TO_LIST );
+        registerType( SequenceValue.class, TO_LIST );
         registerType( Object.class, TO_ANY );
+        registerType( AnyValue.class, TO_ANY );
         registerType( byte[].class, TO_BYTE_ARRAY );
-        registerType( ZonedDateTime.class, new DefaultValueConverter( NTDateTime, ZonedDateTime.class ) );
-        registerType( LocalDateTime.class, new DefaultValueConverter( NTLocalDateTime, LocalDateTime.class ) );
-        registerType( LocalDate.class, new DefaultValueConverter( NTDate, LocalDate.class ) );
-        registerType( OffsetTime.class, new DefaultValueConverter( NTTime, OffsetTime.class ) );
-        registerType( LocalTime.class, new DefaultValueConverter( NTLocalTime, LocalTime.class ) );
-        registerType( TemporalAmount.class, new DefaultValueConverter( NTDuration, TemporalAmount.class ) );
+        registerType( ByteArray.class, TO_BYTE_ARRAY );
+        registerType( ZonedDateTime.class, new DefaultValueConverter( NTDateTime ) );
+        registerType( DateTimeValue.class, new DefaultValueConverter( NTDateTime ) );
+        registerType( LocalDateTime.class, new DefaultValueConverter( NTLocalDateTime ) );
+        registerType( LocalDateTimeValue.class, new DefaultValueConverter( NTLocalDateTime ) );
+        registerType( LocalDate.class, new DefaultValueConverter( NTDate ) );
+        registerType( DateValue.class, new DefaultValueConverter( NTDate ) );
+        registerType( OffsetTime.class, new DefaultValueConverter( NTTime) );
+        registerType( TimeValue.class, new DefaultValueConverter( NTTime) );
+        registerType( LocalTime.class, new DefaultValueConverter( NTLocalTime ) );
+        registerType( LocalTimeValue.class, new DefaultValueConverter( NTLocalTime ) );
+        registerType( TemporalAmount.class, new DefaultValueConverter( NTDuration ) );
+        registerType( DurationValue.class, new DefaultValueConverter( NTDuration ) );
     }
 
     TypeChecker checkerFor( Type javaType ) throws ProcedureException
@@ -123,6 +154,12 @@ public class TypeCheckers
 
     DefaultValueConverter converterFor( Type javaType ) throws ProcedureException
     {
+        if ( isAnyValue( javaType ) )
+        {
+            //For AnyValue we support subtyping
+           javaType = findValidSuperClass( javaType );
+        }
+
         DefaultValueConverter converter = javaToNeo.get( javaType );
         if ( converter != null )
         {
@@ -155,6 +192,25 @@ public class TypeCheckers
         throw javaToNeoMappingError( javaType );
     }
 
+    private boolean isAnyValue( Type type )
+    {
+        return type instanceof Class<?> && AnyValue.class.isAssignableFrom( (Class<?>) type );
+    }
+
+    private Type findValidSuperClass( Type type )
+    {
+        if ( type instanceof Class<?> )
+        {
+            Class<?> aClass = (Class<?>) type;
+            while ( !javaToNeo.containsKey( aClass ) )
+            {
+                aClass = aClass.getSuperclass();
+            }
+            return aClass;
+        }
+        return type;
+    }
+
     void registerType( Class<?> javaClass, DefaultValueConverter toNeo )
     {
         javaToNeo.put( javaClass, toNeo );
@@ -180,7 +236,7 @@ public class TypeCheckers
 
     private static DefaultValueConverter toList( DefaultValueConverter inner, Type type )
     {
-        return new DefaultValueConverter( NTList( inner.type() ), List.class, new ListConverter( type, inner.type() ) );
+        return new DefaultValueConverter( NTList( inner.type() ), new ListConverter( type, inner.type() ) );
     }
 
     private ProcedureException javaToNeoMappingError( Type cls )
@@ -200,14 +256,11 @@ public class TypeCheckers
     public abstract static class TypeChecker
     {
         final AnyType type;
-        final Class<?> javaClass;
 
-        private TypeChecker( AnyType type, Class<?> javaClass )
+        private TypeChecker( AnyType type )
         {
             this.type = type;
-            this.javaClass = javaClass;
         }
-
         public AnyType type()
         {
             return type;
@@ -219,14 +272,14 @@ public class TypeCheckers
     {
         private final Function<String,DefaultParameterValue> parser;
 
-        DefaultValueConverter( AnyType type, Class<?> javaClass )
+        DefaultValueConverter( AnyType type )
         {
-            this( type, javaClass, nullParser( javaClass, type ) );
+            this( type, nullParser( type ) );
         }
 
-        private DefaultValueConverter( AnyType type, Class<?> javaClass, Function<String,DefaultParameterValue> parser )
+        private DefaultValueConverter( AnyType type, Function<String,DefaultParameterValue> parser )
         {
-            super( type, javaClass );
+            super( type );
             this.parser = parser;
         }
 
@@ -247,12 +300,12 @@ public class TypeCheckers
                 {
                     throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed,
                             "Default value `%s` could not be parsed as a %s", parameter.defaultValue(),
-                            javaClass.getSimpleName() );
+                            type.toString() );
                 }
             }
         }
 
-        private static Function<String,DefaultParameterValue> nullParser( Class<?> javaType, Neo4jTypes.AnyType neoType )
+        private static Function<String,DefaultParameterValue> nullParser( Neo4jTypes.AnyType neoType )
         {
             return s ->
             {
@@ -264,7 +317,7 @@ public class TypeCheckers
                 {
                     throw new IllegalArgumentException( String.format(
                             "A %s can only have a `defaultValue = \"null\"",
-                            javaType.getSimpleName() ) );
+                            neoType.toString() ) );
                 }
             };
         }

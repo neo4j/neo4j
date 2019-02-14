@@ -231,7 +231,7 @@ public class GlobalProcedures extends LifecycleAdapter
      */
     public void registerType( Class<?> javaClass, Neo4jTypes.AnyType type )
     {
-        typeCheckers.registerType( javaClass, new TypeCheckers.DefaultValueConverter( type, javaClass ) );
+        typeCheckers.registerType( javaClass, new TypeCheckers.DefaultValueConverter( type ) );
     }
 
     /**

@@ -45,9 +45,14 @@ import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLog;
 import org.neo4j.procedure.Context;
+import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.ValueMapper;
+import org.neo4j.values.storable.BooleanValue;
+import org.neo4j.values.storable.LongValue;
+import org.neo4j.values.storable.TextValue;
+import org.neo4j.values.storable.Values;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -69,7 +74,7 @@ import static org.neo4j.kernel.api.proc.BasicContext.buildContext;
 import static org.neo4j.values.storable.Values.longValue;
 import static org.neo4j.values.storable.Values.stringValue;
 
-@SuppressWarnings( "WeakerAccess" )
+@SuppressWarnings( {"WeakerAccess", "unused"} )
 public class ProcedureTest
 {
     private ProcedureCompiler procedureCompiler;
@@ -201,7 +206,7 @@ public class ProcedureTest
     @Test
     void shouldGiveHelpfulErrorOnProcedureReturningInvalidRecordType()
     {
-        ProcedureException exception = assertThrows( ProcedureException.class, () -> compile( ProcedureWithInvalidRecordOutput.class ).get( 0 ) );
+        ProcedureException exception = assertThrows( ProcedureException.class, () -> compile( ProcedureWithInvalidRecordOutput.class ) );
         assertThat( exception.getMessage(), equalTo( String.format( "Procedures must return a Stream of records, where a record is a concrete class%n" +
                                                 "that you define, with public non-final fields defining the fields in the record.%n" +
                                                 "If you''d like your procedure to return `String`, you could define a record class " +
@@ -216,7 +221,7 @@ public class ProcedureTest
     @Test
     void shouldGiveHelpfulErrorOnContextAnnotatedStaticField()
     {
-        ProcedureException exception = assertThrows( ProcedureException.class, () -> compile( ProcedureWithStaticContextAnnotatedField.class ).get( 0 ) );
+        ProcedureException exception = assertThrows( ProcedureException.class, () -> compile( ProcedureWithStaticContextAnnotatedField.class ) );
         assertThat( exception.getMessage(), equalTo( String.format("The field `gdb` in the class named `ProcedureWithStaticContextAnnotatedField` is " +
                                                     "annotated as a @Context field,%n" +
                                                     "but it is static. @Context fields must be public, non-final and non-static,%n" +
@@ -419,6 +424,24 @@ public class ProcedureTest
         verify( log )
                 .warn( "The procedure 'org.neo4j.kernel.impl.proc.listCoolPeople' is not on the whitelist and won't be loaded." );
         assertThat( proc.isEmpty(), is(true) );
+    }
+
+    @Test
+    void shouldRunProcedureWithInternalTypes() throws Throwable
+    {
+        // Given
+        CallableProcedure proc = compile( InternalTypes.class ).get( 0 );
+
+        // When
+        RawIterator<AnyValue[],ProcedureException> out =
+                proc.apply( prepareContext(), new AnyValue[]{longValue( 42 ), stringValue( "hello" ),
+                        Values.TRUE}, resourceTracker );
+
+        // Then
+        assertThat( out.next(), equalTo(
+                new AnyValue[]{longValue( 42 ), stringValue( "hello" ), Values.TRUE}
+        ) );
+        assertFalse( out.hasNext() );
     }
 
     private org.neo4j.kernel.api.proc.Context prepareContext()
@@ -642,6 +665,31 @@ public class ProcedureTest
         @Procedure( value = "badProc", deprecatedBy = "newProc" )
         public void badProc()
         {
+        }
+    }
+
+    public static class InternalTypes
+    {
+        @Procedure
+        public Stream<InternalTypeRecord> internalTypes( @Name( value = "long" ) LongValue longValue,
+                @Name( value = "text" ) TextValue textValue, @Name( value = "bool" ) BooleanValue booleanValue )
+        {
+            return Stream.of( new InternalTypeRecord( longValue, textValue, booleanValue ) );
+        }
+    }
+
+    public static class InternalTypeRecord
+    {
+        public final LongValue longValue;
+        public final TextValue textValue;
+        public final BooleanValue booleanValue;
+
+        public InternalTypeRecord( LongValue longValue, TextValue textValue,
+                BooleanValue booleanValue )
+        {
+            this.longValue = longValue;
+            this.textValue = textValue;
+            this.booleanValue = booleanValue;
         }
     }
 
