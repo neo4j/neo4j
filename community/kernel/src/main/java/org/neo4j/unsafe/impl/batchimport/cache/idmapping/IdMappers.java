@@ -36,6 +36,7 @@ import org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.StringEncoder;
 import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.input.Group;
 import org.neo4j.unsafe.impl.batchimport.input.Groups;
+import org.neo4j.unsafe.impl.batchimport.input.ReadableGroups;
 
 import static org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.EncodingIdMapper.NO_MONITOR;
 import static org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.TrackerFactories.dynamic;
@@ -119,7 +120,7 @@ public class IdMappers
      * @param groups {@link Groups} containing all id groups.
      * @return {@link IdMapper} for when input ids are strings.
      */
-    public static IdMapper strings( NumberArrayFactory cacheFactory, Groups groups )
+    public static IdMapper strings( NumberArrayFactory cacheFactory, ReadableGroups groups )
     {
         return new EncodingIdMapper( cacheFactory, new StringEncoder(), Radix.STRING, NO_MONITOR, dynamic(), groups,
                 numberOfCollisions -> new StringCollisionValues( cacheFactory, numberOfCollisions ) );
@@ -132,7 +133,7 @@ public class IdMappers
      * @param groups {@link Groups} containing all id groups.
      * @return {@link IdMapper} for when input ids are numbers.
      */
-    public static IdMapper longs( NumberArrayFactory cacheFactory, Groups groups )
+    public static IdMapper longs( NumberArrayFactory cacheFactory, ReadableGroups groups )
     {
         return new EncodingIdMapper( cacheFactory, new LongEncoder(), Radix.LONG, NO_MONITOR, dynamic(), groups,
                 numberOfCollisions -> new LongCollisionValues( cacheFactory, numberOfCollisions ) );

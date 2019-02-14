@@ -30,13 +30,17 @@ import static java.util.Arrays.asList;
 /**
  * Mapping from name to {@link Group}. Assigns proper {@link Group#id() ids} to created groups.
  */
-public class Groups
+public class Groups implements ReadableGroups
 {
     static final int LOWEST_NONGLOBAL_ID = 1;
 
     private final Map<String,Group> byName = new HashMap<>();
     private final List<Group> byId = new ArrayList<>( asList( Group.GLOBAL ) );
     private int nextId = LOWEST_NONGLOBAL_ID;
+
+    public Groups()
+    {
+    }
 
     /**
      * @param name group name or {@code null} for a {@link Group#GLOBAL global group}.
@@ -81,6 +85,7 @@ public class Groups
         return group;
     }
 
+    @Override
     public Group get( int id )
     {
         if ( id < 0 || id >= byId.size() )
@@ -95,6 +100,7 @@ public class Groups
         return Arrays.toString( byName.keySet().toArray( new String[byName.keySet().size()] ) );
     }
 
+    @Override
     public int size()
     {
         return nextId;

@@ -25,8 +25,7 @@ import java.util.function.ToIntFunction;
 import org.neo4j.unsafe.impl.batchimport.BatchImporter;
 import org.neo4j.unsafe.impl.batchimport.InputIterable;
 import org.neo4j.unsafe.impl.batchimport.InputIterator;
-import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
-import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
+import org.neo4j.unsafe.impl.batchimport.input.csv.IdType;
 import org.neo4j.values.storable.Value;
 
 /**
@@ -94,11 +93,16 @@ public interface Input
     InputIterable relationships();
 
     /**
-     * @return {@link IdMapper} which will get populated by node import and later queried by relationship import
+     * @return {@link IdType} which matches the type of ids this {@link Input} generates.
+     * Will get populated by node import and later queried by relationship import
      * to resolve potentially temporary input node ids to actual node ids in the database.
-     * @param numberArrayFactory The factory for creating data-structures to use for caching internally in the IdMapper.
      */
-    IdMapper idMapper( NumberArrayFactory numberArrayFactory );
+    IdType idType();
+
+    /**
+     * @return accessor for id groups that this input has.
+     */
+    ReadableGroups groups();
 
     /**
      * @return a {@link Collector} capable of writing bad relationships

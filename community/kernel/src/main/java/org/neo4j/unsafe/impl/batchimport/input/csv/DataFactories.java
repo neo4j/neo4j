@@ -55,6 +55,7 @@ import static java.lang.String.format;
 import static java.time.ZoneOffset.UTC;
 import static org.neo4j.csv.reader.Readables.individualFiles;
 import static org.neo4j.csv.reader.Readables.iterator;
+import static org.neo4j.unsafe.impl.batchimport.input.csv.CsvInput.idExtractor;
 
 /**
  * Provides common implementations of factories required by f.ex {@link CsvInput}.
@@ -191,7 +192,7 @@ public class DataFactories
                 Mark mark = new Mark();
                 Extractors extractors = new Extractors( config.arrayDelimiter(), config.emptyQuotedStringsAsNull(),
                         config.trimStrings(), defaultTimeZone );
-                Extractor<?> idExtractor = idType.extractor( extractors );
+                Extractor<?> idExtractor = idExtractor( idType, extractors );
                 int delimiter = config.delimiter();
                 List<Header.Entry> columns = new ArrayList<>();
                 for ( int i = 0; !mark.isEndOfLine() && dataSeeker.seek( mark, delimiter ); i++ )

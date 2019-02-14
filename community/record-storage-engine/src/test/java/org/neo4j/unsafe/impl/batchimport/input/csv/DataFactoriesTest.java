@@ -40,6 +40,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.neo4j.csv.reader.Readables.wrap;
 import static org.neo4j.helpers.ArrayUtil.array;
+import static org.neo4j.unsafe.impl.batchimport.input.csv.CsvInput.idExtractor;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.defaultFormatNodeFileHeader;
 
 public class DataFactoriesTest
@@ -63,7 +64,7 @@ public class DataFactoriesTest
 
         // THEN
         assertArrayEquals( array(
-                entry( "ID", Type.ID, idType.extractor( extractors ) ),
+                entry( "ID", Type.ID, idExtractor( idType, extractors ) ),
                 entry( "label-one", Type.LABEL, extractors.stringArray() ),
                 entry( "also-labels", Type.LABEL, extractors.stringArray() ),
                 entry( "name", Type.PROPERTY, extractors.string() ),
@@ -84,8 +85,8 @@ public class DataFactoriesTest
 
         // THEN
         assertArrayEquals( array(
-                entry( null, Type.START_ID, idType.extractor( extractors ) ),
-                entry( null, Type.END_ID, idType.extractor( extractors ) ),
+                entry( null, Type.START_ID, idExtractor( idType, extractors ) ),
+                entry( null, Type.END_ID, idExtractor( idType, extractors ) ),
                 entry( "type", Type.TYPE, extractors.string() ),
                 entry( "date", Type.PROPERTY, extractors.long_() ),
                 entry( "more", Type.PROPERTY, extractors.longArray() ) ), header.entries() );
@@ -213,8 +214,8 @@ public class DataFactoriesTest
 
         // THEN
         assertArrayEquals( array(
-                entry( null, Type.START_ID, "GroupOne", idType.extractor( extractors ) ),
-                entry( null, Type.END_ID, "GroupTwo", idType.extractor( extractors ) ),
+                entry( null, Type.START_ID, "GroupOne", idExtractor( idType, extractors ) ),
+                entry( null, Type.END_ID, "GroupTwo", idExtractor( idType, extractors ) ),
                 entry( "type", Type.TYPE, extractors.string() ),
                 entry( "date", Type.PROPERTY, extractors.long_() ),
                 entry( "more", Type.PROPERTY, extractors.longArray() ) ), header.entries() );

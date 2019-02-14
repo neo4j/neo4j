@@ -63,12 +63,11 @@ import org.neo4j.unsafe.impl.batchimport.GeneratingInputIterator;
 import org.neo4j.unsafe.impl.batchimport.InputIterable;
 import org.neo4j.unsafe.impl.batchimport.ParallelBatchImporter;
 import org.neo4j.unsafe.impl.batchimport.RandomsStates;
-import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
-import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
-import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMappers;
 import org.neo4j.unsafe.impl.batchimport.input.BadCollector;
 import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.input.Input;
+import org.neo4j.unsafe.impl.batchimport.input.ReadableGroups;
+import org.neo4j.unsafe.impl.batchimport.input.csv.IdType;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitors;
 import org.neo4j.util.FeatureToggles;
 import org.neo4j.values.storable.RandomValues;
@@ -347,9 +346,15 @@ public class MultipleIndexPopulationStressIT
         }
 
         @Override
-        public IdMapper idMapper( NumberArrayFactory numberArrayFactory )
+        public IdType idType()
         {
-            return IdMappers.actual();
+            return IdType.ACTUAL;
+        }
+
+        @Override
+        public ReadableGroups groups()
+        {
+            return ReadableGroups.EMPTY;
         }
 
         @Override

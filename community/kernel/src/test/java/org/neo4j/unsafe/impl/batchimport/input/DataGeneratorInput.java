@@ -28,8 +28,6 @@ import java.util.function.ToIntFunction;
 import org.neo4j.csv.reader.Extractors;
 import org.neo4j.unsafe.impl.batchimport.InputIterable;
 import org.neo4j.unsafe.impl.batchimport.InputIterator;
-import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
-import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Header;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Header.Entry;
 import org.neo4j.unsafe.impl.batchimport.input.csv.IdType;
@@ -37,6 +35,8 @@ import org.neo4j.unsafe.impl.batchimport.input.csv.Type;
 import org.neo4j.values.storable.Value;
 
 import static java.util.Arrays.asList;
+import static org.neo4j.unsafe.impl.batchimport.input.csv.CsvInput.idExtractor;
+
 /**
  * {@link Input} which generates data on the fly. This input wants to know number of nodes and relationships
  * and then a function for generating the nodes and another for generating the relationships.
@@ -111,9 +111,15 @@ public class DataGeneratorInput implements Input
     }
 
     @Override
-    public IdMapper idMapper( NumberArrayFactory numberArrayFactory )
+    public IdType idType()
     {
-        return idType.idMapper( numberArrayFactory, groups );
+        return idType;
+    }
+
+    @Override
+    public ReadableGroups groups()
+    {
+        return groups;
     }
 
     @Override
@@ -183,7 +189,7 @@ public class DataGeneratorInput implements Input
 
     public static Header sillyNodeHeader( IdType idType, Extractors extractors )
     {
-        return new Header( new Entry( null, Type.ID, null, idType.extractor( extractors ) ),
+        return new Header( new Entry( null, Type.ID, null, idExtractor( idType, extractors ) ),
                 new Entry( "name", Type.PROPERTY, null, extractors.string() ),
                 new Entry( "age", Type.PROPERTY, null, extractors.int_() ),
                 new Entry( "something", Type.PROPERTY, null, extractors.string() ),
@@ -198,7 +204,7 @@ public class DataGeneratorInput implements Input
     public static Header bareboneNodeHeader( String idKey, IdType idType, Extractors extractors, Entry... additionalEntries )
     {
         List<Entry> entries = new ArrayList<>();
-        entries.add( new Entry( idKey, Type.ID, null, idType.extractor( extractors ) ) );
+        entries.add( new Entry( idKey, Type.ID, null, idExtractor( idType, extractors ) ) );
         entries.add( new Entry( null, Type.LABEL, null, extractors.stringArray() ) );
         entries.addAll( asList( additionalEntries ) );
         return new Header( entries.toArray( new Entry[entries.size()] ) );
@@ -207,8 +213,8 @@ public class DataGeneratorInput implements Input
     public static Header bareboneRelationshipHeader( IdType idType, Extractors extractors, Entry... additionalEntries )
     {
         List<Entry> entries = new ArrayList<>();
-        entries.add( new Entry( null, Type.START_ID, null, idType.extractor( extractors ) ) );
-        entries.add( new Entry( null, Type.END_ID, null, idType.extractor( extractors ) ) );
+        entries.add( new Entry( null, Type.START_ID, null, idExtractor( idType, extractors ) ) );
+        entries.add( new Entry( null, Type.END_ID, null, idExtractor( idType, extractors ) ) );
         entries.add( new Entry( null, Type.TYPE, null, extractors.string() ) );
         entries.addAll( asList( additionalEntries ) );
         return new Header( entries.toArray( new Entry[entries.size()] ) );

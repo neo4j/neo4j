@@ -83,6 +83,7 @@ import static org.neo4j.unsafe.impl.batchimport.input.InputEntityDecorators.NO_D
 import static org.neo4j.unsafe.impl.batchimport.input.InputEntityDecorators.additiveLabels;
 import static org.neo4j.unsafe.impl.batchimport.input.InputEntityDecorators.defaultRelationshipType;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.Configuration.COMMAS;
+import static org.neo4j.unsafe.impl.batchimport.input.csv.CsvInput.idExtractor;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.datas;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.defaultFormatNodeFileHeader;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.defaultFormatRelationshipFileHeader;
@@ -120,7 +121,7 @@ public class CsvInputTest
         Iterable<DataFactory> data = dataIterable( data( "123,Mattias Persson,HACKER" ) );
         Input input = new CsvInput(
                 data,
-                header( entry( null, Type.ID, idType.extractor( extractors ) ),
+                header( entry( null, Type.ID, idExtractor( idType, extractors ) ),
                         entry( "name", Type.PROPERTY, extractors.string() ),
                         entry( "labels", Type.LABEL, extractors.string() ) ),
                         datas(), defaultFormatRelationshipFileHeader(), idType, config( COMMAS ), silentBadCollector( 0 ) );
@@ -143,8 +144,8 @@ public class CsvInputTest
               "node2,node10,HACKS,987654" ) );
         Input input = new CsvInput( datas(), defaultFormatNodeFileHeader(),
                 data,
-                header( entry( "from", Type.START_ID, idType.extractor( extractors ) ),
-                        entry( "to", Type.END_ID, idType.extractor( extractors ) ),
+                header( entry( "from", Type.START_ID, idExtractor( idType, extractors ) ),
+                        entry( "to", Type.END_ID, idExtractor( idType, extractors ) ),
                         entry( "type", Type.TYPE, extractors.string() ),
                         entry( "since", Type.PROPERTY, extractors.long_() ) ), idType, config( COMMAS ),
                         silentBadCollector( 0 ) );
@@ -168,10 +169,10 @@ public class CsvInputTest
         IdType idType = IdType.STRING;
         Input input = new CsvInput(
                 nodeData, header(
-                        entry( null, Type.ID, idType.extractor( extractors ) ) ),
+                        entry( null, Type.ID, idExtractor( idType, extractors ) ) ),
                 relationshipData, header(
-                        entry( null, Type.START_ID, idType.extractor( extractors ) ),
-                        entry( null, Type.END_ID, idType.extractor( extractors ) ) ),
+                        entry( null, Type.START_ID, idExtractor( idType, extractors ) ),
+                        entry( null, Type.END_ID, idExtractor( idType, extractors ) ) ),
                 idType, config( COMMAS ), silentBadCollector( 0 ) );
 
         // WHEN
@@ -832,7 +833,7 @@ public class CsvInputTest
         Group group = groups.getOrCreate( "MyGroup" );
         Input input = new CsvInput(
                 data,
-                header( entry( null, Type.ID, group.name(), idType.extractor( extractors ) ),
+                header( entry( null, Type.ID, group.name(), idExtractor( idType, extractors ) ),
                         entry( "name", Type.PROPERTY, extractors.string() ) ),
                         datas(), defaultFormatRelationshipFileHeader(), idType, config( COMMAS ),
                         silentBadCollector( 0 ) );
@@ -862,9 +863,9 @@ public class CsvInputTest
                 data( ":ID(" + endNodeGroup.name() + ")" ) );
         Input input = new CsvInput( nodeHeader, defaultFormatNodeFileHeader(),
                 data,
-                header( entry( null, Type.START_ID, startNodeGroup.name(), idType.extractor( extractors ) ),
+                header( entry( null, Type.START_ID, startNodeGroup.name(), idExtractor( idType, extractors ) ),
                         entry( null, Type.TYPE, extractors.string() ),
-                        entry( null, Type.END_ID, endNodeGroup.name(), idType.extractor( extractors ) ) ),
+                        entry( null, Type.END_ID, endNodeGroup.name(), idExtractor( idType, extractors ) ) ),
                         idType, config( COMMAS ),
                         silentBadCollector( 0 ) );
 

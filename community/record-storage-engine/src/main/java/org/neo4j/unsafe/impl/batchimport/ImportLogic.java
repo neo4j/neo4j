@@ -54,6 +54,7 @@ import org.neo4j.unsafe.impl.batchimport.cache.NodeType;
 import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
 import org.neo4j.unsafe.impl.batchimport.cache.PageCacheArrayFactoryMonitor;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
+import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMappers;
 import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.input.EstimationSanityChecker;
 import org.neo4j.unsafe.impl.batchimport.input.Input;
@@ -196,7 +197,7 @@ public class ImportLogic implements Closeable
         numberArrayFactory = auto( neoStore.getPageCache(), storeDir, config.allowCacheAllocationOnHeap(), numberArrayFactoryMonitor );
         badCollector = input.badCollector();
         // Some temporary caches and indexes in the import
-        idMapper = input.idMapper( numberArrayFactory );
+        idMapper = instantiateIdMapper( input );
         nodeRelationshipCache = new NodeRelationshipCache( numberArrayFactory, config.denseNodeThreshold() );
         Estimates inputEstimates = input.calculateEstimates( neoStore.getPropertyStore().newValueEncodedSizeCalculator() );
 
@@ -214,6 +215,21 @@ public class ImportLogic implements Closeable
         }
 
         executionMonitor.initialize( dependencies );
+    }
+
+    private IdMapper instantiateIdMapper( Input input )
+    {
+        switch ( input.idType() )
+        {
+        case STRING:
+            return IdMappers.strings( numberArrayFactory, input.groups() );
+        case INTEGER:
+            return IdMappers.longs( numberArrayFactory, input.groups() );
+        case ACTUAL:
+            return IdMappers.actual();
+        default:
+            throw new IllegalArgumentException( "Unsupported id type " + input.idType() );
+        }
     }
 
     /**

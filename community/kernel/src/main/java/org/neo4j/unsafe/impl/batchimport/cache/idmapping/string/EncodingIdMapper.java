@@ -41,8 +41,8 @@ import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.ParallelSort.Comparator;
 import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.input.Group;
-import org.neo4j.unsafe.impl.batchimport.input.Groups;
 import org.neo4j.unsafe.impl.batchimport.input.InputException;
+import org.neo4j.unsafe.impl.batchimport.input.ReadableGroups;
 
 import static java.lang.Math.max;
 import static java.lang.Math.min;
@@ -144,21 +144,21 @@ public class EncodingIdMapper implements IdMapper
     private long[][] sortBuckets;
 
     private final Monitor monitor;
-    private final Groups groups;
+    private final ReadableGroups groups;
 
     private long numberOfCollisions;
     private final LongFunction<CollisionValues> collisionValuesFactory;
     private CollisionValues collisionValues;
 
     public EncodingIdMapper( NumberArrayFactory cacheFactory, Encoder encoder, Factory<Radix> radixFactory,
-            Monitor monitor, TrackerFactory trackerFactory, Groups groups, LongFunction<CollisionValues> collisionValuesFactory )
+            Monitor monitor, TrackerFactory trackerFactory, ReadableGroups groups, LongFunction<CollisionValues> collisionValuesFactory )
     {
         this( cacheFactory, encoder, radixFactory, monitor, trackerFactory, groups, collisionValuesFactory, DEFAULT_CACHE_CHUNK_SIZE,
                 Runtime.getRuntime().availableProcessors() - 1, DEFAULT );
     }
 
     EncodingIdMapper( NumberArrayFactory cacheFactory, Encoder encoder, Factory<Radix> radixFactory,
-            Monitor monitor, TrackerFactory trackerFactory, Groups groups, LongFunction<CollisionValues> collisionValuesFactory,
+            Monitor monitor, TrackerFactory trackerFactory, ReadableGroups groups, LongFunction<CollisionValues> collisionValuesFactory,
             int chunkSize, int processorsForParallelWork, Comparator comparator )
     {
         this.radixFactory = radixFactory;

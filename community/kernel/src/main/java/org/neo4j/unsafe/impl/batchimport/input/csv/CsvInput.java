@@ -28,15 +28,16 @@ import java.util.function.ToIntFunction;
 import org.neo4j.collection.RawIterator;
 import org.neo4j.csv.reader.CharReadable;
 import org.neo4j.csv.reader.CharSeeker;
+import org.neo4j.csv.reader.Extractor;
+import org.neo4j.csv.reader.Extractors;
 import org.neo4j.csv.reader.MultiReadable;
 import org.neo4j.unsafe.impl.batchimport.InputIterable;
 import org.neo4j.unsafe.impl.batchimport.InputIterator;
-import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
-import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.input.Groups;
 import org.neo4j.unsafe.impl.batchimport.input.Input;
 import org.neo4j.unsafe.impl.batchimport.input.InputEntity;
+import org.neo4j.unsafe.impl.batchimport.input.ReadableGroups;
 import org.neo4j.values.storable.Value;
 
 import static org.neo4j.csv.reader.CharSeekers.charSeeker;
@@ -83,8 +84,7 @@ public class CsvInput implements Input
             Iterable<DataFactory> relationshipDataFactory, Header.Factory relationshipHeaderFactory,
             IdType idType, Configuration config, Collector badCollector )
     {
-        this( nodeDataFactory, nodeHeaderFactory, relationshipDataFactory, relationshipHeaderFactory, idType, config, badCollector,
-                new Groups() );
+        this( nodeDataFactory, nodeHeaderFactory, relationshipDataFactory, relationshipHeaderFactory, idType, config, badCollector, new Groups() );
     }
 
     CsvInput(
@@ -181,9 +181,15 @@ public class CsvInput implements Input
     }
 
     @Override
-    public IdMapper idMapper( NumberArrayFactory numberArrayFactory )
+    public IdType idType()
     {
-        return idType.idMapper( numberArrayFactory, groups );
+        return idType;
+    }
+
+    @Override
+    public ReadableGroups groups()
+    {
+        return groups;
     }
 
     @Override
@@ -258,5 +264,19 @@ public class CsvInput implements Input
             }
         }
         return estimates;
+    }
+
+    public static Extractor<?> idExtractor( IdType idType, Extractors extractors )
+    {
+        switch ( idType )
+        {
+        case STRING:
+            return extractors.string();
+        case INTEGER:
+        case ACTUAL:
+            return extractors.long_();
+        default:
+            throw new IllegalArgumentException( "Unsupported id type " + idType );
+        }
     }
 }

@@ -97,12 +97,12 @@ import org.neo4j.unsafe.impl.batchimport.BatchImporterFactory;
 import org.neo4j.unsafe.impl.batchimport.Configuration;
 import org.neo4j.unsafe.impl.batchimport.InputIterable;
 import org.neo4j.unsafe.impl.batchimport.InputIterator;
-import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMappers;
 import org.neo4j.unsafe.impl.batchimport.input.Collectors;
 import org.neo4j.unsafe.impl.batchimport.input.Input.Estimates;
 import org.neo4j.unsafe.impl.batchimport.input.InputChunk;
 import org.neo4j.unsafe.impl.batchimport.input.InputEntityVisitor;
 import org.neo4j.unsafe.impl.batchimport.input.Inputs;
+import org.neo4j.unsafe.impl.batchimport.input.csv.IdType;
 import org.neo4j.unsafe.impl.batchimport.staging.CoarseBoundedProgressExecutionMonitor;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitor;
 
@@ -402,8 +402,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
                     legacyStore.getPropertyStore().getNumberOfIdsInUse(),
                     propertyStoreSize / 2, propertyStoreSize / 2,
                     0 /*node labels left as 0 for now*/);
-            importer.doImport(
-                    Inputs.input( nodes, relationships, IdMappers.actual(), Collectors.badCollector( badOutput, 0 ), estimates ) );
+            importer.doImport( Inputs.input( nodes, relationships, IdType.ACTUAL, Collectors.badCollector( badOutput, 0 ), estimates ) );
 
             // During migration the batch importer doesn't necessarily writes all entities, depending on
             // which stores needs migration. Node, relationship, relationship group stores are always written

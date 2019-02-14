@@ -35,7 +35,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.function.Function;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -65,13 +64,13 @@ import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
-import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.unsafe.impl.batchimport.input.Group;
 import org.neo4j.unsafe.impl.batchimport.input.Groups;
 import org.neo4j.unsafe.impl.batchimport.input.InputChunk;
 import org.neo4j.unsafe.impl.batchimport.input.InputEntity;
 import org.neo4j.unsafe.impl.batchimport.input.InputEntityVisitor;
 import org.neo4j.unsafe.impl.batchimport.input.Inputs;
+import org.neo4j.unsafe.impl.batchimport.input.csv.IdType;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitor;
 import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.Values;
@@ -88,9 +87,6 @@ import static org.neo4j.io.ByteUnit.mebiBytes;
 import static org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds.EMPTY;
 import static org.neo4j.unsafe.impl.batchimport.ImportLogic.NO_MONITOR;
 import static org.neo4j.unsafe.impl.batchimport.ProcessorAssignmentStrategies.eagerRandomSaturation;
-import static org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory.AUTO_WITHOUT_PAGECACHE;
-import static org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMappers.longs;
-import static org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMappers.strings;
 import static org.neo4j.unsafe.impl.batchimport.input.Collectors.silentBadCollector;
 import static org.neo4j.unsafe.impl.batchimport.input.Inputs.knownEstimates;
 
@@ -146,23 +142,23 @@ public class ParallelBatchImporterTest
         }
     };
     private final InputIdGenerator inputIdGenerator;
-    private final Function<Groups,IdMapper> idMapper;
+    private final IdType idType;
 
     @Parameterized.Parameters( name = "{0},{1},{3}" )
     public static Collection<Object[]> data()
     {
         return Arrays.asList(
                 // Long input ids, actual node id input
-                new Object[]{new LongInputIdGenerator(), (Function<Groups,IdMapper>) groups -> longs( AUTO_WITHOUT_PAGECACHE, groups )},
+                new Object[]{new LongInputIdGenerator(), IdType.INTEGER},
                 // String input ids, generate ids from stores
-                new Object[]{new StringInputIdGenerator(), (Function<Groups,IdMapper>) groups -> strings( AUTO_WITHOUT_PAGECACHE, groups )}
+                new Object[]{new StringInputIdGenerator(), IdType.STRING}
         );
     }
 
-    public ParallelBatchImporterTest( InputIdGenerator inputIdGenerator, Function<Groups,IdMapper> idMapper )
+    public ParallelBatchImporterTest( InputIdGenerator inputIdGenerator, IdType idType )
     {
         this.inputIdGenerator = inputIdGenerator;
-        this.idMapper = idMapper;
+        this.idType = idType;
     }
 
     @Test
@@ -187,7 +183,7 @@ public class ParallelBatchImporterTest
             inserter.doImport( Inputs.input(
                     nodes( nodeRandomSeed, NODE_COUNT, config.batchSize(), inputIdGenerator, groupDistribution ),
                     relationships( relationshipRandomSeed, RELATIONSHIP_COUNT, config.batchSize(),
-                            inputIdGenerator, groupDistribution ), idMapper.apply( groups ),
+                            inputIdGenerator, groupDistribution ), idType,
                     /*insanely high bad tolerance, but it will actually never be that many*/
                     silentBadCollector( RELATIONSHIP_COUNT ),
                     knownEstimates(
