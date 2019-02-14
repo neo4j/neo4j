@@ -33,8 +33,8 @@ import org.neo4j.memory.GlobalMemoryTracker;
 
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
-import static org.neo4j.helpers.Format.bytes;
 import static org.neo4j.helpers.Numbers.safeCastLongToInt;
+import static org.neo4j.io.ByteUnit.bytesToString;
 
 /**
  * Factory of {@link LongArray}, {@link IntArray} and {@link ByteArray} instances. Users can select in which type of
@@ -260,7 +260,7 @@ public interface NumberArrayFactory
         private OutOfMemoryError error( long length, int itemSize, OutOfMemoryError error )
         {
             return Exceptions.withMessage( error, format( "%s: Not enough memory available for allocating %s, tried %s",
-                    error.getMessage(), bytes( length * itemSize ), Arrays.toString( candidates ) ) );
+                    error.getMessage(), bytesToString( length * itemSize ), Arrays.toString( candidates ) ) );
         }
 
     }

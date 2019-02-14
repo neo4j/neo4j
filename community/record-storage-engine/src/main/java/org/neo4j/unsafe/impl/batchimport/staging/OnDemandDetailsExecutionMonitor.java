@@ -36,6 +36,7 @@ import java.util.function.LongFunction;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.helpers.Format;
 import org.neo4j.helpers.collection.Pair;
+import org.neo4j.io.ByteUnit;
 import org.neo4j.io.os.OsBeanUtil;
 import org.neo4j.kernel.monitoring.VmPauseMonitor;
 import org.neo4j.kernel.monitoring.VmPauseMonitor.VmPauseInfo;
@@ -48,9 +49,9 @@ import org.neo4j.unsafe.impl.batchimport.stats.StepStats;
 
 import static java.lang.Long.max;
 import static java.lang.System.currentTimeMillis;
-import static org.neo4j.helpers.Format.bytes;
 import static org.neo4j.helpers.Format.date;
 import static org.neo4j.helpers.Format.duration;
+import static org.neo4j.io.ByteUnit.bytesToString;
 
 /**
  * Sits in the background and collect stats about stages that are executing.
@@ -152,9 +153,9 @@ public class OnDemandDetailsExecutionMonitor implements ExecutionMonitor
         }
 
         printIndented( out, "Environment information:" );
-        printIndented( out, "  Free physical memory: " + bytes( OsBeanUtil.getFreePhysicalMemory() ) );
-        printIndented( out, "  Max VM memory: " + bytes( Runtime.getRuntime().maxMemory() ) );
-        printIndented( out, "  Free VM memory: " + bytes( Runtime.getRuntime().freeMemory() ) );
+        printIndented( out, "  Free physical memory: " + bytesToString( OsBeanUtil.getFreePhysicalMemory() ) );
+        printIndented( out, "  Max VM memory: " + bytesToString( Runtime.getRuntime().maxMemory() ) );
+        printIndented( out, "  Free VM memory: " + bytesToString( Runtime.getRuntime().freeMemory() ) );
         printIndented( out, "  VM stop-the-world time: " + duration( vmPauseTimeAccumulator.getPauseTime() ) );
         printIndented( out, "  Duration: " + duration( totalTime ) );
         out.println();
@@ -235,8 +236,8 @@ public class OnDemandDetailsExecutionMonitor implements ExecutionMonitor
             StringBuilder builder = new StringBuilder();
             SpectrumExecutionMonitor.printSpectrum( builder, execution, SpectrumExecutionMonitor.DEFAULT_WIDTH, DetailLevel.NO );
             printIndented( out, builder.toString() );
-            printValue( out, memoryUsage, "Memory usage", Format::bytes );
-            printValue( out, ioThroughput, "I/O throughput", value -> bytes( value ) + "/s" );
+            printValue( out, memoryUsage, "Memory usage", ByteUnit::bytesToString );
+            printValue( out, ioThroughput, "I/O throughput", value -> bytesToString( value ) + "/s" );
             printValue( out, stageVmPauseTime, "VM stop-the-world time", Format::duration );
             printValue( out, totalTimeMillis, "Duration", Format::duration );
             printValue( out, doneBatches, "Done batches", String::valueOf );

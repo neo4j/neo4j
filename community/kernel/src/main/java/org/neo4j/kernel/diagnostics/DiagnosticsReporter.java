@@ -45,7 +45,7 @@ import static java.nio.file.Files.createDirectories;
 import static java.nio.file.Files.newOutputStream;
 import static java.nio.file.StandardOpenOption.CREATE_NEW;
 import static java.nio.file.StandardOpenOption.WRITE;
-import static org.neo4j.io.ByteUnit.bytes;
+import static org.neo4j.io.ByteUnit.bytesToString;
 import static org.neo4j.io.ByteUnit.kibiBytes;
 
 public class DiagnosticsReporter
@@ -137,7 +137,7 @@ public class DiagnosticsReporter
         if ( estimatedFinalSize > freeSpace )
         {
             throw new RuntimeException( format( "Free available disk space for %s is %s, worst case estimate is %s. To ignore add '--force' to the command.",
-                    destination.getFileName(), bytes( freeSpace ), bytes( estimatedFinalSize ) )
+                    destination.getFileName(), bytesToString( freeSpace ), bytesToString( estimatedFinalSize ) )
             );
         }
     }

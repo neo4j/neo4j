@@ -24,7 +24,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.neo4j.io.pagecache.PageCache;
 
 import static java.lang.String.format;
-import static org.neo4j.helpers.Format.bytes;
+import static org.neo4j.io.ByteUnit.bytesToString;
 
 public class PageCacheArrayFactoryMonitor implements NumberArrayFactory.Monitor
 {
@@ -38,8 +38,8 @@ public class PageCacheArrayFactoryMonitor implements NumberArrayFactory.Monitor
     {
         if ( successfulFactory instanceof PageCachedNumberArrayFactory )
         {
-            StringBuilder builder =
-                    new StringBuilder( format( "Memory allocation of %s ended up in page cache, which may impact performance negatively", bytes( memory ) ) );
+            StringBuilder builder = new StringBuilder( format(
+                    "Memory allocation of %s ended up in page cache, which may impact performance negatively", bytesToString( memory ) ) );
             attemptedAllocationFailures.forEach(
                     failure -> builder.append( format( "%n%s: %s", failure.getFactory(), failure.getFailure() ) ) );
             failedFactoriesDescription.compareAndSet( null, builder.toString() );

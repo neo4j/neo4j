@@ -36,7 +36,6 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.Format;
 import org.neo4j.io.layout.DatabaseFile;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.diagnostics.providers.StoreFilesDiagnostics;
@@ -52,6 +51,7 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.neo4j.io.ByteUnit.bytesToString;
 
 public class KernelDiagnosticsIT
 {
@@ -80,7 +80,7 @@ public class KernelDiagnosticsIT
 
             // then
             long expected = manuallyCountTotalMappedFileSize( dbDir );
-            assertEquals( Format.bytes( expected ), capture.size );
+            assertEquals( bytesToString( expected ), capture.size );
         }
     }
 

@@ -24,6 +24,7 @@ import org.neo4j.logging.Log;
 
 import static java.lang.String.format;
 import static java.lang.System.currentTimeMillis;
+import static org.neo4j.io.ByteUnit.bytesToString;
 
 public class VerboseStatistics implements Statistics
 {
@@ -62,10 +63,10 @@ public class VerboseStatistics implements Statistics
     {
         Runtime runtime = Runtime.getRuntime();
         return format( "Memory[used:%s, free:%s, total:%s, max:%s]",
-                Format.bytes( runtime.totalMemory() - runtime.freeMemory() ),
-                Format.bytes( runtime.freeMemory() ),
-                Format.bytes( runtime.totalMemory() ),
-                Format.bytes( runtime.maxMemory() ) );
+                bytesToString( runtime.totalMemory() - runtime.freeMemory() ),
+                bytesToString( runtime.freeMemory() ),
+                bytesToString( runtime.totalMemory() ),
+                bytesToString( runtime.maxMemory() ) );
     }
 
     @Override

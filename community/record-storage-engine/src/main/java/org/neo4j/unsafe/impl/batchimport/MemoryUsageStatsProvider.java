@@ -26,7 +26,7 @@ import org.neo4j.unsafe.impl.batchimport.stats.GenericStatsProvider;
 import org.neo4j.unsafe.impl.batchimport.stats.Keys;
 import org.neo4j.unsafe.impl.batchimport.stats.Stat;
 
-import static org.neo4j.helpers.Format.bytes;
+import static org.neo4j.io.ByteUnit.bytesToString;
 
 /**
  * Provides {@link Stat statistics} about memory usage, as the key {@link Keys#memory_usage}
@@ -61,6 +61,6 @@ public class MemoryUsageStatsProvider extends GenericStatsProvider implements St
     @Override
     public String toString()
     {
-        return bytes( asLong() );
+        return bytesToString( asLong() );
     }
 }

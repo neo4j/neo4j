@@ -27,7 +27,7 @@ import java.io.PrintStream;
 import org.neo4j.unsafe.impl.batchimport.ImportLogic;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.helpers.Format.bytes;
+import static org.neo4j.io.ByteUnit.bytesToString;
 import static org.neo4j.io.ByteUnit.gibiBytes;
 
 /**
@@ -92,8 +92,8 @@ class PrintingImportLogicMonitorTest
         String text = errBuffer.toString();
         assertTrue( text.contains( "WARNING" ) );
         assertTrue( text.contains( "too small" ) );
-        assertTrue( text.contains( bytes( heapSize ) ) );
-        assertTrue( text.contains( bytes( optimalHeapSize ) ) );
+        assertTrue( text.contains( bytesToString( heapSize ) ) );
+        assertTrue( text.contains( bytesToString( optimalHeapSize ) ) );
     }
 
     @Test
@@ -110,8 +110,8 @@ class PrintingImportLogicMonitorTest
         String text = errBuffer.toString();
         assertTrue( text.contains( "WARNING" ) );
         assertTrue( text.contains( "unnecessarily large" ) );
-        assertTrue( text.contains( bytes( heapSize ) ) );
-        assertTrue( text.contains( bytes( optimalHeapSize ) ) );
+        assertTrue( text.contains( bytesToString( heapSize ) ) );
+        assertTrue( text.contains( bytesToString( optimalHeapSize ) ) );
     }
 
     @Test
@@ -129,8 +129,8 @@ class PrintingImportLogicMonitorTest
         String text = errBuffer.toString();
         assertTrue( text.contains( "WARNING" ) );
         assertTrue( text.contains( "may not be sufficient" ) );
-        assertTrue( text.contains( bytes( estimatedCacheSize ) ) );
-        assertTrue( text.contains( bytes( optimalHeapSize ) ) );
-        assertTrue( text.contains( bytes( availableMemory ) ) );
+        assertTrue( text.contains( bytesToString( estimatedCacheSize ) ) );
+        assertTrue( text.contains( bytesToString( optimalHeapSize ) ) );
+        assertTrue( text.contains( bytesToString( availableMemory ) ) );
     }
 }

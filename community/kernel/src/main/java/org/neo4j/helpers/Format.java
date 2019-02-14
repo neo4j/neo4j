@@ -26,8 +26,6 @@ import java.util.Locale;
 import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.io.ByteUnit;
-
 @Deprecated
 public class Format
 {
@@ -37,7 +35,6 @@ public class Format
      */
     public static final TimeZone DEFAULT_TIME_ZONE = TimeZone.getTimeZone( "UTC" );
 
-    private static final String[] BYTE_SIZES = { "B", "kB", "MB", "GB" };
     private static final String[] COUNT_SIZES = { "", "k", "M", "G", "T" };
 
     public static final String DATE_FORMAT = "yyyy-MM-dd HH:mm:ss.SSSZ";
@@ -45,7 +42,6 @@ public class Format
 
     private static final ThreadLocalFormat DATE = new ThreadLocalFormat( DATE_FORMAT );
     private static final ThreadLocalFormat TIME = new ThreadLocalFormat( TIME_FORMAT );
-    private static int KB = (int) ByteUnit.kibiBytes( 1 );
 
     public static String date()
     {
@@ -105,11 +101,6 @@ public class Format
     public static String time( Date date, TimeZone timeZone )
     {
         return TIME.format( date, timeZone );
-    }
-
-    public static String bytes( long bytes )
-    {
-        return suffixCount( bytes, BYTE_SIZES, KB );
     }
 
     public static String count( long count )

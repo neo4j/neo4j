@@ -43,11 +43,11 @@ import static java.lang.Integer.min;
 import static java.lang.Long.max;
 import static java.lang.String.format;
 import static java.lang.System.currentTimeMillis;
-import static org.neo4j.helpers.Format.bytes;
 import static org.neo4j.helpers.Format.count;
 import static org.neo4j.helpers.Format.date;
 import static org.neo4j.helpers.Format.duration;
 import static org.neo4j.helpers.collection.Iterables.last;
+import static org.neo4j.io.ByteUnit.bytesToString;
 import static org.neo4j.unsafe.impl.batchimport.ImportMemoryCalculator.defensivelyPadMemoryEstimate;
 import static org.neo4j.unsafe.impl.batchimport.ImportMemoryCalculator.estimatedCacheSize;
 import static org.neo4j.unsafe.impl.batchimport.cache.GatheringMemoryStatsVisitor.totalMemoryUsageOf;
@@ -127,11 +127,11 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor
                 ESTIMATED_NUMBER_OF_NODE_PROPERTIES, count( estimates.numberOfNodeProperties() ),
                 ESTIMATED_NUMBER_OF_RELATIONSHIPS, count( estimates.numberOfRelationships() ),
                 ESTIMATED_NUMBER_OF_RELATIONSHIP_PROPERTIES, count( estimates.numberOfRelationshipProperties() ),
-                ESTIMATED_DISK_SPACE_USAGE, bytes(
+                ESTIMATED_DISK_SPACE_USAGE, bytesToString(
                         nodesDiskUsage( estimates, neoStores ) +
                         relationshipsDiskUsage( estimates, neoStores ) +
                         estimates.sizeOfNodeProperties() + estimates.sizeOfRelationshipProperties() ),
-                ESTIMATED_REQUIRED_MEMORY_USAGE, bytes( biggestCacheMemory ) );
+                ESTIMATED_REQUIRED_MEMORY_USAGE, bytesToString( biggestCacheMemory ) );
         System.out.println();
     }
 
@@ -223,12 +223,12 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor
         long numberOfNodes = estimates.numberOfNodes();
         printStageHeader( "(1/4) Node import",
                 ESTIMATED_NUMBER_OF_NODES, count( numberOfNodes ),
-                ESTIMATED_DISK_SPACE_USAGE, bytes(
+                ESTIMATED_DISK_SPACE_USAGE, bytesToString(
                         // node store
                         nodesDiskUsage( estimates, neoStores ) +
                         // property store(s)
                         estimates.sizeOfNodeProperties() ),
-                ESTIMATED_REQUIRED_MEMORY_USAGE, bytes(
+                ESTIMATED_REQUIRED_MEMORY_USAGE, bytesToString(
                         baselineMemoryRequirement( neoStores ) +
                         defensivelyPadMemoryEstimate( idMapper.memoryEstimation( numberOfNodes ) ) ) );
 
@@ -245,10 +245,10 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor
         long numberOfRelationships = estimates.numberOfRelationships();
         printStageHeader( "(2/4) Relationship import",
                 ESTIMATED_NUMBER_OF_RELATIONSHIPS, count( numberOfRelationships ),
-                ESTIMATED_DISK_SPACE_USAGE, bytes(
+                ESTIMATED_DISK_SPACE_USAGE, bytesToString(
                         relationshipsDiskUsage( estimates, neoStores ) +
                         estimates.sizeOfRelationshipProperties() ),
-                ESTIMATED_REQUIRED_MEMORY_USAGE, bytes(
+                ESTIMATED_REQUIRED_MEMORY_USAGE, bytesToString(
                         baselineMemoryRequirement( neoStores ) +
                         totalMemoryUsageOf( idMapper ) ) );
         initializeProgress( numberOfRelationships, ImportStage.relationshipImport );
@@ -258,7 +258,7 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor
             NodeRelationshipCache nodeRelationshipCache, DataStatistics distribution )
     {
         printStageHeader( "(3/4) Relationship linking",
-                ESTIMATED_REQUIRED_MEMORY_USAGE, bytes(
+                ESTIMATED_REQUIRED_MEMORY_USAGE, bytesToString(
                         baselineMemoryRequirement( neoStores ) +
                         defensivelyPadMemoryEstimate( nodeRelationshipCache.memoryEstimation( distribution.getNodeCount() ) ) ) );
         // The reason the highId of the relationship store is used, as opposed to actual number of imported relationships
@@ -278,7 +278,7 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor
     private void initializeMisc( BatchingNeoStores neoStores, DataStatistics distribution )
     {
         printStageHeader( "(4/4) Post processing",
-                ESTIMATED_REQUIRED_MEMORY_USAGE, bytes( baselineMemoryRequirement( neoStores ) ) );
+                ESTIMATED_REQUIRED_MEMORY_USAGE, bytesToString( baselineMemoryRequirement( neoStores ) ) );
         long actualNodeCount = distribution.getNodeCount();
         // The reason the highId of the relationship store is used, as opposed to actual number of imported relationships
         // is that the stages underneath operate on id ranges, not knowing which records are actually in use.

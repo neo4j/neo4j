@@ -29,7 +29,7 @@ import org.neo4j.unsafe.impl.batchimport.cache.MemoryStatsVisitor;
 import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
 
 import static java.lang.Long.max;
-import static org.neo4j.helpers.Format.bytes;
+import static org.neo4j.io.ByteUnit.bytesToString;
 
 /**
  * Holds information vital for making {@link RelationshipGroupDefragmenter} work the way it does.
@@ -71,8 +71,8 @@ public class RelationshipGroupCache implements Iterable<RelationshipGroupRecord>
         if ( memoryLeftForGroupCache < 0 )
         {
             throw new IllegalArgumentException(
-                    "Too little memory to cache any groups, provided " + bytes( maxMemory ) + " where " +
-                            bytes( memoryDedicatedToCounting ) + " was dedicated to group counting" );
+                    "Too little memory to cache any groups, provided " + bytesToString( maxMemory ) + " where " +
+                            bytesToString( memoryDedicatedToCounting ) + " was dedicated to group counting" );
         }
         maxCacheLength = memoryLeftForGroupCache / GROUP_ENTRY_SIZE;
         this.cache = arrayFactory.newDynamicByteArray( max( 1_000, maxCacheLength / 100 ), new byte[GROUP_ENTRY_SIZE] );

@@ -94,8 +94,8 @@ class KernelDiagnosticsTest
         StoreFilesDiagnostics storeFiles = new StoreFilesDiagnostics( storageEngineFactory, fs, layout );
         storeFiles.dump( logProvider.getLog( getClass() ).debugLogger() );
 
-        logProvider.assertContainsMessageContaining( "Total size of store: 4.00 kB" );
-        logProvider.assertContainsMessageContaining( "Total size of mapped files: 3.00 kB" );
+        logProvider.assertContainsMessageContaining( "Total size of store: 4.000KiB" );
+        logProvider.assertContainsMessageContaining( "Total size of mapped files: 3.000KiB" );
     }
 
     private File directory( File parent, String name ) throws IOException

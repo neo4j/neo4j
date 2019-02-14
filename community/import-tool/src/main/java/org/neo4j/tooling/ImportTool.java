@@ -84,9 +84,9 @@ import static java.util.Arrays.asList;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.logs_directory;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_internal_log_path;
 import static org.neo4j.helpers.Exceptions.throwIfUnchecked;
-import static org.neo4j.helpers.Format.bytes;
 import static org.neo4j.helpers.Strings.TAB;
 import static org.neo4j.helpers.TextUtil.tokenizeStringWithQuotes;
+import static org.neo4j.io.ByteUnit.bytesToString;
 import static org.neo4j.io.ByteUnit.mebiBytes;
 import static org.neo4j.io.fs.FileUtils.readTextFile;
 import static org.neo4j.kernel.configuration.Settings.parseLongWithUnit;
@@ -541,7 +541,7 @@ public class ImportTool
                 if ( !canDetectFreeMemory() )
                 {
                     System.err.println( "WARNING: amount of free memory couldn't be detected so defaults to " +
-                            bytes( result ) + ". For optimal performance instead explicitly specify amount of " +
+                            bytesToString( result ) + ". For optimal performance instead explicitly specify amount of " +
                             "memory that importer is allowed to use using " + Options.MAX_MEMORY.argument() );
                 }
                 return result;
@@ -672,11 +672,11 @@ public class ImportTool
         printInputFiles( "Relationships", relationshipsFiles, out );
         out.println();
         out.println( "Available resources:" );
-        printIndented( "Total machine memory: " + bytes( OsBeanUtil.getTotalPhysicalMemory() ), out );
-        printIndented( "Free machine memory: " + bytes( OsBeanUtil.getFreePhysicalMemory() ), out );
-        printIndented( "Max heap memory : " + bytes( Runtime.getRuntime().maxMemory() ), out );
+        printIndented( "Total machine memory: " + bytesToString( OsBeanUtil.getTotalPhysicalMemory() ), out );
+        printIndented( "Free machine memory: " + bytesToString( OsBeanUtil.getFreePhysicalMemory() ), out );
+        printIndented( "Max heap memory : " + bytesToString( Runtime.getRuntime().maxMemory() ), out );
         printIndented( "Processors: " + configuration.maxNumberOfProcessors(), out );
-        printIndented( "Configured max memory: " + bytes( configuration.maxMemoryUsage() ), out );
+        printIndented( "Configured max memory: " + bytesToString( configuration.maxMemoryUsage() ), out );
         printIndented( "High-IO: " + configuration.highIO(), out );
         out.println();
     }

@@ -20,7 +20,7 @@
 package org.neo4j.unsafe.impl.batchimport.cache;
 
 import static java.lang.Long.max;
-import static org.neo4j.helpers.Format.bytes;
+import static org.neo4j.io.ByteUnit.bytesToString;
 
 /**
  * {@link MemoryStatsVisitor} that can gather stats from multiple sources and give a total.
@@ -60,7 +60,7 @@ public class GatheringMemoryStatsVisitor implements MemoryStatsVisitor
     @Override
     public String toString()
     {
-        return "Memory usage[heap:" + bytes( heapUsage ) + ", off-heap:" + bytes( offHeapUsage ) + "]";
+        return "Memory usage[heap:" + bytesToString( heapUsage ) + ", off-heap:" + bytesToString( offHeapUsage ) + "]";
     }
 
     public static long totalMemoryUsageOf( MemoryStatsVisitor.Visitable... memoryUsers )

@@ -31,50 +31,6 @@ import static org.neo4j.helpers.Format.duration;
 class FormatTest
 {
     @Test
-    void shouldDisplayBytes()
-    {
-        // when
-        String format = Format.bytes( 123 );
-
-        // then
-        assertTrue( format.contains( String.valueOf( 123 ) ) );
-        assertTrue( format.endsWith( " B" ) );
-    }
-
-    @Test
-    void shouldDisplayKiloBytes()
-    {
-        // when
-        String format = Format.bytes( 1_234 );
-
-        // then
-        assertTrue( format.startsWith( "1" ) );
-        assertTrue( format.endsWith( " kB" ) );
-    }
-
-    @Test
-    void shouldDisplayMegaBytes()
-    {
-        // when
-        String format = Format.bytes( 1_234_567 );
-
-        // then
-        assertTrue( format.startsWith( "1" ) );
-        assertTrue( format.endsWith( " MB" ) );
-    }
-
-    @Test
-    void shouldDisplayGigaBytes()
-    {
-        // when
-        String format = Format.bytes( 1_234_567_890 );
-
-        // then
-        assertTrue( format.startsWith( "1" ) );
-        assertTrue( format.endsWith( " GB" ) );
-    }
-
-    @Test
     void shouldDisplayPlainCount()
     {
         // when

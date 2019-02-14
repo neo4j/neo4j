@@ -19,11 +19,11 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
-import org.neo4j.helpers.Format;
 import org.neo4j.unsafe.impl.batchimport.stats.DetailLevel;
 import org.neo4j.unsafe.impl.batchimport.stats.Stat;
 
 import static java.lang.System.currentTimeMillis;
+import static org.neo4j.io.ByteUnit.bytesToString;
 
 /**
  * {@link Stat} that provides a simple Mb/s stat, mostly used for getting an insight into I/O throughput.
@@ -60,6 +60,6 @@ public class IoThroughputStat implements Stat
     public String toString()
     {
         long stat = asLong();
-        return stat == -1 ? "??" : Format.bytes( stat ) + "/s";
+        return stat == -1 ? "??" : bytesToString( stat ) + "/s";
     }
 }

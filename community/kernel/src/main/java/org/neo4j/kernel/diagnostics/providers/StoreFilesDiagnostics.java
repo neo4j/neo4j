@@ -30,12 +30,13 @@ import java.util.Date;
 import java.util.List;
 import java.util.TimeZone;
 
-import org.neo4j.helpers.Format;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.internal.NativeIndexFileFilter;
 import org.neo4j.logging.Logger;
 import org.neo4j.storageengine.api.StorageEngineFactory;
+
+import static org.neo4j.io.ByteUnit.bytesToString;
 
 public class StoreFilesDiagnostics extends NamedDiagnosticsProvider
 {
@@ -63,8 +64,8 @@ public class StoreFilesDiagnostics extends NamedDiagnosticsProvider
         MappedFileCounter mappedCounter = new MappedFileCounter();
         long totalSize = logStoreFiles( logger, "  ", databaseLayout.databaseDirectory(), mappedCounter );
         logger.log( "Storage summary: " );
-        logger.log( "  Total size of store: " + Format.bytes( totalSize ) );
-        logger.log( "  Total size of mapped files: " + Format.bytes( mappedCounter.getSize() ) );
+        logger.log( "  Total size of store: " + bytesToString( totalSize ) );
+        logger.log( "  Total size of mapped files: " + bytesToString( mappedCounter.getSize() ) );
     }
 
     private long logStoreFiles( Logger logger, String prefix, File dir, MappedFileCounter mappedCounter )
@@ -102,7 +103,7 @@ public class StoreFilesDiagnostics extends NamedDiagnosticsProvider
             }
 
             String fileModificationDate = getFileModificationDate( file );
-            String bytes = Format.bytes( size );
+            String bytes = bytesToString( size );
             String fileInformation = String.format( "%s%s: %s - %s", prefix, filename, fileModificationDate, bytes );
             logger.log( fileInformation );
 

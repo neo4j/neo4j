@@ -67,8 +67,8 @@ import static java.lang.Long.max;
 import static java.lang.String.format;
 import static java.lang.System.currentTimeMillis;
 import static org.neo4j.function.Predicates.alwaysTrue;
-import static org.neo4j.helpers.Format.bytes;
 import static org.neo4j.helpers.Format.duration;
+import static org.neo4j.io.ByteUnit.bytesToString;
 import static org.neo4j.io.IOUtils.closeAll;
 import static org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipCache.calculateMaxMemoryUsage;
 import static org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory.auto;
@@ -516,7 +516,8 @@ public class ImportLogic implements Closeable
         long totalTimeMillis = currentTimeMillis() - startTime;
         DataStatistics state = getState( DataStatistics.class );
         String additionalInformation = Objects.toString( state, "Data statistics is not available." );
-        executionMonitor.done( successful, totalTimeMillis, format( "%n%s%nPeak memory usage: %s", additionalInformation, bytes( peakMemoryUsage ) ) );
+        executionMonitor.done( successful, totalTimeMillis, format( "%n%s%nPeak memory usage: %s", additionalInformation,
+                bytesToString( peakMemoryUsage ) ) );
         log.info( "Import completed successfully, took " + duration( totalTimeMillis ) + ". " + additionalInformation );
         closeAll( nodeRelationshipCache, nodeLabelsCache, idMapper );
     }

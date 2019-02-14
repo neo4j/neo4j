@@ -23,7 +23,7 @@ import java.io.PrintStream;
 
 import org.neo4j.unsafe.impl.batchimport.ImportLogic;
 
-import static org.neo4j.helpers.Format.bytes;
+import static org.neo4j.io.ByteUnit.bytesToString;
 
 class PrintingImportLogicMonitor implements ImportLogic.Monitor
 {
@@ -60,7 +60,7 @@ class PrintingImportLogicMonitor implements ImportLogic.Monitor
     public void insufficientHeapSize( long optimalMinimalHeapSize, long heapSize )
     {
         err.printf( "WARNING: heap size %s may be too small to complete this import. Suggested heap size is %s",
-                bytes( heapSize ), bytes( optimalMinimalHeapSize ) );
+                bytesToString( heapSize ), bytesToString( optimalMinimalHeapSize ) );
     }
 
     @Override
@@ -68,7 +68,7 @@ class PrintingImportLogicMonitor implements ImportLogic.Monitor
     {
         err.printf( "WARNING: heap size %s is unnecessarily large for completing this import.%n" +
                 "The abundant heap memory will leave less memory for off-heap importer caches. Suggested heap size is %s",
-                bytes( heapSize ), bytes( optimalMinimalHeapSize ) );
+                bytesToString( heapSize ), bytesToString( optimalMinimalHeapSize ) );
     }
 
     @Override
@@ -77,6 +77,6 @@ class PrintingImportLogicMonitor implements ImportLogic.Monitor
         err.printf( "WARNING: %s memory may not be sufficient to complete this import. Suggested memory distribution is:%n" +
                 "heap size: %s%n" +
                 "minimum free and available memory excluding heap size: %s",
-                bytes( availableMemory ), bytes( optimalMinimalHeapSize ), bytes( estimatedCacheSize ) );
+                bytesToString( availableMemory ), bytesToString( optimalMinimalHeapSize ), bytesToString( estimatedCacheSize ) );
     }
 }
