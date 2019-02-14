@@ -213,27 +213,25 @@ class BlockStorageTest
         }
     }
 
-    // todo shouldOnlyLeaveSingleFileAfterMerge
-//    @Test
-//    void shouldOnlyLeaveSingleFileAfterMerge() throws IOException
-//    {
-//        TrackingMonitor monitor = new TrackingMonitor();
-//        int blockSize = 1_000;
-//        try ( BlockStorage<MutableLong,MutableLong> storage = new BlockStorage<>( layout, BUFFER_FACTORY, fileSystem, file, monitor, blockSize ) )
-//        {
-//            int numberOfBlocks = random.nextInt( 100 ) + 2;
-//            List<List<BlockEntry<MutableLong,MutableLong>>> expectedBlocks = addACoupleOfBlocksOfEntries( monitor, storage, numberOfBlocks );
-//            storage.doneAdding();
-//
-//            // when
-//            storage.merge();
-//
-//            // then
-//            // todo continue here
-//            File[] files = fileSystem.listFiles( directory.directory() );
-//            Arrays.stream( files ).forEach( f -> System.out.println( f.getName() ) );
-//        }
-//    }
+    @Test
+    void shouldOnlyLeaveSingleFileAfterMerge() throws IOException
+    {
+        TrackingMonitor monitor = new TrackingMonitor();
+        int blockSize = 1_000;
+        try ( BlockStorage<MutableLong,MutableLong> storage = new BlockStorage<>( layout, BUFFER_FACTORY, fileSystem, file, monitor, blockSize ) )
+        {
+            int numberOfBlocks = random.nextInt( 100 ) + 2;
+            addACoupleOfBlocksOfEntries( monitor, storage, numberOfBlocks );
+            storage.doneAdding();
+
+            // when
+            storage.merge( 2 );
+
+            // then
+            File[] files = fileSystem.listFiles( directory.directory() );
+            assertEquals( 1, files.length, "Expected only a single file to exist after merge." );
+        }
+    }
 
     @Test
     void shouldNotAcceptAddedEntriesAfterDoneAdding() throws IOException
