@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.transaction.log.checkpoint;
 
 import java.io.IOException;
+
 import org.neo4j.graphdb.Resource;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
@@ -35,7 +36,6 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.storageengine.api.StorageEngine;
 
 import static java.lang.System.currentTimeMillis;
-
 import static org.neo4j.helpers.Format.duration;
 
 public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
@@ -89,7 +89,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
         ioLimiter.disableLimit();
         try ( Resource lock = mutex.checkPoint() )
         {
-            return doCheckPoint( info, LogCheckPointEvent.NULL );
+            return doCheckPoint( info );
         }
         finally
         {
@@ -108,7 +108,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
             {
                 try ( Resource lock = lockAttempt )
                 {
-                    return doCheckPoint( info, LogCheckPointEvent.NULL );
+                    return doCheckPoint( info );
                 }
             }
             else
@@ -132,18 +132,17 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
     {
         if ( threshold.isCheckPointingNeeded( transactionIdStore.getLastClosedTransactionId(), info ) )
         {
-            try ( LogCheckPointEvent event = tracer.beginCheckPoint();
-                    Resource lock = mutex.checkPoint() )
+            try ( Resource lock = mutex.checkPoint() )
             {
-                return doCheckPoint( info, event );
+                return doCheckPoint( info );
             }
         }
         return -1;
     }
 
-    private long doCheckPoint( TriggerInfo triggerInfo, LogCheckPointEvent logCheckPointEvent ) throws IOException
+    private long doCheckPoint( TriggerInfo triggerInfo ) throws IOException
     {
-        try
+        try ( LogCheckPointEvent event = tracer.beginCheckPoint() )
         {
             long[] lastClosedTransaction = transactionIdStore.getLastClosedTransaction();
             long lastClosedTransactionId = lastClosedTransaction[0];
@@ -168,7 +167,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
              * repair the damages.
              */
             databaseHealth.assertHealthy( IOException.class );
-            appender.checkPoint( logPosition, logCheckPointEvent );
+            appender.checkPoint( logPosition, event );
             threshold.checkPointHappened( lastClosedTransactionId );
             msgLog.info( prefix + " checkpoint completed in " + duration( currentTimeMillis() - startTime ) );
             /*

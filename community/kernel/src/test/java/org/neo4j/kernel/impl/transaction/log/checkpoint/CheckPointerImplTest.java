@@ -148,8 +148,8 @@ public class CheckPointerImplTest
         verify( threshold, times( 1 ) ).checkPointHappened( transactionId );
         verify( threshold, never() ).isCheckPointingNeeded( transactionId, INFO );
         verify( logPruning, times( 1 ) ).pruneLogs( logPosition.getLogVersion() );
-        verifyZeroInteractions( tracer );
-        verifyNoMoreInteractions( storageEngine, health, appender, threshold, tracer );
+        verify( tracer, times( 1 ) ).beginCheckPoint();
+        verifyNoMoreInteractions( storageEngine, health, appender, threshold );
     }
 
     @Test
@@ -174,8 +174,8 @@ public class CheckPointerImplTest
         verify( threshold, times( 1 ) ).checkPointHappened( transactionId );
         verify( threshold, never() ).isCheckPointingNeeded( transactionId, INFO );
         verify( logPruning, times( 1 ) ).pruneLogs( logPosition.getLogVersion() );
-        verifyZeroInteractions( tracer );
-        verifyNoMoreInteractions( storageEngine, health, appender, threshold, tracer );
+        verify( tracer, times( 1 ) ).beginCheckPoint();
+        verifyNoMoreInteractions( storageEngine, health, appender, threshold );
     }
 
     @Test
