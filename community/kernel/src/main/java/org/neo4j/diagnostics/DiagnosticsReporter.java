@@ -82,8 +82,9 @@ public class DiagnosticsReporter
         estimateSizeAndCheckAvailableDiskSpace( destination, progress, sources, destinationFolder, force );
 
         // Compress all files to destination
-        Map<String,String> env = new HashMap<>();
+        Map<String, Object> env = new HashMap<>();
         env.put( "create", "true" );
+        env.put( "useTempFile", Boolean.TRUE );
 
         // NOTE: we need the toUri() in order to handle windows file paths
         URI uri = URI.create("jar:file:" + destination.toAbsolutePath().toUri().getRawPath() );
