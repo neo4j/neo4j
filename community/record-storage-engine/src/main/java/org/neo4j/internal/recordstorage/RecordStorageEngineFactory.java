@@ -198,10 +198,6 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
         FileSystemAbstraction fs = dependencyResolver.resolveDependency( FileSystemAbstraction.class );
 
         File neoStoreFile = databaseLayout.metadataStore();
-        if ( !fs.fileExists( neoStoreFile ) )
-        {
-            return null;
-        }
         return MetaDataStore.getStoreId( pageCache, neoStoreFile );
     }
 
