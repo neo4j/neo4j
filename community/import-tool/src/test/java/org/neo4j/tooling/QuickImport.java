@@ -152,7 +152,7 @@ public class QuickImport
 
         Input input = new DataGeneratorInput(
                 nodeCount, relationshipCount,
-                idType, Collector.EMPTY, randomSeed,
+                idType, randomSeed,
                 0, nodeHeader, relationshipHeader, labelCount, relationshipTypeCount,
                 factorBadNodeData, factorBadRelationshipData );
 
@@ -170,7 +170,7 @@ public class QuickImport
                 final JobScheduler jobScheduler = life.add( createScheduler() );
                 consumer = BatchImporterFactory.withHighestPriority().instantiate( DatabaseLayout.of( dir ), fileSystem, null, importConfig,
                         new SimpleLogService( logging, logging ), defaultVisible( jobScheduler ), EMPTY, dbConfig,
-                        RecordFormatSelector.selectForConfig( dbConfig, logging ), NO_MONITOR, jobScheduler );
+                        RecordFormatSelector.selectForConfig( dbConfig, logging ), NO_MONITOR, jobScheduler, Collector.EMPTY );
                 ImportTool.printOverview( dir, Collections.emptyList(), Collections.emptyList(), importConfig, System.out );
             }
             consumer.doImport( input );

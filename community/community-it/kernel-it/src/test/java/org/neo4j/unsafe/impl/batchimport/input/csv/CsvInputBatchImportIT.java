@@ -100,7 +100,6 @@ import static org.neo4j.kernel.impl.util.AutoCreatingHashMap.nested;
 import static org.neo4j.kernel.impl.util.AutoCreatingHashMap.values;
 import static org.neo4j.register.Registers.newDoubleLongRegister;
 import static org.neo4j.unsafe.impl.batchimport.ImportLogic.NO_MONITOR;
-import static org.neo4j.unsafe.impl.batchimport.input.Collectors.silentBadCollector;
 import static org.neo4j.unsafe.impl.batchimport.input.InputEntityDecorators.NO_DECORATOR;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.Configuration.COMMAS;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.data;
@@ -132,20 +131,19 @@ public class CsvInputBatchImportIT
         {
             BatchImporter importer =
                     new ParallelBatchImporter( directory.databaseLayout(), fileSystemRule.get(), null, smallBatchSizeConfig(), NullLogService.getInstance(),
-                            invisible(), AdditionalInitialIds.EMPTY, dbConfig, RecordFormatSelector.defaultFormat(), NO_MONITOR, scheduler );
+                            invisible(), AdditionalInitialIds.EMPTY, dbConfig, RecordFormatSelector.defaultFormat(), NO_MONITOR, scheduler, Collector.EMPTY );
             List<InputEntity> nodeData = randomNodeData();
             List<InputEntity> relationshipData = randomRelationshipData( nodeData );
 
             // WHEN
-            importer.doImport( csv( nodeDataAsFile( nodeData ), relationshipDataAsFile( relationshipData ), IdType.STRING, lowBufferSize( COMMAS ),
-                    silentBadCollector( 0 ) ) );
+            importer.doImport( csv( nodeDataAsFile( nodeData ), relationshipDataAsFile( relationshipData ), IdType.STRING, lowBufferSize( COMMAS ) ) );
             // THEN
             verifyImportedData( nodeData, relationshipData );
         }
     }
 
     public static Input csv( File nodes, File relationships, IdType idType,
-            org.neo4j.unsafe.impl.batchimport.input.csv.Configuration configuration, Collector badCollector )
+            org.neo4j.unsafe.impl.batchimport.input.csv.Configuration configuration )
     {
         return new CsvInput(
                 datas( data( NO_DECORATOR, defaultCharset(), nodes ) ),
@@ -153,8 +151,7 @@ public class CsvInputBatchImportIT
                 datas( data( NO_DECORATOR, defaultCharset(), relationships ) ),
                 defaultFormatRelationshipFileHeader( testDefaultTimeZone ),
                 idType,
-                configuration,
-                badCollector );
+                configuration );
     }
 
     private static org.neo4j.unsafe.impl.batchimport.input.csv.Configuration lowBufferSize(

@@ -94,7 +94,7 @@ import static org.neo4j.helpers.collection.MapUtil.store;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.io.fs.FileUtils.writeToFile;
 import static org.neo4j.tooling.ImportTool.MULTI_FILE_DELIMITER;
-import static org.neo4j.unsafe.impl.batchimport.Configuration.BAD_FILE_NAME;
+import static org.neo4j.unsafe.impl.batchimport.input.BadCollector.BAD_FILE_NAME;
 
 public class ImportToolTest
 {

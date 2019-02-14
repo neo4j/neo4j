@@ -81,16 +81,18 @@ public interface Input
     /**
      * Provides all node data for an import.
      *
+     * @param badCollector for collecting bad entries.
      * @return an {@link InputIterator} which will provide all node data for the whole import.
      */
-    InputIterable nodes();
+    InputIterable nodes( Collector badCollector );
 
     /**
      * Provides all relationship data for an import.
      *
+     * @param badCollector for collecting bad entries.
      * @return an {@link InputIterator} which will provide all relationship data for the whole import.
      */
-    InputIterable relationships();
+    InputIterable relationships( Collector badCollector );
 
     /**
      * @return {@link IdType} which matches the type of ids this {@link Input} generates.
@@ -103,12 +105,6 @@ public interface Input
      * @return accessor for id groups that this input has.
      */
     ReadableGroups groups();
-
-    /**
-     * @return a {@link Collector} capable of writing bad relationships
-     * and duplicate nodes to an output stream for later handling.
-     */
-    Collector badCollector();
 
     /**
      * @param valueSizeCalculator for calculating property sizes on disk.

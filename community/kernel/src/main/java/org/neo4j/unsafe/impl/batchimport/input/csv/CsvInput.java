@@ -63,7 +63,6 @@ public class CsvInput implements Input
     private final Header.Factory relationshipHeaderFactory;
     private final IdType idType;
     private final Configuration config;
-    private final Collector badCollector;
     private final Groups groups;
 
     /**
@@ -77,20 +76,19 @@ public class CsvInput implements Input
      * @param relationshipHeaderFactory factory for reading relationship headers.
      * @param idType {@link IdType} to expect in id fields of node and relationship input.
      * @param config CSV configuration.
-     * @param badCollector Collector getting calls about bad input data.
      */
     public CsvInput(
             Iterable<DataFactory> nodeDataFactory, Header.Factory nodeHeaderFactory,
             Iterable<DataFactory> relationshipDataFactory, Header.Factory relationshipHeaderFactory,
-            IdType idType, Configuration config, Collector badCollector )
+            IdType idType, Configuration config )
     {
-        this( nodeDataFactory, nodeHeaderFactory, relationshipDataFactory, relationshipHeaderFactory, idType, config, badCollector, new Groups() );
+        this( nodeDataFactory, nodeHeaderFactory, relationshipDataFactory, relationshipHeaderFactory, idType, config, new Groups() );
     }
 
     CsvInput(
             Iterable<DataFactory> nodeDataFactory, Header.Factory nodeHeaderFactory,
             Iterable<DataFactory> relationshipDataFactory, Header.Factory relationshipHeaderFactory,
-            IdType idType, Configuration config, Collector badCollector, Groups groups )
+            IdType idType, Configuration config, Groups groups )
     {
         assertSaneConfiguration( config );
 
@@ -100,7 +98,6 @@ public class CsvInput implements Input
         this.relationshipHeaderFactory = relationshipHeaderFactory;
         this.idType = idType;
         this.config = config;
-        this.badCollector = badCollector;
         this.groups = groups;
 
         verifyHeaders();
@@ -164,18 +161,18 @@ public class CsvInput implements Input
     }
 
     @Override
-    public InputIterable nodes()
+    public InputIterable nodes( Collector badCollector )
     {
-        return () -> stream( nodeDataFactory, nodeHeaderFactory );
+        return () -> stream( nodeDataFactory, nodeHeaderFactory, badCollector );
     }
 
     @Override
-    public InputIterable relationships()
+    public InputIterable relationships( Collector badCollector )
     {
-        return () -> stream( relationshipDataFactory, relationshipHeaderFactory );
+        return () -> stream( relationshipDataFactory, relationshipHeaderFactory, badCollector );
     }
 
-    private InputIterator stream( Iterable<DataFactory> data, Header.Factory headerFactory )
+    private InputIterator stream( Iterable<DataFactory> data, Header.Factory headerFactory, Collector badCollector )
     {
         return new CsvGroupInputIterator( data.iterator(), headerFactory, idType, config, badCollector, groups );
     }
@@ -190,12 +187,6 @@ public class CsvInput implements Input
     public ReadableGroups groups()
     {
         return groups;
-    }
-
-    @Override
-    public Collector badCollector()
-    {
-        return badCollector;
     }
 
     @Override

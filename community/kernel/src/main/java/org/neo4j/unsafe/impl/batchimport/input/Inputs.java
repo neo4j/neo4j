@@ -33,22 +33,20 @@ public class Inputs
     {
     }
 
-    public static Input input(
-            final InputIterable nodes, final InputIterable relationships,
-            final IdType idType, final Collector badCollector, Estimates estimates )
+    public static Input input( InputIterable nodes, InputIterable relationships, IdType idType, Estimates estimates )
     {
         return new Input()
         {
             private final Groups groups = new Groups();
 
             @Override
-            public InputIterable relationships()
+            public InputIterable relationships( Collector badCollector )
             {
                 return relationships;
             }
 
             @Override
-            public InputIterable nodes()
+            public InputIterable nodes( Collector badCollector )
             {
                 return nodes;
             }
@@ -63,12 +61,6 @@ public class Inputs
             public ReadableGroups groups()
             {
                 return groups;
-            }
-
-            @Override
-            public Collector badCollector()
-            {
-                return badCollector;
             }
 
             @Override

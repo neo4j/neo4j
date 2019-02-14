@@ -67,7 +67,6 @@ public class DataGeneratorInput implements Input
     private final long nodes;
     private final long relationships;
     private final IdType idType;
-    private final Collector badCollector;
     private final long seed;
     private final Header nodeHeader;
     private final Header relationshipHeader;
@@ -78,14 +77,13 @@ public class DataGeneratorInput implements Input
     private final long startId;
     private final Groups groups = new Groups();
 
-    public DataGeneratorInput( long nodes, long relationships, IdType idType, Collector badCollector, long seed, long startId,
+    public DataGeneratorInput( long nodes, long relationships, IdType idType, long seed, long startId,
             Header nodeHeader, Header relationshipHeader, int labelCount, int relationshipTypeCount,
             float factorBadNodeData, float factorBadRelationshipData )
     {
         this.nodes = nodes;
         this.relationships = relationships;
         this.idType = idType;
-        this.badCollector = badCollector;
         this.seed = seed;
         this.startId = startId;
         this.nodeHeader = nodeHeader;
@@ -97,14 +95,14 @@ public class DataGeneratorInput implements Input
     }
 
     @Override
-    public InputIterable nodes()
+    public InputIterable nodes( Collector badCollector )
     {
         return () -> new RandomEntityDataGenerator( nodes, nodes, 10_000, seed, startId, nodeHeader, labels, relationshipTypes,
                 factorBadNodeData, factorBadRelationshipData );
     }
 
     @Override
-    public InputIterable relationships()
+    public InputIterable relationships( Collector badCollector )
     {
         return () -> new RandomEntityDataGenerator( nodes, relationships, 10_000, seed, startId, relationshipHeader,
                 labels, relationshipTypes, factorBadNodeData, factorBadRelationshipData );
@@ -123,19 +121,13 @@ public class DataGeneratorInput implements Input
     }
 
     @Override
-    public Collector badCollector()
-    {
-        return badCollector;
-    }
-
-    @Override
     public Estimates calculateEstimates( ToIntFunction<Value[]> valueSizeCalculator )
     {
         int sampleSize = 100;
-        InputEntity[] nodeSample = sample( nodes(), sampleSize );
+        InputEntity[] nodeSample = sample( nodes( Collector.EMPTY ), sampleSize );
         double labelsPerNodeEstimate = sampleLabels( nodeSample );
         double[] nodePropertyEstimate = sampleProperties( nodeSample, valueSizeCalculator );
-        double[] relationshipPropertyEstimate = sampleProperties( sample( relationships(), sampleSize ), valueSizeCalculator );
+        double[] relationshipPropertyEstimate = sampleProperties( sample( relationships( Collector.EMPTY ), sampleSize ), valueSizeCalculator );
         return Inputs.knownEstimates(
                 nodes, relationships,
                 (long) (nodes * nodePropertyEstimate[0]), (long) (relationships * relationshipPropertyEstimate[0]),

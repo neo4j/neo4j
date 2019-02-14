@@ -37,6 +37,7 @@ import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.unsafe.impl.batchimport.DataStatistics.RelationshipTypeCount;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipCache;
 import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
+import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitor;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingNeoStores;
 
@@ -79,7 +80,7 @@ class ImportLogicTest
         {
             //noinspection EmptyTryBlock
             try ( ImportLogic logic = new ImportLogic( testDirectory.directory(), fileSystem, stores, DEFAULT, getInstance(), monitor,
-                    defaultFormat(), NO_MONITOR ) )
+                    defaultFormat(), Collector.EMPTY, NO_MONITOR ) )
             {
                 // nothing to run in this import
                 logic.success();
@@ -158,7 +159,7 @@ class ImportLogicTest
                     };
             DataStatistics dataStatistics = new DataStatistics( 100123, 100456, relationshipTypeCounts );
             try ( ImportLogic logic = new ImportLogic( testDirectory.directory(), fileSystem, stores, DEFAULT, getInstance(), monitor,
-                    defaultFormat(), NO_MONITOR ) )
+                    defaultFormat(), Collector.EMPTY, NO_MONITOR ) )
             {
                 logic.putState( dataStatistics );
                 logic.success();

@@ -35,6 +35,8 @@ import static org.neo4j.helpers.Exceptions.withMessage;
 
 public class BadCollector implements Collector
 {
+    public static final String BAD_FILE_NAME = "bad.log";
+
     /**
      * Introduced to avoid creating an exception for every reported bad thing, since it can be
      * quite the performance hogger for scenarios where there are many many bad things to collect.

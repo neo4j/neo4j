@@ -64,6 +64,7 @@ import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
+import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.input.Group;
 import org.neo4j.unsafe.impl.batchimport.input.Groups;
 import org.neo4j.unsafe.impl.batchimport.input.InputChunk;
@@ -87,7 +88,6 @@ import static org.neo4j.io.ByteUnit.mebiBytes;
 import static org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds.EMPTY;
 import static org.neo4j.unsafe.impl.batchimport.ImportLogic.NO_MONITOR;
 import static org.neo4j.unsafe.impl.batchimport.ProcessorAssignmentStrategies.eagerRandomSaturation;
-import static org.neo4j.unsafe.impl.batchimport.input.Collectors.silentBadCollector;
 import static org.neo4j.unsafe.impl.batchimport.input.Inputs.knownEstimates;
 
 @RunWith( Parameterized.class )
@@ -176,7 +176,7 @@ public class ParallelBatchImporterTest
         JobScheduler jobScheduler = new ThreadPoolJobScheduler();
         final BatchImporter inserter = new ParallelBatchImporter( databaseLayout,
                 fileSystemRule.get(), null, config, NullLogService.getInstance(),
-                processorAssigner, EMPTY, Config.defaults(), getFormat(), NO_MONITOR, jobScheduler );
+                processorAssigner, EMPTY, Config.defaults(), getFormat(), NO_MONITOR, jobScheduler, Collector.EMPTY );
         try
         {
             // WHEN
@@ -184,8 +184,6 @@ public class ParallelBatchImporterTest
                     nodes( nodeRandomSeed, NODE_COUNT, config.batchSize(), inputIdGenerator, groupDistribution ),
                     relationships( relationshipRandomSeed, RELATIONSHIP_COUNT, config.batchSize(),
                             inputIdGenerator, groupDistribution ), idType,
-                    /*insanely high bad tolerance, but it will actually never be that many*/
-                    silentBadCollector( RELATIONSHIP_COUNT ),
                     knownEstimates(
                             NODE_COUNT, RELATIONSHIP_COUNT,
                             NODE_COUNT * TOKENS.length / 2,

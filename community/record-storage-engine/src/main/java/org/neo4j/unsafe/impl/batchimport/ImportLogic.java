@@ -171,17 +171,19 @@ public class ImportLogic implements Closeable
      * @param logService {@link LogService} to use.
      * @param executionMonitor {@link ExecutionMonitor} to follow progress as the import proceeds.
      * @param recordFormats which {@link RecordFormats record format} to use for the created db.
+     * @param badCollector {@link Collector} for bad entries.
      * @param monitor {@link Monitor} for some events.
      */
     public ImportLogic( File storeDir, FileSystemAbstraction fileSystem, BatchingNeoStores neoStore,
             Configuration config, LogService logService, ExecutionMonitor executionMonitor,
-            RecordFormats recordFormats, Monitor monitor )
+            RecordFormats recordFormats, Collector badCollector, Monitor monitor )
     {
         this.storeDir = storeDir;
         this.fileSystem = fileSystem;
         this.neoStore = neoStore;
         this.config = config;
         this.recordFormats = recordFormats;
+        this.badCollector = badCollector;
         this.monitor = monitor;
         this.log = logService.getInternalLogProvider().getLog( getClass() );
         this.executionMonitor = ExecutionSupervisors.withDynamicProcessorAssignment( executionMonitor, config );
@@ -195,7 +197,6 @@ public class ImportLogic implements Closeable
         this.input = input;
         PageCacheArrayFactoryMonitor numberArrayFactoryMonitor = new PageCacheArrayFactoryMonitor();
         numberArrayFactory = auto( neoStore.getPageCache(), storeDir, config.allowCacheAllocationOnHeap(), numberArrayFactoryMonitor );
-        badCollector = input.badCollector();
         // Some temporary caches and indexes in the import
         idMapper = instantiateIdMapper( input );
         nodeRelationshipCache = new NodeRelationshipCache( numberArrayFactory, config.denseNodeThreshold() );
@@ -259,7 +260,7 @@ public class ImportLogic implements Closeable
     }
 
     /**
-     * Imports nodes w/ their properties and labels from {@link Input#nodes()}. This will as a side-effect populate the {@link IdMapper},
+     * Imports nodes w/ their properties and labels from {@link Input#nodes(Collector)}. This will as a side-effect populate the {@link IdMapper},
      * to later be used for looking up ID --> nodeId in {@link #importRelationships()}. After a completed node import,
      * {@link #prepareIdMapper()} must be called.
      *
@@ -269,8 +270,7 @@ public class ImportLogic implements Closeable
     {
         // Import nodes, properties, labels
         neoStore.startFlushingPageCache();
-        DataImporter.importNodes( config.maxNumberOfProcessors(), input, neoStore, idMapper,
-              executionMonitor, storeUpdateMonitor );
+        DataImporter.importNodes( config.maxNumberOfProcessors(), input, neoStore, idMapper, badCollector, executionMonitor, storeUpdateMonitor );
         neoStore.stopFlushingPageCache();
         updatePeakMemoryUsage();
     }
@@ -295,7 +295,7 @@ public class ImportLogic implements Closeable
     }
 
     /**
-     * Uses {@link IdMapper} as lookup for ID --> nodeId and imports all relationships from {@link Input#relationships()}
+     * Uses {@link IdMapper} as lookup for ID --> nodeId and imports all relationships from {@link Input#relationships(Collector)}
      * and writes them into the {@link RelationshipStore}. No linking between relationships is done in this method,
      * it's done later in {@link #linkRelationships(int)}.
      *

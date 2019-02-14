@@ -47,7 +47,6 @@ import org.neo4j.helpers.ArrayUtil;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.Strings;
 import org.neo4j.helpers.collection.IterableWrapper;
-import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
@@ -94,11 +93,11 @@ import static org.neo4j.kernel.impl.scheduler.JobSchedulerFactory.createSchedule
 import static org.neo4j.kernel.impl.store.PropertyType.EMPTY_BYTE_ARRAY;
 import static org.neo4j.kernel.impl.util.Converters.withDefault;
 import static org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds.EMPTY;
-import static org.neo4j.unsafe.impl.batchimport.Configuration.BAD_FILE_NAME;
 import static org.neo4j.unsafe.impl.batchimport.Configuration.DEFAULT;
 import static org.neo4j.unsafe.impl.batchimport.Configuration.DEFAULT_MAX_MEMORY_PERCENT;
 import static org.neo4j.unsafe.impl.batchimport.Configuration.calculateMaxMemoryFromPercent;
 import static org.neo4j.unsafe.impl.batchimport.Configuration.canDetectFreeMemory;
+import static org.neo4j.unsafe.impl.batchimport.input.BadCollector.BAD_FILE_NAME;
 import static org.neo4j.unsafe.impl.batchimport.input.Collectors.badCollector;
 import static org.neo4j.unsafe.impl.batchimport.input.Collectors.collect;
 import static org.neo4j.unsafe.impl.batchimport.input.Collectors.silentBadCollector;
@@ -387,7 +386,7 @@ public class ImportTool
      * @param defaultSettingsSuitableForTests default configuration geared towards unit/integration
      * test environments, for example lower default buffer sizes.
      */
-    public static void main( String[] incomingArguments, boolean defaultSettingsSuitableForTests ) throws IOException
+    public static void main( String[] incomingArguments, boolean defaultSettingsSuitableForTests )
     {
         System.err.println( format( "WARNING: neo4j-import is deprecated and support for it will be removed in a future%n" +
                 "version of Neo4j; please use neo4j-admin import instead." ) );
@@ -423,8 +422,8 @@ public class ImportTool
         Long maxMemory;
         Boolean defaultHighIO;
         InputStream in;
+        Collector badCollector = null;
 
-        boolean success = false;
         try ( FileSystemAbstraction fs = new DefaultFileSystemAbstraction() )
         {
             args = useArgumentsFromFileArgumentIfPresent( args );
@@ -465,7 +464,7 @@ public class ImportTool
             defaultHighIO = args.getBoolean( Options.HIGH_IO.key(),
                     (Boolean)Options.HIGH_IO.defaultValue(), true );
 
-            Collector badCollector = getBadCollector( badTolerance, skipBadRelationships, skipDuplicateNodes, ignoreExtraColumns,
+            badCollector = getBadCollector( badTolerance, skipBadRelationships, skipDuplicateNodes, ignoreExtraColumns,
                     skipBadEntriesLogging, badOutput );
 
             dbConfig = loadDbConfig( args.interpretOption( Options.DATABASE_CONFIG.key(), Converters.optional(),
@@ -479,14 +478,12 @@ public class ImportTool
                     allowCacheOnHeap, defaultHighIO );
             input = new CsvInput( nodeData( inputEncoding, nodesFiles ), defaultFormatNodeFileHeader(),
                     relationshipData( inputEncoding, relationshipsFiles ), defaultFormatRelationshipFileHeader(),
-                    idType, csvConfiguration( args, defaultSettingsSuitableForTests ), badCollector );
+                    idType, csvConfiguration( args, defaultSettingsSuitableForTests ) );
             in = defaultSettingsSuitableForTests ? new ByteArrayInputStream( EMPTY_BYTE_ARRAY ) : System.in;
             boolean detailedPrinting = args.getBoolean( Options.DETAILED_PROGRESS.key(), (Boolean) Options.DETAILED_PROGRESS.defaultValue() );
 
             doImport( out, err, in, databaseLayout, logsDir, badFile, fs, nodesFiles, relationshipsFiles,
-                    enableStacktrace, input, dbConfig, badOutput, configuration, detailedPrinting );
-
-            success = true;
+                    enableStacktrace, input, dbConfig, badCollector, configuration, detailedPrinting );
         }
         catch ( IllegalArgumentException e )
         {
@@ -498,9 +495,9 @@ public class ImportTool
         }
         finally
         {
-            if ( !success && badOutput != null )
+            if ( badCollector != null )
             {
-                badOutput.close();
+                badCollector.close();
             }
         }
     }
@@ -555,7 +552,7 @@ public class ImportTool
     public static void doImport( PrintStream out, PrintStream err, InputStream in, DatabaseLayout databaseLayout, File logsDir, File badFile,
                                  FileSystemAbstraction fs, Collection<Option<File[]>> nodesFiles,
                                  Collection<Option<File[]>> relationshipsFiles, boolean enableStacktrace, Input input,
-                                 Config dbConfig, OutputStream badOutput,
+                                 Config dbConfig, Collector badCollector,
                                  org.neo4j.unsafe.impl.batchimport.Configuration configuration, boolean detailedProgress ) throws IOException
     {
         boolean success;
@@ -578,7 +575,7 @@ public class ImportTool
                 EMPTY,
                 dbConfig,
                 RecordFormatSelector.selectForConfig( dbConfig, logService.getInternalLogProvider() ),
-                new PrintingImportLogicMonitor( out, err ), jobScheduler );
+                new PrintingImportLogicMonitor( out, err ), jobScheduler, badCollector );
         printOverview( databaseLayout.databaseDirectory(), nodesFiles, relationshipsFiles, configuration, out );
         success = false;
         try
@@ -592,10 +589,7 @@ public class ImportTool
         }
         finally
         {
-            Collector collector = input.badCollector();
-            long numberOfBadEntries = collector.badEntries();
-            collector.close();
-            IOUtils.closeAll( badOutput );
+            long numberOfBadEntries = badCollector.badEntries();
 
             if ( badFile != null )
             {

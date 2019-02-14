@@ -167,12 +167,12 @@ public class DataImporter
         return roughEntityCountProgress.sum();
     }
 
-    public static void importNodes( int numRunners, Input input, BatchingNeoStores stores, IdMapper idMapper,
+    public static void importNodes( int numRunners, Input input, BatchingNeoStores stores, IdMapper idMapper, Collector badCollector,
             ExecutionMonitor executionMonitor, Monitor monitor )
                     throws IOException
     {
         Supplier<EntityImporter> importers = () -> new NodeImporter( stores, idMapper, monitor );
-        importData( NODE_IMPORT_NAME, numRunners, input.nodes(), stores, importers, executionMonitor,
+        importData( NODE_IMPORT_NAME, numRunners, input.nodes( badCollector ), stores, importers, executionMonitor,
                 new MemoryUsageStatsProvider( stores, idMapper ) );
     }
 
@@ -184,7 +184,7 @@ public class DataImporter
         DataStatistics typeDistribution = new DataStatistics( monitor.nodes.sum(), monitor.properties.sum(), new RelationshipTypeCount[0] );
         Supplier<EntityImporter> importers = () -> new RelationshipImporter( stores, idMapper, typeDistribution, monitor,
                 badCollector, validateRelationshipData, stores.usesDoubleRelationshipRecordUnits() );
-        importData( RELATIONSHIP_IMPORT_NAME, numRunners, input.relationships(), stores, importers, executionMonitor,
+        importData( RELATIONSHIP_IMPORT_NAME, numRunners, input.relationships( badCollector ), stores, importers, executionMonitor,
                 new MemoryUsageStatsProvider( stores, idMapper ) );
         return typeDistribution;
     }

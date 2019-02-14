@@ -122,11 +122,10 @@ class CsvImporter implements Importer
                 nodeData( inputEncoding, nodesFiles ), defaultFormatNodeFileHeader( defaultTimeZone ),
                 relationshipData( inputEncoding, relationshipsFiles ), defaultFormatRelationshipFileHeader( defaultTimeZone ),
                 idType,
-                new WrappedCsvInputConfigurationForNeo4jAdmin( csvConfiguration( args, false ) ),
-                badCollector );
+                new WrappedCsvInputConfigurationForNeo4jAdmin( csvConfiguration( args, false ) ) );
 
         ImportTool.doImport( outsideWorld.errorStream(), outsideWorld.errorStream(), outsideWorld.inStream(), databaseLayout, logsDir,
-                reportFile, fs, nodesFiles, relationshipsFiles, false, input, this.databaseConfig, badOutput, configuration, false );
+                reportFile, fs, nodesFiles, relationshipsFiles, false, input, this.databaseConfig, badCollector, configuration, false );
     }
 
     private boolean isIgnoringSomething()

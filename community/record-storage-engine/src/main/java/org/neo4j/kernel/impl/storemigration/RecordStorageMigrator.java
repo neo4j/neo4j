@@ -70,7 +70,6 @@ import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
-import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.store.id.ReadOnlyIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -97,6 +96,7 @@ import org.neo4j.unsafe.impl.batchimport.BatchImporterFactory;
 import org.neo4j.unsafe.impl.batchimport.Configuration;
 import org.neo4j.unsafe.impl.batchimport.InputIterable;
 import org.neo4j.unsafe.impl.batchimport.InputIterator;
+import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.input.Collectors;
 import org.neo4j.unsafe.impl.batchimport.input.Input.Estimates;
 import org.neo4j.unsafe.impl.batchimport.input.InputChunk;
@@ -370,9 +370,10 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
         boolean requiresDynamicStoreMigration = !newFormat.dynamic().equals( oldFormat.dynamic() );
         boolean requiresPropertyMigration =
                 !newFormat.property().equals( oldFormat.property() ) || requiresDynamicStoreMigration;
-        File badFile = sourceDirectoryStructure.file( Configuration.BAD_FILE_NAME );
+        File badFile = sourceDirectoryStructure.file( BadCollector.BAD_FILE_NAME );
         try ( NeoStores legacyStore = instantiateLegacyStore( oldFormat, sourceDirectoryStructure );
-              OutputStream badOutput = new BufferedOutputStream( new FileOutputStream( badFile, false ) ) )
+              OutputStream badOutput = new BufferedOutputStream( new FileOutputStream( badFile, false ) );
+              Collector badCollector = Collectors.badCollector( badOutput, 0 ) )
         {
             Configuration importConfig = new Configuration.Overridden( config )
             {
@@ -389,7 +390,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
             BatchImporter importer = BatchImporterFactory.withHighestPriority().instantiate( migrationDirectoryStructure,
                     fileSystem, pageCache, importConfig, logService,
                     withDynamicProcessorAssignment( migrationBatchImporterMonitor( legacyStore, progressReporter,
-                            importConfig ), importConfig ), additionalInitialIds, config, newFormat, NO_MONITOR, jobScheduler );
+                            importConfig ), importConfig ), additionalInitialIds, config, newFormat, NO_MONITOR, jobScheduler, badCollector );
             InputIterable nodes = () -> legacyNodesAsInput( legacyStore, requiresPropertyMigration );
             InputIterable relationships = () -> legacyRelationshipsAsInput( legacyStore, requiresPropertyMigration );
             long propertyStoreSize = storeSize( legacyStore.getPropertyStore() ) / 2 +
@@ -402,7 +403,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
                     legacyStore.getPropertyStore().getNumberOfIdsInUse(),
                     propertyStoreSize / 2, propertyStoreSize / 2,
                     0 /*node labels left as 0 for now*/);
-            importer.doImport( Inputs.input( nodes, relationships, IdType.ACTUAL, Collectors.badCollector( badOutput, 0 ), estimates ) );
+            importer.doImport( Inputs.input( nodes, relationships, IdType.ACTUAL, estimates ) );
 
             // During migration the batch importer doesn't necessarily writes all entities, depending on
             // which stores needs migration. Node, relationship, relationship group stores are always written

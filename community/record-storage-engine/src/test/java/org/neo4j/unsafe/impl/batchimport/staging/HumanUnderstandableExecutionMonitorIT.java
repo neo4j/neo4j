@@ -79,7 +79,7 @@ class HumanUnderstandableExecutionMonitorIT
         CapturingMonitor progress = new CapturingMonitor();
         HumanUnderstandableExecutionMonitor monitor = new HumanUnderstandableExecutionMonitor( progress, NO_EXTERNAL_MONITOR );
         IdType idType = INTEGER;
-        Input input = new DataGeneratorInput( NODE_COUNT, RELATIONSHIP_COUNT, idType, Collector.EMPTY, random.seed(),
+        Input input = new DataGeneratorInput( NODE_COUNT, RELATIONSHIP_COUNT, idType, random.seed(),
                 0, bareboneNodeHeader( idType, new Extractors( ';' ) ), bareboneRelationshipHeader( idType, new Extractors( ';' ) ),
                 1, 1, 0, 0 );
 
@@ -87,7 +87,7 @@ class HumanUnderstandableExecutionMonitorIT
         try ( JobScheduler jobScheduler = new ThreadPoolJobScheduler() )
         {
             new ParallelBatchImporter( testDirectory.databaseLayout(), fileSystem, pageCache, DEFAULT, NullLogService.getInstance(),
-                    monitor, EMPTY, defaults(), LATEST_RECORD_FORMATS, NO_MONITOR, jobScheduler ).doImport( input );
+                    monitor, EMPTY, defaults(), LATEST_RECORD_FORMATS, NO_MONITOR, jobScheduler, Collector.EMPTY ).doImport( input );
 
             // then
             progress.assertAllProgressReachedEnd();

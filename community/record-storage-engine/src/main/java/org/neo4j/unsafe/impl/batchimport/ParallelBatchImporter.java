@@ -28,6 +28,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.input.Input;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitor;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingNeoStores;
@@ -57,11 +58,12 @@ public class ParallelBatchImporter implements BatchImporter
     private final AdditionalInitialIds additionalInitialIds;
     private final ImportLogic.Monitor monitor;
     private final JobScheduler jobScheduler;
+    private final Collector badCollector;
 
     public ParallelBatchImporter( DatabaseLayout directoryStructure, FileSystemAbstraction fileSystem, PageCache externalPageCache,
             Configuration config, LogService logService, ExecutionMonitor executionMonitor,
             AdditionalInitialIds additionalInitialIds, Config dbConfig, RecordFormats recordFormats, ImportLogic.Monitor monitor,
-            JobScheduler jobScheduler )
+            JobScheduler jobScheduler, Collector badCollector )
     {
         this.externalPageCache = externalPageCache;
         this.directoryStructure = directoryStructure;
@@ -74,6 +76,7 @@ public class ParallelBatchImporter implements BatchImporter
         this.additionalInitialIds = additionalInitialIds;
         this.monitor = monitor;
         this.jobScheduler = jobScheduler;
+        this.badCollector = badCollector;
     }
 
     @Override
@@ -82,7 +85,7 @@ public class ParallelBatchImporter implements BatchImporter
         try ( BatchingNeoStores store = instantiateNeoStores( fileSystem, directoryStructure.databaseDirectory(), externalPageCache, recordFormats,
                       config, logService, additionalInitialIds, dbConfig, jobScheduler );
               ImportLogic logic = new ImportLogic( directoryStructure.databaseDirectory(), fileSystem, store, config, logService,
-                      executionMonitor, recordFormats, monitor ) )
+                      executionMonitor, recordFormats, badCollector, monitor ) )
         {
             store.createNew();
             logic.initialize( input );

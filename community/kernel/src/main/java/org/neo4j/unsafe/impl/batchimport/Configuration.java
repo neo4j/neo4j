@@ -39,7 +39,6 @@ public interface Configuration
      * File name in which bad entries from the import will end up. This file will be created in the
      * database directory of the imported database, i.e. <into>/bad.log.
      */
-    String BAD_FILE_NAME = "bad.log";
     long MAX_PAGE_CACHE_MEMORY = gibiBytes( 1 );
     int DEFAULT_MAX_MEMORY_PERCENT = 90;
 

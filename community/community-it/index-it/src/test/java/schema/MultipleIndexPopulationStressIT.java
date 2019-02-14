@@ -302,7 +302,7 @@ public class MultipleIndexPopulationStressIT
               JobScheduler jobScheduler = new ThreadPoolJobScheduler() )
         {
             BatchImporter importer = new ParallelBatchImporter( directory.databaseLayout(), fileSystemRule.get(), null, DEFAULT, NullLogService.getInstance(),
-                    ExecutionMonitors.invisible(), EMPTY, config, recordFormats, NO_MONITOR, jobScheduler );
+                    ExecutionMonitors.invisible(), EMPTY, config, recordFormats, NO_MONITOR, jobScheduler, Collector.EMPTY );
             importer.doImport( input );
         }
     }
@@ -327,13 +327,13 @@ public class MultipleIndexPopulationStressIT
         }
 
         @Override
-        public InputIterable relationships()
+        public InputIterable relationships( Collector badCollector )
         {
             return EMPTY_ITERABLE;
         }
 
         @Override
-        public InputIterable nodes()
+        public InputIterable nodes( Collector badCollector )
         {
             return () -> new RandomNodeGenerator( count, ( state, visitor, id ) -> {
                 String[] keys = random.randomValues().selection( TOKENS, 1, TOKENS.length, false );
@@ -355,12 +355,6 @@ public class MultipleIndexPopulationStressIT
         public ReadableGroups groups()
         {
             return ReadableGroups.EMPTY;
-        }
-
-        @Override
-        public Collector badCollector()
-        {
-            return badCollector;
         }
 
         private BadCollector createBadCollector()

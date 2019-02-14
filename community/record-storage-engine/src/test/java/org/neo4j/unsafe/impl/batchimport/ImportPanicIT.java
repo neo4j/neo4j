@@ -34,7 +34,6 @@ import org.neo4j.configuration.Config;
 import org.neo4j.csv.reader.CharReadable;
 import org.neo4j.csv.reader.DataAfterQuoteException;
 import org.neo4j.csv.reader.Readables;
-import org.neo4j.io.NullOutputStream;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_4;
@@ -43,7 +42,7 @@ import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
-import org.neo4j.unsafe.impl.batchimport.input.BadCollector;
+import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.input.Input;
 import org.neo4j.unsafe.impl.batchimport.input.InputException;
 import org.neo4j.unsafe.impl.batchimport.input.csv.CsvInput;
@@ -83,15 +82,14 @@ public class ImportPanicIT
         {
             BatchImporter importer = new ParallelBatchImporter( directory.databaseLayout(), fs, null, Configuration.DEFAULT,
                     NullLogService.getInstance(), ExecutionMonitors.invisible(), AdditionalInitialIds.EMPTY,
-                    Config.defaults(), StandardV3_4.RECORD_FORMATS, NO_MONITOR, jobScheduler );
+                    Config.defaults(), StandardV3_4.RECORD_FORMATS, NO_MONITOR, jobScheduler, Collector.EMPTY );
             Iterable<DataFactory> nodeData =
                     datas( data( NO_DECORATOR, fileAsCharReadable( nodeCsvFileWithBrokenEntries() ) ) );
             Input brokenCsvInput = new CsvInput(
                     nodeData, defaultFormatNodeFileHeader(),
                     datas(), defaultFormatRelationshipFileHeader(),
                     IdType.ACTUAL,
-                    csvConfigurationWithLowBufferSize(),
-                    new BadCollector( NullOutputStream.NULL_OUTPUT_STREAM, 0, 0 ) );
+                    csvConfigurationWithLowBufferSize() );
             importer.doImport( brokenCsvInput );
             fail( "Should have failed properly" );
         }

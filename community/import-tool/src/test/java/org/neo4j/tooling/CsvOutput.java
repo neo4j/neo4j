@@ -31,6 +31,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.neo4j.unsafe.impl.batchimport.BatchImporter;
 import org.neo4j.unsafe.impl.batchimport.InputIterator;
+import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.input.Input;
 import org.neo4j.unsafe.impl.batchimport.input.InputChunk;
 import org.neo4j.unsafe.impl.batchimport.input.InputEntity;
@@ -69,8 +70,8 @@ public class CsvOutput implements BatchImporter
     @Override
     public void doImport( Input input ) throws IOException
     {
-        consume( "nodes", input.nodes().iterator(), nodeHeader, RandomEntityDataGenerator::convert );
-        consume( "relationships", input.relationships().iterator(), relationshipHeader, RandomEntityDataGenerator::convert );
+        consume( "nodes", input.nodes( Collector.EMPTY ).iterator(), nodeHeader, RandomEntityDataGenerator::convert );
+        consume( "relationships", input.relationships( Collector.EMPTY ).iterator(), relationshipHeader, RandomEntityDataGenerator::convert );
     }
 
     private void consume( String name, InputIterator entities, Header header, Deserializer deserializer ) throws IOException
