@@ -18,7 +18,6 @@ package org.neo4j.cypher.internal.v4_0.expressions.functions
 
 import org.neo4j.cypher.internal.v4_0.expressions._
 import org.neo4j.cypher.internal.v4_0.util.InputPosition
-import org.neo4j.kernel.impl.query.FunctionInformation
 
 object Function {
   private val knownFunctions: Seq[Function] = Vector(
@@ -97,7 +96,7 @@ object Function {
 
   lazy val lookup: Map[String, Function] = knownFunctions.map { f => (f.name.toLowerCase, f) }.toMap
 
-  lazy val functionInfo: List[FunctionInformation] = {
+  lazy val functionInfo: List[FunctionInfo] = {
     lookup.values.flatMap {
       case f: TypeSignatures =>
         f.signatures.flatMap {
@@ -123,13 +122,17 @@ object Function {
   }
 }
 
-abstract case class FunctionInfo(f: Function) extends FunctionInformation {
-  override def getFunctionName: String = f.name
+abstract case class FunctionInfo(f: Function){
+  def getFunctionName: String = f.name
 
-  override def isAggregationFunction: java.lang.Boolean = f match {
+  def isAggregationFunction: java.lang.Boolean = f match {
       case _: AggregatingFunction => true
       case _ => false
     }
+
+  def getDescription: String
+
+  def getSignature: String
 
   override def toString: String = getFunctionName + " || " + getSignature + " || " + getDescription + " || " + isAggregationFunction
 }

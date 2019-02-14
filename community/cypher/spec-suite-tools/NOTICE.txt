@@ -27,7 +27,6 @@ Third-party licenses
 
 Apache Software License, Version 2.0
   Apache Commons Lang
-  Apache Commons Text
   Caffeine cache
   casbah-commons
   casbah-core
@@ -52,10 +51,6 @@ BSD - Scala License
 
 BSD License
   ANTLR 4 Runtime
-  asm
-  asm-analysis
-  asm-tree
-  asm-util
   ParaNamer Core
   Scala Compiler
 

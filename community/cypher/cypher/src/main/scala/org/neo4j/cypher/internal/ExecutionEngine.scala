@@ -20,14 +20,15 @@
 package org.neo4j.cypher.internal
 
 import java.time.Clock
-import java.util
 import java.util.function.Supplier
+import java.{lang, util}
 
 import org.neo4j.cypher.internal.ExecutionEngine.{JitCompilation, NEVER_COMPILE, QueryCompilation}
 import org.neo4j.cypher.internal.QueryCache.ParameterTypeMap
 import org.neo4j.cypher.internal.compatibility.CypherCacheMonitor
 import org.neo4j.cypher.internal.tracing.CompilationTracer
 import org.neo4j.cypher.internal.tracing.CompilationTracer.QueryCompilationEvent
+import org.neo4j.cypher.internal.v4_0.expressions.functions.FunctionInfo
 import org.neo4j.cypher.{ParameterNotFoundException, exceptionHandler}
 import org.neo4j.graphdb.Result
 import org.neo4j.helpers.collection.Pair
@@ -191,8 +192,10 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
   def isPeriodicCommit(query: String): Boolean =
     preParser.preParseQuery(query, profile = false).isPeriodicCommit
 
-  def getCypherFunctions: util.List[FunctionInformation] =
-    org.neo4j.cypher.internal.v4_0.expressions.functions.Function.functionInfo.asJava
+  def getCypherFunctions: util.List[FunctionInformation] = {
+    val informations: Seq[FunctionInformation] = org.neo4j.cypher.internal.v4_0.expressions.functions.Function.functionInfo.map(FunctionWithInformation)
+    informations.asJava
+  }
 
   // HELPERS
 
@@ -210,6 +213,17 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
     new Supplier[T] {
       override def get(): T = t
     }
+}
+
+case class FunctionWithInformation(f: FunctionInfo) extends FunctionInformation {
+
+  override def getFunctionName: String = f.getFunctionName
+
+  override def getDescription: String = f.getDescription
+
+  override def getSignature: String = f.getSignature
+
+  override def isAggregationFunction: lang.Boolean = f.isAggregationFunction
 }
 
 object ExecutionEngine {
