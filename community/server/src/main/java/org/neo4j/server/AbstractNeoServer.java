@@ -36,7 +36,6 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.facade.ExternalDependencies;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.ListenSocketAddress;
-import org.neo4j.helpers.RunCarefully;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.security.AuthManager;
@@ -86,7 +85,6 @@ import org.neo4j.udc.UsageData;
 import static java.lang.Math.round;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.db_timezone;
-import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.server.configuration.ServerSettings.http_log_path;
 import static org.neo4j.server.configuration.ServerSettings.http_logging_enabled;
 import static org.neo4j.server.configuration.ServerSettings.http_logging_rotation_keep_number;
@@ -244,7 +242,24 @@ public abstract class AbstractNeoServer implements NeoServer
 
     private void stopModules()
     {
-        new RunCarefully( map( module -> module::stop, serverModules ) ).run();
+        final List<Exception> errors = new ArrayList<>();
+        for ( final ServerModule module : serverModules )
+        {
+            try
+            {
+                module.stop();
+            }
+            catch ( Exception e )
+            {
+                errors.add( e );
+            }
+        }
+        if ( !errors.isEmpty() )
+        {
+            final RuntimeException e = new RuntimeException();
+            errors.forEach( e::addSuppressed );
+            throw e;
+        }
     }
 
     private void clearModules()
