@@ -100,7 +100,7 @@ public class IndexUpdateStorage<KEY extends NativeIndexKey<KEY>,VALUE extends Na
         IndexUpdateEntry.write( pageCursor, layout, updateMode, key1, key2, value );
     }
 
-    public void doneAdding() throws IOException
+    void doneAdding() throws IOException
     {
         if ( buffer.remaining() < TYPE_SIZE )
         {
@@ -114,7 +114,7 @@ public class IndexUpdateStorage<KEY extends NativeIndexKey<KEY>,VALUE extends Na
     {
         ReadAheadChannel<StoreChannel> channel = new ReadAheadChannel<>( fs.open( file, OpenMode.READ ) );
         PageCursor pageCursor = new ReadableChannelPageCursor( channel );
-        return new IndexUpdateCursor<>( channel, pageCursor, layout );
+        return new IndexUpdateCursor<>( pageCursor, layout );
     }
 
     private void flush() throws IOException

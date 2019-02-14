@@ -231,10 +231,10 @@ class BlockStorage<KEY, VALUE> implements Closeable
         }
     }
 
-    private void writeBlock( StoreChannel targetChannel, BlockEntryCursor<KEY,VALUE> merger, long blockSize, long entryCount ) throws IOException
+    private void writeBlock( StoreChannel targetChannel, BlockEntryCursor<KEY,VALUE> blockEntryCursor, long blockSize, long entryCount ) throws IOException
     {
         writeHeader( byteBuffer, blockSize, entryCount );
-        long actualDataSize = writeMergedBlock( targetChannel, byteBuffer, layout, merger );
+        long actualDataSize = writeEntries( targetChannel, byteBuffer, layout, blockEntryCursor );
         writeLastEntriesWithPadding( targetChannel, byteBuffer, blockSize - actualDataSize );
     }
 
@@ -244,16 +244,16 @@ class BlockStorage<KEY, VALUE> implements Closeable
         byteBuffer.putLong( entryCount );
     }
 
-    private static <KEY, VALUE> long writeMergedBlock( StoreChannel targetChannel, ByteBuffer byteBuffer, Layout<KEY,VALUE> layout,
-            BlockEntryCursor<KEY,VALUE> merger ) throws IOException
+    private static <KEY, VALUE> long writeEntries( StoreChannel targetChannel, ByteBuffer byteBuffer, Layout<KEY,VALUE> layout,
+            BlockEntryCursor<KEY,VALUE> blockEntryCursor ) throws IOException
     {
         // Loop over block entries
         long actualDataSize = BLOCK_HEADER_SIZE;
         ByteArrayPageCursor pageCursor = new ByteArrayPageCursor( byteBuffer );
-        while ( merger.next() )
+        while ( blockEntryCursor.next() )
         {
-            KEY key = merger.key();
-            VALUE value = merger.value();
+            KEY key = blockEntryCursor.key();
+            VALUE value = blockEntryCursor.value();
             int entrySize = BlockEntry.entrySize( layout, key, value );
             actualDataSize += entrySize;
 

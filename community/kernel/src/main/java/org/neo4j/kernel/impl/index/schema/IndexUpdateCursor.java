@@ -24,7 +24,6 @@ import java.io.IOException;
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.impl.api.index.UpdateMode;
-import org.neo4j.kernel.impl.transaction.log.ReadAheadChannel;
 
 import static org.neo4j.kernel.impl.index.schema.IndexUpdateStorage.STOP_TYPE;
 
@@ -34,7 +33,6 @@ import static org.neo4j.kernel.impl.index.schema.IndexUpdateStorage.STOP_TYPE;
  */
 public class IndexUpdateCursor<KEY, VALUE> implements BlockEntryCursor<KEY,VALUE>
 {
-    private final ReadAheadChannel channel;
     private final PageCursor cursor;
     private final Layout<KEY,VALUE> layout;
 
@@ -44,9 +42,8 @@ public class IndexUpdateCursor<KEY, VALUE> implements BlockEntryCursor<KEY,VALUE
     private KEY key2;
     private VALUE value;
 
-    public IndexUpdateCursor( ReadAheadChannel channel, PageCursor cursor, Layout<KEY,VALUE> layout )
+    IndexUpdateCursor( PageCursor cursor, Layout<KEY,VALUE> layout )
     {
-        this.channel = channel;
         this.cursor = cursor;
         this.layout = layout;
         this.key1 = layout.newKey();
