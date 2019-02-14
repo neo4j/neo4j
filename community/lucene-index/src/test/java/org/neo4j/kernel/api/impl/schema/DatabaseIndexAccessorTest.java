@@ -37,7 +37,6 @@ import java.util.concurrent.Future;
 
 import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.function.IOFunction;
-import org.neo4j.helpers.TaskCoordinator;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;

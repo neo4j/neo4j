@@ -28,8 +28,8 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.function.Function;
 
+import org.neo4j.common.Validator;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.impl.util.Validator;
 
 /**
  * Parses a String[] argument from a main-method. It expects values to be either

@@ -20,10 +20,11 @@
 package org.neo4j.helpers;
 
 import java.net.InetSocketAddress;
-import java.util.Collection;
+import java.util.HashSet;
 import java.util.Objects;
+import java.util.Set;
 
-import static org.neo4j.helpers.collection.Iterators.asSet;
+import static java.util.Arrays.asList;
 
 /**
  * Socket address derived from configuration.
@@ -31,8 +32,7 @@ import static org.neo4j.helpers.collection.Iterators.asSet;
  */
 public class SocketAddress
 {
-    private static final Collection<String> WILDCARDS = asSet( "0.0.0.0", "::" );
-
+    private static final Set<String> WILDCARDS = new HashSet<>( asList( "0.0.0.0", "::" ) );
     private final String hostname;
     private final int port;
 

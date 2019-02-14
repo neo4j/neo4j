@@ -17,12 +17,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.helpers;
+package org.neo4j.kernel.api.impl.schema;
 
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 import org.neo4j.function.Factory;
+import org.neo4j.helpers.Cancelable;
+import org.neo4j.helpers.CancellationRequest;
+import org.neo4j.helpers.TaskControl;
 
 /**
  * Represents a collection point for various {@link TaskControl} instances that need to be waited on and potentially

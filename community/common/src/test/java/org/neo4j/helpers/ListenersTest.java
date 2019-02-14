@@ -19,20 +19,20 @@
  */
 package org.neo4j.helpers;
 
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
-
-import org.neo4j.helpers.collection.Iterables;
 
 import static java.lang.Thread.currentThread;
 import static java.util.Collections.singletonList;
 import static java.util.concurrent.Executors.newSingleThreadExecutor;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.startsWith;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.helpers.NamedThreadFactory.named;
@@ -52,7 +52,17 @@ class ListenersTest
 
         Listeners<Listener> copy = new Listeners<>( original );
 
-        assertEquals( Iterables.asList( original ), Iterables.asList( copy ) );
+        Assertions.assertEquals( asList( original ), asList( copy ) );
+    }
+
+    private <T> List<T> asList( Listeners<T> listeners )
+    {
+        final List<T> list = new ArrayList<>();
+        for ( final T listener : listeners )
+        {
+            list.add( listener );
+        }
+        return list;
     }
 
     @Test
@@ -68,7 +78,7 @@ class ListenersTest
 
         Listeners<Listener> listeners = newListeners( listenersArray );
 
-        assertArrayEquals( listenersArray, Iterables.asArray( Listener.class, listeners ) );
+        Assertions.assertEquals( Arrays.asList( listenersArray ), asList( listeners ) );
     }
 
     @Test
@@ -86,13 +96,13 @@ class ListenersTest
 
         Listeners<Listener> listeners = newListeners( listener1, listener2, listener3 );
 
-        assertEquals( Arrays.asList( listener1, listener2, listener3 ), Iterables.asList( listeners ) );
+        Assertions.assertEquals( Arrays.asList( listener1, listener2, listener3 ), asList( listeners ) );
 
         listeners.remove( listener1 );
-        assertEquals( Arrays.asList( listener2, listener3 ), Iterables.asList( listeners ) );
+        Assertions.assertEquals( Arrays.asList( listener2, listener3 ), asList( listeners ) );
 
         listeners.remove( listener3 );
-        assertEquals( singletonList( listener2 ), Iterables.asList( listeners ) );
+        Assertions.assertEquals( singletonList( listener2 ), asList( listeners ) );
     }
 
     @Test
@@ -168,7 +178,7 @@ class ListenersTest
 
         Listeners<Listener> listeners = newListeners( listener1, listener2, listener3 );
 
-        assertEquals( Arrays.asList( listener1, listener2, listener3 ), Iterables.asList( listeners ) );
+        Assertions.assertEquals( Arrays.asList( listener1, listener2, listener3 ), asList( listeners ) );
     }
 
     @SafeVarargs

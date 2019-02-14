@@ -21,9 +21,9 @@ package org.neo4j.kernel.impl.index.schema;
 
 import java.util.Arrays;
 
+import org.neo4j.common.Validator;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Layout;
-import org.neo4j.kernel.impl.util.Validator;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.SequenceValue;
 import org.neo4j.values.storable.TextArray;

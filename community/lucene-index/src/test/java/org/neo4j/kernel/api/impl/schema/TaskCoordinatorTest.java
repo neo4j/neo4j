@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.helpers;
+package org.neo4j.kernel.api.impl.schema;
 
 import org.junit.jupiter.api.Test;
 
@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.neo4j.helpers.TaskControl;
 import org.neo4j.test.Barrier;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;

@@ -42,6 +42,7 @@ import java.util.UUID;
 import java.util.function.IntPredicate;
 import java.util.function.Predicate;
 
+import org.neo4j.common.Validator;
 import org.neo4j.csv.reader.IllegalMultilineFieldException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -59,7 +60,6 @@ import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
-import org.neo4j.kernel.impl.util.Validator;
 import org.neo4j.kernel.impl.util.Validators;
 import org.neo4j.kernel.internal.Version;
 import org.neo4j.test.rule.EmbeddedDbmsRule;

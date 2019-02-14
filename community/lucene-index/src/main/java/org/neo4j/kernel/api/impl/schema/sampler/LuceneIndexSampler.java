@@ -20,8 +20,8 @@
 package org.neo4j.kernel.api.impl.schema.sampler;
 
 import org.neo4j.helpers.TaskControl;
-import org.neo4j.helpers.TaskCoordinator;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
+import org.neo4j.kernel.api.impl.schema.TaskCoordinator;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.IndexSampler;
 
