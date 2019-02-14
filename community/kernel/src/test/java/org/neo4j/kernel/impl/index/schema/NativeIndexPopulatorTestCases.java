@@ -19,9 +19,6 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
@@ -32,7 +29,6 @@ import org.neo4j.gis.spatial.index.curves.StandardConfiguration;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.index.schema.config.ConfiguredSpaceFillingCurveSettingsCache;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettingsCache;
@@ -41,63 +37,75 @@ import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.ValueType;
 
-public class NativeIndexPopulatorTest
+class NativeIndexPopulatorTestCases
 {
-    private static Collection<Object[]> allPopulators()
+    static class TestCase<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue>
+    {
+        final String name;
+        final PopulatorFactory<KEY,VALUE> populatorFactory;
+        final ValueType[] typesOfGroup;
+        final IndexLayoutFactory<KEY,VALUE> indexLayoutFactory;
+
+        TestCase( String name, PopulatorFactory<KEY,VALUE> populatorFactory, ValueType[] typesOfGroup, IndexLayoutFactory<KEY,VALUE> indexLayoutFactory )
+        {
+            this.name = name;
+            this.populatorFactory = populatorFactory;
+            this.typesOfGroup = typesOfGroup;
+            this.indexLayoutFactory = indexLayoutFactory;
+        }
+
+        @Override
+        public String toString()
+        {
+            return name;
+        }
+    }
+
+    static Collection<Object[]> allCases()
     {
         return Arrays.asList( new Object[][]{
-                {"Number",
+                {new TestCase<>( "Number",
                         numberPopulatorFactory(),
                         RandomValues.typesOfGroup( ValueGroup.NUMBER ),
-                        (IndexLayoutFactory) NumberLayoutNonUnique::new
-                },
-                {"String",
-                        (PopulatorFactory) StringIndexPopulator::new,
+                        NumberLayoutNonUnique::new )},
+                {new TestCase<>( "String",
+                        StringIndexPopulator::new,
                         RandomValues.typesOfGroup( ValueGroup.TEXT ),
-                        (IndexLayoutFactory) StringLayout::new
-                },
-                {"Date",
+                        StringLayout::new )},
+                {new TestCase<>( "Date",
                         temporalPopulatorFactory( ValueGroup.DATE ),
                         RandomValues.typesOfGroup( ValueGroup.DATE ),
-                        (IndexLayoutFactory) DateLayout::new
-                },
-                {"DateTime",
+                        DateLayout::new )},
+                {new TestCase<>( "DateTime",
                         temporalPopulatorFactory( ValueGroup.ZONED_DATE_TIME ),
                         RandomValues.typesOfGroup( ValueGroup.ZONED_DATE_TIME ),
-                        (IndexLayoutFactory) ZonedDateTimeLayout::new
-                },
-                {"Duration",
+                        ZonedDateTimeLayout::new )},
+                {new TestCase<>( "Duration",
                         temporalPopulatorFactory( ValueGroup.DURATION ),
                         RandomValues.typesOfGroup( ValueGroup.DURATION ),
-                        (IndexLayoutFactory) DurationLayout::new
-                },
-                {"LocalDateTime",
+                        DurationLayout::new )},
+                {new TestCase<>( "LocalDateTime",
                         temporalPopulatorFactory( ValueGroup.LOCAL_DATE_TIME ),
                         RandomValues.typesOfGroup( ValueGroup.LOCAL_DATE_TIME ),
-                        (IndexLayoutFactory) LocalDateTimeLayout::new
-                },
-                {"LocalTime",
+                        LocalDateTimeLayout::new )},
+                {new TestCase<>( "LocalTime",
                         temporalPopulatorFactory( ValueGroup.LOCAL_TIME ),
                         RandomValues.typesOfGroup( ValueGroup.LOCAL_TIME ),
-                        (IndexLayoutFactory) LocalTimeLayout::new
-                },
-                {"LocalDateTime",
+                        LocalTimeLayout::new )},
+                {new TestCase<>( "LocalDateTime",
                         temporalPopulatorFactory( ValueGroup.LOCAL_DATE_TIME ),
                         RandomValues.typesOfGroup( ValueGroup.LOCAL_DATE_TIME ),
-                        (IndexLayoutFactory) LocalDateTimeLayout::new
-                },
-                {"Time",
+                        LocalDateTimeLayout::new )},
+                {new TestCase<>( "Time",
                         temporalPopulatorFactory( ValueGroup.ZONED_TIME ),
                         RandomValues.typesOfGroup( ValueGroup.ZONED_TIME ),
-                        (IndexLayoutFactory) ZonedTimeLayout::new
-                },
-                {"Generic",
+                        ZonedTimeLayout::new )},
+                {new TestCase<>( "Generic",
                         genericPopulatorFactory(),
                         ValueType.values(),
-                        (IndexLayoutFactory) () -> new GenericLayout( 1, spaceFillingCurveSettings )
-                },
-                // todo { Spatial has it's own subclass because it need to override some of the test methods }
+                        () -> new GenericLayout( 1, spaceFillingCurveSettings ) )}
         } );
+        // { Spatial has it's own subclass because it need to override some of the test methods }
     }
 
     private static final IndexSpecificSpaceFillingCurveSettingsCache spaceFillingCurveSettings =
@@ -126,93 +134,9 @@ public class NativeIndexPopulatorTest
     }
 
     @FunctionalInterface
-    private interface PopulatorFactory<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue>
+    public interface PopulatorFactory<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue>
     {
         NativeIndexPopulator<KEY,VALUE> create( PageCache pageCache, FileSystemAbstraction fs, File storeFile, IndexLayout<KEY,VALUE> layout,
                 IndexProvider.Monitor monitor, StoreIndexDescriptor descriptor ) throws IOException;
-    }
-
-    @RunWith( Parameterized.class )
-    public static class UniqueTest<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue> extends NativeIndexPopulatorTests.Unique<KEY,VALUE>
-    {
-        @Parameterized.Parameters( name = "{index} {0}" )
-        public static Collection<Object[]> data()
-        {
-            return allPopulators();
-        }
-
-        @Parameterized.Parameter()
-        public String name;
-
-        @Parameterized.Parameter( 1 )
-        public PopulatorFactory<KEY,VALUE> populatorFactory;
-
-        @Parameterized.Parameter( 2 )
-        public ValueType[] supportedTypes;
-
-        @Parameterized.Parameter( 3 )
-        public IndexLayoutFactory<KEY,VALUE> indexLayoutFactory;
-
-        private static final StoreIndexDescriptor uniqueDescriptor = TestIndexDescriptorFactory.uniqueForLabel( 42, 666 ).withId( 0 );
-
-        @Override
-        NativeIndexPopulator<KEY,VALUE> createPopulator() throws IOException
-        {
-            return populatorFactory.create( pageCache, fs, getIndexFile(), layout, monitor, indexDescriptor );
-        }
-
-        @Override
-        ValueCreatorUtil<KEY,VALUE> createValueCreatorUtil()
-        {
-            return new ValueCreatorUtil<>( uniqueDescriptor, supportedTypes, ValueCreatorUtil.FRACTION_DUPLICATE_UNIQUE );
-        }
-
-        @Override
-        IndexLayout<KEY,VALUE> createLayout()
-        {
-            return indexLayoutFactory.create();
-        }
-    }
-
-    @RunWith( Parameterized.class )
-    public static class NonUniqueTest<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue> extends NativeIndexPopulatorTests.NonUnique<KEY,VALUE>
-    {
-        @Parameterized.Parameters( name = "{index} {0}" )
-        public static Collection<Object[]> data()
-        {
-            return allPopulators();
-        }
-
-        @Parameterized.Parameter()
-        public String name;
-
-        @Parameterized.Parameter( 1 )
-        public PopulatorFactory<KEY,VALUE> populatorFactory;
-
-        @Parameterized.Parameter( 2 )
-        public ValueType[] supportedTypes;
-
-        @Parameterized.Parameter( 3 )
-        public IndexLayoutFactory<KEY,VALUE> indexLayoutFactory;
-
-        private static final StoreIndexDescriptor nonUniqueDescriptor = TestIndexDescriptorFactory.forLabel( 42, 666 ).withId( 0 );
-
-        @Override
-        NativeIndexPopulator<KEY,VALUE> createPopulator() throws IOException
-        {
-            return populatorFactory.create( pageCache, fs, getIndexFile(), layout, monitor, indexDescriptor );
-        }
-
-        @Override
-        ValueCreatorUtil<KEY,VALUE> createValueCreatorUtil()
-        {
-            return new ValueCreatorUtil<>( nonUniqueDescriptor, supportedTypes, ValueCreatorUtil.FRACTION_DUPLICATE_NON_UNIQUE );
-        }
-
-        @Override
-        IndexLayout<KEY,VALUE> createLayout()
-        {
-            return indexLayoutFactory.create();
-        }
     }
 }
