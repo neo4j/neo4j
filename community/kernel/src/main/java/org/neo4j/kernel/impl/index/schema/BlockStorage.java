@@ -304,7 +304,7 @@ class BlockStorage<KEY, VALUE> implements Closeable
 
     private BlockReader<KEY,VALUE> reader( File file ) throws IOException
     {
-        return new BlockReader<>( fs, file, layout, blockSize );
+        return new BlockReader<>( fs, file, layout, bufferFactory, blockSize );
     }
 
     public interface Monitor

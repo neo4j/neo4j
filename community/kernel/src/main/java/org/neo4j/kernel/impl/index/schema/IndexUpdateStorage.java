@@ -48,6 +48,8 @@ public class IndexUpdateStorage<KEY extends NativeIndexKey<KEY>,VALUE extends Na
     private final Layout<KEY,VALUE> layout;
     private final FileSystemAbstraction fs;
     private final File file;
+    private final ByteBufferFactory byteBufferFactory;
+    private final int blockSize;
     private final ByteBuffer buffer;
     private final ByteArrayPageCursor pageCursor;
     private final StoreChannel storeChannel;
@@ -55,12 +57,14 @@ public class IndexUpdateStorage<KEY extends NativeIndexKey<KEY>,VALUE extends Na
     private final KEY key2;
     private final VALUE value;
 
-    IndexUpdateStorage( Layout<KEY,VALUE> layout, FileSystemAbstraction fs, File file, ByteBuffer buffer ) throws IOException
+    IndexUpdateStorage( Layout<KEY,VALUE> layout, FileSystemAbstraction fs, File file, ByteBufferFactory byteBufferFactory, int blockSize ) throws IOException
     {
         this.layout = layout;
         this.fs = fs;
         this.file = file;
-        this.buffer = buffer;
+        this.byteBufferFactory = byteBufferFactory;
+        this.blockSize = blockSize;
+        this.buffer = byteBufferFactory.newBuffer( blockSize );
         this.pageCursor = new ByteArrayPageCursor( buffer );
         this.storeChannel = fs.create( file );
         this.key1 = layout.newKey();
@@ -112,7 +116,7 @@ public class IndexUpdateStorage<KEY extends NativeIndexKey<KEY>,VALUE extends Na
 
     public IndexUpdateCursor<KEY,VALUE> reader() throws IOException
     {
-        ReadAheadChannel<StoreChannel> channel = new ReadAheadChannel<>( fs.open( file, OpenMode.READ ) );
+        ReadAheadChannel<StoreChannel> channel = new ReadAheadChannel<>( fs.open( file, OpenMode.READ ), byteBufferFactory.newBuffer( blockSize ) );
         PageCursor pageCursor = new ReadableChannelPageCursor( channel );
         return new IndexUpdateCursor<>( pageCursor, layout );
     }

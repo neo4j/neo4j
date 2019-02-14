@@ -122,7 +122,7 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
         try
         {
             externalUpdates = new IndexUpdateStorage<>( layout, fileSystem, new File( storeFile.getParent(), storeFile.getName() + ".ext" ),
-                    BYTE_BUFFER_FACTORY.newBuffer( blockSize ) );
+                    BYTE_BUFFER_FACTORY, blockSize );
         }
         catch ( IOException e )
         {

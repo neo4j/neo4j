@@ -65,7 +65,7 @@ class IndexUpdateStorageTest
     {
         // given
         try ( IndexUpdateStorage<GenericKey,NativeIndexValue> storage = new IndexUpdateStorage<>( layout, directory.getFileSystem(), directory.file( "file" ),
-                ByteBuffer.allocate( 1_000 ) ) )
+                ByteBuffer::allocate, 1000 ) )
         {
             // when
             List<IndexEntryUpdate<SchemaDescriptorSupplier>> expected = generateSomeUpdates( 0 );
@@ -81,7 +81,7 @@ class IndexUpdateStorageTest
     {
         // given
         try ( IndexUpdateStorage<GenericKey,NativeIndexValue> storage = new IndexUpdateStorage<>( layout, directory.getFileSystem(), directory.file( "file" ),
-                ByteBuffer.allocate( 1_000 ) ) )
+                ByteBuffer::allocate, 1000 ) )
         {
             // when
             List<IndexEntryUpdate<SchemaDescriptorSupplier>> expected = generateSomeUpdates( 5 );
@@ -97,7 +97,7 @@ class IndexUpdateStorageTest
     {
         // given
         try ( IndexUpdateStorage<GenericKey,NativeIndexValue> storage = new IndexUpdateStorage<>( layout, directory.getFileSystem(), directory.file( "file" ),
-                ByteBuffer.allocate( 1_000 ) ) )
+                ByteBuffer::allocate, 1000 ) )
         {
             // when
             List<IndexEntryUpdate<SchemaDescriptorSupplier>> expected = generateSomeUpdates( 1_000 );
