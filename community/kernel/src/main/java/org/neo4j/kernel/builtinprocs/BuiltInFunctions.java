@@ -23,13 +23,15 @@ import java.util.UUID;
 
 import org.neo4j.procedure.Description;
 import org.neo4j.procedure.UserFunction;
+import org.neo4j.values.storable.TextValue;
+import org.neo4j.values.storable.Values;
 
 public class BuiltInFunctions
 {
     @Description( "Generates a random UUID." )
     @UserFunction( name = "randomUUID" )
-    public String randomUUID()
+    public TextValue randomUUID()
     {
-        return UUID.randomUUID().toString();
+        return Values.stringValue( UUID.randomUUID().toString() );
     }
 }
