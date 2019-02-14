@@ -19,9 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v4_0.common;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+
+import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -32,14 +31,8 @@ import org.neo4j.values.virtual.VirtualValues;
 
 import static java.lang.String.format;
 
-/**
- * Inspired by {@link org.neo4j.kernel.impl.api.PropertyValueComparisonTest}
- */
 public class CypherOrderabilityTest
 {
-    @Rule
-    public ExpectedException thrown = ExpectedException.none();
-
     public static Object[] values = new Object[]{
             // MAP
             new HashMap<Long,Long>(),
@@ -134,7 +127,7 @@ public class CypherOrderabilityTest
     };
 
     @Test
-    public void shouldOrderValuesCorrectly()
+    void shouldOrderValuesCorrectly()
     {
         for ( int i = 2; i < values.length; i++ )
         {
