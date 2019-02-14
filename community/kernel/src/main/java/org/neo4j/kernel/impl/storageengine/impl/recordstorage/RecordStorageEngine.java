@@ -377,14 +377,6 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     public void start() throws Throwable
     {
         neoStores.makeStoreOk();
-
-        tokenHolders.propertyKeyTokens().setInitialTokens(
-                neoStores.getPropertyKeyTokenStore().getTokens() );
-        tokenHolders.relationshipTypeTokens().setInitialTokens(
-                neoStores.getRelationshipTypeTokenStore().getTokens() );
-        tokenHolders.labelTokens().setInitialTokens(
-                neoStores.getLabelTokenStore().getTokens() );
-
         neoStores.startCountStore(); // TODO: move this to counts store lifecycle
         indexingService.start();
         labelScanStore.start();
@@ -515,6 +507,12 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             @Override
             public void init()
             {
+                tokenHolders.propertyKeyTokens().setInitialTokens(
+                        neoStores.getPropertyKeyTokenStore().getTokens() );
+                tokenHolders.relationshipTypeTokens().setInitialTokens(
+                        neoStores.getRelationshipTypeTokenStore().getTokens() );
+                tokenHolders.labelTokens().setInitialTokens(
+                        neoStores.getLabelTokenStore().getTokens() );
                 loadSchemaCache();
                 indexingService.init();
             }
