@@ -38,9 +38,9 @@ public class IndexUpdateCursor<KEY, VALUE> implements BlockEntryCursor<KEY,VALUE
 
     // Fields for the last entry
     private UpdateMode updateMode;
-    private KEY key1;
-    private KEY key2;
-    private VALUE value;
+    private final KEY key1;
+    private final KEY key2;
+    private final VALUE value;
 
     IndexUpdateCursor( PageCursor cursor, Layout<KEY,VALUE> layout )
     {

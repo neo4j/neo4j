@@ -59,7 +59,7 @@ class BlockStorage<KEY, VALUE> implements Closeable
     private final Monitor monitor;
     private final int blockSize;
     private final ByteBufferFactory bufferFactory;
-    private File blockFile;
+    private final File blockFile;
     private int numberOfBlocksInCurrentFile;
     private int currentBufferSize;
     private boolean doneAdding;

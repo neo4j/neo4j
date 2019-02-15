@@ -36,7 +36,7 @@ import org.neo4j.io.IOUtils;
 public class MergingBlockEntryReader<KEY,VALUE> implements BlockEntryCursor<KEY,VALUE>
 {
     private final PriorityQueue<BlockEntryCursor<KEY,VALUE>> sortedReaders;
-    private List<BlockEntryCursor<KEY,VALUE>> readersToClose = new ArrayList<>();
+    private final List<BlockEntryCursor<KEY,VALUE>> readersToClose = new ArrayList<>();
     private BlockEntryCursor<KEY,VALUE> lastReturned;
 
     MergingBlockEntryReader( Layout<KEY,VALUE> layout )

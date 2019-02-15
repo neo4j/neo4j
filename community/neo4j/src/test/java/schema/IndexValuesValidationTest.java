@@ -153,7 +153,7 @@ class IndexValuesValidationTest
             try ( Transaction ignored = database.beginTx() )
             {
                 String indexFailure = database.schema().getIndexFailure( indexDefinition );
-                assertThat( "", indexFailure, allOf(
+                assertThat( indexFailure, allOf(
                         containsString( "java.lang.IllegalArgumentException:" ),
                         containsString( "Please see index documentation for limitations." )
                 ) );

@@ -23,7 +23,7 @@ import java.util.Iterator;
 
 class ListBasedBlockEntryCursor<KEY,VALUE> implements BlockEntryCursor<KEY,VALUE>
 {
-    private Iterator<BlockEntry<KEY,VALUE>> entries;
+    private final Iterator<BlockEntry<KEY,VALUE>> entries;
     private BlockEntry<KEY,VALUE> next;
 
     ListBasedBlockEntryCursor( Iterable<BlockEntry<KEY,VALUE>> entries )

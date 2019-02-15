@@ -95,7 +95,7 @@ class BlockEntryTest
         }
     }
 
-    private void assertBlockEquals( BlockEntry<MutableLong,MutableLong> expected, BlockEntry<MutableLong,MutableLong> actual )
+    private static void assertBlockEquals( BlockEntry<MutableLong,MutableLong> expected, BlockEntry<MutableLong,MutableLong> actual )
     {
         assertEquals( 0, layout.compare( expected.key(), actual.key() ) );
         assertEquals( 0, layout.compare( expected.value(), actual.value() ) );

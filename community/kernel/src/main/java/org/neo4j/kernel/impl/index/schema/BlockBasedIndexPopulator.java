@@ -52,7 +52,6 @@ import org.neo4j.util.FeatureToggles;
 import org.neo4j.util.Preconditions;
 import org.neo4j.values.storable.Value;
 
-import static org.neo4j.helpers.collection.Iterables.asList;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexUpdater.initializeKeyFromUpdate;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexes.deleteIndex;
 
@@ -66,10 +65,10 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
     private final IndexDirectoryStructure directoryStructure;
     private final boolean archiveFailedIndex;
     private final int blockSize;
-    private ThreadLocal<BlockStorage<KEY,VALUE>> scanUpdates;
-    private List<BlockStorage<KEY,VALUE>> allScanUpdates = new ArrayList<>();
+    private final List<BlockStorage<KEY,VALUE>> allScanUpdates = new ArrayList<>();
+    private final ThreadLocal<BlockStorage<KEY,VALUE>> scanUpdates;
     private IndexUpdateStorage<KEY,VALUE> externalUpdates;
-    private boolean merged;
+    private volatile boolean merged;
 
     BlockBasedIndexPopulator( PageCache pageCache, FileSystemAbstraction fs, File file, IndexLayout<KEY,VALUE> layout, IndexProvider.Monitor monitor,
             StoreIndexDescriptor descriptor, IndexSpecificSpaceFillingCurveSettingsCache spatialSettings,
@@ -326,7 +325,7 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
     {
         try
         {
-            List<Closeable> toClose = new ArrayList<>( asList( allScanUpdates ) );
+            List<Closeable> toClose = new ArrayList<>( allScanUpdates );
             toClose.add( externalUpdates );
             IOUtils.closeAllUnchecked( toClose );
         }

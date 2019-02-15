@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.index.schema;
 
 import java.nio.ByteBuffer;
 
+@FunctionalInterface
 interface ByteBufferFactory
 {
     ByteBuffer newBuffer( int bufferSize );

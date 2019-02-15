@@ -43,10 +43,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class MergingBlockEntryReaderTest
 {
     @Inject
-    RandomRule rnd;
+    protected RandomRule rnd;
 
-    private static SimpleLongLayout layout = SimpleLongLayout.longLayout().build();
-    private static Comparator<BlockEntry<MutableLong,MutableLong>> blockEntryComparator = ( b1, b2 ) -> layout.compare( b1.key(), b2.key() );
+    private static final SimpleLongLayout layout = SimpleLongLayout.longLayout().build();
+    private static final Comparator<BlockEntry<MutableLong,MutableLong>> blockEntryComparator = ( b1, b2 ) -> layout.compare( b1.key(), b2.key() );
 
     @Test
     void shouldMergeSingleReader() throws IOException
@@ -136,7 +136,8 @@ class MergingBlockEntryReaderTest
         assertTrue( nonEmpty.closed );
     }
 
-    private void verifyMerged( List<BlockEntry<MutableLong,MutableLong>> expected, MergingBlockEntryReader<MutableLong,MutableLong> merger ) throws IOException
+    private static void verifyMerged( List<BlockEntry<MutableLong,MutableLong>> expected, MergingBlockEntryReader<MutableLong,MutableLong> merger )
+            throws IOException
     {
         for ( BlockEntry<MutableLong,MutableLong> expectedEntry : expected )
         {
@@ -147,7 +148,7 @@ class MergingBlockEntryReaderTest
         assertFalse( merger.next() );
     }
 
-    private List<BlockEntry<MutableLong,MutableLong>> sortAll( Iterable<List<BlockEntry<MutableLong,MutableLong>>> data )
+    private static List<BlockEntry<MutableLong,MutableLong>> sortAll( Iterable<List<BlockEntry<MutableLong,MutableLong>>> data )
     {
         List<BlockEntry<MutableLong,MutableLong>> result = new ArrayList<>();
         for ( List<BlockEntry<MutableLong,MutableLong>> list : data )
@@ -158,7 +159,7 @@ class MergingBlockEntryReaderTest
         return result;
     }
 
-    private CloseTrackingBlockEntryCursor newReader( List<BlockEntry<MutableLong,MutableLong>> expected )
+    private static CloseTrackingBlockEntryCursor newReader( List<BlockEntry<MutableLong,MutableLong>> expected )
     {
         return new CloseTrackingBlockEntryCursor( expected );
     }
@@ -176,7 +177,7 @@ class MergingBlockEntryReaderTest
         return entries;
     }
 
-    private class CloseTrackingBlockEntryCursor extends ListBasedBlockEntryCursor<MutableLong,MutableLong>
+    private static class CloseTrackingBlockEntryCursor extends ListBasedBlockEntryCursor<MutableLong,MutableLong>
     {
         private boolean closed;
 

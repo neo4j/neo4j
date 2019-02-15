@@ -25,6 +25,11 @@ import org.neo4j.kernel.impl.api.index.UpdateMode;
 
 public class IndexUpdateEntry
 {
+    private IndexUpdateEntry()
+    {
+        // Static utility class
+    }
+
     public static <KEY, VALUE> void read( PageCursor cursor, Layout<KEY,VALUE> layout, UpdateMode updateMode, KEY key1, KEY key2, VALUE value )
     {
         switch ( updateMode )

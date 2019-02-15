@@ -36,8 +36,8 @@ import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.readKeyValueSize;
  */
 class BlockEntry<KEY,VALUE>
 {
-    private KEY key;
-    private VALUE value;
+    private final KEY key;
+    private final VALUE value;
 
     BlockEntry( KEY key, VALUE value )
     {

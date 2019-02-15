@@ -48,9 +48,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @ExtendWith( {TestDirectoryExtension.class, RandomExtension.class} )
 class IndexUpdateStorageTest
 {
-    private static IndexSpecificSpaceFillingCurveSettingsCache spatialSettings =
+    private static final IndexSpecificSpaceFillingCurveSettingsCache spatialSettings =
             new IndexSpecificSpaceFillingCurveSettingsCache( new ConfiguredSpaceFillingCurveSettingsCache( Config.defaults() ), new HashMap<>() );
-    private static SchemaDescriptorSupplier descriptor = SchemaDescriptorFactory.forLabel( 1, 1 );
+    private static final SchemaDescriptorSupplier descriptor = SchemaDescriptorFactory.forLabel( 1, 1 );
 
     @Inject
     protected TestDirectory directory;
@@ -108,7 +108,7 @@ class IndexUpdateStorageTest
         }
     }
 
-    private void storeAll( IndexUpdateStorage<GenericKey,NativeIndexValue> storage, List<IndexEntryUpdate<SchemaDescriptorSupplier>> expected )
+    private static void storeAll( IndexUpdateStorage<GenericKey,NativeIndexValue> storage, List<IndexEntryUpdate<SchemaDescriptorSupplier>> expected )
             throws IOException
     {
         for ( IndexEntryUpdate<SchemaDescriptorSupplier> update : expected )
@@ -118,7 +118,8 @@ class IndexUpdateStorageTest
         storage.doneAdding();
     }
 
-    private void verify( List<IndexEntryUpdate<SchemaDescriptorSupplier>> expected, IndexUpdateStorage<GenericKey,NativeIndexValue> storage ) throws IOException
+    private static void verify( List<IndexEntryUpdate<SchemaDescriptorSupplier>> expected, IndexUpdateStorage<GenericKey,NativeIndexValue> storage )
+            throws IOException
     {
         try ( IndexUpdateCursor<GenericKey,NativeIndexValue> reader = storage.reader() )
         {
@@ -131,7 +132,7 @@ class IndexUpdateStorageTest
         }
     }
 
-    private IndexEntryUpdate<SchemaDescriptorSupplier> asUpdate( IndexUpdateCursor<GenericKey,NativeIndexValue> reader )
+    private static IndexEntryUpdate<SchemaDescriptorSupplier> asUpdate( IndexUpdateCursor<GenericKey,NativeIndexValue> reader )
     {
         switch ( reader.updateMode() )
         {
