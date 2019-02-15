@@ -29,7 +29,6 @@ import java.util.Objects;
 import java.util.function.Function;
 
 import org.neo4j.common.Validator;
-import org.neo4j.helpers.collection.Iterables;
 
 /**
  * Parses a String[] argument from a main-method. It expects values to be either
@@ -191,7 +190,8 @@ public class Args
         Map<String,String> result = new HashMap<>();
         for ( Map.Entry<String,List<Option<String>>> entry : map.entrySet() )
         {
-            Option<String> value = Iterables.firstOrNull( entry.getValue() );
+            final List<Option<String>> values = entry.getValue();
+            Option<String> value = values.isEmpty() ? null : values.get( 0 );
             result.put( entry.getKey(), value != null ? value.value() : null );
         }
         return result;

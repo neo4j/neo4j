@@ -31,18 +31,17 @@ import java.util.Map;
 
 import org.neo4j.common.Validator;
 
+import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.aMapWithSize;
+import static org.hamcrest.Matchers.hasEntry;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.impl.util.Converters.mandatory;
-import static org.neo4j.kernel.impl.util.Converters.optional;
-import static org.neo4j.kernel.impl.util.Converters.toInt;
 
 class ArgsTest
 {
@@ -133,7 +132,10 @@ class ArgsTest
         Validator<Integer> validator = mock( Validator.class );
 
         // WHEN
-        int value = args.interpretOption( "arg", mandatory(), toInt(), validator );
+        int value = args.interpretOption( "arg", key ->
+        {
+            throw new IllegalArgumentException( "Missing argument '" + key + "'" );
+        }, Integer::new, validator );
 
         // THEN
         assertEquals( expectedValue, value );
@@ -150,7 +152,10 @@ class ArgsTest
         Validator<Integer> validator = mock( Validator.class );
 
         // WHEN
-        int value = args.interpretOrphan( 0, mandatory(), toInt(), validator );
+        int value = args.interpretOrphan( 0, key ->
+        {
+            throw new IllegalArgumentException( "Missing argument '" + key + "'" );
+        }, Integer::new, validator );
 
         // THEN
         assertEquals( expectedValue, value );
@@ -173,7 +178,7 @@ class ArgsTest
 
         // WHEN
         assertThrows( IllegalArgumentException.class, () -> args.get( key ) );
-        Collection<Integer> numbers = args.interpretOptions( key, optional(), toInt() );
+        Collection<Integer> numbers = args.interpretOptions( key, k -> null, Integer::new );
 
         // THEN
         assertEquals( expectedValues, numbers );
@@ -207,7 +212,13 @@ class ArgsTest
         Map<String, String> map = args.asMap();
 
         // THEN
-        assertEquals( stringMap( "with-value", "value", "without-value", null ), map );
+
+        assertThat( map, allOf(
+                aMapWithSize( 2 ),
+                hasEntry( "with-value", "value" ),
+                hasEntry( "without-value", null )
+        ) );
+
     }
 
     @Test
@@ -218,7 +229,10 @@ class ArgsTest
 
         // WHEN
         Collection<Args.Option<String>> options = args.interpretOptionsWithMetadata( "my-option",
-                mandatory(), value -> value );
+                key ->
+                {
+                    throw new IllegalArgumentException( "Missing argument '" + key + "'" );
+                }, value -> value );
 
         // THEN
         assertEquals( 2, options.size() );
@@ -337,7 +351,7 @@ class ArgsTest
         Args args = Args.withFlags().parse();
 
         // When
-        Collection<String> interpreted = args.interpretOptions( "something", optional(),
+        Collection<String> interpreted = args.interpretOptions( "something", x -> null,
                 value -> value );
 
         // Then
