@@ -17,9 +17,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.helpers;
+package org.neo4j.cypher.internal;
 
-@Deprecated
 public class Assertion
 {
     private static boolean assertionEnabled;
@@ -29,7 +28,6 @@ public class Assertion
         assert assertionEnabled = true;
     }
 
-    @Deprecated
     public static boolean assertionsEnabled()
     {
         return assertionEnabled;
