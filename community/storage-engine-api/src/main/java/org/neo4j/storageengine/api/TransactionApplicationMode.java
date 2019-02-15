@@ -62,7 +62,7 @@ public enum TransactionApplicationMode
      */
     RECOVERY(
             true,  // id tracking not needed because id generators will be rebuilt after recovery anyway
-            false, // during recovery there's not really a cache to invalidate so don't bother
+            true,  // we need cache invalidation during forward recovery, because we need our token holders to be updated with token create commands
             true,  // extra care needs to be taken to ensure idempotency since this transaction may have been applied previously
             true,  // include all stores
             AFTER
