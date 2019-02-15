@@ -28,6 +28,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -173,9 +174,11 @@ class ValueCreatorUtil<KEY extends NativeIndexKey<KEY>, VALUE extends NativeInde
         return Stream.of( updates ).map( update -> update.values()[0] ).collect( Collectors.toSet() ).size();
     }
 
-    static int countUniqueValues( Object[] updates )
+    static int countUniqueValues( Value[] updates )
     {
-        return Stream.of( updates ).collect( Collectors.toSet() ).size();
+        Set<Value> set = new TreeSet<>( Values.COMPARATOR );
+        set.addAll( Arrays.asList( updates ) );
+        return set.size();
     }
 
     void sort( IndexEntryUpdate<IndexDescriptor>[] updates )
