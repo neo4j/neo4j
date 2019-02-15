@@ -547,9 +547,12 @@ public class MultipleIndexPopulator implements IndexPopulator
             {
                 if ( populationOngoing )
                 {
+                    // First of all remove this population from the list of ongoing populations so that it won't receive more updates.
+                    // This is good because closing the populator may wait for an opportunity to perform the close, among the incoming writes to it.
+                    removeFromOngoingPopulations( this );
+
                     populator.close( false );
                     resetIndexCountsForPopulation( this );
-                    removeFromOngoingPopulations( this );
                     populationOngoing = false;
                 }
             }
