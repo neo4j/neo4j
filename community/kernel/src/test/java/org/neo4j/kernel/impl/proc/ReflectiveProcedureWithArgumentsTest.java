@@ -138,7 +138,7 @@ public class ReflectiveProcedureWithArgumentsTest
     {
         ProcedureException exception = assertThrows( ProcedureException.class, () -> compile( ClassWithProcedureWithBadlyTypedDefault.class ) );
         assertThat( exception.getMessage(), equalTo( String.format( "Argument `a` at position 0 in `defaultValues` with%n" +
-                "type `long` cannot be converted to a Neo4j type: Default value `forty-two` could not be parsed as a Long" ) ) );
+                "type `long` cannot be converted to a Neo4j type: Default value `forty-two` could not be parsed as a INTEGER?" ) ) );
     }
 
     private org.neo4j.kernel.api.proc.Context prepareContext()

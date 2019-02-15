@@ -54,7 +54,21 @@ import org.neo4j.kernel.api.proc.Context;
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
 import org.neo4j.kernel.impl.util.DefaultValueMapper;
 import org.neo4j.values.AnyValue;
+import org.neo4j.values.storable.BooleanValue;
+import org.neo4j.values.storable.ByteArray;
+import org.neo4j.values.storable.DateTimeValue;
+import org.neo4j.values.storable.DateValue;
+import org.neo4j.values.storable.DurationValue;
+import org.neo4j.values.storable.FloatingPointValue;
+import org.neo4j.values.storable.IntegralValue;
+import org.neo4j.values.storable.LocalDateTimeValue;
+import org.neo4j.values.storable.LocalTimeValue;
+import org.neo4j.values.storable.NumberValue;
+import org.neo4j.values.storable.TextValue;
+import org.neo4j.values.storable.TimeValue;
 import org.neo4j.values.storable.Values;
+import org.neo4j.values.virtual.ListValue;
+import org.neo4j.values.virtual.MapValue;
 
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
@@ -311,6 +325,10 @@ public class ProcedureCompilationTest
             else if ( type.equals( boolean.class ) )
             {
                 assertEquals( TRUE, function.apply( ctx, new AnyValue[]{TRUE} ) );
+            }
+            else if ( type instanceof Class<?> && AnyValue.class.isAssignableFrom( (Class<?>) type ) )
+            {
+                assertEquals( NO_VALUE, function.apply( ctx, new AnyValue[]{null} ) );
             }
             else
             {
@@ -766,6 +784,81 @@ public class ProcedureCompilationTest
         return in;
     }
 
+    public LocalDateTimeValue testMethod( LocalDateTimeValue in )
+    {
+        return in;
+    }
+
+    public LocalTimeValue testMethod( LocalTimeValue in )
+    {
+        return in;
+    }
+
+    public TimeValue testMethod( TimeValue in )
+    {
+        return in;
+    }
+
+    public DateValue testMethod( DateValue in )
+    {
+        return in;
+    }
+
+    public DateTimeValue testMethod( DateTimeValue in )
+    {
+        return in;
+    }
+
+    public ByteArray testMethod( ByteArray in )
+    {
+        return in;
+    }
+
+    public AnyValue testMethod( AnyValue in )
+    {
+        return in;
+    }
+
+    public ListValue testMethod( ListValue in )
+    {
+        return in;
+    }
+
+    public MapValue testMethod( MapValue in )
+    {
+        return in;
+    }
+
+    public BooleanValue testMethod( BooleanValue in )
+    {
+        return in;
+    }
+
+    public NumberValue testMethod( NumberValue in )
+    {
+        return in;
+    }
+
+    public IntegralValue testMethod( IntegralValue in )
+    {
+        return in;
+    }
+
+    public FloatingPointValue testMethod( FloatingPointValue in )
+    {
+        return in;
+    }
+
+    public TextValue testMethod( TextValue in )
+    {
+        return in;
+    }
+
+    public DurationValue testMethod( DurationValue in )
+    {
+        return in;
+    }
+
     private Map<Type,Method> typeMaps()
     {
         HashMap<Type,Method> methodHashMap = new HashMap<>();
@@ -778,6 +871,7 @@ public class ProcedureCompilationTest
         methodHashMap.put( boolean.class, method( "testMethod", boolean.class ) );
         methodHashMap.put( Boolean.class, method( "testMethod", Boolean.class ) );
         methodHashMap.put( byte[].class, method( "testMethod", byte[].class ) );
+        methodHashMap.put( ByteArray.class, method( "testMethod", ByteArray.class ) );
         methodHashMap.put( List.class, method( "testMethod", List.class ) );
         methodHashMap.put( Map.class, method( "testMethod", Map.class ) );
         methodHashMap.put( Object.class, method( "testMethod", Object.class ) );
@@ -787,6 +881,20 @@ public class ProcedureCompilationTest
         methodHashMap.put( OffsetTime.class, method( "testMethod", OffsetTime.class ) );
         methodHashMap.put( LocalTime.class, method( "testMethod", LocalTime.class ) );
         methodHashMap.put( TemporalAmount.class, method( "testMethod", TemporalAmount.class ) );
+        methodHashMap.put( LocalTimeValue.class, method( "testMethod", LocalTimeValue.class ) );
+        methodHashMap.put( LocalDateTimeValue.class, method( "testMethod", LocalDateTimeValue.class ) );
+        methodHashMap.put( TimeValue.class, method( "testMethod", TimeValue.class ) );
+        methodHashMap.put( DateValue.class, method( "testMethod", DateValue.class ) );
+        methodHashMap.put( DateTimeValue.class, method( "testMethod", DateTimeValue.class ) );
+        methodHashMap.put( AnyValue.class, method( "testMethod", AnyValue.class ) );
+        methodHashMap.put( ListValue.class, method( "testMethod", ListValue.class ) );
+        methodHashMap.put( MapValue.class, method( "testMethod", MapValue.class ) );
+        methodHashMap.put( BooleanValue.class, method( "testMethod", BooleanValue.class ) );
+        methodHashMap.put( NumberValue.class, method( "testMethod", NumberValue.class ) );
+        methodHashMap.put( FloatingPointValue.class, method( "testMethod", FloatingPointValue.class ) );
+        methodHashMap.put( IntegralValue.class, method( "testMethod", IntegralValue.class ) );
+        methodHashMap.put( TextValue.class, method( "testMethod", TextValue.class ) );
+        methodHashMap.put( DurationValue.class, method( "testMethod", DurationValue.class ) );
 
         //safety check, make sure we are testing all types
         Set<Type> types = new TypeCheckers().allTypes();

@@ -242,6 +242,7 @@ public class TypeCheckers
     {
         List<String> types = Iterables.asList( javaToNeo.keySet() )
                 .stream()
+                .filter( t -> !isAnyValue(t) )
                 .map( Type::getTypeName )
                 .sorted( String::compareTo )
                 .collect( Collectors.toList() );
