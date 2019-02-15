@@ -19,35 +19,39 @@
  */
 package org.neo4j.kernel.builtinprocs;
 
-import java.util.List;
+import org.neo4j.values.AnyValue;
+import org.neo4j.values.storable.BooleanValue;
+import org.neo4j.values.storable.TextValue;
+import org.neo4j.values.virtual.ListValue;
 
+@SuppressWarnings( "WeakerAccess" )
 public class NodePropertySchemaInfoResult
 {
     /**
      * A combination of escaped label names interleaved by ":"
      */
-    public final String nodeType;
+    public final TextValue nodeType;
 
     /**
      * A list of label names
      */
-    public final List<String> nodeLabels;
+    public final ListValue nodeLabels;
     /**
      * A property name that occurs on the given label combination or null
      */
-    public final String propertyName;
+    public final AnyValue propertyName;
 
     /**
      * A List containing all types of the given property on the given label combination or null
      */
-    public final List<String> propertyTypes;
+    public final AnyValue propertyTypes;
 
     /**
      * Indicates whether the property is present on all similar nodes (= true) or not (= false)
      */
-    public final boolean mandatory;
+    public final BooleanValue mandatory;
 
-    public NodePropertySchemaInfoResult( String nodeType, List<String> nodeLabelsList, String propertyName, List<String> cypherTypes, boolean mandatory )
+    public NodePropertySchemaInfoResult( TextValue nodeType, ListValue nodeLabelsList, AnyValue propertyName, AnyValue cypherTypes, BooleanValue mandatory )
     {
         this.nodeType = nodeType;
         this.nodeLabels = nodeLabelsList;

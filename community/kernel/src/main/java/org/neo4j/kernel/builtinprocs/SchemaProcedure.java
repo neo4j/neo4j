@@ -50,6 +50,7 @@ import org.neo4j.kernel.impl.coreapi.schema.PropertyNameUtils;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.api.schema.ConstraintDescriptor;
 
+@SuppressWarnings( "WeakerAccess" )
 public class SchemaProcedure
 {
 

@@ -19,31 +19,35 @@
  */
 package org.neo4j.kernel.builtinprocs;
 
-import java.util.List;
+import org.neo4j.values.AnyValue;
+import org.neo4j.values.storable.BooleanValue;
+import org.neo4j.values.storable.TextValue;
 
+@SuppressWarnings( "WeakerAccess" )
 public class RelationshipPropertySchemaInfoResult
 {
     /**
      * A relationship type
      */
-    public final String relType;
+    public final TextValue relType;
 
     /**
      * A property name that occurs on the given relationship type or null
      */
-    public final String propertyName;
+    public final AnyValue propertyName;
 
     /**
      * A List containing all types of the given property on the given relationship type or null
      */
-    public final List<String> propertyTypes;
+    public final AnyValue propertyTypes;
 
     /**
      * Indicates whether the property is present on all similar relationships (= true) or not (= false)
      */
-    public final boolean mandatory;
+    public final BooleanValue mandatory;
 
-    public RelationshipPropertySchemaInfoResult( String relType, String propertyName, List<String> cypherTypes, boolean mandatory )
+    public RelationshipPropertySchemaInfoResult( TextValue relType, AnyValue propertyName, AnyValue cypherTypes,
+            BooleanValue mandatory )
     {
         this.relType = relType;
         this.propertyName = propertyName;

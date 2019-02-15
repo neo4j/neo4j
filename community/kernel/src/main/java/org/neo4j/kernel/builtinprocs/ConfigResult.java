@@ -20,21 +20,25 @@
 package org.neo4j.kernel.builtinprocs;
 
 import org.neo4j.configuration.ConfigValue;
+import org.neo4j.values.storable.BooleanValue;
+import org.neo4j.values.storable.TextValue;
 
 import static org.apache.commons.lang3.StringUtils.EMPTY;
+import static org.neo4j.values.storable.Values.booleanValue;
+import static org.neo4j.values.storable.Values.stringValue;
 
 public class ConfigResult
 {
-    public final String name;
-    public final String description;
-    public final String value;
-    public final boolean dynamic;
+    public final TextValue name;
+    public final TextValue description;
+    public final TextValue value;
+    public final BooleanValue dynamic;
 
     ConfigResult( ConfigValue configValue )
     {
-        this.name = configValue.name();
-        this.description = configValue.description().orElse( EMPTY );
-        this.value = configValue.valueAsString().orElse( EMPTY );
-        this.dynamic = configValue.dynamic();
+        this.name = stringValue( configValue.name() );
+        this.description = stringValue( configValue.description().orElse( EMPTY ) );
+        this.value = stringValue( configValue.valueAsString().orElse( EMPTY ) );
+        this.dynamic = booleanValue( configValue.dynamic() );
     }
 }
