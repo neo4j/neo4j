@@ -27,6 +27,7 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -65,9 +66,11 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
     private final IndexDirectoryStructure directoryStructure;
     private final boolean archiveFailedIndex;
     private final int blockSize;
-    private final List<BlockStorage<KEY,VALUE>> allScanUpdates = new ArrayList<>();
+    // written to in a synchronized method when creating new thread-local instances, read from when population completes
+    private final List<BlockStorage<KEY,VALUE>> allScanUpdates = new CopyOnWriteArrayList<>();
     private final ThreadLocal<BlockStorage<KEY,VALUE>> scanUpdates;
     private IndexUpdateStorage<KEY,VALUE> externalUpdates;
+    // written in a synchronized method when creating new thread-local instances, read when processing external updates
     private volatile boolean merged;
 
     BlockBasedIndexPopulator( PageCache pageCache, FileSystemAbstraction fs, File file, IndexLayout<KEY,VALUE> layout, IndexProvider.Monitor monitor,
