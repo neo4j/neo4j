@@ -46,6 +46,7 @@ import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexUpdater;
+import org.neo4j.kernel.impl.api.index.BatchingMultipleIndexPopulator;
 import org.neo4j.kernel.impl.api.index.PhaseTracker;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettingsCache;
 import org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettingsWriter;
@@ -59,7 +60,25 @@ import static org.neo4j.kernel.impl.index.schema.NativeIndexes.deleteIndex;
 
 public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,VALUE extends NativeIndexValue> extends NativeIndexPopulator<KEY,VALUE>
 {
+    /**
+     * Base size of blocks of entries. As entries gets written to a BlockStorage, they are buffered up to this size, then sorted and written out.
+     * As blocks gets merged into bigger blocks, this is still the size of the read buffer for each block no matter its size.
+     * Each thread has its own buffer when writing and each thread has {@link #MERGE_FACTOR} buffers when merging.
+     * The memory usage will be at its biggest during merge and a total memory usage sum can be calculated like so:
+     *
+     * {@link #BLOCK_SIZE} * numberOfThreads * {@link #MERGE_FACTOR}
+     *
+     * where typically {@link BatchingMultipleIndexPopulator} controls the number of threads. The setting
+     * `unsupported.dbms.multi_threaded_schema_index_population_enabled` controls whether or not the multi-threaded {@link BatchingMultipleIndexPopulator}
+     * is used or not, otherwise a single-threaded populator is used instead.
+     */
     private static final String BLOCK_SIZE = FeatureToggles.getString( BlockBasedIndexPopulator.class, "blockSize", "1M" );
+
+    /**
+     * When merging all blocks together the algorithm does multiple passes over the block storage, until the number of blocks reaches 1.
+     * Every pass does one or more merges and every merge merges up to {@link #MERGE_FACTOR} number of blocks into one block,
+     * i.e. the number of blocks shrinks by a factor {@link #MERGE_FACTOR} every pass, until one blocks is left.
+     */
     private static final int MERGE_FACTOR = FeatureToggles.getInteger( BlockBasedIndexPopulator.class, "mergeFactor", 8 );
 
     private static final ByteBufferFactory BYTE_BUFFER_FACTORY = ByteBuffer::allocate;
