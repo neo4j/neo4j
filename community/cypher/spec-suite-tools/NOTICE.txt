@@ -37,7 +37,6 @@ Apache Software License, Version 2.0
   json4s-ast
   json4s-core
   json4s-native
-  MongoDB Java Driver
   nscala-time
   openCypher TCK API
   openCypher TCK Features and Graphs

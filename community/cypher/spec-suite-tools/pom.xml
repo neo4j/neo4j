@@ -90,6 +90,12 @@
             <groupId>com.novus</groupId>
             <artifactId>salat-core_${scala.binary.version}</artifactId>
             <scope>compile</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.mongodb</groupId>
+                    <artifactId>mongo-java-driver</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.neo4j.community</groupId>
