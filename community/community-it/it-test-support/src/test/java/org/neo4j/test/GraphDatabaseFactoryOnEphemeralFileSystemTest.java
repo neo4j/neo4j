@@ -22,26 +22,43 @@ package org.neo4j.test;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.test.extension.EphemeralFileSystemExtension;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.TestDirectoryExtension;
+import org.neo4j.test.rule.TestDirectory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-class TestImpermanentGraphDatabase
+@ExtendWith( {EphemeralFileSystemExtension.class, TestDirectoryExtension.class} )
+public class GraphDatabaseFactoryOnEphemeralFileSystemTest
 {
+    @Inject
+    private EphemeralFileSystemAbstraction fs;
+    @Inject
+    private TestDirectory dir;
+
     private GraphDatabaseService db;
 
     @BeforeEach
     void createDb()
     {
-        db = new TestGraphDatabaseFactory().newImpermanentDatabase();
+        db = createGraphDatabaseFactory().setFileSystem( fs ).newEmbeddedDatabaseBuilder( dir.storeDir() ).newGraphDatabase();
+    }
+
+    protected TestGraphDatabaseFactory createGraphDatabaseFactory()
+    {
+        return new TestGraphDatabaseFactory();
     }
 
     @AfterEach
@@ -59,12 +76,24 @@ class TestImpermanentGraphDatabase
     }
 
     @Test
-    void dataShouldNotSurviveShutdown()
+    void dataShouldNotSurviveRestartOnSameFileSystem()
     {
         createNode();
-        db.shutdown();
+        db.shutdown(); // Closing the ephemeral file system deletes all of its data.
 
         createDb();
+
+        assertEquals( 0, nodeCount(), "Should not see anything." );
+    }
+
+    @Test
+    void dataCreatedAfterCrashShouldNotSurvive()
+    {
+        fs = fs.snapshot(); // Crash before we create any data.
+
+        createNode(); // Pretend to create data, but we are post-crash, so the database should never see this.
+        db.shutdown();
+        createDb(); // Start database up on the crash snapshot.
 
         assertEquals( 0, nodeCount(), "Should not see anything." );
     }
@@ -104,10 +133,10 @@ class TestImpermanentGraphDatabase
 
     private long nodeCount()
     {
-        Transaction transaction = db.beginTx();
-        long count = Iterables.count( db.getAllNodes() );
-        transaction.close();
-        return count;
+        try ( Transaction ignore = db.beginTx() )
+        {
+            return Iterables.count( db.getAllNodes() );
+        }
     }
 
     private void createNode()
