@@ -26,7 +26,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.neo4j.index.internal.gbptree.SimpleLongLayout;
 import org.neo4j.test.extension.Inject;
@@ -53,7 +55,7 @@ class MergingBlockEntryReaderTest
     {
         // given
         MergingBlockEntryReader<MutableLong,MutableLong> merger = new MergingBlockEntryReader<>( layout );
-        List<BlockEntry<MutableLong,MutableLong>> data = someBlockEntries();
+        List<BlockEntry<MutableLong,MutableLong>> data = someBlockEntries( new HashSet<>() );
 
         // when
         merger.addSource( newReader( data ) );
@@ -83,11 +85,12 @@ class MergingBlockEntryReaderTest
         // given
         MergingBlockEntryReader<MutableLong,MutableLong> merger = new MergingBlockEntryReader<>( layout );
         List<List<BlockEntry<MutableLong,MutableLong>>> datas = new ArrayList<>();
+        Set<MutableLong> uniqueKeys = new HashSet<>();
         int nbrOfReaders = rnd.nextInt( 10 ) + 1;
         for ( int i = 0; i < nbrOfReaders; i++ )
         {
             // when
-            List<BlockEntry<MutableLong,MutableLong>> data = someBlockEntries();
+            List<BlockEntry<MutableLong,MutableLong>> data = someBlockEntries( uniqueKeys );
             datas.add( data );
             merger.addSource( newReader( data ) );
         }
@@ -103,7 +106,7 @@ class MergingBlockEntryReaderTest
         // given
         MergingBlockEntryReader<MutableLong,MutableLong> merger = new MergingBlockEntryReader<>( layout );
         CloseTrackingBlockEntryCursor empty = newReader( emptyList() );
-        CloseTrackingBlockEntryCursor nonEmpty = newReader( someBlockEntries() );
+        CloseTrackingBlockEntryCursor nonEmpty = newReader( someBlockEntries( new HashSet<>() ) );
         merger.addSource( empty );
         merger.addSource( nonEmpty );
 
@@ -121,7 +124,7 @@ class MergingBlockEntryReaderTest
         // given
         MergingBlockEntryReader<MutableLong,MutableLong> merger = new MergingBlockEntryReader<>( layout );
         CloseTrackingBlockEntryCursor empty = newReader( emptyList() );
-        CloseTrackingBlockEntryCursor nonEmpty = newReader( someBlockEntries() );
+        CloseTrackingBlockEntryCursor nonEmpty = newReader( someBlockEntries( new HashSet<>() ) );
         merger.addSource( empty );
         merger.addSource( nonEmpty );
 
@@ -164,12 +167,17 @@ class MergingBlockEntryReaderTest
         return new CloseTrackingBlockEntryCursor( expected );
     }
 
-    private List<BlockEntry<MutableLong,MutableLong>> someBlockEntries()
+    private List<BlockEntry<MutableLong,MutableLong>> someBlockEntries( Set<MutableLong> uniqueKeys )
     {
         List<BlockEntry<MutableLong,MutableLong>> entries = new ArrayList<>();
         for ( int i = 0; i < rnd.nextInt( 10 ); i++ )
         {
-            MutableLong key = layout.key( rnd.nextLong( 10_000 ) );
+            MutableLong key;
+            do
+            {
+                key = layout.key( rnd.nextLong( 10_000 ) );
+            }
+            while ( !uniqueKeys.add( key ) );
             MutableLong value = layout.value( rnd.nextLong( 10_000 ) );
             entries.add( new BlockEntry<>( key, value ) );
         }
