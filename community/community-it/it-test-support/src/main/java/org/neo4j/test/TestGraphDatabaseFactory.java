@@ -281,28 +281,34 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
         @Override
         protected GlobalModule createGlobalPlatform( File storeDir, Config config, ExternalDependencies dependencies )
         {
-            File absoluteStoreDir = storeDir.getAbsoluteFile();
-            File databasesRoot = absoluteStoreDir.getParentFile();
+            File databasesRoot = configureAndGetDatabaseRoot( storeDir, config );
+
             if ( !config.isConfigured( GraphDatabaseSettings.shutdown_transaction_end_timeout ) )
             {
                 config.augment( GraphDatabaseSettings.shutdown_transaction_end_timeout, "0s" );
             }
-            config.augment( GraphDatabaseSettings.ephemeral, Settings.FALSE );
-            config.augment( GraphDatabaseSettings.active_database, absoluteStoreDir.getName() );
-            config.augment( GraphDatabaseSettings.databases_root_path, databasesRoot.getAbsolutePath() );
-            if ( !config.isConfigured( GraphDatabaseSettings.transaction_logs_root_path ) )
-            {
-                config.augment( GraphDatabaseSettings.transaction_logs_root_path, databasesRoot.getAbsolutePath() );
-            }
+            config.augment( GraphDatabaseSettings.ephemeral, impermanent ? Settings.TRUE : Settings.FALSE );
             if ( impermanent )
             {
-                config.augment( ephemeral, TRUE );
                 return new ImpermanentTestDatabaseGlobalModule( databasesRoot, config, dependencies, this.databaseInfo );
             }
             else
             {
                 return new TestDatabaseGlobalModule( databasesRoot, config, dependencies, this.databaseInfo );
             }
+        }
+
+        protected File configureAndGetDatabaseRoot( File storeDir, Config config )
+        {
+            File absoluteStoreDir = storeDir.getAbsoluteFile();
+            File databasesRoot = absoluteStoreDir.getParentFile();
+            config.augment( GraphDatabaseSettings.active_database, absoluteStoreDir.getName() );
+            config.augment( GraphDatabaseSettings.databases_root_path, databasesRoot.getAbsolutePath() );
+            if ( !config.isConfigured( GraphDatabaseSettings.transaction_logs_root_path ) )
+            {
+                config.augment( GraphDatabaseSettings.transaction_logs_root_path, databasesRoot.getAbsolutePath() );
+            }
+            return databasesRoot;
         }
 
         class TestDatabaseGlobalModule extends GlobalModule
