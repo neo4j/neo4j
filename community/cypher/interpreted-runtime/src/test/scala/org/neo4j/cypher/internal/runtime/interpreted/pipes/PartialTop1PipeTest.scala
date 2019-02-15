@@ -26,63 +26,10 @@ import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.ValueComparisonHelper.beEquivalentTo
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 
-class PartialTopPipe1Test extends CypherFunSuite {
+class PartialTop1PipeTest extends CypherFunSuite {
 
   private val compareX: Comparator[ExecutionContext] = ExecutionContextOrdering.asComparator(List(Ascending("x")))
   private val compareY: Comparator[ExecutionContext] = ExecutionContextOrdering.asComparator(List(Ascending("y")))
-  private val compareYDesc: Comparator[ExecutionContext] = ExecutionContextOrdering.asComparator(List(Descending("y")))
-
-  test("empty top should be empty") {
-    val source = new FakePipe(List())
-    val sortPipe = PartialTop1Pipe(source, compareX, compareY)()
-
-    sortPipe.createResults(QueryStateHelper.emptyWithValueSerialization) should be(empty)
-  }
-
-  test("simple sorting works as expected") {
-    val list = List(
-      Map("x" -> "A", "y" -> 2),
-      Map("x" -> "A", "y" -> 1),
-      Map("x" -> "B", "y" -> 0)
-    )
-    val source = new FakePipe(list)
-    val sortPipe = PartialTop1Pipe(source, compareX, compareY)()
-
-    sortPipe.createResults(QueryStateHelper.emptyWithValueSerialization).toList should beEquivalentTo(List(Map("x" -> "A", "y" -> 1)))
-  }
-
-  test("two ties for the first place are not all returned") {
-    val input = List(
-      Map("x" -> 1, "y" -> 5),
-      Map("x" -> 1, "y" -> 5),
-      Map("x" -> 1, "y" -> 2),
-      Map("x" -> 1, "y" -> 2),
-      Map("x" -> 2, "y" -> 4),
-      Map("x" -> 2, "y" -> 3),
-      Map("x" -> 2, "y" -> 0)
-    )
-
-    val source = new FakePipe(input)
-    val sortPipe = PartialTop1Pipe(source, compareX, compareY)()
-
-    sortPipe.createResults(QueryStateHelper.emptyWithValueSerialization).toList should beEquivalentTo(List(
-      Map("x" -> 1, "y" -> 2)))
-  }
-
-  test("if only null is present, it should be returned") {
-    val input = List(
-      Map[String,Any]("x" -> null, "y" -> null),
-      Map[String,Any]("x" -> null, "y" -> null),
-      Map[String,Any]("x" -> null, "y" -> 2),
-      Map[String,Any]("x" -> null, "y" -> 2)
-    )
-
-    val source = new FakePipe(input)
-    val sortPipe = PartialTop1Pipe(source, compareX, compareYDesc)()
-
-    sortPipe.createResults(QueryStateHelper.emptyWithValueSerialization).toList should beEquivalentTo(List(
-      Map("x" -> null, "y" -> null)))
-  }
 
   test("partial top 1 should be lazy") {
     val input = List(

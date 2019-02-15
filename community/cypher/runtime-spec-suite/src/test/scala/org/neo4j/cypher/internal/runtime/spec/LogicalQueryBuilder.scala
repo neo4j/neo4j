@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.runtime.spec
 import org.neo4j.cypher.internal.LogicalQuery
 import org.neo4j.cypher.internal.ir.v4_0.SimplePatternLength
 import org.neo4j.cypher.internal.planner.v4_0.spi.PlanningAttributes.Cardinalities
+import org.neo4j.cypher.internal.v4_0.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.v4_0.expressions.{Expression, LabelName, Variable}
 import org.neo4j.cypher.internal.v4_0.logical.plans._
@@ -43,8 +44,8 @@ trait TokenResolver {
 /**
   * Test help utility for hand-writing logical queries.
   */
-class LogicalQueryBuilder(tokenResolver: TokenResolver)
-{
+class LogicalQueryBuilder(tokenResolver: TokenResolver) extends AstConstructionTestSupport {
+
   private sealed trait OperatorBuilder
   private case class LeafOperator(plan: LogicalPlan) extends OperatorBuilder
   private case class UnaryOperator(planConstructor: LogicalPlan => LogicalPlan) extends OperatorBuilder
@@ -118,6 +119,36 @@ class LogicalQueryBuilder(tokenResolver: TokenResolver)
     this
   }
 
+  def partialSort(alreadySortedPrefix: Seq[ColumnOrder], stillToSortSuffix: Seq[ColumnOrder]): LogicalQueryBuilder = {
+    appendAtCurrentIndent(UnaryOperator(lp => PartialSort(lp, alreadySortedPrefix, stillToSortSuffix)))
+    this
+  }
+
+  def sort(sortItems: Seq[ColumnOrder]): LogicalQueryBuilder = {
+    appendAtCurrentIndent(UnaryOperator(lp => Sort(lp, sortItems)))
+    this
+  }
+
+  def top(sortItems: Seq[ColumnOrder], limit: Long): LogicalQueryBuilder = {
+    appendAtCurrentIndent(UnaryOperator(lp => Top(lp, sortItems, literalInt(limit))))
+    this
+  }
+
+  def top(sortItems: Seq[ColumnOrder], limitVariable: String): LogicalQueryBuilder = {
+    appendAtCurrentIndent(UnaryOperator(lp => Top(lp, sortItems, varFor(limitVariable))))
+    this
+  }
+
+  def partialTop(alreadySortedPrefix: Seq[ColumnOrder], stillToSortSuffix: Seq[ColumnOrder], limit: Long): LogicalQueryBuilder = {
+    appendAtCurrentIndent(UnaryOperator(lp => PartialTop(lp, alreadySortedPrefix, stillToSortSuffix, literalInt(limit))))
+    this
+  }
+
+  def partialTop(alreadySortedPrefix: Seq[ColumnOrder], stillToSortSuffix: Seq[ColumnOrder], limitVariable: String): LogicalQueryBuilder = {
+    appendAtCurrentIndent(UnaryOperator(lp => PartialTop(lp, alreadySortedPrefix, stillToSortSuffix, varFor(limitVariable))))
+    this
+  }
+
   def eager(): LogicalQueryBuilder = {
     appendAtCurrentIndent(UnaryOperator(lp => Eager(lp)))
     this
@@ -130,12 +161,12 @@ class LogicalQueryBuilder(tokenResolver: TokenResolver)
   }
 
   def detachDeleteNode(node: String): LogicalQueryBuilder = {
-    appendAtCurrentIndent(UnaryOperator(lp => DetachDeleteNode(lp, Variable(node)(InputPosition.NONE))))
+    appendAtCurrentIndent(UnaryOperator(lp => DetachDeleteNode(lp, varFor(node))))
     this
   }
 
   def deleteRel(rel: String): LogicalQueryBuilder = {
-    appendAtCurrentIndent(UnaryOperator(lp => DeleteRelationship(lp, Variable(rel)(InputPosition.NONE))))
+    appendAtCurrentIndent(UnaryOperator(lp => DeleteRelationship(lp, varFor(rel))))
     this
   }
 
@@ -158,13 +189,13 @@ class LogicalQueryBuilder(tokenResolver: TokenResolver)
   }
 
   def allNodeScan(node: String, args: String*): LogicalQueryBuilder = {
-    semanticTable = semanticTable.addNode(Variable(node)(InputPosition.NONE))
+    semanticTable = semanticTable.addNode(varFor(node))
     appendAtCurrentIndent(LeafOperator(AllNodesScan(node, args.toSet)))
   }
 
   def nodeByLabelScan(node: String, label: String, args: String*): LogicalQueryBuilder = {
-    semanticTable = semanticTable.addNode(Variable(node)(InputPosition.NONE))
-    appendAtCurrentIndent(LeafOperator(NodeByLabelScan(node, LabelName(label)(InputPosition.NONE), args.toSet)))
+    semanticTable = semanticTable.addNode(varFor(node))
+    appendAtCurrentIndent(LeafOperator(NodeByLabelScan(node, lblName(label), args.toSet)))
   }
 
   def nodeIndexOperator(indexSeekString: String,

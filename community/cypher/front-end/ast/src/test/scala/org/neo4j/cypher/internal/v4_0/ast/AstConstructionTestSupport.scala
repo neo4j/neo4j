@@ -57,8 +57,8 @@ trait AstConstructionTestSupport extends CypherTestSupport {
   def literalString(stringValue: String): StringLiteral =
     StringLiteral(stringValue)(pos)
 
-  def literalInt(intValue: Int): SignedDecimalIntegerLiteral =
-    SignedDecimalIntegerLiteral(intValue.toString)(pos)
+  def literalInt(value: Long): SignedDecimalIntegerLiteral =
+    SignedDecimalIntegerLiteral(value.toString)(pos)
 
   def literalUnsignedInt(intValue: Int): UnsignedDecimalIntegerLiteral =
     UnsignedDecimalIntegerLiteral(intValue.toString)(pos)
@@ -69,8 +69,8 @@ trait AstConstructionTestSupport extends CypherTestSupport {
   def listOf(expressions: Expression*): ListLiteral =
     ListLiteral(expressions)(pos)
 
-  def listOfInt(intValues: Int*): ListLiteral =
-    ListLiteral(intValues.toSeq.map(literalInt))(pos)
+  def listOfInt(values: Long*): ListLiteral =
+    ListLiteral(values.toSeq.map(literalInt))(pos)
 
   def listOfString(stringValues: String*): ListLiteral =
     ListLiteral(stringValues.toSeq.map(literalString))(pos)

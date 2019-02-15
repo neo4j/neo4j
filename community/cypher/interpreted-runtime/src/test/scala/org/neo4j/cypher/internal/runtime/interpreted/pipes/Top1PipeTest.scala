@@ -26,7 +26,7 @@ import org.neo4j.kernel.impl.util.ValueUtils
 
 import scala.util.Random
 
-class TopPipe1Test extends CypherFunSuite {
+class Top1PipeTest extends CypherFunSuite {
 
   test("returning top 1 from 5 possible should return lowest") {
     val input = createFakePipeWith(5)
