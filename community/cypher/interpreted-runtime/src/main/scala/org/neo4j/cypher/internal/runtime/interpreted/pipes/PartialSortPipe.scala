@@ -21,88 +21,39 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.runtime.ExecutionContext
 import org.neo4j.cypher.internal.v4_0.util.attribution.Id
+import scala.collection.JavaConverters._
 
 case class PartialSortPipe(source: Pipe,
                            alreadySortedPrefix: Seq[ColumnOrder],
                            stillToSortSuffix: Seq[ColumnOrder])
                           (val id: Id = Id.INVALID_ID)
-  extends PipeWithSource(source) {
+  extends OrderedInputPipe(source) {
+
   assert(alreadySortedPrefix.nonEmpty)
   assert(stillToSortSuffix.nonEmpty)
 
   private val prefixComparator = ExecutionContextOrdering.asComparator(alreadySortedPrefix)
   private val suffixComparator = ExecutionContextOrdering.asComparator(stillToSortSuffix)
 
-  protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] =
-    new Iterator[ExecutionContext] {
-      var state: PartialOrderState = PartialOrderState(new java.util.ArrayList[ExecutionContext](), 0, null)
+  class PartialSortReceiver extends OrderedChunkReceiver {
+    private val buffer = new java.util.ArrayList[ExecutionContext]()
 
-      override def hasNext: Boolean = {
-        (state.buffer.isEmpty && input.hasNext) ||
-          state.nextIndexToRead < state.buffer.size() ||
-          state.firstRowOfNextChunk != null
+    override def clear(): Unit = buffer.clear()
+
+    override def isSameChunk(first: ExecutionContext, current: ExecutionContext): Boolean = prefixComparator.compare(first, current) == 0
+
+    override def processRow(row: ExecutionContext): Unit = buffer.add(row)
+
+    override def result(): Iterator[ExecutionContext] = {
+      if (buffer.size() > 1) {
+        // Sort this chunk
+        buffer.sort(suffixComparator)
       }
-
-      override def next(): ExecutionContext = {
-        if (state.firstRowOfNextChunk == null && state.buffer.isEmpty) {
-          // This is the very first call to next
-          fillBufferAndReturnFirstRow(None)
-        } else if (state.nextIndexToRead < state.buffer.size) {
-          // We have a buffered row we can read
-          val indexToRead = state.nextIndexToRead
-          state.nextIndexToRead += 1
-          state.buffer.get(indexToRead)
-        } else {
-          // We have to read the next chunk into the buffer
-          fillBufferAndReturnFirstRow(Some(state.firstRowOfNextChunk))
-        }
-      }
-
-      private def fillBufferAndReturnFirstRow(maybeFirstRow: Option[ExecutionContext]): ExecutionContext = {
-        val buffer = state.buffer
-        if (!buffer.isEmpty) {
-          buffer.clear()
-        }
-        val first = maybeFirstRow.getOrElse(input.next())
-        var current = first
-
-        // Fill up buffer with all elements that are equal on the already sorted columns
-        while (current != null && prefixComparator.compare(first, current) == 0) {
-          buffer.add(current)
-          if (input.hasNext) {
-            current = input.next()
-          } else {
-            current = null
-          }
-        }
-
-        if (buffer.size() > 1) {
-          // Sort this chunk
-          buffer.sort(suffixComparator)
-        }
-
-        // Update state
-        state.nextIndexToRead = 1
-        state.firstRowOfNextChunk = current
-
-        // Return first row
-        buffer.get(0)
-      }
+      buffer.iterator().asScala
     }
 
-  /**
-    * This state holds all information needed between two calls to `next()`.
-    * The buffer is reused and holds all rows of one chunk, i.e. where
-    * the values of the already sorted columns are equal. We save the index
-    * from which we have to read from the buffer on the next `next()` call.
-    * And finally we will have read already the first row of the next chunk,
-    * if there is a next chunk, and need to save it for later.
-    *
-    * @param buffer              the buffer
-    * @param nextIndexToRead     the next index to read from the buffer
-    * @param firstRowOfNextChunk the first row from the next chunk
-    */
-  case class PartialOrderState(buffer: java.util.ArrayList[ExecutionContext],
-                               var nextIndexToRead: Int,
-                               var firstRowOfNextChunk: ExecutionContext)
+    override def processNextChunk: Boolean = true
+  }
+
+  override def getReceiver(state: QueryState): OrderedChunkReceiver = new PartialSortReceiver()
 }

@@ -33,9 +33,59 @@ case class PartialTopNPipe(source: Pipe,
                            countExpression: Expression,
                            prefixComparator: Comparator[ExecutionContext],
                            suffixComparator: Comparator[ExecutionContext])
-                          (val id: Id = Id.INVALID_ID) extends PipeWithSource(source) {
+                          (val id: Id = Id.INVALID_ID)
+  extends OrderedInputPipe(source) {
 
   countExpression.registerOwningPipe(this)
+
+  override def getReceiver(state: QueryState): OrderedChunkReceiver = throw new IllegalStateException()
+
+  class TopNReceiver(var remainingLimit: Long) extends OrderedChunkReceiver {
+    private val buffer = new java.util.ArrayList[ExecutionContext]()
+    private var topTable: DefaultComparatorTopTable[ExecutionContext] = _
+
+    override def clear(): Unit = buffer.clear()
+
+    override def isSameChunk(first: ExecutionContext, current: ExecutionContext): Boolean = prefixComparator.compare(first, current) == 0
+
+    override def processRow(row: ExecutionContext): Unit = {
+      // add to either Buffer or TopTable
+      if (remainingLimit > 0) {
+        remainingLimit -= 1
+        buffer.add(row)
+      } else {
+        if (topTable == null) {
+          // At this point we switch from a buffer for the whole chunk to a TopTable
+          topTable = new DefaultComparatorTopTable[ExecutionContext](suffixComparator, buffer.size())
+          // Transfer everything buffered so far into the TopTable
+          var i = 0
+          while (i < buffer.size()) {
+            topTable.add(buffer.get(i))
+            i += 1
+          }
+          // Clean up the buffer
+          buffer.clear()
+        }
+        // Add the current row to the TopTable
+        topTable.add(row)
+      }
+    }
+
+    override def result(): Iterator[ExecutionContext] = {
+      if (topTable == null) {
+        if (buffer.size() > 1) {
+          // Sort the buffered chunk
+          buffer.sort(suffixComparator)
+        }
+        buffer.iterator().asScala
+      } else {
+        topTable.sort()
+        topTable.iterator().asScala
+      }
+    }
+
+    override def processNextChunk: Boolean = remainingLimit > 0
+  }
 
   protected override def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
     if (input.isEmpty) {
@@ -51,136 +101,11 @@ case class PartialTopNPipe(source: Pipe,
 
         // We have to re-attach the already read first row to the iterator
         val restoredInput = Iterator.single(first) ++ input
-
-        new Iterator[ExecutionContext] {
-          var state: PartialTopState = PartialTopBufferState(new java.util.ArrayList[ExecutionContext](), 0, null, longCount)
-
-          override def hasNext: Boolean = {
-            state match {
-              case PartialTopBufferState(buffer, nextIndexToRead, firstRowOfNextChunk, remainingLimit) =>
-                (buffer.isEmpty && restoredInput.hasNext) ||
-                  nextIndexToRead < buffer.size() ||
-                  (firstRowOfNextChunk != null && remainingLimit > 0)
-              case PartialTopTableState(tableIterator) =>
-                tableIterator.hasNext
-            }
-          }
-
-          override def next(): ExecutionContext = {
-            state match {
-              case state@PartialTopBufferState(buffer, nextIndexToRead, firstRowOfNextChunk, _) =>
-                if (firstRowOfNextChunk == null && buffer.isEmpty) {
-                  // This is the very first call to next
-                  fillBufferAndReturnFirstRow(state)
-                } else if (nextIndexToRead < buffer.size) {
-                  // We have a buffered row we can read
-                  val indexToRead = nextIndexToRead
-                  state.nextIndexToRead += 1
-                  buffer.get(indexToRead)
-                } else {
-                  // We have to read the next chunk into the buffer
-                  fillBufferAndReturnFirstRow(state)
-                }
-              case PartialTopTableState(tableIterator) =>
-                tableIterator.next()
-            }
-
-          }
-
-          private def fillBufferAndReturnFirstRow(bufferState: PartialTopBufferState): ExecutionContext = {
-            val buffer = bufferState.buffer
-            var topTable: DefaultComparatorTopTable[ExecutionContext] = null
-            if (!buffer.isEmpty) {
-              buffer.clear()
-            }
-            val first = if (bufferState.firstRowOfNextChunk != null) bufferState.firstRowOfNextChunk else restoredInput.next()
-            var current = first
-
-            // Fill up buffer/TopTable with all elements that are equal on the already sorted columns
-            while (current != null && prefixComparator.compare(first, current) == 0) {
-
-              // add to either Buffer or TopTable
-              if (bufferState.remainingLimit > 0) {
-                bufferState.remainingLimit -= 1
-                buffer.add(current)
-              } else {
-                if (topTable == null) {
-                  // At this point we switch from a buffer for the whole chunk to a TopTable
-                  topTable = new DefaultComparatorTopTable[ExecutionContext](suffixComparator, buffer.size())
-                  // Transfer everything buffered so far into the TopTable
-                  var i = 0
-                  while (i < buffer.size()) {
-                    topTable.add(buffer.get(i))
-                    i += 1
-                  }
-                  // Clean up the buffer
-                  buffer.clear()
-                }
-                // Add the current row to the TopTable
-                topTable.add(current)
-              }
-
-              if (restoredInput.hasNext) {
-                current = restoredInput.next()
-              } else {
-                current = null
-              }
-            }
-
-            if (topTable == null) {
-              if (buffer.size() > 1) {
-                // Sort the buffered chunk
-                buffer.sort(suffixComparator)
-              }
-
-              // Update state
-              bufferState.nextIndexToRead = 1
-              bufferState.firstRowOfNextChunk = current
-
-              // Return first row
-              buffer.get(0)
-            } else {
-              topTable.sort()
-              val iterator = topTable.iterator().asScala
-              // Update the state
-              state = PartialTopTableState(iterator)
-              iterator.next()
-            }
-
-          }
-        }
+        val receiver = new TopNReceiver(longCount)
+        internalCreateResultsWithReceiver(restoredInput, state, receiver)
       }
     }
   }
-
-  trait PartialTopState
-
-  /**
-    * We are currently reading incoming rows into a buffer.
-    * The buffer is reused and holds all rows of one chunk, i.e. where
-    * the values of the already sorted columns are equal. We save the index
-    * from which we have to read from the buffer on the next `next()` call.
-    * And finally we will have read already the first row of the next chunk,
-    * if there is a next chunk, and need to save it for later.
-    *
-    * @param buffer              the buffer
-    * @param nextIndexToRead     the next index to read from the buffer
-    * @param firstRowOfNextChunk the first row from the next chunk
-    * @param remainingLimit      how many rows are left after this chunk until reaching the limit
-    */
-  case class PartialTopBufferState(buffer: java.util.ArrayList[ExecutionContext],
-                                   var nextIndexToRead: Int,
-                                   var firstRowOfNextChunk: ExecutionContext,
-                                   var remainingLimit: Long) extends PartialTopState
-
-  /**
-    * We have reached the case that the ramining limit is smaller than the current chunk size.
-    * Therefore, we read everything into a TopTable of the right size and stream from the
-    * resulting iterator.
-    *
-    * @param tableIterator the iterator of the TopTable
-    */
-  case class PartialTopTableState(tableIterator: Iterator[ExecutionContext]) extends PartialTopState
 }
 
 /*
