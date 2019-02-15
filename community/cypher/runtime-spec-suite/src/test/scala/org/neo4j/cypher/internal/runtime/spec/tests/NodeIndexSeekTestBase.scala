@@ -20,9 +20,7 @@
 package org.neo4j.cypher.internal.runtime.spec.tests
 
 import org.neo4j.cypher.internal.runtime.spec._
-import org.neo4j.cypher.internal.v4_0.expressions.{ListLiteral, Null, Variable}
 import org.neo4j.cypher.internal.v4_0.logical.plans.{GetValue, IndexOrderAscending, IndexOrderDescending, ManyQueryExpression}
-import org.neo4j.cypher.internal.v4_0.util.InputPosition
 import org.neo4j.cypher.internal.{CypherRuntime, RuntimeContext}
 
 // Supported by all runtimes
@@ -77,7 +75,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
   test("should exact (multiple, but empty) seek nodes of an index with a property") {
     // given
     nodeGraph(5, "Milk")
-    val nodes = nodePropertyGraph(sizeHint, {
+    nodePropertyGraph(sizeHint, {
       case i if i % 10 == 0 => Map("prop" -> i)
     },"Honey")
     index("Honey", "prop")
@@ -85,7 +83,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .nodeIndexOperator("x:Honey(prop)", customQueryExpression = Some(ManyQueryExpression(ListLiteral(Seq.empty)(InputPosition.NONE))))
+      .nodeIndexOperator("x:Honey(prop)", customQueryExpression = Some(ManyQueryExpression(listOf())))
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -105,7 +103,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .nodeIndexOperator("x:Honey(prop = 20 OR ???)", paramExpr = Some(Null()(InputPosition.NONE)))
+      .nodeIndexOperator("x:Honey(prop = 20 OR ???)", paramExpr = Some(nullLiteral))
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -188,7 +186,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .nodeIndexOperator("x:Honey(prop = 20 OR ???)", paramExpr = Some(Null()(InputPosition.NONE)))
+      .nodeIndexOperator("x:Honey(prop = 20 OR ???)", paramExpr = Some(nullLiteral))
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
@@ -433,7 +431,7 @@ trait NodeIndexSeekRangeAndCompositeTestBase[CONTEXT <: RuntimeContext] {
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
       .apply()
-      .|.nodeIndexOperator("x:Honey(prop = ???)", GetValue, paramExpr = Some(Variable("value")(InputPosition.NONE)), argumentIds = Set("value"))
+      .|.nodeIndexOperator("x:Honey(prop = ???)", GetValue, paramExpr = Some(varFor("value")), argumentIds = Set("value"))
       .input("value")
       .build()
 
