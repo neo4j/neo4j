@@ -117,10 +117,8 @@ public class IndexRecoveryIT
         // Then
         assertThat( getIndexes( db, myLabel ), inTx( db, hasSize( 1 ) ) );
         assertThat( getIndexes( db, myLabel ), inTx( db, haveState( db, Schema.IndexState.POPULATING ) ) );
-        verify( mockedIndexProvider, times( 2 ) )
-                .getPopulator( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ) );
-        verify( mockedIndexProvider, never() ).getOnlineAccessor( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class )
-        );
+        verify( mockedIndexProvider, times( 2 ) ).getPopulator( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ) );
+        verify( mockedIndexProvider, never() ).getOnlineAccessor( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ) );
         latch.countDown();
     }
 

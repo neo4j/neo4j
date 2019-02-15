@@ -59,6 +59,8 @@ import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.impl.util.monitoring.SilentProgressReporter;
 import org.neo4j.kernel.lifecycle.LifeSupport;
+import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.kernel.recovery.CorruptedLogsTruncator;
 import org.neo4j.kernel.recovery.DefaultRecoveryService;
@@ -105,6 +107,7 @@ public class RecoveryTest
     private final SimpleLogVersionRepository versionRepository = new SimpleLogVersionRepository();
     private LogFiles logFiles;
     private File storeDir;
+    private Lifecycle schemaLife;
 
     @Before
     public void setUp() throws Exception
@@ -114,6 +117,7 @@ public class RecoveryTest
                 .withLogVersionRepository( logVersionRepository )
                 .withTransactionIdStore( transactionIdStore )
                 .build();
+        schemaLife = new LifecycleAdapter();
     }
 
     @Test
@@ -212,7 +216,7 @@ public class RecoveryTest
                         }
                     };
                 }
-            }, logPruner, monitor, SilentProgressReporter.INSTANCE, false ) );
+            }, logPruner, schemaLife, monitor, SilentProgressReporter.INSTANCE, false ) );
 
             life.start();
 
@@ -270,7 +274,7 @@ public class RecoveryTest
                 {
                     fail( "Recovery should not be required" );
                 }
-            }, logPruner, monitor, SilentProgressReporter.INSTANCE, false ) );
+            }, logPruner, schemaLife, monitor, SilentProgressReporter.INSTANCE, false ) );
 
             life.start();
 
@@ -424,7 +428,7 @@ public class RecoveryTest
                 {
                     recoveryRequired.set( true );
                 }
-            }, logPruner, monitor, SilentProgressReporter.INSTANCE, false ) );
+            }, logPruner, schemaLife, monitor, SilentProgressReporter.INSTANCE, false ) );
 
             life.start();
         }

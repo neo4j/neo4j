@@ -27,6 +27,7 @@ import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.internal.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.io.pagecache.IOLimiter;
+import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.storageengine.api.lock.ResourceLocker;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
@@ -140,6 +141,11 @@ public interface StorageEngine
      * @return the {@link StoreId} of the underlying store.
      */
     StoreId getStoreId();
+
+    /**
+     * The life cycle that is used for initialising the token holders, and filling the schema cache.
+     */
+    Lifecycle schemaAndTokensLifecycle();
 
     // ====================================================================
     // All these methods below are temporary while in the process of

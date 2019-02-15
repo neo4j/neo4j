@@ -574,7 +574,8 @@ public class NeoStoreDataSource extends LifecycleAdapter
                 logicalTransactionStore, logVersionRepository, positionMonitor );
         CorruptedLogsTruncator logsTruncator = new CorruptedLogsTruncator( databaseLayout.databaseDirectory(), logFiles, fileSystemAbstraction );
         ProgressReporter progressReporter = new LogProgressReporter( logService.getInternalLog( Recovery.class ) );
-        Recovery recovery = new Recovery( recoveryService, logsTruncator, recoveryMonitor, progressReporter, failOnCorruptedLogFiles );
+        Lifecycle schemaLife = storageEngine.schemaAndTokensLifecycle();
+        Recovery recovery = new Recovery( recoveryService, logsTruncator, schemaLife, recoveryMonitor, progressReporter, failOnCorruptedLogFiles );
         life.add( recovery );
     }
 

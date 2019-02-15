@@ -31,6 +31,7 @@ import org.neo4j.kernel.impl.store.record.ConstraintRule;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.transaction.command.Command.BaseCommand;
 import org.neo4j.storageengine.api.CommandVersion;
+import org.neo4j.storageengine.api.schema.SchemaRule;
 
 /**
  * Visits commands targeted towards the {@link NeoStores} and update corresponding stores.
@@ -128,6 +129,25 @@ public class NeoStoreTransactionApplier extends TransactionApplier.Adapter
     @Override
     public boolean visitSchemaRuleCommand( Command.SchemaRuleCommand command )
     {
+        SchemaStore schemaStore = neoStores.getSchemaStore();
+        if ( version == CommandVersion.BEFORE )
+        {
+            // We are doing reverse-recovery. There is no need for updating the cache, since the indexing service be told what it needs to know when we do
+            // forward-recovery later.
+            boolean create = command.getMode() == Command.Mode.CREATE;
+            for ( DynamicRecord record : command.getRecordsBefore() )
+            {
+                if ( create )
+                {
+                    // Schema create commands do not properly store their before images, so we need to correct them.
+                    // That is, if the schema was created by this command, then obviously the before image of those records were not in use.
+                    record.setInUse( false );
+                }
+                schemaStore.updateRecord( record );
+            }
+            return false;
+        }
+
         // schema rules. Execute these after generating the property updates so. If executed
         // before and we've got a transaction that sets properties/labels as well as creating an index
         // we might end up with this corner-case:
@@ -137,8 +157,6 @@ public class NeoStoreTransactionApplier extends TransactionApplier.Adapter
         //    job might get those as updates
         // 4) the population job will apply those updates as added properties, and might end up with duplicate
         //    entries for the same property
-
-        SchemaStore schemaStore = neoStores.getSchemaStore();
         for ( DynamicRecord record : command.getRecordsAfter() )
         {
             schemaStore.updateRecord( record );
