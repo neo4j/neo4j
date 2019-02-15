@@ -40,6 +40,7 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.util.FeatureToggles;
 
+import static java.lang.Integer.min;
 import static java.util.stream.Collectors.joining;
 import static org.neo4j.helpers.NamedThreadFactory.daemon;
 
@@ -64,8 +65,10 @@ public class BatchingMultipleIndexPopulator extends MultipleIndexPopulator
     private static final String EOL = System.lineSeparator();
     private static final String FLUSH_THREAD_NAME_PREFIX = "Index Population Flush Thread";
 
+    // Maximum number of workers processing batches of updates from the scan. It is capped because there's only a single
+    // thread generating updates and it generally cannot saturate all the workers anyway.
     private final int MAXIMUM_NUMBER_OF_WORKERS = FeatureToggles.getInteger( getClass(), MAXIMUM_NUMBER_OF_WORKERS_NAME,
-            Runtime.getRuntime().availableProcessors() - 1 );
+            min( 8, Runtime.getRuntime().availableProcessors() - 1 ) );
     private final int TASK_QUEUE_SIZE = FeatureToggles.getInteger( getClass(), TASK_QUEUE_SIZE_NAME,
             getNumberOfPopulationWorkers() * 2 );
     private final int AWAIT_TIMEOUT_MINUTES = FeatureToggles.getInteger( getClass(), AWAIT_TIMEOUT_MINUTES_NAME, 30 );
