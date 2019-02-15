@@ -506,18 +506,17 @@ public class UserFunctionTest
         }
     }
 
-
     public static class FunctionsWithInternalTypes
     {
 
         @UserFunction
-        public LongValue countLetters( @Name(value = "text") StringValue text )
+        public LongValue countLetters( @Name( value = "text" ) StringValue text )
         {
             return longValue( text.length() );
         }
 
         @UserFunction
-        public LongValue nullMethod( @Name(value = "text") StringValue text )
+        public LongValue nullMethod( @Name( value = "text" ) StringValue text )
         {
             return null;
         }

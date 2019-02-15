@@ -138,8 +138,8 @@ public class TypeCheckers
         registerType( LocalDateTimeValue.class, new DefaultValueConverter( NTLocalDateTime ) );
         registerType( LocalDate.class, new DefaultValueConverter( NTDate ) );
         registerType( DateValue.class, new DefaultValueConverter( NTDate ) );
-        registerType( OffsetTime.class, new DefaultValueConverter( NTTime) );
-        registerType( TimeValue.class, new DefaultValueConverter( NTTime) );
+        registerType( OffsetTime.class, new DefaultValueConverter( NTTime ) );
+        registerType( TimeValue.class, new DefaultValueConverter( NTTime ) );
         registerType( LocalTime.class, new DefaultValueConverter( NTLocalTime ) );
         registerType( LocalTimeValue.class, new DefaultValueConverter( NTLocalTime ) );
         registerType( TemporalAmount.class, new DefaultValueConverter( NTDuration ) );

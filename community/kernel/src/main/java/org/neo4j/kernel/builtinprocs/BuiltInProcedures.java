@@ -161,17 +161,18 @@ public class BuiltInProcedures
                     MapValue providerDescriptorMap = indexProviderDescriptorMap( schemaRead.index( schema ) );
                     PopulationProgress progress = schemaRead.indexGetPopulationProgress( index );
                     IndexPopulationProgress indexProgress = new IndexPopulationProgress( progress.getCompleted(), progress.getTotal() );
-                    TextValue failureMessage = internalIndexState == InternalIndexState.FAILED ? stringValue( schemaRead.indexGetFailure( index ) ) : Values.EMPTY_STRING;
+                    TextValue failureMessage = internalIndexState == InternalIndexState.FAILED ? stringValue(
+                            schemaRead.indexGetFailure( index ) ) : Values.EMPTY_STRING;
                     result.add( new IndexResult( indexId,
-                                                 description,
-                                                 stringValue( index.name() ),
-                                                 tokenNames,
-                                                 propertyNames,
-                                                 state,
-                                                 stringValue( type.typeName() ),
-                                                 doubleValue( indexProgress.getCompletedPercentage() ),
-                                                 providerDescriptorMap,
-                                                 failureMessage ) );
+                            description,
+                            stringValue( index.name() ),
+                            tokenNames,
+                            propertyNames,
+                            state,
+                            stringValue( type.typeName() ),
+                            doubleValue( indexProgress.getCompletedPercentage() ),
+                            providerDescriptorMap,
+                            failureMessage ) );
                 }
                 catch ( IndexNotFoundKernelException e )
                 {

@@ -141,7 +141,7 @@ public class SchemaCalculator
                     {
                         results.add( new RelationshipPropertySchemaInfoResult( finalName, propName,
                                 valueTypeListHelper.getCypherTypesList(),
-                                booleanValue( valueTypeListHelper.isMandatory() )) );
+                                booleanValue( valueTypeListHelper.isMandatory() ) ) );
                     }
                 } );
             }
