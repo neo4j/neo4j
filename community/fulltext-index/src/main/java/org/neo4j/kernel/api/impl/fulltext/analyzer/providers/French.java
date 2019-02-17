@@ -23,9 +23,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.fr.FrenchAnalyzer;
 
 import org.neo4j.graphdb.index.fulltext.AnalyzerProvider;
-import org.neo4j.helpers.Service;
 
-@Service.Implementation( AnalyzerProvider.class )
 public class French extends AnalyzerProvider
 {
     public French()

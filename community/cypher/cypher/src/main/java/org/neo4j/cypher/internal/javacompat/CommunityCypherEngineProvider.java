@@ -25,7 +25,6 @@ import org.neo4j.cypher.internal.CypherConfiguration;
 import org.neo4j.cypher.internal.CypherRuntimeConfiguration;
 import org.neo4j.cypher.internal.compiler.v4_0.CypherPlannerConfiguration;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.Service;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.query.QueryEngineProvider;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
@@ -35,7 +34,6 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.internal.LogService;
 
-@Service.Implementation( QueryEngineProvider.class )
 public class CommunityCypherEngineProvider extends QueryEngineProvider
 {
     public CommunityCypherEngineProvider()

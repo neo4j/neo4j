@@ -19,10 +19,6 @@
  */
 package org.neo4j.helpers;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -119,32 +115,6 @@ public abstract class Service
             flag( Service.class, "printServiceLoaderStackTraces", false );
 
     private final Set<String> keys;
-
-    /**
-     * Designates that a class implements the specified service and should be
-     * added to the services listings file (META-INF/services/[service-name]).
-     * <p>
-     * The annotation in itself does not provide any functionality for adding
-     * the implementation class to the services listings file. But it serves as
-     * a handle for an Annotation Processing Tool to utilize for performing that
-     * task.
-     * <p>
-     * This annotation is deprecated and will be removed in a future release.
-     *
-     * @author Tobias Ivarsson
-     */
-    @Target( ElementType.TYPE )
-    @Retention( RetentionPolicy.SOURCE )
-    @Deprecated
-    public @interface Implementation
-    {
-        /**
-         * The service(s) this class implements.
-         *
-         * @return the services this class implements.
-         */
-        Class<?>[] value();
-    }
 
     /**
      * Load all implementations of a Service.

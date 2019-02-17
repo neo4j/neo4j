@@ -19,7 +19,6 @@
  */
 package org.neo4j.internal.collector.extension;
 
-import org.neo4j.helpers.Service;
 import org.neo4j.internal.collector.DataCollector;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.extension.ExtensionFactory;
@@ -30,7 +29,6 @@ import org.neo4j.scheduler.JobScheduler;
 
 import static org.neo4j.kernel.extension.ExtensionType.DATABASE;
 
-@Service.Implementation( ExtensionFactory.class )
 public class DataCollectorExtensionFactory extends ExtensionFactory<DataCollectorExtensionFactory.Dependencies>
 {
     public interface Dependencies

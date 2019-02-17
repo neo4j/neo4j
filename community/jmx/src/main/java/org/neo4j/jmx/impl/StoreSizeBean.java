@@ -25,7 +25,6 @@ import java.io.File;
 import java.time.Clock;
 
 import org.neo4j.common.DependencyResolver;
-import org.neo4j.helpers.Service;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemUtils;
 import org.neo4j.io.layout.DatabaseFile;
@@ -57,7 +56,6 @@ import static org.neo4j.io.layout.DatabaseFile.RELATIONSHIP_TYPE_TOKEN_STORE;
 import static org.neo4j.io.layout.DatabaseFile.SCHEMA_STORE;
 import static org.neo4j.jmx.impl.ThrottlingBeanSnapshotProxy.newThrottlingBeanSnapshotProxy;
 
-@Service.Implementation( ManagementBeanProvider.class )
 @Deprecated
 public final class StoreSizeBean extends ManagementBeanProvider
 {

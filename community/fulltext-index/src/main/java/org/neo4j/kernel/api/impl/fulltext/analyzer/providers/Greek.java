@@ -23,9 +23,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.el.GreekAnalyzer;
 
 import org.neo4j.graphdb.index.fulltext.AnalyzerProvider;
-import org.neo4j.helpers.Service;
 
-@Service.Implementation( AnalyzerProvider.class )
 public class Greek extends AnalyzerProvider
 {
     public Greek()

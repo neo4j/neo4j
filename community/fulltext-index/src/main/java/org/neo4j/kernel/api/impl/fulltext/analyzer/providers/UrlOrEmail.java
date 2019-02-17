@@ -23,9 +23,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.UAX29URLEmailAnalyzer;
 
 import org.neo4j.graphdb.index.fulltext.AnalyzerProvider;
-import org.neo4j.helpers.Service;
 
-@Service.Implementation( AnalyzerProvider.class )
 public class UrlOrEmail extends AnalyzerProvider
 {
     public UrlOrEmail()

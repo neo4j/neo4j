@@ -19,7 +19,6 @@
  */
 package org.neo4j.jmx.impl;
 
-import org.neo4j.helpers.Service;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.extension.context.ExtensionContext;
@@ -29,7 +28,6 @@ import org.neo4j.logging.internal.LogService;
 
 import static org.neo4j.kernel.extension.ExtensionType.DATABASE;
 
-@Service.Implementation( ExtensionFactory.class )
 @Deprecated
 public final class JmxExtensionFactory extends ExtensionFactory<JmxExtensionFactory.Dependencies>
 {

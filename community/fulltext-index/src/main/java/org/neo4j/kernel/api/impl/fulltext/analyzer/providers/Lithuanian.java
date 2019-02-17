@@ -23,9 +23,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.lt.LithuanianAnalyzer;
 
 import org.neo4j.graphdb.index.fulltext.AnalyzerProvider;
-import org.neo4j.helpers.Service;
 
-@Service.Implementation( AnalyzerProvider.class )
 public class Lithuanian extends AnalyzerProvider
 {
     public Lithuanian()

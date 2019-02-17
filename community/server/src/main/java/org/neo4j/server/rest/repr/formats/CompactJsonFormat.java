@@ -30,7 +30,6 @@ import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
-import org.neo4j.helpers.Service;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
@@ -44,7 +43,6 @@ import org.neo4j.server.rest.repr.RepresentationFormat;
 import static org.neo4j.server.rest.domain.JsonHelper.assertSupportedPropertyValue;
 import static org.neo4j.server.rest.domain.JsonHelper.readJson;
 
-@Service.Implementation( RepresentationFormat.class )
 public class CompactJsonFormat extends RepresentationFormat
 {
     public static final MediaType MEDIA_TYPE = new MediaType( MediaType.APPLICATION_JSON_TYPE.getType(),

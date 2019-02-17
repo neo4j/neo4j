@@ -35,7 +35,6 @@ import java.util.List;
 import java.util.Map;
 import javax.ws.rs.WebApplicationException;
 
-import org.neo4j.helpers.Service;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.server.rest.repr.BadInputException;
@@ -49,7 +48,6 @@ import org.neo4j.server.rest.repr.StreamingFormat;
 import static org.neo4j.server.rest.domain.JsonHelper.assertSupportedPropertyValue;
 import static org.neo4j.server.rest.domain.JsonHelper.readJson;
 
-@Service.Implementation( RepresentationFormat.class )
 public class StreamingJsonFormat extends RepresentationFormat implements StreamingFormat
 {
 
