@@ -19,59 +19,65 @@
  */
 package org.neo4j.kernel.impl.index.labelscan;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.IOException;
 import java.util.BitSet;
 import java.util.Random;
 
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.labelscan.LabelScanReader;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
 import org.neo4j.kernel.impl.api.scan.FullStoreChangeStream;
+import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.storageengine.api.NodeLabelUpdate;
-import org.neo4j.test.rule.LifeRule;
-import org.neo4j.test.rule.PageCacheRule;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.LifeExtension;
+import org.neo4j.test.extension.RandomExtension;
+import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.rules.RuleChain.outerRule;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.neo4j.collection.PrimitiveLongCollections.closingAsArray;
 import static org.neo4j.storageengine.api.NodeLabelUpdate.labelChanges;
 
-public class NativeLabelScanStoreIT
+@PageCacheExtension
+@ExtendWith( {RandomExtension.class, LifeExtension.class} )
+class NativeLabelScanStoreIT
 {
-    private final TestDirectory directory = TestDirectory.testDirectory();
-    private final DefaultFileSystemRule fileSystem = new DefaultFileSystemRule();
-    private final PageCacheRule pageCacheRule = new PageCacheRule();
-    private final LifeRule life = new LifeRule( true );
-    private final RandomRule random = new RandomRule();
-    @Rule
-    public final RuleChain rules = outerRule( fileSystem ).around( directory ).around( pageCacheRule ).around( life ).around( random );
+    @Inject
+    private RandomRule random;
+    @Inject
+    private LifeSupport life;
+    @Inject
+    private PageCache pageCache;
+    @Inject
+    private TestDirectory testDirectory;
+    @Inject
+    private FileSystemAbstraction fileSystem;
+
     private NativeLabelScanStore store;
 
     private static final int NODE_COUNT = 10_000;
     private static final int LABEL_COUNT = 12;
 
-    @Before
-    public void before()
+    @BeforeEach
+    void before()
     {
-        PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
-        store = life.add( new NativeLabelScanStore( pageCache, directory.databaseLayout(), fileSystem, FullStoreChangeStream.EMPTY,
+        store = life.add( new NativeLabelScanStore( pageCache, testDirectory.databaseLayout(), fileSystem, FullStoreChangeStream.EMPTY,
                 false, new Monitors(), RecoveryCleanupWorkCollector.immediate(),
                 // a bit of random pageSize
                 Math.min( pageCache.pageSize(), 256 << random.nextInt( 5 ) ) ) );
     }
 
     @Test
-    public void shouldRandomlyTestIt() throws Exception
+    void shouldRandomlyTestIt() throws Exception
     {
         // GIVEN
         long[] expected = new long[NODE_COUNT];
@@ -96,7 +102,7 @@ public class NativeLabelScanStoreIT
         }
     }
 
-    public static long[] nodesWithLabel( long[] expected, int labelId )
+    static long[] nodesWithLabel( long[] expected, int labelId )
     {
         int mask = 1 << labelId;
         int count = 0;
@@ -152,7 +158,7 @@ public class NativeLabelScanStoreIT
         }
     }
 
-    public static long flipRandom( long existingLabels, int highLabelId, Random random )
+    static long flipRandom( long existingLabels, int highLabelId, Random random )
     {
         return existingLabels ^ (1 << random.nextInt( highLabelId ));
     }

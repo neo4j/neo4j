@@ -72,6 +72,18 @@ public abstract class StatefullFieldExtension<T> implements TestInstancePostProc
         return getLocalStore( context ).remove( getFieldKey(), getFieldType() );
     }
 
+    protected T deepRemoveStoredValue( ExtensionContext context )
+    {
+        T removedValue = null;
+        ExtensionContext valueContext = context;
+        while ( removedValue == null && valueContext != null )
+        {
+            removedValue = removeStoredValue( valueContext );
+            valueContext = valueContext.getParent().orElse( null );
+        }
+        return removedValue;
+    }
+
     protected static Store getStore( ExtensionContext extensionContext, Namespace namespace )
     {
         return extensionContext.getStore( namespace );

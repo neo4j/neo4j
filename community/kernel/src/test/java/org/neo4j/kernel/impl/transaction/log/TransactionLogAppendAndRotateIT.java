@@ -19,9 +19,8 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.io.IOException;
@@ -32,6 +31,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.io.ByteUnit;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.api.TestCommand;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.core.DatabasePanicEventGenerator;
@@ -51,43 +51,46 @@ import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotationImpl;
 import org.neo4j.kernel.impl.transaction.log.rotation.monitor.LogRotationMonitorAdapter;
 import org.neo4j.kernel.internal.DatabaseHealth;
+import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.NullLog;
 import org.neo4j.storageengine.api.LogVersionRepository;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.test.Race;
-import org.neo4j.test.rule.LifeRule;
+import org.neo4j.test.extension.DefaultFileSystemExtension;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.LifeExtension;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static java.lang.System.currentTimeMillis;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.concurrent.locks.LockSupport.parkNanos;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.junit.rules.RuleChain.outerRule;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.kernel.impl.api.TestCommandReaderFactory.logEntryReader;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
 import static org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent.NULL;
 
-public class TransactionLogAppendAndRotateIT
+@ExtendWith( {DefaultFileSystemExtension.class, TestDirectoryExtension.class, LifeExtension.class} )
+class TransactionLogAppendAndRotateIT
 {
-    private final LifeRule life = new LifeRule( true );
-    private final TestDirectory directory = TestDirectory.testDirectory();
-    private final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
-
-    @Rule
-    public final RuleChain chain = outerRule( directory ).around( life ).around( fileSystemRule );
+    @Inject
+    private TestDirectory directory;
+    @Inject
+    private FileSystemAbstraction fileSystem;
+    @Inject
+    private LifeSupport life;
 
     @Test
-    public void shouldKeepTransactionsIntactWhenConcurrentlyRotationAndAppending() throws Throwable
+    void shouldKeepTransactionsIntactWhenConcurrentlyRotationAndAppending() throws Throwable
     {
         // GIVEN
         LogVersionRepository logVersionRepository = new SimpleLogVersionRepository();
-        LogFiles logFiles = LogFilesBuilder.builder( directory.databaseLayout(), fileSystemRule.get() )
+        LogFiles logFiles = LogFilesBuilder.builder( directory.databaseLayout(), fileSystem )
                 .withLogVersionRepository( logVersionRepository )
                 .withRotationThreshold( ByteUnit.mebiBytes( 1 ) )
                 .withTransactionIdStore( new SimpleTransactionIdStore() )

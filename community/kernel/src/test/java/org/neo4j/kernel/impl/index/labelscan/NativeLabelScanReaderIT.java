@@ -19,53 +19,64 @@
  */
 package org.neo4j.kernel.impl.index.labelscan;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.IOException;
 import java.util.BitSet;
 
 import org.neo4j.collection.PrimitiveLongResourceIterator;
-import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.labelscan.LabelScanReader;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
+import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
-import org.neo4j.test.rule.LifeRule;
-import org.neo4j.test.rule.PageCacheAndDependenciesRule;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.LifeExtension;
+import org.neo4j.test.extension.RandomExtension;
+import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.rule.RandomRule;
+import org.neo4j.test.rule.TestDirectory;
 
 import static java.lang.Math.toIntExact;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.kernel.impl.api.scan.FullStoreChangeStream.EMPTY;
 import static org.neo4j.storageengine.api.NodeLabelUpdate.labelChanges;
 
-public class NativeLabelScanReaderIT
+@PageCacheExtension
+@ExtendWith( {RandomExtension.class, LifeExtension.class} )
+class NativeLabelScanReaderIT
 {
-    @Rule
-    public final RandomRule random = new RandomRule();
-    @Rule
-    public final PageCacheAndDependenciesRule storage = new PageCacheAndDependenciesRule();
-    @Rule
-    public final LifeRule life = new LifeRule( true );
+    @Inject
+    private RandomRule random;
+    @Inject
+    private LifeSupport life;
+    @Inject
+    private PageCache pageCache;
+    @Inject
+    private TestDirectory testDirectory;
+    @Inject
+    private FileSystemAbstraction fileSystem;
 
     @Test
-    public void shouldStartFromGivenIdDense() throws IOException
+    void shouldStartFromGivenIdDense() throws IOException
     {
         shouldStartFromGivenId( 10 );
     }
 
     @Test
-    public void shouldStartFromGivenIdSparse() throws IOException
+    void shouldStartFromGivenIdSparse() throws IOException
     {
         shouldStartFromGivenId( 100 );
     }
 
     @Test
-    public void shouldStartFromGivenIdSuperSparse() throws IOException
+    void shouldStartFromGivenIdSuperSparse() throws IOException
     {
         shouldStartFromGivenId( 1000 );
     }
@@ -74,8 +85,7 @@ public class NativeLabelScanReaderIT
     {
         // given
         NativeLabelScanStore store = life.add(
-                new NativeLabelScanStore( storage.pageCache(), DatabaseLayout.of( storage.directory().directory() ), storage.fileSystem(), EMPTY, false,
-                        new Monitors(), immediate() ) );
+                new NativeLabelScanStore( pageCache, testDirectory.databaseLayout(), fileSystem, EMPTY, false, new Monitors(), immediate() ) );
         int labelId = 1;
         int highNodeId = 100_000;
         BitSet expected = new BitSet( highNodeId );

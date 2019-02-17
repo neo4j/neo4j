@@ -19,14 +19,15 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.io.IOException;
 import java.time.Clock;
 import java.util.List;
 
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.api.TestCommand;
 import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
 import org.neo4j.kernel.impl.api.TransactionToApply;
@@ -48,31 +49,34 @@ import org.neo4j.kernel.impl.transaction.tracing.LogRotateEvent;
 import org.neo4j.kernel.impl.transaction.tracing.SerializeTransactionEvent;
 import org.neo4j.kernel.internal.DatabaseEventHandlers;
 import org.neo4j.kernel.internal.DatabaseHealth;
+import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLog;
 import org.neo4j.storageengine.api.StorageCommand;
-import org.neo4j.test.rule.LifeRule;
+import org.neo4j.test.extension.DefaultFileSystemExtension;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.LifeExtension;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static java.util.Collections.singletonList;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class BatchingTransactionAppenderRotationIT
+@ExtendWith( {DefaultFileSystemExtension.class, TestDirectoryExtension.class, LifeExtension.class} )
+class BatchingTransactionAppenderRotationIT
 {
-
-    @Rule
-    public final TestDirectory testDirectory = TestDirectory.testDirectory();
-    @Rule
-    public final DefaultFileSystemRule fileSystem = new DefaultFileSystemRule();
-    @Rule
-    public final LifeRule life = new LifeRule( true );
+    @Inject
+    private TestDirectory testDirectory;
+    @Inject
+    private FileSystemAbstraction fileSystem;
+    @Inject
+    private LifeSupport life;
     private final SimpleLogVersionRepository logVersionRepository = new SimpleLogVersionRepository();
     private final SimpleTransactionIdStore transactionIdStore = new SimpleTransactionIdStore();
     private final Monitors monitors = new Monitors();
 
     @Test
-    public void correctLastAppliedToPreviousLogTransactionInHeaderOnLogFileRotation() throws IOException
+    void correctLastAppliedToPreviousLogTransactionInHeaderOnLogFileRotation() throws IOException
     {
         LogFiles logFiles = getLogFiles( logVersionRepository, transactionIdStore );
         life.add( logFiles );
@@ -113,7 +117,7 @@ public class BatchingTransactionAppenderRotationIT
     private LogFiles getLogFiles( SimpleLogVersionRepository logVersionRepository,
             SimpleTransactionIdStore transactionIdStore ) throws IOException
     {
-        return LogFilesBuilder.builder( testDirectory.databaseLayout(), fileSystem.get() )
+        return LogFilesBuilder.builder( testDirectory.databaseLayout(), fileSystem )
                 .withLogVersionRepository( logVersionRepository )
                 .withTransactionIdStore( transactionIdStore )
                 .withLogEntryReader( new VersionAwareLogEntryReader( new TestCommandReaderFactory(), InvalidLogEntryHandler.STRICT ) )

@@ -19,16 +19,15 @@
  */
 package org.neo4j.kernel.impl.transaction.log.reverse;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.rules.RuleChain;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.api.TestCommand;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
@@ -44,37 +43,42 @@ import org.neo4j.kernel.impl.transaction.log.entry.UnsupportedLogVersionExceptio
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
+import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.storageengine.api.LogVersionRepository;
 import org.neo4j.storageengine.api.StorageCommand;
-import org.neo4j.test.rule.LifeRule;
 import org.neo4j.storageengine.api.TransactionIdStore;
+import org.neo4j.test.extension.DefaultFileSystemExtension;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.LifeExtension;
+import org.neo4j.test.extension.RandomExtension;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static org.hamcrest.CoreMatchers.containsString;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.kernel.impl.api.TestCommandReaderFactory.logEntryReader;
 import static org.neo4j.kernel.impl.transaction.log.GivenTransactionCursor.exhaust;
 import static org.neo4j.kernel.impl.transaction.log.LogPosition.start;
 import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryByteCodes.TX_START;
 
-public class ReversedSingleFileTransactionCursorTest
+@ExtendWith( {DefaultFileSystemExtension.class, TestDirectoryExtension.class, RandomExtension.class, LifeExtension.class} )
+class ReversedSingleFileTransactionCursorTest
 {
-    private final DefaultFileSystemRule fs = new DefaultFileSystemRule();
-    private final TestDirectory directory = TestDirectory.testDirectory( fs );
-    private final LifeRule life = new LifeRule( true );
-    private final RandomRule random = new RandomRule();
-    private final ExpectedException expectedException = ExpectedException.none();
-
-    @Rule
-    public final RuleChain rules = RuleChain.outerRule( random ).around( fs )
-            .around( directory ).around( life ).around( expectedException );
+    @Inject
+    private FileSystemAbstraction fs;
+    @Inject
+    private TestDirectory directory;
+    @Inject
+    private LifeSupport life;
+    @Inject
+    private RandomRule random;
 
     private long txId = TransactionIdStore.BASE_TX_ID;
     private LogProvider logProvider = new AssertableLogProvider( true );
@@ -82,8 +86,8 @@ public class ReversedSingleFileTransactionCursorTest
             logProvider.getLog( ReversedSingleFileTransactionCursor.class ) );
     private LogFile logFile;
 
-    @Before
-    public void setUp() throws IOException
+    @BeforeEach
+    void setUp() throws IOException
     {
         LogVersionRepository logVersionRepository = new SimpleLogVersionRepository();
         SimpleTransactionIdStore transactionIdStore = new SimpleTransactionIdStore();
@@ -97,7 +101,7 @@ public class ReversedSingleFileTransactionCursorTest
     }
 
     @Test
-    public void shouldHandleVerySmallTransactions() throws Exception
+    void shouldHandleVerySmallTransactions() throws Exception
     {
         // given
         writeTransactions( 10, 1, 1 );
@@ -110,7 +114,7 @@ public class ReversedSingleFileTransactionCursorTest
     }
 
     @Test
-    public void shouldHandleManyVerySmallTransactions() throws Exception
+    void shouldHandleManyVerySmallTransactions() throws Exception
     {
         // given
         writeTransactions( 20_000, 1, 1 );
@@ -123,7 +127,7 @@ public class ReversedSingleFileTransactionCursorTest
     }
 
     @Test
-    public void shouldHandleLargeTransactions() throws Exception
+    void shouldHandleLargeTransactions() throws Exception
     {
         // given
         writeTransactions( 10, 1000, 1000 );
@@ -136,7 +140,7 @@ public class ReversedSingleFileTransactionCursorTest
     }
 
     @Test
-    public void shouldHandleEmptyLog() throws Exception
+    void shouldHandleEmptyLog() throws Exception
     {
         // given
 
@@ -148,7 +152,7 @@ public class ReversedSingleFileTransactionCursorTest
     }
 
     @Test
-    public void shouldDetectAndPreventChannelReadingMultipleLogVersions() throws Exception
+    void shouldDetectAndPreventChannelReadingMultipleLogVersions() throws Exception
     {
         // given
         writeTransactions( 1, 1, 1 );
@@ -169,7 +173,7 @@ public class ReversedSingleFileTransactionCursorTest
     }
 
     @Test
-    public void readCorruptedTransactionLog() throws IOException
+    void readCorruptedTransactionLog() throws IOException
     {
         int readableTransactions = 10;
         writeTransactions( readableTransactions, 1, 1 );
@@ -181,16 +185,14 @@ public class ReversedSingleFileTransactionCursorTest
     }
 
     @Test
-    public void failToReadCorruptedTransactionLogWhenConfigured() throws IOException
+    void failToReadCorruptedTransactionLogWhenConfigured() throws IOException
     {
         int readableTransactions = 10;
         writeTransactions( readableTransactions, 1, 1 );
         appendCorruptedTransaction();
         writeTransactions( readableTransactions, 1, 1 );
 
-        expectedException.expect( UnsupportedLogVersionException.class );
-
-        readAllFromReversedCursorFailOnCorrupted();
+        assertThrows( UnsupportedLogVersionException.class, this::readAllFromReversedCursorFailOnCorrupted );
     }
 
     private CommittedTransactionRepresentation[] readAllFromReversedCursor() throws IOException

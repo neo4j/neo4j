@@ -19,12 +19,12 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.Flushable;
 import java.io.IOException;
@@ -61,50 +61,35 @@ import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogForceWaitEvent;
 import org.neo4j.kernel.internal.DatabaseHealth;
+import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.NullLog;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.test.Race;
-import org.neo4j.test.rule.LifeRule;
+import org.neo4j.test.extension.EphemeralFileSystemExtension;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.LifeExtension;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static java.util.Collections.singletonList;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.test.DoubleLatch.awaitLatch;
 import static org.neo4j.test.ThreadTestUtils.awaitThreadState;
 import static org.neo4j.test.ThreadTestUtils.fork;
 
+@ExtendWith( {EphemeralFileSystemExtension.class, TestDirectoryExtension.class, LifeExtension.class} )
 public class BatchingTransactionAppenderConcurrencyTest
 {
-
     private static final long MILLISECONDS_TO_WAIT = TimeUnit.SECONDS.toMillis( 10 );
-
     private static ExecutorService executor;
-
-    @BeforeClass
-    public static void setUpExecutor()
-    {
-        executor = Executors.newCachedThreadPool();
-    }
-
-    @AfterClass
-    public static void tearDownExecutor()
-    {
-        executor.shutdown();
-        executor = null;
-    }
-
-    private final LifeRule life = new LifeRule();
-    private final EphemeralFileSystemRule fileSystemRule = new EphemeralFileSystemRule();
-    private final TestDirectory testDirectory = TestDirectory.testDirectory( fileSystemRule );
-
-    @Rule
-    public final RuleChain ruleChain = RuleChain.outerRule( fileSystemRule ).around( testDirectory ).around( life );
+    @Inject
+    private LifeSupport life;
+    @Inject
+    private TestDirectory testDirectory;
 
     private final LogAppendEvent logAppendEvent = LogAppendEvent.NULL;
     private final LogFiles logFiles = mock( TransactionLogFiles.class );
@@ -118,15 +103,28 @@ public class BatchingTransactionAppenderConcurrencyTest
 
     private final BlockingQueue<ChannelCommand> channelCommandQueue = new LinkedBlockingQueue<>( 2 );
 
-    @Before
-    public void setUp()
+    @BeforeAll
+    static void setUpExecutor()
+    {
+        executor = Executors.newCachedThreadPool();
+    }
+
+    @AfterAll
+    static void tearDownExecutor()
+    {
+        executor.shutdown();
+        executor = null;
+    }
+
+    @BeforeEach
+    void setUp()
     {
         when( logFiles.getLogFile() ).thenReturn( logFile );
         when( logFile.getWriter() ).thenReturn( new CommandQueueChannel() );
     }
 
     @Test
-    public void shouldForceLogChannel() throws Throwable
+    void shouldForceLogChannel() throws Throwable
     {
         BatchingTransactionAppender appender = life.add( createTransactionAppender() );
         life.start();
@@ -139,7 +137,7 @@ public class BatchingTransactionAppenderConcurrencyTest
     }
 
     @Test
-    public void shouldWaitForOngoingForceToCompleteBeforeForcingAgain() throws Throwable
+    void shouldWaitForOngoingForceToCompleteBeforeForcingAgain() throws Throwable
     {
         channelCommandQueue.put( ChannelCommand.dummy );
 
@@ -168,7 +166,7 @@ public class BatchingTransactionAppenderConcurrencyTest
     }
 
     @Test
-    public void shouldBatchUpMultipleWaitingForceRequests() throws Throwable
+    void shouldBatchUpMultipleWaitingForceRequests() throws Throwable
     {
         channelCommandQueue.put( ChannelCommand.dummy );
 
@@ -213,7 +211,7 @@ public class BatchingTransactionAppenderConcurrencyTest
      * and notice the panic later (which would be too late).
      */
     @Test
-    public void shouldHaveAllConcurrentAppendersSeePanic() throws Throwable
+    void shouldHaveAllConcurrentAppendersSeePanic() throws Throwable
     {
         // GIVEN
         Adversary adversary = new ClassGuardedAdversary( new CountingAdversary( 1, true ),
@@ -255,7 +253,7 @@ public class BatchingTransactionAppenderConcurrencyTest
                     // Append to the log, the LogAppenderEvent will have all of the appending threads
                     // do wait for all of the other threads to start the force thing
                     appender.append( tx(), beforeForceTrappingEvent );
-                    fail( "No transaction should be considered appended" );
+                    Assertions.fail( "No transaction should be considered appended" );
                 }
                 catch ( IOException e )
                 {
