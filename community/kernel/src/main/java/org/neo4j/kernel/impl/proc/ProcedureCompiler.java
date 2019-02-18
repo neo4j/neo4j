@@ -61,7 +61,7 @@ import static org.neo4j.graphdb.factory.GraphDatabaseSettings.procedure_unrestri
  */
 class ProcedureCompiler
 {
-    private final ProcedureOutputSignatureCompiler outputMappers;
+    private final ProcedureOutputSignatureCompiler outputSignatureCompiler;
     private final MethodSignatureCompiler inputSignatureDeterminer;
     private final FieldInjections safeFieldInjections;
     private final FieldInjections allFieldInjections;
@@ -86,7 +86,7 @@ class ProcedureCompiler
 
     private ProcedureCompiler(
             MethodSignatureCompiler inputSignatureCompiler,
-            ProcedureOutputSignatureCompiler outputMappers,
+            ProcedureOutputSignatureCompiler outputSignatureCompiler,
             FieldInjections safeFieldInjections,
             FieldInjections allFieldInjections,
             Log log,
@@ -95,7 +95,7 @@ class ProcedureCompiler
             NamingRestrictions restrictions )
     {
         this.inputSignatureDeterminer = inputSignatureCompiler;
-        this.outputMappers = outputMappers;
+        this.outputSignatureCompiler = outputSignatureCompiler;
         this.safeFieldInjections = safeFieldInjections;
         this.allFieldInjections = allFieldInjections;
         this.log = log;
@@ -248,7 +248,7 @@ class ProcedureCompiler
             throws ProcedureException
     {
         List<FieldSignature> inputSignature = inputSignatureDeterminer.signatureFor( method );
-        List<FieldSignature> outputSignature = outputMappers.fieldSignatures( method );
+        List<FieldSignature> outputSignature = outputSignatureCompiler.fieldSignatures( method );
 
         String description = description( method );
         Procedure procedure = method.getAnnotation( Procedure.class );
@@ -509,7 +509,7 @@ class ProcedureCompiler
     {
         return new ProcedureCompiler(
                 inputSignatureDeterminer,
-                outputMappers,
+                outputSignatureCompiler,
                 safeFieldInjections,
                 allFieldInjections,
                 log,

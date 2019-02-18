@@ -510,8 +510,6 @@ public final class ProcedureCompilation
         }
         catch ( Throwable e )
         {
-            System.out.println(create.getName());
-            System.out.println(update.getDeclaringClass().getSimpleName());
             throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed, e,
                     "Failed to compile function defined in `%s`: %s", create.getDeclaringClass().getSimpleName(),
                     e.getMessage() );
