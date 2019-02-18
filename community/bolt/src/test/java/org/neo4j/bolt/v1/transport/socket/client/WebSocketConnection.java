@@ -32,8 +32,8 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import org.neo4j.common.HexPrinter;
 import org.neo4j.helpers.HostnamePort;
-import org.neo4j.kernel.impl.util.HexPrinter;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;

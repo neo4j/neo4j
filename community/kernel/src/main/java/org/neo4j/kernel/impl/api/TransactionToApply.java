@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.util.Iterator;
 import java.util.function.LongConsumer;
 
+import org.neo4j.common.HexPrinter;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContext;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContext;
@@ -30,7 +31,6 @@ import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.Commitment;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
-import org.neo4j.kernel.impl.util.HexPrinter;
 import org.neo4j.storageengine.api.CommandsToApply;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
