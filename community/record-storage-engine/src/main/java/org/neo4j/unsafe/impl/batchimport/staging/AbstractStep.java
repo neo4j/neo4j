@@ -27,7 +27,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
 
-import org.neo4j.kernel.impl.util.MovingAverage;
 import org.neo4j.unsafe.impl.batchimport.Configuration;
 import org.neo4j.unsafe.impl.batchimport.executor.ParkStrategy;
 import org.neo4j.unsafe.impl.batchimport.stats.ProcessingStats;
