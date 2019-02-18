@@ -362,12 +362,11 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
                     }
                     catch ( IndexNotFoundKernelException e )
                     {
-                        throw new IllegalStateException(
-                                "What? This index was seen during recovery just now, why isn't it available now?", e );
+                        throw new IllegalStateException( "What? This index was seen during recovery just now, why isn't it available now?", e );
                     }
 
                     monitor.awaitingPopulationOfRecoveredIndex( descriptor );
-                    awaitOnline( proxy );
+                    awaitOnlineAfterRecovery( proxy );
                 } );
 
         state = State.RUNNING;
@@ -418,9 +417,8 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
     {
         rebuildingDescriptors.forEachKeyValue( ( indexId, descriptor ) ->
         {
-            IndexProxy proxy = indexProxyCreator.createPopulatingIndexProxy( descriptor,
-         false,// never pass through a tentative online state during recovery
-                    monitor, populationJob );
+            boolean flipToTentative = false; // Never pass through a tentative online state during recovery.
+            IndexProxy proxy = indexProxyCreator.createPopulatingIndexProxy( descriptor, flipToTentative, monitor, populationJob );
             proxy.start();
             indexMap.putIndexProxy( proxy );
         } );
@@ -428,11 +426,13 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
     }
 
     /**
-     * Polls the {@link IndexProxy#getState() state of the index} and waits for it to be either
-     * {@link InternalIndexState#ONLINE}, in which case the wait is over, or {@link InternalIndexState#FAILED},
-     * in which an exception is thrown.
+     * Polls the {@link IndexProxy#getState() state of the index} and waits for it to be either {@link InternalIndexState#ONLINE},
+     * in which case the wait is over, or {@link InternalIndexState#FAILED}, in which an exception is logged.
+     *
+     * THis method is only called during startup, and might be called as part of recovery. If we threw an exception here, it could
+     * render the database unrecoverable. That's why we only log a message about failed indexes.
      */
-    private void awaitOnline( IndexProxy proxy )
+    private void awaitOnlineAfterRecovery( IndexProxy proxy )
     {
         while ( true )
         {
@@ -442,9 +442,13 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
                 return;
             case FAILED:
                 IndexPopulationFailure populationFailure = proxy.getPopulationFailure();
-                String message = String.format( "Index entered %s state while recovery waited for it to be fully populated.", FAILED );
                 String causeOfFailure = populationFailure.asString();
-                throw new IllegalStateException( IndexPopulationFailure.appendCauseOfFailure( message, causeOfFailure ) );
+                // Log as INFO because at this point we don't know if the constraint index was ever bound to a constraint or not.
+                // If it was really bound to a constraint, then we actually ought to log as WARN or ERROR, I suppose.
+                // But by far the most likely scenario is that the constraint itself was never created.
+                internalLog.info( IndexPopulationFailure.appendCauseOfFailure(
+                        "Index entered FAILED state while recovery waited for it to be fully populated.", causeOfFailure ) );
+                return;
             case POPULATING:
                 // Sleep a short while and look at state again the next loop iteration
                 try

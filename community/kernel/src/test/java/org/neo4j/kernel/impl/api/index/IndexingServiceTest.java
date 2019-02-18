@@ -1081,15 +1081,13 @@ public class IndexingServiceTest
         ExecutorService executor = Executors.newSingleThreadExecutor();
         try
         {
-            AtomicReference<Throwable> startException = new AtomicReference<>();
             executor.submit( () -> {
                 try
                 {
                     life.start();
                 }
-                catch ( Throwable t )
+                finally
                 {
-                    startException.set( t );
                     exceptionBarrier.countDown();
                 }
             } );
@@ -1109,10 +1107,8 @@ public class IndexingServiceTest
                     indexFailure, mock( IndexStatisticsStore.class ), internalLogProvider ) );
             barrier.release();
             exceptionBarrier.await();
-            Throwable actual = startException.get();
 
-            assertThat( actual.getCause(), instanceOf( IllegalStateException.class ) );
-            assertThat( Exceptions.stringify( actual.getCause() ), Matchers.containsString( Exceptions.stringify( expectedCause ) ) );
+            internalLogProvider.assertContainsMessageContaining( expectedCause.getMessage() );
         }
         finally
         {
