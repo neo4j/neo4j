@@ -36,7 +36,7 @@
       -XX:+UnlockExperimentalVMOptions -XX:+TrustFinalNonStaticFields ${test.runner.jvm.settings.additional}
     </test.runner.jvm.settings>
     <doclint-groups>reference</doclint-groups>
-    <jetty.version>9.2.22.v20170606</jetty.version>
+    <jetty.version>9.2.26.v20180806</jetty.version>
     <findbugs.version>3.0.1</findbugs.version>
     <clirr.comparisonVersion>3.0.1</clirr.comparisonVersion>
     <git.commit>unknown-commit</git.commit>
