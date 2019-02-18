@@ -326,8 +326,8 @@ public class BatchInserterImpl implements BatchInserter
         tokenHolders = new TokenHolders( propertyKeyTokenHolder, labelTokenHolder, relationshipTypeTokenHolder );
 
         schemaRuleAccess = SchemaRuleAccess.getSchemaRuleAccess( schemaStore, tokenHolders );
-        schemaCache = new SchemaCache( getConstraintSemantics(), schemaRuleAccess );
-        schemaCache.loadAllRules();
+        schemaCache = new SchemaCache( getConstraintSemantics() );
+        schemaCache.load( schemaRuleAccess.getAll() );
 
         actions = new BatchSchemaActions();
 

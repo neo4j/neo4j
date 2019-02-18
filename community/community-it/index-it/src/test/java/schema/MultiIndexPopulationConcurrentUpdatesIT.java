@@ -49,8 +49,6 @@ import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.internal.recordstorage.SchemaCache;
-import org.neo4j.internal.recordstorage.SchemaRuleAccess;
-import org.neo4j.internal.recordstorage.StubSchemaRuleAccess;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.SilentTokenNameLookup;
 import org.neo4j.kernel.api.Statement;
@@ -83,7 +81,6 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.NodeLabelUpdate;
-import org.neo4j.storageengine.api.SchemaRule;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.schema.LabelSchemaDescriptor;
@@ -331,16 +328,8 @@ public class MultiIndexPopulationConcurrentUpdatesIT
             indexService.start();
 
             rules = createIndexRules( labelNameIdMap, propertyId );
-            SchemaRuleAccess schemaRuleAccess = new StubSchemaRuleAccess()
-            {
-                @Override
-                public Iterable<SchemaRule> getAll()
-                {
-                    return iterable( rules );
-                }
-            };
-            schemaCache = new SchemaCache( new StandardConstraintSemantics(), schemaRuleAccess );
-            schemaCache.loadAllRules();
+            schemaCache = new SchemaCache( new StandardConstraintSemantics() );
+            schemaCache.load( iterable( rules ) );
 
             indexService.createIndexes( rules );
             transaction.success();

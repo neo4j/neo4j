@@ -487,16 +487,8 @@ public class SchemaCacheTest
 
     private static SchemaCache newSchemaCache( SchemaRule... rules )
     {
-        SchemaRuleAccess access = new StubSchemaRuleAccess()
-        {
-            @Override
-            public Iterable<SchemaRule> getAll()
-            {
-                return (rules == null || rules.length == 0) ? Collections.emptyList() : asList( rules );
-            }
-        };
-        SchemaCache cache = new SchemaCache( new ConstraintSemantics(), access );
-        cache.loadAllRules();
+        SchemaCache cache = new SchemaCache( new ConstraintSemantics() );
+        cache.load( (rules == null || rules.length == 0) ? Collections.emptyList() : asList( rules ) );
         return cache;
     }
 

@@ -59,12 +59,10 @@ import static java.util.Collections.emptyIterator;
 public class SchemaCache
 {
     private final Lock cacheUpdateLock = new StampedLock().asWriteLock();
-    private final SchemaRuleAccess schemaRuleAccess;
     private volatile SchemaCacheState schemaCacheState;
 
-    public SchemaCache( ConstraintSemantics constraintSemantics, SchemaRuleAccess schemaRuleAccess )
+    public SchemaCache( ConstraintSemantics constraintSemantics )
     {
-        this.schemaRuleAccess = schemaRuleAccess;
         this.schemaCacheState = new SchemaCacheState( constraintSemantics, Collections.emptyList() );
     }
 
@@ -118,13 +116,13 @@ public class SchemaCache
         return schemaCacheState.getOrCreateDependantState( type, factory, parameter );
     }
 
-    public void loadAllRules()
+    public void load( Iterable<SchemaRule> rules )
     {
         cacheUpdateLock.lock();
         try
         {
             ConstraintSemantics constraintSemantics = schemaCacheState.constraintSemantics;
-            this.schemaCacheState = new SchemaCacheState( constraintSemantics, schemaRuleAccess.getAll() );
+            this.schemaCacheState = new SchemaCacheState( constraintSemantics, rules );
         }
         finally
         {

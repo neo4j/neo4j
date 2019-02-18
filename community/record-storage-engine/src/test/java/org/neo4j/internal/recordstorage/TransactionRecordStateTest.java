@@ -128,7 +128,7 @@ public class TransactionRecordStateTest
     private final long[] bothLabelIds = new long[]{labeIdOne, labeIdSecond};
     private final IntegrityValidator integrityValidator = mock( IntegrityValidator.class );
     private RecordChangeSet recordChangeSet;
-    private final SchemaCache schemaCache = new SchemaCache( new StandardConstraintSemantics(), new StubSchemaRuleAccess() );
+    private final SchemaCache schemaCache = new SchemaCache( new StandardConstraintSemantics() );
     private long nextRuleId = 1;
 
     private static void assertRelationshipGroupDoesNotExist( RecordChangeSet recordChangeSet, NodeRecord node, int type )

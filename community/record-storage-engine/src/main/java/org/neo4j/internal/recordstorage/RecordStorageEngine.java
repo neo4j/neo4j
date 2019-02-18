@@ -143,7 +143,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         {
             indexUpdatesConverter = new PropertyPhysicalToLogicalConverter( neoStores.getPropertyStore() );
             schemaRuleAccess = SchemaRuleAccess.getSchemaRuleAccess( neoStores.getSchemaStore(), tokenHolders );
-            schemaCache = new SchemaCache( constraintSemantics, schemaRuleAccess );
+            schemaCache = new SchemaCache( constraintSemantics );
 
             countsStore = openCountsStore( fs, pageCache, databaseLayout, config, logProvider, versionContextSupplier );
 
@@ -348,7 +348,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     @VisibleForTesting
     public void loadSchemaCache()
     {
-        schemaCache.loadAllRules();
+        schemaCache.load( schemaRuleAccess.getAll() );
     }
 
     @Override

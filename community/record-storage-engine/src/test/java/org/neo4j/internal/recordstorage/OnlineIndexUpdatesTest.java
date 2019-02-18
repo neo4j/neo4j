@@ -40,7 +40,6 @@ import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.IndexingServiceFactory;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
-import org.neo4j.kernel.impl.core.TokenHolders;
 import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
@@ -144,9 +143,7 @@ class OnlineIndexUpdatesTest
                 idTokenNameLookup, empty(), nullLogProvider, nullLogProvider,
                 IndexingService.NO_MONITOR, new DatabaseSchemaState( nullLogProvider ), indexStatisticsStore );
 
-        TokenHolders tokenHolders = RecordStorageEngineFactory.readOnlyTokenHolders( neoStores );
-        SchemaRuleAccess schemaRuleAccess = SchemaRuleAccess.getSchemaRuleAccess( neoStores.getSchemaStore(), tokenHolders );
-        schemaCache = new SchemaCache( new StandardConstraintSemantics(), schemaRuleAccess );
+        schemaCache = new SchemaCache( new StandardConstraintSemantics() );
         propertyPhysicalToLogicalConverter = new PropertyPhysicalToLogicalConverter( neoStores.getPropertyStore() );
         life.add( indexingService );
         life.add( scheduler );
