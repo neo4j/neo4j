@@ -43,37 +43,37 @@ public class SimpleLongLayout extends TestLayout<MutableLong,MutableLong>
         private String customNameAsMetaData = "test";
         private boolean fixedSize = true;
 
-        Builder withKeyPadding( int keyPadding )
+        public Builder withKeyPadding( int keyPadding )
         {
             this.keyPadding = keyPadding;
             return this;
         }
 
-        Builder withIdentifier( int identifier )
+        public Builder withIdentifier( int identifier )
         {
             this.identifier = identifier;
             return this;
         }
 
-        Builder withMajorVersion( int majorVersion )
+        public Builder withMajorVersion( int majorVersion )
         {
             this.majorVersion = majorVersion;
             return this;
         }
 
-        Builder withMinorVersion( int minorVersion )
+        public Builder withMinorVersion( int minorVersion )
         {
             this.minorVersion = minorVersion;
             return this;
         }
 
-        Builder withCustomerNameAsMetaData( String customNameAsMetaData )
+        public Builder withCustomerNameAsMetaData( String customNameAsMetaData )
         {
             this.customNameAsMetaData = customNameAsMetaData;
             return this;
         }
 
-        Builder withFixedSize( boolean fixedSize )
+        public Builder withFixedSize( boolean fixedSize )
         {
             this.fixedSize = fixedSize;
             return this;
@@ -148,6 +148,7 @@ public class SimpleLongLayout extends TestLayout<MutableLong,MutableLong>
     public void writeKey( PageCursor cursor, MutableLong key )
     {
         cursor.putLong( key.longValue() );
+        cursor.putBytes( keyPadding, (byte) 0 );
     }
 
     @Override
@@ -160,6 +161,7 @@ public class SimpleLongLayout extends TestLayout<MutableLong,MutableLong>
     public void readKey( PageCursor cursor, MutableLong into, int keySize )
     {
         into.setValue( cursor.getLong() );
+        cursor.getBytes( new byte[keyPadding] );
     }
 
     @Override

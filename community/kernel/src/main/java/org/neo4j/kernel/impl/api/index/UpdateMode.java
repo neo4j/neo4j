@@ -48,5 +48,7 @@ public enum UpdateMode
         }
     };
 
+    public static final UpdateMode[] MODES = UpdateMode.values();
+
     public abstract boolean forLabel( long[] before, long[] after, long label );
 }

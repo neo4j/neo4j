@@ -21,7 +21,6 @@ package schema;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.index.IndexWriter;
-import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -42,6 +41,7 @@ import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -153,8 +153,10 @@ class IndexValuesValidationTest
             try ( Transaction ignored = database.beginTx() )
             {
                 String indexFailure = database.schema().getIndexFailure( indexDefinition );
-                assertThat( "", indexFailure, Matchers.containsString(
-                        "java.lang.IllegalArgumentException: Index key-value size it to large. Please see index documentation for limitations." ) );
+                assertThat( indexFailure, allOf(
+                        containsString( "java.lang.IllegalArgumentException:" ),
+                        containsString( "Please see index documentation for limitations." )
+                ) );
             }
         }
     }
