@@ -23,6 +23,7 @@ import java.util.Map;
 
 import org.neo4j.graphdb.security.URLAccessRule;
 import org.neo4j.helpers.collection.Pair;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.impl.query.QueryEngineProvider;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -38,6 +39,8 @@ public interface ExternalDependencies
      * database create its own monitors instance.
      */
     Monitors monitors();
+
+    PageCache pageCache();
 
     LogProvider userLogProvider();
 

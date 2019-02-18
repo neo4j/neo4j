@@ -176,7 +176,9 @@ public class GlobalModule
 
         collectionsFactorySupplier = createCollectionsFactorySupplier( globalConfig, globalLife );
 
-        pageCache = createPageCache( fileSystem, globalConfig, logService, tracers, versionContextSupplier, jobScheduler );
+        pageCache = externalDependencies.pageCache() != null ? externalDependencies.pageCache()
+                                                             : createPageCache( fileSystem, globalConfig, logService, tracers, versionContextSupplier,
+                                                                     jobScheduler );
         globalLife.add( new PageCacheLifecycle( pageCache ) );
 
         dbmsDiagnosticsManager = new DbmsDiagnosticsManager( globalDependencies, logService );

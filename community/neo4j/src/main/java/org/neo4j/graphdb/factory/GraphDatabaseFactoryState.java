@@ -29,6 +29,7 @@ import org.neo4j.common.Service;
 import org.neo4j.configuration.LoadableConfig;
 import org.neo4j.graphdb.facade.ExternalDependencies;
 import org.neo4j.graphdb.security.URLAccessRule;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
@@ -48,6 +49,7 @@ public class GraphDatabaseFactoryState
     private final List<ExtensionFactory<?>> extensions;
     private volatile Monitors monitors;
     private volatile LogProvider userLogProvider;
+    private volatile PageCache pageCache;
     private final Map<String,URLAccessRule> urlAccessRules;
 
     public GraphDatabaseFactoryState()
@@ -67,8 +69,9 @@ public class GraphDatabaseFactoryState
         settingsClasses = new CopyOnWriteArrayList<>( previous.settingsClasses );
         extensions = new CopyOnWriteArrayList<>( previous.extensions );
         urlAccessRules = new ConcurrentHashMap<>( previous.urlAccessRules );
-        monitors = previous.monitors;
-        userLogProvider = previous.userLogProvider;
+        this.monitors = previous.monitors;
+        this.userLogProvider = previous.userLogProvider;
+        this.pageCache = previous.pageCache;
     }
 
     public Iterable<ExtensionFactory<?>> getExtension()
@@ -124,11 +127,17 @@ public class GraphDatabaseFactoryState
         this.monitors = monitors;
     }
 
+    public void setPageCache( PageCache pageCache )
+    {
+        this.pageCache = pageCache;
+    }
+
     public ExternalDependencies databaseDependencies()
     {
         return newDependencies().
                 monitors( monitors ).
                 userLogProvider( userLogProvider ).
+                pageCache( pageCache ).
                 settingsClasses( settingsClasses ).
                 urlAccessRules( urlAccessRules ).
                 extensions( extensions );

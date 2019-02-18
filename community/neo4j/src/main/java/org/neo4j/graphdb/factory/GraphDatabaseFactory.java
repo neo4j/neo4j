@@ -28,6 +28,7 @@ import org.neo4j.graphdb.facade.ExternalDependencies;
 import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory;
 import org.neo4j.graphdb.factory.module.edition.CommunityEditionModule;
 import org.neo4j.graphdb.security.URLAccessRule;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
@@ -154,6 +155,12 @@ public class GraphDatabaseFactory
     public GraphDatabaseFactory setMonitors( Monitors monitors )
     {
         getCurrentState().setMonitors( monitors );
+        return this;
+    }
+
+    public GraphDatabaseFactory setPageCache( PageCache pageCache )
+    {
+        getCurrentState().setPageCache( pageCache );
         return this;
     }
 
