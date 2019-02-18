@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
@@ -31,7 +31,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
-public class OnlineIndexProxyTest
+class OnlineIndexProxyTest
 {
     private final long indexId = 1;
     private final IndexDescriptor descriptor = TestIndexDescriptorFactory.forLabel( 1, 2 );
@@ -40,7 +40,7 @@ public class OnlineIndexProxyTest
     private final IndexStatisticsStore indexStatisticsStore = mock( IndexStatisticsStore.class );
 
     @Test
-    public void shouldRemoveIndexCountsWhenTheIndexItselfIsDropped()
+    void shouldRemoveIndexCountsWhenTheIndexItselfIsDropped()
     {
         // given
         CapableIndexDescriptor capableIndexDescriptor = descriptor.withId( indexId ).withoutCapabilities();

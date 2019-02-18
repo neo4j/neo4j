@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.builtinprocs;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -38,12 +38,12 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.storageengine.api.schema.LabelSchemaDescriptor;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -56,7 +56,7 @@ import static org.neo4j.internal.kernel.api.InternalIndexState.POPULATING;
 import static org.neo4j.kernel.impl.index.schema.IndexDescriptorFactory.forSchema;
 import static org.neo4j.test.assertion.Assert.assertEventually;
 
-public class AwaitIndexProcedureTest
+class AwaitIndexProcedureTest
 {
     private static final int TIMEOUT = 10;
     private static final TimeUnit TIME_UNIT = TimeUnit.SECONDS;
@@ -68,8 +68,8 @@ public class AwaitIndexProcedureTest
     private LabelSchemaDescriptor anyDescriptor;
     private IndexReference anyIndex ;
 
-    @Before
-    public void setup()
+    @BeforeEach
+    void setup()
     {
         transaction = mock( KernelTransaction.class );
         tokenRead = mock( TokenRead.class );
@@ -83,39 +83,27 @@ public class AwaitIndexProcedureTest
     }
 
     @Test
-    public void shouldThrowAnExceptionIfTheLabelDoesntExist()
+    void shouldThrowAnExceptionIfTheLabelDoesntExist()
     {
         when( tokenRead.nodeLabel( "NonExistentLabel" ) ).thenReturn( -1 );
 
-        try
-        {
-            procedure.awaitIndexByPattern( ":NonExistentLabel(prop)", TIMEOUT, TIME_UNIT );
-            fail( "Expected an exception" );
-        }
-        catch ( ProcedureException e )
-        {
-            assertThat( e.status(), is( Status.Schema.LabelAccessFailed ) );
-        }
+        ProcedureException exception =
+                assertThrows( ProcedureException.class, () -> procedure.awaitIndexByPattern( ":NonExistentLabel(prop)", TIMEOUT, TIME_UNIT ) );
+        assertThat( exception.status(), is( Status.Schema.LabelAccessFailed ) );
     }
 
     @Test
-    public void shouldThrowAnExceptionIfThePropertyKeyDoesntExist()
+    void shouldThrowAnExceptionIfThePropertyKeyDoesntExist()
     {
         when( tokenRead.propertyKey( "nonExistentProperty" ) ).thenReturn( -1 );
 
-        try
-        {
-            procedure.awaitIndexByPattern( ":Label(nonExistentProperty)", TIMEOUT, TIME_UNIT );
-            fail( "Expected an exception" );
-        }
-        catch ( ProcedureException e )
-        {
-            assertThat( e.status(), is( Status.Schema.PropertyKeyAccessFailed ) );
-        }
+        ProcedureException exception =
+                assertThrows( ProcedureException.class, () -> procedure.awaitIndexByPattern( ":Label(nonExistentProperty)", TIMEOUT, TIME_UNIT ) );
+        assertThat( exception.status(), is( Status.Schema.PropertyKeyAccessFailed ) );
     }
 
     @Test
-    public void shouldLookUpTheIndexByLabelIdAndPropertyKeyId() throws ProcedureException, IndexNotFoundKernelException
+    void shouldLookUpTheIndexByLabelIdAndPropertyKeyId() throws ProcedureException, IndexNotFoundKernelException
     {
         when( tokenRead.nodeLabel( anyString() ) ).thenReturn( descriptor.getLabelId() );
         when( tokenRead.propertyKey( anyString() ) ).thenReturn( descriptor.getPropertyId() );
@@ -128,7 +116,7 @@ public class AwaitIndexProcedureTest
     }
 
     @Test
-    public void shouldLookUpTheIndexByIndexName() throws ProcedureException, IndexNotFoundKernelException
+    void shouldLookUpTheIndexByIndexName() throws ProcedureException, IndexNotFoundKernelException
     {
         when( tokenRead.nodeLabel( anyString() ) ).thenReturn( descriptor.getLabelId() );
         when( tokenRead.propertyKey( anyString() ) ).thenReturn( descriptor.getPropertyId() );
@@ -141,7 +129,7 @@ public class AwaitIndexProcedureTest
     }
 
     @Test
-    public void shouldThrowAnExceptionIfTheIndexHasFailed() throws IndexNotFoundKernelException
+    void shouldThrowAnExceptionIfTheIndexHasFailed() throws IndexNotFoundKernelException
     {
         when( tokenRead.nodeLabel( anyString() ) ).thenReturn( 0 );
         when( tokenRead.propertyKey( anyString() ) ).thenReturn( 0 );
@@ -149,62 +137,42 @@ public class AwaitIndexProcedureTest
         when( schemaRead.indexGetState( any( IndexReference.class ) ) ).thenReturn( FAILED );
         when( schemaRead.indexGetFailure( any( IndexReference.class ) ) ).thenReturn( Exceptions.stringify( new Exception( "Kilroy was here" ) ) );
 
-        try
-        {
-            procedure.awaitIndexByPattern( ":Person(name)", TIMEOUT, TIME_UNIT );
-            fail( "Expected an exception" );
-        }
-        catch ( ProcedureException e )
-        {
-            assertThat( e.status(), is( Status.Schema.IndexCreationFailed ) );
-            assertThat( e.getMessage(), containsString( "Kilroy was here" ) );
-        }
+        ProcedureException exception = assertThrows( ProcedureException.class, () -> procedure.awaitIndexByPattern( ":Person(name)", TIMEOUT, TIME_UNIT ) );
+        assertThat( exception.status(), is( Status.Schema.IndexCreationFailed ) );
+        assertThat( exception.getMessage(), containsString( "Kilroy was here" ) );
     }
 
     @Test
-    public void shouldThrowAnExceptionIfTheIndexDoesNotExist()
+    void shouldThrowAnExceptionIfTheIndexDoesNotExist()
     {
         when( tokenRead.propertyKey( anyString() ) ).thenReturn( 0 );
         when( tokenRead.nodeLabel( anyString() ) ).thenReturn( 0 );
         when( schemaRead.index( anyInt(), any() ) ).thenReturn( IndexReference.NO_INDEX );
 
-        try
-        {
-            procedure.awaitIndexByPattern( ":Person(name)", TIMEOUT, TIME_UNIT );
-            fail( "Expected an exception" );
-        }
-        catch ( ProcedureException e )
-        {
-            assertThat( e.status(), is( Status.Schema.IndexNotFound ) );
-        }
-    }
-
-    @Test( expected = IllegalArgumentException.class )
-    public void shouldThrowAnExceptionIfGivenAnIndexName() throws ProcedureException
-    {
-        procedure.awaitIndexByPattern( "`some index`", TIMEOUT, TIME_UNIT );
+        ProcedureException exception =
+                assertThrows( ProcedureException.class, () -> procedure.awaitIndexByPattern( ":Person(name)", TIMEOUT, TIME_UNIT ) );
+        assertThat( exception.status(), is( Status.Schema.IndexNotFound ) );
     }
 
     @Test
-    public void shouldThrowAnExceptionIfTheIndexWithGivenNameDoesNotExist()
+    void shouldThrowAnExceptionIfGivenAnIndexName()
+    {
+        assertThrows( IllegalArgumentException.class, () -> procedure.awaitIndexByPattern( "`some index`", TIMEOUT, TIME_UNIT ) );
+    }
+
+    @Test
+    void shouldThrowAnExceptionIfTheIndexWithGivenNameDoesNotExist()
     {
         when( tokenRead.propertyKey( anyString() ) ).thenReturn( 0 );
         when( tokenRead.nodeLabel( anyString() ) ).thenReturn( 0 );
         when( schemaRead.indexGetForName( "some index" ) ).thenReturn( IndexReference.NO_INDEX );
 
-        try
-        {
-            procedure.awaitIndexByName( "`some index`", TIMEOUT, TIME_UNIT );
-            fail( "Expected an exception" );
-        }
-        catch ( ProcedureException e )
-        {
-            assertThat( e.status(), is( Status.Schema.IndexNotFound ) );
-        }
+        ProcedureException exception = assertThrows( ProcedureException.class, () -> procedure.awaitIndexByName( "`some index`", TIMEOUT, TIME_UNIT ) );
+        assertThat( exception.status(), is( Status.Schema.IndexNotFound ) );
     }
 
     @Test
-    public void shouldBlockUntilTheIndexIsOnline() throws IndexNotFoundKernelException, InterruptedException
+    void shouldBlockUntilTheIndexIsOnline() throws IndexNotFoundKernelException, InterruptedException
     {
         when( tokenRead.nodeLabel( anyString() ) ).thenReturn( 0 );
         when( tokenRead.propertyKey( anyString() ) ).thenReturn( 0 );
@@ -235,7 +203,7 @@ public class AwaitIndexProcedureTest
     }
 
     @Test
-    public void shouldTimeoutIfTheIndexTakesTooLongToComeOnline() throws InterruptedException, IndexNotFoundKernelException
+    void shouldTimeoutIfTheIndexTakesTooLongToComeOnline() throws InterruptedException, IndexNotFoundKernelException
     {
         when( tokenRead.nodeLabel( anyString() ) ).thenReturn( 0 );
         when( tokenRead.propertyKey( anyString() ) ).thenReturn( 0 );

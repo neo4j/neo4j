@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.function.IntPredicate;
 
@@ -43,13 +43,13 @@ import org.neo4j.storageengine.api.NodeLabelUpdate;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.values.storable.Values;
 
-import static org.junit.Assert.assertSame;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.Mockito.mock;
 
-public class IndexPopulationTest
+class IndexPopulationTest
 {
     @Test
-    public void mustFlipToFailedIfFailureToApplyLastBatchWhileFlipping() throws Exception
+    void mustFlipToFailedIfFailureToApplyLastBatchWhileFlipping() throws Exception
     {
         // given
         NullLogProvider logProvider = NullLogProvider.getInstance();
@@ -72,7 +72,7 @@ public class IndexPopulationTest
         indexPopulation.flip( false );
 
         // then
-        assertSame( "flipper should have flipped to failing proxy", flipper.getState(), InternalIndexState.FAILED );
+        assertSame( flipper.getState(), InternalIndexState.FAILED, "flipper should have flipped to failing proxy" );
     }
 
     private OnlineIndexProxy onlineIndexProxy( IndexStatisticsStore indexStatisticsStore )

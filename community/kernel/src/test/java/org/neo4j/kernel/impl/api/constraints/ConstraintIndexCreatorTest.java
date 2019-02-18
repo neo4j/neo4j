@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.constraints;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -65,8 +65,9 @@ import org.neo4j.storageengine.api.schema.LabelSchemaDescriptor;
 import org.neo4j.storageengine.api.schema.SchemaDescriptor;
 import org.neo4j.values.storable.Values;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
@@ -78,7 +79,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
-public class ConstraintIndexCreatorTest
+class ConstraintIndexCreatorTest
 {
     private static final int PROPERTY_KEY_ID = 456;
     private static final int LABEL_ID = 123;
@@ -93,7 +94,7 @@ public class ConstraintIndexCreatorTest
     private final AssertableLogProvider logProvider = new AssertableLogProvider();
 
     @Test
-    public void shouldCreateIndexInAnotherTransaction() throws Exception
+    void shouldCreateIndexInAnotherTransaction() throws Exception
     {
         // given
         StubKernel kernel = new StubKernel();
@@ -116,7 +117,7 @@ public class ConstraintIndexCreatorTest
     }
 
     @Test
-    public void shouldDropIndexIfPopulationFails() throws Exception
+    void shouldDropIndexIfPopulationFails() throws Exception
     {
         // given
 
@@ -140,18 +141,10 @@ public class ConstraintIndexCreatorTest
 
         // when
         KernelTransactionImplementation transaction = createTransaction();
-        try
-        {
-            creator.createUniquenessConstraintIndex( transaction, descriptor, getDefaultProvider() );
-
-            fail( "expected exception" );
-        }
-        // then
-        catch ( UniquePropertyValueValidationException e )
-        {
-            assertEquals( "Existing data does not satisfy CONSTRAINT ON ( label[123]:label[123] ) " +
-                    "ASSERT label[123].property[456] IS UNIQUE: Both node 2 and node 1 share the property value ( String(\"a\") )", e.getMessage() );
-        }
+        UniquePropertyValueValidationException exception = assertThrows( UniquePropertyValueValidationException.class,
+                () -> creator.createUniquenessConstraintIndex( transaction, descriptor, getDefaultProvider() ) );
+        assertEquals( "Existing data does not satisfy CONSTRAINT ON ( label[123]:label[123] ) " +
+                "ASSERT label[123].property[456] IS UNIQUE: Both node 2 and node 1 share the property value ( String(\"a\") )", exception.getMessage() );
         assertEquals( 2, kernel.transactions.size() );
         KernelTransactionImplementation tx1 = kernel.transactions.get( 0 );
         SchemaDescriptor newIndex = index.schema();
@@ -164,7 +157,7 @@ public class ConstraintIndexCreatorTest
     }
 
     @Test
-    public void shouldDropIndexInAnotherTransaction() throws Exception
+    void shouldDropIndexInAnotherTransaction() throws Exception
     {
         // given
         StubKernel kernel = new StubKernel();
@@ -182,7 +175,7 @@ public class ConstraintIndexCreatorTest
     }
 
     @Test
-    public void shouldReleaseLabelLockWhileAwaitingIndexPopulation() throws Exception
+    void shouldReleaseLabelLockWhileAwaitingIndexPopulation() throws Exception
     {
         // given
         StubKernel kernel = new StubKernel();
@@ -210,7 +203,7 @@ public class ConstraintIndexCreatorTest
     }
 
     @Test
-    public void shouldReuseExistingOrphanedConstraintIndex() throws Exception
+    void shouldReuseExistingOrphanedConstraintIndex() throws Exception
     {
         // given
         IndexingService indexingService = mock( IndexingService.class );
@@ -232,8 +225,8 @@ public class ConstraintIndexCreatorTest
 
         // then
         assertEquals( orphanedConstraintIndexId, indexId );
-        assertEquals( "There should have been no need to acquire a statement to create the constraint index", 0,
-                kernel.transactions.size() );
+        assertEquals( 0,
+                kernel.transactions.size(), "There should have been no need to acquire a statement to create the constraint index" );
         verify( schemaRead ).indexGetCommittedId( indexReference );
         verify( schemaRead ).index( descriptor );
         verify( schemaRead ).indexGetOwningUniquenessConstraintId( indexReference );
@@ -242,7 +235,7 @@ public class ConstraintIndexCreatorTest
     }
 
     @Test
-    public void shouldFailOnExistingOwnedConstraintIndex() throws Exception
+    void shouldFailOnExistingOwnedConstraintIndex() throws Exception
     {
         // given
         IndexingService indexingService = mock( IndexingService.class );
@@ -262,27 +255,22 @@ public class ConstraintIndexCreatorTest
                 new ConstraintIndexCreator( () -> kernel, indexingService, logProvider );
 
         // when
-        try
+        assertThrows( AlreadyConstrainedException.class, () ->
         {
             KernelTransactionImplementation transaction = createTransaction();
             creator.createUniquenessConstraintIndex( transaction, descriptor, getDefaultProvider() );
-            fail( "Should've failed" );
-        }
-        catch ( AlreadyConstrainedException e )
-        {
-            // THEN good
-        }
+        } );
 
         // then
-        assertEquals( "There should have been no need to acquire a statement to create the constraint index", 0,
-                kernel.transactions.size() );
+        assertEquals( 0,
+                kernel.transactions.size(), "There should have been no need to acquire a statement to create the constraint index" );
         verify( schemaRead ).index( descriptor );
         verify( schemaRead ).indexGetOwningUniquenessConstraintId( indexReference );
         verifyNoMoreInteractions( schemaRead );
     }
 
     @Test
-    public void shouldCreateConstraintIndexForSpecifiedProvider() throws Exception
+    void shouldCreateConstraintIndexForSpecifiedProvider() throws Exception
     {
         // given
         IndexingService indexingService = mock( IndexingService.class );
@@ -309,7 +297,7 @@ public class ConstraintIndexCreatorTest
     }
 
     @Test
-    public void logMessagesAboutConstraintCreation()
+    void logMessagesAboutConstraintCreation()
             throws SchemaKernelException, UniquePropertyValueValidationException, TransactionFailureException, IndexNotFoundKernelException
     {
         StubKernel kernel = new StubKernel();

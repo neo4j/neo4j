@@ -19,18 +19,18 @@
  */
 package org.neo4j.kernel.impl.api.index.sampling;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.kernel.api.index.IndexSample;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class DefaultNonUniqueIndexSamplerTest
+class DefaultNonUniqueIndexSamplerTest
 {
     private final String value = "aaa";
 
     @Test
-    public void shouldSampleNothing()
+    void shouldSampleNothing()
     {
         // given
         NonUniqueIndexSampler sampler = new DefaultNonUniqueIndexSampler( 10 );
@@ -43,7 +43,7 @@ public class DefaultNonUniqueIndexSamplerTest
     }
 
     @Test
-    public void shouldSampleASingleValue()
+    void shouldSampleASingleValue()
     {
         // given
         NonUniqueIndexSampler sampler = new DefaultNonUniqueIndexSampler( 10 );
@@ -56,7 +56,7 @@ public class DefaultNonUniqueIndexSamplerTest
     }
 
     @Test
-    public void shouldSampleDuplicateValues()
+    void shouldSampleDuplicateValues()
     {
         // given
         NonUniqueIndexSampler sampler = new DefaultNonUniqueIndexSampler( 10 );
@@ -71,7 +71,7 @@ public class DefaultNonUniqueIndexSamplerTest
     }
 
     @Test
-    public void shouldDivideTheSamplingInStepsNotBiggerThanBatchSize()
+    void shouldDivideTheSamplingInStepsNotBiggerThanBatchSize()
     {
         // given
         NonUniqueIndexSampler sampler = new DefaultNonUniqueIndexSampler( 1 );
@@ -87,7 +87,7 @@ public class DefaultNonUniqueIndexSamplerTest
     }
 
     @Test
-    public void shouldExcludeValuesFromTheCurrentSampling1()
+    void shouldExcludeValuesFromTheCurrentSampling1()
     {
         // given
         NonUniqueIndexSampler sampler = new DefaultNonUniqueIndexSampler( 10 );
@@ -103,7 +103,7 @@ public class DefaultNonUniqueIndexSamplerTest
     }
 
     @Test
-    public void shouldExcludeValuesFromTheCurrentSampling2()
+    void shouldExcludeValuesFromTheCurrentSampling2()
     {
         // given
         NonUniqueIndexSampler sampler = new DefaultNonUniqueIndexSampler( 10 );
@@ -119,7 +119,7 @@ public class DefaultNonUniqueIndexSamplerTest
     }
 
     @Test
-    public void shouldDoNothingWhenExcludingAValueInAnEmptySample()
+    void shouldDoNothingWhenExcludingAValueInAnEmptySample()
     {
         // given
         NonUniqueIndexSampler sampler = new DefaultNonUniqueIndexSampler( 10 );

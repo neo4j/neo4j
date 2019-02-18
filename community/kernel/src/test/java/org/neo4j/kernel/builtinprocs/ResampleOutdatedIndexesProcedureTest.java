@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.builtinprocs;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode;
@@ -27,13 +27,13 @@ import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-public class ResampleOutdatedIndexesProcedureTest
+class ResampleOutdatedIndexesProcedureTest
 {
     private final IndexingService indexingService = mock( IndexingService.class );
     private final IndexProcedures procedure = new IndexProcedures( new StubKernelTransaction(  ), indexingService );
 
     @Test
-    public void shouldTriggerResampling()
+    void shouldTriggerResampling()
     {
         procedure.resampleOutdatedIndexes();
 

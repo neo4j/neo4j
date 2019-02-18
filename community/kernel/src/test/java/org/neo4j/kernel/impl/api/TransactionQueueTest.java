@@ -19,22 +19,22 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.kernel.impl.api.TransactionQueue.Applier;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
-public class TransactionQueueTest
+class TransactionQueueTest
 {
     @Test
-    public void shouldEmptyIfTooMany() throws Exception
+    void shouldEmptyIfTooMany() throws Exception
     {
         // GIVEN
         Applier applier = mock( Applier.class );
@@ -65,7 +65,7 @@ public class TransactionQueueTest
     }
 
     @Test
-    public void shouldLinkTogetherTransactions() throws Exception
+    void shouldLinkTogetherTransactions() throws Exception
     {
         // GIVEN
         Applier applier = mock( Applier.class );

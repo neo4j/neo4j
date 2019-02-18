@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.api.index;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -35,6 +35,8 @@ import java.util.function.Function;
 import org.neo4j.graphdb.spatial.Point;
 import org.neo4j.helpers.ArrayUtil;
 import org.neo4j.test.Race;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.rule.concurrent.ThreadingExtension;
 import org.neo4j.test.rule.concurrent.ThreadingRule;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.DateTimeValue;
@@ -47,13 +49,14 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
 import static java.time.ZoneOffset.UTC;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class ArrayEncoderTest
+@ExtendWith( ThreadingExtension.class )
+class ArrayEncoderTest
 {
-    @Rule
-    public final ThreadingRule threads = new ThreadingRule();
+    @Inject
+    private ThreadingRule threads;
 
     private static final Character[] base64chars = new Character[]{
             'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U',
@@ -66,7 +69,7 @@ public class ArrayEncoderTest
     private static final char PADDING = '=';
 
     @Test
-    public void encodingShouldContainOnlyBase64EncodingChars()
+    void encodingShouldContainOnlyBase64EncodingChars()
     {
         String[] array = {
                 "This string is long enough for BASE64 to emit a line break, making the encoding platform dependant.",
@@ -94,15 +97,15 @@ public class ArrayEncoderTest
             }
             else
             {
-                assertTrue( "Char " + character + " at position " + i + " is not a valid Base64 encoded char",
-                        ArrayUtil.contains( base64chars, character ) );
+                assertTrue( ArrayUtil.contains( base64chars, character ),
+                        "Char " + character + " at position " + i + " is not a valid Base64 encoded char" );
             }
         }
         assertEquals( array.length, separators );
     }
 
     @Test
-    public void shouldEncodeArrays()
+    void shouldEncodeArrays()
     {
         assertEncoding( "D1.0|2.0|3.0|", new int[]{1, 2, 3} );
         assertEncoding( "Ztrue|false|", new boolean[]{true, false} );
@@ -131,7 +134,7 @@ public class ArrayEncoderTest
     }
 
     @Test
-    public void shouldEncodeProperlyWithMultipleThreadsRacing() throws Throwable
+    void shouldEncodeProperlyWithMultipleThreadsRacing() throws Throwable
     {
         // given
         final String[] INPUT = {
@@ -162,8 +165,8 @@ public class ArrayEncoderTest
                 for ( int i = 0; i < 1000; i++ )
                 {
                     String encoded = encodeFunction.apply( inputValue );
-                    assertEquals( "Each attempt at encoding should yield the same result. Turns out that first one was '"
-                            + first + "', yet another one was '" + encoded + "'", first, encoded );
+                    assertEquals( first, encoded, "Each attempt at encoding should yield the same result. Turns out that first one was '"
+                            + first + "', yet another one was '" + encoded + "'" );
                 }
             } );
         }

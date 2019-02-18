@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -31,39 +31,34 @@ import org.neo4j.resources.CpuClock;
 import org.neo4j.resources.HeapAllocation;
 import org.neo4j.storageengine.api.lock.LockTracer;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class KernelStatementTest
+class KernelStatementTest
 {
     @Test
-    public void shouldReleaseResourcesWhenForceClosed()
+    void shouldReleaseResourcesWhenForceClosed()
     {
         // given
         KernelTransactionImplementation transaction = mock( KernelTransactionImplementation.class );
+        when( transaction.isSuccess() ).thenReturn( true );
         KernelStatement statement = new KernelStatement( transaction,
                 null, LockTracer.NONE,
                 mock( StatementOperationParts.class ), new ClockContext(), EmptyVersionContextSupplier.EMPTY );
         statement.acquire();
 
         // when
-        try
-        {
-            statement.forceClose();
-        }
-        catch ( KernelStatement.StatementNotClosedException ignored )
-        {
-            // ignore
-        }
+        assertThrows( KernelStatement.StatementNotClosedException.class, statement::forceClose );
 
         // then
         verify( transaction ).releaseStatementResources();
     }
 
-    @Test( expected = NotInTransactionException.class )
-    public void assertStatementIsNotOpenWhileAcquireIsNotInvoked()
+    @Test
+    void assertStatementIsNotOpenWhileAcquireIsNotInvoked()
     {
         KernelTransactionImplementation transaction = mock( KernelTransactionImplementation.class );
         TxStateHolder txStateHolder = mock( TxStateHolder.class );
@@ -71,11 +66,11 @@ public class KernelStatementTest
                 LockTracer.NONE, mock( StatementOperationParts.class ),
                 new ClockContext(), EmptyVersionContextSupplier.EMPTY );
 
-        statement.assertOpen();
+        assertThrows( NotInTransactionException.class, statement::assertOpen );
     }
 
     @Test
-    public void reportQueryWaitingTimeToTransactionStatisticWhenFinishQueryExecution()
+    void reportQueryWaitingTimeToTransactionStatisticWhenFinishQueryExecution()
     {
         KernelTransactionImplementation transaction = mock( KernelTransactionImplementation.class );
         TxStateHolder txStateHolder = mock( TxStateHolder.class );

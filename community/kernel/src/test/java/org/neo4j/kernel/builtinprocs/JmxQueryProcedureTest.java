@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.builtinprocs;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.lang.management.ManagementFactory;
 import javax.management.MBeanAttributeInfo;
@@ -51,7 +51,7 @@ import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.values.storable.Values.stringValue;
 
-public class JmxQueryProcedureTest
+class JmxQueryProcedureTest
 {
 
     private MBeanServer jmxServer;
@@ -59,8 +59,28 @@ public class JmxQueryProcedureTest
     private String attributeName;
     private final ResourceTracker resourceTracker = new StubResourceManager();
 
+    @BeforeEach
+    void setup() throws Throwable
+    {
+        jmxServer = mock( MBeanServer.class );
+        beanName = new ObjectName( "org.neo4j:chevyMakesTheTruck=bobMcCoshMakesTheDifference" );
+        attributeName = "name";
+
+        when( jmxServer.queryNames( new ObjectName( "*:*" ), null ) )
+                .thenReturn( asSet( beanName ) );
+        when( jmxServer.getMBeanInfo( beanName ) )
+                .thenReturn( new MBeanInfo(
+                        "org.neo4j.SomeMBean",
+                        "This is a description",
+                        new MBeanAttributeInfo[]{
+                                new MBeanAttributeInfo( attributeName, "someType", "This is the attribute desc.",
+                                        true, false, false )
+                        },
+                        null, null, null ) );
+    }
+
     @Test
-    public void shouldHandleBasicMBean() throws Throwable
+    void shouldHandleBasicMBean() throws Throwable
     {
         // given
         when( jmxServer.getAttribute( beanName, "name" ) ).thenReturn( "Hello, world!" );
@@ -83,7 +103,7 @@ public class JmxQueryProcedureTest
     }
 
     @Test
-    public void shouldHandleMBeanThatThrowsOnGetAttribute() throws Throwable
+    void shouldHandleMBeanThatThrowsOnGetAttribute() throws Throwable
     {
         // given some JVM MBeans do not allow accessing their attributes, despite marking
         // then as readable
@@ -111,7 +131,7 @@ public class JmxQueryProcedureTest
     }
 
     @Test
-    public void shouldHandleCompositeAttributes() throws Throwable
+    void shouldHandleCompositeAttributes() throws Throwable
     {
         // given
         ObjectName beanName = new ObjectName( "org.neo4j:chevyMakesTheTruck=bobMcCoshMakesTheDifference" );
@@ -157,7 +177,7 @@ public class JmxQueryProcedureTest
     }
 
     @Test
-    public void shouldConvertAllStandardBeansWithoutError() throws Throwable
+    void shouldConvertAllStandardBeansWithoutError() throws Throwable
     {
         // given
         MBeanServer jmxServer = ManagementFactory.getPlatformMBeanServer();
@@ -172,25 +192,5 @@ public class JmxQueryProcedureTest
         //      that independent of platform, we never throw exceptions even when converting every
         //      single MBean into Neo4j types, and we always get the correct number of MBeans out.
         assertThat( asList( result ).size(), equalTo( jmxServer.getMBeanCount() ));
-    }
-
-    @Before
-    public void setup() throws Throwable
-    {
-        jmxServer = mock( MBeanServer.class );
-        beanName = new ObjectName( "org.neo4j:chevyMakesTheTruck=bobMcCoshMakesTheDifference" );
-        attributeName = "name";
-
-        when( jmxServer.queryNames( new ObjectName( "*:*" ), null ) )
-                .thenReturn( asSet( beanName ) );
-        when( jmxServer.getMBeanInfo( beanName ) )
-                .thenReturn( new MBeanInfo(
-                    "org.neo4j.SomeMBean",
-                    "This is a description",
-                    new MBeanAttributeInfo[]{
-                            new MBeanAttributeInfo( attributeName, "someType", "This is the attribute desc.",
-                                    true, false, false )
-                    },
-                    null, null, null ) );
     }
 }

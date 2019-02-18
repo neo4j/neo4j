@@ -19,19 +19,21 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.storageengine.api.lock.LockTracer;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
-public class StatementLifecycleTest
+class StatementLifecycleTest
 {
     @Test
-    public void shouldReleaseStoreStatementOnlyWhenReferenceCountDownToZero()
+    void shouldReleaseStoreStatementOnlyWhenReferenceCountDownToZero()
     {
         // given
         KernelTransactionImplementation transaction = mock( KernelTransactionImplementation.class );
@@ -49,22 +51,16 @@ public class StatementLifecycleTest
     }
 
     @Test
-    public void shouldReleaseStoreStatementWhenForceClosingStatements()
+    void shouldReleaseStoreStatementWhenForceClosingStatements()
     {
         // given
         KernelTransactionImplementation transaction = mock( KernelTransactionImplementation.class );
+        when( transaction.isSuccess() ).thenReturn( true );
         KernelStatement statement = getKernelStatement( transaction );
         statement.acquire();
 
         // when
-        try
-        {
-            statement.forceClose();
-        }
-        catch ( KernelStatement.StatementNotClosedException ignored )
-        {
-            //ignored
-        }
+        assertThrows( KernelStatement.StatementNotClosedException.class, statement::forceClose );
 
         // then
         verify( transaction ).releaseStatementResources();

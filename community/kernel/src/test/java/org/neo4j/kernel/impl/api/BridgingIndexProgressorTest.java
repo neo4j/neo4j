@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.kernel.api.index.IndexProgressor;
@@ -30,10 +30,10 @@ import org.neo4j.kernel.impl.index.schema.IndexDescriptor;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-public class BridgingIndexProgressorTest
+class BridgingIndexProgressorTest
 {
     @Test
-    public void closeMustCloseAll()
+    void closeMustCloseAll()
     {
         IndexDescriptor index = TestIndexDescriptorFactory.forLabel( 1, 2, 3 );
         BridgingIndexProgressor progressor = new BridgingIndexProgressor( null, index.schema().getPropertyIds() );

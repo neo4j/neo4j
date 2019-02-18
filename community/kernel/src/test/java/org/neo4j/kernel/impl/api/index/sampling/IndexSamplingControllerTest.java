@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.index.sampling;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -32,7 +32,7 @@ import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.test.DoubleLatch;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -48,10 +48,38 @@ import static org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode.BACKGRO
 import static org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode.TRIGGER_REBUILD_UPDATED;
 import static org.neo4j.kernel.impl.index.schema.IndexDescriptorFactory.forSchema;
 
-public class IndexSamplingControllerTest
+class IndexSamplingControllerTest
 {
+    private final IndexSamplingConfig samplingConfig = mock( IndexSamplingConfig.class );
+    private final IndexSamplingJobFactory jobFactory = mock( IndexSamplingJobFactory.class );
+    private final IndexSamplingJobQueue<Long> jobQueue = new IndexSamplingJobQueue<>( Predicates.alwaysTrue() );
+    private final IndexSamplingJobTracker tracker = mock( IndexSamplingJobTracker.class );
+    private final JobScheduler scheduler = mock( JobScheduler.class );
+    private final IndexMapSnapshotProvider snapshotProvider = mock( IndexMapSnapshotProvider.class );
+    private final IndexMap indexMap = new IndexMap();
+    private final long indexId = 2;
+    private final long anotherIndexId = 3;
+    private final IndexProxy indexProxy = mock( IndexProxy.class );
+    private final IndexProxy anotherIndexProxy = mock( IndexProxy.class );
+    private final CapableIndexDescriptor descriptor =
+            forSchema( forLabel( 3, 4 ), PROVIDER_DESCRIPTOR ).withId( indexId ).withoutCapabilities();
+    private final CapableIndexDescriptor anotherDescriptor =
+            forSchema( forLabel( 5, 6 ), PROVIDER_DESCRIPTOR ).withId( anotherIndexId ).withoutCapabilities();
+    private final IndexSamplingJob job = mock( IndexSamplingJob.class );
+    private final IndexSamplingJob anotherJob = mock( IndexSamplingJob.class );
+    {
+        when( samplingConfig.backgroundSampling() ).thenReturn( true );
+        when( samplingConfig.jobLimit() ).thenReturn( 1 );
+        when( indexProxy.getDescriptor() ).thenReturn( descriptor );
+        when( anotherIndexProxy.getDescriptor() ).thenReturn( anotherDescriptor );
+        when( snapshotProvider.indexMapSnapshot() ).thenReturn( indexMap );
+        when( jobFactory.create( indexId, indexProxy ) ).thenReturn( job );
+        when( jobFactory.create( anotherIndexId, anotherIndexProxy ) ).thenReturn( anotherJob );
+        indexMap.putIndexProxy( indexProxy );
+    }
+
     @Test
-    public void shouldStartASamplingJobForEachIndexInTheDB()
+    void shouldStartASamplingJobForEachIndexInTheDB()
     {
         // given
         IndexSamplingController controller = newSamplingController( always( false ) );
@@ -69,7 +97,7 @@ public class IndexSamplingControllerTest
     }
 
     @Test
-    public void shouldNotStartAJobIfTheIndexIsNotOnline()
+    void shouldNotStartAJobIfTheIndexIsNotOnline()
     {
         // given
         IndexSamplingController controller = newSamplingController( always( false ) );
@@ -85,7 +113,7 @@ public class IndexSamplingControllerTest
     }
 
     @Test
-    public void shouldNotStartAJobIfTheTrackerCannotHandleIt()
+    void shouldNotStartAJobIfTheTrackerCannotHandleIt()
     {
         // given
         IndexSamplingController controller = newSamplingController( always( false ) );
@@ -101,7 +129,7 @@ public class IndexSamplingControllerTest
     }
 
     @Test
-    public void shouldNotEmptyQueueConcurrently()
+    void shouldNotEmptyQueueConcurrently()
     {
         // given
         final AtomicInteger totalCount = new AtomicInteger( 0 );
@@ -164,7 +192,7 @@ public class IndexSamplingControllerTest
     }
 
     @Test
-    public void shouldSampleAllTheIndexes()
+    void shouldSampleAllTheIndexes()
     {
         // given
         IndexSamplingController controller = newSamplingController( always( false ) );
@@ -187,7 +215,7 @@ public class IndexSamplingControllerTest
     }
 
     @Test
-    public void shouldSampleAllTheOnlineIndexes()
+    void shouldSampleAllTheOnlineIndexes()
     {
         // given
         IndexSamplingController controller = newSamplingController( always( false ) );
@@ -208,7 +236,7 @@ public class IndexSamplingControllerTest
     }
 
     @Test
-    public void shouldNotStartOtherSamplingWhenSamplingAllTheIndexes()
+    void shouldNotStartOtherSamplingWhenSamplingAllTheIndexes()
     {
         // given
         final AtomicInteger totalCount = new AtomicInteger( 0 );
@@ -259,7 +287,7 @@ public class IndexSamplingControllerTest
     }
 
     @Test
-    public void shouldRecoverOnlineIndex()
+    void shouldRecoverOnlineIndex()
     {
         // given
         IndexSamplingController controller = newSamplingController( always( true ) );
@@ -275,7 +303,7 @@ public class IndexSamplingControllerTest
     }
 
     @Test
-    public void shouldNotRecoverOfflineIndex()
+    void shouldNotRecoverOfflineIndex()
     {
         // given
         IndexSamplingController controller = newSamplingController( always( true ) );
@@ -289,7 +317,7 @@ public class IndexSamplingControllerTest
     }
 
     @Test
-    public void shouldNotRecoverOnlineIndexIfNotNeeded()
+    void shouldNotRecoverOnlineIndexIfNotNeeded()
     {
         // given
         IndexSamplingController controller = newSamplingController( always( false ) );
@@ -303,7 +331,7 @@ public class IndexSamplingControllerTest
     }
 
     @Test
-    public void shouldSampleIndex()
+    void shouldSampleIndex()
     {
         // given
         IndexSamplingController controller = newSamplingController( always( false ) );
@@ -326,7 +354,7 @@ public class IndexSamplingControllerTest
     }
 
     @Test
-    public void shouldNotStartForSingleIndexAJobIfTheTrackerCannotHandleIt()
+    void shouldNotStartForSingleIndexAJobIfTheTrackerCannotHandleIt()
     {
         // given
         IndexSamplingController controller = newSamplingController( always( false ) );
@@ -355,35 +383,6 @@ public class IndexSamplingControllerTest
         {
             return ans;
         }
-    }
-
-    private final IndexSamplingConfig samplingConfig = mock( IndexSamplingConfig.class );
-    private final IndexSamplingJobFactory jobFactory = mock( IndexSamplingJobFactory.class );
-    private final IndexSamplingJobQueue<Long> jobQueue = new IndexSamplingJobQueue<>( Predicates.alwaysTrue() );
-    private final IndexSamplingJobTracker tracker = mock( IndexSamplingJobTracker.class );
-    private final JobScheduler scheduler = mock( JobScheduler.class );
-    private final IndexMapSnapshotProvider snapshotProvider = mock( IndexMapSnapshotProvider.class );
-    private final IndexMap indexMap = new IndexMap();
-    private final long indexId = 2;
-    private final long anotherIndexId = 3;
-    private final IndexProxy indexProxy = mock( IndexProxy.class );
-    private final IndexProxy anotherIndexProxy = mock( IndexProxy.class );
-    private final CapableIndexDescriptor descriptor =
-            forSchema( forLabel( 3, 4 ), PROVIDER_DESCRIPTOR ).withId( indexId ).withoutCapabilities();
-    private final CapableIndexDescriptor anotherDescriptor =
-            forSchema( forLabel( 5, 6 ), PROVIDER_DESCRIPTOR ).withId( anotherIndexId ).withoutCapabilities();
-    private final IndexSamplingJob job = mock( IndexSamplingJob.class );
-    private final IndexSamplingJob anotherJob = mock( IndexSamplingJob.class );
-
-    {
-        when( samplingConfig.backgroundSampling() ).thenReturn( true );
-        when( samplingConfig.jobLimit() ).thenReturn( 1 );
-        when( indexProxy.getDescriptor() ).thenReturn( descriptor );
-        when( anotherIndexProxy.getDescriptor() ).thenReturn( anotherDescriptor );
-        when( snapshotProvider.indexMapSnapshot() ).thenReturn( indexMap );
-        when( jobFactory.create( indexId, indexProxy ) ).thenReturn( job );
-        when( jobFactory.create( anotherIndexId, anotherIndexProxy ) ).thenReturn( anotherJob );
-        indexMap.putIndexProxy( indexProxy );
     }
 
     private IndexSamplingController.RecoveryCondition always( boolean ans )

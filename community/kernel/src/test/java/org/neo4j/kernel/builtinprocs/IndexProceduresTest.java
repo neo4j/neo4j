@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.builtinprocs;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
@@ -28,10 +28,10 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class IndexProceduresTest
+class IndexProceduresTest
 {
     @Test
-    public void closeStatementOnClose()
+    void closeStatementOnClose()
     {
         KernelTransaction kernelTransaction = mock( KernelTransaction.class );
         Statement statement = mock( Statement.class );

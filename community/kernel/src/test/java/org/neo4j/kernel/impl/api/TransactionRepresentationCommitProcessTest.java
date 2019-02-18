@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -37,9 +37,9 @@ import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.storageengine.api.TransactionIdStore;
 
 import static org.hamcrest.CoreMatchers.containsString;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
@@ -50,12 +50,12 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.Exceptions.contains;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.INTERNAL;
 
-public class TransactionRepresentationCommitProcessTest
+class TransactionRepresentationCommitProcessTest
 {
     private final CommitEvent commitEvent = CommitEvent.NULL;
 
     @Test
-    public void shouldFailWithProperMessageOnAppendException() throws Exception
+    void shouldFailWithProperMessageOnAppendException() throws Exception
     {
         // GIVEN
         TransactionAppender appender = mock( TransactionAppender.class );
@@ -68,20 +68,14 @@ public class TransactionRepresentationCommitProcessTest
                 storageEngine );
 
         // WHEN
-        try
-        {
-            commitProcess.commit( mockedTransaction(), commitEvent, INTERNAL );
-            fail( "Should have failed, something is wrong with the mocking in this test" );
-        }
-        catch ( TransactionFailureException e )
-        {
-            assertThat( e.getMessage(), containsString( "Could not append transaction representation to log" ) );
-            assertTrue( contains( e, rootCause.getMessage(), rootCause.getClass() ) );
-        }
+        TransactionFailureException exception =
+                assertThrows( TransactionFailureException.class, () -> commitProcess.commit( mockedTransaction(), commitEvent, INTERNAL ) );
+        assertThat( exception.getMessage(), containsString( "Could not append transaction representation to log" ) );
+        assertTrue( contains( exception, rootCause.getMessage(), rootCause.getClass() ) );
     }
 
     @Test
-    public void shouldCloseTransactionRegardlessOfWhetherOrNotItAppliedCorrectly() throws Exception
+    void shouldCloseTransactionRegardlessOfWhetherOrNotItAppliedCorrectly() throws Exception
     {
         // GIVEN
         TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
@@ -98,15 +92,10 @@ public class TransactionRepresentationCommitProcessTest
         TransactionToApply transaction = mockedTransaction();
 
         // WHEN
-        try
-        {
-            commitProcess.commit( transaction, commitEvent, INTERNAL );
-        }
-        catch ( TransactionFailureException e )
-        {
-            assertThat( e.getMessage(), containsString( "Could not apply the transaction to the store" ) );
-            assertTrue( contains( e, rootCause.getMessage(), rootCause.getClass() ) );
-        }
+        TransactionFailureException exception =
+                assertThrows( TransactionFailureException.class, () -> commitProcess.commit( transaction, commitEvent, INTERNAL ) );
+        assertThat( exception.getMessage(), containsString( "Could not apply the transaction to the store" ) );
+        assertTrue( contains( exception, rootCause.getMessage(), rootCause.getClass() ) );
 
         // THEN
         // we can't verify transactionCommitted since that's part of the TransactionAppender, which we have mocked
@@ -114,7 +103,7 @@ public class TransactionRepresentationCommitProcessTest
     }
 
     @Test
-    public void shouldSuccessfullyCommitTransactionWithNoCommands() throws Exception
+    void shouldSuccessfullyCommitTransactionWithNoCommands() throws Exception
     {
         // GIVEN
         long txId = 11;

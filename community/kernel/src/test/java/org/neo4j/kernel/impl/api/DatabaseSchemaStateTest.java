@@ -19,22 +19,28 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.logging.AssertableLogProvider;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 
-public class DatabaseSchemaStateTest
+class DatabaseSchemaStateTest
 {
     private final AssertableLogProvider logProvider = new AssertableLogProvider();
     private DatabaseSchemaState stateStore;
 
+    @BeforeEach
+    void before()
+    {
+        this.stateStore = new DatabaseSchemaState( logProvider );
+    }
+
     @Test
-    public void should_apply_updates_correctly()
+    void should_apply_updates_correctly()
     {
         // GIVEN
         stateStore.put( "key", "created_value" );
@@ -47,7 +53,7 @@ public class DatabaseSchemaStateTest
     }
 
     @Test
-    public void should_flush()
+    void should_flush()
     {
         // GIVEN
         stateStore.put( "key", "created_value" );
@@ -61,11 +67,5 @@ public class DatabaseSchemaStateTest
 
         // AND ALSO
         logProvider.assertExactly( inLog( DatabaseSchemaState.class ).debug( "Schema state store has been cleared." ) );
-    }
-
-    @Before
-    public void before()
-    {
-        this.stateStore = new DatabaseSchemaState( logProvider );
     }
 }

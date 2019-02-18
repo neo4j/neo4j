@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.impl.api.index.sampling;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.IndexProviderDescriptor;
@@ -42,10 +42,31 @@ import static org.neo4j.internal.kernel.api.InternalIndexState.ONLINE;
 import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forLabel;
 import static org.neo4j.kernel.impl.index.schema.IndexDescriptorFactory.forSchema;
 
-public class OnlineIndexSamplingJobTest
+class OnlineIndexSamplingJobTest
 {
+    private final LogProvider logProvider = NullLogProvider.getInstance();
+    private final long indexId = 1;
+    private final IndexProxy indexProxy = mock( IndexProxy.class );
+    private final IndexStatisticsStore indexStatisticsStore = mock( IndexStatisticsStore.class );
+    private final CapableIndexDescriptor indexDescriptor =
+            forSchema( forLabel( 1, 2 ), IndexProviderDescriptor.UNDECIDED ).withId( indexId ).withoutCapabilities();
+    private final IndexReader indexReader = mock( IndexReader.class );
+    private final IndexSampler indexSampler = mock( IndexSampler.class );
+
+    private final long indexUniqueValues = 21L;
+    private final long indexSize = 23L;
+
+    @BeforeEach
+    void setup() throws IndexNotFoundKernelException
+    {
+        when( indexProxy.getDescriptor() ).thenReturn( indexDescriptor );
+        when( indexProxy.newReader() ).thenReturn( indexReader );
+        when( indexReader.createSampler() ).thenReturn( indexSampler );
+        when( indexSampler.sampleIndex() ).thenReturn( new IndexSample( indexSize, indexUniqueValues, indexSize ) );
+    }
+
     @Test
-    public void shouldSampleTheIndexAndStoreTheValueWhenTheIndexIsOnline()
+    void shouldSampleTheIndexAndStoreTheValueWhenTheIndexIsOnline()
     {
         // given
         OnlineIndexSamplingJob job = new OnlineIndexSamplingJob( indexId, indexProxy, indexStatisticsStore, "Foo", logProvider );
@@ -60,7 +81,7 @@ public class OnlineIndexSamplingJobTest
     }
 
     @Test
-    public void shouldSampleTheIndexButDoNotStoreTheValuesIfTheIndexIsNotOnline()
+    void shouldSampleTheIndexButDoNotStoreTheValuesIfTheIndexIsNotOnline()
     {
         // given
         OnlineIndexSamplingJob job = new OnlineIndexSamplingJob( indexId, indexProxy, indexStatisticsStore, "Foo", logProvider );
@@ -71,26 +92,5 @@ public class OnlineIndexSamplingJobTest
 
         // then
         verifyNoMoreInteractions( indexStatisticsStore );
-    }
-
-    private final LogProvider logProvider = NullLogProvider.getInstance();
-    private final long indexId = 1;
-    private final IndexProxy indexProxy = mock( IndexProxy.class );
-    private final IndexStatisticsStore indexStatisticsStore = mock( IndexStatisticsStore.class );
-    private final CapableIndexDescriptor indexDescriptor =
-            forSchema( forLabel( 1, 2 ), IndexProviderDescriptor.UNDECIDED ).withId( indexId ).withoutCapabilities();
-    private final IndexReader indexReader = mock( IndexReader.class );
-    private final IndexSampler indexSampler = mock( IndexSampler.class );
-
-    private final long indexUniqueValues = 21L;
-    private final long indexSize = 23L;
-
-    @Before
-    public void setup() throws IndexNotFoundKernelException
-    {
-        when( indexProxy.getDescriptor() ).thenReturn( indexDescriptor );
-        when( indexProxy.newReader() ).thenReturn( indexReader );
-        when( indexReader.createSampler() ).thenReturn( indexSampler );
-        when( indexSampler.sampleIndex() ).thenReturn( new IndexSample( indexSize, indexUniqueValues, indexSize ) );
     }
 }

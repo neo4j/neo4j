@@ -19,9 +19,8 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProviderDescriptor;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
@@ -36,16 +35,14 @@ import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forLabel;
 import static org.neo4j.kernel.impl.index.schema.IndexDescriptorFactory.forSchema;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 
-public class FailedIndexProxyTest
+class FailedIndexProxyTest
 {
-    private final IndexProviderDescriptor providerDescriptor = mock( IndexProviderDescriptor.class );
-    private final IndexCapability indexCapability = mock( IndexCapability.class );
     private final IndexPopulator indexPopulator = mock( IndexPopulator.class );
     private final IndexPopulationFailure indexPopulationFailure = mock( IndexPopulationFailure.class );
     private final IndexStatisticsStore indexStatisticsStore = mock( IndexStatisticsStore.class );
 
     @Test
-    public void shouldRemoveIndexCountsWhenTheIndexItselfIsDropped()
+    void shouldRemoveIndexCountsWhenTheIndexItselfIsDropped()
     {
         // given
         String userDescription = "description";
@@ -63,7 +60,7 @@ public class FailedIndexProxyTest
     }
 
     @Test
-    public void shouldLogReasonForDroppingIndex()
+    void shouldLogReasonForDroppingIndex()
     {
         // given
         AssertableLogProvider logProvider = new AssertableLogProvider();

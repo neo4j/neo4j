@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.builtinprocs;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.SchemaRead;
@@ -29,15 +29,14 @@ import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode;
 import org.neo4j.kernel.impl.index.schema.IndexDescriptor;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -45,15 +44,15 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class ResampleIndexProcedureTest
+class ResampleIndexProcedureTest
 {
     private IndexingService indexingService;
     private IndexProcedures procedure;
     private TokenRead tokenRead;
     private SchemaRead schemaRead;
 
-    @Before
-    public void setup()
+    @BeforeEach
+    void setup()
     {
 
         KernelTransaction transaction = mock( KernelTransaction.class );
@@ -69,40 +68,25 @@ public class ResampleIndexProcedureTest
     }
 
     @Test
-    public void shouldThrowAnExceptionIfTheLabelDoesntExist()
+    void shouldThrowAnExceptionIfTheLabelDoesntExist()
     {
         when( tokenRead.nodeLabel( "NonExistentLabel" ) ).thenReturn( -1 );
 
-        try
-        {
-            procedure.resampleIndex( ":NonExistentLabel(prop)" );
-            fail( "Expected an exception" );
-        }
-        catch ( ProcedureException e )
-        {
-            assertThat( e.status(), is( Status.Schema.LabelAccessFailed ) );
-        }
+        ProcedureException exception = assertThrows( ProcedureException.class, () -> procedure.resampleIndex( ":NonExistentLabel(prop)" ) );
+        assertThat( exception.status(), is( Status.Schema.LabelAccessFailed ) );
     }
 
     @Test
-    public void shouldThrowAnExceptionIfThePropertyKeyDoesntExist()
+    void shouldThrowAnExceptionIfThePropertyKeyDoesntExist()
     {
         when( tokenRead.propertyKey( "nonExistentProperty" ) ).thenReturn( -1 );
 
-        try
-        {
-            procedure.resampleIndex( ":Label(nonExistentProperty)" );
-            fail( "Expected an exception" );
-        }
-        catch ( ProcedureException e )
-        {
-            assertThat( e.status(), is( Status.Schema.PropertyKeyAccessFailed ) );
-        }
+        ProcedureException exception = assertThrows( ProcedureException.class, () -> procedure.resampleIndex( ":Label(nonExistentProperty)" ) );
+        assertThat( exception.status(), is( Status.Schema.PropertyKeyAccessFailed ) );
     }
 
     @Test
-    public void shouldLookUpTheIndexByLabelIdAndPropertyKeyId()
-            throws ProcedureException, SchemaRuleNotFoundException
+    void shouldLookUpTheIndexByLabelIdAndPropertyKeyId() throws ProcedureException
     {
         IndexDescriptor index = TestIndexDescriptorFactory.forLabel( 0, 0 );
         when( tokenRead.nodeLabel( anyString() ) ).thenReturn( 123 );
@@ -115,8 +99,7 @@ public class ResampleIndexProcedureTest
     }
 
     @Test
-    public void shouldLookUpTheCompositeIndexByLabelIdAndPropertyKeyId()
-            throws ProcedureException, SchemaRuleNotFoundException
+    void shouldLookUpTheCompositeIndexByLabelIdAndPropertyKeyId() throws ProcedureException
     {
         IndexDescriptor index = TestIndexDescriptorFactory.forLabel( 0, 0, 1 );
         when( tokenRead.nodeLabel( anyString() ) ).thenReturn( 123 );
@@ -130,28 +113,18 @@ public class ResampleIndexProcedureTest
     }
 
     @Test
-    public void shouldThrowAnExceptionIfTheIndexDoesNotExist()
-            throws SchemaRuleNotFoundException
-
+    void shouldThrowAnExceptionIfTheIndexDoesNotExist()
     {
         when( tokenRead.nodeLabel( anyString() ) ).thenReturn( 0 );
         when( tokenRead.propertyKey( anyString() ) ).thenReturn( 0 );
         when( schemaRead.index( anyInt(), any() ) ).thenReturn( IndexReference.NO_INDEX );
 
-        try
-        {
-            procedure.resampleIndex( ":Person(name)" );
-            fail( "Expected an exception" );
-        }
-        catch ( ProcedureException e )
-        {
-            assertThat( e.status(), is( Status.Schema.IndexNotFound ) );
-        }
+        ProcedureException exception = assertThrows( ProcedureException.class, () -> procedure.resampleIndex( ":Person(name)" ) );
+        assertThat( exception.status(), is( Status.Schema.IndexNotFound ) );
     }
 
     @Test
-    public void shouldTriggerResampling()
-            throws SchemaRuleNotFoundException, ProcedureException, IndexNotFoundKernelException
+    void shouldTriggerResampling() throws ProcedureException, IndexNotFoundKernelException
     {
         IndexDescriptor index = TestIndexDescriptorFactory.forLabel( 123, 456 );
         when( schemaRead.index( anyInt(), any() ) ).thenReturn( index );

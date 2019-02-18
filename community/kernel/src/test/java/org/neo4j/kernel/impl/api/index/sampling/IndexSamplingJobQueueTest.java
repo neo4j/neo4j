@@ -19,30 +19,31 @@
  */
 package org.neo4j.kernel.impl.api.index.sampling;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.function.Predicate;
 
 import org.neo4j.function.Predicates;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.neo4j.helpers.collection.Iterables.asArray;
 
 public class IndexSamplingJobQueueTest
 {
     public static final Predicate<Object> TRUE = Predicates.alwaysTrue();
     public static final Predicate<Object> FALSE = Predicates.alwaysFalse();
+    private final Object something = new Object();
 
     @Test
-    public void returnsNullWhenEmpty()
+    void returnsNullWhenEmpty()
     {
         assertNull( new IndexSamplingJobQueue<>( Predicates.alwaysTrue() ).poll() );
     }
 
     @Test
-    public void shouldEnqueueJobWhenEmpty()
+    void shouldEnqueueJobWhenEmpty()
     {
         // given
         final IndexSamplingJobQueue<Object> jobQueue = new IndexSamplingJobQueue<>( TRUE );
@@ -56,7 +57,7 @@ public class IndexSamplingJobQueueTest
     }
 
     @Test
-    public void shouldEnqueueJobOnlyOnce()
+    void shouldEnqueueJobOnlyOnce()
     {
         // given
         final IndexSamplingJobQueue<Object> jobQueue = new IndexSamplingJobQueue<>( TRUE );
@@ -71,7 +72,7 @@ public class IndexSamplingJobQueueTest
     }
 
     @Test
-    public void shouldNotEnqueueJobOnlyIfForbiddenByThePredicate()
+    void shouldNotEnqueueJobOnlyIfForbiddenByThePredicate()
     {
         // given
         final IndexSamplingJobQueue<Object> jobQueue = new IndexSamplingJobQueue<>( FALSE );
@@ -84,7 +85,7 @@ public class IndexSamplingJobQueueTest
     }
 
     @Test
-    public void shouldForceEnqueueOfAnJobEvenIfThePredicateForbidsIt()
+    void shouldForceEnqueueOfAnJobEvenIfThePredicateForbidsIt()
     {
         // given
         final IndexSamplingJobQueue<Object> jobQueue = new IndexSamplingJobQueue<>( FALSE );
@@ -97,7 +98,7 @@ public class IndexSamplingJobQueueTest
     }
 
     @Test
-    public void shouldDequeueAll()
+    void shouldDequeueAll()
     {
         // given
         final Object somethingElse = new Object();
@@ -115,6 +116,4 @@ public class IndexSamplingJobQueueTest
         );
         assertNull( jobQueue.poll() );
     }
-
-    private final Object something = new Object();
 }
