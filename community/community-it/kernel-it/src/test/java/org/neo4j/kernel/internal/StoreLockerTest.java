@@ -201,7 +201,7 @@ public class StoreLockerTest
         {
             String msg = format( "Unable to create path for store dir: %s. " +
                     "Please ensure no other process is using this database, and that " +
-                    "the directory is writable (required even for read-only access)", storeLayout );
+                    "the directory is writable (required even for read-only access)", storeLayout.storeDirectory().toString() );
             assertThat( e.getMessage(), is( msg ) );
         }
     }

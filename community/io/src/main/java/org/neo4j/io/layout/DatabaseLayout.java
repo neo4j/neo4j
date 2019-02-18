@@ -331,7 +331,7 @@ public class DatabaseLayout
     @Override
     public String toString()
     {
-        return String.valueOf( databaseDirectory );
+        return "DatabaseLayout{" + "databaseDirectory=" + databaseDirectory + ", transactionLogsDirectory=" + getTransactionLogsDirectory() + '}';
     }
 
     @Override

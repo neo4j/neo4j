@@ -134,6 +134,6 @@ public class StoreLayout
     @Override
     public String toString()
     {
-        return String.valueOf( storeDirectory );
+        return "StoreLayout{" + "storeDirectory=" + storeDirectory + ", transactionLogsRootDirectory=" + layoutConfig.getTransactionLogsRootDirectory() + '}';
     }
 }
