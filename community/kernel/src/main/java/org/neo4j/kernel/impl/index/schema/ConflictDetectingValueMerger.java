@@ -71,12 +71,22 @@ class ConflictDetectingValueMerger<KEY extends NativeIndexKey<KEY>, VALUE extend
         key.setCompareId( compareEntityIds );
     }
 
+    boolean wasConflicting()
+    {
+        return conflict;
+    }
+
+    void reportConflict( Value[] values ) throws IndexEntryConflictException
+    {
+        conflict = false;
+        throw new IndexEntryConflictException( existingNodeId, addedNodeId, ValueTuple.of( values ) );
+    }
+
     void checkConflict( Value[] values ) throws IndexEntryConflictException
     {
-        if ( conflict )
+        if ( wasConflicting() )
         {
-            conflict = false;
-            throw new IndexEntryConflictException( existingNodeId, addedNodeId, ValueTuple.of( values ) );
+            reportConflict( values );
         }
     }
 }

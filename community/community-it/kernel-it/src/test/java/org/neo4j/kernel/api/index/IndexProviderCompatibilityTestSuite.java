@@ -40,6 +40,7 @@ import java.util.List;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.impl.api.index.PhaseTracker;
 import org.neo4j.kernel.impl.index.schema.IndexDescriptor;
 import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
@@ -293,6 +294,7 @@ public abstract class IndexProviderCompatibilityTestSuite
                 runWithPopulator.accept( populator );
                 if ( closeSuccessfully )
                 {
+                    populator.scanCompleted( PhaseTracker.nullInstance );
                     testSuite.consistencyCheck( populator );
                 }
             }

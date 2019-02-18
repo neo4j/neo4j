@@ -127,14 +127,20 @@ class NativeIndexUpdater<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIn
             Writer<KEY,VALUE> writer, ConflictDetectingValueMerger<KEY,VALUE> conflictDetectingValueMerger )
             throws IndexEntryConflictException
     {
-        initializeKeyFromUpdate( treeKey, update.getEntityId(), update.values() );
-        treeValue.from( update.values() );
+        initializeKeyAndValueFromUpdate( treeKey, treeValue, update.getEntityId(), update.values() );
         conflictDetectingValueMerger.controlConflictDetection( treeKey );
         writer.merge( treeKey, treeValue, conflictDetectingValueMerger );
         conflictDetectingValueMerger.checkConflict( update.values() );
     }
 
-    private static <KEY extends NativeIndexKey<KEY>> void initializeKeyFromUpdate( KEY treeKey, long entityId, Value[] values )
+    static <KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue> void initializeKeyAndValueFromUpdate( KEY treeKey, VALUE treeValue,
+            long entityId, Value[] values )
+    {
+        initializeKeyFromUpdate( treeKey, entityId, values );
+        treeValue.from( values );
+    }
+
+    static <KEY extends NativeIndexKey<KEY>> void initializeKeyFromUpdate( KEY treeKey, long entityId, Value[] values )
     {
         treeKey.initialize( entityId );
         for ( int i = 0; i < values.length; i++ )

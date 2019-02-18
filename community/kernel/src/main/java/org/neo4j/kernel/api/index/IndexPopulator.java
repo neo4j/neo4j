@@ -24,11 +24,11 @@ import java.util.Collection;
 
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
+import org.neo4j.kernel.impl.api.index.PhaseTracker;
 import org.neo4j.kernel.impl.api.index.updater.SwallowingIndexUpdater;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.storageengine.api.StorageIndexReference;
-import org.neo4j.storageengine.api.UpdateMode;
 
 /**
  * Used for initial population of an index.
@@ -141,6 +141,10 @@ public interface IndexPopulator
 
     IndexPopulator EMPTY = new Adapter();
 
+    default void scanCompleted( PhaseTracker phaseTracker ) throws IndexEntryConflictException
+    {   // no-op by default
+    }
+
     class Adapter implements IndexPopulator
     {
         @Override
@@ -162,6 +166,11 @@ public interface IndexPopulator
         public IndexUpdater newPopulatingUpdater( NodePropertyAccessor accessor )
         {
             return SwallowingIndexUpdater.INSTANCE;
+        }
+
+        @Override
+        public void scanCompleted( PhaseTracker phaseTracker )
+        {
         }
 
         @Override

@@ -23,5 +23,7 @@ public enum UpdateMode
 {
     ADDED,
     CHANGED,
-    REMOVED
+    REMOVED;
+
+    public static final UpdateMode[] MODES = UpdateMode.values();
 }

@@ -45,13 +45,13 @@ import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelExceptio
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.kernel.impl.api.SchemaState;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.index.schema.CapableIndexDescriptor;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
+import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.storageengine.api.schema.SchemaDescriptor;
 import org.neo4j.storageengine.api.schema.SchemaDescriptorSupplier;
 import org.neo4j.util.FeatureToggles;
@@ -300,6 +300,12 @@ public class MultipleIndexPopulator implements IndexPopulator
         throw new UnsupportedOperationException( "Multiple index populator can't perform index sampling." );
     }
 
+    @Override
+    public void scanCompleted( PhaseTracker phaseTracker )
+    {
+        throw new UnsupportedOperationException( "Not supposed to be called" );
+    }
+
     void resetIndexCounts()
     {
         forEachPopulation( this::resetIndexCountsForPopulation );
@@ -316,6 +322,7 @@ public class MultipleIndexPopulator implements IndexPopulator
         {
             try
             {
+                population.scanCompleted();
                 population.flip( verifyBeforeFlipping );
             }
             catch ( Throwable t )
@@ -638,6 +645,11 @@ public class MultipleIndexPopulator implements IndexPopulator
             Collection<IndexEntryUpdate<?>> batch = batchedUpdatesFromScan;
             batchedUpdatesFromScan = new ArrayList<>( BATCH_SIZE_SCAN );
             return batch;
+        }
+
+        void scanCompleted() throws IndexEntryConflictException
+        {
+            populator.scanCompleted( phaseTracker );
         }
     }
 

@@ -63,7 +63,6 @@ public class RandomExtension extends StatefullFieldExtension<RandomRule> impleme
     {
         RandomRule randomRule = new RandomRule();
         randomRule.setSeed( System.currentTimeMillis() );
-        randomRule.reset();
         return randomRule;
     }
 

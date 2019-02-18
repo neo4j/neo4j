@@ -17,35 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api.index;
+package org.neo4j.kernel.impl.index.schema;
 
-public interface PhaseTracker
+import java.nio.ByteBuffer;
+
+@FunctionalInterface
+interface ByteBufferFactory
 {
-    void enterPhase( Phase phase );
-
-    void stop();
-
-    PhaseTracker nullInstance = new NullPhaseTracker();
-
-    enum Phase
-    {
-        SCAN,
-        WRITE,
-        MERGE,
-        BUILD,
-        FLIP
-    }
-
-    class NullPhaseTracker implements PhaseTracker
-    {
-        @Override
-        public void enterPhase( Phase phase )
-        {
-        }
-
-        @Override
-        public void stop()
-        {
-        }
-    }
+    ByteBuffer newBuffer( int bufferSize );
 }

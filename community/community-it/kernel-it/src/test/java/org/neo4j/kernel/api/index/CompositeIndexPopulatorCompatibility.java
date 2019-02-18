@@ -30,6 +30,7 @@ import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.api.index.PhaseTracker;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.index.schema.IndexDescriptor;
 import org.neo4j.kernel.impl.index.schema.NodeValueIterator;
@@ -115,6 +116,7 @@ public class CompositeIndexPopulatorCompatibility extends IndexProviderCompatibi
                     TestNodePropertyAccessor propertyAccessor =
                             new TestNodePropertyAccessor( nodeId1, descriptor.schema(), value1, value2 );
                     propertyAccessor.addNode( nodeId2, descriptor.schema(), value1, value2 );
+                    p.scanCompleted( PhaseTracker.nullInstance );
                     p.verifyDeferredConstraints( propertyAccessor );
 
                     fail( "expected exception" );
@@ -126,7 +128,7 @@ public class CompositeIndexPopulatorCompatibility extends IndexProviderCompatibi
                     assertEquals( ValueTuple.of( value1, value2 ), conflict.getPropertyValues() );
                     assertEquals( nodeId2, conflict.getAddedNodeId() );
                 }
-            } );
+            }, false );
         }
 
         @Test

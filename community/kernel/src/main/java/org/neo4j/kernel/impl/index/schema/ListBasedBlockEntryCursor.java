@@ -17,35 +17,45 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api.index;
+package org.neo4j.kernel.impl.index.schema;
 
-public interface PhaseTracker
+import java.util.Iterator;
+
+class ListBasedBlockEntryCursor<KEY,VALUE> implements BlockEntryCursor<KEY,VALUE>
 {
-    void enterPhase( Phase phase );
+    private final Iterator<BlockEntry<KEY,VALUE>> entries;
+    private BlockEntry<KEY,VALUE> next;
 
-    void stop();
-
-    PhaseTracker nullInstance = new NullPhaseTracker();
-
-    enum Phase
+    ListBasedBlockEntryCursor( Iterable<BlockEntry<KEY,VALUE>> entries )
     {
-        SCAN,
-        WRITE,
-        MERGE,
-        BUILD,
-        FLIP
+        this.entries = entries.iterator();
     }
 
-    class NullPhaseTracker implements PhaseTracker
+    @Override
+    public boolean next()
     {
-        @Override
-        public void enterPhase( Phase phase )
+        if ( entries.hasNext() )
         {
+            next = entries.next();
+            return true;
         }
+        return false;
+    }
 
-        @Override
-        public void stop()
-        {
-        }
+    @Override
+    public KEY key()
+    {
+        return next.key();
+    }
+
+    @Override
+    public VALUE value()
+    {
+        return next.value();
+    }
+
+    @Override
+    public void close()
+    {   // no-op
     }
 }

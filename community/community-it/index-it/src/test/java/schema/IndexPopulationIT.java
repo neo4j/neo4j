@@ -192,6 +192,8 @@ public class IndexPopulationIT
                 containsString( "SCAN" ),
                 containsString( "WRITE" ),
                 containsString( "FLIP" ),
+                containsString( "MERGE" ),
+                containsString( "BUILD" ),
                 containsString( "totalTime=" ),
                 containsString( "avgTime=" ),
                 containsString( "minTime=" ),
