@@ -108,6 +108,22 @@ class RowsMatcherTest extends CypherFunSuite with TestName
     new GroupBy("c").matches(Array("a", "b", "c"), rows) should be(true)
   }
 
+  test("GroupBy multi") {
+    val rows = Array(
+      row(1, 1),
+      row(1, 1),
+      row(4, 0),
+      row(1, 2),
+      row(2, 2),
+      row(2, 2),
+      row(4, 1))
+
+    new GroupBy("a", "b").matches(Array("a", "b"), rows) should be(true)
+    new GroupBy("b", "a").matches(Array("a", "b"), rows) should be(true)
+    new GroupBy("b", "a").matches(Array("a", "b"), rows :+ rows.head) should be(false)
+    new GroupBy("b", "a").matches(Array("a", "b"), rows.last +: rows) should be(false)
+  }
+
   test("Ascending") {
     assertOkSingleRow(new Ascending("a"))
 

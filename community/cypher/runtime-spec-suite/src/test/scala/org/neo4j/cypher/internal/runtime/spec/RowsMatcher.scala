@@ -107,8 +107,8 @@ trait RowOrderMatcher extends RowsMatcher {
     append(new Descending(column))
     this
   }
-  def groupBy(column: String): RowOrderMatcher = {
-    append(new GroupBy(column))
+  def groupBy(columns: String*): RowOrderMatcher = {
+    append(new GroupBy(columns:_*))
     this
   }
 
@@ -143,11 +143,11 @@ trait RowOrderMatcher extends RowsMatcher {
   def onRow(columns: IndexedSeq[String], row: Array[AnyValue]): Boolean
 }
 
-class GroupBy(val column: String) extends RowOrderMatcher {
-  def description: String = s"grouped by '$column'"
+class GroupBy(val groupingColumns: String*) extends RowOrderMatcher {
+  def description: String = s"grouped by '${groupingColumns.mkString(",")}'"
 
-  private var previous: AnyValue = _
-  private val seenGroupingKeys = mutable.Set[AnyValue]()
+  private var previous: Seq[AnyValue] = _
+  private val seenGroupingKeys = mutable.Set[Seq[AnyValue]]()
 
   override def reset(): Unit = {
     seenGroupingKeys.clear()
@@ -157,11 +157,14 @@ class GroupBy(val column: String) extends RowOrderMatcher {
   override def onRow(columns: IndexedSeq[String],
                      row: Array[AnyValue]): Boolean = {
 
-    val i = columns.indexOf(column)
-    if (i == -1)
-      throw new IllegalArgumentException(s"group by column '$column' is not part of result columns '${columns.mkString(",")}'")
+    val is = groupingColumns.map(col => {
+      val i = columns.indexOf(col)
+      if (i == -1)
+        throw new IllegalArgumentException(s"group by column '$col' is not part of result columns '${columns.mkString(",")}'")
+      i
+    })
 
-    val current = row(i)
+    val current = is.map(row)
     if (current == previous) {
       inner.forall(_.onRow(columns, row))
     } else {
