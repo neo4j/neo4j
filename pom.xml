@@ -2128,6 +2128,11 @@
                 <version>1.1.1</version>
             </dependency>
 
+            <dependency>
+                <groupId>io.airlift</groupId>
+                <artifactId>airline</artifactId>
+                <version>0.8</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 </project>
