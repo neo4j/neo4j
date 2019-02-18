@@ -26,17 +26,12 @@ import java.util.function.Predicate;
 import org.neo4j.function.Predicates;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.internal.kernel.api.exceptions.schema.MalformedSchemaRuleException;
-import org.neo4j.kernel.api.exceptions.schema.DuplicateSchemaRuleException;
-import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.store.InvalidRecordException;
 import org.neo4j.kernel.impl.store.RecordStore;
-import org.neo4j.kernel.impl.store.record.ConstraintRule;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.storageengine.api.SchemaRule;
-import org.neo4j.storageengine.api.schema.ConstraintDescriptor;
-import org.neo4j.storageengine.api.schema.SchemaDescriptorSupplier;
 
 /**
  * A stripped down 3.5.x version of SchemaStorage, used for schema store migration.
@@ -57,27 +52,7 @@ public class SchemaStorage35
 
     public Iterator<StoreIndexDescriptor> indexesGetAll()
     {
-        return loadAllSchemaRules( Predicates.alwaysTrue(), StoreIndexDescriptor.class, false );
-    }
-
-    public StoreIndexDescriptor indexGetForSchema( final SchemaDescriptorSupplier index )
-    {
-        Iterator<StoreIndexDescriptor> indexes = loadAllSchemaRules( index::equals, StoreIndexDescriptor.class, false );
-
-        StoreIndexDescriptor foundRule = null;
-
-        while ( indexes.hasNext() )
-        {
-            StoreIndexDescriptor candidate = indexes.next();
-            if ( foundRule != null )
-            {
-                throw new IllegalStateException( String.format(
-                        "Found more than one matching index, %s and %s", foundRule, candidate ) );
-            }
-            foundRule = candidate;
-        }
-
-        return foundRule;
+        return loadAllSchemaRules( Predicates.alwaysTrue(), StoreIndexDescriptor.class );
     }
 
     public StoreIndexDescriptor indexGetForName( String indexName )
@@ -94,33 +69,9 @@ public class SchemaStorage35
         return null;
     }
 
-    public ConstraintRule constraintsGetSingle( final ConstraintDescriptor descriptor )
-            throws SchemaRuleNotFoundException, DuplicateSchemaRuleException
+    private Iterator<SchemaRule> loadAllSchemaRules()
     {
-        Iterator<ConstraintRule> rules = loadAllSchemaRules( descriptor::isSame, ConstraintRule.class, false );
-
-        if ( !rules.hasNext() )
-        {
-            throw new SchemaRuleNotFoundException( SchemaRule.Kind.map( descriptor ), descriptor.schema() );
-        }
-
-        ConstraintRule rule = rules.next();
-
-        if ( rules.hasNext() )
-        {
-            throw new DuplicateSchemaRuleException( SchemaRule.Kind.map( descriptor ), descriptor.schema() );
-        }
-        return rule;
-    }
-
-    public Iterator<ConstraintRule> constraintsGetAllIgnoreMalformed()
-    {
-        return loadAllSchemaRules( Predicates.alwaysTrue(), ConstraintRule.class, true );
-    }
-
-    Iterator<SchemaRule> loadAllSchemaRules()
-    {
-        return loadAllSchemaRules( Predicates.alwaysTrue(), SchemaRule.class, false );
+        return loadAllSchemaRules( Predicates.alwaysTrue(), SchemaRule.class );
     }
 
     /**
@@ -129,13 +80,9 @@ public class SchemaStorage35
      *
      * @param predicate filter when loading.
      * @param returnType type of {@link SchemaRule} to load.
-     * @param ignoreMalformed whether or not to ignore inconsistent records (used in consistency checking).
      * @return {@link Iterator} of the loaded schema rules, lazily loaded when advancing the iterator.
      */
-    <ReturnType extends SchemaRule> Iterator<ReturnType> loadAllSchemaRules(
-            final Predicate<ReturnType> predicate,
-            final Class<ReturnType> returnType,
-            final boolean ignoreMalformed )
+    private <ReturnType extends SchemaRule> Iterator<ReturnType> loadAllSchemaRules( final Predicate<ReturnType> predicate, final Class<ReturnType> returnType )
     {
         return new PrefetchingIterator<ReturnType>()
         {
@@ -180,10 +127,7 @@ public class SchemaStorage35
                         }
                         catch ( MalformedSchemaRuleException e )
                         {
-                            if ( !ignoreMalformed )
-                            {
-                                throw new RuntimeException( e );
-                            }
+                            throw new RuntimeException( e );
                         }
                     }
                 }

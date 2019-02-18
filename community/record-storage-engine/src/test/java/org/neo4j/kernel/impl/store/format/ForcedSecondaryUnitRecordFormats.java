@@ -104,9 +104,9 @@ public class ForcedSecondaryUnitRecordFormats implements RecordFormats
     }
 
     @Override
-    public RecordFormat<SchemaRecord> schemaRecord()
+    public RecordFormat<SchemaRecord> schema()
     {
-        return withForcedSecondaryUnit( actual.schemaRecord() );
+        return withForcedSecondaryUnit( actual.schema() );
     }
 
     @Override

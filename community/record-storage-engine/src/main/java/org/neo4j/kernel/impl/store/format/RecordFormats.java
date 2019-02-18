@@ -81,7 +81,7 @@ public interface RecordFormats
 
     RecordFormat<PropertyRecord> property();
 
-    RecordFormat<SchemaRecord> schemaRecord();
+    RecordFormat<SchemaRecord> schema();
 
     RecordFormat<LabelTokenRecord> labelToken();
 

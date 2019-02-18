@@ -39,6 +39,7 @@ import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.storageengine.api.SchemaRule;
+import org.neo4j.util.VisibleForTesting;
 
 import static java.util.Collections.singleton;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
@@ -50,7 +51,7 @@ public class SchemaStore35 extends AbstractDynamicStore
 {
     // store version, each store ends with this string (byte encoded)
     public static final String TYPE_DESCRIPTOR = "SchemaStore";
-    public static final int BLOCK_SIZE = 56;
+    private static final int BLOCK_SIZE = 56;
 
     public SchemaStore35(
             File file,
@@ -73,13 +74,14 @@ public class SchemaStore35 extends AbstractDynamicStore
         throw new UnsupportedOperationException( "Not needed for store migration." );
     }
 
+    @VisibleForTesting
     @Override
     public void checkAndLoadStorage( boolean createIfNotExists )
     {
         super.checkAndLoadStorage( createIfNotExists );
     }
 
-    public List<DynamicRecord> allocateFrom( SchemaRule rule )
+    List<DynamicRecord> allocateFrom( SchemaRule rule )
     {
         List<DynamicRecord> records = new ArrayList<>();
         DynamicRecord record = getRecord( rule.getId(), nextRecord(), CHECK );
@@ -88,8 +90,7 @@ public class SchemaStore35 extends AbstractDynamicStore
         return records;
     }
 
-    public static SchemaRule readSchemaRule( long id, Collection<DynamicRecord> records, byte[] buffer )
-            throws MalformedSchemaRuleException
+    static SchemaRule readSchemaRule( long id, Collection<DynamicRecord> records, byte[] buffer ) throws MalformedSchemaRuleException
     {
         ByteBuffer scratchBuffer = concatData( records, buffer );
         return SchemaRuleSerialization35.deserialize( id, scratchBuffer );

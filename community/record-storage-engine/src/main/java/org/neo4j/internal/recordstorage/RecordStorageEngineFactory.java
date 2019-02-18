@@ -236,7 +236,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
     }
 
     /**
-     * Create an empty read-only token holder if the given type.
+     * Create an empty read-only token holder of the given type.
      * @param tokenType one of {@link TokenHolder#TYPE_LABEL}, {@link TokenHolder#TYPE_RELATIONSHIP_TYPE}, or {@link TokenHolder#TYPE_PROPERTY_KEY}.
      * @return An empty read-only token holder.
      */

@@ -142,7 +142,7 @@ public class RecordFormatPropertyConfiguratorTest
         }
 
         @Override
-        public RecordFormat<SchemaRecord> schemaRecord()
+        public RecordFormat<SchemaRecord> schema()
         {
             return null;
         }

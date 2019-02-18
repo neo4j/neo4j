@@ -101,9 +101,9 @@ public class PrepareTrackingRecordFormats implements RecordFormats
     }
 
     @Override
-    public RecordFormat<SchemaRecord> schemaRecord()
+    public RecordFormat<SchemaRecord> schema()
     {
-        return new PrepareTrackingRecordFormat<>( actual.schemaRecord(), schemaPrepare );
+        return new PrepareTrackingRecordFormat<>( actual.schema(), schemaPrepare );
     }
 
     @Override

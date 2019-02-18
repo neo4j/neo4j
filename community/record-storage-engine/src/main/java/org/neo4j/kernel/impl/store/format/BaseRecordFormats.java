@@ -158,7 +158,7 @@ public abstract class BaseRecordFormats implements RecordFormats
     }
 
     @Override
-    public RecordFormat<SchemaRecord> schemaRecord()
+    public RecordFormat<SchemaRecord> schema()
     {
         return new NoRecordFormat<>();
     }

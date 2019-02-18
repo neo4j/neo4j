@@ -93,7 +93,7 @@ public class SchemaStore extends CommonAbstractStore<SchemaRecord,IntStoreHeader
             RecordFormats recordFormats,
             OpenOption... openOptions )
     {
-        super( file, idFile, conf, idType, idGeneratorFactory, pageCache, logProvider, TYPE_DESCRIPTOR, recordFormats.schemaRecord(),
+        super( file, idFile, conf, idType, idGeneratorFactory, pageCache, logProvider, TYPE_DESCRIPTOR, recordFormats.schema(),
                 getStoreHeaderFormat( recordFormats ), recordFormats.storeVersion(), openOptions );
         this.propertyStore = propertyStore;
     }
@@ -164,7 +164,7 @@ public class SchemaStore extends CommonAbstractStore<SchemaRecord,IntStoreHeader
 
     public static IntObjectMap<Value> convertSchemaRuleToMap( SchemaRule rule, TokenHolders tokenHolders )
     {
-        // The dance we do in here with amp to arrays to another map, allows us to resolve (and allocate) all of the tokens in a single batch operation.
+        // The dance we do in here with map to arrays to another map, allows us to resolve (and allocate) all of the tokens in a single batch operation.
         Map<String,Value> stringlyMap = mapifySchemaRule( rule );
 
         int size = stringlyMap.size();

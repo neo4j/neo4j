@@ -45,6 +45,10 @@ public class IndexPopulationJob implements Runnable
 
     private volatile StoreScan<IndexPopulationFailedKernelException> storeScan;
     private volatile boolean cancelled;
+    /**
+     * The {@link JobHandle} that represents the scheduling of this index population job.
+     * This is used in the cancellation of the job.
+     */
     private volatile JobHandle jobHandle;
 
     public IndexPopulationJob( MultipleIndexPopulator multiPopulator, IndexingService.Monitor monitor, boolean verifyBeforeFlipping )
@@ -179,6 +183,9 @@ public class IndexPopulationJob implements Runnable
         doneSignal.await();
     }
 
+    /**
+     * Assign the job-handle that was created when this index population job was scheduled.
+     */
     public void setHandle( JobHandle handle )
     {
         this.jobHandle = handle;
