@@ -68,6 +68,43 @@ import org.neo4j.values.storable.Values;
 
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
 
+/**
+ * In this schema store implementation, each schema record is really just a pointer to a property chain in the property store.
+ * The properties describe each schema rule structurally, as a map of property keys to values. The property keys are resolved as property key tokens
+ * with pre-defined names. The property keys can vary from database to database, but the token names are the same.
+ * <p>
+ * The exact structure of a schema rule depends on what kind of rule it is:
+ *
+ * <ul>
+ *     <li>All</li>
+ *     <ul>
+ *         <li>schemaRuleType: String, "INDEX" or "CONSTRAINT"</li>
+ *         <li>name: String</li>
+ *         <li>Schema descriptor:</li>
+ *         <ul>
+ *             <li>schemaEntityType: String, "NODE" or "RELATIONSHIP"</li>
+ *             <li>schemaPropertySchemaType: String, "COMPLETE_ALL_TOKENS" or "PARTIAL_ANY_TOKEN"</li>
+ *             <li>schemaEntityIds: int[] -- IDs for either labels or relationship types, depending on schemaEntityType</li>
+ *             <li>schemaPropertyIds: int[]</li>
+ *         </ul>
+ *     </ul>
+ *     <li>INDEXes</li>
+ *     <ul>
+ *         <li>schemaRuleType = "INDEX"</li>
+ *         <li>indexRuleTyoe: String, "UNIQUE" or "NON_UNIQUE"</li>
+ *         <li>owningConstraint: long -- only present for indexRuleType=UNIQUE indexes</li>
+ *         <li>indexProviderName: String</li>
+ *         <li>indexProviderVersion: String</li>
+ *         <li>"indexConfig.XYZ"... properties -- index specific settings, depending on the index provider</li>
+ *     </ul>
+ *     <li>CONSTRAINTs</li>
+ *     <ul>
+ *         <li>schemaRuleType = "CONSTRAINT"</li>
+ *         <li>constraintRuleType: String, "UNIQUE" or "EXISTS" or "UNIQUE_EXISTS"</li>
+ *         <li>ownedIndex: long -- only present for constraintRuleType=UNIQUE or constraintRuleType=UNIQUE_EXISTS constraints</li>
+ *     </ul>
+ * </ul>
+ */
 public class SchemaStore extends CommonAbstractStore<SchemaRecord,IntStoreHeader>
 {
     // We technically don't need a store header, but we reserve record id 0 anyway, both to stay compatible with the old schema store,
@@ -284,46 +321,6 @@ public class SchemaStore extends CommonAbstractStore<SchemaRecord,IntStoreHeader
         default:
             throw new MalformedSchemaRuleException( "Can not create a schema rule of type: " + schemaRuleType );
         }
-
-        // All
-        // schemaRuleType - index / constraint
-        // name
-
-        // CONSTRAINTS
-        // ownedIndex
-        // constraintDescriptor (schema and type)
-
-        // INDEXES
-        // indexProvider - providerName, providerVersion
-        // indexRuleType (uniqueness)
-        // schema - labels/relTypes, properties
-        // owningConstraint
-        // indexType
-        // indexConfig
-
-        // IMPLEMENTATION
-
-        // SchemaRuleType: String
-        // name: String
-        // ownedIndex: long
-        // constraintDescriptor:
-        //      type: String
-        //      schema: Schema
-        // indexProviderName: String
-        // indexProviderVersion: String
-        // indexRuleType: String
-        // owningConstraint: long
-        // indexType: String
-
-        // IndexConfig:
-        //      "IndexConfig.<x>"
-        //      "IndexConfig.<y>"
-        //      "IndexConfig.<z>"
-        // Schema:
-        //      entityType: String
-        //      entities (labelIds or repTypeIds): long[]
-        //      propertyKeyIds: long[]
-        //      propertySchemaType: String
     }
 
     private static SchemaRule buildIndexRule( long schemaRuleId, Map<String,Value> props ) throws MalformedSchemaRuleException
