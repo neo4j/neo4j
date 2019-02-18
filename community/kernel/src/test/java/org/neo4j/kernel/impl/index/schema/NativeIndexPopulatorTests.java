@@ -45,6 +45,7 @@ import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
+import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
 import static java.util.Arrays.asList;
@@ -601,44 +602,50 @@ public abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>,
         public void shouldSampleUpdatesIfConfiguredForOnlineSampling() throws Exception
         {
             // GIVEN
-            populator.create();
-            IndexEntryUpdate<IndexDescriptor>[] scanUpdates = valueCreatorUtil.someUpdates( random );
-            populator.add( Arrays.asList( scanUpdates ) );
-            Iterator<IndexEntryUpdate<IndexDescriptor>> generator = valueCreatorUtil.randomUpdateGenerator( random );
-            Object[] updates = new Object[5];
-            updates[0] = generator.next().values()[0].asObject();
-            updates[1] = generator.next().values()[0].asObject();
-            updates[2] = updates[1];
-            updates[3] = generator.next().values()[0].asObject();
-            updates[4] = updates[3];
-            try ( IndexUpdater updater = populator.newPopulatingUpdater( null_property_accessor ) )
+            try
             {
-                long nodeId = 1000;
-                for ( Object value : updates )
+                populator.create();
+                IndexEntryUpdate<IndexDescriptor>[] scanUpdates = valueCreatorUtil.someUpdates( random );
+                populator.add( Arrays.asList( scanUpdates ) );
+                Iterator<IndexEntryUpdate<IndexDescriptor>> generator = valueCreatorUtil.randomUpdateGenerator( random );
+                Value[] updates = new Value[5];
+                updates[0] = generator.next().values()[0];
+                updates[1] = generator.next().values()[0];
+                updates[2] = updates[1];
+                updates[3] = generator.next().values()[0];
+                updates[4] = updates[3];
+                try ( IndexUpdater updater = populator.newPopulatingUpdater( null_property_accessor ) )
                 {
-                    IndexEntryUpdate<IndexDescriptor> update = valueCreatorUtil.add( nodeId++, Values.of( value ) );
-                    updater.process( update );
+                    long nodeId = 1000;
+                    for ( Value value : updates )
+                    {
+                        IndexEntryUpdate<IndexDescriptor> update = valueCreatorUtil.add( nodeId++, value );
+                        updater.process( update );
+                    }
                 }
+
+                // WHEN
+                IndexSample sample = populator.sampleResult();
+
+                // THEN
+                Value[] allValues = Arrays.copyOf( updates, updates.length + scanUpdates.length );
+                System.arraycopy( asValues( scanUpdates ), 0, allValues, updates.length, scanUpdates.length );
+                assertEquals( updates.length + scanUpdates.length, sample.sampleSize() );
+                assertEquals( countUniqueValues( allValues ), sample.uniqueValues() );
+                assertEquals( updates.length + scanUpdates.length, sample.indexSize() );
             }
-
-            // WHEN
-            IndexSample sample = populator.sampleResult();
-
-            // THEN
-            Object[] allValues = Arrays.copyOf( updates, updates.length + scanUpdates.length );
-            System.arraycopy( asValues( scanUpdates ), 0, allValues, updates.length, scanUpdates.length );
-            assertEquals( updates.length + scanUpdates.length, sample.sampleSize() );
-            assertEquals( countUniqueValues( allValues ), sample.uniqueValues() );
-            assertEquals( updates.length + scanUpdates.length, sample.indexSize() );
-            populator.close( true );
+            finally
+            {
+                populator.close( true );
+            }
         }
 
-        private Object[] asValues( IndexEntryUpdate<IndexDescriptor>[] updates )
+        private Value[] asValues( IndexEntryUpdate<IndexDescriptor>[] updates )
         {
-            Object[] values = new Object[updates.length];
+            Value[] values = new Value[updates.length];
             for ( int i = 0; i < updates.length; i++ )
             {
-                values[i] = updates[i].values()[0].asObject();
+                values[i] = updates[i].values()[0];
             }
             return values;
         }
