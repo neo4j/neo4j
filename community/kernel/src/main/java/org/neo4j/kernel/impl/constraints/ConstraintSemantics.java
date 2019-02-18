@@ -23,7 +23,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
-import org.neo4j.helpers.Service;
+import org.neo4j.common.Service;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.NodeCursor;
@@ -54,7 +54,7 @@ public abstract class ConstraintSemantics extends Service
 
     public static ConstraintSemantics getConstraintSemantics()
     {
-        Iterable<ConstraintSemantics> semantics = Service.load( ConstraintSemantics.class );
+        Iterable<ConstraintSemantics> semantics = Service.loadAll( ConstraintSemantics.class );
         List<ConstraintSemantics> candidates = Iterables.asList( semantics );
         checkState( !candidates.isEmpty(), format( "At least one implementation of %s should be available.", ConstraintSemantics.class ) );
 

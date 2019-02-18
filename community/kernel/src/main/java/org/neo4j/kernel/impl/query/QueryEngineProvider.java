@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.query;
 import java.util.Comparator;
 import java.util.List;
 
-import org.neo4j.helpers.Service;
+import org.neo4j.common.Service;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;

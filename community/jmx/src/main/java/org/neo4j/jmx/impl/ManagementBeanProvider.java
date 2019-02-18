@@ -24,7 +24,7 @@ import java.util.Collections;
 import javax.management.DynamicMBean;
 import javax.management.NotCompliantMBeanException;
 
-import org.neo4j.helpers.Service;
+import org.neo4j.common.Service;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.internal.KernelData;
 

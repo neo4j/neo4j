@@ -25,11 +25,11 @@ import java.io.PrintStream;
 import java.time.ZoneId;
 import java.util.List;
 
+import org.neo4j.common.Service;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.consistency.checking.full.ConsistencyFlags;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Args;
-import org.neo4j.helpers.Service;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -111,7 +111,7 @@ public class ConsistencyCheckTool
         boolean verbose = isVerbose( arguments );
 
         DatabaseLayout databaseLayout = DatabaseLayout.of( storeDir, LayoutConfig.of( tuningConfiguration ) );
-        StorageEngineFactory storageEngineFactory = StorageEngineFactory.selectStorageEngine( Service.load( StorageEngineFactory.class ) );
+        StorageEngineFactory storageEngineFactory = StorageEngineFactory.selectStorageEngine( Service.loadAll( StorageEngineFactory.class ) );
         checkDbState( databaseLayout, tuningConfiguration, storageEngineFactory );
 
         ZoneId logTimeZone = tuningConfiguration.get( GraphDatabaseSettings.db_timezone ).getZoneId();

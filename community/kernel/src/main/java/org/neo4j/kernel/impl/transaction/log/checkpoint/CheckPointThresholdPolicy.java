@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.transaction.log.checkpoint;
 import java.time.Clock;
 import java.util.NoSuchElementException;
 
-import org.neo4j.helpers.Service;
+import org.neo4j.common.Service;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.transaction.log.pruning.LogPruning;
 import org.neo4j.logging.LogProvider;
@@ -57,7 +57,7 @@ public abstract class CheckPointThresholdPolicy extends Service
      */
     public static CheckPointThresholdPolicy loadPolicy( String policyName ) throws NoSuchElementException
     {
-        return Service.load( CheckPointThresholdPolicy.class, policyName );
+        return Service.loadOrFail( CheckPointThresholdPolicy.class, policyName );
     }
 
     /**

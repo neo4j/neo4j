@@ -17,20 +17,25 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.helpers;
+package org.neo4j.common;
 
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Optional;
+import java.util.ServiceConfigurationError;
 import java.util.ServiceLoader;
 import java.util.Set;
 
-import org.neo4j.helpers.collection.PrefetchingIterator;
-
+import static java.lang.String.format;
+import static java.util.Collections.unmodifiableSet;
+import static java.util.stream.Collectors.toSet;
+import static java.util.stream.Stream.concat;
+import static java.util.stream.Stream.of;
 import static org.neo4j.util.FeatureToggles.flag;
 
 /**
@@ -119,59 +124,75 @@ public abstract class Service
     /**
      * Load all implementations of a Service.
      *
-     * @param <T> the type of the Service
      * @param type the type of the Service to load
      * @return all registered implementations of the Service
      */
-    public static <T> Iterable<T> load( Class<T> type )
+    public static <T> List<T> loadAll( Class<T> type )
     {
-        Iterable<T> loader;
-        if ( null != (loader = java6Loader( type )) )
+        final Map<String, T> services = new HashMap<>();
+        final ClassLoader currentCL = Service.class.getClassLoader();
+        final ClassLoader contextCL = Thread.currentThread().getContextClassLoader();
+
+        loadAllSafely( type, contextCL ).forEach( service -> services.put( service.getClass().getName(), service ) );
+
+        // JBoss 7 does not export content of META-INF/services to context class loader, so this call adds implementations defined in Neo4j
+        // libraries from the same module.
+        if ( currentCL != contextCL )
         {
-            return loader;
+            // Services from context class loader have higher precedence, so we skip duplicates by comparing class names.
+            loadAllSafely( type, currentCL ).forEach( service -> services.putIfAbsent( service.getClass().getName(), service ) );
         }
-        return Collections.emptyList();
+        return new ArrayList<>( services.values() );
     }
 
     /**
-     * Load the Service implementation with the specified key. This method will return null if requested service not
-     * found.
+     * Load the Service implementation with the specified key. Matches from context class loader have highest priority.
+     * If there are multiple matches within one class loader, it is not defined which one of them is returned.
      *
      * @param type the type of the Service to load
      * @param key the key that identifies the desired implementation
-     * @param <T> the type of the Service to load
      * @return requested service
      */
-    public static <T extends Service> T loadSilently( Class<T> type, String key )
+    public static <T extends Service> Optional<T> load( Class<T> type, String key )
     {
-        for ( T service : load( type ) )
-        {
-            if ( service.matches( key ) )
-            {
-                return service;
-            }
-        }
-        return null;
+        return loadAll( type ).stream()
+                .filter( s -> s.matches( key ) )
+                .findFirst();
     }
 
     /**
      * Load the Service implementation with the specified key. This method should never return null.
      *
-     * @param <T> the type of the Service
      * @param type the type of the Service to load
      * @param key the key that identifies the desired implementation
      * @return the matching Service implementation
      * @throws NoSuchElementException if no service could be loaded with the given key.
      */
-    public static <T extends Service> T load( Class<T> type, String key )
+    public static <T extends Service> T loadOrFail( Class<T> type, String key )
     {
-        T service = loadSilently( type, key );
-        if ( service == null )
+        return load( type, key )
+                .orElseThrow( () -> new NoSuchElementException( format( "Could not find any implementation of %s with a key=\"%s\"", type.getName(), key ) ) );
+    }
+
+    private static <T> List<T> loadAllSafely( Class<T> type, ClassLoader classLoader )
+    {
+        final List<T> services = new ArrayList<>();
+        final Iterator<T> loader = ServiceLoader.load( type, classLoader ).iterator();
+        while ( loader.hasNext() )
         {
-            throw new NoSuchElementException(
-                    String.format( "Could not find any implementation of %s with a key=\"%s\"", type.getName(), key ) );
+            try
+            {
+                services.add( loader.next() );
+            }
+            catch ( ServiceConfigurationError e )
+            {
+                if ( printServiceLoaderStackTraces )
+                {
+                    e.printStackTrace();
+                }
+            }
         }
-        return service;
+        return services;
     }
 
     /**
@@ -190,8 +211,7 @@ public abstract class Service
         }
         else
         {
-            this.keys = new HashSet<>( Arrays.asList( altKeys ) );
-            this.keys.add( key );
+            this.keys = unmodifiableSet( concat( of( key ), of( altKeys ) ).collect( toSet() ) );
         }
     }
 
@@ -206,7 +226,7 @@ public abstract class Service
         return keys.contains( key );
     }
 
-    public Iterable<String> getKeys()
+    public Set<String> getKeys()
     {
         return keys;
     }
@@ -231,82 +251,5 @@ public abstract class Service
     public int hashCode()
     {
         return keys.hashCode();
-    }
-
-    private static <T> Iterable<T> filterExceptions( final Iterable<T> iterable )
-    {
-        return () -> new PrefetchingIterator<T>()
-        {
-            private final Iterator<T> iterator = iterable.iterator();
-
-            @Override
-            protected T fetchNextOrNull()
-            {
-                while ( iterator.hasNext() )
-                {
-                    try
-                    {
-                        return iterator.next();
-                    }
-                    catch ( Throwable e )
-                    {
-                        if ( printServiceLoaderStackTraces )
-                        {
-                            e.printStackTrace();
-                        }
-                    }
-                }
-                return null;
-            }
-        };
-    }
-
-    private static <T> Iterable<T> java6Loader( Class<T> type )
-    {
-        try
-        {
-            HashMap<String,T> services = new HashMap<>();
-            ClassLoader currentCL = Service.class.getClassLoader();
-            ClassLoader contextCL = Thread.currentThread().getContextClassLoader();
-
-            Iterable<T> contextClassLoaderServices = ServiceLoader.load( type, contextCL );
-
-            if ( currentCL != contextCL )
-            {
-                // JBoss 7 does not export content of META-INF/services to context
-                // class loader, so this call adds implementations defined in Neo4j
-                // libraries from the same module.
-                Iterable<T> currentClassLoaderServices = ServiceLoader.load( type, currentCL );
-                // Combine services loaded by both context and module class loaders.
-                // Service instances compared by full class name ( we cannot use
-                // equals for instances or classes because they can came from
-                // different class loaders ).
-                putAllInstancesToMap( currentClassLoaderServices, services );
-                // Services from context class loader have higher precedence,
-                // so we load those later.
-            }
-
-            putAllInstancesToMap( contextClassLoaderServices, services );
-            return services.values();
-        }
-        catch ( Exception | LinkageError e )
-        {
-            if ( printServiceLoaderStackTraces )
-            {
-                e.printStackTrace();
-            }
-            return null;
-        }
-    }
-
-    private static <T> void putAllInstancesToMap( Iterable<T> services, Map<String,T> servicesMap )
-    {
-        for ( T instance : filterExceptions( services ) )
-        {
-            if ( null != instance )
-            {
-                servicesMap.put( instance.getClass().getName(), instance );
-            }
-        }
     }
 }

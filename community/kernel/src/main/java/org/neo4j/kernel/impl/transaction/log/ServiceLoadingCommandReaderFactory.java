@@ -23,7 +23,7 @@ import org.eclipse.collections.api.map.primitive.IntObjectMap;
 import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
 import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
 
-import org.neo4j.helpers.Service;
+import org.neo4j.common.Service;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion;
 import org.neo4j.storageengine.api.CommandReader;
 import org.neo4j.storageengine.api.CommandReaderFactory;
@@ -37,7 +37,7 @@ public class ServiceLoadingCommandReaderFactory implements CommandReaderFactory
 
     public ServiceLoadingCommandReaderFactory()
     {
-        this( Service.load( CommandReader.class ) );
+        this( Service.loadAll( CommandReader.class ) );
     }
 
     @VisibleForTesting

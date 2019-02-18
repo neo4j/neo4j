@@ -26,7 +26,7 @@ import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 
 import org.neo4j.common.DependencyResolver;
-import org.neo4j.helpers.Service;
+import org.neo4j.common.Service;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
@@ -331,7 +331,7 @@ public class LogFilesBuilder
 
     private TransactionIdStore readOnlyTransactionIdStore() throws IOException
     {
-        StorageEngineFactory storageEngineFactory = StorageEngineFactory.selectStorageEngine( Service.load( StorageEngineFactory.class ) );
+        StorageEngineFactory storageEngineFactory = StorageEngineFactory.selectStorageEngine( Service.loadAll( StorageEngineFactory.class ) );
         Dependencies dependencies = new Dependencies();
         dependencies.satisfyDependencies( pageCache, databaseLayout );
         return storageEngineFactory.readOnlyTransactionIdStore( dependencies );
@@ -339,7 +339,7 @@ public class LogFilesBuilder
 
     private LogVersionRepository readOnlyLogVersionRepository() throws IOException
     {
-        StorageEngineFactory storageEngineFactory = StorageEngineFactory.selectStorageEngine( Service.load( StorageEngineFactory.class ) );
+        StorageEngineFactory storageEngineFactory = StorageEngineFactory.selectStorageEngine( Service.loadAll( StorageEngineFactory.class ) );
         Dependencies dependencies = new Dependencies();
         dependencies.satisfyDependencies( pageCache, databaseLayout );
         return storageEngineFactory.readOnlyLogVersionRepository( dependencies );

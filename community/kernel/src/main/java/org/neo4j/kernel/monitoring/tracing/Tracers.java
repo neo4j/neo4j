@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.monitoring.tracing;
 
-import org.neo4j.helpers.Service;
+import org.neo4j.common.Service;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.kernel.impl.transaction.tracing.CheckPointTracer;
@@ -174,7 +174,7 @@ public class Tracers
         }
         try
         {
-            for ( TracerFactory factory : Service.load( TracerFactory.class ) )
+            for ( TracerFactory factory : Service.loadAll( TracerFactory.class ) )
             {
                 if ( factory.getImplementationName().equalsIgnoreCase( desiredImplementationName ) )
                 {

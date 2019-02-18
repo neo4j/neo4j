@@ -19,16 +19,9 @@
  */
 package org.neo4j.kernel.impl.annotations;
 
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
-import java.net.URI;
-import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.Set;
-import java.util.regex.Pattern;
 import javax.annotation.processing.AbstractProcessor;
 import javax.annotation.processing.RoundEnvironment;
 import javax.lang.model.element.AnnotationMirror;
@@ -37,8 +30,6 @@ import javax.lang.model.element.Element;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
 import javax.tools.Diagnostic.Kind;
-import javax.tools.FileObject;
-import javax.tools.StandardLocation;
 
 public abstract class AnnotationProcessor extends AbstractProcessor
 {
@@ -93,52 +84,4 @@ public abstract class AnnotationProcessor extends AbstractProcessor
 
     protected abstract void process( TypeElement annotationType, Element annotated, AnnotationMirror annotation,
             Map<? extends ExecutableElement, ? extends AnnotationValue> values ) throws IOException;
-
-    private static Pattern nl = Pattern.compile( "\n" );
-
-    void addTo( String line, String... path ) throws IOException
-    {
-        FileObject fo = processingEnv.getFiler().getResource( StandardLocation.CLASS_OUTPUT, "", path( path ) );
-        URI uri = fo.toUri();
-        File file;
-        try
-        {
-            file = new File( uri );
-        }
-        catch ( Exception e )
-        {
-            file = new File( uri.toString() );
-        }
-        if ( file.exists() )
-        {
-            for ( String previous : nl.split( fo.getCharContent( true ), 0 ) )
-            {
-                if ( line.equals( previous ) )
-                {
-                    return;
-                }
-            }
-        }
-        else
-        {
-            file.getParentFile().mkdirs();
-        }
-
-        try ( PrintWriter writer = new PrintWriter( new OutputStreamWriter( new FileOutputStream( file, true ), StandardCharsets.UTF_8 ) ) )
-        {
-            writer.append( line ).append( "\n" );
-        }
-    }
-
-    private String path( String[] path )
-    {
-        StringBuilder filename = new StringBuilder();
-        String sep = "";
-        for ( String part : path )
-        {
-            filename.append( sep ).append( part );
-            sep = "/";
-        }
-        return filename.toString();
-    }
 }

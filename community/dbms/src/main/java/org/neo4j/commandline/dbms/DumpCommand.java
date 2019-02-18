@@ -33,9 +33,9 @@ import org.neo4j.commandline.admin.AdminCommand;
 import org.neo4j.commandline.admin.CommandFailed;
 import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.commandline.arguments.Arguments;
+import org.neo4j.common.Service;
 import org.neo4j.dbms.archive.Dumper;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.Service;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.StoreLockException;
 import org.neo4j.kernel.configuration.Config;
@@ -76,7 +76,7 @@ public class DumpCommand implements AdminCommand
         Config config = buildConfig( database );
         Path databaseDirectory = getDatabaseDirectory( config );
         DatabaseLayout databaseLayout = DatabaseLayout.of( databaseDirectory.toFile(), of( config ) );
-        StorageEngineFactory storageEngineFactory = StorageEngineFactory.selectStorageEngine( Service.load( StorageEngineFactory.class ) );
+        StorageEngineFactory storageEngineFactory = StorageEngineFactory.selectStorageEngine( Service.loadAll( StorageEngineFactory.class ) );
 
         try
         {

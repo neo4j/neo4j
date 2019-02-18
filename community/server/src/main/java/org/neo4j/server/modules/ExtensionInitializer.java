@@ -22,9 +22,9 @@ package org.neo4j.server.modules;
 import java.util.Collection;
 import java.util.HashSet;
 
-import org.neo4j.helpers.Service;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.common.Service;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.server.NeoServer;
 import org.neo4j.server.plugins.ConfigAdapter;
 import org.neo4j.server.plugins.Injectable;
@@ -42,7 +42,7 @@ public class ExtensionInitializer
     public ExtensionInitializer( NeoServer neoServer )
     {
         this.neoServer = neoServer;
-        lifecycles = Service.load( PluginLifecycle.class );
+        lifecycles = Service.loadAll( PluginLifecycle.class );
     }
 
     public Collection<Injectable<?>> initializePackages( Iterable<String> packageNames )

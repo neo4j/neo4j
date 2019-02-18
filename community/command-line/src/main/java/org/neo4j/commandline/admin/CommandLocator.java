@@ -23,7 +23,7 @@ import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.function.Supplier;
 
-import org.neo4j.helpers.Service;
+import org.neo4j.common.Service;
 import org.neo4j.helpers.collection.Iterables;
 
 /**
@@ -58,13 +58,13 @@ public interface CommandLocator
             @Override
             public AdminCommand.Provider findProvider( String name )
             {
-                return Service.load( AdminCommand.Provider.class, name );
+                return Service.loadOrFail( AdminCommand.Provider.class, name );
             }
 
             @Override
             public Iterable<AdminCommand.Provider> getAllProviders()
             {
-                return Service.load( AdminCommand.Provider.class );
+                return Service.loadAll( AdminCommand.Provider.class );
             }
         };
     }

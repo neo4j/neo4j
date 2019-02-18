@@ -29,8 +29,8 @@ import java.util.stream.StreamSupport;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import org.neo4j.common.Service;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.Service;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -323,7 +323,7 @@ public class RecordFormatSelector
      */
     public static Iterable<RecordFormats> allFormats()
     {
-        Iterable<RecordFormats.Factory> loadableFormatFactories = Service.load( RecordFormats.Factory.class );
+        Iterable<RecordFormats.Factory> loadableFormatFactories = Service.loadAll( RecordFormats.Factory.class );
         Iterable<RecordFormats> loadableFormats = map( RecordFormats.Factory::newInstance, loadableFormatFactories );
         return concat( KNOWN_FORMATS, loadableFormats );
     }
@@ -342,26 +342,24 @@ public class RecordFormatSelector
     @Nullable
     private static RecordFormats loadRecordFormat( String recordFormat )
     {
-        if ( StringUtils.isNotEmpty( recordFormat ) )
+        if ( StringUtils.isEmpty( recordFormat ) )
         {
-            if ( Standard.LATEST_NAME.equals( recordFormat ) )
+            return null;
+        }
+        if ( Standard.LATEST_NAME.equals( recordFormat ) )
+        {
+            return Standard.LATEST_RECORD_FORMATS;
+        }
+        for ( RecordFormats knownFormat : KNOWN_FORMATS )
+        {
+            if ( recordFormat.equals( knownFormat.name() ) )
             {
-                return Standard.LATEST_RECORD_FORMATS;
-            }
-            for ( RecordFormats knownFormat : KNOWN_FORMATS )
-            {
-                if ( recordFormat.equals( knownFormat.name() ) )
-                {
-                    return knownFormat;
-                }
-            }
-            RecordFormats.Factory formatFactory = Service.loadSilently( RecordFormats.Factory.class, recordFormat );
-            if ( formatFactory != null )
-            {
-                return formatFactory.newInstance();
+                return knownFormat;
             }
         }
-        return null;
+        return Service.load( RecordFormats.Factory.class, recordFormat )
+                .map( RecordFormats.Factory::newInstance )
+                .orElse( null );
     }
 
     private static void info( LogProvider logProvider, String message )

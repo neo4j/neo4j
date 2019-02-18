@@ -26,7 +26,7 @@ import java.util.function.Consumer;
 import javax.annotation.Nonnull;
 
 import org.neo4j.commandline.arguments.Arguments;
-import org.neo4j.helpers.Service;
+import org.neo4j.common.Service;
 import org.neo4j.helpers.collection.Iterables;
 
 /**

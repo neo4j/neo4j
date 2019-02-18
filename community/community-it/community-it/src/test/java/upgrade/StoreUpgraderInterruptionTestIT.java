@@ -34,10 +34,10 @@ import java.util.Collection;
 import java.util.Collections;
 
 import org.neo4j.common.ProgressReporter;
+import org.neo4j.common.Service;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.Service;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
@@ -164,7 +164,7 @@ public class StoreUpgraderInterruptionTestIT
 
     private SchemaIndexMigrator createIndexMigrator()
     {
-        return new SchemaIndexMigrator( fs, IndexProvider.EMPTY, StorageEngineFactory.selectStorageEngine( Service.load( StorageEngineFactory.class ) ) );
+        return new SchemaIndexMigrator( fs, IndexProvider.EMPTY, StorageEngineFactory.selectStorageEngine( Service.loadAll( StorageEngineFactory.class ) ) );
     }
 
     @Test

@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.pagecache;
 
-import org.neo4j.helpers.Service;
+import org.neo4j.common.Service;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.mem.MemoryAllocator;
@@ -181,7 +181,7 @@ public class ConfiguringPageCacheFactory
         String desiredImplementation = config.get( pagecache_swapper );
         if ( desiredImplementation != null )
         {
-            for ( PageSwapperFactory factory : Service.load( PageSwapperFactory.class ) )
+            for ( PageSwapperFactory factory : Service.loadAll( PageSwapperFactory.class ) )
             {
                 if ( factory.implementationName().equals( desiredImplementation ) )
                 {

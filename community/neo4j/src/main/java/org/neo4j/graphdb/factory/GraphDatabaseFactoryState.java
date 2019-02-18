@@ -25,10 +25,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Predicate;
 
+import org.neo4j.common.Service;
 import org.neo4j.configuration.LoadableConfig;
 import org.neo4j.graphdb.facade.ExternalDependencies;
 import org.neo4j.graphdb.security.URLAccessRule;
-import org.neo4j.helpers.Service;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
@@ -55,7 +55,7 @@ public class GraphDatabaseFactoryState
         settingsClasses = new CopyOnWriteArrayList<>();
         settingsClasses.add( GraphDatabaseSettings.class );
         extensions = new CopyOnWriteArrayList<>();
-        for ( ExtensionFactory<?> factory : Service.load( ExtensionFactory.class ) )
+        for ( ExtensionFactory<?> factory : Service.loadAll( ExtensionFactory.class ) )
         {
             extensions.add( factory );
         }

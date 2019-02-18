@@ -26,7 +26,7 @@ import java.util.Map;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 
-import org.neo4j.helpers.Service;
+import org.neo4j.common.Service;
 import org.neo4j.server.AbstractNeoServer;
 import org.neo4j.server.plugins.PluginManager;
 import org.neo4j.server.rest.repr.formats.JsonFormat;
@@ -40,7 +40,7 @@ public final class RepresentationFormatRepository
     {
         this.injectorProvider = injectorProvider;
         this.formats = new HashMap<>();
-        for ( RepresentationFormat format : Service.load( RepresentationFormat.class ) )
+        for ( RepresentationFormat format : Service.loadAll( RepresentationFormat.class ) )
         {
             formats.put( format.mediaType, format );
         }

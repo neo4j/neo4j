@@ -23,7 +23,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Map;
 
-import org.neo4j.helpers.Service;
+import org.neo4j.common.Service;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.extension.ExtensionFactory;
@@ -89,6 +89,6 @@ public final class BatchInserters
 
     private static Iterable loadExtension()
     {
-        return Service.load( ExtensionFactory.class );
+        return Service.loadAll( ExtensionFactory.class );
     }
 }

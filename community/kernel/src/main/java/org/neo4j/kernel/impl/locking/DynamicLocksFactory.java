@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.locking;
 
-import org.neo4j.helpers.Service;
+import org.neo4j.common.Service;
 
 /**
  * Factory for lock managers that can be loaded over service loading.

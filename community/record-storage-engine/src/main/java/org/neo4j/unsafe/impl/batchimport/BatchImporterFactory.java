@@ -21,7 +21,7 @@ package org.neo4j.unsafe.impl.batchimport;
 
 import java.util.NoSuchElementException;
 
-import org.neo4j.helpers.Service;
+import org.neo4j.common.Service;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
@@ -48,7 +48,7 @@ public abstract class BatchImporterFactory extends Service
 
     public static BatchImporterFactory withHighestPriority()
     {
-        Iterable<BatchImporterFactory> candidates = Service.load( BatchImporterFactory.class );
+        Iterable<BatchImporterFactory> candidates = Service.loadAll( BatchImporterFactory.class );
         BatchImporterFactory highestPrioritized = null;
         for ( BatchImporterFactory candidate : candidates )
         {

@@ -23,7 +23,7 @@ import org.apache.lucene.analysis.Analyzer;
 
 import java.util.NoSuchElementException;
 
-import org.neo4j.helpers.Service;
+import org.neo4j.common.Service;
 
 /**
  * This is the base-class for all service-loadable factory classes, that build the Lucene Analyzer instances that are available to the fulltext schema index.
@@ -69,7 +69,7 @@ public abstract class AnalyzerProvider extends Service
 
     public static AnalyzerProvider getProviderByName( String analyzerName ) throws NoSuchElementException
     {
-        return load( AnalyzerProvider.class, analyzerName );
+        return loadOrFail( AnalyzerProvider.class, analyzerName );
     }
 
     /**

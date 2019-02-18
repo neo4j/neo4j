@@ -305,7 +305,7 @@ class FulltextIndexProvider extends IndexProvider implements FulltextAdapter
     @Override
     public Stream<AnalyzerProvider> listAvailableAnalyzers()
     {
-        Iterable<AnalyzerProvider> providers = AnalyzerProvider.load( AnalyzerProvider.class );
+        Iterable<AnalyzerProvider> providers = AnalyzerProvider.loadAll( AnalyzerProvider.class );
         return StreamSupport.stream( providers.spliterator(), false );
     }
 }

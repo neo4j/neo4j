@@ -23,8 +23,8 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.time.Clock;
 
+import org.neo4j.common.Service;
 import org.neo4j.graphdb.factory.module.edition.CommunityEditionModule;
-import org.neo4j.helpers.Service;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.locking.DynamicLocksFactory;
 import org.neo4j.kernel.impl.locking.Locks;
@@ -43,7 +43,7 @@ public final class EditionLocksFactories
     public static LocksFactory createLockFactory( Config config, LogService logging )
     {
         String key = config.get( GraphDatabaseSettings.lock_manager );
-        for ( DynamicLocksFactory candidate : Service.load( DynamicLocksFactory.class ) )
+        for ( DynamicLocksFactory candidate : Service.loadAll( DynamicLocksFactory.class ) )
         {
             String candidateId = candidate.getKeys().iterator().next();
             if ( key.equals( candidateId ) )

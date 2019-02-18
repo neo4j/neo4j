@@ -35,7 +35,7 @@ import java.util.TreeSet;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
-import org.neo4j.helpers.Service;
+import org.neo4j.common.Service;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 
@@ -149,7 +149,7 @@ public class DiagnosticsReporter
 
     public void registerAllOfflineProviders( Config config, File storeDirectory, FileSystemAbstraction fs )
     {
-        for ( DiagnosticsOfflineReportProvider provider : Service.load( DiagnosticsOfflineReportProvider.class ) )
+        for ( DiagnosticsOfflineReportProvider provider : Service.loadAll( DiagnosticsOfflineReportProvider.class ) )
         {
             provider.init( fs, config, storeDirectory );
             registerOfflineProvider( provider );

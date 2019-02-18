@@ -25,9 +25,9 @@ import java.util.Map;
 import java.util.Optional;
 
 import org.neo4j.common.ProgressReporter;
+import org.neo4j.common.Service;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.Service;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.index.internal.gbptree.GroupingRecoveryCleanupWorkCollector;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
@@ -353,7 +353,7 @@ public final class Recovery
 
     private static Iterable<ExtensionFactory<?>> loadExtensions()
     {
-        return Iterables.cast( Service.load( ExtensionFactory.class ) );
+        return Iterables.cast( Service.loadAll( ExtensionFactory.class ) );
     }
 
     private static DatabaseExtensions instantiateRecoveryExtensions( DatabaseLayout databaseLayout, FileSystemAbstraction fileSystem, Config config,

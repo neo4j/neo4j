@@ -22,7 +22,7 @@ package org.neo4j.kernel.internal;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.neo4j.helpers.Service;
+import org.neo4j.common.Service;
 
 public class Version extends Service
 {

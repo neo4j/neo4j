@@ -29,8 +29,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.common.Service;
 import org.neo4j.graphdb.security.URLAccessRule;
-import org.neo4j.helpers.Service;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.impl.query.QueryEngineProvider;
@@ -59,7 +59,7 @@ public class GraphDatabaseDependencies implements ExternalDependencies
     {
         ImmutableList<Class<?>> settingsClasses = ImmutableListFactoryImpl.INSTANCE.empty();
         ImmutableList<ExtensionFactory<?>> extensions = asImmutableList(
-                getExtensions(Service.load( ExtensionFactory.class ).iterator()));
+                getExtensions( Service.loadAll( ExtensionFactory.class ).iterator() ) );
 
         ImmutableMap<String,URLAccessRule> urlAccessRules = ImmutableMapFactoryImpl.INSTANCE.of(
                 "http", URLAccessRules.alwaysPermitted(),
@@ -68,7 +68,7 @@ public class GraphDatabaseDependencies implements ExternalDependencies
                 "file", URLAccessRules.fileAccess()
         );
 
-        ImmutableList<QueryEngineProvider> queryEngineProviders = asImmutableList( Service.load( QueryEngineProvider.class ) );
+        ImmutableList<QueryEngineProvider> queryEngineProviders = asImmutableList( Service.loadAll( QueryEngineProvider.class ) );
         ImmutableList<Pair<DeferredExecutor,Group>> deferredExecutors = ImmutableListFactoryImpl.INSTANCE.empty();
 
         return new GraphDatabaseDependencies( null, null, settingsClasses, extensions,

@@ -27,7 +27,7 @@ import org.neo4j.commandline.admin.CommandFailed;
 import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.commandline.arguments.Arguments;
 import org.neo4j.commandline.arguments.common.MandatoryCanonicalPath;
-import org.neo4j.helpers.Service;
+import org.neo4j.common.Service;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
@@ -68,7 +68,7 @@ public class StoreInfoCommand implements AdminCommand
                 PageCache pageCache = StandalonePageCacheFactory.createPageCache( fileSystem, jobScheduler ) )
         {
             DatabaseLayout databaseLayout = DatabaseLayout.of( databaseDirectory.toFile() );
-            StorageEngineFactory storageEngineFactory = StorageEngineFactory.selectStorageEngine( Service.load( StorageEngineFactory.class ) );
+            StorageEngineFactory storageEngineFactory = StorageEngineFactory.selectStorageEngine( Service.loadAll( StorageEngineFactory.class ) );
             Dependencies dependencies = new Dependencies();
             dependencies.satisfyDependencies( pageCache, databaseLayout, fileSystem, NullLogService.getInstance(), Config.defaults() );
             StoreVersionCheck storeVersionCheck = storageEngineFactory.versionCheck( dependencies );

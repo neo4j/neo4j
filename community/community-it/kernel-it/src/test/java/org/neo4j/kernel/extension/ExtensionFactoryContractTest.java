@@ -24,8 +24,8 @@ import org.junit.Test;
 
 import java.util.Map;
 
+import org.neo4j.common.Service;
 import org.neo4j.graphdb.facade.embedded.EmbeddedGraphDatabase;
-import org.neo4j.helpers.Service;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -140,6 +140,6 @@ public abstract class ExtensionFactoryContractTest
 
     private ExtensionFactory<?> loadInstance()
     {
-        return extClass.cast( Service.load( ExtensionFactory.class, key ) );
+        return extClass.cast( Service.loadOrFail( ExtensionFactory.class, key ) );
     }
 }

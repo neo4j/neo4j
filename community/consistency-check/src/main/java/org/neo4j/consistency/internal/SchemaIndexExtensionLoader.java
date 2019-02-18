@@ -19,7 +19,7 @@
  */
 package org.neo4j.consistency.internal;
 
-import org.neo4j.helpers.Service;
+import org.neo4j.common.Service;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -51,7 +51,7 @@ public class SchemaIndexExtensionLoader
         Dependencies deps = new Dependencies();
         deps.satisfyDependencies( fileSystem, config, logService, pageCache, recoveryCollector, monitors, jobScheduler, tokenHolders );
         @SuppressWarnings( "rawtypes" )
-        Iterable extensions = Service.load( ExtensionFactory.class );
+        Iterable extensions = Service.loadAll( ExtensionFactory.class );
         DatabaseExtensionContext extensionContext = new DatabaseExtensionContext( databaseLayout, databaseInfo, deps );
         return new DatabaseExtensions( extensionContext, extensions, deps, ExtensionFailureStrategies.ignore() );
     }

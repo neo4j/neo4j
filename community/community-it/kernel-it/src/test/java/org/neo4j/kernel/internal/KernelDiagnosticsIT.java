@@ -31,12 +31,12 @@ import java.util.stream.Stream;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import org.neo4j.common.Service;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Format;
-import org.neo4j.helpers.Service;
 import org.neo4j.io.layout.DatabaseFile;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.diagnostics.providers.StoreFilesDiagnostics;
@@ -72,7 +72,7 @@ public class KernelDiagnosticsIT
             createIndexInIsolatedDbInstance( dbDir, schemaIndex );
 
             // when
-            StorageEngineFactory storageEngineFactory = StorageEngineFactory.selectStorageEngine( Service.load( StorageEngineFactory.class ) );
+            StorageEngineFactory storageEngineFactory = StorageEngineFactory.selectStorageEngine( Service.loadAll( StorageEngineFactory.class ) );
             StoreFilesDiagnostics files = new StoreFilesDiagnostics( storageEngineFactory, fs, DatabaseLayout.of( dbDir ) );
             SizeCapture capture = new SizeCapture();
             files.dump( capture );

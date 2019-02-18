@@ -23,10 +23,10 @@ import java.util.Collections;
 import java.util.function.Function;
 
 import org.neo4j.common.DependencyResolver;
+import org.neo4j.common.Service;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.dbms.database.DatabaseConfig;
 import org.neo4j.exceptions.UnsatisfiedDependencyException;
-import org.neo4j.helpers.Service;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.watcher.DatabaseLayoutWatcher;
@@ -158,7 +158,7 @@ public class DatabaseRule extends ExternalResource
         dependency( mutableDependencies, DbmsDiagnosticsManager.class, deps -> mock( DbmsDiagnosticsManager.class ) );
         dependency( mutableDependencies, IndexProvider.class, deps -> EMPTY );
         StorageEngineFactory storageEngineFactory = dependency( mutableDependencies, StorageEngineFactory.class,
-                deps -> StorageEngineFactory.selectStorageEngine( Service.load( StorageEngineFactory.class ) ) );
+                deps -> StorageEngineFactory.selectStorageEngine( Service.loadAll( StorageEngineFactory.class ) ) );
 
         database = new Database( new TestDatabaseCreationContext( databaseName, databaseLayout, config, idGeneratorFactory, logService,
                 mock( JobScheduler.class, RETURNS_MOCKS ), mock( TokenNameLookup.class ), mutableDependencies, mockedTokenHolders(), locksFactory,

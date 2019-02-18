@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.helpers;
+package org.neo4j.common;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -26,17 +26,16 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Enumeration;
 
-import org.neo4j.helpers.collection.Iterables;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ServiceTest
 {
-
     private ClassLoader contextClassLoader;
 
     @BeforeEach
@@ -54,7 +53,7 @@ class ServiceTest
     @Test
     void shouldLoadServiceInDefaultEnvironment()
     {
-        FooService fooService = Service.load( FooService.class, "foo" );
+        FooService fooService = Service.loadOrFail( FooService.class, "foo" );
         assertTrue( fooService instanceof BarService );
     }
 
@@ -62,24 +61,23 @@ class ServiceTest
     void whenContextCallsLoaderBlocksServicesFolderShouldLoadClassFromKernelClassloader()
     {
         Thread.currentThread().setContextClassLoader( new ServiceBlockClassLoader( contextClassLoader ) );
-        FooService fooService = Service.load( FooService.class, "foo" );
+        FooService fooService = Service.loadOrFail( FooService.class, "foo" );
         assertTrue( fooService instanceof BarService );
     }
 
     @Test
-    void whenContextClassLoaderOverridesServiceShouldLoadThatClass()
+    void failOnMultipleMatchesByKey()
     {
         Thread.currentThread().setContextClassLoader( new ServiceRedirectClassLoader( contextClassLoader ) );
-        FooService fooService = Service.load( FooService.class, "foo" );
-        assertTrue( fooService instanceof BazService );
+        assertThrows( RuntimeException.class, () -> Service.loadOrFail( FooService.class, "foo" ) );
     }
 
     @Test
     void whenContextClassLoaderDuplicatesServiceShouldLoadItOnce()
     {
         Thread.currentThread().setContextClassLoader( Service.class.getClassLoader() );
-        Iterable<FooService> services = Service.load( FooService.class );
-        assertEquals( 1, Iterables.count( services ) );
+        Collection<FooService> services = Service.loadAll( FooService.class );
+        assertEquals( 1, services.size() );
     }
 
     private static final class ServiceBlockClassLoader extends ClassLoader

@@ -23,6 +23,7 @@ import java.time.Clock;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
+import org.neo4j.common.Service;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.dmbs.database.DefaultDatabaseManager;
 import org.neo4j.exceptions.KernelException;
@@ -30,7 +31,6 @@ import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.factory.module.GlobalModule;
 import org.neo4j.graphdb.factory.module.edition.context.EditionDatabaseContext;
-import org.neo4j.helpers.Service;
 import org.neo4j.internal.collector.DataCollectorProcedures;
 import org.neo4j.io.fs.watcher.DatabaseLayoutWatcher;
 import org.neo4j.io.fs.watcher.FileWatcher;
@@ -141,13 +141,13 @@ public abstract class AbstractEditionModule
             GlobalProcedures globalProcedures, String key )
     {
         SecurityModule.Dependencies securityModuleDependencies = new SecurityModuleDependencies( globalModule, editionModule, globalProcedures );
-        SecurityModule securityModule = Service.loadSilently( SecurityModule.class, key );
-        if ( securityModule == null )
-        {
-            String errorMessage = "Failed to load security module with key '" + key + "'.";
-            log.error( errorMessage );
-            throw new IllegalArgumentException( errorMessage );
-        }
+        SecurityModule securityModule = Service.load( SecurityModule.class, key )
+                .orElseThrow( () ->
+                {
+                    String errorMessage = "Failed to load security module with key '" + key + "'.";
+                    log.error( errorMessage );
+                    return new IllegalArgumentException( errorMessage );
+                } );
         try
         {
             securityModule.setup( securityModuleDependencies );

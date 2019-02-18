@@ -27,7 +27,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-import org.neo4j.helpers.Service;
+import org.neo4j.common.Service;
 
 /**
  * API for creating extensions for the Neo4j server.
@@ -139,7 +139,7 @@ public abstract class ServerPlugin
 
     static Iterable<ServerPlugin> load()
     {
-        return Service.load( ServerPlugin.class );
+        return Service.loadAll( ServerPlugin.class );
     }
 
     /**

@@ -29,10 +29,10 @@ import java.nio.file.Paths;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.common.ProgressReporter;
+import org.neo4j.common.Service;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.helpers.Service;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.OpenMode;
@@ -98,7 +98,7 @@ class NativeLabelScanStoreMigratorTest
         migrationLayout = testDirectory.databaseLayout( "migrationDir" );
         luceneLabelScanStore = testDirectory.databaseDir().toPath().resolve( Paths.get( "schema", "label", "lucene" ) ).toFile();
 
-        StorageEngineFactory storageEngineFactory = StorageEngineFactory.selectStorageEngine( Service.load( StorageEngineFactory.class ) );
+        StorageEngineFactory storageEngineFactory = StorageEngineFactory.selectStorageEngine( Service.loadAll( StorageEngineFactory.class ) );
         indexMigrator = new NativeLabelScanStoreMigrator( fileSystem, pageCache, Config.defaults(), storageEngineFactory );
         fileSystem.mkdirs( luceneLabelScanStore );
     }
