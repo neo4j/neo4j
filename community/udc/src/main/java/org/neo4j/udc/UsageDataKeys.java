@@ -19,7 +19,7 @@
  */
 package org.neo4j.udc;
 
-import org.neo4j.kernel.impl.factory.Edition;
+import org.neo4j.common.Edition;
 import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.util.concurrent.DecayingFlags;
 import org.neo4j.util.concurrent.DecayingFlags.Key;

@@ -29,7 +29,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
-import org.neo4j.kernel.configuration.ConnectorPortRegister;
+import org.neo4j.configuration.ConnectorPortRegister;
 import org.neo4j.server.rest.JaxRsResponse;
 import org.neo4j.server.rest.PrettyJSON;
 import org.neo4j.server.rest.RestRequest;

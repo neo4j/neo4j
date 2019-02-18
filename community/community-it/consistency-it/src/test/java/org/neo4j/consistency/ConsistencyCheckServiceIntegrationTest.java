@@ -33,6 +33,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.configuration.Config;
+import org.neo4j.configuration.Settings;
 import org.neo4j.consistency.ConsistencyCheckService.Result;
 import org.neo4j.consistency.checking.GraphStoreFixture;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
@@ -51,8 +53,6 @@ import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;

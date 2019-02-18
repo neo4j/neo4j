@@ -21,10 +21,10 @@ package org.neo4j.kernel.api.index;
 
 import java.io.File;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.kernel.impl.index.schema.ConsistencyCheckableIndexPopulator;
 import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProviderFactory;

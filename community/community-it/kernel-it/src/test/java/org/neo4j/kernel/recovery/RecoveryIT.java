@@ -53,9 +53,9 @@ import static java.lang.String.valueOf;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.configuration.Config.defaults;
 import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.helpers.collection.Iterables.count;
-import static org.neo4j.kernel.configuration.Config.defaults;
 import static org.neo4j.kernel.recovery.Recovery.isRecoveryRequired;
 import static org.neo4j.kernel.recovery.Recovery.performRecovery;
 

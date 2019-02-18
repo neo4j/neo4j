@@ -29,14 +29,14 @@ import java.nio.file.Files;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 
+import org.neo4j.configuration.Config;
+import org.neo4j.configuration.LegacySslPolicyConfig;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.harness.extensionpackage.MyUnmanagedExtension;
 import org.neo4j.harness.junit.Neo4j;
-import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.configuration.ssl.LegacySslPolicyConfig;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.LogTimeZone;
 import org.neo4j.test.server.HTTP;

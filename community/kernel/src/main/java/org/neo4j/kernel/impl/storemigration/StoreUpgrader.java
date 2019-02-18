@@ -28,10 +28,10 @@ import java.util.Optional;
 import java.util.regex.Pattern;
 
 import org.neo4j.common.ProgressReporter;
+import org.neo4j.configuration.Config;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.format.LuceneCapability;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.internal.Version;

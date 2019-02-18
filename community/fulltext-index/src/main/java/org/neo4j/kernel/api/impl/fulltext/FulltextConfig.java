@@ -19,20 +19,19 @@
  */
 package org.neo4j.kernel.api.impl.fulltext;
 
-import org.neo4j.kernel.api.impl.fulltext.analyzer.providers.Standard;
-
 import org.neo4j.configuration.Description;
 import org.neo4j.configuration.LoadableConfig;
+import org.neo4j.configuration.Settings;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.kernel.configuration.Settings;
+import org.neo4j.kernel.api.impl.fulltext.analyzer.providers.Standard;
 
-import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
-import static org.neo4j.kernel.configuration.Settings.INTEGER;
-import static org.neo4j.kernel.configuration.Settings.STRING;
-import static org.neo4j.kernel.configuration.Settings.buildSetting;
-import static org.neo4j.kernel.configuration.Settings.max;
-import static org.neo4j.kernel.configuration.Settings.min;
-import static org.neo4j.kernel.configuration.Settings.setting;
+import static org.neo4j.configuration.Settings.BOOLEAN;
+import static org.neo4j.configuration.Settings.INTEGER;
+import static org.neo4j.configuration.Settings.STRING;
+import static org.neo4j.configuration.Settings.buildSetting;
+import static org.neo4j.configuration.Settings.max;
+import static org.neo4j.configuration.Settings.min;
+import static org.neo4j.configuration.Settings.setting;
 
 /**
  * Configuration settings for the fulltext index.

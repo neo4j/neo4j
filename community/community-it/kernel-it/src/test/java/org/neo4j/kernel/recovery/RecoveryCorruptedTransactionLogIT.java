@@ -35,6 +35,7 @@ import java.util.List;
 import java.util.function.Supplier;
 
 import org.neo4j.common.DependencyResolver;
+import org.neo4j.configuration.Settings;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -45,7 +46,6 @@ import org.neo4j.internal.recordstorage.Command;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.StoreChannel;
-import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;

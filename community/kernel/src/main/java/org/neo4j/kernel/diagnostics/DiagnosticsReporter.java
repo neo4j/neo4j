@@ -36,8 +36,8 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 import org.neo4j.common.Service;
+import org.neo4j.configuration.Config;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.configuration.Config;
 
 import static java.lang.String.format;
 import static java.nio.charset.StandardCharsets.UTF_8;

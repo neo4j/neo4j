@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.transaction.log.pruning;
 
 import java.util.Objects;
 
-import static org.neo4j.kernel.configuration.Settings.parseLongWithUnit;
+import static org.neo4j.configuration.Settings.parseLongWithUnit;
 
 public class ThresholdConfigParser
 {

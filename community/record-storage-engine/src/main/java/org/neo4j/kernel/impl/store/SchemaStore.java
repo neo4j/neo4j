@@ -32,6 +32,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import org.neo4j.common.EntityType;
+import org.neo4j.configuration.Config;
 import org.neo4j.internal.kernel.api.NamedToken;
 import org.neo4j.internal.kernel.api.exceptions.schema.MalformedSchemaRuleException;
 import org.neo4j.io.pagecache.PageCache;
@@ -42,7 +43,6 @@ import org.neo4j.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema.constraints.NodeKeyConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constraints.UniquenessConstraintDescriptor;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.TokenHolder;
 import org.neo4j.kernel.impl.core.TokenHolders;
 import org.neo4j.kernel.impl.core.TokenNotFoundException;

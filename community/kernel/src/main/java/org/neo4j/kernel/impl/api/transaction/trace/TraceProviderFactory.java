@@ -21,7 +21,8 @@ package org.neo4j.kernel.impl.api.transaction.trace;
 
 import java.util.concurrent.ThreadLocalRandom;
 
-import org.neo4j.kernel.configuration.Config;
+import org.neo4j.configuration.Config;
+import org.neo4j.configuration.TransactionTracingLevel;
 
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.transaction_sampling_percentage;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.transaction_tracing_level;

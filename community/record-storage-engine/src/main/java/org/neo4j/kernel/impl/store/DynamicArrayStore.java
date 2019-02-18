@@ -30,9 +30,9 @@ import java.time.OffsetTime;
 import java.time.ZonedDateTime;
 import java.util.Collection;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.format.Capability;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.UnsupportedFormatCapabilityException;

@@ -24,9 +24,9 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.helpers.Args;
 import org.neo4j.helpers.collection.Pair;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.Converters;
 
 import static org.neo4j.helpers.collection.MapUtil.stringMap;

@@ -21,9 +21,9 @@ package org.neo4j.kernel.impl.index.schema;
 
 import java.io.File;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.gis.spatial.index.curves.StandardConfiguration;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.index.schema.config.ConfiguredSpaceFillingCurveSettingsCache;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 

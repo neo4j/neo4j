@@ -25,8 +25,8 @@ import org.junit.Test;
 import java.util.Arrays;
 import java.util.HashMap;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.index.internal.gbptree.Layout;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.index.schema.config.ConfiguredSpaceFillingCurveSettingsCache;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettingsCache;
 import org.neo4j.test.rule.RandomRule;

@@ -24,6 +24,7 @@ import org.junit.jupiter.api.Test;
 import java.io.File;
 import java.util.concurrent.locks.LockSupport;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -38,7 +39,6 @@ import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.scheduler.CentralJobScheduler;

@@ -34,6 +34,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.LongSupplier;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -54,7 +55,6 @@ import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.properties.PropertyKeyValue;
 import org.neo4j.kernel.api.txstate.TransactionState;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;

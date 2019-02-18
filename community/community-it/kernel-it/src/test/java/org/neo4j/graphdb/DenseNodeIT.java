@@ -22,8 +22,8 @@ package org.neo4j.graphdb;
 import org.junit.Rule;
 import org.junit.Test;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.rule.ImpermanentDbmsRule;

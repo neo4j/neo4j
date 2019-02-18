@@ -21,10 +21,10 @@ package org.neo4j.server.database;
 
 import org.junit.Test;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.facade.ExternalDependencies;
 import org.neo4j.graphdb.facade.GraphDatabaseDependencies;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.logging.NullLogProvider;
 

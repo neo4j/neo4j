@@ -26,13 +26,13 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Stream;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.graphdb.InputPosition;
 import org.neo4j.graphdb.Notification;
 import org.neo4j.graphdb.QueryExecutionException;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 
 import static org.hamcrest.Matchers.equalTo;

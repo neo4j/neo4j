@@ -46,7 +46,7 @@ import org.neo4j.unsafe.impl.batchimport.staging.HumanUnderstandableExecutionMon
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
-import static org.neo4j.kernel.configuration.Config.defaults;
+import static org.neo4j.configuration.Config.defaults;
 import static org.neo4j.kernel.impl.store.format.standard.Standard.LATEST_RECORD_FORMATS;
 import static org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds.EMPTY;
 import static org.neo4j.unsafe.impl.batchimport.Configuration.DEFAULT;

@@ -22,7 +22,7 @@ package org.neo4j.server.modules;
 import java.net.URI;
 import java.util.List;
 
-import org.neo4j.kernel.configuration.Config;
+import org.neo4j.configuration.Config;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.rest.management.JmxService;
 import org.neo4j.server.rest.management.RootService;

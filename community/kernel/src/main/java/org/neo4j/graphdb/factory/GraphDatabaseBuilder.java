@@ -29,9 +29,9 @@ import java.util.Properties;
 import java.util.Set;
 import javax.annotation.Nonnull;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.kernel.configuration.Config;
 
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 

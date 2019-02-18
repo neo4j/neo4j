@@ -21,11 +21,11 @@ package org.neo4j.dbms.database;
 
 import org.junit.jupiter.api.Test;
 
+import org.neo4j.configuration.Config;
+import org.neo4j.configuration.SettingChangeListener;
+import org.neo4j.configuration.TransactionTracingLevel;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.configuration.SettingChangeListener;
-import org.neo4j.kernel.impl.api.transaction.trace.TransactionTracingLevel;
 import org.neo4j.test.Race;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;

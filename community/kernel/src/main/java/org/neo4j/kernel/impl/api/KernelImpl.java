@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
@@ -31,7 +32,6 @@ import org.neo4j.kernel.api.TransactionHook;
 import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.CallableUserAggregationFunction;
 import org.neo4j.kernel.api.proc.CallableUserFunction;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.newapi.DefaultThreadSafeCursors;
 import org.neo4j.kernel.impl.proc.GlobalProcedures;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;

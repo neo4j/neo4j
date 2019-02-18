@@ -37,6 +37,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.consistency.ConsistencyCheckService.Result;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
@@ -53,7 +54,6 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.logging.NullLogProvider;

@@ -26,8 +26,8 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.graphdb.facade.GraphDatabaseDependencies;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.scheduler.BufferingExecutor;
 import org.neo4j.scheduler.Group;

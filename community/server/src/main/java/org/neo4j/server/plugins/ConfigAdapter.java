@@ -23,7 +23,7 @@ import org.apache.commons.configuration.AbstractConfiguration;
 
 import java.util.Iterator;
 
-import org.neo4j.kernel.configuration.Config;
+import org.neo4j.configuration.Config;
 
 /**
  * @deprecated Server plugins are deprecated for removal in the next major release. Please use unmanaged extensions instead.

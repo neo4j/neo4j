@@ -23,8 +23,8 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.gis.spatial.index.curves.SpaceFillingCurve;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 
 /**

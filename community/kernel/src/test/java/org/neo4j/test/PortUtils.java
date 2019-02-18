@@ -19,9 +19,9 @@
  */
 package org.neo4j.test;
 
+import org.neo4j.configuration.ConnectorPortRegister;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.helpers.HostnamePort;
-import org.neo4j.kernel.configuration.ConnectorPortRegister;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 
 import static java.util.Objects.requireNonNull;

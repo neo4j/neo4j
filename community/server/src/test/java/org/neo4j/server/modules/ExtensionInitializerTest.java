@@ -27,9 +27,9 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.function.Function;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.helpers.collection.Iterators;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.server.NeoServer;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.plugins.Injectable;

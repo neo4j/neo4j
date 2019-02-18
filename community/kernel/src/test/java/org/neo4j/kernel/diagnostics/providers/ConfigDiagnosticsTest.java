@@ -21,7 +21,7 @@ package org.neo4j.kernel.diagnostics.providers;
 
 import org.junit.jupiter.api.Test;
 
-import org.neo4j.kernel.configuration.Config;
+import org.neo4j.configuration.Config;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.Log;
 

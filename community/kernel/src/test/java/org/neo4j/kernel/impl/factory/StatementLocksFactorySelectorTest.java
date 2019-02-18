@@ -24,7 +24,7 @@ import org.junit.Test;
 import java.util.Arrays;
 import java.util.List;
 
-import org.neo4j.kernel.configuration.Config;
+import org.neo4j.configuration.Config;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.Locks.Client;
 import org.neo4j.kernel.impl.locking.SimpleStatementLocks;

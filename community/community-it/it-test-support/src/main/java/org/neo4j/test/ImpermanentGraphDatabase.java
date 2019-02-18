@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.neo4j.common.Service;
+import org.neo4j.configuration.Config;
 import org.neo4j.graphdb.facade.ExternalDependencies;
 import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory;
 import org.neo4j.graphdb.facade.embedded.EmbeddedGraphDatabase;
@@ -33,7 +34,6 @@ import org.neo4j.graphdb.factory.module.edition.CommunityEditionModule;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.internal.locker.StoreLocker;
@@ -42,10 +42,10 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.logging.internal.SimpleLogService;
 
+import static org.neo4j.configuration.Settings.TRUE;
 import static org.neo4j.graphdb.facade.GraphDatabaseDependencies.newDependencies;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.ephemeral;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;
-import static org.neo4j.kernel.configuration.Settings.TRUE;
 
 /**
  * A database meant to be used in unit tests. It will always be empty on start.

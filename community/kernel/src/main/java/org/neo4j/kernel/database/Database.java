@@ -31,6 +31,8 @@ import java.util.function.Supplier;
 
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.common.TokenNameLookup;
+import org.neo4j.configuration.Config;
+import org.neo4j.configuration.SettingChangeListener;
 import org.neo4j.dbms.database.DatabaseConfig;
 import org.neo4j.dbms.database.DatabasePageCache;
 import org.neo4j.graphdb.ResourceIterator;
@@ -50,8 +52,6 @@ import org.neo4j.kernel.api.labelscan.LoggingMonitor;
 import org.neo4j.kernel.availability.AvailabilityGuard;
 import org.neo4j.kernel.availability.DatabaseAvailability;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
-import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.configuration.SettingChangeListener;
 import org.neo4j.kernel.diagnostics.providers.DbmsDiagnosticsManager;
 import org.neo4j.kernel.extension.DatabaseExtensions;
 import org.neo4j.kernel.extension.ExtensionFactory;

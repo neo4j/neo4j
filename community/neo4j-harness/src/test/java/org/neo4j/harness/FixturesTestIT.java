@@ -24,12 +24,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 
+import org.neo4j.configuration.LegacySslPolicyConfig;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.harness.internal.InProcessNeo4j;
 import org.neo4j.harness.internal.Neo4jBuilder;
 import org.neo4j.io.fs.FileUtils;
-import org.neo4j.kernel.configuration.ssl.LegacySslPolicyConfig;
 import org.neo4j.server.ServerTestUtils;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.SuppressOutputExtension;

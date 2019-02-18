@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.runtime.spec
 
 import org.neo4j.common.DependencyResolver
+import org.neo4j.configuration.Config
 import org.neo4j.cypher.internal._
-import org.neo4j.kernel.configuration.Config
 import org.neo4j.test.TestGraphDatabaseFactory
 
 abstract class Edition[CONTEXT <: RuntimeContext](val graphDatabaseFactory: TestGraphDatabaseFactory) {

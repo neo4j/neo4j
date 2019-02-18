@@ -25,6 +25,7 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.Set;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.AuthenticationResult;
 import org.neo4j.internal.kernel.api.security.LoginContext;
@@ -35,7 +36,6 @@ import org.neo4j.kernel.api.security.PasswordPolicy;
 import org.neo4j.kernel.api.security.UserManager;
 import org.neo4j.kernel.api.security.UserManagerSupplier;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.security.User;
 import org.neo4j.server.security.auth.exception.ConcurrentModificationException;
 import org.neo4j.string.UTF8;

@@ -21,7 +21,7 @@ package org.neo4j.kernel.diagnostics.providers;
 
 import java.util.Map;
 
-import org.neo4j.kernel.configuration.Config;
+import org.neo4j.configuration.Config;
 import org.neo4j.logging.Logger;
 
 public class ConfigDiagnostics extends NamedDiagnosticsProvider

@@ -30,9 +30,9 @@ import org.neo4j.graphdb.config.BaseSetting;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 
-import static org.neo4j.kernel.configuration.Settings.DOUBLE;
-import static org.neo4j.kernel.configuration.Settings.INTEGER;
-import static org.neo4j.kernel.configuration.Settings.setting;
+import static org.neo4j.configuration.Settings.DOUBLE;
+import static org.neo4j.configuration.Settings.INTEGER;
+import static org.neo4j.configuration.Settings.setting;
 
 public class SpatialIndexSettings implements LoadableConfig
 {

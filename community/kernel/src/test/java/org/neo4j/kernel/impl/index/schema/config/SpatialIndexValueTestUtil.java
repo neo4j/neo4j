@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.impl.index.schema.config;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.gis.spatial.index.curves.SpaceFillingCurve;
 import org.neo4j.helpers.collection.Pair;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.Values;

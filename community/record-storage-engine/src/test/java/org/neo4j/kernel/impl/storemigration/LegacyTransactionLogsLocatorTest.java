@@ -24,9 +24,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;

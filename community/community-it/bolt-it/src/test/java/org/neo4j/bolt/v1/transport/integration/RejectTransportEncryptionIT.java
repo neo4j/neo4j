@@ -34,14 +34,14 @@ import org.neo4j.bolt.v1.messaging.Neo4jPackV1;
 import org.neo4j.bolt.v1.transport.socket.client.SecureSocketConnection;
 import org.neo4j.bolt.v1.transport.socket.client.SecureWebSocketConnection;
 import org.neo4j.bolt.v1.transport.socket.client.TransportConnection;
+import org.neo4j.configuration.BoltConnector;
 import org.neo4j.function.Factory;
-import org.neo4j.kernel.configuration.BoltConnector;
 
 import static java.util.Arrays.asList;
 import static org.apache.commons.lang3.JavaVersion.JAVA_9;
 import static org.apache.commons.lang3.SystemUtils.isJavaVersionAtLeast;
 import static org.neo4j.bolt.v1.transport.integration.Neo4jWithSocket.DEFAULT_CONNECTOR_KEY;
-import static org.neo4j.kernel.configuration.BoltConnector.EncryptionLevel.DISABLED;
+import static org.neo4j.configuration.BoltConnector.EncryptionLevel.DISABLED;
 
 @RunWith( Parameterized.class )
 public class RejectTransportEncryptionIT

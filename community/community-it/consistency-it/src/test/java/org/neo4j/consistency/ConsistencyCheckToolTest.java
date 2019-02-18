@@ -37,6 +37,7 @@ import java.time.ZoneOffset;
 import java.util.Properties;
 import java.util.TimeZone;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.consistency.ConsistencyCheckTool.ToolFailureException;
 import org.neo4j.consistency.checking.full.ConsistencyFlags;
 import org.neo4j.graphdb.Transaction;
@@ -46,7 +47,6 @@ import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.LogProvider;

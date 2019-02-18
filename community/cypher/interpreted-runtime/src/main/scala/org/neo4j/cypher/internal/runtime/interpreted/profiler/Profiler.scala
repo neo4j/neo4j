@@ -20,15 +20,16 @@
 package org.neo4j.cypher.internal.runtime.interpreted.profiler
 
 import org.eclipse.collections.api.iterator.LongIterator
+import org.neo4j.common.Edition
+import org.neo4j.cypher.internal.runtime._
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{Pipe, PipeDecorator, QueryState}
 import org.neo4j.cypher.internal.runtime.interpreted.{DelegatingOperations, DelegatingQueryContext}
-import org.neo4j.cypher.internal.runtime._
-import org.neo4j.internal.kernel.api.{QueryContext => _, _}
+import org.neo4j.cypher.internal.v4_0.util.attribution.Id
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelectionCursor
-import org.neo4j.kernel.impl.factory.{DatabaseInfo, Edition}
+import org.neo4j.internal.kernel.api.{QueryContext => _, _}
+import org.neo4j.kernel.impl.factory.DatabaseInfo
 import org.neo4j.storageengine.api.RelationshipVisitor
 import org.neo4j.values.storable.Value
-import org.neo4j.cypher.internal.v4_0.util.attribution.Id
 
 class Profiler(databaseInfo: DatabaseInfo,
                stats: InterpretedProfileInformation) extends PipeDecorator {

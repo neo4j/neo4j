@@ -19,11 +19,11 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.kernel.configuration.Config;
-import org.neo4j.storageengine.migration.UpgradeNotAllowedException;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion;
 import org.neo4j.kernel.recovery.LogTailScanner;
+import org.neo4j.storageengine.migration.UpgradeNotAllowedException;
 
 /**
  * Here we check the latest entry in the transaction log and make sure it matches the current version, if this check

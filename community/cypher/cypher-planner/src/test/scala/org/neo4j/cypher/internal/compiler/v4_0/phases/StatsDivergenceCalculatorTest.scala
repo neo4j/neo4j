@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v4_0.phases
 
+import org.neo4j.configuration.Settings
 import org.neo4j.cypher.internal.compiler.v4_0.StatsDivergenceCalculator
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
-import org.neo4j.kernel.configuration.Settings
 
 class StatsDivergenceCalculatorTest extends CypherFunSuite {
   val defaultInitialThreshold = GraphDatabaseSettings.query_statistics_divergence_threshold.getDefaultValue().toDouble

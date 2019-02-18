@@ -30,9 +30,9 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 import java.util.List;
 import java.util.UUID;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.kernel.api.net.NetworkConnectionTracker;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.server.web.HttpConnectorFactory;
 import org.neo4j.server.web.JettyThreadCalculator;
 import org.neo4j.ssl.SslPolicy;

@@ -34,12 +34,12 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Random;
 
+import org.neo4j.configuration.ConnectorPortRegister;
+import org.neo4j.configuration.LegacySslPolicyConfig;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.HostnamePort;
-import org.neo4j.kernel.configuration.ConnectorPortRegister;
-import org.neo4j.kernel.configuration.ssl.LegacySslPolicyConfig;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 
 import static org.junit.Assert.assertNotNull;

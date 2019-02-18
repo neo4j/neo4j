@@ -34,6 +34,7 @@ import java.util.function.IntSupplier;
 import java.util.stream.Collectors;
 
 import org.neo4j.common.DependencyResolver;
+import org.neo4j.common.Edition;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
@@ -60,7 +61,6 @@ import org.neo4j.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
-import org.neo4j.kernel.impl.factory.Edition;
 import org.neo4j.kernel.impl.index.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.proc.GlobalProcedures;
 import org.neo4j.kernel.impl.util.DefaultValueMapper;

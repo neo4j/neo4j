@@ -34,12 +34,12 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 
 import org.neo4j.common.DependencyResolver;
+import org.neo4j.configuration.BoltConnector;
+import org.neo4j.configuration.Config;
+import org.neo4j.configuration.ConnectorPortRegister;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.HostnamePort;
-import org.neo4j.kernel.configuration.BoltConnector;
-import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.configuration.ConnectorPortRegister;
 import org.neo4j.server.NeoServer;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.rest.repr.formats.JsonFormat;

@@ -21,13 +21,13 @@ package org.neo4j.kernel.api.impl.fulltext;
 
 import org.apache.lucene.index.IndexWriterConfig;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.function.Factory;
 import org.neo4j.kernel.api.impl.index.DatabaseIndex;
 import org.neo4j.kernel.api.impl.index.IndexWriterConfigs;
 import org.neo4j.kernel.api.impl.index.builder.AbstractLuceneIndexBuilder;
 import org.neo4j.kernel.api.impl.index.partition.ReadOnlyIndexPartitionFactory;
 import org.neo4j.kernel.api.impl.index.partition.WritableIndexPartitionFactory;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.TokenHolder;
 
 public class FulltextIndexBuilder extends AbstractLuceneIndexBuilder<FulltextIndexBuilder>

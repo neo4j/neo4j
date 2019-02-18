@@ -23,6 +23,7 @@ import java.time.Clock;
 import java.util.List;
 
 import org.neo4j.common.DependencyResolver;
+import org.neo4j.configuration.Config;
 import org.neo4j.cypher.CypherException;
 import org.neo4j.cypher.internal.CacheTracer;
 import org.neo4j.cypher.internal.CompilerFactory;
@@ -32,7 +33,6 @@ import org.neo4j.cypher.internal.tracing.CompilationTracer;
 import org.neo4j.cypher.internal.tracing.TimingCompilationTracer;
 import org.neo4j.graphdb.Result;
 import org.neo4j.kernel.GraphDatabaseQueryService;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.query.FunctionInformation;
 import org.neo4j.kernel.impl.query.QueryExecution;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;

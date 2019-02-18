@@ -23,9 +23,9 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.configuration.ConfigValue;
 import org.neo4j.gis.spatial.index.Envelope;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 
 class EnvelopeSettings

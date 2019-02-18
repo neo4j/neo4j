@@ -32,6 +32,7 @@ import java.util.function.Function;
 import java.util.stream.Stream;
 
 import org.neo4j.collection.pool.Pool;
+import org.neo4j.configuration.Config;
 import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.internal.kernel.api.CursorFactory;
@@ -66,7 +67,6 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;

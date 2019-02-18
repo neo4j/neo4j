@@ -53,6 +53,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -62,7 +63,6 @@ import org.neo4j.helpers.collection.Pair;
 import org.neo4j.internal.kernel.api.NamedToken;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.api.StatementConstants;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.TokenStore;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;

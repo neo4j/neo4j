@@ -36,8 +36,8 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.bolt.BoltServer;
 import org.neo4j.bolt.testing.Jobs;
+import org.neo4j.configuration.Config;
 import org.neo4j.function.Predicates;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.NullLog;
 import org.neo4j.logging.internal.LogService;

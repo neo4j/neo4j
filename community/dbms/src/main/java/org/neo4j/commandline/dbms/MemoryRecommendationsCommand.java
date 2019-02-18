@@ -34,11 +34,11 @@ import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.commandline.arguments.Arguments;
 import org.neo4j.commandline.arguments.OptionalNamedArg;
 import org.neo4j.common.Service;
+import org.neo4j.configuration.Config;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.os.OsBeanUtil;
 import org.neo4j.kernel.api.impl.index.storage.FailureStorage;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.internal.NativeIndexFileFilter;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 
@@ -46,6 +46,8 @@ import static java.lang.String.format;
 import static org.neo4j.commandline.arguments.common.Database.ARG_DATABASE;
 import static org.neo4j.configuration.ExternalSettings.initialHeapSize;
 import static org.neo4j.configuration.ExternalSettings.maxHeapSize;
+import static org.neo4j.configuration.Settings.BYTES;
+import static org.neo4j.configuration.Settings.buildSetting;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.active_database;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.database_path;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;
@@ -56,8 +58,6 @@ import static org.neo4j.io.ByteUnit.gibiBytes;
 import static org.neo4j.io.ByteUnit.mebiBytes;
 import static org.neo4j.io.ByteUnit.tebiBytes;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.baseSchemaIndexFolder;
-import static org.neo4j.kernel.configuration.Settings.BYTES;
-import static org.neo4j.kernel.configuration.Settings.buildSetting;
 
 public class MemoryRecommendationsCommand implements AdminCommand
 {

@@ -24,8 +24,8 @@ import org.apache.commons.lang3.StringUtils;
 import java.time.Clock;
 
 import org.neo4j.common.Service;
+import org.neo4j.configuration.Config;
 import org.neo4j.graphdb.factory.module.edition.CommunityEditionModule;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.locking.DynamicLocksFactory;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.LocksFactory;

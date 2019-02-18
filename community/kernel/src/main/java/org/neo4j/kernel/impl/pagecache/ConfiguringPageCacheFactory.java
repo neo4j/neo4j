@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.pagecache;
 
 import org.neo4j.common.Service;
+import org.neo4j.configuration.Config;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.mem.MemoryAllocator;
@@ -31,14 +32,13 @@ import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.Log;
 import org.neo4j.memory.GlobalMemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
 
+import static org.neo4j.configuration.Settings.BYTES;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_swapper;
-import static org.neo4j.kernel.configuration.Settings.BYTES;
 
 public class ConfiguringPageCacheFactory
 {

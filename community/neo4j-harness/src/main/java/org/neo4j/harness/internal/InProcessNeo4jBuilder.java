@@ -23,8 +23,8 @@ import org.apache.commons.lang3.SystemUtils;
 
 import java.io.File;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.graphdb.facade.ExternalDependencies;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.server.AbstractNeoServer;
 import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.database.CommunityGraphFactory;

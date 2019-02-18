@@ -26,8 +26,8 @@ import org.neo4j.configuration.LoadableConfig;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 
-import static org.neo4j.kernel.configuration.Settings.PATH;
-import static org.neo4j.kernel.configuration.Settings.derivedSetting;
+import static org.neo4j.configuration.Settings.PATH;
+import static org.neo4j.configuration.Settings.derivedSetting;
 
 public class DatabaseManagementSystemSettings implements LoadableConfig
 {

@@ -25,7 +25,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
-import org.neo4j.kernel.configuration.Config;
+import org.neo4j.configuration.Config;
 import org.neo4j.kernel.impl.transaction.log.pruning.LogPruning;
 import org.neo4j.logging.LogProvider;
 

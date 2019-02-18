@@ -24,17 +24,17 @@ import org.junit.jupiter.api.Test;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.kernel.configuration.Config;
 
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.configuration.TransactionTracingLevel.ALL;
+import static org.neo4j.configuration.TransactionTracingLevel.DISABLED;
+import static org.neo4j.configuration.TransactionTracingLevel.SAMPLE;
 import static org.neo4j.kernel.impl.api.transaction.trace.TraceProviderFactory.getTraceProvider;
 import static org.neo4j.kernel.impl.api.transaction.trace.TransactionInitializationTrace.NONE;
-import static org.neo4j.kernel.impl.api.transaction.trace.TransactionTracingLevel.ALL;
-import static org.neo4j.kernel.impl.api.transaction.trace.TransactionTracingLevel.DISABLED;
-import static org.neo4j.kernel.impl.api.transaction.trace.TransactionTracingLevel.SAMPLE;
 
 class TraceProviderFactoryTest
 {

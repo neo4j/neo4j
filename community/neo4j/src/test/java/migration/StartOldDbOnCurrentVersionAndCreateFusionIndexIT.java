@@ -31,6 +31,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
+import org.neo4j.configuration.Settings;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -54,7 +55,6 @@ import org.neo4j.kernel.api.impl.schema.LuceneIndexProviderFactory;
 import org.neo4j.kernel.api.impl.schema.NativeLuceneFusionIndexProviderFactory10;
 import org.neo4j.kernel.api.impl.schema.NativeLuceneFusionIndexProviderFactory20;
 import org.neo4j.kernel.api.index.IndexProviderDescriptor;
-import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProvider;

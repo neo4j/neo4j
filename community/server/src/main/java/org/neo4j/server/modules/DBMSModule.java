@@ -23,8 +23,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.function.Supplier;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.server.rest.dbms.UserService;
 import org.neo4j.server.rest.discovery.DiscoverableURIs;
 import org.neo4j.server.rest.discovery.DiscoveryService;

@@ -22,8 +22,8 @@ package org.neo4j.server;
 import java.net.URI;
 import java.util.Collections;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.graphdb.facade.ExternalDependencies;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.database.GraphFactory;

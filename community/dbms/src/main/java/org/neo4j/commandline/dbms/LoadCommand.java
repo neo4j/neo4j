@@ -33,12 +33,12 @@ import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.commandline.arguments.Arguments;
 import org.neo4j.commandline.arguments.OptionalBooleanArg;
 import org.neo4j.commandline.arguments.common.MandatoryCanonicalPath;
+import org.neo4j.configuration.Config;
+import org.neo4j.configuration.LayoutConfig;
 import org.neo4j.dbms.archive.IncorrectFormat;
 import org.neo4j.dbms.archive.Loader;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.configuration.LayoutConfig;
 
 import static java.util.Objects.requireNonNull;
 import static org.neo4j.commandline.Util.checkLock;

@@ -31,6 +31,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -41,7 +42,6 @@ import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexDefinition;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.IoPrimitiveUtils;
 
 public class DbRepresentation

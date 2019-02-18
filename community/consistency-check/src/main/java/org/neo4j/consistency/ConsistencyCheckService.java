@@ -26,6 +26,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 
 import org.neo4j.common.Service;
+import org.neo4j.configuration.Config;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.consistency.checking.full.ConsistencyFlags;
 import org.neo4j.consistency.checking.full.FullCheck;
@@ -49,7 +50,6 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.DatabaseExtensions;
 import org.neo4j.kernel.impl.api.scan.FullStoreChangeStream;
 import org.neo4j.kernel.impl.core.DelegatingTokenHolder;
@@ -75,10 +75,10 @@ import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 
 import static java.lang.String.format;
+import static org.neo4j.configuration.Settings.FALSE;
+import static org.neo4j.configuration.Settings.TRUE;
 import static org.neo4j.consistency.internal.SchemaIndexExtensionLoader.instantiateExtensions;
 import static org.neo4j.io.fs.FileSystemUtils.createOrOpenAsOutputStream;
-import static org.neo4j.kernel.configuration.Settings.FALSE;
-import static org.neo4j.kernel.configuration.Settings.TRUE;
 import static org.neo4j.kernel.impl.factory.DatabaseInfo.TOOL;
 import static org.neo4j.kernel.recovery.Recovery.isRecoveryRequired;
 

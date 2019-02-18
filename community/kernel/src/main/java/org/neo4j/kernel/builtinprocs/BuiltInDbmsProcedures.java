@@ -24,10 +24,10 @@ import java.util.List;
 import java.util.stream.Stream;
 
 import org.neo4j.common.DependencyResolver;
+import org.neo4j.configuration.Config;
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
 import org.neo4j.internal.kernel.api.procs.UserFunctionSignature;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.proc.GlobalProcedures;
 import org.neo4j.kernel.impl.query.FunctionInformation;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;

@@ -24,12 +24,12 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.function.Function;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.gis.spatial.index.curves.PartialOverlapConfiguration;
 import org.neo4j.gis.spatial.index.curves.SpaceFillingCurveConfiguration;
 import org.neo4j.gis.spatial.index.curves.StandardConfiguration;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.configuration.Config;
 
 /**
  * <p>

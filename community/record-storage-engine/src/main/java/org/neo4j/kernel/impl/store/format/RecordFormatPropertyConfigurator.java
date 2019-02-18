@@ -21,9 +21,9 @@ package org.neo4j.kernel.impl.store.format;
 
 import java.util.Map;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.kernel.configuration.Config;
 
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.DEFAULT_BLOCK_SIZE;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.DEFAULT_LABEL_BLOCK_SIZE;

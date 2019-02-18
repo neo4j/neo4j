@@ -23,9 +23,9 @@ import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.kernel.api.net.NetworkConnectionTracker;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.rule.ImpermanentDbmsRule;
 import org.neo4j.test.rule.SuppressOutput;

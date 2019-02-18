@@ -28,7 +28,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.junit.Test;
 
-import org.neo4j.kernel.configuration.Config;
+import org.neo4j.configuration.Config;
 import org.neo4j.server.configuration.ServerSettings;
 
 import static org.eclipse.jetty.http.HttpHeader.STRICT_TRANSPORT_SECURITY;

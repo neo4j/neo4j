@@ -21,6 +21,7 @@ package org.neo4j.server.security.auth;
 
 import java.io.File;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -30,7 +31,6 @@ import org.neo4j.kernel.api.security.PasswordPolicy;
 import org.neo4j.kernel.api.security.SecurityModule;
 import org.neo4j.kernel.api.security.UserManager;
 import org.neo4j.kernel.api.security.UserManagerSupplier;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.proc.GlobalProcedures;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.time.Clocks;

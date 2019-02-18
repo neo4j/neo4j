@@ -21,10 +21,10 @@ package org.neo4j.kernel.api.security;
 
 import org.neo4j.common.DependencySatisfier;
 import org.neo4j.common.Service;
+import org.neo4j.configuration.Config;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.security.provider.SecurityProvider;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.AccessCapability;
 import org.neo4j.kernel.impl.proc.GlobalProcedures;
 import org.neo4j.kernel.lifecycle.LifeSupport;

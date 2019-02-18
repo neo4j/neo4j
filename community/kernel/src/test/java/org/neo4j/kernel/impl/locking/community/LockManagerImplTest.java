@@ -24,7 +24,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.mockito.Mockito;
 
-import org.neo4j.kernel.configuration.Config;
+import org.neo4j.configuration.Config;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.storageengine.api.lock.LockTracer;
 import org.neo4j.time.Clocks;

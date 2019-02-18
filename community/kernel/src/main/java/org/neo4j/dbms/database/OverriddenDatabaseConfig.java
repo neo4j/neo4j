@@ -24,13 +24,12 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
-
 import javax.annotation.Nonnull;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.configuration.ConfigValue;
 import org.neo4j.graphdb.config.InvalidSettingException;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.kernel.configuration.Config;
 
 /**
  * Instance of database specific config where you may override specific config values with a local, database specific scope.

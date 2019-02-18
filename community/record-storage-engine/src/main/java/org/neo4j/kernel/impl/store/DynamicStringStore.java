@@ -22,8 +22,8 @@ package org.neo4j.kernel.impl.store;
 import java.io.File;
 import java.nio.file.OpenOption;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdType;

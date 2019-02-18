@@ -28,13 +28,13 @@ import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.common.Service;
+import org.neo4j.configuration.Config;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -46,9 +46,9 @@ import org.neo4j.test.rule.TestDirectory;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.neo4j.configuration.LayoutConfig.of;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.DEFAULT_TX_LOGS_ROOT_DIR_NAME;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.transaction_logs_root_path;
-import static org.neo4j.kernel.configuration.LayoutConfig.of;
 
 @ExtendWith( {EphemeralFileSystemExtension.class, TestDirectoryExtension.class} )
 class RecoveryRequiredCheckerTest

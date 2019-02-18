@@ -23,8 +23,8 @@ import io.netty.channel.Channel;
 
 import java.time.Clock;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.kernel.configuration.Config;
 
 /**
  * Serves as an entry point for throttling of transport related resources. Currently only

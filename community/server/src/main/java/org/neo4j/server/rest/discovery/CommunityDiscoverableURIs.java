@@ -19,8 +19,8 @@
  */
 package org.neo4j.server.rest.discovery;
 
-import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.configuration.ConnectorPortRegister;
+import org.neo4j.configuration.Config;
+import org.neo4j.configuration.ConnectorPortRegister;
 import org.neo4j.server.configuration.ServerSettings;
 
 import static org.neo4j.server.rest.discovery.DiscoverableURIs.Precedence.NORMAL;

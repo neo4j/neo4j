@@ -23,6 +23,7 @@ import java.util.function.Function;
 
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.common.TokenNameLookup;
+import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.DatabaseConfig;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.factory.module.edition.context.EditionDatabaseContext;
@@ -35,7 +36,6 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.availability.DatabaseAvailability;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.database.DatabaseCreationContext;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;

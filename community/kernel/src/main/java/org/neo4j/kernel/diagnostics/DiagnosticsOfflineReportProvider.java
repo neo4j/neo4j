@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.diagnostics;
 
-
 import java.io.File;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -27,8 +26,8 @@ import java.util.List;
 import java.util.Set;
 
 import org.neo4j.common.Service;
+import org.neo4j.configuration.Config;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.configuration.Config;
 
 /**
  * Base class for a provider of offline reports. Offline reports does not require a running instance of the database

@@ -30,11 +30,11 @@ import java.util.HashMap;
 
 import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.commandline.admin.NullOutsideWorld;
+import org.neo4j.configuration.Config;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Args;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.Validators;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.TestDirectory;

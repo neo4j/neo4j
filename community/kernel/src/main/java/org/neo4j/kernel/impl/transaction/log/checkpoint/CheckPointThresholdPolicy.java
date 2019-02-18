@@ -23,7 +23,7 @@ import java.time.Clock;
 import java.util.NoSuchElementException;
 
 import org.neo4j.common.Service;
-import org.neo4j.kernel.configuration.Config;
+import org.neo4j.configuration.Config;
 import org.neo4j.kernel.impl.transaction.log.pruning.LogPruning;
 import org.neo4j.logging.LogProvider;
 

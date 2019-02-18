@@ -22,6 +22,7 @@ package org.neo4j.consistency.checking.full;
 import java.lang.reflect.Array;
 import java.util.List;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.consistency.checking.ByteArrayBitsManipulator;
 import org.neo4j.consistency.checking.CheckDecorator;
 import org.neo4j.consistency.checking.cache.CacheAccess;
@@ -38,7 +39,6 @@ import org.neo4j.consistency.store.DirectRecordAccess;
 import org.neo4j.consistency.store.DirectStoreAccess;
 import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.StoreAccess;

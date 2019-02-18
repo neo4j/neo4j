@@ -35,6 +35,7 @@ import java.util.Collection;
 import java.util.List;
 
 import org.neo4j.common.ProgressReporter;
+import org.neo4j.configuration.Config;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.internal.recordstorage.RecordNodeCursor;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
@@ -47,7 +48,6 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.DelegatingTokenHolder;
 import org.neo4j.kernel.impl.core.TokenCreator;
 import org.neo4j.kernel.impl.core.TokenHolder;

@@ -38,6 +38,7 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import org.neo4j.common.DependencyResolver;
+import org.neo4j.configuration.Config;
 import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.consistency.checking.full.ConsistencyFlags;
@@ -53,7 +54,6 @@ import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.IndexingService;

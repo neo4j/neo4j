@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.locking;
 
 import java.time.Clock;
 
-import org.neo4j.kernel.configuration.Config;
+import org.neo4j.configuration.Config;
 import org.neo4j.storageengine.api.lock.ResourceType;
 
 public interface LocksFactory

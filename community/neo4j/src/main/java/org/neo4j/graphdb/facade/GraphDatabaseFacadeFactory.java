@@ -25,6 +25,7 @@ import java.util.function.Function;
 
 import org.neo4j.bolt.BoltServer;
 import org.neo4j.common.DependencyResolver;
+import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Node;
@@ -44,7 +45,6 @@ import org.neo4j.kernel.api.proc.Context;
 import org.neo4j.kernel.api.security.provider.SecurityProvider;
 import org.neo4j.kernel.availability.StartupWaiter;
 import org.neo4j.kernel.builtinprocs.SpecialBuiltInProcedures;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.dbms.NonTransactionalDbmsOperations;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;

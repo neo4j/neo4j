@@ -20,7 +20,7 @@
 package org.neo4j.kernel.impl.api.index;
 
 import org.neo4j.common.TokenNameLookup;
-import org.neo4j.kernel.configuration.Config;
+import org.neo4j.configuration.Config;
 import org.neo4j.kernel.impl.api.SchemaState;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingController;

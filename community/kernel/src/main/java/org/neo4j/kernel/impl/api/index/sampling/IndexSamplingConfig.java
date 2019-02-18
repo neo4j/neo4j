@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.impl.api.index.sampling;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.kernel.configuration.Config;
 
 public class IndexSamplingConfig
 {

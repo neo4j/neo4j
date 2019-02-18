@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.locking.community;
 
 import java.time.Clock;
 
-import org.neo4j.kernel.configuration.Config;
+import org.neo4j.configuration.Config;
 import org.neo4j.kernel.impl.locking.Locks;
 
 public class CommunityLockManger implements Locks

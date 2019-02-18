@@ -32,14 +32,14 @@ import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.neo4j.configuration.Config;
+import org.neo4j.configuration.ConfigurationValidator;
+import org.neo4j.configuration.HttpConnector.Encryption;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.facade.GraphDatabaseDependencies;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.configuration.ConfigurationValidator;
-import org.neo4j.kernel.configuration.HttpConnector.Encryption;
 import org.neo4j.kernel.impl.scheduler.BufferingExecutor;
 import org.neo4j.kernel.info.JvmChecker;
 import org.neo4j.kernel.info.JvmMetadataRepository;

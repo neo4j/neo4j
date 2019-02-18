@@ -26,15 +26,15 @@ import org.neo4j.bolt.AbstractBoltTransportsTest;
 import org.neo4j.bolt.v1.messaging.request.InitMessage;
 import org.neo4j.bolt.v1.transport.integration.Neo4jWithSocket;
 import org.neo4j.bolt.v1.transport.socket.client.TransportConnection;
+import org.neo4j.configuration.BoltConnector;
 import org.neo4j.helpers.HostnamePort;
-import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.test.rule.SuppressOutput;
 
 import static java.util.Collections.emptyMap;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.bolt.v1.transport.integration.Neo4jWithSocket.DEFAULT_CONNECTOR_KEY;
 import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyDisconnects;
-import static org.neo4j.kernel.configuration.BoltConnector.EncryptionLevel.REQUIRED;
+import static org.neo4j.configuration.BoltConnector.EncryptionLevel.REQUIRED;
 
 public class BoltConfigIT extends AbstractBoltTransportsTest
 {

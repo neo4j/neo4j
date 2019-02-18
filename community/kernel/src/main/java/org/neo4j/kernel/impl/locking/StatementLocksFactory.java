@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.locking;
 
-import org.neo4j.kernel.configuration.Config;
+import org.neo4j.configuration.Config;
 
 /**
  * Factory to create {@link StatementLocks} instances.

@@ -23,8 +23,8 @@ import org.junit.Test;
 
 import java.util.HashMap;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.gis.spatial.index.Envelope;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 
 import static org.hamcrest.CoreMatchers.equalTo;

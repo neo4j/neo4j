@@ -27,20 +27,17 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.stream.Stream;
 import javax.annotation.Nonnull;
 
+import org.neo4j.configuration.BoltConnector;
+import org.neo4j.configuration.Config;
 import org.neo4j.configuration.ConfigValue;
+import org.neo4j.configuration.HttpConnector;
+import org.neo4j.configuration.SettingChangeListener;
 import org.neo4j.graphdb.config.InvalidSettingException;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.collection.CollectorsUtil;
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.helpers.collection.Pair;
-import org.neo4j.kernel.configuration.BoltConnector;
-import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.configuration.HttpConnector;
-import org.neo4j.kernel.configuration.SettingChangeListener;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
 public class DatabaseConfig extends Config implements Lifecycle

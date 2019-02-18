@@ -25,6 +25,9 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
+import org.neo4j.configuration.BoltConnector;
+import org.neo4j.configuration.Config;
+import org.neo4j.configuration.Settings;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.facade.ExternalDependencies;
@@ -40,9 +43,6 @@ import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.graphdb.mockfs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.graphdb.security.URLAccessRule;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.configuration.BoltConnector;
-import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.index.schema.AbstractIndexProviderFactory;
@@ -54,9 +54,9 @@ import org.neo4j.logging.internal.LogService;
 import org.neo4j.logging.internal.SimpleLogService;
 import org.neo4j.time.SystemNanoClock;
 
+import static org.neo4j.configuration.Connector.ConnectorType.BOLT;
+import static org.neo4j.configuration.Settings.TRUE;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.ephemeral;
-import static org.neo4j.kernel.configuration.Connector.ConnectorType.BOLT;
-import static org.neo4j.kernel.configuration.Settings.TRUE;
 
 
 /**

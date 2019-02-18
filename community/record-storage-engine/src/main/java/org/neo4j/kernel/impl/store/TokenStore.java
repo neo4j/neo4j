@@ -26,9 +26,9 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.internal.kernel.api.NamedToken;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdType;

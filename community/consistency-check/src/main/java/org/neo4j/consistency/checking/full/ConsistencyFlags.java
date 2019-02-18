@@ -22,8 +22,8 @@ package org.neo4j.consistency.checking.full;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.consistency.ConsistencyCheckSettings;
-import org.neo4j.kernel.configuration.Config;
 
 public class ConsistencyFlags
 {

@@ -45,8 +45,8 @@ import org.neo4j.test.rule.SuppressOutput;
 import static java.lang.Integer.max;
 import static java.util.UUID.randomUUID;
 import static org.junit.Assert.assertTrue;
+import static org.neo4j.configuration.Config.defaults;
 import static org.neo4j.helpers.progress.ProgressMonitorFactory.NONE;
-import static org.neo4j.kernel.configuration.Config.defaults;
 import static org.neo4j.logging.FormattedLogProvider.toOutputStream;
 
 /**

@@ -21,16 +21,17 @@ package org.neo4j.dbms.database;
 
 import org.junit.jupiter.api.Test;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.kernel.configuration.Config;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.configuration.Settings.STRING;
+import static org.neo4j.configuration.Settings.setting;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.configuration.Settings.STRING;
-import static org.neo4j.kernel.configuration.Settings.setting;
 
 class OverriddenDatabaseConfigTest
 {

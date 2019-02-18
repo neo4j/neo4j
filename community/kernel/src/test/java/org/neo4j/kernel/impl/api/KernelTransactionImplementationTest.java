@@ -34,6 +34,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
+import org.neo4j.configuration.TransactionTracingLevel;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
@@ -45,7 +46,6 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.transaction.trace.TransactionInitializationTrace;
-import org.neo4j.kernel.impl.api.transaction.trace.TransactionTracingLevel;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.NoOpClient;
 import org.neo4j.kernel.impl.locking.SimpleStatementLocks;

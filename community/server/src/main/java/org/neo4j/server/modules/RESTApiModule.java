@@ -23,7 +23,7 @@ import java.net.URI;
 import java.util.List;
 import java.util.function.Supplier;
 
-import org.neo4j.kernel.configuration.Config;
+import org.neo4j.configuration.Config;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.plugins.DefaultPluginManager;

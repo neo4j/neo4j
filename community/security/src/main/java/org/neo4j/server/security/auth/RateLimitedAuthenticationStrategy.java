@@ -25,8 +25,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.internal.kernel.api.security.AuthenticationResult;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.security.User;
 
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.auth_lock_time;

@@ -25,9 +25,9 @@ import org.junit.Test;
 
 import java.util.concurrent.CountDownLatch;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.kernel.api.net.NetworkConnectionTracker;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.rule.SuppressOutput;
 

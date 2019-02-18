@@ -24,9 +24,9 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.mockito.InOrder;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.internal.recordstorage.RelationshipGroupGetter.RelationshipGroupPosition;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.StoreFactory;

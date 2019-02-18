@@ -27,14 +27,14 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 
+import org.neo4j.configuration.Config;
+import org.neo4j.configuration.HttpConnector;
+import org.neo4j.configuration.HttpConnector.Encryption;
+import org.neo4j.configuration.LegacySslPolicyConfig;
 import org.neo4j.graphdb.facade.ExternalDependencies;
 import org.neo4j.graphdb.facade.GraphDatabaseDependencies;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.ListenSocketAddress;
-import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.configuration.HttpConnector;
-import org.neo4j.kernel.configuration.HttpConnector.Encryption;
-import org.neo4j.kernel.configuration.ssl.LegacySslPolicyConfig;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;

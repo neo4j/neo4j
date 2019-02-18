@@ -27,7 +27,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 
-import org.neo4j.kernel.configuration.Config;
+import org.neo4j.configuration.Config;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.rest.repr.DiscoveryRepresentation;
 import org.neo4j.server.rest.repr.OutputFormat;

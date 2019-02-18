@@ -30,6 +30,7 @@ import java.util.stream.Stream;
 
 import org.neo4j.collection.RawIterator;
 import org.neo4j.common.DependencyResolver;
+import org.neo4j.configuration.Config;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
@@ -38,7 +39,6 @@ import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.StubResourceManager;
 import org.neo4j.kernel.api.exceptions.ResourceCloseFailureException;
 import org.neo4j.kernel.api.proc.CallableProcedure;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
 import org.neo4j.kernel.impl.util.DefaultValueMapper;
 import org.neo4j.kernel.impl.util.Dependencies;

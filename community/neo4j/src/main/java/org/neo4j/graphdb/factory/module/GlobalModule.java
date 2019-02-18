@@ -25,8 +25,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.neo4j.common.Service;
 import org.neo4j.common.DependencyResolver;
+import org.neo4j.common.Service;
+import org.neo4j.configuration.Config;
+import org.neo4j.configuration.ConnectorPortRegister;
 import org.neo4j.graphdb.facade.ExternalDependencies;
 import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -41,8 +43,6 @@ import org.neo4j.io.layout.StoreLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
-import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.configuration.ConnectorPortRegister;
 import org.neo4j.kernel.diagnostics.providers.DbmsDiagnosticsManager;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.extension.ExtensionFailureStrategies;
@@ -87,10 +87,10 @@ import org.neo4j.time.SystemNanoClock;
 import org.neo4j.udc.UsageData;
 import org.neo4j.udc.UsageDataKeys;
 
+import static org.neo4j.configuration.LayoutConfig.of;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_internal_log_path;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.tx_state_off_heap_block_cache_size;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.tx_state_off_heap_max_cacheable_block_size;
-import static org.neo4j.kernel.configuration.LayoutConfig.of;
 import static org.neo4j.kernel.lifecycle.LifecycleAdapter.onShutdown;
 
 /**

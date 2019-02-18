@@ -61,8 +61,12 @@ import static org.neo4j.commandline.dbms.MemoryRecommendationsCommand.bytesToStr
 import static org.neo4j.commandline.dbms.MemoryRecommendationsCommand.recommendHeapMemory;
 import static org.neo4j.commandline.dbms.MemoryRecommendationsCommand.recommendOsMemory;
 import static org.neo4j.commandline.dbms.MemoryRecommendationsCommand.recommendPageCacheMemory;
+import static org.neo4j.configuration.Config.DEFAULT_CONFIG_FILE_NAME;
+import static org.neo4j.configuration.Config.fromFile;
 import static org.neo4j.configuration.ExternalSettings.initialHeapSize;
 import static org.neo4j.configuration.ExternalSettings.maxHeapSize;
+import static org.neo4j.configuration.Settings.BYTES;
+import static org.neo4j.configuration.Settings.buildSetting;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.SchemaIndex;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.active_database;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.data_directory;
@@ -77,10 +81,6 @@ import static org.neo4j.io.ByteUnit.exbiBytes;
 import static org.neo4j.io.ByteUnit.gibiBytes;
 import static org.neo4j.io.ByteUnit.mebiBytes;
 import static org.neo4j.io.ByteUnit.tebiBytes;
-import static org.neo4j.kernel.configuration.Config.DEFAULT_CONFIG_FILE_NAME;
-import static org.neo4j.kernel.configuration.Config.fromFile;
-import static org.neo4j.kernel.configuration.Settings.BYTES;
-import static org.neo4j.kernel.configuration.Settings.buildSetting;
 
 public class MemoryRecommendationsCommandTest
 {

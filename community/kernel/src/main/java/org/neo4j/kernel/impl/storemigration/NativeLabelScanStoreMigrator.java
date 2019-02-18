@@ -26,6 +26,7 @@ import java.util.Optional;
 import java.util.function.Supplier;
 
 import org.neo4j.common.ProgressReporter;
+import org.neo4j.configuration.Config;
 import org.neo4j.function.Predicates;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.fs.FileHandle;
@@ -33,7 +34,6 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.kernel.impl.api.scan.FullLabelStream;
 import org.neo4j.kernel.impl.index.labelscan.NativeLabelScanStore;

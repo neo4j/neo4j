@@ -30,13 +30,13 @@ import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.util.function.Supplier;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.csv.reader.CharReadable;
 import org.neo4j.csv.reader.DataAfterQuoteException;
 import org.neo4j.csv.reader.Readables;
 import org.neo4j.io.NullOutputStream;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_4;
 import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.scheduler.JobScheduler;

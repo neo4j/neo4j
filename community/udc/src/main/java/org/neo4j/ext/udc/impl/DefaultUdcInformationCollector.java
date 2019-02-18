@@ -32,6 +32,7 @@ import java.util.Optional;
 import java.util.Properties;
 import java.util.regex.Pattern;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.ext.udc.UdcSettings;
@@ -40,7 +41,6 @@ import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemUtils;
 import org.neo4j.io.os.OsBeanUtil;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdType;

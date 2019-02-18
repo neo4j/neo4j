@@ -22,8 +22,8 @@ package org.neo4j.commandline.dbms;
 import org.neo4j.commandline.admin.CommandFailed;
 import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.commandline.admin.OutsideWorld;
+import org.neo4j.configuration.Config;
 import org.neo4j.helpers.Args;
-import org.neo4j.kernel.configuration.Config;
 
 class ImporterFactory
 {

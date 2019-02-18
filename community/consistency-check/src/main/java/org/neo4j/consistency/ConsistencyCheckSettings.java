@@ -23,10 +23,10 @@ import org.neo4j.configuration.Description;
 import org.neo4j.configuration.LoadableConfig;
 import org.neo4j.graphdb.config.Setting;
 
-import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
-import static org.neo4j.kernel.configuration.Settings.FALSE;
-import static org.neo4j.kernel.configuration.Settings.TRUE;
-import static org.neo4j.kernel.configuration.Settings.setting;
+import static org.neo4j.configuration.Settings.BOOLEAN;
+import static org.neo4j.configuration.Settings.FALSE;
+import static org.neo4j.configuration.Settings.TRUE;
+import static org.neo4j.configuration.Settings.setting;
 
 /**
  * Settings for consistency checker

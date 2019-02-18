@@ -19,9 +19,9 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.os.OsBeanUtil;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
 
 import static java.lang.Math.min;

@@ -26,9 +26,9 @@ import org.eclipse.jetty.server.ServerConnector;
 
 import java.util.Arrays;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.kernel.api.net.NetworkConnectionTracker;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.server.configuration.ServerSettings;
 
 public class HttpConnectorFactory

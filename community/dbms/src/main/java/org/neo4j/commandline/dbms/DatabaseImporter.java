@@ -24,9 +24,9 @@ import java.io.IOException;
 
 import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.commandline.admin.OutsideWorld;
+import org.neo4j.configuration.Config;
 import org.neo4j.helpers.Args;
 import org.neo4j.io.fs.FileUtils;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.Converters;
 import org.neo4j.kernel.impl.util.Validators;
 

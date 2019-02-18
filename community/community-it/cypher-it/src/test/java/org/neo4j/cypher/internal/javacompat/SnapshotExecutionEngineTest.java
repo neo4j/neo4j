@@ -25,12 +25,12 @@ import org.junit.Test;
 
 import java.util.Collections;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.cypher.internal.CompilerFactory;
 import org.neo4j.graphdb.QueryStatistics;
 import org.neo4j.graphdb.Result;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContext;
 import org.neo4j.kernel.GraphDatabaseQueryService;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
 import org.neo4j.kernel.impl.query.TransactionalContext;

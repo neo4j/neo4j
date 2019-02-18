@@ -30,29 +30,29 @@ import org.neo4j.configuration.Description;
 import org.neo4j.configuration.DocumentedDefaultValue;
 import org.neo4j.configuration.Internal;
 import org.neo4j.configuration.LoadableConfig;
+import org.neo4j.configuration.Settings;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.server.web.JettyThreadCalculator;
 
+import static org.neo4j.configuration.LegacySslPolicyConfig.LEGACY_POLICY_NAME;
+import static org.neo4j.configuration.Settings.BOOLEAN;
+import static org.neo4j.configuration.Settings.BYTES;
+import static org.neo4j.configuration.Settings.DURATION;
+import static org.neo4j.configuration.Settings.EMPTY;
+import static org.neo4j.configuration.Settings.FALSE;
+import static org.neo4j.configuration.Settings.INTEGER;
+import static org.neo4j.configuration.Settings.NORMALIZED_RELATIVE_URI;
+import static org.neo4j.configuration.Settings.NO_DEFAULT;
+import static org.neo4j.configuration.Settings.PATH;
+import static org.neo4j.configuration.Settings.STRING;
+import static org.neo4j.configuration.Settings.STRING_LIST;
+import static org.neo4j.configuration.Settings.TRUE;
+import static org.neo4j.configuration.Settings.buildSetting;
+import static org.neo4j.configuration.Settings.derivedSetting;
+import static org.neo4j.configuration.Settings.pathSetting;
+import static org.neo4j.configuration.Settings.range;
+import static org.neo4j.configuration.Settings.setting;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.logs_directory;
-import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
-import static org.neo4j.kernel.configuration.Settings.BYTES;
-import static org.neo4j.kernel.configuration.Settings.DURATION;
-import static org.neo4j.kernel.configuration.Settings.EMPTY;
-import static org.neo4j.kernel.configuration.Settings.FALSE;
-import static org.neo4j.kernel.configuration.Settings.INTEGER;
-import static org.neo4j.kernel.configuration.Settings.NORMALIZED_RELATIVE_URI;
-import static org.neo4j.kernel.configuration.Settings.NO_DEFAULT;
-import static org.neo4j.kernel.configuration.Settings.PATH;
-import static org.neo4j.kernel.configuration.Settings.STRING;
-import static org.neo4j.kernel.configuration.Settings.STRING_LIST;
-import static org.neo4j.kernel.configuration.Settings.TRUE;
-import static org.neo4j.kernel.configuration.Settings.buildSetting;
-import static org.neo4j.kernel.configuration.Settings.derivedSetting;
-import static org.neo4j.kernel.configuration.Settings.pathSetting;
-import static org.neo4j.kernel.configuration.Settings.range;
-import static org.neo4j.kernel.configuration.Settings.setting;
-import static org.neo4j.kernel.configuration.ssl.LegacySslPolicyConfig.LEGACY_POLICY_NAME;
 
 @Description( "Settings used by the server configuration" )
 public class ServerSettings implements LoadableConfig

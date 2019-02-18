@@ -29,11 +29,11 @@ import java.util.Collection;
 import java.util.Map;
 import javax.ws.rs.core.Response.Status;
 
+import org.neo4j.configuration.ConnectorPortRegister;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.helpers.collection.Pair;
-import org.neo4j.kernel.configuration.ConnectorPortRegister;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;

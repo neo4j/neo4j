@@ -31,9 +31,9 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.commandline.admin.RealOutsideWorld;
+import org.neo4j.configuration.Config;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Args;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.SuppressOutputExtension;
 import org.neo4j.test.extension.TestDirectoryExtension;

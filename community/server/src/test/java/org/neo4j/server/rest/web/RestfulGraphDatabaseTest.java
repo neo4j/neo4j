@@ -33,13 +33,13 @@ import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.api.exceptions.Status.Request;
 import org.neo4j.kernel.api.exceptions.Status.Schema;
 import org.neo4j.kernel.api.exceptions.Status.Statement;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.database.WrappedDatabase;

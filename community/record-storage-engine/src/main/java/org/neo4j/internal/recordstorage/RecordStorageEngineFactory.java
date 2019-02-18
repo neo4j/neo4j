@@ -26,12 +26,12 @@ import java.util.List;
 
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.common.DependencySatisfier;
+import org.neo4j.configuration.Config;
 import org.neo4j.exceptions.UnsatisfiedDependencyException;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.SchemaState;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.core.DelegatingTokenHolder;

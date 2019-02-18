@@ -27,6 +27,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.neo4j.collection.PrimitiveLongCollections;
+import org.neo4j.configuration.Config;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.internal.kernel.api.IndexOrder;
@@ -34,7 +35,6 @@ import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.PhaseTracker;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;

@@ -34,15 +34,15 @@ import java.util.Set;
 
 import org.neo4j.bolt.v1.messaging.Neo4jPackV1;
 import org.neo4j.bolt.v1.transport.socket.client.SecureSocketConnection;
-import org.neo4j.kernel.configuration.BoltConnector;
+import org.neo4j.configuration.BoltConnector;
 import org.neo4j.ssl.PkiUtils;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.neo4j.bolt.v1.transport.integration.Neo4jWithSocket.DEFAULT_CONNECTOR_KEY;
-import static org.neo4j.kernel.configuration.ssl.LegacySslPolicyConfig.tls_certificate_file;
-import static org.neo4j.kernel.configuration.ssl.LegacySslPolicyConfig.tls_key_file;
+import static org.neo4j.configuration.LegacySslPolicyConfig.tls_certificate_file;
+import static org.neo4j.configuration.LegacySslPolicyConfig.tls_key_file;
 
 public class CertificatesIT
 {

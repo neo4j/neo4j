@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.factory;
 
+import org.neo4j.common.Edition;
+
 public enum DatabaseInfo
 {
     UNKNOWN( Edition.UNKNOWN, OperationalMode.UNKNOWN ),

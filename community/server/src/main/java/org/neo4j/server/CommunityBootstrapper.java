@@ -19,8 +19,8 @@
  */
 package org.neo4j.server;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.graphdb.facade.GraphDatabaseDependencies;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.server.database.CommunityGraphFactory;
 import org.neo4j.server.database.GraphFactory;
 

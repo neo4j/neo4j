@@ -25,9 +25,9 @@ import java.util.List;
 import java.util.Map.Entry;
 import java.util.Optional;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.configuration.ConfigValue;
-import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.configuration.HttpConnector;
+import org.neo4j.configuration.HttpConnector;
 
 import static java.util.stream.Collectors.toList;
 import static org.hamcrest.Matchers.containsInAnyOrder;

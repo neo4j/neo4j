@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.impl.cache;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.monitoring.VmPauseMonitor;
 import org.neo4j.logging.Log;

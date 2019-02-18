@@ -25,10 +25,10 @@ import org.junit.Test;
 import java.io.IOException;
 import javax.ws.rs.core.MediaType;
 
+import org.neo4j.configuration.ConnectorPortRegister;
+import org.neo4j.configuration.HttpConnector;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.ListenSocketAddress;
-import org.neo4j.kernel.configuration.ConnectorPortRegister;
-import org.neo4j.kernel.configuration.HttpConnector;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.rest.JaxRsResponse;
 import org.neo4j.server.rest.RestRequest;

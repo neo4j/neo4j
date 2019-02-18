@@ -24,7 +24,7 @@ import org.junit.jupiter.api.Test;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.kernel.configuration.Config;
+import org.neo4j.configuration.Config;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;

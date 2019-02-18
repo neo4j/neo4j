@@ -35,6 +35,7 @@ import java.util.Collections;
 
 import org.neo4j.common.ProgressReporter;
 import org.neo4j.common.Service;
+import org.neo4j.configuration.Config;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -42,7 +43,6 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_4;
 import org.neo4j.kernel.impl.storemigration.LegacyTransactionLogsLocator;
 import org.neo4j.kernel.impl.storemigration.MigrationTestUtils;

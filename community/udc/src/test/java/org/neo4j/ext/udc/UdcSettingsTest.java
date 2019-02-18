@@ -26,8 +26,8 @@ import org.junit.runners.Parameterized;
 
 import java.util.Arrays;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.helpers.Configuration;
-import org.neo4j.kernel.configuration.Config;
 
 import static java.util.Collections.singletonMap;
 import static org.junit.Assert.assertFalse;

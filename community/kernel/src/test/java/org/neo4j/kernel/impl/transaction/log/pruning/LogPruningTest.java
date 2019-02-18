@@ -27,8 +27,8 @@ import java.io.File;
 import java.time.Clock;
 import java.util.stream.LongStream;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;

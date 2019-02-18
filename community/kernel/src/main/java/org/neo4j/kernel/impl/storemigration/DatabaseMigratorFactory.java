@@ -23,12 +23,12 @@ import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.common.DependencyResolver;
+import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.DatabaseConfig;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.StoreLayout;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.transaction.log.LogVersionUpgradeChecker;
 import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;

@@ -24,6 +24,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 
 import org.neo4j.common.Service;
+import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.dmbs.database.DefaultDatabaseManager;
 import org.neo4j.exceptions.KernelException;
@@ -46,7 +47,6 @@ import org.neo4j.kernel.builtinprocs.BuiltInDbmsProcedures;
 import org.neo4j.kernel.builtinprocs.BuiltInFunctions;
 import org.neo4j.kernel.builtinprocs.BuiltInProcedures;
 import org.neo4j.kernel.builtinprocs.TokenProcedures;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;

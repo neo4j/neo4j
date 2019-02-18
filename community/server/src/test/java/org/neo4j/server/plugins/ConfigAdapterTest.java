@@ -24,7 +24,7 @@ import org.junit.Test;
 import java.net.URI;
 import java.time.Duration;
 
-import org.neo4j.kernel.configuration.Config;
+import org.neo4j.configuration.Config;
 import org.neo4j.server.configuration.ServerSettings;
 
 import static org.junit.Assert.assertEquals;

@@ -32,8 +32,8 @@ import org.junit.runners.Parameterized.Parameters;
 import java.util.BitSet;
 import java.util.Collection;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.store.format.ForcedSecondaryUnitRecordFormats;

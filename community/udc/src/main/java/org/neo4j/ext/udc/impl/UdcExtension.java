@@ -21,10 +21,10 @@ package org.neo4j.ext.udc.impl;
 
 import java.util.Timer;
 
+import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.ext.udc.UdcSettings;
 import org.neo4j.helpers.HostnamePort;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.udc.UsageData;
 

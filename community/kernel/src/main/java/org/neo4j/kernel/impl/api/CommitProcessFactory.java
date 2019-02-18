@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import org.neo4j.kernel.configuration.Config;
+import org.neo4j.configuration.Config;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.storageengine.api.StorageEngine;
 

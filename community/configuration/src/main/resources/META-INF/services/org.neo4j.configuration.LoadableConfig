@@ -1,1 +1,5 @@
+org.neo4j.graphdb.factory.GraphDatabaseSettings
 org.neo4j.configuration.ExternalSettings
+org.neo4j.configuration.LegacySslPolicyConfig
+org.neo4j.configuration.SslPolicyConfig
+

@@ -33,6 +33,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.common.DependencyResolver;
+import org.neo4j.configuration.Config;
 import org.neo4j.consistency.statistics.AccessStatistics;
 import org.neo4j.consistency.statistics.AccessStatsKeepingStoreAccess;
 import org.neo4j.consistency.statistics.DefaultCounts;
@@ -55,7 +56,6 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.DatabaseExtensions;
 import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionToApply;

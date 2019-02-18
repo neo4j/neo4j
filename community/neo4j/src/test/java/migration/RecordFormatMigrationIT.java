@@ -25,13 +25,13 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 
+import org.neo4j.configuration.Settings;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
-import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_4;
 import org.neo4j.kernel.impl.store.format.standard.StandardV4_0;
@@ -45,10 +45,10 @@ import org.neo4j.test.rule.TestDirectory;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.neo4j.configuration.Settings.FALSE;
+import static org.neo4j.configuration.Settings.TRUE;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.allow_upgrade;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.record_format;
-import static org.neo4j.kernel.configuration.Settings.FALSE;
-import static org.neo4j.kernel.configuration.Settings.TRUE;
 
 @ExtendWith( TestDirectoryExtension.class )
 class RecordFormatMigrationIT

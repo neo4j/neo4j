@@ -23,7 +23,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
-import org.neo4j.kernel.configuration.Config;
+import org.neo4j.configuration.Config;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.server.NeoServer;
