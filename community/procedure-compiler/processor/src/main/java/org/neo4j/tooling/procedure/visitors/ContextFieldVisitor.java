@@ -58,7 +58,7 @@ class ContextFieldVisitor extends SimpleElementVisitor8<Stream<CompilationMessag
             Arrays.asList( GraphDatabaseAPI.class.getName(), KernelTransaction.class.getName(),
                     DependencyResolver.class.getName(), UserManager.class.getName(),
                     // the following classes are not in the compiler classpath
-                    "com.neo4j.kernel.enterprise.api.security.EnterpriseAuthManager",
+                    "com.neo4j.kernel.enterprise.api.security.CommercialAuthManager",
                     "com.neo4j.server.security.enterprise.log.SecurityLog" ) );
 
     private final Elements elements;
