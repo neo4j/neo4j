@@ -1,0 +1,54 @@
+/*
+ * Copyright (c) 2002-2019 "Neo4j,"
+ * Neo4j Sweden AB [http://neo4j.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+package org.neo4j.cypher.internal.runtime.interpreted
+
+import java.util.Comparator
+
+import org.neo4j.cypher.internal.runtime.ExecutionContext
+import org.neo4j.values.{AnyValue, AnyValues}
+
+case class InterpretedExecutionContextOrdering(order: ColumnOrder) extends scala.Ordering[ExecutionContext] {
+  override def compare(a: ExecutionContext, b: ExecutionContext): Int = {
+    val column = order.id
+    val aVal = a.getByName(column)
+    val bVal = b.getByName(column)
+    order.compareValues(aVal, bVal)
+  }
+}
+
+object InterpretedExecutionContextOrdering {
+  def asComparator(orderBy: Seq[ColumnOrder]): Comparator[ExecutionContext] =
+    orderBy.map(InterpretedExecutionContextOrdering.apply)
+    .reduceLeft[Comparator[ExecutionContext]]((a, b) => a.thenComparing(b))
+}
+
+sealed trait ColumnOrder {
+  def id: String
+
+  def compareValues(a: AnyValue, b: AnyValue): Int
+}
+
+case class Ascending(id: String) extends ColumnOrder {
+  override def compareValues(a: AnyValue, b: AnyValue): Int = AnyValues.COMPARATOR.compare(a, b)
+}
+
+case class Descending(id: String) extends ColumnOrder {
+  override def compareValues(a: AnyValue, b: AnyValue): Int = AnyValues.COMPARATOR.compare(b, a)
+}

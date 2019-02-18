@@ -31,7 +31,7 @@ import org.neo4j.cypher.internal.runtime.{ExecutionContext, ProcedureCallMode, Q
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.v4_0.expressions.{Equals => ASTEquals, Expression => ASTExpression, _}
 import org.neo4j.cypher.internal.v4_0.logical.plans
-import org.neo4j.cypher.internal.v4_0.logical.plans.{ColumnOrder, Limit => LimitPlan, LoadCSV => LoadCSVPlan, Skip => SkipPlan, _}
+import org.neo4j.cypher.internal.v4_0.logical.plans.{Limit => LimitPlan, LoadCSV => LoadCSVPlan, Skip => SkipPlan, _}
 import org.neo4j.cypher.internal.v4_0.util.attribution.Id
 import org.neo4j.cypher.internal.v4_0.util.{Eagerly, InternalException}
 import org.neo4j.values.AnyValue
@@ -176,10 +176,10 @@ case class InterpretedPipeMapper(readOnly: Boolean,
         PruningVarLengthExpandPipe(source, from, toName, LazyTypes(types.toArray), dir, minLength, maxLength, predicate)(id = id)
 
       case Sort(_, sortItems) =>
-        SortPipe(source, sortItems.map(translateColumnOrder))(id = id)
+        SortPipe(source, InterpretedExecutionContextOrdering.asComparator(sortItems.map(translateColumnOrder)))(id = id)
 
       case PartialSort(_, alreadySortedPrefix, stillToSortSuffix) =>
-        PartialSortPipe(source, alreadySortedPrefix.map(translateColumnOrder), stillToSortSuffix.map(translateColumnOrder))(id = id)
+        PartialSortPipe(source, InterpretedExecutionContextOrdering.asComparator(alreadySortedPrefix.map(translateColumnOrder)), InterpretedExecutionContextOrdering.asComparator(stillToSortSuffix.map(translateColumnOrder)))(id = id)
 
       case SkipPlan(_, count) =>
         SkipPipe(source, buildExpression(count))(id = id)
@@ -187,32 +187,31 @@ case class InterpretedPipeMapper(readOnly: Boolean,
       case Top(_, sortItems, _) if sortItems.isEmpty => source
 
       case Top(_, sortItems, SignedDecimalIntegerLiteral("1")) =>
-        Top1Pipe(source, ExecutionContextOrdering.asComparator(sortItems.map(translateColumnOrder).toList))(id = id)
+        Top1Pipe(source, InterpretedExecutionContextOrdering.asComparator(sortItems.map(translateColumnOrder).toList))(id = id)
 
       case Top(_, sortItems, limit) =>
         TopNPipe(source, buildExpression(limit),
-                 ExecutionContextOrdering.asComparator(sortItems.map(translateColumnOrder).toList))(id = id)
+                 InterpretedExecutionContextOrdering.asComparator(sortItems.map(translateColumnOrder).toList))(id = id)
 
       case PartialTop(_, _, stillToSortSuffix, _) if stillToSortSuffix.isEmpty => source
 
       case PartialTop(_, alreadySortedPrefix, stillToSortSuffix, SignedDecimalIntegerLiteral("1")) =>
-        PartialTop1Pipe(source, ExecutionContextOrdering.asComparator(alreadySortedPrefix.map(translateColumnOrder).toList),
-          ExecutionContextOrdering.asComparator(stillToSortSuffix.map(translateColumnOrder).toList))(id = id)
+        PartialTop1Pipe(source, InterpretedExecutionContextOrdering.asComparator(alreadySortedPrefix.map(translateColumnOrder).toList),
+          InterpretedExecutionContextOrdering.asComparator(stillToSortSuffix.map(translateColumnOrder).toList))(id = id)
 
       case PartialTop(_, alreadySortedPrefix, stillToSortSuffix, limit) =>
-        PartialTopNPipe(source, buildExpression(limit), ExecutionContextOrdering.asComparator(alreadySortedPrefix.map(translateColumnOrder).toList),
-          ExecutionContextOrdering.asComparator(stillToSortSuffix.map(translateColumnOrder).toList))(id = id)
+        PartialTopNPipe(source, buildExpression(limit), InterpretedExecutionContextOrdering.asComparator(alreadySortedPrefix.map(translateColumnOrder).toList),
+          InterpretedExecutionContextOrdering.asComparator(stillToSortSuffix.map(translateColumnOrder).toList))(id = id)
 
       case LimitPlan(_, count, DoNotIncludeTies) =>
         LimitPipe(source, buildExpression(count))(id = id)
 
       case LimitPlan(_, count, IncludeTies) =>
         (source, count) match {
-          case (SortPipe(inner, sortDescription), SignedDecimalIntegerLiteral("1")) =>
-            Top1WithTiesPipe(inner, ExecutionContextOrdering.asComparator(sortDescription))(id = id)
-          case (PartialSortPipe(inner, alreadySortedPrefix, stillToSortSuffix), SignedDecimalIntegerLiteral("1")) =>
-            PartialTop1WithTiesPipe(inner, ExecutionContextOrdering.asComparator(alreadySortedPrefix),
-              ExecutionContextOrdering.asComparator(stillToSortSuffix))(id = id)
+          case (SortPipe(inner, comparator), SignedDecimalIntegerLiteral("1")) =>
+            Top1WithTiesPipe(inner, comparator)(id = id)
+          case (PartialSortPipe(inner, prefixComparator, suffixComparator), SignedDecimalIntegerLiteral("1")) =>
+            PartialTop1WithTiesPipe(inner, prefixComparator, suffixComparator)(id = id)
 
           case _ => throw new InternalException("Including ties is only supported for very specific plans")
         }
@@ -470,8 +469,8 @@ case class InterpretedPipeMapper(readOnly: Boolean,
       .rewrite(KeyTokenResolver.resolveExpressions(_, tokenContext))
       .asInstanceOf[Predicate]
 
-  private def translateColumnOrder(s: ColumnOrder): org.neo4j.cypher.internal.runtime.interpreted.pipes.ColumnOrder = s match {
-    case plans.Ascending(name) => org.neo4j.cypher.internal.runtime.interpreted.pipes.Ascending(name)
-    case plans.Descending(name) => org.neo4j.cypher.internal.runtime.interpreted.pipes.Descending(name)
+  private def translateColumnOrder(s: plans.ColumnOrder): org.neo4j.cypher.internal.runtime.interpreted.ColumnOrder = s match {
+    case plans.Ascending(name) => org.neo4j.cypher.internal.runtime.interpreted.Ascending(name)
+    case plans.Descending(name) => org.neo4j.cypher.internal.runtime.interpreted.Descending(name)
   }
 }

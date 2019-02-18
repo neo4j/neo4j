@@ -19,21 +19,18 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
+import java.util.Comparator
+
 import org.neo4j.cypher.internal.runtime.ExecutionContext
 import org.neo4j.cypher.internal.v4_0.util.attribution.Id
+
 import scala.collection.JavaConverters._
 
 case class PartialSortPipe(source: Pipe,
-                           alreadySortedPrefix: Seq[ColumnOrder],
-                           stillToSortSuffix: Seq[ColumnOrder])
+                           prefixComparator: Comparator[ExecutionContext],
+                           suffixComparator: Comparator[ExecutionContext])
                           (val id: Id = Id.INVALID_ID)
   extends OrderedInputPipe(source) {
-
-  assert(alreadySortedPrefix.nonEmpty)
-  assert(stillToSortSuffix.nonEmpty)
-
-  private val prefixComparator = ExecutionContextOrdering.asComparator(alreadySortedPrefix)
-  private val suffixComparator = ExecutionContextOrdering.asComparator(stillToSortSuffix)
 
   class PartialSortReceiver extends OrderedChunkReceiver {
     private val buffer = new java.util.ArrayList[ExecutionContext]()

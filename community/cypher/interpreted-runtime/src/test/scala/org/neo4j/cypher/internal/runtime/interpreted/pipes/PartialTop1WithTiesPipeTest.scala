@@ -22,15 +22,15 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 import java.util.Comparator
 
 import org.neo4j.cypher.internal.runtime.ExecutionContext
-import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
+import org.neo4j.cypher.internal.runtime.interpreted.{Ascending, Descending, InterpretedExecutionContextOrdering, QueryStateHelper}
 import org.neo4j.cypher.internal.runtime.interpreted.ValueComparisonHelper.beEquivalentTo
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 
 class PartialTop1WithTiesPipeTest extends CypherFunSuite {
 
-  private val compareX: Comparator[ExecutionContext] = ExecutionContextOrdering.asComparator(List(Ascending("x")))
-  private val compareY: Comparator[ExecutionContext] = ExecutionContextOrdering.asComparator(List(Ascending("y")))
-  private val compareYDesc: Comparator[ExecutionContext] = ExecutionContextOrdering.asComparator(List(Descending("y")))
+  private val compareX: Comparator[ExecutionContext] = InterpretedExecutionContextOrdering.asComparator(List(Ascending("x")))
+  private val compareY: Comparator[ExecutionContext] = InterpretedExecutionContextOrdering.asComparator(List(Ascending("y")))
+  private val compareYDesc: Comparator[ExecutionContext] = InterpretedExecutionContextOrdering.asComparator(List(Descending("y")))
 
   test("empty input gives empty output") {
     val source = new FakePipe(List())

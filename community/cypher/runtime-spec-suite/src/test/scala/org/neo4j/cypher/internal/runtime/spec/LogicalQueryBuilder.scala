@@ -195,7 +195,7 @@ class LogicalQueryBuilder(tokenResolver: TokenResolver) extends AstConstructionT
 
   def nodeByLabelScan(node: String, label: String, args: String*): LogicalQueryBuilder = {
     semanticTable = semanticTable.addNode(varFor(node))
-    appendAtCurrentIndent(LeafOperator(NodeByLabelScan(node, lblName(label), args.toSet)))
+    appendAtCurrentIndent(LeafOperator(NodeByLabelScan(node, labelName(label), args.toSet)))
   }
 
   def nodeIndexOperator(indexSeekString: String,

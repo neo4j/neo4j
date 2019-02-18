@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
+import org.neo4j.cypher.internal.runtime.interpreted.{Ascending, InterpretedExecutionContextOrdering, QueryStateHelper}
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.scalatest.mock.MockitoSugar
 
@@ -40,7 +40,9 @@ class PartialSortPipeTest extends CypherFunSuite with MockitoSugar {
     )
     val source = new FakePipe(list)
 
-    val sortPipe = PartialSortPipe(source, List(Ascending("x")), List(Ascending("y")))()
+    val sortPipe = PartialSortPipe(source,
+      InterpretedExecutionContextOrdering.asComparator(List(Ascending("x"))),
+      InterpretedExecutionContextOrdering.asComparator(List(Ascending("y"))))()
 
     val iterator = sortPipe.createResults(QueryStateHelper.emptyWithValueSerialization)
 

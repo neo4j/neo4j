@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
+import org.neo4j.cypher.internal.runtime.interpreted.{Ascending, Descending, InterpretedExecutionContextOrdering, QueryStateHelper}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Literal
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.kernel.impl.util.ValueUtils
@@ -30,7 +30,7 @@ class TopNPipeTest extends CypherFunSuite {
 
   test("returning top 10 from 5 possible should return all") {
     val input = createFakePipeWith(5)
-    val pipe = TopNPipe(input, Literal(10), ExecutionContextOrdering.asComparator(List(Ascending("a"))))()
+    val pipe = TopNPipe(input, Literal(10), InterpretedExecutionContextOrdering.asComparator(List(Ascending("a"))))()
     val result = pipe.createResults(QueryStateHelper.emptyWithValueSerialization).map(ctx => ctx.getByName("a")).toList
 
     result should equal(list(0, 1, 2, 3, 4))
@@ -38,7 +38,7 @@ class TopNPipeTest extends CypherFunSuite {
 
   test("returning top 10 descending from 3 possible should return all") {
     val input = createFakePipeWith(3)
-    val pipe = TopNPipe(input, Literal(10), ExecutionContextOrdering.asComparator(List(Descending("a"))))()
+    val pipe = TopNPipe(input, Literal(10), InterpretedExecutionContextOrdering.asComparator(List(Descending("a"))))()
     val result = pipe.createResults(QueryStateHelper.emptyWithValueSerialization).map(ctx => ctx.getByName("a")).toList
 
     result should equal(list(2, 1, 0))
@@ -46,7 +46,7 @@ class TopNPipeTest extends CypherFunSuite {
 
   test("returning top 5 from 20 possible should return 5 with lowest value") {
     val input = createFakePipeWith(20)
-    val pipe = TopNPipe(input, Literal(5), ExecutionContextOrdering.asComparator(List(Ascending("a"))))()
+    val pipe = TopNPipe(input, Literal(5), InterpretedExecutionContextOrdering.asComparator(List(Ascending("a"))))()
     val result = pipe.createResults(QueryStateHelper.emptyWithValueSerialization).map(ctx => ctx.getByName("a")).toList
 
     result should equal(list(0, 1, 2, 3, 4))
@@ -54,7 +54,7 @@ class TopNPipeTest extends CypherFunSuite {
 
   test("returning top 3 descending from 10 possible values should return three highest values") {
     val input = createFakePipeWith(10)
-    val pipe = TopNPipe(input, Literal(3), ExecutionContextOrdering.asComparator(List(Descending("a"))))()
+    val pipe = TopNPipe(input, Literal(3), InterpretedExecutionContextOrdering.asComparator(List(Descending("a"))))()
     val result = pipe.createResults(QueryStateHelper.emptyWithValueSerialization).map(ctx => ctx.getByName("a")).toList
 
     result should equal(list(9, 8, 7))
@@ -64,7 +64,7 @@ class TopNPipeTest extends CypherFunSuite {
     val in = (0 until 100).map(i => Map("a" -> i)).reverse
     val input = new FakePipe(in)
 
-    val pipe = TopNPipe(input, Literal(5), ExecutionContextOrdering.asComparator(List(Ascending("a"))))()
+    val pipe = TopNPipe(input, Literal(5), InterpretedExecutionContextOrdering.asComparator(List(Ascending("a"))))()
     val result = pipe.createResults(QueryStateHelper.emptyWithValueSerialization).map(ctx => ctx.getByName("a")).toList
 
     result should equal(list(0, 1, 2, 3, 4))
@@ -74,7 +74,7 @@ class TopNPipeTest extends CypherFunSuite {
     val in = ((0 until 5) ++ (0 until 5)).map(i => Map("a" -> i)).reverse
     val input = new FakePipe(in)
 
-    val pipe = TopNPipe(input, Literal(5), ExecutionContextOrdering.asComparator(List(Descending("a"))))()
+    val pipe = TopNPipe(input, Literal(5), InterpretedExecutionContextOrdering.asComparator(List(Descending("a"))))()
     val result = pipe.createResults(QueryStateHelper.emptyWithValueSerialization).map(ctx => ctx.getByName("a")).toList
 
     result should equal(list(4, 4, 3, 3, 2))
@@ -84,7 +84,7 @@ class TopNPipeTest extends CypherFunSuite {
     val in = List(Map("a" -> 0),Map("a" -> 1),Map("a" -> 1))
     val input = new FakePipe(in)
 
-    val pipe = TopNPipe(input, Literal(2), ExecutionContextOrdering.asComparator(List(Descending("a"))))()
+    val pipe = TopNPipe(input, Literal(2), InterpretedExecutionContextOrdering.asComparator(List(Descending("a"))))()
     val result = pipe.createResults(QueryStateHelper.emptyWithValueSerialization).map(ctx => ctx.getByName("a")).toList
 
     result should equal(list(1,1))
@@ -93,7 +93,7 @@ class TopNPipeTest extends CypherFunSuite {
   test("should handle empty input") {
     val input = new FakePipe(Iterator.empty)
 
-    val pipe = TopNPipe(input, Literal(5), ExecutionContextOrdering.asComparator(List(Ascending("a"))))()
+    val pipe = TopNPipe(input, Literal(5), InterpretedExecutionContextOrdering.asComparator(List(Ascending("a"))))()
     val result = pipe.createResults(QueryStateHelper.emptyWithValueSerialization).map(ctx => ctx.getByName("a")).toList
 
     result should equal(List.empty)
@@ -102,7 +102,7 @@ class TopNPipeTest extends CypherFunSuite {
   test("should handle null input") {
     val input = new FakePipe(Seq(Map("a"->10),Map("a"->null)))
 
-    val pipe = TopNPipe(input, Literal(5), ExecutionContextOrdering.asComparator(List(Ascending("a"))))()
+    val pipe = TopNPipe(input, Literal(5), InterpretedExecutionContextOrdering.asComparator(List(Ascending("a"))))()
     val result = pipe.createResults(QueryStateHelper.emptyWithValueSerialization).map(ctx => ctx.getByName("a")).toList
 
     result should equal(list(10,null))
