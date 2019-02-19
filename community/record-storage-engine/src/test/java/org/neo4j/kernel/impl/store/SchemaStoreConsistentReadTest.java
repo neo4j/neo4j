@@ -36,7 +36,7 @@ class SchemaStoreConsistentReadTest extends RecordStoreConsistentReadTest<Schema
     @Override
     protected SchemaRecord createNullRecord( long id )
     {
-        return new SchemaRecord( id ).initialize( false, 0 ); // This is what it looks like when an unused record is force-read from the store.
+        return new SchemaRecord( id ); // This is what it looks like when an unused record is force-read from the store.
     }
 
     @Override
