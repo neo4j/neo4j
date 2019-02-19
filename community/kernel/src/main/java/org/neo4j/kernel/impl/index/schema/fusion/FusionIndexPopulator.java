@@ -19,38 +19,51 @@
  */
 package org.neo4j.kernel.impl.index.schema.fusion;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.Collection;
 
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
+import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
-import org.neo4j.kernel.impl.index.schema.fusion.FusionIndexProvider.DropAction;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 
+import static org.neo4j.kernel.impl.index.schema.NativeIndexes.deleteIndex;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexSampler.combineSamples;
 
 class FusionIndexPopulator extends FusionIndexBase<IndexPopulator> implements IndexPopulator
 {
     private final long indexId;
-    private final DropAction dropAction;
+    private final IndexDirectoryStructure directoryStructure;
     private final boolean archiveFailedIndex;
+    private final FileSystemAbstraction fs;
 
-    FusionIndexPopulator( SlotSelector slotSelector, InstanceSelector<IndexPopulator> instanceSelector, long indexId, DropAction dropAction,
-            boolean archiveFailedIndex )
+    FusionIndexPopulator( SlotSelector slotSelector, InstanceSelector<IndexPopulator> instanceSelector, long indexId, FileSystemAbstraction fs,
+            IndexDirectoryStructure directoryStructure, boolean archiveFailedIndex )
     {
         super( slotSelector, instanceSelector );
         this.indexId = indexId;
-        this.dropAction = dropAction;
+        this.fs = fs;
+        this.directoryStructure = directoryStructure;
         this.archiveFailedIndex = archiveFailedIndex;
     }
 
     @Override
     public void create()
     {
-        dropAction.drop( indexId, archiveFailedIndex );
+        try
+        {
+            deleteIndex( fs, directoryStructure, indexId, archiveFailedIndex );
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
+        }
         instanceSelector.forAll( IndexPopulator::create );
     }
 
@@ -58,7 +71,14 @@ class FusionIndexPopulator extends FusionIndexBase<IndexPopulator> implements In
     public void drop()
     {
         instanceSelector.forAll( IndexPopulator::drop );
-        dropAction.drop( indexId );
+        try
+        {
+            deleteIndex( fs, directoryStructure, indexId, false );
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
+        }
     }
 
     @Override

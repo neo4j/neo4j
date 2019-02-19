@@ -20,44 +20,58 @@
 package org.neo4j.kernel.impl.index.schema.fusion;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.Iterator;
 
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.BoundedIterable;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexAccessor;
+import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
-import org.neo4j.kernel.impl.index.schema.fusion.FusionIndexProvider.DropAction;
 import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.values.storable.Value;
 
 import static org.neo4j.helpers.collection.Iterators.concatResourceIterators;
+import static org.neo4j.kernel.impl.index.schema.NativeIndexes.deleteIndex;
 
 class FusionIndexAccessor extends FusionIndexBase<IndexAccessor> implements IndexAccessor
 {
     private final StorageIndexReference descriptor;
-    private final DropAction dropAction;
+    private final FileSystemAbstraction fs;
+    private final IndexDirectoryStructure directoryStructure;
 
     FusionIndexAccessor( SlotSelector slotSelector,
             InstanceSelector<IndexAccessor> instanceSelector,
             StorageIndexReference descriptor,
-            DropAction dropAction )
+            FileSystemAbstraction fs,
+            IndexDirectoryStructure directoryStructure )
     {
         super( slotSelector, instanceSelector );
         this.descriptor = descriptor;
-        this.dropAction = dropAction;
+        this.fs = fs;
+        this.directoryStructure = directoryStructure;
     }
 
     @Override
     public void drop()
     {
         instanceSelector.forAll( IndexAccessor::drop );
-        dropAction.drop( descriptor.indexReference() );
+        try
+        {
+            deleteIndex( fs, directoryStructure, descriptor.indexReference(), false );
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
+        }
     }
 
     @Override

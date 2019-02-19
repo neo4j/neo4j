@@ -20,11 +20,9 @@
 package org.neo4j.kernel.impl.index.schema.fusion;
 
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.util.EnumMap;
 import java.util.List;
 
-import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.IndexOrder;
@@ -45,7 +43,6 @@ import org.neo4j.values.storable.ValueCategory;
 
 import static org.neo4j.internal.kernel.api.InternalIndexState.FAILED;
 import static org.neo4j.internal.kernel.api.InternalIndexState.POPULATING;
-import static org.neo4j.kernel.impl.index.schema.NativeIndexes.deleteIndex;
 import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.LUCENE;
 import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.NUMBER;
 import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.SPATIAL;
@@ -61,7 +58,7 @@ public class FusionIndexProvider extends IndexProvider
     private final boolean archiveFailedIndex;
     private final InstanceSelector<IndexProvider> providers;
     private final SlotSelector slotSelector;
-    private final DropAction dropAction;
+    private final FileSystemAbstraction fs;
 
     public FusionIndexProvider(
             // good to be strict with specific providers here since this is dev facing
@@ -80,7 +77,7 @@ public class FusionIndexProvider extends IndexProvider
         this.archiveFailedIndex = archiveFailedIndex;
         this.slotSelector = slotSelector;
         this.providers = new InstanceSelector<>();
-        this.dropAction = new FileSystemDropAction( fs, directoryStructure() );
+        this.fs = fs;
         fillProvidersSelector( stringProvider, numberProvider, spatialProvider, temporalProvider, luceneProvider );
         slotSelector.validateSatisfied( providers );
     }
@@ -100,14 +97,15 @@ public class FusionIndexProvider extends IndexProvider
     public IndexPopulator getPopulator( StorageIndexReference descriptor, IndexSamplingConfig samplingConfig )
     {
         EnumMap<IndexSlot,IndexPopulator> populators = providers.map( provider -> provider.getPopulator( descriptor, samplingConfig ) );
-        return new FusionIndexPopulator( slotSelector, new InstanceSelector<>( populators ), descriptor.indexReference(), dropAction, archiveFailedIndex );
+        return new FusionIndexPopulator( slotSelector, new InstanceSelector<>( populators ), descriptor.indexReference(), fs, directoryStructure(),
+                archiveFailedIndex );
     }
 
     @Override
     public IndexAccessor getOnlineAccessor( StorageIndexReference descriptor, IndexSamplingConfig samplingConfig ) throws IOException
     {
         EnumMap<IndexSlot,IndexAccessor> accessors = providers.map( provider -> provider.getOnlineAccessor( descriptor, samplingConfig ) );
-        return new FusionIndexAccessor( slotSelector, new InstanceSelector<>( accessors ), descriptor, dropAction );
+        return new FusionIndexAccessor( slotSelector, new InstanceSelector<>( accessors ), descriptor, fs, directoryStructure() );
     }
 
     @Override
@@ -181,54 +179,5 @@ public class FusionIndexProvider extends IndexProvider
     public StoreMigrationParticipant storeMigrationParticipant( FileSystemAbstraction fs, PageCache pageCache, StorageEngineFactory storageEngineFactory )
     {
         return StoreMigrationParticipant.NOT_PARTICIPATING;
-    }
-
-    @FunctionalInterface
-    interface DropAction
-    {
-        /**
-         * Deletes the index directory and everything in it, as last part of dropping an index.
-         * Can be configured to create archive with content of index directories for future analysis.
-         *
-         * @param indexId the index id, for which directory to drop.
-         * @param archiveExistentIndex create archive with content of dropped directories
-         * @see GraphDatabaseSettings#archive_failed_index
-         */
-        void drop( long indexId, boolean archiveExistentIndex );
-
-        /**
-         * Deletes the index directory and everything in it, as last part of dropping an index.
-         *
-         * @param indexId the index id, for which directory to drop.
-         */
-        default void drop( long indexId )
-        {
-            drop( indexId, false );
-        }
-    }
-
-    private static class FileSystemDropAction implements DropAction
-    {
-        private final FileSystemAbstraction fs;
-        private final IndexDirectoryStructure directoryStructure;
-
-        FileSystemDropAction( FileSystemAbstraction fs, IndexDirectoryStructure directoryStructure )
-        {
-            this.fs = fs;
-            this.directoryStructure = directoryStructure;
-        }
-
-        @Override
-        public void drop( long indexId, boolean archiveExistentIndex )
-        {
-            try
-            {
-                deleteIndex( fs, directoryStructure, indexId, archiveExistentIndex );
-            }
-            catch ( IOException e )
-            {
-                throw new UncheckedIOException( e );
-            }
-        }
     }
 }

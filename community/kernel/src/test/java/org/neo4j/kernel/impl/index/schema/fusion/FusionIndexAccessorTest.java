@@ -26,6 +26,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.mockito.ArgumentMatchers;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.ArrayList;
@@ -37,14 +38,15 @@ import java.util.Set;
 
 import org.neo4j.helpers.collection.BoundedIterable;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.index.IndexAccessor;
+import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.index.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
-import org.neo4j.kernel.impl.index.schema.fusion.FusionIndexProvider.DropAction;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.values.storable.Value;
 
@@ -63,6 +65,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.ArrayUtil.without;
+import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
+import static org.neo4j.kernel.api.index.IndexProviderDescriptor.UNDECIDED;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexTestHelp.fill;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexTestHelp.verifyFusionCloseThrowIfAllThrow;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexTestHelp.verifyFusionCloseThrowOnSingleCloseThrow;
@@ -82,11 +86,12 @@ public class FusionIndexAccessorTest
 {
     private FusionIndexAccessor fusionIndexAccessor;
     private final long indexId = 0;
-    private final DropAction dropAction = mock( DropAction.class );
     private EnumMap<IndexSlot,IndexAccessor> accessors;
     private IndexAccessor[] aliveAccessors;
     private StoreIndexDescriptor indexDescriptor =
             IndexDescriptorFactory.forSchema( SchemaDescriptorFactory.forLabel( 1, 42 ) ).withId( indexId );
+    private FileSystemAbstraction fs;
+    private IndexDirectoryStructure directoryStructure;
 
     @Rule
     public RandomRule random = new RandomRule();
@@ -140,7 +145,11 @@ public class FusionIndexAccessorTest
                 throw new RuntimeException();
             }
         }
-        fusionIndexAccessor = new FusionIndexAccessor(  fusionVersion.slotSelector(), new InstanceSelector<>( accessors ), indexDescriptor, dropAction );
+        SlotSelector slotSelector = fusionVersion.slotSelector();
+        InstanceSelector<IndexAccessor> instanceSelector = new InstanceSelector<>( accessors );
+        fs = mock( FileSystemAbstraction.class );
+        directoryStructure = directoriesByProvider( new File( "storeDir" ) ).forProvider( UNDECIDED );
+        fusionIndexAccessor = new FusionIndexAccessor( slotSelector, instanceSelector, indexDescriptor, fs, directoryStructure );
     }
 
     private void resetMocks()
@@ -154,7 +163,7 @@ public class FusionIndexAccessorTest
     /* drop */
 
     @Test
-    public void dropMustDropAll()
+    public void dropMustDropAll() throws IOException
     {
         // when
         // ... all drop successful
@@ -165,7 +174,7 @@ public class FusionIndexAccessorTest
         {
             verify( accessor ).drop();
         }
-        verify( dropAction ).drop( indexId );
+        verify( fs ).deleteRecursively( directoryStructure.directoryForIndex( indexId ) );
     }
 
     @Test
