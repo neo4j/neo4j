@@ -34,7 +34,6 @@ import org.neo4j.server.rest.web.CorsFilter;
 import org.neo4j.server.rest.web.CypherService;
 import org.neo4j.server.rest.web.DatabaseMetadataService;
 import org.neo4j.server.rest.web.ExtensionService;
-import org.neo4j.server.rest.web.ResourcesService;
 import org.neo4j.server.rest.web.RestfulGraphDatabase;
 import org.neo4j.server.rest.web.TransactionalService;
 import org.neo4j.server.web.WebServer;
@@ -89,7 +88,6 @@ public class RESTApiModule implements ServerModule
                 CypherService.class.getName(),
                 DatabaseMetadataService.class.getName(),
                 ExtensionService.class.getName(),
-                ResourcesService.class.getName(),
                 BatchOperationService.class.getName() );
     }
 
