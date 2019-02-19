@@ -60,6 +60,7 @@ import org.neo4j.values.storable.Value;
 
 import static org.neo4j.helpers.collection.Iterables.first;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexUpdater.initializeKeyFromUpdate;
+import static org.neo4j.kernel.impl.index.schema.NativeIndexes.archiveIndex;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexes.deleteIndex;
 
 public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,VALUE extends NativeIndexValue> extends NativeIndexPopulator<KEY,VALUE>
@@ -155,7 +156,8 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
     {
         try
         {
-            deleteIndex( fileSystem, directoryStructure, descriptor.indexReference(), archiveFailedIndex );
+            archiveIndex( fileSystem, directoryStructure, descriptor.indexReference(), archiveFailedIndex );
+            deleteIndex( fileSystem, directoryStructure, descriptor.indexReference() );
         }
         catch ( IOException e )
         {

@@ -32,6 +32,7 @@ import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveS
 import org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettingsWriter;
 import org.neo4j.storageengine.api.StorageIndexReference;
 
+import static org.neo4j.kernel.impl.index.schema.NativeIndexes.archiveIndex;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexes.deleteIndex;
 
 class GenericNativeIndexPopulator extends NativeIndexPopulator<GenericKey,NativeIndexValue>
@@ -59,7 +60,8 @@ class GenericNativeIndexPopulator extends NativeIndexPopulator<GenericKey,Native
         {
             // Archive and delete the index, if it exists. The reason why this isn't done in the generic implementation is that for all other cases a
             // native index populator lives under a fusion umbrella and the archive function sits on the top-level fusion folder, not every single sub-folder.
-            deleteIndex( fileSystem, directoryStructure, descriptor.indexReference(), archiveFailedIndex );
+            archiveIndex( fileSystem, directoryStructure, descriptor.indexReference(), archiveFailedIndex );
+            deleteIndex( fileSystem, directoryStructure, descriptor.indexReference() );
 
             // Now move on to do the actual creation.
             super.create();

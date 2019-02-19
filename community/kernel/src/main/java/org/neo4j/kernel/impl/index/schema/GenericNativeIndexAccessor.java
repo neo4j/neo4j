@@ -63,7 +63,7 @@ class GenericNativeIndexAccessor extends NativeIndexAccessor<GenericKey,NativeIn
         super.drop();
         try
         {
-            NativeIndexes.deleteIndex( fileSystem, directoryStructure, descriptor.indexReference(), false );
+            NativeIndexes.deleteIndex( fileSystem, directoryStructure, descriptor.indexReference() );
         }
         catch ( IOException e )
         {

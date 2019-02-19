@@ -33,6 +33,7 @@ import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 
+import static org.neo4j.kernel.impl.index.schema.NativeIndexes.archiveIndex;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexes.deleteIndex;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexSampler.combineSamples;
 
@@ -58,7 +59,8 @@ class FusionIndexPopulator extends FusionIndexBase<IndexPopulator> implements In
     {
         try
         {
-            deleteIndex( fs, directoryStructure, indexId, archiveFailedIndex );
+            archiveIndex( fs, directoryStructure, indexId, archiveFailedIndex );
+            deleteIndex( fs, directoryStructure, indexId );
         }
         catch ( IOException e )
         {
@@ -73,7 +75,7 @@ class FusionIndexPopulator extends FusionIndexBase<IndexPopulator> implements In
         instanceSelector.forAll( IndexPopulator::drop );
         try
         {
-            deleteIndex( fs, directoryStructure, indexId, false );
+            deleteIndex( fs, directoryStructure, indexId );
         }
         catch ( IOException e )
         {

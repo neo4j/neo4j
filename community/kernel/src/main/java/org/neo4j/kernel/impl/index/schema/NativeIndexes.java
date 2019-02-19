@@ -65,17 +65,17 @@ public class NativeIndexes
     }
 
     /**
-     * Deletes index folder with the specific indexId, but has the option to first archive the index if it exists.
+     * Archive given index directory.
      * The zip archive will be placed next to the root directory for that index with a timestamp included in its name.
      *
      * @param fs {@link FileSystemAbstraction} this index lives in.
      * @param directoryStructure {@link IndexDirectoryStructure} knowing the directory structure for the provider owning the index.
      * @param indexId id of the index.
      * @param archiveIfExists whether or not to archive the index before deleting it, if it exists.
-     * @return whether or not an archive was created.
      * @throws IOException on I/O error.
+     * @return true if zip archive was created.
      */
-    public static boolean deleteIndex( FileSystemAbstraction fs, IndexDirectoryStructure directoryStructure, long indexId, boolean archiveIfExists )
+    public static boolean archiveIndex( FileSystemAbstraction fs, IndexDirectoryStructure directoryStructure, long indexId, boolean archiveIfExists )
             throws IOException
     {
         File rootIndexDirectory = directoryStructure.directoryForIndex( indexId );
@@ -85,7 +85,20 @@ public class NativeIndexes
                     new File( rootIndexDirectory.getParent(), "archive-" + rootIndexDirectory.getName() + "-" + System.currentTimeMillis() + ".zip" ) );
             return true;
         }
-        fs.deleteRecursively( rootIndexDirectory );
         return false;
+    }
+
+    /**
+     * Deletes index folder with the specific indexId.
+     *
+     * @param fs {@link FileSystemAbstraction} this index lives in.
+     * @param directoryStructure {@link IndexDirectoryStructure} knowing the directory structure for the provider owning the index.
+     * @param indexId id of the index.
+     * @throws IOException on I/O error.
+     */
+    public static void deleteIndex( FileSystemAbstraction fs, IndexDirectoryStructure directoryStructure, long indexId ) throws IOException
+    {
+        File rootIndexDirectory = directoryStructure.directoryForIndex( indexId );
+        fs.deleteRecursively( rootIndexDirectory );
     }
 }

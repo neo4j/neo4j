@@ -66,7 +66,7 @@ class FusionIndexAccessor extends FusionIndexBase<IndexAccessor> implements Inde
         instanceSelector.forAll( IndexAccessor::drop );
         try
         {
-            deleteIndex( fs, directoryStructure, descriptor.indexReference(), false );
+            deleteIndex( fs, directoryStructure, descriptor.indexReference() );
         }
         catch ( IOException e )
         {
