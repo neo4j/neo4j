@@ -129,6 +129,21 @@ public abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>,
     }
 
     @Test
+    public void dropShouldDeleteExistingDirectory()
+    {
+        // given
+        populator.create();
+
+        // when
+        populator.drop();
+
+        System.out.println( "dir: " + getIndexDirectory() );
+        System.out.println( "file: " + getIndexFile() );
+        // then
+        assertDirectoryNotPresent();
+    }
+
+    @Test
     public void dropShouldSucceedOnNonExistentFile()
     {
         // given

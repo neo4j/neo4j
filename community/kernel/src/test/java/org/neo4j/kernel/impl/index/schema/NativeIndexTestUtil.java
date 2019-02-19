@@ -71,6 +71,7 @@ public abstract class NativeIndexTestUtil<KEY extends NativeIndexKey<KEY>,VALUE 
     ValueCreatorUtil<KEY,VALUE> valueCreatorUtil;
     IndexLayout<KEY,VALUE> layout;
     IndexDirectoryStructure indexDirectoryStructure;
+    private File indexDirectory;
     private File indexFile;
     PageCache pageCache;
     IndexProvider.Monitor monitor = IndexProvider.Monitor.EMPTY;
@@ -82,14 +83,20 @@ public abstract class NativeIndexTestUtil<KEY extends NativeIndexKey<KEY>,VALUE 
         indexDescriptor = valueCreatorUtil.indexDescriptor();
         layout = createLayout();
         indexDirectoryStructure = directoriesByProvider( directory.directory( "root" ) ).forProvider( indexDescriptor.providerDescriptor() );
-        indexFile = indexDirectoryStructure.directoryForIndex( indexDescriptor.getId() );
-        fs.mkdirs( indexFile.getParentFile() );
+        indexDirectory = indexDirectoryStructure.directoryForIndex( indexDescriptor.getId() );
+        indexFile = new File( indexDirectory, "indexFile" );
+        fs.mkdirs( this.indexFile.getParentFile() );
         pageCache = pageCacheRule.getPageCache( fs );
     }
 
     public File getIndexFile()
     {
         return indexFile;
+    }
+
+    File getIndexDirectory()
+    {
+        return indexDirectory;
     }
 
     abstract ValueCreatorUtil<KEY,VALUE> createValueCreatorUtil();
@@ -205,6 +212,11 @@ public abstract class NativeIndexTestUtil<KEY extends NativeIndexKey<KEY>,VALUE 
     void assertFileNotPresent()
     {
         assertFalse( fs.fileExists( getIndexFile() ) );
+    }
+
+    void assertDirectoryNotPresent()
+    {
+        assertFalse( "expected ", fs.fileExists( indexDirectory ) );
     }
 
     // Useful when debugging
