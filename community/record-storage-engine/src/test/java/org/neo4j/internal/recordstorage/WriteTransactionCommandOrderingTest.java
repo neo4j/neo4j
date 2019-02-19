@@ -138,21 +138,13 @@ class WriteTransactionCommandOrderingTest
         when( nodeRecordChanges.changeSize() ).thenReturn( 3 );
         when( recordChangeSet.changeSize() ).thenReturn( 3 );
 
-        when( labelTokenChanges.changes() )
-                .thenReturn( Collections.emptyList() );
-        when( relationshipTypeTokenChanges.changes() ).thenReturn(
-                Collections.emptyList() );
-        when( propertyKeyTokenChanges.changes() )
-                .thenReturn( Collections.emptyList() );
-        when( relationshipRecordChanges.changes() )
-                .thenReturn( Collections.emptyList() );
-        when( propertyRecordChanges.changes() )
-                .thenReturn( Collections.emptyList() );
-        when( relationshipGroupChanges.changes() ).thenReturn(
-                Collections.emptyList() );
-        when( schemaRuleChanges.changes() ).thenReturn(
-                Collections.emptyList() );
-        // TODO return schema records for the new schema store, that needs to be sorted in a meaningful way, and assert on it.
+        when( labelTokenChanges.changes() ).thenReturn( Collections.emptyList() );
+        when( relationshipTypeTokenChanges.changes() ).thenReturn( Collections.emptyList() );
+        when( propertyKeyTokenChanges.changes() ).thenReturn( Collections.emptyList() );
+        when( relationshipRecordChanges.changes() ).thenReturn( Collections.emptyList() );
+        when( propertyRecordChanges.changes() ).thenReturn( Collections.emptyList() );
+        when( relationshipGroupChanges.changes() ).thenReturn( Collections.emptyList() );
+        when( schemaRuleChanges.changes() ).thenReturn( Collections.emptyList() );
 
         NeoStores neoStores = mock( NeoStores.class );
         NodeStore store = mock( NodeStore.class );
