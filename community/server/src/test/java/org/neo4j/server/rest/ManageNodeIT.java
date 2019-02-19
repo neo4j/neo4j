@@ -20,7 +20,6 @@
 package org.neo4j.server.rest;
 
 import org.hamcrest.MatcherAssert;
-import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -30,7 +29,6 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 import java.net.URI;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
@@ -45,12 +43,9 @@ import org.neo4j.kernel.configuration.HttpConnector.Encryption;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.kernel.internal.KernelData;
 import org.neo4j.kernel.monitoring.Monitors;
-import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.NeoServer;
-import org.neo4j.server.configuration.ServerSettings;
-import org.neo4j.server.database.Database;
 import org.neo4j.server.helpers.CommunityServerBuilder;
 import org.neo4j.server.helpers.FunctionalTestHelper;
 import org.neo4j.server.rest.domain.GraphDbHelper;
@@ -58,9 +53,6 @@ import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.management.JmxService;
 import org.neo4j.server.rest.management.RootService;
 import org.neo4j.server.rest.management.VersionAndEditionService;
-import org.neo4j.server.rest.management.console.ConsoleService;
-import org.neo4j.server.rest.management.console.ConsoleSessionFactory;
-import org.neo4j.server.rest.management.console.ScriptSession;
 import org.neo4j.server.rest.repr.OutputFormat;
 import org.neo4j.server.rest.repr.formats.JsonFormat;
 import org.neo4j.string.UTF8;
@@ -72,7 +64,6 @@ import org.neo4j.test.server.HTTP;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasKey;
-import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
@@ -363,95 +354,6 @@ public class ManageNodeIT extends AbstractRestFunctionalDocTestBase
         }
     }
 
-    public static class ConfigureEnabledManagementConsolesDocIT extends ExclusiveServerTestBase
-    {
-        private NeoServer server;
-
-        @After
-        public void stopTheServer()
-        {
-            server.stop();
-        }
-
-        @Test
-        public void shouldBeAbleToExplicitlySetConsolesToEnabled() throws Exception
-        {
-            server = CommunityServerBuilder.server().withProperty( ServerSettings.console_module_engines.name(), "" )
-                    .usingDataDir( folder.directory( name.getMethodName() ).getAbsolutePath() )
-                    .build();
-            server.start();
-
-            assertThat( exec( "ls", "shell" ).getStatus(), is( 400 ) );
-        }
-
-        @Test
-        public void shellConsoleShouldBeEnabledByDefault() throws Exception
-        {
-            server = CommunityServerBuilder.server().usingDataDir( folder.directory( name.getMethodName() ).getAbsolutePath() ).build();
-            server.start();
-
-            assertThat( exec( "ls", "shell" ).getStatus(), is( 200 ) );
-        }
-
-        private JaxRsResponse exec( String command, String engine )
-        {
-            return RestRequest.req().post( server.baseUri() + "db/manage/server/console", "{" +
-                    "\"engine\":\"" + engine + "\"," +
-                    "\"command\":\"" + command + "\\n\"}" );
-        }
-    }
-
-    public static class ConsoleServiceDocTest
-    {
-        private final URI uri = URI.create( "http://peteriscool.com:6666/" );
-
-        @Test
-        public void correctRepresentation()
-        {
-            ConsoleService consoleService = new ConsoleService( new StubConsoleSessionFactory(), mock( Database.class ),
-                    NullLogProvider.getInstance(), new OutputFormat( new JsonFormat(), uri, null ) );
-
-            Response consoleResponse = consoleService.getServiceDefinition();
-
-            assertEquals( 200, consoleResponse.getStatus() );
-            String response = decode( consoleResponse );
-            MatcherAssert.assertThat( response, containsString( "resources" ) );
-            MatcherAssert.assertThat( response, containsString( uri.toString() ) );
-        }
-
-        @Test
-        public void advertisesAvailableConsoleEngines()
-        {
-            ConsoleService consoleServiceWithJustShellEngine = new ConsoleService( new StubConsoleSessionFactory(),
-                    mock( Database.class ), NullLogProvider.getInstance(), new OutputFormat( new JsonFormat(), uri, null ) );
-
-            String response = decode( consoleServiceWithJustShellEngine.getServiceDefinition());
-
-            MatcherAssert.assertThat( response, containsString( "\"engines\" : [ \"stub-engine\" ]" ) );
-
-        }
-
-        private String decode( final Response response )
-        {
-            return UTF8.decode( (byte[]) response.getEntity() );
-        }
-
-        private static class StubConsoleSessionFactory implements ConsoleSessionFactory
-        {
-            @Override
-            public ScriptSession createSession( String engineName, Database database, LogProvider logProvider )
-            {
-                return null;
-            }
-
-            @Override
-            public Iterable<String> supportedEngines()
-            {
-                return Collections.singletonList( "stub-engine" );
-            }
-        }
-    }
-
     public static class JmxServiceDocTest
     {
         public JmxService jmxService;
@@ -515,8 +417,6 @@ public class ManageNodeIT extends AbstractRestFunctionalDocTestBase
             assertEquals( 200, serviceDefinition.getStatus() );
             Map<String, Object> result = (Map<String, Object>) output.getResultAsMap().get( "services" );
 
-            assertThat( result.get( "console" )
-                    .toString(), containsString( String.format( "%sserver/console", uri.toString() ) ) );
             assertThat( result.get( "jmx" )
                     .toString(), containsString( String.format( "%sserver/jmx", uri.toString() ) ) );
         }

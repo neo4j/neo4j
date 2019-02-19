@@ -88,10 +88,6 @@ public class ServerSettings implements LoadableConfig
     public static final Setting<Duration> webserver_limit_execution_time = setting( "unsupported.dbms" +
             ".executiontime_limit.time", DURATION, NO_DEFAULT );
 
-    @Internal
-    public static final Setting<List<String>> console_module_engines = setting(
-            "unsupported.dbms.console_module.engines", STRING_LIST, "SHELL" );
-
     @Description( "Comma-separated list of <classname>=<mount point> for unmanaged extensions." )
     public static final Setting<List<ThirdPartyJaxRsPackage>> third_party_packages = setting( "dbms.unmanaged_extension_classes",
             new Function<String, List<ThirdPartyJaxRsPackage>>()
@@ -230,10 +226,6 @@ public class ServerSettings implements LoadableConfig
     @Internal
     public static final Setting<Boolean> wadl_enabled = setting( "unsupported.dbms.wadl_generation_enabled", BOOLEAN,
             FALSE );
-
-    @Internal
-    public static final Setting<Boolean> console_module_enabled =
-            setting( "unsupported.dbms.console_module.enabled", BOOLEAN, TRUE );
 
     @Internal
     public static final Setting<Boolean> jmx_module_enabled = setting( "unsupported.dbms.jmx_module.enabled", BOOLEAN, TRUE );

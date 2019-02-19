@@ -31,7 +31,6 @@ import org.neo4j.kernel.configuration.ConnectorPortRegister;
 import org.neo4j.server.database.CommunityGraphFactory;
 import org.neo4j.server.database.GraphFactory;
 import org.neo4j.server.modules.AuthorizationModule;
-import org.neo4j.server.modules.ConsoleModule;
 import org.neo4j.server.modules.DBMSModule;
 import org.neo4j.server.modules.ManagementApiModule;
 import org.neo4j.server.modules.Neo4jBrowserModule;
@@ -42,7 +41,6 @@ import org.neo4j.server.modules.ThirdPartyJAXRSModule;
 import org.neo4j.server.rest.discovery.DiscoverableURIs;
 import org.neo4j.server.rest.management.AdvertisableService;
 import org.neo4j.server.rest.management.JmxService;
-import org.neo4j.server.rest.management.console.ConsoleService;
 import org.neo4j.server.web.Jetty9WebServer;
 import org.neo4j.server.web.WebServer;
 import org.neo4j.udc.UsageData;
@@ -69,7 +67,6 @@ public class CommunityNeoServer extends AbstractNeoServer
                 new RESTApiModule( webServer, getConfig(), getDependencyResolver().provideDependency( UsageData.class ), userLogProvider ),
                 new ManagementApiModule( webServer, getConfig() ),
                 new ThirdPartyJAXRSModule( webServer, getConfig(), userLogProvider, this ),
-                new ConsoleModule( webServer, getConfig() ),
                 new Neo4jBrowserModule( webServer ),
                 createAuthorizationModule(),
                 new SecurityRulesModule( webServer, getConfig(), userLogProvider ) );
@@ -86,7 +83,6 @@ public class CommunityNeoServer extends AbstractNeoServer
     public Iterable<AdvertisableService> getServices()
     {
         List<AdvertisableService> toReturn = new ArrayList<>( 3 );
-        toReturn.add( new ConsoleService( null, null, userLogProvider, null ) );
         toReturn.add( new JmxService( null, null ) );
 
         return toReturn;

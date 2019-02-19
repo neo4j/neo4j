@@ -134,32 +134,6 @@ public class ServerConfigIT extends ExclusiveServerTestBase
         assertEquals( 404, response.getStatus() );
     }
 
-    @Test
-    public void shouldEnableConsoleServiceByDefault() throws IOException
-    {
-        // Given
-        server = serverOnRandomPorts()
-                .usingDataDir( folder.directory( name.getMethodName() ).getAbsolutePath() )
-                .build();
-        server.start();
-
-        // When & then
-        assertEquals( 200, new RestRequest().get( server.baseUri().toString() + "db/manage/server/console" ).getStatus() );
-    }
-
-    @Test
-    public void shouldDisableConsoleServiceWhenAskedTo() throws IOException
-    {
-        // Given
-        server = serverOnRandomPorts().withProperty( ServerSettings.console_module_enabled.name(), "false" )
-                .usingDataDir( folder.directory( name.getMethodName() ).getAbsolutePath() )
-                .build();
-        server.start();
-
-        // When & then
-        assertEquals( 404, new RestRequest().get( server.baseUri().toString() + "db/manage/server/console" ).getStatus() );
-    }
-
     private HostnamePort getLocalHttpAddress()
     {
         ConnectorPortRegister connectorPortRegister = server.getDatabase().getGraph().getDependencyResolver()

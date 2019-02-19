@@ -448,11 +448,6 @@ public class Jetty9WebServer implements WebServer
 
                 handlers.addHandler( staticContext );
             }
-            else
-            {
-                log.warn( "No static content available for Neo4j Server at %s. management console may not be available.",
-                        addressConfigurationDescription() );
-            }
         }
         catch ( Exception e )
         {
