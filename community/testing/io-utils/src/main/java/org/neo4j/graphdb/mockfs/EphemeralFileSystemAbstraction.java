@@ -126,6 +126,11 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
         initCurrentWorkingDirectory();
     }
 
+    public void clear()
+    {
+        closeFiles();
+    }
+
     /**
      * Simulate a filesystem crash, in which any changes that have not been {@link StoreChannel#force}d
      * will be lost. Practically, all files revert to the state when they are last {@link StoreChannel#force}d.
