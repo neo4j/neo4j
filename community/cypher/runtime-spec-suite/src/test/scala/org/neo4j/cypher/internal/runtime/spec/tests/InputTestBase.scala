@@ -35,7 +35,7 @@ abstract class InputTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y", "z")
-      .input("x", "y", "z")
+      .input(variables = Seq("x", "y", "z"))
       .build()
 
     val input =
@@ -60,7 +60,7 @@ abstract class InputTestBase[CONTEXT <: RuntimeContext](
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults(columns:_*)
-      .input(columns:_*)
+      .input(variables = columns)
       .build()
 
     val input = inputValues(columns.toArray)
@@ -74,7 +74,7 @@ abstract class InputTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y", "z")
-      .input("x", "y", "z")
+      .input(variables = Seq("x", "y", "z"))
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime, NO_INPUT)

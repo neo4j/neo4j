@@ -432,7 +432,7 @@ trait NodeIndexSeekRangeAndCompositeTestBase[CONTEXT <: RuntimeContext] {
       .produceResults("x")
       .apply()
       .|.nodeIndexOperator("x:Honey(prop = ???)", GetValue, paramExpr = Some(varFor("value")), argumentIds = Set("value"))
-      .input("value")
+      .input(variables = Seq("value"))
       .build()
 
     val input = inputValues(Array(20), Array(50))

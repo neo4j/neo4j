@@ -36,7 +36,7 @@ abstract class PartialTop1TestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
       .partialTop(Seq(Ascending("x")), Seq(Ascending("y")), 1)
-      .input("x", "y")
+      .input(variables = Seq("x", "y"))
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime, input)
@@ -56,7 +56,7 @@ abstract class PartialTop1TestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
       .partialTop(Seq(Ascending("x")), Seq(Ascending("y")), 1)
-      .input("x", "y")
+      .input(variables = Seq("x", "y"))
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime, input)
@@ -81,7 +81,7 @@ abstract class PartialTop1TestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
       .partialTop(Seq(Ascending("x")), Seq(Ascending("y")), 1)
-      .input("x", "y")
+      .input(variables = Seq("x", "y"))
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime, input)
@@ -103,7 +103,7 @@ abstract class PartialTop1TestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
       .partialTop(Seq(Ascending("x")), Seq(Descending("y")), 1)
-      .input("x", "y")
+      .input(variables = Seq("x", "y"))
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime, input)

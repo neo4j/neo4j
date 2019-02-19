@@ -171,6 +171,8 @@ class LogicalQueryBuilder(tokenResolver: TokenResolver) extends AstConstructionT
 
   def expandInto(pattern: String): LogicalQueryBuilder = {
     val p = PatternParser.parse(pattern)
+    semanticTable = semanticTable.addNode(varFor(p.from))
+    semanticTable = semanticTable.addNode(varFor(p.to))
     appendAtCurrentIndent(UnaryOperator(lp => Expand(lp, p.from, p.dir, p.relTypes, p.to, p.relName, ExpandInto)))
     this
   }
@@ -192,6 +194,10 @@ class LogicalQueryBuilder(tokenResolver: TokenResolver) extends AstConstructionT
     appendAtCurrentIndent(LeafOperator(AllNodesScan(node, args.toSet)))
   }
 
+  def argument(args: String*): LogicalQueryBuilder = {
+    appendAtCurrentIndent(LeafOperator(Argument(args.toSet)))
+  }
+
   def nodeByLabelScan(node: String, label: String, args: String*): LogicalQueryBuilder = {
     semanticTable = semanticTable.addNode(varFor(node))
     appendAtCurrentIndent(LeafOperator(NodeByLabelScan(node, labelName(label), args.toSet)))
@@ -207,6 +213,7 @@ class LogicalQueryBuilder(tokenResolver: TokenResolver) extends AstConstructionT
                         customQueryExpression: Option[QueryExpression[Expression]] = None): LogicalQueryBuilder = {
     val label = tokenResolver.labelId(IndexSeek.labelFromIndexSeekString(indexSeekString))
     val plan = IndexSeek(indexSeekString, getValue, indexOrder, paramExpr, argumentIds, propIds, label, unique, customQueryExpression)
+    semanticTable = semanticTable.addNode(varFor(plan.idName))
     appendAtCurrentIndent(LeafOperator(plan))
   }
 
@@ -216,6 +223,9 @@ class LogicalQueryBuilder(tokenResolver: TokenResolver) extends AstConstructionT
 
   def apply(): LogicalQueryBuilder =
     appendAtCurrentIndent(BinaryOperator((lhs, rhs) => Apply(lhs, rhs)))
+
+  def cartesianProduct(): LogicalQueryBuilder =
+    appendAtCurrentIndent(BinaryOperator((lhs, rhs) => CartesianProduct(lhs, rhs)))
 
   def union(): LogicalQueryBuilder =
     appendAtCurrentIndent(BinaryOperator((lhs, rhs) => Union(lhs, rhs)))
@@ -228,12 +238,16 @@ class LogicalQueryBuilder(tokenResolver: TokenResolver) extends AstConstructionT
   def argument(): LogicalQueryBuilder =
     appendAtCurrentIndent(LeafOperator(Argument()))
 
-  def input(variables: String*): LogicalQueryBuilder = {
+  def input(nodes: Seq[String] = Seq.empty, variables: Seq[String] = Seq.empty): LogicalQueryBuilder = {
     if (indent != 0)
       throw new IllegalStateException("The input operator has to be the left-most leaf of the plan")
-    if (variables.toSet.size < variables.size)
+    if (nodes.toSet.size < nodes.size || variables.toSet.size < variables.size)
       throw new IllegalArgumentException("Input must create unique variables")
-    appendAtCurrentIndent(LeafOperator(Input(variables.toArray)))
+    appendAtCurrentIndent(LeafOperator(Input(nodes.toArray, variables.toArray)))
+  }
+
+  def filter(predicates: Seq[Expression]): LogicalQueryBuilder = {
+    appendAtCurrentIndent(UnaryOperator(lp => Selection(predicates, lp)))
   }
 
   // SHIP IT

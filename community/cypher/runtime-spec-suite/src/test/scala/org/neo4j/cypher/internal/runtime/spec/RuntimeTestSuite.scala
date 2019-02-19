@@ -31,9 +31,11 @@ import org.neo4j.cypher.result.{QueryResult, RuntimeResult}
 import org.neo4j.graphdb._
 import org.neo4j.kernel.impl.coreapi.InternalTransaction
 import org.neo4j.kernel.impl.util.ValueUtils
+import org.neo4j.values.virtual.ListValue
 import org.neo4j.values.{AnyValue, AnyValues}
 import org.scalactic.{Equality, TolerantNumerics}
 import org.scalactic.source.Position
+import org.scalactic.{Equality, TolerantNumerics}
 import org.scalatest.matchers.{MatchResult, Matcher}
 import org.scalatest.{BeforeAndAfterEach, Tag}
 
@@ -60,6 +62,7 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
 
   var graphDb: GraphDatabaseService = _
   var runtimeTestSupport: RuntimeTestSupport[CONTEXT] = _
+  val ANY_VALUE_ORDERING: Ordering[AnyValue] = Ordering.comparatorToOrdering(AnyValues.COMPARATOR)
 
   override def beforeEach(): Unit = {
     graphDb = edition.graphDatabaseFactory.newImpermanentDatabase()
@@ -72,7 +75,7 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
   }
 
   override def test(testName: String, testTags: Tag*)(testFun: => Any)(implicit pos: Position): Unit = {
-    super.test(testName, Tag(runtime.name)+:testTags:_*)(testFun)
+    super.test(testName, Tag(runtime.name) +: testTags: _*)(testFun)
   }
 
   // HELPERS
@@ -122,7 +125,7 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
   val NO_INPUT = new InputValues
 
   def inputValues(rows: Array[Any]*): InputValues =
-    new InputValues().and(rows:_*)
+    new InputValues().and(rows: _*)
 
   def inputSingleColumn(nBatches: Int, batchSize: Int, valueFunction: Int => Any): InputValues = {
     val input = new InputValues()
@@ -130,7 +133,7 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
       val rows =
         for (row <- 0 until batchSize)
           yield Array(valueFunction(batch * batchSize + row))
-      input.and(rows:_*)
+      input.and(rows: _*)
 
     }
     input
@@ -138,10 +141,12 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
 
   class InputValues() {
     val batches = new ArrayBuffer[IndexedSeq[Array[Any]]]
+
     def and(rows: Array[Any]*): InputValues = {
       batches += rows.toIndexedSeq
       this
     }
+
     def flatten: IndexedSeq[Array[Any]] =
       batches.flatten
 
@@ -149,7 +154,8 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
   }
 
   class BufferInputStream(data: ArrayBuffer[IndexedSeq[Array[AnyValue]]]) extends InputDataStream {
-    private var batchIndex = new AtomicInteger(0)
+    private val batchIndex = new AtomicInteger(0)
+
     override def nextInputBatch(): InputCursor = {
       val i = batchIndex.getAndIncrement()
       if (i < data.size)
@@ -177,8 +183,8 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
 
   def nodeGraph(nNodes: Int, labels: String*): Seq[Node] = {
     inTx {
-      for (i <- 0 until nNodes) yield {
-        graphDb.createNode(labels.map(Label.label):_*)
+      for (_ <- 0 until nNodes) yield {
+        graphDb.createNode(labels.map(Label.label): _*)
       }
     }
   }
@@ -186,7 +192,7 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
   def circleGraph(nNodes: Int, labels: String*): (Seq[Node], Seq[Relationship]) = {
     val nodes = inTx {
       for (i <- 0 until nNodes) yield {
-        graphDb.createNode(labels.map(Label.label):_*)
+        graphDb.createNode(labels.map(Label.label): _*)
       }
     }
 
@@ -195,7 +201,7 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
       val rType = RelationshipType.withName("R")
       for (i <- 0 until nNodes) {
         val a = nodes(i)
-        val b = nodes((i+1)%nNodes)
+        val b = nodes((i + 1) % nNodes)
         rels += a.createRelationshipTo(b, rType)
       }
     }
@@ -215,7 +221,7 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
     try {
       tx.success()
       for (i <- 0 until nNodes) yield {
-        val node = graphDb.createNode(labels.map(Label.label):_*)
+        val node = graphDb.createNode(labels.map(Label.label): _*)
         properties.runWith(_.foreach(kv => node.setProperty(kv._1, kv._2)))(i)
         node
       }
@@ -286,8 +292,9 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
       this
     }
 
-    def withSingleRow(values: Any*): RuntimeResultMatcher = withRows(singleRow(values:_*))
-    def withRows(rows: Seq[Array[_]]): RuntimeResultMatcher = withRows(inAnyOrder(rows))
+    def withSingleRow(values: Any*): RuntimeResultMatcher = withRows(singleRow(values: _*))
+
+    def withRows(rows: Iterable[Array[_]]): RuntimeResultMatcher = withRows(inAnyOrder(rows))
     def withNoRows(): RuntimeResultMatcher = withRows(NoRowsMatcher)
 
     def withRows(rowsMatcher: RowsMatcher): RuntimeResultMatcher = {
@@ -327,22 +334,22 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
     }
   }
 
-  def inOrder(rows: Seq[Array[_]]): RowsMatcher = {
+  def inOrder(rows: Iterable[Array[_]]): RowsMatcher = {
     val anyValues = rows.map(row => row.map(ValueUtils.of)).toIndexedSeq
     EqualInOrder(anyValues)
   }
 
-  def inAnyOrder(rows: Seq[Array[_]]): RowsMatcher = {
+  def inAnyOrder(rows: Iterable[Array[_]]): RowsMatcher = {
     val anyValues = rows.map(row => row.map(ValueUtils.of)).toIndexedSeq
     EqualInAnyOrder(anyValues)
   }
 
-  def singleColumn(values: Seq[Any]): RowsMatcher = {
+  def singleColumn(values: Iterable[Any]): RowsMatcher = {
     val anyValues = values.map(x => Array(ValueUtils.of(x))).toIndexedSeq
     EqualInAnyOrder(anyValues)
   }
 
-  def singleColumnInOrder(values: Seq[Any]): RowsMatcher = {
+  def singleColumnInOrder(values: Iterable[Any]): RowsMatcher = {
     val anyValues = values.map(x => Array(ValueUtils.of(x))).toIndexedSeq
     EqualInOrder(anyValues)
   }
@@ -356,9 +363,55 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
     CustomRowsMatcher(matchPattern(func))
   }
 
-  def groupedBy(columns: String*): RowOrderMatcher = new GroupBy(columns:_*)
+  private def pretty(diff: IndexedSeq[DiffItem]): String = {
+    val sb = new StringBuilder
+    for (diffItem <- diff)
+      sb ++= diffItem.missingRow.asArray().map(value => value.toString).mkString(if (diffItem.fromA) "- " else "+ ", ", ", "\n")
+    sb.result()
+  }
+
+  def groupedBy(columns: String*): RowOrderMatcher = new GroupBy(columns: _*)
+
   def sortedAsc(column: String): RowOrderMatcher = new Ascending(column)
+
   def sortedDesc(column: String): RowOrderMatcher = new Descending(column)
+
+  case class DiffItem(missingRow: ListValue, fromA: Boolean)
+
+  private def diffOf(sortedA: IndexedSeq[ListValue], sortedB: IndexedSeq[ListValue]): IndexedSeq[DiffItem] = {
+    var aIndex = 0
+    var bIndex = 0
+    var diff = new ArrayBuffer[DiffItem]()
+    while (aIndex < sortedA.size && bIndex < sortedB.size) {
+      val rowA = sortedA(aIndex)
+      val rowB = sortedB(bIndex)
+
+      ANY_VALUE_ORDERING.compare(rowA, rowB) match {
+        case i if i > 0 =>
+          diff += DiffItem(rowB, fromA = false)
+          bIndex += 1
+        case i if i < 0 =>
+          diff += DiffItem(rowA, fromA = true)
+          aIndex += 1
+        case 0 =>
+          aIndex += 1
+          bIndex += 1
+      }
+    }
+    while (aIndex < sortedA.size) {
+      val rowA = sortedA(aIndex)
+      diff += DiffItem(rowA, fromA = true)
+      aIndex += 1
+    }
+    while (bIndex < sortedB.size) {
+      val rowB = sortedB(bIndex)
+      diff += DiffItem(rowB, fromA = false)
+      bIndex += 1
+    }
+
+    diff
+  }
+
 }
 
 case class ContextCondition[CONTEXT <: RuntimeContext](test: CONTEXT => Boolean, errorMsg: String)
