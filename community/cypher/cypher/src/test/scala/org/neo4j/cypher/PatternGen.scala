@@ -34,7 +34,7 @@ trait PatternGen extends PropertyChecks {
   protected def maxDiscardedInputs = 500
   protected def maxSize = 10
 
-  override implicit val generatorDrivenConfig = PropertyCheckConfig(
+  override implicit val generatorDrivenConfig: PropertyCheckConfiguration = PropertyCheckConfig(
     minSuccessful = numberOfTestRuns, maxDiscarded = maxDiscardedInputs, maxSize = maxSize
   )
 

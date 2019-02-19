@@ -34,6 +34,7 @@ import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.values.{AnyValue, AnyValues}
 import org.scalactic.{Equality, TolerantNumerics}
 import org.neo4j.values.virtual.VirtualValues
+import org.scalactic.source.Position
 import org.scalatest.matchers.{MatchResult, Matcher}
 import org.scalatest.{BeforeAndAfterEach, Tag}
 
@@ -72,7 +73,7 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
     graphDb.shutdown()
   }
 
-  override def test(testName: String, testTags: Tag*)(testFun: => Unit): Unit = {
+  override def test(testName: String, testTags: Tag*)(testFun: => Any)(implicit pos: Position): Unit = {
     super.test(testName, Tag(runtime.name)+:testTags:_*)(testFun)
   }
 
