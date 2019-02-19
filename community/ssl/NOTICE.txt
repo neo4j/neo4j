@@ -27,6 +27,7 @@ Third-party licenses
 
 Apache Software License, Version 2.0
   Apache Commons Lang
+  Apache Commons Text
   Netty/All-in-One
 
 Bouncy Castle License
