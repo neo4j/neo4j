@@ -33,7 +33,10 @@ public class SchemaRecordFormat extends BaseOneByteHeaderRecordFormat<SchemaReco
 {
     // 8 bits header. 56 possible bits for property record reference. (Even high-limit format only uses 50 bits for property ids).
     public static final int RECORD_SIZE = Long.BYTES;
-    private static final long RECORD_IN_USE_BIT = ((long) IN_USE_BIT) << (Long.SIZE - Byte.SIZE);
+    private static final int HEADER_SHIFT = Long.SIZE - Byte.SIZE;
+    private static final long RECORD_IN_USE_BIT = ((long) IN_USE_BIT) << HEADER_SHIFT;
+    private static final int HAS_PROP_BIT = 0b0000_0010;
+    private static final long RECORD_HAS_PROPERTY = ((long) HAS_PROP_BIT) << HEADER_SHIFT;
     private static final long RECORD_PROPERTY_REFERENCE_MASK = 0x00FFFFFF_FFFFFFFFL;
     private static final long NO_NEXT_PROP = Record.NO_NEXT_PROPERTY.longValue();
 
@@ -53,7 +56,9 @@ public class SchemaRecordFormat extends BaseOneByteHeaderRecordFormat<SchemaReco
     {
         long data = cursor.getLong();
         boolean inUse = (data & RECORD_IN_USE_BIT) != 0;
-        record.initialize( inUse, mode.shouldLoad( inUse ) ? data & RECORD_PROPERTY_REFERENCE_MASK : NO_NEXT_PROP );
+        boolean shouldLoad = mode.shouldLoad( inUse );
+        boolean hashProperty = (data & RECORD_HAS_PROPERTY) == RECORD_HAS_PROPERTY;
+        record.initialize( inUse, shouldLoad && hashProperty ? data & RECORD_PROPERTY_REFERENCE_MASK : NO_NEXT_PROP );
     }
 
     @Override
@@ -62,7 +67,17 @@ public class SchemaRecordFormat extends BaseOneByteHeaderRecordFormat<SchemaReco
         long data = 0;
         if ( record.inUse() )
         {
-            data = RECORD_IN_USE_BIT | record.getNextProp();
+            data = RECORD_IN_USE_BIT;
+            long prop = record.getNextProp();
+            if ( prop != NO_NEXT_PROP )
+            {
+                if ( (prop & RECORD_PROPERTY_REFERENCE_MASK) != prop )
+                {
+                    cursor.setCursorException( "Property reference value outside of range that can be stored in a schema record: " + prop );
+                    return;
+                }
+                data += RECORD_HAS_PROPERTY | prop;
+            }
         }
         cursor.putLong( data );
     }

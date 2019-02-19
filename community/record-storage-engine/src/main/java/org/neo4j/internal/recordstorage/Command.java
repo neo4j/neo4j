@@ -400,6 +400,11 @@ public abstract class Command implements StorageCommand
             return after.getRelId();
         }
 
+        public long getSchemaRuleId()
+        {
+            return after.getSchemaRuleId();
+        }
+
         @Override
         public void serialize( WritableChannel channel ) throws IOException
         {

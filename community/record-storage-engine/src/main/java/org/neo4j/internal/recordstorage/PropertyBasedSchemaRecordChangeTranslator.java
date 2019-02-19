@@ -48,7 +48,7 @@ public abstract class PropertyBasedSchemaRecordChangeTranslator implements Schem
     public void setConstraintIndexOwner( TransactionRecordState recordState, StoreIndexDescriptor indexRule, long constraintId )
     {
         setConstraintIndexOwnerProperty( constraintId,
-                ( propertyKeyId, value ) -> recordState.setIndexOwner( indexRule, constraintId, propertyKeyId, value ) );
+                ( propertyKeyId, value ) -> recordState.schemaRuleSetIndexOwner( indexRule, constraintId, propertyKeyId, value ) );
     }
 
     protected abstract IntObjectMap<Value> asMap( SchemaRule rule );

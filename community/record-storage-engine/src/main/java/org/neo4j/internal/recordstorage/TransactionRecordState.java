@@ -571,7 +571,6 @@ public class TransactionRecordState implements RecordState
         propertyDeleter.removeProperty( recordChange, propertyKey, recordChangeSet.getPropertyRecords() );
     }
 
-    // Property based schema rules:
     void schemaRuleCreate( long ruleId, boolean isConstraint, SchemaRule rule )
     {
         SchemaRecord record = recordChangeSet.getSchemaRuleChanges().create( ruleId, rule ).forChangingData();
@@ -591,7 +590,7 @@ public class TransactionRecordState implements RecordState
             getAndDeletePropertyChain( record );
         }
         // Index schema rules may be deleted twice, if they were owned by a constraint; once for dropping the index, and then again as part of
-        // dropping the constraint. To preserve support for the legacy schema store, we keep this method idempotent.
+        // dropping the constraint. So we keep this method idempotent.
     }
 
     void schemaRuleSetProperty( long ruleId, int propertyKeyId, Value value, SchemaRule rule )
@@ -600,7 +599,7 @@ public class TransactionRecordState implements RecordState
         propertyCreator.primitiveSetProperty( record, propertyKeyId, value, recordChangeSet.getPropertyRecords() );
     }
 
-    void setIndexOwner( StoreIndexDescriptor rule, long constraintId, int propertyKeyId, Value value )
+    void schemaRuleSetIndexOwner( StoreIndexDescriptor rule, long constraintId, int propertyKeyId, Value value )
     {
         // It is possible that the added property will only modify the property chain and leave the owning record untouched.
         // However, we need the schema record to be marked as updated so that an UPDATE schema command is generated.
