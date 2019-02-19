@@ -23,14 +23,12 @@ import org.junit.jupiter.api.Test;
 
 import org.neo4j.bolt.messaging.Neo4jPack;
 import org.neo4j.bolt.v1.messaging.response.RecordMessage;
-import org.neo4j.cypher.result.QueryResult;
 import org.neo4j.values.AnyValue;
 
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 class RecordMessageEncoderTest
 {
@@ -42,9 +40,7 @@ class RecordMessageEncoderTest
         RecordMessageEncoder encoder = new RecordMessageEncoder();
 
         // When
-        QueryResult.Record value = mock( QueryResult.Record.class );
-        when( value.fields() ).thenReturn( new AnyValue[0] );
-        encoder.encode( packer, new RecordMessage( value ) );
+        encoder.encode( packer, new RecordMessage(  new AnyValue[0] ) );
 
         // Then
         verify( packer ).packStructHeader( anyInt(), eq( RecordMessage.SIGNATURE ) );

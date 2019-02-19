@@ -60,7 +60,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.serialize;
-import static org.neo4j.bolt.v1.runtime.spi.Records.record;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.values.storable.Values.intValue;
 import static org.neo4j.values.storable.Values.stringArray;
@@ -129,7 +128,7 @@ public class BoltRequestMessageTest
 
     private String serialized( AnyValue object ) throws IOException
     {
-        RecordMessage message = new RecordMessage( record( object ) );
+        RecordMessage message = new RecordMessage( new AnyValue[]{object} );
         return HexPrinter.hex( serialize( neo4jPack, message ), 4, " " );
     }
 

@@ -29,6 +29,9 @@ public interface QueryExecutionEngine
     Result executeQuery( String query, MapValue parameters, TransactionalContext context, boolean prePopulate )
             throws QueryExecutionKernelException;
 
+    QueryExecution executeQuery( String query, MapValue parameters, TransactionalContext context, boolean prePopulate,
+            QuerySubscriber subscriber ) throws QueryExecutionKernelException;
+
     Result profileQuery( String query, MapValue parameters, TransactionalContext context, boolean prePopulate )
             throws QueryExecutionKernelException;
 

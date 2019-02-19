@@ -48,7 +48,6 @@ import org.neo4j.bolt.v1.packstream.BufferedChannelInput;
 import org.neo4j.bolt.v1.packstream.BufferedChannelOutput;
 import org.neo4j.bolt.v1.transport.integration.TestNotification;
 import org.neo4j.common.HexPrinter;
-import org.neo4j.cypher.result.QueryResult;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Notification;
 import org.neo4j.graphdb.Relationship;
@@ -56,6 +55,7 @@ import org.neo4j.graphdb.spatial.Point;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.util.BaseToObjectValueWriter;
 import org.neo4j.logging.internal.NullLogService;
+import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.virtual.MapValue;
 
@@ -266,7 +266,7 @@ public class MessageMatchers
         };
     }
 
-    public static Matcher<ResponseMessage> msgRecord( final Matcher<QueryResult.Record> matcher )
+    public static Matcher<ResponseMessage> msgRecord( final Matcher<AnyValue[]> matcher )
     {
         return new TypeSafeMatcher<ResponseMessage>()
         {
@@ -276,7 +276,7 @@ public class MessageMatchers
                 assertThat( t, instanceOf( RecordMessage.class ) );
 
                 RecordMessage msg = (RecordMessage) t;
-                assertThat( msg.record(), matcher );
+                assertThat( msg.fields(), matcher );
                 return true;
             }
 

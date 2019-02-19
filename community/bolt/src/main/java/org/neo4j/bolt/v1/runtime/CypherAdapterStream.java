@@ -27,12 +27,12 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.bolt.runtime.BoltResult;
-import org.neo4j.cypher.result.QueryResult;
 import org.neo4j.graphdb.ExecutionPlanDescription;
 import org.neo4j.graphdb.InputPosition;
 import org.neo4j.graphdb.Notification;
 import org.neo4j.graphdb.QueryExecutionType;
 import org.neo4j.graphdb.QueryStatistics;
+import org.neo4j.kernel.impl.query.QueryExecution;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.MapValue;
@@ -45,22 +45,25 @@ import static org.neo4j.values.storable.Values.stringValue;
 
 public class CypherAdapterStream implements BoltResult
 {
-    protected final QueryResult delegate;
+    protected final QueryExecution queryExecution;
     private final String[] fieldNames;
     protected final Clock clock;
     protected final Map<String, AnyValue> metadata = new HashMap<>();
+    private final TransactionStateMachineV1SPI.VisitorSubscriber subscriber;
 
-    public CypherAdapterStream( QueryResult delegate, Clock clock )
+    public CypherAdapterStream( QueryExecution queryExecution,
+            TransactionStateMachineV1SPI.VisitorSubscriber subscriber, Clock clock )
     {
-        this.delegate = delegate;
-        this.fieldNames = delegate.fieldNames();
+        this.queryExecution = queryExecution;
+        this.fieldNames = queryExecution.fieldNames();
+        this.subscriber = subscriber;
         this.clock = clock;
     }
 
     @Override
     public void close()
     {
-        delegate.close();
+        queryExecution.cancel();
     }
 
     @Override
@@ -70,17 +73,20 @@ public class CypherAdapterStream implements BoltResult
     }
 
     @Override
-    public boolean handleRecords( Visitor visitor, long ignored ) throws Exception
+    public boolean handleRecords( Visitor visitor, long size ) throws Exception
     {
         long start = clock.millis();
-        delegate.accept( row -> {
-            visitor.visit( row );
-            return true;
-        } );
-        addRecordStreamingTime( clock.millis() - start );
-        addMetadata();
-        metadata.forEach( visitor::addMetadata );
-        return false;
+        subscriber.setVisitor(visitor);
+        queryExecution.request( size );
+
+        boolean hasMore = queryExecution.await();
+        if ( !hasMore )
+        {
+            addRecordStreamingTime( clock.millis() - start );
+            addMetadata( subscriber.queryStatistics() );
+            metadata.forEach( visitor::addMetadata );
+        }
+        return hasMore;
     }
 
     protected void addRecordStreamingTime( long time )
@@ -88,24 +94,24 @@ public class CypherAdapterStream implements BoltResult
         metadata.put( "result_consumed_after", longValue( time ) );
     }
 
-    protected void addMetadata()
+    protected void addMetadata( QueryStatistics statistics )
     {
-        QueryExecutionType qt = delegate.executionType();
+        QueryExecutionType qt = queryExecution.executionType();
         metadata.put( "type", Values.stringValue( queryTypeCode( qt.queryType() ) ) );
 
-        if ( delegate.queryStatistics().containsUpdates() )
+        if ( statistics.containsUpdates() )
         {
-            MapValue stats = queryStats( delegate.queryStatistics() );
+            MapValue stats = queryStats( statistics );
             metadata.put( "stats", stats );
         }
         if ( qt.requestedExecutionPlanDescription() )
         {
-            ExecutionPlanDescription rootPlanTreeNode = delegate.executionPlanDescription();
+            ExecutionPlanDescription rootPlanTreeNode = queryExecution.executionPlanDescription();
             String metadataFieldName = rootPlanTreeNode.hasProfilerStatistics() ? "profile" : "plan";
             metadata.put( metadataFieldName, ExecutionPlanConverter.convert( rootPlanTreeNode ) );
         }
 
-        Iterable<Notification> notifications = delegate.getNotifications();
+        Iterable<Notification> notifications = queryExecution.getNotifications();
         if ( notifications.iterator().hasNext() )
         {
             metadata.put( "notifications", NotificationConverter.convert( notifications ) );
@@ -115,7 +121,7 @@ public class CypherAdapterStream implements BoltResult
     @Override
     public String toString()
     {
-        return "CypherAdapterStream{" + "delegate=" + delegate + ", fieldNames=" + Arrays.toString( fieldNames ) + '}';
+        return "CypherAdapterStream{" + "delegate=" + queryExecution + ", fieldNames=" + Arrays.toString( fieldNames ) + '}';
     }
 
     private MapValue queryStats( QueryStatistics queryStatistics )

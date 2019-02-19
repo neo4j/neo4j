@@ -22,9 +22,9 @@ package org.neo4j.bolt.v1.messaging;
 import java.io.IOException;
 
 import org.neo4j.bolt.messaging.BoltIOException;
+import org.neo4j.bolt.messaging.BoltResponseMessageWriter;
 import org.neo4j.bolt.messaging.Neo4jPack;
 import org.neo4j.bolt.runtime.Neo4jError;
-import org.neo4j.bolt.messaging.BoltResponseMessageWriter;
 import org.neo4j.bolt.v1.messaging.response.FailureMessage;
 import org.neo4j.bolt.v1.messaging.response.IgnoredMessage;
 import org.neo4j.bolt.v1.messaging.response.RecordMessage;
@@ -34,8 +34,6 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.StringValue;
 import org.neo4j.values.virtual.MapValue;
-
-import static org.neo4j.bolt.v1.runtime.spi.Records.record;
 
 public class BoltResponseMessageReader
 {
@@ -68,7 +66,7 @@ public class BoltResponseMessageReader
                     {
                         fields[i] = unpacker.unpack();
                     }
-                    messageWriter.write( new RecordMessage( record( fields ) ) );
+                    messageWriter.write( new RecordMessage( fields ) );
                     break;
                 case IGNORED:
                     messageWriter.write( IgnoredMessage.IGNORED_MESSAGE );

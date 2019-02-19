@@ -23,10 +23,8 @@ import java.time.Clock;
 import java.time.Duration;
 
 import org.neo4j.bolt.BoltChannel;
-import org.neo4j.bolt.runtime.BoltResult;
 import org.neo4j.bolt.runtime.BoltResultHandle;
 import org.neo4j.bolt.v1.runtime.TransactionStateMachineV1SPI;
-import org.neo4j.cypher.internal.javacompat.QueryResultProvider;
 import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.kernel.impl.query.TransactionalContext;
 import org.neo4j.values.virtual.MapValue;
@@ -56,12 +54,6 @@ public class TransactionStateMachineV4SPI extends TransactionStateMachineV1SPI
         BoltResultHandleV4( String statement, MapValue params, TransactionalContext transactionalContext )
         {
             super( statement, params, transactionalContext );
-        }
-
-        @Override
-        protected BoltResult newBoltResult( QueryResultProvider result, Clock clock )
-        {
-            return new CypherAdapterStreamV4( result.queryResult(), clock );
         }
     }
 }

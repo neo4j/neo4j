@@ -19,7 +19,6 @@
  */
 package org.neo4j.bolt.runtime;
 
-import org.neo4j.cypher.result.QueryResult;
 import org.neo4j.values.AnyValue;
 
 /**
@@ -40,7 +39,9 @@ public interface BoltResult extends AutoCloseable
 
     interface Visitor
     {
-        void visit( QueryResult.Record record ) throws Exception;
+        void newRecord();
+        void onValue( int offset, AnyValue value );
+        void closeRecord() throws Exception;
 
         /**
          * Associate arbitrary metadata with the result stream. This will get transferred at the end of the stream.

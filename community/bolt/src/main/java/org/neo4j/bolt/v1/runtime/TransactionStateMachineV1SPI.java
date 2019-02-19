@@ -29,10 +29,9 @@ import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.runtime.BoltResult;
 import org.neo4j.bolt.runtime.BoltResultHandle;
 import org.neo4j.bolt.runtime.TransactionStateMachineSPI;
-import org.neo4j.cypher.internal.javacompat.QueryResultProvider;
 import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.exceptions.KernelException;
-import org.neo4j.graphdb.Result;
+import org.neo4j.graphdb.QueryStatistics;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
@@ -45,14 +44,16 @@ import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory;
+import org.neo4j.kernel.impl.query.QueryExecution;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
+import org.neo4j.kernel.impl.query.QuerySubscriber;
 import org.neo4j.kernel.impl.query.TransactionalContext;
 import org.neo4j.kernel.impl.query.TransactionalContextFactory;
 import org.neo4j.storageengine.api.TransactionIdStore;
+import org.neo4j.values.AnyValue;
 import org.neo4j.values.virtual.MapValue;
 
-import static java.lang.String.format;
 import static org.neo4j.internal.kernel.api.Transaction.Type.explicit;
 import static org.neo4j.internal.kernel.api.Transaction.Type.implicit;
 
@@ -192,16 +193,12 @@ public class TransactionStateMachineV1SPI implements TransactionStateMachineSPI
         {
             try
             {
-                Result result = queryExecutionEngine.executeQuery( statement, params, transactionalContext, true );
-                if ( result instanceof QueryResultProvider )
-                {
-                    return newBoltResult( (QueryResultProvider) result, clock );
-                }
-                else
-                {
-                    throw new IllegalStateException( format( "Unexpected query execution result. Expected to get instance of %s but was %s.",
-                                                              QueryResultProvider.class.getName(), result.getClass().getName() ) );
-                }
+                //
+                VisitorSubscriber subscriber = new VisitorSubscriber();
+                QueryExecution result = queryExecutionEngine.executeQuery( statement, params, transactionalContext, true,
+                        subscriber );
+                return newBoltResult( result, subscriber, clock );
+
             }
             catch ( KernelException e )
             {
@@ -215,9 +212,10 @@ public class TransactionStateMachineV1SPI implements TransactionStateMachineSPI
             }
         }
 
-        protected BoltResult newBoltResult( QueryResultProvider result, Clock clock )
+        protected BoltResult newBoltResult( QueryExecution result,
+                VisitorSubscriber subscriber, Clock clock )
         {
-            return new CypherAdapterStream( result.queryResult(), clock );
+            return new CypherAdapterStream( result, subscriber, clock );
         }
 
         @Override
@@ -230,6 +228,54 @@ public class TransactionStateMachineV1SPI implements TransactionStateMachineSPI
         public void terminate()
         {
             transactionalContext.terminate();
+        }
+    }
+
+    public static class VisitorSubscriber implements QuerySubscriber
+    {
+        private BoltResult.Visitor visitor;
+        private Throwable error;
+        private QueryStatistics statistics;
+
+        @Override
+        public void newRecord()
+        {
+            visitor.newRecord();
+
+        }
+
+        @Override
+        public void onValue( int offset, AnyValue value )
+        {
+            visitor.onValue( offset, value );
+        }
+
+        @Override
+        public void closeRecord() throws Exception
+        {
+            visitor.closeRecord();
+        }
+
+        @Override
+        public void onError( Throwable throwable )
+        {
+            this.error = throwable;
+        }
+
+        @Override
+        public void onCompleted( QueryStatistics statistics )
+        {
+            this.statistics = statistics;
+        }
+
+        QueryStatistics queryStatistics()
+        {
+            return statistics;
+        }
+
+        public void setVisitor( BoltResult.Visitor visitor )
+        {
+            this.visitor = visitor;
         }
     }
 }

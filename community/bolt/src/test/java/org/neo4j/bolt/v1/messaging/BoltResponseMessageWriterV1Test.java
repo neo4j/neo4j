@@ -59,7 +59,7 @@ public class BoltResponseMessageWriterV1Test
 
         BoltResponseMessageWriterV1 writer = newWriter( output, packer );
 
-        writer.write( new RecordMessage( () -> new AnyValue[]{longValue( 42 ), stringValue( "42" )} ) );
+        writer.write( new RecordMessage( new AnyValue[]{longValue( 42 ), stringValue( "42" )} ) );
 
         InOrder inOrder = inOrder( output, packer );
         inOrder.verify( output ).beginMessage();
@@ -145,7 +145,7 @@ public class BoltResponseMessageWriterV1Test
 
         try
         {
-            writer.write( new RecordMessage( () -> new AnyValue[]{stringValue( "42" ), longValue( 42 )} ) );
+            writer.write( new RecordMessage( new AnyValue[]{stringValue( "42" ), longValue( 42 )} ) );
             fail( "Exception expected" );
         }
         catch ( IOException e )
@@ -172,7 +172,7 @@ public class BoltResponseMessageWriterV1Test
 
         try
         {
-            writer.write( new RecordMessage( () -> new AnyValue[]{longValue( 1 ), longValue( 2 )} ) );
+            writer.write( new RecordMessage( new AnyValue[]{longValue( 1 ), longValue( 2 )} ) );
             fail( "Exception expected" );
         }
         catch ( IOException e )

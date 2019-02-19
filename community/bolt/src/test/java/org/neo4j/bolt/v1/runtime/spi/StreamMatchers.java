@@ -23,7 +23,6 @@ import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
 
-import org.neo4j.cypher.result.QueryResult;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.NumberValue;
 
@@ -54,21 +53,21 @@ public class StreamMatchers
         };
     }
 
-    public static Matcher<QueryResult.Record> eqRecord( final Matcher<?>... expectedFieldValues )
+    public static Matcher<AnyValue[]> eqRecord( final Matcher<?>... expectedFieldValues )
     {
-        return new TypeSafeMatcher<QueryResult.Record>()
+        return new TypeSafeMatcher<AnyValue[]>()
         {
             @Override
-            protected boolean matchesSafely( QueryResult.Record item )
+            protected boolean matchesSafely( AnyValue[] item )
             {
-                if ( expectedFieldValues.length != item.fields().length )
+                if ( expectedFieldValues.length != item.length )
                 {
                     return false;
                 }
 
-                for ( int i = 0; i < item.fields().length; i++ )
+                for ( int i = 0; i < item.length; i++ )
                 {
-                    if ( !expectedFieldValues[i].matches( item.fields()[i] ) )
+                    if ( !expectedFieldValues[i].matches( item[i] ) )
                     {
                         return false;
                     }

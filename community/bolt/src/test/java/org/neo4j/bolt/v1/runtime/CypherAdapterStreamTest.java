@@ -30,11 +30,12 @@ import java.util.Map;
 import java.util.Set;
 
 import org.neo4j.bolt.runtime.BoltResult;
-import org.neo4j.cypher.result.QueryResult;
+import org.neo4j.bolt.v1.runtime.TransactionStateMachineV1SPI.VisitorSubscriber;
 import org.neo4j.graphdb.ExecutionPlanDescription;
 import org.neo4j.graphdb.InputPosition;
 import org.neo4j.graphdb.QueryStatistics;
 import org.neo4j.graphdb.impl.notification.NotificationCode;
+import org.neo4j.kernel.impl.query.QueryExecution;
 import org.neo4j.kernel.impl.query.TransactionalContext;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.DoubleValue;
@@ -81,17 +82,18 @@ public class CypherAdapterStreamTest
         when( queryStatistics.getLabelsAdded() ).thenReturn( 10 );
         when( queryStatistics.getLabelsRemoved() ).thenReturn( 11 );
 
-        QueryResult result = mock( QueryResult.class );
+        QueryExecution result = mock( QueryExecution.class );
+        VisitorSubscriber subscriber = new VisitorSubscriber();
         when( result.fieldNames() ).thenReturn( new String[0] );
         when( result.executionType() ).thenReturn( query( READ_WRITE ) );
-        when( result.queryStatistics() ).thenReturn( queryStatistics );
+        subscriber.onCompleted( queryStatistics );
         when( result.getNotifications() ).thenReturn( Collections.emptyList() );
 
         Clock clock = mock( Clock.class );
         when( clock.millis() ).thenReturn( 0L, 1337L );
 
         TransactionalContext tc = mock( TransactionalContext.class );
-        CypherAdapterStream stream = new CypherAdapterStream( result, clock );
+        CypherAdapterStream stream = new CypherAdapterStream( result, subscriber, clock );
 
         // When
         MapValue meta = metadataOf( stream );
@@ -120,17 +122,18 @@ public class CypherAdapterStreamTest
         // Given
         QueryStatistics queryStatistics = mock( QueryStatistics.class );
         when( queryStatistics.containsUpdates() ).thenReturn( false );
-        QueryResult result = mock( QueryResult.class );
+        QueryExecution result = mock( QueryExecution.class );
+        VisitorSubscriber subscriber = new VisitorSubscriber();
         when( result.fieldNames() ).thenReturn( new String[0] );
         when( result.executionType() ).thenReturn( explained( READ_ONLY ) );
-        when( result.queryStatistics() ).thenReturn( queryStatistics );
+        subscriber.onCompleted( queryStatistics );
+
         when( result.getNotifications() ).thenReturn( Collections.emptyList() );
         when( result.executionPlanDescription() ).thenReturn(
                 plan( "Join", map( "arg1", 1 ), singletonList( "id1" ),
                         plan( "Scan", map( "arg2", 1 ), singletonList( "id2" ) ) ) );
 
-        TransactionalContext tc = mock( TransactionalContext.class );
-        CypherAdapterStream stream = new CypherAdapterStream( result, Clock.systemUTC() );
+        CypherAdapterStream stream = new CypherAdapterStream( result, subscriber, Clock.systemUTC() );
 
         // When
         MapValue meta = metadataOf( stream );
@@ -156,17 +159,19 @@ public class CypherAdapterStreamTest
         // Given
         QueryStatistics queryStatistics = mock( QueryStatistics.class );
         when( queryStatistics.containsUpdates() ).thenReturn( false );
-        QueryResult result = mock( QueryResult.class );
+        QueryExecution result = mock( QueryExecution.class );
+        VisitorSubscriber subscriber = new VisitorSubscriber();
         when( result.fieldNames() ).thenReturn( new String[0] );
         when( result.executionType() ).thenReturn( explained( READ_ONLY ) );
-        when( result.queryStatistics() ).thenReturn( queryStatistics );
+        subscriber.onCompleted( queryStatistics );
+
         when( result.getNotifications() ).thenReturn( Collections.emptyList() );
         when( result.executionPlanDescription() ).thenReturn(
                 plan( "Join", map( "arg1", 1 ), 2, 4, 3, 1, 2, singletonList( "id1" ),
                         plan( "Scan", map( "arg2", 1 ), 2, 4, 7, 1, 1, singletonList( "id2" ) ) ) );
 
         TransactionalContext tc = mock( TransactionalContext.class );
-        CypherAdapterStream stream = new CypherAdapterStream( result, Clock.systemUTC() );
+        CypherAdapterStream stream = new CypherAdapterStream( result, subscriber, Clock.systemUTC() );
 
         // When
         MapValue meta = metadataOf( stream );
@@ -216,13 +221,15 @@ public class CypherAdapterStreamTest
     public void shouldIncludeNotificationsIfPresent() throws Throwable
     {
         // Given
-        QueryResult result = mock( QueryResult.class );
+        QueryExecution result = mock( QueryExecution.class );
+        VisitorSubscriber subscriber = new VisitorSubscriber();
         when( result.fieldNames() ).thenReturn( new String[0] );
 
         QueryStatistics queryStatistics = mock( QueryStatistics.class );
         when( queryStatistics.containsUpdates() ).thenReturn( false );
 
-        when( result.queryStatistics() ).thenReturn( queryStatistics );
+        subscriber.onCompleted( queryStatistics );
+
         when( result.executionType() ).thenReturn( query( READ_WRITE ) );
 
         when( result.getNotifications() ).thenReturn( Arrays.asList(
@@ -230,7 +237,7 @@ public class CypherAdapterStreamTest
                 NotificationCode.PLANNER_UNSUPPORTED.notification( new InputPosition( 4, 5, 6 ) )
         ) );
         TransactionalContext tc = mock( TransactionalContext.class );
-        CypherAdapterStream stream = new CypherAdapterStream( result, Clock.systemUTC() );
+        CypherAdapterStream stream = new CypherAdapterStream( result, subscriber, Clock.systemUTC() );
 
         // When
         MapValue meta = metadataOf( stream );
@@ -262,8 +269,21 @@ public class CypherAdapterStreamTest
         stream.handleRecords( new BoltResult.Visitor()
         {
             @Override
-            public void visit( QueryResult.Record record )
+            public void newRecord()
             {
+
+            }
+
+            @Override
+            public void onValue( int offset, AnyValue value )
+            {
+
+            }
+
+            @Override
+            public void closeRecord()
+            {
+
             }
 
             @Override

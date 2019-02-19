@@ -19,18 +19,19 @@
  */
 package org.neo4j.bolt.v1.messaging.response;
 
+import java.util.Arrays;
+
 import org.neo4j.bolt.messaging.ResponseMessage;
-import org.neo4j.cypher.result.QueryResult;
 import org.neo4j.values.AnyValue;
 
 public class RecordMessage implements ResponseMessage
 {
     public static final byte SIGNATURE = 0x71;
-    private final QueryResult.Record value;
+    private final AnyValue[] fields;
 
-    public RecordMessage( QueryResult.Record record )
+    public RecordMessage( AnyValue[] fields )
     {
-        this.value = record;
+        this.fields = fields;
     }
 
     @Override
@@ -53,28 +54,23 @@ public class RecordMessage implements ResponseMessage
 
         RecordMessage that = (RecordMessage) o;
 
-        return value == null ? that.value == null : value.equals( that.value );
+        return Arrays.equals( fields, that.fields );
     }
 
     @Override
     public int hashCode()
     {
-        return value.hashCode();
+        return Arrays.hashCode( fields );
     }
 
     @Override
     public String toString()
     {
-        return "RECORD " + value;
-    }
-
-    public QueryResult.Record record()
-    {
-        return value;
+        return "RECORD " + Arrays.toString( fields );
     }
 
     public AnyValue[] fields()
     {
-        return value.fields();
+        return fields;
     }
 }

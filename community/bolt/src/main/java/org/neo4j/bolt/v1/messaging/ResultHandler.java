@@ -19,11 +19,12 @@
  */
 package org.neo4j.bolt.v1.messaging;
 
+import java.io.IOException;
+
 import org.neo4j.bolt.messaging.BoltResponseMessageWriter;
 import org.neo4j.bolt.runtime.BoltConnection;
 import org.neo4j.bolt.runtime.BoltResult;
 import org.neo4j.bolt.v1.messaging.response.RecordMessage;
-import org.neo4j.cypher.result.QueryResult;
 import org.neo4j.logging.Log;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.BooleanValue;
@@ -38,7 +39,8 @@ public class ResultHandler extends MessageProcessingHandler
     @Override
     public boolean onPullRecords( final BoltResult result, final long size ) throws Exception
     {
-        return markHasMore( result.handleRecords( new RecordWritingBoltResultVisitor(), size ) );
+        return markHasMore(
+                result.handleRecords( new RecordWritingBoltResultVisitor( result.fieldNames().length ), size ) );
     }
 
     @Override
@@ -49,10 +51,29 @@ public class ResultHandler extends MessageProcessingHandler
 
     private class RecordWritingBoltResultVisitor implements BoltResult.Visitor
     {
-        @Override
-        public void visit( QueryResult.Record record ) throws Exception
+        private final AnyValue[] values;
+
+        private RecordWritingBoltResultVisitor( int size )
         {
-            messageWriter.write( new RecordMessage( record ) );
+            this.values = new AnyValue[size];
+        }
+
+        @Override
+        public void newRecord()
+        {
+
+        }
+
+        @Override
+        public void closeRecord() throws IOException
+        {
+            messageWriter.write( new RecordMessage( values ) );
+        }
+
+        @Override
+        public void onValue( int offset, AnyValue value )
+        {
+            values[offset] = value;
         }
 
         @Override
@@ -65,8 +86,21 @@ public class ResultHandler extends MessageProcessingHandler
     private class RecordDiscardingBoltResultVisitor implements BoltResult.Visitor
     {
         @Override
-        public void visit( QueryResult.Record record )
+        public void newRecord()
         {
+
+        }
+
+        @Override
+        public void onValue( int offset, AnyValue value )
+        {
+
+        }
+
+        @Override
+        public void closeRecord()
+        {
+
         }
 
         @Override

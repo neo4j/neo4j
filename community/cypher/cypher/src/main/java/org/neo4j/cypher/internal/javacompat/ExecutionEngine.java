@@ -34,8 +34,10 @@ import org.neo4j.graphdb.Result;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.query.FunctionInformation;
+import org.neo4j.kernel.impl.query.QueryExecution;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
+import org.neo4j.kernel.impl.query.QuerySubscriber;
 import org.neo4j.kernel.impl.query.TransactionalContext;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
@@ -88,6 +90,13 @@ public class ExecutionEngine implements QueryExecutionEngine
         {
             throw new QueryExecutionKernelException( e );
         }
+    }
+
+    @Override
+    public QueryExecution executeQuery( String query, MapValue parameters, TransactionalContext context,
+            boolean prePopulate, QuerySubscriber subscriber ) throws QueryExecutionKernelException
+    {
+        throw new UnsupportedOperationException(  );
     }
 
     @Override

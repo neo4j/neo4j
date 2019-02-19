@@ -23,6 +23,7 @@ import org.hamcrest.CoreMatchers;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -43,7 +44,6 @@ import org.neo4j.bolt.v1.messaging.request.PullAllMessage;
 import org.neo4j.bolt.v1.messaging.request.ResetMessage;
 import org.neo4j.bolt.v1.messaging.request.RunMessage;
 import org.neo4j.bolt.v1.runtime.BoltStateMachineV1;
-import org.neo4j.cypher.result.QueryResult.Record;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.util.ValueUtils;
@@ -486,15 +486,15 @@ public class BoltConnectionIT
         runAndPull( firstMachine, "BEGIN" );
 
         // When I issue a statement in a separate session
-        Object[] stream = runAndPull( secondMachine, "CREATE (a:Person) RETURN id(a)" );
-        long id = ((LongValue) ((Record) stream[0]).fields()[0]).value();
+        List<AnyValue[]> stream = runAndPull( secondMachine, "CREATE (a:Person) RETURN id(a)" );
+        long id = ((LongValue) (stream.get( 0 ))[0]).value();
 
         // And when I roll back that first session transaction
         runAndPull( firstMachine, "ROLLBACK" );
 
         // Then the two should not have interfered with each other
         stream = runAndPull( secondMachine, "MATCH (a:Person) WHERE id(a) = " + id + " RETURN COUNT(*)" );
-        assertThat( ((Record) stream[0]).fields()[0], equalTo( longValue( 1L ) ) );
+        assertThat( stream.get( 0 )[0], equalTo( longValue( 1L ) ) );
     }
 
     @Test
@@ -508,7 +508,7 @@ public class BoltConnectionIT
         long batch = 40;
 
         // When
-        Object[] result = runAndPull(
+        List<AnyValue[]> result = runAndPull(
                 machine,
                 "USING PERIODIC COMMIT " + batch + "\n" +
                         "LOAD CSV WITH HEADERS FROM {csvFileUrl} AS l\n" +
@@ -521,10 +521,9 @@ public class BoltConnectionIT
         );
 
         // Then
-        assertThat( result.length, equalTo( 1 ) );
-        Record record = (Record) result[0];
+        assertThat( result.size(), equalTo( 1 ) );
+        AnyValue[] fields = result.get( 0 );
 
-        AnyValue[] fields = record.fields();
         assertThat( fields.length, equalTo( 1) );
         assertThat( fields[0], equalTo( longValue( 150L )) );
 
@@ -644,10 +643,10 @@ public class BoltConnectionIT
 
         // When
         runAndPull( machine, "BEGIN" );
-        Object[] stream = runAndPull( machine, "RETURN 1" );
+        List<AnyValue[]> stream = runAndPull( machine, "RETURN 1" );
 
         // Then
-        assertThat( ((Record) stream[0]).fields()[0], equalTo( longValue( 1L )) );
+        assertThat( stream.get( 0 )[0], equalTo( longValue( 1L ) ) );
     }
 
     private static boolean hasTransaction( BoltStateMachine machine )
@@ -666,17 +665,17 @@ public class BoltConnectionIT
         return env.putTmpFile( "iris", ".csv", IRIS_DATA ).toExternalForm();
     }
 
-    private Object[] runAndPull( BoltStateMachine machine, String statement ) throws Exception
+    private List<AnyValue[]> runAndPull( BoltStateMachine machine, String statement ) throws Exception
     {
         return runAndPull( machine, statement, EMPTY_PARAMS, SUCCESS );
     }
 
-    private Record[] runAndPull( BoltStateMachine machine, String statement, MapValue params ) throws Exception
+    private List<AnyValue[]> runAndPull( BoltStateMachine machine, String statement, MapValue params ) throws Exception
     {
         return runAndPull( machine, statement, params, SUCCESS );
     }
 
-    private Record[] runAndPull( BoltStateMachine machine, String statement, MapValue params,
+    private List<AnyValue[]> runAndPull( BoltStateMachine machine, String statement, MapValue params,
             BoltResponseMessage expectedResponse ) throws Exception
     {
         BoltResponseRecorder recorder = new BoltResponseRecorder();

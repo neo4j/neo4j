@@ -20,13 +20,11 @@
 package org.neo4j.bolt.testing;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import org.neo4j.bolt.v1.messaging.BoltResponseMessage;
-import org.neo4j.cypher.result.QueryResult;
 import org.neo4j.values.AnyValue;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -35,20 +33,20 @@ import static org.junit.Assert.assertArrayEquals;
 
 public class RecordedBoltResponse
 {
-    private List<QueryResult.Record> records;
+    private List<AnyValue[]> records;
     private BoltResponseMessage response;
     private Map<String,AnyValue> metadata;
 
     public RecordedBoltResponse()
     {
-        records = new ArrayList<>();
+        records = new ArrayList<>(  );
         response = null;
         metadata = new HashMap<>();
     }
 
-    public void addRecord( QueryResult.Record record )
+    public void addFields( AnyValue[] fields )
     {
-        records.add( new RecordedRecord( record ) );
+        records.add( fields  );
     }
 
     public void addMetadata( String key, AnyValue value )
@@ -76,47 +74,20 @@ public class RecordedBoltResponse
         return metadata.get( key );
     }
 
-    public void assertRecord( int index, Object... values )
+    public void assertRecord( int index, AnyValue... values )
     {
         assertThat( index, lessThan( records.size() ) );
-        assertArrayEquals( records.get( index ).fields(), values );
+        assertArrayEquals( records.get( index ), values );
     }
 
-    public QueryResult.Record[] records()
+    public List<AnyValue[]> records()
     {
-        QueryResult.Record[] recordArray = new QueryResult.Record[records.size()];
-        return records.toArray( recordArray );
+        return new ArrayList<>( records );
     }
 
     @Override
     public String toString()
     {
         return "RecordedBoltResponse{" + "records=" + records + ", response=" + response + ", metadata=" + metadata + '}';
-    }
-
-    private static class RecordedRecord implements QueryResult.Record
-    {
-        private final QueryResult.Record record;
-        private final AnyValue[] fields;
-
-        RecordedRecord( QueryResult.Record record )
-        {
-            this.record = record;
-            AnyValue[] src = record.fields();
-            AnyValue[] dest = new AnyValue[src.length];
-            System.arraycopy( src, 0, dest, 0, src.length );
-            fields = dest;
-        }
-
-        @Override
-        public AnyValue[] fields()
-        {
-            return fields;
-        }
-
-        public String toString()
-        {
-            return "RecordedRecord{" + Arrays.toString( fields ) + "}";
-        }
     }
 }

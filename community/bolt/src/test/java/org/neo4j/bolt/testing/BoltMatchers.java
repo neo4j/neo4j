@@ -24,6 +24,7 @@ import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.regex.Pattern;
 
 import org.neo4j.bolt.runtime.BoltConnectionFatality;
@@ -33,7 +34,6 @@ import org.neo4j.bolt.runtime.StatementProcessor;
 import org.neo4j.bolt.v1.messaging.request.ResetMessage;
 import org.neo4j.bolt.v1.runtime.BoltStateMachineV1;
 import org.neo4j.bolt.v1.runtime.ReadyState;
-import org.neo4j.cypher.result.QueryResult;
 import org.neo4j.function.ThrowingAction;
 import org.neo4j.function.ThrowingBiConsumer;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -131,8 +131,8 @@ public class BoltMatchers
             public boolean matches( Object item )
             {
                 final RecordedBoltResponse response = (RecordedBoltResponse) item;
-                QueryResult.Record[] records = response.records();
-                return records.length == 0;
+                List<AnyValue[]> records = response.records();
+                return records.size() == 0;
             }
 
             @Override
@@ -153,8 +153,8 @@ public class BoltMatchers
             public boolean matches( final Object item )
             {
                 final RecordedBoltResponse response = (RecordedBoltResponse) item;
-                QueryResult.Record[] records = response.records();
-                return records.length > 0 && Arrays.equals( records[0].fields(), anyValues );
+                List<AnyValue[]> records = response.records();
+                return records.size() > 0 && Arrays.equals( records.get( 0 ), anyValues );
             }
 
             @Override
@@ -176,9 +176,9 @@ public class BoltMatchers
             {
 
                 final RecordedBoltResponse response = (RecordedBoltResponse) item;
-                QueryResult.Record[] records = response.records();
+                List<AnyValue[]> records = response.records();
                 return response.message() == SUCCESS &&
-                       Arrays.equals( records[0].fields(), anyValues );
+                       Arrays.equals( records.get( 0 ), anyValues );
             }
 
             @Override

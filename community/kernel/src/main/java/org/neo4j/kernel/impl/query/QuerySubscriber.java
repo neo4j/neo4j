@@ -19,21 +19,15 @@
  */
 package org.neo4j.kernel.impl.query;
 
-import org.neo4j.graphdb.ExecutionPlanDescription;
-import org.neo4j.graphdb.Notification;
-import org.neo4j.graphdb.QueryExecutionType;
+import org.neo4j.graphdb.QueryStatistics;
+import org.neo4j.values.AnyValue;
 
-/**
- * The execution of a query.
- */
-public interface QueryExecution
+public interface QuerySubscriber
 {
-    void request( long numberOfRows );
-    void cancel();
-    boolean await();
+    void newRecord();
+    void onValue( int offset, AnyValue value );
+    void closeRecord() throws Exception;
 
-    String[] fieldNames();
-    QueryExecutionType executionType();
-    ExecutionPlanDescription executionPlanDescription();
-    Iterable<Notification> getNotifications();
+    void onError( Throwable throwable );
+    void onCompleted( QueryStatistics statistics );
 }

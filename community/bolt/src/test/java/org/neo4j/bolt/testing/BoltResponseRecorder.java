@@ -25,7 +25,6 @@ import java.util.concurrent.LinkedBlockingQueue;
 import org.neo4j.bolt.runtime.BoltResponseHandler;
 import org.neo4j.bolt.runtime.BoltResult;
 import org.neo4j.bolt.runtime.Neo4jError;
-import org.neo4j.cypher.result.QueryResult;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.BooleanValue;
 
@@ -56,7 +55,7 @@ public class BoltResponseRecorder implements BoltResponseHandler
     @Override
     public boolean onPullRecords( BoltResult result, long size ) throws Exception
     {
-        return hasMore( result.handleRecords( new RecordingBoltResultVisitor(), size ) );
+        return hasMore( result.handleRecords( new RecordingBoltResultVisitor( result.fieldNames().length ), size ) );
     }
 
     @Override
@@ -120,9 +119,21 @@ public class BoltResponseRecorder implements BoltResponseHandler
     private class DiscardingBoltResultVisitor implements BoltResult.Visitor
     {
         @Override
-        public void visit( QueryResult.Record record )
+        public void newRecord()
         {
-            // discard
+            //discard
+        }
+
+        @Override
+        public void onValue( int offset, AnyValue value )
+        {
+            //discard
+        }
+
+        @Override
+        public void closeRecord() throws Exception
+        {
+            //discard
         }
 
         @Override
@@ -134,10 +145,32 @@ public class BoltResponseRecorder implements BoltResponseHandler
 
     private class RecordingBoltResultVisitor implements BoltResult.Visitor
     {
-        @Override
-        public void visit( QueryResult.Record record )
+
+        private AnyValue[] fields;
+
+        private final int size;
+
+        private RecordingBoltResultVisitor( int size )
         {
-            currentResponse.addRecord( record );
+            this.size = size;
+        }
+
+        @Override
+        public void newRecord()
+        {
+            this.fields = new AnyValue[size];
+        }
+
+        @Override
+        public void onValue( int offset, AnyValue value )
+        {
+            fields[offset] = value;
+        }
+
+        @Override
+        public void closeRecord()
+        {
+            currentResponse.addFields( fields );
         }
 
         @Override

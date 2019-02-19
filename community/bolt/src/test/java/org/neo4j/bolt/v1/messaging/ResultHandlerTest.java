@@ -21,7 +21,6 @@ package org.neo4j.bolt.v1.messaging;
 
 import org.junit.jupiter.api.Test;
 
-import java.util.Arrays;
 import java.util.List;
 
 import org.neo4j.bolt.messaging.ResponseMessage;
@@ -29,10 +28,11 @@ import org.neo4j.bolt.runtime.BoltConnection;
 import org.neo4j.bolt.runtime.BoltResult;
 import org.neo4j.bolt.v1.messaging.response.RecordMessage;
 import org.neo4j.bolt.v1.messaging.response.SuccessMessage;
-import org.neo4j.bolt.v1.runtime.spi.ImmutableRecord;
-import org.neo4j.cypher.result.QueryResult.Record;
 import org.neo4j.logging.NullLog;
+import org.neo4j.values.AnyValue;
+import org.neo4j.values.storable.Value;
 
+import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
@@ -48,8 +48,8 @@ class ResultHandlerTest
         BoltResponseMessageRecorder messageWriter = new BoltResponseMessageRecorder();
         ResultHandler handler = new ResultHandler( messageWriter, mock( BoltConnection.class ), NullLog.getInstance() );
 
-        ImmutableRecord record1 = new ImmutableRecord( values( "a", "b", "c" ) );
-        ImmutableRecord record2 = new ImmutableRecord( values( "1", "2", "3" ) );
+        Value[] record1 = values( "a", "b", "c" );
+        Value[] record2 = values( "1", "2", "3" );
         BoltResult result = new TestBoltResult( record1, record2 );
 
         handler.onPullRecords( result, PULL_DISCARD_ALL_N_SIZE );
@@ -68,8 +68,8 @@ class ResultHandlerTest
         BoltResponseMessageRecorder messageWriter = new BoltResponseMessageRecorder();
         ResultHandler handler = new ResultHandler( messageWriter, mock( BoltConnection.class ), NullLog.getInstance() );
 
-        ImmutableRecord record1 = new ImmutableRecord( values( "a", "b", "c" ) );
-        ImmutableRecord record2 = new ImmutableRecord( values( "1", "2", "3" ) );
+        Value[] record1 = values( "a", "b", "c" );
+        Value[] record2 = values( "1", "2", "3" );
         BoltResult result = new TestBoltResult( record1, record2 );
 
         handler.onDiscardRecords( result, PULL_DISCARD_ALL_N_SIZE );
@@ -82,11 +82,11 @@ class ResultHandlerTest
 
     private static class TestBoltResult implements BoltResult
     {
-        private final Record[] records;
+        private final List<AnyValue[]> records;
 
-        private TestBoltResult( Record... records )
+        private TestBoltResult( AnyValue[]... records )
         {
-            this.records = records;
+            this.records = asList( records );
         }
 
         @Override
@@ -98,9 +98,14 @@ class ResultHandlerTest
         @Override
         public boolean handleRecords( Visitor visitor, long size ) throws Exception
         {
-            for ( Record record: records )
+            for ( AnyValue[] record: records )
             {
-                visitor.visit( record );
+                visitor.newRecord();
+                for ( int i = 0; i < record.length; i++ )
+                {
+                    visitor.onValue( i, record[i] );
+                }
+                visitor.closeRecord();
             }
             return false;
         }
@@ -113,7 +118,7 @@ class ResultHandlerTest
         @Override
         public String toString()
         {
-            return "TestBoltResult{" + "records=" + Arrays.toString( records ) + '}';
+            return "TestBoltResult{" + "records=" + records + '}';
         }
     }
 }

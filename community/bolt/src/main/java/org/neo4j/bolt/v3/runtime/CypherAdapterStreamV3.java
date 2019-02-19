@@ -22,7 +22,8 @@ package org.neo4j.bolt.v3.runtime;
 import java.time.Clock;
 
 import org.neo4j.bolt.v1.runtime.CypherAdapterStream;
-import org.neo4j.cypher.result.QueryResult;
+import org.neo4j.bolt.v1.runtime.TransactionStateMachineV1SPI;
+import org.neo4j.kernel.impl.query.QueryExecution;
 
 import static org.neo4j.values.storable.Values.longValue;
 
@@ -30,9 +31,9 @@ public class CypherAdapterStreamV3 extends CypherAdapterStream
 {
     private static final String LAST_RESULT_CONSUMED_KEY = "t_last";
 
-    public CypherAdapterStreamV3( QueryResult delegate, Clock clock )
+    public CypherAdapterStreamV3( QueryExecution delegate, TransactionStateMachineV1SPI.VisitorSubscriber subscriber,  Clock clock )
     {
-        super( delegate, clock );
+        super( delegate, subscriber, clock );
     }
 
     @Override

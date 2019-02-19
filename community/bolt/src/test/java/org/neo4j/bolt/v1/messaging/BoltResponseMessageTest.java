@@ -56,7 +56,6 @@ import static org.neo4j.bolt.v1.messaging.example.Paths.PATH_WITH_RELATIONSHIP_T
 import static org.neo4j.bolt.v1.messaging.example.Paths.PATH_WITH_RELATIONSHIP_TRAVERSED_MULTIPLE_TIMES_IN_SAME_DIRECTION;
 import static org.neo4j.bolt.v1.messaging.response.IgnoredMessage.IGNORED_MESSAGE;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.serialize;
-import static org.neo4j.bolt.v1.runtime.spi.Records.record;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.values.storable.Values.intValue;
 import static org.neo4j.values.storable.Values.longValue;
@@ -81,7 +80,7 @@ public class BoltResponseMessageTest
     @Test
     public void shouldHandleCommonMessages() throws Throwable
     {
-        assertSerializes( new RecordMessage( record( longValue( 1L ), stringValue( "b" ), longValue( 2L ) ) ) );
+        assertSerializes( new RecordMessage( new AnyValue[]{longValue( 1L ), stringValue( "b" ), longValue( 2L )} ) );
         assertSerializes( new SuccessMessage( VirtualValues.EMPTY_MAP ) );
         assertSerializes( new FailureMessage( Status.General.UnknownError, "Err" ) );
         assertSerializes( IGNORED_MESSAGE );
@@ -232,7 +231,7 @@ public class BoltResponseMessageTest
 
     private String serialized( AnyValue object ) throws IOException
     {
-        RecordMessage message = new RecordMessage( record( object ) );
+        RecordMessage message = new RecordMessage( new AnyValue[]{ object } );
         return HexPrinter.hex( serialize( neo4jPack, message ), 4, " " );
     }
 
@@ -277,7 +276,7 @@ public class BoltResponseMessageTest
 
     private void assertSerializesNeoValue( Object val ) throws IOException
     {
-        assertSerializes( new RecordMessage( record( ValueUtils.of( val ) ) ) );
+        assertSerializes( new RecordMessage( new AnyValue[]{ValueUtils.of( val )} ) );
     }
 
 }
