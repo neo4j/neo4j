@@ -19,7 +19,8 @@
  */
 package org.neo4j.internal.recordstorage;
 
-import org.junit.Test;
+import org.junit.jupiter.api.RepeatedTest;
+import org.junit.jupiter.api.Test;
 
 import java.util.function.Predicate;
 
@@ -58,7 +59,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
 
-public class SchemaRuleCommandTest
+class SchemaRuleCommandTest
 {
     private final int labelId = 2;
     private final int propertyKey = 8;
@@ -85,7 +86,7 @@ public class SchemaRuleCommandTest
     private final StoreIndexDescriptor rule = TestIndexDescriptorFactory.forLabel( labelId, propertyKey ).withId( id );
 
     @Test
-    public void shouldWriteCreatedSchemaRuleToStore() throws Exception
+    void shouldWriteCreatedSchemaRuleToStore() throws Exception
     {
         // GIVEN
         SchemaRecord before = new SchemaRecord( id ).initialize( false, NO_NEXT_PROPERTY.longValue() );
@@ -101,7 +102,7 @@ public class SchemaRuleCommandTest
     }
 
     @Test
-    public void shouldCreateIndexForCreatedSchemaRule() throws Exception
+    void shouldCreateIndexForCreatedSchemaRule() throws Exception
     {
         // GIVEN
         SchemaRecord before = new SchemaRecord( id ).initialize( false, NO_NEXT_PROPERTY.longValue() );
@@ -118,7 +119,7 @@ public class SchemaRuleCommandTest
     }
 
     @Test
-    public void shouldSetLatestConstraintRule() throws Exception
+    void shouldSetLatestConstraintRule() throws Exception
     {
         // Given
         SchemaRecord before = new SchemaRecord( id ).initialize( true, 42 );
@@ -141,7 +142,7 @@ public class SchemaRuleCommandTest
     }
 
     @Test
-    public void shouldDropSchemaRuleFromStore() throws Exception
+    void shouldDropSchemaRuleFromStore() throws Exception
     {
         // GIVEN
         SchemaRecord before = new SchemaRecord( id ).initialize( true, 42 );
@@ -158,7 +159,7 @@ public class SchemaRuleCommandTest
     }
 
     @Test
-    public void shouldDropSchemaRuleFromIndex() throws Exception
+    void shouldDropSchemaRuleFromIndex() throws Exception
     {
         // GIVEN
         SchemaRecord before = new SchemaRecord( id ).initialize( true, 42 );
@@ -175,7 +176,7 @@ public class SchemaRuleCommandTest
     }
 
     @Test
-    public void shouldWriteSchemaRuleToLog() throws Exception
+    void shouldWriteSchemaRuleToLog() throws Exception
     {
         // GIVEN
         SchemaRecord before = new SchemaRecord( id ).initialize( false, NO_NEXT_PROPERTY.longValue() );
@@ -198,7 +199,7 @@ public class SchemaRuleCommandTest
     }
 
     @Test
-    public void shouldRecreateSchemaRuleWhenDeleteCommandReadFromDisk() throws Exception
+    void shouldRecreateSchemaRuleWhenDeleteCommandReadFromDisk() throws Exception
     {
         // GIVEN
         SchemaRecord before = new SchemaRecord( id ).initialize( true, 42 );
@@ -220,8 +221,8 @@ public class SchemaRuleCommandTest
     }
 
     @SuppressWarnings( "OptionalGetWithoutIsPresent" )
-    @Test
-    public void writeAndReadOfArbitrarySchemaRules() throws Exception
+    @RepeatedTest( 1000 )
+    void writeAndReadOfArbitrarySchemaRules() throws Exception
     {
         RandomSchema randomSchema = new RandomSchema();
         SchemaRule rule = randomSchema.schemaRules().filter( indexBackedConstraintsWithoutIndexes() ).findFirst().get();
