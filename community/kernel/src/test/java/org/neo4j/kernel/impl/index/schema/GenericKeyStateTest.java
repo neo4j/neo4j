@@ -131,6 +131,12 @@ class GenericKeyStateTest
             {
                 return RandomValues.MAX_BMP_CODE_POINT;
             }
+
+            @Override
+            public int minCodePoint()
+            {
+                return Character.MIN_CODE_POINT;
+            }
         } );
         random.reset();
     }

@@ -21,8 +21,11 @@ package org.neo4j.internal.recordstorage;
 
 import org.junit.Test;
 
+import java.util.function.Predicate;
+
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptorPredicates;
 import org.neo4j.internal.recordstorage.Command.SchemaRuleCommand;
+import org.neo4j.io.ByteUnit;
 import org.neo4j.kernel.api.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.TransactionToApply;
@@ -40,10 +43,12 @@ import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.storageengine.api.IndexUpdateListener;
 import org.neo4j.storageengine.api.NodeLabelUpdateListener;
+import org.neo4j.storageengine.api.SchemaRule;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.util.concurrent.WorkSync;
 
 import static java.util.Collections.singletonList;
+import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
@@ -170,7 +175,7 @@ public class SchemaRuleCommandTest
     }
 
     @Test
-    public void shouldWriteSchemaRuleToLog() throws Exception // TODO more of this, but using randomly generated schema rules!
+    public void shouldWriteSchemaRuleToLog() throws Exception
     {
         // GIVEN
         SchemaRecord before = new SchemaRecord( id ).initialize( false, NO_NEXT_PROPERTY.longValue() );
@@ -212,6 +217,48 @@ public class SchemaRuleCommandTest
         assertThat( readCommand, instanceOf( SchemaRuleCommand.class ) );
 
         assertSchemaRule( (SchemaRuleCommand) readCommand );
+    }
+
+    @SuppressWarnings( "OptionalGetWithoutIsPresent" )
+    @Test
+    public void writeAndReadOfArbitrarySchemaRules() throws Exception
+    {
+        RandomSchema randomSchema = new RandomSchema();
+        SchemaRule rule = randomSchema.schemaRules().filter( indexBackedConstraintsWithoutIndexes() ).findFirst().get();
+        long ruleId = rule.getId();
+
+        SchemaRecord before = new SchemaRecord( ruleId ).initialize( false, NO_NEXT_PROPERTY.longValue() );
+        SchemaRecord after = new SchemaRecord( ruleId ).initialize( true, 42 );
+        after.setCreated();
+
+        SchemaRuleCommand command = new SchemaRuleCommand( before, after, rule );
+        InMemoryClosableChannel buffer = new InMemoryClosableChannel( (int) ByteUnit.kibiBytes( 5 ) );
+        when( neoStores.getSchemaStore() ).thenReturn( schemaStore );
+
+        // WHEN
+        command.serialize( buffer );
+        SchemaRuleCommand readCommand = (SchemaRuleCommand) reader.read( buffer );
+
+        // THEN
+        assertEquals( ruleId, readCommand.getKey() );
+        assertThat( readCommand.getSchemaRule(), equalTo( rule ) );
+    }
+
+    /**
+     * When we get to committing a schema rule command that writes a constraint rule, it is illegal for an index-backed constraint rule to not have a reference
+     * to an index that it owns. However, the {@link RandomSchema} might generate such {@link ConstraintRule ConstraintRules}, so we have to filter them out.
+     */
+    private Predicate<? super SchemaRule> indexBackedConstraintsWithoutIndexes()
+    {
+        return r ->
+        {
+            if ( r instanceof ConstraintRule )
+            {
+                ConstraintRule constraintRule = (ConstraintRule) r;
+                return constraintRule.getConstraintDescriptor().enforcesUniqueness() && constraintRule.hasOwnedIndexReference();
+            }
+            return true;
+        };
     }
 
     private void assertSchemaRule( SchemaRuleCommand readSchemaCommand )

@@ -87,6 +87,8 @@ public class RandomValues
         int arrayMaxLength();
 
         int maxCodePoint();
+
+        int minCodePoint();
     }
 
     public static class Default implements Configuration
@@ -119,6 +121,12 @@ public class RandomValues
         public int maxCodePoint()
         {
             return Character.MAX_CODE_POINT;
+        }
+
+        @Override
+        public int minCodePoint()
+        {
+            return Character.MIN_CODE_POINT;
         }
     }
 
@@ -734,7 +742,7 @@ public class RandomValues
         int type;
         do
         {
-            codePoint = intBetween( Character.MIN_CODE_POINT, maxCodePoint );
+            codePoint = intBetween( configuration.minCodePoint(), maxCodePoint );
             type = Character.getType( codePoint );
         }
         while ( type == Character.UNASSIGNED ||
