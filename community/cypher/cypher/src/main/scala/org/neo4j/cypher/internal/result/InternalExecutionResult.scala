@@ -27,10 +27,11 @@ import org.neo4j.cypher.internal.runtime._
 import org.neo4j.cypher.result.QueryResult
 import org.neo4j.graphdb.Result.ResultVisitor
 import org.neo4j.graphdb.{Notification, QueryExecutionType, ResourceIterator}
+import org.neo4j.kernel.impl.query.QueryExecution
 
 import scala.collection.JavaConverters._
 
-trait InternalExecutionResult extends QueryResult {
+trait InternalExecutionResult extends QueryResult with QueryExecution {
 
   /**
     * Perform any initial logic, such a materialization and early closing.
@@ -80,6 +81,8 @@ trait InternalExecutionResult extends QueryResult {
   def close(reason: CloseReason): Unit
 
   override def close(): Unit = close(Success)
+
+
 }
 
 sealed trait CloseReason

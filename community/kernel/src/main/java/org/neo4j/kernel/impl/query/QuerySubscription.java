@@ -19,16 +19,10 @@
  */
 package org.neo4j.kernel.impl.query;
 
-import org.neo4j.graphdb.ExecutionPlanDescription;
-import org.neo4j.graphdb.Notification;
-import org.neo4j.graphdb.QueryExecutionType;
-
-/**
- * The execution of a query.
- */
-public interface QueryExecution extends QuerySubscription
+public interface QuerySubscription
 {
-    QueryExecutionType executionType();
-    ExecutionPlanDescription executionPlanDescription();
-    Iterable<Notification> getNotifications();
+    void request( long numberOfRows );
+    void cancel();
+    boolean await() throws Exception;
+    String[] fieldNames();
 }

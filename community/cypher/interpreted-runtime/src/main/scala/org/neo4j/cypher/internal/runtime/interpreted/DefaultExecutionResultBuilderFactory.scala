@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes._
 import org.neo4j.cypher.internal.runtime.{ExecutionContext, _}
 import org.neo4j.cypher.internal.v4_0.logical.plans.LogicalPlan
 import org.neo4j.cypher.result.{QueryProfile, RuntimeResult}
+import org.neo4j.kernel.impl.query.QuerySubscriber
 import org.neo4j.values.virtual.MapValue
 
 abstract class BaseExecutionResultBuilderFactory(pipe: Pipe,
@@ -53,11 +54,12 @@ abstract class BaseExecutionResultBuilderFactory(pipe: Pipe,
                        readOnly: Boolean,
                        queryProfile: QueryProfile,
                        prePopulateResults: Boolean,
-                       input: InputDataStream): RuntimeResult = {
+                       input: InputDataStream,
+                       subscriber: QuerySubscriber): RuntimeResult = {
       val state = createQueryState(params, prePopulateResults, input)
       val results = pipe.createResults(state)
       val resultIterator = buildResultIterator(results, readOnly)
-      new PipeExecutionResult(resultIterator, columns.toArray, state, queryProfile)
+      new PipeExecutionResult(resultIterator, columns.toArray, state, queryProfile, subscriber)
     }
 
     protected def buildResultIterator(results: Iterator[ExecutionContext], readOnly: Boolean): IteratorBasedResult

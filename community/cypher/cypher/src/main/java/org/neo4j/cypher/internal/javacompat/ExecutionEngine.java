@@ -96,7 +96,14 @@ public class ExecutionEngine implements QueryExecutionEngine
     public QueryExecution executeQuery( String query, MapValue parameters, TransactionalContext context,
             boolean prePopulate, QuerySubscriber subscriber ) throws QueryExecutionKernelException
     {
-        throw new UnsupportedOperationException(  );
+        try
+        {
+            return inner.execute( query, parameters, context, false, prePopulate, subscriber );
+        }
+        catch ( CypherException e )
+        {
+            throw new QueryExecutionKernelException( e );
+        }
     }
 
     @Override

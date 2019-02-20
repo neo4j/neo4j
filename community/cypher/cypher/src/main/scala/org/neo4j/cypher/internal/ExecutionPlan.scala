@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.runtime.{InputDataStream, QueryContext}
 import org.neo4j.cypher.internal.v4_0.util.InternalNotification
 import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.internal.kernel.api.CursorFactory
+import org.neo4j.kernel.impl.query.QuerySubscriber
 import org.neo4j.values.virtual.MapValue
 
 abstract class ExecutionPlan {
@@ -32,7 +33,8 @@ abstract class ExecutionPlan {
           doProfile: Boolean,
           params: MapValue,
           prePopulateResults: Boolean,
-          input: InputDataStream): RuntimeResult
+          input: InputDataStream,
+          subscriber: QuerySubscriber): RuntimeResult
 
   /**
     *
@@ -49,12 +51,8 @@ abstract class ExecutionPlan {
 }
 
 abstract class DelegatingExecutionPlan(inner: ExecutionPlan) extends ExecutionPlan {
-  override def run(queryContext: QueryContext,
-                   doProfile: Boolean,
-                   params: MapValue,
-                   prePopulateResults: Boolean,
-                   input: InputDataStream): RuntimeResult =
-    inner.run(queryContext, doProfile, params, prePopulateResults, input)
+  override def run(queryContext: _root_.org.neo4j.cypher.internal.runtime.QueryContext, doProfile: Boolean, params: _root_.org.neo4j.values.virtual.MapValue, prePopulateResults: Boolean, input: _root_.org.neo4j.cypher.internal.runtime.InputDataStream, subscriber: _root_.org.neo4j.kernel.impl.query.QuerySubscriber): RuntimeResult =
+    inner.run(queryContext, doProfile, params, prePopulateResults, input, subscriber)
 
   override def runtimeName: RuntimeName = inner.runtimeName
 

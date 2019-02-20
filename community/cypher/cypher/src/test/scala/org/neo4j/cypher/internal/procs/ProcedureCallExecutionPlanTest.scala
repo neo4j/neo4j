@@ -33,8 +33,8 @@ import org.neo4j.cypher.internal.v4_0.util.attribution.SequentialIdGen
 import org.neo4j.cypher.internal.v4_0.util.symbols._
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.result.RuntimeResult
-import org.neo4j.internal.kernel.api.procs.{QualifiedName => KernelQualifiedName}
 import org.neo4j.internal.kernel.api.{CursorFactory, Procedures}
+import org.neo4j.kernel.impl.query.QuerySubscriber.NOT_A_SUBSCRIBER
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.LongValue
 import org.neo4j.values.virtual.VirtualValues.EMPTY_MAP
@@ -52,7 +52,7 @@ class ProcedureCallExecutionPlanTest extends CypherFunSuite {
                                           converters, idGen.id())
 
     // When
-    val res = proc.run(ctx, doProfile = false, EMPTY_MAP, prePopulateResults = false, NoInput)
+    val res = proc.run(ctx, doProfile = false, EMPTY_MAP, prePopulateResults = false, NoInput, NOT_A_SUBSCRIBER )
 
     // Then
     toList(res) should equal(List(Map("b" -> 84)))
@@ -65,7 +65,7 @@ class ProcedureCallExecutionPlanTest extends CypherFunSuite {
                                           converters, idGen.id())
 
     // When
-    proc.run(ctx, doProfile = false, EMPTY_MAP, prePopulateResults = false, NoInput)
+    proc.run(ctx, doProfile = false, EMPTY_MAP, prePopulateResults = false, NoInput, NOT_A_SUBSCRIBER )
 
     // Then without touching the result, it should have been spooled out
     iteratorExhausted should equal(true)
@@ -78,7 +78,7 @@ class ProcedureCallExecutionPlanTest extends CypherFunSuite {
                                           converters, idGen.id())
 
     // When
-    proc.run(ctx, doProfile = false, EMPTY_MAP, prePopulateResults = false, NoInput)
+    proc.run(ctx, doProfile = false, EMPTY_MAP, prePopulateResults = false, NoInput, NOT_A_SUBSCRIBER )
 
     // Then without touching the result, the Kernel iterator should not be touched
     iteratorExhausted should equal(false)

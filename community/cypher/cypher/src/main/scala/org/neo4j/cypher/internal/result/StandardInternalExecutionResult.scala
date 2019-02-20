@@ -32,6 +32,7 @@ import org.neo4j.cypher.result.RuntimeResult.ConsumptionState
 import org.neo4j.cypher.result.{QueryResult, RuntimeResult}
 import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
 import org.neo4j.graphdb.{NotFoundException, Notification, ResourceIterator}
+import org.neo4j.kernel.impl.query.QuerySubscriber
 import org.neo4j.values.AnyValue
 
 import scala.collection.mutable
@@ -42,7 +43,8 @@ class StandardInternalExecutionResult(context: QueryContext,
                                       taskCloser: TaskCloser,
                                       override val queryType: InternalQueryType,
                                       override val executionMode: ExecutionMode,
-                                      planDescriptionBuilder: PlanDescriptionBuilder)
+                                      planDescriptionBuilder: PlanDescriptionBuilder,
+                                      subscriber: QuerySubscriber)
   extends InternalExecutionResult {
 
   self =>
@@ -205,6 +207,19 @@ class StandardInternalExecutionResult(context: QueryContext,
   }
 
   /*
+ ======= REACTIVE RESULTS ==========
+  */
+
+  override def request(numberOfRows: Long): Unit = runtimeResult.request(numberOfRows)
+
+  override def cancel(): Unit = {
+    runtimeResult.cancel()
+    close()
+  }
+
+  override def await(): Boolean = runtimeResult.await()
+
+  /*
   ======= DUMP TO STRING ==========
    */
 
@@ -243,6 +258,7 @@ class StandardInternalExecutionResult(context: QueryContext,
   }
 
   override def notifications: Iterable[Notification] = Set.empty
+
 }
 
 

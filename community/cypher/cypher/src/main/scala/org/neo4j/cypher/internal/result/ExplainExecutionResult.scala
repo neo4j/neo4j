@@ -63,4 +63,14 @@ case class ExplainExecutionResult(fieldNames: Array[String],
   override def executionMode: ExecutionMode = ExplainMode
 
   override def executionPlanDescription(): InternalPlanDescription = planDescription
+
+  override def request(numberOfRows: Long): Unit = {
+    //do nothing
+  }
+
+  override def cancel(): Unit = {
+    //do nothing
+  }
+
+  override def await(): Boolean = false
 }

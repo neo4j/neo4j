@@ -28,9 +28,10 @@ import org.neo4j.cypher.internal.runtime._
 import org.neo4j.cypher.internal.v4_0.util.TaskCloser
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.result.RuntimeResult.ConsumptionState
-import org.neo4j.cypher.result.{QueryProfile, QueryResult, RuntimeResult}
+import org.neo4j.cypher.result.{NaiveRuntimeResult, QueryProfile, QueryResult, RuntimeResult}
 import org.neo4j.graphdb.ResourceIterator
 import org.neo4j.graphdb.Result.ResultVisitor
+import org.neo4j.kernel.impl.query.QuerySubscriber
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 
@@ -151,14 +152,16 @@ class StandardInternalExecutionResultTest extends CypherFunSuite {
       new TaskCloser,
       queryType,
       NormalMode,
-      mock[PlanDescriptionBuilder]
+      mock[PlanDescriptionBuilder],
+      mock[QuerySubscriber]
     )
 
   case class TestRuntimeResult(values: Seq[Int],
                                isIterable: Boolean = true,
                                var resultRequested: Boolean = false,
-                               override val fieldNames: Array[String] = Array("x", "y")
-                              ) extends RuntimeResult {
+                               override val fieldNames: Array[String] = Array("x", "y"),
+                               subscriber: QuerySubscriber = mock[QuerySubscriber]
+                              ) extends NaiveRuntimeResult(subscriber) {
 
     private val iterator = values.iterator
 

@@ -21,9 +21,9 @@ package org.neo4j.cypher.internal.runtime.spec
 
 import org.neo4j.common.DependencyResolver
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
-import org.neo4j.cypher.internal.runtime.{InputDataStream, QueryContext}
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.runtime.interpreted.{TransactionBoundQueryContext, TransactionalContextWrapper}
+import org.neo4j.cypher.internal.runtime.{InputDataStream, QueryContext}
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.{CypherRuntime, LogicalQuery, MasterCompiler, RuntimeContext}
 import org.neo4j.cypher.result.RuntimeResult
@@ -33,6 +33,7 @@ import org.neo4j.internal.kernel.api.security.LoginContext
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI
 import org.neo4j.kernel.impl.coreapi.InternalTransaction
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory
+import org.neo4j.kernel.impl.query.QuerySubscriber.NOT_A_SUBSCRIBER
 import org.neo4j.kernel.impl.util.DefaultValueMapper
 import org.neo4j.kernel.monitoring.Monitors
 import org.neo4j.values.virtual.VirtualValues
@@ -69,7 +70,7 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](val graphDb: GraphDatabaseSe
     val runtimeContext = newRuntimeContext(tx)
 
     val executableQuery = runtime.compileToExecutable(logicalQuery, runtimeContext)
-    val result = executableQuery.run(queryContext, doProfile = false, VirtualValues.EMPTY_MAP, prePopulateResults = true, input)
+    val result = executableQuery.run(queryContext, doProfile = false, VirtualValues.EMPTY_MAP, prePopulateResults = true, input, NOT_A_SUBSCRIBER)
     resultMapper(runtimeContext, result)
   }
 

@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionResultBuilderFact
 import org.neo4j.cypher.internal.runtime.{InputDataStream, QueryContext, QueryIndexes}
 import org.neo4j.cypher.internal.v4_0.util.{InternalNotification, PeriodicCommitInOpenTransactionException}
 import org.neo4j.cypher.result.RuntimeResult
+import org.neo4j.kernel.impl.query.QuerySubscriber
 import org.neo4j.values.virtual.MapValue
 
 object InterpretedRuntime extends CypherRuntime[RuntimeContext] {
@@ -68,7 +69,8 @@ object InterpretedRuntime extends CypherRuntime[RuntimeContext] {
                      doProfile: Boolean,
                      params: MapValue,
                      prePopulateResults: Boolean,
-                     input: InputDataStream): RuntimeResult = {
+                     input: InputDataStream,
+                     subscriber: QuerySubscriber): RuntimeResult = {
       val builderContext = if (!readOnly || doProfile) new UpdateCountingQueryContext(queryContext) else queryContext
       val builder = resultBuilderFactory.create(builderContext)
 
@@ -87,7 +89,8 @@ object InterpretedRuntime extends CypherRuntime[RuntimeContext] {
                     readOnly,
                     profileInformation,
                     prePopulateResults,
-                    input)
+                    input,
+                    subscriber)
     }
 
     override def metadata: Seq[Argument] = Nil

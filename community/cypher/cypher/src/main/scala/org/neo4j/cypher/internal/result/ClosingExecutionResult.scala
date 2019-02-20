@@ -202,6 +202,12 @@ class ClosingExecutionResult private(val query: ExecutingQuery,
     }
 
   override def isClosed: Boolean = inner.isClosed
+
+  override def request(numberOfRows: Long): Unit = safely(inner.request(numberOfRows))
+
+  override def cancel(): Unit = safely(inner.cancel())
+
+  override def await(): Boolean = safely(inner.await())
 }
 
 object ClosingExecutionResult {

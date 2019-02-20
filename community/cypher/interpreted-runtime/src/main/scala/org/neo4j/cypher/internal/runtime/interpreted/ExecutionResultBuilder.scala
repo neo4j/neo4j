@@ -19,9 +19,10 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted
 
-import org.neo4j.cypher.internal.runtime.{InputDataStream, QueryContext}
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.PipeDecorator
+import org.neo4j.cypher.internal.runtime.{InputDataStream, QueryContext}
 import org.neo4j.cypher.result.{QueryProfile, RuntimeResult}
+import org.neo4j.kernel.impl.query.QuerySubscriber
 import org.neo4j.values.virtual.MapValue
 
 trait ExecutionResultBuilder {
@@ -31,7 +32,8 @@ trait ExecutionResultBuilder {
             readOnly: Boolean,
             queryProfile: QueryProfile,
             prePopulateResults: Boolean,
-            input: InputDataStream): RuntimeResult
+            input: InputDataStream,
+            subscriber: QuerySubscriber): RuntimeResult
 }
 
 trait ExecutionResultBuilderFactory {

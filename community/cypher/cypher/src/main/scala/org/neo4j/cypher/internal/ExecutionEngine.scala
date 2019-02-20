@@ -35,6 +35,7 @@ import org.neo4j.helpers.collection.Pair
 import org.neo4j.internal.kernel.api.security.AccessMode
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.impl.query.{FunctionInformation, TransactionalContext}
+import org.neo4j.kernel.impl.query.{QueryExecution, QuerySubscriber, TransactionalContext}
 import org.neo4j.kernel.monitoring.Monitors
 import org.neo4j.logging.LogProvider
 import org.neo4j.values.virtual.MapValue
@@ -92,6 +93,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
   def profile(query: String, params: MapValue, context: TransactionalContext): Result =
     execute(query, params, context, profile = true)
 
+  @deprecated
   def execute(query: String,
               params: MapValue,
               context: TransactionalContext,
@@ -115,6 +117,32 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
         throw t
     } finally queryTracer.close()
   }
+
+  def execute(query: String,
+              params: MapValue,
+              context: TransactionalContext,
+              profile: Boolean,
+              prePopulate: Boolean,
+              subscriber: QuerySubscriber): QueryExecution = {
+    val queryTracer = tracer.compileQuery(query)
+
+    try {
+      val preParsedQuery = preParser.preParseQuery(query, profile)
+      val executableQuery = getOrCompile(context, preParsedQuery, queryTracer, params)
+      if (preParsedQuery.executionMode.name != "explain") {
+        checkParameters(executableQuery.paramNames, params, executableQuery.extractedParams)
+      }
+      val combinedParams = params.updatedWith(executableQuery.extractedParams)
+      context.executingQuery().compilationCompleted(executableQuery.compilerInfo, supplier(executableQuery.planDescription()))
+      executableQuery.execute(context, preParsedQuery, combinedParams, prePopulate, subscriber)
+
+    } catch {
+      case t: Throwable =>
+        context.close(false)
+        throw t
+    } finally queryTracer.close()
+  }
+
 
   /*
    * Return the primary and secondary compile to be used

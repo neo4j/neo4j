@@ -21,11 +21,12 @@ package org.neo4j.cypher.result;
 
 import org.neo4j.cypher.internal.runtime.QueryStatistics;
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.kernel.impl.query.QuerySubscription;
 
 /**
  * The result API of a Cypher runtime
  */
-public interface RuntimeResult extends AutoCloseable
+public interface RuntimeResult extends AutoCloseable, QuerySubscription
 {
     enum ConsumptionState
     {

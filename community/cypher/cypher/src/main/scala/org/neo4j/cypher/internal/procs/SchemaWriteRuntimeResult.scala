@@ -48,4 +48,14 @@ case class SchemaWriteRuntimeResult(ctx: QueryContext) extends RuntimeResult {
   override def close(): Unit = {}
 
   override def queryProfile(): QueryProfile = QueryProfile.NONE
+
+  override def request(numberOfRows: Long): Unit = {
+    //do nothing
+  }
+
+  override def cancel(): Unit = {
+    //do nothing
+  }
+
+  override def await(): Boolean = false
 }

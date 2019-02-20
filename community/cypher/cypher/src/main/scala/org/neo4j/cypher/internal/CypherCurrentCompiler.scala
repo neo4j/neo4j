@@ -38,7 +38,8 @@ import org.neo4j.cypher.internal.v4_0.util.{InternalNotification, TaskCloser}
 import org.neo4j.cypher.{CypherException, CypherExecutionMode}
 import org.neo4j.graphdb.{Notification, Result}
 import org.neo4j.kernel.api.query.{CompilerInfo, SchemaIndexUsage}
-import org.neo4j.kernel.impl.query.{QueryExecutionMonitor, TransactionalContext}
+import org.neo4j.kernel.impl.query.QuerySubscriber.NOT_A_SUBSCRIBER
+import org.neo4j.kernel.impl.query.{QueryExecution, QueryExecutionMonitor, QuerySubscriber, TransactionalContext}
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.values.virtual.MapValue
 
@@ -187,53 +188,78 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
                          preParsedQuery: PreParsedQuery,
                          params: MapValue,
                          prePopulateResults: Boolean): Result = {
+      val taskCloser = new TaskCloser
+      val queryContext = getQueryContext(transactionalContext, preParsedQuery.debugOptions)
+      taskCloser.addTask(queryContext.transactionalContext.close)
+      taskCloser.addTask(queryContext.resources.close)
+      runSafely {
+        val internalExecutionResult =  innerExecute(transactionalContext, preParsedQuery, taskCloser, queryContext, params,
+                                             prePopulateResults, NOT_A_SUBSCRIBER)
+        new ExecutionResult(internalExecutionResult)
+      } (_ => taskCloser.close(false))
+    }
+
+
+    override def execute(transactionalContext: TransactionalContext,
+                         preParsedQuery: PreParsedQuery,
+                         params: MapValue, prePopulateResults: Boolean,
+                         subscriber: QuerySubscriber): QueryExecution = {
+
+
+      val taskCloser = new TaskCloser
+      val queryContext = getQueryContext(transactionalContext, preParsedQuery.debugOptions)
+      taskCloser.addTask(queryContext.transactionalContext.close)
+      taskCloser.addTask(queryContext.resources.close)
+      runSafely {
+        innerExecute(transactionalContext, preParsedQuery, taskCloser, queryContext, params, prePopulateResults, subscriber)
+      }(_ => taskCloser.close(false))
+    }
+
+    private def innerExecute(transactionalContext: TransactionalContext,
+                      preParsedQuery: PreParsedQuery,
+                      taskCloser: TaskCloser,
+                      queryContext: QueryContext,
+                      params: MapValue, prePopulateResults: Boolean,
+                      subscriber: QuerySubscriber) = {
+
       val innerExecutionMode = preParsedQuery.executionMode match {
         case CypherExecutionMode.explain => ExplainMode
         case CypherExecutionMode.profile => ProfileMode
         case CypherExecutionMode.normal => NormalMode
       }
-      val taskCloser = new TaskCloser
-      val queryContext = getQueryContext(transactionalContext, preParsedQuery.debugOptions)
-      taskCloser.addTask(queryContext.transactionalContext.close)
-      taskCloser.addTask(queryContext.resources.close)
 
-      runSafely {
+      val inner = if (innerExecutionMode == ExplainMode) {
+        taskCloser.close(success = true)
+        val columns = columnNames(logicalPlan)
 
-        val internalExecutionResult =
-          if (innerExecutionMode == ExplainMode) {
-            taskCloser.close(success = true)
-            val columns = columnNames(logicalPlan)
+        val allNotifications =
+          preParsingNotifications ++ (planningNotifications ++ executionPlan.notifications)
+            .map(asKernelNotification(Some(preParsedQuery.offset)))
+        ExplainExecutionResult(columns,
+                               planDescriptionBuilder.explain(),
+                               queryType, allNotifications)
+      } else {
 
-            val allNotifications =
-              preParsingNotifications ++ (planningNotifications ++ executionPlan.notifications).map(asKernelNotification(Some(preParsedQuery.offset)))
-            ExplainExecutionResult(columns,
-                                   planDescriptionBuilder.explain(),
-                                   queryType, allNotifications)
-          } else {
+        val doProfile = innerExecutionMode == ProfileMode
+        val runtimeResult = executionPlan.run(queryContext, doProfile, params, prePopulateResults, NoInput, subscriber)
 
-            val doProfile = innerExecutionMode == ProfileMode
-            val runtimeResult = executionPlan.run(queryContext, doProfile, params, prePopulateResults, NoInput)
+        taskCloser.addTask(_ => runtimeResult.close())
 
-            taskCloser.addTask(_ => runtimeResult.close)
-
-            new StandardInternalExecutionResult(queryContext,
-                                                executionPlan.runtimeName,
-                                                runtimeResult,
-                                                taskCloser,
-                                                queryType,
-                                                innerExecutionMode,
-                                                planDescriptionBuilder)
-          }
-
-        new ExecutionResult(
-          ClosingExecutionResult.wrapAndInitiate(
-            transactionalContext.executingQuery(),
-            internalExecutionResult,
-            runSafely,
-            kernelMonitors.newMonitor(classOf[QueryExecutionMonitor])
-          )
-        )
-      } (e => taskCloser.close(false))
+        new StandardInternalExecutionResult(queryContext,
+                                            executionPlan.runtimeName,
+                                            runtimeResult,
+                                            taskCloser,
+                                            queryType,
+                                            innerExecutionMode,
+                                            planDescriptionBuilder,
+                                            subscriber)
+        }
+      ClosingExecutionResult.wrapAndInitiate(
+        transactionalContext.executingQuery(),
+        inner,
+        runSafely,
+        kernelMonitors.newMonitor(classOf[QueryExecutionMonitor])
+      )
     }
 
     override def reusabilityState(lastCommittedTxId: () => Long, ctx: TransactionalContext): ReusabilityState = reusabilityState

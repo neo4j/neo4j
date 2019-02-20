@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal
 import org.neo4j.cypher.internal.plandescription.InternalPlanDescription
 import org.neo4j.graphdb.Result
 import org.neo4j.kernel.api.query.CompilerInfo
-import org.neo4j.kernel.impl.query.TransactionalContext
+import org.neo4j.kernel.impl.query.{QueryExecution, QuerySubscriber, TransactionalContext}
 import org.neo4j.values.virtual.MapValue
 
 /**
@@ -39,10 +39,17 @@ trait ExecutableQuery extends CacheabilityInfo {
     * @param prePopulateResults if false, nodes and relationships might be returned as references in the results
     * @return the query result
     */
+  @deprecated
   def execute(transactionalContext: TransactionalContext,
               preParsedQuery: PreParsedQuery,
               params: MapValue,
               prePopulateResults: Boolean): Result
+
+  def execute(transactionalContext: TransactionalContext,
+              preParsedQuery: PreParsedQuery,
+              params: MapValue,
+              prePopulateResults: Boolean,
+              subscriber: QuerySubscriber): QueryExecution
 
   /**
     * The reusability state of this executable query.

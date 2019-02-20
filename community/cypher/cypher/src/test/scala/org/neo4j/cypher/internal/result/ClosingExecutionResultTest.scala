@@ -24,16 +24,15 @@ import java.util
 
 import org.neo4j.cypher.exceptionHandler.RunSafely
 import org.neo4j.cypher.internal.compatibility.ExceptionHandler
-import org.neo4j.cypher.internal.result.ClosingExecutionResult
-import org.neo4j.cypher.internal.runtime._
 import org.neo4j.cypher.internal.plandescription.InternalPlanDescription
+import org.neo4j.cypher.internal.runtime._
+import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.result.QueryResult
 import org.neo4j.graphdb.Result.ResultVisitor
 import org.neo4j.graphdb.{Notification, ResourceIterator, Result}
 import org.neo4j.helpers.collection.Iterators
 import org.neo4j.kernel.api.query.ExecutingQuery
 import org.neo4j.kernel.impl.query.QueryExecutionMonitor
-import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 
 class ClosingExecutionResultTest extends CypherFunSuite {
 
@@ -253,6 +252,12 @@ class ClosingExecutionResultTest extends CypherFunSuite {
 
     override def close(reason: CloseReason): Unit =
       closeReason = reason
+
+    override def request(numberOfRows: Long): Unit = {}
+
+    override def cancel(): Unit = {}
+
+    override def await(): Boolean = false
   }
 
   class NiceInner(values: Seq[Int]) extends ClosingInner {

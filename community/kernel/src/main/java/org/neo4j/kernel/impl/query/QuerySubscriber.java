@@ -30,4 +30,42 @@ public interface QuerySubscriber
 
     void onError( Throwable throwable );
     void onCompleted( QueryStatistics statistics );
+
+    QuerySubscriber NOT_A_SUBSCRIBER = new QuerySubscriber()
+    {
+        @Override
+        public void newRecord()
+        {
+            throwError();
+        }
+
+        @Override
+        public void onValue( int offset, AnyValue value )
+        {
+            throwError();
+        }
+
+        @Override
+        public void closeRecord()
+        {
+            throwError();
+        }
+
+        @Override
+        public void onError( Throwable throwable )
+        {
+            throwError();
+        }
+
+        @Override
+        public void onCompleted( QueryStatistics statistics )
+        {
+            throwError();
+        }
+
+        private void throwError()
+        {
+            throw new UnsupportedOperationException( "Invalid operation, can't use this as a subscriber" );
+        }
+    };
 }
