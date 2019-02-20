@@ -67,6 +67,7 @@ class GraphDatabaseFacadeFactoryTest
     void setup()
     {
         when( deps.monitors() ).thenReturn( new Monitors() );
+        when( deps.dependencies() ).thenReturn( null );
     }
 
     @Test
