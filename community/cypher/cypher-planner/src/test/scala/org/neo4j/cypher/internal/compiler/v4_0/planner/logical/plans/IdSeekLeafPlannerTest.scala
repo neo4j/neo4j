@@ -43,8 +43,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
   private val evaluator = mock[ExpressionEvaluator]
   test("simple node by id seek with a collection of node ids") {
     // given
-    val variable = varFor("n")
-    val expr = in(id(variable), listOfInt(42, 43, 43))
+    val expr = in(id(varFor("n")), listOfInt(42, 43, 43))
     val qg = QueryGraph(
       selections = Selections(Set(Predicate(Set("n"), expr))),
       patternNodes = Set("n")
@@ -56,7 +55,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
       case _               => Cost(Double.MaxValue)
     })
     val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext, metrics = factory.newMetrics(statistics, evaluator, config))
-    when(context.semanticTable.isNode(variable)).thenReturn(true)
+    when(context.semanticTable.isNode(varFor("n"))).thenReturn(true)
 
     // when
     val resultPlans = idSeekLeafPlanner(qg, InterestingOrder.empty, context)
@@ -69,8 +68,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
 
   test("node by id seek with a collection of node ids via previous variable") {
     // given
-    val variable = varFor("n")
-    val expr = in(id(variable), varFor("arr"))
+    val expr = in(id(varFor("n")), varFor("arr"))
     val qg = QueryGraph(
       selections = Selections(Set(Predicate(Set("n"), expr))),
       patternNodes = Set("n"),
@@ -83,7 +81,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
       case _               => Cost(Double.MaxValue)
     })
     val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext, metrics = factory.newMetrics(statistics, evaluator, config))
-    when(context.semanticTable.isNode(variable)).thenReturn(true)
+    when(context.semanticTable.isNode(varFor("n"))).thenReturn(true)
 
     // when
     val resultPlans = idSeekLeafPlanner(qg, InterestingOrder.empty, context)
@@ -96,8 +94,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
 
   test("node by id seek should not be produced when the argument expression is an unbound variable") {
     // given match (n) where id(n) in arr
-    val variable = varFor("n")
-    val expr = in(id(variable), varFor("arr"))
+    val expr = in(id(varFor("n")), varFor("arr"))
     val qg = QueryGraph(
       selections = Selections(Set(Predicate(Set("n"), expr))),
       patternNodes = Set("n"),
@@ -110,7 +107,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
       case _               => Cost(Double.MaxValue)
     })
     val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext, metrics = factory.newMetrics(statistics, evaluator, config))
-    when(context.semanticTable.isNode(variable)).thenReturn(true)
+    when(context.semanticTable.isNode(varFor("n"))).thenReturn(true)
 
     // when
     val resultPlans = idSeekLeafPlanner(qg, InterestingOrder.empty, context)
@@ -121,8 +118,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
 
   test("node by id seek should not be produced when the node variable is an argument") {
     // given match (n) where id(n) in arr
-    val variable = varFor("n")
-    val expr = in(id(variable), varFor("arr"))
+    val expr = in(id(varFor("n")), varFor("arr"))
     val qg = QueryGraph(
       selections = Selections(Set(Predicate(Set("n"), expr))),
       patternNodes = Set("n"),
@@ -135,7 +131,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
       case _               => Cost(Double.MaxValue)
     })
     val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext, metrics = factory.newMetrics(statistics, evaluator, config))
-    when(context.semanticTable.isNode(variable)).thenReturn(true)
+    when(context.semanticTable.isNode(varFor("n"))).thenReturn(true)
 
     // when
     val resultPlans = idSeekLeafPlanner(qg, InterestingOrder.empty, context)
@@ -146,8 +142,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
 
   test("simple directed relationship by id seek with a collection of relationship ids") {
     // given
-    val rIdent = varFor("r")
-    val expr = in(id(rIdent), listOfInt(42, 43, 43))
+    val expr = in(id(varFor("r")), listOfInt(42, 43, 43))
     val from = "from"
     val end = "to"
     val patternRel = PatternRelationship("r", (from, end), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
@@ -163,7 +158,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
       case _                               => Cost(Double.MaxValue)
     })
     val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext, metrics = factory.newMetrics(statistics, evaluator, config))
-    when(context.semanticTable.isRelationship(rIdent)).thenReturn(true)
+    when(context.semanticTable.isRelationship(varFor("r"))).thenReturn(true)
 
     // when
     val resultPlans = idSeekLeafPlanner(qg, InterestingOrder.empty, context)
@@ -176,8 +171,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
 
   test("simple undirected relationship by id seek with a collection of relationship ids") {
     // given
-    val rIdent = varFor("r")
-    val expr = in(id(rIdent), listOfInt(42, 43, 43))
+    val expr = in(id(varFor("r")), listOfInt(42, 43, 43))
     val from = "from"
     val end = "to"
     val patternRel = PatternRelationship("r", (from, end), SemanticDirection.BOTH, Seq.empty, SimplePatternLength)
@@ -192,7 +186,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
       case _                                 => Cost(Double.MaxValue)
     })
     val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext, metrics = factory.newMetrics(statistics, evaluator, config))
-    when(context.semanticTable.isRelationship(rIdent)).thenReturn(true)
+    when(context.semanticTable.isRelationship(varFor("r"))).thenReturn(true)
 
     // when
     val resultPlans = idSeekLeafPlanner(qg, InterestingOrder.empty, context)
@@ -205,15 +199,14 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
 
   test("simple undirected typed relationship by id seek with a collection of relationship ids") {
     // given
-    val rIdent = varFor("r")
-    val expr = in(id(rIdent), listOfInt(42))
+    val expr = in(id(varFor("r")), listOfInt(42))
     val from = "from"
     val end = "to"
     val relTypeX = RelTypeName("X")(pos)
 
     val semanticTable =
       new SemanticTable(ASTAnnotationMap(
-        rIdent -> ExpressionTypeInfo(symbols.CTRelationship)
+        varFor("r") -> ExpressionTypeInfo(symbols.CTRelationship)
       ))
     semanticTable.resolvedRelTypeNames += "X" -> RelTypeId(1)
 
@@ -240,7 +233,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     // then
     resultPlans should equal(
       Seq(Selection(
-        ands(equals(function("type", rIdent), literalString("X"))),
+        ands(equals(function("type", varFor("r")), literalString("X"))),
         UndirectedRelationshipByIdSeek("r", ManySeekableArgs(listOfInt(42)), from, end, Set.empty)
       ))
     )
@@ -248,8 +241,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
 
   test("simple undirected multi-typed relationship by id seek with  a collection of relationship ids") {
     // given
-    val rIdent = varFor("r")
-    val expr = in(id(rIdent), listOfInt(42))
+    val expr = in(id(varFor("r")), listOfInt(42))
     val from = "from"
     val end = "to"
     val relTypeX = RelTypeName("X") _
@@ -257,7 +249,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
 
     val semanticTable =
       new SemanticTable(ASTAnnotationMap(
-        rIdent -> ExpressionTypeInfo(symbols.CTRelationship)
+        varFor("r") -> ExpressionTypeInfo(symbols.CTRelationship)
       ))
     semanticTable.resolvedRelTypeNames += "X" -> RelTypeId(1)
     semanticTable.resolvedRelTypeNames += "Y" -> RelTypeId(2)
@@ -287,8 +279,8 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
       Seq(Selection(
         ands(
           ors(
-            equals(function("type", rIdent), literalString("X")),
-            equals(function("type", rIdent), literalString("Y"))
+            equals(function("type", varFor("r")), literalString("X")),
+            equals(function("type", varFor("r")), literalString("Y"))
           )
         ),
         UndirectedRelationshipByIdSeek("r", ManySeekableArgs(listOfInt(42)), from, end, Set.empty)

@@ -262,6 +262,7 @@ class IndexSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
   test("does not plan an index seek when the RHS expression does not have its dependencies in scope") {
     new given {
       addTypeToSemanticTable(lit42, CTInteger.invariant)
+      // MATCH a, x WHERE a.prop IN [x]
       qg = queryGraph(in(property, listOf(varFor("x"))), hasLabel("Awesome"))
 
       indexOn("Awesome", "prop")
