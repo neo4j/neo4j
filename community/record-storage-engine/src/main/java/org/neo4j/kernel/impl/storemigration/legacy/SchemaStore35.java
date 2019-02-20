@@ -81,10 +81,10 @@ public class SchemaStore35 extends AbstractDynamicStore
         super.checkAndLoadStorage( createIfNotExists );
     }
 
-    List<DynamicRecord> allocateFrom( SchemaRule rule )
+    public List<DynamicRecord> allocateFrom( SchemaRule rule )
     {
         List<DynamicRecord> records = new ArrayList<>();
-        DynamicRecord record = getRecord( rule.getId(), nextRecord(), CHECK );
+        DynamicRecord record = getRecord( rule.getId(), newRecord(), CHECK );
         DynamicRecordAllocator recordAllocator = new ReusableRecordsCompositeAllocator( singleton( record ), this );
         allocateRecordsFromBytes( records, SchemaRuleSerialization35.serialize( rule ), recordAllocator );
         return records;

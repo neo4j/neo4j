@@ -146,63 +146,78 @@ public class RandomSchema implements Supplier<SchemaRule>
         }
     }
 
-    private StoreIndexDescriptor nextIndex()
+    public StoreIndexDescriptor nextIndex()
     {
-        long ruleId = nextRuleId();
+        long ruleId = nextRuleIdForIndex();
 
         int choice = rng.nextInt( 48 );
         switch ( choice )
         {
         case 0: return forSchema( nextNodeSchema() ).withId( ruleId );
-        case 1: return forSchema( nextNodeSchema() ).withIds( ruleId, nextRuleId() );
+        case 1: return forSchema( nextNodeSchema() ).withIds( ruleId, existingConstraintId() );
         case 2: return forSchema( nextNodeSchema(), nextIndexProvider() ).withId( ruleId );
-        case 3: return forSchema( nextNodeSchema(), nextIndexProvider() ).withIds( ruleId, nextRuleId() );
+        case 3: return forSchema( nextNodeSchema(), nextIndexProvider() ).withIds( ruleId, existingConstraintId() );
         case 4: return forSchema( nextNodeSchema(), Optional.empty(), nextIndexProvider() ).withId( ruleId );
-        case 5: return forSchema( nextNodeSchema(), Optional.empty(), nextIndexProvider() ).withIds( ruleId, nextRuleId() );
-        case 6: return forSchema( nextNodeSchema(), Optional.of( nextName() ), nextIndexProvider() ).withId( ruleId );
-        case 7: return forSchema( nextNodeSchema(), Optional.of( nextName() ), nextIndexProvider() ).withIds( ruleId, nextRuleId() );
+        case 5: return forSchema( nextNodeSchema(), Optional.empty(), nextIndexProvider() ).withIds( ruleId, existingConstraintId() );
+        case 6: return forSchema( nextNodeSchema(), nextNameOpt(), nextIndexProvider() ).withId( ruleId );
+        case 7: return forSchema( nextNodeSchema(), nextNameOpt(), nextIndexProvider() ).withIds( ruleId, existingConstraintId() );
         case 8: return forSchema( nextNodeMultiTokenSchema() ).withId( ruleId );
-        case 9: return forSchema( nextNodeMultiTokenSchema() ).withIds( ruleId, nextRuleId() );
+        case 9: return forSchema( nextNodeMultiTokenSchema() ).withIds( ruleId, existingConstraintId() );
         case 10: return forSchema( nextNodeMultiTokenSchema(), nextIndexProvider() ).withId( ruleId );
-        case 11: return forSchema( nextNodeMultiTokenSchema(), nextIndexProvider() ).withIds( ruleId, nextRuleId() );
+        case 11: return forSchema( nextNodeMultiTokenSchema(), nextIndexProvider() ).withIds( ruleId, existingConstraintId() );
         case 12: return forSchema( nextNodeMultiTokenSchema(), Optional.empty(), nextIndexProvider() ).withId( ruleId );
-        case 13: return forSchema( nextNodeMultiTokenSchema(), Optional.empty(), nextIndexProvider() ).withIds( ruleId, nextRuleId() );
-        case 14: return forSchema( nextNodeMultiTokenSchema(), Optional.of( nextName() ), nextIndexProvider() ).withId( ruleId );
-        case 15: return forSchema( nextNodeMultiTokenSchema(), Optional.of( nextName() ), nextIndexProvider() ).withIds( ruleId, nextRuleId() );
+        case 13: return forSchema( nextNodeMultiTokenSchema(), Optional.empty(), nextIndexProvider() ).withIds( ruleId, existingConstraintId() );
+        case 14: return forSchema( nextNodeMultiTokenSchema(), nextNameOpt(), nextIndexProvider() ).withId( ruleId );
+        case 15: return forSchema( nextNodeMultiTokenSchema(), nextNameOpt(), nextIndexProvider() ).withIds( ruleId, existingConstraintId() );
         case 16: return forSchema( nextRelationshipMultiTokenSchema() ).withId( ruleId );
-        case 17: return forSchema( nextRelationshipMultiTokenSchema() ).withIds( ruleId, nextRuleId() );
+        case 17: return forSchema( nextRelationshipMultiTokenSchema() ).withIds( ruleId, existingConstraintId() );
         case 18: return forSchema( nextRelationshipMultiTokenSchema(), nextIndexProvider() ).withId( ruleId );
-        case 19: return forSchema( nextRelationshipMultiTokenSchema(), nextIndexProvider() ).withIds( ruleId, nextRuleId() );
+        case 19: return forSchema( nextRelationshipMultiTokenSchema(), nextIndexProvider() ).withIds( ruleId, existingConstraintId() );
         case 20: return forSchema( nextRelationshipMultiTokenSchema(), Optional.empty(), nextIndexProvider() ).withId( ruleId );
-        case 21: return forSchema( nextRelationshipMultiTokenSchema(), Optional.empty(), nextIndexProvider() ).withIds( ruleId, nextRuleId() );
-        case 22: return forSchema( nextRelationshipMultiTokenSchema(), Optional.of( nextName() ), nextIndexProvider() ).withId( ruleId );
-        case 23: return forSchema( nextRelationshipMultiTokenSchema(), Optional.of( nextName() ), nextIndexProvider() ).withIds( ruleId, nextRuleId() );
+        case 21: return forSchema( nextRelationshipMultiTokenSchema(), Optional.empty(), nextIndexProvider() ).withIds( ruleId, existingConstraintId() );
+        case 22: return forSchema( nextRelationshipMultiTokenSchema(), nextNameOpt(), nextIndexProvider() ).withId( ruleId );
+        case 23: return forSchema( nextRelationshipMultiTokenSchema(), nextNameOpt(), nextIndexProvider() ).withIds( ruleId, existingConstraintId() );
         case 24: return uniqueForSchema( nextNodeSchema() ).withId( ruleId );
-        case 25: return uniqueForSchema( nextNodeSchema() ).withIds( ruleId, nextRuleId() );
+        case 25: return uniqueForSchema( nextNodeSchema() ).withIds( ruleId, existingConstraintId() );
         case 26: return uniqueForSchema( nextNodeSchema(), nextIndexProvider() ).withId( ruleId );
-        case 27: return uniqueForSchema( nextNodeSchema(), nextIndexProvider() ).withIds( ruleId, nextRuleId() );
+        case 27: return uniqueForSchema( nextNodeSchema(), nextIndexProvider() ).withIds( ruleId, existingConstraintId() );
         case 28: return uniqueForSchema( nextNodeSchema(), Optional.empty(), nextIndexProvider() ).withId( ruleId );
-        case 29: return uniqueForSchema( nextNodeSchema(), Optional.empty(), nextIndexProvider() ).withIds( ruleId, nextRuleId() );
-        case 30: return uniqueForSchema( nextNodeSchema(), Optional.of( nextName() ), nextIndexProvider() ).withId( ruleId );
-        case 31: return uniqueForSchema( nextNodeSchema(), Optional.of( nextName() ), nextIndexProvider() ).withIds( ruleId, nextRuleId() );
+        case 29: return uniqueForSchema( nextNodeSchema(), Optional.empty(), nextIndexProvider() ).withIds( ruleId, existingConstraintId() );
+        case 30: return uniqueForSchema( nextNodeSchema(), nextNameOpt(), nextIndexProvider() ).withId( ruleId );
+        case 31: return uniqueForSchema( nextNodeSchema(), nextNameOpt(), nextIndexProvider() ).withIds( ruleId, existingConstraintId() );
         case 32: return uniqueForSchema( nextNodeMultiTokenSchema() ).withId( ruleId );
-        case 33: return uniqueForSchema( nextNodeMultiTokenSchema() ).withIds( ruleId, nextRuleId() );
+        case 33: return uniqueForSchema( nextNodeMultiTokenSchema() ).withIds( ruleId, existingConstraintId() );
         case 34: return uniqueForSchema( nextNodeMultiTokenSchema(), nextIndexProvider() ).withId( ruleId );
-        case 35: return uniqueForSchema( nextNodeMultiTokenSchema(), nextIndexProvider() ).withIds( ruleId, nextRuleId() );
+        case 35: return uniqueForSchema( nextNodeMultiTokenSchema(), nextIndexProvider() ).withIds( ruleId, existingConstraintId() );
         case 36: return uniqueForSchema( nextNodeMultiTokenSchema(), Optional.empty(), nextIndexProvider() ).withId( ruleId );
-        case 37: return uniqueForSchema( nextNodeMultiTokenSchema(), Optional.empty(), nextIndexProvider() ).withIds( ruleId, nextRuleId() );
-        case 38: return uniqueForSchema( nextNodeMultiTokenSchema(), Optional.of( nextName() ), nextIndexProvider() ).withId( ruleId );
-        case 39: return uniqueForSchema( nextNodeMultiTokenSchema(), Optional.of( nextName() ), nextIndexProvider() ).withIds( ruleId, nextRuleId() );
+        case 37: return uniqueForSchema( nextNodeMultiTokenSchema(), Optional.empty(), nextIndexProvider() ).withIds( ruleId, existingConstraintId() );
+        case 38: return uniqueForSchema( nextNodeMultiTokenSchema(), nextNameOpt(), nextIndexProvider() ).withId( ruleId );
+        case 39: return uniqueForSchema( nextNodeMultiTokenSchema(), nextNameOpt(), nextIndexProvider() ).withIds( ruleId, existingConstraintId() );
         case 40: return uniqueForSchema( nextRelationshipMultiTokenSchema() ).withId( ruleId );
-        case 41: return uniqueForSchema( nextRelationshipMultiTokenSchema() ).withIds( ruleId, nextRuleId() );
+        case 41: return uniqueForSchema( nextRelationshipMultiTokenSchema() ).withIds( ruleId, existingConstraintId() );
         case 42: return uniqueForSchema( nextRelationshipMultiTokenSchema(), nextIndexProvider() ).withId( ruleId );
-        case 43: return uniqueForSchema( nextRelationshipMultiTokenSchema(), nextIndexProvider() ).withIds( ruleId, nextRuleId() );
+        case 43: return uniqueForSchema( nextRelationshipMultiTokenSchema(), nextIndexProvider() ).withIds( ruleId, existingConstraintId() );
         case 44: return uniqueForSchema( nextRelationshipMultiTokenSchema(), Optional.empty(), nextIndexProvider() ).withId( ruleId );
-        case 45: return uniqueForSchema( nextRelationshipMultiTokenSchema(), Optional.empty(), nextIndexProvider() ).withIds( ruleId, nextRuleId() );
-        case 46: return uniqueForSchema( nextRelationshipMultiTokenSchema(), Optional.of( nextName() ), nextIndexProvider() ).withId( ruleId );
-        case 47: return uniqueForSchema( nextRelationshipMultiTokenSchema(), Optional.of( nextName() ), nextIndexProvider() ).withIds( ruleId, nextRuleId() );
+        case 45: return uniqueForSchema( nextRelationshipMultiTokenSchema(), Optional.empty(), nextIndexProvider() ).withIds( ruleId, existingConstraintId() );
+        case 46: return uniqueForSchema( nextRelationshipMultiTokenSchema(), nextNameOpt(), nextIndexProvider() ).withId( ruleId );
+        case 47: return uniqueForSchema( nextRelationshipMultiTokenSchema(), nextNameOpt(), nextIndexProvider() ).withIds( ruleId, existingConstraintId() );
         default: throw new RuntimeException( "Bad index choice: " + choice );
         }
+    }
+
+    public Optional<String> nextNameOpt()
+    {
+        return Optional.of( nextName() );
+    }
+
+    public long nextRuleIdForIndex()
+    {
+        return nextRuleId();
+    }
+
+    public long existingConstraintId()
+    {
+        return nextRuleId();
     }
 
     public IndexProviderDescriptor nextIndexProvider()
@@ -212,7 +227,7 @@ public class RandomSchema implements Supplier<SchemaRule>
 
     public ConstraintRule nextConstraint()
     {
-        long ruleId = nextRuleId();
+        long ruleId = nextRuleIdForConstraint();
 
         int choice = rng.nextInt( 12 );
         switch ( choice )
@@ -222,15 +237,25 @@ public class RandomSchema implements Supplier<SchemaRule>
         case 2: return constraintRule( ruleId, ConstraintDescriptorFactory.existsForSchema( nextNodeSchema() ) );
         case 3: return constraintRule( ruleId, ConstraintDescriptorFactory.existsForSchema( nextNodeSchema() ), nextName() );
         case 4: return constraintRule( ruleId, ConstraintDescriptorFactory.uniqueForSchema( nextNodeSchema() ) );
-        case 5: return constraintRule( ruleId, ConstraintDescriptorFactory.uniqueForSchema( nextNodeSchema() ), nextRuleId() );
+        case 5: return constraintRule( ruleId, ConstraintDescriptorFactory.uniqueForSchema( nextNodeSchema() ), existingIndexId() );
         case 6: return constraintRule( ruleId, ConstraintDescriptorFactory.uniqueForSchema( nextNodeSchema() ), nextName() );
-        case 7: return constraintRule( ruleId, ConstraintDescriptorFactory.uniqueForSchema( nextNodeSchema() ), nextRuleId(), nextName() );
+        case 7: return constraintRule( ruleId, ConstraintDescriptorFactory.uniqueForSchema( nextNodeSchema() ), existingIndexId(), nextName() );
         case 8: return constraintRule( ruleId, ConstraintDescriptorFactory.nodeKeyForSchema( nextNodeSchema() ) );
-        case 9: return constraintRule( ruleId, ConstraintDescriptorFactory.nodeKeyForSchema( nextNodeSchema() ), nextRuleId() );
+        case 9: return constraintRule( ruleId, ConstraintDescriptorFactory.nodeKeyForSchema( nextNodeSchema() ), existingIndexId() );
         case 10: return constraintRule( ruleId, ConstraintDescriptorFactory.nodeKeyForSchema( nextNodeSchema() ), nextName() );
-        case 11: return constraintRule( ruleId, ConstraintDescriptorFactory.nodeKeyForSchema( nextNodeSchema() ), nextRuleId(), nextName() );
+        case 11: return constraintRule( ruleId, ConstraintDescriptorFactory.nodeKeyForSchema( nextNodeSchema() ), existingIndexId(), nextName() );
         default: throw new RuntimeException( "Bad constraint choice: " + choice );
         }
+    }
+
+    public long nextRuleIdForConstraint()
+    {
+        return nextRuleId();
+    }
+
+    public long existingIndexId()
+    {
+        return nextRuleId();
     }
 
     public LabelSchemaDescriptor nextNodeSchema()
