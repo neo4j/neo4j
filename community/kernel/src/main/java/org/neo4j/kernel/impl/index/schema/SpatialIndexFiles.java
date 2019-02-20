@@ -56,7 +56,7 @@ class SpatialIndexFiles
         return existing;
     }
 
-    <T> void loadExistingIndexes( SpatialIndexCache<T> indexCache ) throws IOException
+    <T> void loadExistingIndexes( SpatialIndexCache<T> indexCache )
     {
         for ( SpatialFile fileLayout : existing() )
         {
@@ -66,7 +66,7 @@ class SpatialIndexFiles
 
     SpatialFile forCrs( CoordinateReferenceSystem crs )
     {
-        return new SpatialFile( crs, configuredSettings, indexDirectory );
+        return new SpatialFile( crs, configuredSettings, fs, indexDirectory );
     }
 
     private void addExistingFiles( List<SpatialFile> existing )
@@ -89,17 +89,19 @@ class SpatialIndexFiles
         }
     }
 
-    static class SpatialFile
+    static class SpatialFile extends IndexFiles
     {
-        final File indexFile;
         final ConfiguredSpaceFillingCurveSettingsCache configuredSettings;
+        private final File indexFile;
+        private final FileSystemAbstraction fs;
         private final CoordinateReferenceSystem crs;
 
-        SpatialFile( CoordinateReferenceSystem crs, ConfiguredSpaceFillingCurveSettingsCache configuredSettings, File indexDirectory )
+        SpatialFile( CoordinateReferenceSystem crs, ConfiguredSpaceFillingCurveSettingsCache configuredSettings, FileSystemAbstraction fs, File indexDirectory )
         {
             this.crs = crs;
             this.configuredSettings = configuredSettings;
-            String s = crs.getTable().getTableId() + "-" + Integer.toString( crs.getCode() );
+            this.fs = fs;
+            String s = crs.getTable().getTableId() + "-" + crs.getCode();
             this.indexFile = new File( indexDirectory, s );
         }
 
@@ -120,6 +122,24 @@ class SpatialIndexFiles
                     SpaceFillingCurveSettingsFactory.fromGBPTree( indexFile, pageCache, NativeIndexHeaderReader::readFailureMessage );
             return new SpatialFileLayout( this, settings );
         }
+
+        @Override
+        public File getStoreFile()
+        {
+            return indexFile;
+        }
+
+        @Override
+        public File getBase()
+        {
+            return indexFile;
+        }
+
+        @Override
+        public void clear()
+        {
+            clearSingleFile( fs, indexFile );
+        }
     }
 
     static class SpatialFileLayout
@@ -133,11 +153,6 @@ class SpatialIndexFiles
             this.spatialFile = spatialFile;
             this.settings = settings;
             this.layout = new SpatialLayout( spatialFile.crs, settings.curve() );
-        }
-
-        public File getIndexFile()
-        {
-            return spatialFile.indexFile;
         }
     }
 }

@@ -78,6 +78,7 @@ public class NativeIndexes
     public static boolean archiveIndex( FileSystemAbstraction fs, IndexDirectoryStructure directoryStructure, long indexId, boolean archiveIfExists )
             throws IOException
     {
+        // todo can rewrite to use IndexFiles
         File rootIndexDirectory = directoryStructure.directoryForIndex( indexId );
         if ( archiveIfExists && fs.isDirectory( rootIndexDirectory ) && fs.fileExists( rootIndexDirectory ) && fs.listFiles( rootIndexDirectory ).length > 0 )
         {

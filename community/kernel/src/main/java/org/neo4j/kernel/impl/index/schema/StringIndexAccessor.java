@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import java.io.File;
-
 import org.neo4j.common.Validator;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
@@ -41,10 +39,10 @@ public class StringIndexAccessor extends NativeIndexAccessor<StringIndexKey,Nati
 {
     private Validator<Value> validator;
 
-    StringIndexAccessor( PageCache pageCache, FileSystemAbstraction fs, File storeFile, IndexLayout<StringIndexKey,NativeIndexValue> layout,
+    StringIndexAccessor( PageCache pageCache, FileSystemAbstraction fs, IndexFiles indexFiles, IndexLayout<StringIndexKey,NativeIndexValue> layout,
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, IndexProvider.Monitor monitor, StorageIndexReference descriptor )
     {
-        super( pageCache, fs, storeFile, layout, monitor, descriptor, NO_HEADER_WRITER );
+        super( pageCache, fs, indexFiles, layout, monitor, descriptor, NO_HEADER_WRITER );
         instantiateTree( recoveryCleanupWorkCollector, headerWriter );
     }
 

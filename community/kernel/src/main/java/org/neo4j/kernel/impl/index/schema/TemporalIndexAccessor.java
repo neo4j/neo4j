@@ -38,9 +38,9 @@ import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
+import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
 
@@ -173,7 +173,7 @@ class TemporalIndexAccessor extends TemporalIndexCache<TemporalIndexAccessor.Par
         PartAccessor( PageCache pageCache, FileSystemAbstraction fs, TemporalIndexFiles.FileLayout<KEY> fileLayout,
                 RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, IndexProvider.Monitor monitor, StorageIndexReference descriptor )
         {
-            super( pageCache, fs, fileLayout.indexFile, fileLayout.layout, monitor, descriptor, NO_HEADER_WRITER );
+            super( pageCache, fs, fileLayout, fileLayout.layout, monitor, descriptor, NO_HEADER_WRITER );
             this.layout = fileLayout.layout;
             this.descriptor = descriptor;
             instantiateTree( recoveryCleanupWorkCollector, headerWriter );
@@ -248,7 +248,7 @@ class TemporalIndexAccessor extends TemporalIndexCache<TemporalIndexAccessor.Par
         private <KEY extends NativeIndexSingleValueKey<KEY>> PartAccessor<KEY> createPartAccessor( TemporalIndexFiles.FileLayout<KEY> fileLayout )
                 throws IOException
         {
-            if ( !fs.fileExists( fileLayout.indexFile ) )
+            if ( !fs.fileExists( fileLayout.getStoreFile() ) )
             {
                 createEmptyIndex( fileLayout );
             }

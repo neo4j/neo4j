@@ -193,7 +193,7 @@ public class SpatialIndexSettingsTest
 
     private SpatialIndexFiles.SpatialFile makeIndexFile( long indexId, ConfiguredSpaceFillingCurveSettingsCache configuredSettings )
     {
-        return new SpatialIndexFiles.SpatialFile( CoordinateReferenceSystem.WGS84, configuredSettings, indexDir( indexId ) );
+        return new SpatialIndexFiles.SpatialFile( CoordinateReferenceSystem.WGS84, configuredSettings, fs, indexDir( indexId ) );
     }
 
     private File indexDir( long indexId )
@@ -204,7 +204,7 @@ public class SpatialIndexSettingsTest
     private File indexFile( long indexId )
     {
         // The indexFile location is independent of the configuredSettings, so we just use the defaults
-        return makeIndexFile( indexId, new ConfiguredSpaceFillingCurveSettingsCache( Config.defaults() ) ).indexFile;
+        return makeIndexFile( indexId, new ConfiguredSpaceFillingCurveSettingsCache( Config.defaults() ) ).getStoreFile();
     }
 
     private File indexRoot()

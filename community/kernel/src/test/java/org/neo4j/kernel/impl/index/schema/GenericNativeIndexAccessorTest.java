@@ -49,18 +49,17 @@ public class GenericNativeIndexAccessorTest
         File root = storage.directory().directory( "root" );
         IndexDirectoryStructure directoryStructure = IndexDirectoryStructure.directoriesByProvider( root ).forProvider( GenericNativeIndexProvider.DESCRIPTOR );
         long indexId = 8;
-        File indexDirectory = directoryStructure.directoryForIndex( indexId );
-        File indexFile = new File( indexDirectory, "my-index" );
         StoreIndexDescriptor descriptor = IndexDescriptorFactory.forSchema( SchemaDescriptorFactory.forLabel( 1, 1 ) ).withId( indexId );
         IndexSpecificSpaceFillingCurveSettingsCache spatialSettings = mock( IndexSpecificSpaceFillingCurveSettingsCache.class );
         FileSystemAbstraction fs = storage.fileSystem();
-        GenericNativeIndexAccessor accessor = new GenericNativeIndexAccessor( storage.pageCache(), fs, indexFile, new GenericLayout( 1, spatialSettings ),
+        IndexFiles indexFiles = new IndexFiles.Directory( fs, directoryStructure, descriptor.getId() );
+        GenericNativeIndexAccessor accessor = new GenericNativeIndexAccessor( storage.pageCache(), fs, indexFiles, new GenericLayout( 1, spatialSettings ),
                 immediate(), EMPTY, descriptor, spatialSettings, directoryStructure, mock( SpaceFillingCurveConfiguration.class ) );
 
         // when
         accessor.drop();
 
         // then
-        assertFalse( fs.fileExists( indexDirectory ) );
+        assertFalse( fs.fileExists( indexFiles.getBase() ) );
     }
 }

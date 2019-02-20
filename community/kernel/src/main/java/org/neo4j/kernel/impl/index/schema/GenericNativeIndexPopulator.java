@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 
@@ -33,7 +32,6 @@ import org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettingsWriter
 import org.neo4j.storageengine.api.StorageIndexReference;
 
 import static org.neo4j.kernel.impl.index.schema.NativeIndexes.archiveIndex;
-import static org.neo4j.kernel.impl.index.schema.NativeIndexes.deleteIndex;
 
 class GenericNativeIndexPopulator extends NativeIndexPopulator<GenericKey,NativeIndexValue>
 {
@@ -42,11 +40,11 @@ class GenericNativeIndexPopulator extends NativeIndexPopulator<GenericKey,Native
     private final SpaceFillingCurveConfiguration configuration;
     private final boolean archiveFailedIndex;
 
-    GenericNativeIndexPopulator( PageCache pageCache, FileSystemAbstraction fs, File storeFile, IndexLayout<GenericKey,NativeIndexValue> layout,
+    GenericNativeIndexPopulator( PageCache pageCache, FileSystemAbstraction fs, IndexFiles indexFiles, IndexLayout<GenericKey,NativeIndexValue> layout,
             IndexProvider.Monitor monitor, StorageIndexReference descriptor, IndexSpecificSpaceFillingCurveSettingsCache spatialSettings,
             IndexDirectoryStructure directoryStructure, SpaceFillingCurveConfiguration configuration, boolean archiveFailedIndex )
     {
-        super( pageCache, fs, storeFile, layout, monitor, descriptor, new SpaceFillingCurveSettingsWriter( spatialSettings ) );
+        super( pageCache, fs, indexFiles, layout, monitor, descriptor, new SpaceFillingCurveSettingsWriter( spatialSettings ) );
         this.spatialSettings = spatialSettings;
         this.directoryStructure = directoryStructure;
         this.configuration = configuration;
@@ -58,10 +56,10 @@ class GenericNativeIndexPopulator extends NativeIndexPopulator<GenericKey,Native
     {
         try
         {
-            // Archive and delete the index, if it exists. The reason why this isn't done in the generic implementation is that for all other cases a
+            // Archive index if it exists. The reason why this isn't done in the generic implementation is that for all other cases a
             // native index populator lives under a fusion umbrella and the archive function sits on the top-level fusion folder, not every single sub-folder.
             archiveIndex( fileSystem, directoryStructure, descriptor.indexReference(), archiveFailedIndex );
-            deleteIndex( fileSystem, directoryStructure, descriptor.indexReference() );
+            indexFiles.clear();
 
             // Now move on to do the actual creation.
             super.create();

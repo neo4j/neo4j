@@ -20,8 +20,6 @@
 package org.neo4j.kernel.impl.index.schema.fusion;
 
 import java.io.File;
-import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.util.Iterator;
 
 import org.neo4j.graphdb.ResourceIterator;
@@ -34,19 +32,18 @@ import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
+import org.neo4j.kernel.impl.index.schema.IndexFiles;
+import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.values.storable.Value;
 
 import static org.neo4j.helpers.collection.Iterators.concatResourceIterators;
-import static org.neo4j.kernel.impl.index.schema.NativeIndexes.deleteIndex;
 
 class FusionIndexAccessor extends FusionIndexBase<IndexAccessor> implements IndexAccessor
 {
     private final StorageIndexReference descriptor;
-    private final FileSystemAbstraction fs;
-    private final IndexDirectoryStructure directoryStructure;
+    private final IndexFiles indexFiles;
 
     FusionIndexAccessor( SlotSelector slotSelector,
             InstanceSelector<IndexAccessor> instanceSelector,
@@ -56,22 +53,14 @@ class FusionIndexAccessor extends FusionIndexBase<IndexAccessor> implements Inde
     {
         super( slotSelector, instanceSelector );
         this.descriptor = descriptor;
-        this.fs = fs;
-        this.directoryStructure = directoryStructure;
+        this.indexFiles = new IndexFiles.Directory( fs, directoryStructure, descriptor.indexReference() );
     }
 
     @Override
     public void drop()
     {
         instanceSelector.forAll( IndexAccessor::drop );
-        try
-        {
-            deleteIndex( fs, directoryStructure, descriptor.indexReference() );
-        }
-        catch ( IOException e )
-        {
-            throw new UncheckedIOException( e );
-        }
+        indexFiles.clear();
     }
 
     @Override

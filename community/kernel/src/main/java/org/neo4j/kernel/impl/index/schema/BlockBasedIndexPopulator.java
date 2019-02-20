@@ -61,7 +61,6 @@ import org.neo4j.values.storable.Value;
 import static org.neo4j.helpers.collection.Iterables.first;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexUpdater.initializeKeyFromUpdate;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexes.archiveIndex;
-import static org.neo4j.kernel.impl.index.schema.NativeIndexes.deleteIndex;
 
 public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,VALUE extends NativeIndexValue> extends NativeIndexPopulator<KEY,VALUE>
 {
@@ -106,19 +105,19 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
     private volatile long numberOfAppliedScanUpdates;
     private volatile long numberOfAppliedExternalUpdates;
 
-    BlockBasedIndexPopulator( PageCache pageCache, FileSystemAbstraction fs, File file, IndexLayout<KEY,VALUE> layout, IndexProvider.Monitor monitor,
+    BlockBasedIndexPopulator( PageCache pageCache, FileSystemAbstraction fs, IndexFiles indexFiles, IndexLayout<KEY,VALUE> layout, IndexProvider.Monitor monitor,
             StorageIndexReference descriptor, IndexSpecificSpaceFillingCurveSettingsCache spatialSettings,
             IndexDirectoryStructure directoryStructure, boolean archiveFailedIndex )
     {
-        this( pageCache, fs, file, layout, monitor, descriptor, spatialSettings, directoryStructure, archiveFailedIndex, parseBlockSize(), MERGE_FACTOR,
+        this( pageCache, fs, indexFiles, layout, monitor, descriptor, spatialSettings, directoryStructure, archiveFailedIndex, parseBlockSize(), MERGE_FACTOR,
                 BlockStorage.Monitor.NO_MONITOR );
     }
 
-    BlockBasedIndexPopulator( PageCache pageCache, FileSystemAbstraction fs, File file, IndexLayout<KEY,VALUE> layout, IndexProvider.Monitor monitor,
+    BlockBasedIndexPopulator( PageCache pageCache, FileSystemAbstraction fs, IndexFiles indexFiles, IndexLayout<KEY,VALUE> layout, IndexProvider.Monitor monitor,
             StorageIndexReference descriptor, IndexSpecificSpaceFillingCurveSettingsCache spatialSettings,
             IndexDirectoryStructure directoryStructure, boolean archiveFailedIndex, int blockSize, int mergeFactor, BlockStorage.Monitor blockStorageMonitor )
     {
-        super( pageCache, fs, file, layout, monitor, descriptor, new SpaceFillingCurveSettingsWriter( spatialSettings ) );
+        super( pageCache, fs, indexFiles, layout, monitor, descriptor, new SpaceFillingCurveSettingsWriter( spatialSettings ) );
         this.directoryStructure = directoryStructure;
         this.archiveFailedIndex = archiveFailedIndex;
         this.blockSize = blockSize;
@@ -157,7 +156,6 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
         try
         {
             archiveIndex( fileSystem, directoryStructure, descriptor.indexReference(), archiveFailedIndex );
-            deleteIndex( fileSystem, directoryStructure, descriptor.indexReference() );
         }
         catch ( IOException e )
         {
@@ -166,6 +164,7 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
         super.create();
         try
         {
+            File storeFile = indexFiles.getStoreFile();
             externalUpdates = new IndexUpdateStorage<>( layout, fileSystem, new File( storeFile.getParent(), storeFile.getName() + ".ext" ),
                     bufferFactory, blockSize );
         }
@@ -591,6 +590,7 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
         ThreadLocalBlockStorage( int id ) throws IOException
         {
             super( blockStorageMonitor );
+            File storeFile = indexFiles.getStoreFile();
             File blockFile = new File( storeFile.getParentFile(), storeFile.getName() + ".scan-" + id );
             this.blockStorage = new BlockStorage<>( layout, bufferFactory, fileSystem, blockFile, this, blockSize );
         }

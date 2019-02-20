@@ -189,7 +189,7 @@ class SpatialIndexAccessor extends SpatialIndexCache<SpatialIndexAccessor.PartAc
                 RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, IndexProvider.Monitor monitor, StorageIndexReference descriptor,
                 SpaceFillingCurveConfiguration searchConfiguration )
         {
-            super( pageCache, fs, fileLayout.getIndexFile(), fileLayout.layout, monitor, descriptor, NO_HEADER_WRITER );
+            super( pageCache, fs, fileLayout.spatialFile, fileLayout.layout, monitor, descriptor, NO_HEADER_WRITER );
             this.layout = fileLayout.layout;
             this.descriptor = descriptor;
             this.searchConfiguration = searchConfiguration;
@@ -242,7 +242,7 @@ class SpatialIndexAccessor extends SpatialIndexCache<SpatialIndexAccessor.PartAc
         public PartAccessor newSpatial( CoordinateReferenceSystem crs ) throws IOException
         {
             SpatialIndexFiles.SpatialFile spatialFile = spatialIndexFiles.forCrs( crs );
-            if ( !fs.fileExists( spatialFile.indexFile ) )
+            if ( !fs.fileExists( spatialFile.getStoreFile() ) )
             {
                 SpatialIndexFiles.SpatialFileLayout fileLayout = spatialFile.getLayoutForNewIndex();
                 createEmptyIndex( fileLayout );

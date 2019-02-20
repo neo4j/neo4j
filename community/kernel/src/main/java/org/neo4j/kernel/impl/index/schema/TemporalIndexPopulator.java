@@ -54,6 +54,9 @@ class TemporalIndexPopulator extends TemporalIndexCache<WorkSyncedNativeIndexPop
     @Override
     public synchronized void create()
     {
+        //todo
+        // - also clear directory
+        // - Might not have to call clear on all sub. Only place where clear is called
         forAll( p -> p.getActual().clear(), this );
 
         // We must make sure to have at least one subindex:
@@ -67,6 +70,7 @@ class TemporalIndexPopulator extends TemporalIndexCache<WorkSyncedNativeIndexPop
     @Override
     public synchronized void drop()
     {
+        // todo also clear directory
         forAll( IndexPopulator::drop, this );
     }
 
@@ -141,7 +145,7 @@ class TemporalIndexPopulator extends TemporalIndexCache<WorkSyncedNativeIndexPop
         PartPopulator( PageCache pageCache, FileSystemAbstraction fs, TemporalIndexFiles.FileLayout<KEY> fileLayout, IndexProvider.Monitor monitor,
                 StorageIndexReference descriptor )
         {
-            super( pageCache, fs, fileLayout.indexFile, fileLayout.layout, monitor, descriptor, NO_HEADER_WRITER );
+            super( pageCache, fs, fileLayout, fileLayout.layout, monitor, descriptor, NO_HEADER_WRITER );
         }
 
         @Override

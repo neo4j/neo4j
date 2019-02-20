@@ -60,15 +60,15 @@ public class StringIndexProvider extends NativeIndexProvider<StringIndexKey,Nati
     }
 
     @Override
-    protected IndexPopulator newIndexPopulator( File storeFile, StringLayout layout, StorageIndexReference descriptor )
+    protected IndexPopulator newIndexPopulator( IndexFiles indexFiles, StringLayout layout, StorageIndexReference descriptor )
     {
-        return new WorkSyncedNativeIndexPopulator<>( new StringIndexPopulator( pageCache, fs, storeFile, layout, monitor, descriptor ) );
+        return new WorkSyncedNativeIndexPopulator<>( new StringIndexPopulator( pageCache, fs, indexFiles, layout, monitor, descriptor ) );
     }
 
     @Override
-    protected IndexAccessor newIndexAccessor( File storeFile, StringLayout layout, StorageIndexReference descriptor ) throws IOException
+    protected IndexAccessor newIndexAccessor( IndexFiles indexFiles, StringLayout layout, StorageIndexReference descriptor ) throws IOException
     {
-        return new StringIndexAccessor( pageCache, fs, storeFile, layout, recoveryCleanupWorkCollector, monitor, descriptor );
+        return new StringIndexAccessor( pageCache, fs, indexFiles, layout, recoveryCleanupWorkCollector, monitor, descriptor );
     }
 
     @Override

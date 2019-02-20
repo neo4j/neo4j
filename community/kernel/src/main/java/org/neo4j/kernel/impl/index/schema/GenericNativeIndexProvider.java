@@ -154,22 +154,22 @@ public class GenericNativeIndexProvider extends NativeIndexProvider<GenericKey,N
     }
 
     @Override
-    protected IndexPopulator newIndexPopulator( File storeFile, GenericLayout layout, StorageIndexReference descriptor )
+    protected IndexPopulator newIndexPopulator( IndexFiles indexFiles, GenericLayout layout, StorageIndexReference descriptor )
     {
         if ( blockBasedPopulation )
         {
-            return new GenericBlockBasedIndexPopulator( pageCache, fs, storeFile, layout, monitor, descriptor, layout.getSpaceFillingCurveSettings(),
+            return new GenericBlockBasedIndexPopulator( pageCache, fs, indexFiles, layout, monitor, descriptor, layout.getSpaceFillingCurveSettings(),
                     directoryStructure(), configuration, archiveFailedIndex );
         }
         return new WorkSyncedNativeIndexPopulator<>(
-                new GenericNativeIndexPopulator( pageCache, fs, storeFile, layout, monitor, descriptor, layout.getSpaceFillingCurveSettings(),
+                new GenericNativeIndexPopulator( pageCache, fs, indexFiles, layout, monitor, descriptor, layout.getSpaceFillingCurveSettings(),
                         directoryStructure(), configuration, archiveFailedIndex ) );
     }
 
     @Override
-    protected IndexAccessor newIndexAccessor( File storeFile, GenericLayout layout, StorageIndexReference descriptor )
+    protected IndexAccessor newIndexAccessor( IndexFiles indexFiles, GenericLayout layout, StorageIndexReference descriptor )
     {
-        return new GenericNativeIndexAccessor( pageCache, fs, storeFile, layout, recoveryCleanupWorkCollector, monitor, descriptor,
+        return new GenericNativeIndexAccessor( pageCache, fs, indexFiles, layout, recoveryCleanupWorkCollector, monitor, descriptor,
                 layout.getSpaceFillingCurveSettings(), directoryStructure(), configuration );
     }
 

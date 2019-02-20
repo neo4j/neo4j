@@ -43,12 +43,12 @@ class TemporalIndexFiles
     {
         this.fs = fs;
         File indexDirectory = directoryStructure.directoryForIndex( descriptor.indexReference() );
-        this.date = new FileLayout<>( new File( indexDirectory, "date" ), new DateLayout(), ValueGroup.DATE );
-        this.localTime = new FileLayout<>( new File( indexDirectory, "localTime" ), new LocalTimeLayout(), ValueGroup.LOCAL_TIME );
-        this.zonedTime = new FileLayout<>( new File( indexDirectory, "zonedTime" ), new ZonedTimeLayout(), ValueGroup.ZONED_TIME );
-        this.localDateTime = new FileLayout<>( new File( indexDirectory, "localDateTime" ), new LocalDateTimeLayout(), ValueGroup.LOCAL_DATE_TIME );
-        this.zonedDateTime = new FileLayout<>( new File( indexDirectory, "zonedDateTime" ), new ZonedDateTimeLayout(), ValueGroup.ZONED_DATE_TIME );
-        this.duration = new FileLayout<>( new File( indexDirectory, "duration" ), new DurationLayout(), ValueGroup.DURATION );
+        this.date = new FileLayout<>( fs, new File( indexDirectory, "date" ), new DateLayout(), ValueGroup.DATE );
+        this.localTime = new FileLayout<>( fs, new File( indexDirectory, "localTime" ), new LocalTimeLayout(), ValueGroup.LOCAL_TIME );
+        this.zonedTime = new FileLayout<>( fs, new File( indexDirectory, "zonedTime" ), new ZonedTimeLayout(), ValueGroup.ZONED_TIME );
+        this.localDateTime = new FileLayout<>( fs, new File( indexDirectory, "localDateTime" ), new LocalDateTimeLayout(), ValueGroup.LOCAL_DATE_TIME );
+        this.zonedDateTime = new FileLayout<>( fs, new File( indexDirectory, "zonedDateTime" ), new ZonedDateTimeLayout(), ValueGroup.ZONED_DATE_TIME );
+        this.duration = new FileLayout<>( fs, new File( indexDirectory, "duration" ), new DurationLayout(), ValueGroup.DURATION );
     }
 
     Iterable<FileLayout> existing()
@@ -111,22 +111,42 @@ class TemporalIndexFiles
 
     private boolean exists( FileLayout fileLayout )
     {
-        return fileLayout != null && fs.fileExists( fileLayout.indexFile );
+        return fileLayout != null && fs.fileExists( fileLayout.getStoreFile() );
     }
 
     // .... we will add more explicit accessor methods later
 
-    static class FileLayout<KEY extends NativeIndexSingleValueKey<KEY>>
+    static class FileLayout<KEY extends NativeIndexSingleValueKey<KEY>> extends IndexFiles
     {
-        final File indexFile;
+        private final FileSystemAbstraction fs;
+        private final File indexFile;
         final IndexLayout<KEY,NativeIndexValue> layout;
         final ValueGroup valueGroup;
 
-        FileLayout( File indexFile, IndexLayout<KEY,NativeIndexValue> layout, ValueGroup valueGroup )
+        FileLayout( FileSystemAbstraction fs, File indexFile, IndexLayout<KEY,NativeIndexValue> layout, ValueGroup valueGroup )
         {
+            this.fs = fs;
             this.indexFile = indexFile;
             this.layout = layout;
             this.valueGroup = valueGroup;
+        }
+
+        @Override
+        public File getStoreFile()
+        {
+            return indexFile;
+        }
+
+        @Override
+        public File getBase()
+        {
+            return indexFile;
+        }
+
+        @Override
+        public void clear()
+        {
+            clearSingleFile( fs, indexFile );
         }
     }
 }

@@ -21,11 +21,9 @@ package org.neo4j.kernel.impl.index.schema;
 
 import org.apache.commons.lang3.ArrayUtils;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.NoSuchFileException;
 import java.nio.file.OpenOption;
 import java.nio.file.StandardOpenOption;
 import java.util.Collection;
@@ -76,10 +74,10 @@ public abstract class NativeIndexPopulator<KEY extends NativeIndexKey<KEY>, VALU
     private boolean dropped;
     private boolean closed;
 
-    NativeIndexPopulator( PageCache pageCache, FileSystemAbstraction fs, File storeFile, IndexLayout<KEY,VALUE> layout, IndexProvider.Monitor monitor,
+    NativeIndexPopulator( PageCache pageCache, FileSystemAbstraction fs, IndexFiles indexFiles, IndexLayout<KEY,VALUE> layout, IndexProvider.Monitor monitor,
             StorageIndexReference descriptor, Consumer<PageCursor> additionalHeaderWriter, OpenOption... openOptions )
     {
-        super( pageCache, fs, storeFile, layout, monitor, descriptor, withNoStriping( openOptions ) );
+        super( pageCache, fs, indexFiles, layout, monitor, descriptor, withNoStriping( openOptions ) );
         this.treeKey = layout.newKey();
         this.treeValue = layout.newValue();
         this.additionalHeaderWriter = additionalHeaderWriter;
@@ -96,7 +94,7 @@ public abstract class NativeIndexPopulator<KEY extends NativeIndexKey<KEY>, VALU
 
     public void clear()
     {
-        deleteFileIfPresent( fileSystem, storeFile );
+        indexFiles.clear();
     }
 
     @Override
@@ -110,7 +108,7 @@ public abstract class NativeIndexPopulator<KEY extends NativeIndexKey<KEY>, VALU
         assertNotDropped();
         assertNotClosed();
 
-        deleteFileIfPresent( fileSystem, storeFile );
+        clear();
         instantiateTree( RecoveryCleanupWorkCollector.immediate(), headerWriter );
 
         // true:  tree uniqueness is (value,entityId)
@@ -136,7 +134,7 @@ public abstract class NativeIndexPopulator<KEY extends NativeIndexKey<KEY>, VALU
             {
                 // This deletion is guarded by a seemingly unnecessary check of this specific open option, but is checked before deletion
                 // due to observed problems on some Windows versions where the deletion could otherwise throw j.n.f.AccessDeniedException
-                deleteFileIfPresent( fileSystem, storeFile );
+                clear();
             }
         }
         finally
@@ -315,21 +313,5 @@ public abstract class NativeIndexPopulator<KEY extends NativeIndexKey<KEY>, VALU
             return uniqueSampler.result();
         }
         return new FullScanNonUniqueIndexSampler<>( tree, layout ).result();
-    }
-
-    private static void deleteFileIfPresent( FileSystemAbstraction fs, File storeFile )
-    {
-        try
-        {
-            fs.deleteFileOrThrow( storeFile );
-        }
-        catch ( NoSuchFileException e )
-        {
-            // File does not exist, we don't need to delete
-        }
-        catch ( IOException e )
-        {
-            throw new UncheckedIOException( e );
-        }
     }
 }

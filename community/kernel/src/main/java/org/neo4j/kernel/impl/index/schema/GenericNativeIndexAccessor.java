@@ -19,10 +19,6 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.UncheckedIOException;
-
 import org.neo4j.common.Validator;
 import org.neo4j.gis.spatial.index.curves.SpaceFillingCurveConfiguration;
 import org.neo4j.index.internal.gbptree.GBPTree;
@@ -45,30 +41,16 @@ class GenericNativeIndexAccessor extends NativeIndexAccessor<GenericKey,NativeIn
     private final SpaceFillingCurveConfiguration configuration;
     private Validator<Value[]> validator;
 
-    GenericNativeIndexAccessor( PageCache pageCache, FileSystemAbstraction fs, File storeFile, IndexLayout<GenericKey,NativeIndexValue> layout,
+    GenericNativeIndexAccessor( PageCache pageCache, FileSystemAbstraction fs, IndexFiles indexFiles, IndexLayout<GenericKey,NativeIndexValue> layout,
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, IndexProvider.Monitor monitor, StorageIndexReference descriptor,
             IndexSpecificSpaceFillingCurveSettingsCache spaceFillingCurveSettings, IndexDirectoryStructure directoryStructure,
             SpaceFillingCurveConfiguration configuration )
     {
-        super( pageCache, fs, storeFile, layout, monitor, descriptor, new SpaceFillingCurveSettingsWriter( spaceFillingCurveSettings ) );
+        super( pageCache, fs, indexFiles, layout, monitor, descriptor, new SpaceFillingCurveSettingsWriter( spaceFillingCurveSettings ) );
         this.spaceFillingCurveSettings = spaceFillingCurveSettings;
         this.directoryStructure = directoryStructure;
         this.configuration = configuration;
         instantiateTree( recoveryCleanupWorkCollector, headerWriter );
-    }
-
-    @Override
-    public void drop()
-    {
-        super.drop();
-        try
-        {
-            NativeIndexes.deleteIndex( fileSystem, directoryStructure, descriptor.indexReference() );
-        }
-        catch ( IOException e )
-        {
-            throw new UncheckedIOException( e );
-        }
     }
 
     @Override

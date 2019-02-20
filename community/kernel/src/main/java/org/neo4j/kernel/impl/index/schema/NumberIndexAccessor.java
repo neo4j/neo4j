@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import java.io.File;
-
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -32,10 +30,10 @@ import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_WRITER;
 
 public class NumberIndexAccessor extends NativeIndexAccessor<NumberIndexKey,NativeIndexValue>
 {
-    NumberIndexAccessor( PageCache pageCache, FileSystemAbstraction fs, File storeFile, IndexLayout<NumberIndexKey,NativeIndexValue> layout,
+    NumberIndexAccessor( PageCache pageCache, FileSystemAbstraction fs, IndexFiles indexFiles, IndexLayout<NumberIndexKey,NativeIndexValue> layout,
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, IndexProvider.Monitor monitor, StorageIndexReference descriptor )
     {
-        super( pageCache, fs, storeFile, layout, monitor, descriptor, NO_HEADER_WRITER );
+        super( pageCache, fs, indexFiles, layout, monitor, descriptor, NO_HEADER_WRITER );
         instantiateTree( recoveryCleanupWorkCollector, headerWriter );
     }
 

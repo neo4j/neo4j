@@ -639,7 +639,7 @@ public abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, 
 
         // then
         assertTrue( files.hasNext() );
-        assertEquals( getIndexFile(), files.next() );
+        assertEquals( getIndexFiles().getStoreFile(), files.next() );
         assertFalse( files.hasNext() );
     }
 

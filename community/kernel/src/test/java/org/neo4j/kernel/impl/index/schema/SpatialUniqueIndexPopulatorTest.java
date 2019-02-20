@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import java.io.File;
-
 import org.neo4j.configuration.Config;
 import org.neo4j.gis.spatial.index.curves.StandardConfiguration;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
@@ -37,15 +35,16 @@ public class SpatialUniqueIndexPopulatorTest extends NativeIndexPopulatorTests.U
     @Override
     NativeIndexPopulator<SpatialIndexKey,NativeIndexValue> createPopulator()
     {
-        spatialFile = new SpatialIndexFiles.SpatialFile( crs, configuredSettings, super.getIndexFile() );
+        // todo adapt to use SpatialIndexPopulator instead of partPopulator
+        spatialFile = new SpatialIndexFiles.SpatialFile( crs, configuredSettings, fs, super.getIndexFiles().getBase() );
         return new SpatialIndexPopulator.PartPopulator( pageCache, fs, spatialFile.getLayoutForNewIndex(), monitor, indexDescriptor,
                 new StandardConfiguration() );
     }
 
     @Override
-    public File getIndexFile()
+    public IndexFiles getIndexFiles()
     {
-        return spatialFile.indexFile;
+        return spatialFile;
     }
 
     @Override

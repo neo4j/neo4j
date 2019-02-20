@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import java.io.File;
-
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexProvider;
@@ -30,10 +28,10 @@ import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_WRITER;
 
 class NumberIndexPopulator extends NativeIndexPopulator<NumberIndexKey,NativeIndexValue>
 {
-    NumberIndexPopulator( PageCache pageCache, FileSystemAbstraction fs, File storeFile, IndexLayout<NumberIndexKey,NativeIndexValue> layout,
+    NumberIndexPopulator( PageCache pageCache, FileSystemAbstraction fs, IndexFiles indexFiles, IndexLayout<NumberIndexKey,NativeIndexValue> layout,
             IndexProvider.Monitor monitor, StorageIndexReference descriptor )
     {
-        super( pageCache, fs, storeFile, layout, monitor, descriptor, NO_HEADER_WRITER );
+        super( pageCache, fs, indexFiles, layout, monitor, descriptor, NO_HEADER_WRITER );
     }
 
     @Override

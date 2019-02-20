@@ -48,10 +48,10 @@ public abstract class NativeIndexAccessor<KEY extends NativeIndexKey<KEY>, VALUE
     private final NativeIndexUpdater<KEY,VALUE> singleUpdater;
     final NativeIndexHeaderWriter headerWriter;
 
-    NativeIndexAccessor( PageCache pageCache, FileSystemAbstraction fs, File storeFile, IndexLayout<KEY,VALUE> layout,
+    NativeIndexAccessor( PageCache pageCache, FileSystemAbstraction fs, IndexFiles indexFiles, IndexLayout<KEY,VALUE> layout,
             IndexProvider.Monitor monitor, StorageIndexReference descriptor, Consumer<PageCursor> additionalHeaderWriter )
     {
-        super( pageCache, fs, storeFile, layout, monitor, descriptor );
+        super( pageCache, fs, indexFiles, layout, monitor, descriptor );
         singleUpdater = new NativeIndexUpdater<>( layout.newKey(), layout.newValue() );
         headerWriter = new NativeIndexHeaderWriter( BYTE_ONLINE, additionalHeaderWriter );
     }
@@ -60,14 +60,7 @@ public abstract class NativeIndexAccessor<KEY extends NativeIndexKey<KEY>, VALUE
     public void drop()
     {
         closeTree();
-        try
-        {
-            fileSystem.deleteFileOrThrow( storeFile );
-        }
-        catch ( IOException e )
-        {
-            throw new UncheckedIOException( e );
-        }
+        indexFiles.clear();
     }
 
     @Override
@@ -120,7 +113,7 @@ public abstract class NativeIndexAccessor<KEY extends NativeIndexKey<KEY>, VALUE
     @Override
     public ResourceIterator<File> snapshotFiles()
     {
-        return asResourceIterator( iterator( storeFile ) );
+        return asResourceIterator( iterator( indexFiles.getStoreFile() ) );
     }
 
     @Override

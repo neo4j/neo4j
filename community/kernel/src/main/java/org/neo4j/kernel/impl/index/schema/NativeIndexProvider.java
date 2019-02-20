@@ -84,27 +84,27 @@ abstract class NativeIndexProvider<KEY extends NativeIndexKey<KEY>,VALUE extends
             throw new UnsupportedOperationException( "Can't create populator for read only index" );
         }
 
-        File storeFile = nativeIndexFileFromIndexId( descriptor.indexReference() );
-        return newIndexPopulator( storeFile, layout( descriptor, null /*meaning don't read from this file since we're recreating it anyway*/ ), descriptor );
+        IndexFiles indexFiles = new IndexFiles.Directory( fs, directoryStructure(), descriptor.indexReference() );
+        return newIndexPopulator( indexFiles, layout( descriptor, null /*meaning don't read from this file since we're recreating it anyway*/ ), descriptor );
     }
 
-    protected abstract IndexPopulator newIndexPopulator( File storeFile, LAYOUT layout, StorageIndexReference descriptor );
+    protected abstract IndexPopulator newIndexPopulator( IndexFiles indexFiles, LAYOUT layout, StorageIndexReference descriptor );
 
     @Override
     public IndexAccessor getOnlineAccessor( StorageIndexReference descriptor, IndexSamplingConfig samplingConfig ) throws IOException
     {
-        File storeFile = nativeIndexFileFromIndexId( descriptor.indexReference() );
-        return newIndexAccessor( storeFile, layout( descriptor, storeFile ), descriptor );
+        IndexFiles indexFiles = new IndexFiles.Directory( fs, directoryStructure(), descriptor.indexReference() );
+        return newIndexAccessor( indexFiles, layout( descriptor, indexFiles.getStoreFile() ), descriptor );
     }
 
-    protected abstract IndexAccessor newIndexAccessor( File storeFile, LAYOUT layout, StorageIndexReference descriptor ) throws IOException;
+    protected abstract IndexAccessor newIndexAccessor( IndexFiles indexFiles, LAYOUT layout, StorageIndexReference descriptor ) throws IOException;
 
     @Override
     public String getPopulationFailure( StorageIndexReference descriptor ) throws IllegalStateException
     {
         try
         {
-            String failureMessage = NativeIndexes.readFailureMessage( pageCache, nativeIndexFileFromIndexId( descriptor.indexReference() ) );
+            String failureMessage = NativeIndexes.readFailureMessage( pageCache, storeFile( descriptor ) );
             if ( failureMessage == null )
             {
                 throw new IllegalStateException( "Index " + descriptor.indexReference() + " isn't failed" );
@@ -122,7 +122,7 @@ abstract class NativeIndexProvider<KEY extends NativeIndexKey<KEY>,VALUE extends
     {
         try
         {
-            return NativeIndexes.readState( pageCache, nativeIndexFileFromIndexId( descriptor.indexReference() ) );
+            return NativeIndexes.readState( pageCache, storeFile( descriptor ) );
         }
         catch ( MetadataMismatchException | IOException e )
         {
@@ -139,13 +139,9 @@ abstract class NativeIndexProvider<KEY extends NativeIndexKey<KEY>,VALUE extends
         return StoreMigrationParticipant.NOT_PARTICIPATING;
     }
 
-    private File nativeIndexFileFromIndexId( long indexId )
+    private File storeFile( StorageIndexReference descriptor )
     {
-        return new File( directoryStructure().directoryForIndex( indexId ), indexFileName( indexId ) );
-    }
-
-    private static String indexFileName( long indexId )
-    {
-        return "index-" + indexId;
+        IndexFiles indexFiles = new IndexFiles.Directory( fs, directoryStructure(), descriptor.indexReference() );
+        return indexFiles.getStoreFile();
     }
 }

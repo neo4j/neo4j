@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
@@ -124,7 +123,7 @@ class NativeIndexPopulatorTestCases
     {
         return ( pageCache, fs, storeFile, layout, monitor, descriptor ) ->
         {
-            TemporalIndexFiles.FileLayout<TK> fileLayout = new TemporalIndexFiles.FileLayout<>( storeFile, layout, temporalValueGroup );
+            TemporalIndexFiles.FileLayout<TK> fileLayout = new TemporalIndexFiles.FileLayout<>( fs, storeFile.getStoreFile(), layout, temporalValueGroup );
             return new TemporalIndexPopulator.PartPopulator<>( pageCache, fs, fileLayout, monitor, descriptor );
         };
     }
@@ -133,20 +132,20 @@ class NativeIndexPopulatorTestCases
     {
         return ( pageCache, fs, storeFile, layout, monitor, descriptor ) ->
                 new GenericNativeIndexPopulator( pageCache, fs, storeFile, layout, monitor, descriptor, spaceFillingCurveSettings,
-                        SimpleIndexDirectoryStructures.onIndexFile( storeFile ), configuration, false );
+                        SimpleIndexDirectoryStructures.onIndexFile( storeFile.getStoreFile() ), configuration, false );
     }
 
     private static PopulatorFactory<GenericKey,NativeIndexValue> genericBlockBasedPopulatorFactory()
     {
         return ( pageCache, fs, storeFile, layout, monitor, descriptor ) ->
                 new GenericBlockBasedIndexPopulator( pageCache, fs, storeFile, layout, monitor, descriptor, spaceFillingCurveSettings,
-                        SimpleIndexDirectoryStructures.onIndexFile( storeFile ), configuration, false );
+                        SimpleIndexDirectoryStructures.onIndexFile( storeFile.getStoreFile() ), configuration, false );
     }
 
     @FunctionalInterface
     public interface PopulatorFactory<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue>
     {
-        NativeIndexPopulator<KEY,VALUE> create( PageCache pageCache, FileSystemAbstraction fs, File storeFile, IndexLayout<KEY,VALUE> layout,
+        NativeIndexPopulator<KEY,VALUE> create( PageCache pageCache, FileSystemAbstraction fs, IndexFiles indexFiles, IndexLayout<KEY,VALUE> layout,
                 IndexProvider.Monitor monitor, StoreIndexDescriptor descriptor ) throws IOException;
     }
 }

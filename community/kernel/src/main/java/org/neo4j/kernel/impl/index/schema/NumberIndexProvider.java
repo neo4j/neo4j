@@ -59,15 +59,15 @@ public class NumberIndexProvider extends NativeIndexProvider<NumberIndexKey,Nati
     }
 
     @Override
-    protected IndexPopulator newIndexPopulator( File storeFile, NumberLayout layout, StorageIndexReference descriptor )
+    protected IndexPopulator newIndexPopulator( IndexFiles indexFiles, NumberLayout layout, StorageIndexReference descriptor )
     {
-        return new WorkSyncedNativeIndexPopulator<>( new NumberIndexPopulator( pageCache, fs, storeFile, layout, monitor, descriptor ) );
+        return new WorkSyncedNativeIndexPopulator<>( new NumberIndexPopulator( pageCache, fs, indexFiles, layout, monitor, descriptor ) );
     }
 
     @Override
-    protected IndexAccessor newIndexAccessor( File storeFile, NumberLayout layout, StorageIndexReference descriptor ) throws IOException
+    protected IndexAccessor newIndexAccessor( IndexFiles indexFiles, NumberLayout layout, StorageIndexReference descriptor ) throws IOException
     {
-        return new NumberIndexAccessor( pageCache, fs, storeFile, layout, recoveryCleanupWorkCollector, monitor, descriptor );
+        return new NumberIndexAccessor( pageCache, fs, indexFiles, layout, recoveryCleanupWorkCollector, monitor, descriptor );
     }
 
     @Override

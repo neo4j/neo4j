@@ -57,6 +57,9 @@ class SpatialIndexPopulator extends SpatialIndexCache<WorkSyncedNativeIndexPopul
     @Override
     public synchronized void create()
     {
+        //todo
+        // - also clear directory
+        // - Might not have to call clear on all sub. Only place where clear is called
         forAll( p -> p.getActual().clear(), this );
 
         // We must make sure to have at least one subindex:
@@ -70,6 +73,7 @@ class SpatialIndexPopulator extends SpatialIndexCache<WorkSyncedNativeIndexPopul
     @Override
     public synchronized void drop()
     {
+        // todo also clear directory
         forAll( IndexPopulator::drop, this );
     }
 
@@ -151,7 +155,7 @@ class SpatialIndexPopulator extends SpatialIndexCache<WorkSyncedNativeIndexPopul
         PartPopulator( PageCache pageCache, FileSystemAbstraction fs, SpatialIndexFiles.SpatialFileLayout fileLayout, IndexProvider.Monitor monitor,
                 StorageIndexReference descriptor, SpaceFillingCurveConfiguration configuration )
         {
-            super( pageCache, fs, fileLayout.getIndexFile(), fileLayout.layout, monitor, descriptor, NO_HEADER_WRITER );
+            super( pageCache, fs, fileLayout.spatialFile, fileLayout.layout, monitor, descriptor, NO_HEADER_WRITER );
             this.configuration = configuration;
             this.settings = fileLayout.settings;
         }

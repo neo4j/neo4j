@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.index.schema;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
@@ -141,7 +140,7 @@ public class NativeIndexAccessorTest<KEY extends NativeIndexKey<KEY>, VALUE exte
     @Override
     NativeIndexAccessor<KEY,VALUE> makeAccessor() throws IOException
     {
-        return accessorFactory.create( pageCache, fs, getIndexFile(), layout, RecoveryCleanupWorkCollector.immediate(), monitor, indexDescriptor,
+        return accessorFactory.create( pageCache, fs, getIndexFiles(), layout, RecoveryCleanupWorkCollector.immediate(), monitor, indexDescriptor,
                 indexDirectoryStructure );
     }
 
@@ -166,36 +165,36 @@ public class NativeIndexAccessorTest<KEY extends NativeIndexKey<KEY>, VALUE exte
     /* Helpers */
     private static AccessorFactory<NumberIndexKey,NativeIndexValue> numberAccessorFactory()
     {
-        return ( pageCache, fs, storeFile, layout, recoveryCleanupWorkCollector, monitor, descriptor, directory ) ->
-                new NumberIndexAccessor( pageCache, fs, storeFile, layout, recoveryCleanupWorkCollector, monitor, descriptor );
+        return ( pageCache, fs, storeFiles, layout, recoveryCleanupWorkCollector, monitor, descriptor, directory ) ->
+                new NumberIndexAccessor( pageCache, fs, storeFiles, layout, recoveryCleanupWorkCollector, monitor, descriptor );
     }
 
     private static AccessorFactory<StringIndexKey,NativeIndexValue> stringAccessorFactory()
     {
-        return ( pageCache, fs, storeFile, layout, recoveryCleanupWorkCollector, monitor, descriptor, directory ) ->
-                new StringIndexAccessor( pageCache, fs, storeFile, layout, recoveryCleanupWorkCollector, monitor, descriptor );
+        return ( pageCache, fs, storeFiles, layout, recoveryCleanupWorkCollector, monitor, descriptor, directory ) ->
+                new StringIndexAccessor( pageCache, fs, storeFiles, layout, recoveryCleanupWorkCollector, monitor, descriptor );
     }
 
     private static <TK extends NativeIndexSingleValueKey<TK>> AccessorFactory<TK,NativeIndexValue> temporalAccessorFactory( ValueGroup temporalValueGroup )
     {
-        return ( pageCache, fs, storeFile, layout, cleanup, monitor, descriptor, directory ) ->
+        return ( pageCache, fs, storeFiles, layout, cleanup, monitor, descriptor, directory ) ->
         {
-            TemporalIndexFiles.FileLayout<TK> fileLayout = new TemporalIndexFiles.FileLayout<>( storeFile, layout, temporalValueGroup );
+            TemporalIndexFiles.FileLayout<TK> fileLayout = new TemporalIndexFiles.FileLayout<>( fs, storeFiles.getStoreFile(), layout, temporalValueGroup );
             return new TemporalIndexAccessor.PartAccessor<>( pageCache, fs, fileLayout, cleanup, monitor, descriptor );
         };
     }
 
     private static AccessorFactory<GenericKey,NativeIndexValue> genericAccessorFactory()
     {
-        return ( pageCache, fs, storeFile, layout, cleanup, monitor, descriptor, directory ) ->
-                new GenericNativeIndexAccessor( pageCache, fs, storeFile, layout, cleanup, monitor, descriptor, spaceFillingCurveSettings,
+        return ( pageCache, fs, storeFiles, layout, cleanup, monitor, descriptor, directory ) ->
+                new GenericNativeIndexAccessor( pageCache, fs, storeFiles, layout, cleanup, monitor, descriptor, spaceFillingCurveSettings,
                         directory, configuration );
     }
 
     @FunctionalInterface
     private interface AccessorFactory<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue>
     {
-        NativeIndexAccessor<KEY,VALUE> create( PageCache pageCache, FileSystemAbstraction fs, File storeFile, IndexLayout<KEY,VALUE> layout,
+        NativeIndexAccessor<KEY,VALUE> create( PageCache pageCache, FileSystemAbstraction fs, IndexFiles indexFiles, IndexLayout<KEY,VALUE> layout,
                 RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, IndexProvider.Monitor monitor, StoreIndexDescriptor descriptor,
                 IndexDirectoryStructure directory ) throws IOException;
     }

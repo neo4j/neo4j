@@ -21,9 +21,6 @@ package org.neo4j.kernel.impl.index.schema;
 
 import org.junit.Test;
 
-import java.io.File;
-import java.io.IOException;
-
 import org.neo4j.configuration.Config;
 import org.neo4j.gis.spatial.index.curves.StandardConfiguration;
 import org.neo4j.internal.kernel.api.IndexCapability;
@@ -47,9 +44,9 @@ public class SpatialIndexAccessorTest extends NativeIndexAccessorTests<SpatialIn
     private SpatialIndexFiles.SpatialFile spatialFile;
 
     @Override
-    NativeIndexAccessor<SpatialIndexKey,NativeIndexValue> makeAccessor() throws IOException
+    NativeIndexAccessor<SpatialIndexKey,NativeIndexValue> makeAccessor()
     {
-        spatialFile = new SpatialIndexFiles.SpatialFile( CoordinateReferenceSystem.WGS84, configuredSettings, super.getIndexFile() );
+        spatialFile = new SpatialIndexFiles.SpatialFile( CoordinateReferenceSystem.WGS84, configuredSettings, fs, super.getIndexFiles().getBase() );
         return new SpatialIndexAccessor.PartAccessor( pageCache, fs, spatialFile.getLayoutForNewIndex(), immediate(), monitor, indexDescriptor,
                 new StandardConfiguration() );
     }
@@ -73,9 +70,9 @@ public class SpatialIndexAccessorTest extends NativeIndexAccessorTests<SpatialIn
     }
 
     @Override
-    public File getIndexFile()
+    public IndexFiles getIndexFiles()
     {
-        return spatialFile.indexFile;
+        return spatialFile;
     }
 
     @Override

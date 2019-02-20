@@ -23,7 +23,6 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.rules.RuleChain;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -71,8 +70,7 @@ public abstract class NativeIndexTestUtil<KEY extends NativeIndexKey<KEY>,VALUE 
     ValueCreatorUtil<KEY,VALUE> valueCreatorUtil;
     IndexLayout<KEY,VALUE> layout;
     IndexDirectoryStructure indexDirectoryStructure;
-    private File indexDirectory;
-    private File indexFile;
+    private IndexFiles indexFiles;
     PageCache pageCache;
     IndexProvider.Monitor monitor = IndexProvider.Monitor.EMPTY;
 
@@ -83,20 +81,14 @@ public abstract class NativeIndexTestUtil<KEY extends NativeIndexKey<KEY>,VALUE 
         indexDescriptor = valueCreatorUtil.indexDescriptor();
         layout = createLayout();
         indexDirectoryStructure = directoriesByProvider( directory.directory( "root" ) ).forProvider( indexDescriptor.providerDescriptor() );
-        indexDirectory = indexDirectoryStructure.directoryForIndex( indexDescriptor.getId() );
-        indexFile = new File( indexDirectory, "indexFile" );
-        fs.mkdirs( this.indexFile.getParentFile() );
+        this.indexFiles = new IndexFiles.Directory( fs, indexDirectoryStructure, indexDescriptor.getId() );
+        fs.mkdirs( indexFiles.getStoreFile().getParentFile() );
         pageCache = pageCacheRule.getPageCache( fs );
     }
 
-    public File getIndexFile()
+    IndexFiles getIndexFiles()
     {
-        return indexFile;
-    }
-
-    File getIndexDirectory()
-    {
-        return indexDirectory;
+        return indexFiles;
     }
 
     abstract ValueCreatorUtil<KEY,VALUE> createValueCreatorUtil();
@@ -139,7 +131,7 @@ public abstract class NativeIndexTestUtil<KEY extends NativeIndexKey<KEY>,VALUE 
 
     GBPTree<KEY,VALUE> getTree()
     {
-        return new GBPTree<>( pageCache, getIndexFile(), layout, 0, GBPTree.NO_MONITOR,
+        return new GBPTree<>( pageCache, getIndexFiles().getStoreFile(), layout, 0, GBPTree.NO_MONITOR,
                 NO_HEADER_READER, NO_HEADER_WRITER, RecoveryCleanupWorkCollector.immediate() );
     }
 
@@ -206,17 +198,17 @@ public abstract class NativeIndexTestUtil<KEY extends NativeIndexKey<KEY>,VALUE 
 
     void assertFilePresent()
     {
-        assertTrue( fs.fileExists( getIndexFile() ) );
+        assertTrue( fs.fileExists( getIndexFiles().getStoreFile() ) );
     }
 
     void assertFileNotPresent()
     {
-        assertFalse( fs.fileExists( getIndexFile() ) );
+        assertFalse( fs.fileExists( getIndexFiles().getStoreFile() ) );
     }
 
     void assertDirectoryNotPresent()
     {
-        assertFalse( "expected ", fs.fileExists( indexDirectory ) );
+        assertFalse( "expected ", fs.fileExists( getIndexFiles().getBase() ) );
     }
 
     // Useful when debugging

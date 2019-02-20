@@ -25,7 +25,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -90,13 +89,14 @@ public class GenericAccessorPointsTest
     {
         DefaultFileSystemAbstraction fs = this.fs.get();
         PageCache pc = pageCacheRule.getPageCache( fs );
-        File file = directory.file( "index" );
+        IndexFiles indexFiles = new IndexFiles.SingleFile( fs, directory.file( "index" ) );
         GenericLayout layout = new GenericLayout( 1, indexSettings );
         RecoveryCleanupWorkCollector collector = RecoveryCleanupWorkCollector.ignore();
         descriptor = TestIndexDescriptorFactory.forLabel( 1, 1 ).withId( 1 );
         IndexDirectoryStructure.Factory factory = IndexDirectoryStructure.directoriesByProvider( directory.storeDir() );
         IndexDirectoryStructure structure = factory.forProvider( GenericNativeIndexProvider.DESCRIPTOR );
-        accessor = new GenericNativeIndexAccessor( pc, fs, file, layout, collector, EMPTY, descriptor, indexSettings, structure, new StandardConfiguration() );
+        accessor = new GenericNativeIndexAccessor( pc, fs, indexFiles, layout, collector, EMPTY, descriptor, indexSettings, structure,
+                new StandardConfiguration() );
     }
 
     @After
