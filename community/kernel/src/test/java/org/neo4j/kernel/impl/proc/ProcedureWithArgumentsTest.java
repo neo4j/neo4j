@@ -57,7 +57,7 @@ import static org.neo4j.values.storable.Values.longValue;
 import static org.neo4j.values.storable.Values.stringValue;
 
 @SuppressWarnings( "WeakerAccess" )
-public class ReflectiveProcedureWithArgumentsTest
+public class ProcedureWithArgumentsTest
 {
     private final ResourceTracker resourceTracker = new StubResourceManager();
     private final DependencyResolver dependencyResolver = new Dependencies();
