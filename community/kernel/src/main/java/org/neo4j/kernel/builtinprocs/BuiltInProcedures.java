@@ -20,9 +20,11 @@
 package org.neo4j.kernel.builtinprocs;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Spliterator;
 import java.util.concurrent.TimeUnit;
 import java.util.function.LongFunction;
@@ -34,9 +36,12 @@ import org.neo4j.common.DependencyResolver;
 import org.neo4j.common.EntityType;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.graphdb.Label;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.index.IndexPopulationProgress;
 import org.neo4j.helpers.collection.Iterators;
+import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.PopulationProgress;
@@ -60,23 +65,10 @@ import org.neo4j.procedure.Mode;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
 import org.neo4j.storageengine.api.schema.SchemaDescriptor;
-import org.neo4j.values.AnyValue;
-import org.neo4j.values.storable.DoubleValue;
-import org.neo4j.values.storable.LongValue;
-import org.neo4j.values.storable.TextValue;
-import org.neo4j.values.storable.Values;
-import org.neo4j.values.virtual.ListValue;
-import org.neo4j.values.virtual.MapValue;
-import org.neo4j.values.virtual.VirtualValues;
 
 import static org.neo4j.helpers.collection.Iterators.asList;
 import static org.neo4j.procedure.Mode.READ;
 import static org.neo4j.procedure.Mode.SCHEMA;
-import static org.neo4j.values.storable.Values.doubleValue;
-import static org.neo4j.values.storable.Values.longValue;
-import static org.neo4j.values.storable.Values.stringArray;
-import static org.neo4j.values.storable.Values.stringValue;
-import static org.neo4j.values.virtual.VirtualValues.fromArray;
 
 @SuppressWarnings( {"unused", "WeakerAccess"} )
 public class BuiltInProcedures
@@ -151,28 +143,27 @@ public class BuiltInProcedures
                     IndexType type = IndexType.getIndexTypeOf( index );
 
                     SchemaDescriptor schema = index.schema();
-                    LongValue indexId = longValue( getIndexId( indexingService, schema ) );
-                    ListValue tokenNames = fromArray( stringArray( tokens.entityTokensGetNames( schema.entityType(),
-                            schema.getEntityTokenIds() ) ) );
-                    ListValue propertyNames = propertyNames( tokens, index );
-                    TextValue description = stringValue( "INDEX ON " + schema.userDescription( tokens ) );
+                    long indexId = getIndexId( indexingService, schema );
+                    List<String> tokenNames = Arrays.asList( tokens.entityTokensGetNames( schema.entityType(), schema.getEntityTokenIds() ) );
+                    List<String> propertyNames = propertyNames( tokens, index );
+                    String description = "INDEX ON " + schema.userDescription( tokens );
                     InternalIndexState internalIndexState = schemaRead.indexGetState( index );
-                    TextValue state = stringValue( internalIndexState.toString() );
-                    MapValue providerDescriptorMap = indexProviderDescriptorMap( schemaRead.index( schema ) );
+                    String state = internalIndexState.toString();
+                    Map<String,String> providerDescriptorMap = indexProviderDescriptorMap( schemaRead.index( schema ) );
                     PopulationProgress progress = schemaRead.indexGetPopulationProgress( index );
                     IndexPopulationProgress indexProgress = new IndexPopulationProgress( progress.getCompleted(), progress.getTotal() );
-                    TextValue failureMessage = internalIndexState == InternalIndexState.FAILED ? stringValue(
-                            schemaRead.indexGetFailure( index ) ) : Values.EMPTY_STRING;
+
+                    String failureMessage = internalIndexState == InternalIndexState.FAILED ? schemaRead.indexGetFailure( index ) : "";
                     result.add( new IndexResult( indexId,
-                            description,
-                            stringValue( index.name() ),
-                            tokenNames,
-                            propertyNames,
-                            state,
-                            stringValue( type.typeName() ),
-                            doubleValue( indexProgress.getCompletedPercentage() ),
-                            providerDescriptorMap,
-                            failureMessage ) );
+                                                 description,
+                                                 index.name(),
+                                                 tokenNames,
+                                                 propertyNames,
+                                                 state,
+                                                 type.typeName(),
+                                                 indexProgress.getCompletedPercentage(),
+                                                 providerDescriptorMap,
+                                                 failureMessage ) );
                 }
                 catch ( IndexNotFoundKernelException e )
                 {
@@ -187,29 +178,29 @@ public class BuiltInProcedures
     @Description( "Wait for an index to come online (for example: CALL db.awaitIndex(\":Person(name)\"))." )
     @Procedure( name = "db.awaitIndex", mode = READ )
     public void awaitIndex( @Name( "index" ) String index,
-            @Name( value = "timeOutSeconds", defaultValue = "300" ) LongValue timeout )
+            @Name( value = "timeOutSeconds", defaultValue = "300" ) long timeout )
             throws ProcedureException
     {
         try ( IndexProcedures indexProcedures = indexProcedures() )
         {
-            indexProcedures.awaitIndexByPattern( index, timeout.longValue(), TimeUnit.SECONDS );
+            indexProcedures.awaitIndexByPattern( index, timeout, TimeUnit.SECONDS );
         }
     }
 
     @Description( "Wait for all indexes to come online (for example: CALL db.awaitIndexes(\"500\"))." )
     @Procedure( name = "db.awaitIndexes", mode = READ )
-    public void awaitIndexes( @Name( value = "timeOutSeconds", defaultValue = "300" ) LongValue timeout )
+    public void awaitIndexes( @Name( value = "timeOutSeconds", defaultValue = "300" ) long timeout )
     {
-        graphDatabaseAPI.schema().awaitIndexesOnline( timeout.longValue(), TimeUnit.SECONDS );
+        graphDatabaseAPI.schema().awaitIndexesOnline( timeout, TimeUnit.SECONDS );
     }
 
     @Description( "Schedule resampling of an index (for example: CALL db.resampleIndex(\":Person(name)\"))." )
     @Procedure( name = "db.resampleIndex", mode = READ )
-    public void resampleIndex( @Name( "index" ) TextValue index ) throws ProcedureException
+    public void resampleIndex( @Name( "index" ) String index ) throws ProcedureException
     {
         try ( IndexProcedures indexProcedures = indexProcedures() )
         {
-            indexProcedures.resampleIndex( index.stringValue() );
+            indexProcedures.resampleIndex( index );
         }
     }
 
@@ -228,14 +219,14 @@ public class BuiltInProcedures
             "Triggers an index resample and waits for it to complete, and after that clears query caches. After this " +
             "procedure has finished queries will be planned using the latest database statistics." )
     @Procedure( name = "db.prepareForReplanning", mode = READ )
-    public void prepareForReplanning( @Name( value = "timeOutSeconds", defaultValue = "300" ) LongValue timeOutSeconds )
+    public void prepareForReplanning( @Name( value = "timeOutSeconds", defaultValue = "300" ) long timeOutSeconds )
             throws ProcedureException
     {
         //Resample indexes
         try ( IndexProcedures indexProcedures = indexProcedures() )
         {
             indexProcedures.resampleOutdatedIndexes();
-            indexProcedures.awaitIndexResampling( timeOutSeconds.longValue() );
+            indexProcedures.awaitIndexResampling( timeOutSeconds );
         }
 
         //now that index-stats are up-to-date, clear caches so that we are ready to re-plan
@@ -292,13 +283,13 @@ public class BuiltInProcedures
             "YIELD index, providerName, status" )
     @Procedure( name = "db.createIndex", mode = SCHEMA )
     public Stream<SchemaIndexInfo> createIndex(
-            @Name( "index" ) TextValue index,
-            @Name( "providerName" ) TextValue providerName )
+            @Name( "index" ) String index,
+            @Name( "providerName" ) String providerName )
             throws ProcedureException
     {
         try ( IndexProcedures indexProcedures = indexProcedures() )
         {
-            return indexProcedures.createIndex( index.stringValue(), providerName.stringValue() );
+            return indexProcedures.createIndex( index, providerName );
         }
     }
 
@@ -307,13 +298,13 @@ public class BuiltInProcedures
             "YIELD index, providerName, status" )
     @Procedure( name = "db.createUniquePropertyConstraint", mode = SCHEMA )
     public Stream<BuiltInProcedures.SchemaIndexInfo> createUniquePropertyConstraint(
-            @Name( "index" ) TextValue index,
-            @Name( "providerName" ) TextValue providerName )
+            @Name( "index" ) String index,
+            @Name( "providerName" ) String providerName )
             throws ProcedureException
     {
         try ( IndexProcedures indexProcedures = indexProcedures() )
         {
-            return indexProcedures.createUniquePropertyConstraint( index.stringValue(), providerName.stringValue() );
+            return indexProcedures.createUniquePropertyConstraint( index, providerName );
         }
     }
 
@@ -329,24 +320,22 @@ public class BuiltInProcedures
         }
     }
 
-    private static MapValue indexProviderDescriptorMap( IndexReference indexReference )
+    private static Map<String,String> indexProviderDescriptorMap( IndexReference indexReference )
     {
-        return VirtualValues.map(
-                new String[]{"key", "version"},
-                new AnyValue[]{stringValue( indexReference.providerKey() ),
-                        stringValue( indexReference.providerVersion() )}
-        );
+        return MapUtil.stringMap(
+                "key", indexReference.providerKey(),
+                "version", indexReference.providerVersion() );
     }
 
-    private static ListValue propertyNames( TokenNameLookup tokens, IndexReference index )
+    private static List<String> propertyNames( TokenNameLookup tokens, IndexReference index )
     {
         int[] propertyIds = index.properties();
-        List<AnyValue> propertyNames = new ArrayList<>( propertyIds.length );
+        List<String> propertyNames = new ArrayList<>( propertyIds.length );
         for ( int propertyId : propertyIds )
         {
-            propertyNames.add( stringValue( tokens.propertyKeyGetName( propertyId ) ) );
+            propertyNames.add( tokens.propertyKeyGetName( propertyId ) );
         }
-        return VirtualValues.fromList( propertyNames );
+        return propertyNames;
     }
 
     private static <T> Stream<T> toStream( PrimitiveLongResourceIterator iterator, LongFunction<T> mapper )
@@ -376,61 +365,71 @@ public class BuiltInProcedures
 
     public static class LabelResult
     {
-        public final TextValue label;
-        public final LongValue nodeCount;
+        public final String label;
+        public final long nodeCount;
 
         private LabelResult( Label label, long nodeCount )
         {
-            this.label = stringValue(label.name());
-            this.nodeCount = longValue( nodeCount );
+            this.label = label.name();
+            this.nodeCount = nodeCount;
         }
     }
 
     public static class PropertyKeyResult
     {
-        public final TextValue propertyKey;
+        public final String propertyKey;
 
         private PropertyKeyResult( String propertyKey )
         {
-            this.propertyKey = stringValue( propertyKey );
+            this.propertyKey = propertyKey;
         }
     }
 
     public static class RelationshipTypeResult
     {
-        public final TextValue relationshipType;
-        public final LongValue relationshipCount;
+        public final String relationshipType;
+        public final long relationshipCount;
 
         private RelationshipTypeResult( RelationshipType relationshipType, long relationshipCount )
         {
-            this.relationshipType = stringValue( relationshipType.name() );
-            this.relationshipCount = longValue( relationshipCount );
+            this.relationshipType = relationshipType.name();
+            this.relationshipCount = relationshipCount;
         }
+    }
+
+    public static class BooleanResult
+    {
+        public BooleanResult( Boolean success )
+        {
+            this.success = success;
+        }
+
+        public final Boolean success;
     }
 
     public static class IndexResult
     {
-        public final TextValue description;
-        public final TextValue indexName;
-        public final ListValue tokenNames;
-        public final ListValue properties;
-        public final TextValue state;
-        public final TextValue type;
-        public final DoubleValue progress;
-        public final MapValue provider;
-        public final LongValue id;
-        public final TextValue failureMessage;
+        public final String description;
+        public final String indexName;
+        public final List<String> tokenNames;
+        public final List<String> properties;
+        public final String state;
+        public final String type;
+        public final Double progress;
+        public final Map<String,String> provider;
+        public final long id;
+        public final String failureMessage;
 
-        private IndexResult( LongValue id,
-                             TextValue description,
-                             TextValue indexName,
-                             ListValue tokenNames,
-                             ListValue properties,
-                             TextValue state,
-                             TextValue type,
-                             DoubleValue progress,
-                             MapValue provider,
-                             TextValue failureMessage )
+        private IndexResult( long id,
+                             String description,
+                             String indexName,
+                             List<String> tokenNames,
+                             List<String> properties,
+                             String state,
+                             String type,
+                             Float progress,
+                             Map<String,String> provider,
+                             String failureMessage )
         {
             this.id = id;
             this.description = description;
@@ -439,7 +438,7 @@ public class BuiltInProcedures
             this.properties = properties;
             this.state = state;
             this.type = type;
-            this.progress = progress;
+            this.progress = progress.doubleValue();
             this.provider = provider;
             this.failureMessage = failureMessage;
         }
@@ -447,26 +446,70 @@ public class BuiltInProcedures
 
     public static class SchemaIndexInfo
     {
-        public final TextValue index;
-        public final TextValue providerName;
-        public final TextValue status;
+        public final String index;
+        public final String providerName;
+        public final String status;
 
         public SchemaIndexInfo( String index, String providerName, String status )
         {
-            this.index = stringValue( index );
-            this.providerName = stringValue( providerName );
-            this.status = stringValue( status );
+            this.index = index;
+            this.providerName = providerName;
+            this.status = status;
         }
     }
 
     public static class ConstraintResult
     {
-        public final TextValue description;
+        public final String description;
 
         private ConstraintResult( String description )
         {
-            this.description = stringValue( description );
+            this.description = description;
         }
+    }
+
+    public static class NodeResult
+    {
+        public NodeResult( Node node )
+        {
+            this.node = node;
+        }
+
+        public final Node node;
+    }
+
+    public static class WeightedNodeResult
+    {
+        public final Node node;
+        public final double weight;
+
+        public WeightedNodeResult( Node node, double weight )
+        {
+            this.node = node;
+            this.weight = weight;
+        }
+    }
+
+    public static class WeightedRelationshipResult
+    {
+        public final Relationship relationship;
+        public final double weight;
+
+        public WeightedRelationshipResult( Relationship relationship, double weight )
+        {
+            this.relationship = relationship;
+            this.weight = weight;
+        }
+    }
+
+    public static class RelationshipResult
+    {
+        public RelationshipResult( Relationship relationship )
+        {
+            this.relationship = relationship;
+        }
+
+        public final Relationship relationship;
     }
 
     //When we have decided on what to call different indexes

@@ -24,6 +24,7 @@ import org.eclipse.collections.impl.factory.primitive.IntSets;
 import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -41,18 +42,7 @@ import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.Transaction;
-import org.neo4j.values.AnyValue;
-import org.neo4j.values.AnyValues;
-import org.neo4j.values.storable.BooleanValue;
-import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
-import org.neo4j.values.virtual.ListValue;
-
-import static org.neo4j.values.storable.Values.FALSE;
-import static org.neo4j.values.storable.Values.NO_VALUE;
-import static org.neo4j.values.storable.Values.booleanValue;
-import static org.neo4j.values.storable.Values.stringValue;
-import static org.neo4j.values.virtual.VirtualValues.fromList;
 
 public class SchemaCalculator
 {
@@ -123,25 +113,24 @@ public class SchemaCalculator
             MutableIntSet propertyIds = relMappings.relationshipTypeIdToPropertyKeys.get( typeId );
             if ( propertyIds.size() == 0 )
             {
-                results.add( new RelationshipPropertySchemaInfoResult( stringValue( name ), NO_VALUE, NO_VALUE, FALSE ) );
+                results.add( new RelationshipPropertySchemaInfoResult( name, null, null, false ) );
             }
             else
             {
-                TextValue finalName = stringValue( name );
+                String finalName = name;
                 propertyIds.forEach( propId -> {
                     // lookup propId name and valueGroup
-                    TextValue propName = stringValue( propertyIdToPropertyNameMapping.get( propId ) );
+                    String propName = propertyIdToPropertyNameMapping.get( propId );
                     ValueTypeListHelper valueTypeListHelper = relMappings.relationshipTypeIdANDPropertyTypeIdToValueType.get( Pair.of( typeId, propId ) );
                     if ( relMappings.nullableRelationshipTypes.contains( typeId ) )
                     {
                         results.add( new RelationshipPropertySchemaInfoResult( finalName, propName, valueTypeListHelper.getCypherTypesList(),
-                                FALSE ) );
+                                false ) );
                     }
                     else
                     {
-                        results.add( new RelationshipPropertySchemaInfoResult( finalName, propName,
-                                valueTypeListHelper.getCypherTypesList(),
-                                booleanValue( valueTypeListHelper.isMandatory() ) ) );
+                        results.add( new RelationshipPropertySchemaInfoResult( finalName, propName, valueTypeListHelper.getCypherTypesList(),
+                                valueTypeListHelper.isMandatory() ) );
                     }
                 } );
             }
@@ -155,43 +144,40 @@ public class SchemaCalculator
         for ( SortedLabels labelSet : nodeMappings.labelSetToPropertyKeys.keySet() )
         {
             // lookup label names and produce list of names and produce String out of them
-            List<AnyValue> labelNames = new ArrayList<>();
+            List<String> labelNames = new ArrayList<>();
             for ( int i = 0; i < labelSet.numberOfLabels(); i++ )
             {
                 String name = nodeMappings.labelIdToLabelName.get( labelSet.label( i ) );
-                labelNames.add( stringValue( name ) );
+                labelNames.add( name );
             }
-            labelNames.sort( AnyValues.COMPARATOR );  // this is optional but waaaaay nicer
+            Collections.sort( labelNames );  // this is optional but waaaaay nicer
             StringBuilder labelsConcatenator = new StringBuilder();
-            for ( AnyValue item : labelNames )
+            for ( String item : labelNames )
             {
-                labelsConcatenator.append( ":`" ).append( ((TextValue) item).stringValue() ).append( "`" );
+                labelsConcatenator.append( ":`" ).append( item ).append( "`" );
             }
-            TextValue labels = stringValue( labelsConcatenator.toString() );
+            String labels = labelsConcatenator.toString();
 
             // lookup property value types
             MutableIntSet propertyIds = nodeMappings.labelSetToPropertyKeys.get( labelSet );
             if ( propertyIds.size() == 0 )
             {
-                results.add( new NodePropertySchemaInfoResult( labels, fromList( labelNames ), NO_VALUE, NO_VALUE, BooleanValue.FALSE ) );
+                results.add( new NodePropertySchemaInfoResult( labels, labelNames, null, null, false ) );
             }
             else
             {
                 propertyIds.forEach( propId -> {
                     // lookup propId name and valueGroup
-                    TextValue propName = stringValue( propertyIdToPropertyNameMapping.get( propId ) );
-                    ValueTypeListHelper valueTypeListHelper =
-                            nodeMappings.labelSetANDNodePropertyKeyIdToValueType.get( Pair.of( labelSet, propId ) );
+                    String propName = propertyIdToPropertyNameMapping.get( propId );
+                    ValueTypeListHelper valueTypeListHelper = nodeMappings.labelSetANDNodePropertyKeyIdToValueType.get( Pair.of( labelSet, propId ) );
                     if ( nodeMappings.nullableLabelSets.contains( labelSet ) )
                     {
-                        results.add( new NodePropertySchemaInfoResult( labels, fromList( labelNames ), propName,
-                                valueTypeListHelper.getCypherTypesList(), FALSE ) );
+                        results.add( new NodePropertySchemaInfoResult( labels, labelNames, propName, valueTypeListHelper.getCypherTypesList(), false ) );
                     }
                     else
                     {
-                        results.add( new NodePropertySchemaInfoResult( labels, fromList( labelNames ), propName,
-                                valueTypeListHelper.getCypherTypesList(),
-                                booleanValue( valueTypeListHelper.isMandatory() ) ) );
+                        results.add( new NodePropertySchemaInfoResult( labels, labelNames, propName, valueTypeListHelper.getCypherTypesList(),
+                                valueTypeListHelper.isMandatory() ) );
                     }
                 } );
             }
@@ -342,7 +328,7 @@ public class SchemaCalculator
 
     private class ValueTypeListHelper
     {
-        private Set<TextValue> seenValueTypes;
+        private Set<String> seenValueTypes;
         private boolean isMandatory = true;
 
         ValueTypeListHelper( Value v )
@@ -361,9 +347,9 @@ public class SchemaCalculator
             return isMandatory;
         }
 
-        ListValue getCypherTypesList()
+        List<String> getCypherTypesList()
         {
-            return fromList( new ArrayList<>( seenValueTypes ) );
+            return new ArrayList<>( seenValueTypes );
         }
 
         void updateValueTypesWith( Value newValue )
@@ -372,7 +358,7 @@ public class SchemaCalculator
             {
                 throw new IllegalArgumentException();
             }
-            seenValueTypes.add( stringValue( newValue.getTypeName() ) );
+            seenValueTypes.add( newValue.getTypeName() );
         }
     }
 

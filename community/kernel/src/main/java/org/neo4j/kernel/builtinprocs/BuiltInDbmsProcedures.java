@@ -35,10 +35,8 @@ import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Description;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
-import org.neo4j.values.storable.TextValue;
 
 import static org.neo4j.procedure.Mode.DBMS;
-import static org.neo4j.values.storable.Values.stringValue;
 
 @SuppressWarnings( "unused" )
 public class BuiltInDbmsProcedures
@@ -55,15 +53,15 @@ public class BuiltInDbmsProcedures
     @Admin
     @Description( "List the currently active config of Neo4j." )
     @Procedure( name = "dbms.listConfig", mode = DBMS )
-    public Stream<ConfigResult> listConfig( @Name( value = "searchString", defaultValue = "" ) TextValue searchString )
+    public Stream<ConfigResult> listConfig( @Name( value = "searchString", defaultValue = "" ) String searchString )
     {
         Config config = graph.getDependencyResolver().resolveDependency( Config.class );
-        String lowerCasedSearchString = searchString.toLower().stringValue();
+        String lowerCasedSearchString = searchString.toLowerCase();
         return config.getConfigValues().values().stream()
                 .filter( c -> !c.internal() )
                 .filter( c -> c.name().toLowerCase().contains( lowerCasedSearchString ) )
                 .map( ConfigResult::new )
-                .sorted( Comparator.comparing( c -> c.name.stringValue() ) );
+                .sorted( Comparator.comparing( c -> c.name ) );
     }
 
     @Description( "List all procedures in the DBMS." )
@@ -116,27 +114,27 @@ public class BuiltInDbmsProcedures
 
     public static class ProcedureResult
     {
-        public final TextValue name;
-        public final TextValue signature;
-        public final TextValue description;
-        public final TextValue mode;
+        public final String name;
+        public final String signature;
+        public final String description;
+        public final String mode;
 
         private ProcedureResult( ProcedureSignature signature )
         {
-            this.name = stringValue( signature.name().toString() );
-            this.signature = stringValue( signature.toString() );
-            this.description = stringValue( signature.description().orElse( "" ) );
-            this.mode = stringValue( signature.mode().toString() );
+            this.name = signature.name().toString();
+            this.signature = signature.toString();
+            this.description = signature.description().orElse( "" );
+            this.mode = signature.mode().toString();
         }
     }
 
     public static class StringResult
     {
-        public final TextValue value;
+        public final String value;
 
         StringResult( String value )
         {
-            this.value = stringValue( value );
+            this.value = value;
         }
     }
 }

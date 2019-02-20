@@ -61,10 +61,6 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.Logger;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.procedure.ProcedureTransaction;
-import org.neo4j.values.storable.PointValue;
-import org.neo4j.values.virtual.NodeValue;
-import org.neo4j.values.virtual.PathValue;
-import org.neo4j.values.virtual.RelationshipValue;
 
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTGeometry;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTNode;
@@ -222,14 +218,10 @@ public class GraphDatabaseFacadeFactory
         GlobalProcedures globalProcedures = new GlobalProcedures( builtInProcedures, proceduresDirectory, internalLog, procedureConfig );
 
         globalProcedures.registerType( Node.class, NTNode );
-        globalProcedures.registerType( NodeValue.class, NTNode );
         globalProcedures.registerType( Relationship.class, NTRelationship );
-        globalProcedures.registerType( RelationshipValue.class, NTRelationship );
         globalProcedures.registerType( Path.class, NTPath );
-        globalProcedures.registerType( PathValue.class, NTPath );
         globalProcedures.registerType( Geometry.class, NTGeometry );
         globalProcedures.registerType( Point.class, NTPoint );
-        globalProcedures.registerType( PointValue.class, NTPoint );
 
         // Below components are not public API, but are made available for internal
         // procedures to call, and to provide temporary workarounds for the following

@@ -146,8 +146,8 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
                 proc( "dbms.listConfig", "(searchString =  :: STRING?) :: (name :: STRING?, description :: STRING?, value :: STRING?, dynamic :: BOOLEAN?)",
                         "List the currently active config of Neo4j.", "DBMS" ),
                 proc( "db.constraints", "() :: (description :: STRING?)", "List all constraints in the database.", "READ" ),
-                proc( "db.indexes", "() :: (description :: STRING?, indexName :: STRING?, tokenNames :: LIST? OF ANY?, properties :: " +
-                                "LIST? OF ANY?, state :: STRING?, type :: STRING?, progress :: FLOAT?, provider :: MAP?, id :: INTEGER?, " +
+                proc( "db.indexes", "() :: (description :: STRING?, indexName :: STRING?, tokenNames :: LIST? OF STRING?, properties :: " +
+                                "LIST? OF STRING?, state :: STRING?, type :: STRING?, progress :: FLOAT?, provider :: MAP?, id :: INTEGER?, " +
                                 "failureMessage :: STRING?)",
                         "List all indexes in the database.", "READ" ),
                 proc( "db.awaitIndex", "(index :: STRING?, timeOutSeconds = 300 :: INTEGER?) :: VOID",
@@ -164,11 +164,11 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
                 proc( "db.schema.visualization","() :: (nodes :: LIST? OF NODE?, relationships :: LIST? OF RELATIONSHIP?)",
                         "Visualize the schema of the data. Replaces db.schema.", "READ" ),
                 proc( "db.schema.nodeTypeProperties",
-                        "() :: (nodeType :: STRING?, nodeLabels :: LIST? OF ANY?, propertyName :: ANY?, " +
-                                "propertyTypes :: ANY?, mandatory :: BOOLEAN?)",
+                        "() :: (nodeType :: STRING?, nodeLabels :: LIST? OF STRING?, propertyName :: STRING?, " +
+                                "propertyTypes :: LIST? OF STRING?, mandatory :: BOOLEAN?)",
                         "Show the derived property schema of the nodes in tabular form.", "READ" ),
                 proc( "db.schema.relTypeProperties", "() :: (relType :: STRING?, " +
-                                "propertyName :: ANY?, propertyTypes :: ANY?, mandatory :: BOOLEAN?)",
+                                "propertyName :: STRING?, propertyTypes :: LIST? OF STRING?, mandatory :: BOOLEAN?)",
                         "Show the derived property schema of the relationships in tabular form.", "READ" ),
                 proc( "db.relationshipTypes", "() :: (relationshipType :: STRING?, relationshipCount :: INTEGER?)",
                         "List all relationship types in the database and their total count.", "READ" ),
