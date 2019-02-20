@@ -273,15 +273,8 @@ public class EagerResultIT
         protected GraphDatabaseBuilder.DatabaseCreator createDatabaseCreator( File storeDir,
                 GraphDatabaseFactoryState state )
         {
-            return new GraphDatabaseBuilder.DatabaseCreator()
-            {
-                @Override
-                public GraphDatabaseService newDatabase( Config config )
-                {
-                    return customFacadeFactory.newFacade( storeDir, config,
-                            GraphDatabaseDependencies.newDependencies( state.databaseDependencies() ) );
-                }
-            };
+            return config -> customFacadeFactory.newFacade( storeDir, config,
+                    GraphDatabaseDependencies.newDependencies( state.databaseDependencies() ) );
         }
     }
 

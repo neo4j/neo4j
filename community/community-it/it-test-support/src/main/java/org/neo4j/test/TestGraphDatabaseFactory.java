@@ -24,7 +24,6 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import javax.annotation.Nonnull;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Setting;
@@ -244,15 +243,8 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
     protected GraphDatabaseBuilder.DatabaseCreator createImpermanentDatabaseCreator( final File storeDir,
             final TestGraphDatabaseFactoryState state )
     {
-        return new GraphDatabaseBuilder.DatabaseCreator()
-        {
-            @Override
-            public GraphDatabaseService newDatabase( @Nonnull Config config )
-            {
-                return new TestGraphDatabaseFacadeFactory( state, true ).newFacade( storeDir, config,
-                        GraphDatabaseDependencies.newDependencies( state.databaseDependencies() ) );
-            }
-        };
+        return config -> new TestGraphDatabaseFacadeFactory( state, true ).newFacade( storeDir, config,
+                GraphDatabaseDependencies.newDependencies( state.databaseDependencies() ) );
     }
 
     public static class TestGraphDatabaseFacadeFactory extends GraphDatabaseFacadeFactory
