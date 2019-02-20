@@ -269,9 +269,10 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
     }
 
     /**
-     * When this method is called, all updates have been applied to the tree. Here we loop over all updates again and verify that in the end there are no
-     * duplicate entries in the tree. If intermediate duplicates was seen while applying the updates, that is fine as long as the tree is completely unique
-     * now. Note that only updates that result in adding a new key to the tree can possible cause a duplication to appear.
+     * When this method is called, all updates have been applied to the tree. Here we loop over all updates again and for each update we verify that in the
+     * end there are no duplicate entries for the value of the update update value in the tree. If intermediate duplicates was seen while applying the
+     * updates, that is fine as long as the tree is completely unique now. Note that only updates that result in adding a new key to the tree can possible
+     * cause a duplication to appear.
      * @throws IOException If something goes wrong while reading from index.
      * @throws IndexEntryConflictException If a duplicate is found.
      */
