@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.runtime.{IteratorBasedResult, QueryStatistics, RuntimeJavaValueConverter, isGraphKernelResultValue}
 import org.neo4j.cypher.result.QueryResult.QueryResultVisitor
 import org.neo4j.cypher.result.RuntimeResult.ConsumptionState
-import org.neo4j.cypher.result.{NaiveRuntimeResult, QueryProfile, RuntimeResult}
+import org.neo4j.cypher.result.{NaiveQuerySubscription, QueryProfile, RuntimeResult}
 import org.neo4j.graphdb.ResourceIterator
 import org.neo4j.kernel.impl.query.QuerySubscriber
 
@@ -34,7 +34,7 @@ class PipeExecutionResult(val result: IteratorBasedResult,
                           val state: QueryState,
                           override val queryProfile: QueryProfile,
                           subscriber: QuerySubscriber)
-  extends NaiveRuntimeResult(subscriber) {
+  extends NaiveQuerySubscription(subscriber) {
 
   self =>
 

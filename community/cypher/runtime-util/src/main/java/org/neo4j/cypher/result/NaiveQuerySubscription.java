@@ -25,14 +25,19 @@ import java.util.List;
 import org.neo4j.kernel.impl.query.QuerySubscriber;
 import org.neo4j.values.AnyValue;
 
-public abstract class NaiveRuntimeResult implements RuntimeResult
+/**
+ * This class is just a stepping stone and should be removed soon. It is merely a stepping stone in order to get all the
+ * pieces of reactive results in the code. Implements {@link org.neo4j.kernel.impl.query.QuerySubscription} by simply reading
+ * the entire result in to memory and serves it in chunks as demanded by the client.
+ */
+public abstract class NaiveQuerySubscription implements RuntimeResult
 {
     private int requestedRecords;
     private int servedRecords;
     private List<AnyValue[]> materializedResult;
     private final QuerySubscriber subscriber;
 
-    protected NaiveRuntimeResult( QuerySubscriber subscriber )
+    protected NaiveQuerySubscription( QuerySubscriber subscriber )
     {
         this.subscriber = subscriber;
     }

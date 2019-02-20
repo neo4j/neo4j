@@ -43,10 +43,4 @@ public interface QuerySubscription
      * @return <tt>true</tt> if there is more data in the stream, otherwise <tt>false</tt>
      */
     boolean await() throws Exception;
-
-    /**
-     * The name of the fields of each record
-     * @return an array of the field names of each record.
-     */
-    String[] fieldNames();
 }

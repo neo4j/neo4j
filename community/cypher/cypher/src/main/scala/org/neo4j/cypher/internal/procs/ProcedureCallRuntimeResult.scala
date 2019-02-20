@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.runtime._
 import org.neo4j.cypher.internal.v4_0.util.symbols.CypherType
 import org.neo4j.cypher.result.QueryResult.{QueryResultVisitor, Record}
 import org.neo4j.cypher.result.RuntimeResult.ConsumptionState
-import org.neo4j.cypher.result.{NaiveRuntimeResult, OperatorProfile, QueryProfile, RuntimeResult}
+import org.neo4j.cypher.result.{NaiveQuerySubscription, OperatorProfile, QueryProfile, RuntimeResult}
 import org.neo4j.graphdb.ResourceIterator
 import org.neo4j.internal.kernel.api.procs.QualifiedName
 import org.neo4j.kernel.impl.query.QuerySubscriber
@@ -48,7 +48,7 @@ class ProcedureCallRuntimeResult(context: QueryContext,
                                  args: Seq[AnyValue],
                                  indexResultNameMappings: IndexedSeq[(Int, String, CypherType)],
                                  profile: Boolean,
-                                 subscriber: QuerySubscriber) extends NaiveRuntimeResult(subscriber) {
+                                 subscriber: QuerySubscriber) extends NaiveQuerySubscription(subscriber) {
 
   self =>
 

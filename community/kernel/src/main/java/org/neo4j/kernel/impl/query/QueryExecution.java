@@ -24,11 +24,30 @@ import org.neo4j.graphdb.Notification;
 import org.neo4j.graphdb.QueryExecutionType;
 
 /**
- * The execution of a query.
+ * The execution of a query is a {@link QuerySubscription} with added methods describing the actual execution of a
+ * query.
  */
 public interface QueryExecution extends QuerySubscription
 {
+    /**
+     * The {@link QueryExecutionType} of the query,
+     */
     QueryExecutionType executionType();
+
+    /**
+     * @return The plan description of the query.
+     */
     ExecutionPlanDescription executionPlanDescription();
+
+    /**
+     * @return all notifications and warnings of the query.
+     */
     Iterable<Notification> getNotifications();
+
+    /**
+     * The name of the fields of each record
+     *
+     * @return an array of the field names of each record.
+     */
+    String[] fieldNames();
 }
