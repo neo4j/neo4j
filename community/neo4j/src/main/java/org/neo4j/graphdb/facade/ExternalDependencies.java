@@ -21,9 +21,9 @@ package org.neo4j.graphdb.facade;
 
 import java.util.Map;
 
+import org.neo4j.common.DependencyResolver;
 import org.neo4j.graphdb.security.URLAccessRule;
 import org.neo4j.helpers.collection.Pair;
-import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.impl.query.QueryEngineProvider;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -40,7 +40,7 @@ public interface ExternalDependencies
      */
     Monitors monitors();
 
-    PageCache pageCache();
+    DependencyResolver dependencies();
 
     LogProvider userLogProvider();
 

@@ -23,12 +23,12 @@ import java.io.File;
 import java.util.Map;
 import javax.annotation.Nonnull;
 
+import org.neo4j.common.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.facade.ExternalDependencies;
 import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory;
 import org.neo4j.graphdb.factory.module.edition.CommunityEditionModule;
 import org.neo4j.graphdb.security.URLAccessRule;
-import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
@@ -158,9 +158,9 @@ public class GraphDatabaseFactory
         return this;
     }
 
-    public GraphDatabaseFactory setPageCache( PageCache pageCache )
+    public GraphDatabaseFactory setExternalDependencies( DependencyResolver dependencies )
     {
-        getCurrentState().setPageCache( pageCache );
+        getCurrentState().setDependencies( dependencies );
         return this;
     }
 

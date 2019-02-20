@@ -25,11 +25,11 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Predicate;
 
+import org.neo4j.common.DependencyResolver;
 import org.neo4j.common.Service;
 import org.neo4j.configuration.LoadableConfig;
 import org.neo4j.graphdb.facade.ExternalDependencies;
 import org.neo4j.graphdb.security.URLAccessRule;
-import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
@@ -49,7 +49,7 @@ public class GraphDatabaseFactoryState
     private final List<ExtensionFactory<?>> extensions;
     private volatile Monitors monitors;
     private volatile LogProvider userLogProvider;
-    private volatile PageCache pageCache;
+    private volatile DependencyResolver dependencies;
     private final Map<String,URLAccessRule> urlAccessRules;
 
     public GraphDatabaseFactoryState()
@@ -71,7 +71,7 @@ public class GraphDatabaseFactoryState
         urlAccessRules = new ConcurrentHashMap<>( previous.urlAccessRules );
         this.monitors = previous.monitors;
         this.userLogProvider = previous.userLogProvider;
-        this.pageCache = previous.pageCache;
+        this.dependencies = previous.dependencies;
     }
 
     public Iterable<ExtensionFactory<?>> getExtension()
@@ -127,9 +127,9 @@ public class GraphDatabaseFactoryState
         this.monitors = monitors;
     }
 
-    public void setPageCache( PageCache pageCache )
+    public void setDependencies( DependencyResolver dependencies )
     {
-        this.pageCache = pageCache;
+        this.dependencies = dependencies;
     }
 
     public ExternalDependencies databaseDependencies()
@@ -137,7 +137,7 @@ public class GraphDatabaseFactoryState
         return newDependencies().
                 monitors( monitors ).
                 userLogProvider( userLogProvider ).
-                pageCache( pageCache ).
+                dependencies( dependencies ).
                 settingsClasses( settingsClasses ).
                 urlAccessRules( urlAccessRules ).
                 extensions( extensions );

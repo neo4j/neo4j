@@ -30,9 +30,9 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.common.Service;
+import org.neo4j.common.DependencyResolver;
 import org.neo4j.graphdb.security.URLAccessRule;
 import org.neo4j.helpers.collection.Pair;
-import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.impl.query.QueryEngineProvider;
 import org.neo4j.kernel.impl.security.URLAccessRules;
@@ -50,7 +50,7 @@ public class GraphDatabaseDependencies implements ExternalDependencies
 {
     public static GraphDatabaseDependencies newDependencies( ExternalDependencies deps )
     {
-        return new GraphDatabaseDependencies( deps.monitors(), deps.userLogProvider(), deps.pageCache(),
+        return new GraphDatabaseDependencies( deps.monitors(), deps.userLogProvider(), deps.dependencies(),
                 asImmutableList( deps.settingsClasses() ), asImmutableList( deps.extensions() ),
                 asImmutableMap( deps.urlAccessRules() ), asImmutableList( deps.executionEngines() ),
                 asImmutableList( deps.deferredExecutors() ) );
@@ -78,7 +78,7 @@ public class GraphDatabaseDependencies implements ExternalDependencies
 
     private final Monitors monitors;
     private final LogProvider userLogProvider;
-    private final PageCache pageCache;
+    private final DependencyResolver dependencies;
     private final ImmutableList<Class<?>> settingsClasses;
     private final ImmutableList<ExtensionFactory<?>> extensions;
     private final ImmutableMap<String,URLAccessRule> urlAccessRules;
@@ -88,7 +88,7 @@ public class GraphDatabaseDependencies implements ExternalDependencies
     private GraphDatabaseDependencies(
             Monitors monitors,
             LogProvider userLogProvider,
-            PageCache pageCache,
+            DependencyResolver dependencies,
             ImmutableList<Class<?>> settingsClasses,
             ImmutableList<ExtensionFactory<?>> extensions,
             ImmutableMap<String,URLAccessRule> urlAccessRules,
@@ -98,7 +98,7 @@ public class GraphDatabaseDependencies implements ExternalDependencies
     {
         this.monitors = monitors;
         this.userLogProvider = userLogProvider;
-        this.pageCache = pageCache;
+        this.dependencies = dependencies;
         this.settingsClasses = settingsClasses;
         this.extensions = extensions;
         this.urlAccessRules = urlAccessRules;
@@ -109,45 +109,45 @@ public class GraphDatabaseDependencies implements ExternalDependencies
     // Builder DSL
     public GraphDatabaseDependencies monitors( Monitors monitors )
     {
-        return new GraphDatabaseDependencies( monitors, userLogProvider, pageCache, settingsClasses, extensions,
+        return new GraphDatabaseDependencies( monitors, userLogProvider, dependencies, settingsClasses, extensions,
                 urlAccessRules, queryEngineProviders, deferredExecutors );
     }
 
     public GraphDatabaseDependencies userLogProvider( LogProvider userLogProvider )
     {
-        return new GraphDatabaseDependencies( monitors, userLogProvider, pageCache, settingsClasses, extensions,
+        return new GraphDatabaseDependencies( monitors, userLogProvider, dependencies, settingsClasses, extensions,
                 urlAccessRules, queryEngineProviders, deferredExecutors );
     }
 
-    public GraphDatabaseDependencies pageCache( PageCache pageCache )
+    public GraphDatabaseDependencies dependencies( DependencyResolver dependencies )
     {
-        return new GraphDatabaseDependencies( monitors, userLogProvider, pageCache, settingsClasses, extensions, urlAccessRules, queryEngineProviders,
+        return new GraphDatabaseDependencies( monitors, userLogProvider, dependencies, settingsClasses, extensions, urlAccessRules, queryEngineProviders,
                 deferredExecutors );
     }
 
     public GraphDatabaseDependencies withDeferredExecutor( DeferredExecutor executor, Group group )
     {
-        return new GraphDatabaseDependencies( monitors, userLogProvider, pageCache, settingsClasses, extensions,
+        return new GraphDatabaseDependencies( monitors, userLogProvider, dependencies, settingsClasses, extensions,
                 urlAccessRules, queryEngineProviders,
                 asImmutableList( concat( deferredExecutors, asIterable( Pair.of( executor, group ) ) ) ) );
     }
 
     public GraphDatabaseDependencies settingsClasses( List<Class<?>> settingsClasses )
     {
-        return new GraphDatabaseDependencies( monitors, userLogProvider, pageCache, asImmutableList( settingsClasses ), extensions, urlAccessRules,
+        return new GraphDatabaseDependencies( monitors, userLogProvider, dependencies, asImmutableList( settingsClasses ), extensions, urlAccessRules,
                 queryEngineProviders, deferredExecutors );
     }
 
     public GraphDatabaseDependencies settingsClasses( Class<?>... settingsClass )
     {
-        return new GraphDatabaseDependencies( monitors, userLogProvider, pageCache,
+        return new GraphDatabaseDependencies( monitors, userLogProvider, dependencies,
                 asImmutableList( concat( settingsClasses, Arrays.asList( settingsClass ) ) ), extensions, urlAccessRules, queryEngineProviders,
                 deferredExecutors );
     }
 
     public GraphDatabaseDependencies extensions( Iterable<ExtensionFactory<?>> extensions )
     {
-        return new GraphDatabaseDependencies( monitors, userLogProvider, pageCache, settingsClasses,
+        return new GraphDatabaseDependencies( monitors, userLogProvider, dependencies, settingsClasses,
                 asImmutableList( extensions ), urlAccessRules, queryEngineProviders, deferredExecutors );
     }
 
@@ -155,13 +155,13 @@ public class GraphDatabaseDependencies implements ExternalDependencies
     {
         final Map<String,URLAccessRule> newUrlAccessRules = this.urlAccessRules.toMap();
         newUrlAccessRules.putAll( urlAccessRules );
-        return new GraphDatabaseDependencies( monitors, userLogProvider, pageCache, settingsClasses, extensions,
+        return new GraphDatabaseDependencies( monitors, userLogProvider, dependencies, settingsClasses, extensions,
                 asImmutableMap( newUrlAccessRules ), queryEngineProviders, deferredExecutors );
     }
 
     public GraphDatabaseDependencies queryEngineProviders( Iterable<QueryEngineProvider> queryEngineProviders )
     {
-        return new GraphDatabaseDependencies( monitors, userLogProvider, pageCache, settingsClasses, extensions,
+        return new GraphDatabaseDependencies( monitors, userLogProvider, dependencies, settingsClasses, extensions,
                 urlAccessRules, asImmutableList( concat( this.queryEngineProviders, queryEngineProviders ) ),
                 deferredExecutors );
     }
@@ -210,9 +210,9 @@ public class GraphDatabaseDependencies implements ExternalDependencies
     }
 
     @Override
-    public PageCache pageCache()
+    public DependencyResolver dependencies()
     {
-        return pageCache;
+        return dependencies;
     }
 
     // This method is needed to convert the non generic ExtensionFactory type returned from Service.load

@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.common.Service;
+import org.neo4j.common.DependencyResolver;
 import org.neo4j.graphdb.facade.ExternalDependencies;
 import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -125,6 +126,8 @@ public class GlobalModule
     public GlobalModule( File providedStoreDir, Config globalConfig, DatabaseInfo databaseInfo,
             ExternalDependencies externalDependencies )
     {
+        DependencyResolver externalDeps = externalDependencies.dependencies();
+
         this.databaseInfo = databaseInfo;
 
         globalDependencies = new Dependencies();
@@ -176,9 +179,9 @@ public class GlobalModule
 
         collectionsFactorySupplier = createCollectionsFactorySupplier( globalConfig, globalLife );
 
-        pageCache = externalDependencies.pageCache() != null ? externalDependencies.pageCache()
-                                                             : createPageCache( fileSystem, globalConfig, logService, tracers, versionContextSupplier,
-                                                                     jobScheduler );
+        PageCache externalPageCache = externalDeps != null ? externalDeps.resolveDependency( PageCache.class ) : null;
+        pageCache = externalPageCache != null ? externalPageCache
+                                              : createPageCache( fileSystem, globalConfig, logService, tracers, versionContextSupplier, jobScheduler );
         globalLife.add( new PageCacheLifecycle( pageCache ) );
 
         dbmsDiagnosticsManager = new DbmsDiagnosticsManager( globalDependencies, logService );
