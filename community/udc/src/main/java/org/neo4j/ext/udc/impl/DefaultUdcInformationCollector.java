@@ -35,6 +35,7 @@ import java.util.regex.Pattern;
 import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.ext.udc.UdcSettings;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemUtils;
@@ -132,7 +133,7 @@ public class DefaultUdcInformationCollector implements UdcInformationCollector
     @Override
     public String getStoreId()
     {
-        return getDatabaseContext( DEFAULT_DATABASE_NAME )
+        return getDatabaseContext( config.get( GraphDatabaseSettings.active_database ) )
                 .map( DatabaseContext::getDatabase )
                 .map( Database::getStoreId )
                 .map( DefaultUdcInformationCollector::getStoreIdString )
