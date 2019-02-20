@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.index.schema;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.file.NoSuchFileException;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
@@ -57,6 +58,10 @@ public abstract class IndexFiles
         try
         {
             fs.deleteFileOrThrow( file );
+        }
+        catch ( NoSuchFileException e )
+        {
+            // File does not exist, we don't need to delete
         }
         catch ( IOException e )
         {
