@@ -33,6 +33,7 @@ import java.util.Set;
 
 import static java.lang.String.format;
 import static java.util.Collections.unmodifiableSet;
+import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 import static java.util.stream.Stream.concat;
 import static java.util.stream.Stream.of;
@@ -146,8 +147,7 @@ public abstract class Service
     }
 
     /**
-     * Load the Service implementation with the specified key. Matches from context class loader have highest priority.
-     * If there are multiple matches within one class loader, it is not defined which one of them is returned.
+     * Load the Service implementation with the specified key. If multiple matches found then a {@link RuntimeException} is thrown.
      *
      * @param type the type of the Service to load
      * @param key the key that identifies the desired implementation
@@ -155,9 +155,14 @@ public abstract class Service
      */
     public static <T extends Service> Optional<T> load( Class<T> type, String key )
     {
-        return loadAll( type ).stream()
+        final List<T> matches = loadAll( type ).stream()
                 .filter( s -> s.matches( key ) )
-                .findFirst();
+                .collect( toList() );
+        if ( matches.size() > 1 )
+        {
+            throw new RuntimeException( format( "Multiple matches found for service '%s' with key '%s': %s", type.getName(), key, matches ) );
+        }
+        return matches.isEmpty() ? Optional.empty() : Optional.of( matches.get( 0 ) );
     }
 
     /**
