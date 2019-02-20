@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.proc;
 
-import com.sun.jdi.IntegerValue;
-
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.time.LocalDate;
@@ -46,18 +44,19 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.procedure.Name;
 import org.neo4j.util.VisibleForTesting;
 import org.neo4j.values.AnyValue;
-import org.neo4j.values.SequenceValue;
 import org.neo4j.values.storable.BooleanValue;
 import org.neo4j.values.storable.ByteArray;
 import org.neo4j.values.storable.DateTimeValue;
 import org.neo4j.values.storable.DateValue;
 import org.neo4j.values.storable.DurationValue;
 import org.neo4j.values.storable.FloatingPointValue;
+import org.neo4j.values.storable.IntegralValue;
 import org.neo4j.values.storable.LocalDateTimeValue;
 import org.neo4j.values.storable.LocalTimeValue;
 import org.neo4j.values.storable.NumberValue;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.TimeValue;
+import org.neo4j.values.virtual.ListValue;
 import org.neo4j.values.virtual.MapValue;
 
 import static java.lang.Boolean.parseBoolean;
@@ -116,7 +115,7 @@ public class TypeCheckers
         registerType( TextValue.class, TO_STRING );
         registerType( long.class, TO_INTEGER );
         registerType( Long.class, TO_INTEGER );
-        registerType( IntegerValue.class, TO_INTEGER );
+        registerType( IntegralValue.class, TO_INTEGER );
         registerType( double.class, TO_FLOAT );
         registerType( Double.class, TO_FLOAT );
         registerType( FloatingPointValue.class, TO_FLOAT );
@@ -128,7 +127,7 @@ public class TypeCheckers
         registerType( Map.class, TO_MAP );
         registerType( MapValue.class, TO_MAP );
         registerType( List.class, TO_LIST );
-        registerType( SequenceValue.class, TO_LIST );
+        registerType( ListValue.class, TO_LIST );
         registerType( Object.class, TO_ANY );
         registerType( AnyValue.class, TO_ANY );
         registerType( byte[].class, TO_BYTE_ARRAY );
