@@ -96,16 +96,16 @@ class ResultHandlerTest
         }
 
         @Override
-        public boolean handleRecords( Visitor visitor, long size ) throws Exception
+        public boolean handleRecords( Subscriber subscriber, long size ) throws Exception
         {
             for ( AnyValue[] record: records )
             {
-                visitor.newRecord();
+                subscriber.onRecord();
                 for ( int i = 0; i < record.length; i++ )
                 {
-                    visitor.onValue( i, record[i] );
+                    subscriber.onField( i, record[i] );
                 }
-                visitor.closeRecord();
+                subscriber.onRecordCompleted();
             }
             return false;
         }

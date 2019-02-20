@@ -30,7 +30,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.neo4j.bolt.runtime.BoltResult;
-import org.neo4j.bolt.v1.runtime.TransactionStateMachineV1SPI.VisitorSubscriber;
+import org.neo4j.bolt.v1.runtime.TransactionStateMachineV1SPI.BoltAdapterSubscriber;
 import org.neo4j.graphdb.ExecutionPlanDescription;
 import org.neo4j.graphdb.InputPosition;
 import org.neo4j.graphdb.QueryStatistics;
@@ -83,10 +83,10 @@ public class CypherAdapterStreamTest
         when( queryStatistics.getLabelsRemoved() ).thenReturn( 11 );
 
         QueryExecution result = mock( QueryExecution.class );
-        VisitorSubscriber subscriber = new VisitorSubscriber();
+        BoltAdapterSubscriber subscriber = new BoltAdapterSubscriber();
         when( result.fieldNames() ).thenReturn( new String[0] );
         when( result.executionType() ).thenReturn( query( READ_WRITE ) );
-        subscriber.onCompleted( queryStatistics );
+        subscriber.onResultCompleted( queryStatistics );
         when( result.getNotifications() ).thenReturn( Collections.emptyList() );
 
         Clock clock = mock( Clock.class );
@@ -123,10 +123,10 @@ public class CypherAdapterStreamTest
         QueryStatistics queryStatistics = mock( QueryStatistics.class );
         when( queryStatistics.containsUpdates() ).thenReturn( false );
         QueryExecution result = mock( QueryExecution.class );
-        VisitorSubscriber subscriber = new VisitorSubscriber();
+        BoltAdapterSubscriber subscriber = new BoltAdapterSubscriber();
         when( result.fieldNames() ).thenReturn( new String[0] );
         when( result.executionType() ).thenReturn( explained( READ_ONLY ) );
-        subscriber.onCompleted( queryStatistics );
+        subscriber.onResultCompleted( queryStatistics );
 
         when( result.getNotifications() ).thenReturn( Collections.emptyList() );
         when( result.executionPlanDescription() ).thenReturn(
@@ -160,10 +160,10 @@ public class CypherAdapterStreamTest
         QueryStatistics queryStatistics = mock( QueryStatistics.class );
         when( queryStatistics.containsUpdates() ).thenReturn( false );
         QueryExecution result = mock( QueryExecution.class );
-        VisitorSubscriber subscriber = new VisitorSubscriber();
+        BoltAdapterSubscriber subscriber = new BoltAdapterSubscriber();
         when( result.fieldNames() ).thenReturn( new String[0] );
         when( result.executionType() ).thenReturn( explained( READ_ONLY ) );
-        subscriber.onCompleted( queryStatistics );
+        subscriber.onResultCompleted( queryStatistics );
 
         when( result.getNotifications() ).thenReturn( Collections.emptyList() );
         when( result.executionPlanDescription() ).thenReturn(
@@ -222,13 +222,13 @@ public class CypherAdapterStreamTest
     {
         // Given
         QueryExecution result = mock( QueryExecution.class );
-        VisitorSubscriber subscriber = new VisitorSubscriber();
+        BoltAdapterSubscriber subscriber = new BoltAdapterSubscriber();
         when( result.fieldNames() ).thenReturn( new String[0] );
 
         QueryStatistics queryStatistics = mock( QueryStatistics.class );
         when( queryStatistics.containsUpdates() ).thenReturn( false );
 
-        subscriber.onCompleted( queryStatistics );
+        subscriber.onResultCompleted( queryStatistics );
 
         when( result.executionType() ).thenReturn( query( READ_WRITE ) );
 
@@ -266,24 +266,30 @@ public class CypherAdapterStreamTest
     private MapValue metadataOf( CypherAdapterStream stream ) throws Exception
     {
         final MapValueBuilder meta = new MapValueBuilder();
-        stream.handleRecords( new BoltResult.Visitor()
+        stream.handleRecords( new BoltResult.Subscriber()
         {
             @Override
-            public void newRecord()
+            public void onResult( int numberOfFields )
             {
-
+                //do nothing
             }
 
             @Override
-            public void onValue( int offset, AnyValue value )
+            public void onRecord()
             {
-
+                //do nothing
             }
 
             @Override
-            public void closeRecord()
+            public void onField( int offset, AnyValue value )
             {
+                //do nothing
+            }
 
+            @Override
+            public void onRecordCompleted()
+            {
+                //do nothing
             }
 
             @Override

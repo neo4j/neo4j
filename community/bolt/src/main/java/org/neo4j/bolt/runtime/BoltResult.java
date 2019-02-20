@@ -32,22 +32,51 @@ public interface BoltResult extends AutoCloseable
     /** Positional names for all fields in every record of this stream. */
     String[] fieldNames();
 
-    boolean handleRecords( Visitor visitor, long size ) throws Exception;
+    boolean handleRecords( Subscriber subscriber, long size ) throws Exception;
 
     @Override
     void close();
 
-    interface Visitor
+    interface Subscriber
     {
-        void newRecord();
-        void onValue( int offset, AnyValue value );
-        void closeRecord() throws Exception;
+        void onResult( int numberOfFields );
+        void onRecord();
+        void onField( int offset, AnyValue value );
+        void onRecordCompleted() throws Exception;
 
         /**
          * Associate arbitrary metadata with the result stream. This will get transferred at the end of the stream.
          * Please stick to Neo4j type system types (Map, List, Integer, Float, Boolean, String etc)
          */
         void addMetadata( String key, AnyValue value );
+    }
+
+    abstract class BaseSubscriber implements Subscriber
+    {
+
+        @Override
+        public void onResult( int numberOfFields )
+        {
+
+        }
+
+        @Override
+        public void onRecord()
+        {
+
+        }
+
+        @Override
+        public void onField( int offset, AnyValue value )
+        {
+
+        }
+
+        @Override
+        public void onRecordCompleted()
+        {
+
+        }
     }
 
     BoltResult EMPTY = new BoltResult()
@@ -66,7 +95,7 @@ public interface BoltResult extends AutoCloseable
         }
 
         @Override
-        public boolean handleRecords( Visitor visitor, long size )
+        public boolean handleRecords( Subscriber subscriber, long size )
         {
             return false;
         }

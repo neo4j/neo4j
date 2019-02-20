@@ -40,38 +40,39 @@ public class ResultHandler extends MessageProcessingHandler
     public boolean onPullRecords( final BoltResult result, final long size ) throws Exception
     {
         return markHasMore(
-                result.handleRecords( new RecordWritingBoltResultVisitor( result.fieldNames().length ), size ) );
+                result.handleRecords( new RecordWritingBoltResultSubscriber( ), size ) );
     }
 
     @Override
     public boolean onDiscardRecords( BoltResult result, long size ) throws Exception
     {
-        return markHasMore( result.handleRecords( new RecordDiscardingBoltResultVisitor(), size ) );
+        return markHasMore( result.handleRecords( new RecordDiscardingBoltResultSubscriber(), size ) );
     }
 
-    private class RecordWritingBoltResultVisitor implements BoltResult.Visitor
+    private class RecordWritingBoltResultSubscriber implements BoltResult.Subscriber
     {
-        private final AnyValue[] values;
-
-        private RecordWritingBoltResultVisitor( int size )
-        {
-            this.values = new AnyValue[size];
-        }
+        private AnyValue[] values;
 
         @Override
-        public void newRecord()
-        {
-
-        }
-
-        @Override
-        public void closeRecord() throws IOException
+        public void onRecordCompleted() throws IOException
         {
             messageWriter.write( new RecordMessage( values ) );
         }
 
         @Override
-        public void onValue( int offset, AnyValue value )
+        public void onResult( int numberOfFields )
+        {
+            values = new AnyValue[numberOfFields];
+        }
+
+        @Override
+        public void onRecord()
+        {
+            //do nothing here
+        }
+
+        @Override
+        public void onField( int offset, AnyValue value )
         {
             values[offset] = value;
         }
@@ -83,26 +84,8 @@ public class ResultHandler extends MessageProcessingHandler
         }
     }
 
-    private class RecordDiscardingBoltResultVisitor implements BoltResult.Visitor
+    private class RecordDiscardingBoltResultSubscriber extends BoltResult.BaseSubscriber
     {
-        @Override
-        public void newRecord()
-        {
-
-        }
-
-        @Override
-        public void onValue( int offset, AnyValue value )
-        {
-
-        }
-
-        @Override
-        public void closeRecord()
-        {
-
-        }
-
         @Override
         public void addMetadata( String key, AnyValue value )
         {

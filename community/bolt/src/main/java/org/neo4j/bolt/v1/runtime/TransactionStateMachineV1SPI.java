@@ -193,8 +193,7 @@ public class TransactionStateMachineV1SPI implements TransactionStateMachineSPI
         {
             try
             {
-                //
-                VisitorSubscriber subscriber = new VisitorSubscriber();
+                BoltAdapterSubscriber subscriber = new BoltAdapterSubscriber();
                 QueryExecution result = queryExecutionEngine.executeQuery( statement, params, transactionalContext, true,
                         subscriber );
                 return newBoltResult( result, subscriber, clock );
@@ -213,7 +212,7 @@ public class TransactionStateMachineV1SPI implements TransactionStateMachineSPI
         }
 
         protected BoltResult newBoltResult( QueryExecution result,
-                VisitorSubscriber subscriber, Clock clock )
+                BoltAdapterSubscriber subscriber, Clock clock )
         {
             return new CypherAdapterStream( result, subscriber, clock );
         }
@@ -231,29 +230,34 @@ public class TransactionStateMachineV1SPI implements TransactionStateMachineSPI
         }
     }
 
-    public static class VisitorSubscriber implements QuerySubscriber
+    public static class BoltAdapterSubscriber implements QuerySubscriber
     {
-        private BoltResult.Visitor visitor;
+        private BoltResult.Subscriber subscriber;
         private Throwable error;
         private QueryStatistics statistics;
 
         @Override
-        public void newRecord()
+        public void onResult( int numberOfFields )
         {
-            visitor.newRecord();
-
+            subscriber.onResult( numberOfFields );
         }
 
         @Override
-        public void onValue( int offset, AnyValue value )
+        public void onRecord()
         {
-            visitor.onValue( offset, value );
+           subscriber.onRecord();
         }
 
         @Override
-        public void closeRecord() throws Exception
+        public void onField( int offset, AnyValue value )
         {
-            visitor.closeRecord();
+            subscriber.onField( offset, value );
+        }
+
+        @Override
+        public void onRecordCompleted() throws Exception
+        {
+            subscriber.onRecordCompleted();
         }
 
         @Override
@@ -263,7 +267,7 @@ public class TransactionStateMachineV1SPI implements TransactionStateMachineSPI
         }
 
         @Override
-        public void onCompleted( QueryStatistics statistics )
+        public void onResultCompleted( QueryStatistics statistics )
         {
             this.statistics = statistics;
         }
@@ -273,9 +277,9 @@ public class TransactionStateMachineV1SPI implements TransactionStateMachineSPI
             return statistics;
         }
 
-        public void setVisitor( BoltResult.Visitor visitor )
+        public void setSubscriber( BoltResult.Subscriber subscriber )
         {
-            this.visitor = visitor;
+            this.subscriber = subscriber;
         }
     }
 }

@@ -53,7 +53,7 @@ public class TransactionStateMachineV3SPI extends TransactionStateMachineV1SPI
 
         @Override
         protected BoltResult newBoltResult( QueryExecution result,
-                TransactionStateMachineV1SPI.VisitorSubscriber subscriber, Clock clock )
+                BoltAdapterSubscriber subscriber, Clock clock )
         {
             return new CypherAdapterStreamV3( result, subscriber, clock );
         }

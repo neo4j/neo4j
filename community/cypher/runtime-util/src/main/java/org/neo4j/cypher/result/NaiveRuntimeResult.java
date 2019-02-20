@@ -27,8 +27,8 @@ import org.neo4j.values.AnyValue;
 
 public abstract class NaiveRuntimeResult implements RuntimeResult
 {
-    private int requestedRows;
-    private int servedRows;
+    private int requestedRecords;
+    private int servedRecords;
     private List<AnyValue[]> materializedResult;
     private final QuerySubscriber subscriber;
 
@@ -38,9 +38,9 @@ public abstract class NaiveRuntimeResult implements RuntimeResult
     }
 
     @Override
-    public void request( long numberOfRows )
+    public void request( long numberOfRecords )
     {
-        requestedRows = StrictMath.addExact( requestedRows, (int) numberOfRows );
+        requestedRecords = StrictMath.addExact( requestedRecords, (int) numberOfRecords );
     }
 
     @Override
@@ -55,24 +55,30 @@ public abstract class NaiveRuntimeResult implements RuntimeResult
         if ( materializedResult == null )
         {
             materializedResult = new ArrayList<>();
-            accept( row -> {
-                materializedResult.add( row.fields().clone() );
-                row.release();
+            accept( record -> {
+                materializedResult.add( record.fields().clone() );
+                record.release();
                 return true;
             } );
         }
-        for ( ; servedRows < requestedRows && servedRows < materializedResult.size(); servedRows++ )
+
+        subscriber.onResult( fieldNames().length );
+        for ( ; servedRecords < requestedRecords && servedRecords < materializedResult.size(); servedRecords++ )
         {
-            subscriber.newRecord();
-            AnyValue[] current = materializedResult.get( servedRows );
+            subscriber.onRecord();
+            AnyValue[] current = materializedResult.get( servedRecords );
             for ( int offset = 0; offset < current.length; offset++ )
             {
-                subscriber.onValue( offset, current[offset] );
+                subscriber.onField( offset, current[offset] );
             }
-            subscriber.closeRecord();
+            subscriber.onRecordCompleted();
         }
 
-        subscriber.onCompleted( queryStatistics() );
-        return servedRows < materializedResult.size();
+        boolean hasMore = servedRecords < materializedResult.size();
+        if ( !hasMore )
+        {
+            subscriber.onResultCompleted( queryStatistics() );
+        }
+        return hasMore;
     }
 }

@@ -19,10 +19,34 @@
  */
 package org.neo4j.kernel.impl.query;
 
+/**
+ * A QuerySubscription is used to stream data from a query.
+ *
+ * Used in conjunction with a {@link QuerySubscriber}. The client demands a number of records via {@link #request(long)},
+ * data will then be streamed to the subscriber until the demand is met or the there is no more data to stream.
+ */
 public interface QuerySubscription
 {
-    void request( long numberOfRows );
+    /**
+     * Request a number of records.
+     * @param numberOfRecords The number of records demanded.
+     */
+    void request( long numberOfRecords );
+
+    /**
+     * Request the query to not send any more data.
+     */
     void cancel();
+
+    /**
+     * Synchronously await the result
+     * @return <tt>true</tt> if there is more data in the stream, otherwise <tt>false</tt>
+     */
     boolean await() throws Exception;
+
+    /**
+     * The name of the fields of each record
+     * @return an array of the field names of each record.
+     */
     String[] fieldNames();
 }

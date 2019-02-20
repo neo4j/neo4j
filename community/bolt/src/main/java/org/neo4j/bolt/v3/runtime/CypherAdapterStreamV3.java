@@ -31,7 +31,7 @@ public class CypherAdapterStreamV3 extends CypherAdapterStream
 {
     private static final String LAST_RESULT_CONSUMED_KEY = "t_last";
 
-    public CypherAdapterStreamV3( QueryExecution delegate, TransactionStateMachineV1SPI.VisitorSubscriber subscriber,  Clock clock )
+    public CypherAdapterStreamV3( QueryExecution delegate, TransactionStateMachineV1SPI.BoltAdapterSubscriber subscriber,  Clock clock )
     {
         super( delegate, subscriber, clock );
     }

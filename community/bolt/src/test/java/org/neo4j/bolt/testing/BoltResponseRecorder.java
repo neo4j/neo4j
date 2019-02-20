@@ -55,7 +55,7 @@ public class BoltResponseRecorder implements BoltResponseHandler
     @Override
     public boolean onPullRecords( BoltResult result, long size ) throws Exception
     {
-        return hasMore( result.handleRecords( new RecordingBoltResultVisitor( result.fieldNames().length ), size ) );
+        return hasMore( result.handleRecords( new RecordingBoltResultVisitor( ), size ) );
     }
 
     @Override
@@ -116,26 +116,8 @@ public class BoltResponseRecorder implements BoltResponseHandler
         return hasMore;
     }
 
-    private class DiscardingBoltResultVisitor implements BoltResult.Visitor
+    private class DiscardingBoltResultVisitor extends BoltResult.BaseSubscriber
     {
-        @Override
-        public void newRecord()
-        {
-            //discard
-        }
-
-        @Override
-        public void onValue( int offset, AnyValue value )
-        {
-            //discard
-        }
-
-        @Override
-        public void closeRecord() throws Exception
-        {
-            //discard
-        }
-
         @Override
         public void addMetadata( String key, AnyValue value )
         {
@@ -143,32 +125,25 @@ public class BoltResponseRecorder implements BoltResponseHandler
         }
     }
 
-    private class RecordingBoltResultVisitor implements BoltResult.Visitor
+    private class RecordingBoltResultVisitor extends BoltResult.BaseSubscriber
     {
 
         private AnyValue[] fields;
 
-        private final int size;
-
-        private RecordingBoltResultVisitor( int size )
+        @Override
+        public void onResult( int numberOfFields )
         {
-            this.size = size;
+            fields = new AnyValue[numberOfFields];
         }
 
         @Override
-        public void newRecord()
-        {
-            this.fields = new AnyValue[size];
-        }
-
-        @Override
-        public void onValue( int offset, AnyValue value )
+        public void onField( int offset, AnyValue value )
         {
             fields[offset] = value;
         }
 
         @Override
-        public void closeRecord()
+        public void onRecordCompleted()
         {
             currentResponse.addFields( fields );
         }

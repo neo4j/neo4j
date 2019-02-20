@@ -49,14 +49,14 @@ public class CypherAdapterStream implements BoltResult
     private final String[] fieldNames;
     protected final Clock clock;
     protected final Map<String, AnyValue> metadata = new HashMap<>();
-    private final TransactionStateMachineV1SPI.VisitorSubscriber subscriber;
+    private final TransactionStateMachineV1SPI.BoltAdapterSubscriber querySubscriber;
 
     public CypherAdapterStream( QueryExecution queryExecution,
-            TransactionStateMachineV1SPI.VisitorSubscriber subscriber, Clock clock )
+            TransactionStateMachineV1SPI.BoltAdapterSubscriber querySubscriber, Clock clock )
     {
         this.queryExecution = queryExecution;
         this.fieldNames = queryExecution.fieldNames();
-        this.subscriber = subscriber;
+        this.querySubscriber = querySubscriber;
         this.clock = clock;
     }
 
@@ -73,18 +73,18 @@ public class CypherAdapterStream implements BoltResult
     }
 
     @Override
-    public boolean handleRecords( Visitor visitor, long size ) throws Exception
+    public boolean handleRecords( Subscriber subscriber, long size ) throws Exception
     {
         long start = clock.millis();
-        subscriber.setVisitor(visitor);
+        this.querySubscriber.setSubscriber( subscriber );
         queryExecution.request( size );
 
         boolean hasMore = queryExecution.await();
         if ( !hasMore )
         {
             addRecordStreamingTime( clock.millis() - start );
-            addMetadata( subscriber.queryStatistics() );
-            metadata.forEach( visitor::addMetadata );
+            addMetadata( querySubscriber.queryStatistics() );
+            metadata.forEach( subscriber::addMetadata );
         }
         return hasMore;
     }
@@ -94,7 +94,7 @@ public class CypherAdapterStream implements BoltResult
         metadata.put( "result_consumed_after", longValue( time ) );
     }
 
-    protected void addMetadata( QueryStatistics statistics )
+    private void addMetadata( QueryStatistics statistics )
     {
         QueryExecutionType qt = queryExecution.executionType();
         metadata.put( "type", Values.stringValue( queryTypeCode( qt.queryType() ) ) );
