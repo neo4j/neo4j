@@ -35,7 +35,6 @@ import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.rest.dbms.AuthorizedRequestWrapper;
 import org.neo4j.server.rest.repr.RepresentationWriteHandler;
-import org.neo4j.server.rest.web.BatchOperationService;
 import org.neo4j.server.rest.web.DatabaseMetadataService;
 import org.neo4j.server.rest.web.ExtensionService;
 import org.neo4j.server.rest.web.HttpConnectionInfoFactory;
@@ -76,15 +75,6 @@ public class TransactionalContainerFilter implements ContainerRequestFilter
 
             representationWriteHandler = new CommitOnSuccessfulStatusCodeRepresentationWriteHandler( response, transaction );
             restfulGraphDatabase.getOutputFormat().setRepresentationWriteHandler( representationWriteHandler );
-        }
-        else if ( resource instanceof BatchOperationService )
-        {
-            BatchOperationService batchOperationService = (BatchOperationService) resource;
-
-            final Transaction transaction = graph.beginTransaction( KernelTransaction.Type.explicit, loginContext, clientConnection );
-
-            representationWriteHandler = new CommitOnSuccessfulStatusCodeRepresentationWriteHandler( response, transaction );
-            batchOperationService.setRepresentationWriteHandler( representationWriteHandler );
         }
         else if ( resource instanceof DatabaseMetadataService )
         {

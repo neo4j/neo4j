@@ -28,7 +28,6 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.plugins.DefaultPluginManager;
 import org.neo4j.server.plugins.PluginManager;
-import org.neo4j.server.rest.web.BatchOperationService;
 import org.neo4j.server.rest.web.CollectUserAgentFilter;
 import org.neo4j.server.rest.web.CorsFilter;
 import org.neo4j.server.rest.web.DatabaseMetadataService;
@@ -85,8 +84,7 @@ public class RESTApiModule implements ServerModule
                 RestfulGraphDatabase.class,
                 TransactionalService.class,
                 DatabaseMetadataService.class,
-                ExtensionService.class,
-                BatchOperationService.class );
+                ExtensionService.class );
     }
 
     @Override
