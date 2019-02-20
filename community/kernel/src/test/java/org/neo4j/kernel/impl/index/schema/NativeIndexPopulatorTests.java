@@ -105,7 +105,7 @@ public abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>,
         populator.create();
 
         // then
-        try ( StoreChannel r = fs.open( getIndexFiles().getStoreFile(), OpenMode.READ ) )
+        try ( StoreChannel r = fs.open( indexFiles.getStoreFile(), OpenMode.READ ) )
         {
             byte[] firstBytes = new byte[someBytes.length];
             r.readAll( ByteBuffer.wrap( firstBytes ) );
@@ -135,11 +135,11 @@ public abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>,
         populator.create();
 
         // when
+        assertTrue( fs.fileExists( indexFiles.getBase() ) );
         populator.drop();
 
-        System.out.println( "indexFiles: " + getIndexFiles() );
         // then
-        assertDirectoryNotPresent();
+        assertFalse( "expected drop to delete index base", fs.fileExists( indexFiles.getBase() ) );
     }
 
     @Test
@@ -253,7 +253,7 @@ public abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>,
     {
         // given
         populator.create();
-        Optional<PagedFile> existingMapping = pageCache.getExistingMapping( getIndexFiles().getStoreFile() );
+        Optional<PagedFile> existingMapping = pageCache.getExistingMapping( indexFiles.getStoreFile() );
         if ( existingMapping.isPresent() )
         {
             existingMapping.get().close();
@@ -267,7 +267,7 @@ public abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>,
         populator.close( true );
 
         // then
-        existingMapping = pageCache.getExistingMapping( getIndexFiles().getStoreFile() );
+        existingMapping = pageCache.getExistingMapping( indexFiles.getStoreFile() );
         assertFalse( existingMapping.isPresent() );
     }
 
@@ -299,7 +299,7 @@ public abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>,
     {
         // given
         populator.create();
-        Optional<PagedFile> existingMapping = pageCache.getExistingMapping( getIndexFiles().getStoreFile() );
+        Optional<PagedFile> existingMapping = pageCache.getExistingMapping( indexFiles.getStoreFile() );
         if ( existingMapping.isPresent() )
         {
             existingMapping.get().close();
@@ -313,7 +313,7 @@ public abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>,
         populator.close( false );
 
         // then
-        existingMapping = pageCache.getExistingMapping( getIndexFiles().getStoreFile() );
+        existingMapping = pageCache.getExistingMapping( indexFiles.getStoreFile() );
         assertFalse( existingMapping.isPresent() );
     }
 
@@ -704,7 +704,7 @@ public abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>,
     private void assertHeader( boolean online, String failureMessage, boolean messageTruncated ) throws IOException
     {
         NativeIndexHeaderReader headerReader = new NativeIndexHeaderReader( NO_HEADER_READER );
-        try ( GBPTree<KEY,VALUE> ignored = new GBPTree<>( pageCache, getIndexFiles().getStoreFile(), layout, 0, GBPTree.NO_MONITOR,
+        try ( GBPTree<KEY,VALUE> ignored = new GBPTree<>( pageCache, indexFiles.getStoreFile(), layout, 0, GBPTree.NO_MONITOR,
                 headerReader, NO_HEADER_WRITER, RecoveryCleanupWorkCollector.immediate() ) )
         {
             if ( online )
@@ -789,8 +789,8 @@ public abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>,
     private byte[] fileWithContent() throws IOException
     {
         int size = 1000;
-        fs.mkdirs( getIndexFiles().getStoreFile().getParentFile() );
-        try ( StoreChannel storeChannel = fs.create( getIndexFiles().getStoreFile() ) )
+        fs.mkdirs( indexFiles.getStoreFile().getParentFile() );
+        try ( StoreChannel storeChannel = fs.create( indexFiles.getStoreFile() ) )
         {
             byte[] someBytes = new byte[size];
             random.nextBytes( someBytes );

@@ -32,9 +32,8 @@ import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.storageengine.api.NodePropertyAccessor;
-import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
+import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
@@ -45,10 +44,10 @@ import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexSampler.combi
 
 class TemporalIndexPopulator extends TemporalIndexCache<WorkSyncedNativeIndexPopulator<?,?>> implements IndexPopulator
 {
-    TemporalIndexPopulator( StorageIndexReference descriptor, IndexSamplingConfig samplingConfig, TemporalIndexFiles temporalIndexFiles, PageCache pageCache,
-                            FileSystemAbstraction fs, IndexProvider.Monitor monitor )
+    TemporalIndexPopulator( StorageIndexReference descriptor, TemporalIndexFiles temporalIndexFiles, PageCache pageCache,
+            FileSystemAbstraction fs, IndexProvider.Monitor monitor )
     {
-        super( new PartFactory( pageCache, fs, temporalIndexFiles, descriptor, samplingConfig, monitor ) );
+        super( new PartFactory( pageCache, fs, temporalIndexFiles, descriptor, monitor ) );
     }
 
     @Override
@@ -142,10 +141,10 @@ class TemporalIndexPopulator extends TemporalIndexCache<WorkSyncedNativeIndexPop
 
     static class PartPopulator<KEY extends NativeIndexSingleValueKey<KEY>> extends NativeIndexPopulator<KEY,NativeIndexValue>
     {
-        PartPopulator( PageCache pageCache, FileSystemAbstraction fs, TemporalIndexFiles.FileLayout<KEY> fileLayout, IndexProvider.Monitor monitor,
-                StorageIndexReference descriptor )
+        PartPopulator( PageCache pageCache, FileSystemAbstraction fs, IndexFiles indexFiles, IndexLayout<KEY,NativeIndexValue> layout,
+                IndexProvider.Monitor monitor, StorageIndexReference descriptor )
         {
-            super( pageCache, fs, fileLayout, fileLayout.layout, monitor, descriptor, NO_HEADER_WRITER );
+            super( pageCache, fs, indexFiles, layout, monitor, descriptor, NO_HEADER_WRITER );
         }
 
         @Override
@@ -161,17 +160,15 @@ class TemporalIndexPopulator extends TemporalIndexCache<WorkSyncedNativeIndexPop
         private final FileSystemAbstraction fs;
         private final TemporalIndexFiles temporalIndexFiles;
         private final StorageIndexReference descriptor;
-        private final IndexSamplingConfig samplingConfig;
         private final IndexProvider.Monitor monitor;
 
         PartFactory( PageCache pageCache, FileSystemAbstraction fs, TemporalIndexFiles temporalIndexFiles, StorageIndexReference descriptor,
-                IndexSamplingConfig samplingConfig, IndexProvider.Monitor monitor )
+                IndexProvider.Monitor monitor )
         {
             this.pageCache = pageCache;
             this.fs = fs;
             this.temporalIndexFiles = temporalIndexFiles;
             this.descriptor = descriptor;
-            this.samplingConfig = samplingConfig;
             this.monitor = monitor;
         }
 
@@ -213,7 +210,7 @@ class TemporalIndexPopulator extends TemporalIndexCache<WorkSyncedNativeIndexPop
 
         private <KEY extends NativeIndexSingleValueKey<KEY>> WorkSyncedNativeIndexPopulator<KEY,?> create( TemporalIndexFiles.FileLayout<KEY> fileLayout )
         {
-            PartPopulator<KEY> populator = new PartPopulator<>( pageCache, fs, fileLayout, monitor, descriptor );
+            PartPopulator<KEY> populator = new PartPopulator<>( pageCache, fs, fileLayout.indexFiles, fileLayout.layout, monitor, descriptor );
             populator.create();
             return new WorkSyncedNativeIndexPopulator<>( populator );
         }

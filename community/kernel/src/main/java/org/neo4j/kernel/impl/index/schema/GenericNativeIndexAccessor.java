@@ -26,7 +26,6 @@ import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettingsCache;
@@ -37,18 +36,15 @@ import org.neo4j.values.storable.Value;
 class GenericNativeIndexAccessor extends NativeIndexAccessor<GenericKey,NativeIndexValue>
 {
     private final IndexSpecificSpaceFillingCurveSettingsCache spaceFillingCurveSettings;
-    private final IndexDirectoryStructure directoryStructure;
     private final SpaceFillingCurveConfiguration configuration;
     private Validator<Value[]> validator;
 
     GenericNativeIndexAccessor( PageCache pageCache, FileSystemAbstraction fs, IndexFiles indexFiles, IndexLayout<GenericKey,NativeIndexValue> layout,
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, IndexProvider.Monitor monitor, StorageIndexReference descriptor,
-            IndexSpecificSpaceFillingCurveSettingsCache spaceFillingCurveSettings, IndexDirectoryStructure directoryStructure,
-            SpaceFillingCurveConfiguration configuration )
+            IndexSpecificSpaceFillingCurveSettingsCache spaceFillingCurveSettings, SpaceFillingCurveConfiguration configuration )
     {
         super( pageCache, fs, indexFiles, layout, monitor, descriptor, new SpaceFillingCurveSettingsWriter( spaceFillingCurveSettings ) );
         this.spaceFillingCurveSettings = spaceFillingCurveSettings;
-        this.directoryStructure = directoryStructure;
         this.configuration = configuration;
         instantiateTree( recoveryCleanupWorkCollector, headerWriter );
     }

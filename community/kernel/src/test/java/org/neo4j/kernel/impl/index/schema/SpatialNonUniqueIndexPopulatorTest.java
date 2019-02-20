@@ -23,6 +23,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.gis.spatial.index.curves.StandardConfiguration;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.index.schema.config.ConfiguredSpaceFillingCurveSettingsCache;
+import org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettings;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 
 public class SpatialNonUniqueIndexPopulatorTest extends NativeIndexPopulatorTests.NonUnique<SpatialIndexKey,NativeIndexValue>
@@ -30,20 +31,12 @@ public class SpatialNonUniqueIndexPopulatorTest extends NativeIndexPopulatorTest
     private static final CoordinateReferenceSystem crs = CoordinateReferenceSystem.WGS84;
     private static final ConfiguredSpaceFillingCurveSettingsCache configuredSettings = new ConfiguredSpaceFillingCurveSettingsCache( Config.defaults() );
 
-    private SpatialIndexFiles.SpatialFile spatialFile;
-
     @Override
     NativeIndexPopulator<SpatialIndexKey,NativeIndexValue> createPopulator()
     {
-        spatialFile = new SpatialIndexFiles.SpatialFile( crs, configuredSettings, fs, super.getIndexFiles().getBase() );
-        return new SpatialIndexPopulator.PartPopulator( pageCache, fs, spatialFile.getLayoutForNewIndex(), monitor, indexDescriptor,
-                new StandardConfiguration() );
-    }
-
-    @Override
-    public IndexFiles getIndexFiles()
-    {
-        return spatialFile;
+        SpaceFillingCurveSettings settings = configuredSettings.forCRS( crs );
+        return new SpatialIndexPopulator.PartPopulator( pageCache, fs, indexFiles, layout, monitor, indexDescriptor,
+                new StandardConfiguration(), settings );
     }
 
     @Override

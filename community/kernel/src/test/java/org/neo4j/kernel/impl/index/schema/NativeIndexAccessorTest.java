@@ -33,7 +33,6 @@ import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.impl.index.schema.config.ConfiguredSpaceFillingCurveSettingsCache;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettingsCache;
@@ -64,43 +63,43 @@ public class NativeIndexAccessorTest<KEY extends NativeIndexKey<KEY>, VALUE exte
                         StringIndexProvider.CAPABILITY
                 },
                 {"Date",
-                        temporalAccessorFactory( ValueGroup.DATE ),
+                        temporalAccessorFactory(),
                         RandomValues.typesOfGroup( ValueGroup.DATE ),
                         (IndexLayoutFactory) DateLayout::new,
                         TemporalIndexProvider.CAPABILITY
                 },
                 {"DateTime",
-                        temporalAccessorFactory( ValueGroup.ZONED_DATE_TIME ),
+                        temporalAccessorFactory(),
                         RandomValues.typesOfGroup( ValueGroup.ZONED_DATE_TIME ),
                         (IndexLayoutFactory) ZonedDateTimeLayout::new,
                         TemporalIndexProvider.CAPABILITY
                 },
                 {"Duration",
-                        temporalAccessorFactory( ValueGroup.DURATION ),
+                        temporalAccessorFactory(),
                         RandomValues.typesOfGroup( ValueGroup.DURATION ),
                         (IndexLayoutFactory) DurationLayout::new,
                         TemporalIndexProvider.CAPABILITY
                 },
                 {"LocalDateTime",
-                        temporalAccessorFactory( ValueGroup.LOCAL_DATE_TIME ),
+                        temporalAccessorFactory(),
                         RandomValues.typesOfGroup( ValueGroup.LOCAL_DATE_TIME ),
                         (IndexLayoutFactory) LocalDateTimeLayout::new,
                         TemporalIndexProvider.CAPABILITY
                 },
                 {"LocalTime",
-                        temporalAccessorFactory( ValueGroup.LOCAL_TIME ),
+                        temporalAccessorFactory(),
                         RandomValues.typesOfGroup( ValueGroup.LOCAL_TIME ),
                         (IndexLayoutFactory) LocalTimeLayout::new,
                         TemporalIndexProvider.CAPABILITY
                 },
                 {"LocalDateTime",
-                        temporalAccessorFactory( ValueGroup.LOCAL_DATE_TIME ),
+                        temporalAccessorFactory(),
                         RandomValues.typesOfGroup( ValueGroup.LOCAL_DATE_TIME ),
                         (IndexLayoutFactory) LocalDateTimeLayout::new,
                         TemporalIndexProvider.CAPABILITY
                 },
                 {"Time",
-                        temporalAccessorFactory( ValueGroup.ZONED_TIME ),
+                        temporalAccessorFactory(),
                         RandomValues.typesOfGroup( ValueGroup.ZONED_TIME ),
                         (IndexLayoutFactory) ZonedTimeLayout::new,
                         TemporalIndexProvider.CAPABILITY
@@ -140,8 +139,7 @@ public class NativeIndexAccessorTest<KEY extends NativeIndexKey<KEY>, VALUE exte
     @Override
     NativeIndexAccessor<KEY,VALUE> makeAccessor() throws IOException
     {
-        return accessorFactory.create( pageCache, fs, getIndexFiles(), layout, RecoveryCleanupWorkCollector.immediate(), monitor, indexDescriptor,
-                indexDirectoryStructure );
+        return accessorFactory.create( pageCache, fs, indexFiles, layout, RecoveryCleanupWorkCollector.immediate(), monitor, indexDescriptor );
     }
 
     @Override
@@ -165,37 +163,29 @@ public class NativeIndexAccessorTest<KEY extends NativeIndexKey<KEY>, VALUE exte
     /* Helpers */
     private static AccessorFactory<NumberIndexKey,NativeIndexValue> numberAccessorFactory()
     {
-        return ( pageCache, fs, storeFiles, layout, recoveryCleanupWorkCollector, monitor, descriptor, directory ) ->
-                new NumberIndexAccessor( pageCache, fs, storeFiles, layout, recoveryCleanupWorkCollector, monitor, descriptor );
+        return NumberIndexAccessor::new;
     }
 
     private static AccessorFactory<StringIndexKey,NativeIndexValue> stringAccessorFactory()
     {
-        return ( pageCache, fs, storeFiles, layout, recoveryCleanupWorkCollector, monitor, descriptor, directory ) ->
-                new StringIndexAccessor( pageCache, fs, storeFiles, layout, recoveryCleanupWorkCollector, monitor, descriptor );
+        return StringIndexAccessor::new;
     }
 
-    private static <TK extends NativeIndexSingleValueKey<TK>> AccessorFactory<TK,NativeIndexValue> temporalAccessorFactory( ValueGroup temporalValueGroup )
+    private static <TK extends NativeIndexSingleValueKey<TK>> AccessorFactory<TK,NativeIndexValue> temporalAccessorFactory()
     {
-        return ( pageCache, fs, storeFiles, layout, cleanup, monitor, descriptor, directory ) ->
-        {
-            TemporalIndexFiles.FileLayout<TK> fileLayout = new TemporalIndexFiles.FileLayout<>( fs, storeFiles.getStoreFile(), layout, temporalValueGroup );
-            return new TemporalIndexAccessor.PartAccessor<>( pageCache, fs, fileLayout, cleanup, monitor, descriptor );
-        };
+        return TemporalIndexAccessor.PartAccessor::new;
     }
 
     private static AccessorFactory<GenericKey,NativeIndexValue> genericAccessorFactory()
     {
-        return ( pageCache, fs, storeFiles, layout, cleanup, monitor, descriptor, directory ) ->
-                new GenericNativeIndexAccessor( pageCache, fs, storeFiles, layout, cleanup, monitor, descriptor, spaceFillingCurveSettings,
-                        directory, configuration );
+        return ( pageCache, fs, storeFiles, layout, cleanup, monitor, descriptor ) ->
+                new GenericNativeIndexAccessor( pageCache, fs, storeFiles, layout, cleanup, monitor, descriptor, spaceFillingCurveSettings, configuration );
     }
 
     @FunctionalInterface
     private interface AccessorFactory<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue>
     {
         NativeIndexAccessor<KEY,VALUE> create( PageCache pageCache, FileSystemAbstraction fs, IndexFiles indexFiles, IndexLayout<KEY,VALUE> layout,
-                RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, IndexProvider.Monitor monitor, StoreIndexDescriptor descriptor,
-                IndexDirectoryStructure directory ) throws IOException;
+                RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, IndexProvider.Monitor monitor, StoreIndexDescriptor descriptor ) throws IOException;
     }
 }

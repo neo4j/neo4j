@@ -70,7 +70,7 @@ public abstract class NativeIndexTestUtil<KEY extends NativeIndexKey<KEY>,VALUE 
     ValueCreatorUtil<KEY,VALUE> valueCreatorUtil;
     IndexLayout<KEY,VALUE> layout;
     IndexDirectoryStructure indexDirectoryStructure;
-    private IndexFiles indexFiles;
+    IndexFiles indexFiles;
     PageCache pageCache;
     IndexProvider.Monitor monitor = IndexProvider.Monitor.EMPTY;
 
@@ -84,11 +84,6 @@ public abstract class NativeIndexTestUtil<KEY extends NativeIndexKey<KEY>,VALUE 
         this.indexFiles = new IndexFiles.Directory( fs, indexDirectoryStructure, indexDescriptor.getId() );
         fs.mkdirs( indexFiles.getStoreFile().getParentFile() );
         pageCache = pageCacheRule.getPageCache( fs );
-    }
-
-    IndexFiles getIndexFiles()
-    {
-        return indexFiles;
     }
 
     abstract ValueCreatorUtil<KEY,VALUE> createValueCreatorUtil();
@@ -131,7 +126,7 @@ public abstract class NativeIndexTestUtil<KEY extends NativeIndexKey<KEY>,VALUE 
 
     GBPTree<KEY,VALUE> getTree()
     {
-        return new GBPTree<>( pageCache, getIndexFiles().getStoreFile(), layout, 0, GBPTree.NO_MONITOR,
+        return new GBPTree<>( pageCache, indexFiles.getStoreFile(), layout, 0, GBPTree.NO_MONITOR,
                 NO_HEADER_READER, NO_HEADER_WRITER, RecoveryCleanupWorkCollector.immediate() );
     }
 
@@ -198,17 +193,12 @@ public abstract class NativeIndexTestUtil<KEY extends NativeIndexKey<KEY>,VALUE 
 
     void assertFilePresent()
     {
-        assertTrue( fs.fileExists( getIndexFiles().getStoreFile() ) );
+        assertTrue( fs.fileExists( indexFiles.getStoreFile() ) );
     }
 
     void assertFileNotPresent()
     {
-        assertFalse( fs.fileExists( getIndexFiles().getStoreFile() ) );
-    }
-
-    void assertDirectoryNotPresent()
-    {
-        assertFalse( "expected ", fs.fileExists( getIndexFiles().getBase() ) );
+        assertFalse( fs.fileExists( indexFiles.getStoreFile() ) );
     }
 
     // Useful when debugging

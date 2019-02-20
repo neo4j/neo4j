@@ -89,7 +89,7 @@ public class SpatialIndexProvider extends IndexProvider
     }
 
     @Override
-    public IndexAccessor getOnlineAccessor( StorageIndexReference descriptor, IndexSamplingConfig samplingConfig ) throws IOException
+    public IndexAccessor getOnlineAccessor( StorageIndexReference descriptor, IndexSamplingConfig samplingConfig )
     {
         SpatialIndexFiles files = new SpatialIndexFiles( directoryStructure(), descriptor.indexReference(), fs, configuredSettings );
         return new SpatialIndexAccessor( descriptor, pageCache, fs, recoveryCleanupWorkCollector, monitor, files, configuration );
@@ -104,7 +104,7 @@ public class SpatialIndexProvider extends IndexProvider
         {
             for ( SpatialIndexFiles.SpatialFile subIndex : spatialIndexFiles.existing() )
             {
-                String indexFailure = NativeIndexes.readFailureMessage( pageCache, subIndex.getStoreFile() );
+                String indexFailure = NativeIndexes.readFailureMessage( pageCache, subIndex.indexFiles.getStoreFile() );
                 if ( indexFailure != null )
                 {
                     return indexFailure;
@@ -129,7 +129,7 @@ public class SpatialIndexProvider extends IndexProvider
         {
             try
             {
-                switch ( NativeIndexes.readState( pageCache, subIndex.getStoreFile() ) )
+                switch ( NativeIndexes.readState( pageCache, subIndex.indexFiles.getStoreFile() ) )
                 {
                 case FAILED:
                     return InternalIndexState.FAILED;

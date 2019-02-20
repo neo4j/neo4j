@@ -41,13 +41,10 @@ public class SpatialIndexAccessorTest extends NativeIndexAccessorTests<SpatialIn
     private static final CoordinateReferenceSystem crs = CoordinateReferenceSystem.WGS84;
     private static final ConfiguredSpaceFillingCurveSettingsCache configuredSettings = new ConfiguredSpaceFillingCurveSettingsCache( Config.defaults() );
 
-    private SpatialIndexFiles.SpatialFile spatialFile;
-
     @Override
     NativeIndexAccessor<SpatialIndexKey,NativeIndexValue> makeAccessor()
     {
-        spatialFile = new SpatialIndexFiles.SpatialFile( CoordinateReferenceSystem.WGS84, configuredSettings, fs, super.getIndexFiles().getBase() );
-        return new SpatialIndexAccessor.PartAccessor( pageCache, fs, spatialFile.getLayoutForNewIndex(), immediate(), monitor, indexDescriptor,
+        return new SpatialIndexAccessor.PartAccessor( pageCache, fs, indexFiles, layout, immediate(), monitor, indexDescriptor,
                 new StandardConfiguration() );
     }
 
@@ -67,12 +64,6 @@ public class SpatialIndexAccessorTest extends NativeIndexAccessorTests<SpatialIn
     IndexLayout<SpatialIndexKey,NativeIndexValue> createLayout()
     {
         return new SpatialLayout( crs, configuredSettings.forCRS( crs ).curve() );
-    }
-
-    @Override
-    public IndexFiles getIndexFiles()
-    {
-        return spatialFile;
     }
 
     @Override

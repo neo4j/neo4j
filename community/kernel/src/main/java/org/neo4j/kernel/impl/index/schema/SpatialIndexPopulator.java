@@ -34,9 +34,9 @@ import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettings;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
+import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.PointValue;
@@ -152,12 +152,13 @@ class SpatialIndexPopulator extends SpatialIndexCache<WorkSyncedNativeIndexPopul
         private final SpaceFillingCurveConfiguration configuration;
         private final SpaceFillingCurveSettings settings;
 
-        PartPopulator( PageCache pageCache, FileSystemAbstraction fs, SpatialIndexFiles.SpatialFileLayout fileLayout, IndexProvider.Monitor monitor,
-                StorageIndexReference descriptor, SpaceFillingCurveConfiguration configuration )
+        PartPopulator( PageCache pageCache, FileSystemAbstraction fs, IndexFiles indexFiles, IndexLayout<SpatialIndexKey,NativeIndexValue> layout,
+                IndexProvider.Monitor monitor, StorageIndexReference descriptor, SpaceFillingCurveConfiguration configuration,
+                SpaceFillingCurveSettings settings )
         {
-            super( pageCache, fs, fileLayout.spatialFile, fileLayout.layout, monitor, descriptor, NO_HEADER_WRITER );
+            super( pageCache, fs, indexFiles, layout, monitor, descriptor, NO_HEADER_WRITER );
             this.configuration = configuration;
-            this.settings = fileLayout.settings;
+            this.settings = settings;
         }
 
         @Override
@@ -229,7 +230,10 @@ class SpatialIndexPopulator extends SpatialIndexCache<WorkSyncedNativeIndexPopul
 
         private WorkSyncedNativeIndexPopulator<SpatialIndexKey,NativeIndexValue> create( SpatialIndexFiles.SpatialFileLayout fileLayout )
         {
-            PartPopulator populator = new PartPopulator( pageCache, fs, fileLayout, monitor, descriptor, configuration );
+            IndexFiles indexFiles = fileLayout.indexFiles;
+            IndexLayout<SpatialIndexKey,NativeIndexValue> layout = fileLayout.layout;
+            SpaceFillingCurveSettings settings = fileLayout.settings;
+            PartPopulator populator = new PartPopulator( pageCache, fs, indexFiles, layout, monitor, descriptor, configuration, settings );
             populator.create();
             return new WorkSyncedNativeIndexPopulator<>( populator );
         }

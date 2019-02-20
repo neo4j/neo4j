@@ -40,8 +40,8 @@ import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
+import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 
@@ -59,7 +59,7 @@ class SpatialIndexAccessor extends SpatialIndexCache<SpatialIndexAccessor.PartAc
                           RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
                           IndexProvider.Monitor monitor,
                           SpatialIndexFiles spatialIndexFiles,
-                          SpaceFillingCurveConfiguration searchConfiguration ) throws IOException
+                          SpaceFillingCurveConfiguration searchConfiguration )
     {
         super( new PartFactory( pageCache,
                                 fs,
@@ -181,16 +181,14 @@ class SpatialIndexAccessor extends SpatialIndexCache<SpatialIndexAccessor.PartAc
 
     static class PartAccessor extends NativeIndexAccessor<SpatialIndexKey,NativeIndexValue>
     {
-        private final IndexLayout<SpatialIndexKey,NativeIndexValue> layout;
         private final StorageIndexReference descriptor;
         private final SpaceFillingCurveConfiguration searchConfiguration;
 
-        PartAccessor( PageCache pageCache, FileSystemAbstraction fs, SpatialIndexFiles.SpatialFileLayout fileLayout,
+        PartAccessor( PageCache pageCache, FileSystemAbstraction fs, IndexFiles indexFiles, IndexLayout<SpatialIndexKey,NativeIndexValue> layout,
                 RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, IndexProvider.Monitor monitor, StorageIndexReference descriptor,
                 SpaceFillingCurveConfiguration searchConfiguration )
         {
-            super( pageCache, fs, fileLayout.spatialFile, fileLayout.layout, monitor, descriptor, NO_HEADER_WRITER );
-            this.layout = fileLayout.layout;
+            super( pageCache, fs, indexFiles, layout, monitor, descriptor, NO_HEADER_WRITER );
             this.descriptor = descriptor;
             this.searchConfiguration = searchConfiguration;
             instantiateTree( recoveryCleanupWorkCollector, headerWriter );
@@ -242,7 +240,7 @@ class SpatialIndexAccessor extends SpatialIndexCache<SpatialIndexAccessor.PartAc
         public PartAccessor newSpatial( CoordinateReferenceSystem crs ) throws IOException
         {
             SpatialIndexFiles.SpatialFile spatialFile = spatialIndexFiles.forCrs( crs );
-            if ( !fs.fileExists( spatialFile.getStoreFile() ) )
+            if ( !fs.fileExists( spatialFile.indexFiles.getStoreFile() ) )
             {
                 SpatialIndexFiles.SpatialFileLayout fileLayout = spatialFile.getLayoutForNewIndex();
                 createEmptyIndex( fileLayout );
@@ -254,11 +252,12 @@ class SpatialIndexAccessor extends SpatialIndexCache<SpatialIndexAccessor.PartAc
             }
         }
 
-        private PartAccessor createPartAccessor( SpatialIndexFiles.SpatialFileLayout fileLayout ) throws IOException
+        private PartAccessor createPartAccessor( SpatialIndexFiles.SpatialFileLayout fileLayout )
         {
             return new PartAccessor( pageCache,
                                      fs,
-                                     fileLayout,
+                                     fileLayout.indexFiles,
+                                     fileLayout.layout,
                                      recoveryCleanupWorkCollector,
                                      monitor,
                                      descriptor,
@@ -269,10 +268,12 @@ class SpatialIndexAccessor extends SpatialIndexCache<SpatialIndexAccessor.PartAc
         {
             IndexPopulator populator = new SpatialIndexPopulator.PartPopulator( pageCache,
                                                                                 fs,
-                                                                                fileLayout,
+                                                                                fileLayout.indexFiles,
+                                                                                fileLayout.layout,
                                                                                 monitor,
                                                                                 descriptor,
-                                                                                searchConfiguration );
+                                                                                searchConfiguration,
+                                                                                fileLayout.settings);
             populator.create();
             populator.close( true );
         }

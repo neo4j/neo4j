@@ -94,9 +94,7 @@ public class GenericAccessorPointsTest
         RecoveryCleanupWorkCollector collector = RecoveryCleanupWorkCollector.ignore();
         descriptor = TestIndexDescriptorFactory.forLabel( 1, 1 ).withId( 1 );
         IndexDirectoryStructure.Factory factory = IndexDirectoryStructure.directoriesByProvider( directory.storeDir() );
-        IndexDirectoryStructure structure = factory.forProvider( GenericNativeIndexProvider.DESCRIPTOR );
-        accessor = new GenericNativeIndexAccessor( pc, fs, indexFiles, layout, collector, EMPTY, descriptor, indexSettings, structure,
-                new StandardConfiguration() );
+        accessor = new GenericNativeIndexAccessor( pc, fs, indexFiles, layout, collector, EMPTY, descriptor, indexSettings, new StandardConfiguration() );
     }
 
     @After

@@ -29,20 +29,20 @@ final class SimpleIndexDirectoryStructures
     {
     }
 
-    static IndexDirectoryStructure onIndexFile( File indexFile )
+    static IndexDirectoryStructure onDirectory( File indexDirectory )
     {
         return new IndexDirectoryStructure()
         {
             @Override
             public File rootDirectory()
             {
-                return indexFile.getParentFile();
+                return indexDirectory.getParentFile();
             }
 
             @Override
             public File directoryForIndex( long indexId )
             {
-                return indexFile;
+                return indexDirectory;
             }
         };
     }

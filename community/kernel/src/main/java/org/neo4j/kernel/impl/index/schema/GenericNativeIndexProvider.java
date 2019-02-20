@@ -170,7 +170,7 @@ public class GenericNativeIndexProvider extends NativeIndexProvider<GenericKey,N
     protected IndexAccessor newIndexAccessor( IndexFiles indexFiles, GenericLayout layout, StorageIndexReference descriptor )
     {
         return new GenericNativeIndexAccessor( pageCache, fs, indexFiles, layout, recoveryCleanupWorkCollector, monitor, descriptor,
-                layout.getSpaceFillingCurveSettings(), directoryStructure(), configuration );
+                layout.getSpaceFillingCurveSettings(), configuration );
     }
 
     @Override

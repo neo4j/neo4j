@@ -45,7 +45,7 @@ public class NativeNonUniqueIndexPopulatorTest<KEY extends NativeIndexKey<KEY>, 
     @Override
     NativeIndexPopulator<KEY,VALUE> createPopulator() throws IOException
     {
-        return testCase.populatorFactory.create( pageCache, fs, getIndexFiles(), layout, monitor, indexDescriptor );
+        return testCase.populatorFactory.create( pageCache, fs, indexFiles, layout, monitor, indexDescriptor );
     }
 
     @Override

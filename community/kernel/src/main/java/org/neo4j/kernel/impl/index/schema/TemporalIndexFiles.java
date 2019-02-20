@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -43,12 +42,17 @@ class TemporalIndexFiles
     {
         this.fs = fs;
         File indexDirectory = directoryStructure.directoryForIndex( descriptor.indexReference() );
-        this.date = new FileLayout<>( fs, new File( indexDirectory, "date" ), new DateLayout(), ValueGroup.DATE );
-        this.localTime = new FileLayout<>( fs, new File( indexDirectory, "localTime" ), new LocalTimeLayout(), ValueGroup.LOCAL_TIME );
-        this.zonedTime = new FileLayout<>( fs, new File( indexDirectory, "zonedTime" ), new ZonedTimeLayout(), ValueGroup.ZONED_TIME );
-        this.localDateTime = new FileLayout<>( fs, new File( indexDirectory, "localDateTime" ), new LocalDateTimeLayout(), ValueGroup.LOCAL_DATE_TIME );
-        this.zonedDateTime = new FileLayout<>( fs, new File( indexDirectory, "zonedDateTime" ), new ZonedDateTimeLayout(), ValueGroup.ZONED_DATE_TIME );
-        this.duration = new FileLayout<>( fs, new File( indexDirectory, "duration" ), new DurationLayout(), ValueGroup.DURATION );
+        this.date = new FileLayout<>( singleIndexFiles( fs, indexDirectory, "date" ), new DateLayout(), ValueGroup.DATE );
+        this.localTime = new FileLayout<>( singleIndexFiles( fs, indexDirectory, "localTime" ), new LocalTimeLayout(), ValueGroup.LOCAL_TIME );
+        this.zonedTime = new FileLayout<>( singleIndexFiles( fs, indexDirectory, "zonedTime" ), new ZonedTimeLayout(), ValueGroup.ZONED_TIME );
+        this.localDateTime = new FileLayout<>( singleIndexFiles( fs, indexDirectory, "localDateTime" ), new LocalDateTimeLayout(), ValueGroup.LOCAL_DATE_TIME );
+        this.zonedDateTime = new FileLayout<>( singleIndexFiles( fs, indexDirectory, "zonedDateTime" ), new ZonedDateTimeLayout(), ValueGroup.ZONED_DATE_TIME );
+        this.duration = new FileLayout<>( singleIndexFiles( fs, indexDirectory, "duration" ), new DurationLayout(), ValueGroup.DURATION );
+    }
+
+    private IndexFiles.SingleFile singleIndexFiles( FileSystemAbstraction fs, File indexDirectory, String singleFileName )
+    {
+        return new IndexFiles.SingleFile( fs, new File( indexDirectory, singleFileName ) );
     }
 
     Iterable<FileLayout> existing()
@@ -63,7 +67,7 @@ class TemporalIndexFiles
         return existing;
     }
 
-    <T> void loadExistingIndexes( TemporalIndexCache<T> indexCache ) throws IOException
+    <T> void loadExistingIndexes( TemporalIndexCache<T> indexCache )
     {
         for ( FileLayout fileLayout : existing() )
         {
@@ -111,42 +115,22 @@ class TemporalIndexFiles
 
     private boolean exists( FileLayout fileLayout )
     {
-        return fileLayout != null && fs.fileExists( fileLayout.getStoreFile() );
+        return fileLayout != null && fs.fileExists( fileLayout.indexFiles.getStoreFile() );
     }
 
     // .... we will add more explicit accessor methods later
 
-    static class FileLayout<KEY extends NativeIndexSingleValueKey<KEY>> extends IndexFiles
+    static class FileLayout<KEY extends NativeIndexSingleValueKey<KEY>>
     {
-        private final FileSystemAbstraction fs;
-        private final File indexFile;
+        final IndexFiles indexFiles;
         final IndexLayout<KEY,NativeIndexValue> layout;
         final ValueGroup valueGroup;
 
-        FileLayout( FileSystemAbstraction fs, File indexFile, IndexLayout<KEY,NativeIndexValue> layout, ValueGroup valueGroup )
+        FileLayout( IndexFiles indexFiles, IndexLayout<KEY,NativeIndexValue> layout, ValueGroup valueGroup )
         {
-            this.fs = fs;
-            this.indexFile = indexFile;
+            this.indexFiles = indexFiles;
             this.layout = layout;
             this.valueGroup = valueGroup;
-        }
-
-        @Override
-        public File getStoreFile()
-        {
-            return indexFile;
-        }
-
-        @Override
-        public File getBase()
-        {
-            return indexFile;
-        }
-
-        @Override
-        public void clear()
-        {
-            clearSingleFile( fs, indexFile );
         }
     }
 }

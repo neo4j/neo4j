@@ -89,20 +89,18 @@ class SpatialIndexFiles
         }
     }
 
-    static class SpatialFile extends IndexFiles
+    static class SpatialFile
     {
         final ConfiguredSpaceFillingCurveSettingsCache configuredSettings;
-        private final File indexFile;
-        private final FileSystemAbstraction fs;
+        final IndexFiles indexFiles;
         private final CoordinateReferenceSystem crs;
 
         SpatialFile( CoordinateReferenceSystem crs, ConfiguredSpaceFillingCurveSettingsCache configuredSettings, FileSystemAbstraction fs, File indexDirectory )
         {
             this.crs = crs;
             this.configuredSettings = configuredSettings;
-            this.fs = fs;
             String s = crs.getTable().getTableId() + "-" + crs.getCode();
-            this.indexFile = new File( indexDirectory, s );
+            this.indexFiles = new IndexFiles.SingleFile( fs, new File( indexDirectory, s ) );
         }
 
         /**
@@ -110,7 +108,7 @@ class SpatialIndexFiles
          */
         SpatialFileLayout getLayoutForNewIndex()
         {
-            return new SpatialFileLayout( this, configuredSettings.forCRS( crs ) );
+            return new SpatialFileLayout( indexFiles, configuredSettings.forCRS( crs ), crs );
         }
 
         /**
@@ -119,40 +117,22 @@ class SpatialIndexFiles
         SpatialFileLayout getLayoutForExistingIndex( PageCache pageCache ) throws IOException
         {
             SpaceFillingCurveSettings settings =
-                    SpaceFillingCurveSettingsFactory.fromGBPTree( indexFile, pageCache, NativeIndexHeaderReader::readFailureMessage );
-            return new SpatialFileLayout( this, settings );
-        }
-
-        @Override
-        public File getStoreFile()
-        {
-            return indexFile;
-        }
-
-        @Override
-        public File getBase()
-        {
-            return indexFile;
-        }
-
-        @Override
-        public void clear()
-        {
-            clearSingleFile( fs, indexFile );
+                    SpaceFillingCurveSettingsFactory.fromGBPTree( indexFiles.getStoreFile(), pageCache, NativeIndexHeaderReader::readFailureMessage );
+            return new SpatialFileLayout( indexFiles, settings, crs );
         }
     }
 
     static class SpatialFileLayout
     {
         final SpaceFillingCurveSettings settings;
-        final SpatialFile spatialFile;
+        final IndexFiles indexFiles;
         final IndexLayout<SpatialIndexKey,NativeIndexValue> layout;
 
-        SpatialFileLayout( SpatialFile spatialFile, SpaceFillingCurveSettings settings )
+        SpatialFileLayout( IndexFiles indexFiles, SpaceFillingCurveSettings settings, CoordinateReferenceSystem crs )
         {
-            this.spatialFile = spatialFile;
+            this.indexFiles = indexFiles;
             this.settings = settings;
-            this.layout = new SpatialLayout( spatialFile.crs, settings.curve() );
+            this.layout = new SpatialLayout( crs, settings.curve() );
         }
     }
 }

@@ -86,7 +86,7 @@ public class SpatialIndexSettingsTest
     private IndexProvider.Monitor monitor = IndexProvider.Monitor.EMPTY;
 
     @Before
-    public void setupTwoIndexes() throws IOException
+    public void setupTwoIndexes()
     {
         pageCache = pageCacheRule.getPageCache( fs );
 
@@ -176,7 +176,7 @@ public class SpatialIndexSettingsTest
     }
 
     private void addUpdates( SpatialIndexProvider provider, StoreIndexDescriptor schemaIndexDescriptor,
-            ValueCreatorUtil<SpatialIndexKey,NativeIndexValue> layoutUtil ) throws IOException, IndexEntryConflictException
+            ValueCreatorUtil<SpatialIndexKey,NativeIndexValue> layoutUtil ) throws IndexEntryConflictException
     {
         IndexAccessor accessor = provider.getOnlineAccessor( schemaIndexDescriptor, samplingConfig() );
         try ( IndexUpdater updater = accessor.newUpdater( ONLINE ) )
@@ -204,7 +204,7 @@ public class SpatialIndexSettingsTest
     private File indexFile( long indexId )
     {
         // The indexFile location is independent of the configuredSettings, so we just use the defaults
-        return makeIndexFile( indexId, new ConfiguredSpaceFillingCurveSettingsCache( Config.defaults() ) ).getStoreFile();
+        return makeIndexFile( indexId, new ConfiguredSpaceFillingCurveSettingsCache( Config.defaults() ) ).indexFiles.getStoreFile();
     }
 
     private File indexRoot()
@@ -213,16 +213,16 @@ public class SpatialIndexSettingsTest
     }
 
     private void createEmptyIndex( StoreIndexDescriptor schemaIndexDescriptor, ConfiguredSpaceFillingCurveSettingsCache configuredSettings )
-            throws IOException
     {
         SpatialIndexFiles.SpatialFileLayout fileLayout = makeIndexFile( schemaIndexDescriptor.getId(), configuredSettings ).getLayoutForNewIndex();
         SpatialIndexPopulator.PartPopulator populator =
-                new SpatialIndexPopulator.PartPopulator( pageCache, fs, fileLayout, monitor, schemaIndexDescriptor, new StandardConfiguration() );
+                new SpatialIndexPopulator.PartPopulator( pageCache, fs, fileLayout.indexFiles, fileLayout.layout, monitor, schemaIndexDescriptor,
+                        new StandardConfiguration(), fileLayout.settings );
         populator.create();
         populator.close( true );
     }
 
-    private void createEmptyIndex( StoreIndexDescriptor schemaIndexDescriptor, SpatialIndexProvider provider ) throws IOException
+    private void createEmptyIndex( StoreIndexDescriptor schemaIndexDescriptor, SpatialIndexProvider provider )
     {
         IndexPopulator populator = provider.getPopulator( schemaIndexDescriptor, samplingConfig() );
         populator.create();

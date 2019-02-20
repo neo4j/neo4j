@@ -71,31 +71,31 @@ class NativeIndexPopulatorTestCases
                         RandomValues.typesOfGroup( ValueGroup.TEXT ),
                         StringLayout::new )},
                 {new TestCase<>( "Date",
-                        temporalPopulatorFactory( ValueGroup.DATE ),
+                        temporalPopulatorFactory(),
                         RandomValues.typesOfGroup( ValueGroup.DATE ),
                         DateLayout::new )},
                 {new TestCase<>( "DateTime",
-                        temporalPopulatorFactory( ValueGroup.ZONED_DATE_TIME ),
+                        temporalPopulatorFactory(),
                         RandomValues.typesOfGroup( ValueGroup.ZONED_DATE_TIME ),
                         ZonedDateTimeLayout::new )},
                 {new TestCase<>( "Duration",
-                        temporalPopulatorFactory( ValueGroup.DURATION ),
+                        temporalPopulatorFactory(),
                         RandomValues.typesOfGroup( ValueGroup.DURATION ),
                         DurationLayout::new )},
                 {new TestCase<>( "LocalDateTime",
-                        temporalPopulatorFactory( ValueGroup.LOCAL_DATE_TIME ),
+                        temporalPopulatorFactory(),
                         RandomValues.typesOfGroup( ValueGroup.LOCAL_DATE_TIME ),
                         LocalDateTimeLayout::new )},
                 {new TestCase<>( "LocalTime",
-                        temporalPopulatorFactory( ValueGroup.LOCAL_TIME ),
+                        temporalPopulatorFactory(),
                         RandomValues.typesOfGroup( ValueGroup.LOCAL_TIME ),
                         LocalTimeLayout::new )},
                 {new TestCase<>( "LocalDateTime",
-                        temporalPopulatorFactory( ValueGroup.LOCAL_DATE_TIME ),
+                        temporalPopulatorFactory(),
                         RandomValues.typesOfGroup( ValueGroup.LOCAL_DATE_TIME ),
                         LocalDateTimeLayout::new )},
                 {new TestCase<>( "Time",
-                        temporalPopulatorFactory( ValueGroup.ZONED_TIME ),
+                        temporalPopulatorFactory(),
                         RandomValues.typesOfGroup( ValueGroup.ZONED_TIME ),
                         ZonedTimeLayout::new )},
                 {new TestCase<>( "Generic",
@@ -119,27 +119,23 @@ class NativeIndexPopulatorTestCases
         return NumberIndexPopulator::new;
     }
 
-    private static <TK extends NativeIndexSingleValueKey<TK>> PopulatorFactory<TK,NativeIndexValue> temporalPopulatorFactory( ValueGroup temporalValueGroup )
+    private static <TK extends NativeIndexSingleValueKey<TK>> PopulatorFactory<TK,NativeIndexValue> temporalPopulatorFactory()
     {
-        return ( pageCache, fs, storeFile, layout, monitor, descriptor ) ->
-        {
-            TemporalIndexFiles.FileLayout<TK> fileLayout = new TemporalIndexFiles.FileLayout<>( fs, storeFile.getStoreFile(), layout, temporalValueGroup );
-            return new TemporalIndexPopulator.PartPopulator<>( pageCache, fs, fileLayout, monitor, descriptor );
-        };
+        return TemporalIndexPopulator.PartPopulator::new;
     }
 
     private static PopulatorFactory<GenericKey,NativeIndexValue> genericPopulatorFactory()
     {
         return ( pageCache, fs, storeFile, layout, monitor, descriptor ) ->
                 new GenericNativeIndexPopulator( pageCache, fs, storeFile, layout, monitor, descriptor, spaceFillingCurveSettings,
-                        SimpleIndexDirectoryStructures.onIndexFile( storeFile.getStoreFile() ), configuration, false );
+                        SimpleIndexDirectoryStructures.onDirectory( storeFile.getStoreFile() ), configuration, false );
     }
 
     private static PopulatorFactory<GenericKey,NativeIndexValue> genericBlockBasedPopulatorFactory()
     {
         return ( pageCache, fs, storeFile, layout, monitor, descriptor ) ->
                 new GenericBlockBasedIndexPopulator( pageCache, fs, storeFile, layout, monitor, descriptor, spaceFillingCurveSettings,
-                        SimpleIndexDirectoryStructures.onIndexFile( storeFile.getStoreFile() ), configuration, false );
+                        SimpleIndexDirectoryStructures.onDirectory( storeFile.getStoreFile() ), configuration, false );
     }
 
     @FunctionalInterface

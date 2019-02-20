@@ -72,14 +72,14 @@ public class TemporalIndexProvider extends IndexProvider
             throw new UnsupportedOperationException( "Can't create populator for read only index" );
         }
         TemporalIndexFiles files = new TemporalIndexFiles( directoryStructure(), descriptor, fs );
-        return new TemporalIndexPopulator( descriptor, samplingConfig, files, pageCache, fs, monitor );
+        return new TemporalIndexPopulator( descriptor, files, pageCache, fs, monitor );
     }
 
     @Override
-    public IndexAccessor getOnlineAccessor( StorageIndexReference descriptor, IndexSamplingConfig samplingConfig ) throws IOException
+    public IndexAccessor getOnlineAccessor( StorageIndexReference descriptor, IndexSamplingConfig samplingConfig )
     {
         TemporalIndexFiles files = new TemporalIndexFiles( directoryStructure(), descriptor, fs );
-        return new TemporalIndexAccessor( descriptor, samplingConfig, pageCache, fs, recoveryCleanupWorkCollector, monitor, files );
+        return new TemporalIndexAccessor( descriptor, pageCache, fs, recoveryCleanupWorkCollector, monitor, files );
     }
 
     @Override
@@ -91,7 +91,7 @@ public class TemporalIndexProvider extends IndexProvider
         {
             for ( TemporalIndexFiles.FileLayout subIndex : temporalIndexFiles.existing() )
             {
-                String indexFailure = NativeIndexes.readFailureMessage( pageCache, subIndex.getStoreFile() );
+                String indexFailure = NativeIndexes.readFailureMessage( pageCache, subIndex.indexFiles.getStoreFile() );
                 if ( indexFailure != null )
                 {
                     return indexFailure;
@@ -116,7 +116,7 @@ public class TemporalIndexProvider extends IndexProvider
         {
             try
             {
-                switch ( NativeIndexes.readState( pageCache, subIndex.getStoreFile() ) )
+                switch ( NativeIndexes.readState( pageCache, subIndex.indexFiles.getStoreFile() ) )
                 {
                 case FAILED:
                     return InternalIndexState.FAILED;
