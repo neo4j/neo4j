@@ -368,7 +368,7 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
 
         return new IndexUpdater()
         {
-            private boolean closed;
+            private volatile boolean closed;
 
             @Override
             public void process( IndexEntryUpdate<?> update )
