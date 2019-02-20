@@ -272,40 +272,6 @@ public class BatchOperationIT extends AbstractRestFunctionalDocTestBase
     }
 
     @Test
-    public void shouldHandleFailingCypherStatementCorrectly() throws Exception
-    {
-        String jsonString = new PrettyJSON()
-            .array()
-                .object()
-                    .key("method") .value("POST")
-                    .key("to")     .value("/cypher")
-                    .key("body")   .object()
-                                       .key("query").value("create (n) set n.foo = {maps:'not welcome'} return n")
-                                       .key("params").object().key("id").value("0").endObject()
-                                   .endObject()
-                .endObject()
-                .object()
-                    .key("method") .value("POST")
-                    .key("to")     .value("/node")
-                .endObject()
-            .endArray()
-            .toString();
-
-        String entity = gen.get()
-                .expectedStatus( 500 )
-                .payload( jsonString )
-                .post( batchUri() )
-                .entity();
-
-        // Pull out the property value from the depths of the response
-        Map<String, Object> result = JsonHelper.jsonToMap(entity);
-        String exception = (String) result.get("exception");
-        assertThat(exception, is("BatchOperationFailedException"));
-        String innerException = (String) JsonHelper.jsonToMap((String) result.get("message")).get("exception");
-        assertThat(innerException, is("CypherTypeException"));
-    }
-
-    @Test
     @Graph( "Peter likes Jazz" )
     public void shouldHandleEscapedStrings() throws ClientHandlerException,
             UniformInterfaceException, JSONException, JsonParseException

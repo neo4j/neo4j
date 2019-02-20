@@ -31,7 +31,6 @@ import org.neo4j.server.plugins.PluginManager;
 import org.neo4j.server.rest.web.BatchOperationService;
 import org.neo4j.server.rest.web.CollectUserAgentFilter;
 import org.neo4j.server.rest.web.CorsFilter;
-import org.neo4j.server.rest.web.CypherService;
 import org.neo4j.server.rest.web.DatabaseMetadataService;
 import org.neo4j.server.rest.web.ExtensionService;
 import org.neo4j.server.rest.web.RestfulGraphDatabase;
@@ -85,7 +84,6 @@ public class RESTApiModule implements ServerModule
         return asList(
                 RestfulGraphDatabase.class,
                 TransactionalService.class,
-                CypherService.class,
                 DatabaseMetadataService.class,
                 ExtensionService.class,
                 BatchOperationService.class );

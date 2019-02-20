@@ -480,7 +480,7 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
 
         // GIVEN
         long nodesInDatabaseBeforeTransaction = countNodes();
-        Response response = http.POST( "db/data/transaction/commit",
+        Response response1 = http.POST( "db/data/transaction/commit",
                 rawPayload( "{ \"statements\" : [{\"statement\" : \"CREATE (n0:DecibelEntity :AlbumGroup{DecibelID : " +
                             "'34a2201b-f4a9-420f-87ae-00a9c691cc5c', Title : 'Dance With Me', " +
                             "ArtistString : 'Ra Ra Riot', MainArtistAlias : 'Ra Ra Riot', " +
@@ -493,13 +493,15 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
                             "ReleaseDate : '2013-01-08', ReleaseYear : '2013', ReleaseRegion : 'USA', " +
                             "Cline : 'Barsuk Records', Pline : 'Barsuk Records', CYear : '2013', PYear : '2013', " +
                             "ParentalAdvisory : 'False', IsLimitedEdition : 'False'}) return id(n1)\"}]}" ) );
-        assertEquals( 200, response.status() );
-        JsonNode everything = jsonNode( response.rawContent() );
+        assertEquals( 200, response1.status() );
+        JsonNode everything = jsonNode( response1.rawContent() );
         JsonNode result = everything.get( "results" ).get( 0 );
         long id = result.get( "data" ).get( 0 ).get( "row" ).get( 0 ).getLongValue();
 
         // WHEN
-        http.POST( "db/data/cypher", rawPayload( "{\"query\":\"match (n) where id(n) = " + id + " delete n\"}" ) );
+        Response response2 = http.POST( "db/data/transaction/commit",
+                rawPayload( "{ \"statements\" : [{\"statement\":\"match (n) where id(n) = " + id + " delete n\"}]}" ) );
+        assertEquals( 200, response2.status() );
 
         // THEN
         assertThat( countNodes(), equalTo( nodesInDatabaseBeforeTransaction + 1 ) );

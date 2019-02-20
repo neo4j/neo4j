@@ -75,10 +75,6 @@ public class GetOnRootIT extends AbstractRestFunctionalTestBase
         assertEquals( 200, response.getStatus() );
         response.close();
 
-        response = RestRequest.req().post( (String) map.get( "cypher" ), "{\"query\":\"CREATE (n) RETURN n\"}" );
-        assertEquals( 200, response.getStatus() );
-        response.close();
-
         response = RestRequest.req().get( (String) map.get( "indexes" ) );
         assertEquals( 200, response.getStatus() );
         response.close();
