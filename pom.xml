@@ -51,7 +51,7 @@
     <system>GitHub</system>
     <url>https://github.com/neo4j/neo4j/issues</url>
   </issueManagement>
-  
+
   <distributionManagement>
     <repository>
       <id>sonatype-nexus-staging</id>
@@ -152,8 +152,6 @@
         </includes>
       </testResource>
     </testResources>
-
-    <!-- Plugin definitions -->
     <pluginManagement>
       <plugins>
 
