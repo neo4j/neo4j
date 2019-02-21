@@ -243,6 +243,7 @@ class LogicalQueryBuilder(tokenResolver: TokenResolver) extends AstConstructionT
       throw new IllegalStateException("The input operator has to be the left-most leaf of the plan")
     if (nodes.toSet.size < nodes.size || variables.toSet.size < variables.size)
       throw new IllegalArgumentException("Input must create unique variables")
+    nodes.foreach(node => semanticTable = semanticTable.addNode(varFor(node)))
     appendAtCurrentIndent(LeafOperator(Input(nodes.toArray, variables.toArray)))
   }
 

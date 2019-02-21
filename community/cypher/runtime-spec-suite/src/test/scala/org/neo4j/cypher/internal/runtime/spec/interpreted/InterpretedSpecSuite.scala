@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.runtime.spec.interpreted
 
 import org.neo4j.cypher.internal.runtime.spec.COMMUNITY_EDITION
 import org.neo4j.cypher.internal.runtime.spec.interpreted.InterpretedSpecSuite.SIZE_HINT
-import org.neo4j.cypher.internal.runtime.spec.tests.{AggregationTestBase, AllNodeScanTestBase, ExpandAllTestBase, ExpandAllWithOptionalTestBase, FilterTestBase, InputTestBase, LabelScanTestBase, NodeIndexScanTestBase, NodeIndexSeekRangeAndCompositeTestBase, NodeIndexSeekTestBase, NodeLockingUniqueIndexSeekTestBase, PartialSortTestBase, PartialTop1TestBase, PartialTopNTestBase}
+import org.neo4j.cypher.internal.runtime.spec.tests.{AggregationTestBase, AllNodeScanTestBase, ArgumentTestBase, ExpandAllTestBase, ExpandAllWithOptionalTestBase, FilterTestBase, InputTestBase, LabelScanTestBase, NodeIndexScanTestBase, NodeIndexSeekRangeAndCompositeTestBase, NodeIndexSeekTestBase, NodeLockingUniqueIndexSeekTestBase, PartialSortTestBase, PartialTop1TestBase, PartialTopNTestBase}
 import org.neo4j.cypher.internal.{CommunityRuntimeContext, InterpretedRuntime}
 
 object InterpretedSpecSuite {
@@ -42,3 +42,4 @@ class InterpretedPartialSortTest extends PartialSortTestBase(COMMUNITY_EDITION, 
 class InterpretedPartialTopNTest extends PartialTopNTestBase(COMMUNITY_EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedPartialTop1Test extends PartialTop1TestBase(COMMUNITY_EDITION, InterpretedRuntime, SIZE_HINT)
 class InterpretedFilterTest extends FilterTestBase(COMMUNITY_EDITION, InterpretedRuntime, SIZE_HINT)
+class InterpretedArgumentTest extends ArgumentTestBase(COMMUNITY_EDITION, InterpretedRuntime, SIZE_HINT)
