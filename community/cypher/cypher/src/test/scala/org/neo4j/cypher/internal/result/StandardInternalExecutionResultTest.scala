@@ -153,7 +153,7 @@ class StandardInternalExecutionResultTest extends CypherFunSuite {
       queryType,
       NormalMode,
       mock[PlanDescriptionBuilder],
-      mock[QuerySubscriber]
+      QuerySubscriber.NOT_A_SUBSCRIBER
     )
 
   case class TestRuntimeResult(values: Seq[Int],
