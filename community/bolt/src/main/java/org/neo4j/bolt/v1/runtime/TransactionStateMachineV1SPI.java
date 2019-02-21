@@ -239,13 +239,13 @@ public class TransactionStateMachineV1SPI implements TransactionStateMachineSPI
         @Override
         public void onResult( int numberOfFields )
         {
-            subscriber.onResult( numberOfFields );
+            subscriber.onStart( numberOfFields );
         }
 
         @Override
         public void onRecord()
         {
-           subscriber.onRecord();
+            //do nothing
         }
 
         @Override
@@ -257,7 +257,7 @@ public class TransactionStateMachineV1SPI implements TransactionStateMachineSPI
         @Override
         public void onRecordCompleted() throws Exception
         {
-            subscriber.onRecordCompleted();
+            subscriber.onCompleted();
         }
 
         @Override

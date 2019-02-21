@@ -269,13 +269,7 @@ public class CypherAdapterStreamTest
         stream.handleRecords( new BoltResult.Subscriber()
         {
             @Override
-            public void onResult( int numberOfFields )
-            {
-                //do nothing
-            }
-
-            @Override
-            public void onRecord()
+            public void onStart( int numberOfFields )
             {
                 //do nothing
             }
@@ -287,7 +281,7 @@ public class CypherAdapterStreamTest
             }
 
             @Override
-            public void onRecordCompleted()
+            public void onCompleted()
             {
                 //do nothing
             }

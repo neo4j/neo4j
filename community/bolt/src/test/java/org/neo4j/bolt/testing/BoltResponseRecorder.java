@@ -131,7 +131,7 @@ public class BoltResponseRecorder implements BoltResponseHandler
         private AnyValue[] fields;
 
         @Override
-        public void onResult( int numberOfFields )
+        public void onStart( int numberOfFields )
         {
             fields = new AnyValue[numberOfFields];
         }
@@ -143,7 +143,7 @@ public class BoltResponseRecorder implements BoltResponseHandler
         }
 
         @Override
-        public void onRecordCompleted()
+        public void onCompleted()
         {
             currentResponse.addFields( fields.clone() );
         }

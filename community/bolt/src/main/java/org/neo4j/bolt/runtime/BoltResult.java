@@ -39,10 +39,9 @@ public interface BoltResult extends AutoCloseable
 
     interface Subscriber
     {
-        void onResult( int numberOfFields );
-        void onRecord();
+        void onStart( int numberOfFields );
         void onField( int offset, AnyValue value );
-        void onRecordCompleted() throws Exception;
+        void onCompleted() throws Exception;
 
         /**
          * Associate arbitrary metadata with the result stream. This will get transferred at the end of the stream.
@@ -55,13 +54,7 @@ public interface BoltResult extends AutoCloseable
     {
 
         @Override
-        public void onResult( int numberOfFields )
-        {
-
-        }
-
-        @Override
-        public void onRecord()
+        public void onStart( int numberOfFields )
         {
 
         }
@@ -73,7 +66,7 @@ public interface BoltResult extends AutoCloseable
         }
 
         @Override
-        public void onRecordCompleted()
+        public void onCompleted()
         {
 
         }

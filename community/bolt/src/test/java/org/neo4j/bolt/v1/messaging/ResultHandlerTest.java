@@ -103,15 +103,14 @@ class ResultHandlerTest
                 return false;
             }
 
-            subscriber.onResult( records.get( 0 ).length );
+            subscriber.onStart( records.get( 0 ).length );
             for ( AnyValue[] record : records )
             {
-                subscriber.onRecord();
                 for ( int i = 0; i < record.length; i++ )
                 {
                     subscriber.onField( i, record[i] );
                 }
-                subscriber.onRecordCompleted();
+                subscriber.onCompleted();
             }
             return false;
         }

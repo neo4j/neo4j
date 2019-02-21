@@ -54,21 +54,15 @@ public class ResultHandler extends MessageProcessingHandler
         private AnyValue[] values;
 
         @Override
-        public void onRecordCompleted() throws IOException
+        public void onCompleted() throws IOException
         {
             messageWriter.write( new RecordMessage( values ) );
         }
 
         @Override
-        public void onResult( int numberOfFields )
+        public void onStart( int numberOfFields )
         {
             values = new AnyValue[numberOfFields];
-        }
-
-        @Override
-        public void onRecord()
-        {
-            //do nothing
         }
 
         @Override
