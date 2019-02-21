@@ -99,9 +99,9 @@ public abstract class NaiveQuerySubscription implements RuntimeResult
         boolean hasMore = servedRecords < materializedResult.size();
         if ( !hasMore )
         {
-            if (error != null)
+            if ( error != null )
             {
-                //NOTE: this should be ported to use subscription.onError
+                //NOTE: this should be ported to use subscriber.onError
                 throw error;
             }
             else
