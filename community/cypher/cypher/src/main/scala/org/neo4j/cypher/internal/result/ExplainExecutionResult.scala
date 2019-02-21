@@ -25,6 +25,7 @@ import java.util.Collections
 
 import org.neo4j.cypher.internal.plandescription.InternalPlanDescription
 import org.neo4j.cypher.internal.runtime._
+import org.neo4j.cypher.result.EmtpyQuerySubscription
 import org.neo4j.cypher.result.QueryResult.QueryResultVisitor
 import org.neo4j.graphdb.Result.ResultVisitor
 import org.neo4j.graphdb.{Notification, ResourceIterator}
@@ -36,7 +37,7 @@ case class ExplainExecutionResult(fieldNames: Array[String],
                                   queryType: InternalQueryType,
                                   notifications: Set[Notification],
                                   subscriber: QuerySubscriber)
-  extends InternalExecutionResult {
+  extends EmtpyQuerySubscription(subscriber) with InternalExecutionResult {
 
   override def initiate(): Unit = {}
 
@@ -65,15 +66,4 @@ case class ExplainExecutionResult(fieldNames: Array[String],
   override def executionMode: ExecutionMode = ExplainMode
 
   override def executionPlanDescription(): InternalPlanDescription = planDescription
-
-  override def request(numberOfRows: Long): Unit = {
-    subscriber.onResult(fieldNames.length)
-    subscriber.onResultCompleted(queryStatistics())
-  }
-
-  override def cancel(): Unit = {
-    //do nothing
-  }
-
-  override def await(): Boolean = false
 }

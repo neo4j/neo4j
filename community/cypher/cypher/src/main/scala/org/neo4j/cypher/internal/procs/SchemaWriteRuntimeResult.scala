@@ -24,14 +24,15 @@ import java.util
 import org.neo4j.cypher.internal.runtime.{QueryContext, QueryStatistics}
 import org.neo4j.cypher.result.QueryResult.QueryResultVisitor
 import org.neo4j.cypher.result.RuntimeResult.ConsumptionState
-import org.neo4j.cypher.result.{QueryProfile, RuntimeResult}
+import org.neo4j.cypher.result.{EmtpyQuerySubscription, QueryProfile, RuntimeResult}
 import org.neo4j.graphdb.ResourceIterator
 import org.neo4j.helpers.collection.Iterators
+import org.neo4j.kernel.impl.query.QuerySubscriber
 
 /**
   * Empty result, as produced by a schema write.
   */
-case class SchemaWriteRuntimeResult(ctx: QueryContext) extends RuntimeResult {
+case class SchemaWriteRuntimeResult(ctx: QueryContext, subscriber: QuerySubscriber) extends EmtpyQuerySubscription(subscriber) with RuntimeResult{
 
   override def fieldNames(): Array[String] = Array.empty
 
@@ -48,14 +49,4 @@ case class SchemaWriteRuntimeResult(ctx: QueryContext) extends RuntimeResult {
   override def close(): Unit = {}
 
   override def queryProfile(): QueryProfile = QueryProfile.NONE
-
-  override def request(numberOfRows: Long): Unit = {
-    //do nothing
-  }
-
-  override def cancel(): Unit = {
-    //do nothing
-  }
-
-  override def await(): Boolean = false
 }

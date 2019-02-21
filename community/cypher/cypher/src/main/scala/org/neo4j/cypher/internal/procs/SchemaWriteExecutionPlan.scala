@@ -49,7 +49,7 @@ case class SchemaWriteExecutionPlan(name: String, schemaWrite: QueryContext => U
     val countingCtx = new UpdateCountingQueryContext(ctx)
     schemaWrite(countingCtx)
     ctx.transactionalContext.close(success = true)
-    val runtimeResult = SchemaWriteRuntimeResult(countingCtx)
+    val runtimeResult = SchemaWriteRuntimeResult(countingCtx, subscriber)
     runtimeResult
   }
 
