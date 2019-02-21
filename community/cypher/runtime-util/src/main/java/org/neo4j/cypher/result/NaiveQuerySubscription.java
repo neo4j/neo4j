@@ -32,7 +32,7 @@ import org.neo4j.values.AnyValue;
  */
 public abstract class NaiveQuerySubscription implements RuntimeResult
 {
-    private int requestedRecords;
+    private long requestedRecords;
     private int servedRecords;
     private List<AnyValue[]> materializedResult;
     private final QuerySubscriber subscriber;
@@ -45,7 +45,16 @@ public abstract class NaiveQuerySubscription implements RuntimeResult
     @Override
     public void request( long numberOfRecords )
     {
-        requestedRecords = StrictMath.addExact( requestedRecords, (int) numberOfRecords );
+        long next = requestedRecords + numberOfRecords;
+        //check for overflow
+        if ( next < 0 )
+        {
+            requestedRecords = Long.MAX_VALUE;
+        }
+        else
+        {
+            requestedRecords = next;
+        }
     }
 
     @Override
