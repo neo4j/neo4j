@@ -377,6 +377,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
     {
         if ( isDirectory( path ) )
         {
+            // Delete all files in directory and sub-directory
             List<String> directoryPathItems = splitPath( canonicalFile( path ) );
             for ( Map.Entry<File,EphemeralFileData> file : files.entrySet() )
             {
@@ -385,6 +386,16 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
                 if ( directoryMatches( directoryPathItems, fileNamePathItems ) )
                 {
                     deleteFile( fileName );
+                }
+            }
+
+            // Delete all sub-directories
+            for ( File subDirectory : directories )
+            {
+                List<String> subDirectoryPathItems = splitPath( subDirectory );
+                if ( directoryMatches( directoryPathItems, subDirectoryPathItems ) )
+                {
+                    deleteFile( subDirectory );
                 }
             }
         }

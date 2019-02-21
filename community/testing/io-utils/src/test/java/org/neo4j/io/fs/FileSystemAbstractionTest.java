@@ -58,6 +58,7 @@ import static org.hamcrest.core.Is.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.io.fs.FileHandle.HANDLE_DELETE;
@@ -228,6 +229,49 @@ public abstract class FileSystemAbstractionTest
         fsa.create( file ).close();
         fsa.deleteRecursively( file );
         assertFalse( fsa.fileExists( file ) );
+    }
+
+    @Test
+    void deleteRecursivelyMustDeleteAllSubDirectoriesInDirectory() throws IOException
+    {
+        fsa.mkdirs( path );
+        File a = new File( path, "a" );
+        fsa.mkdirs( a );
+        File aa = new File( a, "a" );
+        fsa.create( aa ).close();
+        File b = new File( path, "b" );
+        fsa.mkdirs( b );
+        File c = new File( path, "c" );
+        fsa.create( c ).close();
+        fsa.deleteRecursively( path );
+
+        assertFalse( fsa.fileExists( a ) );
+        assertFalse( fsa.fileExists( aa ) );
+        assertFalse( fsa.fileExists( b ) );
+        assertFalse( fsa.fileExists( c ) );
+        assertFalse( fsa.fileExists( path ) );
+        assertNull( fsa.listFiles( path ) );
+    }
+
+    @Test
+    void deleteRecursivelyMustNotDeleteSiblingDirectories() throws IOException
+    {
+        fsa.mkdirs( path );
+        File a = new File( path, "a" );
+        fsa.mkdirs( a );
+        File b = new File( path, "b" );
+        fsa.mkdirs( b );
+        File bb = new File( b, "b" );
+        fsa.create( bb ).close();
+        File c = new File( path, "c" );
+        fsa.create( c ).close();
+        fsa.deleteRecursively( a );
+
+        assertFalse( fsa.fileExists( a ) );
+        assertTrue( fsa.fileExists( b ) );
+        assertTrue( fsa.fileExists( bb ) );
+        assertTrue( fsa.fileExists( c ) );
+        assertTrue( fsa.fileExists( path ) );
     }
 
     @Test
