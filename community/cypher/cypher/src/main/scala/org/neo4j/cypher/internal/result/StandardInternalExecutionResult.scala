@@ -55,7 +55,8 @@ class StandardInternalExecutionResult(context: QueryContext,
     val consumedBeforeInit = runtimeResult.consumptionState == ConsumptionState.EXHAUSTED
 
     // By policy we materialize the result directly unless it's a read only query.
-    if (queryType != READ_ONLY) {
+    //NOTE: for now we never materialize when using reactive API
+    if (queryType != READ_ONLY && subscriber == QuerySubscriber.NOT_A_SUBSCRIBER) {
       materializeResult()
     }
 
