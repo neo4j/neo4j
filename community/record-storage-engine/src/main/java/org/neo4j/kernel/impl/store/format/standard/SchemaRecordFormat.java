@@ -57,8 +57,8 @@ public class SchemaRecordFormat extends BaseOneByteHeaderRecordFormat<SchemaReco
         long data = cursor.getLong();
         boolean inUse = (data & RECORD_IN_USE_BIT) != 0;
         boolean shouldLoad = mode.shouldLoad( inUse );
-        boolean hashProperty = (data & RECORD_HAS_PROPERTY) == RECORD_HAS_PROPERTY;
-        record.initialize( inUse, shouldLoad && hashProperty ? data & RECORD_PROPERTY_REFERENCE_MASK : NO_NEXT_PROP );
+        boolean hasProperty = (data & RECORD_HAS_PROPERTY) == RECORD_HAS_PROPERTY;
+        record.initialize( inUse, shouldLoad && hasProperty ? data & RECORD_PROPERTY_REFERENCE_MASK : NO_NEXT_PROP );
     }
 
     @Override
