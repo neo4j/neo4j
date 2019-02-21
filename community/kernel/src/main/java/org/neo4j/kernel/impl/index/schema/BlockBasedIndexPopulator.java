@@ -34,6 +34,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.cursor.RawCursor;
+import org.neo4j.index.internal.gbptree.Hit;
 import org.neo4j.index.internal.gbptree.Writer;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.IOUtils;
@@ -47,7 +49,6 @@ import org.neo4j.kernel.impl.api.index.PhaseTracker;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettingsCache;
 import org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettingsWriter;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
-import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.util.FeatureToggles;
 import org.neo4j.util.Preconditions;
@@ -229,7 +230,14 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
         }
     }
 
-    private void writeExternalUpdatesToTree() throws IOException
+    /**
+     * We will loop over all external updates once to add them to the tree. This is done without checking any uniqueness.
+     * If index is a uniqueness index we will then loop over external updates again and for each ADD or CHANGED update
+     * we will verify that those entries are unique in the tree and throw as soon as we find a duplicate.
+     * @throws IOException If something goes wrong while reading from index.
+     * @throws IndexEntryConflictException If a duplicate is found.
+     */
+    private void writeExternalUpdatesToTree() throws IOException, IndexEntryConflictException
     {
         try ( Writer<KEY,VALUE> writer = tree.writer();
               IndexUpdateCursor<KEY,VALUE> updates = externalUpdates.reader() )
@@ -250,6 +258,64 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
                     break;
                 default:
                     throw new IllegalArgumentException( "Unknown update mode " + updates.updateMode() );
+                }
+            }
+        }
+
+        if ( descriptor.isUnique() )
+        {
+            verifyUniquenessOnExternalUpdates();
+        }
+    }
+
+    /**
+     * When this method is called, all updates have been applied to the tree. Here we loop over all updates again and for each update we verify that in the
+     * end there are no duplicate entries for the value of the update update value in the tree. If intermediate duplicates was seen while applying the
+     * updates, that is fine as long as the tree is completely unique now. Note that only updates that result in adding a new key to the tree can possible
+     * cause a duplication to appear.
+     * @throws IOException If something goes wrong while reading from index.
+     * @throws IndexEntryConflictException If a duplicate is found.
+     */
+    private void verifyUniquenessOnExternalUpdates() throws IOException, IndexEntryConflictException
+    {
+        try ( IndexUpdateCursor<KEY,VALUE> updates = externalUpdates.reader() )
+        {
+            while ( updates.next() )
+            {
+                RawCursor<Hit<KEY,VALUE>,IOException> seek;
+                switch ( updates.updateMode() )
+                {
+                case ADDED:
+                    updates.key().setCompareId( false );
+                    seek = tree.seek( updates.key(), updates.key() );
+                    break;
+                case CHANGED:
+                    updates.key2().setCompareId( false );
+                    seek = tree.seek( updates.key2(), updates.key2() );
+                    break;
+                case REMOVED:
+                    // Can't cause uniqueness conflict
+                    seek = null;
+                    break;
+                default:
+                    throw new IllegalArgumentException( "Unknown update mode " + updates.updateMode() );
+                }
+                verifyUniqueSeek( seek );
+            }
+        }
+    }
+
+    private void verifyUniqueSeek( RawCursor<Hit<KEY,VALUE>,IOException> seek ) throws IOException, IndexEntryConflictException
+    {
+        if ( seek != null )
+        {
+            if ( seek.next() )
+            {
+                long firstEntityId = seek.get().key().getEntityId();
+                if ( seek.next() )
+                {
+                    long secondEntityId = seek.get().key().getEntityId();
+                    throw new IndexEntryConflictException( firstEntityId, secondEntityId, seek.get().key().asValues() );
                 }
             }
         }
@@ -293,19 +359,22 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
     }
 
     @Override
-    public IndexUpdater newPopulatingUpdater( NodePropertyAccessor accessor )
+    public IndexUpdater newPopulatingUpdater()
     {
         if ( merged )
         {
             // Will need the reader from newReader, which a sub-class of this class implements
-            return super.newPopulatingUpdater( accessor );
+            return super.newPopulatingUpdater();
         }
 
         return new IndexUpdater()
         {
+            private volatile boolean closed;
+
             @Override
             public void process( IndexEntryUpdate<?> update )
             {
+                assertOpen();
                 try
                 {
                     externalUpdates.add( update );
@@ -319,6 +388,15 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
             @Override
             public void close()
             {
+                closed = true;
+            }
+
+            private void assertOpen()
+            {
+                if ( closed )
+                {
+                    throw new IllegalStateException( "Updater has been closed" );
+                }
             }
         };
     }

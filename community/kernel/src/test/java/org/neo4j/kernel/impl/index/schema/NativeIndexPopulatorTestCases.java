@@ -102,6 +102,10 @@ class NativeIndexPopulatorTestCases
                 {new TestCase<>( "Generic",
                         genericPopulatorFactory(),
                         ValueType.values(),
+                        () -> new GenericLayout( 1, spaceFillingCurveSettings ) )},
+                {new TestCase<>( "Generic-BlockBased",
+                        genericBlockBasedPopulatorFactory(),
+                        ValueType.values(),
                         () -> new GenericLayout( 1, spaceFillingCurveSettings ) )}
         } );
         // { Spatial has it's own subclass because it need to override some of the test methods }
@@ -130,6 +134,13 @@ class NativeIndexPopulatorTestCases
         return ( pageCache, fs, storeFile, layout, monitor, descriptor ) ->
                 new GenericNativeIndexPopulator( pageCache, fs, storeFile, layout, monitor, descriptor, spaceFillingCurveSettings,
                         SimpleIndexDirectoryStructures.onIndexFile( storeFile ), configuration, false, false );
+    }
+
+    private static PopulatorFactory<GenericKey,NativeIndexValue> genericBlockBasedPopulatorFactory()
+    {
+        return ( pageCache, fs, storeFile, layout, monitor, descriptor ) ->
+                new GenericBlockBasedIndexPopulator( pageCache, fs, storeFile, layout, monitor, descriptor, spaceFillingCurveSettings,
+                        SimpleIndexDirectoryStructures.onIndexFile( storeFile ), configuration, false );
     }
 
     @FunctionalInterface

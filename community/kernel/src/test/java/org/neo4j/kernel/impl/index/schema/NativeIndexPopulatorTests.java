@@ -57,6 +57,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_WRITER;
+import static org.neo4j.kernel.impl.api.index.PhaseTracker.nullInstance;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexPopulator.BYTE_FAILED;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexPopulator.BYTE_ONLINE;
 import static org.neo4j.kernel.impl.index.schema.ValueCreatorUtil.countUniqueValues;
@@ -149,6 +150,7 @@ public abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>,
 
         // when
         populator.add( updates );
+        populator.scanCompleted( nullInstance );
 
         // then
         populator.close( true );
@@ -164,6 +166,7 @@ public abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>,
 
         // when
         populator.add( Arrays.asList( updates ) );
+        populator.scanCompleted( nullInstance );
 
         // then
         populator.close( true );
@@ -186,6 +189,7 @@ public abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>,
         }
 
         // then
+        populator.scanCompleted( nullInstance );
         populator.close( true );
         verifyUpdates( updates );
     }
@@ -225,6 +229,7 @@ public abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>,
         applyInterleaved( updates, populator );
 
         // then
+        populator.scanCompleted( nullInstance );
         populator.close( true );
         verifyUpdates( updates );
     }
@@ -376,6 +381,7 @@ public abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>,
         int count = interleaveLargeAmountOfUpdates( updaterRandom, updates );
 
         // then
+        populator.scanCompleted( nullInstance );
         populator.close( true );
         random.reset();
         verifyUpdates( valueCreatorUtil.randomUpdateGenerator( random ), count );
@@ -497,6 +503,7 @@ public abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>,
             try
             {
                 populator.add( Arrays.asList( updates ) );
+                populator.scanCompleted( nullInstance );
                 fail( "Updates should have conflicted" );
             }
             catch ( IndexEntryConflictException e )
@@ -525,6 +532,7 @@ public abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>,
             try
             {
                 updater.close();
+                populator.scanCompleted( nullInstance );
                 fail( "Updates should have conflicted" );
             }
             catch ( Exception e )
@@ -551,6 +559,7 @@ public abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>,
             {
                 populator.includeSample( update );
             }
+            populator.scanCompleted( nullInstance );
             IndexSample sample = populator.sampleResult();
 
             // THEN
@@ -574,6 +583,7 @@ public abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>,
             populator.add( Arrays.asList( updates ) );
 
             // then
+            populator.scanCompleted( nullInstance );
             populator.close( true );
             verifyUpdates( updates );
         }
@@ -594,6 +604,7 @@ public abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>,
             }
 
             // then
+            populator.scanCompleted( nullInstance );
             populator.close( true );
             verifyUpdates( updates );
         }
@@ -625,6 +636,7 @@ public abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>,
                 }
 
                 // WHEN
+                populator.scanCompleted( nullInstance );
                 IndexSample sample = populator.sampleResult();
 
                 // THEN
