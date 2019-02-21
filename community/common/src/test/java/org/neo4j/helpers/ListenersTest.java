@@ -19,7 +19,6 @@
  */
 package org.neo4j.helpers;
 
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -52,7 +51,7 @@ class ListenersTest
 
         Listeners<Listener> copy = new Listeners<>( original );
 
-        Assertions.assertEquals( asList( original ), asList( copy ) );
+        assertEquals( asList( original ), asList( copy ) );
     }
 
     private <T> List<T> asList( Listeners<T> listeners )
@@ -78,7 +77,7 @@ class ListenersTest
 
         Listeners<Listener> listeners = newListeners( listenersArray );
 
-        Assertions.assertEquals( Arrays.asList( listenersArray ), asList( listeners ) );
+        assertEquals( Arrays.asList( listenersArray ), asList( listeners ) );
     }
 
     @Test
@@ -96,13 +95,13 @@ class ListenersTest
 
         Listeners<Listener> listeners = newListeners( listener1, listener2, listener3 );
 
-        Assertions.assertEquals( Arrays.asList( listener1, listener2, listener3 ), asList( listeners ) );
+        assertEquals( Arrays.asList( listener1, listener2, listener3 ), asList( listeners ) );
 
         listeners.remove( listener1 );
-        Assertions.assertEquals( Arrays.asList( listener2, listener3 ), asList( listeners ) );
+        assertEquals( Arrays.asList( listener2, listener3 ), asList( listeners ) );
 
         listeners.remove( listener3 );
-        Assertions.assertEquals( singletonList( listener2 ), asList( listeners ) );
+        assertEquals( singletonList( listener2 ), asList( listeners ) );
     }
 
     @Test
@@ -178,7 +177,7 @@ class ListenersTest
 
         Listeners<Listener> listeners = newListeners( listener1, listener2, listener3 );
 
-        Assertions.assertEquals( Arrays.asList( listener1, listener2, listener3 ), asList( listeners ) );
+        assertEquals( Arrays.asList( listener1, listener2, listener3 ), asList( listeners ) );
     }
 
     @SafeVarargs
