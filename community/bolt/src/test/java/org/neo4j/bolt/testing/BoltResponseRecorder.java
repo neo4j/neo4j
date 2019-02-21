@@ -55,7 +55,7 @@ public class BoltResponseRecorder implements BoltResponseHandler
     @Override
     public boolean onPullRecords( BoltResult result, long size ) throws Exception
     {
-        return hasMore( result.handleRecords( new RecordingBoltResultVisitor( ), size ) );
+        return hasMore( result.handleRecords( new RecordingBoltResultSubscriber( ), size ) );
     }
 
     @Override
@@ -125,7 +125,7 @@ public class BoltResponseRecorder implements BoltResponseHandler
         }
     }
 
-    private class RecordingBoltResultVisitor extends BoltResult.BaseSubscriber
+    private class RecordingBoltResultSubscriber extends BoltResult.BaseSubscriber
     {
 
         private AnyValue[] fields;
@@ -145,7 +145,7 @@ public class BoltResponseRecorder implements BoltResponseHandler
         @Override
         public void onRecordCompleted()
         {
-            currentResponse.addFields( fields );
+            currentResponse.addFields( fields.clone() );
         }
 
         @Override
