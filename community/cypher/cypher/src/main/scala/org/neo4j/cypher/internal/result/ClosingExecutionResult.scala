@@ -207,7 +207,11 @@ class ClosingExecutionResult private(val query: ExecutingQuery,
 
   override def cancel(): Unit = safely(inner.cancel())
 
-  override def await(): Boolean = safely(inner.await())
+  override def await(): Boolean = {
+    val hasMore = safely(inner.await())
+    if (!hasMore) close()
+    hasMore
+  }
 }
 
 object ClosingExecutionResult {
