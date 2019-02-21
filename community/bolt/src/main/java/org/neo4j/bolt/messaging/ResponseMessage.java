@@ -19,7 +19,15 @@
  */
 package org.neo4j.bolt.messaging;
 
+import org.neo4j.util.VisibleForTesting;
+
 public interface ResponseMessage
 {
     byte signature();
+
+    /**
+     * This method is only for tests so that we can record a stream without it changing underneath us
+     */
+    @VisibleForTesting
+    ResponseMessage copy();
 }

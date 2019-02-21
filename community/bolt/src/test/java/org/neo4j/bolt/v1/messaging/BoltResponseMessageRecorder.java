@@ -19,12 +19,11 @@
  */
 package org.neo4j.bolt.v1.messaging;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.neo4j.bolt.messaging.ResponseMessage;
 import org.neo4j.bolt.messaging.BoltResponseMessageWriter;
+import org.neo4j.bolt.messaging.ResponseMessage;
 
 public class BoltResponseMessageRecorder implements BoltResponseMessageWriter
 {
@@ -36,8 +35,8 @@ public class BoltResponseMessageRecorder implements BoltResponseMessageWriter
     }
 
     @Override
-    public void write( ResponseMessage message ) throws IOException
+    public void write( ResponseMessage message )
     {
-        messages.add( message );
+        messages.add( message.copy() );
     }
 }

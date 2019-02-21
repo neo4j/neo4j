@@ -37,6 +37,12 @@ public class IgnoredMessage implements ResponseMessage
     }
 
     @Override
+    public ResponseMessage copy()
+    {
+        return this;
+    }
+
+    @Override
     public boolean equals( Object o )
     {
         return this == o || !(o == null || getClass() != o.getClass());

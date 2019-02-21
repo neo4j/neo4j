@@ -98,7 +98,13 @@ class ResultHandlerTest
         @Override
         public boolean handleRecords( Subscriber subscriber, long size ) throws Exception
         {
-            for ( AnyValue[] record: records )
+            if ( records.isEmpty() )
+            {
+                return false;
+            }
+
+            subscriber.onResult( records.get( 0 ).length );
+            for ( AnyValue[] record : records )
             {
                 subscriber.onRecord();
                 for ( int i = 0; i < record.length; i++ )

@@ -39,6 +39,12 @@ public class SuccessMessage implements ResponseMessage
     }
 
     @Override
+    public ResponseMessage copy()
+    {
+        return this;
+    }
+
+    @Override
     public boolean equals( Object o )
     {
         if ( this == o )

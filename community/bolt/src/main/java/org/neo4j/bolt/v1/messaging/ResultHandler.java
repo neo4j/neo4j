@@ -68,7 +68,7 @@ public class ResultHandler extends MessageProcessingHandler
         @Override
         public void onRecord()
         {
-            //do nothing here
+            //do nothing
         }
 
         @Override

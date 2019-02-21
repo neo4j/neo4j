@@ -41,6 +41,12 @@ public class RecordMessage implements ResponseMessage
     }
 
     @Override
+    public ResponseMessage copy()
+    {
+        return new RecordMessage( fields.clone() );
+    }
+
+    @Override
     public boolean equals( Object o )
     {
         if ( this == o )
