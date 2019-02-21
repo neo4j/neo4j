@@ -237,7 +237,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
             .map(asKernelNotification(Some(preParsedQuery.offset)))
         ExplainExecutionResult(columns,
                                planDescriptionBuilder.explain(),
-                               queryType, allNotifications)
+                               queryType, allNotifications, subscriber)
       } else {
 
         val doProfile = innerExecutionMode == ProfileMode

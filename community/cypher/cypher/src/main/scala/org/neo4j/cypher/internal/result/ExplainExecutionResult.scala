@@ -29,11 +29,13 @@ import org.neo4j.cypher.result.QueryResult.QueryResultVisitor
 import org.neo4j.graphdb.Result.ResultVisitor
 import org.neo4j.graphdb.{Notification, ResourceIterator}
 import org.neo4j.helpers.collection.Iterators
+import org.neo4j.kernel.impl.query.QuerySubscriber
 
 case class ExplainExecutionResult(fieldNames: Array[String],
                                   planDescription: InternalPlanDescription,
                                   queryType: InternalQueryType,
-                                  notifications: Set[Notification])
+                                  notifications: Set[Notification],
+                                  subscriber: QuerySubscriber)
   extends InternalExecutionResult {
 
   override def initiate(): Unit = {}
@@ -65,7 +67,8 @@ case class ExplainExecutionResult(fieldNames: Array[String],
   override def executionPlanDescription(): InternalPlanDescription = planDescription
 
   override def request(numberOfRows: Long): Unit = {
-    //do nothing
+    subscriber.onResult(fieldNames.length)
+    subscriber.onResultCompleted(queryStatistics())
   }
 
   override def cancel(): Unit = {
