@@ -36,6 +36,7 @@ public abstract class NaiveQuerySubscription implements RuntimeResult
     private int servedRecords;
     private List<AnyValue[]> materializedResult;
     private final QuerySubscriber subscriber;
+    private Exception error;
 
     protected NaiveQuerySubscription( QuerySubscriber subscriber )
     {
@@ -69,11 +70,19 @@ public abstract class NaiveQuerySubscription implements RuntimeResult
         if ( materializedResult == null )
         {
             materializedResult = new ArrayList<>();
-            accept( record -> {
-                materializedResult.add( record.fields().clone() );
-                record.release();
-                return true;
-            } );
+            try
+            {
+                accept( record -> {
+                    materializedResult.add( record.fields().clone() );
+                    record.release();
+                    return true;
+                } );
+            }
+            catch ( Exception t )
+            {
+                //an error occurred, there might still be some data to feed to the user before failing
+                error = t;
+            }
         }
 
         subscriber.onResult( fieldNames().length );
@@ -87,11 +96,18 @@ public abstract class NaiveQuerySubscription implements RuntimeResult
             }
             subscriber.onRecordCompleted();
         }
-
         boolean hasMore = servedRecords < materializedResult.size();
         if ( !hasMore )
         {
-            subscriber.onResultCompleted( queryStatistics() );
+            if (error != null)
+            {
+                //NOTE: this should be ported to use subscription.onError
+                throw error;
+            }
+            else
+            {
+                subscriber.onResultCompleted( queryStatistics() );
+            }
         }
         return hasMore;
     }

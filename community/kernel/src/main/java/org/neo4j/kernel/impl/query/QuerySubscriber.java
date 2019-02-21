@@ -49,7 +49,7 @@ import org.neo4j.values.AnyValue;
 public interface QuerySubscriber
 {
     /**
-     * Called at the beginning of a stream
+     * Called at the beginning of a stream, guaranteed to be call exactly once.
      *
      * @param numberOfFields the number of fields each record of the stream will contain
      */
