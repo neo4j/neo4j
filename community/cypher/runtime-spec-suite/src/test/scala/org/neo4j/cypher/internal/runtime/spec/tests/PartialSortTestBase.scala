@@ -62,10 +62,11 @@ abstract class PartialSortTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime, input)
 
     // then
-    runtimeResult should beColumns("x", "y")
-      .withRow(3, 1)
-      .withRow(3, 2)
-      .withRow(3, 3)
+    runtimeResult should beColumns("x", "y").withRows(Seq(
+      Array(3, 1),
+      Array(3, 2),
+      Array(3, 3)
+    ))
   }
 
   test("partial sort with one column already sorted") {
@@ -89,14 +90,15 @@ abstract class PartialSortTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime, input)
 
     // then
-    runtimeResult should beColumns("x", "y")
-      .withRow(3, 1)
-      .withRow(3, 2)
-      .withRow(3, 3)
-      .withRow(5, 0)
-      .withRow(5, 7)
-      .withRow(5, 9)
-      .withRow(5, 9)
+    runtimeResult should beColumns("x", "y").withRows(Seq(
+      Array(3, 1),
+      Array(3, 2),
+      Array(3, 3),
+      Array(5, 0),
+      Array(5, 7),
+      Array(5, 9),
+      Array(5, 9)
+      ))
   }
 
   test("partial sort with chunk size 1") {
@@ -120,14 +122,15 @@ abstract class PartialSortTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime, input)
 
     // then
-    runtimeResult should beColumns("x", "y")
-      .withRow(1, 1)
-      .withRow(2, 3)
-      .withRow(3, 2)
-      .withRow(4, 9)
-      .withRow(5, 9)
-      .withRow(6, 0)
-      .withRow(7, 7)
+    runtimeResult should beColumns("x", "y").withRows(Seq(
+      Array(1, 1),
+      Array(2, 3),
+      Array(3, 2),
+      Array(4, 9),
+      Array(5, 9),
+      Array(6, 0),
+      Array(7, 7)
+      ))
   }
 
   test("partial sort with two sorted and two unsorted columns") {
@@ -151,14 +154,15 @@ abstract class PartialSortTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime, input)
 
     // then
-    runtimeResult should beColumns("x", "y", "z", "a")
-      .withRow(3, 3, 0, 1)
-      .withRow(3, 1, 3, 3)
-      .withRow(3, 1, 9, 2)
-      .withRow(5, 5, 2, 6)
-      .withRow(5, 5, 2, 0)
-      .withRow(5, 5, 4, 0)
-      .withRow(5, 0, 2, 0)
+    runtimeResult should beColumns("x", "y", "z", "a").withRows(Seq(
+      Array(3, 3, 0, 1),
+      Array(3, 1, 3, 3),
+      Array(3, 1, 9, 2),
+      Array(5, 5, 2, 6),
+      Array(5, 5, 2, 0),
+      Array(5, 5, 4, 0),
+      Array(5, 0, 2, 0)
+      ))
   }
 
   test("should handle null values") {
@@ -182,13 +186,14 @@ abstract class PartialSortTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime, input)
 
     // then
-    runtimeResult should beColumns("x", "y")
-      .withRow(3, 1)
-      .withRow(3, 2)
-      .withRow(3, null)
-      .withRow(5, 9)
-      .withRow(5, null)
-      .withRow(null, 0)
-      .withRow(null, null)
+    runtimeResult should beColumns("x", "y").withRows(Seq(
+      Array(3, 1),
+      Array(3, 2),
+      Array(3, null),
+      Array(5, 9),
+      Array(5, null),
+      Array(null, 0),
+      Array(null, null)
+      ))
   }
 }

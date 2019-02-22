@@ -63,7 +63,7 @@ abstract class PartialTop1TestBase[CONTEXT <: RuntimeContext](
 
     // then
     runtimeResult should beColumns("x", "y")
-      .withRow("A", 1)
+      .withSingleRow("A", 1)
   }
 
   test("two ties for the first place are not all returned") {
@@ -88,7 +88,7 @@ abstract class PartialTop1TestBase[CONTEXT <: RuntimeContext](
 
     // then
     runtimeResult should beColumns("x", "y")
-      .withRow(1, 2)
+      .withSingleRow(1, 2)
   }
 
   test("if only null is present, it should be returned") {
@@ -110,7 +110,7 @@ abstract class PartialTop1TestBase[CONTEXT <: RuntimeContext](
 
     // then
     runtimeResult should beColumns("x", "y")
-      .withRow(null, null)
+      .withSingleRow(null, null)
   }
 
 }

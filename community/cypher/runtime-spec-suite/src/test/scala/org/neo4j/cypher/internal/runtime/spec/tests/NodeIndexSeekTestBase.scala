@@ -48,7 +48,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val expected = nodes(20)
-    runtimeResult should beColumns("x").withRow(expected)
+    runtimeResult should beColumns("x").withSingleRow(expected)
   }
 
   test("should exact (multiple) seek nodes of an index with a property") {
@@ -109,7 +109,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    runtimeResult should beColumns("x").withRow(nodes(20))
+    runtimeResult should beColumns("x").withSingleRow(nodes(20))
   }
 
   test("should exact (multiple, but identical) seek nodes of an index with a property") {
@@ -151,7 +151,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val expected = nodes(20)
-    runtimeResult should beColumns("x").withRow(expected)
+    runtimeResult should beColumns("x").withSingleRow(expected)
   }
 
   test("should exact (multiple, but identical) seek nodes of a unique index with a property") {
@@ -192,7 +192,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    runtimeResult should beColumns("x").withRow(nodes(20))
+    runtimeResult should beColumns("x").withSingleRow(nodes(20))
   }
 
 }
@@ -219,7 +219,7 @@ trait NodeLockingUniqueIndexSeekTestBase[CONTEXT <: RuntimeContext] {
 
     // then
     val expected = nodes(20)
-    runtimeResult should beColumns("x").withRow(expected)
+    runtimeResult should beColumns("x").withSingleRow(expected)
   }
 
   test("should exact (multiple, but identical) seek nodes of a locking unique index with a property") {
@@ -263,7 +263,7 @@ trait NodeLockingUniqueIndexSeekTestBase[CONTEXT <: RuntimeContext] {
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    runtimeResult should beColumns("x", "prop").withRow(nodes(10), 10)
+    runtimeResult should beColumns("x", "prop").withSingleRow(nodes(10), 10)
   }
 }
 
@@ -331,7 +331,7 @@ trait NodeIndexSeekRangeAndCompositeTestBase[CONTEXT <: RuntimeContext] {
 
     // then
     val expected = nodes(10)
-    runtimeResult should beColumns("x").withRow(expected)
+    runtimeResult should beColumns("x").withSingleRow(expected)
   }
 
   test("should support composite index (multiple results)") {
@@ -373,7 +373,7 @@ trait NodeIndexSeekRangeAndCompositeTestBase[CONTEXT <: RuntimeContext] {
 
     // then
     val expected = nodes(10)
-    runtimeResult should beColumns("x").withRow(expected)
+    runtimeResult should beColumns("x").withSingleRow(expected)
   }
 
   test("should cache properties") {
@@ -416,7 +416,7 @@ trait NodeIndexSeekRangeAndCompositeTestBase[CONTEXT <: RuntimeContext] {
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    runtimeResult should beColumns("x", "prop", "prop2").withRow(nodes(10), 10, "10")
+    runtimeResult should beColumns("x", "prop", "prop2").withSingleRow(nodes(10), 10, "10")
   }
 
   test("should use existing values from arguments when available") {

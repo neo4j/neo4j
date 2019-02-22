@@ -33,7 +33,6 @@ import org.neo4j.kernel.impl.coreapi.InternalTransaction
 import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.values.{AnyValue, AnyValues}
 import org.scalactic.{Equality, TolerantNumerics}
-import org.neo4j.values.virtual.VirtualValues
 import org.scalactic.source.Position
 import org.scalatest.matchers.{MatchResult, Matcher}
 import org.scalatest.{BeforeAndAfterEach, Tag}
@@ -287,8 +286,8 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
       this
     }
 
-    def withRow(values: Any*): RuntimeResultMatcher = withRows(singleRow(values:_*))
-    def withRows[T](rows: Seq[Array[T]]): RuntimeResultMatcher = withRows(inAnyOrder(rows))
+    def withSingleRow(values: Any*): RuntimeResultMatcher = withRows(singleRow(values:_*))
+    def withRows(rows: Seq[Array[_]]): RuntimeResultMatcher = withRows(inAnyOrder(rows))
     def withNoRows(): RuntimeResultMatcher = withRows(NoRowsMatcher)
 
     def withRows(rowsMatcher: RowsMatcher): RuntimeResultMatcher = {
@@ -328,12 +327,12 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
     }
   }
 
-  def inOrder[T](rows: Seq[Array[T]]): RowsMatcher = {
+  def inOrder(rows: Seq[Array[_]]): RowsMatcher = {
     val anyValues = rows.map(row => row.map(ValueUtils.of)).toIndexedSeq
     EqualInOrder(anyValues)
   }
 
-  def inAnyOrder[T](rows: Seq[Array[T]]): RowsMatcher = {
+  def inAnyOrder(rows: Seq[Array[_]]): RowsMatcher = {
     val anyValues = rows.map(row => row.map(ValueUtils.of)).toIndexedSeq
     EqualInAnyOrder(anyValues)
   }

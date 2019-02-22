@@ -67,7 +67,7 @@ abstract class InputTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime, input)
 
     // then
-    runtimeResult should beColumns(columns:_*).withRow(columns:_*)
+    runtimeResult should beColumns(columns:_*).withSingleRow(columns:_*)
   }
 
   test("should return no rows on no input") {

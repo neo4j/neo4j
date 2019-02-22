@@ -65,9 +65,10 @@ abstract class PartialTopNTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime, input)
 
     // then
-    runtimeResult should beColumns("x", "y")
-      .withRow("A", 0)
-      .withRow("A", 1)
+    runtimeResult should beColumns("x", "y").withRows(Seq(
+      Array("A", 0),
+      Array("A", 1)
+    ))
   }
 
   test("simple top n for chunk size 1") {
@@ -90,11 +91,12 @@ abstract class PartialTopNTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime, input)
 
     // then
-    runtimeResult should beColumns("x", "y")
-      .withRow("A", 2)
-      .withRow("B", 1)
-      .withRow("C", 3)
-      .withRow("D", 0)
+    runtimeResult should beColumns("x", "y").withRows(Seq(
+      Array("A", 2),
+      Array("B", 1),
+      Array("C", 3),
+      Array("D", 0)
+    ))
   }
 
   test("simple top n if sorted column has more values - return subset of first block") {
@@ -115,9 +117,10 @@ abstract class PartialTopNTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime, input)
 
     // then
-    runtimeResult should beColumns("x", "y")
-      .withRow("A", 1)
-      .withRow("A", 2)
+    runtimeResult should beColumns("x", "y").withRows(Seq(
+      Array("A", 1),
+      Array("A", 2)
+    ))
   }
 
   test("simple top n if sorted column has more values - return whole first block") {
@@ -138,10 +141,11 @@ abstract class PartialTopNTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime, input)
 
     // then
-    runtimeResult should beColumns("x", "y")
-      .withRow("A", 1)
-      .withRow("A", 2)
-      .withRow("A", 3)
+    runtimeResult should beColumns("x", "y").withRows(Seq(
+      Array("A", 1),
+      Array("A", 2),
+      Array("A", 3)
+    ))
   }
 
   test("simple top n if results from two blocks must be returned - one from second block") {
@@ -167,12 +171,13 @@ abstract class PartialTopNTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime, input)
 
     // then
-    runtimeResult should beColumns("x", "y")
-      .withRow(1, 2)
-      .withRow(1, 2)
-      .withRow(1, 5)
-      .withRow(1, 5)
-      .withRow(2, 3)
+    runtimeResult should beColumns("x", "y").withRows(Seq(
+      Array(1, 2),
+      Array(1, 2),
+      Array(1, 5),
+      Array(1, 5),
+      Array(2, 3)
+    ))
   }
 
   test("simple top n if results from two blocks must be returned - two from second block") {
@@ -198,13 +203,14 @@ abstract class PartialTopNTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime, input)
 
     // then
-    runtimeResult should beColumns("x", "y")
-      .withRow(1, 2)
-      .withRow(1, 2)
-      .withRow(1, 5)
-      .withRow(1, 5)
-      .withRow(2, 3)
-      .withRow(2, 4)
+    runtimeResult should beColumns("x", "y").withRows(Seq(
+      Array(1, 2),
+      Array(1, 2),
+      Array(1, 5),
+      Array(1, 5),
+      Array(2, 3),
+      Array(2, 4)
+    ))
   }
 
   test("Top n with limit > Integer.Max works") {
@@ -230,16 +236,17 @@ abstract class PartialTopNTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime, input)
 
     // then
-    runtimeResult should beColumns("x", "y")
-      .withRow(1, 2)
-      .withRow(1, 2)
-      .withRow(1, 5)
-      .withRow(1, 5)
-      .withRow(2, 3)
-      .withRow(2, 4)
-      .withRow(2, 5)
-      .withRow(3, 0)
-      .withRow(3, 1)
+    runtimeResult should beColumns("x", "y").withRows(Seq(
+      Array(1, 2),
+      Array(1, 2),
+      Array(1, 5),
+      Array(1, 5),
+      Array(2, 3),
+      Array(2, 4),
+      Array(2, 5),
+      Array(3, 0),
+      Array(3, 1)
+    ))
   }
 
 }

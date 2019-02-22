@@ -225,9 +225,6 @@ class LogicalQueryBuilder(tokenResolver: TokenResolver) extends AstConstructionT
     appendAtCurrentIndent(UnaryOperator(source => Expand(source, p.from, p.dir, p.relTypes, p.to, p.relName, ExpandAll)))
   }
 
-  def sort(sortItems: ColumnOrder*): LogicalQueryBuilder =
-    appendAtCurrentIndent(UnaryOperator(source => Sort(source, sortItems)))
-
   def argument(): LogicalQueryBuilder =
     appendAtCurrentIndent(LeafOperator(Argument()))
 

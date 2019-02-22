@@ -155,7 +155,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    runtimeResult should beColumns("c").withRow(sizeHint / 2)
+    runtimeResult should beColumns("c").withSingleRow(sizeHint / 2)
   }
 
   test("should collect(n.prop)") {
@@ -196,7 +196,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    runtimeResult should beColumns("c").withRow((0 until sizeHint by 2).sum)
+    runtimeResult should beColumns("c").withSingleRow((0 until sizeHint by 2).sum)
   }
 
   test("should min(n.prop)") {
@@ -215,7 +215,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    runtimeResult should beColumns("c").withRow((0 until sizeHint by 2).min)
+    runtimeResult should beColumns("c").withSingleRow((0 until sizeHint by 2).min)
   }
 
   test("should max(n.prop)") {
@@ -234,7 +234,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    runtimeResult should beColumns("c").withRow((0 until sizeHint by 2).max)
+    runtimeResult should beColumns("c").withSingleRow((0 until sizeHint by 2).max)
   }
 
   test("should avg(n.prop)") {
@@ -359,6 +359,6 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    runtimeResult should beColumns("countStar", "count", "avg", "collect", "max", "min", "sum").withRow(0, 0, null, Collections.emptyList(),  null, null, 0)
+    runtimeResult should beColumns("countStar", "count", "avg", "collect", "max", "min", "sum").withSingleRow(0, 0, null, Collections.emptyList(),  null, null, 0)
   }
 }
