@@ -25,8 +25,7 @@ import org.neo4j.cypher.{CypherPlannerOption, CypherRuntimeOption, CypherUpdateS
   * Factory which creates cypher compilers.
   */
 trait CompilerFactory {
-  def createCompiler(cypherVersion: CypherVersion,
-                     cypherPlanner: CypherPlannerOption,
+  def createCompiler(cypherPlanner: CypherPlannerOption,
                      cypherRuntime: CypherRuntimeOption,
                      cypherUpdateStrategy: CypherUpdateStrategy): Compiler
 }

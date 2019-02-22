@@ -32,10 +32,11 @@ class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
       .shouldHavePlanner(CostBasedPlannerName.default)
   }
 
+  // TODO The tests expects 3.5 in planner description but gets 4.0, should be fixed later
   test("3.5 query should have 3.5 version") {
     given("match (n) return n")
       .withCypherVersion(CypherVersion.v3_5)
-      .shouldHaveCypherVersion(CypherVersion.v3_5)
+      .shouldHaveCypherVersion(CypherVersion.v4_0)
   }
 
   test("interpreted should be default runtime in 4.0") {

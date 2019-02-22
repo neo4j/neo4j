@@ -26,7 +26,6 @@ import org.neo4j.cypher._
 import org.neo4j.cypher.internal.QueryCache.ParameterTypeMap
 import org.neo4j.cypher.internal._
 import org.neo4j.cypher.internal.compatibility.CypherPlanner
-import org.neo4j.cypher.internal.compatibility.v3_5.Cypher3_5Planner
 import org.neo4j.cypher.internal.compiler.v4_0.{CypherPlannerConfiguration, StatsDivergenceCalculator}
 import org.neo4j.cypher.internal.runtime.interpreted.CSVResources
 import org.neo4j.cypher.internal.v4_0.frontend.phases.CompilationPhaseTracer
@@ -114,33 +113,19 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
 
   var counter: CacheCounter = _
   var compiler: CypherCurrentCompiler[RuntimeContext] = _
-  var compiler3_5: CypherCurrentCompiler[RuntimeContext] = _
 
   override protected def beforeEach(): Unit = {
     super.beforeEach()
     counter = new CacheCounter()
     compiler = createCompiler(plannerConfig())
-
-    val config3_5 = plannerConfig()
-    val planner3_5 = Cypher3_5Planner(config3_5,
-      Clock.systemUTC(),
-      kernelMonitors,
-      NullLog.getInstance,
-      cypher.CypherPlannerOption.default,
-      CypherUpdateStrategy.default,
-      () => 1)
-
-    compiler3_5 = createCompiler(planner3_5, config3_5)
-
     kernelMonitors.addMonitorListener(counter)
-
   }
 
   private def runQuery(query: String, debugOptions: Set[String] = Set.empty, params: scala.Predef.Map[String, AnyRef] = Map.empty,
                        cypherCompiler: Compiler = compiler): Unit = {
     import collection.JavaConverters._
 
-    graph.withTx { tx =>
+    graph.withTx { _ =>
       val noTracing = CompilationPhaseTracer.NO_TRACING
       val context = graph.transactionalContext(query = query -> params)
       cypherCompiler.compile(PreParsedQuery(query, DummyPosition(0), query,
@@ -305,15 +290,6 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
     counter.counts should equal(CacheCounts(hits = 0, misses = 2, flushes = 1))
   }
 
-  test("should find query in cache with different parameter types in 3.5") {
-    val map1: scala.Predef.Map[String, AnyRef] = scala.Predef.Map("number" -> new Integer(42))
-    val map2: scala.Predef.Map[String, AnyRef] = scala.Predef.Map("number" -> "nope")
-    runQuery("return $number", params = map1, cypherCompiler = compiler3_5)
-    runQuery("return $number", params = map2, cypherCompiler = compiler3_5)
-
-    counter.counts should equal(CacheCounts(hits = 1, misses = 1, flushes = 1))
-  }
-
   test("should find query in cache with same parameter types") {
     val map1: scala.Predef.Map[String, AnyRef] = scala.Predef.Map("number" -> new Integer(42))
     val map2: scala.Predef.Map[String, AnyRef] = scala.Predef.Map("number" -> new Integer(43))
@@ -334,22 +310,17 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
 
   test("should clear all compiler library caches") {
     val compilerLibrary = createCompilerLibrary()
-    val compilers = CypherVersion.all.map { version =>
-      compilerLibrary.selectCompiler(version, CypherPlannerOption.default, CypherRuntimeOption.default, CypherUpdateStrategy.default)
-    }
+    val defaultCompiler =
+      compilerLibrary.selectCompiler(CypherPlannerOption.default, CypherRuntimeOption.default, CypherUpdateStrategy.default)
 
-    compilers.foreach { compiler =>
-      runQuery("return 42", cypherCompiler = compiler) // Misses
-      runQuery("return 42", cypherCompiler = compiler) // Hits
-    }
+    runQuery("return 42", cypherCompiler = defaultCompiler) // Misses
+    runQuery("return 42", cypherCompiler = defaultCompiler) // Hits
 
     compilerLibrary.clearCaches()
 
-    compilers.foreach { compiler =>
-      runQuery("return 42", cypherCompiler = compiler) // Misses
-    }
+    runQuery("return 42", cypherCompiler = defaultCompiler) // Misses
 
-    counter.counts should equal(CacheCounts(hits = compilers.size, misses = 2 * compilers.size, flushes = 2 * compilers.size))
+    counter.counts should equal(CacheCounts(hits = 1, misses = 2, flushes = 2))
   }
 
   private def createCompilerLibrary(): CompilerLibrary = {

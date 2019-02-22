@@ -98,7 +98,6 @@
         <junit.version>5.4.0</junit.version>
         <junit.platform.version>1.4.0</junit.platform.version>
         <currentYear>2019</currentYear>
-        <cypher.compatibility.35>3.5.3</cypher.compatibility.35>
         <opencypher.version>1.0.0-M12</opencypher.version>
         <caffeine.version>2.6.2</caffeine.version>
         <required.maven.version>3.5.4</required.maven.version>

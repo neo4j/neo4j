@@ -86,7 +86,7 @@ class MasterCompiler(graph: GraphDatabaseQueryService,
       logger.log(DeprecatedCompiledRuntimeNotification)
 
     // Do the compilation
-    val compiler = compilerLibrary.selectCompiler(preParsedQuery.version,
+    val compiler = compilerLibrary.selectCompiler(
       preParsedQuery.planner,
       preParsedQuery.runtime,
       preParsedQuery.updateStrategy)

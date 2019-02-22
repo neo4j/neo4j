@@ -114,6 +114,8 @@ case class Cypher4_0Planner(config: CypherPlannerConfiguration,
                             params: MapValue
                            ): LogicalPlanResult = {
 
+    val version: CypherVersion = preParsedQuery.version // TODO use this somehow
+
     runSafely {
       val notificationLogger = new RecordingNotificationLogger(Some(preParsedQuery.offset))
       val syntacticQuery =
