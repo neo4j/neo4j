@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.plandescription
 
+import org.neo4j.cypher.CypherVersion
 import org.neo4j.cypher.internal.plandescription.Arguments._
 import org.neo4j.cypher.internal.planner.v4_0.spi.PlanningAttributes.{Cardinalities, ProvidedOrders}
 import org.neo4j.cypher.internal.v4_0.expressions.functions.Point
@@ -32,15 +33,16 @@ object LogicalPlan2PlanDescription {
 
   def apply(input: LogicalPlan,
             plannerName: PlannerName,
+            cypherVersion: CypherVersion,
             readOnly: Boolean,
             cardinalities: Cardinalities,
             providedOrders: ProvidedOrders): InternalPlanDescription = {
     new LogicalPlan2PlanDescription(readOnly, cardinalities, providedOrders).create(input)
-      .addArgument(Version("CYPHER "+plannerName.version))
+      .addArgument(Version("CYPHER " + cypherVersion.name))
       .addArgument(RuntimeVersion("4.0"))
       .addArgument(Planner(plannerName.toTextOutput))
       .addArgument(PlannerImpl(plannerName.name))
-      .addArgument(PlannerVersion(plannerName.version))
+      .addArgument(PlannerVersion("4.0"))
   }
 }
 

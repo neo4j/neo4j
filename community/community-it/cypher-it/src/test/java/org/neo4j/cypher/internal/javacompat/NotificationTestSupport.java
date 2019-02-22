@@ -178,8 +178,7 @@ public class NotificationTestSupport
         NotificationCode.Notification notification = code.notification( pos );
         assertThat( Iterables.asList( result.getNotifications() ), Matchers.hasItems( notification ) );
         Map<String,Object> arguments = result.getExecutionPlanDescription().getArguments();
-        // TODO The tests expects 3.5 in planner description but gets 4.0, should be fixed later
-        //assertThat( arguments.get( "version" ), equalTo( version ) );
+        assertThat( arguments.get( "version" ), equalTo( version ) );
         result.close();
     }
 
@@ -193,8 +192,7 @@ public class NotificationTestSupport
         NotificationCode.Notification notification = code.notification( pos, detail );
         assertThat( Iterables.asList( result.getNotifications() ), Matchers.hasItems( notification ) );
         Map<String,Object> arguments = result.getExecutionPlanDescription().getArguments();
-        // TODO The tests expects 3.5 in planner description but gets 4.0, should be fixed later
-        //assertThat( arguments.get( "version" ), equalTo( version ) );
+        assertThat( arguments.get( "version" ), equalTo( version ) );
         result.close();
     }
 
@@ -206,8 +204,7 @@ public class NotificationTestSupport
         // then
         assertThat( Iterables.asList( result.getNotifications() ), empty() );
         Map<String,Object> arguments = result.getExecutionPlanDescription().getArguments();
-        // TODO The tests expects 3.5 in planner description but gets 4.0, should be fixed later
-        //assertThat( arguments.get( "version" ), equalTo( version ) );
+        assertThat( arguments.get( "version" ), equalTo( version ) );
         result.close();
     }
 

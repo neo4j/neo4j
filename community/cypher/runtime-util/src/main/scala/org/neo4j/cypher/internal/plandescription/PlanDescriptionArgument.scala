@@ -78,8 +78,7 @@ object Arguments {
                        args: Seq[ast.Expression],
                        results: Seq[(String, CypherType)]) extends Argument
 
-  // This is the version of cypher and will equal the planner version
-  // that is being used.
+  // This is the version of cypher
   case class Version(value: String) extends Argument {
 
     override def name = "version"

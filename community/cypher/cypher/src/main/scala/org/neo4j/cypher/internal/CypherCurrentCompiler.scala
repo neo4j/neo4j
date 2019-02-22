@@ -35,7 +35,7 @@ import org.neo4j.cypher.internal.v4_0.frontend.PlannerName
 import org.neo4j.cypher.internal.v4_0.frontend.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.v4_0.logical.plans._
 import org.neo4j.cypher.internal.v4_0.util.{InternalNotification, TaskCloser}
-import org.neo4j.cypher.{CypherException, CypherExecutionMode}
+import org.neo4j.cypher.{CypherException, CypherExecutionMode, CypherVersion}
 import org.neo4j.graphdb.{Notification, Result}
 import org.neo4j.kernel.api.query.{CompilerInfo, SchemaIndexUsage}
 import org.neo4j.kernel.impl.query.QuerySubscriber.NOT_A_SUBSCRIBER
@@ -115,6 +115,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
       logicalPlanResult.extractedParams,
       buildCompilerInfo(logicalPlan, planState.plannerName, executionPlan.runtimeName),
       planState.plannerName,
+      preParsedQuery.version,
       queryType,
       logicalPlanResult.shouldBeCached)
   }
@@ -162,6 +163,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
                                         override val extractedParams: MapValue,
                                         override val compilerInfo: CompilerInfo,
                                         plannerName: PlannerName,
+                                        cypherVersion: CypherVersion,
                                         queryType: InternalQueryType,
                                         override val shouldBeCached: Boolean) extends ExecutableQuery {
 
@@ -170,6 +172,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
     private val planDescriptionBuilder =
       new PlanDescriptionBuilder(logicalPlan,
         plannerName,
+        cypherVersion,
         readOnly,
         cardinalities,
         providedOrders,

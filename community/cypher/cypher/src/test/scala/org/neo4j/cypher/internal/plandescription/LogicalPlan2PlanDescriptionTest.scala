@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.plandescription
 
+import org.neo4j.cypher.CypherVersion.v4_0
 import org.neo4j.cypher.internal.ir.v4_0.ProvidedOrder
 import org.neo4j.cypher.internal.plandescription.Arguments._
 import org.neo4j.cypher.internal.planner.v4_0.spi.IDPPlannerName
@@ -114,7 +115,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     forAll(modeCombinations) {
       case (logicalPlan: LogicalPlan, expectedPlanDescription: PlanDescriptionImpl) =>
-        val producedPlanDescription = LogicalPlan2PlanDescription(logicalPlan, IDPPlannerName, readOnly, cardinalities, providedOrders)
+        val producedPlanDescription = LogicalPlan2PlanDescription(logicalPlan, IDPPlannerName, v4_0, readOnly, cardinalities, providedOrders)
 
         def shouldBeEqual(a: InternalPlanDescription, b: InternalPlanDescription): Unit = {
           withClue("name")(a.name should equal(b.name))

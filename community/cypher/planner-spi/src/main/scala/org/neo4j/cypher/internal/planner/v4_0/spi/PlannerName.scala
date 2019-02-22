@@ -70,11 +70,3 @@ object PlannerNameFor {
       s"$n is not a a valid planner, valid options are COST, ${IDPPlannerName.name} and ${DPPlannerName.name}")
   }
 }
-
-/**
- * When running older planner from current version
- */
-case class PlannerNameWithVersion(inner: PlannerName, version: String) extends PlannerName {
-  override def name = inner.name
-  override def toTextOutput = inner.toTextOutput
-}
