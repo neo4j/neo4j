@@ -179,6 +179,12 @@ class LogicalQueryBuilder(tokenResolver: TokenResolver) extends AstConstructionT
     this
   }
 
+  def unwind(projectionString: String): LogicalQueryBuilder = {
+    val (name, expression) = ExpressionParser.parseProjections(projectionString).head
+    appendAtCurrentIndent(UnaryOperator(lp => UnwindCollection(lp, name, expression)))
+    this
+  }
+
   def projection(projectionStrings: String*): LogicalQueryBuilder = {
     val projections = ExpressionParser.parseProjections(projectionStrings: _*)
     appendAtCurrentIndent(UnaryOperator(lp => Projection(lp, projections)))
