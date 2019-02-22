@@ -134,7 +134,7 @@ class NativeIndexPopulatorTestCases
     {
         return ( pageCache, fs, storeFile, layout, monitor, descriptor ) ->
                 new GenericNativeIndexPopulator( pageCache, fs, storeFile, layout, monitor, descriptor, spaceFillingCurveSettings,
-                        SimpleIndexDirectoryStructures.onIndexFile( storeFile ), configuration, false, false );
+                        SimpleIndexDirectoryStructures.onIndexFile( storeFile ), configuration, false );
     }
 
     private static PopulatorFactory<GenericKey,NativeIndexValue> genericBlockBasedPopulatorFactory()
