@@ -19,7 +19,8 @@
  */
 package org.neo4j.kernel.impl.transaction.log.checkpoint;
 
-import org.junit.Before;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 
 import java.time.Duration;
 import java.util.concurrent.BlockingQueue;
@@ -34,10 +35,9 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class CheckPointThresholdTestSupport
@@ -52,7 +52,7 @@ public class CheckPointThresholdTestSupport
     protected BlockingQueue<String> triggerConsumer;
     protected Consumer<String> triggered;
 
-    @Before
+    @BeforeEach
     public void setUp()
     {
         config = Config.defaults();
@@ -63,7 +63,7 @@ public class CheckPointThresholdTestSupport
         intervalTime = config.get( GraphDatabaseSettings.check_point_interval_time );
         triggerConsumer = new LinkedBlockingQueue<>();
         triggered = triggerConsumer::offer;
-        notTriggered = s -> fail( "Should not have triggered: " + s );
+        notTriggered = s -> Assertions.fail( "Should not have triggered: " + s );
     }
 
     protected void withPolicy( String policy )
