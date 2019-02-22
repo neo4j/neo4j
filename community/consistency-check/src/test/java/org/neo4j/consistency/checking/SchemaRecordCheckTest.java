@@ -21,6 +21,8 @@ package org.neo4j.consistency.checking;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.Collections;
+
 import org.neo4j.consistency.checking.index.IndexAccessors;
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.internal.kernel.api.exceptions.schema.MalformedSchemaRuleException;
@@ -30,6 +32,7 @@ import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.store.record.ConstraintRule;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
+import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.storageengine.api.SchemaRule;
 
@@ -39,6 +42,7 @@ import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.consistency.checking.SchemaRuleUtil.constraintIndexRule;
 import static org.neo4j.consistency.checking.SchemaRuleUtil.indexRule;
+import static org.neo4j.consistency.checking.SchemaRuleUtil.relPropertyExistenceConstraintRule;
 import static org.neo4j.consistency.checking.SchemaRuleUtil.uniquenessConstraintRule;
 
 class SchemaRecordCheckTest
@@ -87,6 +91,26 @@ class SchemaRecordCheckTest
 
         // then
         verify( report ).labelNotInUse( labelTokenRecord );
+    }
+
+    @Test
+    void shouldReportInvalidRelationshipTypeReferences() throws Exception
+    {
+        // given
+        int schemaRuleId = 21;
+
+        SchemaRecord record = inUse( new SchemaRecord( schemaRuleId ) );
+        ConstraintRule rule = relPropertyExistenceConstraintRule( schemaRuleId, labelId, propertyKeyId );
+        when( checker().ruleAccess.loadSingleSchemaRule( schemaRuleId ) ).thenReturn( rule );
+
+        RelationshipTypeTokenRecord relTypeTokenRecord = add( notInUse( new RelationshipTypeTokenRecord( labelId ) ) );
+        add( inUse( new PropertyKeyTokenRecord( propertyKeyId ) ) );
+
+        // when
+        ConsistencyReport.SchemaConsistencyReport report = check( record );
+
+        // then
+        verify( report ).relationshipTypeNotInUse( relTypeTokenRecord );
     }
 
     @Test
@@ -358,12 +382,56 @@ class SchemaRecordCheckTest
         verify( report ).duplicateRuleContent( record1 );
     }
 
-    private static IndexAccessors configureIndexAccessors()
+    @Test
+    void shouldReportUnsupportedSchemaRuleKind() throws Exception
+    {
+        // given
+        int schemaRuleId = 21;
+
+        SchemaRecord record = inUse( new SchemaRecord( schemaRuleId ) );
+        SchemaRule rule = mock( SchemaRule.class );
+        when( checker().ruleAccess.loadSingleSchemaRule( schemaRuleId ) ).thenReturn( rule );
+
+        // when
+        ConsistencyReport.SchemaConsistencyReport report = check( record );
+
+        // then
+        verify( report ).unsupportedSchemaRuleType( rule.getClass() );
+    }
+
+    @Test
+    void shouldReportNotOnlineIndexesMeantToBackConstraints() throws Exception
+    {
+        // given
+        int indexRuleId = 21;
+        int constraintRuleId = 22;
+
+        SchemaRecord badRecord = inUse( new SchemaRecord( indexRuleId ) );
+        IndexProviderDescriptor providerDescriptor = new IndexProviderDescriptor( "in-memory", "1.0" );
+        StoreIndexDescriptor indexRule = constraintIndexRule( indexRuleId, labelId, propertyKeyId, providerDescriptor, (long) constraintRuleId );
+        ConstraintRule constraintRule = uniquenessConstraintRule( constraintRuleId, labelId, propertyKeyId, indexRuleId );
+        when( checker().ruleAccess.loadSingleSchemaRule( indexRuleId ) ).thenReturn( indexRule );
+        when( checker().ruleAccess.loadSingleSchemaRule( constraintRuleId ) ).thenReturn( constraintRule );
+        when( checker().indexAccessors.notOnlineRules() ).thenReturn( Collections.singleton( indexRule ) );
+
+        add( inUse( new LabelTokenRecord( labelId ) ) );
+        add( inUse( new PropertyKeyTokenRecord( propertyKeyId ) ) );
+
+        // when
+        check( badRecord );
+        SchemaRecordCheck obligationChecker = checker().forObligationChecking();
+        ConsistencyReport.SchemaConsistencyReport report = check( obligationChecker, badRecord );
+
+        // then
+        verify( report ).schemaRuleNotOnline( indexRule );
+    }
+
+    static IndexAccessors configureIndexAccessors()
     {
         return mock( IndexAccessors.class );
     }
 
-    private static SchemaRuleAccess configureSchemaStore()
+    static SchemaRuleAccess configureSchemaStore()
     {
         return mock( SchemaRuleAccess.class );
     }

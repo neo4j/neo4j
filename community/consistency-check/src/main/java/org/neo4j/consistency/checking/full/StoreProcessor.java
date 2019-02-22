@@ -56,7 +56,6 @@ import static org.neo4j.kernel.impl.store.Scanner.scan;
  */
 public class StoreProcessor extends AbstractStoreProcessor
 {
-    private final int qSize = DEFAULT_QUEUE_SIZE;
     protected final CacheAccess cacheAccess;
     private final ConsistencyReport.Reporter report;
     private SchemaRecordCheck schemaRecordCheck;
@@ -84,12 +83,6 @@ public class StoreProcessor extends AbstractStoreProcessor
         super.processNode( store, node );
     }
 
-    protected void checkSchema( RecordType type, RecordStore<SchemaRecord> store, SchemaRecord schema,
-            RecordCheck<SchemaRecord,ConsistencyReport.SchemaConsistencyReport> checker )
-    {
-        report.forSchema( schema, checker );
-    }
-
     @Override
     protected void checkNode( RecordStore<NodeRecord> store, NodeRecord node,
             RecordCheck<NodeRecord,ConsistencyReport.NodeConsistencyReport> checker )
@@ -97,7 +90,7 @@ public class StoreProcessor extends AbstractStoreProcessor
         report.forNode( node, checker );
     }
 
-    public void countLinks( long id1, long id2, CacheAccess.Client client )
+    private void countLinks( long id1, long id2, CacheAccess.Client client )
     {
         Counts.Type type;
         if ( id2 == -1 )
@@ -198,13 +191,12 @@ public class StoreProcessor extends AbstractStoreProcessor
         }
         else
         {
-            checkSchema( RecordType.SCHEMA, store, schema, schemaRecordCheck );
+            report.forSchema( schema, schemaRecordCheck );
         }
     }
 
-    public <R extends AbstractBaseRecord> void applyFilteredParallel( final RecordStore<R> store,
-            final ProgressListener progressListener, int numberOfThreads, long recordsPerCpu,
-            final QueueDistributor<R> distributor )
+    <R extends AbstractBaseRecord> void applyFilteredParallel( RecordStore<R> store, ProgressListener progressListener, int numberOfThreads,
+            long recordsPerCpu, final QueueDistributor<R> distributor )
     {
         cacheAccess.prepareForProcessingOfSingleStore( recordsPerCpu );
         RecordProcessor<R> processor = new RecordProcessor.Adapter<R>()
@@ -227,7 +219,7 @@ public class StoreProcessor extends AbstractStoreProcessor
         ResourceIterable<R> scan = scan( store, stage.isForward() );
         try ( ResourceIterator<R> records = scan.iterator() )
         {
-            distributeRecords( numberOfThreads, getClass().getSimpleName(), qSize,
+            distributeRecords( numberOfThreads, getClass().getSimpleName(), DEFAULT_QUEUE_SIZE,
                     cloned( records ), progressListener, processor, distributor );
         }
     }

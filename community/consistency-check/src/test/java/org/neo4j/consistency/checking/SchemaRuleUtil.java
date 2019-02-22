@@ -45,10 +45,10 @@ public class SchemaRuleUtil
                 ConstraintDescriptorFactory.existsForLabel( labelId, propertyId ) );
     }
 
-    public static ConstraintRule relPropertyExistenceConstraintRule( long ruleId, int labelId, int propertyId )
+    public static ConstraintRule relPropertyExistenceConstraintRule( long ruleId, int relTypeId, int propertyId )
     {
         return ConstraintRule.constraintRule( ruleId,
-                ConstraintDescriptorFactory.existsForRelType( labelId, propertyId ) );
+                ConstraintDescriptorFactory.existsForRelType( relTypeId, propertyId ) );
     }
 
     public static StoreIndexDescriptor indexRule( long ruleId, int labelId, int propertyId, IndexProviderDescriptor descriptor )

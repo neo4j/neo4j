@@ -124,14 +124,10 @@ public abstract class AbstractStoreProcessor extends RecordStore.Processor<Runti
             RecordStore<RelationshipGroupRecord> store, RelationshipGroupRecord record,
             RecordCheck<RelationshipGroupRecord, RelationshipGroupConsistencyReport> checker );
 
-    protected abstract void checkSchema( RecordType type, RecordStore<SchemaRecord> store, SchemaRecord schema,
-            RecordCheck<SchemaRecord,ConsistencyReport.SchemaConsistencyReport> checker );
-
     @Override
     public void processSchema( RecordStore<SchemaRecord> store, SchemaRecord schema )
     {
-        // cf. StoreProcessor
-        checkSchema( RecordType.SCHEMA, store, schema, new SimpleSchemaRecordCheck() );
+        // See StoreProcessor
     }
 
     @Override

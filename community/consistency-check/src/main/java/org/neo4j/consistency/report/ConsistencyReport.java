@@ -157,8 +157,8 @@ public interface ConsistencyReport
         @Documented( "The schema rule is malformed (not deserializable)" )
         void malformedSchemaRule();
 
-        @Documented( "The schema rule is of an unrecognized Kind" )
-        void unsupportedSchemaRuleKind( SchemaRule.Kind kind );
+        @Documented( "The schema rule is of an unrecognized type" )
+        void unsupportedSchemaRuleType( Class<? extends SchemaRule> ruleType );
 
         @Warning
         @Documented( "The schema rule has a reference to another schema rule that is not online." )

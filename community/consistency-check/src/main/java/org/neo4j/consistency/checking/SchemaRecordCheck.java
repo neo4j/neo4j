@@ -50,8 +50,8 @@ import org.neo4j.storageengine.api.schema.SchemaProcessor;
 public class SchemaRecordCheck implements RecordCheck<SchemaRecord, ConsistencyReport.SchemaConsistencyReport>
 {
     final SchemaRuleAccess ruleAccess;
+    final IndexAccessors indexAccessors;
 
-    private final IndexAccessors indexAccessors;
     private final Map<Long, SchemaRecord> indexObligations;
     private final Map<Long, SchemaRecord> constraintObligations;
     private final Map<SchemaRule, SchemaRecord> verifiedRulesWithRecords;
@@ -118,7 +118,7 @@ public class SchemaRecordCheck implements RecordCheck<SchemaRecord, ConsistencyR
             }
             else
             {
-                engine.report().unsupportedSchemaRuleKind( null );
+                engine.report().unsupportedSchemaRuleType( rule.getClass() );
             }
         }
     }
