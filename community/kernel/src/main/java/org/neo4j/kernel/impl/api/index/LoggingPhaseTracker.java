@@ -118,7 +118,10 @@ public class LoggingPhaseTracker implements PhaseTracker
     private String mainReportString( String title )
     {
         StringJoiner joiner = new StringJoiner( ", ", title + ": ", "" );
-        times.values().forEach( p -> joiner.add( p.toString() ) );
+        times.values().forEach( logger ->
+        {
+            reportToJoiner( joiner, logger );
+        } );
         return joiner.toString();
     }
 
@@ -126,12 +129,23 @@ public class LoggingPhaseTracker implements PhaseTracker
     {
         long secondsSinceLastPeriodReport = TimeUnit.MILLISECONDS.toSeconds( millisSinceLastPeriodReport );
         StringJoiner joiner = new StringJoiner( ", ", "Last " + secondsSinceLastPeriodReport + " sec: ", "" );
-        times.values().forEach( logger ->
-        {
-            joiner.add( logger.period().toString() );
-            logger.period().reset();
-        } );
+        times.values().stream()
+                .map( Logger::period )
+                .forEach( period ->
+                {
+                    reportToJoiner( joiner, period );
+                    period.reset();
+
+                } );
         return joiner.toString();
+    }
+
+    private void reportToJoiner( StringJoiner joiner, Counter counter )
+    {
+        if ( counter.nbrOfReports > 0 )
+        {
+            joiner.add( counter.toString() );
+        }
     }
 
     private long logCurrentTime()
@@ -205,6 +219,10 @@ public class LoggingPhaseTracker implements PhaseTracker
             if ( nbrOfReports == 0 )
             {
                 addToString( "nbrOfReports", nbrOfReports, joiner, false );
+            }
+            else if ( nbrOfReports == 1 )
+            {
+                addToString( "totalTime", totalTime, joiner, true );
             }
             else
             {

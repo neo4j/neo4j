@@ -137,9 +137,15 @@ public class LoggingPhaseTrackerTest
         sleep( 100 );
         phaseTracker.enterPhase( PhaseTracker.Phase.WRITE );
         sleep( 100 );
+        phaseTracker.enterPhase( PhaseTracker.Phase.SCAN );
+        sleep( 100 );
+        phaseTracker.enterPhase( PhaseTracker.Phase.WRITE );
+        sleep( 100 );
         phaseTracker.enterPhase( PhaseTracker.Phase.MERGE );
         sleep( 100 );
         phaseTracker.enterPhase( PhaseTracker.Phase.BUILD );
+        sleep( 100 );
+        phaseTracker.enterPhase( PhaseTracker.Phase.APPLY_EXTERNAL );
         sleep( 100 );
         phaseTracker.enterPhase( PhaseTracker.Phase.FLIP );
         sleep( 100 );
@@ -148,14 +154,11 @@ public class LoggingPhaseTrackerTest
         phaseTracker.stop();
 
         // then
-        AssertableLogProvider.LogMatcher logMatcher = AssertableLogProvider.
-                inLog( IndexPopulationJob.class )
-                .info( "TIME/PHASE Final: " +
-                        "SCAN[totalTime=100ms, avgTime=100ms, minTime=0ns, maxTime=100ms, nbrOfReports=1], " +
-                        "WRITE[totalTime=100ms, avgTime=100ms, minTime=0ns, maxTime=100ms, nbrOfReports=1], " +
-                        "MERGE[totalTime=100ms, avgTime=100ms, minTime=0ns, maxTime=100ms, nbrOfReports=1], " +
-                        "BUILD[totalTime=100ms, avgTime=100ms, minTime=0ns, maxTime=100ms, nbrOfReports=1], " +
-                        "FLIP[totalTime=100ms, avgTime=100ms, minTime=0ns, maxTime=100ms, nbrOfReports=1]" );
+        AssertableLogProvider.LogMatcher logMatcher = AssertableLogProvider.inLog( IndexPopulationJob.class ).info(
+                "TIME/PHASE Final: " +
+                        "SCAN[totalTime=200ms, avgTime=100ms, minTime=0ns, maxTime=100ms, nbrOfReports=2], " +
+                        "WRITE[totalTime=200ms, avgTime=100ms, minTime=0ns, maxTime=100ms, nbrOfReports=2], " +
+                        "MERGE[totalTime=100ms], BUILD[totalTime=100ms], APPLY_EXTERNAL[totalTime=100ms], FLIP[totalTime=100ms]" );
         logProvider.assertAtLeastOnce( logMatcher );
     }
 
@@ -173,21 +176,32 @@ public class LoggingPhaseTrackerTest
         phaseTracker.enterPhase( PhaseTracker.Phase.WRITE );
 
         // then
-        AssertableLogProvider.LogMatcher logMatcher = AssertableLogProvider.
-                inLog( IndexPopulationJob.class )
-                .debug( "TIME/PHASE Total: " +
-                        "SCAN[totalTime=1s, avgTime=1s, minTime=0ns, maxTime=1s, nbrOfReports=1], " +
-                        "WRITE[nbrOfReports=0], " +
-                        "MERGE[nbrOfReports=0], " +
-                        "BUILD[nbrOfReports=0], " +
-                        "FLIP[nbrOfReports=0], " +
-                        "Last 1 sec: " +
-                        "SCAN[totalTime=1s, avgTime=1s, minTime=1s, maxTime=1s, nbrOfReports=1], " +
-                        "WRITE[nbrOfReports=0], " +
-                        "MERGE[nbrOfReports=0], " +
-                        "BUILD[nbrOfReports=0], " +
-                        "FLIP[nbrOfReports=0]" );
-        logProvider.assertAtLeastOnce( logMatcher );
+        AssertableLogProvider.LogMatcher firstEntry =
+                AssertableLogProvider.inLog( IndexPopulationJob.class ).debug( "TIME/PHASE Total: SCAN[totalTime=1s], Last 1 sec: SCAN[totalTime=1s]" );
+        logProvider.assertExactly( firstEntry );
+
+        // when
+        sleep( 1000 );
+        phaseTracker.enterPhase( PhaseTracker.Phase.SCAN );
+
+        // then
+        AssertableLogProvider.LogMatcher secondEntry =
+                AssertableLogProvider.inLog( IndexPopulationJob.class )
+                        .debug( "TIME/PHASE Total: SCAN[totalTime=1s], WRITE[totalTime=1s], Last 1 sec: WRITE[totalTime=1s]" );
+        logProvider.assertExactly( firstEntry, secondEntry );
+
+        // when
+        sleep( 1000 );
+        phaseTracker.enterPhase( PhaseTracker.Phase.WRITE );
+
+        // then
+        AssertableLogProvider.LogMatcher thirdEntry =
+                AssertableLogProvider.inLog( IndexPopulationJob.class )
+                        .debug( "TIME/PHASE Total: " +
+                                "SCAN[totalTime=2s, avgTime=1s, minTime=0ns, maxTime=1s, nbrOfReports=2], " +
+                                "WRITE[totalTime=1s], " +
+                                "Last 1 sec: SCAN[totalTime=1s]" );
+        logProvider.assertExactly( firstEntry, secondEntry, thirdEntry );
     }
 
     private LoggingPhaseTracker getPhaseTracker()
