@@ -17,7 +17,7 @@
 package org.neo4j.cypher.internal.v4_0.ast
 
 import org.neo4j.cypher.internal.v4_0.expressions._
-import org.neo4j.cypher.internal.v4_0.expressions.functions.{Avg, Collect, Count, Id, Max, Min, Sum}
+import org.neo4j.cypher.internal.v4_0.expressions.functions.{Avg, Collect, Count, Id, Max, Min, Sum, ToString}
 import org.neo4j.cypher.internal.v4_0.util.symbols.CypherType
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherTestSupport
 import org.neo4j.cypher.internal.v4_0.util.{DummyPosition, InputPosition}
@@ -128,6 +128,9 @@ trait AstConstructionTestSupport extends CypherTestSupport {
 
   def id(expression: Expression): FunctionInvocation =
     FunctionInvocation(expression, FunctionName(Id.name)(pos))
+
+  def toString(expression: Expression): FunctionInvocation =
+    FunctionInvocation(expression, FunctionName(ToString.name)(pos))
 
   def not(expression: Expression): Not = Not(expression)(pos)
 

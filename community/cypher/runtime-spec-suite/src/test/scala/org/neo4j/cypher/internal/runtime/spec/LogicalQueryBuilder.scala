@@ -38,6 +38,8 @@ trait TokenResolver {
     * Obtain the token of a label by name.
     */
   def labelId(label: String): Int
+
+  def propertyKeyId(prop: String): Int
 }
 
 /**
@@ -208,11 +210,11 @@ class LogicalQueryBuilder(tokenResolver: TokenResolver) extends AstConstructionT
                         indexOrder: IndexOrder = IndexOrderNone,
                         paramExpr: Option[Expression] = None,
                         argumentIds: Set[String] = Set.empty,
-                        propIds: Map[String, Int] = Map.empty,
                         unique: Boolean = false,
                         customQueryExpression: Option[QueryExpression[Expression]] = None): LogicalQueryBuilder = {
     val label = tokenResolver.labelId(IndexSeek.labelFromIndexSeekString(indexSeekString))
-    val plan = IndexSeek(indexSeekString, getValue, indexOrder, paramExpr, argumentIds, propIds, label, unique, customQueryExpression)
+    val propIds = PartialFunction(tokenResolver.propertyKeyId)
+    val plan = IndexSeek(indexSeekString, getValue, indexOrder, paramExpr, argumentIds, Some(propIds), label, unique, customQueryExpression)
     semanticTable = semanticTable.addNode(varFor(plan.idName))
     appendAtCurrentIndent(LeafOperator(plan))
   }

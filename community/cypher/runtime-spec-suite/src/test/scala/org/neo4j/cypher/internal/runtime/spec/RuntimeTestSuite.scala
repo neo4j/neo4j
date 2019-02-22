@@ -88,6 +88,14 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
     } finally tx.close()
   }
 
+  override def propertyKeyId(prop: String): Int =  {
+    val tx = graphDb.beginTx()
+    try {
+      tx.success()
+      tx.asInstanceOf[InternalTransaction].kernelTransaction().tokenRead().propertyKey(prop)
+    } finally tx.close()
+  }
+
   // EXECUTE
 
   def execute(logicalQuery: LogicalQuery,

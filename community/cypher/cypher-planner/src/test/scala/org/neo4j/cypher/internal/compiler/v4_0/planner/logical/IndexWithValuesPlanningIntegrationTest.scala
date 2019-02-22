@@ -42,7 +42,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
         Distinct(
           Union(
             IndexSeek("n:Awesome(prop1 > 42)", GetValue),
-            IndexSeek("n:Awesome(prop2 > 3)", GetValue, propIds = Map("prop2" -> 1))
+            IndexSeek("n:Awesome(prop2 > 3)", GetValue, propIds = Some(Map("prop2" -> 1)))
           ),
           Map("n" -> varFor("n"))
         ),
@@ -80,8 +80,8 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
       Projection(
         Distinct(
           Union(
-            IndexSeek("n:Awesome(prop2 = 3)", GetValue, propIds = Map("prop2" -> 1)),
-            IndexSeek("n:Awesome(prop1 = 42)", GetValue, propIds = Map("prop1" -> 0))
+            IndexSeek("n:Awesome(prop2 = 3)", GetValue, propIds = Some(Map("prop2" -> 1))),
+            IndexSeek("n:Awesome(prop1 = 42)", GetValue, propIds = Some(Map("prop1" -> 0)))
           ),
           Map("n" -> varFor("n"))
         ),
@@ -106,12 +106,12 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
             Union(
               Union(
                 Union(
-                  IndexSeek("n:Awesome(prop2 = 3)", GetValue, propIds = Map("prop2" -> 1)),
-                  IndexSeek("n:Awesome2(prop2 = 3)", GetValue, propIds = Map("prop2" -> 1), labelId = 1)
+                  IndexSeek("n:Awesome(prop2 = 3)", GetValue, propIds = Some(Map("prop2" -> 1))),
+                  IndexSeek("n:Awesome2(prop2 = 3)", GetValue, propIds = Some(Map("prop2" -> 1)), labelId = 1)
                 ),
-                IndexSeek("n:Awesome(prop1 = 42)", GetValue, propIds = Map("prop1" -> 0))
+                IndexSeek("n:Awesome(prop1 = 42)", GetValue, propIds = Some(Map("prop1" -> 0)))
               ),
-              IndexSeek("n:Awesome2(prop1 = 42)", GetValue, propIds = Map("prop1" -> 0), labelId = 1)
+              IndexSeek("n:Awesome2(prop1 = 42)", GetValue, propIds = Some(Map("prop1" -> 0)), labelId = 1)
             ),
             Map("n" -> varFor("n"))
           )

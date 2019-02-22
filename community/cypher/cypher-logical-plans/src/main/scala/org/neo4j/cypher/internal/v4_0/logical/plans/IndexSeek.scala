@@ -48,9 +48,9 @@ object IndexSeek {
   private val LESS_THAN_OR_EQ = s"$ID ?<= ?$VALUE".r
   private val GREATER_THAN = s"$ID ?> ?$VALUE".r
   private val GREATER_THAN_OR_EQ = s"$ID ?>= ?$VALUE".r
-  private val STARTS_WITH = s"$ID STARTS WITH $STRING".r
-  private val ENDS_WITH = s"$ID ENDS WITH $STRING".r
-  private val CONTAINS = s"$ID CONTAINS $STRING".r
+  private val STARTS_WITH = s"$ID STARTS WITH $VALUE".r
+  private val ENDS_WITH = s"$ID ENDS WITH $VALUE".r
+  private val CONTAINS = s"$ID CONTAINS $VALUE".r
 
   private val pos = InputPosition.NONE
 
@@ -70,7 +70,7 @@ object IndexSeek {
             indexOrder: IndexOrder = IndexOrderNone,
             paramExpr: Option[Expression] = None,
             argumentIds: Set[String] = Set.empty,
-            propIds: Map[String, Int] = Map.empty,
+            propIds: Option[PartialFunction[String, Int]] = None,
             labelId: Int = 0,
             unique: Boolean = false,
             customQueryExpression: Option[QueryExpression[Expression]] = None)(implicit idGen: IdGen): IndexLeafPlan = {
@@ -80,17 +80,23 @@ object IndexSeek {
     val predicates = predicateStr.split(',').map(_.trim)
 
     var propId = -1
-    def nextPropId() = {
+    def nextPropId(): Int = {
       propId += 1
       propId
     }
 
-    def prop(prop: String) = {
+    def prop(prop: String): IndexedProperty = {
       val id =
-        if (propIds.nonEmpty)
-          propIds.getOrElse(prop, throw new IllegalArgumentException(s"Property `$prop` has no provided id. Either provide ids for all properties, or provide none. Provided properties: $propIds"))
-        else
+        if (propIds.isDefined) {
+          val func = propIds.get
+          if (func.isDefinedAt(prop)) {
+            func(prop)
+          } else {
+            throw new IllegalArgumentException(s"Property `$prop` has no provided id. Either provide ids for all properties, or provide none.")
+          }
+        } else {
           nextPropId()
+        }
 
       IndexedProperty(PropertyKeyToken(PropertyKeyName(prop)(pos), PropertyKeyId(id)), getValue)
     }
@@ -138,14 +144,14 @@ object IndexSeek {
           createSeek(List(prop(propStr)), valueExpr)
 
         case STARTS_WITH(propStr, string) =>
-          val valueExpr = RangeQueryExpression(PrefixSeekRangeWrapper(PrefixRange(StringLiteral(string)(pos)))(pos))
+          val valueExpr = RangeQueryExpression(PrefixSeekRangeWrapper(PrefixRange(value(string)))(pos))
           createSeek(List(prop(propStr)), valueExpr)
 
         case ENDS_WITH(propStr, string) =>
-          NodeIndexEndsWithScan(node, label, prop(propStr), StringLiteral(string)(pos), argumentIds, indexOrder)
+          NodeIndexEndsWithScan(node, label, prop(propStr), value(string), argumentIds, indexOrder)
 
         case CONTAINS(propStr, string) =>
-          NodeIndexContainsScan(node, label, prop(propStr), StringLiteral(string)(pos), argumentIds, indexOrder)
+          NodeIndexContainsScan(node, label, prop(propStr), value(string), argumentIds, indexOrder)
 
         case EXISTS(propStr) if customQueryExpression.isDefined =>
           createSeek(List(prop(propStr)), customQueryExpression.get)

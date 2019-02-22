@@ -87,7 +87,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     } getLogicalPlanFor "MATCH (a:Person) WHERE a.name STARTS WITH 'short' AND a.lastname STARTS WITH 'longer' RETURN a")
       ._2 should equal(
         Selection(ands(startsWith(prop("a", "name"), literalString("short"))),
-          IndexSeek("a:Person(lastname STARTS WITH 'longer')", propIds = Map("lastname" -> 1))
+          IndexSeek("a:Person(lastname STARTS WITH 'longer')", propIds = Some(Map("lastname" -> 1)))
         ))
   }
 
@@ -99,7 +99,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     } getLogicalPlanFor "MATCH (a:Person) WHERE a.lastname STARTS WITH 'longer' AND a.name STARTS WITH 'short' RETURN a")
       ._2 should equal(
       Selection(ands(startsWith(prop("a", "name"), literalString("short"))),
-        IndexSeek("a:Person(lastname STARTS WITH 'longer')", propIds = Map("lastname" -> 1))
+        IndexSeek("a:Person(lastname STARTS WITH 'longer')", propIds = Some(Map("lastname" -> 1)))
       ))
   }
 
@@ -522,7 +522,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     plan._2 should equal(
       Selection(
         ands(in(prop("n", "prop1"), listOfInt(42))),
-        IndexSeek("n:Awesome(prop2 = 3)", propIds = Map("prop2" -> 1))
+        IndexSeek("n:Awesome(prop2 = 3)", propIds = Some(Map("prop2" -> 1)))
       )
     )
   }
@@ -534,7 +534,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     } getLogicalPlanFor "MATCH (n) USING INDEX n:Awesome(prop2) WHERE n:Awesome AND (n.prop1 = 42 OR n.prop2 = 3) RETURN n "
 
     val seek1 = IndexSeek("n:Awesome(prop1 = 42)", GetValue)
-    val seek2 = IndexSeek("n:Awesome(prop2 = 3)", GetValue, propIds = Map("prop2" -> 1))
+    val seek2 = IndexSeek("n:Awesome(prop2 = 3)", GetValue, propIds = Some(Map("prop2" -> 1)))
     val union: Union = Union(seek2, seek1)
     val distinct = Distinct(union, Map("n" -> varFor("n")))
 
@@ -630,7 +630,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop1 = 42 OR n.prop2 = 'apa' RETURN n")._2
 
     val seek1 = IndexSeek("n:Awesome(prop1 = 42)", GetValue)
-    val seek2 = IndexSeek("n:Awesome(prop2 = 'apa')", GetValue, propIds = Map("prop2" -> 1))
+    val seek2 = IndexSeek("n:Awesome(prop2 = 'apa')", GetValue, propIds = Some(Map("prop2" -> 1)))
     val union: Union = Union(seek2, seek1)
     val distinct = Distinct(union, Map("n" -> varFor("n")))
 
@@ -663,7 +663,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop1 >= 42 OR n.prop2 STARTS WITH 'apa' RETURN n")._2
 
     val seek1 = IndexSeek("n:Awesome(prop1 >= 42)")
-    val seek2 = IndexSeek("n:Awesome(prop2 STARTS WITH 'apa')", propIds = Map("prop2" -> 1))
+    val seek2 = IndexSeek("n:Awesome(prop2 STARTS WITH 'apa')", propIds = Some(Map("prop2" -> 1)))
     val union = Union(seek1, seek2)
     val distinct = Distinct(union, Map("n" -> varFor("n")))
 
@@ -680,7 +680,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     val labelPredicate2 = hasLabels("n", "Label2")
 
     val seek1 = IndexSeek("n:Label1(prop1 = 'val')", GetValue)
-    val seek2 = IndexSeek("n:Label2(prop2 = 'val')", GetValue, propIds = Map("prop2" -> 1), labelId = 1)
+    val seek2 = IndexSeek("n:Label2(prop2 = 'val')", GetValue, propIds = Some(Map("prop2" -> 1)), labelId = 1)
 
     val union: Union = Union(seek2, seek1)
     val distinct = Distinct(union, Map("n" -> varFor("n")))
@@ -701,9 +701,9 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     val labelPredicate2 = hasLabels("n", "Label2")
 
     val seek1 = IndexSeek("n:Label1(prop1 = 'val')", GetValue)
-    val seek2 = IndexSeek("n:Label1(prop2 = 'val')", GetValue, propIds = Map("prop2" -> 1))
+    val seek2 = IndexSeek("n:Label1(prop2 = 'val')", GetValue, propIds = Some(Map("prop2" -> 1)))
     val seek3 = IndexSeek("n:Label2(prop1 = 'val')", GetValue, labelId = 1)
-    val seek4 = IndexSeek("n:Label2(prop2 = 'val')", GetValue, labelId = 1, propIds = Map("prop2" -> 1))
+    val seek4 = IndexSeek("n:Label2(prop2 = 'val')", GetValue, labelId = 1, propIds = Some(Map("prop2" -> 1)))
 
     val union: Union = Union( Union( Union(seek2, seek4), seek1), seek3)
     val distinct = Distinct(union, Map("n" -> varFor("n")))
