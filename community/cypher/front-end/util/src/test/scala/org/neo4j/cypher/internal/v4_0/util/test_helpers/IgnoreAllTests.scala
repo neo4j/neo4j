@@ -32,4 +32,5 @@ trait IgnoreAllTests extends CypherFunSuite {
   protected def testIgnored(testName: String, testTags: Tag*)(testFun: => Unit): Unit = {
     super.test(testName, testTags: _*)(testFun)
   }
+
 }
