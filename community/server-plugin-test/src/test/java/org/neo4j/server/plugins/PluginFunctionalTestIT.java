@@ -35,18 +35,15 @@ import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.server.helpers.FunctionalTestHelper;
 import org.neo4j.server.helpers.ServerHelper;
 import org.neo4j.server.plugins.PluginFunctionalTestHelper.RegExp;
-import org.neo4j.server.rest.JaxRsResponse;
 import org.neo4j.server.rest.RestRequest;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.server.rest.repr.NodeRepresentationTest;
 import org.neo4j.server.rest.repr.RelationshipRepresentationTest;
 import org.neo4j.test.server.SharedServerTestBase;
 
-import static org.hamcrest.CoreMatchers.endsWith;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.core.IsNull.nullValue;
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 
 @SuppressWarnings( "unchecked" )
@@ -119,29 +116,6 @@ public class PluginFunctionalTestIT extends SharedServerTestBase
     }
 
     @Test
-    public void canInvokeNodePlugin() throws Exception
-    {
-        long n = functionalTestHelper.getGraphDbHelper()
-                .createNode();
-
-        Map<String, Object> map = PluginFunctionalTestHelper.makeGet( functionalTestHelper.nodeUri( n ) );
-        map = (Map<String, Object>) map.get( "extensions" );
-        map = (Map<String, Object>) map.get( FunctionalTestPlugin.class.getSimpleName() );
-
-        String uri = (String) map.get( FunctionalTestPlugin.GET_CONNECTED_NODES );
-        List<Map<String, Object>> response = PluginFunctionalTestHelper.makePostList( uri );
-        verifyNodes( response );
-    }
-
-    private void verifyNodes( final List<Map<String, Object>> response )
-    {
-        for ( Map<String, Object> nodeMap : response )
-        {
-            NodeRepresentationTest.verifySerialisation( nodeMap );
-        }
-    }
-
-    @Test
     public void canInvokePluginWithParam() throws Exception
     {
         long n = functionalTestHelper.getGraphDbHelper()
@@ -156,24 +130,6 @@ public class PluginFunctionalTestIT extends SharedServerTestBase
         Map<String, Object> node = PluginFunctionalTestHelper.makePostMap( uri, params );
 
         NodeRepresentationTest.verifySerialisation( node );
-    }
-
-    @Test
-    public void canInvokePluginOnRelationship() throws Exception
-    {
-        long n1 = functionalTestHelper.getGraphDbHelper()
-                .createNode();
-        long n2 = functionalTestHelper.getGraphDbHelper()
-                .createNode();
-        long relId = functionalTestHelper.getGraphDbHelper()
-                .createRelationship( "pals", n1, n2 );
-
-        String uri = getPluginMethodUri( functionalTestHelper.relationshipUri( relId ), "methodOnRelationship" );
-
-        Map<String, Object> params = MapUtil.map( "id", relId );
-        List<Map<String, Object>> nodes = PluginFunctionalTestHelper.makePostList( uri, params );
-
-        verifyNodes( nodes );
     }
 
     private String getPluginMethodUri( String startUrl, String methodName ) throws JsonParseException
@@ -211,80 +167,6 @@ public class PluginFunctionalTestIT extends SharedServerTestBase
         assertThat( FunctionalTestPlugin._float, is( g ) );
         assertThat( FunctionalTestPlugin._double, is( h ) );
         assertThat( FunctionalTestPlugin._boolean, is( i ) );
-    }
-
-    @Test
-    public void shouldHandleOptionalValuesCorrectly1() throws Exception
-    {
-        long n = functionalTestHelper.getGraphDbHelper()
-                .createNode();
-        String methodUri = getPluginMethodUri( functionalTestHelper.nodeUri( n ), "getThisNodeOrById" );
-        Map<String, Object> map = PluginFunctionalTestHelper.makePostMap( methodUri );
-        NodeRepresentationTest.verifySerialisation( map );
-    }
-
-    @Test
-    public void shouldHandleOptionalValuesCorrectly2() throws Exception
-    {
-        long n = functionalTestHelper.getGraphDbHelper()
-                .createNode();
-        String methodUri = getPluginMethodUri( functionalTestHelper.nodeUri( n ), "getThisNodeOrById" );
-        long id = functionalTestHelper.getGraphDbHelper()
-                .getFirstNode();
-        Map<String, Object> params = MapUtil.map( "id", id );
-
-        PluginFunctionalTestHelper.makePostMap( methodUri, params );
-
-        assertThat( FunctionalTestPlugin.optional, is( id ) );
-    }
-
-    @Test
-    public void canInvokePluginWithNodeParam() throws Exception
-    {
-        long n = functionalTestHelper.getGraphDbHelper()
-                .createNode();
-        long m = functionalTestHelper.getGraphDbHelper()
-                .createNode();
-        functionalTestHelper.getGraphDbHelper()
-                .createRelationship( "LOVES", n, m );
-        functionalTestHelper.getGraphDbHelper()
-                .createRelationship( "LOVES", m, n );
-        functionalTestHelper.getGraphDbHelper()
-                .createRelationship( "KNOWS", m, functionalTestHelper.getGraphDbHelper()
-                        .createNode() );
-        functionalTestHelper.getGraphDbHelper()
-                .createRelationship( "KNOWS", n, functionalTestHelper.getGraphDbHelper()
-                        .createNode() );
-
-        Map<String, Object> map = PluginFunctionalTestHelper.makeGet( functionalTestHelper.nodeUri( n ) );
-        map = (Map<String, Object>) map.get( "extensions" );
-        map = (Map<String, Object>) map.get( FunctionalTestPlugin.class.getSimpleName() );
-
-        String uri = (String) map.get( "getRelationshipsBetween" );
-        List<Map<String, Object>> response = PluginFunctionalTestHelper.makePostList( uri,
-                MapUtil.map( "other", functionalTestHelper.nodeUri( m ) ) );
-        assertEquals( 2, response.size() );
-        verifyRelationships( response );
-    }
-
-    @Test
-    public void canInvokePluginWithNodeListParam() throws Exception
-    {
-        long n = functionalTestHelper.getGraphDbHelper()
-                .createNode();
-        Map<String, Object> map = PluginFunctionalTestHelper.makeGet( functionalTestHelper.nodeUri( n ) );
-        map = (Map<String, Object>) map.get( "extensions" );
-        map = (Map<String, Object>) map.get( FunctionalTestPlugin.class.getSimpleName() );
-        List<String> nodes = Arrays.asList( functionalTestHelper.nodeUri( functionalTestHelper.getGraphDbHelper()
-                .createNode() ), functionalTestHelper.nodeUri( functionalTestHelper.getGraphDbHelper()
-                .createNode() ), functionalTestHelper.nodeUri( functionalTestHelper.getGraphDbHelper()
-                .createNode() ) );
-
-        String uri = (String) map.get( "createRelationships" );
-        List<Map<String, Object>> response = PluginFunctionalTestHelper.makePostList( uri,
-                MapUtil.map( "type", "KNOWS", "nodes", nodes ) );
-        assertEquals( nodes.size(), response.size() );
-        verifyRelationships( response );
     }
 
     private void verifyRelationships( final List<Map<String, Object>> response )
@@ -390,38 +272,6 @@ public class PluginFunctionalTestIT extends SharedServerTestBase
         PluginFunctionalTestHelper.makePostMap( methodUri );
 
         assertThat( FunctionalTestPlugin.intArray, is( nullValue() ) );
-    }
-
-    @Test
-    public void shouldBeAbleToReturnPaths() throws Exception
-    {
-        long n = functionalTestHelper.getGraphDbHelper()
-                .createNode();
-        long r = functionalTestHelper.getGraphDbHelper()
-                .getFirstNode();
-        functionalTestHelper.getGraphDbHelper()
-                .createRelationship( "friend", n, r );
-
-        String methodUri = getPluginMethodUri( functionalTestHelper.nodeUri( n ), "pathToReference" );
-
-        Map<String, Object> maps = PluginFunctionalTestHelper.makePostMap( methodUri );
-
-        assertThat( (String) maps.get( "start" ), endsWith( Long.toString( r ) ) );
-        assertThat( (String) maps.get( "end" ), endsWith( Long.toString( n ) ) );
-    }
-
-    @Test
-    public void shouldHandleNullPath() throws Exception
-    {
-        long n = functionalTestHelper.getGraphDbHelper()
-                .createNode();
-
-        String url = getPluginMethodUri(functionalTestHelper.nodeUri(n), "pathToReference");
-
-        JaxRsResponse response = new RestRequest().post(url, null);
-
-        assertThat( response.getEntity(), response.getStatus(), is(204) );
-        response.close();
     }
 
 }

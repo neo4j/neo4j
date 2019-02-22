@@ -74,20 +74,15 @@ public class ServerConfigIT extends ExclusiveServerTestBase
     @Test
     public void shouldPickupRelativeUrisForManagementApiAndRestApi() throws IOException
     {
-        String dataUri = "a/different/data/uri/";
         String managementUri = "a/different/management/uri/";
 
-        server = serverOnRandomPorts().withRelativeRestApiUriPath( "/" + dataUri )
+        server = serverOnRandomPorts()
                 .usingDataDir( folder.directory( name.getMethodName() ).getAbsolutePath() )
                 .withRelativeManagementApiUriPath( "/" + managementUri )
                 .build();
         server.start();
 
-        JaxRsResponse response = new RestRequest().get( server.baseUri().toString() + dataUri,
-                MediaType.TEXT_HTML_TYPE );
-        assertEquals( 200, response.getStatus() );
-
-        response = new RestRequest().get( server.baseUri().toString() + managementUri );
+        JaxRsResponse response = new RestRequest().get( server.baseUri().toString() + managementUri );
         assertEquals( 200, response.getStatus() );
         response.close();
     }

@@ -240,27 +240,6 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
     }
 
     @Test
-    public void returned_rest_urls_must_be_useable() throws Exception
-    {
-        // begin and execute and commit "resultDataContents":["REST"]
-        HTTP.RawPayload payload = quotedJson( "{ 'statements': [ { 'statement': 'CREATE (n {a: 1}) return n', " +
-                                              "'resultDataContents' : ['REST'] } ] }" );
-        Response begin = http.POST( "db/data/transaction/commit", payload );
-
-        assertThat( begin.status(), equalTo( 200 ) );
-        JsonNode results = begin.get( "results" );
-        JsonNode result = results.get( 0 );
-        JsonNode data = result.get( "data" );
-        JsonNode firstDataSegment = data.get( 0 );
-        JsonNode restData = firstDataSegment.get( "rest" );
-        JsonNode firstRestSegment = restData.get( 0 );
-        String propertiesUri = firstRestSegment.get( "properties" ).asText();
-
-        Response propertiesResponse = http.GET( propertiesUri );
-        assertThat( propertiesResponse.status(), is( 200 ) );
-    }
-
-    @Test
     public void begin_and_execute_and_commit_with_badly_escaped_statement()
     {
         long nodesInDatabaseBeforeTransaction = countNodes();

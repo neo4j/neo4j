@@ -35,10 +35,8 @@ import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.rest.dbms.AuthorizedRequestWrapper;
 import org.neo4j.server.rest.repr.RepresentationWriteHandler;
-import org.neo4j.server.rest.web.DatabaseMetadataService;
 import org.neo4j.server.rest.web.ExtensionService;
 import org.neo4j.server.rest.web.HttpConnectionInfoFactory;
-import org.neo4j.server.rest.web.RestfulGraphDatabase;
 import org.neo4j.server.web.JettyHttpConnection;
 
 import static org.neo4j.server.rest.repr.RepresentationWriteHandler.DO_NOTHING;
@@ -67,43 +65,7 @@ public class TransactionalContainerFilter implements ContainerRequestFilter
 
         final Object resource = resourceContext.getResource( resourceInfo.getResourceClass() );
         final GraphDatabaseFacade graph = database.getGraph();
-        if ( resource instanceof RestfulGraphDatabase )
-        {
-            RestfulGraphDatabase restfulGraphDatabase = (RestfulGraphDatabase) resource;
-
-            final Transaction transaction = graph.beginTransaction( KernelTransaction.Type.implicit, loginContext, clientConnection );
-
-            representationWriteHandler = new CommitOnSuccessfulStatusCodeRepresentationWriteHandler( response, transaction );
-            restfulGraphDatabase.getOutputFormat().setRepresentationWriteHandler( representationWriteHandler );
-        }
-        else if ( resource instanceof DatabaseMetadataService )
-        {
-            DatabaseMetadataService databaseMetadataService = (DatabaseMetadataService) resource;
-
-            final Transaction transaction = graph.beginTransaction( KernelTransaction.Type.implicit, loginContext, clientConnection );
-            representationWriteHandler = new RepresentationWriteHandler()
-            {
-                @Override
-                public void onRepresentationStartWriting()
-                {
-                    // do nothing
-                }
-
-                @Override
-                public void onRepresentationWritten()
-                {
-                    // doesn't need to commit
-                }
-
-                @Override
-                public void onRepresentationFinal()
-                {
-                    transaction.close();
-                }
-            };
-            databaseMetadataService.setRepresentationWriteHandler( representationWriteHandler );
-        }
-        else if ( resource instanceof ExtensionService )
+        if ( resource instanceof ExtensionService )
         {
             ExtensionService extensionService = (ExtensionService) resource;
             representationWriteHandler = new RepresentationWriteHandler()

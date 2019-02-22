@@ -30,9 +30,7 @@ import org.neo4j.server.plugins.DefaultPluginManager;
 import org.neo4j.server.plugins.PluginManager;
 import org.neo4j.server.rest.web.CollectUserAgentFilter;
 import org.neo4j.server.rest.web.CorsFilter;
-import org.neo4j.server.rest.web.DatabaseMetadataService;
 import org.neo4j.server.rest.web.ExtensionService;
-import org.neo4j.server.rest.web.RestfulGraphDatabase;
 import org.neo4j.server.rest.web.TransactionalService;
 import org.neo4j.server.web.WebServer;
 import org.neo4j.udc.UsageData;
@@ -81,9 +79,7 @@ public class RESTApiModule implements ServerModule
     private List<Class<?>> getClassNames()
     {
         return asList(
-                RestfulGraphDatabase.class,
                 TransactionalService.class,
-                DatabaseMetadataService.class,
                 ExtensionService.class );
     }
 

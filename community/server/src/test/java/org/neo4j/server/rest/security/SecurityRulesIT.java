@@ -87,7 +87,7 @@ public class SecurityRulesIT extends ExclusiveServerTestBase
         server.start();
         functionalTestHelper = new FunctionalTestHelper( server );
         JaxRsResponse response = gen.get().expectedStatus( 401 ).expectedHeader(
-                "WWW-Authenticate" ).post( functionalTestHelper.nodeUri() ).response();
+                "WWW-Authenticate" ).payload( functionalTestHelper.simpleCypherRequestBody() ).post( functionalTestHelper.cypherURL() ).response();
 
         assertThat( (String) response.getHeaders().getFirst( "WWW-Authenticate" ),
                 containsString( "Basic realm=\"" + PermanentlyFailingSecurityRule.REALM + "\"" ) );
@@ -105,8 +105,12 @@ public class SecurityRulesIT extends ExclusiveServerTestBase
         server.start();
         functionalTestHelper = new FunctionalTestHelper( server );
 
-        JaxRsResponse response = gen.get().expectedStatus( 401 ).expectedHeader(
-                "WWW-Authenticate" ).post( functionalTestHelper.nodeUri() ).response();
+        JaxRsResponse response = gen.get().expectedStatus( 401 )
+                .expectedHeader(
+                "WWW-Authenticate" )
+                .payload( functionalTestHelper.simpleCypherRequestBody() )
+                .post( functionalTestHelper.cypherURL() )
+                .response();
 
         assertThat( (String) response.getHeaders().getFirst( "WWW-Authenticate" ),
                 containsString( "Basic realm=\"" + PermanentlyFailingSecurityRule.REALM + "\"" ) );
@@ -141,8 +145,12 @@ public class SecurityRulesIT extends ExclusiveServerTestBase
         server.start();
         functionalTestHelper = new FunctionalTestHelper( server );
 
-        gen.get().expectedStatus( 201 ).expectedHeader( "Location" ).post(
-                functionalTestHelper.nodeUri() ).response();
+        String responseBody = gen.get().expectedStatus( 200 )
+                .payload( functionalTestHelper.simpleCypherRequestBody() )
+                .post( functionalTestHelper.cypherURL() )
+                .response()
+                .getEntity();
+        functionalTestHelper.verifyCypherResponse( responseBody );
     }
 
     @Test

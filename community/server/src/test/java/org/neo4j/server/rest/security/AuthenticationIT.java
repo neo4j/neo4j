@@ -139,21 +139,6 @@ public class AuthenticationIT extends CommunityServerTestBase
     }
 
     @Test
-    @Documented( "When auth is disabled\n" +
-                 "\n" +
-                 "When auth has been disabled in the configuration, requests can be sent without an +Authorization+ header." )
-    public void auth_disabled() throws IOException
-    {
-        // Given
-        startServer( false );
-
-        // Document
-        gen.get()
-            .expectedStatus( 200 )
-            .get( dataURL() );
-    }
-
-    @Test
     public void shouldSayMalformedHeaderIfMalformedAuthorization() throws Exception
     {
         // Given
@@ -175,10 +160,9 @@ public class AuthenticationIT extends CommunityServerTestBase
         startServerWithConfiguredUser();
 
         // When & then
-        assertAuthorizationRequired( "POST", "db/data/node", RawPayload.quotedJson( "{'name':'jake'}" ), 201 );
-        assertAuthorizationRequired( "GET",  "db/data/node/1234", 404 );
         assertAuthorizationRequired( "POST", "db/data/transaction/commit", RawPayload.quotedJson(
                 "{'statements':[{'statement':'MATCH (n) RETURN n'}]}" ), 200 );
+        assertAuthorizationRequired( "GET",  "db/data/nowhere", 404 );
 
         assertEquals(200, HTTP.GET( server.baseUri().resolve( "" ).toString() ).status() );
     }
@@ -190,11 +174,9 @@ public class AuthenticationIT extends CommunityServerTestBase
         startServer( false );
 
         // When & then
-        assertEquals( 201, HTTP.POST( server.baseUri().resolve( "db/data/node" ).toString(),
-                RawPayload.quotedJson( "{'name':'jake'}" ) ).status() );
-        assertEquals( 404, HTTP.GET( server.baseUri().resolve( "db/data/node/1234" ).toString() ).status() );
         assertEquals( 200, HTTP.POST( server.baseUri().resolve( "db/data/transaction/commit" ).toString(),
                 RawPayload.quotedJson( "{'statements':[{'statement':'MATCH (n) RETURN n'}]}" ) ).status() );
+        assertEquals( 404, HTTP.GET( server.baseUri().resolve( "db/data/nowhere" ).toString() ).status() );
     }
 
     @Test

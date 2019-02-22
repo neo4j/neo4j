@@ -41,6 +41,7 @@ import org.neo4j.test.server.HTTP;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
+import static org.neo4j.test.server.HTTP.RawPayload.rawPayload;
 
 public class UsersIT extends ExclusiveServerTestBase
 {
@@ -112,10 +113,10 @@ public class UsersIT extends ExclusiveServerTestBase
                 .post( server.baseUri().resolve( "/user/neo4j/password" ).toString() );
 
         // Then the new password should work
-        assertEquals( 200, HTTP.withBasicAuth( "neo4j", "secret" ).GET( dataURL() ).status() );
+        assertEquals( 200, HTTP.withBasicAuth( "neo4j", "secret" ).POST( cypherURL(), simpleCypherRequestBody() ).status() );
 
-        // Then the old password should not be invalid
-        assertEquals( 401, HTTP.withBasicAuth( "neo4j", "neo4j" ).POST( dataURL() ).status() );
+        // Then the old password should be invalid
+        assertEquals( 401, HTTP.withBasicAuth( "neo4j", "neo4j" ).POST( cypherURL(), simpleCypherRequestBody() ).status() );
     }
 
     @Test
@@ -161,9 +162,14 @@ public class UsersIT extends ExclusiveServerTestBase
         assertEquals( 200, post.status() );
     }
 
-    private String dataURL()
+    private String cypherURL()
     {
-        return server.baseUri().resolve( "db/data/" ).toString();
+        return server.baseUri().resolve( "db/data/transaction/commit" ).toString();
+    }
+
+    private HTTP.RawPayload simpleCypherRequestBody()
+    {
+        return rawPayload( "{\"statements\": [{\"statement\": \"MATCH (n:MyLabel) RETURN n\"}]}" );
     }
 
     private String userURL( String username )
