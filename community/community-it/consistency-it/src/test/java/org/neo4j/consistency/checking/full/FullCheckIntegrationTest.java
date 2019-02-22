@@ -281,7 +281,7 @@ public class FullCheckIntegrationTest
         }
     };
 
-    private final SuppressOutput suppressOutput = SuppressOutput.suppress( SuppressOutput.System.out );
+    private final SuppressOutput suppressOutput = SuppressOutput.suppressAll();
 
     @Rule
     public RuleChain ruleChain = RuleChain.outerRule( suppressOutput ).around( fixture );

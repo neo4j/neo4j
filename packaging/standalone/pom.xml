@@ -93,7 +93,7 @@
                 <artifactId>licensing-maven-plugin</artifactId>
                 <configuration>
                     <prependText>licensing/notice-agpl-prefix.txt</prependText>
-                    <excludedGroups>^((org.neo4j){1}|(org.neo4j.app){1}|(org.neo4j.server.plugin){1}|(org.neo4j.assembly){1})$</excludedGroups>
+                    <excludedGroups>^((org.neo4j){1}|(org.neo4j.community){1}|(org.neo4j.app){1}|(org.neo4j.server.plugin){1}|(org.neo4j.assembly){1})$</excludedGroups>
                 </configuration>
                 <executions>
                     <execution>
