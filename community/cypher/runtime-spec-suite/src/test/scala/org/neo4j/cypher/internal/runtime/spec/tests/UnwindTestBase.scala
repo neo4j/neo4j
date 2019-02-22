@@ -56,7 +56,7 @@ abstract class UnwindTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    runtimeResult should beColumns("i").withRow("lalala")
+    runtimeResult should beColumns("i").withSingleRow("lalala")
   }
 
   test("should produce no rows if expression is null") {

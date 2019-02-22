@@ -129,9 +129,6 @@ trait AstConstructionTestSupport extends CypherTestSupport {
   def id(expression: Expression): FunctionInvocation =
     FunctionInvocation(expression, FunctionName(Id.name)(pos))
 
-  def toString(expression: Expression): FunctionInvocation =
-    FunctionInvocation(expression, FunctionName(ToString.name)(pos))
-
   def not(expression: Expression): Not = Not(expression)(pos)
 
   def equals(lhs: Expression, rhs: Expression): Equals = Equals(lhs, rhs)(pos)

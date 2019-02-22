@@ -48,7 +48,7 @@ abstract class NodeIndexContainsScanTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val expected = List.fill(sizeHint / 2)("case")
-    runtimeResult should beColumns("text").withRows(singleRow(expected))
+    runtimeResult should beColumns("text").withRows(singleColumn(expected))
   }
 
   test("should be case sensitive for CONTAINS with unique indexes") {
@@ -70,7 +70,7 @@ abstract class NodeIndexContainsScanTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val expected = (1 to sizeHint by 2).map(i => s"case$i")
-    runtimeResult should beColumns("text").withRows(singleRow(expected))
+    runtimeResult should beColumns("text").withRows(singleColumn(expected))
   }
 
   test("should cache properties") {
