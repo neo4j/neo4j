@@ -224,7 +224,11 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
                 proc( "db.stats.stop", "(section :: STRING?) :: (section :: STRING?, success :: BOOLEAN?, message :: STRING?)",
                       "Stop data collection of a given data section. Valid sections are 'QUERIES'", "READ" ),
                 proc( "db.stats.clear", "(section :: STRING?) :: (section :: STRING?, success :: BOOLEAN?, message :: STRING?)",
-                      "Clear collected data of a given data section. Valid sections are 'QUERIES'", "READ" )
+                        "Clear collected data of a given data section. Valid sections are 'QUERIES'", "READ" ),
+                proc( "dbms.routing.getRoutingTable", "(context :: MAP?) :: (ttl :: INTEGER?, servers :: LIST? OF MAP?)",
+                        "Returns endpoints of this instance.", "READ" ),
+                proc( "dbms.cluster.routing.getRoutingTable", "(context :: MAP?) :: (ttl :: INTEGER?, servers :: LIST? OF MAP?)",
+                        "Returns endpoints of this instance.", "READ" )
         ) );
         commit();
     }

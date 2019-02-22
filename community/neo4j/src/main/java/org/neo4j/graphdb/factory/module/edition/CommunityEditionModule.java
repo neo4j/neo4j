@@ -26,6 +26,7 @@ import java.util.function.Supplier;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.configuration.connectors.ConnectorPortRegister;
 import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.exceptions.KernelException;
@@ -38,6 +39,7 @@ import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.security.SecurityModule;
 import org.neo4j.kernel.api.security.provider.NoAuthSecurityProvider;
+import org.neo4j.kernel.builtinprocs.routing.CommunityRoutingProcedureInstaller;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
@@ -81,8 +83,14 @@ public class CommunityEditionModule extends DefaultEditionModule
 {
     public static final String COMMUNITY_SECURITY_MODULE_ID = "community-security-module";
 
+    private final Config config;
+    private final ConnectorPortRegister portRegister;
+
     public CommunityEditionModule( GlobalModule globalModule )
     {
+        this.config = globalModule.getGlobalConfig();
+        this.portRegister = globalModule.getConnectorPortRegister();
+
         Dependencies globalDependencies = globalModule.getGlobalDependencies();
         Config globalConfig = globalModule.getGlobalConfig();
         LogService logService = globalModule.getLogService();
@@ -225,7 +233,8 @@ public class CommunityEditionModule extends DefaultEditionModule
     @Override
     public void registerEditionSpecificProcedures( GlobalProcedures globalProcedures ) throws KernelException
     {
-        // Community does not add any extra procedures
+        CommunityRoutingProcedureInstaller routingProcedureInstaller = new CommunityRoutingProcedureInstaller( portRegister, config );
+        routingProcedureInstaller.install( globalProcedures );
     }
 
     @Override

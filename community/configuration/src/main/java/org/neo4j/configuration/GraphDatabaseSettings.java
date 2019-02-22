@@ -952,6 +952,10 @@ public class GraphDatabaseSettings implements LoadableConfig
     public static final Setting<Duration> bookmark_ready_timeout = buildSetting(
             "dbms.transaction.bookmark_ready_timeout", DURATION, "30s" ).constraint( min( Duration.ofSeconds( 1 ) ) ).build();
 
+    @Description( "How long callers should cache the response of the routing procedure `dbms.routing.getRoutingTable()`" )
+    public static final Setting<Duration> routing_ttl = buildSetting(
+            "dbms.routing_ttl", DURATION, "300s" ).constraint( min( Duration.ofSeconds( 1 ) ) ).build();
+
     public enum TransactionStateMemoryAllocation
     {
         ON_HEAP,
