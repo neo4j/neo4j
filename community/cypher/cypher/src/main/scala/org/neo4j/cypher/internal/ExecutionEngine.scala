@@ -34,8 +34,7 @@ import org.neo4j.graphdb.Result
 import org.neo4j.helpers.collection.Pair
 import org.neo4j.internal.kernel.api.security.AccessMode
 import org.neo4j.kernel.GraphDatabaseQueryService
-import org.neo4j.kernel.impl.query.{FunctionInformation, TransactionalContext}
-import org.neo4j.kernel.impl.query.{QueryExecution, QuerySubscriber, TransactionalContext}
+import org.neo4j.kernel.impl.query.{FunctionInformation, QueryExecution, QuerySubscriber, TransactionalContext}
 import org.neo4j.kernel.monitoring.Monitors
 import org.neo4j.logging.LogProvider
 import org.neo4j.values.virtual.MapValue
@@ -93,6 +92,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
   def profile(query: String, params: MapValue, context: TransactionalContext): Result =
     execute(query, params, context, profile = true)
 
+  /**@deprecated The translation to [[Result]] should happen further up the stack.*/
   @deprecated
   def execute(query: String,
               params: MapValue,
@@ -118,6 +118,17 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
     } finally queryTracer.close()
   }
 
+  /**
+    * Executes query returns a `QueryExecution` that can be used to control demand to the provided `QuerySubscriber`
+    *
+    * @param query the query to execute
+    * @param params the parameters of the query
+    * @param context the context in which to run the query
+    * @param profile if `true` run with profiling enabled
+    * @param prePopulate if `true` pre populate all results
+    * @param subscriber the subscriber where results will be streamed
+    * @return a `QueryExecution` that controls the demand to the subscriber
+    */
   def execute(query: String,
               params: MapValue,
               context: TransactionalContext,

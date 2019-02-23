@@ -81,8 +81,6 @@ trait InternalExecutionResult extends QueryResult with QueryExecution {
   def close(reason: CloseReason): Unit
 
   override def close(): Unit = close(Success)
-
-
 }
 
 sealed trait CloseReason

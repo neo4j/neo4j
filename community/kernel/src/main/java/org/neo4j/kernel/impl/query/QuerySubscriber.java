@@ -44,12 +44,12 @@ import org.neo4j.values.AnyValue;
  *     onResultCompleted(stats)
  * </pre>
  * <p>
- * Or if some error occur along the way we will have a call to onError.
+ * Or if some error occurs along the way we will have a call to onError.
  */
 public interface QuerySubscriber
 {
     /**
-     * Called at the beginning of a stream, guaranteed to be call exactly once.
+     * Called at the beginning of a stream, guaranteed to be called exactly once.
      *
      * @param numberOfFields the number of fields each record of the stream will contain
      */
@@ -63,9 +63,8 @@ public interface QuerySubscriber
     /**
      * Writes the field at a particular offset.
      * <p>
-     * The offset is guaranteed to be called for all values smaller than the argument provided to {@link
-     * #onRecordCompleted()}
-     * if no errors occur.
+     * This method is guaranteed to be called exactly <tt>numberOfFields</tt> times with distinct offsets in [0, <tt>numberOfFields</tt> -1],
+     * where <tt>numberOfFields</tt> is the argument provided in {@link #onResult(int)} ()}
      *
      * @param offset the offset of the field
      * @param value the value of the field

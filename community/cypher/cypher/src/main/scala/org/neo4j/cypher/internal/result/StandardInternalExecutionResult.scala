@@ -259,7 +259,6 @@ class StandardInternalExecutionResult(context: QueryContext,
   }
 
   override def notifications: Iterable[Notification] = Set.empty
-
 }
 
 
