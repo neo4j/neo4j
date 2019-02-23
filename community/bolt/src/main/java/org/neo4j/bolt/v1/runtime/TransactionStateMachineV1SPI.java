@@ -19,6 +19,7 @@
  */
 package org.neo4j.bolt.v1.runtime;
 
+import java.io.IOException;
 import java.time.Clock;
 import java.time.Duration;
 import java.util.Map;
@@ -31,6 +32,7 @@ import org.neo4j.bolt.runtime.BoltResultHandle;
 import org.neo4j.bolt.runtime.TransactionStateMachineSPI;
 import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.exceptions.KernelException;
+import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.graphdb.QueryStatistics;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
@@ -232,14 +234,15 @@ public class TransactionStateMachineV1SPI implements TransactionStateMachineSPI
 
     public static class BoltAdapterSubscriber implements QuerySubscriber
     {
-        private BoltResult.Subscriber subscriber;
+        private ThrowingConsumer<AnyValue[],IOException> recordConsumer;
         private Throwable error;
         private QueryStatistics statistics;
+        private AnyValue[] values;
 
         @Override
         public void onResult( int numberOfFields )
         {
-            subscriber.onStart( numberOfFields );
+            this.values = new AnyValue[numberOfFields];
         }
 
         @Override
@@ -251,13 +254,13 @@ public class TransactionStateMachineV1SPI implements TransactionStateMachineSPI
         @Override
         public void onField( int offset, AnyValue value )
         {
-            subscriber.onField( offset, value );
+           values[offset] = value;
         }
 
         @Override
         public void onRecordCompleted() throws Exception
         {
-            subscriber.onCompleted();
+            recordConsumer.accept(values);
         }
 
         @Override
@@ -277,9 +280,9 @@ public class TransactionStateMachineV1SPI implements TransactionStateMachineSPI
             return statistics;
         }
 
-        public void setSubscriber( BoltResult.Subscriber subscriber )
+        public void setRecordConsumer( ThrowingConsumer<AnyValue[],IOException> recordConsumer )
         {
-            this.subscriber = subscriber;
+            this.recordConsumer = recordConsumer;
         }
     }
 }

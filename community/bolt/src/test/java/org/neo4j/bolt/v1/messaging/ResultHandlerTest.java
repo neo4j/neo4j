@@ -96,21 +96,16 @@ class ResultHandlerTest
         }
 
         @Override
-        public boolean handleRecords( Subscriber subscriber, long size ) throws Exception
+        public boolean handleRecords( RecordConsumer recordConsumer, long size ) throws Exception
         {
             if ( records.isEmpty() )
             {
                 return false;
             }
 
-            subscriber.onStart( records.get( 0 ).length );
             for ( AnyValue[] record : records )
             {
-                for ( int i = 0; i < record.length; i++ )
-                {
-                    subscriber.onField( i, record[i] );
-                }
-                subscriber.onCompleted();
+                recordConsumer.accept( record );
             }
             return false;
         }

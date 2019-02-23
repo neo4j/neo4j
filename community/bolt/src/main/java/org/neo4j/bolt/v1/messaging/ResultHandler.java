@@ -40,50 +40,42 @@ public class ResultHandler extends MessageProcessingHandler
     public boolean onPullRecords( final BoltResult result, final long size ) throws Exception
     {
         return markHasMore(
-                result.handleRecords( new RecordWritingBoltResultSubscriber( ), size ) );
+                result.handleRecords( new RecordWritingBoltResultRecordConsumer( ), size ) );
     }
 
     @Override
     public boolean onDiscardRecords( BoltResult result, long size ) throws Exception
     {
-        return markHasMore( result.handleRecords( new RecordDiscardingBoltResultSubscriber(), size ) );
+        return markHasMore( result.handleRecords( new RecordDiscardingBoltResultRecordConsumer(), size ) );
     }
 
-    private class RecordWritingBoltResultSubscriber implements BoltResult.Subscriber
+    private class RecordWritingBoltResultRecordConsumer implements BoltResult.RecordConsumer
     {
-        private AnyValue[] values;
+        @Override
+        public void addMetadata( String key, AnyValue value )
+        {
+            onMetadata( key, value );
+        }
 
         @Override
-        public void onCompleted() throws IOException
+        public void accept( AnyValue[] values ) throws IOException
         {
             messageWriter.write( new RecordMessage( values ) );
         }
-
-        @Override
-        public void onStart( int numberOfFields )
-        {
-            values = new AnyValue[numberOfFields];
-        }
-
-        @Override
-        public void onField( int offset, AnyValue value )
-        {
-            values[offset] = value;
-        }
-
-        @Override
-        public void addMetadata( String key, AnyValue value )
-        {
-            onMetadata( key, value );
-        }
     }
 
-    private class RecordDiscardingBoltResultSubscriber extends BoltResult.BaseSubscriber
+    private class RecordDiscardingBoltResultRecordConsumer implements BoltResult.RecordConsumer
     {
         @Override
         public void addMetadata( String key, AnyValue value )
         {
             onMetadata( key, value );
+        }
+
+        @Override
+        public void accept( AnyValue[] anyValues )
+        {
+            //discard
         }
     }
 

@@ -19,6 +19,9 @@
  */
 package org.neo4j.bolt.runtime;
 
+import java.io.IOException;
+
+import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.values.AnyValue;
 
 /**
@@ -32,44 +35,18 @@ public interface BoltResult extends AutoCloseable
     /** Positional names for all fields in every record of this stream. */
     String[] fieldNames();
 
-    boolean handleRecords( Subscriber subscriber, long size ) throws Exception;
+    boolean handleRecords( RecordConsumer recordConsumer, long size ) throws Exception;
 
     @Override
     void close();
 
-    interface Subscriber
+    interface RecordConsumer extends ThrowingConsumer<AnyValue[],IOException>
     {
-        void onStart( int numberOfFields );
-        void onField( int offset, AnyValue value );
-        void onCompleted() throws Exception;
-
         /**
          * Associate arbitrary metadata with the result stream. This will get transferred at the end of the stream.
          * Please stick to Neo4j type system types (Map, List, Integer, Float, Boolean, String etc)
          */
         void addMetadata( String key, AnyValue value );
-    }
-
-    abstract class BaseSubscriber implements Subscriber
-    {
-
-        @Override
-        public void onStart( int numberOfFields )
-        {
-
-        }
-
-        @Override
-        public void onField( int offset, AnyValue value )
-        {
-
-        }
-
-        @Override
-        public void onCompleted()
-        {
-
-        }
     }
 
     BoltResult EMPTY = new BoltResult()
@@ -88,7 +65,7 @@ public interface BoltResult extends AutoCloseable
         }
 
         @Override
-        public boolean handleRecords( Subscriber subscriber, long size )
+        public boolean handleRecords( RecordConsumer recordConsumer, long size )
         {
             return false;
         }

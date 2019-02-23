@@ -55,7 +55,7 @@ public class BoltResponseRecorder implements BoltResponseHandler
     @Override
     public boolean onPullRecords( BoltResult result, long size ) throws Exception
     {
-        return hasMore( result.handleRecords( new RecordingBoltResultSubscriber( ), size ) );
+        return hasMore( result.handleRecords( new RecordingBoltResultRecordConsumer( ), size ) );
     }
 
     @Override
@@ -116,36 +116,27 @@ public class BoltResponseRecorder implements BoltResponseHandler
         return hasMore;
     }
 
-    private class DiscardingBoltResultVisitor extends BoltResult.BaseSubscriber
+    private class DiscardingBoltResultVisitor implements BoltResult.RecordConsumer
     {
         @Override
         public void addMetadata( String key, AnyValue value )
         {
             currentResponse.addMetadata( key, value );
         }
+
+        @Override
+        public void accept( AnyValue[] anyValues )
+        {
+            //discard the result
+        }
     }
 
-    private class RecordingBoltResultSubscriber extends BoltResult.BaseSubscriber
+    private class RecordingBoltResultRecordConsumer implements BoltResult.RecordConsumer
     {
-
-        private AnyValue[] fields;
-
         @Override
-        public void onStart( int numberOfFields )
+        public void accept( AnyValue[] anyValues )
         {
-            fields = new AnyValue[numberOfFields];
-        }
-
-        @Override
-        public void onField( int offset, AnyValue value )
-        {
-            fields[offset] = value;
-        }
-
-        @Override
-        public void onCompleted()
-        {
-            currentResponse.addFields( fields.clone() );
+            currentResponse.addFields(  anyValues.clone() );
         }
 
         @Override
