@@ -38,6 +38,7 @@ trait ExecutableQuery extends CacheabilityInfo {
     * @param params the parameters
     * @param prePopulateResults if false, nodes and relationships might be returned as references in the results
     * @return the query result
+    * @deprecated This method will be removed and the conversion to `Result` will happen further up the stack
     */
   @deprecated
   def execute(transactionalContext: TransactionalContext,
@@ -45,6 +46,16 @@ trait ExecutableQuery extends CacheabilityInfo {
               params: MapValue,
               prePopulateResults: Boolean): Result
 
+  /**
+    * Execute this executable query.
+    *
+    * @param transactionalContext the transaction in which to execute
+    * @param preParsedQuery       the preparsed query to execute
+    * @param params               the parameters
+    * @param prePopulateResults   if false, nodes and relationships might be returned as references in the results
+    * @param subscriber           The subscriber where results should be streamed to.
+    * @return the QueryExecution that controls the demand to the subscriber
+    */
   def execute(transactionalContext: TransactionalContext,
               preParsedQuery: PreParsedQuery,
               params: MapValue,
