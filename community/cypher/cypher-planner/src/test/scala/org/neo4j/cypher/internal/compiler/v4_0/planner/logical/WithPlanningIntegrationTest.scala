@@ -189,7 +189,7 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       Limit(
         VarExpand(
           AllNodesScan("a", Set()),
-          "a", OUTGOING, OUTGOING, List(), "b", "r", VarPatternLength(1, None), ExpandAll, "r_NODES", "r_RELS", trueLiteral, trueLiteral, Seq()
+          "a", OUTGOING, OUTGOING, List(), "b", "r", VarPatternLength(1, None), ExpandAll, varFor("r_NODES"), varFor("r_RELS"), trueLiteral, trueLiteral, Seq()
         ),
         literalInt(1), DoNotIncludeTies
       ),

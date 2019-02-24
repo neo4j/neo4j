@@ -41,7 +41,7 @@ class UnnestOptionalTest extends CypherFunSuite with LogicalPlanningTestSupport 
 
   test("should not rewrite Apply/Optional/Selection/Expand to OptionalExpand when expansion is variable length") {
     val argument: LogicalPlan = Argument(Set("a"))
-    val expand = VarExpand(argument, "a", SemanticDirection.OUTGOING, SemanticDirection.OUTGOING, Seq.empty, "b", "r", VarPatternLength(1, None), ExpandAll, "tempNode", "tempEdge", trueLiteral, trueLiteral, Seq.empty)
+    val expand = VarExpand(argument, "a", SemanticDirection.OUTGOING, SemanticDirection.OUTGOING, Seq.empty, "b", "r", VarPatternLength(1, None), ExpandAll, varFor("tempNode"), varFor("tempEdge"), trueLiteral, trueLiteral, Seq.empty)
     val predicate = propEquality("b", "prop", 1)
     val selection = Selection(Seq(predicate), expand)
     val rhs: LogicalPlan = Optional(selection)

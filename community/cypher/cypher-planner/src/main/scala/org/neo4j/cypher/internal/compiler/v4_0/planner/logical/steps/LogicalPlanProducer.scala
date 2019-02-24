@@ -156,20 +156,20 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
         .addPredicates(solvedPredicates: _*)
       )
       annotate(VarExpand(
-        source = source,
-        from = from,
-        dir = dir,
-        projectedDir = projectedDir,
-        types = pattern.types,
-        to = to,
-        relName = pattern.name,
-        length = l,
-        mode = mode,
-        tempNode = temporaryNode,
-        tempRelationship = temporaryRelationship,
-        nodePredicate = nodePredicate,
-        relationshipPredicate = relationshipPredicate,
-        legacyPredicates = legacyPredicates), solved, providedOrders.get(source.id), context)
+              source = source,
+              from = from,
+              dir = dir,
+              projectedDir = projectedDir,
+              types = pattern.types,
+              to = to,
+              relName = pattern.name,
+              length = l,
+              mode = mode,
+              tempNode = Variable(temporaryNode)(InputPosition.NONE),
+              tempRelationship = Variable(temporaryRelationship)(InputPosition.NONE),
+              nodePredicate = nodePredicate,
+              relationshipPredicate = relationshipPredicate,
+              legacyPredicates = legacyPredicates), solved, providedOrders.get(source.id), context)
 
     case _ => throw new InternalException("Expected a varlength path to be here")
   }
