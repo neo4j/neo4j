@@ -174,6 +174,14 @@ public class ConsistencyCheckService
         }
     }
 
+    public Result runFullConsistencyCheck( DatabaseLayout databaseLayout, Config config, ProgressMonitorFactory progressFactory, LogProvider logProvider,
+            FileSystemAbstraction fileSystem, PageCache pageCache, boolean verbose, ConsistencyFlags consistencyFlags )
+            throws ConsistencyCheckIncompleteException
+    {
+        return runFullConsistencyCheck( databaseLayout, config, progressFactory, logProvider, fileSystem, pageCache, verbose,
+                defaultReportDir( config, databaseLayout.databaseDirectory() ), consistencyFlags );
+    }
+
     public Result runFullConsistencyCheck( DatabaseLayout databaseLayout, Config config,
             ProgressMonitorFactory progressFactory, final LogProvider logProvider, final FileSystemAbstraction fileSystem, final PageCache pageCache,
             final boolean verbose, File reportDir, ConsistencyFlags consistencyFlags ) throws ConsistencyCheckIncompleteException
