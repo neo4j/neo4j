@@ -81,11 +81,8 @@ case class VarExpand(source: LogicalPlan,
                      relName: String,
                      length: VarPatternLength,
                      mode: ExpansionMode = ExpandAll,
-                     tempNode: LogicalVariable,
-                     tempRelationship: LogicalVariable,
-                     nodePredicate: Expression,
-                     relationshipPredicate: Expression,
-                     legacyPredicates: Seq[(LogicalVariable, Expression)])
+                     nodePredicate: Option[VariablePredicate] = None,
+                     relationshipPredicate: Option[VariablePredicate] = None)
                     (implicit idGen: IdGen) extends LogicalPlan(idGen) with LazyLogicalPlan {
   override val lhs = Some(source)
   override def rhs = None
@@ -108,7 +105,8 @@ case class PruningVarExpand(source: LogicalPlan,
                             to: String,
                             minLength: Int,
                             maxLength: Int,
-                            predicates: Seq[(LogicalVariable, Expression)] = Seq.empty)
+                            nodePredicate: Option[VariablePredicate] = None,
+                            edgePredicate: Option[VariablePredicate] = None)
                            (implicit idGen: IdGen)
   extends LogicalPlan(idGen) with LazyLogicalPlan {
 
@@ -129,3 +127,5 @@ case object ExpandAll extends ExpansionMode
   * Expand relationships (a)-[r]-(b) for a given a and b, and populate r
   */
 case object ExpandInto extends ExpansionMode
+
+case class VariablePredicate(variable: LogicalVariable, predicate: Expression)

@@ -34,14 +34,12 @@ trait VarLengthPredicate {
 }
 
 object VarLengthPredicate {
-
   val NONE: VarLengthPredicate = new VarLengthPredicate {
-
     override def filterNode(row: ExecutionContext, state:QueryState)(node: NodeValue): Boolean = true
-
     override def filterRelationship(row: ExecutionContext, state:QueryState)(rel: RelationshipValue): Boolean = true
   }
 }
+
 case class VarLengthExpandPipe(source: Pipe,
                                fromName: String,
                                relName: String,
@@ -52,7 +50,7 @@ case class VarLengthExpandPipe(source: Pipe,
                                min: Int,
                                max: Option[Int],
                                nodeInScope: Boolean,
-                               filteringStep: VarLengthPredicate= VarLengthPredicate.NONE)
+                               filteringStep: VarLengthPredicate = VarLengthPredicate.NONE)
                               (val id: Id = Id.INVALID_ID) extends PipeWithSource(source) {
   private def varLengthExpand(node: NodeValue, state: QueryState, maxDepth: Option[Int],
                               row: ExecutionContext): Iterator[(NodeValue, RelationshipContainer)] = {

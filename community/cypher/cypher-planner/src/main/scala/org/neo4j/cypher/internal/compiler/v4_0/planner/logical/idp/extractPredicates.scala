@@ -25,9 +25,8 @@ import org.neo4j.cypher.internal.v4_0.util.{Rewriter, bottomUp}
 object extractPredicates {
 
   // Using type predicates to make this more readable.
-  type NodePredicates = List[Expression] // for slotted runtime
-  type RelationshipPredicates = List[Expression] // for slotted runtime
-  type LegacyPredicates = List[(LogicalVariable, Expression)] // for interpreted runtime
+  type NodePredicates = List[Expression]
+  type EdgePredicates = List[Expression]
   type SolvedPredicates = List[Expression] // for marking predicates as solved
 
   def apply(availablePredicates: Seq[Expression],
@@ -35,7 +34,7 @@ object extractPredicates {
             tempRelationship: String,
             tempNode: String,
             originalNodeName: String)
-    : (NodePredicates, RelationshipPredicates, LegacyPredicates, SolvedPredicates) = {
+    : (NodePredicates, EdgePredicates, SolvedPredicates) = {
 
     /*
     We extract predicates that we can evaluate eagerly during the traversal, which allows us to abort traversing
@@ -44,8 +43,8 @@ object extractPredicates {
 
     During the folding, we also accumulate the original predicate, which we can mark as solved by this plan.
      */
-    val seed: (NodePredicates, RelationshipPredicates, LegacyPredicates, SolvedPredicates) =
-      (List.empty, List.empty, List.empty, List.empty)
+    val seed: (NodePredicates, EdgePredicates, SolvedPredicates) =
+      (List.empty, List.empty, List.empty)
 
     /**
       * Checks if an inner predicate depends on the path (i.e. the original start node or relationship). In that case
@@ -63,42 +62,40 @@ object extractPredicates {
 
       //MATCH ()-[r* {prop:1337}]->()
       case (
-          (n, e, l, s),
+          (n, e, s),
           p @ AllRelationships(variable, `originalRelationshipName`, innerPredicate)) =>
         val rewrittenPredicate = innerPredicate.endoRewrite(replaceVariable(variable, tempRelationship))
-        (n, e :+ rewrittenPredicate, l :+ (variable -> innerPredicate), s :+ p)
+        (n, e :+ rewrittenPredicate, s :+ p)
 
       //MATCH p = (a)-[x*]->(b) WHERE ALL(r in rels(p) WHERE r.prop > 5)
-      case ((n, e, l, s),
+      case ((n, e, s),
             p @ AllRelationshipsInPath(`originalNodeName`, `originalRelationshipName`, variable, innerPredicate))
             if !pathDependent(innerPredicate) =>
         val rewrittenPredicate = innerPredicate.endoRewrite(replaceVariable(variable, tempRelationship))
-        (n, e :+ rewrittenPredicate, l :+ (variable -> innerPredicate), s :+ p)
+        (n, e :+ rewrittenPredicate, s :+ p)
 
       //MATCH p = ()-[*]->() WHERE NONE(r in rels(p) WHERE <innerPredicate>)
-      case ((n, e, l, s),
+      case ((n, e, s),
             p @ NoRelationshipInPath(`originalNodeName`, `originalRelationshipName`, variable, innerPredicate))
             if !pathDependent(innerPredicate) =>
         val rewrittenPredicate = innerPredicate.endoRewrite(replaceVariable(variable, tempRelationship))
-        val negatedLegacyPredicate = Not(innerPredicate)(innerPredicate.position)
         val negatedPredicate = Not(rewrittenPredicate)(innerPredicate.position)
-        (n, e :+ negatedPredicate, l :+ (variable -> negatedLegacyPredicate), s :+ p)
+        (n, e :+ negatedPredicate, s :+ p)
 
       //MATCH p = ()-[*]->() WHERE ALL(r in nodes(p) WHERE <innerPredicate>)
-      case ((n, e, l, s),
+      case ((n, e, s),
             p @ AllNodesInPath(`originalNodeName`, `originalRelationshipName`, variable, innerPredicate))
             if !pathDependent(innerPredicate) =>
         val rewrittenPredicate = innerPredicate.endoRewrite(replaceVariable(variable, tempNode))
-        (n :+ rewrittenPredicate, e, l :+ (variable -> innerPredicate), s :+ p)
+        (n :+ rewrittenPredicate, e, s :+ p)
 
       //MATCH p = ()-[*]->() WHERE NONE(r in nodes(p) WHERE <innerPredicate>)
-      case ((n, e, l, s),
+      case ((n, e, s),
             p @ NoNodeInPath(`originalNodeName`, `originalRelationshipName`, variable, innerPredicate))
             if !pathDependent(innerPredicate) =>
         val rewrittenPredicate = innerPredicate.endoRewrite(replaceVariable(variable, tempNode))
-        val negatedLegacyPredicate = Not(innerPredicate)(innerPredicate.position)
         val negatedPredicate = Not(rewrittenPredicate)(innerPredicate.position)
-        (n :+ negatedPredicate, e, l :+ (variable -> negatedLegacyPredicate), s :+ p)
+        (n :+ negatedPredicate, e, s :+ p)
 
       case (acc, _) =>
         acc

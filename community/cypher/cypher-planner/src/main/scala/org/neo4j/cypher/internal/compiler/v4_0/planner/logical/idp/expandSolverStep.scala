@@ -24,6 +24,9 @@ import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.LogicalPlanningCo
 import org.neo4j.cypher.internal.ir.v4_0._
 import org.neo4j.cypher.internal.v4_0.expressions.{Expression, LogicalVariable}
 import org.neo4j.cypher.internal.v4_0.logical.plans.{ExpandAll, ExpandInto, LogicalPlan}
+import org.neo4j.cypher.internal.v4_0.expressions.{Ands, Expression, Variable}
+import org.neo4j.cypher.internal.v4_0.logical.plans.{ExpandAll, ExpandInto, LogicalPlan, VariablePredicate}
+import org.neo4j.cypher.internal.v4_0.util.InputPosition
 
 case class expandSolverStep(qg: QueryGraph) extends IDPSolverStep[PatternRelationship, InterestingOrder, LogicalPlan, LogicalPlanningContext] {
 
@@ -92,15 +95,13 @@ object expandSolverStep {
           qg.selections.predicatesGiven(availableSymbols + patternRel.name + otherSide)
         val tempNode = patternRel.name + "_NODES"
         val tempRelationship = patternRel.name + "_RELS"
-        val (nodePredicates: Seq[Expression], relationshipPredicates: Seq[Expression], legacyPredicates: Seq[(LogicalVariable,Expression)], solvedPredicates: Seq[Expression]) =
+        val (nodePredicates: Seq[Expression], relationshipPredicates: Seq[Expression], solvedPredicates: Seq[Expression]) =
           extractPredicates(
             availablePredicates,
             originalRelationshipName = patternRel.name,
             tempRelationship = tempRelationship,
             tempNode = tempNode,
             originalNodeName = nodeId)
-        val nodePredicate = PredicateHelper.coercePredicates(nodePredicates)
-        val relationshipPredicate = PredicateHelper.coercePredicates(relationshipPredicates)
 
         context.logicalPlanProducer.planVarExpand(
           source = sourcePlan,
@@ -108,14 +109,18 @@ object expandSolverStep {
           dir = dir,
           to = otherSide,
           pattern = patternRel,
-          temporaryNode = tempNode,
-          temporaryRelationship = tempRelationship,
-          relationshipPredicate = relationshipPredicate,
-          nodePredicate = nodePredicate,
+          nodePredicate = variablePredicate(tempNode, nodePredicates),
+          relationshipPredicate = variablePredicate(tempRelationship, relationshipPredicates),
           solvedPredicates = solvedPredicates,
           mode = mode,
-          legacyPredicates = legacyPredicates,
           context = context)
     }
   }
+
+  private def variablePredicate(tempVariableName: String, predicates: Seq[Expression]): Option[VariablePredicate] =
+    if (predicates.isEmpty)
+      None
+    else
+      Some(VariablePredicate(Variable(tempVariableName)(InputPosition.NONE), Ands.create(predicates.toSet)))
+
 }

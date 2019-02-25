@@ -155,8 +155,9 @@ case class InterpretedPipeMapper(readOnly: Boolean,
                      relName,
                      VarPatternLength(min, max),
                      expansionMode,
-                     _, _, _, _, predicates) =>
-        val predicate = varLengthPredicate(id, predicates)
+                     nodePredicate,
+                     edgePredicate) =>
+        val predicate = varLengthPredicate(id, nodePredicate, edgePredicate)
 
         val nodeInScope = expansionMode match {
           case ExpandAll => false
@@ -169,8 +170,16 @@ case class InterpretedPipeMapper(readOnly: Boolean,
       case Optional(inner, protectedSymbols) =>
         OptionalPipe(inner.availableSymbols -- protectedSymbols, source)(id = id)
 
-      case PruningVarExpand(_, from, dir, types, toName, minLength, maxLength, predicates) =>
-        val predicate = varLengthPredicate(id, predicates)
+      case PruningVarExpand(_,
+                            from,
+                            dir,
+                            types,
+                            toName,
+                            minLength,
+                            maxLength,
+                            nodePredicate,
+                            edgePredicate) =>
+        val predicate = varLengthPredicate(id, nodePredicate, edgePredicate)
         PruningVarLengthExpandPipe(source, from, toName, LazyTypes(types.toArray), dir, minLength, maxLength, predicate)(id = id)
 
       case Sort(_, sortItems) =>
@@ -360,29 +369,28 @@ case class InterpretedPipeMapper(readOnly: Boolean,
     }
   }
 
-  private def varLengthPredicate(id: Id, predicates: Seq[(LogicalVariable, ASTExpression)]): VarLengthPredicate  = {
+  private def varLengthPredicate(id: Id,
+                                 nodePredicate: Option[VariablePredicate],
+                                 edgePredicate: Option[VariablePredicate]): VarLengthPredicate  = {
+
     //Creates commands out of the predicates
-    def asCommand(predicates: Seq[(LogicalVariable, ASTExpression)]) = {
-      val (keys: Seq[LogicalVariable], exprs) = predicates.unzip
+    def asCommand(maybeVariablePredicate: Option[VariablePredicate]) =
+     maybeVariablePredicate match {
+       case None => (_: ExecutionContext, _: QueryState, _: AnyValue) => true
+       case Some(VariablePredicate(variable, astPredicate)) =>
+         val command = buildPredicate(id, astPredicate)
+         val variableName = variable.name
+         (context: ExecutionContext, state: QueryState, entity: AnyValue) => {
+           context.set(variableName, entity)
+           command.isTrue(context, state)
+         }
+     }
 
-      val commands = exprs.map(buildPredicate(id, _))
-      (context: ExecutionContext, state: QueryState, entity: AnyValue) => {
-        keys.zip(commands).forall { case (variable: LogicalVariable, expr: Predicate) =>
-          context.set(variable.name, entity)
-          val result = expr.isTrue(context, state)
-          result
-        }
-      }
-    }
-
-    //partition predicates on whether they deal with nodes or rels
-    val (nodePreds, relPreds) = predicates.partition(e => semanticTable.seen(e._1) && semanticTable.isNode(e._1))
-    val nodeCommand = asCommand(nodePreds)
-    val relCommand = asCommand(relPreds)
+    val nodeCommand = asCommand(nodePredicate)
+    val relCommand = asCommand(edgePredicate)
 
     new VarLengthPredicate {
       override def filterNode(row: ExecutionContext, state: QueryState)(node: NodeValue): Boolean = nodeCommand(row, state, node)
-
       override def filterRelationship(row: ExecutionContext, state: QueryState)(rel: RelationshipValue): Boolean = relCommand(row, state, rel)
     }
   }

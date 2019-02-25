@@ -140,12 +140,9 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
                     dir: SemanticDirection,
                     to: String,
                     pattern: PatternRelationship,
-                    temporaryNode: String,
-                    temporaryRelationship: String,
-                    relationshipPredicate: Expression,
-                    nodePredicate: Expression,
+                    relationshipPredicate: Option[VariablePredicate],
+                    nodePredicate: Option[VariablePredicate],
                     solvedPredicates: Seq[Expression],
-                    legacyPredicates: Seq[(LogicalVariable, Expression)] = Seq.empty,
                     mode: ExpansionMode,
                     context: LogicalPlanningContext): LogicalPlan = pattern.length match {
     case l: VarPatternLength =>
@@ -165,11 +162,8 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
               relName = pattern.name,
               length = l,
               mode = mode,
-              tempNode = Variable(temporaryNode)(InputPosition.NONE),
-              tempRelationship = Variable(temporaryRelationship)(InputPosition.NONE),
               nodePredicate = nodePredicate,
-              relationshipPredicate = relationshipPredicate,
-              legacyPredicates = legacyPredicates), solved, providedOrders.get(source.id), context)
+              relationshipPredicate = relationshipPredicate), solved, providedOrders.get(source.id), context)
 
     case _ => throw new InternalException("Expected a varlength path to be here")
   }
