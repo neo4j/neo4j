@@ -47,6 +47,7 @@ import org.neo4j.kernel.api.proc.Context;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.procedure.Mode;
 
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Stream.concat;
@@ -74,6 +75,7 @@ public class GetServersProcedureForSingleDC implements CallableProcedure
                     .in( CONTEXT.parameterName(), Neo4jTypes.NTMap )
                     .out( TTL.parameterName(), Neo4jTypes.NTInteger )
                     .out( SERVERS.parameterName(), Neo4jTypes.NTList( Neo4jTypes.NTMap ) )
+                    .mode( Mode.DBMS )
                     .description( DESCRIPTION )
                     .build();
 
