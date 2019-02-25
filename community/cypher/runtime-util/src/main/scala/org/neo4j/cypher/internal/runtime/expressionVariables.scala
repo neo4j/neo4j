@@ -53,7 +53,7 @@ object expressionVariables {
       case x: VarExpand =>
         prevNumExpressionVariables => {
           var slot = prevNumExpressionVariables
-          for (varPred <- x.nodePredicate ++ x.edgePredicate) {
+          for (varPred <- x.nodePredicate ++ x.relationshipPredicate) {
             globalMapping += varPred.variable.name -> slot
             slot += 1
           }
