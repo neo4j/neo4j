@@ -1,3 +1,4 @@
+
 /*
  * Copyright (c) 2002-2019 "Neo4j,"
  * Neo4j Sweden AB [http://neo4j.com]
@@ -28,6 +29,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -86,6 +88,8 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
     private final IndexDirectoryStructure directoryStructure;
     private final boolean archiveFailedIndex;
     private final int blockSize;
+    private final int mergeFactor;
+    private final BlockStorage.Monitor blockStorageMonitor;
     // written to in a synchronized method when creating new thread-local instances, read from when population completes
     private final List<BlockStorage<KEY,VALUE>> allScanUpdates = new CopyOnWriteArrayList<>();
     private final ThreadLocal<BlockStorage<KEY,VALUE>> scanUpdates;
@@ -93,15 +97,27 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
     // written in a synchronized method when creating new thread-local instances, read when processing external updates
     private volatile boolean merged;
     private volatile boolean closeRequested;
+    // Will be instantiated right before merging and can be used to neatly await merge to complete
+    private volatile CountDownLatch mergeOngoingLatch;
 
     BlockBasedIndexPopulator( PageCache pageCache, FileSystemAbstraction fs, File file, IndexLayout<KEY,VALUE> layout, IndexProvider.Monitor monitor,
             StoreIndexDescriptor descriptor, IndexSpecificSpaceFillingCurveSettingsCache spatialSettings,
             IndexDirectoryStructure directoryStructure, boolean archiveFailedIndex )
     {
+        this( pageCache, fs, file, layout, monitor, descriptor, spatialSettings, directoryStructure, archiveFailedIndex, parseBlockSize(), MERGE_FACTOR,
+                BlockStorage.Monitor.NO_MONITOR );
+    }
+
+    BlockBasedIndexPopulator( PageCache pageCache, FileSystemAbstraction fs, File file, IndexLayout<KEY,VALUE> layout, IndexProvider.Monitor monitor,
+            StoreIndexDescriptor descriptor, IndexSpecificSpaceFillingCurveSettingsCache spatialSettings,
+            IndexDirectoryStructure directoryStructure, boolean archiveFailedIndex, int blockSize, int mergeFactor, BlockStorage.Monitor blockStorageMonitor )
+    {
         super( pageCache, fs, file, layout, monitor, descriptor, new SpaceFillingCurveSettingsWriter( spatialSettings ) );
         this.directoryStructure = directoryStructure;
         this.archiveFailedIndex = archiveFailedIndex;
-        this.blockSize = parseBlockSize();
+        this.blockSize = blockSize;
+        this.mergeFactor = mergeFactor;
+        this.blockStorageMonitor = blockStorageMonitor;
         this.scanUpdates = ThreadLocal.withInitial( this::newThreadLocalBlockStorage );
     }
 
@@ -113,7 +129,7 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
             int id = allScanUpdates.size();
             BlockStorage<KEY,VALUE> blockStorage =
                     new BlockStorage<>( layout, BYTE_BUFFER_FACTORY, fileSystem, new File( storeFile.getParentFile(), storeFile.getName() + ".scan-" + id ),
-                            BlockStorage.Monitor.NO_MONITOR, blockSize );
+                            blockStorageMonitor, blockSize );
             allScanUpdates.add( blockStorage );
             return blockStorage;
         }
@@ -187,9 +203,26 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
         storeUpdate( update.getEntityId(), update.values(), blockStorage );
     }
 
+    private synchronized boolean markMergeStarted()
+    {
+        if ( closeRequested )
+        {
+            return false;
+        }
+        mergeOngoingLatch = new CountDownLatch( 1 );
+        return true;
+    }
+
     @Override
     public void scanCompleted( PhaseTracker phaseTracker ) throws IndexEntryConflictException
     {
+        if ( !markMergeStarted() )
+        {
+            // This populator has already been closed, either from an external cancel or drop call.
+            // Either way we're not supposed to do this merge.
+            return;
+        }
+
         BlockStorage.Cancellation mergeCancellation = () -> closeRequested;
         try
         {
@@ -203,7 +236,7 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
                     mergeFutures.add( executorService.submit( () ->
                     {
                         scanUpdates.doneAdding();
-                        scanUpdates.merge( MERGE_FACTOR, mergeCancellation );
+                        scanUpdates.merge( mergeFactor, mergeCancellation );
                         return null;
                     } ) );
                 }
@@ -249,6 +282,10 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
                 throw (RuntimeException) executionException;
             }
             throw new RuntimeException( executionException );
+        }
+        finally
+        {
+            mergeOngoingLatch.countDown();
         }
     }
 
@@ -437,11 +474,27 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
     }
 
     @Override
-    public void close( boolean populationCompletedSuccessfully )
+    public synchronized void close( boolean populationCompletedSuccessfully )
     {
         // This method may be called while scanCompleted is running. This could be a drop or shutdown(?) which happens when this population
         // is in its final stages. scanCompleted merges things in multiple threads. Set this flag, a flag which those threads reacts to.
         closeRequested = true;
+
+        // If there's a merge concurrently running it will very soon notice the close request and abort whatever it's doing as soon as it can.
+        // Let's wait for that merge to be fully aborted by simply waiting for the merge latch.
+        if ( mergeOngoingLatch != null )
+        {
+            try
+            {
+                // We want to await any ongoing merge because it becomes problematic to close the channels otherwise
+                mergeOngoingLatch.await();
+            }
+            catch ( InterruptedException e )
+            {
+                Thread.currentThread().interrupt();
+                // We still want to go ahead and try to close things properly, so get by only restoring the interrupt flag on the thread
+            }
+        }
 
         try
         {
