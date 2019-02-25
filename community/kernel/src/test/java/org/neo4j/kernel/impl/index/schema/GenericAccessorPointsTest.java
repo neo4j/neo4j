@@ -189,6 +189,28 @@ public class GenericAccessorPointsTest
         exactMatchOnAllValues( pointArrays );
     }
 
+    @Test
+    public void exactTest()
+    {
+        PointValue origin = Values.pointValue( WGS84, 0.0, 0.0 );
+        long derivedValueForCenterPoint = curve.derivedValueFor( origin.coordinate() );
+        double[] centerPoint = curve.centerPointFor( derivedValueForCenterPoint ); // [1.6763806343078613E-7, 8.381903171539307E-8]
+
+        double xWidthMultiplier = curve.getTileWidth( 0, curve.getMaxLevel() ) / 2; // 1.6763806343078613E-7
+        double yWidthMultiplier = curve.getTileWidth( 1, curve.getMaxLevel() ) / 2; // 8.381903171539307E-8
+
+        double[] faultyCoords = new double[]{1.874410632171803E-8, 1.6763806281859016E-7};
+
+        assertTrue( "inside upper x limit", centerPoint[0] + xWidthMultiplier > faultyCoords[0] );
+        assertTrue( "inside lower x limit", centerPoint[0] - xWidthMultiplier < faultyCoords[0] );
+
+        assertTrue( "inside upper y limit", centerPoint[1] + yWidthMultiplier > faultyCoords[1] );
+        assertTrue( "inside lower y limit", centerPoint[1] - yWidthMultiplier < faultyCoords[1] );
+
+        long derivedValueForFaultyCoords = curve.derivedValueFor( faultyCoords );
+        assertEquals( derivedValueForCenterPoint, derivedValueForFaultyCoords, "expected same derived value" );
+    }
+
     private long addPointsToLists( List<Value> pointValues, List<IndexEntryUpdate<?>> updates, long nodeId, PointValue... values )
     {
         for ( PointValue value : values )
