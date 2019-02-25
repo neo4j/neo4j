@@ -402,17 +402,35 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
     }
 
     @Override
+    public synchronized void drop()
+    {
+        try
+        {
+            closeBlockStorage();
+        }
+        finally
+        {
+            super.drop();
+        }
+    }
+
+    @Override
     public void close( boolean populationCompletedSuccessfully )
     {
         try
         {
-            List<Closeable> toClose = new ArrayList<>( allScanUpdates );
-            toClose.add( externalUpdates );
-            IOUtils.closeAllUnchecked( toClose );
+            closeBlockStorage();
         }
         finally
         {
             super.close( populationCompletedSuccessfully );
         }
+    }
+
+    private void closeBlockStorage()
+    {
+        List<Closeable> toClose = new ArrayList<>( allScanUpdates );
+        toClose.add( externalUpdates );
+        IOUtils.closeAllUnchecked( toClose );
     }
 }
