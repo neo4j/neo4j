@@ -23,6 +23,7 @@ import java.util
 
 import org.neo4j.cypher.internal.runtime._
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
+import org.neo4j.cypher.internal.v4_0.util.InternalException
 import org.neo4j.cypher.result.QueryResult.QueryResultVisitor
 import org.neo4j.cypher.result.RuntimeResult.ConsumptionState
 import org.neo4j.cypher.result.{QueryProfile, RuntimeResult}
@@ -103,5 +104,10 @@ class PipeExecutionResult(val result: IteratorBasedResult,
       }
     }
 
-    override def await(): Boolean = reactiveIterator.await(subscriber)
+    override def await(): Boolean = {
+      if (reactiveIterator == null) {
+        throw new InternalException("Call to await before calling request");
+      }
+      reactiveIterator.await(subscriber)
+    }
 }

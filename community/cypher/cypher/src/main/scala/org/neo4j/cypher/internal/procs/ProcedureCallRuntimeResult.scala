@@ -22,10 +22,11 @@ package org.neo4j.cypher.internal.procs
 import java.util
 
 import org.neo4j.cypher.internal.runtime._
+import org.neo4j.cypher.internal.v4_0.util.InternalException
 import org.neo4j.cypher.internal.v4_0.util.symbols.CypherType
 import org.neo4j.cypher.result.QueryResult.{QueryResultVisitor, Record}
 import org.neo4j.cypher.result.RuntimeResult.ConsumptionState
-import org.neo4j.cypher.result.{NaiveQuerySubscription, OperatorProfile, QueryProfile, RuntimeResult}
+import org.neo4j.cypher.result.{OperatorProfile, QueryProfile, RuntimeResult}
 import org.neo4j.graphdb.ResourceIterator
 import org.neo4j.internal.kernel.api.procs.QualifiedName
 import org.neo4j.kernel.impl.query.QuerySubscriber
@@ -48,7 +49,7 @@ class ProcedureCallRuntimeResult(context: QueryContext,
                                  args: Seq[AnyValue],
                                  indexResultNameMappings: IndexedSeq[(Int, String, CypherType)],
                                  profile: Boolean,
-                                 subscriber: QuerySubscriber) extends NaiveQuerySubscription(subscriber) {
+                                 subscriber: QuerySubscriber) extends RuntimeResult {
 
   self =>
 
@@ -58,6 +59,7 @@ class ProcedureCallRuntimeResult(context: QueryContext,
 
   private final val executionResults: Iterator[Array[AnyValue]] = executeCall
   private var resultRequested = false
+  private var reactiveIterator: ReactiveIterator = _
 
   // The signature mode is taking care of eagerization
   protected def executeCall: Iterator[Array[AnyValue]] = {
@@ -121,6 +123,25 @@ class ProcedureCallRuntimeResult(context: QueryContext,
   override def close(): Unit = {}
 
   override def queryProfile(): QueryProfile = StandaloneProcedureCallProfile(counter.counted)
+
+  override def request(numberOfRecords: Long): Unit = {
+    resultRequested = true
+    if (reactiveIterator == null) {
+      reactiveIterator = new ReactiveIterator(executionResults, this)
+    }
+    reactiveIterator.addDemand(numberOfRecords)
+  }
+
+  override def cancel(): Unit = if (reactiveIterator != null) {
+    reactiveIterator.cancel()
+  }
+
+  override def await(): Boolean = {
+    if (reactiveIterator == null) {
+      throw new InternalException("Call to await before calling request");
+    }
+    reactiveIterator.await(subscriber)
+  }
 }
 
 case class StandaloneProcedureCallProfile(rowCount: Long) extends QueryProfile with OperatorProfile {
