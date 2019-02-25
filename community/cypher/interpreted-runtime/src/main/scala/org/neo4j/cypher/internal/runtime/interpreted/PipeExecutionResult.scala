@@ -21,14 +21,13 @@ package org.neo4j.cypher.internal.runtime.interpreted
 
 import java.util
 
+import org.neo4j.cypher.internal.runtime._
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
-import org.neo4j.cypher.internal.runtime.{IteratorBasedResult, QueryStatistics, RuntimeJavaValueConverter, isGraphKernelResultValue}
 import org.neo4j.cypher.result.QueryResult.QueryResultVisitor
 import org.neo4j.cypher.result.RuntimeResult.ConsumptionState
 import org.neo4j.cypher.result.{QueryProfile, RuntimeResult}
 import org.neo4j.graphdb.ResourceIterator
 import org.neo4j.kernel.impl.query.QuerySubscriber
-import org.neo4j.values.AnyValue
 
 class PipeExecutionResult(val result: IteratorBasedResult,
                           val fieldNames: Array[String],
@@ -93,7 +92,7 @@ class PipeExecutionResult(val result: IteratorBasedResult,
         val iterator =
           if (result.recordIterator.isDefined) result.recordIterator.get.map(_.fields())
           else result.mapIterator.map(r => fieldNames.map(r.getByName))
-        reactiveIterator = new ReactiveIterator(iterator)
+        reactiveIterator = new ReactiveIterator(iterator, this)
       }
       reactiveIterator.addDemand(numberOfRecords)
     }
@@ -104,55 +103,5 @@ class PipeExecutionResult(val result: IteratorBasedResult,
       }
     }
 
-    override def await(): Boolean = {
-      val numberOfFields = fieldNames.length
-      subscriber.onResult(numberOfFields)
-      while (reactiveIterator.hasNext) {
-        val values = reactiveIterator.next()
-        subscriber.onRecord()
-        var i = 0
-        while (i < numberOfFields) {
-          subscriber.onField(i, values(i))
-          i += 1
-        }
-        subscriber.onRecordCompleted()
-      }
-
-      val hasMore = reactiveIterator.hasMoreData
-      if (!hasMore) {
-        subscriber.onResultCompleted(queryStatistics())
-      }
-      hasMore && !reactiveIterator.isCancelled
-    }
-
-
-  class ReactiveIterator(inner: Iterator[Array[AnyValue]]) extends Iterator[Array[AnyValue]] {
-    private var demand = 0L
-    private var served = 0L
-    private var cancelled = false
-
-    def addDemand(numberOfRecords: Long): Unit = {
-      val newDemand = demand + numberOfRecords
-      if (newDemand < 0) {
-          demand = Long.MaxValue
-        } else {
-        demand = newDemand
-      }
-    }
-
-    def cancel(): Unit = {
-      cancelled = true
-    }
-
-    override def hasNext: Boolean = inner.hasNext && served < demand
-
-    def hasMoreData: Boolean = inner.hasNext
-
-    def isCancelled: Boolean = cancelled
-
-    override def next(): Array[AnyValue] = {
-      served += 1L
-      inner.next()
-    }
-  }
+    override def await(): Boolean = reactiveIterator.await(subscriber)
 }
