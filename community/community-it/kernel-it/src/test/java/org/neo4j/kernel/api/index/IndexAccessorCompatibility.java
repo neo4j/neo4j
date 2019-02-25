@@ -20,7 +20,6 @@
 package org.neo4j.kernel.api.index;
 
 import org.junit.After;
-import org.junit.Assert;
 import org.junit.Before;
 
 import java.util.ArrayList;
@@ -50,6 +49,7 @@ import org.neo4j.values.storable.Values;
 
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
 import static org.neo4j.internal.kernel.api.QueryContext.NULL_CONTEXT;
 
 public abstract class IndexAccessorCompatibility extends IndexProviderCompatibilityTestSuite.Compatibility
@@ -175,7 +175,7 @@ public abstract class IndexAccessorCompatibility extends IndexProviderCompatibil
             }
             else
             {
-                Assert.fail( "Unexpected order " + order + " (count = " + count + ")" );
+                fail( "Unexpected order " + order + " (count = " + count + ")" );
             }
             prevValues = values;
         }
