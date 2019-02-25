@@ -33,13 +33,14 @@ class CompilerLibrary(factory: CompilerFactory) {
 
   private val compilers = new CopyOnWriteHashMap[CompilerKey, Compiler]
 
-  def selectCompiler(cypherPlanner: CypherPlannerOption,
+  def selectCompiler(cypherVersion: CypherVersion,
+                     cypherPlanner: CypherPlannerOption,
                      cypherRuntime: CypherRuntimeOption,
                      cypherUpdateStrategy: CypherUpdateStrategy): Compiler = {
     val key = CompilerKey(cypherPlanner, cypherRuntime, cypherUpdateStrategy)
     val compiler = compilers.get(key)
     if (compiler == null) {
-      compilers.put(key, factory.createCompiler(cypherPlanner, cypherRuntime, cypherUpdateStrategy))
+      compilers.put(key, factory.createCompiler(cypherVersion, cypherPlanner, cypherRuntime, cypherUpdateStrategy))
       compilers.get(key)
     } else compiler
   }

@@ -23,7 +23,7 @@ import java.time.Clock
 
 import org.neo4j.cypher.internal.NotificationWrapping.asKernelNotification
 import org.neo4j.cypher.internal.compiler.v4_0.{StatsDivergenceCalculator, _}
-import org.neo4j.cypher.{InvalidArgumentException, _}
+import org.neo4j.cypher._
 import org.neo4j.graphdb.Notification
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.impl.query.TransactionalContext
@@ -31,7 +31,6 @@ import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.logging.LogProvider
 import org.neo4j.values.virtual.MapValue
 import org.neo4j.cypher.internal.v4_0.frontend.phases.{CompilationPhaseTracer, RecordingNotificationLogger}
-import org.neo4j.cypher.internal.v4_0.util.{DeprecatedStartNotification, InternalNotification, SyntaxException => InternalSyntaxException}
 
 object MasterCompiler {
   val DEFAULT_QUERY_CACHE_SIZE: Int = 128
@@ -80,13 +79,12 @@ class MasterCompiler(graph: GraphDatabaseQueryService,
 
     def notificationsSoFar(): Set[Notification] = logger.notifications.map(asKernelNotification(None))
 
-    val inputPosition = preParsedQuery.offset
-
     if (preParsedQuery.runtime == CypherRuntimeOption.compiled)
       logger.log(DeprecatedCompiledRuntimeNotification)
 
     // Do the compilation
     val compiler = compilerLibrary.selectCompiler(
+      preParsedQuery.version,
       preParsedQuery.planner,
       preParsedQuery.runtime,
       preParsedQuery.updateStrategy)

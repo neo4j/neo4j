@@ -17,31 +17,32 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compatibility.v4_0
+package org.neo4j.cypher.internal.compatibility.v3_5
 
 import java.time.Clock
 import java.util.function.BiFunction
 
-import org.neo4j.cypher._
 import org.neo4j.cypher.exceptionHandler.runSafely
 import org.neo4j.cypher.internal._
-import org.neo4j.cypher.internal.compatibility.{CypherPlanner, simpleExpressionEvaluator, _}
+import org.neo4j.cypher.internal.compatibility._
+import org.neo4j.cypher.internal.compatibility.notification.LogicalPlanNotifications
 import org.neo4j.cypher.internal.compiler.v4_0
-import org.neo4j.cypher.internal.compiler.v4_0._
 import org.neo4j.cypher.internal.compiler.v4_0.phases.{PlannerContext, PlannerContextCreator}
 import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.idp._
 import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.{CachedMetricsFactory, SimpleMetricsFactory}
+import org.neo4j.cypher.internal.compiler.v4_0.{CypherPlanner => _, _}
 import org.neo4j.cypher.internal.planner.v4_0.spi.{CostBasedPlannerName, DPPlannerName, IDPPlannerName}
 import org.neo4j.cypher.internal.runtime.interpreted._
 import org.neo4j.cypher.internal.spi.v4_0.{ExceptionTranslatingPlanContext, TransactionBoundPlanContext}
 import org.neo4j.cypher.internal.v4_0.ast.Statement
 import org.neo4j.cypher.internal.v4_0.expressions.Parameter
 import org.neo4j.cypher.internal.v4_0.frontend.PlannerName
-import org.neo4j.cypher.internal.v4_0.frontend.phases._
+import org.neo4j.cypher.internal.v4_0.frontend.phases.{BaseState, CompilationPhaseTracer, InternalNotificationLogger, RecordingNotificationLogger}
 import org.neo4j.cypher.internal.v4_0.logical.plans.{LoadCSV, LogicalPlan}
 import org.neo4j.cypher.internal.v4_0.rewriting.RewriterStepSequencer
 import org.neo4j.cypher.internal.v4_0.util.InputPosition
 import org.neo4j.cypher.internal.v4_0.util.attribution.SequentialIdGen
+import org.neo4j.cypher.{CypherPlannerOption, CypherUpdateStrategy}
 import org.neo4j.helpers.collection.Pair
 import org.neo4j.kernel.impl.api.SchemaStateKey
 import org.neo4j.kernel.impl.query.TransactionalContext
@@ -50,7 +51,7 @@ import org.neo4j.logging.Log
 import org.neo4j.values.AnyValue
 import org.neo4j.values.virtual.MapValue
 
-case class Cypher4_0Planner(config: CypherPlannerConfiguration,
+case class Cypher3_5Planner(config: CypherPlannerConfiguration,
                             clock: Clock,
                             kernelMonitors: KernelMonitors,
                             log: Log,
@@ -59,22 +60,23 @@ case class Cypher4_0Planner(config: CypherPlannerConfiguration,
                             txIdProvider: () => Long)
   extends BasePlanner[Statement, BaseState](config, clock, kernelMonitors, log, txIdProvider) with CypherPlanner {
 
-  monitors.addMonitorListener(logStalePlanRemovalMonitor(logger), "cypher4.0")
+  monitors.addMonitorListener(logStalePlanRemovalMonitor(logger), "cypher4.0")//cypher3.5?
 
-  val plannerName: CostBasedPlannerName =
-    plannerOption match {
-      case CypherPlannerOption.default => CostBasedPlannerName.default
-      case CypherPlannerOption.cost | CypherPlannerOption.idp => IDPPlannerName
-      case CypherPlannerOption.dp => DPPlannerName
-      case _ => throw new IllegalArgumentException(s"unknown cost based planner: ${plannerOption.name}")
-    }
+  val plannerName: CostBasedPlannerName = plannerOption match {
+    case CypherPlannerOption.default => CostBasedPlannerName.default
+    case CypherPlannerOption.cost | CypherPlannerOption.idp => IDPPlannerName
+    case CypherPlannerOption.dp => DPPlannerName
+    case _ => throw new IllegalArgumentException(s"unknown cost based planner: ${plannerOption.name}")
+  }
 
-  private val maybeUpdateStrategy: Option[UpdateStrategy] = updateStrategy match {
+  val maybeUpdateStrategy: Option[UpdateStrategy] = updateStrategy match {
     case CypherUpdateStrategy.eager => Some(eagerUpdateStrategy)
     case _ => None
   }
 
-  protected val rewriterSequencer: String => RewriterStepSequencer = {
+  override def parserCacheSize: Int = config.queryCacheSize
+
+  val rewriterSequencer: String => RewriterStepSequencer = {
     import Assertion._
     import RewriterStepSequencer._
 
@@ -87,7 +89,7 @@ case class Cypher4_0Planner(config: CypherPlannerConfiguration,
     new CypherPlannerFactory().costBasedCompiler(config, clock, monitors, rewriterSequencer,
       maybeUpdateStrategy, contextCreator)
 
-  private def createQueryGraphSolver(): IDPQueryGraphSolver =
+  private def createQueryGraphSolver() =
     plannerName match {
       case IDPPlannerName =>
         val monitor = monitors.newMonitor[IDPQueryGraphSolverMonitor]()
@@ -113,10 +115,13 @@ case class Cypher4_0Planner(config: CypherPlannerConfiguration,
                             transactionalContext: TransactionalContext,
                             params: MapValue
                            ): LogicalPlanResult = {
+
+    // TODO use 3.5 specific parser and move rest (duplicate of 4.0) into superclass?
+
     runSafely {
       val notificationLogger = new RecordingNotificationLogger(Some(preParsedQuery.offset))
       val syntacticQuery =
-        getOrParse(preParsedQuery, new Parser4_0(planner, notificationLogger, preParsedQuery.offset, tracer))
+        getOrParse(preParsedQuery, new Parser3_5(planner, notificationLogger, preParsedQuery.offset, tracer))
 
       val transactionalContextWrapper = TransactionalContextWrapper(transactionalContext)
       // Context used for db communication during planning
@@ -126,39 +131,39 @@ case class Cypher4_0Planner(config: CypherPlannerConfiguration,
       // Context used to create logical plans
       val logicalPlanIdGen = new SequentialIdGen()
       val context = contextCreator.create(tracer,
-                                          notificationLogger,
-                                          planContext,
-                                          syntacticQuery.queryText,
-                                          preParsedQuery.debugOptions,
-                                          Some(preParsedQuery.offset),
-                                          monitors,
-                                          CachedMetricsFactory(SimpleMetricsFactory),
-                                          createQueryGraphSolver(),
-                                          config,
-                                          maybeUpdateStrategy.getOrElse(defaultUpdateStrategy),
-                                          clock,
-                                          logicalPlanIdGen,
-                                          simpleExpressionEvaluator)
+        notificationLogger,
+        planContext,
+        syntacticQuery.queryText,
+        preParsedQuery.debugOptions,
+        Some(preParsedQuery.offset),
+        monitors,
+        CachedMetricsFactory(SimpleMetricsFactory),
+        createQueryGraphSolver(),
+        config,
+        maybeUpdateStrategy.getOrElse(defaultUpdateStrategy),
+        clock,
+        logicalPlanIdGen,
+        simpleExpressionEvaluator)
 
       // Prepare query for caching
       val preparedQuery = planner.normalizeQuery(syntacticQuery, context)
       val queryParamNames: Seq[String] = preparedQuery.statement().findByAllClass[Parameter].map(x => x.name).distinct
-
       checkForSchemaChanges(transactionalContextWrapper)
 
-      // If the query is not cached we want to do the full planning
+      // If the query is not cached we do full planning + creating of executable plan
       def createPlan(shouldBeCached: Boolean, missingParameterNames: Seq[String] = Seq.empty): CacheableLogicalPlan = {
         val logicalPlanStateOld = planner.planPreparedQuery(preparedQuery, context)
         val hasLoadCsv = logicalPlanStateOld.logicalPlan.treeFind[LogicalPlan] {
           case _: LoadCSV => true
         }.nonEmpty
         val logicalPlanState = logicalPlanStateOld.copy(hasLoadCSV = hasLoadCsv)
-        notification.LogicalPlanNotifications
+        LogicalPlanNotifications
           .checkForNotifications(logicalPlanState.maybeLogicalPlan.get, planContext, config)
           .foreach(notificationLogger.log)
         if (missingParameterNames.nonEmpty) {
           notificationLogger.log(MissingParametersNotification(missingParameterNames))
         }
+
         val reusabilityState = createReusabilityState(logicalPlanState, planContext)
         CacheableLogicalPlan(logicalPlanState, reusabilityState, notificationLogger.notifications, shouldBeCached)
       }
@@ -176,10 +181,10 @@ case class Cypher4_0Planner(config: CypherPlannerConfiguration,
         // We don't want to cache any query without enough given parameters (although EXPLAIN queries will succeed)
         if (preParsedQuery.debugOptions.isEmpty && (queryParamNames.isEmpty || enoughParametersSupplied))
           planCache.computeIfAbsentOrStale(Pair.of(syntacticQuery.statement(), QueryCache.extractParameterTypeMap(filteredParams)),
-                                           transactionalContext,
-                                           () => createPlan(shouldBeCached = true),
-                                           _ => None,
-                                           syntacticQuery.queryText).executableQuery
+            transactionalContext,
+            () => createPlan(shouldBeCached = true),
+            _ => None,
+            syntacticQuery.queryText).executableQuery
 
         else if (!enoughParametersSupplied)
           createPlan(shouldBeCached = false, missingParameterNames = queryParamNames.filterNot(filteredParams.containsKey))
@@ -200,7 +205,7 @@ case class Cypher4_0Planner(config: CypherPlannerConfiguration,
   override val name: PlannerName = plannerName
 }
 
-private[v4_0] class Parser4_0(planner: v4_0.CypherPlanner[PlannerContext],
+private[v3_5] class Parser3_5(planner: v4_0.CypherPlanner[PlannerContext],
                               notificationLogger: InternalNotificationLogger,
                               offset: InputPosition,
                               tracer: CompilationPhaseTracer
@@ -208,11 +213,11 @@ private[v4_0] class Parser4_0(planner: v4_0.CypherPlanner[PlannerContext],
 
   override def parse(preParsedQuery: PreParsedQuery): BaseState = {
     planner.parseQuery(preParsedQuery.statement,
-                       preParsedQuery.rawStatement,
-                       notificationLogger,
-                       preParsedQuery.planner.name,
-                       preParsedQuery.debugOptions,
-                       Some(offset),
-                       tracer)
+      preParsedQuery.rawStatement,
+      notificationLogger,
+      preParsedQuery.planner.name,
+      preParsedQuery.debugOptions,
+      Some(offset),
+      tracer)
   }
 }

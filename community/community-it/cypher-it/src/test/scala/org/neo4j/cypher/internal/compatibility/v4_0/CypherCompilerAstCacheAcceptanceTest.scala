@@ -310,17 +310,22 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
 
   test("should clear all compiler library caches") {
     val compilerLibrary = createCompilerLibrary()
-    val defaultCompiler =
-      compilerLibrary.selectCompiler(CypherPlannerOption.default, CypherRuntimeOption.default, CypherUpdateStrategy.default)
+    val compilers = CypherVersion.all.map { version =>
+      compilerLibrary.selectCompiler(version, CypherPlannerOption.default, CypherRuntimeOption.default, CypherUpdateStrategy.default)
+    }
 
-    runQuery("return 42", cypherCompiler = defaultCompiler) // Misses
-    runQuery("return 42", cypherCompiler = defaultCompiler) // Hits
+    compilers.foreach { compiler =>
+      runQuery("return 42", cypherCompiler = compiler) // Misses
+      runQuery("return 42", cypherCompiler = compiler) // Hits
+    }
 
     compilerLibrary.clearCaches()
 
-    runQuery("return 42", cypherCompiler = defaultCompiler) // Misses
+    compilers.foreach { compiler =>
+      runQuery("return 42", cypherCompiler = compiler) // Misses
+    }
 
-    counter.counts should equal(CacheCounts(hits = 1, misses = 2, flushes = 2))
+    counter.counts should equal(CacheCounts(hits = compilers.size, misses = 2 * compilers.size, flushes = 2 * compilers.size))
   }
 
   private def createCompilerLibrary(): CompilerLibrary = {
