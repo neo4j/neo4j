@@ -23,7 +23,7 @@ import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.kernel.impl.query.QuerySubscriber
 import org.neo4j.values.AnyValue
 
-class ReactiveIterator(inner: Iterator[Array[AnyValue]], result: RuntimeResult) extends Iterator[Array[AnyValue]] {
+class ReactiveIterator(inner: Iterator[Array[AnyValue]], result: RuntimeResult, indexMap: Int => Int = identity) extends Iterator[Array[AnyValue]] {
   private var demand = 0L
   private var served = 0L
   private var cancelled = false
@@ -56,7 +56,7 @@ class ReactiveIterator(inner: Iterator[Array[AnyValue]], result: RuntimeResult) 
       subscriber.onRecord()
       var i = 0
       while (i < numberOfFields) {
-        subscriber.onField(i, values(i))
+        subscriber.onField(i, values(indexMap(i)))
         i += 1
       }
       subscriber.onRecordCompleted()

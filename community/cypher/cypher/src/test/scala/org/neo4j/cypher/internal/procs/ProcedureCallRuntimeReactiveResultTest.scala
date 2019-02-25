@@ -32,7 +32,7 @@ class ProcedureCallRuntimeReactiveResultTest extends BaseReactiveResultTest {
   override def runtimeResult(subscriber: QuerySubscriber,
                              first: Array[AnyValue],
                              more: Array[AnyValue]*): RuntimeResult = {
-    val fieldNames = (1 to first.length).map(i => (i, s"f$i", symbols.CTAny))
+    val fieldNames = first.indices.map(i => (i, s"f$i", symbols.CTAny))
     val id = 13
     val qtx = mock[QueryContext](RETURNS_DEEP_STUBS)
     val args = Seq.empty[AnyValue]

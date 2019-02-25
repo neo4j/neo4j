@@ -127,7 +127,7 @@ class ProcedureCallRuntimeResult(context: QueryContext,
   override def request(numberOfRecords: Long): Unit = {
     resultRequested = true
     if (reactiveIterator == null) {
-      reactiveIterator = new ReactiveIterator(executionResults, this)
+      reactiveIterator = new ReactiveIterator(executionResults, this, i => indexResultNameMappings(i)._1)
     }
     reactiveIterator.addDemand(numberOfRecords)
   }
