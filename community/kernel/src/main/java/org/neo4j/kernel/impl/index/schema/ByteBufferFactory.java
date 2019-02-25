@@ -21,8 +21,28 @@ package org.neo4j.kernel.impl.index.schema;
 
 import java.nio.ByteBuffer;
 
-@FunctionalInterface
-interface ByteBufferFactory
+import static java.lang.Math.toIntExact;
+import static java.nio.ByteBuffer.allocate;
+
+interface ByteBufferFactory extends AutoCloseable
 {
     ByteBuffer newBuffer( int bufferSize );
+
+    @Override
+    void close();
+
+    ByteBufferFactory HEAP_BUFFER_FACTORY = new ByteBufferFactory()
+    {
+        @Override
+        public ByteBuffer newBuffer( int bufferSize )
+        {
+            return allocate( toIntExact( bufferSize ) );
+        }
+
+        @Override
+        public void close()
+        {
+            // Nothing to close
+        }
+    };
 }
