@@ -93,7 +93,7 @@ public final class FunctionalTestHelper
 
     public void verifyCypherResponse( String responseBody )
     {
-        // if at least one node is returned there will be "node" in the metadata part od the the row
+        // if at least one node is returned, there will be "node" in the metadata part od the the row
         assertThat( responseBody, containsString( "node" ) );
     }
 }

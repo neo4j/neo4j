@@ -55,7 +55,6 @@
     <module>server-api</module>
     <module>bolt</module>
     <module>server</module>
-    <module>server-plugin-test</module>
     <module>consistency-check</module>
     <module>neo4j-harness</module>
     <module>dbms</module>

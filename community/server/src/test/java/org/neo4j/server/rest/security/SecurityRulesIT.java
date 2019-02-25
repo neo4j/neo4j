@@ -106,8 +106,7 @@ public class SecurityRulesIT extends ExclusiveServerTestBase
         functionalTestHelper = new FunctionalTestHelper( server );
 
         JaxRsResponse response = gen.get().expectedStatus( 401 )
-                .expectedHeader(
-                "WWW-Authenticate" )
+                .expectedHeader( "WWW-Authenticate" )
                 .payload( functionalTestHelper.simpleCypherRequestBody() )
                 .post( functionalTestHelper.cypherURL() )
                 .response();

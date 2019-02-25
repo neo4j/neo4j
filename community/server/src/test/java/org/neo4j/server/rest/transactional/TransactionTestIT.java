@@ -419,7 +419,7 @@ public class TransactionTestIT extends AbstractRestFunctionalTestBase
         ResponseEntity response = gen.get().expectedStatus( 200 ).payload( quotedJson(
                 "{ 'statements': [ { 'statement': 'MATCH (n) WHERE ID(n) = $nodeId RETURN n' , " + "'parameters': { 'nodeId': " + nodeId + " } } ] }" ) )
                 .post( getDataUri() + "transaction/commit" );
-        // if at least one node is returned there will be "node" in the metadata part od the the row
+        // if at least one node is returned, there will be "node" in the metadata part od the the row
         Assert.assertThat( response.entity(), Matchers.containsString( "node" ) );
     }
 }
