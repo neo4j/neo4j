@@ -19,12 +19,11 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.neo4j.cypher.internal.runtime.ExecutionContext
+import org.neo4j.cypher.internal.runtime.{ExecutionContext, RelationshipContainer}
 import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
 import org.neo4j.cypher.internal.v4_0.util.InternalException
 import org.neo4j.cypher.internal.v4_0.util.attribution.Id
 import org.neo4j.values.storable.Values
-import org.neo4j.values.virtual.VirtualValues.EMPTY_LIST
 import org.neo4j.values.virtual._
 
 import scala.collection.mutable
@@ -56,14 +55,14 @@ case class VarLengthExpandPipe(source: Pipe,
                                filteringStep: VarLengthPredicate= VarLengthPredicate.NONE)
                               (val id: Id = Id.INVALID_ID) extends PipeWithSource(source) {
   private def varLengthExpand(node: NodeValue, state: QueryState, maxDepth: Option[Int],
-                              row: ExecutionContext): Iterator[(NodeValue, ListValue)] = {
-    val stack = new mutable.Stack[(NodeValue, ListValue)]
-    stack.push((node, EMPTY_LIST))
+                              row: ExecutionContext): Iterator[(NodeValue, RelationshipContainer)] = {
+    val stack = new mutable.Stack[(NodeValue, RelationshipContainer)]
+    stack.push((node, RelationshipContainer.EMPTY))
 
-    new Iterator[(NodeValue, ListValue)] {
-      def next(): (NodeValue, ListValue) = {
+    new Iterator[(NodeValue, RelationshipContainer)] {
+      def next(): (NodeValue, RelationshipContainer) = {
         val (node, rels) = stack.pop()
-        if (rels.length < maxDepth.getOrElse(Int.MaxValue) && filteringStep.filterNode(row,state)(node)) {
+        if (rels.size < maxDepth.getOrElse(Int.MaxValue) && filteringStep.filterNode(row,state)(node)) {
           val relationships: Iterator[RelationshipValue] = state.query.getRelationshipsForIds(node.id(), dir,
                                                                                       types.types(state.query))
 
@@ -91,8 +90,8 @@ case class VarLengthExpandPipe(source: Pipe,
     def expand(row: ExecutionContext, n: NodeValue) = {
       val paths = varLengthExpand(n, state, max, row)
       paths.collect {
-        case (node, rels) if rels.length >= min && isToNodeValid(row, state, node) =>
-          executionContextFactory.copyWith(row, relName, rels, toName, node)
+        case (node, rels) if rels.size >= min && isToNodeValid(row, state, node) =>
+          executionContextFactory.copyWith(row, relName, rels.asList, toName, node)
       }
     }
 
