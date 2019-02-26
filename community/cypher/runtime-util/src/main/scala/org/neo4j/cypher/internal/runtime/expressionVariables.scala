@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.runtime.ast.ExpressionVariable
 import org.neo4j.cypher.internal.v4_0.expressions.{LogicalVariable, ScopeExpression}
 import org.neo4j.cypher.internal.v4_0.logical.plans.{LogicalPlan, NestedPlanExpression, PruningVarExpand, VarExpand}
 import org.neo4j.cypher.internal.v4_0.util.attribution.Attribute
-import org.neo4j.cypher.internal.v4_0.util.{Rewriter, topDown}
+import org.neo4j.cypher.internal.v4_0.util.{Foldable, Rewritable, Rewriter, topDown}
 
 import scala.collection.mutable
 
@@ -42,11 +42,11 @@ object expressionVariables {
     */
   class AvailableExpressionVariables extends Attribute[Seq[ExpressionVariable]]
 
-  case class Result(newPlan: LogicalPlan,
-                    nExpressionSlots: Int,
-                    availableExpressionVars: AvailableExpressionVariables)
+  case class Result[T](rewritten: T,
+                       nExpressionSlots: Int,
+                       availableExpressionVars: AvailableExpressionVariables)
 
-  def replace(lp: LogicalPlan): Result = {
+  def replace[T <: Foldable with Rewritable](input: T): Result[T] = {
 
     val globalMapping = mutable.Map[String, ExpressionVariable]()
     val availableExpressionVars = new AvailableExpressionVariables
@@ -63,7 +63,7 @@ object expressionVariables {
       innerVars
     }
 
-    lp.treeFold(List.empty[ExpressionVariable]) {
+    input.treeFold(List.empty[ExpressionVariable]) {
       case x: ScopeExpression =>
         outerVars =>
           val innerVars = allocateScope(outerVars, x.introducedVariables)
@@ -93,6 +93,6 @@ object expressionVariables {
       })
 
     val nExpressionSlots = globalMapping.values.map(_.offset).reduceOption(math.max).map(_ + 1).getOrElse(0)
-    Result(lp.endoRewrite(rewriter), nExpressionSlots, availableExpressionVars)
+    Result(input.endoRewrite(rewriter), nExpressionSlots, availableExpressionVars)
   }
 }

@@ -21,26 +21,30 @@ package org.neo4j.cypher.internal.compatibility
 
 import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.ExpressionEvaluator
 import org.neo4j.cypher.internal.planner.v4_0.spi.TokenContext
-import org.neo4j.cypher.internal.runtime.ExecutionContext
+import org.neo4j.cypher.internal.runtime.expressionVariables.Result
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
+import org.neo4j.cypher.internal.runtime.{ExecutionContext, expressionVariables}
 import org.neo4j.cypher.internal.v4_0.expressions.Expression
 import org.neo4j.cypher.internal.v4_0.util.attribution.Id
 import org.neo4j.cypher.internal.v4_0.util.{CypherException => InternalCypherException}
 import org.neo4j.internal.kernel.api.IndexReadSession
-import org.neo4j.values.AnyValue
 import org.neo4j.values.virtual.VirtualValues
 
 case object simpleExpressionEvaluator extends ExpressionEvaluator {
 
   // Returns Some(value) if the expression can be independently evaluated in an empty context/query state, otherwise None
   def evaluateExpression(expr: Expression): Option[Any] = {
+    val Result(rewritten, nExpressionSlots, _) = expressionVariables.replace(expr)
     val converters = new ExpressionConverters(CommunityExpressionConverter(TokenContext.EMPTY))
-    val commandExpr = converters.toCommandExpression(Id.INVALID_ID, expr)
+    val commandExpr = converters.toCommandExpression(Id.INVALID_ID, rewritten)
 
-    // TODO: allocate expression slots
-
-    val emptyQueryState = new QueryState(null, null, VirtualValues.EMPTY_MAP, null, Array.empty[IndexReadSession], Array.empty[AnyValue])
+    val emptyQueryState = new QueryState(null,
+                                         null,
+                                         VirtualValues.EMPTY_MAP,
+                                         null,
+                                         Array.empty[IndexReadSession],
+                                         new Array(nExpressionSlots))
 
     try {
       Some(commandExpr(ExecutionContext.empty, emptyQueryState))
