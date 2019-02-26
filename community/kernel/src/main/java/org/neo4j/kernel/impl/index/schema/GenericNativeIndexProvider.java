@@ -108,7 +108,6 @@ public class GenericNativeIndexProvider extends NativeIndexProvider<GenericKey,N
     public static final String KEY = NATIVE_BTREE10.providerKey();
     public static final IndexProviderDescriptor DESCRIPTOR = new IndexProviderDescriptor( KEY, NATIVE_BTREE10.providerVersion() );
     public static final IndexCapability CAPABILITY = new GenericIndexCapability();
-    static final boolean parallelPopulation = FeatureToggles.flag( GenericNativeIndexProvider.class, "parallelPopulation", false );
     // todo turn OFF by default before releasing next patch. For now ON by default to test it.
     private static final boolean blockBasedPopulation = FeatureToggles.flag( GenericNativeIndexPopulator.class, "blockBasedPopulation", true );
 
@@ -157,12 +156,6 @@ public class GenericNativeIndexProvider extends NativeIndexProvider<GenericKey,N
     @Override
     protected IndexPopulator newIndexPopulator( File storeFile, GenericLayout layout, StorageIndexReference descriptor )
     {
-        if ( parallelPopulation )
-        {
-            return new ParallelNativeIndexPopulator<>( storeFile, layout, file ->
-                    new GenericNativeIndexPopulator( pageCache, fs, file, layout, monitor, descriptor, layout.getSpaceFillingCurveSettings(),
-                            directoryStructure(), configuration, archiveFailedIndex, !file.equals( storeFile ) ) );
-        }
         if ( blockBasedPopulation )
         {
             return new GenericBlockBasedIndexPopulator( pageCache, fs, storeFile, layout, monitor, descriptor, layout.getSpaceFillingCurveSettings(),
@@ -170,7 +163,7 @@ public class GenericNativeIndexProvider extends NativeIndexProvider<GenericKey,N
         }
         return new WorkSyncedNativeIndexPopulator<>(
                 new GenericNativeIndexPopulator( pageCache, fs, storeFile, layout, monitor, descriptor, layout.getSpaceFillingCurveSettings(),
-                        directoryStructure(), configuration, archiveFailedIndex, false ) );
+                        directoryStructure(), configuration, archiveFailedIndex ) );
     }
 
     @Override

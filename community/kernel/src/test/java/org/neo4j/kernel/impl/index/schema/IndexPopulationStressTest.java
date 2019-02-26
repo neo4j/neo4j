@@ -49,9 +49,9 @@ import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexProviderDescriptor;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
+import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.storageengine.api.schema.SimpleNodeValueClient;
 import org.neo4j.test.Race;
 import org.neo4j.test.rule.PageCacheAndDependenciesRule;
@@ -96,27 +96,25 @@ public class IndexPopulationStressTest
     {
         Collection<Object[]> parameters = new ArrayList<>();
         // GenericNativeIndexProvider
-        parameters.add( of( "generic", true, GenericNativeIndexProvider.parallelPopulation, RandomValues::nextValue, test ->
-                new GenericNativeIndexProvider( test.directory(), test.rules.pageCache(), test.rules.fileSystem(), EMPTY, immediate(),false, defaults() ) ) );
         // NumberIndexProvider
-        parameters.add( of( "number", true, false, RandomValues::nextNumberValue, test ->
+        parameters.add( of( "number", true, RandomValues::nextNumberValue, test ->
                 new NumberIndexProvider( test.rules.pageCache(), test.rules.fileSystem(), test.directory(), EMPTY, immediate(), false ) ) );
         // StringIndexProvider
-        parameters.add( of( "string", true, false, RandomValues::nextAlphaNumericTextValue, test ->
+        parameters.add( of( "string", true, RandomValues::nextAlphaNumericTextValue, test ->
                 new StringIndexProvider( test.rules.pageCache(), test.rules.fileSystem(), test.directory(), EMPTY, immediate(), false ) ) );
         // SpatialIndexProvider
-        parameters.add( of( "spatial", false, false, RandomValues::nextPointValue, test ->
+        parameters.add( of( "spatial", false, RandomValues::nextPointValue, test ->
                 new SpatialIndexProvider( test.rules.pageCache(), test.rules.fileSystem(), test.directory(), EMPTY, immediate(), false, defaults() ) ) );
         // TemporalIndexProvider
-        parameters.add( of( "temporal", true, false, RandomValues::nextTemporalValue, test ->
+        parameters.add( of( "temporal", true, RandomValues::nextTemporalValue, test ->
                 new TemporalIndexProvider( test.rules.pageCache(), test.rules.fileSystem(), test.directory(), EMPTY, immediate(), false ) ) );
         return parameters;
     }
 
-    private static Object[] of( String name, boolean hasValues, boolean canHandlePopulationConcurrentlyWithAdd,
-            Function<RandomValues,Value> valueGenerator, Function<IndexPopulationStressTest,IndexProvider> providerCreator )
+    private static Object[] of( String name, boolean hasValues, Function<RandomValues,Value> valueGenerator,
+            Function<IndexPopulationStressTest,IndexProvider> providerCreator )
     {
-        return toArray( name, hasValues, canHandlePopulationConcurrentlyWithAdd, valueGenerator, providerCreator );
+        return toArray( name, hasValues, valueGenerator, providerCreator );
     }
 
     @Rule
@@ -133,10 +131,8 @@ public class IndexPopulationStressTest
     @Parameterized.Parameter( 1 )
     public boolean hasValues;
     @Parameterized.Parameter( 2 )
-    public boolean canHandlePopulationConcurrentlyWithAdd;
-    @Parameterized.Parameter( 3 )
     public Function<RandomValues,Value> valueGenerator;
-    @Parameterized.Parameter( 4 )
+    @Parameterized.Parameter( 3 )
     public Function<IndexPopulationStressTest,IndexProvider> providerCreator;
 
     private IndexPopulator populator;
@@ -226,10 +222,7 @@ public class IndexPopulationStressTest
             {
                 // Do updates now and then
                 Thread.sleep( 10 );
-                if ( !canHandlePopulationConcurrentlyWithAdd )
-                {
-                    updateLock.writeLock().lock();
-                }
+                updateLock.writeLock().lock();
                 try ( IndexUpdater updater = populator.newPopulatingUpdater( nodePropertyAccessor ) )
                 {
                     for ( int i = 0; i < THREADS; i++ )
@@ -269,10 +262,7 @@ public class IndexPopulationStressTest
                 }
                 finally
                 {
-                    if ( !canHandlePopulationConcurrentlyWithAdd )
-                    {
-                        updateLock.writeLock().unlock();
-                    }
+                    updateLock.writeLock().unlock();
                 }
             }
         } );
