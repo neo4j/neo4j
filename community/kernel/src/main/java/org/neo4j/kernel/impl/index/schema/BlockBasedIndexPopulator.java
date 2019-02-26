@@ -225,6 +225,7 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
             writeScanUpdatesToTree();
 
             // Apply the external updates
+            phaseTracker.enterPhase( PhaseTracker.Phase.APPLY_EXTERNAL );
             writeExternalUpdatesToTree();
             merged = true;
         }

@@ -191,14 +191,10 @@ public class IndexPopulationIT
                 containsString( "Final: " ),
                 containsString( "SCAN" ),
                 containsString( "WRITE" ),
-                containsString( "FLIP" ),
                 containsString( "MERGE" ),
                 containsString( "BUILD" ),
-                containsString( "totalTime=" ),
-                containsString( "avgTime=" ),
-                containsString( "minTime=" ),
-                containsString( "maxTime=" ),
-                containsString( "nbrOfReports=" )
+                containsString( "FLIP" ),
+                containsString( "totalTime=" )
         ) );
     }
 
