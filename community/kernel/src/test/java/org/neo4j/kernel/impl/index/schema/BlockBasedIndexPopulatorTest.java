@@ -59,10 +59,10 @@ public class BlockBasedIndexPopulatorTest
     public final PageCacheAndDependenciesRule storage = new PageCacheAndDependenciesRule();
 
     @Rule
-    public final OtherThreadRule<Void> t2 = new OtherThreadRule<>( "T2" );
+    public final OtherThreadRule<Void> t2 = new OtherThreadRule<>( "MERGER" );
 
     @Rule
-    public final OtherThreadRule<Void> t3 = new OtherThreadRule<>( "T3" );
+    public final OtherThreadRule<Void> t3 = new OtherThreadRule<>( "CLOSER" );
 
     @Test
     public void shouldAwaitMergeToBeFullyAbortedBeforeLeavingCloseMethod() throws Exception

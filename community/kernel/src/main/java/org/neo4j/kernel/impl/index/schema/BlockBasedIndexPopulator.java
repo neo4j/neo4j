@@ -96,7 +96,7 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
     private IndexUpdateStorage<KEY,VALUE> externalUpdates;
     // written in a synchronized method when creating new thread-local instances, read when processing external updates
     private volatile boolean merged;
-    private volatile boolean closeRequested;
+    private final CloseCancellation cancellation = new CloseCancellation();
     // Will be instantiated right before merging and can be used to neatly await merge to complete
     private volatile CountDownLatch mergeOngoingLatch;
 
@@ -205,7 +205,7 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
 
     private synchronized boolean markMergeStarted()
     {
-        if ( closeRequested )
+        if ( cancellation.cancelled() )
         {
             return false;
         }
@@ -223,7 +223,6 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
             return;
         }
 
-        BlockStorage.Cancellation mergeCancellation = () -> closeRequested;
         try
         {
             phaseTracker.enterPhase( PhaseTracker.Phase.MERGE );
@@ -236,7 +235,7 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
                     mergeFutures.add( executorService.submit( () ->
                     {
                         scanUpdates.doneAdding();
-                        scanUpdates.merge( mergeFactor, mergeCancellation );
+                        scanUpdates.merge( mergeFactor, cancellation );
                         return null;
                     } ) );
                 }
@@ -301,7 +300,7 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
         try ( Writer<KEY,VALUE> writer = tree.writer();
               IndexUpdateCursor<KEY,VALUE> updates = externalUpdates.reader() )
         {
-            while ( updates.next() )
+            while ( updates.next() && !cancellation.cancelled() )
             {
                 switch ( updates.updateMode() )
                 {
@@ -339,7 +338,7 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
     {
         try ( IndexUpdateCursor<KEY,VALUE> updates = externalUpdates.reader() )
         {
-            while ( updates.next() )
+            while ( updates.next() && !cancellation.cancelled() )
             {
                 RawCursor<Hit<KEY,VALUE>,IOException> seek;
                 switch ( updates.updateMode() )
@@ -404,7 +403,7 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
             int asMuchAsPossibleToTheLeft = 1;
             try ( Writer<KEY,VALUE> writer = tree.writer( asMuchAsPossibleToTheLeft ) )
             {
-                while ( allEntries.next() && !closeRequested )
+                while ( allEntries.next() && !cancellation.cancelled() )
                 {
                     conflictDetector.controlConflictDetection( allEntries.key() );
                     writer.merge( allEntries.key(), allEntries.value(), conflictDetector );
@@ -478,7 +477,7 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
     {
         // This method may be called while scanCompleted is running. This could be a drop or shutdown(?) which happens when this population
         // is in its final stages. scanCompleted merges things in multiple threads. Set this flag, a flag which those threads reacts to.
-        closeRequested = true;
+        cancellation.setCancel();
 
         // If there's a merge concurrently running it will very soon notice the close request and abort whatever it's doing as soon as it can.
         // Let's wait for that merge to be fully aborted by simply waiting for the merge latch.
@@ -511,5 +510,21 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
         List<Closeable> toClose = new ArrayList<>( allScanUpdates );
         toClose.add( externalUpdates );
         IOUtils.closeAllUnchecked( toClose );
+    }
+
+    private static class CloseCancellation implements BlockStorage.Cancellation
+    {
+        private volatile boolean cancelled;
+
+        void setCancel()
+        {
+            this.cancelled = true;
+        }
+
+        @Override
+        public boolean cancelled()
+        {
+            return cancelled;
+        }
     }
 }
