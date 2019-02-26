@@ -82,7 +82,7 @@ public class PopulatingIndexProxy implements IndexProxy
     @Override
     public void drop()
     {
-        job.cancelPopulation( indexPopulation );
+        job.dropPopulation( indexPopulation );
     }
 
     @Override
