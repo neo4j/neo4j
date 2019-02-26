@@ -360,5 +360,5 @@ class BlockStorage<KEY, VALUE> implements Closeable
         boolean cancelled();
     }
 
-    public static final Cancellation NOT_CANCELLABLE = () -> false;
+    static final Cancellation NOT_CANCELLABLE = () -> false;
 }

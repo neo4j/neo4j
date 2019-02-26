@@ -1,4 +1,3 @@
-
 /*
  * Copyright (c) 2002-2019 "Neo4j,"
  * Neo4j Sweden AB [http://neo4j.com]
@@ -485,13 +484,15 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
         }
     }
 
+    // Always called from synchronized method
     private void closeBlockStorage()
     {
         // This method may be called while scanCompleted is running. This could be a drop or shutdown(?) which happens when this population
-        // is in its final stages. scanCompleted merges things in multiple threads. Set this flag, a flag which those threads reacts to.
+        // is in its final stages. scanCompleted merges things in multiple threads. Those threads will abort when they see that setCancel
+        // has been called.
         cancellation.setCancel();
 
-        // If there's a merge concurrently running it will very soon notice the close request and abort whatever it's doing as soon as it can.
+        // If there's a merge concurrently running it will very soon notice the cancel request and abort whatever it's doing as soon as it can.
         // Let's wait for that merge to be fully aborted by simply waiting for the merge latch.
         if ( mergeOngoingLatch != null )
         {
