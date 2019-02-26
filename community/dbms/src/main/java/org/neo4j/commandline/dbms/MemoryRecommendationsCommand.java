@@ -65,8 +65,8 @@ public class MemoryRecommendationsCommand implements AdminCommand
     // And the page cache gets what's left, though always at least 100 MiB.
     // Heap never goes beyond 31 GiBs.
     private static final Bracket[] datapoints = {
-            new Bracket( 0.01, 0.005, 0.005 ),
-            new Bracket( 1.0, 0.5, 0.5 ),
+            new Bracket( 0.01, 0.007, 0.002 ),
+            new Bracket( 1.0, 0.65, 0.3 ),
             new Bracket( 2.0, 1, 0.5 ),
             new Bracket( 4.0, 1.5, 2 ),
             new Bracket( 6.0, 2, 3 ),
@@ -104,7 +104,7 @@ public class MemoryRecommendationsCommand implements AdminCommand
         long osMemory = recommendOsMemory( totalMemoryBytes );
         long heapMemory = recommendHeapMemory( totalMemoryBytes );
         long recommendation = totalMemoryBytes - osMemory - heapMemory;
-        recommendation = Math.max( mebiBytes( 100 ), recommendation );
+        recommendation = Math.max( mebiBytes( 8 ), recommendation );
         recommendation = Math.min( tebiBytes( 16 ), recommendation );
         return recommendation;
     }
