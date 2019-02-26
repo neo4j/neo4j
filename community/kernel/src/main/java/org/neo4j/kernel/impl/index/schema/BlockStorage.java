@@ -41,9 +41,9 @@ import org.neo4j.util.Preconditions;
  * 1. ADD: Entries are added through {@link #add(KEY, VALUE)}. Those entries are buffered in memory until there are enough of them to fill up a Block.
  * At that point they are sorted and flushed out to a file. This file will eventually contain multiple Blocks that each contain many entries in sorted order.
  * When there are no more entries to add {@link #doneAdding()} is called and the last Block is flushed to file.
- * 2. MERGE: By calling {@link #merge(int)} (after {@link #doneAdding()} has been called) the multiple Blocks are merge joined into a new file resulting in
- * larger blocks of sorted entries. Those larger blocks are then merge joined back to the original file. Merging continues in this ping pong fashion until
- * there is only a single large block in the resulting file. The entries are now ready to be read in sorted order, call {@link #reader()}.
+ * 2. MERGE: By calling {@link #merge(int, Cancellation)} (after {@link #doneAdding()} has been called) the multiple Blocks are merge joined into a new file
+ * resulting in larger blocks of sorted entries. Those larger blocks are then merge joined back to the original file. Merging continues in this ping pong
+ * fashion until there is only a single large block in the resulting file. The entries are now ready to be read in sorted order, call {@link #reader()}.
  */
 class BlockStorage<KEY, VALUE> implements Closeable
 {
@@ -120,7 +120,7 @@ class BlockStorage<KEY, VALUE> implements Closeable
         bufferedEntries.sortThis( comparator );
 
         ListBasedBlockEntryCursor<KEY,VALUE> entries = new ListBasedBlockEntryCursor<>( bufferedEntries );
-        writeBlock( storeChannel, entries, blockSize, bufferedEntries.size() );
+        writeBlock( storeChannel, entries, blockSize, bufferedEntries.size(), NOT_CANCELLABLE );
 
         // Append to file
         monitor.blockFlushed( bufferedEntries.size(), currentBufferSize, storeChannel.position() );
@@ -134,12 +134,15 @@ class BlockStorage<KEY, VALUE> implements Closeable
      * When source only contain a single block we are finished and the extra file is deleted and {@link #blockFile} contains the result with a single sorted
      * block.
      *
-     * See {@link #performSingleMerge(int, BlockReader, StoreChannel)} for further details.
+     * See {@link #performSingleMerge(int, BlockReader, StoreChannel, Cancellation)} for further details.
      *
-     * @param mergeFactor See {@link #performSingleMerge(int, BlockReader, StoreChannel)}.
+     * @param mergeFactor See {@link #performSingleMerge(int, BlockReader, StoreChannel, Cancellation)}.
+     * @param cancellation Injected so that this merge can be cancelled, if an external request to do that comes in.
+     * A cancelled merge will leave the same end state file/channel-wise, just not quite completed, which is fine because the merge
+     * was cancelled meaning that the result will not be used for anything other than deletion.
      * @throws IOException If something goes wrong when reading from file.
      */
-    public void merge( int mergeFactor ) throws IOException
+    public void merge( int mergeFactor, Cancellation cancellation ) throws IOException
     {
         File sourceFile = blockFile;
         File tempFile = new File( blockFile.getParent(), blockFile.getName() + ".b" );
@@ -155,9 +158,9 @@ class BlockStorage<KEY, VALUE> implements Closeable
                 {
                     int blocksMergedSoFar = 0;
                     int blocksInMergedFile = 0;
-                    while ( blocksMergedSoFar < numberOfBlocksInCurrentFile )
+                    while ( !cancellation.cancelled() && blocksMergedSoFar < numberOfBlocksInCurrentFile )
                     {
-                        blocksMergedSoFar += performSingleMerge( mergeFactor, reader, targetChannel );
+                        blocksMergedSoFar += performSingleMerge( mergeFactor, reader, targetChannel, cancellation );
                         blocksInMergedFile++;
                     }
                     numberOfBlocksInCurrentFile = blocksInMergedFile;
@@ -192,16 +195,18 @@ class BlockStorage<KEY, VALUE> implements Closeable
      * {@link MergingBlockEntryReader} pull head from each {@link BlockEntryReader} and hand them out in sorted order, making the multiple entry readers look
      * like a single large and sorted entry reader.
      *
-     * The large block resulting from the merge is written down to targetChannel by calling {@link #writeBlock(StoreChannel, BlockEntryCursor, long, long)}.
+     * The large block resulting from the merge is written down to targetChannel by calling
+     * {@link #writeBlock(StoreChannel, BlockEntryCursor, long, long, Cancellation)}.
      *
      * @param mergeFactor How many blocks to merge at the same time. Influence how much memory will be used because each merge block will have it's own
      * {@link ByteBuffer} that they read from.
      * @param reader The {@link BlockReader} to pull blocks / {@link BlockEntryReader}s from.
      * @param targetChannel The {@link StoreChannel} to write the merge result to. Result will be appended to current position.
+     * @param cancellation Injected so that this merge can be cancelled, if an external request to do that comes in.
      * @return The number of blocks that where merged, most often this will be equal to mergeFactor but can be less if there are fewer blocks left in source.
      * @throws IOException If something goes wrong when reading from file.
      */
-    private int performSingleMerge( int mergeFactor, BlockReader<KEY,VALUE> reader, StoreChannel targetChannel )
+    private int performSingleMerge( int mergeFactor, BlockReader<KEY,VALUE> reader, StoreChannel targetChannel, Cancellation cancellation )
             throws IOException
     {
         try ( MergingBlockEntryReader<KEY,VALUE> merger = new MergingBlockEntryReader<>( layout ) )
@@ -225,16 +230,17 @@ class BlockStorage<KEY, VALUE> implements Closeable
                 }
             }
 
-            writeBlock( targetChannel, merger, blockSize, entryCount );
+            writeBlock( targetChannel, merger, blockSize, entryCount, cancellation );
             monitor.mergedBlocks( blockSize, entryCount, blocksMerged );
             return blocksMerged;
         }
     }
 
-    private void writeBlock( StoreChannel targetChannel, BlockEntryCursor<KEY,VALUE> blockEntryCursor, long blockSize, long entryCount ) throws IOException
+    private void writeBlock( StoreChannel targetChannel, BlockEntryCursor<KEY,VALUE> blockEntryCursor, long blockSize, long entryCount,
+            Cancellation cancellation ) throws IOException
     {
         writeHeader( byteBuffer, blockSize, entryCount );
-        long actualDataSize = writeEntries( targetChannel, byteBuffer, layout, blockEntryCursor );
+        long actualDataSize = writeEntries( targetChannel, byteBuffer, layout, blockEntryCursor, cancellation );
         writeLastEntriesWithPadding( targetChannel, byteBuffer, blockSize - actualDataSize );
     }
 
@@ -245,7 +251,7 @@ class BlockStorage<KEY, VALUE> implements Closeable
     }
 
     private static <KEY, VALUE> long writeEntries( StoreChannel targetChannel, ByteBuffer byteBuffer, Layout<KEY,VALUE> layout,
-            BlockEntryCursor<KEY,VALUE> blockEntryCursor ) throws IOException
+            BlockEntryCursor<KEY,VALUE> blockEntryCursor, Cancellation cancellation ) throws IOException
     {
         // Loop over block entries
         long actualDataSize = BLOCK_HEADER_SIZE;
@@ -259,6 +265,12 @@ class BlockStorage<KEY, VALUE> implements Closeable
 
             if ( byteBuffer.remaining() < entrySize )
             {
+                // First check if this merge have been cancelled, if so just break here, it's fine.
+                if ( cancellation.cancelled() )
+                {
+                    break;
+                }
+
                 // flush and reset + DON'T PAD!!!
                 byteBuffer.flip();
                 targetChannel.writeAll( byteBuffer );
@@ -342,4 +354,11 @@ class BlockStorage<KEY, VALUE> implements Closeable
 
         Monitor NO_MONITOR = new Adapter();
     }
+
+    public interface Cancellation
+    {
+        boolean cancelled();
+    }
+
+    static final Cancellation NOT_CANCELLABLE = () -> false;
 }

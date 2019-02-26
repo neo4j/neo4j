@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.index.schema;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.factory.primitive.LongSets;
+import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -30,9 +31,14 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.index.internal.gbptree.SimpleLongLayout;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.test.Barrier;
+import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.TestDirectoryExtension;
@@ -52,6 +58,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.kernel.impl.index.schema.BlockStorage.Monitor.NO_MONITOR;
+import static org.neo4j.kernel.impl.index.schema.BlockStorage.NOT_CANCELLABLE;
+import static org.neo4j.test.OtherThreadExecutor.command;
 
 @ExtendWith( {TestDirectoryExtension.class, RandomExtension.class} )
 class BlockStorageTest
@@ -165,7 +173,7 @@ class BlockStorageTest
         try ( BlockStorage<MutableLong,MutableLong> storage = new BlockStorage<>( layout, BUFFER_FACTORY, fileSystem, file, monitor, blockSize ) )
         {
             // when
-            storage.merge( randomMergeFactor() );
+            storage.merge( randomMergeFactor(), NOT_CANCELLABLE );
 
             // then
             assertEquals( 0, monitor.mergeIterationCallCount );
@@ -185,7 +193,7 @@ class BlockStorageTest
             storage.doneAdding();
 
             // when
-            storage.merge( randomMergeFactor() );
+            storage.merge( randomMergeFactor(), NOT_CANCELLABLE );
 
             // then
             assertEquals( 0, monitor.mergeIterationCallCount );
@@ -206,7 +214,7 @@ class BlockStorageTest
             storage.doneAdding();
 
             // when
-            storage.merge( randomMergeFactor() );
+            storage.merge( randomMergeFactor(), NOT_CANCELLABLE );
 
             // then
             assertContents( layout, storage, asOneBigBlock( expectedBlocks ) );
@@ -225,7 +233,7 @@ class BlockStorageTest
             storage.doneAdding();
 
             // when
-            storage.merge( 2 );
+            storage.merge( 2, NOT_CANCELLABLE );
 
             // then
             File[] files = fileSystem.listFiles( directory.directory() );
@@ -246,6 +254,7 @@ class BlockStorageTest
             assertThrows( IllegalStateException.class, () -> storage.add( new MutableLong( 0 ), new MutableLong( 1 ) ) );
         }
     }
+
     @Test
     void shouldNotFlushAnythingOnEmptyBufferInDoneAdding() throws IOException
     {
@@ -259,6 +268,46 @@ class BlockStorageTest
             // then
             assertEquals( 0, monitor.blockFlushedCallCount );
         }
+    }
+
+    @Test
+    void shouldNoticeCancelRequest() throws IOException, ExecutionException, InterruptedException
+    {
+        // given
+        Barrier.Control barrier = new Barrier.Control();
+        TrackingMonitor monitor = new TrackingMonitor()
+        {
+            @Override
+            public void mergedBlocks( long resultingBlockSize, long resultingEntryCount, int numberOfBlocks )
+            {
+                super.mergedBlocks( resultingBlockSize, resultingEntryCount, numberOfBlocks );
+                barrier.reached();
+            }
+        };
+        int blocks = 10;
+        int mergeFactor = 2;
+        MutableLongSet uniqueKeys = new LongHashSet();
+        AtomicBoolean cancelled = new AtomicBoolean();
+        try ( BlockStorage<MutableLong,MutableLong> storage = new BlockStorage<>( layout, BUFFER_FACTORY, fileSystem, file, monitor, 100 );
+              OtherThreadExecutor<Void> t2 = new OtherThreadExecutor<>( "T2", null ) )
+        {
+            while ( monitor.blockFlushedCallCount < blocks )
+            {
+                storage.add( uniqueKey( uniqueKeys ), new MutableLong() );
+            }
+            storage.doneAdding();
+
+            // when starting to merge
+            Future<Object> merge = t2.executeDontWait( command( () -> storage.merge( mergeFactor, cancelled::get ) ) );
+            barrier.awaitUninterruptibly();
+            // one merge iteration have now been done, set the cancellation flag
+            cancelled.set( true );
+            barrier.release();
+            merge.get();
+        }
+
+        // then there should not be any more merge iterations done, i.e. merge was cancelled
+        assertEquals( 1, monitor.mergeIterationCallCount );
     }
 
     private Iterable<List<BlockEntry<MutableLong,MutableLong>>> asOneBigBlock( List<List<BlockEntry<MutableLong,MutableLong>>> expectedBlocks )
@@ -366,20 +415,20 @@ class BlockStorageTest
     private static class TrackingMonitor implements BlockStorage.Monitor
     {
         // For entryAdded
-        private int entryAddedCallCount;
-        private int lastEntrySize;
-        private long totalEntrySize;
+        int entryAddedCallCount;
+        int lastEntrySize;
+        long totalEntrySize;
 
         // For blockFlushed
-        private int blockFlushedCallCount;
-        private long lastKeyCount;
-        private int lastNumberOfBytes;
-        private long lastPositionAfterFlush;
+        int blockFlushedCallCount;
+        long lastKeyCount;
+        int lastNumberOfBytes;
+        long lastPositionAfterFlush;
 
         // For mergeIteration
-        private int mergeIterationCallCount;
-        private int lastNumberOfBlocksBefore;
-        private int lastNumberOfBlocksAfter;
+        int mergeIterationCallCount;
+        int lastNumberOfBlocksBefore;
+        int lastNumberOfBlocksAfter;
 
         // For mergeBlocks
         @Override
