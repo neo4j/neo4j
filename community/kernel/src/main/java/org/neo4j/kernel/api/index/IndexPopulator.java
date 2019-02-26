@@ -29,6 +29,7 @@ import org.neo4j.kernel.impl.api.index.UpdateMode;
 import org.neo4j.kernel.impl.api.index.updater.SwallowingIndexUpdater;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.storageengine.api.schema.IndexSample;
+import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
 
 /**
@@ -139,6 +140,17 @@ public interface IndexPopulator
      * @return {@link IndexSample} from samples collected by {@link #includeSample(IndexEntryUpdate)} calls.
      */
     IndexSample sampleResult();
+
+    /**
+     * Returns actual population progress, given the progress of the scan. This is for when a populator needs to do
+     * significant work after scan has completed where the scan progress can be seen as only a part of the whole progress.
+     * @param scanProgress progress of the scan.
+     * @return progress of the population of this index as a whole.
+     */
+    default PopulationProgress progress( PopulationProgress scanProgress )
+    {
+        return scanProgress;
+    }
 
     IndexPopulator EMPTY = new Adapter();
 

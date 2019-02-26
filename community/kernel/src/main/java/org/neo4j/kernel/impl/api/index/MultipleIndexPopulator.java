@@ -667,6 +667,11 @@ public class MultipleIndexPopulator implements IndexPopulator
         {
             populator.scanCompleted( phaseTracker );
         }
+
+        PopulationProgress progress( PopulationProgress storeScanProgress )
+        {
+            return populator.progress( storeScanProgress );
+        }
     }
 
     private class EntityPopulationVisitor implements Visitor<EntityUpdates,
