@@ -61,7 +61,7 @@ public class SchemaProcedureIT extends KernelIntegrationTest
         // When
         Procedures procs = procs();
         RawIterator<AnyValue[],ProcedureException> stream =
-               procs.procedureCallRead( procs.procedureGet( procedureName( "db", "schema" ) ).id(), new AnyValue[0] );
+               procs.procedureCallRead( procs.procedureGet( procedureName( "db", "schema", "visualization" ) ).id(), new AnyValue[0] );
 
         // Then
         assertThat( asList( stream ), contains( equalTo( new AnyValue[]{EMPTY_LIST, EMPTY_LIST} ) ) );
@@ -89,7 +89,7 @@ public class SchemaProcedureIT extends KernelIntegrationTest
 
         // When
         RawIterator<AnyValue[],ProcedureException> stream =
-                procs().procedureCallRead( procs().procedureGet( procedureName( "db", "schema" ) ).id(),
+                procs().procedureCallRead( procs().procedureGet( procedureName( "db", "schema", "visualization" ) ).id(),
                         new AnyValue[0] );
 
         // Then
@@ -126,7 +126,7 @@ public class SchemaProcedureIT extends KernelIntegrationTest
 
         // When
         RawIterator<AnyValue[],ProcedureException> stream =
-                procs().procedureCallRead( procs().procedureGet(  procedureName( "db", "schema" ) ).id(),
+                procs().procedureCallRead( procs().procedureGet(  procedureName( "db", "schema", "visualization" ) ).id(),
                         new AnyValue[0] );
 
         // Then

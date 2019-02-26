@@ -94,7 +94,7 @@ public class AuthProceduresIT
     {
 
         // Given
-        assertEmpty( admin, "CALL dbms.changePassword('abc')" );
+        assertEmpty( admin, "CALL dbms.security.changePassword('abc')" );
 
         assert authManager.getUser( "neo4j" ).credentials().matchesPassword( "abc" );
     }
@@ -102,8 +102,8 @@ public class AuthProceduresIT
     @Test
     public void shouldNotChangeOwnPasswordIfNewPasswordInvalid()
     {
-        assertFail( admin, "CALL dbms.changePassword( '' )", "A password cannot be empty." );
-        assertFail( admin, "CALL dbms.changePassword( 'neo4j' )", "Old password and new password cannot be the same." );
+        assertFail( admin, "CALL dbms.security.changePassword( '' )", "A password cannot be empty." );
+        assertFail( admin, "CALL dbms.security.changePassword( 'neo4j' )", "Old password and new password cannot be the same." );
     }
 
     @Test
@@ -113,7 +113,7 @@ public class AuthProceduresIT
         authManager.newUser( "andres", UTF8.encode( "banana" ), true );
 
         // Then
-        assertEmpty( login("andres", "banana"), "CALL dbms.changePassword('abc')" );
+        assertEmpty( login("andres", "banana"), "CALL dbms.security.changePassword('abc')" );
     }
 
     @Test

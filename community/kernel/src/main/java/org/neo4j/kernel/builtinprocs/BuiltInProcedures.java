@@ -247,7 +247,7 @@ public class BuiltInProcedures
         return new SchemaCalculator( tx ).calculateTabularResultStreamForRels();
     }
 
-    @Description( "Visualize the schema of the data. Replaces db.schema." )
+    @Description( "Visualize the schema of the data." )
     @Procedure( name = "db.schema.visualization", mode = READ )
     public Stream<SchemaProcedure.GraphResult> schemaVisualization()
     {
