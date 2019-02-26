@@ -37,11 +37,9 @@ public class LockWorkFailureDump
 
     public File dumpState( Locks lm, LockWorker... workers ) throws IOException
     {
-        FileOutputStream out = new FileOutputStream( file, false );
-        FormattedLogProvider logProvider = FormattedLogProvider.withoutAutoFlush().toOutputStream( out );
-
-        try
+        try ( FileOutputStream out = new FileOutputStream( file, false ) )
         {
+            FormattedLogProvider logProvider = FormattedLogProvider.withoutAutoFlush().toOutputStream( out );
             //  * locks held by the lock manager
             lm.accept( new DumpLocksVisitor( logProvider.getLog( LockWorkFailureDump.class ) ) );
             //  * rag manager state;
@@ -53,11 +51,6 @@ public class LockWorkFailureDump
                 log.info( "Worker %s", worker );
             }
             return file;
-        }
-        finally
-        {
-            out.flush();
-            out.close();
         }
     }
 }

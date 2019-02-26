@@ -206,7 +206,7 @@ abstract class DuplicateCheckStrategy
 
         private BucketEntry bucketEntrySet( int hashCode, int entrySetSize )
         {
-            int bucket = Math.abs( hashCode ) % numberOfBuckets;
+            int bucket = Math.abs( hashCode  % numberOfBuckets );
             BucketEntry current = buckets[bucket];
             if ( current == null )
             {

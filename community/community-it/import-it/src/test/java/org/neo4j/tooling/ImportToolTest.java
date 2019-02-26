@@ -1505,7 +1505,7 @@ public class ImportToolTest
         catch ( InputException e )
         {
             // THEN
-            assertThat( e.getMessage(), containsString( String.format( "Multi-line fields are illegal", unbalancedStartLine ) ) );
+            assertThat( e.getMessage(), containsString( "Multi-line fields are illegal" ) );
         }
     }
 

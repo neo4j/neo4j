@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.api.index;
 import org.junit.jupiter.api.Test;
 
 import java.util.EnumMap;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.logging.AssertableLogProvider;
@@ -50,10 +51,10 @@ class LoggingPhaseTrackerTest
         phaseTracker.stop();
 
         EnumMap<PhaseTracker.Phase,LoggingPhaseTracker.Logger> times = phaseTracker.times();
-        for ( PhaseTracker.Phase phase : times.keySet() )
+        for ( Map.Entry<PhaseTracker.Phase,LoggingPhaseTracker.Logger> phaseEntry : times.entrySet() )
         {
-            LoggingPhaseTracker.Logger logger = times.get( phase );
-            if ( phase == PhaseTracker.Phase.SCAN )
+            LoggingPhaseTracker.Logger logger = phaseEntry.getValue();
+            if ( phaseEntry.getKey() == PhaseTracker.Phase.SCAN )
             {
                 assertTrue( logger.totalTime >= 100 );
                 assertTrue( logger.totalTime < 500 );
@@ -77,11 +78,11 @@ class LoggingPhaseTrackerTest
         phaseTracker.stop();
 
         EnumMap<PhaseTracker.Phase,LoggingPhaseTracker.Logger> times = phaseTracker.times();
-        for ( PhaseTracker.Phase phase : times.keySet() )
+        for ( Map.Entry<PhaseTracker.Phase,LoggingPhaseTracker.Logger> phaseEntry : times.entrySet() )
         {
-            LoggingPhaseTracker.Logger logger = times.get( phase );
-            if ( phase == PhaseTracker.Phase.SCAN ||
-                    phase == PhaseTracker.Phase.WRITE )
+            LoggingPhaseTracker.Logger logger = phaseEntry.getValue();
+            PhaseTracker.Phase phase = phaseEntry.getKey();
+            if ( phase == PhaseTracker.Phase.SCAN || phase == PhaseTracker.Phase.WRITE )
             {
                 assertTrue( logger.totalTime >= 100 );
                 assertTrue( logger.totalTime < 500 );

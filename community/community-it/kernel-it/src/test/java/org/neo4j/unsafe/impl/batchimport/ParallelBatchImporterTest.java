@@ -452,11 +452,6 @@ public class ParallelBatchImporterTest
         }
     }
 
-    private String uniqueId( Group group, PropertyContainer entity )
-    {
-        return uniqueId( group, entity.getProperty( "id" ) );
-    }
-
     private String uniqueId( Group group, Object id )
     {
         return group.name() + "_" + id;
