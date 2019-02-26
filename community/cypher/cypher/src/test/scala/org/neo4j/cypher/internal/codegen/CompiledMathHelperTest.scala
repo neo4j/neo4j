@@ -19,14 +19,14 @@
  */
 package org.neo4j.cypher.internal.codegen
 
-import java.util
+import java.{lang, util}
 
 import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable._
 import org.neo4j.values.virtual.{ListValue, VirtualValues}
 import org.neo4j.cypher.internal.v4_0.util.CypherTypeException
-import org.scalatest.prop.TableDrivenPropertyChecks
+import org.scalatest.prop.{TableDrivenPropertyChecks, TableFor1}
 import org.scalatest.{Assertions, Matchers, PropSpec}
 
 import scala.collection.JavaConverters._
@@ -109,7 +109,7 @@ class CompiledMathHelperTest extends PropSpec with TableDrivenPropertyChecks wit
       case (l: DurationValue,       r: TemporalValue[_, _], Right(result)) => result should equal(r.plus(l))
       case (l: DurationValue,       r: DurationValue,       Right(result)) => result should equal(l.add(r))
 
-      case (l: TemporalValue[_, _], _,                      Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: TemporalValue[_, _], _,                      Left(exception)) => exception shouldBe a [CypherTypeException]
       case (_,                      _: TemporalValue[_, _], Left(exception)) => exception shouldBe a [CypherTypeException]
       case (_: DurationValue,       _,                      Left(exception)) => exception shouldBe a [CypherTypeException]
       case (_,                      _: DurationValue,       Left(exception)) => exception shouldBe a [CypherTypeException]
@@ -118,7 +118,7 @@ class CompiledMathHelperTest extends PropSpec with TableDrivenPropertyChecks wit
 
       // Lists
       case (l1: util.List[_], l2: util.List[_], Right(result)) => result should equal(concat(l1, l2))
-      case (l1: ListValue,    l2: ListValue,    Right(result)) => result should equal(
+      case (l1: ListValue,    _: ListValue,    Right(result)) => result should equal(
         VirtualValues.fromList(concat(l1.asArray().toList.asJava, l1.asArray().toList.asJava).asInstanceOf[util.List[AnyValue]])
       )
       case (l1: ListValue, l2: util.List[_], Right(result)) => result should equal(
@@ -153,7 +153,7 @@ class CompiledMathHelperTest extends PropSpec with TableDrivenPropertyChecks wit
       case (l: NumberValue,       r: String,            Right(result)) => result should equal(l.prettyPrint() + r)
       case (l: String,            r: NumberValue,       Right(result)) => result should equal(l + r.prettyPrint())
       case (l: TextValue,         r: Number,            Right(result)) => result should equal(l.stringValue() + r.toString)
-      case (l: Number,            r: TextValue,         Right(result)) => result should equal(l.toString() + r.stringValue())
+      case (l: Number,            r: TextValue,         Right(result)) => result should equal(l.toString + r.stringValue())
       case (l: TextValue,         r: String,            Right(result)) => result should equal(l.stringValue() + r)
       case (l: String,            r: TextValue,         Right(result)) => result should equal(l + r.stringValue())
       case (l: TextValue,         r: java.lang.Boolean, Right(result)) => result should equal(l.stringValue() + r)
@@ -190,11 +190,11 @@ class CompiledMathHelperTest extends PropSpec with TableDrivenPropertyChecks wit
       case (l: Number,            r: java.lang.Float,   Right(result)) => result should equal(l.doubleValue() - r)
       case (l: Number,            r: Number,            Right(result)) => result should equal(l.longValue() - r.longValue())
 
-      case (l: Number,            r: String,            Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (l: String,            r: Number,            Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (l: String,            r: String,            Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (l: String,            r: java.lang.Boolean, Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (l: java.lang.Boolean, r: String,            Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: Number,            _: String,            Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: String,            _: Number,            Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: String,            _: String,            Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: String,            _: java.lang.Boolean, Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: java.lang.Boolean, _: String,            Left(exception)) => exception shouldBe a [CypherTypeException]
 
       case (_: Number,            _: java.lang.Boolean, Left(exception)) => exception shouldBe a [CypherTypeException]
       case (_: java.lang.Boolean, _: java.lang.Boolean, Left(exception)) => exception shouldBe a [CypherTypeException]
@@ -210,11 +210,11 @@ class CompiledMathHelperTest extends PropSpec with TableDrivenPropertyChecks wit
       case (l: NumberValue,       r: FloatValue,        Right(result)) => result should equal(l.doubleValue() - r.doubleValue())
       case (l: NumberValue,       r: NumberValue,       Right(result)) => result should equal(Values.longValue(l.longValue() - r.longValue()))
 
-      case (l: NumberValue,       r: TextValue,         Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (l: TextValue,         r: NumberValue,       Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (l: TextValue,         r: TextValue,         Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (l: TextValue,         r: BooleanValue,      Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (l: BooleanValue,      r: TextValue,         Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: NumberValue,       _: TextValue,         Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: TextValue,         _: NumberValue,       Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: TextValue,         _: TextValue,         Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: TextValue,         _: BooleanValue,      Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: BooleanValue,      _: TextValue,         Left(exception)) => exception shouldBe a [CypherTypeException]
 
       case (_: NumberValue,       _: BooleanValue,      Left(exception)) => exception shouldBe a [CypherTypeException]
       case (_: BooleanValue,      _: BooleanValue,      Left(exception)) => exception shouldBe a [CypherTypeException]
@@ -222,7 +222,7 @@ class CompiledMathHelperTest extends PropSpec with TableDrivenPropertyChecks wit
 
       case (l: TemporalValue[_, _], r: DurationValue,       Right(result)) => result should equal(l.minus(r))
       case (l: DurationValue,       r: DurationValue,       Right(result)) => result should equal(l.sub(r))
-      case (l: TemporalValue[_, _], _,                      Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: TemporalValue[_, _], _,                      Left(exception)) => exception shouldBe a [CypherTypeException]
       case (_,                      _: TemporalValue[_, _], Left(exception)) => exception shouldBe a [CypherTypeException]
       case (_: DurationValue,       _,                      Left(exception)) => exception shouldBe a [CypherTypeException]
       case (_,                      _: DurationValue,       Left(exception)) => exception shouldBe a [CypherTypeException]
@@ -230,14 +230,14 @@ class CompiledMathHelperTest extends PropSpec with TableDrivenPropertyChecks wit
       case (_,                      _: PointValue,          Left(exception)) => exception shouldBe a [CypherTypeException]
 
       // Lists
-      case (l1: util.List[_], l2: util.List[_], Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (l1: ListValue,    l2: ListValue,    Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (l1: ListValue, l2: util.List[_], Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (l1: util.List[_], l2: ListValue, Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (x, l: ListValue, Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (l: ListValue, x, Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (x, l: util.List[_], Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (l: util.List[_], x, Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: util.List[_], _: util.List[_], Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: ListValue,    _: ListValue,    Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: ListValue, _: util.List[_], Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: util.List[_], _: ListValue, Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_, _: ListValue, Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: ListValue, _, Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_, _: util.List[_], Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: util.List[_], _, Left(exception)) => exception shouldBe a [CypherTypeException]
 
       // Mix of Neo values and Java values
       case (l: DoubleValue,       r: Number,            Right(result)) => result should equal(l.doubleValue() - r.doubleValue())
@@ -251,16 +251,16 @@ class CompiledMathHelperTest extends PropSpec with TableDrivenPropertyChecks wit
       case (l: NumberValue,       r: Number,            Right(result)) => result should equal(l.longValue() - r.longValue())
       case (l: Number,            r: NumberValue,       Right(result)) => result should equal(l.longValue() - r.longValue())
 
-      case (l: NumberValue,       r: String,            Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (l: String,            r: NumberValue,       Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (l: TextValue,         r: Number,            Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (l: Number,            r: TextValue,         Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (l: TextValue,         r: String,            Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (l: String,            r: TextValue,         Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (l: TextValue,         r: java.lang.Boolean, Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (l: java.lang.Boolean, r: TextValue,         Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (l: BooleanValue,      r: String,            Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (l: String,            r: BooleanValue,      Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: NumberValue,       _: String,            Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: String,            _: NumberValue,       Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: TextValue,         _: Number,            Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: Number,            _: TextValue,         Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: TextValue,         _: String,            Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: String,            _: TextValue,         Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: TextValue,         _: java.lang.Boolean, Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: java.lang.Boolean, _: TextValue,         Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: BooleanValue,      _: String,            Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: String,            _: BooleanValue,      Left(exception)) => exception shouldBe a [CypherTypeException]
 
       case (_: NumberValue,       _: java.lang.Boolean, Left(exception)) => exception shouldBe a [CypherTypeException]
       case (_: java.lang.Boolean, _: NumberValue,       Left(exception)) => exception shouldBe a [CypherTypeException]
@@ -288,11 +288,11 @@ class CompiledMathHelperTest extends PropSpec with TableDrivenPropertyChecks wit
       case (l: Number,            r: java.lang.Float,   Right(result)) => result should equal(l.doubleValue() * r)
       case (l: Number,            r: Number,            Right(result)) => result should equal(l.longValue() * r.longValue())
 
-      case (l: Number,            r: String,            Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (l: String,            r: Number,            Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (l: String,            r: String,            Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (l: String,            r: java.lang.Boolean, Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (l: java.lang.Boolean, r: String,            Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: Number,            _: String,            Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: String,            _: Number,            Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: String,            _: String,            Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: String,            _: java.lang.Boolean, Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: java.lang.Boolean, _: String,            Left(exception)) => exception shouldBe a [CypherTypeException]
 
       case (_: Number,            _: java.lang.Boolean, Left(exception)) => exception shouldBe a [CypherTypeException]
       case (_: java.lang.Boolean, _: java.lang.Boolean, Left(exception)) => exception shouldBe a [CypherTypeException]
@@ -308,11 +308,11 @@ class CompiledMathHelperTest extends PropSpec with TableDrivenPropertyChecks wit
       case (l: NumberValue,       r: FloatValue,        Right(result)) => result should equal(l.doubleValue() * r.doubleValue())
       case (l: NumberValue,       r: NumberValue,       Right(result)) => result should equal(Values.longValue(l.longValue() * r.longValue()))
 
-      case (l: NumberValue,       r: TextValue,         Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (l: TextValue,         r: NumberValue,       Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (l: TextValue,         r: TextValue,         Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (l: TextValue,         r: BooleanValue,      Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (l: BooleanValue,      r: TextValue,         Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: NumberValue,       _: TextValue,         Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: TextValue,         _: NumberValue,       Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: TextValue,         _: TextValue,         Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: TextValue,         _: BooleanValue,      Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: BooleanValue,      _: TextValue,         Left(exception)) => exception shouldBe a [CypherTypeException]
 
       case (_: NumberValue,       _: BooleanValue,      Left(exception)) => exception shouldBe a [CypherTypeException]
       case (_: BooleanValue,      _: BooleanValue,      Left(exception)) => exception shouldBe a [CypherTypeException]
@@ -322,7 +322,7 @@ class CompiledMathHelperTest extends PropSpec with TableDrivenPropertyChecks wit
       case (l: DurationValue,       r: Number,          Right(result)) => result should equal(l.mul(Values.numberValue(r)))
       case (l: NumberValue,         r: DurationValue,   Right(result)) => result should equal(r.mul(l))
       case (l: Number,              r: DurationValue,   Right(result)) => result should equal(r.mul(Values.numberValue(l)))
-      case (l: TemporalValue[_, _], _,                      Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: TemporalValue[_, _], _,                      Left(exception)) => exception shouldBe a [CypherTypeException]
       case (_,                      _: TemporalValue[_, _], Left(exception)) => exception shouldBe a [CypherTypeException]
       case (_: DurationValue,       _,                      Left(exception)) => exception shouldBe a [CypherTypeException]
       case (_,                      _: DurationValue,       Left(exception)) => exception shouldBe a [CypherTypeException]
@@ -330,14 +330,14 @@ class CompiledMathHelperTest extends PropSpec with TableDrivenPropertyChecks wit
       case (_,                      _: PointValue,          Left(exception)) => exception shouldBe a [CypherTypeException]
 
       // Lists
-      case (l1: util.List[_], l2: util.List[_], Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (l1: ListValue,    l2: ListValue,    Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (l1: ListValue, l2: util.List[_], Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (l1: util.List[_], l2: ListValue, Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (x, l: ListValue, Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (l: ListValue, x, Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (x, l: util.List[_], Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (l: util.List[_], x, Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: util.List[_], _: util.List[_], Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: ListValue,    _: ListValue,    Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: ListValue, _: util.List[_], Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: util.List[_], _: ListValue, Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_, _: ListValue, Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: ListValue, _, Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_, _: util.List[_], Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: util.List[_], _, Left(exception)) => exception shouldBe a [CypherTypeException]
 
       // Mix of Neo values and Java values
       case (l: DoubleValue,       r: Number,            Right(result)) => result should equal(l.doubleValue() * r.doubleValue())
@@ -351,16 +351,16 @@ class CompiledMathHelperTest extends PropSpec with TableDrivenPropertyChecks wit
       case (l: NumberValue,       r: Number,            Right(result)) => result should equal(l.longValue() * r.longValue())
       case (l: Number,            r: NumberValue,       Right(result)) => result should equal(l.longValue() * r.longValue())
 
-      case (l: NumberValue,       r: String,            Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (l: String,            r: NumberValue,       Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (l: TextValue,         r: Number,            Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (l: Number,            r: TextValue,         Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (l: TextValue,         r: String,            Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (l: String,            r: TextValue,         Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (l: TextValue,         r: java.lang.Boolean, Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (l: java.lang.Boolean, r: TextValue,         Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (l: BooleanValue,      r: String,            Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (l: String,            r: BooleanValue,      Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: NumberValue,       _: String,            Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: String,            _: NumberValue,       Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: TextValue,         _: Number,            Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: Number,            _: TextValue,         Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: TextValue,         _: String,            Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: String,            _: TextValue,         Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: TextValue,         _: java.lang.Boolean, Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: java.lang.Boolean, _: TextValue,         Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: BooleanValue,      _: String,            Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: String,            _: BooleanValue,      Left(exception)) => exception shouldBe a [CypherTypeException]
 
       case (_: NumberValue,       _: java.lang.Boolean, Left(exception)) => exception shouldBe a [CypherTypeException]
       case (_: java.lang.Boolean, _: NumberValue,       Left(exception)) => exception shouldBe a [CypherTypeException]
@@ -388,11 +388,11 @@ class CompiledMathHelperTest extends PropSpec with TableDrivenPropertyChecks wit
       case (l: Number,            r: java.lang.Float,   Right(result)) => result should equal(l.doubleValue() / r)
       case (l: Number,            r: Number,            Right(result)) => result should equal(l.longValue() / r.longValue())
 
-      case (l: Number,            r: String,            Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (l: String,            r: Number,            Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (l: String,            r: String,            Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (l: String,            r: java.lang.Boolean, Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (l: java.lang.Boolean, r: String,            Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: Number,            _: String,            Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: String,            _: Number,            Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: String,            _: String,            Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: String,            _: java.lang.Boolean, Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: java.lang.Boolean, _: String,            Left(exception)) => exception shouldBe a [CypherTypeException]
 
       case (_: Number,            _: java.lang.Boolean, Left(exception)) => exception shouldBe a [CypherTypeException]
       case (_: java.lang.Boolean, _: java.lang.Boolean, Left(exception)) => exception shouldBe a [CypherTypeException]
@@ -408,11 +408,11 @@ class CompiledMathHelperTest extends PropSpec with TableDrivenPropertyChecks wit
       case (l: NumberValue,       r: FloatValue,        Right(result)) => result should equal(l.doubleValue() / r.doubleValue())
       case (l: NumberValue,       r: NumberValue,       Right(result)) => result should equal(Values.longValue(l.longValue() / r.longValue()))
 
-      case (l: NumberValue,       r: TextValue,         Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (l: TextValue,         r: NumberValue,       Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (l: TextValue,         r: TextValue,         Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (l: TextValue,         r: BooleanValue,      Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (l: BooleanValue,      r: TextValue,         Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: NumberValue,       _: TextValue,         Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: TextValue,         _: NumberValue,       Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: TextValue,         _: TextValue,         Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: TextValue,         _: BooleanValue,      Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: BooleanValue,      _: TextValue,         Left(exception)) => exception shouldBe a [CypherTypeException]
 
       case (_: NumberValue,       _: BooleanValue,      Left(exception)) => exception shouldBe a [CypherTypeException]
       case (_: BooleanValue,      _: BooleanValue,      Left(exception)) => exception shouldBe a [CypherTypeException]
@@ -420,7 +420,7 @@ class CompiledMathHelperTest extends PropSpec with TableDrivenPropertyChecks wit
 
       case (l: DurationValue,       r: NumberValue,     Right(result)) => result should equal(l.div(r))
       case (l: DurationValue,       r: Number,          Right(result)) => result should equal(l.div(Values.numberValue(r)))
-      case (l: TemporalValue[_, _], _,                      Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: TemporalValue[_, _], _,                      Left(exception)) => exception shouldBe a [CypherTypeException]
       case (_,                      _: TemporalValue[_, _], Left(exception)) => exception shouldBe a [CypherTypeException]
       case (_: DurationValue,       _,                      Left(exception)) => exception shouldBe a [CypherTypeException]
       case (_,                      _: DurationValue,       Left(exception)) => exception shouldBe a [CypherTypeException]
@@ -428,14 +428,14 @@ class CompiledMathHelperTest extends PropSpec with TableDrivenPropertyChecks wit
       case (_,                      _: PointValue,          Left(exception)) => exception shouldBe a [CypherTypeException]
 
       // Lists
-      case (l1: util.List[_], l2: util.List[_], Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (l1: ListValue,    l2: ListValue,    Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (l1: ListValue, l2: util.List[_], Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (l1: util.List[_], l2: ListValue, Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (x, l: ListValue, Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (l: ListValue, x, Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (x, l: util.List[_], Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (l: util.List[_], x, Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: util.List[_], _: util.List[_], Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: ListValue,    _: ListValue,    Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: ListValue, _: util.List[_], Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: util.List[_], _: ListValue, Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_, _: ListValue, Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: ListValue, _, Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_, _: util.List[_], Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: util.List[_], _, Left(exception)) => exception shouldBe a [CypherTypeException]
 
       // Mix of Neo values and Java values
       case (l: DoubleValue,       r: Number,            Right(result)) => result should equal(l.doubleValue() / r.doubleValue())
@@ -449,16 +449,16 @@ class CompiledMathHelperTest extends PropSpec with TableDrivenPropertyChecks wit
       case (l: NumberValue,       r: Number,            Right(result)) => result should equal(l.longValue() / r.longValue())
       case (l: Number,            r: NumberValue,       Right(result)) => result should equal(l.longValue() / r.longValue())
 
-      case (l: NumberValue,       r: String,            Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (l: String,            r: NumberValue,       Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (l: TextValue,         r: Number,            Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (l: Number,            r: TextValue,         Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (l: TextValue,         r: String,            Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (l: String,            r: TextValue,         Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (l: TextValue,         r: java.lang.Boolean, Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (l: java.lang.Boolean, r: TextValue,         Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (l: BooleanValue,      r: String,            Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (l: String,            r: BooleanValue,      Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: NumberValue,       _: String,            Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: String,            _: NumberValue,       Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: TextValue,         _: Number,            Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: Number,            _: TextValue,         Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: TextValue,         _: String,            Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: String,            _: TextValue,         Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: TextValue,         _: java.lang.Boolean, Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: java.lang.Boolean, _: TextValue,         Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: BooleanValue,      _: String,            Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: String,            _: BooleanValue,      Left(exception)) => exception shouldBe a [CypherTypeException]
 
       case (_: NumberValue,       _: java.lang.Boolean, Left(exception)) => exception shouldBe a [CypherTypeException]
       case (_: java.lang.Boolean, _: NumberValue,       Left(exception)) => exception shouldBe a [CypherTypeException]
@@ -486,11 +486,11 @@ class CompiledMathHelperTest extends PropSpec with TableDrivenPropertyChecks wit
       case (l: Number,            r: java.lang.Float,   Right(result)) => result should equal(l.doubleValue() % r)
       case (l: Number,            r: Number,            Right(result)) => result should equal(l.longValue() % r.longValue())
 
-      case (l: Number,            r: String,            Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (l: String,            r: Number,            Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (l: String,            r: String,            Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (l: String,            r: java.lang.Boolean, Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (l: java.lang.Boolean, r: String,            Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: Number,            _: String,            Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: String,            _: Number,            Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: String,            _: String,            Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: String,            _: java.lang.Boolean, Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: java.lang.Boolean, _: String,            Left(exception)) => exception shouldBe a [CypherTypeException]
 
       case (_: Number,            _: java.lang.Boolean, Left(exception)) => exception shouldBe a [CypherTypeException]
       case (_: java.lang.Boolean, _: java.lang.Boolean, Left(exception)) => exception shouldBe a [CypherTypeException]
@@ -508,17 +508,17 @@ class CompiledMathHelperTest extends PropSpec with TableDrivenPropertyChecks wit
       case (l: NumberValue,       r: NumberValue,       Right(result)) =>
         result should equal(l.longValue() % r.longValue())
 
-      case (l: NumberValue,       r: TextValue,         Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (l: TextValue,         r: NumberValue,       Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (l: TextValue,         r: TextValue,         Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (l: TextValue,         r: BooleanValue,      Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (l: BooleanValue,      r: TextValue,         Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: NumberValue,       _: TextValue,         Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: TextValue,         _: NumberValue,       Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: TextValue,         _: TextValue,         Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: TextValue,         _: BooleanValue,      Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: BooleanValue,      _: TextValue,         Left(exception)) => exception shouldBe a [CypherTypeException]
 
       case (_: NumberValue,       _: BooleanValue,      Left(exception)) => exception shouldBe a [CypherTypeException]
       case (_: BooleanValue,      _: BooleanValue,      Left(exception)) => exception shouldBe a [CypherTypeException]
       case (_: BooleanValue,      _: NumberValue,       Left(exception)) => exception shouldBe a [CypherTypeException]
 
-      case (l: TemporalValue[_, _], _,                      Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: TemporalValue[_, _], _,                      Left(exception)) => exception shouldBe a [CypherTypeException]
       case (_,                      _: TemporalValue[_, _], Left(exception)) => exception shouldBe a [CypherTypeException]
       case (_: DurationValue,       _,                      Left(exception)) => exception shouldBe a [CypherTypeException]
       case (_,                      _: DurationValue,       Left(exception)) => exception shouldBe a [CypherTypeException]
@@ -526,14 +526,14 @@ class CompiledMathHelperTest extends PropSpec with TableDrivenPropertyChecks wit
       case (_,                      _: PointValue,          Left(exception)) => exception shouldBe a [CypherTypeException]
 
       // Lists
-      case (l1: util.List[_], l2: util.List[_], Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (l1: ListValue,    l2: ListValue,    Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (l1: ListValue, l2: util.List[_], Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (l1: util.List[_], l2: ListValue, Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (x, l: ListValue, Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (l: ListValue, x, Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (x, l: util.List[_], Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (l: util.List[_], x, Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: util.List[_], _: util.List[_], Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: ListValue,    _: ListValue,    Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: ListValue, _: util.List[_], Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: util.List[_], _: ListValue, Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_, _: ListValue, Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: ListValue, _, Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_, _: util.List[_], Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: util.List[_], _, Left(exception)) => exception shouldBe a [CypherTypeException]
 
       // Mix of Neo values and Java values
       case (l: DoubleValue,       r: Number,            Right(result)) => result should equal(l.doubleValue() % r.doubleValue())
@@ -547,16 +547,16 @@ class CompiledMathHelperTest extends PropSpec with TableDrivenPropertyChecks wit
       case (l: NumberValue,       r: Number,            Right(result)) => result should equal(l.longValue() % r.longValue())
       case (l: Number,            r: NumberValue,       Right(result)) => result should equal(l.longValue() % r.longValue())
 
-      case (l: NumberValue,       r: String,            Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (l: String,            r: NumberValue,       Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (l: TextValue,         r: Number,            Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (l: Number,            r: TextValue,         Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (l: TextValue,         r: String,            Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (l: String,            r: TextValue,         Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (l: TextValue,         r: java.lang.Boolean, Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (l: java.lang.Boolean, r: TextValue,         Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (l: BooleanValue,      r: String,            Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (l: String,            r: BooleanValue,      Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: NumberValue,       _: String,            Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: String,            _: NumberValue,       Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: TextValue,         _: Number,            Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: Number,            _: TextValue,         Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: TextValue,         _: String,            Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: String,            _: TextValue,         Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: TextValue,         _: java.lang.Boolean, Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: java.lang.Boolean, _: TextValue,         Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: BooleanValue,      _: String,            Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: String,            _: BooleanValue,      Left(exception)) => exception shouldBe a [CypherTypeException]
 
       case (_: NumberValue,       _: java.lang.Boolean, Left(exception)) => exception shouldBe a [CypherTypeException]
       case (_: java.lang.Boolean, _: NumberValue,       Left(exception)) => exception shouldBe a [CypherTypeException]
@@ -584,11 +584,11 @@ class CompiledMathHelperTest extends PropSpec with TableDrivenPropertyChecks wit
       case (l: Number,            r: java.lang.Float,   Right(result)) => result should equal(Math.pow(l.doubleValue() , r.toDouble))
       case (l: Number,            r: Number,            Right(result)) => result should equal(Math.pow(l.longValue() , r.longValue()))
 
-      case (l: Number,            r: String,            Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (l: String,            r: Number,            Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (l: String,            r: String,            Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (l: String,            r: java.lang.Boolean, Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (l: java.lang.Boolean, r: String,            Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: Number,            _: String,            Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: String,            _: Number,            Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: String,            _: String,            Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: String,            _: java.lang.Boolean, Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: java.lang.Boolean, _: String,            Left(exception)) => exception shouldBe a [CypherTypeException]
 
       case (_: Number,            _: java.lang.Boolean, Left(exception)) => exception shouldBe a [CypherTypeException]
       case (_: java.lang.Boolean, _: java.lang.Boolean, Left(exception)) => exception shouldBe a [CypherTypeException]
@@ -606,17 +606,17 @@ class CompiledMathHelperTest extends PropSpec with TableDrivenPropertyChecks wit
       case (l: NumberValue,       r: NumberValue,       Right(result)) =>
         result should equal(Math.pow(l.longValue() , r.longValue()))
 
-      case (l: NumberValue,       r: TextValue,         Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (l: TextValue,         r: NumberValue,       Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (l: TextValue,         r: TextValue,         Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (l: TextValue,         r: BooleanValue,      Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (l: BooleanValue,      r: TextValue,         Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: NumberValue,       _: TextValue,         Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: TextValue,         _: NumberValue,       Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: TextValue,         _: TextValue,         Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: TextValue,         _: BooleanValue,      Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: BooleanValue,      _: TextValue,         Left(exception)) => exception shouldBe a [CypherTypeException]
 
       case (_: NumberValue,       _: BooleanValue,      Left(exception)) => exception shouldBe a [CypherTypeException]
       case (_: BooleanValue,      _: BooleanValue,      Left(exception)) => exception shouldBe a [CypherTypeException]
       case (_: BooleanValue,      _: NumberValue,       Left(exception)) => exception shouldBe a [CypherTypeException]
 
-      case (l: TemporalValue[_, _], _,                      Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: TemporalValue[_, _], _,                      Left(exception)) => exception shouldBe a [CypherTypeException]
       case (_,                      _: TemporalValue[_, _], Left(exception)) => exception shouldBe a [CypherTypeException]
       case (_: DurationValue,       _,                      Left(exception)) => exception shouldBe a [CypherTypeException]
       case (_,                      _: DurationValue,       Left(exception)) => exception shouldBe a [CypherTypeException]
@@ -624,14 +624,14 @@ class CompiledMathHelperTest extends PropSpec with TableDrivenPropertyChecks wit
       case (_,                      _: PointValue,          Left(exception)) => exception shouldBe a [CypherTypeException]
 
       // Lists
-      case (l1: util.List[_], l2: util.List[_], Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (l1: ListValue,    l2: ListValue,    Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (l1: ListValue, l2: util.List[_], Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (l1: util.List[_], l2: ListValue, Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (x, l: ListValue, Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (l: ListValue, x, Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (x, l: util.List[_], Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (l: util.List[_], x, Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: util.List[_], _: util.List[_], Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: ListValue,    _: ListValue,    Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: ListValue, _: util.List[_], Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: util.List[_], _: ListValue, Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_, _: ListValue, Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: ListValue, _, Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_, _: util.List[_], Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: util.List[_], _, Left(exception)) => exception shouldBe a [CypherTypeException]
 
       // Mix of Neo values and Java values
       case (l: DoubleValue,       r: Number,            Right(result)) => result should equal(Math.pow(l.doubleValue() , r.doubleValue()))
@@ -645,16 +645,16 @@ class CompiledMathHelperTest extends PropSpec with TableDrivenPropertyChecks wit
       case (l: NumberValue,       r: Number,            Right(result)) => result should equal(Math.pow(l.longValue() , r.longValue()))
       case (l: Number,            r: NumberValue,       Right(result)) => result should equal(Math.pow(l.longValue() , r.longValue()))
 
-      case (l: NumberValue,       r: String,            Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (l: String,            r: NumberValue,       Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (l: TextValue,         r: Number,            Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (l: Number,            r: TextValue,         Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (l: TextValue,         r: String,            Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (l: String,            r: TextValue,         Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (l: TextValue,         r: java.lang.Boolean, Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (l: java.lang.Boolean, r: TextValue,         Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (l: BooleanValue,      r: String,            Left(exception)) => exception shouldBe a [CypherTypeException]
-      case (l: String,            r: BooleanValue,      Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: NumberValue,       _: String,            Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: String,            _: NumberValue,       Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: TextValue,         _: Number,            Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: Number,            _: TextValue,         Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: TextValue,         _: String,            Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: String,            _: TextValue,         Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: TextValue,         _: java.lang.Boolean, Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: java.lang.Boolean, _: TextValue,         Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: BooleanValue,      _: String,            Left(exception)) => exception shouldBe a [CypherTypeException]
+      case (_: String,            _: BooleanValue,      Left(exception)) => exception shouldBe a [CypherTypeException]
 
       case (_: NumberValue,       _: java.lang.Boolean, Left(exception)) => exception shouldBe a [CypherTypeException]
       case (_: java.lang.Boolean, _: NumberValue,       Left(exception)) => exception shouldBe a [CypherTypeException]
@@ -667,9 +667,9 @@ class CompiledMathHelperTest extends PropSpec with TableDrivenPropertyChecks wit
     }
   }
 
-  implicit class I(i: Int) { def ! = i: java.lang.Integer }
-  implicit class D(i: Double) { def ! = i: java.lang.Double }
-  implicit class Z(i: Boolean) { def ! = i: java.lang.Boolean }
+  implicit class I(i: Int) { def ! : Integer = i: java.lang.Integer }
+  implicit class D(i: Double) { def ! : lang.Double = i: java.lang.Double }
+  implicit class Z(i: Boolean) { def ! : lang.Boolean = i: java.lang.Boolean }
 
   private def getTable(f: (AnyRef, AnyRef) => AnyRef) = {
 
@@ -691,7 +691,7 @@ class CompiledMathHelperTest extends PropSpec with TableDrivenPropertyChecks wit
       case ex: Throwable => Left(ex)
     }
 
-  val inputs = Table[Any]("Number", 42, 42.1, 42L, 42.3F)
+  val inputs: TableFor1[Any] = Table[Any]("Number", 42, 42.1, 42L, 42.3F)
   property("transformToInt") {
     forAll(inputs)(x => CompiledMathHelper.transformToInt(x) should equal(42))
   }
