@@ -88,8 +88,8 @@
         <license-text.header>headers/AGPL-3-header.txt</license-text.header>
 
         <scala-maven-plugin.version>3.4.4</scala-maven-plugin.version>
-        <scala.version>2.11.12</scala.version>
-        <scala.binary.version>2.11</scala.binary.version>
+        <scala.version>2.12.7</scala.version>
+        <scala.binary.version>2.12</scala.binary.version>
         <asm.version>7.0</asm.version>
         <metrics.version>4.0.2</metrics.version>
         <scala.target.vm>1.8</scala.target.vm>
@@ -1343,6 +1343,10 @@
                     <exclusion>
                         <artifactId>scalap</artifactId>
                         <groupId>org.scala-lang</groupId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.scala-lang.modules</groupId>
+                        <artifactId>scala-xml_${scala.binary.version}</artifactId>
                     </exclusion>
                 </exclusions>
             </dependency>
