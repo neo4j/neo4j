@@ -74,15 +74,6 @@ public class AuthProcedures
         userManager.deleteUser( username );
     }
 
-    @Deprecated
-    @Description( "Change the current user's password. Deprecated by dbms.security.changePassword." )
-    @Procedure( name = "dbms.changePassword", mode = DBMS, deprecatedBy = "dbms.security.changePassword" )
-    public void changePasswordDeprecated( @Name( "password" ) String password ) throws InvalidArgumentsException, IOException
-    {
-        // TODO: Deprecate this and create a new procedure that takes password as a byte[]
-        changePassword( password );
-    }
-
     @Description( "Change the current user's password." )
     @Procedure( name = "dbms.security.changePassword", mode = DBMS )
     public void changePassword( @Name( "password" ) String password ) throws InvalidArgumentsException, IOException
@@ -101,14 +92,6 @@ public class AuthProcedures
     public Stream<UserResult> showCurrentUser()
     {
         return Stream.of( userResultForName( securityContext.subject().username() ) );
-    }
-
-    @Deprecated
-    @Description( "Show the current user. Deprecated by dbms.showCurrentUser." )
-    @Procedure( name = "dbms.security.showCurrentUser", mode = DBMS, deprecatedBy = "dbms.showCurrentUser" )
-    public Stream<UserResult> showCurrentUserDeprecated()
-    {
-        return showCurrentUser();
     }
 
     @Description( "List all native users." )
