@@ -39,7 +39,7 @@ public class PhysicalFlushableChannel implements FlushableChannel
 
     private volatile boolean closed;
 
-    protected final ByteBuffer buffer;
+    protected ByteBuffer buffer;
     protected StoreChannel channel;
 
     public PhysicalFlushableChannel( StoreChannel channel )
@@ -61,6 +61,11 @@ public class PhysicalFlushableChannel implements FlushableChannel
     void setChannel( LogVersionedStoreChannel channel )
     {
         this.channel = channel;
+    }
+
+    void setBuffer( ByteBuffer byteBuffer )
+    {
+        this.buffer = byteBuffer;
     }
 
     /**
@@ -173,8 +178,8 @@ public class PhysicalFlushableChannel implements FlushableChannel
     public void close() throws IOException
     {
         prepareForFlush().flush();
-        closed = true;
-        channel.close();
+        this.closed = true;
+        this.channel.close();
     }
 
     /**

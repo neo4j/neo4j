@@ -284,6 +284,32 @@ class TransactionLogFileTest
         assertTrue( exception.getSuppressed()[0] instanceof IOException );
     }
 
+    @Test
+    void closeChannelThrowExceptionOnAttemptToAppendTransactionLogRecords() throws IOException
+    {
+        LogFiles logFiles = LogFilesBuilder.builder( directory.databaseLayout(), fileSystem )
+                .withTransactionIdStore( transactionIdStore )
+                .withLogVersionRepository( logVersionRepository )
+                .withLogEntryReader( logEntryReader() )
+                .build();
+        life.start();
+        life.add( logFiles );
+
+        LogFile logFile = logFiles.getLogFile();
+        FlushablePositionAwareChannel writer = logFile.getWriter();
+
+        life.shutdown();
+
+        assertThrows( Throwable.class, () -> writer.put( (byte) 7 ) );
+        assertThrows( Throwable.class, () -> writer.putInt( 7 ) );
+        assertThrows( Throwable.class, () -> writer.putLong( 7 ) );
+        assertThrows( Throwable.class, () -> writer.putDouble( 7 ) );
+        assertThrows( Throwable.class, () -> writer.putFloat( 7 ) );
+        assertThrows( Throwable.class, () -> writer.putShort( (short) 7 ) );
+        assertThrows( Throwable.class, () -> writer.put( new byte[]{1, 2, 3}, 3 ) );
+        assertThrows( IllegalStateException.class, () -> writer.prepareForFlush().flush() );
+    }
+
     private static byte[] readBytes( ReadableClosableChannel reader, int length ) throws IOException
     {
         byte[] result = new byte[length];

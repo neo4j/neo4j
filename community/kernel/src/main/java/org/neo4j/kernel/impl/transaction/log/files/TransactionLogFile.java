@@ -104,10 +104,6 @@ class TransactionLogFile extends LifecycleAdapter implements LogFile
         {
             writer.close();
         }
-        if ( channel != null )
-        {
-            channel.close();
-        }
         if ( closeableByteBuffer != null )
         {
             closeableByteBuffer.close();

@@ -30,6 +30,7 @@ import java.nio.ByteBuffer;
  */
 public class PositionAwarePhysicalFlushableChannel implements FlushablePositionAwareChannel
 {
+    private static final ByteBuffer EMPTY_READ_ONLY_BUFFER = ByteBuffer.allocate( 0 ).asReadOnlyBuffer();
     private LogVersionedStoreChannel logVersionedStoreChannel;
     private final PhysicalFlushableChannel channel;
 
@@ -98,6 +99,7 @@ public class PositionAwarePhysicalFlushableChannel implements FlushablePositionA
     public void close() throws IOException
     {
         channel.close();
+        channel.setBuffer( EMPTY_READ_ONLY_BUFFER );
     }
 
     public void setChannel( LogVersionedStoreChannel channel )
