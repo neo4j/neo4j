@@ -29,9 +29,9 @@ import java.net.URI;
 import java.util.List;
 import java.util.Optional;
 
-import org.neo4j.configuration.BoltConnector;
-import org.neo4j.configuration.Connector;
-import org.neo4j.configuration.ConnectorPortRegister;
+import org.neo4j.configuration.connectors.BoltConnector;
+import org.neo4j.configuration.connectors.Connector;
+import org.neo4j.configuration.connectors.ConnectorPortRegister;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.harness.junit.Neo4j;
@@ -40,7 +40,7 @@ import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.server.NeoServer;
 
-import static org.neo4j.configuration.HttpConnector.Encryption;
+import static org.neo4j.configuration.connectors.HttpConnector.Encryption;
 
 public class InProcessNeo4j implements Neo4j, AutoCloseable
 {

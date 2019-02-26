@@ -37,8 +37,8 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.HttpConnector;
-import org.neo4j.configuration.HttpConnector.Encryption;
+import org.neo4j.configuration.connectors.HttpConnector;
+import org.neo4j.configuration.connectors.HttpConnector.Encryption;
 import org.neo4j.graphdb.facade.GraphDatabaseDependencies;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.kernel.internal.KernelData;

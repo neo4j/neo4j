@@ -34,7 +34,7 @@ import java.util.Set;
 
 import org.neo4j.bolt.v1.messaging.Neo4jPackV1;
 import org.neo4j.bolt.v1.transport.socket.client.SecureSocketConnection;
-import org.neo4j.configuration.BoltConnector;
+import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.ssl.PkiUtils;
 
 import static org.hamcrest.CoreMatchers.equalTo;

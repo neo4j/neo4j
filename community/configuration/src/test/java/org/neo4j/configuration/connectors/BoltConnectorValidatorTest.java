@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.configuration;
+package org.neo4j.configuration.connectors;
 
 import org.junit.jupiter.api.Test;
 
@@ -26,7 +26,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
 
-import org.neo4j.configuration.BoltConnector.EncryptionLevel;
+import org.neo4j.configuration.connectors.BoltConnector.EncryptionLevel;
 import org.neo4j.graphdb.config.InvalidSettingException;
 import org.neo4j.graphdb.config.Setting;
 
@@ -36,8 +36,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.neo4j.configuration.Connector.ConnectorType.BOLT;
-import static org.neo4j.configuration.ConnectorValidator.DEPRECATED_CONNECTOR_MSG;
+import static org.neo4j.configuration.connectors.Connector.ConnectorType.BOLT;
+import static org.neo4j.configuration.connectors.ConnectorValidator.DEPRECATED_CONNECTOR_MSG;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 class BoltConnectorValidatorTest

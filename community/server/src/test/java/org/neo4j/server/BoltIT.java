@@ -28,8 +28,8 @@ import java.io.IOException;
 import java.util.Map;
 
 import org.neo4j.bolt.v1.transport.socket.client.SecureSocketConnection;
-import org.neo4j.configuration.BoltConnector;
-import org.neo4j.configuration.ConnectorPortRegister;
+import org.neo4j.configuration.connectors.BoltConnector;
+import org.neo4j.configuration.connectors.ConnectorPortRegister;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.server.rest.JaxRsResponse;
 import org.neo4j.server.rest.RestRequest;

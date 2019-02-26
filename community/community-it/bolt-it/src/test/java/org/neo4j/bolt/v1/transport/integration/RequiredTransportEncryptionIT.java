@@ -32,7 +32,7 @@ import org.neo4j.bolt.v1.messaging.Neo4jPackV1;
 import org.neo4j.bolt.v1.transport.socket.client.SocketConnection;
 import org.neo4j.bolt.v1.transport.socket.client.TransportConnection;
 import org.neo4j.bolt.v1.transport.socket.client.WebSocketConnection;
-import org.neo4j.configuration.BoltConnector;
+import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.function.Factory;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.helpers.HostnamePort;
@@ -41,7 +41,7 @@ import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.bolt.v1.transport.integration.Neo4jWithSocket.DEFAULT_CONNECTOR_KEY;
 import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyDisconnects;
-import static org.neo4j.configuration.BoltConnector.EncryptionLevel.REQUIRED;
+import static org.neo4j.configuration.connectors.BoltConnector.EncryptionLevel.REQUIRED;
 
 @RunWith( Parameterized.class )
 public class RequiredTransportEncryptionIT

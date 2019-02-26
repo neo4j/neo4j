@@ -25,8 +25,8 @@ import org.junit.Test;
 import java.io.IOException;
 import javax.ws.rs.core.MediaType;
 
-import org.neo4j.configuration.ConnectorPortRegister;
-import org.neo4j.configuration.HttpConnector;
+import org.neo4j.configuration.connectors.ConnectorPortRegister;
+import org.neo4j.configuration.connectors.HttpConnector;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.server.configuration.ServerSettings;

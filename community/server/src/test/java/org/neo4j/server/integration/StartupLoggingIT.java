@@ -32,11 +32,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import org.neo4j.configuration.BoltConnector;
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.configuration.HttpConnector;
-import org.neo4j.configuration.HttpConnector.Encryption;
 import org.neo4j.configuration.Settings;
+import org.neo4j.configuration.connectors.BoltConnector;
+import org.neo4j.configuration.connectors.HttpConnector;
+import org.neo4j.configuration.connectors.HttpConnector.Encryption;
 import org.neo4j.configuration.ssl.LegacySslPolicyConfig;
 import org.neo4j.server.CommunityBootstrapper;
 import org.neo4j.test.rule.SuppressOutput;

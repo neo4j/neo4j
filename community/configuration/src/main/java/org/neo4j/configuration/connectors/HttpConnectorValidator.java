@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.configuration;
+package org.neo4j.configuration.connectors;
 
 import java.util.EnumSet;
 import java.util.Map;
@@ -26,16 +26,13 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import javax.annotation.Nonnull;
 
-import org.neo4j.configuration.HttpConnector.Encryption;
+import org.neo4j.configuration.connectors.HttpConnector.Encryption;
 import org.neo4j.graphdb.config.BaseSetting;
 import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.graphdb.config.InvalidSettingException;
 import org.neo4j.graphdb.config.Setting;
 
 import static java.lang.String.format;
-import static org.neo4j.configuration.Connector.ConnectorType.HTTP;
-import static org.neo4j.configuration.HttpConnector.Encryption.NONE;
-import static org.neo4j.configuration.HttpConnector.Encryption.TLS;
 import static org.neo4j.configuration.Settings.BOOLEAN;
 import static org.neo4j.configuration.Settings.NO_DEFAULT;
 import static org.neo4j.configuration.Settings.advertisedAddress;
@@ -43,6 +40,9 @@ import static org.neo4j.configuration.Settings.describeOneOf;
 import static org.neo4j.configuration.Settings.listenAddress;
 import static org.neo4j.configuration.Settings.optionsObeyCase;
 import static org.neo4j.configuration.Settings.setting;
+import static org.neo4j.configuration.connectors.Connector.ConnectorType.HTTP;
+import static org.neo4j.configuration.connectors.HttpConnector.Encryption.NONE;
+import static org.neo4j.configuration.connectors.HttpConnector.Encryption.TLS;
 
 public class HttpConnectorValidator extends ConnectorValidator
 {

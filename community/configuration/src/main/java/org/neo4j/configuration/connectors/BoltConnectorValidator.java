@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.configuration;
+package org.neo4j.configuration.connectors;
 
 import java.util.Map;
 import java.util.Optional;
@@ -27,8 +27,6 @@ import org.neo4j.graphdb.config.BaseSetting;
 import org.neo4j.graphdb.config.Setting;
 
 import static java.lang.String.format;
-import static org.neo4j.configuration.BoltConnector.EncryptionLevel.OPTIONAL;
-import static org.neo4j.configuration.Connector.ConnectorType.BOLT;
 import static org.neo4j.configuration.Settings.BOOLEAN;
 import static org.neo4j.configuration.Settings.DURATION;
 import static org.neo4j.configuration.Settings.INTEGER;
@@ -37,6 +35,8 @@ import static org.neo4j.configuration.Settings.advertisedAddress;
 import static org.neo4j.configuration.Settings.listenAddress;
 import static org.neo4j.configuration.Settings.optionsObeyCase;
 import static org.neo4j.configuration.Settings.setting;
+import static org.neo4j.configuration.connectors.BoltConnector.EncryptionLevel.OPTIONAL;
+import static org.neo4j.configuration.connectors.Connector.ConnectorType.BOLT;
 
 public class BoltConnectorValidator extends ConnectorValidator
 {

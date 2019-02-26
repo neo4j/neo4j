@@ -30,8 +30,8 @@ import java.nio.channels.ServerSocketChannel;
 import java.util.Map;
 
 import org.neo4j.bolt.transport.NettyServer;
-import org.neo4j.configuration.BoltConnector;
-import org.neo4j.configuration.ConnectorPortRegister;
+import org.neo4j.configuration.connectors.BoltConnector;
+import org.neo4j.configuration.connectors.ConnectorPortRegister;
 import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.helpers.PortBindException;

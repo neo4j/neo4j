@@ -35,7 +35,7 @@ import java.util.logging.Logger;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.ConfigurationValidator;
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.configuration.HttpConnector.Encryption;
+import org.neo4j.configuration.connectors.HttpConnector.Encryption;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.facade.GraphDatabaseDependencies;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;

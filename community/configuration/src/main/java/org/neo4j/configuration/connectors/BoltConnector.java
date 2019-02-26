@@ -17,15 +17,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.configuration;
+package org.neo4j.configuration.connectors;
 
 import java.time.Duration;
 
+import org.neo4j.configuration.Description;
+import org.neo4j.configuration.Internal;
+import org.neo4j.configuration.ReplacedBy;
+import org.neo4j.configuration.Settings;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.ListenSocketAddress;
 
-import static org.neo4j.configuration.BoltConnector.EncryptionLevel.OPTIONAL;
 import static org.neo4j.configuration.Settings.DURATION;
 import static org.neo4j.configuration.Settings.INTEGER;
 import static org.neo4j.configuration.Settings.advertisedAddress;
@@ -33,6 +36,7 @@ import static org.neo4j.configuration.Settings.legacyFallback;
 import static org.neo4j.configuration.Settings.listenAddress;
 import static org.neo4j.configuration.Settings.optionsObeyCase;
 import static org.neo4j.configuration.Settings.setting;
+import static org.neo4j.configuration.connectors.BoltConnector.EncryptionLevel.OPTIONAL;
 
 @Description( "Configuration options for Bolt connectors. " +
               "\"(bolt-connector-key)\" is a placeholder for a unique name for the connector, for instance " +

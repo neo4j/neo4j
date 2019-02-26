@@ -26,6 +26,8 @@ import java.time.ZoneOffset;
 import java.util.List;
 
 import org.neo4j.common.Edition;
+import org.neo4j.configuration.connectors.BoltConnectorValidator;
+import org.neo4j.configuration.connectors.HttpConnectorValidator;
 import org.neo4j.configuration.ssl.LegacySslPolicyConfig;
 import org.neo4j.configuration.ssl.SslPolicyConfigValidator;
 import org.neo4j.graphdb.config.Setting;

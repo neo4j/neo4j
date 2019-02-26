@@ -44,7 +44,11 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import org.neo4j.common.CopyOnWriteHashMap;
-import org.neo4j.configuration.HttpConnector.Encryption;
+import org.neo4j.configuration.connectors.BoltConnector;
+import org.neo4j.configuration.connectors.Connector;
+import org.neo4j.configuration.connectors.HttpConnector;
+import org.neo4j.configuration.connectors.HttpConnector.Encryption;
+import org.neo4j.configuration.connectors.HttpConnectorValidator;
 import org.neo4j.graphdb.config.BaseSetting;
 import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.graphdb.config.InvalidSettingException;
@@ -56,11 +60,11 @@ import org.neo4j.logging.Log;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonMap;
-import static org.neo4j.configuration.Connector.ConnectorType.BOLT;
-import static org.neo4j.configuration.Connector.ConnectorType.HTTP;
-import static org.neo4j.configuration.HttpConnector.Encryption.NONE;
-import static org.neo4j.configuration.HttpConnector.Encryption.TLS;
 import static org.neo4j.configuration.Settings.TRUE;
+import static org.neo4j.configuration.connectors.Connector.ConnectorType.BOLT;
+import static org.neo4j.configuration.connectors.Connector.ConnectorType.HTTP;
+import static org.neo4j.configuration.connectors.HttpConnector.Encryption.NONE;
+import static org.neo4j.configuration.connectors.HttpConnector.Encryption.TLS;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 /**

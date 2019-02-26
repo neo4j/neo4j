@@ -33,9 +33,9 @@ import java.util.regex.Pattern;
 
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.ConnectorPortRegister;
-import org.neo4j.configuration.HttpConnector;
-import org.neo4j.configuration.HttpConnector.Encryption;
+import org.neo4j.configuration.connectors.ConnectorPortRegister;
+import org.neo4j.configuration.connectors.HttpConnector;
+import org.neo4j.configuration.connectors.HttpConnector.Encryption;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.facade.ExternalDependencies;
 import org.neo4j.helpers.AdvertisedSocketAddress;
