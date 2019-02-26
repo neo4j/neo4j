@@ -24,13 +24,18 @@ import java.time.Clock
 import org.neo4j.cypher.internal.QueryCache.ParameterTypeMap
 import org.neo4j.cypher.internal._
 import org.neo4j.cypher.internal.compatibility.v4_0.{WrappedMonitors => WrappedMonitorsv4_0}
-import org.neo4j.cypher.internal.compiler.v4_0._
-import org.neo4j.cypher.internal.compiler.v4_0.phases.LogicalPlanState
-import org.neo4j.cypher.internal.planner.v4_0.spi.PlanContext
+import org.neo4j.cypher.internal.compiler.v4_0.{CypherPlanner => CypherPlannerv4_0, _}
+import org.neo4j.cypher.internal.compiler.v4_0.phases.{LogicalPlanState, PlannerContext, PlannerContextCreator}
+import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.idp._
+import org.neo4j.cypher.internal.planner.v4_0.spi.{CostBasedPlannerName, DPPlannerName, IDPPlannerName, PlanContext}
+import org.neo4j.cypher.internal.runtime.interpreted.TransactionalContextWrapper
+import org.neo4j.cypher.internal.v4_0.frontend.phases._
+import org.neo4j.cypher.internal.v4_0.rewriting.RewriterStepSequencer
+import org.neo4j.cypher.{CypherPlannerOption, CypherUpdateStrategy}
 import org.neo4j.helpers.collection.Pair
+import org.neo4j.kernel.impl.api.SchemaStateKey
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.logging.Log
-import org.neo4j.cypher.internal.v4_0.frontend.phases._
 
 /**
   * Base planner.
@@ -43,6 +48,8 @@ abstract class BasePlanner[STATEMENT <: AnyRef, PARSED_STATE <: AnyRef](
                                                 clock: Clock,
                                                 kernelMonitors: KernelMonitors,
                                                 log: Log,
+                                                plannerOption: CypherPlannerOption,
+                                                updateStrategy: CypherUpdateStrategy,
                                                 txIdProvider: () => Long
                                                ) extends CachingPlanner[PARSED_STATE] {
 
@@ -52,6 +59,53 @@ abstract class BasePlanner[STATEMENT <: AnyRef, PARSED_STATE <: AnyRef](
   protected val cacheTracer: CacheTracer[Pair[STATEMENT, ParameterTypeMap]] = monitors.newMonitor[CacheTracer[Pair[STATEMENT, ParameterTypeMap]]]("cypher4.0")
 
   override def parserCacheSize: Int = config.queryCacheSize
+
+  protected val rewriterSequencer: String => RewriterStepSequencer = {
+    import Assertion._
+    import RewriterStepSequencer._
+
+    if (assertionsEnabled()) newValidating else newPlain
+  }
+
+  protected val contextCreator: PlannerContextCreator.type = PlannerContextCreator
+
+  protected val plannerName: CostBasedPlannerName =
+    plannerOption match {
+      case CypherPlannerOption.default => CostBasedPlannerName.default
+      case CypherPlannerOption.cost | CypherPlannerOption.idp => IDPPlannerName
+      case CypherPlannerOption.dp => DPPlannerName
+      case _ => throw new IllegalArgumentException(s"unknown cost based planner: ${plannerOption.name}")
+    }
+
+  protected val maybeUpdateStrategy: Option[UpdateStrategy] = updateStrategy match {
+    case CypherUpdateStrategy.eager => Some(eagerUpdateStrategy)
+    case _ => None
+  }
+
+  protected val planner: CypherPlannerv4_0[PlannerContext] =
+    new CypherPlannerFactory().costBasedCompiler(config, clock, monitors, rewriterSequencer,
+      maybeUpdateStrategy, contextCreator)
+
+  protected def createQueryGraphSolver(): IDPQueryGraphSolver =
+    plannerName match {
+      case IDPPlannerName =>
+        val monitor = monitors.newMonitor[IDPQueryGraphSolverMonitor]()
+        val solverConfig = new ConfigurableIDPSolverConfig(
+          maxTableSize = config.idpMaxTableSize,
+          iterationDurationLimit = config.idpIterationDuration
+        )
+        val singleComponentPlanner = SingleComponentPlanner(monitor, solverConfig)
+        IDPQueryGraphSolver(singleComponentPlanner, cartesianProductsOrValueJoins, monitor)
+
+      case DPPlannerName =>
+        val monitor = monitors.newMonitor[IDPQueryGraphSolverMonitor]()
+        val singleComponentPlanner = SingleComponentPlanner(monitor, DPSolverConfig)
+        IDPQueryGraphSolver(singleComponentPlanner, cartesianProductsOrValueJoins, monitor)
+    }
+
+  protected val schemaStateKey: SchemaStateKey = SchemaStateKey.newKey()
+  protected def checkForSchemaChanges(tcw: TransactionalContextWrapper): Unit =
+    tcw.getOrCreateFromSchemaState(schemaStateKey, planCache.clear())
 
   protected val planCache: AstLogicalPlanCache[STATEMENT] =
     new AstLogicalPlanCache(config.queryCacheSize,

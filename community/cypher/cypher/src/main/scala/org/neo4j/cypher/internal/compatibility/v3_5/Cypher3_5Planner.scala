@@ -27,11 +27,9 @@ import org.neo4j.cypher.internal._
 import org.neo4j.cypher.internal.compatibility._
 import org.neo4j.cypher.internal.compatibility.notification.LogicalPlanNotifications
 import org.neo4j.cypher.internal.compiler.v4_0
-import org.neo4j.cypher.internal.compiler.v4_0.phases.{PlannerContext, PlannerContextCreator}
-import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.idp._
+import org.neo4j.cypher.internal.compiler.v4_0.phases.PlannerContext
 import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.{CachedMetricsFactory, SimpleMetricsFactory}
 import org.neo4j.cypher.internal.compiler.v4_0.{CypherPlanner => _, _}
-import org.neo4j.cypher.internal.planner.v4_0.spi.{CostBasedPlannerName, DPPlannerName, IDPPlannerName}
 import org.neo4j.cypher.internal.runtime.interpreted._
 import org.neo4j.cypher.internal.spi.v4_0.{ExceptionTranslatingPlanContext, TransactionBoundPlanContext}
 import org.neo4j.cypher.internal.v4_0.ast.Statement
@@ -39,12 +37,10 @@ import org.neo4j.cypher.internal.v4_0.expressions.Parameter
 import org.neo4j.cypher.internal.v4_0.frontend.PlannerName
 import org.neo4j.cypher.internal.v4_0.frontend.phases.{BaseState, CompilationPhaseTracer, InternalNotificationLogger, RecordingNotificationLogger}
 import org.neo4j.cypher.internal.v4_0.logical.plans.{LoadCSV, LogicalPlan}
-import org.neo4j.cypher.internal.v4_0.rewriting.RewriterStepSequencer
 import org.neo4j.cypher.internal.v4_0.util.InputPosition
 import org.neo4j.cypher.internal.v4_0.util.attribution.SequentialIdGen
 import org.neo4j.cypher.{CypherPlannerOption, CypherUpdateStrategy}
 import org.neo4j.helpers.collection.Pair
-import org.neo4j.kernel.impl.api.SchemaStateKey
 import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.logging.Log
@@ -58,57 +54,9 @@ case class Cypher3_5Planner(config: CypherPlannerConfiguration,
                             plannerOption: CypherPlannerOption,
                             updateStrategy: CypherUpdateStrategy,
                             txIdProvider: () => Long)
-  extends BasePlanner[Statement, BaseState](config, clock, kernelMonitors, log, txIdProvider) with CypherPlanner {
+  extends BasePlanner[Statement, BaseState](config, clock, kernelMonitors, log, plannerOption, updateStrategy, txIdProvider) with CypherPlanner {
 
   monitors.addMonitorListener(logStalePlanRemovalMonitor(logger), "cypher4.0")//cypher3.5?
-
-  val plannerName: CostBasedPlannerName = plannerOption match {
-    case CypherPlannerOption.default => CostBasedPlannerName.default
-    case CypherPlannerOption.cost | CypherPlannerOption.idp => IDPPlannerName
-    case CypherPlannerOption.dp => DPPlannerName
-    case _ => throw new IllegalArgumentException(s"unknown cost based planner: ${plannerOption.name}")
-  }
-
-  val maybeUpdateStrategy: Option[UpdateStrategy] = updateStrategy match {
-    case CypherUpdateStrategy.eager => Some(eagerUpdateStrategy)
-    case _ => None
-  }
-
-  override def parserCacheSize: Int = config.queryCacheSize
-
-  val rewriterSequencer: String => RewriterStepSequencer = {
-    import Assertion._
-    import RewriterStepSequencer._
-
-    if (assertionsEnabled()) newValidating else newPlain
-  }
-
-  private val contextCreator = PlannerContextCreator
-
-  protected val planner: v4_0.CypherPlanner[PlannerContext] =
-    new CypherPlannerFactory().costBasedCompiler(config, clock, monitors, rewriterSequencer,
-      maybeUpdateStrategy, contextCreator)
-
-  private def createQueryGraphSolver() =
-    plannerName match {
-      case IDPPlannerName =>
-        val monitor = monitors.newMonitor[IDPQueryGraphSolverMonitor]()
-        val solverConfig = new ConfigurableIDPSolverConfig(
-          maxTableSize = config.idpMaxTableSize,
-          iterationDurationLimit = config.idpIterationDuration
-        )
-        val singleComponentPlanner = SingleComponentPlanner(monitor, solverConfig)
-        IDPQueryGraphSolver(singleComponentPlanner, cartesianProductsOrValueJoins, monitor)
-
-      case DPPlannerName =>
-        val monitor = monitors.newMonitor[IDPQueryGraphSolverMonitor]()
-        val singleComponentPlanner = SingleComponentPlanner(monitor, DPSolverConfig)
-        IDPQueryGraphSolver(singleComponentPlanner, cartesianProductsOrValueJoins, monitor)
-    }
-
-  private val schemaStateKey = SchemaStateKey.newKey()
-  private def checkForSchemaChanges(tcw: TransactionalContextWrapper): Unit =
-    tcw.getOrCreateFromSchemaState(schemaStateKey, planCache.clear())
 
   override def parseAndPlan(preParsedQuery: PreParsedQuery,
                             tracer: CompilationPhaseTracer,
@@ -116,7 +64,7 @@ case class Cypher3_5Planner(config: CypherPlannerConfiguration,
                             params: MapValue
                            ): LogicalPlanResult = {
 
-    // TODO use 3.5 specific parser and move rest (duplicate of 4.0) into superclass?
+    // TODO use 3.5 specific parser
 
     runSafely {
       val notificationLogger = new RecordingNotificationLogger(Some(preParsedQuery.offset))
@@ -210,7 +158,7 @@ private[v3_5] class Parser3_5(planner: v4_0.CypherPlanner[PlannerContext],
                               offset: InputPosition,
                               tracer: CompilationPhaseTracer
                              ) extends Parser[BaseState] {
-
+  // TODO use 3.5 specific things?
   override def parse(preParsedQuery: PreParsedQuery): BaseState = {
     planner.parseQuery(preParsedQuery.statement,
       preParsedQuery.rawStatement,
