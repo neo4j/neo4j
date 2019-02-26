@@ -267,7 +267,6 @@ BSD License
   asm-tree
   asm-util
   Scala Compiler
-  scala-parser-combinators
   scala-xml
   Scalap
 ------------------------------------------------------------------------------
