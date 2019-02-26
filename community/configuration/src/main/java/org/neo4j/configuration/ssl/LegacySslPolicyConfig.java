@@ -24,8 +24,11 @@ import java.io.File;
 import org.neo4j.configuration.Description;
 import org.neo4j.configuration.Internal;
 import org.neo4j.configuration.LoadableConfig;
-import org.neo4j.configuration.Settings;
 import org.neo4j.graphdb.config.Setting;
+
+import static org.neo4j.configuration.Settings.PATH;
+import static org.neo4j.configuration.Settings.derivedSetting;
+import static org.neo4j.configuration.Settings.pathSetting;
 
 /**
  * To be removed in favour of {@link SslPolicyConfig}. The settings below are still
@@ -38,17 +41,17 @@ public class LegacySslPolicyConfig implements LoadableConfig
 
     @Description( "Directory for storing certificates to be used by Neo4j for TLS connections" )
     public static final Setting<File> certificates_directory =
-            Settings.pathSetting( "dbms.directories.certificates", "certificates" );
+            pathSetting( "dbms.directories.certificates", "certificates" );
 
     @Internal
     @Description( "Path to the X.509 public certificate to be used by Neo4j for TLS connections" )
     public static final Setting<File> tls_certificate_file =
-            Settings.derivedSetting( "unsupported.dbms.security.tls_certificate_file", certificates_directory,
-                    certificates -> new File( certificates, "neo4j.cert" ), Settings.PATH );
+            derivedSetting( "unsupported.dbms.security.tls_certificate_file", certificates_directory,
+                    certificates -> new File( certificates, "neo4j.cert" ), PATH );
 
     @Internal
     @Description( "Path to the X.509 private key to be used by Neo4j for TLS connections" )
     public static final Setting<File> tls_key_file =
-            Settings.derivedSetting( "unsupported.dbms.security.tls_key_file", certificates_directory,
-                    certificates -> new File( certificates, "neo4j.key" ), Settings.PATH );
+            derivedSetting( "unsupported.dbms.security.tls_key_file", certificates_directory,
+                    certificates -> new File( certificates, "neo4j.key" ), PATH );
 }

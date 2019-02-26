@@ -20,7 +20,6 @@
 package org.neo4j.configuration;
 
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 
 import java.util.Map;
 
@@ -31,19 +30,24 @@ import org.neo4j.logging.Log;
 import static java.util.Collections.singletonList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
+import static org.neo4j.configuration.GraphDatabaseSettings.strict_config_validation;
 import static org.neo4j.configuration.Settings.FALSE;
 import static org.neo4j.configuration.Settings.TRUE;
 
 class IndividualSettingsValidatorTest
 {
-    private final Log log = Mockito.mock( Log.class );
+    private final Log log = mock( Log.class );
 
     @Test
     void nonStrictRetainsSettings()
     {
-        IndividualSettingsValidator iv = new IndividualSettingsValidator( singletonList( GraphDatabaseSettings.strict_config_validation ), true );
+        IndividualSettingsValidator iv = new IndividualSettingsValidator( singletonList( strict_config_validation ), true );
 
-        final Map<String, String> rawConfig = MapUtil.stringMap( GraphDatabaseSettings.strict_config_validation.name(), FALSE,
+        final Map<String, String> rawConfig = MapUtil.stringMap( strict_config_validation.name(), FALSE,
                 "dbms.jibber.jabber", "bla",
                 "external_plugin.foo", "bar" );
 
@@ -51,16 +55,16 @@ class IndividualSettingsValidatorTest
 
         iv.validate( config, log );
 
-        Mockito.verify( log ).warn( "Unknown config option: %s", "dbms.jibber.jabber" );
-        Mockito.verifyNoMoreInteractions( log );
+        verify( log ).warn( "Unknown config option: %s", "dbms.jibber.jabber" );
+        verifyNoMoreInteractions( log );
     }
 
     @Test
     void strictErrorsOnUnknownSettingsInOurNamespace()
     {
-        IndividualSettingsValidator iv = new IndividualSettingsValidator( singletonList( GraphDatabaseSettings.strict_config_validation ), true );
+        IndividualSettingsValidator iv = new IndividualSettingsValidator( singletonList( strict_config_validation ), true );
 
-        final Map<String, String> rawConfig = MapUtil.stringMap( GraphDatabaseSettings.strict_config_validation.name(), TRUE,
+        final Map<String, String> rawConfig = MapUtil.stringMap( strict_config_validation.name(), TRUE,
                 "dbms.jibber.jabber", "bla",
                 "external_plugin.foo", "bar" );
 
@@ -69,30 +73,30 @@ class IndividualSettingsValidatorTest
         InvalidSettingException exception = assertThrows( InvalidSettingException.class, () -> iv.validate( config, log ) );
         assertEquals(
                 String.format( "Unknown config option 'dbms.jibber.jabber'. To resolve either remove" + " it from your configuration or set '%s' to false.",
-                        GraphDatabaseSettings.strict_config_validation.name() ), exception.getMessage() );
+                        strict_config_validation.name() ), exception.getMessage() );
     }
 
     @Test
     void strictAllowsStuffOutsideOurNamespace()
     {
-        IndividualSettingsValidator iv = new IndividualSettingsValidator( singletonList( GraphDatabaseSettings.strict_config_validation ), true );
+        IndividualSettingsValidator iv = new IndividualSettingsValidator( singletonList( strict_config_validation ), true );
 
-        final Map<String, String> rawConfig = MapUtil.stringMap( GraphDatabaseSettings.strict_config_validation.name(), TRUE,
+        final Map<String, String> rawConfig = MapUtil.stringMap( strict_config_validation.name(), TRUE,
                 "external_plugin.foo", "bar" );
 
         Config config = mockConfig( rawConfig );
 
         iv.validate( config, log );
-        Mockito.verifyNoMoreInteractions( log );
+        verifyNoMoreInteractions( log );
     }
 
     private Config mockConfig( Map<String,String> rawConfig )
     {
-        Config config = Mockito.mock( Config.class );
+        Config config = mock( Config.class );
 
-        Mockito.when( config.getRaw() ).thenReturn( rawConfig );
-        Mockito.when( config.get( GraphDatabaseSettings.strict_config_validation ) )
-                .thenReturn( Boolean.valueOf( rawConfig.get( GraphDatabaseSettings.strict_config_validation.name() ) ) );
+        when( config.getRaw() ).thenReturn( rawConfig );
+        when( config.get( strict_config_validation ) )
+                .thenReturn( Boolean.valueOf( rawConfig.get( strict_config_validation.name() ) ) );
 
         return config;
     }

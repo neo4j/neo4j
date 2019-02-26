@@ -27,11 +27,20 @@ import org.neo4j.configuration.Group;
 import org.neo4j.configuration.GroupSettingSupport;
 import org.neo4j.configuration.Internal;
 import org.neo4j.configuration.LoadableConfig;
-import org.neo4j.configuration.Settings;
 import org.neo4j.graphdb.config.Setting;
 
 import static java.lang.String.join;
 import static java.util.Collections.singletonList;
+import static org.neo4j.configuration.Settings.BOOLEAN;
+import static org.neo4j.configuration.Settings.FALSE;
+import static org.neo4j.configuration.Settings.NO_DEFAULT;
+import static org.neo4j.configuration.Settings.PATH;
+import static org.neo4j.configuration.Settings.STRING;
+import static org.neo4j.configuration.Settings.STRING_LIST;
+import static org.neo4j.configuration.Settings.derivedSetting;
+import static org.neo4j.configuration.Settings.optionsIgnoreCase;
+import static org.neo4j.configuration.Settings.pathSetting;
+import static org.neo4j.configuration.Settings.setting;
 
 @Group( "dbms.ssl.policy" )
 public class SslPolicyConfig implements LoadableConfig
@@ -89,26 +98,26 @@ public class SslPolicyConfig implements LoadableConfig
     {
         GroupSettingSupport group = new GroupSettingSupport( SslPolicyConfig.class, policyName );
 
-        this.base_directory = group.scope( Settings.pathSetting( "base_directory", Settings.NO_DEFAULT ) );
-        this.allow_key_generation = group.scope( Settings.setting( "allow_key_generation", Settings.BOOLEAN, Settings.FALSE ) );
-        this.trust_all = group.scope( Settings.setting( "trust_all", Settings.BOOLEAN, Settings.FALSE ) );
+        this.base_directory = group.scope( pathSetting( "base_directory", NO_DEFAULT ) );
+        this.allow_key_generation = group.scope( setting( "allow_key_generation", BOOLEAN, FALSE ) );
+        this.trust_all = group.scope( setting( "trust_all", BOOLEAN, FALSE ) );
 
         this.private_key = group.scope( derivedDefault( "private_key", base_directory, "private.key" ) );
         this.public_certificate = group.scope( derivedDefault( "public_certificate", base_directory, "public.crt" ) );
         this.trusted_dir = group.scope( derivedDefault( "trusted_dir", base_directory, "trusted" ) );
         this.revoked_dir = group.scope( derivedDefault( "revoked_dir", base_directory, "revoked" ) );
 
-        this.private_key_password = group.scope( Settings.setting( "private_key_password", Settings.STRING, Settings.NO_DEFAULT ) );
-        this.client_auth = group.scope( Settings.setting( "client_auth", Settings.optionsIgnoreCase( ClientAuth.class ), ClientAuth.REQUIRE.name() ) );
-        this.tls_versions = group.scope( Settings.setting( "tls_versions", Settings.STRING_LIST, joinList( TLS_VERSION_DEFAULTS ) ) );
-        this.ciphers = group.scope( Settings.setting( "ciphers", Settings.STRING_LIST, joinList( CIPHER_SUITES_DEFAULTS ) ) );
-        this.verify_hostname = group.scope( Settings.setting( "verify_hostname", Settings.BOOLEAN, Settings.FALSE ) );
+        this.private_key_password = group.scope( setting( "private_key_password", STRING, NO_DEFAULT ) );
+        this.client_auth = group.scope( setting( "client_auth", optionsIgnoreCase( ClientAuth.class ), ClientAuth.REQUIRE.name() ) );
+        this.tls_versions = group.scope( setting( "tls_versions", STRING_LIST, joinList( TLS_VERSION_DEFAULTS ) ) );
+        this.ciphers = group.scope( setting( "ciphers", STRING_LIST, joinList( CIPHER_SUITES_DEFAULTS ) ) );
+        this.verify_hostname = group.scope( setting( "verify_hostname", BOOLEAN, FALSE ) );
     }
 
     // TODO: can we make this handle relative paths?
     private Setting<File> derivedDefault( String settingName, Setting<File> baseDirectory, String defaultFilename )
     {
-        return Settings.derivedSetting( settingName, baseDirectory, base -> new File( base, defaultFilename ), Settings.PATH );
+        return derivedSetting( settingName, baseDirectory, base -> new File( base, defaultFilename ), PATH );
     }
 
     private String joinList( List<String> list )

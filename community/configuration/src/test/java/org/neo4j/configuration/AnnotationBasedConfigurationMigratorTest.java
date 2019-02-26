@@ -20,7 +20,6 @@
 package org.neo4j.configuration;
 
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -30,6 +29,7 @@ import org.neo4j.logging.Log;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.mockito.Mockito.mock;
 
 class AnnotationBasedConfigurationMigratorTest
 {
@@ -55,7 +55,7 @@ class AnnotationBasedConfigurationMigratorTest
                 new AnnotationBasedConfigurationMigrator( Collections.singleton( new SomeSettings() ) );
 
         // When
-        migrator.apply( new HashMap<>(), Mockito.mock( Log.class ) );
+        migrator.apply( new HashMap<>(), mock( Log.class ) );
 
         // Then
         assertThat( wasCalled.get(), is( true ) );

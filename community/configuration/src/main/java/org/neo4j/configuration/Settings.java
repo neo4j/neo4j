@@ -60,6 +60,9 @@ import org.neo4j.values.storable.DateTimeValue;
 import static java.lang.Character.isDigit;
 import static java.lang.Long.parseLong;
 import static java.lang.String.format;
+import static org.neo4j.configuration.GraphDatabaseSettings.default_advertised_address;
+import static org.neo4j.configuration.GraphDatabaseSettings.default_listen_address;
+import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
 import static org.neo4j.io.fs.FileUtils.fixSeparatorsInPath;
 
 /**
@@ -592,7 +595,7 @@ public class Settings
             @Override
             public String getDefaultValue()
             {
-                return GraphDatabaseSettings.default_listen_address.getDefaultValue() + ":" + defaultPort;
+                return default_listen_address.getDefaultValue() + ":" + defaultPort;
             }
 
             @Override
@@ -606,7 +609,7 @@ public class Settings
             {
                 String name = name();
                 String value = config.apply( name );
-                String hostname = GraphDatabaseSettings.default_listen_address.apply( config );
+                String hostname = default_listen_address.apply( config );
 
                 return SocketAddressParser.deriveSocketAddress( name, value, hostname, defaultPort, ListenSocketAddress::new );
             }
@@ -633,7 +636,7 @@ public class Settings
             @Override
             public String getDefaultValue()
             {
-                return GraphDatabaseSettings.default_advertised_address.getDefaultValue() + ":" +
+                return default_advertised_address.getDefaultValue() + ":" +
                         LISTEN_SOCKET_ADDRESS.apply( listenAddressSetting.getDefaultValue() ).socketAddress().getPort();
             }
 
@@ -647,7 +650,7 @@ public class Settings
             public AdvertisedSocketAddress apply( Function<String, String> config )
             {
                 ListenSocketAddress listenSocketAddress = listenAddressSetting.apply( config );
-                String hostname = GraphDatabaseSettings.default_advertised_address.apply( config );
+                String hostname = default_advertised_address.apply( config );
                 int port = listenSocketAddress.socketAddress().getPort();
 
                 String name = name();
@@ -1355,7 +1358,7 @@ public class Settings
 
         FileSetting( String name, String defaultValue )
         {
-            this( name, defaultValue, GraphDatabaseSettings.neo4j_home );
+            this( name, defaultValue, neo4j_home );
         }
 
         FileSetting( String name, String defaultValue, Setting<File> relativeRoot )

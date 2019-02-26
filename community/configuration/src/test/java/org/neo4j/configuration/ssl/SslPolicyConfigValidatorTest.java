@@ -19,9 +19,7 @@
  */
 package org.neo4j.configuration.ssl;
 
-import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 
 import java.util.Map;
 import java.util.function.Consumer;
@@ -30,14 +28,16 @@ import org.neo4j.graphdb.config.InvalidSettingException;
 
 import static java.util.Collections.unmodifiableMap;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 class SslPolicyConfigValidatorTest
 {
-    private final Consumer<String> warnings = Mockito.mock( Consumer.class );
+    private final Consumer<String> warnings = mock( Consumer.class );
 
     @Test
     void shouldAcceptAllValidPolicyKeys()
@@ -74,7 +74,7 @@ class SslPolicyConfigValidatorTest
 
         // when
         InvalidSettingException exception = assertThrows( InvalidSettingException.class, () -> validator.validate( originalParams, warnings ) );
-        assertThat( exception.getMessage(), Matchers.containsString( "Invalid setting name" ) );
+        assertThat( exception.getMessage(), containsString( "Invalid setting name" ) );
     }
 
     @Test
@@ -86,7 +86,7 @@ class SslPolicyConfigValidatorTest
 
         // when
         InvalidSettingException exception = assertThrows( InvalidSettingException.class, () -> validator.validate( originalParams, warnings ) );
-        assertThat( exception.getMessage(), Matchers.containsString( "Invalid setting name" ) );
+        assertThat( exception.getMessage(), containsString( "Invalid setting name" ) );
     }
 
     @Test
@@ -119,7 +119,7 @@ class SslPolicyConfigValidatorTest
 
         // when
         InvalidSettingException exception = assertThrows( InvalidSettingException.class, () -> validator.validate( originalParams, warnings ) );
-        assertThat( exception.getMessage(), Matchers.containsString( "Missing mandatory setting" ) );
+        assertThat( exception.getMessage(), containsString( "Missing mandatory setting" ) );
     }
 
     private static Map<String,String> params( String... params )

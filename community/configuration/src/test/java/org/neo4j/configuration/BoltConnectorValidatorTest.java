@@ -20,7 +20,6 @@
 package org.neo4j.configuration;
 
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 
 import java.util.Collections;
 import java.util.List;
@@ -35,6 +34,8 @@ import static java.lang.String.format;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.neo4j.configuration.Connector.ConnectorType.BOLT;
 import static org.neo4j.configuration.ConnectorValidator.DEPRECATED_CONNECTOR_MSG;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
@@ -42,7 +43,7 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
 class BoltConnectorValidatorTest
 {
     private final BoltConnectorValidator cv = new BoltConnectorValidator();
-    private final Consumer<String> warningConsumer = Mockito.mock( Consumer.class );
+    private final Consumer<String> warningConsumer = mock( Consumer.class );
 
     @Test
     void doesNotValidateUnrelatedStuff()
@@ -93,7 +94,7 @@ class BoltConnectorValidatorTest
 
         cv.validate( stringMap( randomEnabled, "true", randomType, "BOLT" ), warningConsumer );
 
-        Mockito.verify( warningConsumer ).accept( format( DEPRECATED_CONNECTOR_MSG, format( ">  %s%n>  %s%n", randomEnabled, randomType ) ) );
+        verify( warningConsumer ).accept( format( DEPRECATED_CONNECTOR_MSG, format( ">  %s%n>  %s%n", randomEnabled, randomType ) ) );
     }
 
     @Test

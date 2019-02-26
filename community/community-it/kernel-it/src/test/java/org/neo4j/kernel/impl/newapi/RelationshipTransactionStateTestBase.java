@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.newapi;
 
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import java.util.HashMap;
@@ -647,51 +646,51 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
         //dense outgoing
         assertCount( 100, OUT, group ->
         {
-            Assertions.assertEquals( 101, group.outgoingCount() );
-            Assertions.assertEquals( 0, group.incomingCount() );
-            Assertions.assertEquals( 0, group.loopCount() );
-            Assertions.assertEquals( 101, group.totalCount() );
+            assertEquals( 101, group.outgoingCount() );
+            assertEquals( 0, group.incomingCount() );
+            assertEquals( 0, group.loopCount() );
+            assertEquals( 101, group.totalCount() );
         } );
         //sparse outgoing
         assertCount( 1, OUT, group ->
         {
-            Assertions.assertEquals( 2, group.outgoingCount() );
-            Assertions.assertEquals( 0, group.incomingCount() );
-            Assertions.assertEquals( 0, group.loopCount() );
-            Assertions.assertEquals( 2, group.totalCount() );
+            assertEquals( 2, group.outgoingCount() );
+            assertEquals( 0, group.incomingCount() );
+            assertEquals( 0, group.loopCount() );
+            assertEquals( 2, group.totalCount() );
         } );
         //dense incoming
         assertCount( 100, IN, group ->
         {
-            Assertions.assertEquals( 0, group.outgoingCount() );
-            Assertions.assertEquals( 101, group.incomingCount() );
-            Assertions.assertEquals( 0, group.outgoingCount() );
-            Assertions.assertEquals( 101, group.totalCount() );
+            assertEquals( 0, group.outgoingCount() );
+            assertEquals( 101, group.incomingCount() );
+            assertEquals( 0, group.outgoingCount() );
+            assertEquals( 101, group.totalCount() );
         } );
         //sparse incoming
         assertCount( 1, IN, group ->
         {
-            Assertions.assertEquals( 0, group.outgoingCount() );
-            Assertions.assertEquals( 2, group.incomingCount() );
-            Assertions.assertEquals( 0, group.loopCount() );
-            Assertions.assertEquals( 2, group.totalCount() );
+            assertEquals( 0, group.outgoingCount() );
+            assertEquals( 2, group.incomingCount() );
+            assertEquals( 0, group.loopCount() );
+            assertEquals( 2, group.totalCount() );
         } );
 
         //dense loops
         assertCount( 100, LOOP, group ->
         {
-            Assertions.assertEquals( 0, group.incomingCount() );
-            Assertions.assertEquals( 0, group.outgoingCount() );
-            Assertions.assertEquals( 101, group.loopCount() );
-            Assertions.assertEquals( 101, group.totalCount() );
+            assertEquals( 0, group.incomingCount() );
+            assertEquals( 0, group.outgoingCount() );
+            assertEquals( 101, group.loopCount() );
+            assertEquals( 101, group.totalCount() );
         } );
         //sparse loops
         assertCount( 1, LOOP, group ->
         {
-            Assertions.assertEquals( 0, group.outgoingCount() );
-            Assertions.assertEquals( 0, group.incomingCount() );
-            Assertions.assertEquals( 2, group.loopCount() );
-            Assertions.assertEquals( 2, group.totalCount() );
+            assertEquals( 0, group.outgoingCount() );
+            assertEquals( 0, group.incomingCount() );
+            assertEquals( 2, group.loopCount() );
+            assertEquals( 2, group.totalCount() );
         } );
     }
 

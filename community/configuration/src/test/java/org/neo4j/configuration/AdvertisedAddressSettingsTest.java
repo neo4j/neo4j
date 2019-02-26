@@ -26,11 +26,11 @@ import java.util.Map;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.ListenSocketAddress;
-import org.neo4j.helpers.collection.MapUtil;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.configuration.Settings.advertisedAddress;
 import static org.neo4j.configuration.Settings.listenAddress;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 class AdvertisedAddressSettingsTest
 {
@@ -42,7 +42,7 @@ class AdvertisedAddressSettingsTest
     void shouldParseExplicitSettingValueWhenProvided()
     {
         // given
-        Map<String, String> config = MapUtil.stringMap(
+        Map<String, String> config = stringMap(
                 GraphDatabaseSettings.default_advertised_address.name(), "server1.example.com",
                 advertised_address_setting.name(), "server1.internal:4000" );
 
@@ -58,7 +58,7 @@ class AdvertisedAddressSettingsTest
     void shouldCombineDefaultHostnameWithPortFromListenAddressSettingWhenNoValueProvided()
     {
         // given
-        Map<String, String> config = MapUtil.stringMap(
+        Map<String, String> config = stringMap(
                 GraphDatabaseSettings.default_advertised_address.name(), "server1.example.com" );
 
         // when
@@ -73,7 +73,7 @@ class AdvertisedAddressSettingsTest
     void shouldCombineDefaultHostnameWithExplicitPortWhenOnlyAPortProvided()
     {
         // given
-        Map<String, String> config = MapUtil.stringMap(
+        Map<String, String> config = stringMap(
                 GraphDatabaseSettings.default_advertised_address.name(), "server1.example.com",
                 advertised_address_setting.name(), ":4000" );
 

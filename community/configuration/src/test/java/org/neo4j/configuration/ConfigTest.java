@@ -24,7 +24,6 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InOrder;
-import org.mockito.Mockito;
 
 import java.io.File;
 import java.io.IOException;
@@ -57,6 +56,10 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
+import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.neo4j.configuration.Settings.BOOLEAN;
 import static org.neo4j.configuration.Settings.STRING;
 import static org.neo4j.configuration.Settings.setting;
@@ -134,7 +137,7 @@ class ConfigTest
     void shouldWarnAndDiscardUnknownOptionsInReservedNamespaceAndPassOnBufferedLogInWithMethods() throws Exception
     {
         // Given
-        Log log = Mockito.mock( Log.class );
+        Log log = mock( Log.class );
         File confFile = testDirectory.file( "test.conf" );
         assertTrue( confFile.createNewFile() );
 
@@ -147,15 +150,15 @@ class ConfigTest
         config.augment( "causal_clustering.jibberish", "baah" );
 
         // Then
-        Mockito.verify( log ).warn( "Unknown config option: %s", "dbms.jibberish" );
-        Mockito.verifyNoMoreInteractions( log );
+        verify( log ).warn( "Unknown config option: %s", "dbms.jibberish" );
+        verifyNoMoreInteractions( log );
     }
 
     @Test
     void shouldLogDeprecationWarnings() throws Exception
     {
         // Given
-        Log log = Mockito.mock( Log.class );
+        Log log = mock( Log.class );
         File confFile = testDirectory.file( "test.conf" );
         assertTrue( confFile.createNewFile() );
 
@@ -170,29 +173,29 @@ class ConfigTest
         config.setLogger( log );
 
         // Then
-        Mockito.verify( log ).warn( "%s is deprecated. Replaced by %s", MySettingsWithDefaults.oldHello.name(),
+        verify( log ).warn( "%s is deprecated. Replaced by %s", MySettingsWithDefaults.oldHello.name(),
                 MySettingsWithDefaults.hello.name() );
-        Mockito.verify( log ).warn( "%s is deprecated.", MySettingsWithDefaults.oldSetting.name() );
-        Mockito.verifyNoMoreInteractions( log );
+        verify( log ).warn( "%s is deprecated.", MySettingsWithDefaults.oldSetting.name() );
+        verifyNoMoreInteractions( log );
     }
 
     @Test
     void shouldLogIfConfigFileCouldNotBeFound()
     {
-        Log log = Mockito.mock( Log.class );
+        Log log = mock( Log.class );
         File confFile = testDirectory.file( "test.conf" ); // Note: we don't create the file.
 
         Config config = Config.fromFile( confFile ).withNoThrowOnFileLoadFailure().build();
 
         config.setLogger( log );
 
-        Mockito.verify( log ).warn( "Config file [%s] does not exist.", confFile );
+        verify( log ).warn( "Config file [%s] does not exist.", confFile );
     }
 
     @Test
     void shouldLogIfConfigFileCouldNotBeRead() throws IOException
     {
-        Log log = Mockito.mock( Log.class );
+        Log log = mock( Log.class );
         File confFile = testDirectory.file( "test.conf" );
         assertTrue( confFile.createNewFile() );
         assumeTrue( confFile.setReadable( false ) );
@@ -201,7 +204,7 @@ class ConfigTest
 
         config.setLogger( log );
 
-        Mockito.verify( log ).error( "Unable to load config file [%s]: %s", confFile, confFile + " (Permission denied)" );
+        verify( log ).error( "Unable to load config file [%s]: %s", confFile, confFile + " (Permission denied)" );
     }
 
     @Test
@@ -230,7 +233,7 @@ class ConfigTest
     @Test
     void mustWarnIfFileContainsDuplicateSettings() throws Exception
     {
-        Log log = Mockito.mock( Log.class );
+        Log log = mock( Log.class );
         File confFile = testDirectory.createFile( "test.conf" );
         Files.write( confFile.toPath(), Arrays.asList(
                 ExternalSettings.initialHeapSize.name() + "=5g",
@@ -243,10 +246,10 @@ class ConfigTest
         config.setLogger( log );
 
         // We should only log the warning once for each.
-        Mockito.verify( log ).warn( "The '%s' setting is specified more than once. Settings only be specified once, to avoid ambiguity. " +
+        verify( log ).warn( "The '%s' setting is specified more than once. Settings only be specified once, to avoid ambiguity. " +
                         "The setting value that will be used is '%s'.",
                 ExternalSettings.initialHeapSize.name(), "5g" );
-        Mockito.verify( log ).warn( "The '%s' setting is specified more than once. Settings only be specified once, to avoid ambiguity. " +
+        verify( log ).warn( "The '%s' setting is specified more than once. Settings only be specified once, to avoid ambiguity. " +
                         "The setting value that will be used is '%s'.",
                 ExternalSettings.maxHeapSize.name(), "10g" );
     }
@@ -254,7 +257,7 @@ class ConfigTest
     @Test
     void mustNotWarnAboutDuplicateJvmAdditionalSettings() throws Exception
     {
-        Log log = Mockito.mock( Log.class );
+        Log log = mock( Log.class );
         File confFile = testDirectory.createFile( "test.conf" );
         Files.write( confFile.toPath(), Arrays.asList(
                 ExternalSettings.additionalJvm.name() + "=-Dsysprop=val",
@@ -265,7 +268,7 @@ class ConfigTest
         config.setLogger( log );
 
         // The ExternalSettings.additionalJvm setting is allowed to be specified more than once.
-        Mockito.verifyNoMoreInteractions( log );
+        verifyNoMoreInteractions( log );
     }
 
     @Test
@@ -409,18 +412,18 @@ class ConfigTest
         String changedMessage = "Setting changed: '%s' changed from '%s' to '%s' via '%s'";
         Config config = Config.builder().withConfigClasses( singletonList( new MyDynamicSettings() ) ).build();
 
-        Log log = Mockito.mock( Log.class );
+        Log log = mock( Log.class );
         config.setLogger( log );
 
         config.updateDynamicSetting( settingName, "false", ORIGIN );
         config.updateDynamicSetting( settingName, "true", ORIGIN );
         config.updateDynamicSetting( settingName, "", ORIGIN );
 
-        InOrder order = Mockito.inOrder( log );
+        InOrder order = inOrder( log );
         order.verify( log ).info( changedMessage, settingName, "default (true)", "false", "test" );
         order.verify( log ).info( changedMessage, settingName, "false", "true", "test" );
         order.verify( log ).info( changedMessage, settingName, "true", "default (true)", "test" );
-        Mockito.verifyNoMoreInteractions( log );
+        verifyNoMoreInteractions( log );
     }
 
     @Test
@@ -496,13 +499,13 @@ class ConfigTest
         {
             throw exception;
         } );
-        Log log = Mockito.mock( Log.class );
+        Log log = mock( Log.class );
         config.setLogger( log );
         String settingName = MyDynamicSettings.boolSetting.name();
 
         config.updateDynamicSetting( settingName, "", ORIGIN );
 
-        Mockito.verify( log ).error( "Failure when notifying listeners after dynamic setting change; " +
+        verify( log ).error( "Failure when notifying listeners after dynamic setting change; " +
                              "new setting might not have taken effect: Boo", exception );
     }
 
@@ -514,7 +517,7 @@ class ConfigTest
         String changedMessage = "Setting changed: '%s' changed from '%s' to '%s' via '%s'";
         Config config = Config.builder().withConfigClasses( singletonList( new MyDynamicSettings() ) ).build();
 
-        Log log = Mockito.mock( Log.class );
+        Log log = mock( Log.class );
         config.setLogger( log );
 
         AtomicInteger counter = new AtomicInteger( 0 );
@@ -531,11 +534,11 @@ class ConfigTest
         config.updateDynamicSetting( settingName, "", ORIGIN );
 
         // Then we should see obfuscated log messages
-        InOrder order = Mockito.inOrder( log );
+        InOrder order = inOrder( log );
         order.verify( log ).info( changedMessage, settingName, "default (" + Secret.OBFUSCATED + ")", Secret.OBFUSCATED, ORIGIN );
         order.verify( log ).info( changedMessage, settingName, Secret.OBFUSCATED, Secret.OBFUSCATED, ORIGIN );
         order.verify( log ).info( changedMessage, settingName, Secret.OBFUSCATED, "default (" + Secret.OBFUSCATED + ")", ORIGIN );
-        Mockito.verifyNoMoreInteractions( log );
+        verifyNoMoreInteractions( log );
 
         // And see 3 calls to the update listener
         assertThat( counter.get(), is( 3 ) );

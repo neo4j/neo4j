@@ -19,7 +19,6 @@
  */
 package org.neo4j.graphdb.factory;
 
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Field;
@@ -460,7 +459,7 @@ class GraphDatabaseSettingsTest
         TransactionTracingLevel[] values = TransactionTracingLevel.values();
         for ( TransactionTracingLevel level : values )
         {
-            Assertions.assertEquals( level, Config.defaults( transaction_tracing_level, level.name() ).get( transaction_tracing_level ) );
+            assertEquals( level, Config.defaults( transaction_tracing_level, level.name() ).get( transaction_tracing_level ) );
         }
         assertThrows( InvalidSettingException.class, () -> Config.defaults( transaction_tracing_level, "TRACE" ) );
     }
