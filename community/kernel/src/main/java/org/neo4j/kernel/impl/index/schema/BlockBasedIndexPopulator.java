@@ -51,6 +51,7 @@ import org.neo4j.kernel.impl.api.index.PhaseTracker;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettingsCache;
 import org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettingsWriter;
 import org.neo4j.memory.LocalMemoryTracker;
+import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
 import org.neo4j.util.FeatureToggles;
 import org.neo4j.util.Preconditions;
@@ -512,6 +513,12 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
         List<Closeable> toClose = new ArrayList<>( allScanUpdates );
         toClose.add( externalUpdates );
         IOUtils.closeAllUnchecked( toClose );
+    }
+
+    @Override
+    public PopulationProgress progress( PopulationProgress scanProgress )
+    {
+        return scanProgress;
     }
 
     private static class CloseCancellation implements BlockStorage.Cancellation

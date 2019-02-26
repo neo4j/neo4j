@@ -158,7 +158,7 @@ public abstract class PropertyAwareEntityStoreScan<CURSOR extends StorageEntityS
     {
         if ( totalCount > 0 )
         {
-            return new PopulationProgress( count, totalCount );
+            return PopulationProgress.single( count, totalCount );
         }
 
         // nothing to do 100% completed
