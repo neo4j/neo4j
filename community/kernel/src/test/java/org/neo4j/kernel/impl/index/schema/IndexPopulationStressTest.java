@@ -96,6 +96,8 @@ public class IndexPopulationStressTest
     {
         Collection<Object[]> parameters = new ArrayList<>();
         // GenericNativeIndexProvider
+        parameters.add( of( "generic", true, RandomValues::nextValue, test ->
+                new GenericNativeIndexProvider( test.directory(), test.rules.pageCache(), test.rules.fileSystem(), EMPTY, immediate(), false, defaults() ) ) );
         // NumberIndexProvider
         parameters.add( of( "number", true, RandomValues::nextNumberValue, test ->
                 new NumberIndexProvider( test.rules.pageCache(), test.rules.fileSystem(), test.directory(), EMPTY, immediate(), false ) ) );
