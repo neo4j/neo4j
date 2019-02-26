@@ -48,20 +48,20 @@ import java.util.concurrent.ConcurrentHashMap;
 import javax.net.ssl.CertPathTrustManagerParameters;
 import javax.net.ssl.TrustManagerFactory;
 
-import org.neo4j.configuration.ClientAuth;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.configuration.LegacySslPolicyConfig;
-import org.neo4j.configuration.SslPolicyConfig;
+import org.neo4j.configuration.ssl.ClientAuth;
+import org.neo4j.configuration.ssl.LegacySslPolicyConfig;
+import org.neo4j.configuration.ssl.SslPolicyConfig;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.ssl.PkiUtils;
 import org.neo4j.ssl.SslPolicy;
 
 import static java.lang.String.format;
-import static org.neo4j.configuration.LegacySslPolicyConfig.LEGACY_POLICY_NAME;
-import static org.neo4j.configuration.SslPolicyConfig.CIPHER_SUITES_DEFAULTS;
-import static org.neo4j.configuration.SslPolicyConfig.TLS_VERSION_DEFAULTS;
+import static org.neo4j.configuration.ssl.LegacySslPolicyConfig.LEGACY_POLICY_NAME;
+import static org.neo4j.configuration.ssl.SslPolicyConfig.CIPHER_SUITES_DEFAULTS;
+import static org.neo4j.configuration.ssl.SslPolicyConfig.TLS_VERSION_DEFAULTS;
 
 /**
  * Each component which utilises SSL policies is recommended to provide a component

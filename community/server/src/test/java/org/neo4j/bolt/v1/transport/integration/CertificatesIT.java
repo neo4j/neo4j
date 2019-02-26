@@ -41,8 +41,8 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.neo4j.bolt.v1.transport.integration.Neo4jWithSocket.DEFAULT_CONNECTOR_KEY;
-import static org.neo4j.configuration.LegacySslPolicyConfig.tls_certificate_file;
-import static org.neo4j.configuration.LegacySslPolicyConfig.tls_key_file;
+import static org.neo4j.configuration.ssl.LegacySslPolicyConfig.tls_certificate_file;
+import static org.neo4j.configuration.ssl.LegacySslPolicyConfig.tls_key_file;
 
 public class CertificatesIT
 {

@@ -40,11 +40,11 @@ import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 
 import org.neo4j.bolt.v1.transport.socket.client.SocketConnection;
-import org.neo4j.configuration.ClientAuth;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.HttpConnector;
 import org.neo4j.configuration.HttpConnector.Encryption;
+import org.neo4j.configuration.ssl.ClientAuth;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;

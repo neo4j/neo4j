@@ -32,7 +32,7 @@ import java.util.List;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.configuration.LegacySslPolicyConfig;
+import org.neo4j.configuration.ssl.LegacySslPolicyConfig;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Result;

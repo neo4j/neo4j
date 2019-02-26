@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.configuration;
+package org.neo4j.configuration.ssl;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
@@ -31,6 +31,7 @@ import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.neo4j.configuration.Group;
 import org.neo4j.graphdb.config.InvalidSettingException;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.config.SettingGroup;

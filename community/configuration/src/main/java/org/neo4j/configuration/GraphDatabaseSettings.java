@@ -26,6 +26,8 @@ import java.time.ZoneOffset;
 import java.util.List;
 
 import org.neo4j.common.Edition;
+import org.neo4j.configuration.ssl.LegacySslPolicyConfig;
+import org.neo4j.configuration.ssl.SslPolicyConfigValidator;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.logging.Level;

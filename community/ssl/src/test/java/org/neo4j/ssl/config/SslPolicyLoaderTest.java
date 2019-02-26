@@ -29,8 +29,8 @@ import java.util.Map;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.configuration.LegacySslPolicyConfig;
-import org.neo4j.configuration.SslPolicyConfig;
+import org.neo4j.configuration.ssl.LegacySslPolicyConfig;
+import org.neo4j.configuration.ssl.SslPolicyConfig;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.ssl.PkiUtils;

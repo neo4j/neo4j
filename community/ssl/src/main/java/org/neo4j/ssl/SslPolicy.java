@@ -36,7 +36,7 @@ import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLException;
 import javax.net.ssl.TrustManagerFactory;
 
-import org.neo4j.configuration.ClientAuth;
+import org.neo4j.configuration.ssl.ClientAuth;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 

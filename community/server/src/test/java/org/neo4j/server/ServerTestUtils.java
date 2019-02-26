@@ -36,7 +36,7 @@ import java.util.Random;
 
 import org.neo4j.configuration.ConnectorPortRegister;
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.configuration.LegacySslPolicyConfig;
+import org.neo4j.configuration.ssl.LegacySslPolicyConfig;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.helpers.HostnamePort;

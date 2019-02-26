@@ -24,7 +24,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 
-import org.neo4j.configuration.LegacySslPolicyConfig;
+import org.neo4j.configuration.ssl.LegacySslPolicyConfig;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.harness.internal.InProcessNeo4j;

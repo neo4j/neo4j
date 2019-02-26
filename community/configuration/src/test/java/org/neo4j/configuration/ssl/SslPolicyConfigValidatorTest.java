@@ -17,8 +17,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.configuration;
+package org.neo4j.configuration.ssl;
 
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
@@ -29,7 +30,6 @@ import org.neo4j.graphdb.config.InvalidSettingException;
 
 import static java.util.Collections.unmodifiableMap;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -74,7 +74,7 @@ class SslPolicyConfigValidatorTest
 
         // when
         InvalidSettingException exception = assertThrows( InvalidSettingException.class, () -> validator.validate( originalParams, warnings ) );
-        assertThat( exception.getMessage(), containsString( "Invalid setting name" ) );
+        assertThat( exception.getMessage(), Matchers.containsString( "Invalid setting name" ) );
     }
 
     @Test
@@ -86,7 +86,7 @@ class SslPolicyConfigValidatorTest
 
         // when
         InvalidSettingException exception = assertThrows( InvalidSettingException.class, () -> validator.validate( originalParams, warnings ) );
-        assertThat( exception.getMessage(), containsString( "Invalid setting name" ) );
+        assertThat( exception.getMessage(), Matchers.containsString( "Invalid setting name" ) );
     }
 
     @Test
@@ -119,7 +119,7 @@ class SslPolicyConfigValidatorTest
 
         // when
         InvalidSettingException exception = assertThrows( InvalidSettingException.class, () -> validator.validate( originalParams, warnings ) );
-        assertThat( exception.getMessage(), containsString( "Missing mandatory setting" ) );
+        assertThat( exception.getMessage(), Matchers.containsString( "Missing mandatory setting" ) );
     }
 
     private static Map<String,String> params( String... params )

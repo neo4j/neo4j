@@ -17,27 +17,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.configuration;
+package org.neo4j.configuration.ssl;
 
-import org.junit.jupiter.api.Test;
-
-import java.util.stream.Stream;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.neo4j.configuration.LegacySslPolicyConfig.certificates_directory;
-
-class LegacySslPolicyConfigTest
+public enum ClientAuth
 {
-    @Test
-    void shouldBeFoundInServerDefaults()
-    {
-        // given
-        Config serverDefaultConfig = Config.builder().withServerDefaults().build();
-
-        // when
-        Stream<ConfigValue> cvStream = serverDefaultConfig.getConfigValues().values().stream();
-
-        // then
-        assertEquals( 1, cvStream.filter( c -> c.name().equals( certificates_directory.name() ) ).count() );
-    }
+    NONE,
+    OPTIONAL,
+    REQUIRE
 }
