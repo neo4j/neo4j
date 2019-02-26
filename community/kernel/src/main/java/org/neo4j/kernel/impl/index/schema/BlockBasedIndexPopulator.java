@@ -92,6 +92,7 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
     private IndexUpdateStorage<KEY,VALUE> externalUpdates;
     // written in a synchronized method when creating new thread-local instances, read when processing external updates
     private volatile boolean merged;
+    private volatile boolean closeRequested;
 
     BlockBasedIndexPopulator( PageCache pageCache, FileSystemAbstraction fs, File file, IndexLayout<KEY,VALUE> layout, IndexProvider.Monitor monitor,
             StoreIndexDescriptor descriptor, IndexSpecificSpaceFillingCurveSettingsCache spatialSettings,
@@ -189,6 +190,7 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
     @Override
     public void scanCompleted( PhaseTracker phaseTracker ) throws IndexEntryConflictException
     {
+        BlockStorage.Cancellation mergeCancellation = () -> closeRequested;
         try
         {
             phaseTracker.enterPhase( PhaseTracker.Phase.MERGE );
@@ -201,7 +203,7 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
                     mergeFutures.add( executorService.submit( () ->
                     {
                         scanUpdates.doneAdding();
-                        scanUpdates.merge( MERGE_FACTOR );
+                        scanUpdates.merge( MERGE_FACTOR, mergeCancellation );
                         return null;
                     } ) );
                 }
@@ -365,7 +367,7 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
             int asMuchAsPossibleToTheLeft = 1;
             try ( Writer<KEY,VALUE> writer = tree.writer( asMuchAsPossibleToTheLeft ) )
             {
-                while ( allEntries.next() )
+                while ( allEntries.next() && !closeRequested )
                 {
                     conflictDetector.controlConflictDetection( allEntries.key() );
                     writer.merge( allEntries.key(), allEntries.value(), conflictDetector );
@@ -437,6 +439,10 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
     @Override
     public void close( boolean populationCompletedSuccessfully )
     {
+        // This method may be called while scanCompleted is running. This could be a drop or shutdown(?) which happens when this population
+        // is in its final stages. scanCompleted merges things in multiple threads. Set this flag, a flag which those threads reacts to.
+        closeRequested = true;
+
         try
         {
             closeBlockStorage();
