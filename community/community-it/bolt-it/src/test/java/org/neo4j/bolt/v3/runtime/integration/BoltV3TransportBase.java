@@ -44,7 +44,7 @@ import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgSuccess;
 import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyReceives;
 import static org.neo4j.bolt.v3.messaging.BoltProtocolV3ComponentFactory.newMessageEncoder;
 import static org.neo4j.bolt.v3.messaging.BoltProtocolV3ComponentFactory.newNeo4jPack;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.auth_enabled;
+import static org.neo4j.configuration.GraphDatabaseSettings.auth_enabled;
 
 @RunWith( Parameterized.class )
 public abstract class BoltV3TransportBase

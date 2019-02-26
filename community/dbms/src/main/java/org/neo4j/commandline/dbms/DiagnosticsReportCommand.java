@@ -59,7 +59,7 @@ import org.neo4j.kernel.diagnostics.InteractiveProgress;
 import org.neo4j.kernel.diagnostics.NonInteractiveProgress;
 
 import static org.apache.commons.text.StringEscapeUtils.escapeCsv;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.database_path;
+import static org.neo4j.configuration.GraphDatabaseSettings.database_path;
 
 public class DiagnosticsReportCommand implements AdminCommand
 {

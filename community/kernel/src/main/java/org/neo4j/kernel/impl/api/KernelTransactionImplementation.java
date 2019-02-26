@@ -109,8 +109,8 @@ import static java.lang.String.format;
 import static java.lang.Thread.currentThread;
 import static java.util.Collections.emptyMap;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.transaction_sampling_percentage;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.transaction_tracing_level;
+import static org.neo4j.configuration.GraphDatabaseSettings.transaction_sampling_percentage;
+import static org.neo4j.configuration.GraphDatabaseSettings.transaction_tracing_level;
 import static org.neo4j.kernel.impl.api.transaction.trace.TraceProviderFactory.getTraceProvider;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.INTERNAL;
 

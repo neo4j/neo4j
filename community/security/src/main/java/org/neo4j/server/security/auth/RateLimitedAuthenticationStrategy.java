@@ -29,8 +29,8 @@ import org.neo4j.configuration.Config;
 import org.neo4j.internal.kernel.api.security.AuthenticationResult;
 import org.neo4j.kernel.impl.security.User;
 
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.auth_lock_time;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.auth_max_failed_attempts;
+import static org.neo4j.configuration.GraphDatabaseSettings.auth_lock_time;
+import static org.neo4j.configuration.GraphDatabaseSettings.auth_max_failed_attempts;
 
 public class RateLimitedAuthenticationStrategy implements AuthenticationStrategy
 {

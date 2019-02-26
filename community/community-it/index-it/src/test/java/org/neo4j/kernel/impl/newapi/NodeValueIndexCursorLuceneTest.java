@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.configuration.GraphDatabaseSettings;
 
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.SchemaIndex.LUCENE10;
+import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex.LUCENE10;
 
 public class NodeValueIndexCursorLuceneTest extends AbstractNodeValueIndexCursorTest
 {

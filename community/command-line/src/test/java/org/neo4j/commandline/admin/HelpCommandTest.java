@@ -32,7 +32,7 @@ import java.util.NoSuchElementException;
 import java.util.function.Consumer;
 
 import org.neo4j.commandline.arguments.Arguments;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.configuration.GraphDatabaseSettings;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.containsString;

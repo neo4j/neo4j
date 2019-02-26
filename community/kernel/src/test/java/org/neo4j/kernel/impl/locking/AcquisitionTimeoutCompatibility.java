@@ -30,7 +30,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.configuration.Config;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.storageengine.api.lock.LockTracer;
 import org.neo4j.test.rule.VerboseTimeout;

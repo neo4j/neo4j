@@ -25,12 +25,12 @@ import org.neo4j.configuration.Config;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.helpers.collection.MapUtil;
 
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.DEFAULT_BLOCK_SIZE;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.DEFAULT_LABEL_BLOCK_SIZE;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.MINIMAL_BLOCK_SIZE;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.array_block_size;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.label_block_size;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.string_block_size;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_BLOCK_SIZE;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_LABEL_BLOCK_SIZE;
+import static org.neo4j.configuration.GraphDatabaseSettings.MINIMAL_BLOCK_SIZE;
+import static org.neo4j.configuration.GraphDatabaseSettings.array_block_size;
+import static org.neo4j.configuration.GraphDatabaseSettings.label_block_size;
+import static org.neo4j.configuration.GraphDatabaseSettings.string_block_size;
 
 /**
  * There are couple of configuration options that should be adapted for each particular implementation of record format.

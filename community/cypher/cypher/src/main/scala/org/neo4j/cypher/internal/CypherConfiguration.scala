@@ -22,10 +22,9 @@ package org.neo4j.cypher.internal
 import java.io.File
 import java.util.concurrent.TimeUnit
 
-import org.neo4j.configuration.Config
-import org.neo4j.cypher.internal.compiler.v4_0.{CypherPlannerConfiguration, StatsDivergenceCalculator}
+import org.neo4j.configuration.{Config, GraphDatabaseSettings}
 import org.neo4j.cypher._
-import org.neo4j.graphdb.factory.GraphDatabaseSettings
+import org.neo4j.cypher.internal.compiler.v4_0.{CypherPlannerConfiguration, StatsDivergenceCalculator}
 
 import scala.concurrent.duration.Duration
 

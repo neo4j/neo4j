@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.graphdb.factory;
+package org.neo4j.configuration;
 
 import java.io.File;
 import java.time.Duration;
@@ -26,25 +26,12 @@ import java.time.ZoneOffset;
 import java.util.List;
 
 import org.neo4j.common.Edition;
-import org.neo4j.configuration.BoltConnectorValidator;
-import org.neo4j.configuration.ConfigurationMigrator;
-import org.neo4j.configuration.Description;
-import org.neo4j.configuration.Dynamic;
-import org.neo4j.configuration.GraphDatabaseConfigurationMigrator;
-import org.neo4j.configuration.HttpConnectorValidator;
-import org.neo4j.configuration.Internal;
-import org.neo4j.configuration.LegacySslPolicyConfig;
-import org.neo4j.configuration.LoadableConfig;
-import org.neo4j.configuration.Migrator;
-import org.neo4j.configuration.Settings;
-import org.neo4j.configuration.SslPolicyConfigValidator;
-import org.neo4j.configuration.Title;
-import org.neo4j.configuration.TransactionTracingLevel;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.logging.Level;
 import org.neo4j.logging.LogTimeZone;
 
+import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10;
 import static org.neo4j.configuration.Settings.BOOLEAN;
 import static org.neo4j.configuration.Settings.BYTES;
 import static org.neo4j.configuration.Settings.DEFAULT;
@@ -69,7 +56,6 @@ import static org.neo4j.configuration.Settings.optionsObeyCase;
 import static org.neo4j.configuration.Settings.pathSetting;
 import static org.neo4j.configuration.Settings.range;
 import static org.neo4j.configuration.Settings.setting;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10;
 import static org.neo4j.io.ByteUnit.kibiBytes;
 import static org.neo4j.util.Preconditions.checkArgument;
 

@@ -32,11 +32,11 @@ import javax.annotation.Nonnull;
 import org.neo4j.configuration.BoltConnector;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.ConfigValue;
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.HttpConnector;
 import org.neo4j.configuration.SettingChangeListener;
 import org.neo4j.graphdb.config.InvalidSettingException;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 

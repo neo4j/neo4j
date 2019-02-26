@@ -32,6 +32,7 @@ import java.util.stream.IntStream;
 
 import org.neo4j.configuration.BoltConnector;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.HttpConnector;
 import org.neo4j.configuration.TransactionTracingLevel;
 import org.neo4j.graphdb.config.InvalidSettingException;
@@ -48,10 +49,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.configuration.GraphDatabaseSettings.keep_logical_logs;
+import static org.neo4j.configuration.GraphDatabaseSettings.transaction_sampling_percentage;
+import static org.neo4j.configuration.GraphDatabaseSettings.transaction_tracing_level;
 import static org.neo4j.configuration.HttpConnector.Encryption.TLS;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.keep_logical_logs;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.transaction_sampling_percentage;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.transaction_tracing_level;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 class GraphDatabaseSettingsTest

@@ -33,11 +33,11 @@ import java.util.Map;
 import java.util.Optional;
 
 import org.neo4j.configuration.BoltConnector;
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.HttpConnector;
 import org.neo4j.configuration.HttpConnector.Encryption;
 import org.neo4j.configuration.LegacySslPolicyConfig;
 import org.neo4j.configuration.Settings;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.server.CommunityBootstrapper;
 import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;

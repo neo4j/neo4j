@@ -21,10 +21,10 @@ package org.neo4j.dbms;
 
 import java.io.File;
 
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.Internal;
 import org.neo4j.configuration.LoadableConfig;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 
 import static org.neo4j.configuration.Settings.PATH;
 import static org.neo4j.configuration.Settings.derivedSetting;

@@ -39,7 +39,7 @@ import org.neo4j.test.rule.EmbeddedDbmsRule;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.keep_logical_logs;
+import static org.neo4j.configuration.GraphDatabaseSettings.keep_logical_logs;
 
 public class LogPruningIT
 {

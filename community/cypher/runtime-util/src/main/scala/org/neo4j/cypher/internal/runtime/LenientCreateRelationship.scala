@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime
 
-import org.neo4j.graphdb.factory.GraphDatabaseSettings
+import org.neo4j.configuration.GraphDatabaseSettings
 
 object LenientCreateRelationship {
 

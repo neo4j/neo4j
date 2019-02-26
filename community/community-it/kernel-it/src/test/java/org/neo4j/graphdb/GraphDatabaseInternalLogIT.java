@@ -28,7 +28,7 @@ import java.io.StringWriter;
 import java.nio.file.Files;
 import java.util.stream.Stream;
 
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.test.TestGraphDatabaseFactory;

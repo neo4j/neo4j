@@ -39,7 +39,7 @@ import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.storageengine.api.StorageEngine;
 
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.transaction_timeout;
+import static org.neo4j.configuration.GraphDatabaseSettings.transaction_timeout;
 import static org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo.EMBEDDED_CONNECTION;
 
 /**

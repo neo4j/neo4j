@@ -22,8 +22,8 @@ package org.neo4j.test.rule;
 import java.util.function.Function;
 
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.internal.recordstorage.BatchTransactionApplierFacade;
 import org.neo4j.internal.recordstorage.IndexActivator;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;

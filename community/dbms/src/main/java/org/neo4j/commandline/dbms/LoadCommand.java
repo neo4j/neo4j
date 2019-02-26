@@ -34,17 +34,17 @@ import org.neo4j.commandline.arguments.Arguments;
 import org.neo4j.commandline.arguments.OptionalBooleanArg;
 import org.neo4j.commandline.arguments.common.MandatoryCanonicalPath;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.LayoutConfig;
 import org.neo4j.dbms.archive.IncorrectFormat;
 import org.neo4j.dbms.archive.Loader;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.layout.DatabaseLayout;
 
 import static java.util.Objects.requireNonNull;
 import static org.neo4j.commandline.Util.checkLock;
 import static org.neo4j.commandline.Util.wrapIOException;
 import static org.neo4j.commandline.arguments.common.Database.ARG_DATABASE;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.database_path;
+import static org.neo4j.configuration.GraphDatabaseSettings.database_path;
 import static org.neo4j.io.fs.FileUtils.deleteRecursively;
 
 public class LoadCommand implements AdminCommand

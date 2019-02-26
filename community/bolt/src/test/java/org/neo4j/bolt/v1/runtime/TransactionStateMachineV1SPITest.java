@@ -38,8 +38,8 @@ import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.logging.NullLog;
-import org.neo4j.test.rule.OtherThreadRule;
 import org.neo4j.storageengine.api.TransactionIdStore;
+import org.neo4j.test.rule.OtherThreadRule;
 import org.neo4j.time.FakeClock;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -49,7 +49,7 @@ import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
 public class TransactionStateMachineV1SPITest
 {

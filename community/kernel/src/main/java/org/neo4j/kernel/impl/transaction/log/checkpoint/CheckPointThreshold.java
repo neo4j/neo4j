@@ -29,7 +29,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.kernel.impl.transaction.log.pruning.LogPruning;
 import org.neo4j.logging.LogProvider;
 
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.check_point_policy;
+import static org.neo4j.configuration.GraphDatabaseSettings.check_point_policy;
 
 
 /**

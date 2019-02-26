@@ -24,6 +24,7 @@ import java.util.NoSuchElementException;
 
 import org.neo4j.common.Service;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.kernel.impl.transaction.log.pruning.LogPruning;
 import org.neo4j.logging.LogProvider;
 
@@ -31,7 +32,7 @@ import org.neo4j.logging.LogProvider;
  * The {@link CheckPointThresholdPolicy} specifies the overall <em>type</em> of threshold that should be used for
  * deciding when to check point.
  *
- * The is determined by the {@link org.neo4j.graphdb.factory.GraphDatabaseSettings#check_point_policy} setting, and
+ * The is determined by the {@link GraphDatabaseSettings#check_point_policy} setting, and
  * based on this, the concrete policies are loaded and used to
  * {@link CheckPointThreshold#createThreshold(Config, Clock, LogPruning, LogProvider) create} the final and fully
  * configured check point thresholds.

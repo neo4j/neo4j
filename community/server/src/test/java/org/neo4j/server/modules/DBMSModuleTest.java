@@ -27,7 +27,7 @@ import java.net.URI;
 import java.util.List;
 
 import org.neo4j.configuration.Config;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.rest.dbms.UserService;
 import org.neo4j.server.rest.discovery.DiscoverableURIs;

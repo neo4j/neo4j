@@ -34,7 +34,7 @@ import org.neo4j.test.server.ExclusiveServerTestBase;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.transaction_timeout;
+import static org.neo4j.configuration.GraphDatabaseSettings.transaction_timeout;
 import static org.neo4j.jmx.JmxUtils.getAttribute;
 import static org.neo4j.jmx.JmxUtils.getObjectName;
 

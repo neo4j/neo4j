@@ -35,8 +35,8 @@ import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.commandline.arguments.Arguments;
 import org.neo4j.common.Service;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.archive.Dumper;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.StoreLockException;
 import org.neo4j.kernel.impl.util.Validators;
@@ -44,8 +44,8 @@ import org.neo4j.storageengine.api.StorageEngineFactory;
 
 import static java.lang.String.format;
 import static org.neo4j.commandline.arguments.common.Database.ARG_DATABASE;
+import static org.neo4j.configuration.GraphDatabaseSettings.database_path;
 import static org.neo4j.configuration.LayoutConfig.of;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.database_path;
 import static org.neo4j.helpers.Strings.joinAsLines;
 import static org.neo4j.kernel.recovery.Recovery.isRecoveryRequired;
 

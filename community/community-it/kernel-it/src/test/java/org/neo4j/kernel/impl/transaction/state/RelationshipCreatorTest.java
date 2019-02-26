@@ -26,10 +26,10 @@ import org.junit.Test;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.internal.recordstorage.DirectRecordAccessSet;
 import org.neo4j.internal.recordstorage.RecordAccess;
 import org.neo4j.internal.recordstorage.RecordAccessSet;

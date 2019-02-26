@@ -43,7 +43,7 @@ import org.neo4j.logging.internal.LogService;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.fail_on_corrupted_log_files;
+import static org.neo4j.configuration.GraphDatabaseSettings.fail_on_corrupted_log_files;
 
 public class DatabaseMigratorFactory
 {

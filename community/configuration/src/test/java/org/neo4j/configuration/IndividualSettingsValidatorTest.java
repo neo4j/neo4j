@@ -25,7 +25,6 @@ import org.mockito.Mockito;
 import java.util.Map;
 
 import org.neo4j.graphdb.config.InvalidSettingException;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.logging.Log;
 

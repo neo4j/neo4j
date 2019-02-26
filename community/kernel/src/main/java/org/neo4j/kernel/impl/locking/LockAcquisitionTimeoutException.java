@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.impl.locking;
 
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.TransactionTerminatedException;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.storageengine.api.lock.ResourceType;
 

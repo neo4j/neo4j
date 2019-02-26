@@ -33,7 +33,7 @@ import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.commandline.dbms.config.WrappedBatchImporterConfigurationForNeo4jAdmin;
 import org.neo4j.commandline.dbms.config.WrappedCsvInputConfigurationForNeo4jAdmin;
 import org.neo4j.configuration.Config;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.helpers.Args;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;

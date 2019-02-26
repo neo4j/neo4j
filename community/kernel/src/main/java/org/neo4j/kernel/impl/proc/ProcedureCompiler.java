@@ -54,7 +54,7 @@ import org.neo4j.procedure.UserFunction;
 
 import static java.lang.reflect.Modifier.isPublic;
 import static java.util.Collections.emptyList;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.procedure_unrestricted;
+import static org.neo4j.configuration.GraphDatabaseSettings.procedure_unrestricted;
 
 /**
  * Handles converting a class into one or more callable {@link CallableProcedure}.

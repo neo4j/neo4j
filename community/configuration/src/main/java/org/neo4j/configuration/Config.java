@@ -50,7 +50,6 @@ import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.graphdb.config.InvalidSettingException;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.config.SettingValidator;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.logging.BufferingLog;
 import org.neo4j.logging.Log;
 

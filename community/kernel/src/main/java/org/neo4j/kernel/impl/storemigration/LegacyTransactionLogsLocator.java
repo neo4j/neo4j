@@ -27,9 +27,9 @@ import org.neo4j.configuration.Config;
 import org.neo4j.io.layout.DatabaseLayout;
 
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
+import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
+import static org.neo4j.configuration.GraphDatabaseSettings.database_path;
 import static org.neo4j.configuration.Settings.pathSetting;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.database_path;
 
 public class LegacyTransactionLogsLocator
 {

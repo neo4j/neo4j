@@ -30,7 +30,7 @@ import org.neo4j.graphdb.config.InvalidSettingException;
 import org.neo4j.graphdb.config.SettingValidator;
 import org.neo4j.logging.Log;
 
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.strict_config_validation;
+import static org.neo4j.configuration.GraphDatabaseSettings.strict_config_validation;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 /**

@@ -25,7 +25,7 @@ import java.util.Optional;
 import org.neo4j.io.layout.StoreLayoutConfig;
 
 import static java.util.Optional.ofNullable;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.transaction_logs_root_path;
+import static org.neo4j.configuration.GraphDatabaseSettings.transaction_logs_root_path;
 
 public class LayoutConfig implements StoreLayoutConfig
 {

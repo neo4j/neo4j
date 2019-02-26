@@ -25,7 +25,7 @@ import org.junit.Rule;
 
 import java.util.concurrent.Callable;
 
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.server.NeoServer;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.helpers.ServerHelper;

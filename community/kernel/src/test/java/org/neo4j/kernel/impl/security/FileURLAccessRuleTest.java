@@ -26,7 +26,7 @@ import java.net.URL;
 import java.nio.file.Paths;
 
 import org.neo4j.configuration.Config;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.security.URLAccessValidationError;
 
 import static org.hamcrest.CoreMatchers.equalTo;

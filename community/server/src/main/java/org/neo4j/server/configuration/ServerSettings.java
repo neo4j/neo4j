@@ -34,6 +34,7 @@ import org.neo4j.configuration.Settings;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.server.web.JettyThreadCalculator;
 
+import static org.neo4j.configuration.GraphDatabaseSettings.logs_directory;
 import static org.neo4j.configuration.LegacySslPolicyConfig.LEGACY_POLICY_NAME;
 import static org.neo4j.configuration.Settings.BOOLEAN;
 import static org.neo4j.configuration.Settings.BYTES;
@@ -52,7 +53,6 @@ import static org.neo4j.configuration.Settings.derivedSetting;
 import static org.neo4j.configuration.Settings.pathSetting;
 import static org.neo4j.configuration.Settings.range;
 import static org.neo4j.configuration.Settings.setting;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.logs_directory;
 
 @Description( "Settings used by the server configuration" )
 public class ServerSettings implements LoadableConfig

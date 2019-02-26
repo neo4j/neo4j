@@ -41,12 +41,12 @@ import org.neo4j.storageengine.api.format.Capability;
 import org.neo4j.storageengine.api.format.CapabilityType;
 
 import static org.junit.Assert.assertEquals;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.DEFAULT_BLOCK_SIZE;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.DEFAULT_LABEL_BLOCK_SIZE;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.MINIMAL_BLOCK_SIZE;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.array_block_size;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.label_block_size;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.string_block_size;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_BLOCK_SIZE;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_LABEL_BLOCK_SIZE;
+import static org.neo4j.configuration.GraphDatabaseSettings.MINIMAL_BLOCK_SIZE;
+import static org.neo4j.configuration.GraphDatabaseSettings.array_block_size;
+import static org.neo4j.configuration.GraphDatabaseSettings.label_block_size;
+import static org.neo4j.configuration.GraphDatabaseSettings.string_block_size;
 import static org.neo4j.kernel.impl.store.format.RecordFormatPropertyConfigurator.configureRecordFormat;
 
 public class RecordFormatPropertyConfiguratorTest

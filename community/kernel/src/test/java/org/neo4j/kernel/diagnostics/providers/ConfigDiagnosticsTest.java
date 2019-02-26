@@ -25,8 +25,8 @@ import org.neo4j.configuration.Config;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.Log;
 
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.active_database;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.max_concurrent_transactions;
+import static org.neo4j.configuration.GraphDatabaseSettings.active_database;
+import static org.neo4j.configuration.GraphDatabaseSettings.max_concurrent_transactions;
 
 class ConfigDiagnosticsTest
 {

@@ -25,7 +25,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.stream.Stream;
 
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.harness.internal.InProcessNeo4j;
 import org.neo4j.harness.internal.Neo4jBuilder;
 import org.neo4j.harness.internal.TestNeo4jBuilders;

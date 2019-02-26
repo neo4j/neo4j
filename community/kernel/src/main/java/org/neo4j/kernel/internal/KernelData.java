@@ -30,7 +30,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.forced_kernel_id;
+import static org.neo4j.configuration.GraphDatabaseSettings.forced_kernel_id;
 
 public class KernelData extends LifecycleAdapter
 {

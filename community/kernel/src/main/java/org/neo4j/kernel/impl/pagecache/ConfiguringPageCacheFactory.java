@@ -36,9 +36,9 @@ import org.neo4j.logging.Log;
 import org.neo4j.memory.GlobalMemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
 
+import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_memory;
+import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_swapper;
 import static org.neo4j.configuration.Settings.BYTES;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_swapper;
 
 public class ConfiguringPageCacheFactory
 {

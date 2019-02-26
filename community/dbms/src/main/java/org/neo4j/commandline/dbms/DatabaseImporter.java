@@ -30,7 +30,7 @@ import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.impl.util.Converters;
 import org.neo4j.kernel.impl.util.Validators;
 
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.database_path;
+import static org.neo4j.configuration.GraphDatabaseSettings.database_path;
 
 class DatabaseImporter implements Importer
 {

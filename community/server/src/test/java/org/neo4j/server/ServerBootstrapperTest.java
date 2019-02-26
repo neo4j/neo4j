@@ -38,7 +38,7 @@ import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.database_path;
+import static org.neo4j.configuration.GraphDatabaseSettings.database_path;
 
 public class ServerBootstrapperTest
 {

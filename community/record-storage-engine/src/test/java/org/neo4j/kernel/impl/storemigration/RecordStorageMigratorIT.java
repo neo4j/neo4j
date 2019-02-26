@@ -42,7 +42,7 @@ import java.util.SplittableRandom;
 import java.util.function.Function;
 
 import org.neo4j.configuration.Config;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.internal.recordstorage.RandomSchema;
 import org.neo4j.internal.recordstorage.RecordStorageEngineFactory;

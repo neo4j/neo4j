@@ -24,8 +24,8 @@ import java.util.concurrent.ThreadLocalRandom;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.TransactionTracingLevel;
 
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.transaction_sampling_percentage;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.transaction_tracing_level;
+import static org.neo4j.configuration.GraphDatabaseSettings.transaction_sampling_percentage;
+import static org.neo4j.configuration.GraphDatabaseSettings.transaction_tracing_level;
 
 public class TraceProviderFactory
 {

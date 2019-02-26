@@ -84,7 +84,7 @@ import org.neo4j.udc.UsageData;
 
 import static java.lang.Math.round;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.db_timezone;
+import static org.neo4j.configuration.GraphDatabaseSettings.db_timezone;
 import static org.neo4j.server.configuration.ServerSettings.http_log_path;
 import static org.neo4j.server.configuration.ServerSettings.http_logging_enabled;
 import static org.neo4j.server.configuration.ServerSettings.http_logging_rotation_keep_number;

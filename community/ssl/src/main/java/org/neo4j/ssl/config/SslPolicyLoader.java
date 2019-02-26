@@ -50,9 +50,9 @@ import javax.net.ssl.TrustManagerFactory;
 
 import org.neo4j.configuration.ClientAuth;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.LegacySslPolicyConfig;
 import org.neo4j.configuration.SslPolicyConfig;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.ssl.PkiUtils;

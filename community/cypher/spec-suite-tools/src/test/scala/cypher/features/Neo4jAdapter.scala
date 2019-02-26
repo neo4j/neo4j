@@ -20,10 +20,10 @@
 package cypher.features
 
 import cypher.features.Neo4jExceptionToExecutionFailed._
+import org.neo4j.configuration.GraphDatabaseSettings.cypher_hints_error
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.graphdb.Result.ResultVisitor
 import org.neo4j.graphdb.config.Setting
-import org.neo4j.graphdb.factory.GraphDatabaseSettings.cypher_hints_error
 import org.neo4j.graphdb.{Result => Neo4jResult}
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade
 import org.neo4j.test.TestGraphDatabaseFactory

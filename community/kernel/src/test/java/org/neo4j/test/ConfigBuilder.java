@@ -23,6 +23,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.config.Setting;
 
 /**
@@ -42,14 +43,14 @@ import org.neo4j.graphdb.config.Setting;
  *          return Arrays.asList(
  *              // First set of configuration
  *              {@link #configure(Setting, String) configure}( {@link
- *              org.neo4j.graphdb.factory.GraphDatabaseSettings#query_cache_size
+ *              GraphDatabaseSettings#query_cache_size
  *              GraphDatabaseSettings.query_cache_size}, "42" ).{@link #asParameters() asParameters}(),
  *              // Second set of configuration
  *              {@link #configure(Setting, String) configure}( {@link
- *              org.neo4j.graphdb.factory.GraphDatabaseSettings#query_cache_size
+ *              GraphDatabaseSettings#query_cache_size
  *              GraphDatabaseSettings.query_cache_size}, "12" )
  *                   .{@link #and(Setting, String) and}( {@link
- *                   org.neo4j.graphdb.factory.GraphDatabaseSettings#cypher_min_replan_interval
+ *                   GraphDatabaseSettings#cypher_min_replan_interval
  *                   GraphDatabaseSettings.cypher_min_replan_interval}, "5000" ).{@link #asParameters() asParameters}()
  *          );
  *      }

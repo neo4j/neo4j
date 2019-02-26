@@ -33,10 +33,10 @@ import java.util.Properties;
 import java.util.regex.Pattern;
 
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.ext.udc.UdcSettings;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemUtils;
@@ -48,6 +48,7 @@ import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.udc.UsageData;
 import org.neo4j.udc.UsageDataKeys;
 
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.ext.udc.UdcConstants.DATABASE_MODE;
 import static org.neo4j.ext.udc.UdcConstants.DISTRIBUTION;
 import static org.neo4j.ext.udc.UdcConstants.EDITION;
@@ -72,7 +73,6 @@ import static org.neo4j.ext.udc.UdcConstants.UDC_PROPERTY_PREFIX;
 import static org.neo4j.ext.udc.UdcConstants.UNKNOWN_DIST;
 import static org.neo4j.ext.udc.UdcConstants.USER_AGENTS;
 import static org.neo4j.ext.udc.UdcConstants.VERSION;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
 public class DefaultUdcInformationCollector implements UdcInformationCollector
 {

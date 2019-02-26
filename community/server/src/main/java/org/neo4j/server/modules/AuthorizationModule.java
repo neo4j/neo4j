@@ -24,7 +24,7 @@ import java.util.regex.Pattern;
 import javax.servlet.Filter;
 
 import org.neo4j.configuration.Config;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.server.rest.dbms.AuthorizationDisabledFilter;

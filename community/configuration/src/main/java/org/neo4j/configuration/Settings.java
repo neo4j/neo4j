@@ -47,7 +47,6 @@ import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.graphdb.config.InvalidSettingException;
 import org.neo4j.graphdb.config.ScopeAwareSetting;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.ListenSocketAddress;
@@ -64,7 +63,7 @@ import static java.lang.String.format;
 import static org.neo4j.io.fs.FileUtils.fixSeparatorsInPath;
 
 /**
- * Create settings for configurations in Neo4j. See {@link org.neo4j.graphdb.factory.GraphDatabaseSettings} for
+ * Create settings for configurations in Neo4j. See {@link GraphDatabaseSettings} for
  * example.
  *
  * <p>Each setting has a name, a parser that converts a string to the type of the setting, a default value,

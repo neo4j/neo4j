@@ -27,6 +27,7 @@ import java.util.function.Predicate;
 
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.common.Service;
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.LoadableConfig;
 import org.neo4j.graphdb.facade.ExternalDependencies;
 import org.neo4j.graphdb.security.URLAccessRule;
