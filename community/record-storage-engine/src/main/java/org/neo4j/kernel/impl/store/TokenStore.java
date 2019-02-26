@@ -107,7 +107,7 @@ public abstract class TokenStore<RECORD extends TokenRecord>
                 continue;
             }
 
-            if ( record != null && record.inUse() && record.getNameId() != Record.RESERVED.intValue() )
+            if ( record.getNameId() != Record.RESERVED.intValue() )
             {
                 try
                 {
