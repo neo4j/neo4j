@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.runtime.{ExecutionContext, _}
 import org.neo4j.cypher.internal.v4_0.logical.plans.LogicalPlan
 import org.neo4j.cypher.result.{QueryProfile, RuntimeResult}
 import org.neo4j.kernel.impl.query.QuerySubscriber
+import org.neo4j.values.AnyValue
 import org.neo4j.values.virtual.MapValue
 
 abstract class BaseExecutionResultBuilderFactory(pipe: Pipe,
@@ -69,6 +70,7 @@ abstract class BaseExecutionResultBuilderFactory(pipe: Pipe,
 
 case class InterpretedExecutionResultBuilderFactory(pipe: Pipe,
                                                     queryIndexes: QueryIndexes,
+                                                    nExpressionSlots: Int,
                                                     readOnly: Boolean,
                                                     columns: Seq[String],
                                                     logicalPlan: LogicalPlan,
@@ -87,6 +89,7 @@ case class InterpretedExecutionResultBuilderFactory(pipe: Pipe,
                      params,
                      cursors,
                      queryIndexes.indexes.map(index => queryContext.transactionalContext.dataRead.indexReadSession(index)),
+                     new Array[AnyValue](nExpressionSlots),
                      pipeDecorator,
                      lenientCreateRelationship = lenientCreateRelationship,
                      prePopulateResults = prePopulateResults,

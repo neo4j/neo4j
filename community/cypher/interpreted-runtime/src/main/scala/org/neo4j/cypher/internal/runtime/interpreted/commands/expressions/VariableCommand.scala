@@ -19,11 +19,13 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
-import org.neo4j.cypher.internal.runtime.ExecutionContext
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
-import org.neo4j.values.AnyValue
+abstract class VariableCommand(variableName: String) extends Expression {
 
-case class Variable(name: String) extends VariableCommand(name) {
+  override def toString: String = variableName
 
-  def apply(ctx: ExecutionContext, state: QueryState): AnyValue = ctx.getByName(name)
+  def rewrite(f: Expression => Expression): Expression = f(this)
+
+  def arguments: Seq[Expression] = Seq()
+
+  def symbolTableDependencies: Set[String] = Set(variableName)
 }

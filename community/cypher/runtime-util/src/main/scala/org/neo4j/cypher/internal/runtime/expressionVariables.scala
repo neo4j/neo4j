@@ -21,7 +21,8 @@ package org.neo4j.cypher.internal.runtime
 
 import org.neo4j.cypher.internal.runtime.ast.ExpressionVariable
 import org.neo4j.cypher.internal.v4_0.expressions.{LogicalVariable, ScopeExpression}
-import org.neo4j.cypher.internal.v4_0.logical.plans.{LogicalPlan, PruningVarExpand, VarExpand}
+import org.neo4j.cypher.internal.v4_0.logical.plans.{LogicalPlan, NestedPlanExpression, PruningVarExpand, VarExpand}
+import org.neo4j.cypher.internal.v4_0.util.attribution.Attribute
 import org.neo4j.cypher.internal.v4_0.util.{Rewriter, topDown}
 
 import scala.collection.mutable
@@ -35,48 +36,63 @@ import scala.collection.mutable
   */
 object expressionVariables {
 
-  def replace(lp: LogicalPlan): (LogicalPlan, Int) = {
+  /**
+    * Attribute listing the expression variables in scope for nested logical plans. Only the root
+    * of the nested plan tree will have in expression variables listed here.
+    */
+  class AvailableExpressionVariables extends Attribute[Seq[ExpressionVariable]]
 
-    val globalMapping = mutable.Map[String, Int]()
+  case class Result(newPlan: LogicalPlan,
+                    nExpressionSlots: Int,
+                    availableExpressionVars: AvailableExpressionVariables)
 
-    lp.treeFold(0) {
+  def replace(lp: LogicalPlan): Result = {
+
+    val globalMapping = mutable.Map[String, ExpressionVariable]()
+    val availableExpressionVars = new AvailableExpressionVariables
+
+    def allocateScope(outerVars: List[ExpressionVariable],
+                      variables: Traversable[LogicalVariable]
+                     ): List[ExpressionVariable] = {
+      var innerVars = outerVars
+      for (variable <- variables) {
+        val nextVariable = ExpressionVariable(innerVars.length, variable.name)
+        globalMapping += variable.name -> nextVariable
+        innerVars = nextVariable :: innerVars
+      }
+      innerVars
+    }
+
+    lp.treeFold(List.empty[ExpressionVariable]) {
       case x: ScopeExpression =>
-        prevNumExpressionVariables => {
-          var slot = prevNumExpressionVariables
-          for (variable <- x.introducedVariables) {
-            globalMapping += variable.name -> slot
-            slot += 1
-          }
-          (slot, Some(_ => prevNumExpressionVariables))
-        }
+        outerVars =>
+          val innerVars = allocateScope(outerVars, x.introducedVariables)
+          (innerVars, Some(_ => outerVars))
 
       case x: VarExpand =>
-        prevNumExpressionVariables => {
-          var slot = prevNumExpressionVariables
-          for (varPred <- x.nodePredicate ++ x.relationshipPredicate) {
-            globalMapping += varPred.variable.name -> slot
-            slot += 1
-          }
-          (slot, Some(_ => prevNumExpressionVariables))
-        }
+        outerVars =>
+          val innerVars = allocateScope(outerVars, (x.nodePredicate ++ x.relationshipPredicate).map(_.variable))
+          (innerVars, Some(_ => outerVars))
 
       case x: PruningVarExpand =>
-        prevNumExpressionVariables => {
-          var slot = prevNumExpressionVariables
-          for (varPred <- x.nodePredicate ++ x.edgePredicate) {
-            globalMapping += varPred.variable.name -> slot
-            slot += 1
-          }
-          (slot, Some(_ => prevNumExpressionVariables))
+        outerVars =>
+          val innerVars = allocateScope(outerVars, (x.nodePredicate ++ x.edgePredicate).map(_.variable))
+          (innerVars, Some(_ => outerVars))
+
+      case x: NestedPlanExpression =>
+        outerVars => {
+          availableExpressionVars.set(x.plan.id, outerVars)
+          (outerVars, Some(_ => outerVars))
         }
     }
 
     val rewriter =
       topDown( Rewriter.lift {
         case x: LogicalVariable if globalMapping.contains(x.name) =>
-          ExpressionVariable(globalMapping(x.name), x.name)
+          globalMapping(x.name)
       })
 
-    (lp.endoRewrite(rewriter), globalMapping.values.reduceOption(math.max).map(_ + 1).getOrElse(0))
+    val nExpressionSlots = globalMapping.values.map(_.offset).reduceOption(math.max).map(_ + 1).getOrElse(0)
+    Result(lp.endoRewrite(rewriter), nExpressionSlots, availableExpressionVars)
   }
 }

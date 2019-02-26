@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
+import org.neo4j.cypher.internal.runtime.expressionVariables.AvailableExpressionVariables
 import org.neo4j.cypher.internal.v4_0.util.Rewriter
 import org.neo4j.cypher.internal.v4_0.util.bottomUp
 import org.neo4j.cypher.internal.v4_0.logical.plans.LogicalPlan
@@ -26,12 +27,16 @@ import org.neo4j.cypher.internal.v4_0.logical.plans.NestedPlanExpression
 
 object NestedPipeExpressions {
 
-  def build(pipeBuilder: PipeTreeBuilder, in: LogicalPlan): LogicalPlan = {
+  def build(pipeBuilder: PipeTreeBuilder,
+            in: LogicalPlan,
+            availableExpressionVariables: AvailableExpressionVariables): LogicalPlan = {
+
     val buildPipeExpressions: Rewriter = new Rewriter {
       private val instance = bottomUp(Rewriter.lift {
         case expr@NestedPlanExpression(patternPlan, expression) =>
+          val availableForPlan = availableExpressionVariables(patternPlan.id)
           val pipe = pipeBuilder.build(patternPlan)
-          val result = NestedPipeExpression(pipe, expression)(expr.position)
+          val result = NestedPipeExpression(pipe, expression, availableForPlan)(expr.position)
           result
       })
 

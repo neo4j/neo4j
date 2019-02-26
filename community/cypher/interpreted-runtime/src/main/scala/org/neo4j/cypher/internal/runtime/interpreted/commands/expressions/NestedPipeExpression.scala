@@ -30,9 +30,18 @@ import org.neo4j.values.virtual.VirtualValues
 Contains an expression that is really a pipe. An inner expression is run for every row returned by the inner pipe, and
 the result of the NestedPipeExpression evaluation is a collection containing the result of these inner expressions
  */
-case class NestedPipeExpression(pipe: Pipe, inner: Expression) extends Expression {
+// TODO slotted variant
+case class NestedPipeExpression(pipe: Pipe,
+                                inner: Expression,
+                                availableExpressionVariables: Seq[ExpressionVariable]) extends Expression {
+
   override def apply(ctx: ExecutionContext, state: QueryState): AnyValue = {
-    val innerState = state.withInitialContext(ctx).withDecorator(state.decorator.innerDecorator(owningPipe))
+    val initialContext = pipe.executionContextFactory.copyWith(ctx)
+    availableExpressionVariables.foreach { expVar =>
+      initialContext.set(expVar.name, state.expressionSlots(expVar.offset))
+    }
+    val innerState = state.withInitialContext(initialContext).withDecorator(state.decorator.innerDecorator(owningPipe))
+
     val results = pipe.createResults(innerState)
     val all = new util.ArrayList[AnyValue]()
     while (results.hasNext) {
@@ -41,11 +50,11 @@ case class NestedPipeExpression(pipe: Pipe, inner: Expression) extends Expressio
     VirtualValues.fromList(all)
   }
 
-  override def rewrite(f: Expression => Expression) = f(NestedPipeExpression(pipe, inner.rewrite(f)))
+  override def rewrite(f: Expression => Expression): Expression = f(NestedPipeExpression(pipe, inner.rewrite(f), availableExpressionVariables))
 
   override def arguments = List(inner)
 
-  override def symbolTableDependencies = Set()
+  override def symbolTableDependencies: Set[String] = Set()
 
   override def toString: String = s"NestedExpression()"
 }

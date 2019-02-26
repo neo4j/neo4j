@@ -54,11 +54,7 @@ trait Pipe {
   // TODO: Alternatively we could pass the logicalPlanId when we create contexts, and in the SlottedQueryState use the
   // SlotConfigurations map to get the slot configuration needed for the context creation,
   // but then we would get an extra map lookup at runtime every time we create a new context.
-  protected var executionContextFactory: ExecutionContextFactory = CommunityExecutionContextFactory()
-
-  def setExecutionContextFactory(factory: ExecutionContextFactory) = {
-    executionContextFactory = factory
-  }
+  var executionContextFactory: ExecutionContextFactory = CommunityExecutionContextFactory()
 }
 
 case class ArgumentPipe()(val id: Id = Id.INVALID_ID) extends Pipe {

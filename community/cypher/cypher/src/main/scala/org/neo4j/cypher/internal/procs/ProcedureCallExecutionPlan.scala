@@ -82,7 +82,13 @@ case class ProcedureCallExecutionPlan(signature: ProcedureSignature,
   }
 
   private def evaluateArguments(ctx: QueryContext, params: MapValue): Seq[AnyValue] = {
-    val state = new QueryState(ctx, ExternalCSVResource.empty, params, new ExpressionCursors(ctx.transactionalContext.cursors), Array.empty[IndexReadSession])
+    val state = new QueryState(ctx,
+                               ExternalCSVResource.empty,
+                               params,
+                               new ExpressionCursors(ctx.transactionalContext.cursors),
+                               Array.empty[IndexReadSession],
+                               Array.empty[AnyValue])
+
     val args = zippedArgCandidates.map {
       // an actual argument (or even a parameter that ResolvedCall puts there instead if there is no default value)
       case (Some(actualArg), _, _) => actualArg

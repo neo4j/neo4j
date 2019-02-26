@@ -80,13 +80,13 @@ class ExpressionsTest extends ParserTest[ast.Expression, legacy.Expression] with
     val mapExpression = legacy.Property(legacy.Variable("x"), PropertyKey("name"))
 
     parsing("[x in collection WHERE x.prop = 42 | x.name]") shouldGive
-      legacy.ExtractFunction(legacy.FilterFunction(legacy.Variable("collection"), "x", predicate), "x", mapExpression)
+      legacy.ExtractFunction(legacy.FilterFunction(legacy.Variable("collection"), "x", 0, predicate), "x", 0, mapExpression)
 
     parsing("[x in collection WHERE x.prop = 42]") shouldGive
-      legacy.FilterFunction(legacy.Variable("collection"), "x", predicate)
+      legacy.FilterFunction(legacy.Variable("collection"), "x", 0, predicate)
 
     parsing("[x in collection | x.name]") shouldGive
-      legacy.ExtractFunction(legacy.Variable("collection"), "x", mapExpression)
+      legacy.ExtractFunction(legacy.Variable("collection"), "x", 0, mapExpression)
   }
 
   test("array_indexing") {

@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.runtime.interpreted
 
 import org.neo4j.cypher.internal.ir.v4_0.VarPatternLength
 import org.neo4j.cypher.internal.planner.v4_0.spi.TokenContext
+import org.neo4j.cypher.internal.runtime.ast.ExpressionVariable
 import org.neo4j.cypher.internal.runtime.interpreted.commands.KeyTokenResolver
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.PatternConverters._
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{ExpressionConverters, InterpretedCommandProjection}
@@ -379,9 +380,9 @@ case class InterpretedPipeMapper(readOnly: Boolean,
        case None => (_: ExecutionContext, _: QueryState, _: AnyValue) => true
        case Some(VariablePredicate(variable, astPredicate)) =>
          val command = buildPredicate(id, astPredicate)
-         val variableName = variable.name
+         val ev = ExpressionVariable.cast(variable)
          (context: ExecutionContext, state: QueryState, entity: AnyValue) => {
-           context.set(variableName, entity)
+           state.expressionSlots(ev.offset) = entity
            command.isTrue(context, state)
          }
      }

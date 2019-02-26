@@ -24,36 +24,41 @@ import org.neo4j.cypher.internal.runtime.interpreted.ListSupport
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Predicate
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.values.AnyValue
-import org.neo4j.values.virtual.VirtualValues
+import org.neo4j.values.virtual.{ListValue, VirtualValues}
 
 import scala.collection.mutable.ArrayBuffer
 
-case class FilterFunction(collection: Expression, id: String, predicate: Predicate)
+case class FilterFunction(collection: Expression,
+                          innerVariableName: String,
+                          innerVariableOffset: Int,
+                          predicate: Predicate)
   extends NullInNullOutExpression(collection)
   with ListSupport
   with Closure {
 
-  override def compute(value: AnyValue, m: ExecutionContext, state: QueryState) = {
+  override def compute(value: AnyValue, row: ExecutionContext, state: QueryState): ListValue = {
     val list = makeTraversable(value)
-    val innerContext = m.createClone()
     val filtered = new ArrayBuffer[AnyValue]
     val inputs = list.iterator()
-    while (inputs.hasNext()) {
+    while (inputs.hasNext) {
       val value = inputs.next()
-      innerContext.set(id, value)
-      if (predicate.isTrue(innerContext, state)) {
+      state.expressionSlots(innerVariableOffset) = value
+      if (predicate.isTrue(row, state)) {
         filtered += value
       }
     }
     VirtualValues.list(filtered.toArray:_*)
   }
 
-  def rewrite(f: (Expression) => Expression) =
-    f(FilterFunction(collection.rewrite(f), id, predicate.rewriteAsPredicate(f)))
+  def rewrite(f: Expression => Expression): Expression =
+    f(FilterFunction(collection.rewrite(f),
+                     innerVariableName,
+                     innerVariableOffset,
+                     predicate.rewriteAsPredicate(f)))
 
-  override def children = Seq(collection, predicate)
+  override def children: Seq[Expression] = Seq(collection, predicate)
 
   def arguments: Seq[Expression] = Seq(collection)
 
-  def symbolTableDependencies = symbolTableDependencies(collection, predicate, id)
+  def symbolTableDependencies: Set[String] = symbolTableDependencies(collection, predicate, innerVariableName)
 }

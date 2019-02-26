@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.runtime.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.values.AnyValue
 
-case class Variable(name: String) extends VariableCommand(name) {
+case class ExpressionVariable(offset: Int, name: String) extends VariableCommand(name) {
 
-  def apply(ctx: ExecutionContext, state: QueryState): AnyValue = ctx.getByName(name)
+  def apply(ctx: ExecutionContext, state: QueryState): AnyValue = state.expressionSlots(offset)
 }

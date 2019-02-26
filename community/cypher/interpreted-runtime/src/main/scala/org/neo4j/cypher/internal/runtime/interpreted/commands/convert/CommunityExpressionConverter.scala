@@ -20,14 +20,15 @@
 package org.neo4j.cypher.internal.runtime.interpreted.commands.convert
 
 import org.neo4j.cypher.internal.planner.v4_0.spi.TokenContext
+import org.neo4j.cypher.internal.runtime.ast.ExpressionVariable
 import org.neo4j.cypher.internal.runtime.interpreted._
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{InequalitySeekRangeExpression, PointDistanceSeekRangeExpression, Expression => CommandExpression}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Predicate
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.TokenType.PropertyKey
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.UnresolvedRelType
 import org.neo4j.cypher.internal.runtime.interpreted.commands.{PathExtractorExpression, predicates, expressions => commandexpressions, values => commandvalues}
+import org.neo4j.cypher.internal.v4_0.expressions._
 import org.neo4j.cypher.internal.v4_0.expressions.functions._
-import org.neo4j.cypher.internal.v4_0.expressions.{DesugaredMapProjection, Expression, PropertyKeyName, functions}
 import org.neo4j.cypher.internal.v4_0.logical.plans._
 import org.neo4j.cypher.internal.v4_0.util.attribution.Id
 import org.neo4j.cypher.internal.v4_0.util.{InternalException, NonEmptyList}
@@ -58,6 +59,7 @@ case class CommunityExpressionConverter(tokenContext: TokenContext) extends Expr
       case e: ast.False => predicates.Not(predicates.True())
       case e: ast.Literal => commandexpressions.Literal(e.value)
       case e: ast.Variable => variable(e)
+      case e: ExpressionVariable => commands.expressions.ExpressionVariable(e.offset, e.name)
       case e: ast.Or => predicates.Or(self.toCommandPredicate(id, e.lhs), self.toCommandPredicate(id, e.rhs))
       case e: ast.Xor => predicates.Xor(self.toCommandPredicate(id, e.lhs), self.toCommandPredicate(id, e.rhs))
       case e: ast.And => predicates.And(self.toCommandPredicate(id, e.lhs), self.toCommandPredicate(id, e.rhs))
@@ -109,31 +111,57 @@ case class CommunityExpressionConverter(tokenContext: TokenContext) extends Expr
         .ListSlice(self.toCommandExpression(id, e.list), toCommandExpression(id, e.from, self), toCommandExpression(id, e.to, self))
       case e: ast.ContainerIndex => commandexpressions
         .ContainerIndex(self.toCommandExpression(id, e.expr), self.toCommandExpression(id, e.idx))
-      case e: ast.FilterExpression => commandexpressions
-        .FilterFunction(self.toCommandExpression(id, e.expression), e.variable.name,
-                        e.innerPredicate.map(self.toCommandPredicate(id, _)).getOrElse(predicates.True()))
-      case e: ast.ExtractExpression => commandexpressions
-        .ExtractFunction(self.toCommandExpression(id, e.expression), e.variable.name,
-                         self.toCommandExpression(id, e.scope.extractExpression.get))
+      case e: ast.FilterExpression =>
+        val ev = ExpressionVariable.cast(e.scope.variable)
+        commandexpressions.FilterFunction(self.toCommandExpression(id, e.expression),
+                                          ev.name,
+                                          ev.offset,
+                                          e.innerPredicate.map(self.toCommandPredicate(id, _)).getOrElse(predicates.True()))
+
+      case e: ast.ExtractExpression =>
+        val ev = ExpressionVariable.cast(e.scope.variable)
+          commandexpressions.ExtractFunction(self.toCommandExpression(id, e.expression),
+                                             ev.name,
+                                             ev.offset,
+                                             self.toCommandExpression(id, e.scope.extractExpression.get))
+
       case e: ast.ListComprehension => listComprehension(id, e, self)
-      case e: ast.AllIterablePredicate => commands.AllInList(self.toCommandExpression(id, e.expression), e.variable.name,
-                                                             e.innerPredicate.map(self.toCommandPredicate(id,_))
-                                                               .getOrElse(predicates.True()))
-      case e: ast.AnyIterablePredicate => commands.AnyInList(self.toCommandExpression(id, e.expression), e.variable.name,
-                                                             e.innerPredicate.map(self.toCommandPredicate(id,_))
-                                                               .getOrElse(predicates.True()))
-      case e: ast.NoneIterablePredicate => commands.NoneInList(self.toCommandExpression(id, e.expression), e.variable.name,
-                                                               e.innerPredicate.map(self.toCommandPredicate(id,_))
-                                                                 .getOrElse(predicates.True()))
-      case e: ast.SingleIterablePredicate => commands
-        .SingleInList(self.toCommandExpression(id, e.expression), e.variable.name,
-                      e.innerPredicate.map(self.toCommandPredicate(id,_)).getOrElse(predicates.True()))
+      case e: ast.AllIterablePredicate =>
+        val ev = ExpressionVariable.cast(e.variable)
+          commands.AllInList(self.toCommandExpression(id, e.expression),
+                             ev.name,
+                             ev.offset,
+                             e.innerPredicate.map(self.toCommandPredicate(id, _)).getOrElse(predicates.True()))
+
+      case e: ast.AnyIterablePredicate =>
+        val ev = ExpressionVariable.cast(e.variable)
+          commands.AnyInList(self.toCommandExpression(id, e.expression),
+                             ev.name,
+                             ev.offset,
+                             e.innerPredicate.map(self.toCommandPredicate(id, _)).getOrElse(predicates.True()))
+
+      case e: ast.NoneIterablePredicate =>
+        val ev = ExpressionVariable.cast(e.variable)
+          commands.NoneInList(self.toCommandExpression(id, e.expression),
+                              ev.name,
+                              ev.offset,
+                              e.innerPredicate.map(self.toCommandPredicate(id, _)).getOrElse(predicates.True()))
+
+      case e: ast.SingleIterablePredicate =>
+        val ev = ExpressionVariable.cast(e.variable)
+          commands.SingleInList(self.toCommandExpression(id, e.expression),
+                                ev.name,
+                                ev.offset,
+                                e.innerPredicate.map(self.toCommandPredicate(id, _)).getOrElse(predicates.True()))
+
       case e: ast.ReduceExpression => commandexpressions
         .ReduceFunction(self.toCommandExpression(id, e.list), e.variable.name, self.toCommandExpression(id, e.expression),
                         e.accumulator.name, self.toCommandExpression(id, e.init))
       case e: ast.PathExpression => self.toCommandProjectedPath(e)
       case e: pipes.NestedPipeExpression => commandexpressions
-        .NestedPipeExpression(e.pipe, self.toCommandExpression(id, e.projection))
+        .NestedPipeExpression(e.pipe,
+                              self.toCommandExpression(id, e.projection),
+                              e.availableExpressionVariables.map(exp => commands.expressions.ExpressionVariable(exp.offset, exp.name)))
       case e: ast.GetDegree => getDegree(id, e, self)
       case e: PrefixSeekRangeWrapper => commandexpressions
         .PrefixSeekRangeExpression(e.range.map(self.toCommandExpression(id,_)))
@@ -448,16 +476,22 @@ case class CommunityExpressionConverter(tokenContext: TokenContext) extends Expr
     }.toMap
 
   private def listComprehension(id: Id, e: ast.ListComprehension, self: ExpressionConverters): CommandExpression = {
+    val ev = ExpressionVariable.cast(e.variable)
     val filter = e.innerPredicate match {
       case Some(_: ast.True) | None =>
         self.toCommandExpression(id, e.expression)
       case Some(inner) =>
-        commandexpressions
-          .FilterFunction(self.toCommandExpression(id, e.expression), e.variable.name, self.toCommandPredicate(id, inner))
+        commandexpressions.FilterFunction(self.toCommandExpression(id, e.expression),
+                                          ev.name,
+                                          ev.offset,
+                                          self.toCommandPredicate(id, inner))
     }
     e.extractExpression match {
       case Some(extractExpression) =>
-        commandexpressions.ExtractFunction(filter, e.variable.name, self.toCommandExpression(id, extractExpression))
+        commandexpressions.ExtractFunction(filter,
+                                           ev.name,
+                                           ev.offset,
+                                           self.toCommandExpression(id, extractExpression))
       case None =>
         filter
     }

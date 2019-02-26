@@ -24,27 +24,29 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{Community
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.GreaterThan
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.TokenType.PropertyKey
 import org.neo4j.cypher.internal.runtime.interpreted.commands.{expressions => legacy}
+import org.neo4j.cypher.internal.v4_0.expressions.ListComprehension
 import org.neo4j.cypher.internal.v4_0.parser.{Expressions, ParserTest}
 import org.neo4j.cypher.internal.v4_0.util.attribution.Id
 import org.neo4j.cypher.internal.v4_0.{expressions => ast}
 import org.parboiled.scala._
 
 class ListComprehensionTest extends ParserTest[ast.ListComprehension, legacy.Expression] with Expressions {
-  implicit val parserToTest = ListComprehension ~ EOI
+  implicit val parserToTest: Rule1[ListComprehension] = ListComprehension ~ EOI
 
   test("tests") {
     val filterCommand = legacy.FilterFunction(
       legacy.Variable("p"),
       "a",
+      0,
       GreaterThan(legacy.Property(legacy.Variable("a"), PropertyKey("foo")), legacy.Literal(123)))
 
     parsing("[ a in p WHERE a.foo > 123 ]") shouldGive filterCommand
 
     parsing("[ a in p | a.foo ]") shouldGive
-      legacy.ExtractFunction(legacy.Variable("p"), "a", legacy.Property(legacy.Variable("a"), PropertyKey("foo")))
+      legacy.ExtractFunction(legacy.Variable("p"), "a", 0, legacy.Property(legacy.Variable("a"), PropertyKey("foo")))
 
     parsing("[ a in p WHERE a.foo > 123 | a.foo ]") shouldGive
-      legacy.ExtractFunction(filterCommand, "a", legacy.Property(legacy.Variable("a"), PropertyKey("foo")))
+      legacy.ExtractFunction(filterCommand, "a", 0, legacy.Property(legacy.Variable("a"), PropertyKey("foo")))
   }
 
   private val converters = new ExpressionConverters(CommunityExpressionConverter(TokenContext.EMPTY))

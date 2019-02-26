@@ -138,7 +138,7 @@ class ProfilerTest extends CypherFunSuite {
     val DB_HITS = 100
     val start1 = ArgumentPipe()(idGen.id())
     val testPipe = ProfilerTestPipe(start1, "nested pipe", rows = 10, dbAccess = DB_HITS)(idGen.id())
-    val innerPipe = NestedPipeExpression(testPipe, projectedPath)
+    val innerPipe = NestedPipeExpression(testPipe, projectedPath, Seq.empty)
     val start2 = ArgumentPipe()(idGen.id())
     val pipeUnderInspection = ProjectionPipe(start2, InterpretedCommandProjection(Map("x" -> innerPipe)))(idGen.id())
 
@@ -161,7 +161,7 @@ class ProfilerTest extends CypherFunSuite {
     val start1 = ArgumentPipe()(idGen.id())
     val statisticProvider = new ConfiguredKernelStatisticProvider()
     val testPipe = ProfilerTestPipe(start1, "nested pipe", rows = 10, dbAccess = 2, statisticProvider, hits = 3, misses = 4 )(idGen.id())
-    val innerPipe = NestedPipeExpression(testPipe, projectedPath)
+    val innerPipe = NestedPipeExpression(testPipe, projectedPath, Seq.empty)
     val start2 = ArgumentPipe()(idGen.id())
     val pipeUnderInspection = ProjectionPipe(start2,InterpretedCommandProjection(Map("x" -> innerPipe)))(idGen.id())
 
@@ -186,10 +186,10 @@ class ProfilerTest extends CypherFunSuite {
     val start2 = ArgumentPipe()(idGen.id())
     val start3 = ArgumentPipe()(idGen.id())
     val profiler1 = ProfilerTestPipe(start1, "nested pipe1", rows = 10, dbAccess = DB_HITS)(idGen.id())
-    val nestedExpression = NestedPipeExpression(profiler1, projectedPath)
+    val nestedExpression = NestedPipeExpression(profiler1, projectedPath, Seq.empty)
     val innerInnerPipe = ProjectionPipe(start2, InterpretedCommandProjection(Map("y" -> nestedExpression)))(idGen.id())
     val profiler2 = ProfilerTestPipe(innerInnerPipe, "nested pipe2", rows = 10, dbAccess = DB_HITS)(idGen.id())
-    val pipeExpression = NestedPipeExpression(profiler2, projectedPath)
+    val pipeExpression = NestedPipeExpression(profiler2, projectedPath, Seq.empty)
     val pipeUnderInspection = ProjectionPipe(start3, InterpretedCommandProjection(Map("x" -> pipeExpression)))(idGen.id())
 
     val queryContext: QueryContext = prepareQueryContext()

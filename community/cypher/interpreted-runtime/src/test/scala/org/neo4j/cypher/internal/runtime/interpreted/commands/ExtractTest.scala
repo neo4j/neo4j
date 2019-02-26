@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands
 
 import org.neo4j.cypher.internal.runtime.ExecutionContext
 import org.neo4j.cypher.internal.runtime.ImplicitValueConversion._
-import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{ExtractFunction, SizeFunction, Variable}
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{ExpressionVariable, ExtractFunction, SizeFunction, Variable}
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.values.storable.Values.intValue
@@ -30,12 +30,12 @@ import org.neo4j.values.virtual.VirtualValues.list
 class ExtractTest extends CypherFunSuite {
   test("canReturnSomethingFromAnIterable") {
     val l = Seq("x", "xxx", "xx")
-    val expression = SizeFunction(Variable("n"))
+    val expression = SizeFunction(ExpressionVariable(0, "n"))
     val collection = Variable("l")
     val m = ExecutionContext.from("l" -> l)
 
-    val extract = ExtractFunction(collection, "n", expression)
+    val extract = ExtractFunction(collection, "n", 0, expression)
 
-    extract.apply(m, QueryStateHelper.empty) should equal(list(intValue(1), intValue(3), intValue(2)))
+    extract.apply(m, QueryStateHelper.emptyWith(expressionSlots = new Array(1))) should equal(list(intValue(1), intValue(3), intValue(2)))
   }
 }

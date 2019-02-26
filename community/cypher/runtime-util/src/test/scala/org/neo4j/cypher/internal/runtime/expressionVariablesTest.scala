@@ -21,12 +21,13 @@ package org.neo4j.cypher.internal.runtime
 
 import org.neo4j.cypher.internal.ir.v4_0.VarPatternLength
 import org.neo4j.cypher.internal.runtime.ast.ExpressionVariable
+import org.neo4j.cypher.internal.runtime.expressionVariables.Result
 import org.neo4j.cypher.internal.v4_0.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.v4_0.expressions.{Expression, _}
 import org.neo4j.cypher.internal.v4_0.logical.plans._
 import org.neo4j.cypher.internal.v4_0.parser.Expressions
-import org.neo4j.cypher.internal.v4_0.util.attribution.{Id, IdGen, SameId}
+import org.neo4j.cypher.internal.v4_0.util.attribution.{IdGen, SequentialIdGen}
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.v4_0.util.{Rewriter, topDown}
 import org.parboiled.scala.{ReportingParseRunner, Rule1}
@@ -36,7 +37,7 @@ import scala.collection.mutable
 //noinspection NameBooleanParameters
 class expressionVariablesTest extends CypherFunSuite with AstConstructionTestSupport {
 
-  private implicit val idGen: IdGen = SameId(Id.INVALID_ID)
+  private implicit val idGen: IdGen = new SequentialIdGen()
 
   val exprParser = new ExpressionParser
 
@@ -47,7 +48,7 @@ class expressionVariablesTest extends CypherFunSuite with AstConstructionTestSup
     val plan = Selection(List(varFor("x")), Argument())
 
     // when
-    val (newPlan, nSlots) = expressionVariables.replace(plan)
+    val Result(newPlan, nSlots, _) = expressionVariables.replace(plan)
 
     // then
     nSlots should be(0)
@@ -60,7 +61,7 @@ class expressionVariablesTest extends CypherFunSuite with AstConstructionTestSup
     val plan = projectPlan(expr)
 
     // when
-    val (newPlan, nSlots) = expressionVariables.replace(plan)
+    val Result(newPlan, nSlots, _) = expressionVariables.replace(plan)
 
     // then
     nSlots should be(1)
@@ -75,7 +76,7 @@ class expressionVariablesTest extends CypherFunSuite with AstConstructionTestSup
     val plan = projectPlan(exprX, exprY, exprZ)
 
     // when
-    val (newPlan, nSlots) = expressionVariables.replace(plan)
+    val Result(newPlan, nSlots, _) = expressionVariables.replace(plan)
 
     // then
     nSlots should be(1)
@@ -92,7 +93,7 @@ class expressionVariablesTest extends CypherFunSuite with AstConstructionTestSup
     val plan = projectPlan(expr)
 
     // when
-    val (newPlan, nSlots) = expressionVariables.replace(plan)
+    val Result(newPlan, nSlots, _) = expressionVariables.replace(plan)
 
     // then
     nSlots should be(1)
@@ -107,7 +108,7 @@ class expressionVariablesTest extends CypherFunSuite with AstConstructionTestSup
     val plan = projectPlan(expr)
 
     // when
-    val (newPlan, nSlots) = expressionVariables.replace(plan)
+    val Result(newPlan, nSlots, _) = expressionVariables.replace(plan)
 
     // then
     nSlots should be(2)
@@ -122,7 +123,7 @@ class expressionVariablesTest extends CypherFunSuite with AstConstructionTestSup
     val plan = projectPlan(expr)
 
     // when
-    val (newPlan, nSlots) = expressionVariables.replace(plan)
+    val Result(newPlan, nSlots, _) = expressionVariables.replace(plan)
 
     // then
     nSlots should be(2)
@@ -138,15 +139,13 @@ class expressionVariablesTest extends CypherFunSuite with AstConstructionTestSup
     val exprY = exprParser.parse("all( y IN [1,2,3] WHERE y = 1)")
     val exprZ = exprParser.parse("all( z IN [1,2,3] WHERE z = 1)")
 
-    println(exprX)
-
     val selection = Selection(List(exprZ),
                               Selection(List(exprY),
                                         Selection(List(exprX),
                                                   Argument())))
 
     // when
-    val (newPlan, nSlots) = expressionVariables.replace(selection)
+    val Result(newPlan, nSlots, _) = expressionVariables.replace(selection)
 
     // then
     nSlots should be(1)
@@ -180,27 +179,15 @@ class expressionVariablesTest extends CypherFunSuite with AstConstructionTestSup
      */
 
     // given
-    val innerExpression = exprParser.parse("reduce(acc = 0, x IN [1,2,3] | acc + x )")
-    val nestedPlan = projectPlan(innerExpression)
+    val nestedExpression = exprParser.parse("reduce(acc = 0, x IN [1,2,3] | acc + x )")
+    val nestedPlan = projectPlan(nestedExpression)
     val nestedPlanExpression = NestedPlanExpression(nestedPlan, varFor("x1"))(pos)
 
-    val listLiteral = exprParser.parse("[1,2,3]")
-    val outerExpression =
-      AllIterablePredicate(
-        FilterScope(
-          varFor("y"),
-          Some(
-            In(
-              varFor("y"),
-              nestedPlanExpression
-            )(pos)
-          )
-        )(pos),
-        listLiteral)(pos)
+    val outerExpression = allPredicate("y", nestedPlanExpression, exprParser.parse("[1,2,3]"))
     val outerPlan = projectPlan(outerExpression)
 
     // when
-    val (newPlan, nSlots) = expressionVariables.replace(outerPlan)
+    val Result(newPlan, nSlots, availableExpressionVars) = expressionVariables.replace(outerPlan)
 
     // then
     nSlots should be(3)
@@ -208,6 +195,52 @@ class expressionVariablesTest extends CypherFunSuite with AstConstructionTestSup
                                                           ExpressionVariable(0, "y"),
                                                           ExpressionVariable(1, "acc"),
                                                           ExpressionVariable(2, "x"))))
+    availableExpressionVars(nestedPlan.id) should be(Seq(ExpressionVariable(0, "y")))
+  }
+
+  test("should replace expressions in nested-nested plans") {
+    // given
+    val nestedNestedExpression = exprParser.parse("reduce(acc = 0, x IN [1,2,3] | acc + x )")
+    val nestedNestedPlan = projectPlan(nestedNestedExpression)
+    val nestedNestedPlanExpression = NestedPlanExpression(nestedNestedPlan, varFor("x1"))(pos)
+
+    val nestedExpression = allPredicate("yNested", nestedNestedPlanExpression, exprParser.parse("[1,2,3]"))
+    val nestedPlan = projectPlan(nestedExpression)
+    val nestedPlanExpression = NestedPlanExpression(nestedPlan, varFor("x1"))(pos)
+
+    val outerExpression = allPredicate("y", nestedPlanExpression, exprParser.parse("[1,2,3]"))
+    val outerPlan = projectPlan(outerExpression)
+
+    // when
+    val Result(newPlan, nSlots, availableExpressionVars) = expressionVariables.replace(outerPlan)
+
+    // then
+    nSlots should be(4)
+    newPlan should be(projectPlan(withExpressionVariables(outerExpression,
+                                                          ExpressionVariable(0, "y"),
+                                                          ExpressionVariable(1, "yNested"),
+                                                          ExpressionVariable(2, "acc"),
+                                                          ExpressionVariable(3, "x"))))
+
+    availableExpressionVars(nestedPlan.id) should be(Seq(ExpressionVariable(0, "y")))
+    availableExpressionVars(nestedNestedPlan.id) should contain theSameElementsAs
+      Seq(ExpressionVariable(0, "y"), ExpressionVariable(1, "yNested"))
+  }
+
+  test("nested plan with no available expression variables") {
+    // given
+    val nestedPlanExpression = NestedPlanExpression(Argument(), varFor("y"))(pos)
+    val listComprehension = exprParser.parse("[ x IN [1,2,3] | x + 1]")
+    val projection = projectPlan(nestedPlanExpression, listComprehension)
+
+    // when
+    val Result(newPlan, nSlots, availableExpressionVars) = expressionVariables.replace(projection)
+
+    // then
+    nSlots should be(1)
+    newPlan should be(projectPlan(nestedPlanExpression, withExpressionVariables(listComprehension,
+                                                          ExpressionVariable(0, "x"))))
+    availableExpressionVars(nestedPlanExpression.plan.id) should be(Seq.empty)
   }
 
   test("should replace both reduce expression variables") {
@@ -216,7 +249,7 @@ class expressionVariablesTest extends CypherFunSuite with AstConstructionTestSup
     val plan = projectPlan(expr)
 
     // when
-    val (newPlan, nSlots) = expressionVariables.replace(plan)
+    val Result(newPlan, nSlots, _) = expressionVariables.replace(plan)
 
     // then
     nSlots should be(2)
@@ -231,7 +264,7 @@ class expressionVariablesTest extends CypherFunSuite with AstConstructionTestSup
     val plan = projectPlan(expr)
 
     // when
-    val (newPlan, nSlots) = expressionVariables.replace(plan)
+    val Result(newPlan, nSlots, _) = expressionVariables.replace(plan)
 
     // then
     nSlots should be(1)
@@ -246,7 +279,7 @@ class expressionVariablesTest extends CypherFunSuite with AstConstructionTestSup
     val plan = varLengthPlan(varFor("tempNode"), varFor("tempEdge"), nodePred, edgePred)
 
     // when
-    val (newPlan, nSlots) = expressionVariables.replace(plan)
+    val Result(newPlan, nSlots, _) = expressionVariables.replace(plan)
 
     // then
     nSlots should be(4)
@@ -270,7 +303,7 @@ class expressionVariablesTest extends CypherFunSuite with AstConstructionTestSup
     val plan = pruningVarLengthPlan(varFor("tempNode"), varFor("tempEdge"), nodePred, edgePred)
 
     // when
-    val (newPlan, nSlots) = expressionVariables.replace(plan)
+    val Result(newPlan, nSlots, _) = expressionVariables.replace(plan)
 
     // then
     nSlots should be(4)
@@ -285,6 +318,25 @@ class expressionVariablesTest extends CypherFunSuite with AstConstructionTestSup
                                            withExpressionVariables(edgePred,
                                                                    tempEdge)
     ))
+  }
+
+  // ========== HELPERS ==========
+
+  // all(varName IN list WHERE varName IN predicateList)
+  private def allPredicate(varName: String,
+                           predicateList: Expression,
+                           list: Expression): AllIterablePredicate = {
+    AllIterablePredicate(
+      FilterScope(
+        varFor(varName),
+        Some(
+          In(
+            varFor(varName),
+            predicateList
+          )(pos)
+        )
+      )(pos),
+      list)(pos)
   }
 
   private def projectPlan(exprs: Expression*): LogicalPlan = {

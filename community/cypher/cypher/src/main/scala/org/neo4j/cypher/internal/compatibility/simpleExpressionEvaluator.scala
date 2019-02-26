@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.v4_0.expressions.Expression
 import org.neo4j.cypher.internal.v4_0.util.attribution.Id
 import org.neo4j.cypher.internal.v4_0.util.{CypherException => InternalCypherException}
 import org.neo4j.internal.kernel.api.IndexReadSession
+import org.neo4j.values.AnyValue
 import org.neo4j.values.virtual.VirtualValues
 
 case object simpleExpressionEvaluator extends ExpressionEvaluator {
@@ -37,7 +38,9 @@ case object simpleExpressionEvaluator extends ExpressionEvaluator {
     val converters = new ExpressionConverters(CommunityExpressionConverter(TokenContext.EMPTY))
     val commandExpr = converters.toCommandExpression(Id.INVALID_ID, expr)
 
-    val emptyQueryState = new QueryState(null, null, VirtualValues.EMPTY_MAP, null, Array.empty[IndexReadSession])
+    // TODO: allocate expression slots
+
+    val emptyQueryState = new QueryState(null, null, VirtualValues.EMPTY_MAP, null, Array.empty[IndexReadSession], Array.empty[AnyValue])
 
     try {
       Some(commandExpr(ExecutionContext.empty, emptyQueryState))

@@ -20,11 +20,12 @@
 package org.neo4j.cypher.internal
 
 import org.neo4j.cypher.internal.plandescription.Argument
+import org.neo4j.cypher.internal.runtime.expressionVariables.Result
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{NestedPipeExpressions, PipeTreeBuilder}
 import org.neo4j.cypher.internal.runtime.interpreted.profiler.{InterpretedProfileInformation, Profiler}
 import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionResultBuilderFactory, InterpretedExecutionResultBuilderFactory, InterpretedPipeMapper, UpdateCountingQueryContext}
-import org.neo4j.cypher.internal.runtime.{InputDataStream, QueryContext, QueryIndexes}
+import org.neo4j.cypher.internal.runtime.{InputDataStream, QueryContext, QueryIndexes, expressionVariables}
 import org.neo4j.cypher.internal.v4_0.util.{InternalNotification, PeriodicCommitInOpenTransactionException}
 import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.kernel.impl.query.QuerySubscriber
@@ -34,16 +35,17 @@ object InterpretedRuntime extends CypherRuntime[RuntimeContext] {
   override def name: String = "interpreted"
 
   override def compileToExecutable(query: LogicalQuery, context: RuntimeContext): ExecutionPlan = {
-    val logicalPlan = query.logicalPlan
+    val Result(logicalPlan, nExpressionSlots, availableExpressionVars) = expressionVariables.replace(query.logicalPlan)
     val converters = new ExpressionConverters(CommunityExpressionConverter(context.tokenContext))
     val queryIndexes = new QueryIndexes(context.schemaRead)
     val pipeMapper = InterpretedPipeMapper(query.readOnly, converters, context.tokenContext, queryIndexes)(query.semanticTable)
     val pipeTreeBuilder = PipeTreeBuilder(pipeMapper)
-    val logicalPlanWithConvertedNestedPlans = NestedPipeExpressions.build(pipeTreeBuilder, logicalPlan)
+    val logicalPlanWithConvertedNestedPlans = NestedPipeExpressions.build(pipeTreeBuilder, logicalPlan, availableExpressionVars)
     val pipe = pipeTreeBuilder.build(logicalPlanWithConvertedNestedPlans)
     val columns = query.resultColumns
     val resultBuilderFactory = InterpretedExecutionResultBuilderFactory(pipe,
                                                                         queryIndexes,
+                                                                        nExpressionSlots,
                                                                         query.readOnly,
                                                                         columns,
                                                                         logicalPlan,

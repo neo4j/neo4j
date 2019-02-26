@@ -75,7 +75,7 @@ object Foldable {
      *
      * @param init the initial value of the accumulator
      * @param f    partial function that given a node in the tree might return a function that takes the current
-     *             accumulator, and return a pair compound by the new accumulator for continuing the fold and an
+     *             accumulator, and returns a pair compound by the new accumulator for continuing the fold and an
      *             optional function that takes an accumulator and returns an accumulator
      * @tparam R the type of the accumulator/result
      * @return the accumulated result
