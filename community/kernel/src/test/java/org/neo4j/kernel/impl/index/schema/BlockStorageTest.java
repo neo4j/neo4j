@@ -49,6 +49,7 @@ import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static java.util.Comparator.comparingLong;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.lessThan;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -215,6 +216,8 @@ class BlockStorageTest
 
             // then
             assertContents( layout, storage, asOneBigBlock( expectedBlocks ) );
+            assertThat( monitor.totalEntriesToMerge, greaterThanOrEqualTo( monitor.entryAddedCallCount ) );
+            assertEquals( monitor.totalEntriesToMerge, monitor.entriesMerged );
         }
     }
 
@@ -275,7 +278,7 @@ class BlockStorageTest
         TrackingMonitor monitor = new TrackingMonitor()
         {
             @Override
-            public void mergedBlocks( long resultingBlockSize, long resultingEntryCount, int numberOfBlocks )
+            public void mergedBlocks( long resultingBlockSize, long resultingEntryCount, long numberOfBlocks )
             {
                 super.mergedBlocks( resultingBlockSize, resultingEntryCount, numberOfBlocks );
                 barrier.reached();
@@ -412,7 +415,7 @@ class BlockStorageTest
     private static class TrackingMonitor implements BlockStorage.Monitor
     {
         // For entryAdded
-        int entryAddedCallCount;
+        long entryAddedCallCount;
         int lastEntrySize;
         long totalEntrySize;
 
@@ -424,10 +427,13 @@ class BlockStorageTest
 
         // For mergeIteration
         int mergeIterationCallCount;
-        int lastNumberOfBlocksBefore;
-        int lastNumberOfBlocksAfter;
+        long lastNumberOfBlocksBefore;
+        long lastNumberOfBlocksAfter;
 
-        // For mergeBlocks
+        // For mergeStarted
+        long totalEntriesToMerge;
+        long entriesMerged;
+
         @Override
         public void entryAdded( int entrySize )
         {
@@ -446,7 +452,7 @@ class BlockStorageTest
         }
 
         @Override
-        public void mergeIterationFinished( int numberOfBlocksBefore, int numberOfBlocksAfter )
+        public void mergeIterationFinished( long numberOfBlocksBefore, long numberOfBlocksAfter )
         {
             mergeIterationCallCount++;
             lastNumberOfBlocksBefore = numberOfBlocksBefore;
@@ -454,8 +460,20 @@ class BlockStorageTest
         }
 
         @Override
-        public void mergedBlocks( long resultingBlockSize, long resultingEntryCount, int numberOfBlocks )
+        public void mergedBlocks( long resultingBlockSize, long resultingEntryCount, long numberOfBlocks )
         {   // no-op
+        }
+
+        @Override
+        public void mergeStarted( long totalEntriesToMerge )
+        {
+            this.totalEntriesToMerge = totalEntriesToMerge;
+        }
+
+        @Override
+        public void entriesMerged( int entries )
+        {
+            entriesMerged += entries;
         }
     }
 }

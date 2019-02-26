@@ -33,6 +33,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import org.neo4j.cursor.RawCursor;
 import org.neo4j.index.internal.gbptree.Hit;
@@ -57,6 +58,8 @@ import org.neo4j.util.FeatureToggles;
 import org.neo4j.util.Preconditions;
 import org.neo4j.values.storable.Value;
 
+import static org.neo4j.helpers.collection.Iterables.first;
+import static org.neo4j.kernel.impl.index.schema.BlockStorage.calculateNumberOfEntriesWrittenDuringMerges;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexUpdater.initializeKeyFromUpdate;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexes.deleteIndex;
 
@@ -89,15 +92,19 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
     private final int mergeFactor;
     private final BlockStorage.Monitor blockStorageMonitor;
     // written to in a synchronized method when creating new thread-local instances, read from when population completes
-    private final List<BlockStorage<KEY,VALUE>> allScanUpdates = new CopyOnWriteArrayList<>();
-    private final ThreadLocal<BlockStorage<KEY,VALUE>> scanUpdates;
+    private final List<ThreadLocalBlockStorage> allScanUpdates = new CopyOnWriteArrayList<>();
+    private final ThreadLocal<ThreadLocalBlockStorage> scanUpdates;
     private final ByteBufferFactory bufferFactory = new UnsafeDirectByteBufferFactory( new LocalMemoryTracker() /*plug in actual tracker when available*/ );
     private IndexUpdateStorage<KEY,VALUE> externalUpdates;
     // written in a synchronized method when creating new thread-local instances, read when processing external updates
-    private volatile boolean merged;
+    private volatile boolean scanCompleted;
     private final CloseCancellation cancellation = new CloseCancellation();
     // Will be instantiated right before merging and can be used to neatly await merge to complete
     private volatile CountDownLatch mergeOngoingLatch;
+
+    // progress state
+    private volatile long numberOfAppliedScanUpdates;
+    private volatile long numberOfAppliedExternalUpdates;
 
     BlockBasedIndexPopulator( PageCache pageCache, FileSystemAbstraction fs, File file, IndexLayout<KEY,VALUE> layout, IndexProvider.Monitor monitor,
             StoreIndexDescriptor descriptor, IndexSpecificSpaceFillingCurveSettingsCache spatialSettings,
@@ -120,16 +127,14 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
         this.scanUpdates = ThreadLocal.withInitial( this::newThreadLocalBlockStorage );
     }
 
-    private synchronized BlockStorage<KEY,VALUE> newThreadLocalBlockStorage()
+    private synchronized ThreadLocalBlockStorage newThreadLocalBlockStorage()
     {
-        Preconditions.checkState( !merged, "Already merged" );
         Preconditions.checkState( !cancellation.cancelled(), "Already closed" );
+        Preconditions.checkState( !scanCompleted, "Scan has already been completed" );
         try
         {
             int id = allScanUpdates.size();
-            BlockStorage<KEY,VALUE> blockStorage =
-                    new BlockStorage<>( layout, bufferFactory, fileSystem, new File( storeFile.getParentFile(), storeFile.getName() + ".scan-" + id ),
-                            blockStorageMonitor, blockSize );
+            ThreadLocalBlockStorage blockStorage = new ThreadLocalBlockStorage( id );
             allScanUpdates.add( blockStorage );
             return blockStorage;
         }
@@ -174,7 +179,7 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
     {
         if ( !updates.isEmpty() )
         {
-            BlockStorage<KEY,VALUE> blockStorage = scanUpdates.get();
+            BlockStorage<KEY,VALUE> blockStorage = scanUpdates.get().blockStorage;
             for ( IndexEntryUpdate<?> update : updates )
             {
                 storeUpdate( update, blockStorage );
@@ -205,6 +210,7 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
 
     private synchronized boolean markMergeStarted()
     {
+        scanCompleted = true;
         if ( cancellation.cancelled() )
         {
             return false;
@@ -230,8 +236,9 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
             {
                 ExecutorService executorService = Executors.newFixedThreadPool( allScanUpdates.size() );
                 List<Future<?>> mergeFutures = new ArrayList<>();
-                for ( BlockStorage<KEY,VALUE> scanUpdates : allScanUpdates )
+                for ( ThreadLocalBlockStorage part : allScanUpdates )
                 {
+                    BlockStorage<KEY,VALUE> scanUpdates = part.blockStorage;
                     mergeFutures.add( executorService.submit( () ->
                     {
                         scanUpdates.doneAdding();
@@ -261,7 +268,6 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
             // Apply the external updates
             phaseTracker.enterPhase( PhaseTracker.Phase.APPLY_EXTERNAL );
             writeExternalUpdatesToTree();
-            merged = true;
         }
         catch ( IOException e )
         {
@@ -317,6 +323,7 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
                 default:
                     throw new IllegalArgumentException( "Unknown update mode " + updates.updateMode() );
                 }
+                numberOfAppliedExternalUpdates++;
             }
         }
 
@@ -384,9 +391,9 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
         ConflictDetectingValueMerger<KEY,VALUE> conflictDetector = getMainConflictDetector();
         try ( MergingBlockEntryReader<KEY,VALUE> allEntries = new MergingBlockEntryReader<>( layout ) )
         {
-            for ( BlockStorage<KEY,VALUE> scanUpdates : allScanUpdates )
+            for ( ThreadLocalBlockStorage part : allScanUpdates )
             {
-                try ( BlockReader<KEY,VALUE> reader = scanUpdates.reader() )
+                try ( BlockReader<KEY,VALUE> reader = part.blockStorage.reader() )
                 {
                     BlockEntryReader<KEY,VALUE> singleMergedBlock = reader.nextBlock();
                     if ( singleMergedBlock != null )
@@ -411,6 +418,7 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
                     {
                         conflictDetector.reportConflict( allEntries.key().asValues() );
                     }
+                    numberOfAppliedScanUpdates++;
                 }
             }
         }
@@ -419,7 +427,7 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
     @Override
     public IndexUpdater newPopulatingUpdater()
     {
-        if ( merged )
+        if ( scanCompleted )
         {
             // Will need the reader from newReader, which a sub-class of this class implements
             return super.newPopulatingUpdater();
@@ -510,7 +518,7 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
             }
         }
 
-        List<Closeable> toClose = new ArrayList<>( allScanUpdates );
+        List<Closeable> toClose = allScanUpdates.stream().map( local -> local.blockStorage ).collect( Collectors.toCollection( ArrayList::new ) );
         toClose.add( externalUpdates );
         IOUtils.closeAllUnchecked( toClose );
     }
@@ -518,7 +526,106 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
     @Override
     public PopulationProgress progress( PopulationProgress scanProgress )
     {
-        return scanProgress;
+        // A general note on scanProgress.getTotal(). Before the scan is completed most progress parts will base their estimates on that value.
+        // It is known that it may be slightly higher than the actual value. This is fine, but it creates this small "jump" in the progress
+        // in the middle somewhere when it switches from scan to merge. This also exists in the most basic population progress reports, but
+        // there it will be less visible since it will jump from some close-to-100 percentage to 100% and ONLINE.
+
+        // This progress report will consist of a couple of smaller parts, weighted differently based on empirically collected values.
+        // The weights will not be absolutely correct in all environments, but they don't have to be either, it will just result in some
+        // slices of the percentage progression range progressing at slightly different paces. However, progression of progress reporting
+        // naturally fluctuates anyway due to data set and I/O etc. so this is not an actual problem.
+        PopulationProgress.MultiBuilder builder = PopulationProgress.multiple();
+
+        // Add scan progress (this one weights a bit heavier than the others)
+        builder.add( scanCompleted ? PopulationProgress.DONE : scanProgress, 4 );
+
+        // Add merge progress
+        if ( !allScanUpdates.isEmpty() )
+        {
+            // The parts are merged in parallel so just take the first one and it will represent the whole merge progress.
+            // It will be fairly accurate, but slightly off sometimes if other threads gets scheduling problems, i.e. if this part
+            // finish far apart from others.
+            ThreadLocalBlockStorage part = first( allScanUpdates );
+            long completed = 0;
+            long total;
+            if ( scanCompleted || part.blocksFlushed == 0 )
+            {
+                // We know the actual entry count to write during merge since we have been monitoring those values
+                completed = part.entriesMerged;
+                total = part.totalEntriesToMerge;
+            }
+            else
+            {
+                // Before scan completed the total will have to be scanProgress.getTotal(). Use the same logic that BlockStorage uses
+                // internally to calculate the total number of entries written during the merge. The estimate gets more and more accurate
+                // the longer the scan progresses.
+                long averageKeysPerBlock = part.keysFlushed / part.blocksFlushed;
+                long entryCount = scanProgress.getTotal();
+                total = calculateNumberOfEntriesWrittenDuringMerges( entryCount, entryCount / averageKeysPerBlock, MERGE_FACTOR );
+            }
+            builder.add( PopulationProgress.single( completed, total ), 1 );
+        }
+
+        // Add tree building (before scan completed it's based on scanProgress.getTotal() and after scan completed it's based on actual entry count)
+        long entryCount = scanCompleted ? allScanUpdates.stream().mapToLong( part -> part.count ).sum() : scanProgress.getCompleted();
+        builder.add( PopulationProgress.single( numberOfAppliedScanUpdates, entryCount ), 2 );
+
+        // Add external updates
+        builder.add( PopulationProgress.single( numberOfAppliedExternalUpdates, externalUpdates.count() ), 0.5f );
+
+        return builder.build();
+    }
+
+    /**
+     * Keeps track of a {@link BlockStorage} instance as well as monitoring some aspects of it to be able to provide a fairly accurate
+     * progress report from {@link BlockBasedIndexPopulator#progress(PopulationProgress)}.
+     */
+    private class ThreadLocalBlockStorage extends BlockStorage.Monitor.Delegate
+    {
+        private final BlockStorage<KEY,VALUE> blockStorage;
+        private volatile long count;
+        private volatile long totalEntriesToMerge;
+        private volatile long entriesMerged;
+        private volatile long keysFlushed;
+        private volatile long blocksFlushed;
+
+        ThreadLocalBlockStorage( int id ) throws IOException
+        {
+            super( blockStorageMonitor );
+            this.blockStorage =
+                    new BlockStorage<>( layout, bufferFactory, fileSystem, new File( storeFile.getParentFile(), storeFile.getName() + ".scan-" + id ),
+                            this, blockSize );
+        }
+
+        @Override
+        public void blockFlushed( long keyCount, int numberOfBytes, long positionAfterFlush )
+        {
+            super.blockFlushed( keyCount, numberOfBytes, positionAfterFlush );
+            keysFlushed += keyCount;
+            blocksFlushed++;
+        }
+
+        @Override
+        public void entryAdded( int entrySize )
+        {
+            super.entryAdded( entrySize );
+            count++;
+        }
+
+        @Override
+        public void mergeStarted( long totalEntriesToMerge )
+        {
+            super.mergeStarted( totalEntriesToMerge );
+            this.totalEntriesToMerge = totalEntriesToMerge;
+        }
+
+        @Override
+        public void entriesMerged( int entries )
+        {
+            super.entriesMerged( entries );
+            entriesMerged += entries;
+        }
     }
 
     private static class CloseCancellation implements BlockStorage.Cancellation
