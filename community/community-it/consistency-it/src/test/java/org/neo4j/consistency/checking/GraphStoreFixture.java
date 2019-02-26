@@ -711,7 +711,7 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
     public Statement apply( final Statement base, Description description )
     {
         final TestDirectory directory = TestDirectory.testDirectory( description.getTestClass() );
-        return super.apply( directory.apply( new Statement()
+        return directory.apply( super.apply( new Statement()
         {
             @Override
             public void evaluate() throws Throwable
