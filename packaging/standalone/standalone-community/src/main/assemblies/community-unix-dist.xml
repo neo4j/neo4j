@@ -55,7 +55,6 @@
       <excludes>
         <exclude>**/*.bat</exclude>
         <exclude>**/*.m4</exclude>
-        <exclude>**/neo4j-backup*</exclude>
         <exclude>**/*.psd1</exclude>
         <exclude>**/*.psm1</exclude>
         <exclude>**/*.ps1</exclude>

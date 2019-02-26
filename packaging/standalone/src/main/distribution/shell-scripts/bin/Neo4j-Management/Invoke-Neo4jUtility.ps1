@@ -90,17 +90,6 @@ function Invoke-Neo4jUtility
         }
         break
       }
-      "backup" {
-        Write-Verbose "Backup command specified"
-        if ($thisServer.ServerType -ne 'Enterprise')
-        {
-          throw "Neo4j Server type $($thisServer.ServerType) does not support online backup"
-        }
-        $GetJavaParams = @{
-          StartingClass = 'org.neo4j.backup.BackupTool';
-        }
-        break
-      }
       default {
         Write-Host "Unknown utility $Command"
         return 255

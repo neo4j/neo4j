@@ -41,7 +41,6 @@ FunctionsToExport = @(
 'Invoke-Neo4j',
 'Invoke-Neo4jAdmin',
 'Invoke-Neo4jShell',
-'Invoke-Neo4jBackup',
 'Invoke-Neo4jImport',
 'Get-Args'
 )
