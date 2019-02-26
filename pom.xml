@@ -1198,13 +1198,7 @@
       <dependency>
         <groupId>org.apache.commons</groupId>
         <artifactId>commons-compress</artifactId>
-        <version>1.16.1</version>
-        <exclusions>
-          <exclusion>
-            <groupId>org.objenesis</groupId>
-            <artifactId>objenesis</artifactId>
-          </exclusion>
-        </exclusions>
+        <version>1.18</version>
       </dependency>
 
       <!-- Netty is used by three components: Com, Cluster and Bolt Socket Transport.
