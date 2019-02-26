@@ -34,7 +34,6 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.util.Bits;
 import org.neo4j.storageengine.api.StoragePropertyCursor;
-import org.neo4j.string.UTF8;
 import org.neo4j.values.storable.ArrayValue;
 import org.neo4j.values.storable.BooleanValue;
 import org.neo4j.values.storable.ByteValue;
@@ -419,7 +418,9 @@ class RecordPropertyCursor extends PropertyRecord implements StoragePropertyCurs
     {
         ByteBuffer buffer = cursor.buffer = read.loadString( reference, cursor.buffer, page );
         buffer.flip();
-        return Values.stringValue( UTF8.decode( buffer.array(), 0, buffer.limit() ) );
+        byte[] bytes = new byte[buffer.limit()];
+        buffer.get( bytes );
+        return Values.utf8Value( bytes );
     }
 
     private ArrayValue array( RecordPropertyCursor cursor, long reference, PageCursor page )
