@@ -118,9 +118,6 @@ import static org.neo4j.consistency.internal.SchemaIndexExtensionLoader.instanti
 public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implements TestRule
 {
     private DirectStoreAccess directStoreAccess;
-    private final List<NamedToken> propertyKeyTokens = new ArrayList<>();
-    private final List<NamedToken> labelTokens = new ArrayList<>();
-    private final List<NamedToken> relationshipTypeTokens = new ArrayList<>();
     private Statistics statistics;
     private final boolean keepStatistics;
     private NeoStores neoStore;
@@ -160,9 +157,9 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
     @Override
     protected void after( boolean success )
     {
-        super.after( success );
         storeLife.shutdown();
         fixtureLife.shutdown();
+        super.after( success );
         if ( fileSystem != null )
         {
             try
@@ -185,9 +182,6 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
     {
         if ( directStoreAccess == null )
         {
-            fixtureLife.start();
-            storeLife.start();
-            JobScheduler scheduler = fixtureLife.add( JobSchedulerFactory.createInitialisedScheduler() );
             fileSystem = new DefaultFileSystemAbstraction();
             PageCache pageCache = getPageCache( fileSystem );
             LogProvider logProvider = NullLogProvider.getInstance();
@@ -210,6 +204,8 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
                 nativeStores = new StoreAccess( neoStore );
             }
             nativeStores.initialize();
+            fixtureLife.start();
+            storeLife.start();
 
             CountsTracker counts = new CountsTracker( logProvider, fileSystem, pageCache, config, databaseLayout(), EmptyVersionContextSupplier.EMPTY );
             storeLife.add( counts );
@@ -219,7 +215,7 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
 
             Monitors monitors = new Monitors();
             LabelScanStore labelScanStore = startLabelScanStore( pageCache, indexStoreView, monitors );
-            IndexProviderMap indexes = createIndexes( pageCache, fileSystem, directory.databaseLayout(), config, scheduler, logProvider, monitors);
+            IndexProviderMap indexes = createIndexes( pageCache, fileSystem, directory.databaseLayout(), config, jobScheduler, logProvider, monitors);
             directStoreAccess = new DirectStoreAccess( nativeStores, labelScanStore, indexes, counts );
             storeReader = new RecordStorageReader( neoStore );
         }

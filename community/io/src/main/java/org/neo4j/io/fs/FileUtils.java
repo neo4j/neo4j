@@ -43,6 +43,7 @@ import java.nio.channels.SeekableByteChannel;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.CopyOption;
+import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.FileStore;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
@@ -56,7 +57,10 @@ import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Objects;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import org.neo4j.helpers.Exceptions;
 
 import static java.nio.file.StandardOpenOption.APPEND;
 import static java.nio.file.StandardOpenOption.CREATE;
@@ -109,8 +113,45 @@ public class FileUtils
                 {
                     throw e;
                 }
-                Files.delete( dir );
+                try
+                {
+                    Files.delete( dir );
+                }
+                catch ( DirectoryNotEmptyException notEmpty )
+                {
+                    String reason = notEmptyReason( dir, notEmpty );
+                    DirectoryNotEmptyException newNotEmpty = new DirectoryNotEmptyException( notEmpty.getFile() )
+                    {
+                        @Override
+                        public String getReason()
+                        {
+                            return reason;
+                        }
+                    };
+                    try
+                    {
+                        newNotEmpty.initCause( notEmpty );
+                    }
+                    catch ( Exception ignore )
+                    {
+                        // Attaching this cause is _probably_ not super important. We just loose a little bit of stack trace from JDK internals.
+                    }
+                    throw newNotEmpty;
+                }
                 return FileVisitResult.CONTINUE;
+            }
+
+            private String notEmptyReason( Path dir, DirectoryNotEmptyException notEmpty )
+            {
+                try ( Stream<Path> list = Files.list( dir ) )
+                {
+                    return list.map( p -> String.valueOf( p.getFileName() ) ).collect( Collectors.joining("', '", "'", "'." ) );
+                }
+                catch ( Exception e )
+                {
+                    notEmpty.addSuppressed( e );
+                    return "(could not list directory: " + e.getMessage() + ")";
+                }
             }
         } );
     }
