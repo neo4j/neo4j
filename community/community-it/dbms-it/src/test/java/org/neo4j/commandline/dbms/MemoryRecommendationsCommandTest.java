@@ -90,8 +90,8 @@ public class MemoryRecommendationsCommandTest
     @Test
     public void mustRecommendOSMemory()
     {
-        assertThat( recommendOsMemory( mebiBytes( 100 ) ), between( mebiBytes( 45 ), mebiBytes( 55 ) ) );
-        assertThat( recommendOsMemory( gibiBytes( 1 ) ), between( mebiBytes( 450 ), mebiBytes( 550 ) ) );
+        assertThat( recommendOsMemory( mebiBytes( 100 ) ), between( mebiBytes( 65 ), mebiBytes( 75 ) ) );
+        assertThat( recommendOsMemory( gibiBytes( 1 ) ), between( mebiBytes( 650 ), mebiBytes( 750 ) ) );
         assertThat( recommendOsMemory( gibiBytes( 3 ) ), between( mebiBytes( 1256 ), mebiBytes( 1356 ) ) );
         assertThat( recommendOsMemory( gibiBytes( 192 ) ), between( gibiBytes( 17 ), gibiBytes( 19 ) ) );
         assertThat( recommendOsMemory( gibiBytes( 1920 ) ), greaterThan( gibiBytes( 29 ) ) );
@@ -100,8 +100,8 @@ public class MemoryRecommendationsCommandTest
     @Test
     public void mustRecommendHeapMemory()
     {
-        assertThat( recommendHeapMemory( mebiBytes( 100 ) ), between( mebiBytes( 45 ), mebiBytes( 55 ) ) );
-        assertThat( recommendHeapMemory( gibiBytes( 1 ) ), between( mebiBytes( 450 ), mebiBytes( 550 ) ) );
+        assertThat( recommendHeapMemory( mebiBytes( 100 ) ), between( mebiBytes( 25 ), mebiBytes( 35 ) ) );
+        assertThat( recommendHeapMemory( gibiBytes( 1 ) ), between( mebiBytes( 300 ), mebiBytes( 350 ) ) );
         assertThat( recommendHeapMemory( gibiBytes( 3 ) ), between( mebiBytes( 1256 ), mebiBytes( 1356 ) ) );
         assertThat( recommendHeapMemory( gibiBytes( 6 ) ), between( mebiBytes( 3000 ), mebiBytes( 3200 ) ) );
         assertThat( recommendHeapMemory( gibiBytes( 192 ) ), between( gibiBytes( 30 ), gibiBytes( 32 ) ) );
@@ -111,8 +111,8 @@ public class MemoryRecommendationsCommandTest
     @Test
     public void mustRecommendPageCacheMemory()
     {
-        assertThat( recommendPageCacheMemory( mebiBytes( 100 ) ), between( mebiBytes( 95 ), mebiBytes( 105 ) ) );
-        assertThat( recommendPageCacheMemory( gibiBytes( 1 ) ), between( mebiBytes( 95 ), mebiBytes( 105 ) ) );
+        assertThat( recommendPageCacheMemory( mebiBytes( 100 ) ), between( mebiBytes( 7 ), mebiBytes( 12 ) ) );
+        assertThat( recommendPageCacheMemory( gibiBytes( 1 ) ), between( mebiBytes( 50 ), mebiBytes( 60 ) ) );
         assertThat( recommendPageCacheMemory( gibiBytes( 3 ) ), between( mebiBytes( 470 ), mebiBytes( 530 ) ) );
         assertThat( recommendPageCacheMemory( gibiBytes( 6 ) ), between( mebiBytes( 980 ), mebiBytes( 1048 ) ) );
         assertThat( recommendPageCacheMemory( gibiBytes( 192 ) ), between( gibiBytes( 140 ), gibiBytes( 150 ) ) );
