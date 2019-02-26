@@ -28,8 +28,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.common.DependencyResolver;
@@ -50,7 +48,6 @@ import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.internal.recordstorage.RecordStorageEngineFactory;
 import org.neo4j.internal.recordstorage.RecordStorageReader;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
@@ -71,7 +68,6 @@ import org.neo4j.kernel.impl.core.TokenHolders;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.index.labelscan.NativeLabelScanStore;
 import org.neo4j.kernel.impl.locking.LockService;
-import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.NodeStore;
@@ -99,7 +95,6 @@ import org.neo4j.logging.NullLog;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.logging.internal.SimpleLogService;
-import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.SchemaRule;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageNodeCursor;
@@ -215,7 +210,7 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
 
             Monitors monitors = new Monitors();
             LabelScanStore labelScanStore = startLabelScanStore( pageCache, indexStoreView, monitors );
-            IndexProviderMap indexes = createIndexes( pageCache, fileSystem, directory.databaseLayout(), config, jobScheduler, logProvider, monitors);
+            IndexProviderMap indexes = createIndexes( pageCache, config, logProvider, monitors);
             directStoreAccess = new DirectStoreAccess( nativeStores, labelScanStore, indexes, counts );
             storeReader = new RecordStorageReader( neoStore );
         }
@@ -225,7 +220,7 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
     private LabelScanStore startLabelScanStore( PageCache pageCache, IndexStoreView indexStoreView, Monitors monitors )
     {
         NativeLabelScanStore labelScanStore =
-                new NativeLabelScanStore( pageCache, directory.databaseLayout(), fileSystem, new FullLabelStream( indexStoreView ), false, monitors,
+                new NativeLabelScanStore( pageCache, databaseLayout(), fileSystem, new FullLabelStream( indexStoreView ), false, monitors,
                         RecoveryCleanupWorkCollector.immediate() );
         try
         {
@@ -239,16 +234,15 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
         return labelScanStore;
     }
 
-    private IndexProviderMap createIndexes( PageCache pageCache, FileSystemAbstraction fileSystem, DatabaseLayout databaseLayout,
-                                            Config config, JobScheduler scheduler, LogProvider logProvider, Monitors monitors )
+    private IndexProviderMap createIndexes( PageCache pageCache, Config config, LogProvider logProvider, Monitors monitors )
     {
         LogService logService = new SimpleLogService( logProvider, logProvider );
         TokenHolders tokenHolders = new TokenHolders(
                 new DelegatingTokenHolder( new ReadOnlyTokenCreator(), TokenHolder.TYPE_PROPERTY_KEY ),
                 new DelegatingTokenHolder( new ReadOnlyTokenCreator(), TokenHolder.TYPE_LABEL ),
                 new DelegatingTokenHolder( new ReadOnlyTokenCreator(), TokenHolder.TYPE_RELATIONSHIP_TYPE ) );
-        DatabaseExtensions extensions = fixtureLife.add( instantiateExtensions( databaseLayout, fileSystem, config, logService,
-                pageCache, scheduler, RecoveryCleanupWorkCollector.ignore(), DatabaseInfo.COMMUNITY, monitors, tokenHolders ) );
+        DatabaseExtensions extensions = fixtureLife.add( instantiateExtensions( databaseLayout(), fileSystem, config, logService,
+                pageCache, jobScheduler, RecoveryCleanupWorkCollector.ignore(), DatabaseInfo.COMMUNITY, monitors, tokenHolders ) );
         return fixtureLife.add( new DefaultIndexProviderMap( extensions, config ) );
     }
 
@@ -693,8 +687,8 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
         try
         {
             generateInitialData( graphDb );
-            StoreAccess stores = new StoreAccess( graphDb.getDependencyResolver()
-                    .resolveDependency( RecordStorageEngine.class ).testAccessNeoStores() ).initialize();
+            RecordStorageEngine storageEngine = graphDb.getDependencyResolver().resolveDependency( RecordStorageEngine.class );
+            StoreAccess stores = new StoreAccess( storageEngine.testAccessNeoStores() ).initialize();
             schemaId = stores.getSchemaStore().getHighId();
             nodeId = stores.getNodeStore().getHighId();
             labelId = (int) stores.getLabelTokenStore().getHighId();

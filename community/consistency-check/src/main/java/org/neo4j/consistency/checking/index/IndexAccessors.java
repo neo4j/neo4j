@@ -32,6 +32,7 @@ import java.util.List;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.recordstorage.RecordStorageEngineFactory;
 import org.neo4j.internal.recordstorage.SchemaRuleAccess;
+import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
@@ -121,12 +122,15 @@ public class IndexAccessors implements Closeable
     @Override
     public void close()
     {
-        for ( IndexAccessor accessor : accessors )
+        try
         {
-            accessor.close();
+            IOUtils.closeAllUnchecked( accessors.toList() );
         }
-        accessors.clear();
-        onlineIndexRules.clear();
-        notOnlineIndexRules.clear();
+        finally
+        {
+            accessors.clear();
+            onlineIndexRules.clear();
+            notOnlineIndexRules.clear();
+        }
     }
 }

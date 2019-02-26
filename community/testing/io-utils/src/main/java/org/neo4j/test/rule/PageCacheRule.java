@@ -45,7 +45,6 @@ import static org.neo4j.test.rule.PageCacheConfig.config;
 
 public class PageCacheRule extends ExternalResource
 {
-
     protected JobScheduler jobScheduler;
     protected PageCache pageCache;
     final PageCacheConfig baseConfig;
