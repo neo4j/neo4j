@@ -475,6 +475,18 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
     @Override
     public synchronized void close( boolean populationCompletedSuccessfully )
     {
+        try
+        {
+            closeBlockStorage();
+        }
+        finally
+        {
+            super.close( populationCompletedSuccessfully );
+        }
+    }
+
+    private void closeBlockStorage()
+    {
         // This method may be called while scanCompleted is running. This could be a drop or shutdown(?) which happens when this population
         // is in its final stages. scanCompleted merges things in multiple threads. Set this flag, a flag which those threads reacts to.
         cancellation.setCancel();
@@ -495,18 +507,6 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
             }
         }
 
-        try
-        {
-            closeBlockStorage();
-        }
-        finally
-        {
-            super.close( populationCompletedSuccessfully );
-        }
-    }
-
-    private void closeBlockStorage()
-    {
         List<Closeable> toClose = new ArrayList<>( allScanUpdates );
         toClose.add( externalUpdates );
         IOUtils.closeAllUnchecked( toClose );
