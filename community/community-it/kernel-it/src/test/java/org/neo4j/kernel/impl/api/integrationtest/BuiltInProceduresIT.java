@@ -160,7 +160,7 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
                 proc( "db.propertyKeys", "() :: (propertyKey :: STRING?)", "List all property keys in the database.", "READ" ),
                 proc( "db.labels", "() :: (label :: STRING?, nodeCount :: INTEGER?)", "List all labels in the database and their total count.", "READ" ),
                 proc( "db.schema.visualization","() :: (nodes :: LIST? OF NODE?, relationships :: LIST? OF RELATIONSHIP?)",
-                        "Visualize the schema of the data. Replaces db.schema.", "READ" ),
+                        "Visualize the schema of the data.", "READ" ),
                 proc( "db.schema.nodeTypeProperties",
                         "() :: (nodeType :: STRING?, nodeLabels :: LIST? OF STRING?, propertyName :: STRING?, " +
                                 "propertyTypes :: LIST? OF STRING?, mandatory :: BOOLEAN?)",

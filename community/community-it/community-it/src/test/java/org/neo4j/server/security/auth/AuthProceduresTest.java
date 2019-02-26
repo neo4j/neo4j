@@ -43,26 +43,6 @@ public class AuthProceduresTest extends KernelIntegrationTest
     private final ResourceTracker resourceTracker = new StubResourceManager();
 
     @Test
-    public void shouldFailWhenDeprecatedChangePasswordWithStaticAccessModeInDbmsMode() throws Throwable
-    {
-        // Given
-        AnyValue[] inputArray = new AnyValue[1];
-        inputArray[0] = stringValue( "newPassword" );
-
-        // Then
-        exception.expect( ProcedureException.class );
-        exception.expectMessage( "Anonymous cannot change password" );
-
-        // When
-        int procedureId = procs().procedureGet( procedureName( "dbms", "changePassword" ) ).id();
-        dbmsOperations()
-                .procedureCallDbms( procedureId,
-                                    inputArray, dependencyResolver,
-                                    AnonymousContext.none().authorize( s -> -1, GraphDatabaseSettings.DEFAULT_DATABASE_NAME ),
-                                    resourceTracker, valueMapper );
-    }
-
-    @Test
     public void shouldFailWhenChangePasswordWithStaticAccessModeInDbmsMode() throws Throwable
     {
         // Given
