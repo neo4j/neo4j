@@ -28,6 +28,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -86,21 +87,36 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
     private final IndexDirectoryStructure directoryStructure;
     private final boolean archiveFailedIndex;
     private final int blockSize;
+    private final int mergeFactor;
+    private final BlockStorage.Monitor blockStorageMonitor;
     // written to in a synchronized method when creating new thread-local instances, read from when population completes
     private final List<BlockStorage<KEY,VALUE>> allScanUpdates = new CopyOnWriteArrayList<>();
     private final ThreadLocal<BlockStorage<KEY,VALUE>> scanUpdates;
     private IndexUpdateStorage<KEY,VALUE> externalUpdates;
     // written in a synchronized method when creating new thread-local instances, read when processing external updates
     private volatile boolean merged;
+    private final CloseCancellation cancellation = new CloseCancellation();
+    // Will be instantiated right before merging and can be used to neatly await merge to complete
+    private volatile CountDownLatch mergeOngoingLatch;
 
     BlockBasedIndexPopulator( PageCache pageCache, FileSystemAbstraction fs, File file, IndexLayout<KEY,VALUE> layout, IndexProvider.Monitor monitor,
             StorageIndexReference descriptor, IndexSpecificSpaceFillingCurveSettingsCache spatialSettings,
             IndexDirectoryStructure directoryStructure, boolean archiveFailedIndex )
     {
+        this( pageCache, fs, file, layout, monitor, descriptor, spatialSettings, directoryStructure, archiveFailedIndex, parseBlockSize(), MERGE_FACTOR,
+                BlockStorage.Monitor.NO_MONITOR );
+    }
+
+    BlockBasedIndexPopulator( PageCache pageCache, FileSystemAbstraction fs, File file, IndexLayout<KEY,VALUE> layout, IndexProvider.Monitor monitor,
+            StorageIndexReference descriptor, IndexSpecificSpaceFillingCurveSettingsCache spatialSettings,
+            IndexDirectoryStructure directoryStructure, boolean archiveFailedIndex, int blockSize, int mergeFactor, BlockStorage.Monitor blockStorageMonitor )
+    {
         super( pageCache, fs, file, layout, monitor, descriptor, new SpaceFillingCurveSettingsWriter( spatialSettings ) );
         this.directoryStructure = directoryStructure;
         this.archiveFailedIndex = archiveFailedIndex;
-        this.blockSize = parseBlockSize();
+        this.blockSize = blockSize;
+        this.mergeFactor = mergeFactor;
+        this.blockStorageMonitor = blockStorageMonitor;
         this.scanUpdates = ThreadLocal.withInitial( this::newThreadLocalBlockStorage );
     }
 
@@ -112,7 +128,7 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
             int id = allScanUpdates.size();
             BlockStorage<KEY,VALUE> blockStorage =
                     new BlockStorage<>( layout, BYTE_BUFFER_FACTORY, fileSystem, new File( storeFile.getParentFile(), storeFile.getName() + ".scan-" + id ),
-                            BlockStorage.Monitor.NO_MONITOR, blockSize );
+                            blockStorageMonitor, blockSize );
             allScanUpdates.add( blockStorage );
             return blockStorage;
         }
@@ -186,9 +202,26 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
         storeUpdate( update.getEntityId(), update.values(), blockStorage );
     }
 
+    private synchronized boolean markMergeStarted()
+    {
+        if ( cancellation.cancelled() )
+        {
+            return false;
+        }
+        mergeOngoingLatch = new CountDownLatch( 1 );
+        return true;
+    }
+
     @Override
     public void scanCompleted( PhaseTracker phaseTracker ) throws IndexEntryConflictException
     {
+        if ( !markMergeStarted() )
+        {
+            // This populator has already been closed, either from an external cancel or drop call.
+            // Either way we're not supposed to do this merge.
+            return;
+        }
+
         try
         {
             phaseTracker.enterPhase( PhaseTracker.Phase.MERGE );
@@ -201,7 +234,7 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
                     mergeFutures.add( executorService.submit( () ->
                     {
                         scanUpdates.doneAdding();
-                        scanUpdates.merge( MERGE_FACTOR );
+                        scanUpdates.merge( mergeFactor, cancellation );
                         return null;
                     } ) );
                 }
@@ -248,6 +281,10 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
             }
             throw new RuntimeException( executionException );
         }
+        finally
+        {
+            mergeOngoingLatch.countDown();
+        }
     }
 
     /**
@@ -262,7 +299,7 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
         try ( Writer<KEY,VALUE> writer = tree.writer();
               IndexUpdateCursor<KEY,VALUE> updates = externalUpdates.reader() )
         {
-            while ( updates.next() )
+            while ( updates.next() && !cancellation.cancelled() )
             {
                 switch ( updates.updateMode() )
                 {
@@ -300,7 +337,7 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
     {
         try ( IndexUpdateCursor<KEY,VALUE> updates = externalUpdates.reader() )
         {
-            while ( updates.next() )
+            while ( updates.next() && !cancellation.cancelled() )
             {
                 RawCursor<Hit<KEY,VALUE>,IOException> seek;
                 switch ( updates.updateMode() )
@@ -365,7 +402,7 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
             int asMuchAsPossibleToTheLeft = 1;
             try ( Writer<KEY,VALUE> writer = tree.writer( asMuchAsPossibleToTheLeft ) )
             {
-                while ( allEntries.next() )
+                while ( allEntries.next() && !cancellation.cancelled() )
                 {
                     conflictDetector.controlConflictDetection( allEntries.key() );
                     writer.merge( allEntries.key(), allEntries.value(), conflictDetector );
@@ -435,7 +472,7 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
     }
 
     @Override
-    public void close( boolean populationCompletedSuccessfully )
+    public synchronized void close( boolean populationCompletedSuccessfully )
     {
         try
         {
@@ -447,10 +484,48 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
         }
     }
 
+    // Always called from synchronized method
     private void closeBlockStorage()
     {
+        // This method may be called while scanCompleted is running. This could be a drop or shutdown(?) which happens when this population
+        // is in its final stages. scanCompleted merges things in multiple threads. Those threads will abort when they see that setCancel
+        // has been called.
+        cancellation.setCancel();
+
+        // If there's a merge concurrently running it will very soon notice the cancel request and abort whatever it's doing as soon as it can.
+        // Let's wait for that merge to be fully aborted by simply waiting for the merge latch.
+        if ( mergeOngoingLatch != null )
+        {
+            try
+            {
+                // We want to await any ongoing merge because it becomes problematic to close the channels otherwise
+                mergeOngoingLatch.await();
+            }
+            catch ( InterruptedException e )
+            {
+                Thread.currentThread().interrupt();
+                // We still want to go ahead and try to close things properly, so get by only restoring the interrupt flag on the thread
+            }
+        }
+
         List<Closeable> toClose = new ArrayList<>( allScanUpdates );
         toClose.add( externalUpdates );
         IOUtils.closeAllUnchecked( toClose );
+    }
+
+    private static class CloseCancellation implements BlockStorage.Cancellation
+    {
+        private volatile boolean cancelled;
+
+        void setCancel()
+        {
+            this.cancelled = true;
+        }
+
+        @Override
+        public boolean cancelled()
+        {
+            return cancelled;
+        }
     }
 }
