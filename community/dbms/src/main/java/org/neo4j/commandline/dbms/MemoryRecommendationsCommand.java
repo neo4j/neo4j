@@ -35,6 +35,7 @@ import org.neo4j.commandline.arguments.OptionalNamedArg;
 import org.neo4j.io.os.OsBeanUtil;
 import org.neo4j.kernel.api.impl.index.storage.FailureStorage;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.index.labelscan.NativeLabelScanStore;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.internal.NativeIndexFileFilter;
 
@@ -278,18 +279,23 @@ public class MemoryRecommendationsCommand implements AdminCommand
     private long sumStoreFiles( File storeDir )
     {
         long total = 0;
+        // Include store files
         for ( StoreType type : StoreType.values() )
         {
             if ( type.isRecordStore() )
             {
                 File file = new File( storeDir, type.getStoreFile().storeFileName() );
-                if ( outsideWorld.fileSystem().fileExists( file ) )
-                {
-                    total += outsideWorld.fileSystem().getFileSize( file );
-                }
+                total += sizeOfFileIfExists( file );
             }
         }
+        // Include label index
+        total += sizeOfFileIfExists( new File( storeDir, NativeLabelScanStore.FILE_NAME ) );
         return total;
+    }
+
+    private long sizeOfFileIfExists( File file )
+    {
+        return outsideWorld.fileSystem().fileExists( file ) ? outsideWorld.fileSystem().getFileSize( file ) : 0;
     }
 
     private long sumIndexFiles( File file, FilenameFilter filter )

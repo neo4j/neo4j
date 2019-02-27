@@ -47,6 +47,7 @@ import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.api.impl.index.storage.FailureStorage;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.index.labelscan.NativeLabelScanStore;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.TestDirectory;
@@ -252,6 +253,7 @@ public class MemoryRecommendationsCommandTest
                 pageCacheTotal.add( length );
             }
         }
+        pageCacheTotal.add( new File( storeDir, NativeLabelScanStore.FILE_NAME ).length() );
 
         Files.walkFileTree( IndexDirectoryStructure.baseSchemaIndexFolder( storeDir ).toPath(), new SimpleFileVisitor<Path>()
         {
