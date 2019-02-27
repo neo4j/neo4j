@@ -64,7 +64,7 @@ class ReplaceAliasedFunctionInvocationsTest extends CypherFunSuite with AstConst
   test("should rewrite extract() in V2") {
     val before = ExtractExpression(ExtractScope(varFor("a"), None, None)(pos),
                                    literalFloat(3.0))(pos)
-    val expected = listComprehension("a", literalFloat(3.0), None, None)
+    val expected = listComprehension(varFor("a"), literalFloat(3.0), None, None)
 
     replaceAliasedFunctionInvocations(Deprecations.V1)(before) should equal(before)
     replaceAliasedFunctionInvocations(Deprecations.V2)(before) should equal(expected)

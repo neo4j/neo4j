@@ -166,23 +166,23 @@ trait AstConstructionTestSupport extends CypherTestSupport {
   def sliceFull(list: Expression, from: Expression, to: Expression): ListSlice =
     ListSlice(list, Some(from), Some(to))(pos)
 
-  def singleInList(variable: String, collection: Expression, predicate: Expression): SingleIterablePredicate =
-    SingleIterablePredicate(varFor(variable), collection, Some(predicate) )(pos)
+  def singleInList(variable: LogicalVariable, collection: Expression, predicate: Expression): SingleIterablePredicate =
+    SingleIterablePredicate(variable, collection, Some(predicate) )(pos)
 
-  def noneInList(variable: String, collection: Expression, predicate: Expression): NoneIterablePredicate =
-    NoneIterablePredicate(varFor(variable), collection, Some(predicate) )(pos)
+  def noneInList(variable: LogicalVariable, collection: Expression, predicate: Expression): NoneIterablePredicate =
+    NoneIterablePredicate(variable, collection, Some(predicate) )(pos)
 
-  def anyInList(variable: String, collection: Expression, predicate: Expression): AnyIterablePredicate =
-    AnyIterablePredicate(varFor(variable), collection, Some(predicate) )(pos)
+  def anyInList(variable: LogicalVariable, collection: Expression, predicate: Expression): AnyIterablePredicate =
+    AnyIterablePredicate(variable, collection, Some(predicate) )(pos)
 
-  def allInList(variable: String, collection: Expression, predicate: Expression): AllIterablePredicate =
-    AllIterablePredicate(varFor(variable), collection, Some(predicate) )(pos)
+  def allInList(variable: LogicalVariable, collection: Expression, predicate: Expression): AllIterablePredicate =
+    AllIterablePredicate(variable, collection, Some(predicate) )(pos)
 
-  def filter(variable: String, collection: Expression, predicate: Expression): FilterExpression =
-    FilterExpression(varFor(variable), collection, Some(predicate) )(pos)
+  def filter(variable: LogicalVariable, collection: Expression, predicate: Expression): FilterExpression =
+    FilterExpression(variable, collection, Some(predicate) )(pos)
 
-  def extract(variable: String, collection: Expression, extract: Expression): ExtractExpression =
-    ExtractExpression(varFor(variable), collection, None, Some(extract) )(pos)
+  def extract(variable: LogicalVariable, collection: Expression, extract: Expression): ExtractExpression =
+    ExtractExpression(variable, collection, None, Some(extract) )(pos)
 
   def reduce(accumulator: LogicalVariable,
              init: Expression,
@@ -191,11 +191,11 @@ trait AstConstructionTestSupport extends CypherTestSupport {
              expression: Expression): ReduceExpression =
     ReduceExpression(ReduceScope(accumulator, variable, expression)(pos), init, collection)(pos)
 
-  def listComprehension(variable: String,
+  def listComprehension(variable: LogicalVariable,
                         collection: Expression,
                         predicate: Option[Expression],
                         extractExpression: Option[Expression]): ListComprehension =
-    ListComprehension(varFor(variable), collection, predicate, extractExpression)(pos)
+    ListComprehension(variable, collection, predicate, extractExpression)(pos)
 
   def add(lhs: Expression, rhs: Expression): Add = Add(lhs, rhs)(pos)
 

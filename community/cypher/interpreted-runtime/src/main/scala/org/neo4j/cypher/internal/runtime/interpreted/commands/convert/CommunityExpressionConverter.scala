@@ -59,7 +59,7 @@ case class CommunityExpressionConverter(tokenContext: TokenContext) extends Expr
       case e: ast.False => predicates.Not(predicates.True())
       case e: ast.Literal => commandexpressions.Literal(e.value)
       case e: ast.Variable => variable(e)
-      case e: ExpressionVariable => commands.expressions.ExpressionVariable(e.offset, e.name)
+      case e: ExpressionVariable => expressionVariable(e)
       case e: ast.Or => predicates.Or(self.toCommandPredicate(id, e.lhs), self.toCommandPredicate(id, e.rhs))
       case e: ast.Xor => predicates.Xor(self.toCommandPredicate(id, e.lhs), self.toCommandPredicate(id, e.rhs))
       case e: ast.And => predicates.And(self.toCommandPredicate(id, e.lhs), self.toCommandPredicate(id, e.rhs))
@@ -154,14 +154,23 @@ case class CommunityExpressionConverter(tokenContext: TokenContext) extends Expr
                                 ev.offset,
                                 e.innerPredicate.map(self.toCommandPredicate(id, _)).getOrElse(predicates.True()))
 
-      case e: ast.ReduceExpression => commandexpressions
-        .ReduceFunction(self.toCommandExpression(id, e.list), e.variable.name, self.toCommandExpression(id, e.expression),
-                        e.accumulator.name, self.toCommandExpression(id, e.init))
+      case e: ast.ReduceExpression =>
+        val innerVariable = ExpressionVariable.cast(e.variable)
+        val accVariable = ExpressionVariable.cast(e.accumulator)
+        commandexpressions.ReduceFunction(self.toCommandExpression(id, e.list),
+                                          innerVariable.name,
+                                          innerVariable.offset,
+                                          self.toCommandExpression(id, e.expression),
+                                          accVariable.name,
+                                          accVariable.offset,
+                                          self.toCommandExpression(id, e.init))
+
       case e: ast.PathExpression => self.toCommandProjectedPath(e)
       case e: pipes.NestedPipeExpression => commandexpressions
         .NestedPipeExpression(e.pipe,
                               self.toCommandExpression(id, e.projection),
-                              e.availableExpressionVariables.map(exp => commands.expressions.ExpressionVariable(exp.offset, exp.name)))
+                              e.availableExpressionVariables.map(expressionVariable))
+
       case e: ast.GetDegree => getDegree(id, e, self)
       case e: PrefixSeekRangeWrapper => commandexpressions
         .PrefixSeekRangeExpression(e.range.map(self.toCommandExpression(id,_)))
@@ -407,6 +416,11 @@ case class CommunityExpressionConverter(tokenContext: TokenContext) extends Expr
     expressions.map(self.toCommandExpression(id,_))
 
   private def variable(e: ast.LogicalVariable) = commands.expressions.Variable(e.name)
+
+  private def expressionVariable(e: ast.LogicalVariable): commands.expressions.ExpressionVariable = {
+    val ev = ExpressionVariable.cast(e)
+    commands.expressions.ExpressionVariable(ev.offset, ev.name)
+  }
 
   private def inequalityExpression(id: Id, original: ast.InequalityExpression,
                                    self: ExpressionConverters): predicates.ComparablePredicate = original match {

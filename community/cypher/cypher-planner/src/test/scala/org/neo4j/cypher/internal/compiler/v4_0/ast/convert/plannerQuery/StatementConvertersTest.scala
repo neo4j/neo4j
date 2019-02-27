@@ -323,8 +323,8 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
       PatternRelationship("r2", ("b", "c"), BOTH, Seq.empty, VarPatternLength(1, None))))
     query.queryGraph.patternNodes should equal(Set("a", "b", "c"))
 
-    val inner = anyInList("r2", varFor("r2"), equals(varFor("r"), varFor("r2")))
-    val outer = noneInList("r", varFor("r"), inner)
+    val inner = anyInList(varFor("r2"), varFor("r2"), equals(varFor("r"), varFor("r2")))
+    val outer = noneInList(varFor("r"), varFor("r"), inner)
     val predicate = Predicate(Set("r2", "r"), outer)
 
     query.queryGraph.selections should equal(Selections(Set(predicate)))

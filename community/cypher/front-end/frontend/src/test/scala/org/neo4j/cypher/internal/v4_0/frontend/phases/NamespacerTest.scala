@@ -41,7 +41,7 @@ class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport with
         varFor("  x@22"),
         equals(varFor("  x@22"), literalInt(2)),
         listComprehension(
-          "  x@22",
+          varFor("  x@22"),
           prop("n", "prop"),
           Some(equals(varFor("  x@22"), literalInt(2))),
           None
