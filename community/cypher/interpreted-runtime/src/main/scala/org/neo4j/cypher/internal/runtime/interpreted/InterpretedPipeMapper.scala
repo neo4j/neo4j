@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.KeyTokenResolver
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.PatternConverters._
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{ExpressionConverters, InterpretedCommandProjection}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{AggregationExpression, Expression, Literal, ShortestPathExpression}
-import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.{Predicate, True}
+import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Predicate
 import org.neo4j.cypher.internal.runtime.interpreted.pipes._
 import org.neo4j.cypher.internal.runtime.{ExecutionContext, ProcedureCallMode, QueryIndexes}
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
@@ -143,9 +143,8 @@ case class InterpretedPipeMapper(readOnly: Boolean,
       case OptionalExpand(_, fromName, dir, types, toName, relName, ExpandAll, predicate) =>
         OptionalExpandAllPipe(source, fromName, relName, toName, dir, LazyTypes(types.toArray), predicate.map(buildExpression))(id = id)
 
-      case OptionalExpand(_, fromName, dir, types, toName, relName, ExpandInto, predicates) =>
-        val predicate = predicates.map(buildPredicate(id, _)).reduceOption(_ andWith _).getOrElse(True())
-        OptionalExpandIntoPipe(source, fromName, relName, toName, dir, LazyTypes(types.toArray), predicate)(id = id)
+      case OptionalExpand(_, fromName, dir, types, toName, relName, ExpandInto, predicate) =>
+        OptionalExpandIntoPipe(source, fromName, relName, toName, dir, LazyTypes(types.toArray), predicate.map(buildExpression))(id = id)
 
       case VarExpand(_,
                      fromName,
