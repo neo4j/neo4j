@@ -30,7 +30,7 @@ import org.neo4j.graphdb.InputPosition;
 import org.neo4j.graphdb.Notification;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.SeverityLevel;
-import org.neo4j.kernel.impl.proc.GlobalProcedures;
+import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.procedure.Procedure;
 
 import static org.hamcrest.Matchers.any;

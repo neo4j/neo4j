@@ -32,6 +32,8 @@
     <module>concurrent</module>
     <module>graphdb-api</module>
     <module>procedure-api</module>
+    <module>procedure-compiler</module>
+    <module>procedure</module>
     <module>unsafe</module>
     <module>io</module>
     <module>diagnostics</module>
@@ -59,7 +61,6 @@
     <module>neo4j-harness</module>
     <module>dbms</module>
     <module>command-line</module>
-    <module>procedure-compiler</module>
     <module>random-values</module>
     <module>values</module>
     <module>ssl</module>

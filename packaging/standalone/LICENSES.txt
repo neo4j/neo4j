@@ -251,10 +251,6 @@ Apache Software License, Version 2.0
 ------------------------------------------------------------------------------
 BSD License
   antlr4
-  asm
-  asm-analysis
-  asm-tree
-  asm-util
   bcrypt-pbkdf
   boom
   cryptiles

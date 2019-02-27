@@ -26,12 +26,12 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.api.security.PasswordPolicy;
 import org.neo4j.kernel.api.security.SecurityModule;
 import org.neo4j.kernel.api.security.UserManager;
 import org.neo4j.kernel.api.security.UserManagerSupplier;
-import org.neo4j.kernel.impl.proc.GlobalProcedures;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.time.Clocks;
 

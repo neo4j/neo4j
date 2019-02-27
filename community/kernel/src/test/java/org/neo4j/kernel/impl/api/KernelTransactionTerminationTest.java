@@ -38,6 +38,7 @@ import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
+import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
@@ -45,7 +46,6 @@ import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.factory.CanWrite;
 import org.neo4j.kernel.impl.locking.NoOpClient;
 import org.neo4j.kernel.impl.locking.SimpleStatementLocks;
-import org.neo4j.kernel.impl.proc.GlobalProcedures;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionTracer;
@@ -345,7 +345,7 @@ public class KernelTransactionTerminationTest
         TestKernelTransaction( CommitTrackingMonitor monitor, Dependencies dependencies )
         {
             super( Config.defaults(), mock( StatementOperationParts.class ), mock( SchemaWriteGuard.class ), new TransactionHooks(),
-                    mock( ConstraintIndexCreator.class ), new GlobalProcedures(), TransactionHeaderInformationFactory.DEFAULT,
+                    mock( ConstraintIndexCreator.class ), mock( GlobalProcedures.class ), TransactionHeaderInformationFactory.DEFAULT,
                     mock( TransactionCommitProcess.class ), monitor, mock( Pool.class ), Clocks.fakeClock(),
                     new AtomicReference<>( CpuClock.NOT_AVAILABLE ), new AtomicReference<>( HeapAllocation.NOT_AVAILABLE ), TransactionTracer.NULL,
                     LockTracer.NONE, PageCursorTracerSupplier.NULL, mock( StorageEngine.class, RETURNS_MOCKS ), new CanWrite(),

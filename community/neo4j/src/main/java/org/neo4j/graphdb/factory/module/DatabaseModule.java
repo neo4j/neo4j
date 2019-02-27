@@ -25,10 +25,10 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.module.edition.AbstractEditionModule;
 import org.neo4j.graphdb.factory.module.edition.context.EditionDatabaseContext;
 import org.neo4j.kernel.api.InwardKernel;
+import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.impl.coreapi.CoreAPIAvailabilityGuard;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
-import org.neo4j.kernel.impl.proc.GlobalProcedures;
 import org.neo4j.storageengine.api.StoreId;
 
 public class DatabaseModule

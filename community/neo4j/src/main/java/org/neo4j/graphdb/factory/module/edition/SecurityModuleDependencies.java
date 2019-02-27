@@ -23,9 +23,9 @@ import org.neo4j.common.DependencySatisfier;
 import org.neo4j.configuration.Config;
 import org.neo4j.graphdb.factory.module.GlobalModule;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.api.security.SecurityModule;
 import org.neo4j.kernel.impl.factory.AccessCapability;
-import org.neo4j.kernel.impl.proc.GlobalProcedures;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.scheduler.JobScheduler;
 

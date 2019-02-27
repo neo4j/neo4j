@@ -11,7 +11,7 @@
   <properties>
     <license-text.header>headers/GPL-3-header.txt</license-text.header>
     <licensing.prepend.text>licensing/notice-gpl-prefix.txt</licensing.prepend.text>
-    <moduleName>org.neo4j.graphdb</moduleName>
+    <moduleName>org.neo4j.procedure.api</moduleName>
   </properties>
 
   <modelVersion>4.0.0</modelVersion>

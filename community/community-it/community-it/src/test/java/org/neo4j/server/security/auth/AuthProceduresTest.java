@@ -26,21 +26,18 @@ import org.junit.rules.ExpectedException;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
-import org.neo4j.kernel.api.ResourceTracker;
-import org.neo4j.kernel.api.StubResourceManager;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.impl.api.integrationtest.KernelIntegrationTest;
 import org.neo4j.values.AnyValue;
 
 import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureName;
+import static org.neo4j.kernel.api.ResourceManager.EMPTY_RESOURCE_MANAGER;
 import static org.neo4j.values.storable.Values.stringValue;
 
 public class AuthProceduresTest extends KernelIntegrationTest
 {
     @Rule
     public ExpectedException exception = ExpectedException.none();
-
-    private final ResourceTracker resourceTracker = new StubResourceManager();
 
     @Test
     public void shouldFailWhenChangePasswordWithStaticAccessModeInDbmsMode() throws Throwable
@@ -58,7 +55,7 @@ public class AuthProceduresTest extends KernelIntegrationTest
         dbmsOperations().procedureCallDbms( procedureId,
                                             inputArray, dependencyResolver,
                                             AnonymousContext.none().authorize( s -> -1, GraphDatabaseSettings.DEFAULT_DATABASE_NAME ),
-                                            resourceTracker, valueMapper );
+                                            EMPTY_RESOURCE_MANAGER, valueMapper );
     }
 
     @Override

@@ -23,7 +23,7 @@ import java.util.LinkedList;
 import java.util.List;
 
 import org.neo4j.exceptions.KernelException;
-import org.neo4j.kernel.impl.proc.GlobalProcedures;
+import org.neo4j.kernel.api.procedure.GlobalProcedures;
 
 class HarnessRegisteredProcs
 {

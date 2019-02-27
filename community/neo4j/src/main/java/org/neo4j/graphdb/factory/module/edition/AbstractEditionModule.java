@@ -39,22 +39,17 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.impl.fulltext.FulltextProcedures;
 import org.neo4j.kernel.api.net.NetworkConnectionTracker;
+import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.api.security.SecurityModule;
 import org.neo4j.kernel.api.security.provider.SecurityProvider;
 import org.neo4j.kernel.availability.AvailabilityGuard;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
-import org.neo4j.kernel.builtinprocs.BuiltInDbmsProcedures;
-import org.neo4j.kernel.builtinprocs.BuiltInFunctions;
-import org.neo4j.kernel.builtinprocs.BuiltInProcedures;
-import org.neo4j.kernel.builtinprocs.TokenProcedures;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.factory.AccessCapability;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
-import org.neo4j.kernel.impl.proc.GlobalProcedures;
-import org.neo4j.kernel.impl.proc.ProcedureConfig;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats;
 import org.neo4j.kernel.impl.transaction.stats.TransactionCounters;
@@ -62,10 +57,15 @@ import org.neo4j.kernel.impl.util.watcher.DefaultFileDeletionListenerFactory;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.Logger;
 import org.neo4j.logging.internal.LogService;
+import org.neo4j.procedure.builtin.BuiltInDbmsProcedures;
+import org.neo4j.procedure.builtin.BuiltInFunctions;
+import org.neo4j.procedure.builtin.BuiltInProcedures;
+import org.neo4j.procedure.builtin.TokenProcedures;
+import org.neo4j.procedure.impl.ProcedureConfig;
 import org.neo4j.udc.UsageData;
 import org.neo4j.udc.UsageDataKeys;
 
-import static org.neo4j.kernel.impl.proc.temporal.TemporalFunction.registerTemporalFunctions;
+import static org.neo4j.procedure.impl.temporal.TemporalFunction.registerTemporalFunctions;
 
 /**
  * Edition module for {@link GraphDatabaseFacadeFactory}. Implementations of this class

@@ -25,16 +25,15 @@ import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.dbms.DbmsOperations;
-import org.neo4j.kernel.api.proc.Context;
-import org.neo4j.kernel.impl.proc.GlobalProcedures;
+import org.neo4j.kernel.api.procedure.Context;
+import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.ValueMapper;
 
-import static org.neo4j.kernel.api.proc.BasicContext.buildContext;
+import static org.neo4j.kernel.api.procedure.BasicContext.buildContext;
 
 public class NonTransactionalDbmsOperations implements DbmsOperations
 {
-
     private final GlobalProcedures globalProcedures;
 
     public NonTransactionalDbmsOperations( GlobalProcedures globalProcedures )

@@ -28,9 +28,9 @@ import org.neo4j.graphdb.facade.spi.ClassicCoreSPI;
 import org.neo4j.graphdb.factory.module.DatabaseModule;
 import org.neo4j.graphdb.factory.module.GlobalModule;
 import org.neo4j.graphdb.factory.module.edition.AbstractEditionModule;
+import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
-import org.neo4j.kernel.impl.proc.GlobalProcedures;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Logger;
 

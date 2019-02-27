@@ -24,8 +24,8 @@ import org.neo4j.cypher.internal.v4_0.util.symbols.{CTBoolean, CTFloat, CTIntege
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException
 import org.neo4j.internal.kernel.api.procs
 import org.neo4j.internal.kernel.api.procs.Neo4jTypes
-import org.neo4j.kernel.api.proc.CallableProcedure.BasicProcedure
-import org.neo4j.kernel.api.proc.Context
+import org.neo4j.kernel.api.procedure.CallableProcedure.BasicProcedure
+import org.neo4j.kernel.api.procedure.Context
 import org.neo4j.kernel.api.{InwardKernel, ResourceTracker}
 import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.kernel.internal.GraphDatabaseAPI

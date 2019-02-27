@@ -40,8 +40,6 @@ import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.ProcedureHandle;
-import org.neo4j.kernel.api.ResourceTracker;
-import org.neo4j.kernel.api.StubResourceManager;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.security.AnonymousContext;
@@ -67,6 +65,7 @@ import static org.junit.Assert.fail;
 import static org.neo4j.helpers.collection.Iterators.asList;
 import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureName;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
+import static org.neo4j.kernel.api.ResourceManager.EMPTY_RESOURCE_MANAGER;
 import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forLabel;
 import static org.neo4j.values.storable.Values.EMPTY_STRING;
 import static org.neo4j.values.storable.Values.doubleValue;
@@ -77,8 +76,6 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
 {
     @Rule
     public ExpectedException exception = ExpectedException.none();
-
-    private final ResourceTracker resourceTracker = new StubResourceManager();
 
     @Test
     public void listAllLabels() throws Throwable
@@ -239,7 +236,7 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
         try
         {
             dbmsOperations().procedureCallDbms( -1, new AnyValue[0], dependencyResolver,
-                    AnonymousContext.none().authorize( s -> -1, GraphDatabaseSettings.DEFAULT_DATABASE_NAME ), resourceTracker, valueMapper );
+                    AnonymousContext.none().authorize( s -> -1, GraphDatabaseSettings.DEFAULT_DATABASE_NAME ), EMPTY_RESOURCE_MANAGER, valueMapper );
             fail( "This should never get here" );
         }
         catch ( Exception e )

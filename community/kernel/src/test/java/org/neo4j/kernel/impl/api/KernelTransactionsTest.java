@@ -49,6 +49,7 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KernelTransactionHandle;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
+import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.availability.AvailabilityGuard;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
@@ -64,7 +65,6 @@ import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.SimpleStatementLocksFactory;
 import org.neo4j.kernel.impl.locking.StatementLocksFactory;
-import org.neo4j.kernel.impl.proc.GlobalProcedures;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
@@ -724,7 +724,7 @@ public class KernelTransactionsTest
     {
         return new KernelTransactions( config, statementLocksFactory, null, statementOperations,
                 null, DEFAULT, commitProcess, new TransactionHooks(),
-                mock( TransactionMonitor.class ), databaseAvailabilityGuard, tracers, storageEngine, new GlobalProcedures(), transactionIdStore, clock,
+                mock( TransactionMonitor.class ), databaseAvailabilityGuard, tracers, storageEngine, mock( GlobalProcedures.class ), transactionIdStore, clock,
                 new AtomicReference<>( CpuClock.NOT_AVAILABLE ), new AtomicReference<>( HeapAllocation.NOT_AVAILABLE ),
                 new CanWrite(), EmptyVersionContextSupplier.EMPTY, ON_HEAP,
                 mock( ConstraintSemantics.class ), mock( SchemaState.class ),
@@ -739,7 +739,7 @@ public class KernelTransactionsTest
     {
         Dependencies dependencies = createDependencies();
         return new TestKernelTransactions( statementLocksFactory, null, statementOperations, null, DEFAULT, commitProcess,
-                new TransactionHooks(), mock( TransactionMonitor.class ), databaseAvailabilityGuard, tracers, storageEngine, new GlobalProcedures(),
+                new TransactionHooks(), mock( TransactionMonitor.class ), databaseAvailabilityGuard, tracers, storageEngine, mock( GlobalProcedures.class ),
                 transactionIdStore, clock, new CanWrite(), EmptyVersionContextSupplier.EMPTY, mockedTokenHolders(), dependencies );
     }
 

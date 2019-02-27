@@ -25,9 +25,9 @@ import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
-import org.neo4j.kernel.api.proc.CallableProcedure;
-import org.neo4j.kernel.api.proc.CallableUserAggregationFunction;
-import org.neo4j.kernel.api.proc.CallableUserFunction;
+import org.neo4j.kernel.api.procedure.CallableProcedure;
+import org.neo4j.kernel.api.procedure.CallableUserAggregationFunction;
+import org.neo4j.kernel.api.procedure.CallableUserFunction;
 
 /**
  * The main API through which access to the Neo4j kernel is made, both read

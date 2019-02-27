@@ -26,13 +26,12 @@ import org.neo4j.cypher.internal.v4_0.util.test_helpers.{CypherFunSuite, CypherT
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.internal.kernel.api.helpers.Indexes
-import org.neo4j.internal.kernel.api.procs.{ProcedureSignature, QualifiedName, UserFunctionSignature}
+import org.neo4j.internal.kernel.api.procs._
 import org.neo4j.internal.kernel.api.security.LoginContext
 import org.neo4j.internal.kernel.api.{Kernel, TokenRead, Transaction => KernelTransaction}
 import org.neo4j.kernel.api.InwardKernel
-import org.neo4j.kernel.api.proc._
+import org.neo4j.kernel.api.procedure.{CallableProcedure, CallableUserAggregationFunction, CallableUserFunction, GlobalProcedures}
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
-import org.neo4j.kernel.impl.proc.GlobalProcedures
 import org.neo4j.kernel.monitoring.Monitors
 import org.neo4j.kernel.{GraphDatabaseQueryService, monitoring}
 import org.neo4j.test.TestGraphDatabaseFactory

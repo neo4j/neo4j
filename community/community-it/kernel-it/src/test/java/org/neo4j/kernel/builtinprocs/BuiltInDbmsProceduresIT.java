@@ -29,8 +29,6 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.QualifiedName;
-import org.neo4j.kernel.api.ResourceTracker;
-import org.neo4j.kernel.api.StubResourceManager;
 import org.neo4j.kernel.impl.api.integrationtest.KernelIntegrationTest;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.BooleanValue;
@@ -47,12 +45,11 @@ import static org.junit.Assert.assertTrue;
 import static org.neo4j.helpers.collection.Iterators.asList;
 import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureName;
 import static org.neo4j.internal.kernel.api.security.SecurityContext.AUTH_DISABLED;
+import static org.neo4j.kernel.api.ResourceManager.EMPTY_RESOURCE_MANAGER;
 import static org.neo4j.values.storable.Values.stringValue;
 
 public class BuiltInDbmsProceduresIT extends KernelIntegrationTest
 {
-    private final ResourceTracker resourceTracker = new StubResourceManager();
-
     @Test
     public void listConfig() throws Exception
     {
@@ -125,7 +122,7 @@ public class BuiltInDbmsProceduresIT extends KernelIntegrationTest
         RawIterator<AnyValue[],ProcedureException> callResult =
                 dbmsOperations()
                         .procedureCallDbms( procedureId, toArray( stringValue( searchString ) ), dependencyResolver,
-                                AUTH_DISABLED, resourceTracker, valueMapper );
+                                AUTH_DISABLED, EMPTY_RESOURCE_MANAGER, valueMapper );
         return asList( callResult );
     }
 }

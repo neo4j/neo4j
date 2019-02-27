@@ -35,7 +35,7 @@ import org.neo4j.graphdb.spatial.Coordinate;
 import org.neo4j.graphdb.spatial.Geometry;
 import org.neo4j.graphdb.spatial.Point;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.impl.proc.GlobalProcedures;
+import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
 import org.neo4j.test.rule.DbmsRule;

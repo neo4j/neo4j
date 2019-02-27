@@ -21,8 +21,30 @@ package org.neo4j.kernel.api;
 
 public interface ResourceManager extends ResourceTracker
 {
+    ResourceManager EMPTY_RESOURCE_MANAGER = new EmptyResourceManager();
     /**
      * Closes and unregisters all the registered resources
      */
     void closeAllCloseableResources();
+
+    class EmptyResourceManager implements ResourceManager
+    {
+        @Override
+        public void closeAllCloseableResources()
+        {
+
+        }
+
+        @Override
+        public void registerCloseableResource( AutoCloseable closeableResource )
+        {
+
+        }
+
+        @Override
+        public void unregisterCloseableResource( AutoCloseable closeableResource )
+        {
+
+        }
+    }
 }
