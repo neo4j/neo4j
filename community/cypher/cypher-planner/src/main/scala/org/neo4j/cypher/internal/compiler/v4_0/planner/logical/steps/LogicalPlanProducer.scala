@@ -317,19 +317,6 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     annotate(AssertSameNode(node, left, right), solved, providedOrders.get(left.id), context)
   }
 
-  def planOptionalExpand(left: LogicalPlan,
-                         from: String,
-                         dir: SemanticDirection,
-                         to: String,
-                         pattern: PatternRelationship,
-                         mode: ExpansionMode = ExpandAll,
-                         predicates: Seq[Expression] = Seq.empty,
-                         solvedQueryGraph: QueryGraph,
-                         context: LogicalPlanningContext): LogicalPlan = {
-    val solved = solveds.get(left.id).amendQueryGraph(_.withAddedOptionalMatch(solvedQueryGraph))
-    annotate(OptionalExpand(left, from, dir, pattern.types, to, pattern.name, mode, predicates), solved, providedOrders.get(left.id), context)
-  }
-
   def planOptional(inputPlan: LogicalPlan, ids: Set[String], context: LogicalPlanningContext): LogicalPlan = {
     val solved = RegularPlannerQuery(queryGraph = QueryGraph.empty
       .withAddedOptionalMatch(solveds.get(inputPlan.id).queryGraph)
