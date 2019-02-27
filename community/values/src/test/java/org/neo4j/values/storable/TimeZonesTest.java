@@ -83,7 +83,7 @@ class TimeZonesTest
         byte[] timeZonesInfo = Files.readAllBytes( path );
         byte[] timeZonesHash = DigestUtils.sha256( timeZonesInfo );
         assertThat( timeZonesHash, equalTo(
-                new byte[]{-2, 114, 100, -95, -108, -101, 81, -40, -13, 78, 40, -12, -128, -125, 93, -100, 19, 122, -98, -80, -30, 109, 39, 7, 83, 54, -53, 30,
-                        -6, 26, 8, -103} ) );
+                new byte[]{27, -102, 116, 117, -108, -114, 65, 81, 88, 52, 25, 112, -67, 3, -99, 69, -26, 100, -38, -2, 29, -41, 60, -85, -58, 102, -101, -122,
+                        -40, -66, 49, -65} ) );
     }
 }
