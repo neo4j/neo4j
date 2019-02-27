@@ -137,6 +137,7 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
      * Record format used to generate initial database.
      */
     private String formatName;
+    private LabelScanStore labelScanStore;
 
     private GraphStoreFixture( boolean keepStatistics, String formatName )
     {
@@ -209,7 +210,7 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
                     () -> new RecordStorageReader( nativeStores.getRawNeoStores() ) );
 
             Monitors monitors = new Monitors();
-            LabelScanStore labelScanStore = startLabelScanStore( pageCache, indexStoreView, monitors );
+            labelScanStore = startLabelScanStore( pageCache, indexStoreView, monitors );
             IndexProviderMap indexes = createIndexes( pageCache, config, logProvider, monitors);
             directStoreAccess = new DirectStoreAccess( nativeStores, labelScanStore, indexes, counts );
             storeReader = new RecordStorageReader( neoStore );
@@ -601,7 +602,7 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
             storeLife.shutdown();
             storeReader.close();
             neoStore.close();
-            directStoreAccess.close();
+            labelScanStore.shutdown();
             directStoreAccess = null;
         }
     }

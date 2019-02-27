@@ -122,15 +122,22 @@ public class TestDirectory extends ExternalResource
             public void evaluate() throws Throwable
             {
                 directoryForDescription( description );
-                boolean success = false;
                 try
                 {
                     base.evaluate();
-                    success = true;
+                    complete( true );
                 }
-                finally
+                catch ( Throwable throwable )
                 {
-                    complete( success );
+                    try
+                    {
+                        complete( false );
+                    }
+                    catch ( IOException e )
+                    {
+                        throwable.addSuppressed( e );
+                    }
+                    throw throwable;
                 }
             }
         };
