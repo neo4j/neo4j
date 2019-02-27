@@ -25,7 +25,6 @@ import org.neo4j.cypher.internal.ir.v4_0._
 import org.neo4j.cypher.internal.planner.v4_0.spi.{PlanContext, TokenContext}
 import org.neo4j.cypher.internal.runtime.QueryIndexes
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
-import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.True
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.KeyToken.Resolved
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.TokenType
 import org.neo4j.cypher.internal.runtime.interpreted.commands.{expressions => legacy}
@@ -155,7 +154,7 @@ class InterpretedPipeMapperIT extends CypherFunSuite with LogicalPlanningTestSup
     val pipe = build(logicalPlan)
 
     pipe should equal(
-      OptionalExpandIntoPipe(AllNodesScanPipe("a")(), "a", "r", "a", SemanticDirection.INCOMING, LazyTypes.empty, True())())
+      OptionalExpandIntoPipe(AllNodesScanPipe("a")(), "a", "r", "a", SemanticDirection.INCOMING, LazyTypes.empty, None)())
   }
 
   test("simple hash join") {

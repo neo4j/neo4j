@@ -228,7 +228,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
         PlanDescriptionImpl(id, name = "LockNodes", children, Seq(KeyNames(nodesToLock.toSeq)), variables)
 
       case OptionalExpand(_, fromName, dir, typeNames, toName, relName, mode, predicates) =>
-        val expressions = predicates.map(Expression.apply) :+
+        val expressions = predicates.map(Expression.apply).toSeq :+
           ExpandExpression(fromName, relName, typeNames.map(_.name), toName, dir, 1, Some(1))
         val modeText = mode match {
           case ExpandAll => "OptionalExpand(All)"
