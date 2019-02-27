@@ -170,7 +170,7 @@ class BlockStorage<KEY, VALUE> implements Closeable
                     monitor.mergeIterationFinished( blocksMergedSoFar, blocksInMergedFile );
                 }
 
-                // Flip and restore the channelz
+                // Flip and restore the channels
                 File tmpSourceFile = sourceFile;
                 sourceFile = targetFile;
                 targetFile = tmpSourceFile;
@@ -445,7 +445,7 @@ class BlockStorage<KEY, VALUE> implements Closeable
                 actual.mergedBlocks( resultingBlockSize, resultingEntryCount, numberOfBlocks );
             }
 
-            public Delegate( Monitor actual )
+            Delegate( Monitor actual )
             {
                 this.actual = actual;
             }
