@@ -124,7 +124,6 @@ public class FailureStorage
             channel.writeAll( ByteBuffer.wrap( data, 0, Math.min( data.length, MAX_FAILURE_SIZE ) ) );
 
             channel.force( true );
-            channel.close();
         }
     }
 
