@@ -96,9 +96,9 @@ public interface IndexProxy
     IndexReader newReader() throws IndexNotFoundKernelException;
 
     /**
-     * @return {@code true} if the call waited, {@code false} if the condition was already reached.
-     * @param time time to wait maximum.
+     * @param time time to wait maximum. A value of 0 means indefinite wait.
      * @param unit unit of time to wait.
+     * @return {@code true} if the call waited, {@code false} if the condition was already reached.
      */
     boolean awaitStoreScanCompleted( long time, TimeUnit unit ) throws IndexPopulationFailedKernelException, InterruptedException;
 

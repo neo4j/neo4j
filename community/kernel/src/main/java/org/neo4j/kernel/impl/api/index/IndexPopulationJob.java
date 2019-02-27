@@ -180,6 +180,14 @@ public class IndexPopulationJob implements Runnable
         return getClass().getSimpleName() + "[populator:" + multiPopulator + "]";
     }
 
+    /**
+     * Awaits completion of this population job, but waits maximum the given time.
+     *
+     * @param time time to wait at the most for completion. A value of 0 means indefinite wait.
+     * @param unit {@link TimeUnit unit} of the {@code time}.
+     * @return {@code true} if the job is still running when leaving this method, otherwise {@code false} meaning that the job is completed.
+     * @throws InterruptedException if the wait got interrupted.
+     */
     public boolean awaitCompletion( long time, TimeUnit unit ) throws InterruptedException
     {
         if ( time == 0 )

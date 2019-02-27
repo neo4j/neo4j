@@ -139,7 +139,7 @@ public class TestKernelTransactionHandle implements KernelTransactionHandle
     @Override
     public boolean isSchemaTransaction()
     {
-        return false;
+        return tx.isSchemaTransaction();
     }
 
     @Override

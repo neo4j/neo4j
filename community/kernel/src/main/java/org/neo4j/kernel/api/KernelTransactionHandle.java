@@ -141,5 +141,9 @@ public interface KernelTransactionHandle
      */
     TransactionExecutionStatistic transactionStatistic();
 
+    /**
+     * @return whether or not this transaction is a schema transaction. Type of transaction is decided
+     * on first write operation, be it data or schema operation.
+     */
     boolean isSchemaTransaction();
 }
