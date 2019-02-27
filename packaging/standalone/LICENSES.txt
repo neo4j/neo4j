@@ -34,7 +34,6 @@ Apache Software License, Version 2.0
   forever-agent
   grpc
   long
-  Lucene Core
   neo4j-driver
   Netty/All-in-One
   oauth-sign

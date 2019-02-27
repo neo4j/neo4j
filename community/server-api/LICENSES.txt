@@ -8,7 +8,6 @@ Apache Software License, Version 2.0
   Apache Commons Lang
   Apache Commons Text
   Commons Lang
-  Lucene Core
   Netty/All-in-One
 ------------------------------------------------------------------------------
 
