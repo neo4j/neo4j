@@ -21,9 +21,9 @@ package org.neo4j.cypher.internal.compiler.v4_0.planner.logical.plans.rewriter
 
 import org.neo4j.cypher.internal.compiler.v4_0.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.ir.v4_0.VarPatternLength
-import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.v4_0.expressions.{RelTypeName, SemanticDirection}
 import org.neo4j.cypher.internal.v4_0.logical.plans._
+import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 
 class UnnestOptionalTest extends CypherFunSuite with LogicalPlanningTestSupport {
   test("should rewrite Apply/Optional/Expand to OptionalExpand when lhs of expand is single row") {
@@ -36,7 +36,7 @@ class UnnestOptionalTest extends CypherFunSuite with LogicalPlanningTestSupport 
     val input = Apply(lhs, rhs)
 
     input.endoRewrite(unnestOptional) should equal(
-      OptionalExpand(lhs, "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r", ExpandAll, Seq.empty))
+      OptionalExpand(lhs, "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r", ExpandAll, None))
   }
 
   test("should not rewrite Apply/Optional/Selection/Expand to OptionalExpand when expansion is variable length") {

@@ -108,12 +108,12 @@ class LogicalQueryBuilder(tokenResolver: TokenResolver) extends AstConstructionT
     this
   }
 
-  def optionalExpand(pattern: String, predicates: String*): LogicalQueryBuilder = {
+  def optionalExpand(pattern: String, predicate: Option[String]): LogicalQueryBuilder = {
     val p = PatternParser.parse(pattern)
     p.length match {
       case SimplePatternLength =>
-        val preds = predicates.map(ExpressionParser.parseExpression)
-        appendAtCurrentIndent(UnaryOperator(lp => OptionalExpand(lp, p.from, p.dir, p.relTypes, p.to, p.relName, ExpandAll, preds)))
+        val pred = predicate.map(ExpressionParser.parseExpression)
+        appendAtCurrentIndent(UnaryOperator(lp => OptionalExpand(lp, p.from, p.dir, p.relTypes, p.to, p.relName, ExpandAll, pred)))
       case _ =>
         throw new IllegalArgumentException("Cannot have optional expand with variable length pattern")
     }

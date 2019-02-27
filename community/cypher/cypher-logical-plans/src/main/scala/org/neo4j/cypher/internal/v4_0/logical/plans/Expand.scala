@@ -55,7 +55,7 @@ case class OptionalExpand(source: LogicalPlan,
                           to: String,
                           relName: String,
                           mode: ExpansionMode = ExpandAll,
-                          predicates: Seq[Expression] = Seq.empty)
+                          predicate: Option[Expression] = None)
                          (implicit idGen: IdGen)
   extends LogicalPlan(idGen) with LazyLogicalPlan {
 

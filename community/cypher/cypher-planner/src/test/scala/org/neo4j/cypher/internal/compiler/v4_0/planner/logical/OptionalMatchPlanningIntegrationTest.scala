@@ -23,15 +23,12 @@ import org.neo4j.cypher.internal.compiler.v4_0.planner.LogicalPlanningTestSuppor
 import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.plans.rewriter.unnestOptional
 import org.neo4j.cypher.internal.ir.v4_0.SimplePatternLength
 import org.neo4j.cypher.internal.planner.v4_0.spi.DelegatingGraphStatistics
-import org.neo4j.cypher.internal.v4_0.logical.plans.Limit
-import org.neo4j.cypher.internal.v4_0.logical.plans._
-import org.neo4j.kernel.impl.util.dbstructure.DbStructureLargeOptionalMatchStructure
-import org.neo4j.cypher.internal.v4_0.expressions.{RelTypeName, SemanticDirection}
+import org.neo4j.cypher.internal.v4_0.expressions.{Ands, RelTypeName, SemanticDirection}
+import org.neo4j.cypher.internal.v4_0.logical.plans.{Limit, _}
 import org.neo4j.cypher.internal.v4_0.util.Foldable._
+import org.neo4j.cypher.internal.v4_0.util.{Cardinality, LabelId, RelTypeId}
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.v4_0.util.Cardinality
-import org.neo4j.cypher.internal.v4_0.util.LabelId
-import org.neo4j.cypher.internal.v4_0.util.RelTypeId
+import org.neo4j.kernel.impl.util.dbstructure.DbStructureLargeOptionalMatchStructure
 
 class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
@@ -211,8 +208,8 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
       OptionalExpand(
         OptionalExpand(
           AllNodesScan("a", Set.empty),
-          "a", SemanticDirection.OUTGOING, List(RelTypeName("R1") _), "x1", "  UNNAMED29", ExpandAll, Seq.empty),
-        "a", SemanticDirection.OUTGOING, List(RelTypeName("R2") _), "x2", "  UNNAMED60", ExpandAll, Seq.empty)
+          "a", SemanticDirection.OUTGOING, List(RelTypeName("R1") _), "x1", "  UNNAMED29", ExpandAll, None),
+        "a", SemanticDirection.OUTGOING, List(RelTypeName("R2") _), "x2", "  UNNAMED60", ExpandAll, None)
     )
   }
 
@@ -230,7 +227,7 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
 
     plan should equal(
       OptionalExpand(allNodesN, "n", SemanticDirection.BOTH, Seq.empty, "m", "r", ExpandAll,
-        Seq(in(prop("m", "prop"), listOfInt(42)), hasLabels("m", "Y")))
+        Some(Ands.create(Set(in(prop("m", "prop"), listOfInt(42)), hasLabels("m", "Y")))))
     )
   }
 

@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v4_0.planner.logical.plans.rewriter
 
+import org.neo4j.cypher.internal.v4_0.expressions.Expression
 import org.neo4j.cypher.internal.v4_0.logical.plans._
-import org.neo4j.cypher.internal.v4_0.expressions.{Ands, Expression}
 import org.neo4j.cypher.internal.v4_0.util.attribution.{IdGen, SameId}
 import org.neo4j.cypher.internal.v4_0.util.{Rewriter, bottomUp}
 
@@ -46,15 +46,15 @@ case object unnestOptional extends Rewriter {
     case apply@Apply(lhs,
       Optional(
       e@Expand(_: Argument, _, _, _, _, _, _), _)) =>
-        optionalExpand(e, lhs)(Seq.empty)(SameId(apply.id))
+        optionalExpand(e, lhs)(None)(SameId(apply.id))
 
     case apply@Apply(lhs,
       Optional(
-      Selection(Ands(predicates),
+      Selection(predicate,
       e@Expand(_: Argument, _, _, _, _, _, _)), _)) =>
-        optionalExpand(e, lhs)(predicates.toSeq)(SameId(apply.id))
+        optionalExpand(e, lhs)(Some(predicate))(SameId(apply.id))
   })
 
-  private def optionalExpand(e: Expand, lhs: LogicalPlan): Seq[Expression] => IdGen => OptionalExpand =
-    predicates => idGen => OptionalExpand(lhs, e.from, e.dir, e.types, e.to, e.relName, e.mode, predicates)(idGen)
+  private def optionalExpand(e: Expand, lhs: LogicalPlan): Option[Expression] => IdGen => OptionalExpand =
+    predicate => idGen => OptionalExpand(lhs, e.from, e.dir, e.types, e.to, e.relName, e.mode, predicate)(idGen)
 }

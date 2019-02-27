@@ -140,9 +140,8 @@ case class InterpretedPipeMapper(readOnly: Boolean,
       case LockNodes(_, nodesToLock) =>
         LockNodesPipe(source, nodesToLock)()
 
-      case OptionalExpand(_, fromName, dir, types, toName, relName, ExpandAll, predicates) =>
-        val predicate: Predicate = predicates.map(buildPredicate(id, _)).reduceOption(_ andWith _).getOrElse(True())
-        OptionalExpandAllPipe(source, fromName, relName, toName, dir, LazyTypes(types.toArray), predicate)(id = id)
+      case OptionalExpand(_, fromName, dir, types, toName, relName, ExpandAll, predicate) =>
+        OptionalExpandAllPipe(source, fromName, relName, toName, dir, LazyTypes(types.toArray), predicate.map(buildExpression))(id = id)
 
       case OptionalExpand(_, fromName, dir, types, toName, relName, ExpandInto, predicates) =>
         val predicate = predicates.map(buildPredicate(id, _)).reduceOption(_ andWith _).getOrElse(True())
