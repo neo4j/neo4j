@@ -20,13 +20,12 @@
 package org.neo4j.cypher.internal.compiler.v4_0.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v4_0.helpers.ListSupport
-import org.neo4j.cypher.internal.compiler.v4_0.helpers.PredicateHelper.coercePredicates
+import org.neo4j.cypher.internal.compiler.v4_0.helpers.PredicateHelper.coercePredicatesWithAnds
 import org.neo4j.cypher.internal.compiler.v4_0.planner._
 import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.Metrics.CardinalityModel
 import org.neo4j.cypher.internal.ir.v4_0._
 import org.neo4j.cypher.internal.planner.v4_0.spi.PlanningAttributes
-import org.neo4j.cypher.internal.v4_0.ast
 import org.neo4j.cypher.internal.v4_0.ast._
 import org.neo4j.cypher.internal.v4_0.expressions._
 import org.neo4j.cypher.internal.v4_0.logical.plans
@@ -142,8 +141,8 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
                     to: String,
                     pattern: PatternRelationship,
                     temporaryNode: String,
-                    temporaryEdge: String,
-                    edgePredicate: Expression,
+                    temporaryRelationship: String,
+                    relationshipPredicate: Expression,
                     nodePredicate: Expression,
                     solvedPredicates: Seq[Expression],
                     legacyPredicates: Seq[(LogicalVariable, Expression)] = Seq.empty,
@@ -157,26 +156,26 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
         .addPredicates(solvedPredicates: _*)
       )
       annotate(VarExpand(
-              source = source,
-              from = from,
-              dir = dir,
-              projectedDir = projectedDir,
-              types = pattern.types,
-              to = to,
-              relName = pattern.name,
-              length = l,
-              mode = mode,
-              tempNode = temporaryNode,
-              tempEdge = temporaryEdge,
-              nodePredicate = nodePredicate,
-              edgePredicate = edgePredicate,
-              legacyPredicates = legacyPredicates), solved, providedOrders.get(source.id), context)
+        source = source,
+        from = from,
+        dir = dir,
+        projectedDir = projectedDir,
+        types = pattern.types,
+        to = to,
+        relName = pattern.name,
+        length = l,
+        mode = mode,
+        tempNode = temporaryNode,
+        tempRelationship = temporaryRelationship,
+        nodePredicate = nodePredicate,
+        relationshipPredicate = relationshipPredicate,
+        legacyPredicates = legacyPredicates), solved, providedOrders.get(source.id), context)
 
     case _ => throw new InternalException("Expected a varlength path to be here")
   }
 
   def planHiddenSelection(predicates: Seq[Expression], left: LogicalPlan, context: LogicalPlanningContext): LogicalPlan = {
-    annotate(Selection(coercePredicates(predicates), left), solveds.get(left.id), providedOrders.get(left.id), context)
+    annotate(Selection(coercePredicatesWithAnds(predicates), left), solveds.get(left.id), providedOrders.get(left.id), context)
   }
 
   def planNodeByIdSeek(idName: String, nodeIds: SeekableArgs,
@@ -352,7 +351,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
 
   def planSelection(left: LogicalPlan, predicates: Seq[Expression], reported: Seq[Expression], context: LogicalPlanningContext): LogicalPlan = {
     val solved = solveds.get(left.id).updateTailOrSelf(_.amendQueryGraph(_.addPredicates(reported: _*)))
-    annotate(Selection(coercePredicates(predicates), left), solved, providedOrders.get(left.id), context)
+    annotate(Selection(coercePredicatesWithAnds(predicates), left), solved, providedOrders.get(left.id), context)
   }
 
   def planHorizonSelection(left: LogicalPlan, predicates: Seq[Expression], reported: Seq[Expression], context: LogicalPlanningContext): LogicalPlan = {
@@ -360,7 +359,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
       case p: QueryProjection => p.addPredicates(reported: _*)
       case _ => throw new IllegalArgumentException("You can only plan HorizonSelection after a projection")
     })
-    annotate(Selection(coercePredicates(predicates), left), solved, providedOrders.get(left.id), context)
+    annotate(Selection(coercePredicatesWithAnds(predicates), left), solved, providedOrders.get(left.id), context)
   }
 
   def planSelectOrAntiSemiApply(outer: LogicalPlan, inner: LogicalPlan, expr: Expression, context: LogicalPlanningContext): LogicalPlan =

@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v4_0.helpers
 
-import org.neo4j.cypher.internal.v4_0.logical.plans.{CoerceToPredicate, ResolvedFunctionInvocation}
 import org.neo4j.cypher.internal.v4_0.expressions._
+import org.neo4j.cypher.internal.v4_0.logical.plans.{CoerceToPredicate, ResolvedFunctionInvocation}
 import org.neo4j.cypher.internal.v4_0.util.{InternalException, symbols}
 
 object PredicateHelper {
@@ -31,33 +31,36 @@ object PredicateHelper {
     * @param predicates The predicates to coerce
     * @return coerced predicates anded together
     */
-  def coercePredicates(predicates: Seq[Expression]): Ands = {
-    val mapped = predicates.map {
-      case e: PatternExpression =>
-        GreaterThan(
-          FunctionInvocation(FunctionName(functions.Length.name)(e.position), e)(e.position),
-          UnsignedDecimalIntegerLiteral("0")(e.position))(e.position)
-      case e: FilterExpression => GreaterThan(
-        FunctionInvocation(FunctionName(functions.Size.name)(e.position), e)(e.position),
+  def coercePredicatesWithAnds(predicates: Seq[Expression]): Ands = {
+    if (predicates.isEmpty) throw new InternalException("Selection need at least one predicate")
+    Ands(predicates.map(coerceToPredicate).toSet)(predicates.map(coerceToPredicate).head.position)
+  }
+
+  def coercePredicates(predicates: Seq[Expression]): Expression = Ands.create(predicates.map(coerceToPredicate).toSet)
+
+  def coerceToPredicate(predicate: Expression): Expression = predicate match {
+    case e: PatternExpression =>
+      GreaterThan(
+        FunctionInvocation(FunctionName(functions.Length.name)(e.position), e)(e.position),
         UnsignedDecimalIntegerLiteral("0")(e.position))(e.position)
-      case e: ExtractExpression => GreaterThan(
-        FunctionInvocation(FunctionName(functions.Size.name)(e.position), e)(e.position),
-        UnsignedDecimalIntegerLiteral("0")(e.position))(e.position)
-      case e: ListComprehension => GreaterThan(
-        FunctionInvocation(FunctionName(functions.Size.name)(e.position), e)(e.position),
-        UnsignedDecimalIntegerLiteral("0")(e.position))(e.position)
-      case e if isPredicate(e) => e
-      case e => CoerceToPredicate(e)
-    }
-    if (mapped.isEmpty) throw new InternalException("Selection need at least one predicate")
-    Ands(mapped.toSet)(mapped.head.position)
+    case e: FilterExpression => GreaterThan(
+      FunctionInvocation(FunctionName(functions.Size.name)(e.position), e)(e.position),
+      UnsignedDecimalIntegerLiteral("0")(e.position))(e.position)
+    case e: ExtractExpression => GreaterThan(
+      FunctionInvocation(FunctionName(functions.Size.name)(e.position), e)(e.position),
+      UnsignedDecimalIntegerLiteral("0")(e.position))(e.position)
+    case e: ListComprehension => GreaterThan(
+      FunctionInvocation(FunctionName(functions.Size.name)(e.position), e)(e.position),
+      UnsignedDecimalIntegerLiteral("0")(e.position))(e.position)
+    case e if isPredicate(e) => e
+    case e => CoerceToPredicate(e)
   }
 
   //TODO we should be able to use the semantic table for this however for two reasons we cannot
   //i) we do late ast rewrite after semantic analysis, so all semantic table will be missing some expression
   //ii) For WHERE a.prop semantic analysis will say that a.prop has boolean type since it belongs to a WHERE.
   //    That makes it not usable here since we would need to coerce in that case.
-  def isPredicate(expression: Expression) = {
+  def isPredicate(expression: Expression): Boolean = {
     expression match {
       case o: OperatorExpression => o.signatures.forall(_.outputType == symbols.CTBoolean)
       case f: FunctionInvocation => BOOLEAN_FUNCTIONS.contains(f.function)

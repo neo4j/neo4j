@@ -19,9 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v4_0.planner.logical.idp
 
+import org.neo4j.cypher.internal.compiler.v4_0.helpers.PredicateHelper
 import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.ir.v4_0._
-import org.neo4j.cypher.internal.v4_0.expressions.{Ands, Expression, LogicalVariable}
+import org.neo4j.cypher.internal.v4_0.expressions.{Expression, LogicalVariable}
 import org.neo4j.cypher.internal.v4_0.logical.plans.{ExpandAll, ExpandInto, LogicalPlan}
 
 case class expandSolverStep(qg: QueryGraph) extends IDPSolverStep[PatternRelationship, InterestingOrder, LogicalPlan, LogicalPlanningContext] {
@@ -90,16 +91,16 @@ object expandSolverStep {
         val availablePredicates: Seq[Expression] =
           qg.selections.predicatesGiven(availableSymbols + patternRel.name + otherSide)
         val tempNode = patternRel.name + "_NODES"
-        val tempEdge = patternRel.name + "_RELS"
-        val (nodePredicates: Seq[Expression], edgePredicates: Seq[Expression], legacyPredicates: Seq[(LogicalVariable,Expression)], solvedPredicates: Seq[Expression]) =
+        val tempRelationship = patternRel.name + "_RELS"
+        val (nodePredicates: Seq[Expression], relationshipPredicates: Seq[Expression], legacyPredicates: Seq[(LogicalVariable,Expression)], solvedPredicates: Seq[Expression]) =
           extractPredicates(
             availablePredicates,
-            originalEdgeName = patternRel.name,
-            tempEdge = tempEdge,
+            originalRelationshipName = patternRel.name,
+            tempRelationship = tempRelationship,
             tempNode = tempNode,
             originalNodeName = nodeId)
-        val nodePredicate = Ands.create(nodePredicates.toSet)
-        val relationshipPredicate = Ands.create(edgePredicates.toSet)
+        val nodePredicate = PredicateHelper.coercePredicates(nodePredicates)
+        val relationshipPredicate = PredicateHelper.coercePredicates(relationshipPredicates)
 
         context.logicalPlanProducer.planVarExpand(
           source = sourcePlan,
@@ -108,8 +109,8 @@ object expandSolverStep {
           to = otherSide,
           pattern = patternRel,
           temporaryNode = tempNode,
-          temporaryEdge = tempEdge,
-          edgePredicate = relationshipPredicate,
+          temporaryRelationship = tempRelationship,
+          relationshipPredicate = relationshipPredicate,
           nodePredicate = nodePredicate,
           solvedPredicates = solvedPredicates,
           mode = mode,
