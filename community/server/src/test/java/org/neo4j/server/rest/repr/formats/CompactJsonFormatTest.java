@@ -41,7 +41,7 @@ public class CompactJsonFormatTest
     @Before
     public void createOutputFormat() throws Exception
     {
-        json = new OutputFormat( new CompactJsonFormat(), new URI( "http://localhost/" ), null );
+        json = new OutputFormat( new CompactJsonFormat(), new URI( "http://localhost/" ) );
     }
 
     @Test

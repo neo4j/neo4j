@@ -157,7 +157,7 @@ public class CypherResultRepresentationTest
 
     private Map<String, Object> serializeToStringThenParseAsToMap( CypherResultRepresentation repr ) throws Exception
     {
-        OutputFormat format = new OutputFormat( new JsonFormat(), new URI( "http://localhost/" ), null );
+        OutputFormat format = new OutputFormat( new JsonFormat(), new URI( "http://localhost/" ) );
         return jsonToMap( format.assemble( repr ) );
     }
 }

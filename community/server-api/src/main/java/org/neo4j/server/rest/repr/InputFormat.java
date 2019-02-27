@@ -23,8 +23,6 @@ import java.net.URI;
 import java.util.List;
 import java.util.Map;
 
-import org.neo4j.server.plugins.ParameterList;
-
 public interface InputFormat
 {
     Object readValue( String input ) throws BadInputException;
@@ -34,6 +32,4 @@ public interface InputFormat
     List<Object> readList( String input ) throws BadInputException;
 
     URI readUri( String input ) throws BadInputException;
-
-    ParameterList readParameterList( String input ) throws BadInputException;
 }

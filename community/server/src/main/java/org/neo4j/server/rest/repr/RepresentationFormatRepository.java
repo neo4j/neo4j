@@ -28,7 +28,6 @@ import javax.ws.rs.core.MultivaluedMap;
 
 import org.neo4j.common.Service;
 import org.neo4j.server.AbstractNeoServer;
-import org.neo4j.server.plugins.PluginManager;
 import org.neo4j.server.rest.repr.formats.JsonFormat;
 
 public final class RepresentationFormatRepository
@@ -58,12 +57,7 @@ public final class RepresentationFormatRepository
         {
             format = useDefault( acceptable );
         }
-        return new OutputFormat( format, baseUri, getExtensionManager() );
-    }
-
-    private PluginManager getExtensionManager()
-    {
-        return injectorProvider == null ? null : injectorProvider.getExtensionManager();
+        return new OutputFormat( format, baseUri );
     }
 
     private RepresentationFormat forHeaders( List<MediaType> acceptable, MultivaluedMap<String,String> requestHeaders )

@@ -46,7 +46,7 @@ public class MapRepresentationTest
     {
         MapRepresentation rep = new MapRepresentation( map( "nulls", null, "strings", "a string", "numbers", 42,
                 "booleans", true ) );
-        OutputFormat format = new OutputFormat( new JsonFormat(), new URI( "http://localhost/" ), null );
+        OutputFormat format = new OutputFormat( new JsonFormat(), new URI( "http://localhost/" ) );
 
         String serializedMap = format.assemble( rep );
 
@@ -67,7 +67,7 @@ public class MapRepresentationTest
                 "booleans", new boolean[]{true, false},
                 "Booleans", new Boolean[]{TRUE, FALSE}
         ) );
-        OutputFormat format = new OutputFormat( new JsonFormat(), new URI( "http://localhost/" ), null );
+        OutputFormat format = new OutputFormat( new JsonFormat(), new URI( "http://localhost/" ) );
 
         String serializedMap = format.assemble( rep );
 
@@ -85,7 +85,7 @@ public class MapRepresentationTest
         MapRepresentation rep = new MapRepresentation( map( "lists of nulls", asList( null, null ),
                 "lists of strings", asList( "a string", "another string" ), "lists of numbers", asList( 23, 87, 42 ),
                 "lists of booleans", asList( true, false, true ) ) );
-        OutputFormat format = new OutputFormat( new JsonFormat(), new URI( "http://localhost/" ), null );
+        OutputFormat format = new OutputFormat( new JsonFormat(), new URI( "http://localhost/" ) );
 
         String serializedMap = format.assemble( rep );
 
@@ -103,7 +103,7 @@ public class MapRepresentationTest
                 "maps with strings", map( "strings", "a string" ),
                 "maps with numbers", map( "numbers", 42 ),
                 "maps with booleans", map( "booleans", true ) ) );
-        OutputFormat format = new OutputFormat( new JsonFormat(), new URI( "http://localhost/" ), null );
+        OutputFormat format = new OutputFormat( new JsonFormat(), new URI( "http://localhost/" ) );
 
         String serializedMap = format.assemble( rep );
 
@@ -124,7 +124,7 @@ public class MapRepresentationTest
                         "a list with a map in it", asList( map( "foo", "bar", "baz", false ) )
                 )
         );
-        OutputFormat format = new OutputFormat( new JsonFormat(), new URI( "http://localhost/" ), null );
+        OutputFormat format = new OutputFormat( new JsonFormat(), new URI( "http://localhost/" ) );
 
         String serializedMap = format.assemble( rep );
 
@@ -154,7 +154,7 @@ public class MapRepresentationTest
         for ( Object value : values )
         {
             MapRepresentation rep = new MapRepresentation( map( (Object) null, value ) );
-            OutputFormat format = new OutputFormat( new JsonFormat(), new URI( "http://localhost/" ), null );
+            OutputFormat format = new OutputFormat( new JsonFormat(), new URI( "http://localhost/" ) );
 
             String serializedMap = format.assemble( rep );
 

@@ -23,7 +23,6 @@ import java.net.URI;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.server.database.Database;
-import org.neo4j.server.plugins.PluginManager;
 import org.neo4j.server.rest.management.AdvertisableService;
 import org.neo4j.server.rest.transactional.TransactionRegistry;
 
@@ -38,8 +37,6 @@ public interface NeoServer
     Database getDatabase();
 
     TransactionRegistry getTransactionRegistry();
-
-    PluginManager getExtensionManager();
 
     URI baseUri();
 

@@ -91,8 +91,7 @@ public class ExceptionRepresentationTest
     private JsonNode serialize( ExceptionRepresentation rep ) throws JsonParseException
     {
         Map<String, Object> output = new HashMap<>();
-        MappingSerializer serializer = new MappingSerializer( new MapWrappingWriter( output ), URI.create( "" ),
-                mock(ExtensionInjector.class ) );
+        MappingSerializer serializer = new MappingSerializer( new MapWrappingWriter( output ), URI.create( "" ) );
 
         // When
         rep.serialize( serializer );

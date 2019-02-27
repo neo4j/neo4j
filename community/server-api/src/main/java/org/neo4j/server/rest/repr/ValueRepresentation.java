@@ -39,7 +39,7 @@ public class ValueRepresentation extends Representation
     }
 
     @Override
-    String serialize( RepresentationFormat format, URI baseUri, ExtensionInjector extensions )
+    String serialize( RepresentationFormat format, URI baseUri )
     {
         final String result = format.serializeValue(type, value);
         format.complete();
@@ -116,7 +116,7 @@ public class ValueRepresentation extends Representation
         return new ValueRepresentation( RepresentationType.URI, null )
         {
             @Override
-            String serialize( RepresentationFormat format, URI baseUri, ExtensionInjector extensions )
+            String serialize( RepresentationFormat format, URI baseUri )
             {
                 return Serializer.joinBaseWithRelativePath( baseUri, path );
             }
@@ -140,7 +140,7 @@ public class ValueRepresentation extends Representation
         return new ValueRepresentation( RepresentationType.TEMPLATE, null )
         {
             @Override
-            String serialize( RepresentationFormat format, URI baseUri, ExtensionInjector extensions )
+            String serialize( RepresentationFormat format, URI baseUri )
             {
                 return Serializer.joinBaseWithRelativePath( baseUri, path );
             }

@@ -31,7 +31,7 @@ import org.neo4j.server.rest.discovery.DiscoveryService;
 import org.neo4j.server.web.WebServer;
 
 import static java.util.Collections.singletonList;
-import static org.neo4j.server.plugins.Injectable.injectable;
+import static org.neo4j.server.web.Injectable.injectable;
 
 /**
  * Mounts the DBMS REST API.

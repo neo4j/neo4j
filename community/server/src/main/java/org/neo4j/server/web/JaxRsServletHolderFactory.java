@@ -32,8 +32,6 @@ import java.util.function.Supplier;
 
 import org.neo4j.server.bind.ComponentsBinder;
 import org.neo4j.server.modules.ServerModule;
-import org.neo4j.server.plugins.Injectable;
-import org.neo4j.server.rest.transactional.TransactionalContainerFilter;
 
 import static org.glassfish.jersey.server.ServerProperties.WADL_FEATURE_DISABLE;
 
@@ -88,7 +86,6 @@ public class JaxRsServletHolderFactory
         ResourceConfig resourceConfig = new ResourceConfig()
                 .register( binder )
                 .register( XForwardFilter.class )
-                .register( TransactionalContainerFilter.class )
                 .packages( packages.toArray( new String[0] ) )
                 .registerClasses( classes )
                 .property( WADL_FEATURE_DISABLE, String.valueOf( !wadlEnabled ) );

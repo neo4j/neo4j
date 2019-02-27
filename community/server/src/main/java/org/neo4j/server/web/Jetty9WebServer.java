@@ -67,7 +67,6 @@ import org.neo4j.kernel.api.net.NetworkConnectionTracker;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.server.bind.ComponentsBinder;
-import org.neo4j.server.plugins.Injectable;
 import org.neo4j.server.security.ssl.SslSocketConnectorFactory;
 import org.neo4j.ssl.SslPolicy;
 

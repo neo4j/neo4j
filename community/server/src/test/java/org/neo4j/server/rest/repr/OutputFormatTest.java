@@ -35,7 +35,7 @@ public class OutputFormatTest
     {
         URI relativeURI = new URI( "/test/path" );
 
-        OutputFormat outputFormat = new OutputFormat( new JsonFormat(), new URI( "http://base.local:8765/" ), null );
+        OutputFormat outputFormat = new OutputFormat( new JsonFormat(), new URI( "http://base.local:8765/" ) );
 
         Response response = outputFormat.seeOther( relativeURI );
 

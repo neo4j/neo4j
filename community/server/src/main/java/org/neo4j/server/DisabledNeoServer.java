@@ -28,8 +28,6 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.database.GraphFactory;
 import org.neo4j.server.database.LifecycleManagingDatabase;
-import org.neo4j.server.plugins.DisabledPluginManager;
-import org.neo4j.server.plugins.PluginManager;
 import org.neo4j.server.rest.management.AdvertisableService;
 import org.neo4j.server.rest.transactional.DisabledTransactionRegistry;
 import org.neo4j.server.rest.transactional.TransactionRegistry;
@@ -89,12 +87,6 @@ public class DisabledNeoServer implements NeoServer
     public TransactionRegistry getTransactionRegistry()
     {
         return DisabledTransactionRegistry.INSTANCE;
-    }
-
-    @Override
-    public PluginManager getExtensionManager()
-    {
-        return DisabledPluginManager.INSTANCE;
     }
 
     @Override

@@ -48,10 +48,10 @@ public class ListRepresentation extends Representation
     }
 
     @Override
-    String serialize( RepresentationFormat format, URI baseUri, ExtensionInjector extensions )
+    String serialize( RepresentationFormat format, URI baseUri )
     {
         ListWriter writer = format.serializeList( type );
-        serialize( new ListSerializer( writer, baseUri, extensions ) );
+        serialize( new ListSerializer( writer, baseUri ) );
         writer.done();
         return format.complete( writer );
     }

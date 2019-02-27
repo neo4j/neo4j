@@ -98,7 +98,7 @@ public class UserServiceTest
         HttpServletRequest req = mock( HttpServletRequest.class );
         when( req.getUserPrincipal() ).thenReturn( neo4jPrinciple );
 
-        OutputFormat outputFormat = new EntityOutputFormat( new JsonFormat(), new URI( "http://www.example.com" ), null );
+        OutputFormat outputFormat = new EntityOutputFormat( new JsonFormat(), new URI( "http://www.example.com" ) );
         UserService userService = new UserService( userManagerSupplier, new JsonFormat(), outputFormat );
 
         // When
@@ -120,7 +120,7 @@ public class UserServiceTest
         HttpServletRequest req = mock( HttpServletRequest.class );
         when( req.getUserPrincipal() ).thenReturn( null );
 
-        OutputFormat outputFormat = new EntityOutputFormat( new JsonFormat(), new URI( "http://www.example.com" ), null );
+        OutputFormat outputFormat = new EntityOutputFormat( new JsonFormat(), new URI( "http://www.example.com" ) );
         UserService userService = new UserService( userManagerSupplier, new JsonFormat(), outputFormat );
 
         // When
@@ -137,7 +137,7 @@ public class UserServiceTest
         HttpServletRequest req = mock( HttpServletRequest.class );
         when( req.getUserPrincipal() ).thenReturn( neo4jPrinciple );
 
-        OutputFormat outputFormat = new EntityOutputFormat( new JsonFormat(), new URI( "http://www.example.com" ), null );
+        OutputFormat outputFormat = new EntityOutputFormat( new JsonFormat(), new URI( "http://www.example.com" ) );
         UserService userService = new UserService( mock( BasicAuthManager.class ), new JsonFormat(), outputFormat );
 
         // When
@@ -156,7 +156,7 @@ public class UserServiceTest
 
         userManager.deleteUser( USERNAME );
 
-        OutputFormat outputFormat = new EntityOutputFormat( new JsonFormat(), new URI( "http://www.example.com" ), null );
+        OutputFormat outputFormat = new EntityOutputFormat( new JsonFormat(), new URI( "http://www.example.com" ) );
         UserService userService = new UserService( userManagerSupplier, new JsonFormat(), outputFormat );
 
         // When
@@ -173,7 +173,7 @@ public class UserServiceTest
         HttpServletRequest req = mock( HttpServletRequest.class );
         when( req.getUserPrincipal() ).thenReturn( neo4jPrinciple );
 
-        OutputFormat outputFormat = new EntityOutputFormat( new JsonFormat(), new URI( "http://www.example.com" ), null );
+        OutputFormat outputFormat = new EntityOutputFormat( new JsonFormat(), new URI( "http://www.example.com" ) );
         UserService userService = new UserService( userManagerSupplier, new JsonFormat(), outputFormat );
 
         // When
@@ -191,7 +191,7 @@ public class UserServiceTest
         HttpServletRequest req = mock( HttpServletRequest.class );
         when( req.getUserPrincipal() ).thenReturn( null );
 
-        OutputFormat outputFormat = new EntityOutputFormat( new JsonFormat(), new URI( "http://www.example.com" ), null );
+        OutputFormat outputFormat = new EntityOutputFormat( new JsonFormat(), new URI( "http://www.example.com" ) );
         UserService userService = new UserService( mock( BasicAuthManager.class ), new JsonFormat(), outputFormat );
 
         // When
@@ -210,7 +210,7 @@ public class UserServiceTest
 
         UserManager userManager = mock( UserManager.class );
 
-        OutputFormat outputFormat = new EntityOutputFormat( new JsonFormat(), new URI( "http://www.example.com" ), null );
+        OutputFormat outputFormat = new EntityOutputFormat( new JsonFormat(), new URI( "http://www.example.com" ) );
         UserService userService = new UserService( userManagerSupplier, new JsonFormat(), outputFormat );
 
         // When
@@ -228,7 +228,7 @@ public class UserServiceTest
         HttpServletRequest req = mock( HttpServletRequest.class );
         when( req.getUserPrincipal() ).thenReturn( neo4jPrinciple );
 
-        OutputFormat outputFormat = new EntityOutputFormat( new JsonFormat(), new URI( "http://www.example.com" ), null );
+        OutputFormat outputFormat = new EntityOutputFormat( new JsonFormat(), new URI( "http://www.example.com" ) );
         UserService userService = new UserService( userManagerSupplier, new JsonFormat(), outputFormat );
 
         userManager.deleteUser( USERNAME );
@@ -247,7 +247,7 @@ public class UserServiceTest
         HttpServletRequest req = mock( HttpServletRequest.class );
         when( req.getUserPrincipal() ).thenReturn( neo4jPrinciple );
 
-        OutputFormat outputFormat = new EntityOutputFormat( new JsonFormat(), new URI( "http://www.example.com" ), null );
+        OutputFormat outputFormat = new EntityOutputFormat( new JsonFormat(), new URI( "http://www.example.com" ) );
         UserService userService = new UserService( mock( BasicAuthManager.class ), new JsonFormat(), outputFormat );
 
         // When
@@ -267,7 +267,7 @@ public class UserServiceTest
         HttpServletRequest req = mock( HttpServletRequest.class );
         when( req.getUserPrincipal() ).thenReturn( neo4jPrinciple );
 
-        OutputFormat outputFormat = new EntityOutputFormat( new JsonFormat(), new URI( "http://www.example.com" ), null );
+        OutputFormat outputFormat = new EntityOutputFormat( new JsonFormat(), new URI( "http://www.example.com" ) );
         UserService userService = new UserService( mock( BasicAuthManager.class ), new JsonFormat(), outputFormat );
 
         // When
@@ -288,7 +288,7 @@ public class UserServiceTest
         HttpServletRequest req = mock( HttpServletRequest.class );
         when( req.getUserPrincipal() ).thenReturn( neo4jPrinciple );
 
-        OutputFormat outputFormat = new EntityOutputFormat( new JsonFormat(), new URI( "http://www.example.com" ), null );
+        OutputFormat outputFormat = new EntityOutputFormat( new JsonFormat(), new URI( "http://www.example.com" ) );
         UserService userService = new UserService( mock( BasicAuthManager.class ), new JsonFormat(), outputFormat );
 
         // When
@@ -309,7 +309,7 @@ public class UserServiceTest
         HttpServletRequest req = mock( HttpServletRequest.class );
         when( req.getUserPrincipal() ).thenReturn( neo4jPrinciple );
 
-        OutputFormat outputFormat = new EntityOutputFormat( new JsonFormat(), new URI( "http://www.example.com" ), null );
+        OutputFormat outputFormat = new EntityOutputFormat( new JsonFormat(), new URI( "http://www.example.com" ) );
         UserService userService = new UserService( userManagerSupplier, new JsonFormat(), outputFormat );
 
         // When
@@ -330,7 +330,7 @@ public class UserServiceTest
         HttpServletRequest req = mock( HttpServletRequest.class );
         when( req.getUserPrincipal() ).thenReturn( neo4jPrinciple );
 
-        OutputFormat outputFormat = new EntityOutputFormat( new JsonFormat(), new URI( "http://www.example.com" ), null );
+        OutputFormat outputFormat = new EntityOutputFormat( new JsonFormat(), new URI( "http://www.example.com" ) );
         UserService userService = new UserService( userManagerSupplier, new JsonFormat(), outputFormat );
 
         // When

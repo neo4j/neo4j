@@ -38,16 +38,14 @@ import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 public class OutputFormat
 {
     private final RepresentationFormat format;
-    private final ExtensionInjector extensions;
     private final URI baseUri;
 
     private RepresentationWriteHandler representationWriteHandler = RepresentationWriteHandler.DO_NOTHING;
 
-    public OutputFormat( RepresentationFormat format, URI baseUri, ExtensionInjector extensions )
+    public OutputFormat( RepresentationFormat format, URI baseUri )
     {
         this.format = format;
         this.baseUri = baseUri;
-        this.extensions = extensions;
     }
 
     public void setRepresentationWriteHandler( RepresentationWriteHandler representationWriteHandler )
@@ -170,7 +168,7 @@ public class OutputFormat
             RepresentationFormat outputStreamFormat = streamingFormat.writeTo( output );
             try
             {
-                representation.serialize( outputStreamFormat, baseUri, extensions );
+                representation.serialize( outputStreamFormat, baseUri );
 
                 if ( !mustFail )
                 {
@@ -198,7 +196,7 @@ public class OutputFormat
 
     public static void write( Representation representation, RepresentationFormat format, URI baseUri )
     {
-        representation.serialize( format, baseUri, null );
+        representation.serialize( format, baseUri );
     }
 
     private byte[] toBytes( String entity, boolean mustFail )
@@ -219,7 +217,7 @@ public class OutputFormat
 
     public String assemble( Representation representation )
     {
-        return representation.serialize( format, baseUri, extensions );
+        return representation.serialize( format, baseUri );
     }
 
     public Response noContent()

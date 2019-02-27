@@ -34,7 +34,6 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.server.bind.ComponentsBinder;
-import org.neo4j.server.plugins.Injectable;
 import org.neo4j.ssl.SslPolicy;
 
 public interface WebServer

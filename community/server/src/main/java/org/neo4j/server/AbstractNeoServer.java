@@ -19,7 +19,6 @@
  */
 package org.neo4j.server;
 
-import org.apache.commons.configuration.Configuration;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -59,11 +58,7 @@ import org.neo4j.server.database.CypherExecutor;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.database.GraphFactory;
 import org.neo4j.server.database.LifecycleManagingDatabase;
-import org.neo4j.server.modules.RESTApiModule;
 import org.neo4j.server.modules.ServerModule;
-import org.neo4j.server.plugins.ConfigAdapter;
-import org.neo4j.server.plugins.PluginInvocator;
-import org.neo4j.server.plugins.PluginManager;
 import org.neo4j.server.rest.repr.InputFormat;
 import org.neo4j.server.rest.repr.InputFormatProvider;
 import org.neo4j.server.rest.repr.OutputFormat;
@@ -404,17 +399,6 @@ public abstract class AbstractNeoServer implements NeoServer
         return webServer;
     }
 
-    @Override
-    public PluginManager getExtensionManager()
-    {
-        RESTApiModule module = getModule( RESTApiModule.class );
-        if ( module != null )
-        {
-            return module.getPlugins();
-        }
-        return null;
-    }
-
     private ComponentsBinder createComponentsBinder()
     {
         Database database = getDatabase();
@@ -425,10 +409,8 @@ public abstract class AbstractNeoServer implements NeoServer
         binder.addSingletonBinding( databaseActions, DatabaseActions.class );
         binder.addSingletonBinding( database.getGraph(), GraphDatabaseService.class );
         binder.addSingletonBinding( this, NeoServer.class );
-        binder.addSingletonBinding( new ConfigAdapter( getConfig() ), Configuration.class );
         binder.addSingletonBinding( getConfig(), Config.class );
         binder.addSingletonBinding( getWebServer(), WebServer.class );
-        binder.addLazyBinding( this::getExtensionManager, PluginInvocator.class );
         binder.addSingletonBinding( new RepresentationFormatRepository( this ), RepresentationFormatRepository.class );
         binder.addLazyBinding( InputFormatProvider.class, InputFormat.class );
         binder.addLazyBinding( OutputFormatProvider.class, OutputFormat.class );

@@ -33,7 +33,7 @@ public class SerializerTest
     public void shouldPrependBaseUriToRelativePaths()
     {
         String baseUrl = "http://baseurl/";
-        Serializer serializer = new Serializer( URI.create( baseUrl ), null )
+        Serializer serializer = new Serializer( URI.create( baseUrl ) )
         {
             // empty
         };

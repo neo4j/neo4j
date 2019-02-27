@@ -25,9 +25,9 @@ public class MappingSerializer extends Serializer
 {
     final MappingWriter writer;
 
-    MappingSerializer( MappingWriter writer, URI baseUri, ExtensionInjector extensions )
+    MappingSerializer( MappingWriter writer, URI baseUri )
     {
-        super( baseUri, extensions );
+        super( baseUri );
         this.writer = writer;
     }
 

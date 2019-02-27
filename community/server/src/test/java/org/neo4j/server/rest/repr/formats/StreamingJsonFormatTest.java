@@ -51,7 +51,7 @@ public class StreamingJsonFormatTest
     public void createOutputFormat() throws Exception
     {
         stream = new ByteArrayOutputStream();
-        json = new OutputFormat( new StreamingJsonFormat().writeTo(stream).usePrettyPrinter(), new URI( "http://localhost/" ), null );
+        json = new OutputFormat( new StreamingJsonFormat().writeTo(stream).usePrettyPrinter(), new URI( "http://localhost/" ) );
     }
 
     @Test

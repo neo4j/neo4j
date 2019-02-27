@@ -187,7 +187,7 @@ public class DiscoveryServiceTest
     private DiscoveryService testDiscoveryService()
     {
         Config config = mockConfig();
-        return new DiscoveryService( config, new EntityOutputFormat( new JsonFormat(), baseUri, null ), communityDiscoverableURIs( config, portRegistry ) );
+        return new DiscoveryService( config, new EntityOutputFormat( new JsonFormat(), baseUri ), communityDiscoverableURIs( config, portRegistry ) );
     }
 
     @Test
@@ -240,7 +240,7 @@ public class DiscoveryServiceTest
 
         String baseUri = "http://www.example.com:5435";
         DiscoveryService ds =
-                new DiscoveryService( config, new EntityOutputFormat( new JsonFormat(), new URI( baseUri ), null ), communityDiscoverableURIs( config, null ) );
+                new DiscoveryService( config, new EntityOutputFormat( new JsonFormat(), new URI( baseUri ) ), communityDiscoverableURIs( config, null ) );
 
         Response response = ds.redirectToBrowser();
 

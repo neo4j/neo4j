@@ -34,7 +34,6 @@ import org.neo4j.server.database.Database;
 import org.neo4j.server.web.WebServer;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -66,6 +65,6 @@ public class ThirdPartyJAXRSModuleTest
         module.start();
 
         // Then
-        verify( webServer ).addJAXRSPackages( any( List.class ), anyString(), anyCollection() );
+        verify( webServer ).addJAXRSPackages( any( List.class ), anyString(), any() );
     }
 }

@@ -42,7 +42,7 @@ public class DatabaseRepresentationTest
 
         // When
         HashMap<String,Object> output = new HashMap<>();
-        repr.serialize( new MappingSerializer( new MapWrappingWriter( output ), URI.create("http://steveformayor.org"), mock(ExtensionInjector.class) ) );
+        repr.serialize( new MappingSerializer( new MapWrappingWriter( output ), URI.create("http://steveformayor.org") ) );
 
         // Then
         assertThat( output, hasEntry( "relationship_index", "http://steveformayor.org/index/relationship" ) );

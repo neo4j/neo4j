@@ -34,11 +34,10 @@ public abstract class MappingRepresentation extends Representation
     }
 
     @Override
-    String serialize( RepresentationFormat format, URI baseUri, ExtensionInjector extensions )
+    String serialize( RepresentationFormat format, URI baseUri )
     {
         MappingWriter writer = format.serializeMapping( type );
-        Serializer.injectExtensions( writer, this, baseUri, extensions );
-        serialize( new MappingSerializer( writer, baseUri, extensions ) );
+        serialize( new MappingSerializer( writer, baseUri ) );
         writer.done();
         return format.complete( writer );
     }
