@@ -55,7 +55,7 @@
 
         <dependency>
             <groupId>org.opencypher</groupId>
-            <artifactId>tck-api</artifactId>
+            <artifactId>tck-api_2.12</artifactId>
             <version>${opencypher.version}</version>
             <exclusions>
                 <exclusion>
