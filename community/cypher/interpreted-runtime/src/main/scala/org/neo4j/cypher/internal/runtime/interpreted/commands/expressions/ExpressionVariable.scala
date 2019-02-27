@@ -20,8 +20,17 @@
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
 import org.neo4j.cypher.internal.runtime.ExecutionContext
+import org.neo4j.cypher.internal.runtime.ast
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
+import org.neo4j.cypher.internal.v4_0.expressions.LogicalVariable
 import org.neo4j.values.AnyValue
+
+object ExpressionVariable {
+  def of(e: LogicalVariable): ExpressionVariable = {
+    val ev = ast.ExpressionVariable.cast(e)
+    ExpressionVariable(ev.offset, ev.name)
+  }
+}
 
 case class ExpressionVariable(offset: Int, name: String) extends VariableCommand(name) {
 

@@ -59,7 +59,7 @@ case class CommunityExpressionConverter(tokenContext: TokenContext) extends Expr
       case e: ast.False => predicates.Not(predicates.True())
       case e: ast.Literal => commandexpressions.Literal(e.value)
       case e: ast.Variable => variable(e)
-      case e: ExpressionVariable => expressionVariable(e)
+      case e: ExpressionVariable => commands.expressions.ExpressionVariable.of(e)
       case e: ast.Or => predicates.Or(self.toCommandPredicate(id, e.lhs), self.toCommandPredicate(id, e.rhs))
       case e: ast.Xor => predicates.Xor(self.toCommandPredicate(id, e.lhs), self.toCommandPredicate(id, e.rhs))
       case e: ast.And => predicates.And(self.toCommandPredicate(id, e.lhs), self.toCommandPredicate(id, e.rhs))
@@ -169,7 +169,7 @@ case class CommunityExpressionConverter(tokenContext: TokenContext) extends Expr
       case e: pipes.NestedPipeExpression => commandexpressions
         .NestedPipeExpression(e.pipe,
                               self.toCommandExpression(id, e.projection),
-                              e.availableExpressionVariables.map(expressionVariable))
+                              e.availableExpressionVariables.map(commands.expressions.ExpressionVariable.of))
 
       case e: ast.GetDegree => getDegree(id, e, self)
       case e: PrefixSeekRangeWrapper => commandexpressions
@@ -416,11 +416,6 @@ case class CommunityExpressionConverter(tokenContext: TokenContext) extends Expr
     expressions.map(self.toCommandExpression(id,_))
 
   private def variable(e: ast.LogicalVariable) = commands.expressions.Variable(e.name)
-
-  private def expressionVariable(e: ast.LogicalVariable): commands.expressions.ExpressionVariable = {
-    val ev = ExpressionVariable.cast(e)
-    commands.expressions.ExpressionVariable(ev.offset, ev.name)
-  }
 
   private def inequalityExpression(id: Id, original: ast.InequalityExpression,
                                    self: ExpressionConverters): predicates.ComparablePredicate = original match {
