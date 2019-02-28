@@ -66,7 +66,7 @@
         <maven.compiler.target>1.8</maven.compiler.target>
         <licensing.prepend.text>licensing/notice-agpl-prefix.txt</licensing.prepend.text>
         <lucene.version>5.5.5</lucene.version>
-        <bouncycastle.version>1.60</bouncycastle.version>
+        <bouncycastle.version>1.61</bouncycastle.version>
         <generate-config-docs-phase>prepare-package</generate-config-docs-phase>
         <java.exports/>
         <test.runner.jvm/>
@@ -94,12 +94,12 @@
         <metrics.version>4.0.2</metrics.version>
         <scala.target.vm>1.8</scala.target.vm>
         <scala.java.additional.args/>
-        <jersey.version>2.27</jersey.version>
+        <jersey.version>2.28</jersey.version>
         <junit.version>5.4.0</junit.version>
         <junit.platform.version>1.4.0</junit.platform.version>
         <currentYear>2019</currentYear>
         <opencypher.version>1.0.0-M13</opencypher.version>
-        <caffeine.version>2.6.2</caffeine.version>
+        <caffeine.version>2.7.0</caffeine.version>
         <required.maven.version>3.5.4</required.maven.version>
         <jackson.version>1.9.13</jackson.version>
     </properties>
@@ -851,7 +851,7 @@
                     <dependency>
                         <groupId>com.puppycrawl.tools</groupId>
                         <artifactId>checkstyle</artifactId>
-                        <version>8.16</version>
+                        <version>8.18</version>
                     </dependency>
                     <dependency>
                         <groupId>org.neo4j.build</groupId>
@@ -1145,6 +1145,16 @@
                 <groupId>com.github.ben-manes.caffeine</groupId>
                 <artifactId>caffeine</artifactId>
                 <version>${caffeine.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.checkerframework</groupId>
+                        <artifactId>checker-qual</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>com.google.errorprone</groupId>
+                        <artifactId>error_prone_annotations</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
                 <groupId>org.slf4j</groupId>
@@ -1185,18 +1195,18 @@
             <dependency>
                 <groupId>org.apache.httpcomponents</groupId>
                 <artifactId>httpclient</artifactId>
-                <version>4.5.6</version>
+                <version>4.5.7</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.httpcomponents</groupId>
                 <artifactId>httpclient</artifactId>
-                <version>4.5.6</version>
+                <version>4.5.7</version>
                 <classifier>tests</classifier>
             </dependency>
             <dependency>
                 <groupId>org.apache.httpcomponents</groupId>
                 <artifactId>httpcore</artifactId>
-                <version>4.4.10</version>
+                <version>4.4.11</version>
             </dependency>
             <dependency>
                 <groupId>org.slf4j</groupId>
@@ -1263,14 +1273,14 @@
             <dependency>
                 <groupId>org.mockito</groupId>
                 <artifactId>mockito-core</artifactId>
-                <version>2.23.4</version>
+                <version>2.24.5</version>
                 <scope>test</scope>
             </dependency>
 
             <dependency>
                 <groupId>commons-codec</groupId>
                 <artifactId>commons-codec</artifactId>
-                <version>1.11</version>
+                <version>1.12</version>
                 <scope>test</scope>
             </dependency>
 
@@ -1636,7 +1646,7 @@
             <dependency>
                 <groupId>com.google.truth</groupId>
                 <artifactId>truth</artifactId>
-                <version>0.42</version>
+                <version>0.43</version>
                 <exclusions>
                     <exclusion>
                         <groupId>com.google.guava</groupId>
