@@ -104,7 +104,7 @@ class StoreInfoCommandTest
                             "%n" +
                             "Prints information about a Neo4j database store, such as what version of Neo4j%n" +
                             "created it. Note that this command expects a path to a store directory, for%n" +
-                            "example --store=data/databases/graph.db.%n" +
+                            "example --store=data/databases/neo4j.%n" +
                             "%n" +
                             "options:%n" +
                             "  --store=<path-to-dir>   Path to database store.%n" ),

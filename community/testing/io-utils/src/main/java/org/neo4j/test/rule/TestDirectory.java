@@ -61,7 +61,7 @@ import static java.lang.String.format;
  */
 public class TestDirectory extends ExternalResource
 {
-    private static final String DEFAULT_DATABASE_DIRECTORY = "graph.db";
+    private static final String DEFAULT_DATABASE_DIRECTORY = "neo4j";
     /**
      * This value is mixed into the hash string, along with the test name,
      * that we use for uniquely naming test directories.

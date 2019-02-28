@@ -78,8 +78,8 @@ public class GraphDatabaseSettings implements LoadableConfig
     // default unspecified transaction timeout
     public static final long UNSPECIFIED_TIMEOUT = 0L;
 
-    public static final String SYSTEM_DATABASE_NAME = "system.db";
-    public static final String DEFAULT_DATABASE_NAME = "graph.db";
+    public static final String SYSTEM_DATABASE_NAME = "system";
+    public static final String DEFAULT_DATABASE_NAME = "neo4j";
 
     public static final String DEFAULT_DATA_DIR_NAME = "data";
     public static final String DEFAULT_DATABASES_ROOT_DIR_NAME = "databases";

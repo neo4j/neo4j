@@ -249,13 +249,13 @@ class ArgsTest
     void shouldHandleLastOrphanParam()
     {
         // Given
-        Args args = Args.withFlags( "recovery" ).parse( "--recovery", "/tmp/graph.db" );
+        Args args = Args.withFlags( "recovery" ).parse( "--recovery", "/tmp/neo4j" );
 
         // When
         List<String> orphans = args.orphans();
 
         // Then
-        assertEquals( Arrays.asList( "/tmp/graph.db" ), orphans );
+        assertEquals( Arrays.asList( "/tmp/neo4j" ), orphans );
     }
 
     @Test

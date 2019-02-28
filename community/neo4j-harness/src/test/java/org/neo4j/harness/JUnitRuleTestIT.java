@@ -121,7 +121,7 @@ public class JUnitRuleTestIT
     @Test
     public void shouldRuleWorkWithExistingDirectory() throws Throwable
     {
-        // given a root folder, create /databases/graph.db folders.
+        // given a root folder, create /databases/neo4j folders.
         File oldDir = testDirectory.directory( "old" );
         File storeDir = Config.defaults( GraphDatabaseSettings.data_directory, oldDir.toPath().toString() )
                 .get( GraphDatabaseSettings.database_path );

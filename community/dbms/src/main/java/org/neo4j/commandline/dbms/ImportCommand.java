@@ -38,6 +38,7 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.helpers.Args;
 
 import static org.neo4j.commandline.arguments.common.Database.ARG_DATABASE;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.csv.reader.Configuration.DEFAULT;
 import static org.neo4j.tooling.ImportTool.parseFileArgumentList;
 import static org.neo4j.unsafe.impl.batchimport.Configuration.DEFAULT_MAX_MEMORY_PERCENT;
@@ -81,7 +82,7 @@ public class ImportCommand implements AdminCommand
     {
         arguments
             .withArgument( new OptionalNamedArg( "from", "source-directory", "",
-                    "The location of the pre-3.0 database (e.g. <neo4j-root>/data/graph.db)." ) );
+                    "The location of the pre-3.0 database (e.g. <neo4j-root>/data/" + DEFAULT_DATABASE_NAME + ")." ) );
     }
 
     private static void includeCsvArguments( Arguments arguments )

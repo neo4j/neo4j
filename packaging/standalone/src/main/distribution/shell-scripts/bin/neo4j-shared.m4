@@ -267,5 +267,5 @@ EOF
 }
 
 print_active_database() {
-  echo "Active database: ${dbms_active_database:-graph.db}"
+  echo "Active database: ${dbms_active_database:-neo4j}"
 }

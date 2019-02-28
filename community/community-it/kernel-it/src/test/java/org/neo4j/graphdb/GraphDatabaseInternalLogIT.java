@@ -38,6 +38,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertEquals;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
 public class GraphDatabaseInternalLogIT
 {
@@ -58,8 +59,8 @@ public class GraphDatabaseInternalLogIT
         assertThat( internalLog.isFile(), is( true ) );
         assertThat( internalLog.length(), greaterThan( 0L ) );
 
-        assertEquals( 1, countOccurrences( internalLog, "Database graph.db is ready." ) );
-        assertEquals( 2, countOccurrences( internalLog, "Database graph.db is unavailable." ) );
+        assertEquals( 1, countOccurrences( internalLog, "Database " + DEFAULT_DATABASE_NAME + " is ready." ) );
+        assertEquals( 2, countOccurrences( internalLog, "Database " + DEFAULT_DATABASE_NAME + " is unavailable." ) );
     }
 
     @Test

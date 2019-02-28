@@ -105,7 +105,7 @@ public interface Neo4jConfigurator<T extends Neo4jConfigurator>
 
     /**
      * Pre-populate the server with databases copied from the specified source directory.
-     * The source directory needs to have sub-folders `databases/graph.db` in which the source store files are located.
+     * The source directory needs to have sub-folders `databases/neo4j` in which the source store files are located.
      * @param sourceDirectory the directory to copy from
      * @return this configurator instance
      */

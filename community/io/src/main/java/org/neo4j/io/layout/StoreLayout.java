@@ -42,9 +42,9 @@ import static org.neo4j.io.layout.StoreLayoutConfig.NOT_CONFIGURED;
  * Example of store layout for store with 2 databases:
  * <pre>
  *  store directory
- *  | \ database directory (graph.db, represented by separate database layout)
+ *  | \ database directory (neo4j, represented by separate database layout)
  *  |    \ particular database files
- *  | \ database directory (other.db represented by separate database layout)
+ *  | \ database directory (other represented by separate database layout)
  *  |    \ particular database files
  *  store_lock
  * </pre>

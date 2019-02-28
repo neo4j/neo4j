@@ -26,6 +26,8 @@ import org.neo4j.commandline.admin.AdminCommandSection;
 import org.neo4j.commandline.admin.CommandContext;
 import org.neo4j.commandline.arguments.Arguments;
 
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+
 public class StoreInfoCommandProvider extends AdminCommand.Provider
 {
     public StoreInfoCommandProvider()
@@ -59,7 +61,7 @@ public class StoreInfoCommandProvider extends AdminCommand.Provider
     public String description()
     {
         return "Prints information about a Neo4j database store, such as what version of Neo4j created it. Note that " +
-                "this command expects a path to a store directory, for example --store=data/databases/graph.db.";
+                "this command expects a path to a store directory, for example --store=data/databases/" + DEFAULT_DATABASE_NAME + ".";
     }
 
     @Override
