@@ -21,8 +21,8 @@ package org.neo4j.kernel.impl.transaction.log.entry;
 
 import java.io.IOException;
 
+import org.neo4j.io.fs.ReadableClosableChannel;
 import org.neo4j.kernel.impl.transaction.log.LogPositionMarker;
-import org.neo4j.kernel.impl.transaction.log.ReadableClosableChannel;
 import org.neo4j.storageengine.api.CommandReader;
 import org.neo4j.storageengine.api.CommandReaderFactory;
 

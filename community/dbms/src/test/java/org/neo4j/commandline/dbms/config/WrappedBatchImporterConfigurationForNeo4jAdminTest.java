@@ -32,19 +32,6 @@ import static org.neo4j.unsafe.impl.batchimport.Configuration.DEFAULT;
 class WrappedBatchImporterConfigurationForNeo4jAdminTest
 {
     @Test
-    void shouldDelegateDenseNodeThreshold()
-    {
-        shouldDelegate( expected -> new Configuration()
-        {
-            @Override
-            public int denseNodeThreshold()
-            {
-                return expected;
-            }
-        }, Configuration::denseNodeThreshold, 1, 20 );
-    }
-
-    @Test
     void shouldDelegateMovingAverageSize()
     {
         shouldDelegate( expected -> new Configuration()

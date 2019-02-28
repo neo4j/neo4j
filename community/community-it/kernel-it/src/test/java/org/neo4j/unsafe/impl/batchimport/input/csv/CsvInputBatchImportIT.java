@@ -83,6 +83,7 @@ import org.neo4j.unsafe.impl.batchimport.Configuration;
 import org.neo4j.unsafe.impl.batchimport.ParallelBatchImporter;
 import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.input.Group;
+import org.neo4j.unsafe.impl.batchimport.input.IdType;
 import org.neo4j.unsafe.impl.batchimport.input.Input;
 import org.neo4j.unsafe.impl.batchimport.input.InputEntity;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
@@ -95,6 +96,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.db_timezone;
+import static org.neo4j.configuration.GraphDatabaseSettings.dense_node_threshold;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.kernel.impl.util.AutoCreatingHashMap.nested;
 import static org.neo4j.kernel.impl.util.AutoCreatingHashMap.values;
@@ -126,7 +128,10 @@ public class CsvInputBatchImportIT
     public void shouldImportDataComingFromCsvFiles() throws Exception
     {
         // GIVEN
-        Config dbConfig = Config.builder().withSetting( db_timezone, LogTimeZone.SYSTEM.name() ).build();
+        Config dbConfig = Config.builder()
+                .withSetting( db_timezone, LogTimeZone.SYSTEM.name() )
+                .withSetting( dense_node_threshold, String.valueOf( 5 ) )
+                .build();
         try ( JobScheduler scheduler = new ThreadPoolJobScheduler() )
         {
             BatchImporter importer =
@@ -208,20 +213,7 @@ public class CsvInputBatchImportIT
 
     private Configuration smallBatchSizeConfig()
     {
-        return new Configuration()
-        {
-            @Override
-            public int batchSize()
-            {
-                return 100;
-            }
-
-            @Override
-            public int denseNodeThreshold()
-            {
-                return 5;
-            }
-        };
+        return Configuration.withBatchSize( Configuration.DEFAULT, 100 );
     }
 
     private File relationshipDataAsFile( List<InputEntity> relationshipData ) throws IOException

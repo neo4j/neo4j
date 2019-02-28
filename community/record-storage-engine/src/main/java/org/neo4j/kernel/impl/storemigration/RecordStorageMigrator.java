@@ -96,13 +96,15 @@ import org.neo4j.unsafe.impl.batchimport.BatchImporterFactory;
 import org.neo4j.unsafe.impl.batchimport.Configuration;
 import org.neo4j.unsafe.impl.batchimport.InputIterable;
 import org.neo4j.unsafe.impl.batchimport.InputIterator;
+import org.neo4j.unsafe.impl.batchimport.input.BadCollector;
 import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.input.Collectors;
+import org.neo4j.unsafe.impl.batchimport.input.IdType;
+import org.neo4j.unsafe.impl.batchimport.input.Input;
 import org.neo4j.unsafe.impl.batchimport.input.Input.Estimates;
 import org.neo4j.unsafe.impl.batchimport.input.InputChunk;
 import org.neo4j.unsafe.impl.batchimport.input.InputEntityVisitor;
-import org.neo4j.unsafe.impl.batchimport.input.Inputs;
-import org.neo4j.unsafe.impl.batchimport.input.csv.IdType;
+import org.neo4j.unsafe.impl.batchimport.input.ReadableGroups;
 import org.neo4j.unsafe.impl.batchimport.staging.CoarseBoundedProgressExecutionMonitor;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitor;
 
@@ -121,7 +123,6 @@ import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_COMMIT_TIME
 import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_TX_CHECKSUM;
 import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_TX_COMMIT_TIMESTAMP;
 import static org.neo4j.unsafe.impl.batchimport.ImportLogic.NO_MONITOR;
-import static org.neo4j.unsafe.impl.batchimport.input.Inputs.knownEstimates;
 import static org.neo4j.unsafe.impl.batchimport.staging.ExecutionSupervisors.withDynamicProcessorAssignment;
 
 /**
@@ -130,9 +131,7 @@ import static org.neo4j.unsafe.impl.batchimport.staging.ExecutionSupervisors.wit
  * Since only one store migration is supported at any given version (migration from the previous store version)
  * the migration code is specific for the current upgrade and changes with each store format version.
  * <p>
- * Just one out of many potential participants in a {@link StoreUpgrader migration}.
- *
- * @see StoreUpgrader
+ * Just one out of many potential participants in a migration.
  */
 public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
 {
@@ -396,14 +395,14 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
             long propertyStoreSize = storeSize( legacyStore.getPropertyStore() ) / 2 +
                 storeSize( legacyStore.getPropertyStore().getStringStore() ) / 2 +
                 storeSize( legacyStore.getPropertyStore().getArrayStore() ) / 2;
-            Estimates estimates = knownEstimates(
+            Estimates estimates = Input.knownEstimates(
                     legacyStore.getNodeStore().getNumberOfIdsInUse(),
                     legacyStore.getRelationshipStore().getNumberOfIdsInUse(),
                     legacyStore.getPropertyStore().getNumberOfIdsInUse(),
                     legacyStore.getPropertyStore().getNumberOfIdsInUse(),
                     propertyStoreSize / 2, propertyStoreSize / 2,
                     0 /*node labels left as 0 for now*/);
-            importer.doImport( Inputs.input( nodes, relationships, IdType.ACTUAL, estimates ) );
+            importer.doImport( Input.input( nodes, relationships, IdType.ACTUAL, estimates, ReadableGroups.EMPTY ) );
 
             // During migration the batch importer doesn't necessarily writes all entities, depending on
             // which stores needs migration. Node, relationship, relationship group stores are always written
@@ -661,7 +660,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
                           directoryLayout.schemaStore(),
                           directoryLayout.idSchemaStore(),
                           config,
-                          IdType.SCHEMA,
+                          org.neo4j.kernel.impl.store.id.IdType.SCHEMA,
                           new ReadOnlyIdGeneratorFactory( fileSystem ),
                           pageCache,
                           NullLogProvider.getInstance(),

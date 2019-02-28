@@ -30,8 +30,8 @@ import java.util.function.IntFunction;
 
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.OpenMode;
+import org.neo4j.io.fs.ReadPastEndException;
 import org.neo4j.io.fs.StoreChannel;
-import org.neo4j.storageengine.api.ReadPastEndException;
 import org.neo4j.test.extension.EphemeralFileSystemExtension;
 import org.neo4j.test.extension.Inject;
 

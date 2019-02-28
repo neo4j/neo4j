@@ -31,6 +31,7 @@ import org.neo4j.csv.reader.Readables;
 import org.neo4j.function.IOFunctions;
 import org.neo4j.unsafe.impl.batchimport.input.DuplicateHeaderException;
 import org.neo4j.unsafe.impl.batchimport.input.Groups;
+import org.neo4j.unsafe.impl.batchimport.input.IdType;
 import org.neo4j.unsafe.impl.batchimport.input.InputException;
 
 import static org.hamcrest.Matchers.containsString;

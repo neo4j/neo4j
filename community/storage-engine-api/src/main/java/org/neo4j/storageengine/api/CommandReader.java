@@ -21,6 +21,8 @@ package org.neo4j.storageengine.api;
 
 import java.io.IOException;
 
+import org.neo4j.io.fs.ReadableChannel;
+
 /**
  * Reads {@link StorageCommand commands} from a {@link ReadableChannel channel}.
  * Instances must handle concurrent threads calling it with potentially different channels.

@@ -31,8 +31,8 @@ import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
-import org.neo4j.kernel.impl.util.Bits;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.util.Bits;
 
 import static org.neo4j.kernel.impl.store.NoStoreHeaderFormat.NO_STORE_HEADER_FORMAT;
 

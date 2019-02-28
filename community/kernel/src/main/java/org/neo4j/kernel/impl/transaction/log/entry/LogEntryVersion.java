@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.impl.transaction.log.entry;
 
+import org.neo4j.io.fs.WritableChannel;
 import org.neo4j.storageengine.api.CommandReader;
 import org.neo4j.storageengine.api.StorageCommand;
-import org.neo4j.storageengine.api.WritableChannel;
 
 import static java.lang.String.format;
 

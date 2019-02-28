@@ -22,8 +22,9 @@ package org.neo4j.kernel.impl.transaction.log;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
+import org.neo4j.io.fs.ReadPastEndException;
+import org.neo4j.io.fs.ReadableClosableChannel;
 import org.neo4j.io.fs.StoreChannel;
-import org.neo4j.storageengine.api.ReadPastEndException;
 
 import static java.lang.Math.min;
 import static java.lang.Math.toIntExact;

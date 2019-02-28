@@ -21,8 +21,8 @@ package org.neo4j.consistency.checking;
 
 import java.util.Arrays;
 
-import org.neo4j.kernel.impl.util.Bits;
 import org.neo4j.unsafe.impl.batchimport.cache.ByteArray;
+import org.neo4j.util.Bits;
 
 /**
  * Uses a {@link ByteArray} and can conveniently split up an index into slots, not only per byte, but arbitrary bit-sizes,

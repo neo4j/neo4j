@@ -21,11 +21,11 @@ package org.neo4j.internal.recordstorage;
 
 import java.io.IOException;
 
+import org.neo4j.io.fs.ReadableChannel;
+import org.neo4j.io.fs.ReadableClosableChannel;
 import org.neo4j.kernel.impl.transaction.log.LogPositionMarker;
 import org.neo4j.kernel.impl.transaction.log.PositionAwareChannel;
-import org.neo4j.kernel.impl.transaction.log.ReadableClosableChannel;
 import org.neo4j.storageengine.api.CommandReader;
-import org.neo4j.storageengine.api.ReadableChannel;
 
 /**
  * Basic functionality for {@link CommandReader} for {@link RecordStorageEngine}.

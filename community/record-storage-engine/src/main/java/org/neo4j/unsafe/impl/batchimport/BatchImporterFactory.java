@@ -49,9 +49,8 @@ public abstract class BatchImporterFactory extends Service
 
     public static BatchImporterFactory withHighestPriority()
     {
-        Iterable<BatchImporterFactory> candidates = Service.loadAll( BatchImporterFactory.class );
         BatchImporterFactory highestPrioritized = null;
-        for ( BatchImporterFactory candidate : candidates )
+        for ( BatchImporterFactory candidate : Service.loadAll( BatchImporterFactory.class ) )
         {
             if ( highestPrioritized == null || candidate.priority > highestPrioritized.priority )
             {

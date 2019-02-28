@@ -35,14 +35,14 @@ import org.neo4j.helpers.Args;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.FlushableChannel;
 import org.neo4j.io.fs.OpenMode;
+import org.neo4j.io.fs.ReadPastEndException;
+import org.neo4j.io.fs.ReadableChannel;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
-import org.neo4j.kernel.impl.transaction.log.FlushableChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalFlushableChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadAheadChannel;
-import org.neo4j.storageengine.api.ReadPastEndException;
-import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.util.FeatureToggles;
 
 import static java.lang.String.format;

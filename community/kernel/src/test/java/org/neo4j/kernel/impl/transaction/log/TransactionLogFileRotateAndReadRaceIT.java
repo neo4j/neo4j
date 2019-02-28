@@ -30,6 +30,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.neo4j.io.fs.ReadPastEndException;
 import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
@@ -39,7 +40,6 @@ import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.storageengine.api.LogVersionRepository;
-import org.neo4j.storageengine.api.ReadPastEndException;
 import org.neo4j.test.rule.LifeRule;
 import org.neo4j.test.rule.OtherThreadRule;
 import org.neo4j.test.rule.TestDirectory;

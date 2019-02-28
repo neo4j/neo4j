@@ -25,6 +25,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 
 import org.neo4j.io.ByteUnit;
+import org.neo4j.io.fs.FlushableChannel;
 import org.neo4j.io.fs.StoreChannel;
 
 import static java.lang.Math.min;

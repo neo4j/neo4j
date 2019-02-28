@@ -41,8 +41,8 @@ import org.neo4j.tooling.ImportTool;
 import org.neo4j.unsafe.impl.batchimport.Configuration;
 import org.neo4j.unsafe.impl.batchimport.input.BadCollector;
 import org.neo4j.unsafe.impl.batchimport.input.Collector;
+import org.neo4j.unsafe.impl.batchimport.input.IdType;
 import org.neo4j.unsafe.impl.batchimport.input.csv.CsvInput;
-import org.neo4j.unsafe.impl.batchimport.input.csv.IdType;
 
 import static java.nio.charset.Charset.defaultCharset;
 import static org.neo4j.kernel.impl.util.Converters.withDefault;

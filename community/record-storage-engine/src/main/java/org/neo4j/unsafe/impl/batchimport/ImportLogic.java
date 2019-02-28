@@ -32,6 +32,7 @@ import java.util.function.LongFunction;
 import java.util.function.Predicate;
 
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -137,6 +138,7 @@ public class ImportLogic implements Closeable
     private final FileSystemAbstraction fileSystem;
     private final BatchingNeoStores neoStore;
     private final Configuration config;
+    private final Config dbConfig;
     private final Log log;
     private final ExecutionMonitor executionMonitor;
     private final RecordFormats recordFormats;
@@ -175,13 +177,14 @@ public class ImportLogic implements Closeable
      * @param monitor {@link Monitor} for some events.
      */
     public ImportLogic( File storeDir, FileSystemAbstraction fileSystem, BatchingNeoStores neoStore,
-            Configuration config, LogService logService, ExecutionMonitor executionMonitor,
+            Configuration config, Config dbConfig, LogService logService, ExecutionMonitor executionMonitor,
             RecordFormats recordFormats, Collector badCollector, Monitor monitor )
     {
         this.storeDir = storeDir;
         this.fileSystem = fileSystem;
         this.neoStore = neoStore;
         this.config = config;
+        this.dbConfig = dbConfig;
         this.recordFormats = recordFormats;
         this.badCollector = badCollector;
         this.monitor = monitor;
@@ -199,7 +202,7 @@ public class ImportLogic implements Closeable
         numberArrayFactory = auto( neoStore.getPageCache(), storeDir, config.allowCacheAllocationOnHeap(), numberArrayFactoryMonitor );
         // Some temporary caches and indexes in the import
         idMapper = instantiateIdMapper( input );
-        nodeRelationshipCache = new NodeRelationshipCache( numberArrayFactory, config.denseNodeThreshold() );
+        nodeRelationshipCache = new NodeRelationshipCache( numberArrayFactory, dbConfig.get( GraphDatabaseSettings.dense_node_threshold ) );
         Estimates inputEstimates = input.calculateEstimates( neoStore.getPropertyStore().newValueEncodedSizeCalculator() );
 
         // Sanity checking against estimates

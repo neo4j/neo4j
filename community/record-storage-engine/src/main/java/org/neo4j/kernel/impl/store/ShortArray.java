@@ -25,7 +25,7 @@ import java.util.IdentityHashMap;
 import java.util.Map;
 
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
-import org.neo4j.kernel.impl.util.Bits;
+import org.neo4j.util.Bits;
 import org.neo4j.values.storable.ArrayValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;

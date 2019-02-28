@@ -28,12 +28,12 @@ import java.util.ArrayList;
 import java.util.Collection;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.FlushableChannel;
 import org.neo4j.kernel.impl.api.TestCommand;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.log.FlushableChannel;
 import org.neo4j.kernel.impl.transaction.log.FlushablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;

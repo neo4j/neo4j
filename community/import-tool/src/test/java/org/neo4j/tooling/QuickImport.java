@@ -45,14 +45,13 @@ import org.neo4j.unsafe.impl.batchimport.ParallelBatchImporter;
 import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.input.DataGeneratorInput;
 import org.neo4j.unsafe.impl.batchimport.input.Groups;
+import org.neo4j.unsafe.impl.batchimport.input.IdType;
 import org.neo4j.unsafe.impl.batchimport.input.Input;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Configuration;
 import org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Header;
-import org.neo4j.unsafe.impl.batchimport.input.csv.IdType;
 
 import static java.lang.System.currentTimeMillis;
-import static org.neo4j.configuration.GraphDatabaseSettings.dense_node_threshold;
 import static org.neo4j.kernel.impl.scheduler.JobSchedulerFactory.createScheduler;
 import static org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds.EMPTY;
 import static org.neo4j.unsafe.impl.batchimport.ImportLogic.NO_MONITOR;
@@ -119,12 +118,6 @@ public class QuickImport
             public int maxNumberOfProcessors()
             {
                 return args.getNumber( ImportTool.Options.PROCESSORS.key(), DEFAULT.maxNumberOfProcessors() ).intValue();
-            }
-
-            @Override
-            public int denseNodeThreshold()
-            {
-                return args.getNumber( dense_node_threshold.name(), DEFAULT.denseNodeThreshold() ).intValue();
             }
 
             @Override

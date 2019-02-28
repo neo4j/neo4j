@@ -29,6 +29,7 @@ import org.neo4j.unsafe.impl.batchimport.input.Input.Estimates;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.neo4j.unsafe.impl.batchimport.input.Input.knownEstimates;
 
 public class EstimationSanityCheckerTest
 {
@@ -38,7 +39,7 @@ public class EstimationSanityCheckerTest
         // given
         RecordFormats formats = Standard.LATEST_RECORD_FORMATS;
         Monitor monitor = mock( Monitor.class );
-        Estimates estimates = Inputs.knownEstimates( formats.node().getMaxId() - 1000, formats.relationship().getMaxId() - 1000,
+        Estimates estimates = knownEstimates( formats.node().getMaxId() - 1000, formats.relationship().getMaxId() - 1000,
                 0, 0, 0, 0, 0 ); // we don't care about the rest of the estimates in this checking
 
         // when
@@ -55,7 +56,7 @@ public class EstimationSanityCheckerTest
         // given
         RecordFormats formats = Standard.LATEST_RECORD_FORMATS;
         Monitor monitor = mock( Monitor.class );
-        Estimates estimates = Inputs.knownEstimates( formats.node().getMaxId() * 2, formats.relationship().getMaxId() * 2,
+        Estimates estimates = knownEstimates( formats.node().getMaxId() * 2, formats.relationship().getMaxId() * 2,
                 0, 0, 0, 0, 0 ); // we don't care about the rest of the estimates in this checking
 
         // when
@@ -72,7 +73,7 @@ public class EstimationSanityCheckerTest
         // given
         RecordFormats formats = Standard.LATEST_RECORD_FORMATS;
         Monitor monitor = mock( Monitor.class );
-        Estimates estimates = Inputs.knownEstimates( 1000, 1000,
+        Estimates estimates = knownEstimates( 1000, 1000,
                 0, 0, 0, 0, 0 ); // we don't care about the rest of the estimates in this checking
 
         // when

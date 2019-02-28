@@ -24,7 +24,7 @@ import java.io.Flushable;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
-import org.neo4j.storageengine.api.ReadPastEndException;
+import org.neo4j.io.fs.ReadPastEndException;
 
 import static java.lang.Math.toIntExact;
 

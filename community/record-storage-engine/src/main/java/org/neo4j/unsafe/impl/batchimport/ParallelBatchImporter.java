@@ -84,7 +84,7 @@ public class ParallelBatchImporter implements BatchImporter
     {
         try ( BatchingNeoStores store = instantiateNeoStores( fileSystem, directoryStructure.databaseDirectory(), externalPageCache, recordFormats,
                       config, logService, additionalInitialIds, dbConfig, jobScheduler );
-              ImportLogic logic = new ImportLogic( directoryStructure.databaseDirectory(), fileSystem, store, config, logService,
+              ImportLogic logic = new ImportLogic( directoryStructure.databaseDirectory(), fileSystem, store, config, dbConfig, logService,
                       executionMonitor, recordFormats, badCollector, monitor ) )
         {
             store.createNew();

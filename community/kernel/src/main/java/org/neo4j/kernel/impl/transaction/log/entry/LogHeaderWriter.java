@@ -24,9 +24,9 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.FlushableChannel;
 import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.StoreChannel;
-import org.neo4j.kernel.impl.transaction.log.FlushableChannel;
 
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_VERSION;

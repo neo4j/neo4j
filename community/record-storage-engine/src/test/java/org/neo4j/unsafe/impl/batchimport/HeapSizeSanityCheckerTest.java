@@ -33,7 +33,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.io.ByteUnit.gibiBytes;
 import static org.neo4j.kernel.impl.store.format.standard.Standard.LATEST_RECORD_FORMATS;
-import static org.neo4j.unsafe.impl.batchimport.input.Inputs.knownEstimates;
+import static org.neo4j.unsafe.impl.batchimport.input.Input.knownEstimates;
 
 public class HeapSizeSanityCheckerTest
 {

@@ -65,6 +65,7 @@ import org.neo4j.unsafe.impl.batchimport.BatchImporterFactory;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.DuplicateInputIdException;
 import org.neo4j.unsafe.impl.batchimport.input.BadCollector;
 import org.neo4j.unsafe.impl.batchimport.input.Collector;
+import org.neo4j.unsafe.impl.batchimport.input.IdType;
 import org.neo4j.unsafe.impl.batchimport.input.Input;
 import org.neo4j.unsafe.impl.batchimport.input.InputException;
 import org.neo4j.unsafe.impl.batchimport.input.MissingRelationshipDataException;
@@ -72,7 +73,6 @@ import org.neo4j.unsafe.impl.batchimport.input.csv.Configuration;
 import org.neo4j.unsafe.impl.batchimport.input.csv.CsvInput;
 import org.neo4j.unsafe.impl.batchimport.input.csv.DataFactory;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Decorator;
-import org.neo4j.unsafe.impl.batchimport.input.csv.IdType;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitor;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitors;
 import org.neo4j.unsafe.impl.batchimport.staging.SpectrumExecutionMonitor;
@@ -374,7 +374,7 @@ public class ImportTool
      *
      * @param incomingArguments arguments for specifying input and configuration for the import.
      */
-    public static void main( String[] incomingArguments ) throws IOException
+    public static void main( String[] incomingArguments )
     {
         main( incomingArguments, false );
     }
@@ -744,12 +744,6 @@ public class ImportTool
             public int maxNumberOfProcessors()
             {
                 return processors != null ? processors.intValue() : DEFAULT.maxNumberOfProcessors();
-            }
-
-            @Override
-            public int denseNodeThreshold()
-            {
-                return dbConfig.get( GraphDatabaseSettings.dense_node_threshold );
             }
 
             @Override

@@ -65,9 +65,9 @@ import org.neo4j.unsafe.impl.batchimport.ParallelBatchImporter;
 import org.neo4j.unsafe.impl.batchimport.RandomsStates;
 import org.neo4j.unsafe.impl.batchimport.input.BadCollector;
 import org.neo4j.unsafe.impl.batchimport.input.Collector;
+import org.neo4j.unsafe.impl.batchimport.input.IdType;
 import org.neo4j.unsafe.impl.batchimport.input.Input;
 import org.neo4j.unsafe.impl.batchimport.input.ReadableGroups;
-import org.neo4j.unsafe.impl.batchimport.input.csv.IdType;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitors;
 import org.neo4j.util.FeatureToggles;
 import org.neo4j.values.storable.RandomValues;
@@ -82,7 +82,7 @@ import static org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds.EMPTY;
 import static org.neo4j.unsafe.impl.batchimport.Configuration.DEFAULT;
 import static org.neo4j.unsafe.impl.batchimport.GeneratingInputIterator.EMPTY_ITERABLE;
 import static org.neo4j.unsafe.impl.batchimport.ImportLogic.NO_MONITOR;
-import static org.neo4j.unsafe.impl.batchimport.input.Inputs.knownEstimates;
+import static org.neo4j.unsafe.impl.batchimport.input.Input.knownEstimates;
 
 /**
  * Idea is to test a {@link MultipleIndexPopulator} and {@link BatchingMultipleIndexPopulator} with a bunch of indexes,

@@ -40,8 +40,8 @@ import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 import org.neo4j.unsafe.impl.batchimport.ParallelBatchImporter;
 import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.input.DataGeneratorInput;
+import org.neo4j.unsafe.impl.batchimport.input.IdType;
 import org.neo4j.unsafe.impl.batchimport.input.Input;
-import org.neo4j.unsafe.impl.batchimport.input.csv.IdType;
 import org.neo4j.unsafe.impl.batchimport.staging.HumanUnderstandableExecutionMonitor.ImportStage;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -53,7 +53,6 @@ import static org.neo4j.unsafe.impl.batchimport.Configuration.DEFAULT;
 import static org.neo4j.unsafe.impl.batchimport.ImportLogic.NO_MONITOR;
 import static org.neo4j.unsafe.impl.batchimport.input.DataGeneratorInput.bareboneNodeHeader;
 import static org.neo4j.unsafe.impl.batchimport.input.DataGeneratorInput.bareboneRelationshipHeader;
-import static org.neo4j.unsafe.impl.batchimport.input.csv.IdType.INTEGER;
 import static org.neo4j.unsafe.impl.batchimport.staging.HumanUnderstandableExecutionMonitor.NO_EXTERNAL_MONITOR;
 
 @PageCacheExtension
@@ -78,7 +77,7 @@ class HumanUnderstandableExecutionMonitorIT
         // given
         CapturingMonitor progress = new CapturingMonitor();
         HumanUnderstandableExecutionMonitor monitor = new HumanUnderstandableExecutionMonitor( progress, NO_EXTERNAL_MONITOR );
-        IdType idType = INTEGER;
+        IdType idType = IdType.INTEGER;
         Input input = new DataGeneratorInput( NODE_COUNT, RELATIONSHIP_COUNT, idType, random.seed(),
                 0, bareboneNodeHeader( idType, new Extractors( ';' ) ), bareboneRelationshipHeader( idType, new Extractors( ';' ) ),
                 1, 1, 0, 0 );

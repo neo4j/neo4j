@@ -26,7 +26,7 @@ import java.util.Objects;
 import org.neo4j.internal.recordstorage.Command;
 import org.neo4j.internal.recordstorage.CommandVisitor;
 import org.neo4j.internal.recordstorage.NeoCommandType;
-import org.neo4j.storageengine.api.WritableChannel;
+import org.neo4j.io.fs.WritableChannel;
 
 import static java.lang.String.format;
 import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.write2bLengthAndString;

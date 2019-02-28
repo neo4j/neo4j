@@ -26,6 +26,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.internal.kernel.api.exceptions.schema.MalformedSchemaRuleException;
+import org.neo4j.io.fs.ReadableChannel;
+import org.neo4j.io.fs.WritableChannel;
 import org.neo4j.kernel.impl.store.PropertyType;
 import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -41,9 +43,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion;
-import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.SchemaRule;
-import org.neo4j.storageengine.api.WritableChannel;
 import org.neo4j.string.UTF8;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
@@ -53,7 +53,7 @@ import static org.neo4j.internal.recordstorage.CommandReading.COLLECTION_DYNAMIC
 import static org.neo4j.internal.recordstorage.CommandReading.PROPERTY_BLOCK_DYNAMIC_RECORD_ADDER;
 import static org.neo4j.internal.recordstorage.CommandReading.PROPERTY_DELETED_DYNAMIC_RECORD_ADDER;
 import static org.neo4j.internal.recordstorage.CommandReading.PROPERTY_INDEX_DYNAMIC_RECORD_ADDER;
-import static org.neo4j.kernel.impl.util.Bits.bitFlag;
+import static org.neo4j.util.Bits.bitFlag;
 
 public class PhysicalLogCommandReaderV4_0 extends BaseCommandReader
 {

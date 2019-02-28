@@ -23,6 +23,8 @@ import java.io.Flushable;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
+import org.neo4j.io.fs.FlushableChannel;
+
 /**
  * Decorator around a {@link LogVersionedStoreChannel} making it expose {@link FlushablePositionAwareChannel}. This
  * implementation uses a {@link PhysicalFlushableChannel}, which provides buffering for write operations over the

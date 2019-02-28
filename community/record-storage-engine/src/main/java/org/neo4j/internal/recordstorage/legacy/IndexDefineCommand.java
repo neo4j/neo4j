@@ -34,7 +34,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.neo4j.internal.recordstorage.Command;
 import org.neo4j.internal.recordstorage.CommandVisitor;
 import org.neo4j.internal.recordstorage.NeoCommandType;
-import org.neo4j.storageengine.api.WritableChannel;
+import org.neo4j.io.fs.WritableChannel;
 import org.neo4j.util.VisibleForTesting;
 
 import static java.lang.String.format;

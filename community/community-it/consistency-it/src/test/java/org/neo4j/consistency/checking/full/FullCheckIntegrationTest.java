@@ -102,7 +102,6 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
-import org.neo4j.kernel.impl.util.Bits;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.FormattedLog;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
@@ -110,6 +109,7 @@ import org.neo4j.storageengine.api.NodeLabelUpdate;
 import org.neo4j.storageengine.api.SchemaRule;
 import org.neo4j.string.UTF8;
 import org.neo4j.test.rule.SuppressOutput;
+import org.neo4j.util.Bits;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
@@ -146,10 +146,10 @@ import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
 import static org.neo4j.kernel.impl.store.record.Record.NO_PREV_RELATIONSHIP;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
-import static org.neo4j.kernel.impl.util.Bits.bits;
 import static org.neo4j.storageengine.api.NodeLabelUpdate.labelChanges;
 import static org.neo4j.test.Property.property;
 import static org.neo4j.test.Property.set;
+import static org.neo4j.util.Bits.bits;
 
 public class FullCheckIntegrationTest
 {

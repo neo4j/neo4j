@@ -21,11 +21,11 @@ package org.neo4j.kernel.impl.transaction.log.files;
 
 import java.io.IOException;
 
-import org.neo4j.kernel.impl.transaction.log.FlushableChannel;
+import org.neo4j.io.fs.FlushableChannel;
+import org.neo4j.io.fs.ReadableClosableChannel;
 import org.neo4j.kernel.impl.transaction.log.FlushablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogVersionBridge;
-import org.neo4j.kernel.impl.transaction.log.ReadableClosableChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
 

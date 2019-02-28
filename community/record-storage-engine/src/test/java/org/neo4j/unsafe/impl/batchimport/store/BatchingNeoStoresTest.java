@@ -83,7 +83,6 @@ import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 import org.neo4j.unsafe.impl.batchimport.input.Input.Estimates;
-import org.neo4j.unsafe.impl.batchimport.input.Inputs;
 import org.neo4j.values.storable.Values;
 
 import static org.hamcrest.CoreMatchers.containsString;
@@ -99,6 +98,7 @@ import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_ID;
 import static org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds.EMPTY;
 import static org.neo4j.unsafe.impl.batchimport.Configuration.DEFAULT;
+import static org.neo4j.unsafe.impl.batchimport.input.Input.knownEstimates;
 import static org.neo4j.unsafe.impl.batchimport.store.BatchingNeoStores.DOUBLE_RELATIONSHIP_RECORD_UNIT_THRESHOLD;
 
 @PageCacheExtension
@@ -210,7 +210,7 @@ class BatchingNeoStoresTest
                 NullLogService.getInstance(), EMPTY, Config.defaults() ) )
         {
             stores.createNew();
-            Estimates estimates = Inputs.knownEstimates( 0, DOUBLE_RELATIONSHIP_RECORD_UNIT_THRESHOLD << 1, 0, 0, 0, 0, 0 );
+            Estimates estimates = knownEstimates( 0, DOUBLE_RELATIONSHIP_RECORD_UNIT_THRESHOLD << 1, 0, 0, 0, 0, 0 );
 
             // when
             boolean doubleUnits = stores.determineDoubleRelationshipRecordUnits( estimates );
@@ -230,7 +230,7 @@ class BatchingNeoStoresTest
                 NullLogService.getInstance(), EMPTY, Config.defaults() ) )
         {
             stores.createNew();
-            Estimates estimates = Inputs.knownEstimates( 0, DOUBLE_RELATIONSHIP_RECORD_UNIT_THRESHOLD >> 1, 0, 0, 0, 0, 0 );
+            Estimates estimates = knownEstimates( 0, DOUBLE_RELATIONSHIP_RECORD_UNIT_THRESHOLD >> 1, 0, 0, 0, 0, 0 );
 
             // when
             boolean doubleUnits = stores.determineDoubleRelationshipRecordUnits( estimates );
@@ -250,7 +250,7 @@ class BatchingNeoStoresTest
                 NullLogService.getInstance(), EMPTY, Config.defaults() ) )
         {
             stores.createNew();
-            Estimates estimates = Inputs.knownEstimates( 0, DOUBLE_RELATIONSHIP_RECORD_UNIT_THRESHOLD << 1, 0, 0, 0, 0, 0 );
+            Estimates estimates = knownEstimates( 0, DOUBLE_RELATIONSHIP_RECORD_UNIT_THRESHOLD << 1, 0, 0, 0, 0, 0 );
 
             // when
             boolean doubleUnits = stores.determineDoubleRelationshipRecordUnits( estimates );

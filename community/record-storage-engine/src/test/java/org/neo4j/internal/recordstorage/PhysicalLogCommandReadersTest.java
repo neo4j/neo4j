@@ -26,10 +26,10 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import java.io.IOException;
 
+import org.neo4j.io.fs.ReadableChannel;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.storageengine.api.CommandReader;
-import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.StorageCommand;
 
 import static org.hamcrest.Matchers.instanceOf;

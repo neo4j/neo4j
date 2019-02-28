@@ -28,6 +28,8 @@ import java.time.ZonedDateTime;
 import java.util.Collection;
 import java.util.Map;
 
+import org.neo4j.io.fs.ReadableChannel;
+import org.neo4j.io.fs.WritableChannel;
 import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -43,10 +45,8 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.kernel.impl.store.record.TokenRecord;
-import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.SchemaRule;
 import org.neo4j.storageengine.api.StorageCommand;
-import org.neo4j.storageengine.api.WritableChannel;
 import org.neo4j.string.UTF8;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.Value;
@@ -54,10 +54,10 @@ import org.neo4j.values.storable.ValueWriter;
 
 import static java.lang.Math.toIntExact;
 import static java.lang.String.format;
-import static org.neo4j.kernel.impl.util.Bits.bitFlag;
-import static org.neo4j.kernel.impl.util.Bits.bitFlags;
 import static org.neo4j.kernel.impl.util.IdPrettyPrinter.label;
 import static org.neo4j.kernel.impl.util.IdPrettyPrinter.relationshipType;
+import static org.neo4j.util.Bits.bitFlag;
+import static org.neo4j.util.Bits.bitFlags;
 
 /**
  * Command implementations for all the commands that can be performed on a Neo

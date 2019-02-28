@@ -67,11 +67,11 @@ import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.input.Group;
 import org.neo4j.unsafe.impl.batchimport.input.Groups;
+import org.neo4j.unsafe.impl.batchimport.input.IdType;
+import org.neo4j.unsafe.impl.batchimport.input.Input;
 import org.neo4j.unsafe.impl.batchimport.input.InputChunk;
 import org.neo4j.unsafe.impl.batchimport.input.InputEntity;
 import org.neo4j.unsafe.impl.batchimport.input.InputEntityVisitor;
-import org.neo4j.unsafe.impl.batchimport.input.Inputs;
-import org.neo4j.unsafe.impl.batchimport.input.csv.IdType;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitor;
 import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.Values;
@@ -88,7 +88,7 @@ import static org.neo4j.io.ByteUnit.mebiBytes;
 import static org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds.EMPTY;
 import static org.neo4j.unsafe.impl.batchimport.ImportLogic.NO_MONITOR;
 import static org.neo4j.unsafe.impl.batchimport.ProcessorAssignmentStrategies.eagerRandomSaturation;
-import static org.neo4j.unsafe.impl.batchimport.input.Inputs.knownEstimates;
+import static org.neo4j.unsafe.impl.batchimport.input.Input.knownEstimates;
 
 @RunWith( Parameterized.class )
 public class ParallelBatchImporterTest
@@ -113,13 +113,6 @@ public class ParallelBatchImporterTest
         {
             // Set to extra low to exercise the internals a bit more.
             return 100;
-        }
-
-        @Override
-        public int denseNodeThreshold()
-        {
-            // This will have statistically half the nodes be considered dense
-            return RELATIONSHIPS_PER_NODE * 2;
         }
 
         @Override
@@ -174,13 +167,15 @@ public class ParallelBatchImporterTest
         long nodeRandomSeed = random.nextLong();
         long relationshipRandomSeed = random.nextLong();
         JobScheduler jobScheduler = new ThreadPoolJobScheduler();
+        // This will have statistically half the nodes be considered dense
+        Config dbConfig = Config.defaults( GraphDatabaseSettings.dense_node_threshold, String.valueOf( RELATIONSHIPS_PER_NODE * 2 ) );
         final BatchImporter inserter = new ParallelBatchImporter( databaseLayout,
                 fileSystemRule.get(), null, config, NullLogService.getInstance(),
-                processorAssigner, EMPTY, Config.defaults(), getFormat(), NO_MONITOR, jobScheduler, Collector.EMPTY );
+                processorAssigner, EMPTY, dbConfig, getFormat(), NO_MONITOR, jobScheduler, Collector.EMPTY );
         try
         {
             // WHEN
-            inserter.doImport( Inputs.input(
+            inserter.doImport( Input.input(
                     nodes( nodeRandomSeed, NODE_COUNT, config.batchSize(), inputIdGenerator, groupDistribution ),
                     relationships( relationshipRandomSeed, RELATIONSHIP_COUNT, config.batchSize(),
                             inputIdGenerator, groupDistribution ), idType,
@@ -190,7 +185,7 @@ public class ParallelBatchImporterTest
                             RELATIONSHIP_COUNT * TOKENS.length / 2,
                             NODE_COUNT * TOKENS.length / 2 * Long.BYTES,
                             RELATIONSHIP_COUNT * TOKENS.length / 2 * Long.BYTES,
-                            NODE_COUNT * TOKENS.length / 2 ) ) );
+                            NODE_COUNT * TOKENS.length / 2 ), groups ) );
 
             // THEN
             GraphDatabaseService db = new TestGraphDatabaseFactory()

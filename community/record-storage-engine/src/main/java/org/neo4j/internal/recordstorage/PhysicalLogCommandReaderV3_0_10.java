@@ -38,6 +38,7 @@ import org.neo4j.internal.recordstorage.legacy.IndexCommand.CreateCommand;
 import org.neo4j.internal.recordstorage.legacy.IndexCommand.DeleteCommand;
 import org.neo4j.internal.recordstorage.legacy.IndexCommand.RemoveCommand;
 import org.neo4j.internal.recordstorage.legacy.IndexDefineCommand;
+import org.neo4j.io.fs.ReadableChannel;
 import org.neo4j.kernel.impl.store.AbstractDynamicStore;
 import org.neo4j.kernel.impl.store.PropertyType;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -54,7 +55,6 @@ import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.kernel.impl.storemigration.legacy.SchemaRuleSerialization35;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion;
-import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.SchemaRule;
 
 import static org.neo4j.helpers.Numbers.unsignedShortToInt;
@@ -62,10 +62,10 @@ import static org.neo4j.internal.recordstorage.CommandReading.COLLECTION_DYNAMIC
 import static org.neo4j.internal.recordstorage.CommandReading.PROPERTY_BLOCK_DYNAMIC_RECORD_ADDER;
 import static org.neo4j.internal.recordstorage.CommandReading.PROPERTY_DELETED_DYNAMIC_RECORD_ADDER;
 import static org.neo4j.internal.recordstorage.CommandReading.PROPERTY_INDEX_DYNAMIC_RECORD_ADDER;
-import static org.neo4j.kernel.impl.util.Bits.bitFlag;
 import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.read2bLengthAndString;
 import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.read2bMap;
 import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.read3bLengthAndString;
+import static org.neo4j.util.Bits.bitFlag;
 
 public class PhysicalLogCommandReaderV3_0_10 extends BaseCommandReader
 {

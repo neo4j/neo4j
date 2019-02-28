@@ -23,11 +23,11 @@ import java.io.IOException;
 import java.util.Collection;
 
 import org.neo4j.helpers.collection.Visitor;
+import org.neo4j.io.fs.WritableChannel;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.storageengine.api.StorageCommand;
-import org.neo4j.storageengine.api.WritableChannel;
 
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryByteCodes.CHECK_POINT;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryByteCodes.TX_COMMIT;

@@ -24,10 +24,12 @@ import org.junit.Test;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
+import org.neo4j.util.Bits;
+
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
-import static org.neo4j.kernel.impl.util.Bits.bits;
+import static org.neo4j.util.Bits.bits;
 
 public class TestBits
 {

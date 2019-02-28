@@ -24,9 +24,9 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 
+import org.neo4j.io.fs.ReadableChannel;
 import org.neo4j.io.pagecache.CursorException;
 import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.storageengine.api.ReadableChannel;
 
 class ReadableChannelPageCursor extends PageCursor
 {
