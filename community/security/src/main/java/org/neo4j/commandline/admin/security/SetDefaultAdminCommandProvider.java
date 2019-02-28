@@ -19,12 +19,11 @@
  */
 package org.neo4j.commandline.admin.security;
 
-import java.nio.file.Path;
 import javax.annotation.Nonnull;
 
 import org.neo4j.commandline.admin.AdminCommand;
 import org.neo4j.commandline.admin.AdminCommandSection;
-import org.neo4j.commandline.admin.OutsideWorld;
+import org.neo4j.commandline.admin.CommandContext;
 import org.neo4j.commandline.arguments.Arguments;
 
 public class SetDefaultAdminCommandProvider extends AdminCommand.Provider
@@ -65,8 +64,8 @@ public class SetDefaultAdminCommandProvider extends AdminCommand.Provider
 
     @Override
     @Nonnull
-    public AdminCommand create( Path homeDir, Path configDir, OutsideWorld outsideWorld )
+    public AdminCommand create( CommandContext ctx )
     {
-        return new SetDefaultAdminCommand( homeDir, configDir, outsideWorld );
+        return new SetDefaultAdminCommand( ctx.getHomeDir(), ctx.getConfigDir(), ctx.getOutsideWorld() );
     }
 }

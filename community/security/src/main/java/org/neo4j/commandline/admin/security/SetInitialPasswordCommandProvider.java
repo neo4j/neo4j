@@ -19,12 +19,11 @@
  */
 package org.neo4j.commandline.admin.security;
 
-import java.nio.file.Path;
 import javax.annotation.Nonnull;
 
 import org.neo4j.commandline.admin.AdminCommand;
 import org.neo4j.commandline.admin.AdminCommandSection;
-import org.neo4j.commandline.admin.OutsideWorld;
+import org.neo4j.commandline.admin.CommandContext;
 import org.neo4j.commandline.arguments.Arguments;
 
 import static org.neo4j.kernel.api.security.UserManager.INITIAL_USER_NAME;
@@ -67,8 +66,8 @@ public class SetInitialPasswordCommandProvider extends AdminCommand.Provider
 
     @Override
     @Nonnull
-    public AdminCommand create( Path homeDir, Path configDir, OutsideWorld outsideWorld )
+    public AdminCommand create( CommandContext ctx )
     {
-        return new SetInitialPasswordCommand( homeDir, configDir, outsideWorld );
+        return new SetInitialPasswordCommand( ctx.getHomeDir(), ctx.getConfigDir(), ctx.getOutsideWorld() );
     }
 }

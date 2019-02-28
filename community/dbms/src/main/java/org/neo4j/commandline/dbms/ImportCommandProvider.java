@@ -19,14 +19,13 @@
  */
 package org.neo4j.commandline.dbms;
 
-import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 import javax.annotation.Nonnull;
 
 import org.neo4j.commandline.admin.AdminCommand;
 import org.neo4j.commandline.admin.AdminCommandSection;
-import org.neo4j.commandline.admin.OutsideWorld;
+import org.neo4j.commandline.admin.CommandContext;
 import org.neo4j.commandline.arguments.Arguments;
 
 public class ImportCommandProvider extends AdminCommand.Provider
@@ -74,8 +73,8 @@ public class ImportCommandProvider extends AdminCommand.Provider
 
     @Override
     @Nonnull
-    public AdminCommand create( Path homeDir, Path configDir, OutsideWorld outsideWorld )
+    public AdminCommand create( CommandContext ctx )
     {
-        return new ImportCommand( homeDir, configDir, outsideWorld );
+        return new ImportCommand( ctx.getHomeDir(), ctx.getConfigDir(), ctx.getOutsideWorld() );
     }
 }

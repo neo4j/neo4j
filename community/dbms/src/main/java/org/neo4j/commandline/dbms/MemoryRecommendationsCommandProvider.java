@@ -19,12 +19,11 @@
  */
 package org.neo4j.commandline.dbms;
 
-import java.nio.file.Path;
 import javax.annotation.Nonnull;
 
 import org.neo4j.commandline.admin.AdminCommand;
 import org.neo4j.commandline.admin.AdminCommandSection;
-import org.neo4j.commandline.admin.OutsideWorld;
+import org.neo4j.commandline.admin.CommandContext;
 import org.neo4j.commandline.arguments.Arguments;
 
 import static java.lang.String.format;
@@ -73,8 +72,8 @@ public class MemoryRecommendationsCommandProvider extends AdminCommand.Provider
 
     @Nonnull
     @Override
-    public AdminCommand create( Path homeDir, Path configDir, OutsideWorld outsideWorld )
+    public AdminCommand create( CommandContext ctx )
     {
-        return new MemoryRecommendationsCommand( homeDir, configDir, outsideWorld );
+        return new MemoryRecommendationsCommand( ctx.getHomeDir(), ctx.getConfigDir(), ctx.getOutsideWorld() );
     }
 }

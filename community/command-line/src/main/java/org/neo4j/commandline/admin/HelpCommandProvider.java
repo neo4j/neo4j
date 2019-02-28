@@ -19,7 +19,6 @@
  */
 package org.neo4j.commandline.admin;
 
-import java.nio.file.Path;
 import javax.annotation.Nonnull;
 
 import org.neo4j.commandline.arguments.Arguments;
@@ -64,8 +63,8 @@ public class HelpCommandProvider extends AdminCommand.Provider
 
     @Override
     @Nonnull
-    public AdminCommand create( Path homeDir, Path configDir, OutsideWorld outsideWorld )
+    public AdminCommand create( CommandContext ctx )
     {
-        return new HelpCommand( usage, outsideWorld::stdOutLine, CommandLocator.fromServiceLocator() );
+        return new HelpCommand( usage, ctx.getOutsideWorld()::stdOutLine, CommandLocator.fromServiceLocator() );
     }
 }

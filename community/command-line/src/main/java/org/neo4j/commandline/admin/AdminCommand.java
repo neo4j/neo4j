@@ -19,7 +19,6 @@
  */
 package org.neo4j.commandline.admin;
 
-import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
@@ -98,7 +97,7 @@ public interface AdminCommand
         public abstract String description();
 
         @Nonnull
-        public abstract AdminCommand create( Path homeDir, Path configDir, OutsideWorld outsideWorld );
+        public abstract AdminCommand create( CommandContext ctx );
 
         public final void printSummary( Consumer<String> output )
         {

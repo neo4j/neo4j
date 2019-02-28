@@ -111,7 +111,8 @@ public class AdminTool
             }
             else
             {
-                AdminCommand command = provider.create( homeDir, configDir, outsideWorld );
+                CommandContext commandContext = new CommandContext( homeDir, configDir, outsideWorld, debug );
+                AdminCommand command = provider.create( commandContext );
                 try
                 {
                     command.execute( commandArgs );

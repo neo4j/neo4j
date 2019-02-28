@@ -19,12 +19,11 @@
  */
 package org.neo4j.commandline.dbms;
 
-import java.nio.file.Path;
 import javax.annotation.Nonnull;
 
 import org.neo4j.commandline.admin.AdminCommand;
 import org.neo4j.commandline.admin.AdminCommandSection;
-import org.neo4j.commandline.admin.OutsideWorld;
+import org.neo4j.commandline.admin.CommandContext;
 import org.neo4j.commandline.arguments.Arguments;
 
 public class StoreInfoCommandProvider extends AdminCommand.Provider
@@ -65,8 +64,8 @@ public class StoreInfoCommandProvider extends AdminCommand.Provider
 
     @Override
     @Nonnull
-    public AdminCommand create( Path homeDir, Path configDir, OutsideWorld outsideWorld )
+    public AdminCommand create( CommandContext ctx )
     {
-        return new StoreInfoCommand( outsideWorld::stdOutLine );
+        return new StoreInfoCommand( ctx.getOutsideWorld()::stdOutLine );
     }
 }

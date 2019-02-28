@@ -22,7 +22,6 @@ package org.neo4j.commandline.admin;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 
-import java.nio.file.Path;
 import javax.annotation.Nonnull;
 
 import org.neo4j.commandline.arguments.Arguments;
@@ -267,7 +266,7 @@ class AdminToolTest
 
             @Override
             @Nonnull
-            public AdminCommand create( Path homeDir, Path configDir, OutsideWorld outsideWorld )
+            public AdminCommand create( CommandContext ctx )
             {
                 return command;
             }
@@ -321,7 +320,7 @@ class AdminToolTest
         }
 
         @Override
-        public AdminCommand create( Path homeDir, Path configDir, OutsideWorld outsideWorld )
+        public AdminCommand create( CommandContext ctx )
         {
             return args -> { };
         }
