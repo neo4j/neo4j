@@ -49,6 +49,12 @@ public class IndexEntry extends AbstractBaseRecord
     }
 
     @Override
+    public AbstractBaseRecord clone() throws CloneNotSupportedException
+    {
+        throw new CloneNotSupportedException( "Synthetic records cannot be cloned." );
+    }
+
+    @Override
     public String toString()
     {
         return format( "IndexEntry[nodeId=%d, index=%s]", getId(), indexDescriptor.toString( tokenNameLookup ) );

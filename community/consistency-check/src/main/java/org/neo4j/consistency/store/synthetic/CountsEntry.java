@@ -61,6 +61,12 @@ public class CountsEntry extends AbstractBaseRecord
         throw new UnsupportedOperationException();
     }
 
+    @Override
+    public AbstractBaseRecord clone() throws CloneNotSupportedException
+    {
+        throw new CloneNotSupportedException( "Synthetic records cannot be cloned." );
+    }
+
     public CountsKey getCountsKey()
     {
         return key;
