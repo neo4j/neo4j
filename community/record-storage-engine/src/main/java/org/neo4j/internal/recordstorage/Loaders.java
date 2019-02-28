@@ -148,7 +148,7 @@ public class Loaders
             }
 
             @Override
-            public NodeRecord clone( NodeRecord nodeRecord )
+            public NodeRecord clone( NodeRecord nodeRecord ) throws CloneNotSupportedException
             {
                 return nodeRecord.clone();
             }
@@ -193,7 +193,7 @@ public class Loaders
             }
 
             @Override
-            public PropertyRecord clone( PropertyRecord propertyRecord )
+            public PropertyRecord clone( PropertyRecord propertyRecord ) throws CloneNotSupportedException
             {
                 return propertyRecord.clone();
             }
@@ -223,7 +223,7 @@ public class Loaders
             }
 
             @Override
-            public RelationshipRecord clone( RelationshipRecord relationshipRecord )
+            public RelationshipRecord clone( RelationshipRecord relationshipRecord ) throws CloneNotSupportedException
             {
                 return relationshipRecord.clone();
             }
@@ -255,7 +255,7 @@ public class Loaders
             }
 
             @Override
-            public RelationshipGroupRecord clone( RelationshipGroupRecord record )
+            public RelationshipGroupRecord clone( RelationshipGroupRecord record ) throws CloneNotSupportedException
             {
                 return record.clone();
             }
@@ -284,7 +284,7 @@ public class Loaders
             }
 
             @Override
-            public SchemaRecord clone( SchemaRecord record )
+            public SchemaRecord clone( SchemaRecord record ) throws CloneNotSupportedException
             {
                 return record.clone();
             }
@@ -315,7 +315,7 @@ public class Loaders
             }
 
             @Override
-            public PropertyKeyTokenRecord clone( PropertyKeyTokenRecord record )
+            public PropertyKeyTokenRecord clone( PropertyKeyTokenRecord record ) throws CloneNotSupportedException
             {
                 return record.clone();
             }
@@ -346,7 +346,7 @@ public class Loaders
             }
 
             @Override
-            public LabelTokenRecord clone( LabelTokenRecord record )
+            public LabelTokenRecord clone( LabelTokenRecord record ) throws CloneNotSupportedException
             {
                 return record.clone();
             }
@@ -377,7 +377,7 @@ public class Loaders
             }
 
             @Override
-            public RelationshipTypeTokenRecord clone( RelationshipTypeTokenRecord record )
+            public RelationshipTypeTokenRecord clone( RelationshipTypeTokenRecord record ) throws CloneNotSupportedException
             {
                 return record.clone();
             }

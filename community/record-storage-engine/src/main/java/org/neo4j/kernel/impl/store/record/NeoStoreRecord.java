@@ -55,7 +55,7 @@ public class NeoStoreRecord extends PrimitiveRecord
     }
 
     @Override
-    public NeoStoreRecord clone()
+    public NeoStoreRecord clone() throws CloneNotSupportedException
     {
         return (NeoStoreRecord) super.clone();
     }

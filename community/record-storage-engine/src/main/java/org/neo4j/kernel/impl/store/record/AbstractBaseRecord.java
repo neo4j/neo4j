@@ -181,15 +181,8 @@ public abstract class AbstractBaseRecord implements Cloneable
     }
 
     @Override
-    public AbstractBaseRecord clone()
+    public AbstractBaseRecord clone() throws CloneNotSupportedException
     {
-        try
-        {
-            return (AbstractBaseRecord) super.clone();
-        }
-        catch ( CloneNotSupportedException e )
-        {
-            throw new AssertionError( "AbstractBaseRecord must be cloneable.", e );
-        }
+        return (AbstractBaseRecord) super.clone();
     }
 }

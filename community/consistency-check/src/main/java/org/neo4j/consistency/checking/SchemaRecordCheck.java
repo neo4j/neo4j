@@ -148,7 +148,7 @@ public class SchemaRecordCheck implements RecordCheck<SchemaRecord, ConsistencyR
 
             if ( rule.isUnique() && rule.hasOwningConstraintReference() )
             {
-                SchemaRecord previousObligation = constraintObligations.put( rule.owningConstraintReference(), record.clone() );
+                SchemaRecord previousObligation = constraintObligations.put( rule.owningConstraintReference(), cloneRecord( record ) );
                 if ( previousObligation != null )
                 {
                     engine.report().duplicateObligation( previousObligation );
@@ -164,7 +164,7 @@ public class SchemaRecordCheck implements RecordCheck<SchemaRecord, ConsistencyR
 
             if ( constraint.getConstraintDescriptor().enforcesUniqueness() )
             {
-                SchemaRecord previousObligation = indexObligations.put( constraint.ownedIndexReference(), record.clone() );
+                SchemaRecord previousObligation = indexObligations.put( constraint.ownedIndexReference(), cloneRecord( record ) );
                 if ( previousObligation != null )
                 {
                     engine.report().duplicateObligation( previousObligation );
@@ -248,6 +248,18 @@ public class SchemaRecordCheck implements RecordCheck<SchemaRecord, ConsistencyR
         checkForDuplicates( rule, record, engine );
     }
 
+    private SchemaRecord cloneRecord( SchemaRecord record )
+    {
+        try
+        {
+            return record.clone();
+        }
+        catch ( CloneNotSupportedException e )
+        {
+            throw new AssertionError( "SchemaRecords should be cloneable.", e );
+        }
+    }
+
     static class CheckSchema implements SchemaProcessor
     {
         private final CheckerEngine<SchemaRecord,ConsistencyReport.SchemaConsistencyReport> engine;
@@ -310,7 +322,7 @@ public class SchemaRecordCheck implements RecordCheck<SchemaRecord, ConsistencyR
     private void checkForDuplicates( SchemaRule rule, SchemaRecord record,
             CheckerEngine<SchemaRecord,ConsistencyReport.SchemaConsistencyReport> engine )
     {
-        SchemaRecord previousContentRecord = verifiedRulesWithRecords.put( rule, record.clone() );
+        SchemaRecord previousContentRecord = verifiedRulesWithRecords.put( rule, cloneRecord( record ) );
         if ( previousContentRecord != null )
         {
             engine.report().duplicateRuleContent( previousContentRecord );

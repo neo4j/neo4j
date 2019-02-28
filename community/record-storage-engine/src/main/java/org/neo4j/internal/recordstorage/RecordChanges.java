@@ -239,7 +239,14 @@ public class RecordChanges<RECORD,ADDITIONAL> implements RecordAccess<RECORD,ADD
         {
             if ( before == null )
             {
-                this.before = loader.clone( record );
+                try
+                {
+                    this.before = loader.clone( record );
+                }
+                catch ( CloneNotSupportedException e )
+                {
+                    throw new AssertionError( "Record cloning needs to be supported.", e );
+                }
             }
         }
 

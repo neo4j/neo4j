@@ -91,6 +91,7 @@ import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.store.allocator.ReusableRecordsAllocator;
+import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.ConstraintRule;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
@@ -733,9 +734,9 @@ public class FullCheckIntegrationTest
                 long nodeId = ((long[]) getRightArray( readFullByteArrayFromHeavyRecords( chain, ARRAY ) ).asObject())[0];
                 NodeRecord before = inUse( new NodeRecord( nodeId, false, -1, -1 ) );
                 NodeRecord after = inUse( new NodeRecord( nodeId, false, -1, -1 ) );
-                DynamicRecord record1 = chain.get( 0 ).clone();
-                DynamicRecord record2 = chain.get( 1 ).clone();
-                DynamicRecord record3 = chain.get( 2 ).clone();
+                DynamicRecord record1 = cloneRecord( chain.get( 0 ) );
+                DynamicRecord record2 = cloneRecord( chain.get( 1 ) );
+                DynamicRecord record3 = cloneRecord( chain.get( 2 ) );
 
                 record3.setNextBlock( record2.getId() );
                 before.setLabelField( dynamicPointer( chain ), chain );
@@ -1005,7 +1006,7 @@ public class FullCheckIntegrationTest
                                             GraphStoreFixture.IdGenerator next )
             {
                 SchemaRecord before = new SchemaRecord( next.schema() );
-                SchemaRecord after = before.clone();
+                SchemaRecord after = cloneRecord( before );
                 after.initialize( true, next.property() ); // Point to a record that isn't in use.
 
                 StoreIndexDescriptor rule = indexRule( after.getId(), label1, key1, DESCRIPTOR );
@@ -1037,8 +1038,8 @@ public class FullCheckIntegrationTest
 
                 SchemaRecord before1 = new SchemaRecord( ruleId1 );
                 SchemaRecord before2 = new SchemaRecord( ruleId2 );
-                SchemaRecord after1 = before1.clone().initialize( true, 0 );
-                SchemaRecord after2 = before2.clone().initialize( true, 0 );
+                SchemaRecord after1 = cloneRecord( before1 ).initialize( true, 0 );
+                SchemaRecord after2 = cloneRecord( before2 ).initialize( true, 0 );
 
                 StoreIndexDescriptor rule1 = constraintIndexRule( ruleId1, labelId, propertyKeyId, DESCRIPTOR, ruleId1 );
                 StoreIndexDescriptor rule2 = constraintIndexRule( ruleId2, labelId, propertyKeyId, DESCRIPTOR, ruleId1 );
@@ -1078,8 +1079,8 @@ public class FullCheckIntegrationTest
 
                 SchemaRecord before1 = new SchemaRecord( ruleId1 );
                 SchemaRecord before2 = new SchemaRecord( ruleId2 );
-                SchemaRecord after1 = before1.clone().initialize( true, 0 );
-                SchemaRecord after2 = before2.clone().initialize( true, 0 );
+                SchemaRecord after1 = cloneRecord( before1 ).initialize( true, 0 );
+                SchemaRecord after2 = cloneRecord( before2 ).initialize( true, 0 );
 
                 StoreIndexDescriptor rule1 = constraintIndexRule( ruleId1, labelId, propertyKeyId, DESCRIPTOR, ruleId2 );
                 ConstraintRule rule2 = uniquenessConstraintRule( ruleId2, labelId, propertyKeyId, ruleId2 );
@@ -2299,7 +2300,7 @@ public class FullCheckIntegrationTest
                 StoreIndexDescriptor index = forSchema( forLabel( labelId, propertyKeyIds ), DESCRIPTOR ).withId( id );
 
                 SchemaRecord before = new SchemaRecord( id );
-                SchemaRecord after = before.clone();
+                SchemaRecord after = cloneRecord( before );
 
                 serializeRule( index, after, tx, next );
 
@@ -2465,6 +2466,19 @@ public class FullCheckIntegrationTest
         schemaRecord.setId( rule.getId() );
     }
 
+    private <T extends AbstractBaseRecord> T cloneRecord( T record )
+    {
+        try
+        {
+            //noinspection unchecked
+            return (T) record.clone();
+        }
+        catch ( CloneNotSupportedException e )
+        {
+            throw new AssertionError( "Record should be cloneable: " + record, e );
+        }
+    }
+
     private PropertyRecord newInitialisedPropertyRecord( IdGenerator next, SchemaRule rule )
     {
         PropertyRecord record = new PropertyRecord( next.property() );
@@ -2477,6 +2491,6 @@ public class FullCheckIntegrationTest
         record.setInUse( true );
         record.setPrevProp( prevPropId );
         record.setNextProp( nextProp );
-        tx.update( record.clone().initialize( false, Record.NO_PREVIOUS_PROPERTY.longValue(), Record.NO_PREVIOUS_PROPERTY.longValue() ), record );
+        tx.update( cloneRecord( record ).initialize( false, Record.NO_PREVIOUS_PROPERTY.longValue(), Record.NO_PREVIOUS_PROPERTY.longValue() ), record );
     }
 }

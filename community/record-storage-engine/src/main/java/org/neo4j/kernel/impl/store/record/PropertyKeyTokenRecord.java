@@ -67,7 +67,7 @@ public class PropertyKeyTokenRecord extends TokenRecord
     }
 
     @Override
-    public PropertyKeyTokenRecord clone()
+    public PropertyKeyTokenRecord clone() throws CloneNotSupportedException
     {
         PropertyKeyTokenRecord clone = (PropertyKeyTokenRecord) super.clone();
         clone.nameRecords = new ArrayList<>( nameRecords );

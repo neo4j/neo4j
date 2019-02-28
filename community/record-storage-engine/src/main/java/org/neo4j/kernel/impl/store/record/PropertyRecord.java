@@ -392,7 +392,7 @@ public class PropertyRecord extends AbstractBaseRecord implements Iterable<Prope
     }
 
     @Override
-    public PropertyRecord clone()
+    public PropertyRecord clone() throws CloneNotSupportedException
     {
         PropertyRecord clone = (PropertyRecord) super.clone();
         clone.blocks = blocks.clone();
