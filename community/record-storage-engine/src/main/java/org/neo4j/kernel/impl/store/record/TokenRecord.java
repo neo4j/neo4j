@@ -26,7 +26,7 @@ import java.util.List;
 public abstract class TokenRecord extends AbstractBaseRecord
 {
     private int nameId;
-    private List<DynamicRecord> nameRecords;
+    List<DynamicRecord> nameRecords;
 
     public TokenRecord( long id )
     {

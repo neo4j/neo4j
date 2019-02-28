@@ -57,8 +57,6 @@ public class NeoStoreRecord extends PrimitiveRecord
     @Override
     public NeoStoreRecord clone()
     {
-        NeoStoreRecord neoStoreRecord = new NeoStoreRecord();
-        neoStoreRecord.setNextProp( getNextProp() );
-        return neoStoreRecord;
+        return (NeoStoreRecord) super.clone();
     }
 }

@@ -190,10 +190,7 @@ public class RelationshipGroupRecord extends AbstractBaseRecord
     @Override
     public RelationshipGroupRecord clone()
     {
-        RelationshipGroupRecord clone = new RelationshipGroupRecord( getId() ).initialize( inUse(), type, firstOut,
-                firstIn, firstLoop, owningNode, next );
-        clone.setSecondaryUnitId( getSecondaryUnitId() );
-        return clone;
+        return (RelationshipGroupRecord) super.clone();
     }
 
     @Override

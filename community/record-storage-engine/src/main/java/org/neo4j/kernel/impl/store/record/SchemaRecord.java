@@ -48,11 +48,7 @@ public class SchemaRecord extends PrimitiveRecord
     @Override
     public SchemaRecord clone()
     {
-        SchemaRecord clone = new SchemaRecord( getId() );
-        clone.setInUse( inUse() );
-        clone.setNextProp( getNextProp() );
-        clone.setConstraint( constraint );
-        return clone;
+        return (SchemaRecord) super.clone();
     }
 
     @Override

@@ -249,7 +249,7 @@ class CommonAbstractStoreTest
         @Override
         public TheRecord clone()
         {
-            return new TheRecord( getId() );
+            return (TheRecord) super.clone();
         }
     }
 }

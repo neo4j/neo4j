@@ -24,7 +24,7 @@ package org.neo4j.kernel.impl.store.record;
  * and initialized with the public {@code initialize} method exposed by the specific record implementations,
  * or {@link #clear() cleared} if reading a record that isn't in use.
  */
-public abstract class AbstractBaseRecord
+public abstract class AbstractBaseRecord implements Cloneable
 {
     public static final int NO_ID = -1;
     private long id;
@@ -183,6 +183,13 @@ public abstract class AbstractBaseRecord
     @Override
     public AbstractBaseRecord clone()
     {
-        throw new UnsupportedOperationException();
+        try
+        {
+            return (AbstractBaseRecord) super.clone();
+        }
+        catch ( CloneNotSupportedException e )
+        {
+            throw new AssertionError( "AbstractBaseRecord must be cloneable.", e );
+        }
     }
 }
