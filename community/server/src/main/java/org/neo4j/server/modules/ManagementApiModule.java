@@ -24,7 +24,6 @@ import java.util.List;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.server.configuration.ServerSettings;
-import org.neo4j.server.rest.management.JmxService;
 import org.neo4j.server.rest.management.RootService;
 import org.neo4j.server.rest.management.VersionAndEditionService;
 import org.neo4j.server.web.WebServer;
@@ -52,7 +51,6 @@ public class ManagementApiModule implements ServerModule
     private List<Class<?>> getClassNames()
     {
         return asList(
-                JmxService.class,
                 RootService.class,
                 VersionAndEditionService.class );
     }

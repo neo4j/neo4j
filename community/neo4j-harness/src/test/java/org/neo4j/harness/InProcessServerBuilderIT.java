@@ -19,7 +19,6 @@
  */
 package org.neo4j.harness;
 
-import org.codehaus.jackson.JsonNode;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
@@ -31,7 +30,6 @@ import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
-import java.util.NoSuchElementException;
 import java.util.concurrent.atomic.AtomicLong;
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
@@ -61,7 +59,6 @@ import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.extension.context.ExtensionContext;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.SuppressOutputExtension;
@@ -69,6 +66,7 @@ import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.server.HTTP;
 
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -80,7 +78,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.configuration.ssl.BaseSslPolicyConfig.Format.PEM;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.data_directory;
@@ -90,6 +87,7 @@ import static org.neo4j.helpers.collection.Iterables.asIterable;
 import static org.neo4j.helpers.collection.Iterators.single;
 import static org.neo4j.server.ServerTestUtils.connectorAddress;
 import static org.neo4j.server.ServerTestUtils.verifyConnector;
+import static org.neo4j.test.server.HTTP.RawPayload.rawPayload;
 
 @ExtendWith( {TestDirectoryExtension.class, SuppressOutputExtension.class} )
 class InProcessServerBuilderIT
@@ -439,38 +437,15 @@ class InProcessServerBuilderIT
         }
     }
 
-    private void assertDBConfig( Neo4j server, String expected, String key ) throws JsonParseException
+    private void assertDBConfig( Neo4j server, String expected, String key )
     {
-        JsonNode beans = HTTP.GET(
-                server.httpURI().toString() + "db/manage/server/jmx/domain/org.neo4j/" ).get( "beans" );
-        JsonNode configurationBean = findNamedBean( beans, "Configuration" ).get( "attributes" );
-        boolean foundKey = false;
-        for ( JsonNode attribute : configurationBean )
-        {
-            if ( attribute.get( "name" ).asText().equals( key ) )
-            {
-                assertThat( attribute.get( "value" ).asText(), equalTo( expected ) );
-                foundKey = true;
-                break;
-            }
-        }
-        if ( !foundKey )
-        {
-            fail( "No config key '" + key + "'." );
-        }
-    }
+        String query = "CALL dbms.queryJmx('org.neo4j:*,name=Configuration') YIELD attributes WITH attributes['" + key +
+                "']['value'] AS value RETURN CASE WHEN value = '" + expected + "' THEN 'SUCCESS' ELSE 'FAIL' END AS response";
 
-    private JsonNode findNamedBean( JsonNode beans, String beanName )
-    {
-        for ( JsonNode bean : beans )
-        {
-            JsonNode name = bean.get( "name" );
-            if ( name != null && name.asText().endsWith( ",name=" + beanName ) )
-            {
-                return bean;
-            }
-        }
-        throw new NoSuchElementException();
+        HTTP.Response response =
+                HTTP.POST( server.httpURI().toString() + "db/data/transaction/commit", rawPayload( "{\"statements\":[ {\"statement\": \"" + query + "\"}]}" ) );
+
+        assertThat( response.rawContent(), containsString( "SUCCESS" ) );
     }
 
     private void trustAllSSLCerts() throws NoSuchAlgorithmException, KeyManagementException

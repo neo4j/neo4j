@@ -61,7 +61,7 @@ public class XForwardFilterIT extends AbstractRestFunctionalTestBase
     public void shouldUseXForwardedHostHeaderWhenPresent()
     {
         // when
-        ClientResponse response = client.resource( getManageUri() )
+        ClientResponse response = client.resource( getServerUri() )
                 .accept( APPLICATION_JSON )
                 .header( X_FORWARDED_HOST, "jimwebber.org" )
                 .get( ClientResponse.class );
@@ -76,7 +76,7 @@ public class XForwardFilterIT extends AbstractRestFunctionalTestBase
     public void shouldUseXForwardedProtoHeaderWhenPresent()
     {
         // when
-        ClientResponse response = client.resource( getManageUri() )
+        ClientResponse response = client.resource( getServerUri() )
                 .accept( APPLICATION_JSON )
                 .header( X_FORWARDED_PROTO, "https" )
                 .get( ClientResponse.class );
@@ -91,7 +91,7 @@ public class XForwardFilterIT extends AbstractRestFunctionalTestBase
     public void shouldPickFirstXForwardedHostHeaderValueFromCommaOrCommaAndSpaceSeparatedList()
     {
         // when
-        ClientResponse response = client.resource( getManageUri() )
+        ClientResponse response = client.resource( getServerUri() )
                 .accept( APPLICATION_JSON )
                 .header( X_FORWARDED_HOST, "jimwebber.org, kathwebber.com,neo4j.org" )
                 .get( ClientResponse.class );
@@ -106,7 +106,7 @@ public class XForwardFilterIT extends AbstractRestFunctionalTestBase
     public void shouldUseBaseUriOnBadXForwardedHostHeader()
     {
         // when
-        ClientResponse response = client.resource( getManageUri() )
+        ClientResponse response = client.resource( getServerUri() )
                 .accept( APPLICATION_JSON )
                 .header( X_FORWARDED_HOST, ":bad_URI" )
                 .get( ClientResponse.class );
@@ -120,7 +120,7 @@ public class XForwardFilterIT extends AbstractRestFunctionalTestBase
     public void shouldUseBaseUriIfFirstAddressInXForwardedHostHeaderIsBad()
     {
         // when
-        ClientResponse response = client.resource( getManageUri() )
+        ClientResponse response = client.resource( getServerUri() )
                 .accept( APPLICATION_JSON )
                 .header( X_FORWARDED_HOST, ":bad_URI,good-host" )
                 .get( ClientResponse.class );
@@ -134,7 +134,7 @@ public class XForwardFilterIT extends AbstractRestFunctionalTestBase
     public void shouldUseBaseUriOnBadXForwardedProtoHeader()
     {
         // when
-        ClientResponse response = client.resource( getManageUri() )
+        ClientResponse response = client.resource( getServerUri() )
                 .accept( APPLICATION_JSON )
                 .header( X_FORWARDED_PROTO, "%%%DEFINITELY-NOT-A-PROTO!" )
                 .get( ClientResponse.class );
@@ -148,7 +148,7 @@ public class XForwardFilterIT extends AbstractRestFunctionalTestBase
     public void shouldUseXForwardedHostAndXForwardedProtoHeadersWhenPresent()
     {
         // when
-        ClientResponse response = client.resource( getManageUri() )
+        ClientResponse response = client.resource( getServerUri() )
                 .accept( APPLICATION_JSON )
                 .header( X_FORWARDED_HOST, "jimwebber.org" )
                 .header( X_FORWARDED_PROTO, "https" )
@@ -178,11 +178,6 @@ public class XForwardFilterIT extends AbstractRestFunctionalTestBase
         String entity = response.getEntity( String.class );
         assertTrue( entity.contains( "https://jimwebber.org:2354" ) );
         assertFalse( entity.contains( getServerUri() ) );
-    }
-
-    private String getManageUri()
-    {
-        return getServerUri() + "db/manage";
     }
 
     private String getServerUri()

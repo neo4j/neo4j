@@ -38,8 +38,6 @@ import static org.neo4j.server.rest.repr.ValueRepresentation.temporalAmount;
 /**
  * Converts common primitive and basic objects and arrays of the same into a
  * representation. Handy for specialization.
- *
- * @see org.neo4j.server.rest.management.repr.JmxAttributeRepresentationDispatcher
  */
 public abstract class RepresentationDispatcher extends PropertyTypeDispatcher<String, Representation>
 {

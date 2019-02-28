@@ -21,6 +21,7 @@ package org.neo4j.server;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.function.Supplier;
 
@@ -40,7 +41,6 @@ import org.neo4j.server.modules.ServerModule;
 import org.neo4j.server.modules.ThirdPartyJAXRSModule;
 import org.neo4j.server.rest.discovery.DiscoverableURIs;
 import org.neo4j.server.rest.management.AdvertisableService;
-import org.neo4j.server.rest.management.JmxService;
 import org.neo4j.server.web.Jetty9WebServer;
 import org.neo4j.server.web.WebServer;
 import org.neo4j.udc.UsageData;
@@ -82,10 +82,7 @@ public class CommunityNeoServer extends AbstractNeoServer
     @Override
     public Iterable<AdvertisableService> getServices()
     {
-        List<AdvertisableService> toReturn = new ArrayList<>( 3 );
-        toReturn.add( new JmxService( null, null ) );
-
-        return toReturn;
+        return Collections.emptyList();
     }
 
     protected DBMSModule createDBMSModule()
