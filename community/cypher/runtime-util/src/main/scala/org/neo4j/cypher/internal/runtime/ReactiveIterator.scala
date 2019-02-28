@@ -23,13 +23,14 @@ import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.kernel.impl.query.QuerySubscriber
 import org.neo4j.values.AnyValue
 
-class ReactiveIterator(inner: Iterator[Array[AnyValue]], result: RuntimeResult, indexMap: Int => Int = identity) extends Iterator[Array[AnyValue]] {
+class ReactiveIterator(inner: Iterator[Array[AnyValue]], result: RuntimeResult, indexMapping: Array[Int] = null) extends Iterator[Array[AnyValue]] {
   private var demand = 0L
   private var served = 0L
   private var cancelled = false
 
   def addDemand(numberOfRecords: Long): Unit = {
     val newDemand = demand + numberOfRecords
+    //check for overflow, this might happen since Bolt sends us `Long.MAX_VALUE` for `PULL_ALL`
     if (newDemand < 0) {
       demand = Long.MaxValue
     } else {
@@ -56,7 +57,7 @@ class ReactiveIterator(inner: Iterator[Array[AnyValue]], result: RuntimeResult, 
       subscriber.onRecord()
       var i = 0
       while (i < numberOfFields) {
-        subscriber.onField(i, values(indexMap(i)))
+        subscriber.onField(i, values(mapIndex(i)))
         i += 1
       }
       subscriber.onRecordCompleted()
@@ -68,4 +69,6 @@ class ReactiveIterator(inner: Iterator[Array[AnyValue]], result: RuntimeResult, 
 
     inner.hasNext && !cancelled
   }
+
+  private def mapIndex(index: Int) = if (indexMapping == null) index else indexMapping(index)
 }
