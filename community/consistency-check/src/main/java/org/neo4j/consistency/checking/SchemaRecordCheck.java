@@ -31,6 +31,7 @@ import org.neo4j.internal.kernel.api.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaProcessor;
 import org.neo4j.kernel.impl.store.SchemaRuleAccess;
+import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.ConstraintRule;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
@@ -146,7 +147,7 @@ public class SchemaRecordCheck implements RecordCheck<DynamicRecord, Consistency
 
             if ( rule.canSupportUniqueConstraint() && rule.getOwningConstraint() != null )
             {
-                DynamicRecord previousObligation = constraintObligations.put( rule.getOwningConstraint(), record.clone() );
+                DynamicRecord previousObligation = constraintObligations.put( rule.getOwningConstraint(), cloneRecord( record ) );
                 if ( previousObligation != null )
                 {
                     engine.report().duplicateObligation( previousObligation );
@@ -162,7 +163,7 @@ public class SchemaRecordCheck implements RecordCheck<DynamicRecord, Consistency
 
             if ( rule.getConstraintDescriptor().enforcesUniqueness() )
             {
-                DynamicRecord previousObligation = indexObligations.put( rule.getOwnedIndex(), record.clone() );
+                DynamicRecord previousObligation = indexObligations.put( rule.getOwnedIndex(), cloneRecord( record ) );
                 if ( previousObligation != null )
                 {
                     engine.report().duplicateObligation( previousObligation );
@@ -234,6 +235,18 @@ public class SchemaRecordCheck implements RecordCheck<DynamicRecord, Consistency
         checkForDuplicates( rule, record, engine );
     }
 
+    private <T extends AbstractBaseRecord> T cloneRecord( T record )
+    {
+        try
+        {
+            return (T) record.clone();
+        }
+        catch ( CloneNotSupportedException e )
+        {
+            throw new AssertionError( "SchemaRecords should be cloneable.", e );
+        }
+    }
+
     static class CheckSchema implements SchemaProcessor
     {
         private final CheckerEngine<DynamicRecord,ConsistencyReport.SchemaConsistencyReport> engine;
@@ -296,7 +309,7 @@ public class SchemaRecordCheck implements RecordCheck<DynamicRecord, Consistency
     private void checkForDuplicates( SchemaRule rule, DynamicRecord record,
             CheckerEngine<DynamicRecord,ConsistencyReport.SchemaConsistencyReport> engine )
     {
-        DynamicRecord previousContentRecord = verifiedRulesWithRecords.put( rule, record.clone() );
+        DynamicRecord previousContentRecord = verifiedRulesWithRecords.put( rule, cloneRecord( record ) );
         if ( previousContentRecord != null )
         {
             engine.report().duplicateRuleContent( previousContentRecord );

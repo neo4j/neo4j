@@ -32,6 +32,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Function;
 
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -599,6 +600,17 @@ public class NodeLabelsFieldTest
 
     private static <T extends CloneableInPublic> Iterable<T> cloned( Iterable<T> items, final Class<T> itemClass )
     {
-        return Iterables.map( from -> itemClass.cast( from.clone() ), items );
+        Function<T, T> clone = obj ->
+        {
+            try
+            {
+                return itemClass.cast( obj.clone() );
+            }
+            catch ( CloneNotSupportedException e )
+            {
+                throw new AssertionError( "Expected " + itemClass + " to be cloneable.", e );
+            }
+        };
+        return Iterables.map( clone, items );
     }
 }

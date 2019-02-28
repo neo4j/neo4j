@@ -163,7 +163,7 @@ public class NodeRecord extends PrimitiveRecord
     }
 
     @Override
-    public NodeRecord clone()
+    public NodeRecord clone() throws CloneNotSupportedException
     {
         NodeRecord clone = (NodeRecord) super.clone();
         if ( !dynamicLabelRecords.isEmpty() )

@@ -261,7 +261,7 @@ public class RecordBuilders
         }
 
         @Override
-        public T clone( T record )
+        public T clone( T record ) throws CloneNotSupportedException
         {
             return (T)record.clone();
         }

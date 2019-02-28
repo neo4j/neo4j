@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.store.record;
 
 import java.lang.reflect.Array;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
@@ -227,21 +228,22 @@ public class PropertyBlock implements Cloneable
     }
 
     @Override
-    public PropertyBlock clone()
+    public PropertyBlock clone() throws CloneNotSupportedException
     {
-        PropertyBlock result = new PropertyBlock();
+        PropertyBlock clone = (PropertyBlock) super.clone();
         if ( valueBlocks != null )
         {
-            result.valueBlocks = valueBlocks.clone();
+            clone.valueBlocks = valueBlocks.clone();
         }
         if ( valueRecords != null )
         {
+            clone.valueRecords = new ArrayList<>( valueRecords.size() );
             for ( DynamicRecord valueRecord : valueRecords )
             {
-                result.addValueRecord( valueRecord.clone() );
+                clone.valueRecords.add( valueRecord.clone() );
             }
         }
-        return result;
+        return clone;
     }
 
     public boolean hasSameContentsAs( PropertyBlock other )

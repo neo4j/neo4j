@@ -19,14 +19,12 @@
  */
 package org.neo4j.kernel.impl.store.record;
 
-import org.neo4j.helpers.CloneableInPublic;
-
 /**
  * {@link AbstractBaseRecord records} are intended to be reusable. Created with a zero-arg constructor
  * and initialized with the public {@code initialize} method exposed by the specific record implementations,
  * or {@link #clear() cleared} if reading a record that isn't in use.
  */
-public abstract class AbstractBaseRecord implements CloneableInPublic
+public abstract class AbstractBaseRecord implements Cloneable
 {
     public static final int NO_ID = -1;
     private long id;
@@ -183,15 +181,8 @@ public abstract class AbstractBaseRecord implements CloneableInPublic
     }
 
     @Override
-    public AbstractBaseRecord clone()
+    public AbstractBaseRecord clone() throws CloneNotSupportedException
     {
-        try
-        {
-            return (AbstractBaseRecord) super.clone();
-        }
-        catch ( CloneNotSupportedException e )
-        {
-            throw new AssertionError( "AbstractBaseRecord must be cloneable.", e );
-        }
+        return (AbstractBaseRecord) super.clone();
     }
 }
