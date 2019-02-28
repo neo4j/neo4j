@@ -34,6 +34,7 @@ import java.util.Random;
 
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.StoreLayout;
 import org.neo4j.io.layout.StoreLayoutConfig;
@@ -168,9 +169,9 @@ public class TestDirectory extends ExternalResource
         return testDirectory;
     }
 
-    public File directory( String name )
+    public File directory( String name, String... path )
     {
-        File dir = new File( directory(), name );
+        File dir = FileUtils.path( new File( directory(), name ), path );
         createDirectory( dir );
         return dir;
     }
