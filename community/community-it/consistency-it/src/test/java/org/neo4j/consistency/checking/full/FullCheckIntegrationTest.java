@@ -154,7 +154,8 @@ import static org.neo4j.test.Property.set;
 
 public class FullCheckIntegrationTest
 {
-    private static final IndexProviderDescriptor DESCRIPTOR = GenericNativeIndexProvider.DESCRIPTOR;//new IndexProviderDescriptor( "native-btree", "1.0" );
+    private static final IndexProviderDescriptor DESCRIPTOR = new IndexProviderDescriptor( "lucene", "1.0" );
+//    private static final IndexProviderDescriptor DESCRIPTOR = GenericNativeIndexProvider.DESCRIPTOR;
     private static final String PROP1 = "key1";
     private static final String PROP2 = "key2";
     private static final Object VALUE1 = "value1";
@@ -2467,7 +2468,7 @@ public class FullCheckIntegrationTest
 
         schemaRecord.initialize( true, nextPropId );
         schemaRecord.setId( rule.getId() );
-        tx.createSchema( schemaRecord.clone().initialize( false, Record.NO_PREVIOUS_PROPERTY.longValue() ), schemaRecord, rule );
+//        tx.createSchema( schemaRecord.clone().initialize( false, Record.NO_PREVIOUS_PROPERTY.longValue() ), schemaRecord, rule );
     }
 
     private PropertyRecord newInitialisedPropertyRecord( IdGenerator next, SchemaRule rule )
