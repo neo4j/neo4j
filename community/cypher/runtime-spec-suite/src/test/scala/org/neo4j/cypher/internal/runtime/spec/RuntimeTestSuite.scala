@@ -33,7 +33,6 @@ import org.neo4j.kernel.impl.coreapi.InternalTransaction
 import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.values.virtual.ListValue
 import org.neo4j.values.{AnyValue, AnyValues}
-import org.scalactic.{Equality, TolerantNumerics}
 import org.scalactic.source.Position
 import org.scalactic.{Equality, TolerantNumerics}
 import org.scalatest.matchers.{MatchResult, Matcher}
