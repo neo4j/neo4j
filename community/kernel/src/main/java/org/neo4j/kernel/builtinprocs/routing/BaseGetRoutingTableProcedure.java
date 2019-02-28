@@ -29,6 +29,7 @@ import org.neo4j.internal.kernel.api.procs.QualifiedName;
 import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.Context;
+import org.neo4j.procedure.Mode;
 import org.neo4j.values.AnyValue;
 
 import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureSignature;
@@ -48,6 +49,7 @@ public abstract class BaseGetRoutingTableProcedure implements CallableProcedure
                 .in( CONTEXT.parameterName(), Neo4jTypes.NTMap )
                 .out( TTL.parameterName(), Neo4jTypes.NTInteger )
                 .out( SERVERS.parameterName(), Neo4jTypes.NTList( Neo4jTypes.NTMap ) )
+                .mode( Mode.DBMS )
                 .description( description() )
                 .build();
     }
