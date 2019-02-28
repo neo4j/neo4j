@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.javacompat.ExecutionResult
 import org.neo4j.cypher.internal.plandescription.{InternalPlanDescription, PlanDescriptionBuilder}
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.{Cardinalities, ProvidedOrders}
 import org.neo4j.cypher.internal.result.{ClosingExecutionResult, ExplainExecutionResult, StandardInternalExecutionResult}
+import org.neo4j.cypher.internal.result._
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.runtime.interpreted.{TransactionBoundQueryContext, TransactionalContextWrapper}
 import org.neo4j.cypher.internal.runtime.{ExecutableQuery => _, _}
@@ -214,8 +215,12 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
       taskCloser.addTask(queryContext.transactionalContext.close)
       taskCloser.addTask(queryContext.resources.close)
       runSafely {
-        innerExecute(transactionalContext, preParsedQuery, taskCloser, queryContext, params, prePopulateResults, subscriber)
-      }(_ => taskCloser.close(false))
+        innerExecute(transactionalContext, preParsedQuery, taskCloser, queryContext, params, prePopulateResults,
+                     subscriber)
+      }(_ => taskCloser.close(false), e => {
+        subscriber.onError(e)
+        new FailedExecutionResult(columnNames(logicalPlan), queryType, subscriber)
+      })
     }
 
     private def innerExecute(transactionalContext: TransactionalContext,
@@ -223,7 +228,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
                       taskCloser: TaskCloser,
                       queryContext: QueryContext,
                       params: MapValue, prePopulateResults: Boolean,
-                      subscriber: QuerySubscriber) = {
+                      subscriber: QuerySubscriber): InternalExecutionResult = {
 
       val innerExecutionMode = preParsedQuery.executionMode match {
         case CypherExecutionMode.explain => ExplainMode
@@ -238,7 +243,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
         val allNotifications =
           preParsingNotifications ++ (planningNotifications ++ executionPlan.notifications)
             .map(asKernelNotification(Some(preParsedQuery.offset)))
-        ExplainExecutionResult(columns,
+        new ExplainExecutionResult(columns,
                                planDescriptionBuilder.explain(),
                                queryType, allNotifications, subscriber)
       } else {
@@ -261,7 +266,8 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
         transactionalContext.executingQuery(),
         inner,
         runSafely,
-        kernelMonitors.newMonitor(classOf[QueryExecutionMonitor])
+        kernelMonitors.newMonitor(classOf[QueryExecutionMonitor]),
+        subscriber
       )
     }
 

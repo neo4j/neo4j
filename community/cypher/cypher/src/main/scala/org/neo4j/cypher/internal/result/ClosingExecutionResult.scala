@@ -31,7 +31,7 @@ import org.neo4j.graphdb
 import org.neo4j.graphdb.Result.ResultVisitor
 import org.neo4j.graphdb.{Notification, ResourceIterator}
 import org.neo4j.kernel.api.query.ExecutingQuery
-import org.neo4j.kernel.impl.query.QueryExecutionMonitor
+import org.neo4j.kernel.impl.query.{QueryExecutionMonitor, QuerySubscriber}
 
 /**
   * Ensures execution results are closed. This is tricky because we try to be smart about
@@ -55,7 +55,8 @@ import org.neo4j.kernel.impl.query.QueryExecutionMonitor
 class ClosingExecutionResult private(val query: ExecutingQuery,
                                      val inner: InternalExecutionResult,
                                      runSafely: RunSafely,
-                                     innerMonitor: QueryExecutionMonitor) extends InternalExecutionResult {
+                                     innerMonitor: QueryExecutionMonitor,
+                                     subscriber: QuerySubscriber) extends InternalExecutionResult {
 
   self =>
 
@@ -203,12 +204,16 @@ class ClosingExecutionResult private(val query: ExecutingQuery,
 
   override def isClosed: Boolean = inner.isClosed
 
-  override def request(numberOfRows: Long): Unit = safely(inner.request(numberOfRows))
+  override def request(numberOfRows: Long): Unit =
+    runSafely(inner.request(numberOfRows))(closeOnError, subscriber.onError(_))
 
-  override def cancel(): Unit = safely(inner.cancel())
+  override def cancel(): Unit = runSafely(inner.cancel())(closeOnError, subscriber.onError(_))
 
   override def await(): Boolean = {
-    val hasMore = safely(inner.await())
+    val hasMore = runSafely(inner.await())(closeOnError, e => {
+      subscriber.onError(e)
+      false
+    })
     if (!hasMore) close()
     hasMore
   }
@@ -218,9 +223,10 @@ object ClosingExecutionResult {
   def wrapAndInitiate(query: ExecutingQuery,
                       inner: InternalExecutionResult,
                       runSafely: RunSafely,
-                      innerMonitor: QueryExecutionMonitor): ClosingExecutionResult = {
+                      innerMonitor: QueryExecutionMonitor,
+                      subscriber: QuerySubscriber = QuerySubscriber.NOT_A_SUBSCRIBER): ClosingExecutionResult = {
 
-    val result = new ClosingExecutionResult(query, inner, runSafely, innerMonitor)
+    val result = new ClosingExecutionResult(query, inner, runSafely, innerMonitor, subscriber)
     result.initiate()
     result
   }

@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.values.utils._
 import org.neo4j.cypher.internal.v4_0._
 import org.neo4j.cypher.internal.v4_0.util.spi.MapToPublicExceptions
 import org.neo4j.cypher.internal.v4_0.util.{CypherException => InternalCypherException}
+import org.neo4j.values.utils._
 
 object exceptionHandler extends MapToPublicExceptions[CypherException] {
   override def syntaxException(message: String, query: String, offset: Option[Int], cause: Throwable) = new SyntaxException(message, query, offset, cause)
@@ -86,25 +86,26 @@ object exceptionHandler extends MapToPublicExceptions[CypherException] {
   override def failedIndexException(indexName: String, failureMessage: String, cause: Throwable): CypherException = new FailedIndexException(indexName, failureMessage, cause)
 
   object runSafely extends RunSafely {
-    override def apply[T](body: => T)(implicit f: ExceptionHandler = ExceptionHandler.default): T = {
+    override def apply[T](body: => T)(implicit f: ExceptionHandler = ExceptionHandler.default,
+                                      g: CypherException => T = e => throw e): T = {
       try {
         body
       }
       catch {
         case e: InternalCypherException =>
           f(e)
-          throw e.mapToPublic(exceptionHandler)
+          g(e.mapToPublic(exceptionHandler))
 
         case e: ValuesException =>
           f(e)
-          throw mapToCypher(e)
+          g(mapToCypher(e))
 
         // ValueMath do not wrap java.lang.ArithmeticExceptions, so we map it to public here
         // (This will also catch if we happened to produce arithmetic exceptions internally (as a runtime bug and not as the result of the query),
         //  which is not optimal but hopefully rare)
         case e: java.lang.ArithmeticException =>
           f(e)
-          throw exceptionHandler.arithmeticException(e.getMessage, e)
+          g(exceptionHandler.arithmeticException(e.getMessage, e))
 
         case e: Throwable =>
           f(e)
@@ -114,7 +115,7 @@ object exceptionHandler extends MapToPublicExceptions[CypherException] {
   }
 
   trait RunSafely {
-    def apply[T](body: => T)(implicit f: ExceptionHandler = ExceptionHandler.default): T
+    def apply[T](body: => T)(implicit f: ExceptionHandler = ExceptionHandler.default, g: CypherException => T = (e:CypherException) => throw e): T
   }
 
   def mapToCypher(exception: ValuesException): CypherException = {

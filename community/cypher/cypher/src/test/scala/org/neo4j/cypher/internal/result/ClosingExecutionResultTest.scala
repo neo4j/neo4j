@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.result
 import java.io.PrintWriter
 import java.util
 
+import org.neo4j.cypher.CypherException
 import org.neo4j.cypher.exceptionHandler.RunSafely
 import org.neo4j.cypher.internal.compatibility.ExceptionHandler
 import org.neo4j.cypher.internal.plandescription.InternalPlanDescription
@@ -368,7 +369,7 @@ class ClosingExecutionResultTest extends CypherFunSuite {
   case object NEXT_EXPLODE extends IteratorMode
 
   private val testRunSafely = new RunSafely {
-    override def apply[T](body: => T)(implicit f: ExceptionHandler): T = {
+    override def apply[T](body: => T)(implicit f: ExceptionHandler, g: CypherException => T = (e: CypherException) => throw e): T = {
       try {
         body
       } catch {

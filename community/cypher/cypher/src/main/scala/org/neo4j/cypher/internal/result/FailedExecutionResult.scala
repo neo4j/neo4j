@@ -20,20 +20,16 @@
 package org.neo4j.cypher.internal.result
 
 import org.neo4j.cypher.internal.plandescription.InternalPlanDescription
-import org.neo4j.cypher.internal.runtime._
-import org.neo4j.graphdb.Notification
+import org.neo4j.cypher.internal.runtime.InternalQueryType
 import org.neo4j.kernel.impl.query.QuerySubscriber
 
-class ExplainExecutionResult(fieldNames: Array[String],
-                             planDescription: InternalPlanDescription,
-                             queryType: InternalQueryType,
-                             notifications: Set[Notification],
-                             subscriber: QuerySubscriber)
-  extends EmptyExecutionResult(fieldNames, planDescription, queryType, notifications) {
+class FailedExecutionResult(fieldNames: Array[String],
+                            queryType: InternalQueryType,
+                            subscriber: QuerySubscriber)
+  extends EmptyExecutionResult(fieldNames, InternalPlanDescription.error("Query has failed, no plan available"), queryType, Set.empty) {
 
   override def request(numberOfRecords: Long): Unit = {
-    subscriber.onResult(0)
-    subscriber.onResultCompleted(queryStatistics())
+    subscriber.onError(new IllegalStateException("query has failed not possible to request more data"))
   }
 
   override def cancel(): Unit = {
