@@ -82,7 +82,6 @@ import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.core.TokenHolders;
-import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProvider;
 import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.store.DynamicRecordAllocator;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
@@ -116,6 +115,7 @@ import org.neo4j.values.storable.Values;
 
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
+import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.consistency.ConsistencyCheckService.defaultConsistencyCheckThreadsNumber;
@@ -126,7 +126,6 @@ import static org.neo4j.consistency.checking.SchemaRuleUtil.indexRule;
 import static org.neo4j.consistency.checking.SchemaRuleUtil.nodePropertyExistenceConstraintRule;
 import static org.neo4j.consistency.checking.SchemaRuleUtil.relPropertyExistenceConstraintRule;
 import static org.neo4j.consistency.checking.SchemaRuleUtil.uniquenessConstraintRule;
-import static org.neo4j.consistency.checking.full.FullCheckIntegrationTest.ConsistencySummaryVerifier.on;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.helpers.collection.Iterables.asIterable;
@@ -155,7 +154,6 @@ import static org.neo4j.test.Property.set;
 public class FullCheckIntegrationTest
 {
     private static final IndexProviderDescriptor DESCRIPTOR = new IndexProviderDescriptor( "lucene", "1.0" );
-//    private static final IndexProviderDescriptor DESCRIPTOR = GenericNativeIndexProvider.DESCRIPTOR;
     private static final String PROP1 = "key1";
     private static final String PROP2 = "key2";
     private static final Object VALUE1 = "value1";
@@ -164,10 +162,8 @@ public class FullCheckIntegrationTest
     private int label1;
     private int label2;
     private int label3;
-    private int label4;
     private int draconian;
     private int key1;
-    private int key2;
     private int mandatory;
     private int C;
     private int T;
@@ -227,7 +223,7 @@ public class FullCheckIntegrationTest
                     // the Core API for composite index creation is not quite merged yet
                     TokenWrite tokenWrite = ktx.tokenWrite();
                     key1 = tokenWrite.propertyKeyGetOrCreateForName( PROP1 );
-                    key2 = tokenWrite.propertyKeyGetOrCreateForName( PROP2 );
+                    int key2 = tokenWrite.propertyKeyGetOrCreateForName( PROP2 );
                     label3 = ktx.tokenRead().nodeLabel( "label3" );
                     ktx.schemaWrite().indexCreate( forLabel( label3, key1, key2 ) );
                 }
@@ -267,7 +263,7 @@ public class FullCheckIntegrationTest
                     label1 = tokenRead.nodeLabel( "label1" );
                     label2 = tokenRead.nodeLabel( "label2" );
                     label3 = tokenRead.nodeLabel( "label3" );
-                    label4 = tokenRead.nodeLabel( "label4" );
+                    tokenRead.nodeLabel( "label4" );
                     draconian = tokenWrite.labelGetOrCreateForName( "draconian" );
                     key1 = tokenRead.propertyKey( PROP1 );
                     mandatory = tokenWrite.propertyKeyGetOrCreateForName( "mandatory" );
@@ -505,7 +501,7 @@ public class FullCheckIntegrationTest
         labels.remove( 1 );
         long[] after = asArray( labels );
 
-        write( fixture.directStoreAccess().labelScanStore(), asList( labelChanges( 42, before, after ) ) );
+        write( fixture.directStoreAccess().labelScanStore(), singletonList( labelChanges( 42, before, after ) ) );
 
         // when
         ConsistencySummaryStatistics stats = check();
@@ -542,7 +538,7 @@ public class FullCheckIntegrationTest
             }
         } );
 
-        write( fixture.directStoreAccess().labelScanStore(), asList( labelChanges( 42, new long[]{label1, label2}, new long[]{label1} ) ) );
+        write( fixture.directStoreAccess().labelScanStore(), singletonList( labelChanges( 42, new long[]{label1, label2}, new long[]{label1} ) ) );
 
         // when
         ConsistencySummaryStatistics stats = check();
@@ -568,7 +564,7 @@ public class FullCheckIntegrationTest
                 for ( long nodeId : indexedNodes )
                 {
                     EntityUpdates updates = fixture.nodeAsUpdates( nodeId );
-                    for ( IndexEntryUpdate<?> update : updates.forIndexKeys( asList( indexDescriptor ) ) )
+                    for ( IndexEntryUpdate<?> update : updates.forIndexKeys( singletonList( indexDescriptor ) ) )
                     {
                         updater.process( IndexEntryUpdate.remove( nodeId, indexDescriptor, update.values() ) );
                     }
@@ -2176,7 +2172,7 @@ public class FullCheckIntegrationTest
         return Config.defaults( params );
     }
 
-    protected static RelationshipGroupRecord withRelationships( RelationshipGroupRecord group, long out,
+    private static RelationshipGroupRecord withRelationships( RelationshipGroupRecord group, long out,
             long in, long loop )
     {
         group.setFirstOut( out );
@@ -2185,8 +2181,7 @@ public class FullCheckIntegrationTest
         return group;
     }
 
-    protected static RelationshipGroupRecord withRelationship( RelationshipGroupRecord group, Direction direction,
-            long rel )
+    private static RelationshipGroupRecord withRelationship( RelationshipGroupRecord group, Direction direction, long rel )
     {
         switch ( direction )
         {
@@ -2205,7 +2200,7 @@ public class FullCheckIntegrationTest
         return group;
     }
 
-    protected static RelationshipRecord firstInChains( RelationshipRecord relationship, int count )
+    private static RelationshipRecord firstInChains( RelationshipRecord relationship, int count )
     {
         relationship.setFirstInFirstChain( true );
         relationship.setFirstPrevRel( count );
@@ -2214,13 +2209,13 @@ public class FullCheckIntegrationTest
         return relationship;
     }
 
-    protected static RelationshipGroupRecord withNext( RelationshipGroupRecord group, long next )
+    private static RelationshipGroupRecord withNext( RelationshipGroupRecord group, long next )
     {
         group.setNext( next );
         return group;
     }
 
-    protected static RelationshipGroupRecord withOwner( RelationshipGroupRecord record, long owner )
+    private static RelationshipGroupRecord withOwner( RelationshipGroupRecord record, long owner )
     {
         record.setOwningNode( owner );
         return record;
@@ -2401,23 +2396,23 @@ public class FullCheckIntegrationTest
         }
     }
 
-    public static final class ConsistencySummaryVerifier
+    private static ConsistencySummaryVerifier on( ConsistencySummaryStatistics stats )
+    {
+        return new ConsistencySummaryVerifier( stats );
+    }
+
+    static final class ConsistencySummaryVerifier
     {
         private final ConsistencySummaryStatistics stats;
         private final Set<RecordType> types = new HashSet<>();
         private long total;
-
-        public static ConsistencySummaryVerifier on( ConsistencySummaryStatistics stats )
-        {
-            return new ConsistencySummaryVerifier( stats );
-        }
 
         private ConsistencySummaryVerifier( ConsistencySummaryStatistics stats )
         {
             this.stats = stats;
         }
 
-        public ConsistencySummaryVerifier verify( RecordType type, int inconsistencies )
+        ConsistencySummaryVerifier verify( RecordType type, int inconsistencies )
         {
             if ( !types.add( type ) )
             {
@@ -2429,7 +2424,7 @@ public class FullCheckIntegrationTest
             return this;
         }
 
-        public void andThatsAllFolks()
+        void andThatsAllFolks()
         {
             assertEquals( "Total number of inconsistencies: " + stats, total, stats.getTotalInconsistencyCount() );
         }
@@ -2468,7 +2463,6 @@ public class FullCheckIntegrationTest
 
         schemaRecord.initialize( true, nextPropId );
         schemaRecord.setId( rule.getId() );
-//        tx.createSchema( schemaRecord.clone().initialize( false, Record.NO_PREVIOUS_PROPERTY.longValue() ), schemaRecord, rule );
     }
 
     private PropertyRecord newInitialisedPropertyRecord( IdGenerator next, SchemaRule rule )
