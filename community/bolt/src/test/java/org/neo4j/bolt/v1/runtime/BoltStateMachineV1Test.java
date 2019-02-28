@@ -307,7 +307,7 @@ public class BoltStateMachineV1Test
         BoltResponseRecorder recorder = new BoltResponseRecorder()
         {
             @Override
-            public boolean onPullRecords( BoltResult result, long size ) throws Exception
+            public boolean onPullRecords( BoltResult result, long size )
             {
                 throw new RuntimeException( "I've been expecting you, Mr Bond." );
             }

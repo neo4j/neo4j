@@ -37,14 +37,14 @@ public class ResultHandler extends MessageProcessingHandler
     }
 
     @Override
-    public boolean onPullRecords( final BoltResult result, final long size ) throws Exception
+    public boolean onPullRecords( final BoltResult result, final long size ) throws Throwable
     {
         return markHasMore(
                 result.handleRecords( new RecordWritingBoltResultRecordConsumer( ), size ) );
     }
 
     @Override
-    public boolean onDiscardRecords( BoltResult result, long size ) throws Exception
+    public boolean onDiscardRecords( BoltResult result, long size ) throws Throwable
     {
         return markHasMore( result.handleRecords( new RecordDiscardingBoltResultRecordConsumer(), size ) );
     }

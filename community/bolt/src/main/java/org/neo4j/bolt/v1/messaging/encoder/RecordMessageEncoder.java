@@ -26,6 +26,8 @@ import org.neo4j.bolt.messaging.ResponseMessageEncoder;
 import org.neo4j.bolt.v1.messaging.response.RecordMessage;
 import org.neo4j.values.AnyValue;
 
+import static org.neo4j.bolt.v1.messaging.response.RecordMessage.SIGNATURE;
+
 public class RecordMessageEncoder implements ResponseMessageEncoder<RecordMessage>
 {
     @Override
@@ -33,6 +35,16 @@ public class RecordMessageEncoder implements ResponseMessageEncoder<RecordMessag
     {
         AnyValue[] fields = message.fields();
         packer.packStructHeader( 1, message.signature() );
+        packer.packListHeader( fields.length );
+        for ( AnyValue field : fields )
+        {
+            packer.pack( field );
+        }
+    }
+
+    public void encodeRecord( Neo4jPack.Packer packer, AnyValue[] fields ) throws IOException
+    {
+        packer.packStructHeader( 1, SIGNATURE );
         packer.packListHeader( fields.length );
         for ( AnyValue field : fields )
         {

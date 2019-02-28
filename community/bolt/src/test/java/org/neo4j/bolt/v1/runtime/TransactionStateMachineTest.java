@@ -80,7 +80,7 @@ class TransactionStateMachineTest
     private static EmptyResultConsumer ERROR = new EmptyResultConsumer()
     {
         @Override
-        public void consume( BoltResult boltResult ) throws Exception
+        public void consume( BoltResult boltResult )
         {
             throw new RuntimeException( "some error" );
         }
@@ -338,7 +338,7 @@ class TransactionStateMachineTest
     }
 
     @Test
-    void shouldUnbindTxAfterStreamResult() throws Exception
+    void shouldUnbindTxAfterStreamResult() throws Throwable
     {
         KernelTransaction transaction = newTimedOutTransaction();
         TransactionStateMachineV1SPI stateMachineSPI = newTransactionStateMachineSPI( transaction );
@@ -409,7 +409,7 @@ class TransactionStateMachineTest
     }
 
     @Test
-    void shouldCloseResultHandlesWhenConsumeFailsInExplicitTransaction() throws Exception
+    void shouldCloseResultHandlesWhenConsumeFailsInExplicitTransaction() throws Throwable
     {
         KernelTransaction transaction = newTransaction();
         TransactionStateMachineV1SPI stateMachineSPI = newTransactionStateMachineSPI( transaction );
@@ -544,7 +544,7 @@ class TransactionStateMachineTest
         }
 
         @Override
-        public void consume( BoltResult boltResult ) throws Exception
+        public void consume( BoltResult boltResult )
         {
         }
     }

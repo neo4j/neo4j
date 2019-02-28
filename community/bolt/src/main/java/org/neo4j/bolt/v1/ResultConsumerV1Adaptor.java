@@ -43,7 +43,7 @@ public class ResultConsumerV1Adaptor implements ResultConsumer
     }
 
     @Override
-    public void consume( BoltResult boltResult ) throws Exception
+    public void consume( BoltResult boltResult ) throws Throwable
     {
         if ( pull )
         {

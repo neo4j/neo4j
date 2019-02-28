@@ -41,13 +41,13 @@ public class NullResponseHandler implements BoltResponseHandler
     }
 
     @Override
-    public boolean onPullRecords( BoltResult result, long size ) throws Exception
+    public boolean onPullRecords( BoltResult result, long size )
     {
         return false;
     }
 
     @Override
-    public boolean onDiscardRecords( BoltResult result, long size ) throws Exception
+    public boolean onDiscardRecords( BoltResult result, long size )
     {
         return false;
     }

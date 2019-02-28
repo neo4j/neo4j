@@ -73,13 +73,14 @@ public class CypherAdapterStream implements BoltResult
     }
 
     @Override
-    public boolean handleRecords( RecordConsumer recordConsumer, long size ) throws Exception
+    public boolean handleRecords( RecordConsumer recordConsumer, long size ) throws Throwable
     {
         long start = clock.millis();
         this.querySubscriber.setRecordConsumer( recordConsumer );
         queryExecution.request( size );
 
         boolean hasMore = queryExecution.await();
+        querySubscriber.assertSucceeded();
         if ( !hasMore )
         {
             addRecordStreamingTime( clock.millis() - start );

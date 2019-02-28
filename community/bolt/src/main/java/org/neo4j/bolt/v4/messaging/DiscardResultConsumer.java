@@ -35,7 +35,7 @@ public class DiscardResultConsumer implements ResultConsumer
     }
 
     @Override
-    public void consume( BoltResult boltResult ) throws Exception
+    public void consume( BoltResult boltResult ) throws Throwable
     {
         hasMore = context.connectionState().getResponseHandler().onDiscardRecords( boltResult, size );
     }

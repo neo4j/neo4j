@@ -93,7 +93,7 @@ class StreamingStateTest
     }
 
     @Test
-    void shouldProcessPullAllMessage() throws Exception
+    void shouldProcessPullAllMessage() throws Throwable
     {
         StatementProcessor statementProcessor = mock( StatementProcessor.class );
         connectionState.setStatementProcessor( statementProcessor );
@@ -105,7 +105,7 @@ class StreamingStateTest
     }
 
     @Test
-    void shouldHandleAuthErrorWhenProcessingPullAllMessage() throws Exception
+    void shouldHandleAuthErrorWhenProcessingPullAllMessage() throws Throwable
     {
         AuthorizationExpiredException error = new AuthorizationExpiredException( "Hello" );
 
@@ -120,7 +120,7 @@ class StreamingStateTest
     }
 
     @Test
-    void shouldHandleErrorWhenProcessingPullAllMessage() throws Exception
+    void shouldHandleErrorWhenProcessingPullAllMessage() throws Throwable
     {
         RuntimeException error = new RuntimeException( "Hello" );
 
@@ -135,7 +135,7 @@ class StreamingStateTest
     }
 
     @Test
-    void shouldProcessDiscardAllMessage() throws Exception
+    void shouldProcessDiscardAllMessage() throws Throwable
     {
         StatementProcessor statementProcessor = mock( StatementProcessor.class );
         connectionState.setStatementProcessor( statementProcessor );
@@ -147,7 +147,7 @@ class StreamingStateTest
     }
 
     @Test
-    void shouldHandleAuthErrorWhenProcessingDiscardAllMessage() throws Exception
+    void shouldHandleAuthErrorWhenProcessingDiscardAllMessage() throws Throwable
     {
         AuthorizationExpiredException error = new AuthorizationExpiredException( "Hello" );
 
@@ -162,7 +162,7 @@ class StreamingStateTest
     }
 
     @Test
-    void shouldHandleErrorWhenProcessingDiscardAllMessage() throws Exception
+    void shouldHandleErrorWhenProcessingDiscardAllMessage() throws Throwable
     {
         RuntimeException error = new RuntimeException( "Hello" );
 

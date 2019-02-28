@@ -120,7 +120,7 @@ public class TransactionStateMachine implements StatementProcessor
     }
 
     @Override
-    public Bookmark streamResult( int statementId, ResultConsumer resultConsumer ) throws Exception
+    public Bookmark streamResult( int statementId, ResultConsumer resultConsumer ) throws Throwable
     {
         before();
         try
@@ -333,7 +333,7 @@ public class TransactionStateMachine implements StatementProcessor
 
                     @Override
                     Bookmark streamResult( MutableTransactionState ctx, TransactionStateMachineSPI spi, int statementId, ResultConsumer resultConsumer )
-                            throws Exception
+                            throws Throwable
                     {
                         StatementOutcome outcome = ctx.statementOutcomes.get( statementId );
                         if ( outcome == null )
@@ -430,7 +430,7 @@ public class TransactionStateMachine implements StatementProcessor
 
                     @Override
                     Bookmark streamResult( MutableTransactionState ctx, TransactionStateMachineSPI spi, int statementId, ResultConsumer resultConsumer )
-                            throws Exception
+                            throws Throwable
                     {
                         if ( statementId == StatementMetadata.ABSENT_STATEMENT_ID )
                         {
@@ -469,7 +469,7 @@ public class TransactionStateMachine implements StatementProcessor
                 throws KernelException;
 
         abstract Bookmark streamResult( MutableTransactionState ctx, TransactionStateMachineSPI spi, int statementId, ResultConsumer resultConsumer )
-                throws Exception;
+                throws Throwable;
 
         abstract State commitTransaction( MutableTransactionState ctx, TransactionStateMachineSPI spi ) throws KernelException;
 
@@ -597,7 +597,7 @@ public class TransactionStateMachine implements StatementProcessor
             }
         }
 
-        void consumeResult( MutableTransactionState ctx, int statementId, StatementOutcome outcome, ResultConsumer resultConsumer ) throws Exception
+        void consumeResult( MutableTransactionState ctx, int statementId, StatementOutcome outcome, ResultConsumer resultConsumer ) throws Throwable
         {
             boolean success = false;
             try

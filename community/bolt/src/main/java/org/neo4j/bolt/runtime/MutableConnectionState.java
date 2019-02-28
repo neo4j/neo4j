@@ -60,7 +60,7 @@ public class MutableConnectionState implements BoltResponseHandler
     private Status pendingTerminationNotice;
 
     @Override
-    public boolean onPullRecords( BoltResult result, long size ) throws Exception
+    public boolean onPullRecords( BoltResult result, long size ) throws Throwable
     {
         if ( responseHandler != null )
         {
@@ -73,7 +73,7 @@ public class MutableConnectionState implements BoltResponseHandler
     }
 
     @Override
-    public boolean onDiscardRecords( BoltResult result, long size ) throws Exception
+    public boolean onDiscardRecords( BoltResult result, long size ) throws Throwable
     {
         if ( responseHandler != null )
         {

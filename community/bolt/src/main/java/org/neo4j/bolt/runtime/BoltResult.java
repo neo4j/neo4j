@@ -35,7 +35,7 @@ public interface BoltResult extends AutoCloseable
     /** Positional names for all fields in every record of this stream. */
     String[] fieldNames();
 
-    boolean handleRecords( RecordConsumer recordConsumer, long size ) throws Exception;
+    boolean handleRecords( RecordConsumer recordConsumer, long size ) throws Throwable;
 
     @Override
     void close();

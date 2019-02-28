@@ -289,9 +289,17 @@ public class TransactionStateMachineV1SPI implements TransactionStateMachineSPI
             return statistics;
         }
 
-        public void setRecordConsumer( ThrowingConsumer<AnyValue[],IOException> recordConsumer )
+        void setRecordConsumer( ThrowingConsumer<AnyValue[],IOException> recordConsumer )
         {
             this.recordConsumer = recordConsumer;
+        }
+
+        void assertSucceeded() throws Throwable
+        {
+            if ( error != null )
+            {
+                throw error;
+            }
         }
     }
 }

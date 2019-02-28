@@ -20,6 +20,7 @@
 package org.neo4j.bolt.v1.messaging;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -42,6 +43,7 @@ import org.neo4j.bolt.v1.packstream.PackOutput;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.internal.LogService;
+import org.neo4j.values.AnyValue;
 
 import static java.lang.String.format;
 
@@ -54,6 +56,7 @@ public class BoltResponseMessageWriterV1 implements BoltResponseMessageWriter
     private final Neo4jPack.Packer packer;
     private final Log log;
     private final Map<Byte,ResponseMessageEncoder<ResponseMessage>> encoders;
+    private RecordMessageEncoder recordMessageEncoder = new RecordMessageEncoder();
 
     public BoltResponseMessageWriterV1( PackProvider packerProvider, PackOutput output, LogService logService )
     {
@@ -67,7 +70,7 @@ public class BoltResponseMessageWriterV1 implements BoltResponseMessageWriter
     {
         Map<Byte,ResponseMessageEncoder<?>> encoders = new HashMap<>();
         encoders.put( SuccessMessage.SIGNATURE, new SuccessMessageEncoder() );
-        encoders.put( RecordMessage.SIGNATURE, new RecordMessageEncoder() );
+        encoders.put( RecordMessage.SIGNATURE, recordMessageEncoder );
         encoders.put( IgnoredMessage.SIGNATURE, new IgnoredMessageEncoder() );
         encoders.put( FailureMessage.SIGNATURE, new FailureMessageEncoder( log ) );
         return (Map)encoders;
@@ -115,5 +118,32 @@ public class BoltResponseMessageWriterV1 implements BoltResponseMessageWriter
             }
             throw error;
         }
+    }
+
+    public void writeRecord( AnyValue[] fields ) throws IOException
+    {
+        boolean packingFailed = true;
+        output.beginMessage();
+        try
+        {
+            recordMessageEncoder.encodeRecord( packer, fields );
+            packingFailed = false;
+            output.messageSucceeded();
+        }
+        catch ( Throwable error )
+        {
+            if ( packingFailed )
+            {
+                // packing failed, there might be some half-written data in the output buffer right now
+                // notify output about the failure so that it cleans up the buffer
+                output.messageFailed();
+                log.error( "Failed to write full RECORD %s message because: %s", Arrays.toString(fields), error.getMessage() );
+            }
+            throw error;
+        }
+    }
+
+    public void onError( Throwable t )
+    {
     }
 }

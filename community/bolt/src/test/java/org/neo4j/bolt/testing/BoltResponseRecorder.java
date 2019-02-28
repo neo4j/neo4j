@@ -53,13 +53,13 @@ public class BoltResponseRecorder implements BoltResponseHandler
     }
 
     @Override
-    public boolean onPullRecords( BoltResult result, long size ) throws Exception
+    public boolean onPullRecords( BoltResult result, long size ) throws Throwable
     {
         return hasMore( result.handleRecords( new RecordingBoltResultRecordConsumer( ), size ) );
     }
 
     @Override
-    public boolean onDiscardRecords( BoltResult result, long size ) throws Exception
+    public boolean onDiscardRecords( BoltResult result, long size ) throws Throwable
     {
         return hasMore( result.handleRecords( new DiscardingBoltResultVisitor(), size ) );
     }

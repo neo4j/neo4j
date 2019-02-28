@@ -23,7 +23,7 @@ import org.neo4j.bolt.runtime.BoltResult;
 
 public interface ResultConsumer
 {
-    void consume( BoltResult t ) throws Exception;
+    void consume( BoltResult t ) throws Throwable;
 
     boolean hasMore();
 }

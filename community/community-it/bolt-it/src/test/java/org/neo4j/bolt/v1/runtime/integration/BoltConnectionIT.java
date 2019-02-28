@@ -432,13 +432,13 @@ public class BoltConnectionIT
         machine.process( PullAllMessage.INSTANCE, new BoltResponseHandler()
         {
             @Override
-            public boolean onPullRecords( BoltResult result, long size ) throws Exception
+            public boolean onPullRecords( BoltResult result, long size ) throws Throwable
             {
                 throw new RuntimeException( "Ooopsies!" );
             }
 
             @Override
-            public boolean onDiscardRecords( BoltResult result, long size ) throws Exception
+            public boolean onDiscardRecords( BoltResult result, long size ) throws Throwable
             {
                 throw new RuntimeException( "Ooopsies!" );
             }

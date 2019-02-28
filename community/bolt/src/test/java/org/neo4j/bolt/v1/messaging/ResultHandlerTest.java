@@ -43,7 +43,7 @@ import static org.neo4j.values.storable.Values.values;
 class ResultHandlerTest
 {
     @Test
-    void shouldPullTheResult() throws Exception
+    void shouldPullTheResult() throws Throwable
     {
         BoltResponseMessageRecorder messageWriter = new BoltResponseMessageRecorder();
         ResultHandler handler = new ResultHandler( messageWriter, mock( BoltConnection.class ), NullLog.getInstance() );
@@ -63,7 +63,7 @@ class ResultHandlerTest
     }
 
     @Test
-    void shouldDiscardTheResult() throws Exception
+    void shouldDiscardTheResult() throws Throwable
     {
         BoltResponseMessageRecorder messageWriter = new BoltResponseMessageRecorder();
         ResultHandler handler = new ResultHandler( messageWriter, mock( BoltConnection.class ), NullLog.getInstance() );
@@ -96,7 +96,7 @@ class ResultHandlerTest
         }
 
         @Override
-        public boolean handleRecords( RecordConsumer recordConsumer, long size ) throws Exception
+        public boolean handleRecords( RecordConsumer recordConsumer, long size ) throws Throwable
         {
             if ( records.isEmpty() )
             {

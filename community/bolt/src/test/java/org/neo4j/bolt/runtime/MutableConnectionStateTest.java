@@ -44,7 +44,7 @@ class MutableConnectionStateTest
     private final BoltResponseHandler responseHandler = mock( BoltResponseHandler.class );
 
     @Test
-    void shouldHandleOnPullRecordsWithoutResponseHandler() throws Exception
+    void shouldHandleOnPullRecordsWithoutResponseHandler() throws Throwable
     {
         state.setResponseHandler( null );
 
@@ -55,7 +55,7 @@ class MutableConnectionStateTest
     }
 
     @Test
-    void shouldHandleOnPullRecordsWithResponseHandler() throws Exception
+    void shouldHandleOnPullRecordsWithResponseHandler() throws Throwable
     {
         state.setResponseHandler( responseHandler );
 
@@ -65,7 +65,7 @@ class MutableConnectionStateTest
     }
 
     @Test
-    void shouldHandleOnDiscardRecordsWithoutResponseHandler() throws Exception
+    void shouldHandleOnDiscardRecordsWithoutResponseHandler() throws Throwable
     {
         state.setResponseHandler( null );
 
@@ -76,7 +76,7 @@ class MutableConnectionStateTest
     }
 
     @Test
-    void shouldHandleOnDiscardRecordsWithResponseHandler() throws Exception
+    void shouldHandleOnDiscardRecordsWithResponseHandler() throws Throwable
     {
         state.setResponseHandler( responseHandler );
 

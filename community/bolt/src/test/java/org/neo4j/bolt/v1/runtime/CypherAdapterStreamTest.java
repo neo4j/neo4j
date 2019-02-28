@@ -21,7 +21,6 @@ package org.neo4j.bolt.v1.runtime;
 
 import org.junit.Test;
 
-import java.io.IOException;
 import java.time.Clock;
 import java.util.Arrays;
 import java.util.Collections;
@@ -264,14 +263,14 @@ public class CypherAdapterStreamTest
                 equalTo( list( msg1, msg2 ) ) );
     }
 
-    private MapValue metadataOf( CypherAdapterStream stream ) throws Exception
+    private MapValue metadataOf( CypherAdapterStream stream ) throws Throwable
     {
         final MapValueBuilder meta = new MapValueBuilder();
         stream.handleRecords( new BoltResult.RecordConsumer()
         {
 
             @Override
-            public void accept( AnyValue[] values ) throws IOException
+            public void accept( AnyValue[] values )
             {
                 //discard
             }
