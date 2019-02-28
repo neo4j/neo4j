@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.store.record;
 
+import java.util.ArrayList;
+
 public class RelationshipTypeTokenRecord extends TokenRecord
 {
     public RelationshipTypeTokenRecord( int id )
@@ -42,14 +44,8 @@ public class RelationshipTypeTokenRecord extends TokenRecord
     @Override
     public RelationshipTypeTokenRecord clone()
     {
-        RelationshipTypeTokenRecord relationshipTypeTokenRecord = new RelationshipTypeTokenRecord( getIntId() );
-        relationshipTypeTokenRecord.setInUse( inUse() );
-        if ( isCreated() )
-        {
-            relationshipTypeTokenRecord.setCreated();
-        }
-        relationshipTypeTokenRecord.setNameId( getNameId() );
-        relationshipTypeTokenRecord.addNameRecords( getNameRecords() );
-        return relationshipTypeTokenRecord;
+        RelationshipTypeTokenRecord clone = (RelationshipTypeTokenRecord) super.clone();
+        clone.nameRecords = new ArrayList<>( nameRecords );
+        return clone;
     }
 }

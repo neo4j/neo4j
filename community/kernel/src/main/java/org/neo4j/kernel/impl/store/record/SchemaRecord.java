@@ -73,11 +73,13 @@ public class SchemaRecord extends AbstractBaseRecord implements Iterable<Dynamic
     @Override
     public SchemaRecord clone()
     {
+        SchemaRecord clone = (SchemaRecord) super.clone();
         List<DynamicRecord> list = new ArrayList<>( records.size() );
         for ( DynamicRecord record : records )
         {
             list.add( record.clone() );
         }
-        return new SchemaRecord( list );
+        clone.records = list;
+        return clone;
     }
 }

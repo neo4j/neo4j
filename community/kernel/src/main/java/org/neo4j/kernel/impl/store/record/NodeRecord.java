@@ -165,10 +165,8 @@ public class NodeRecord extends PrimitiveRecord
     @Override
     public NodeRecord clone()
     {
-        NodeRecord clone = new NodeRecord( getId() ).initialize( inUse(), nextProp, dense, nextRel, labels );
-        clone.isLight = isLight;
-
-        if ( dynamicLabelRecords.size() > 0 )
+        NodeRecord clone = (NodeRecord) super.clone();
+        if ( !dynamicLabelRecords.isEmpty() )
         {
             List<DynamicRecord> clonedLabelRecords = new ArrayList<>( dynamicLabelRecords.size() );
             for ( DynamicRecord labelRecord : dynamicLabelRecords )
@@ -177,7 +175,10 @@ public class NodeRecord extends PrimitiveRecord
             }
             clone.dynamicLabelRecords = clonedLabelRecords;
         }
-        clone.setSecondaryUnitId( getSecondaryUnitId() );
+        else
+        {
+            clone.dynamicLabelRecords = emptyList();
+        }
         return clone;
     }
 }
