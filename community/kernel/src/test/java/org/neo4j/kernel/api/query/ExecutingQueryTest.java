@@ -53,6 +53,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
 
 public class ExecutingQueryTest
@@ -232,9 +233,7 @@ public class ExecutingQueryTest
     {
         // given
         ExecutingQuery query = new ExecutingQuery( 17,
-                ClientConnectionInfo.EMBEDDED_CONNECTION,
-                "neo4j",
-                "hello world",
+                ClientConnectionInfo.EMBEDDED_CONNECTION, DEFAULT_DATABASE_NAME, "neo4j", "hello world",
                 EMPTY_MAP,
                 Collections.emptyMap(),
                 () -> lockCount, PageCursorTracer.NULL,
@@ -277,9 +276,7 @@ public class ExecutingQueryTest
     {
         // given
         ExecutingQuery query = new ExecutingQuery( 17,
-                ClientConnectionInfo.EMBEDDED_CONNECTION,
-                "neo4j",
-                "hello world",
+                ClientConnectionInfo.EMBEDDED_CONNECTION, DEFAULT_DATABASE_NAME, "neo4j", "hello world",
                 EMPTY_MAP,
                 Collections.emptyMap(),
                 () -> lockCount,
@@ -406,7 +403,7 @@ public class ExecutingQueryTest
     private ExecutingQuery createExecutingquery( int queryId, String hello_world, PageCursorCountersStub page,
             FakeClock clock, FakeCpuClock cpuClock, FakeHeapAllocation heapAllocation )
     {
-        return new ExecutingQuery( queryId, ClientConnectionInfo.EMBEDDED_CONNECTION, "neo4j", hello_world,
+        return new ExecutingQuery( queryId, ClientConnectionInfo.EMBEDDED_CONNECTION, DEFAULT_DATABASE_NAME, "neo4j", hello_world,
                 EMPTY_MAP, Collections.emptyMap(), () -> lockCount, page, Thread.currentThread().getId(),
                 Thread.currentThread().getName(), clock, cpuClock, heapAllocation );
     }

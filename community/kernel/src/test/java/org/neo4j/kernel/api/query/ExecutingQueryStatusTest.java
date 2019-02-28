@@ -36,6 +36,7 @@ import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
 class ExecutingQueryStatusTest
 {
@@ -95,9 +96,7 @@ class ExecutingQueryStatusTest
                 new WaitingOnQuery(
                         new ExecutingQuery(
                                 12,
-                                null,
-                                null,
-                                null,
+                                null, DEFAULT_DATABASE_NAME, null, null,
                                 null,
                                 null,
                                 ( /*activeLockCount:*/ ) -> 0,

@@ -35,6 +35,7 @@ import org.neo4j.time.Clocks;
 import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
 
 class ExecutingQueryListTest
@@ -118,7 +119,7 @@ class ExecutingQueryListTest
 
     private ExecutingQuery createExecutingQuery( int queryId, String query )
     {
-        return new ExecutingQuery( queryId, ClientConnectionInfo.EMBEDDED_CONNECTION, "me", query,
+        return new ExecutingQuery( queryId, ClientConnectionInfo.EMBEDDED_CONNECTION, DEFAULT_DATABASE_NAME, "me", query,
                 EMPTY_MAP, Collections.emptyMap(), () -> 0, PageCursorTracer.NULL,
                 Thread.currentThread().getId(), Thread.currentThread().getName(),
                 Clocks.nanoClock(), CpuClock.CPU_CLOCK, HeapAllocation.HEAP_ALLOCATION );

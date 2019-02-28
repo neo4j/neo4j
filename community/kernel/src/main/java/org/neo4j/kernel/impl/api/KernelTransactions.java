@@ -59,7 +59,6 @@ import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.MonotonicCounter;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.kernel.monitoring.tracing.Tracers;
 import org.neo4j.resources.CpuClock;
 import org.neo4j.resources.HeapAllocation;
@@ -101,7 +100,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
     private final ReentrantReadWriteLock newTransactionsLock = new ReentrantReadWriteLock();
     private final MonotonicCounter userTransactionIdCounter = MonotonicCounter.newAtomicMonotonicCounter();
     private final TokenHolders tokenHolders;
-    private final String currentDatabaseName;
+    private final String databaseName;
     private final IndexingService indexingService;
     private final LabelScanStore labelScanStore;
     private final IndexStatisticsStore indexStatisticsStore;
@@ -109,7 +108,6 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
     private final Config config;
     private final CollectionsFactorySupplier collectionsFactorySupplier;
     private final SchemaState schemaState;
-    private final Monitors monitors;
 
     /**
      * Used to enumerate all transactions in the system, active and idle ones.
@@ -147,8 +145,8 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
             TransactionIdStore transactionIdStore, SystemNanoClock clock, AtomicReference<CpuClock> cpuClockRef,
             AtomicReference<HeapAllocation> heapAllocationRef, AccessCapability accessCapability, VersionContextSupplier versionContextSupplier,
             CollectionsFactorySupplier collectionsFactorySupplier, ConstraintSemantics constraintSemantics, SchemaState schemaState,
-            TokenHolders tokenHolders, String currentDatabaseName, IndexingService indexingService, LabelScanStore labelScanStore,
-            IndexStatisticsStore indexStatisticsStore, Dependencies databaseDependencies, Monitors monitors )
+            TokenHolders tokenHolders, String databaseName, IndexingService indexingService, LabelScanStore labelScanStore,
+            IndexStatisticsStore indexStatisticsStore, Dependencies databaseDependencies )
     {
         this.config = config;
         this.statementLocksFactory = statementLocksFactory;
@@ -168,7 +166,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
         this.heapAllocationRef = heapAllocationRef;
         this.accessCapability = accessCapability;
         this.tokenHolders = tokenHolders;
-        this.currentDatabaseName = currentDatabaseName;
+        this.databaseName = databaseName;
         this.indexingService = indexingService;
         this.labelScanStore = labelScanStore;
         this.indexStatisticsStore = indexStatisticsStore;
@@ -178,7 +176,6 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
         this.collectionsFactorySupplier = collectionsFactorySupplier;
         this.constraintSemantics = constraintSemantics;
         this.schemaState = schemaState;
-        this.monitors = monitors;
         this.factory = new KernelTransactionImplementationFactory( allTransactions );
         this.globalTxPool = new GlobalKernelTransactionPool( allTransactions, factory );
         this.localTxPool = new LocalKernelTransactionPool( globalTxPool, activeTransactionCounter, config );
@@ -188,7 +185,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
     public KernelTransaction newInstance( KernelTransaction.Type type, LoginContext loginContext, ClientConnectionInfo clientInfo, long timeout )
     {
         assertCurrentThreadIsNotBlockingNewTransactions();
-        SecurityContext securityContext = loginContext.authorize( tokenHolders.propertyKeyTokens()::getOrCreateId, currentDatabaseName );
+        SecurityContext securityContext = loginContext.authorize( tokenHolders.propertyKeyTokens()::getOrCreateId, databaseName );
         try
         {
             while ( !newTransactionsLock.readLock().tryLock( 1, TimeUnit.SECONDS ) )

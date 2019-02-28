@@ -36,15 +36,17 @@ public class StackingQueryRegistrationOperations implements QueryRegistrationOpe
     private final SystemNanoClock clock;
     private final AtomicReference<CpuClock> cpuClockRef;
     private final AtomicReference<HeapAllocation> heapAllocationRef;
+    private final String databaseName;
 
     public StackingQueryRegistrationOperations(
             SystemNanoClock clock,
             AtomicReference<CpuClock> cpuClockRef,
-            AtomicReference<HeapAllocation> heapAllocationRef )
+            AtomicReference<HeapAllocation> heapAllocationRef, String databaseName )
     {
         this.clock = clock;
         this.cpuClockRef = cpuClockRef;
         this.heapAllocationRef = heapAllocationRef;
+        this.databaseName = databaseName;
     }
 
     @Override
@@ -71,7 +73,7 @@ public class StackingQueryRegistrationOperations implements QueryRegistrationOpe
         long threadId = thread.getId();
         String threadName = thread.getName();
         ExecutingQuery executingQuery =
-                new ExecutingQuery( queryId, statement.getTransaction().clientInfo(), statement.username(), queryText, queryParameters,
+                new ExecutingQuery( queryId, statement.getTransaction().clientInfo(), databaseName, statement.username(), queryText, queryParameters,
                         statement.getTransaction().getMetaData(), () -> statement.locks().activeLockCount(),
                         statement.getPageCursorTracer(),
                         threadId, threadName, clock, cpuClockRef.get(), heapAllocationRef.get() );

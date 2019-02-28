@@ -28,8 +28,8 @@ import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 
-import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.graphdb.ExecutionPlanDescription;
+import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorCounters;
 import org.neo4j.kernel.impl.locking.ActiveLock;
 import org.neo4j.resources.CpuClock;
@@ -59,6 +59,7 @@ public class ExecutingQuery
     private final MapValue queryParameters;
     private final long startTimeNanos;
     private final long startTimestampMillis;
+    private final String databaseName;
     /** Uses write barrier of {@link #status}. */
     private long compilationCompletedNanos;
     private Supplier<ExecutionPlanDescription> planDescriptionSupplier;
@@ -80,21 +81,11 @@ public class ExecutingQuery
     @SuppressWarnings( "unused" )
     private volatile long waitTimeNanos;
 
-    public ExecutingQuery(
-            long queryId,
-            ClientConnectionInfo clientConnection,
-            String username,
-            String queryText,
-            MapValue queryParameters,
-            Map<String,Object> transactionAnnotationData,
-            LongSupplier activeLockCount,
-            PageCursorCounters pageCursorCounters,
-            long threadExecutingTheQueryId,
-            String threadExecutingTheQueryName,
-            SystemNanoClock clock,
-            CpuClock cpuClock,
-            HeapAllocation heapAllocation )
+    public ExecutingQuery( long queryId, ClientConnectionInfo clientConnection, String databaseName, String username, String queryText,
+            MapValue queryParameters, Map<String,Object> transactionAnnotationData, LongSupplier activeLockCount, PageCursorCounters pageCursorCounters,
+            long threadExecutingTheQueryId, String threadExecutingTheQueryName, SystemNanoClock clock, CpuClock cpuClock, HeapAllocation heapAllocation )
     {
+        this.databaseName = databaseName;
         // Capture timestamps first
         this.cpuTimeNanosWhenQueryStarted = cpuClock.cpuTimeNanos( threadExecutingTheQueryId );
         this.startTimeNanos = clock.nanos();
@@ -256,6 +247,11 @@ public class ExecutingQuery
     public MapValue queryParameters()
     {
         return queryParameters;
+    }
+
+    public String databaseName()
+    {
+        return databaseName;
     }
 
     public long startTimestampMillis()

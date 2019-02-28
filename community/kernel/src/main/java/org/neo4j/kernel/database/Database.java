@@ -637,7 +637,7 @@ public class Database extends LifecycleAdapter
                         transactionMonitor, databaseAvailabilityGuard, globalTracers, storageEngine, globalProcedures, transactionIdStore, clock, cpuClockRef,
                         heapAllocationRef, accessCapability, versionContextSupplier, collectionsFactorySupplier,
                         constraintSemantics, databaseSchemaState, tokenHolders, getDatabaseName(), indexingService, labelScanStore, indexStatisticsStore,
-                        databaseDependencies, databaseMonitors ) );
+                        databaseDependencies ) );
 
         buildTransactionMonitor( kernelTransactions, clock, config );
 
@@ -812,7 +812,7 @@ public class Database extends LifecycleAdapter
             AtomicReference<HeapAllocation> heapAllocationRef )
     {
         QueryRegistrationOperations queryRegistrationOperations =
-                new StackingQueryRegistrationOperations( clock, cpuClockRef, heapAllocationRef );
+                new StackingQueryRegistrationOperations( clock, cpuClockRef, heapAllocationRef, databaseName );
 
         return new StatementOperationParts( queryRegistrationOperations );
     }

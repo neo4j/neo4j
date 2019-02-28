@@ -24,8 +24,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.graphdb.ExecutionPlanDescription;
+import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.kernel.impl.locking.ActiveLock;
 import org.neo4j.values.virtual.MapValue;
 
@@ -85,6 +85,11 @@ public class QuerySnapshot
     public String username()
     {
         return query.username();
+    }
+
+    public String databaseName()
+    {
+        return query.databaseName();
     }
 
     public ClientConnectionInfo clientConnection()
