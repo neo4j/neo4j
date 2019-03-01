@@ -559,15 +559,17 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
         }
 
         // Add tree building incl. external updates
+        PopulationProgress treeBuildProgress;
         if ( allScanUpdates.stream().allMatch( part -> part.mergeStarted ) )
         {
             long entryCount = allScanUpdates.stream().mapToLong( part -> part.count ).sum() + externalUpdates.count();
-            builder.add( PopulationProgress.single( numberOfAppliedScanUpdates + numberOfAppliedExternalUpdates, entryCount ), 2 );
+            treeBuildProgress = PopulationProgress.single( numberOfAppliedScanUpdates + numberOfAppliedExternalUpdates, entryCount );
         }
         else
         {
-            builder.add( PopulationProgress.NONE, 2 );
+            treeBuildProgress = PopulationProgress.NONE;
         }
+        builder.add( treeBuildProgress, 2 );
 
         return builder.build();
     }
