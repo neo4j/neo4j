@@ -310,6 +310,22 @@ class BlockStorageTest
         assertEquals( 1, monitor.mergeIterationCallCount );
     }
 
+    @Test
+    void shouldCalculateCorrectNumberOfEntriesToWriteDuringMerge()
+    {
+        // when
+        long entryCountForOneBlock = BlockStorage.calculateNumberOfEntriesWrittenDuringMerges( 100, 1, 2 );
+        long entryCountForMergeFactorBlocks = BlockStorage.calculateNumberOfEntriesWrittenDuringMerges( 100, 4, 4 );
+        long entryCountForMoreThanMergeFactorBlocks = BlockStorage.calculateNumberOfEntriesWrittenDuringMerges( 100, 5, 4 );
+        long entryCountForThreeFactorsMergeFactorBlocks = BlockStorage.calculateNumberOfEntriesWrittenDuringMerges( 100, 4 * 4 * 4 - 3, 4 );
+
+        // then
+        assertEquals( 0, entryCountForOneBlock );
+        assertEquals( 100, entryCountForMergeFactorBlocks );
+        assertEquals( 200, entryCountForMoreThanMergeFactorBlocks );
+        assertEquals( 300, entryCountForThreeFactorsMergeFactorBlocks );
+    }
+
     private Iterable<List<BlockEntry<MutableLong,MutableLong>>> asOneBigBlock( List<List<BlockEntry<MutableLong,MutableLong>>> expectedBlocks )
     {
         List<BlockEntry<MutableLong,MutableLong>> all = new ArrayList<>();
@@ -465,9 +481,9 @@ class BlockStorageTest
         }
 
         @Override
-        public void mergeStarted( long totalEntriesToMerge )
+        public void mergeStarted( long entryCount, long totalEntriesToWriteDuringMerge )
         {
-            this.totalEntriesToMerge = totalEntriesToMerge;
+            this.totalEntriesToMerge = totalEntriesToWriteDuringMerge;
         }
 
         @Override

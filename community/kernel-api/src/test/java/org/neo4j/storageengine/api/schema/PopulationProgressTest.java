@@ -27,6 +27,8 @@ import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.RandomRule;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.neo4j.storageengine.api.schema.PopulationProgress.multiple;
+import static org.neo4j.storageengine.api.schema.PopulationProgress.single;
 
 @ExtendWith( RandomExtension.class )
 class PopulationProgressTest
@@ -38,7 +40,7 @@ class PopulationProgressTest
     void shouldCalculateProgressOfSingle()
     {
         // given
-        PopulationProgress populationProgress = PopulationProgress.single( 50, 100 );
+        PopulationProgress populationProgress = single( 50, 100 );
 
         // when
         float progress = populationProgress.getProgress();
@@ -51,9 +53,9 @@ class PopulationProgressTest
     void shouldCalculateProgressOfMultipleEquallyWeightedProgresses()
     {
         // given
-        PopulationProgress part1 = PopulationProgress.single( 1, 1 );
-        PopulationProgress part2 = PopulationProgress.single( 4, 10 );
-        PopulationProgress multi = PopulationProgress.multiple().add( part1, 1 ).add( part2, 1 ).build();
+        PopulationProgress part1 = single( 1, 1 );
+        PopulationProgress part2 = single( 4, 10 );
+        PopulationProgress multi = multiple().add( part1, 1 ).add( part2, 1 ).build();
 
         // when
         float progress = multi.getProgress();
@@ -66,9 +68,9 @@ class PopulationProgressTest
     void shouldCalculateProgressOfMultipleDifferentlyWeightedProgresses()
     {
         // given
-        PopulationProgress part1 = PopulationProgress.single( 1, 3 );
-        PopulationProgress part2 = PopulationProgress.single( 4, 10 );
-        PopulationProgress multi = PopulationProgress.multiple().add( part1, 3 ).add( part2, 1 ).build();
+        PopulationProgress part1 = single( 1, 3 );
+        PopulationProgress part2 = single( 4, 10 );
+        PopulationProgress multi = multiple().add( part1, 3 ).add( part2, 1 ).build();
 
         // when
         float progress = multi.getProgress();
@@ -82,11 +84,11 @@ class PopulationProgressTest
     {
         // given
         int partCount = random.nextInt( 5, 10 );
-        PopulationProgress.MultiBuilder builder = PopulationProgress.multiple();
+        PopulationProgress.MultiBuilder builder = multiple();
         for ( int i = 0; i < partCount; i++ )
         {
             long total = random.nextLong( 10_000_000 );
-            builder.add( PopulationProgress.single( total, total ), random.nextFloat() * random.nextInt( 1, 10 ) );
+            builder.add( single( total, total ), random.nextFloat() * random.nextInt( 1, 10 ) );
         }
         PopulationProgress populationProgress = builder.build();
 
@@ -95,5 +97,22 @@ class PopulationProgressTest
 
         // then
         assertEquals( 1f, progress );
+    }
+
+    @Test
+    void shouldCalculateProgressForNestedMultipleParts()
+    {
+        // given
+        PopulationProgress multiPart1 = multiple().add( single( 1, 1 ), 1 ).add( single( 1, 5 ), 1 ).build(); // should result in 60%
+        assertEquals( 0.6f, multiPart1.getProgress() );
+        PopulationProgress multiPart2 = multiple().add( single( 6, 10 ), 1 ).add( single( 1, 5 ), 1 ).build(); // should result in 40%
+        assertEquals( 0.4f, multiPart2.getProgress() );
+
+        // when
+        PopulationProgress.MultiBuilder builder = multiple();
+        PopulationProgress all = builder.add( multiPart1, 1 ).add( multiPart2, 1 ).build();
+
+        // then
+        assertEquals( 0.5, all.getProgress() );
     }
 }

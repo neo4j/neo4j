@@ -59,7 +59,6 @@ import org.neo4j.util.Preconditions;
 import org.neo4j.values.storable.Value;
 
 import static org.neo4j.helpers.collection.Iterables.first;
-import static org.neo4j.kernel.impl.index.schema.BlockStorage.calculateNumberOfEntriesWrittenDuringMerges;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexUpdater.initializeKeyFromUpdate;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexes.deleteIndex;
 
@@ -527,9 +526,10 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
     public PopulationProgress progress( PopulationProgress scanProgress )
     {
         // A general note on scanProgress.getTotal(). Before the scan is completed most progress parts will base their estimates on that value.
-        // It is known that it may be slightly higher than the actual value. This is fine, but it creates this small "jump" in the progress
-        // in the middle somewhere when it switches from scan to merge. This also exists in the most basic population progress reports, but
-        // there it will be less visible since it will jump from some close-to-100 percentage to 100% and ONLINE.
+        // It is known that it may be slightly higher since it'll be based on store high-id, not the actual count.
+        // This is fine, but it creates this small "jump" in the progress in the middle somewhere when it switches from scan to merge.
+        // This also exists in the most basic population progress reports, but there it will be less visible since it will jump from
+        // some close-to-100 percentage to 100% and ONLINE.
 
         // This progress report will consist of a couple of smaller parts, weighted differently based on empirically collected values.
         // The weights will not be absolutely correct in all environments, but they don't have to be either, it will just result in some
@@ -538,7 +538,7 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
         PopulationProgress.MultiBuilder builder = PopulationProgress.multiple();
 
         // Add scan progress (this one weights a bit heavier than the others)
-        builder.add( scanCompleted ? PopulationProgress.DONE : scanProgress, 4 );
+        builder.add( scanProgress, 4 );
 
         // Add merge progress
         if ( !allScanUpdates.isEmpty() )
@@ -546,33 +546,28 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
             // The parts are merged in parallel so just take the first one and it will represent the whole merge progress.
             // It will be fairly accurate, but slightly off sometimes if other threads gets scheduling problems, i.e. if this part
             // finish far apart from others.
-            ThreadLocalBlockStorage part = first( allScanUpdates );
             long completed = 0;
-            long total;
-            if ( scanCompleted || part.blocksFlushed == 0 )
+            long total = 0;
+            if ( scanCompleted )
             {
                 // We know the actual entry count to write during merge since we have been monitoring those values
+                ThreadLocalBlockStorage part = first( allScanUpdates );
                 completed = part.entriesMerged;
                 total = part.totalEntriesToMerge;
-            }
-            else
-            {
-                // Before scan completed the total will have to be scanProgress.getTotal(). Use the same logic that BlockStorage uses
-                // internally to calculate the total number of entries written during the merge. The estimate gets more and more accurate
-                // the longer the scan progresses.
-                long averageKeysPerBlock = part.keysFlushed / part.blocksFlushed;
-                long entryCount = scanProgress.getTotal();
-                total = calculateNumberOfEntriesWrittenDuringMerges( entryCount, entryCount / averageKeysPerBlock, MERGE_FACTOR );
             }
             builder.add( PopulationProgress.single( completed, total ), 1 );
         }
 
-        // Add tree building (before scan completed it's based on scanProgress.getTotal() and after scan completed it's based on actual entry count)
-        long entryCount = scanCompleted ? allScanUpdates.stream().mapToLong( part -> part.count ).sum() : scanProgress.getCompleted();
-        builder.add( PopulationProgress.single( numberOfAppliedScanUpdates, entryCount ), 2 );
-
-        // Add external updates
-        builder.add( PopulationProgress.single( numberOfAppliedExternalUpdates, externalUpdates.count() ), 0.5f );
+        // Add tree building incl. external updates
+        if ( allScanUpdates.stream().allMatch( part -> part.mergeStarted ) )
+        {
+            long entryCount = allScanUpdates.stream().mapToLong( part -> part.count ).sum() + externalUpdates.count();
+            builder.add( PopulationProgress.single( numberOfAppliedScanUpdates + numberOfAppliedExternalUpdates, entryCount ), 2 );
+        }
+        else
+        {
+            builder.add( PopulationProgress.NONE, 2 );
+        }
 
         return builder.build();
     }
@@ -585,39 +580,24 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
     {
         private final BlockStorage<KEY,VALUE> blockStorage;
         private volatile long count;
+        private volatile boolean mergeStarted;
         private volatile long totalEntriesToMerge;
         private volatile long entriesMerged;
-        private volatile long keysFlushed;
-        private volatile long blocksFlushed;
 
         ThreadLocalBlockStorage( int id ) throws IOException
         {
             super( blockStorageMonitor );
-            this.blockStorage =
-                    new BlockStorage<>( layout, bufferFactory, fileSystem, new File( storeFile.getParentFile(), storeFile.getName() + ".scan-" + id ),
-                            this, blockSize );
+            File blockFile = new File( storeFile.getParentFile(), storeFile.getName() + ".scan-" + id );
+            this.blockStorage = new BlockStorage<>( layout, bufferFactory, fileSystem, blockFile, this, blockSize );
         }
 
         @Override
-        public void blockFlushed( long keyCount, int numberOfBytes, long positionAfterFlush )
+        public void mergeStarted( long entryCount, long totalEntriesToWriteDuringMerge )
         {
-            super.blockFlushed( keyCount, numberOfBytes, positionAfterFlush );
-            keysFlushed += keyCount;
-            blocksFlushed++;
-        }
-
-        @Override
-        public void entryAdded( int entrySize )
-        {
-            super.entryAdded( entrySize );
-            count++;
-        }
-
-        @Override
-        public void mergeStarted( long totalEntriesToMerge )
-        {
-            super.mergeStarted( totalEntriesToMerge );
-            this.totalEntriesToMerge = totalEntriesToMerge;
+            super.mergeStarted( entryCount, totalEntriesToWriteDuringMerge );
+            this.count = entryCount;
+            this.totalEntriesToMerge = totalEntriesToWriteDuringMerge;
+            this.mergeStarted = true;
         }
 
         @Override

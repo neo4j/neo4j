@@ -37,6 +37,8 @@ import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.ByteArrayPageCursor;
 import org.neo4j.util.Preconditions;
 
+import static java.lang.Math.ceil;
+
 /**
  * Transforms an unordered stream of key-value pairs ({@link BlockEntry}) to an ordered one. It does so in two phases:
  * 1. ADD: Entries are added through {@link #add(KEY, VALUE)}. Those entries are buffered in memory until there are enough of them to fill up a Block.
@@ -146,7 +148,7 @@ class BlockStorage<KEY, VALUE> implements Closeable
      */
     public void merge( int mergeFactor, Cancellation cancellation ) throws IOException
     {
-        monitor.mergeStarted( calculateNumberOfEntriesWrittenDuringMerges( entryCount, numberOfBlocksInCurrentFile, mergeFactor ) );
+        monitor.mergeStarted( entryCount, calculateNumberOfEntriesWrittenDuringMerges( entryCount, numberOfBlocksInCurrentFile, mergeFactor ) );
         File sourceFile = blockFile;
         File tempFile = new File( blockFile.getParent(), blockFile.getName() + ".b" );
         try
@@ -202,8 +204,8 @@ class BlockStorage<KEY, VALUE> implements Closeable
      */
     static long calculateNumberOfEntriesWrittenDuringMerges( long entryCount, long numberOfBlocks, int mergeFactor )
     {
-        int singleMerges = 1;
-        for ( long blocks = numberOfBlocks; blocks > mergeFactor; blocks /= mergeFactor )
+        int singleMerges = 0;
+        for ( long blocks = numberOfBlocks; blocks > 1; blocks = (long) ceil( (double) blocks / mergeFactor ) )
         {
             singleMerges++;
         }
@@ -279,14 +281,14 @@ class BlockStorage<KEY, VALUE> implements Closeable
         // Loop over block entries
         long actualDataSize = BLOCK_HEADER_SIZE;
         ByteArrayPageCursor pageCursor = new ByteArrayPageCursor( byteBuffer );
-        int unreportedEntrySize = 0;
+        int entryCountToReport = 0;
         while ( blockEntryCursor.next() )
         {
             KEY key = blockEntryCursor.key();
             VALUE value = blockEntryCursor.value();
             int entrySize = BlockEntry.entrySize( layout, key, value );
             actualDataSize += entrySize;
-            unreportedEntrySize++;
+            entryCountToReport++;
 
             if ( byteBuffer.remaining() < entrySize )
             {
@@ -300,15 +302,15 @@ class BlockStorage<KEY, VALUE> implements Closeable
                 byteBuffer.flip();
                 targetChannel.writeAll( byteBuffer );
                 byteBuffer.clear();
-                entryCountReporter.accept( unreportedEntrySize );
-                unreportedEntrySize = 0;
+                entryCountReporter.accept( entryCountToReport );
+                entryCountToReport = 0;
             }
 
             BlockEntry.write( pageCursor, layout, key, value );
         }
-        if ( unreportedEntrySize > 0 )
+        if ( entryCountToReport > 0 )
         {
-            entryCountReporter.accept( unreportedEntrySize );
+            entryCountReporter.accept( entryCountToReport );
         }
         return actualDataSize;
     }
@@ -357,14 +359,15 @@ class BlockStorage<KEY, VALUE> implements Closeable
         void blockFlushed( long keyCount, int numberOfBytes, long positionAfterFlush );
 
         /**
-         * @param totalEntriesToMerge total entries that will be written, even accounting for that entries may need to be
+         * @param entryCount number of entries there are in this block storage.
+         * @param totalEntriesToWriteDuringMerge total entries that will be written, even accounting for that entries may need to be
          * written multiple times back and forth.
          */
-        void mergeStarted( long totalEntriesToMerge );
+        void mergeStarted( long entryCount, long totalEntriesToWriteDuringMerge );
 
         /**
          * @param entries number of entries merged since last call. The sum of this value from all calls to this method
-         * will in the end match the value provided in {@link #mergeStarted(long)}.
+         * will in the end match the value provided in {@link #mergeStarted(long, long)}.
          */
         void entriesMerged( int entries );
 
@@ -385,7 +388,7 @@ class BlockStorage<KEY, VALUE> implements Closeable
             }
 
             @Override
-            public void mergeStarted( long totalEntriesToMerge )
+            public void mergeStarted( long entryCount, long totalEntriesToWriteDuringMerge )
             {   // no-op
             }
 
@@ -409,6 +412,11 @@ class BlockStorage<KEY, VALUE> implements Closeable
         {
             private final Monitor actual;
 
+            Delegate( Monitor actual )
+            {
+                this.actual = actual;
+            }
+
             @Override
             public void entryAdded( int entrySize )
             {
@@ -422,9 +430,9 @@ class BlockStorage<KEY, VALUE> implements Closeable
             }
 
             @Override
-            public void mergeStarted( long totalEntriesToMerge )
+            public void mergeStarted( long entryCount, long totalEntriesToWriteDuringMerge )
             {
-                actual.mergeStarted( totalEntriesToMerge );
+                actual.mergeStarted( entryCount, totalEntriesToWriteDuringMerge );
             }
 
             @Override
@@ -443,11 +451,6 @@ class BlockStorage<KEY, VALUE> implements Closeable
             public void mergedBlocks( long resultingBlockSize, long resultingEntryCount, long numberOfBlocks )
             {
                 actual.mergedBlocks( resultingBlockSize, resultingEntryCount, numberOfBlocks );
-            }
-
-            Delegate( Monitor actual )
-            {
-                this.actual = actual;
             }
         }
 

@@ -106,6 +106,7 @@ public class BlockBasedIndexPopulatorTest
             assertEquals( 0.7f, populator.progress( PopulationProgress.DONE ).getProgress(), 0.1f );
             monitor.mergeFinishedBarrier.release();
             mergeFuture.get();
+            assertEquals( 1f, populator.progress( PopulationProgress.DONE ).getProgress(), 0f );
         }
         finally
         {

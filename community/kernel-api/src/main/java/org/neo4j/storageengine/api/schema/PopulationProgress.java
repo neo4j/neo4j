@@ -38,6 +38,8 @@ public interface PopulationProgress
 
     float getProgress();
 
+    IndexPopulationProgress toIndexPopulationProgress();
+
     static PopulationProgress single( long completed, long total )
     {
         return new PopulationProgress()
@@ -78,8 +80,6 @@ public interface PopulationProgress
     {
         return new MultiBuilder();
     }
-
-    IndexPopulationProgress toIndexPopulationProgress();
 
     class MultiBuilder
     {
