@@ -120,23 +120,7 @@ public class FileUtils
                 catch ( DirectoryNotEmptyException notEmpty )
                 {
                     String reason = notEmptyReason( dir, notEmpty );
-                    DirectoryNotEmptyException newNotEmpty = new DirectoryNotEmptyException( notEmpty.getFile() )
-                    {
-                        @Override
-                        public String getReason()
-                        {
-                            return reason;
-                        }
-                    };
-                    try
-                    {
-                        newNotEmpty.initCause( notEmpty );
-                    }
-                    catch ( Exception ignore )
-                    {
-                        // Attaching this cause is _probably_ not super important. We just loose a little bit of stack trace from JDK internals.
-                    }
-                    throw newNotEmpty;
+                    throw new IOException( notEmpty.getMessage() + ": " + reason, notEmpty );
                 }
                 return FileVisitResult.CONTINUE;
             }
