@@ -23,7 +23,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -44,6 +43,7 @@ import org.neo4j.test.rule.TestDirectory;
 import static org.junit.Assert.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.kernel.impl.index.schema.ByteBufferFactory.HEAP_BUFFER_FACTORY;
 
 @ExtendWith( {TestDirectoryExtension.class, RandomExtension.class} )
 class IndexUpdateStorageTest
@@ -65,7 +65,7 @@ class IndexUpdateStorageTest
     {
         // given
         try ( IndexUpdateStorage<GenericKey,NativeIndexValue> storage = new IndexUpdateStorage<>( layout, directory.getFileSystem(), directory.file( "file" ),
-                ByteBuffer::allocate, 1000 ) )
+                HEAP_BUFFER_FACTORY, 1000 ) )
         {
             // when
             List<IndexEntryUpdate<SchemaDescriptorSupplier>> expected = generateSomeUpdates( 0 );
@@ -81,7 +81,7 @@ class IndexUpdateStorageTest
     {
         // given
         try ( IndexUpdateStorage<GenericKey,NativeIndexValue> storage = new IndexUpdateStorage<>( layout, directory.getFileSystem(), directory.file( "file" ),
-                ByteBuffer::allocate, 1000 ) )
+                HEAP_BUFFER_FACTORY, 1000 ) )
         {
             // when
             List<IndexEntryUpdate<SchemaDescriptorSupplier>> expected = generateSomeUpdates( 5 );
@@ -97,7 +97,7 @@ class IndexUpdateStorageTest
     {
         // given
         try ( IndexUpdateStorage<GenericKey,NativeIndexValue> storage = new IndexUpdateStorage<>( layout, directory.getFileSystem(), directory.file( "file" ),
-                ByteBuffer::allocate, 1000 ) )
+                HEAP_BUFFER_FACTORY, 1000 ) )
         {
             // when
             List<IndexEntryUpdate<SchemaDescriptorSupplier>> expected = generateSomeUpdates( 1_000 );

@@ -19,12 +19,14 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.function.IntFunction;
 
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.OpenMode;
@@ -35,15 +37,17 @@ import org.neo4j.test.extension.Inject;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.neo4j.kernel.impl.transaction.log.ReadAheadChannel.DEFAULT_READ_AHEAD_SIZE;
 
 @ExtendWith( EphemeralFileSystemExtension.class )
 class ReadAheadChannelTest
 {
     @Inject
-    private EphemeralFileSystemAbstraction fileSystem;
+    protected EphemeralFileSystemAbstraction fileSystem;
 
-    @Test
-    void shouldThrowExceptionForReadAfterEOFIfNotEnoughBytesExist() throws Exception
+    @ParameterizedTest
+    @EnumSource( BufferFactories.class )
+    void shouldThrowExceptionForReadAfterEOFIfNotEnoughBytesExist( IntFunction<ByteBuffer> bufferFactory ) throws Exception
     {
         // Given
         File bytesReadTestFile = new File( "bytesReadTest.txt" );
@@ -57,15 +61,16 @@ class ReadAheadChannelTest
 
         storeChannel = fileSystem.open( bytesReadTestFile, OpenMode.READ );
 
-        ReadAheadChannel<StoreChannel> channel = new ReadAheadChannel<>( storeChannel );
+        ReadAheadChannel<StoreChannel> channel = new ReadAheadChannel<>( storeChannel, bufferFactory.apply( DEFAULT_READ_AHEAD_SIZE ) );
         assertEquals( (byte) 1, channel.get() );
 
         assertThrows( ReadPastEndException.class, channel::get );
         assertThrows( ReadPastEndException.class, channel::get );
     }
 
-    @Test
-    void shouldReturnValueIfSufficientBytesAreBufferedEvenIfEOFHasBeenEncountered() throws Exception
+    @ParameterizedTest
+    @EnumSource( BufferFactories.class )
+    void shouldReturnValueIfSufficientBytesAreBufferedEvenIfEOFHasBeenEncountered( IntFunction<ByteBuffer> bufferFactory ) throws Exception
     {
         // Given
         File shortReadTestFile = new File( "shortReadTest.txt" );
@@ -78,15 +83,16 @@ class ReadAheadChannelTest
         storeChannel.close();
 
         storeChannel = fileSystem.open( shortReadTestFile, OpenMode.READ );
-        ReadAheadChannel<StoreChannel> channel = new ReadAheadChannel<>( storeChannel );
+        ReadAheadChannel<StoreChannel> channel = new ReadAheadChannel<>( storeChannel, bufferFactory.apply( DEFAULT_READ_AHEAD_SIZE ) );
 
         assertThrows( ReadPastEndException.class, channel::getShort );
         assertEquals( (byte) 1, channel.get() );
         assertThrows( ReadPastEndException.class, channel::get );
     }
 
-    @Test
-    void shouldHandleRunningOutOfBytesWhenRequestSpansMultipleFiles() throws Exception
+    @ParameterizedTest
+    @EnumSource( BufferFactories.class )
+    void shouldHandleRunningOutOfBytesWhenRequestSpansMultipleFiles( IntFunction<ByteBuffer> bufferFactory ) throws Exception
     {
         // Given
         StoreChannel storeChannel1 = fileSystem.open( new File( "foo.1" ), OpenMode.READ_WRITE );
@@ -111,7 +117,7 @@ class ReadAheadChannelTest
         storeChannel1 = fileSystem.open( new File( "foo.1" ), OpenMode.READ );
         final StoreChannel storeChannel2Copy = fileSystem.open( new File( "foo.2" ), OpenMode.READ );
 
-        ReadAheadChannel<StoreChannel> channel = new ReadAheadChannel<StoreChannel>( storeChannel1 )
+        ReadAheadChannel<StoreChannel> channel = new ReadAheadChannel<StoreChannel>( storeChannel1, bufferFactory.apply( DEFAULT_READ_AHEAD_SIZE ) )
         {
             @Override
             protected StoreChannel next( StoreChannel channel )
@@ -125,8 +131,9 @@ class ReadAheadChannelTest
         assertThrows( ReadPastEndException.class, channel::get );
     }
 
-    @Test
-    void shouldReturnPositionWithinBufferedStream() throws Exception
+    @ParameterizedTest
+    @EnumSource( BufferFactories.class )
+    void shouldReturnPositionWithinBufferedStream( IntFunction<ByteBuffer> bufferFactory ) throws Exception
     {
         // given
         File file = new File( "foo.txt" );
@@ -135,7 +142,7 @@ class ReadAheadChannelTest
         int fileSize = readAheadSize * 8;
 
         createFile( fileSystem, file, fileSize );
-        ReadAheadChannel<StoreChannel> bufferedReader = new ReadAheadChannel<>( fileSystem.open( file, OpenMode.READ ), readAheadSize );
+        ReadAheadChannel<StoreChannel> bufferedReader = new ReadAheadChannel<>( fileSystem.open( file, OpenMode.READ ), bufferFactory.apply( readAheadSize ) );
 
         // when
         for ( int i = 0; i < fileSize / Long.BYTES; i++ )
@@ -160,5 +167,25 @@ class ReadAheadChannelTest
         buffer.flip();
         storeChannel.writeAll( buffer );
         storeChannel.close();
+    }
+
+    enum BufferFactories implements IntFunction<ByteBuffer>
+    {
+        HEAP
+        {
+            @Override
+            public ByteBuffer apply( int value )
+            {
+                return ByteBuffer.allocate( value );
+            }
+        },
+        DIRECT
+        {
+            @Override
+            public ByteBuffer apply( int value )
+            {
+                return ByteBuffer.allocateDirect( value );
+            }
+        }
     }
 }
