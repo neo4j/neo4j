@@ -371,7 +371,7 @@ public class PropertyRecord extends AbstractBaseRecord implements Iterable<Prope
         PropertyRecord clone = (PropertyRecord) super.clone();
         clone.blocks = blocks.clone();
         clone.blockRecords = blockRecords.clone();
-        for ( int i = 0; i < blockRecords.length; i++ )
+        for ( int i = 0; i < blockRecordsCursor; i++ )
         {
             clone.blockRecords[i] = clone.blockRecords[i].clone();
         }
