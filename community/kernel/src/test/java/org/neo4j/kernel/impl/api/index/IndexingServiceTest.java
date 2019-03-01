@@ -1092,7 +1092,9 @@ public class IndexingServiceTest
 
             // Thread is just about to start checking index status. We flip to failed proxy to indicate population failure during recovery.
             barrier.await();
-
+            // Wait for the index to come online, otherwise we'll race the failed flip below with its flip and sometimes the POPULATING -> ONLINE
+            // flip will win and make the index NOT fail and therefor hanging this test awaiting on the exceptionBarrier below
+            waitForIndexesToComeOnline( indexing, indexId );
             IndexProxy indexProxy = indexing.getIndexProxy( indexRule.schema() );
             assertThat( indexProxy, instanceOf( ContractCheckingIndexProxy.class ) );
             ContractCheckingIndexProxy contractCheckingIndexProxy = (ContractCheckingIndexProxy) indexProxy;
