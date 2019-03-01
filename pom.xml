@@ -62,8 +62,8 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <maven.compiler.source>1.8</maven.compiler.source>
-        <maven.compiler.target>1.8</maven.compiler.target>
+        <maven.compiler.source>11</maven.compiler.source>
+        <maven.compiler.target>11</maven.compiler.target>
         <licensing.prepend.text>licensing/notice-agpl-prefix.txt</licensing.prepend.text>
         <lucene.version>5.5.5</lucene.version>
         <bouncycastle.version>1.61</bouncycastle.version>
@@ -679,7 +679,7 @@
                             <arg>${scala.java.additional.args}</arg>
                         </args>
                         <jvmArgs>
-                            <jvmArg>-Xms64m</jvmArg>
+                            <jvmArg>-Xms256m</jvmArg>
                             <jvmArg>-Xmx1024m</jvmArg>
                         </jvmArgs>
                     </configuration>
@@ -1081,6 +1081,7 @@
                 <jdk>[9, )</jdk>
             </activation>
             <properties>
+                <java.exports>--add-exports=java.base/sun.nio.ch=ALL-UNNAMED</java.exports>
                 <maven.javadoc.skip>true</maven.javadoc.skip>
                 <scala.java.additional.args>-nobootcp</scala.java.additional.args>
             </properties>

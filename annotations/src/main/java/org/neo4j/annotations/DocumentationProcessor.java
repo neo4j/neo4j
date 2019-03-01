@@ -34,7 +34,7 @@ import javax.lang.model.element.Element;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
 
-@SupportedSourceVersion( SourceVersion.RELEASE_8 )
+@SupportedSourceVersion( SourceVersion.RELEASE_11 )
 @SupportedAnnotationTypes( "org.neo4j.kernel.impl.annotations.Documented" )
 public class DocumentationProcessor extends AnnotationProcessor
 {

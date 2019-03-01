@@ -317,12 +317,6 @@ public class TestSecurityManager extends SecurityManager
     }
 
     @Override
-    public boolean checkTopLevelWindow( Object window )
-    {
-        return managerExists() ? securityManager.checkTopLevelWindow( window ) : super.checkTopLevelWindow( window );
-    }
-
-    @Override
     public void checkPrintJobAccess()
     {
         if ( managerExists() )
@@ -332,32 +326,6 @@ public class TestSecurityManager extends SecurityManager
         else
         {
             super.checkPrintJobAccess();
-        }
-    }
-
-    @Override
-    public void checkSystemClipboardAccess()
-    {
-        if ( managerExists() )
-        {
-            securityManager.checkSystemClipboardAccess();
-        }
-        else
-        {
-            super.checkSystemClipboardAccess();
-        }
-    }
-
-    @Override
-    public void checkAwtEventQueueAccess()
-    {
-        if ( managerExists() )
-        {
-            securityManager.checkAwtEventQueueAccess();
-        }
-        else
-        {
-            super.checkAwtEventQueueAccess();
         }
     }
 
@@ -397,19 +365,6 @@ public class TestSecurityManager extends SecurityManager
         else
         {
             super.checkSetFactory();
-        }
-    }
-
-    @Override
-    public void checkMemberAccess( Class<?> clazz, int which )
-    {
-        if ( managerExists() )
-        {
-            securityManager.checkMemberAccess( clazz, which );
-        }
-        else
-        {
-            super.checkMemberAccess( clazz, which );
         }
     }
 
