@@ -58,7 +58,6 @@ import org.neo4j.test.rule.ImpermanentDbmsRule;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.helpers.ArrayUtil.single;
@@ -68,7 +67,7 @@ import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forLabel;
 import static org.neo4j.kernel.impl.index.schema.IndexDescriptorFactory.forSchema;
 import static org.neo4j.kernel.impl.index.schema.IndexDescriptorFactory.uniqueForSchema;
 
-public class SchemaStorageTest
+public class SchemaStorageIT
 {
     private static final String LABEL1 = "Label1";
     private static final String LABEL2 = "Label2";
