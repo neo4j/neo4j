@@ -21,6 +21,8 @@ package org.neo4j.kernel.impl.index.schema;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.DirectoryNotEmptyException;
+import java.nio.file.NoSuchFileException;
 
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.internal.kernel.api.InternalIndexState;
@@ -85,7 +87,31 @@ public class NativeIndexes
                     new File( rootIndexDirectory.getParent(), "archive-" + rootIndexDirectory.getName() + "-" + System.currentTimeMillis() + ".zip" ) );
             return true;
         }
-        fs.deleteRecursively( rootIndexDirectory );
+        int attempt = 0;
+        while ( attempt < 5 )
+        {
+            attempt++;
+            try
+            {
+                fs.deleteRecursively( rootIndexDirectory );
+                break;
+            }
+            catch ( DirectoryNotEmptyException | NoSuchFileException concurrentModificationException )
+            {
+                // Looks like someone was poking around in our directory while we where deleting.
+                // Let's sleep for a bit and try again.
+                try
+                {
+                    Thread.sleep( 100 );
+                }
+                catch ( InterruptedException e )
+                {
+                    // Let's abandon this attempt to clean up.
+                    Thread.currentThread().interrupt();
+                    break;
+                }
+            }
+        }
         return false;
     }
 }
