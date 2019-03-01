@@ -40,14 +40,14 @@ class OverriddenDatabaseConfigTest
     void shouldOnlyReflectAugmentsToUnderlyingConfigIfNotOverridden()
     {
         //given
-        String expectedDbName = "foo.db";
+        String expectedDbName = "foo";
         Config underlyingConfig = Config.defaults();
         OverriddenDatabaseConfig dbConfig = new OverriddenDatabaseConfig( underlyingConfig,
                 stringMap( GraphDatabaseSettings.active_database.name(), expectedDbName ) );
 
         //when
         underlyingConfig.augment( GraphDatabaseSettings.allow_upgrade, "true" );
-        underlyingConfig.augment( GraphDatabaseSettings.active_database, "bar.db" );
+        underlyingConfig.augment( GraphDatabaseSettings.active_database, "bar" );
 
         //then
         assertTrue( dbConfig.get( GraphDatabaseSettings.allow_upgrade ),
@@ -66,7 +66,7 @@ class OverriddenDatabaseConfigTest
 
         //when
         dbConfig.augment( GraphDatabaseSettings.allow_upgrade, "true" );
-        dbConfig.augment( GraphDatabaseSettings.active_database, "bar.db" );
+        dbConfig.augment( GraphDatabaseSettings.active_database, "bar" );
 
         //then
         assertTrue( underlyingConfig.get( GraphDatabaseSettings.allow_upgrade ) &&

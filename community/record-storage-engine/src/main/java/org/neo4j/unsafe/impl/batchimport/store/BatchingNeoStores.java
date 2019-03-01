@@ -93,7 +93,7 @@ import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_COMMIT_TIME
  */
 public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visitable
 {
-    private static final String TEMP_STORE_NAME = "temp.db";
+    private static final String TEMP_STORE_NAME = "temp";
     // Empirical and slightly defensive threshold where relationship records seem to start requiring double record units.
     // Basically decided by picking a maxId of pointer (as well as node ids) in the relationship record and randomizing its data,
     // seeing which is a maxId where records starts to require a secondary unit.

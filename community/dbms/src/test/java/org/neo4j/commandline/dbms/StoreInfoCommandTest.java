@@ -75,7 +75,7 @@ class StoreInfoCommandTest
     void setUp() throws Exception
     {
         Path homeDir = testDirectory.directory( "home-dir" ).toPath();
-        databaseDirectory = homeDir.resolve( "data/databases/foo.db" );
+        databaseDirectory = homeDir.resolve( "data/databases/foo" );
         databaseLayout = DatabaseLayout.of( databaseDirectory.toFile() );
         Files.createDirectories( databaseDirectory );
 

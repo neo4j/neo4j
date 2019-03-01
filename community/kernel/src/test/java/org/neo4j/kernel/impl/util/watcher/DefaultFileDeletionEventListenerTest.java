@@ -43,11 +43,11 @@ class DefaultFileDeletionEventListenerTest
     {
         AssertableLogProvider internalLogProvider = new AssertableLogProvider( false );
         DefaultFileDeletionEventListener listener = buildListener( internalLogProvider );
-        listener.fileDeleted( key, "testFile.db" );
+        listener.fileDeleted( key, "testFile" );
         listener.fileDeleted( key, "anotherDirectory" );
 
         internalLogProvider.assertLogStringContains(
-                "'testFile.db' which belongs to the 'testDatabase' database was deleted while it was running." );
+                "'testFile' which belongs to the 'testDatabase' database was deleted while it was running." );
         internalLogProvider.assertLogStringContains(
                 "'anotherDirectory' which belongs to the 'testDatabase' database was deleted while it was running." );
     }

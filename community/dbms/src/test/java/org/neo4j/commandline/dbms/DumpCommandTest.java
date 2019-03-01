@@ -97,28 +97,28 @@ class DumpCommandTest
         configDir = testDirectory.directory( "config-dir" ).toPath();
         archive = testDirectory.file( "some-archive.dump" ).toPath();
         dumper = mock( Dumper.class );
-        putStoreInDirectory( homeDir.resolve( "data/databases/foo.db" ) );
-        databaseDirectory = homeDir.resolve( "data/databases/foo.db" );
+        putStoreInDirectory( homeDir.resolve( "data/databases/foo" ) );
+        databaseDirectory = homeDir.resolve( "data/databases/foo" );
     }
 
     @Test
     void shouldDumpTheDatabaseToTheArchive() throws Exception
     {
-        execute( "foo.db" );
-        verify( dumper ).dump( eq( homeDir.resolve( "data/databases/foo.db" ) ),
-                eq( homeDir.resolve( "data/tx-logs/foo.db" ) ), eq( archive ), any() );
+        execute( "foo" );
+        verify( dumper ).dump( eq( homeDir.resolve( "data/databases/foo" ) ),
+                eq( homeDir.resolve( "data/tx-logs/foo" ) ), eq( archive ), any() );
     }
 
     @Test
     void shouldCalculateTheDatabaseDirectoryFromConfig() throws Exception
     {
         Path dataDir = testDirectory.directory( "some-other-path" ).toPath();
-        Path txLogsDir = dataDir.resolve( DEFAULT_TX_LOGS_ROOT_DIR_NAME + "/foo.db" );
-        Path databaseDir = dataDir.resolve( "databases/foo.db" );
+        Path txLogsDir = dataDir.resolve( DEFAULT_TX_LOGS_ROOT_DIR_NAME + "/foo" );
+        Path databaseDir = dataDir.resolve( "databases/foo" );
         putStoreInDirectory( databaseDir );
         Files.write( configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ), singletonList( formatProperty( data_directory, dataDir ) ) );
 
-        execute( "foo.db" );
+        execute( "foo" );
         verify( dumper ).dump( eq( databaseDir ), eq( txLogsDir ), any(), any() );
     }
 
@@ -127,14 +127,14 @@ class DumpCommandTest
     {
         Path dataDir = testDirectory.directory( "some-other-path" ).toPath();
         Path txlogsRoot = testDirectory.directory( "txLogsPath" ).toPath();
-        Path databaseDir = dataDir.resolve( "databases/foo.db" );
+        Path databaseDir = dataDir.resolve( "databases/foo" );
         putStoreInDirectory( databaseDir );
         Files.write( configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ),
                 asList( formatProperty( data_directory, dataDir ),
                         formatProperty( transaction_logs_root_path, txlogsRoot ) ) );
 
-        execute( "foo.db" );
-        verify( dumper ).dump( eq( databaseDir ), eq( txlogsRoot.resolve( "foo.db" ) ), any(), any() );
+        execute( "foo" );
+        verify( dumper ).dump( eq( databaseDir ), eq( txlogsRoot.resolve( "foo" ) ), any(), any() );
     }
 
     @Test
@@ -142,11 +142,11 @@ class DumpCommandTest
     void shouldHandleDatabaseSymlink() throws Exception
     {
         Path symDir = testDirectory.directory( "path-to-links" ).toPath();
-        Path realDatabaseDir = symDir.resolve( "foo.db" );
+        Path realDatabaseDir = symDir.resolve( "foo" );
 
         Path dataDir = testDirectory.directory( "some-other-path" ).toPath();
-        Path databaseDir = dataDir.resolve( "databases/foo.db" );
-        Path txLogsDir = dataDir.resolve( DEFAULT_TX_LOGS_ROOT_DIR_NAME + "/foo.db" );
+        Path databaseDir = dataDir.resolve( "databases/foo" );
+        Path txLogsDir = dataDir.resolve( DEFAULT_TX_LOGS_ROOT_DIR_NAME + "/foo" );
 
         putStoreInDirectory( realDatabaseDir );
         Files.createDirectories( dataDir.resolve( "databases" ) );
@@ -155,7 +155,7 @@ class DumpCommandTest
         Files.write( configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ),
                 singletonList( format( "%s=%s", data_directory.name(), dataDir.toString().replace( '\\', '/' ) ) ) );
 
-        execute( "foo.db" );
+        execute( "foo" );
         verify( dumper ).dump( eq( realDatabaseDir ), eq( txLogsDir ), any(), any() );
     }
 
@@ -163,15 +163,15 @@ class DumpCommandTest
     void shouldCalculateTheArchiveNameIfPassedAnExistingDirectory() throws Exception
     {
         File to = testDirectory.directory( "some-dir" );
-        new DumpCommand( homeDir, configDir, dumper ).execute( new String[]{"--database=" + "foo.db", "--to=" + to} );
-        verify( dumper ).dump( any( Path.class ), any( Path.class ), eq( to.toPath().resolve( "foo.db.dump" ) ), any() );
+        new DumpCommand( homeDir, configDir, dumper ).execute( new String[]{"--database=" + "foo", "--to=" + to} );
+        verify( dumper ).dump( any( Path.class ), any( Path.class ), eq( to.toPath().resolve( "foo.dump" ) ), any() );
     }
 
     @Test
     void shouldConvertToCanonicalPath() throws Exception
     {
         new DumpCommand( homeDir, configDir, dumper )
-                .execute( new String[]{"--database=" + "foo.db", "--to=foo.dump"} );
+                .execute( new String[]{"--database=" + "foo", "--to=foo.dump"} );
         verify( dumper ).dump( any( Path.class ), any( Path.class ),
                 eq( Paths.get( new File( "foo.dump" ).getCanonicalPath() ) ), any() );
     }
@@ -181,21 +181,21 @@ class DumpCommandTest
             throws Exception
     {
         Files.createFile( archive );
-        execute( "foo.db" );
+        execute( "foo" );
         verify( dumper ).dump( any(), any(), eq( archive ), any() );
     }
 
     @Test
     void shouldRespectTheStoreLock() throws Exception
     {
-        Path databaseDirectory = homeDir.resolve( "data/databases/foo.db" );
+        Path databaseDirectory = homeDir.resolve( "data/databases/foo" );
         StoreLayout storeLayout = DatabaseLayout.of( databaseDirectory.toFile() ).getStoreLayout();
         try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
               StoreLocker storeLocker = new StoreLocker( fileSystem, storeLayout ) )
         {
             storeLocker.checkLock();
 
-            CommandFailed commandFailed = assertThrows( CommandFailed.class, () -> execute( "foo.db" ) );
+            CommandFailed commandFailed = assertThrows( CommandFailed.class, () -> execute( "foo" ) );
             assertEquals( "the database is in use -- stop Neo4j and try again", commandFailed.getMessage() );
         }
     }
@@ -204,7 +204,7 @@ class DumpCommandTest
     void databaseThatRequireRecoveryIsNotDumpable() throws IOException
     {
         Config config = Config.builder().withHome( homeDir ).build();
-        DatabaseLayout databaseLayout = testDirectory.databaseLayout( "foo.db", LayoutConfig.of( config ) );
+        DatabaseLayout databaseLayout = testDirectory.databaseLayout( "foo", LayoutConfig.of( config ) );
         testDirectory.getFileSystem().mkdirs( databaseLayout.getTransactionLogsDirectory() );
         File logFile = new File( databaseLayout.getTransactionLogsDirectory(), TransactionLogFiles.DEFAULT_NAME + ".0" );
 
@@ -212,14 +212,14 @@ class DumpCommandTest
         {
             fileWriter.write( "brb" );
         }
-        CommandFailed commandFailed = assertThrows( CommandFailed.class, () -> execute( "foo.db" ) );
+        CommandFailed commandFailed = assertThrows( CommandFailed.class, () -> execute( "foo" ) );
         assertThat( commandFailed.getMessage(), startsWith( "Active logical log detected, this might be a source of inconsistencies." ) );
     }
 
     @Test
     void shouldReleaseTheStoreLockAfterDumping() throws Exception
     {
-        execute( "foo.db" );
+        execute( "foo" );
         assertCanLockStore( databaseDirectory );
     }
 
@@ -227,7 +227,7 @@ class DumpCommandTest
     void shouldReleaseTheStoreLockEvenIfThereIsAnError() throws Exception
     {
         doThrow( IOException.class ).when( dumper ).dump( any(), any(), any(), any() );
-        assertThrows( CommandFailed.class, () -> execute( "foo.db" ) );
+        assertThrows( CommandFailed.class, () -> execute( "foo" ) );
         assertCanLockStore( databaseDirectory );
     }
 
@@ -235,7 +235,7 @@ class DumpCommandTest
     void shouldNotAccidentallyCreateTheDatabaseDirectoryAsASideEffectOfStoreLocking()
             throws Exception
     {
-        Path databaseDirectory = homeDir.resolve( "data/databases/accident.db" );
+        Path databaseDirectory = homeDir.resolve( "data/databases/accident" );
 
         doAnswer( ignored ->
         {
@@ -243,7 +243,7 @@ class DumpCommandTest
             return null;
         } ).when( dumper ).dump( any(), any(), any(), any() );
 
-        execute( "foo.db" );
+        execute( "foo" );
     }
 
     @Test
@@ -258,7 +258,7 @@ class DumpCommandTest
 
             try ( Closeable ignored = withPermissions( storeLayout.storeLockFile().toPath(), emptySet() ) )
             {
-                CommandFailed commandFailed = assertThrows( CommandFailed.class, () -> execute( "foo.db" ) );
+                CommandFailed commandFailed = assertThrows( CommandFailed.class, () -> execute( "foo" ) );
                 assertEquals( commandFailed.getMessage(), "you do not have permission to dump the database -- is Neo4j running as a different user?" );
             }
         }
@@ -277,7 +277,7 @@ class DumpCommandTest
             return null;
         } ).when( dumper ).dump(any(), any(), any(), any() );
 
-        execute( "foo.db" );
+        execute( "foo" );
     }
 
     @Test
@@ -306,22 +306,22 @@ class DumpCommandTest
     void shouldGiveAClearErrorIfTheArchiveAlreadyExists() throws Exception
     {
         doThrow( new FileAlreadyExistsException( "the-archive-path" ) ).when( dumper ).dump( any(), any(), any(), any() );
-        CommandFailed commandFailed = assertThrows( CommandFailed.class, () -> execute( "foo.db" ) );
+        CommandFailed commandFailed = assertThrows( CommandFailed.class, () -> execute( "foo" ) );
         assertEquals( "archive already exists: the-archive-path", commandFailed.getMessage() );
     }
 
     @Test
     void shouldGiveAClearMessageIfTheDatabaseDoesntExist()
     {
-        CommandFailed commandFailed = assertThrows( CommandFailed.class, () -> execute( "bobo.db" ) );
-        assertEquals( "database does not exist: bobo.db", commandFailed.getMessage() );
+        CommandFailed commandFailed = assertThrows( CommandFailed.class, () -> execute( "bobo" ) );
+        assertEquals( "database does not exist: bobo", commandFailed.getMessage() );
     }
 
     @Test
     void shouldGiveAClearMessageIfTheArchivesParentDoesntExist() throws Exception
     {
         doThrow( new NoSuchFileException( archive.getParent().toString() ) ).when( dumper ).dump(any(), any(), any(), any() );
-        CommandFailed commandFailed = assertThrows( CommandFailed.class, () -> execute( "foo.db" ) );
+        CommandFailed commandFailed = assertThrows( CommandFailed.class, () -> execute( "foo" ) );
         assertEquals( "unable to dump database: NoSuchFileException: " + archive.getParent(), commandFailed.getMessage() );
     }
 
@@ -330,7 +330,7 @@ class DumpCommandTest
             throws Exception
     {
         doThrow( new IOException( "the-message" ) ).when( dumper ).dump(any(), any(), any(), any() );
-        CommandFailed commandFailed = assertThrows( CommandFailed.class, () -> execute( "foo.db" ) );
+        CommandFailed commandFailed = assertThrows( CommandFailed.class, () -> execute( "foo" ) );
         assertEquals( "unable to dump database: IOException: the-message", commandFailed.getMessage() );
     }
 

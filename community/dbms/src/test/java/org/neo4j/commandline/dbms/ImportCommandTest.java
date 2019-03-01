@@ -173,7 +173,7 @@ class ImportCommandTest
         Path confPath = testDir.directory( "conf" ).toPath();
         ImportCommand importCommand = new ImportCommand( homeDir, confPath, outsideWorld );
         File nodesFile = createTextFile( "nodes.csv", ":ID", "1", "2" );
-        String[] arguments = {"--mode=csv", "--database=existing.db", "--nodes=" + nodesFile.getAbsolutePath(),
+        String[] arguments = {"--mode=csv", "--database=existing", "--nodes=" + nodesFile.getAbsolutePath(),
                 "--report-file=" + testDir.file( "report" )};
 
         // First run an import so that a database gets created

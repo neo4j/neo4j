@@ -97,8 +97,8 @@ class LoadCommandTest
     @Test
     void shouldLoadTheDatabaseFromTheArchive() throws CommandFailed, IncorrectUsage, IOException, IncorrectFormat
     {
-        execute( "foo.db" );
-        DatabaseLayout databaseLayout = createDatabaseLayout( homeDir.resolve( "data/databases/foo.db" ),
+        execute( "foo" );
+        DatabaseLayout databaseLayout = createDatabaseLayout( homeDir.resolve( "data/databases/foo" ),
                 homeDir.resolve( "data/" + DEFAULT_TX_LOGS_ROOT_DIR_NAME ) );
         verify( loader ).load( archive, databaseLayout );
     }
@@ -108,12 +108,12 @@ class LoadCommandTest
             throws IOException, CommandFailed, IncorrectUsage, IncorrectFormat
     {
         Path dataDir = testDirectory.directory( "some-other-path" ).toPath();
-        Path databaseDir = dataDir.resolve( "databases/foo.db" );
+        Path databaseDir = dataDir.resolve( "databases/foo" );
         Path transactionLogsDir = dataDir.resolve( DEFAULT_TX_LOGS_ROOT_DIR_NAME );
         Files.createDirectories( databaseDir );
         Files.write( configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ), singletonList( formatProperty( data_directory, dataDir ) ) );
 
-        execute( "foo.db" );
+        execute( "foo" );
         DatabaseLayout databaseLayout = createDatabaseLayout( databaseDir, transactionLogsDir );
         verify( loader ).load( any(), eq( databaseLayout ) );
     }
@@ -123,12 +123,12 @@ class LoadCommandTest
     {
         Path dataDir = testDirectory.directory( "some-other-path" ).toPath();
         Path txLogsDir = testDirectory.directory( "txLogsPath" ).toPath();
-        Path databaseDir = dataDir.resolve( "databases/foo.db" );
+        Path databaseDir = dataDir.resolve( "databases/foo" );
         Files.write( configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ),
                 asList( formatProperty( data_directory, dataDir ),
                         formatProperty( transaction_logs_root_path, txLogsDir ) ) );
 
-        execute( "foo.db" );
+        execute( "foo" );
         DatabaseLayout databaseLayout = createDatabaseLayout( databaseDir, txLogsDir );
         verify( loader ).load( any(), eq( databaseLayout ) );
     }
@@ -138,10 +138,10 @@ class LoadCommandTest
     void shouldHandleSymlinkToDatabaseDir() throws IOException, CommandFailed, IncorrectUsage, IncorrectFormat
     {
         Path symDir = testDirectory.directory( "path-to-links" ).toPath();
-        Path realDatabaseDir = symDir.resolve( "foo.db" );
+        Path realDatabaseDir = symDir.resolve( "foo" );
 
         Path dataDir = testDirectory.directory( "some-other-path" ).toPath();
-        Path databaseDir = dataDir.resolve( "databases/foo.db" );
+        Path databaseDir = dataDir.resolve( "databases/foo" );
         Path txLogsDir = dataDir.resolve( DEFAULT_TX_LOGS_ROOT_DIR_NAME );
 
         Files.createDirectories( realDatabaseDir );
@@ -151,7 +151,7 @@ class LoadCommandTest
 
         Files.write( configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ), singletonList( formatProperty( data_directory, dataDir ) ) );
 
-        execute( "foo.db" );
+        execute( "foo" );
         DatabaseLayout databaseLayout = createDatabaseLayout( realDatabaseDir, txLogsDir );
         verify( loader ).load( any(), eq( databaseLayout ) );
     }
@@ -160,12 +160,12 @@ class LoadCommandTest
     void shouldMakeFromCanonical() throws IOException, CommandFailed, IncorrectUsage, IncorrectFormat
     {
         Path dataDir = testDirectory.directory( "some-other-path" ).toPath();
-        Path databaseDir = dataDir.resolve( "databases/foo.db" );
+        Path databaseDir = dataDir.resolve( "databases/foo" );
         Files.createDirectories( databaseDir );
         Files.write( configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ), singletonList( formatProperty( data_directory, dataDir ) ) );
 
         new LoadCommand( homeDir, configDir, loader )
-                .execute( ArrayUtil.concat( new String[]{"--database=foo.db", "--from=foo.dump"} ) );
+                .execute( ArrayUtil.concat( new String[]{"--database=foo", "--from=foo.dump"} ) );
 
         verify( loader ).load( eq( Paths.get( new File( "foo.dump" ).getCanonicalPath() ) ), any() );
     }
@@ -174,7 +174,7 @@ class LoadCommandTest
     void shouldDeleteTheOldDatabaseIfForceArgumentIsProvided()
             throws CommandFailed, IncorrectUsage, IOException, IncorrectFormat
     {
-        Path databaseDirectory = homeDir.resolve( "data/databases/foo.db" );
+        Path databaseDirectory = homeDir.resolve( "data/databases/foo" );
         Path txDirectory = homeDir.resolve( "data/" + DEFAULT_TX_LOGS_ROOT_DIR_NAME );
         Files.createDirectories( databaseDirectory );
         Files.createDirectories( txDirectory );
@@ -185,14 +185,14 @@ class LoadCommandTest
             return null;
         } ).when( loader ).load( any(), any() );
 
-        execute( "foo.db", "--force" );
+        execute( "foo", "--force" );
     }
 
     @Test
     void shouldNotDeleteTheOldDatabaseIfForceArgumentIsNotProvided()
             throws CommandFailed, IncorrectUsage, IOException, IncorrectFormat
     {
-        Path databaseDirectory = homeDir.resolve( "data/databases/foo.db" );
+        Path databaseDirectory = homeDir.resolve( "data/databases/foo" );
         Files.createDirectories( databaseDirectory );
 
         doAnswer( ignored ->
@@ -201,13 +201,13 @@ class LoadCommandTest
             return null;
         } ).when( loader ).load( any(), any() );
 
-        execute( "foo.db" );
+        execute( "foo" );
     }
 
     @Test
     void shouldRespectTheStoreLock() throws IOException
     {
-        Path databaseDirectory = homeDir.resolve( "data/databases/foo.db" );
+        Path databaseDirectory = homeDir.resolve( "data/databases/foo" );
         Files.createDirectories( databaseDirectory );
         StoreLayout storeLayout = DatabaseLayout.of( databaseDirectory.toFile() ).getStoreLayout();
 
@@ -215,7 +215,7 @@ class LoadCommandTest
               StoreLocker locker = new StoreLocker( fileSystem, storeLayout ) )
         {
             locker.checkLock();
-            CommandFailed commandFailed = assertThrows( CommandFailed.class, () -> execute( "foo.db", "--force" ) );
+            CommandFailed commandFailed = assertThrows( CommandFailed.class, () -> execute( "foo", "--force" ) );
             assertEquals( "the database is in use -- stop Neo4j and try again", commandFailed.getMessage() );
         }
     }
@@ -252,8 +252,8 @@ class LoadCommandTest
     void shouldGiveAClearMessageIfTheDatabaseAlreadyExists() throws IOException, IncorrectFormat, IncorrectUsage
     {
         doThrow( FileAlreadyExistsException.class ).when( loader ).load( any(), any() );
-        CommandFailed commandFailed = assertThrows( CommandFailed.class, () -> execute( "foo.db" ) );
-        assertEquals( "database already exists: foo.db", commandFailed.getMessage() );
+        CommandFailed commandFailed = assertThrows( CommandFailed.class, () -> execute( "foo" ) );
+        assertEquals( "database already exists: foo", commandFailed.getMessage() );
     }
 
     @Test

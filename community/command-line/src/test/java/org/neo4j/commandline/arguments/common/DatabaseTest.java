@@ -45,6 +45,6 @@ class DatabaseTest
     @Test
     void parseDatabaseName()
     {
-        assertEquals( "bob.db", arg.parse( Args.parse( "--database=bob.db" ) ) );
+        assertEquals( "bob", arg.parse( Args.parse( "--database=bob" ) ) );
     }
 }
