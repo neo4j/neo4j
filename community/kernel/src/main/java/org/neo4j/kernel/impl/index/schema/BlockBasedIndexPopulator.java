@@ -23,7 +23,6 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -51,6 +50,7 @@ import org.neo4j.kernel.impl.api.index.BatchingMultipleIndexPopulator;
 import org.neo4j.kernel.impl.api.index.PhaseTracker;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettingsCache;
 import org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettingsWriter;
+import org.neo4j.memory.LocalMemoryTracker;
 import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
 import org.neo4j.util.FeatureToggles;
 import org.neo4j.util.Preconditions;
@@ -82,8 +82,6 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
      */
     private static final int MERGE_FACTOR = FeatureToggles.getInteger( BlockBasedIndexPopulator.class, "mergeFactor", 8 );
 
-    private static final ByteBufferFactory BYTE_BUFFER_FACTORY = ByteBuffer::allocate;
-
     private final IndexDirectoryStructure directoryStructure;
     private final boolean archiveFailedIndex;
     private final int blockSize;
@@ -92,6 +90,7 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
     // written to in a synchronized method when creating new thread-local instances, read from when population completes
     private final List<BlockStorage<KEY,VALUE>> allScanUpdates = new CopyOnWriteArrayList<>();
     private final ThreadLocal<BlockStorage<KEY,VALUE>> scanUpdates;
+    private final ByteBufferFactory bufferFactory = new UnsafeDirectByteBufferFactory( new LocalMemoryTracker() /*plug in actual tracker when available*/ );
     private IndexUpdateStorage<KEY,VALUE> externalUpdates;
     // written in a synchronized method when creating new thread-local instances, read when processing external updates
     private volatile boolean merged;
@@ -127,7 +126,7 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
         {
             int id = allScanUpdates.size();
             BlockStorage<KEY,VALUE> blockStorage =
-                    new BlockStorage<>( layout, BYTE_BUFFER_FACTORY, fileSystem, new File( storeFile.getParentFile(), storeFile.getName() + ".scan-" + id ),
+                    new BlockStorage<>( layout, bufferFactory, fileSystem, new File( storeFile.getParentFile(), storeFile.getName() + ".scan-" + id ),
                             blockStorageMonitor, blockSize );
             allScanUpdates.add( blockStorage );
             return blockStorage;
@@ -160,7 +159,7 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
         try
         {
             externalUpdates = new IndexUpdateStorage<>( layout, fileSystem, new File( storeFile.getParent(), storeFile.getName() + ".ext" ),
-                    BYTE_BUFFER_FACTORY, blockSize );
+                    bufferFactory, blockSize );
         }
         catch ( IOException e )
         {
@@ -480,6 +479,7 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
         }
         finally
         {
+            bufferFactory.close();
             super.close( populationCompletedSuccessfully );
         }
     }
