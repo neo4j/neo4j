@@ -250,6 +250,7 @@ public class MemoryRecommendationsCommandTest
                 return FileVisitResult.CONTINUE;
             }
         } );
+        pageCacheTotal.add( databaseLayout.labelScanStore().length() );
         return new long[]{pageCacheTotal.longValue(), luceneTotal.longValue()};
     }
 

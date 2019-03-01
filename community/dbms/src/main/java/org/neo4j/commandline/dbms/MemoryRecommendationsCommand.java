@@ -287,12 +287,22 @@ public class MemoryRecommendationsCommand implements AdminCommand
         FileSystemAbstraction fileSystem = outsideWorld.fileSystem();
         try
         {
-            return storageEngineFactory.listStorageFiles( fileSystem, databaseLayout ).stream().mapToLong( fileSystem::getFileSize ).sum();
+            long total = storageEngineFactory.listStorageFiles( fileSystem, databaseLayout ).stream().mapToLong( fileSystem::getFileSize ).sum();
+
+            // Include label index
+            total += sizeOfFileIfExists( databaseLayout.labelScanStore() );
+            return total;
         }
         catch ( IOException e )
         {
             return 0;
         }
+    }
+
+    private long sizeOfFileIfExists( File file )
+    {
+        FileSystemAbstraction fileSystem = outsideWorld.fileSystem();
+        return fileSystem.fileExists( file ) ? fileSystem.getFileSize( file ) : 0;
     }
 
     private long sumIndexFiles( File file, FilenameFilter filter )
