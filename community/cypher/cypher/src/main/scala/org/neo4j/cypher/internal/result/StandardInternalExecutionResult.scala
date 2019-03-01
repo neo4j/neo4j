@@ -53,15 +53,16 @@ class StandardInternalExecutionResult(context: QueryContext,
 
     // OBS: check before materialization
     val consumedBeforeInit = runtimeResult.consumptionState == ConsumptionState.EXHAUSTED
+    //NOTE: for now we never materialize when using reactive API
+    val notReactive = subscriber == QuerySubscriber.NOT_A_SUBSCRIBER
 
     // By policy we materialize the result directly unless it's a read only query.
-    //NOTE: for now we never materialize when using reactive API
-    if (queryType != READ_ONLY && subscriber == QuerySubscriber.NOT_A_SUBSCRIBER) {
+    if (queryType != READ_ONLY && notReactive) {
       materializeResult()
     }
 
     // ... and if we do not return any rows, we close all resources.
-    if (consumedBeforeInit || queryType == WRITE || fieldNames().isEmpty) {
+    if (notReactive && (consumedBeforeInit || queryType == WRITE || fieldNames().isEmpty)) {
       close(Success)
     }
   }

@@ -78,8 +78,6 @@ public class BoltResponseMessageReader
                     String code = failureMetadata.containsKey( "code" ) ?
                                   ((StringValue) failureMetadata.get( "code" )).stringValue() :
                             Status.General.UnknownError.name();
-
-
                     AnyValue msgValue = failureMetadata.get( "message" );
                     String msg = msgValue != NO_VALUE ? ((StringValue) msgValue).stringValue() : "<No message supplied>";
                     messageWriter.write( new FailureMessage( Neo4jError.codeFromString( code ), msg ) );
