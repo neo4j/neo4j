@@ -282,6 +282,7 @@ public class MemoryRecommendationsCommand implements AdminCommand
     private long sumStoreFiles( DatabaseLayout databaseLayout )
     {
         long total = 0;
+        // Include store files
         for ( StoreType type : StoreType.values() )
         {
             if ( type.isRecordStore() )
@@ -290,7 +291,15 @@ public class MemoryRecommendationsCommand implements AdminCommand
                 total += databaseLayout.file( type.getDatabaseFile() ).filter( fileSystem::fileExists ).mapToLong( fileSystem::getFileSize ).sum();
             }
         }
+        // Include label index
+        total += sizeOfFileIfExists( databaseLayout.labelScanStore() );
         return total;
+    }
+
+    private long sizeOfFileIfExists( File file )
+    {
+        FileSystemAbstraction fileSystem = outsideWorld.fileSystem();
+        return fileSystem.fileExists( file ) ? fileSystem.getFileSize( file ) : 0;
     }
 
     private long sumIndexFiles( File file, FilenameFilter filter )
