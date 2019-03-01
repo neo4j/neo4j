@@ -35,6 +35,8 @@ import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.StringValue;
 import org.neo4j.values.virtual.MapValue;
 
+import static org.neo4j.values.storable.Values.NO_VALUE;
+
 public class BoltResponseMessageReader
 {
     private final Neo4jPack.Unpacker unpacker;
@@ -76,9 +78,10 @@ public class BoltResponseMessageReader
                     String code = failureMetadata.containsKey( "code" ) ?
                                   ((StringValue) failureMetadata.get( "code" )).stringValue() :
                             Status.General.UnknownError.name();
-                    String msg = failureMetadata.containsKey( "message" ) ?
-                                 ((StringValue) failureMetadata.get( "message" )).stringValue() :
-                            "<No message supplied>";
+
+
+                    AnyValue msgValue = failureMetadata.get( "message" );
+                    String msg = msgValue != NO_VALUE ? ((StringValue) msgValue).stringValue() : "<No message supplied>";
                     messageWriter.write( new FailureMessage( Neo4jError.codeFromString( code ), msg ) );
                     break;
                 default:
