@@ -106,4 +106,10 @@ abstract class RecordRelationshipCursor extends RelationshipRecord implements Re
     {
         return relationshipStore.getHighestPossibleIdInUse();
     }
+
+    @Override
+    public final RelationshipRecord clone() throws CloneNotSupportedException
+    {
+        throw new CloneNotSupportedException( "Record cursors are not cloneable." );
+    }
 }

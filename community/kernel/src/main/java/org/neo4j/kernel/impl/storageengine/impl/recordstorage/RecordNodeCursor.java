@@ -207,6 +207,12 @@ public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor
     }
 
     @Override
+    public final NodeRecord clone() throws CloneNotSupportedException
+    {
+        throw new CloneNotSupportedException( "Record cursors are not cloneable." );
+    }
+
+    @Override
     public String toString()
     {
         if ( !open )

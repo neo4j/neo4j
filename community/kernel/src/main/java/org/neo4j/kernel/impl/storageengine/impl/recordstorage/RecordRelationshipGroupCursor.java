@@ -272,6 +272,12 @@ class RecordRelationshipGroupCursor extends RelationshipGroupRecord implements S
     }
 
     @Override
+    public RelationshipGroupRecord clone() throws CloneNotSupportedException
+    {
+        throw new CloneNotSupportedException( "Record cursors are not cloneable." );
+    }
+
+    @Override
     public String toString()
     {
         if ( !open )

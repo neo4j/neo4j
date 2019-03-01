@@ -337,6 +337,13 @@ class RecordPropertyCursor extends PropertyRecord implements StoragePropertyCurs
         return Values.booleanValue( PropertyBlock.fetchByte( currentBlock() ) == 1 );
     }
 
+    @Override
+    public final PropertyRecord clone() throws CloneNotSupportedException
+    {
+        throw new CloneNotSupportedException( "Record cursors are not cloneable." );
+    }
+
+    @Override
     public String toString()
     {
         if ( !open )

@@ -49,7 +49,7 @@ public class IndexEntry extends AbstractBaseRecord
     }
 
     @Override
-    public AbstractBaseRecord clone() throws CloneNotSupportedException
+    public final AbstractBaseRecord clone() throws CloneNotSupportedException
     {
         throw new CloneNotSupportedException( "Synthetic records cannot be cloned." );
     }
