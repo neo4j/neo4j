@@ -183,8 +183,6 @@ public class IndexPopulationIT
         waitForOnlineIndexes();
 
         // then
-        long indexCount = countIndexes();
-        assertEquals( "expected exactly one index to exist but there was " + indexCount, 1, indexCount );
         try ( Transaction tx = database.beginTx() )
         {
             ResourceIterator<Node> nodes = database.findNodes( nodeLabel, key, value );
