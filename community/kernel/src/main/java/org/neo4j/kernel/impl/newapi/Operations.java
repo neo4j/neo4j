@@ -565,9 +565,10 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
         }
         else
         {
+            // We need to auto-index even if not actually changing the value.
+            autoIndexing.relationships().propertyChanged( this, relationship, propertyKey, existingValue, value );
             if ( propertyHasChanged( existingValue, value ) )
             {
-                autoIndexing.relationships().propertyChanged( this, relationship, propertyKey, existingValue, value );
 
                 ktx.txState().relationshipDoReplaceProperty( relationship, propertyKey, existingValue, value );
             }

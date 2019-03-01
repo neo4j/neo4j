@@ -42,7 +42,7 @@ public class AutoIndexAcceptanceTest
     public DatabaseRule db = new EnterpriseDatabaseRule();
 
     @Test
-    public void shouldAutoIndexOnSetEvenIfValueNotChanged() throws IOException
+    public void shouldAutoIndexOnNodeSetEvenIfValueNotChanged() throws IOException
     {
         // Given
         try ( Transaction tx = db.beginTx() )
@@ -55,10 +55,30 @@ public class AutoIndexAcceptanceTest
                 GraphDatabaseSettings.node_keys_indexable.name(), "name" );
 
         // When, set with same value as it had before
-        assertThat( asList( db.execute( "MATCH (p) WITH p, p.name as name SET p.name = name RETURN count(p)" ) ), hasSize(1));
+        assertThat( asList( db.execute( "MATCH (p) WITH p, p.name AS name SET p.name = name RETURN count(p)" ) ), hasSize(1));
 
         // Then, we should be able to find it in the index
-        assertThat( asList( db.execute( "START i=node:node_auto_index('name:test') return i limit 1" ) ), hasSize(1));
+        assertThat( asList( db.execute( "START i=node:node_auto_index('name:test') RETURN i" ) ), hasSize(1));
+    }
+
+    @Test
+    public void shouldAutoIndexOnRelationshipSetEvenIfValueNotChanged() throws IOException
+    {
+        // Given
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.execute( "CREATE ()-[:R {name:'test'}]->(), ()-[:R {name:'test2'}]->()" );
+            tx.success();
+        }
+        db.restartDatabase(
+                GraphDatabaseSettings.relationship_auto_indexing.name(), "true",
+                GraphDatabaseSettings.relationship_keys_indexable.name(), "name" );
+
+        // When, set with same value as it had before
+        assertThat( asList( db.execute( "MATCH ()-[r]->() WITH r, r.name AS name SET r.name = name RETURN count(r)" ) ), hasSize(1));
+
+        // Then, we should be able to find it in the index
+        assertThat( asList( db.execute( "START i=relationship:relationship_auto_index('name:test') RETURN i" ) ), hasSize(1));
 
     }
 }
