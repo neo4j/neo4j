@@ -283,6 +283,12 @@ public class StubKernelTransaction implements KernelTransaction
     }
 
     @Override
+    public Map<String,Object> getMetaData()
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
     public void assertOpen()
     {
         throw new UnsupportedOperationException( "not implemented" );
