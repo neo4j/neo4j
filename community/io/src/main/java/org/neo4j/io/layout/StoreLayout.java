@@ -19,9 +19,15 @@
  */
 package org.neo4j.io.layout;
 
+import org.apache.commons.lang3.ArrayUtils;
+
 import java.io.File;
+import java.util.Collection;
 import java.util.Objects;
 
+import static java.util.Arrays.stream;
+import static java.util.Collections.emptyList;
+import static java.util.stream.Collectors.toList;
 import static org.neo4j.io.fs.FileUtils.getCanonicalFile;
 import static org.neo4j.io.layout.StoreLayoutConfig.NOT_CONFIGURED;
 
@@ -76,6 +82,22 @@ public class StoreLayout
     }
 
     /**
+     * Try to return database layouts for directories that located in the current store directory.
+     * Each sub directory of the store directory treated as a separate database directory and database layout wrapper build for that.
+     *
+     * @return database layouts for directories located in current store directory. If no subdirectories exist empty collection is returned.
+     */
+    public Collection<DatabaseLayout> databaseLayouts()
+    {
+        File[] directories = storeDirectory.listFiles( File::isDirectory );
+        if ( ArrayUtils.isEmpty( directories ) )
+        {
+            return emptyList();
+        }
+        return stream( directories ).map( directory -> DatabaseLayout.of( this, directory.getName() ) ).collect( toList() );
+    }
+
+    /**
      * Provide layout for a database with provided name.
      * No assumptions whatsoever should be taken in regards of database location.
      * Newly created layout should be used to any kind of file related requests in scope of a database.
@@ -100,7 +122,7 @@ public class StoreLayout
      * Configuration of store layout
      * @return layout config
      */
-    public StoreLayoutConfig getLayoutConfig()
+    StoreLayoutConfig getLayoutConfig()
     {
         return layoutConfig;
     }

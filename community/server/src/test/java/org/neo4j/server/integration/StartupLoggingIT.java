@@ -102,7 +102,7 @@ public class StartupLoggingIT extends ExclusiveServerTestBase
         properties.put( bolt.enabled.name(), "true" );
         properties.put( bolt.listen_address.name(), "localhost:0" );
 
-        properties.put( GraphDatabaseSettings.database_path.name(), testDir.absolutePath().getAbsolutePath() );
+        properties.put( GraphDatabaseSettings.databases_root_path.name(), testDir.absolutePath().getAbsolutePath() );
         return properties;
     }
 

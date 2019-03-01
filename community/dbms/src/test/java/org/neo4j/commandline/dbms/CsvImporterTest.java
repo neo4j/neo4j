@@ -34,6 +34,7 @@ import org.neo4j.commandline.admin.RealOutsideWorld;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.helpers.Args;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.SuppressOutputExtension;
 import org.neo4j.test.extension.TestDirectoryExtension;
@@ -51,7 +52,7 @@ class CsvImporterTest
     @Test
     void writesReportToSpecifiedReportFile() throws Exception
     {
-        File dbDir = testDir.directory( "db" );
+        DatabaseLayout databaseLayout = testDir.databaseLayout( "db" );
         File logDir = testDir.directory( "logs" );
         File reportLocation = testDir.file( "the_report" );
 
@@ -63,7 +64,6 @@ class CsvImporterTest
         {
             Config config = Config.builder()
                     .withSettings( additionalConfig() )
-                    .withSetting( GraphDatabaseSettings.database_path, dbDir.getAbsolutePath() )
                     .withSetting( GraphDatabaseSettings.logs_directory, logDir.getAbsolutePath() ).build();
 
             CsvImporter csvImporter = new CsvImporter(
@@ -72,7 +72,7 @@ class CsvImporterTest
                             String.format( "--nodes=%s", inputFile.getAbsolutePath() ),
                             "--delimiter=TAB" ),
                     config,
-                    outsideWorld );
+                    outsideWorld, databaseLayout );
             csvImporter.doImport();
         }
 
@@ -81,13 +81,7 @@ class CsvImporterTest
 
     private Map<String,String> additionalConfig()
     {
-        return stringMap( GraphDatabaseSettings.database_path.name(), getDatabasePath(),
-                GraphDatabaseSettings.logs_directory.name(), getLogsDirectory() );
-    }
-
-    private String getDatabasePath()
-    {
-        return testDir.databaseDir().getAbsolutePath();
+        return stringMap( GraphDatabaseSettings.logs_directory.name(), getLogsDirectory() );
     }
 
     private String getLogsDirectory()

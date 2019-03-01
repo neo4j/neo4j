@@ -97,7 +97,7 @@ class BoltStateMachineFactoryImplTest
 
     private static BoltStateMachineFactoryImpl newBoltFactory( DatabaseManager databaseManager )
     {
-        Config config = Config.defaults( GraphDatabaseSettings.active_database, CUSTOM_DB_NAME );
+        Config config = Config.defaults( GraphDatabaseSettings.default_database, CUSTOM_DB_NAME );
         return new BoltStateMachineFactoryImpl( databaseManager, new UsageData( new OnDemandJobScheduler() ),
                 mock( Authentication.class ), CLOCK, config,
                 NullLogService.getInstance() );

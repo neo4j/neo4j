@@ -24,23 +24,24 @@ import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.configuration.Config;
 import org.neo4j.helpers.Args;
+import org.neo4j.io.layout.DatabaseLayout;
 
 class ImporterFactory
 {
-    Importer getImporterForMode( String mode, Args parsedArgs, Config config, OutsideWorld outsideWorld )
+    Importer getImporterForMode( String mode, Args parsedArgs, Config config, OutsideWorld outsideWorld, DatabaseLayout databaseLayout )
             throws IncorrectUsage, CommandFailed
     {
         Importer importer;
         switch ( mode )
         {
         case "database":
-            importer = new DatabaseImporter( parsedArgs, config, outsideWorld );
+            importer = new DatabaseImporter( parsedArgs, databaseLayout );
             break;
         case "csv":
-            importer = new CsvImporter( parsedArgs, config, outsideWorld );
+            importer = new CsvImporter( parsedArgs, config, outsideWorld, databaseLayout );
             break;
         default:
-            throw new CommandFailed( "Invalid mode specified." ); // This won't happen because mode is mandatory.
+            throw new CommandFailed( "Invalid mode specified." );
         }
         return importer;
     }

@@ -23,49 +23,44 @@ import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.commandline.admin.IncorrectUsage;
-import org.neo4j.commandline.admin.OutsideWorld;
-import org.neo4j.configuration.Config;
 import org.neo4j.helpers.Args;
-import org.neo4j.io.fs.FileUtils;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.impl.util.Converters;
-import org.neo4j.kernel.impl.util.Validators;
 
-import static org.neo4j.configuration.GraphDatabaseSettings.database_path;
+import static org.neo4j.io.fs.FileUtils.copyRecursively;
+import static org.neo4j.kernel.impl.util.Validators.CONTAINS_EXISTING_DATABASE;
 
 class DatabaseImporter implements Importer
 {
     private final File from;
-    private final Config config;
+    private final DatabaseLayout databaseLayout;
 
-    DatabaseImporter( Args args, Config config, OutsideWorld outsideWorld ) throws IncorrectUsage
+    DatabaseImporter( Args args, DatabaseLayout databaseLayout ) throws IncorrectUsage
     {
-        this.config = config;
-
-        try
-        {
-            this.from = args.interpretOption( "from", Converters.mandatory(), Converters.toFile(),
-                    Validators.CONTAINS_EXISTING_DATABASE );
-        }
-        catch ( IllegalArgumentException e )
-        {
-            throw new IncorrectUsage( e.getMessage() );
-        }
+        this.databaseLayout = databaseLayout;
+        this.from = getDatabaseSource( args );
     }
 
     @Override
     public void doImport() throws IOException
     {
-        copyDatabase( from, config );
-        removeMessagesLog( config );
+        copyDatabase();
     }
 
-    private void copyDatabase( File from, Config config ) throws IOException
+    private void copyDatabase() throws IOException
     {
-        FileUtils.copyRecursively( from, config.get( database_path ) );
+        copyRecursively( from, databaseLayout.databaseDirectory() );
     }
 
-    private void removeMessagesLog( Config config )
+    private static File getDatabaseSource( Args args ) throws IncorrectUsage
     {
-        FileUtils.deleteFile( new File( config.get( database_path ), "messages.log" ) );
+        try
+        {
+            return args.interpretOption( "from", Converters.mandatory(), Converters.toFile(), CONTAINS_EXISTING_DATABASE );
+        }
+        catch ( IllegalArgumentException e )
+        {
+            throw new IncorrectUsage( e.getMessage() );
+        }
     }
 }

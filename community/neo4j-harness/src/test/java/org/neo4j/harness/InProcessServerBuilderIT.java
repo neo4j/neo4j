@@ -56,6 +56,7 @@ import org.neo4j.harness.internal.Neo4jBuilder;
 import org.neo4j.harness.junit.Neo4j;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.extension.context.ExtensionContext;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -80,6 +81,9 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.configuration.GraphDatabaseSettings.data_directory;
+import static org.neo4j.configuration.GraphDatabaseSettings.databases_root_path;
 import static org.neo4j.harness.internal.TestNeo4jBuilders.newInProcessBuilder;
 import static org.neo4j.helpers.collection.Iterables.asIterable;
 import static org.neo4j.helpers.collection.Iterators.single;
@@ -230,9 +234,9 @@ class InProcessServerBuilderIT
         // When
         // create graph db with one node upfront
         File existingStoreDir = directory.directory( "existingStore" );
-        File storeDir = Config.defaults( GraphDatabaseSettings.data_directory, existingStoreDir.toPath().toString() )
-                .get( GraphDatabaseSettings.database_path );
-        GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir );
+        DatabaseLayout databaseLayout =
+                DatabaseLayout.of( Config.defaults( data_directory, existingStoreDir.toPath().toString() ).get( databases_root_path ), DEFAULT_DATABASE_NAME );
+        GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( databaseLayout.databaseDirectory() );
         try
         {
             db.execute( "create ()" );
@@ -259,7 +263,7 @@ class InProcessServerBuilderIT
         }
 
         // Then: we still only have one node since the server is supposed to work on a copy
-        db = new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir );
+        db = new TestGraphDatabaseFactory().newEmbeddedDatabase( databaseLayout.databaseDirectory() );
         try
         {
             try ( Transaction tx = db.beginTx() )

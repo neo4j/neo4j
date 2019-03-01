@@ -95,17 +95,15 @@ public abstract class ServerBootstrapper implements Bootstrapper
     {
         addShutdownHook();
         installSignalHandlers();
+        Config config = Config.builder()
+                .withFile( configFile )
+                .withSettings( configOverrides )
+                .withHome(homeDir)
+                .withValidators( configurationValidators() )
+                .withNoThrowOnFileLoadFailure() // TODO 4.0: Remove this, and require a neo4j.conf file to be present?
+                .withServerDefaults().build();
         try
         {
-            // Create config file from arguments
-            Config config = Config.builder()
-                    .withFile( configFile )
-                    .withSettings( configOverrides )
-                    .withHome(homeDir)
-                    .withValidators( configurationValidators() )
-                    .withNoThrowOnFileLoadFailure() // TODO 4.0: Remove this, and require a neo4j.conf file to be present?
-                    .withServerDefaults().build();
-
             LogProvider userLogProvider = setupLogging( config );
             dependencies = dependencies.userLogProvider( userLogProvider );
             log = userLogProvider.getLog( getClass() );
@@ -132,7 +130,7 @@ public abstract class ServerBootstrapper implements Bootstrapper
         catch ( TransactionFailureException tfe )
         {
             String locationMsg = (server == null) ? "" :
-                    " Another process may be using database location " + server.getDatabase().getLocation();
+                    " Another process may be using databases at location: " + config.get( GraphDatabaseSettings.databases_root_path );
             log.error( format( "Failed to start Neo4j on %s.", serverAddress ) + locationMsg, tfe );
             return GRAPH_DATABASE_STARTUP_ERROR_CODE;
         }

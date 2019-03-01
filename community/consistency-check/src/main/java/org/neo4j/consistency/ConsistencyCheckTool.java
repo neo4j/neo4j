@@ -180,9 +180,7 @@ public class ConsistencyCheckTool
             File configFile = new File( configFilePath );
             try
             {
-                Config config = Config.fromFile( configFile ).build();
-                config.augment( GraphDatabaseSettings.database_path, databasePath.getAbsolutePath() );
-                return config;
+                return Config.fromFile( configFile ).build();
             }
             catch ( Exception e )
             {

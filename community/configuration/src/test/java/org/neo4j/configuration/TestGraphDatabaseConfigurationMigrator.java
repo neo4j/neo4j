@@ -32,6 +32,8 @@ import org.neo4j.logging.NullLog;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 class TestGraphDatabaseConfigurationMigrator
@@ -64,6 +66,48 @@ class TestGraphDatabaseConfigurationMigrator
         assertContainsWarningMessage("dbms.directories.tx_log is not supported anymore. " +
                 "Please use dbms.directories.transaction.logs.root to set root directory for databases transaction logs. " +
                 "Each individual database will place its logs into a separate subdirectory under configured root.");
+    }
+
+    @Test
+    void migrateActiveDatabaseSettingWhenDefaultDatabaseNotPresent()
+    {
+        Map<String,String> oldConfigMap = stringMap( "dbms.active_database", "oldNeo" );
+        Map<String,String> migratedProperties = migrator.apply( oldConfigMap, getLog() );
+
+        assertEquals( "oldNeo", migratedProperties.get( GraphDatabaseSettings.default_database.name() ) );
+        assertFalse( migratedProperties.containsKey( "\"dbms.active_database\"" ) );
+
+        assertContainsWarningMessage( "WARNING! Deprecated configuration options used. See manual for details" );
+        assertContainsWarningMessage( "dbms.active_database is not supported anymore. " +
+                "Please use dbms.default_database to specify default DBMS database. Please check the manual for details." );
+    }
+
+    @Test
+    void doNotMigrateActiveDatabaseSettingWhenDefaultDatabasePresentAndDefault()
+    {
+        Map<String,String> oldConfigMap = stringMap( "dbms.active_database", "oldNeo", GraphDatabaseSettings.default_database.name(), DEFAULT_DATABASE_NAME );
+        Map<String,String> migratedProperties = migrator.apply( oldConfigMap, getLog() );
+
+        assertEquals( DEFAULT_DATABASE_NAME, migratedProperties.get( GraphDatabaseSettings.default_database.name() ) );
+        assertFalse( migratedProperties.containsKey( "\"dbms.active_database\"" ) );
+
+        assertContainsWarningMessage( "WARNING! Deprecated configuration options used. See manual for details" );
+        assertContainsWarningMessage( "dbms.active_database is not supported anymore. " +
+                "Please use dbms.default_database to specify default DBMS database. Please check the manual for details." );
+    }
+
+    @Test
+    void doNotMigrateActiveDatabaseSettingWhenCustomDefaultDatabasePresent()
+    {
+        Map<String,String> oldConfigMap = stringMap( "dbms.active_database", "oldNeo", GraphDatabaseSettings.default_database.name(), "otherNeo" );
+        Map<String,String> migratedProperties = migrator.apply( oldConfigMap, getLog() );
+
+        assertEquals( "otherNeo", migratedProperties.get( GraphDatabaseSettings.default_database.name() ) );
+        assertFalse( migratedProperties.containsKey( "\"dbms.active_database\"" ) );
+
+        assertContainsWarningMessage( "WARNING! Deprecated configuration options used. See manual for details" );
+        assertContainsWarningMessage( "dbms.active_database is not supported anymore. " +
+                "Please use dbms.default_database to specify default DBMS database. Please check the manual for details." );
     }
 
     private Log getLog()

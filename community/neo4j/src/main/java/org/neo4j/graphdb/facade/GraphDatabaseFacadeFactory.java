@@ -168,9 +168,9 @@ public class GraphDatabaseFacadeFactory
         {
             edition.createDatabases( databaseManager, config );
             globalLife.start();
-            String activeDatabase = config.get( GraphDatabaseSettings.active_database );
-            databaseFacade = databaseManager.getDatabaseContext( activeDatabase ).orElseThrow( () -> new IllegalStateException(
-                    String.format( "Database %s not found. Please check the logs for startup errors.", activeDatabase ) ) ).getDatabaseFacade();
+            String defaultDatabase = config.get( GraphDatabaseSettings.default_database );
+            databaseFacade = databaseManager.getDatabaseContext( defaultDatabase ).orElseThrow( () -> new IllegalStateException(
+                    String.format( "Database %s not found. Please check the logs for startup errors.", defaultDatabase ) ) ).getDatabaseFacade();
 
         }
         catch ( final Throwable throwable )

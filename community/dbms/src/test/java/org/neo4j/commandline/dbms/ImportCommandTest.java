@@ -39,6 +39,7 @@ import org.neo4j.commandline.admin.Usage;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.helpers.Args;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.SuppressOutputExtension;
 import org.neo4j.test.extension.TestDirectoryExtension;
@@ -72,7 +73,7 @@ class ImportCommandTest
         ImporterFactory mockImporterFactory = mock( ImporterFactory.class );
         Importer importer = mock( Importer.class );
         when( mockImporterFactory
-                .getImporterForMode( eq( "csv" ), any( Args.class ), any( Config.class ), any( OutsideWorld.class ) ) )
+                .getImporterForMode( eq( "csv" ), any( Args.class ), any( Config.class ), any( OutsideWorld.class ), any( DatabaseLayout.class ) ) )
                 .thenReturn( importer );
 
         try ( RealOutsideWorld outsideWorld = new RealOutsideWorld( System.out, System.err, new ByteArrayInputStream( new byte[0] ) ) )
@@ -86,7 +87,7 @@ class ImportCommandTest
             importCommand.execute( arguments );
 
             verify( mockImporterFactory ).getImporterForMode( eq( "csv" ), any( Args.class ), any( Config.class ),
-                    any( OutsideWorld.class ) );
+                    any( OutsideWorld.class ), any( DatabaseLayout.class ) );
         }
     }
 
@@ -97,7 +98,7 @@ class ImportCommandTest
         ImporterFactory mockImporterFactory = mock( ImporterFactory.class );
         Importer importer = mock( Importer.class );
         when( mockImporterFactory
-                .getImporterForMode( eq( "csv" ), any( Args.class ), any( Config.class ), any( OutsideWorld.class ) ) )
+                .getImporterForMode( eq( "csv" ), any( Args.class ), any( Config.class ), any( OutsideWorld.class ), any() ) )
                 .thenReturn( importer );
 
         ImportCommand importCommand =
@@ -108,8 +109,8 @@ class ImportCommandTest
 
         importCommand.execute( arguments );
 
-        verify( mockImporterFactory )
-                .getImporterForMode( eq( "csv" ), any( Args.class ), any( Config.class ), any( OutsideWorld.class ) );
+        verify( mockImporterFactory ).getImporterForMode( eq( "csv" ), any( Args.class ), any( Config.class ), any( OutsideWorld.class ),
+                any( DatabaseLayout.class ) );
     }
 
     @Test
@@ -119,7 +120,7 @@ class ImportCommandTest
         ImporterFactory mockImporterFactory = mock( ImporterFactory.class );
         Importer importer = mock( Importer.class );
         when( mockImporterFactory
-                .getImporterForMode( eq( "csv" ), any( Args.class ), any( Config.class ), any( OutsideWorld.class ) ) )
+                .getImporterForMode( eq( "csv" ), any( Args.class ), any( Config.class ), any( OutsideWorld.class ), any( DatabaseLayout.class ) ) )
                 .thenReturn( importer );
 
         ImportCommand importCommand =
@@ -131,7 +132,7 @@ class ImportCommandTest
         importCommand.execute( arguments );
 
         verify( mockImporterFactory )
-                .getImporterForMode( eq( "csv" ), any( Args.class ), any( Config.class ), any( OutsideWorld.class ) );
+                .getImporterForMode( eq( "csv" ), any( Args.class ), any( Config.class ), any( OutsideWorld.class ), any( DatabaseLayout.class ) );
     }
 
     @Test
@@ -182,7 +183,7 @@ class ImportCommandTest
         // When
         ImporterFactory importerFactory = mock( ImporterFactory.class );
         Importer importer = mock( Importer.class );
-        when( importerFactory.getImporterForMode( any(), any(), any(), any() ) ).thenReturn( importer );
+        when( importerFactory.getImporterForMode( any(), any(), any(), any(), any() ) ).thenReturn( importer );
         new ImportCommand( homeDir, confPath, outsideWorld, importerFactory ).execute( arguments );
 
         // Then no exception about database existence should be thrown

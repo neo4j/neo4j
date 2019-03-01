@@ -43,16 +43,16 @@ class OverriddenDatabaseConfigTest
         String expectedDbName = "foo";
         Config underlyingConfig = Config.defaults();
         OverriddenDatabaseConfig dbConfig = new OverriddenDatabaseConfig( underlyingConfig,
-                stringMap( GraphDatabaseSettings.active_database.name(), expectedDbName ) );
+                stringMap( GraphDatabaseSettings.default_database.name(), expectedDbName ) );
 
         //when
         underlyingConfig.augment( GraphDatabaseSettings.allow_upgrade, "true" );
-        underlyingConfig.augment( GraphDatabaseSettings.active_database, "bar" );
+        underlyingConfig.augment( GraphDatabaseSettings.default_database, "bar" );
 
         //then
         assertTrue( dbConfig.get( GraphDatabaseSettings.allow_upgrade ),
                 "Expected Overridden config to reflect underlying update to non overridden setting!" );
-        assertEquals( expectedDbName, dbConfig.get( GraphDatabaseSettings.active_database ),
+        assertEquals( expectedDbName, dbConfig.get( GraphDatabaseSettings.default_database ),
                 "Expected Overridden config to ignore underlying updates to overridden setting!" );
     }
 
@@ -62,22 +62,22 @@ class OverriddenDatabaseConfigTest
         //given
         Config underlyingConfig = Config.defaults();
         OverriddenDatabaseConfig dbConfig = new OverriddenDatabaseConfig( underlyingConfig,
-                stringMap( GraphDatabaseSettings.active_database.name(), GraphDatabaseSettings.active_database.getDefaultValue() ) );
+                stringMap( GraphDatabaseSettings.default_database.name(), GraphDatabaseSettings.default_database.getDefaultValue() ) );
 
         //when
         dbConfig.augment( GraphDatabaseSettings.allow_upgrade, "true" );
-        dbConfig.augment( GraphDatabaseSettings.active_database, "bar" );
+        dbConfig.augment( GraphDatabaseSettings.default_database, "bar" );
 
         //then
         assertTrue( underlyingConfig.get( GraphDatabaseSettings.allow_upgrade ) &&
                 dbConfig.get( GraphDatabaseSettings.allow_upgrade ) &&
                 !Boolean.valueOf( GraphDatabaseSettings.allow_upgrade.getDefaultValue() ),
                 "Both underlying and overridden config should reflect change to allow_upgrade!" );
-        assertNotEquals( dbConfig.get( GraphDatabaseSettings.active_database ),
-                underlyingConfig.get( GraphDatabaseSettings.active_database ),
+        assertNotEquals( dbConfig.get( GraphDatabaseSettings.default_database ),
+                underlyingConfig.get( GraphDatabaseSettings.default_database ),
                 "Underlying and overridden config should diverge when an overridden setting is augmented!" );
-        assertNotEquals( dbConfig.get( GraphDatabaseSettings.active_database ),
-                GraphDatabaseSettings.active_database.getDefaultValue(),
+        assertNotEquals( dbConfig.get( GraphDatabaseSettings.default_database ),
+                GraphDatabaseSettings.default_database.getDefaultValue(),
                 "Overridden config should diverge from default when augmented!" );
     }
 

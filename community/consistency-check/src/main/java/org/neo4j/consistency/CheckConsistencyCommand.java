@@ -19,7 +19,6 @@
  */
 package org.neo4j.consistency;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.time.ZoneId;
@@ -45,7 +44,7 @@ import org.neo4j.storageengine.api.StorageEngineFactory;
 
 import static java.lang.String.format;
 import static org.neo4j.commandline.arguments.common.Database.ARG_DATABASE;
-import static org.neo4j.configuration.GraphDatabaseSettings.database_path;
+import static org.neo4j.configuration.GraphDatabaseSettings.databases_root_path;
 import static org.neo4j.helpers.Strings.joinAsLines;
 import static org.neo4j.kernel.recovery.Recovery.isRecoveryRequired;
 
@@ -129,7 +128,7 @@ public class CheckConsistencyCommand implements AdminCommand
             }
         }
 
-        Config config = loadNeo4jConfig( homeDir, configDir, database, loadAdditionalConfig( additionalConfigFile ) );
+        Config config = loadNeo4jConfig( homeDir, configDir, loadAdditionalConfig( additionalConfigFile ) );
 
         try
         {
@@ -174,8 +173,9 @@ public class CheckConsistencyCommand implements AdminCommand
 
         try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction() )
         {
-            File databaseDirectory = backupPath.map( Path::toFile ).orElse( config.get( database_path ) );
-            DatabaseLayout databaseLayout = DatabaseLayout.of( databaseDirectory );
+            DatabaseLayout databaseLayout = backupPath
+                            .map( Path::toFile ).map( DatabaseLayout::of )
+                            .orElse( DatabaseLayout.of( config.get( databases_root_path ), database ) );
             StorageEngineFactory storageEngineFactory = StorageEngineFactory.selectStorageEngine( Service.loadAll( StorageEngineFactory.class ) );
             checkDbState( databaseLayout, config, storageEngineFactory );
             ZoneId logTimeZone = config.get( GraphDatabaseSettings.db_timezone ).getZoneId();
@@ -246,7 +246,7 @@ public class CheckConsistencyCommand implements AdminCommand
         }
     }
 
-    private static Config loadNeo4jConfig( Path homeDir, Path configDir, String databaseName, Config additionalConfig )
+    private static Config loadNeo4jConfig( Path homeDir, Path configDir, Config additionalConfig )
     {
         Config config = Config.fromFile( configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ) )
                 .withHome( homeDir )
@@ -254,7 +254,6 @@ public class CheckConsistencyCommand implements AdminCommand
                 .withNoThrowOnFileLoadFailure()
                 .build();
         config.augment( additionalConfig );
-        config.augment( GraphDatabaseSettings.active_database, databaseName );
         return config;
     }
 

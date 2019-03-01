@@ -21,8 +21,8 @@ package org.neo4j.commandline.dbms;
 
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.hamcrest.Matcher;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.io.IOException;
@@ -30,11 +30,12 @@ import java.io.StringReader;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Map;
 
+import org.neo4j.commandline.admin.CommandFailed;
+import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.commandline.admin.RealOutsideWorld;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -46,9 +47,12 @@ import org.neo4j.kernel.api.impl.index.storage.FailureStorage;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.values.storable.RandomValues;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.both;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThan;
@@ -56,7 +60,6 @@ import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
-import static org.junit.Assert.assertThat;
 import static org.neo4j.commandline.dbms.MemoryRecommendationsCommand.bytesToString;
 import static org.neo4j.commandline.dbms.MemoryRecommendationsCommand.recommendHeapMemory;
 import static org.neo4j.commandline.dbms.MemoryRecommendationsCommand.recommendOsMemory;
@@ -66,14 +69,12 @@ import static org.neo4j.configuration.Config.fromFile;
 import static org.neo4j.configuration.ExternalSettings.initialHeapSize;
 import static org.neo4j.configuration.ExternalSettings.maxHeapSize;
 import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex;
-import static org.neo4j.configuration.GraphDatabaseSettings.active_database;
 import static org.neo4j.configuration.GraphDatabaseSettings.data_directory;
-import static org.neo4j.configuration.GraphDatabaseSettings.database_path;
+import static org.neo4j.configuration.GraphDatabaseSettings.databases_root_path;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_schema_provider;
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.configuration.Settings.BYTES;
 import static org.neo4j.configuration.Settings.buildSetting;
-import static org.neo4j.helpers.ArrayUtil.array;
 import static org.neo4j.helpers.collection.MapUtil.load;
 import static org.neo4j.helpers.collection.MapUtil.store;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
@@ -82,13 +83,14 @@ import static org.neo4j.io.ByteUnit.gibiBytes;
 import static org.neo4j.io.ByteUnit.mebiBytes;
 import static org.neo4j.io.ByteUnit.tebiBytes;
 
-public class MemoryRecommendationsCommandTest
+@ExtendWith( TestDirectoryExtension.class )
+class MemoryRecommendationsCommandTest
 {
-    @Rule
-    public final TestDirectory directory = TestDirectory.testDirectory();
+    @Inject
+    private TestDirectory directory;
 
     @Test
-    public void mustRecommendOSMemory()
+    void mustRecommendOSMemory()
     {
         assertThat( recommendOsMemory( mebiBytes( 100 ) ), between( mebiBytes( 65 ), mebiBytes( 75 ) ) );
         assertThat( recommendOsMemory( gibiBytes( 1 ) ), between( mebiBytes( 650 ), mebiBytes( 750 ) ) );
@@ -98,7 +100,7 @@ public class MemoryRecommendationsCommandTest
     }
 
     @Test
-    public void mustRecommendHeapMemory()
+    void mustRecommendHeapMemory()
     {
         assertThat( recommendHeapMemory( mebiBytes( 100 ) ), between( mebiBytes( 25 ), mebiBytes( 35 ) ) );
         assertThat( recommendHeapMemory( gibiBytes( 1 ) ), between( mebiBytes( 300 ), mebiBytes( 350 ) ) );
@@ -109,7 +111,7 @@ public class MemoryRecommendationsCommandTest
     }
 
     @Test
-    public void mustRecommendPageCacheMemory()
+    void mustRecommendPageCacheMemory()
     {
         assertThat( recommendPageCacheMemory( mebiBytes( 100 ) ), between( mebiBytes( 7 ), mebiBytes( 12 ) ) );
         assertThat( recommendPageCacheMemory( gibiBytes( 1 ) ), between( mebiBytes( 50 ), mebiBytes( 60 ) ) );
@@ -123,7 +125,7 @@ public class MemoryRecommendationsCommandTest
     }
 
     @Test
-    public void bytesToStringMustBeParseableBySettings()
+    void bytesToStringMustBeParseableBySettings()
     {
         Setting<Long> setting = buildSetting( "arg", BYTES ).build();
         for ( int i = 1; i < 10_000; i++ )
@@ -140,11 +142,14 @@ public class MemoryRecommendationsCommandTest
     }
 
     @Test
-    public void mustPrintRecommendationsAsConfigReadableOutput() throws Exception
+    void mustPrintRecommendationsAsConfigReadableOutput() throws Exception
     {
         StringBuilder output = new StringBuilder();
-        Path homeDir = Paths.get( "home" );
-        Path configDir = Paths.get( "home", "config" );
+        Path homeDir = directory.directory().toPath();
+        Path configDir = homeDir.resolve( "conf" );
+        Path configFile = configDir.resolve( DEFAULT_CONFIG_FILE_NAME );
+        configDir.toFile().mkdirs();
+        store( stringMap( data_directory.name(), homeDir.toString() ), configFile.toFile() );
         OutsideWorld outsideWorld = new RealOutsideWorld()
         {
             @Override
@@ -166,7 +171,7 @@ public class MemoryRecommendationsCommandTest
     }
 
     @Test
-    public void shouldPrintKilobytesEvenForByteSizeBelowAKiloByte()
+    void shouldPrintKilobytesEvenForByteSizeBelowAKiloByte()
     {
         // given
         long bytesBelowK = 176;
@@ -185,38 +190,67 @@ public class MemoryRecommendationsCommandTest
     }
 
     @Test
-    public void mustPrintMinimalPageCacheMemorySettingForConfiguredDb() throws Exception
+    void mustPrintMinimalPageCacheMemorySettingForConfiguredDb() throws Exception
     {
         // given
-        StringBuilder output = new StringBuilder();
         Path homeDir = directory.directory().toPath();
         Path configDir = homeDir.resolve( "conf" );
         configDir.toFile().mkdirs();
         Path configFile = configDir.resolve( DEFAULT_CONFIG_FILE_NAME );
         String databaseName = "mydb";
         store( stringMap( data_directory.name(), homeDir.toString() ), configFile.toFile() );
-        File databaseDirectory = fromFile( configFile ).withHome( homeDir ).withSetting( active_database, databaseName ).build().get( database_path );
-        createDatabaseWithNativeIndexes( databaseDirectory );
-        OutsideWorld outsideWorld = new OutputCaptureOutsideWorld( output );
+        DatabaseLayout databaseLayout = DatabaseLayout.of( fromFile( configFile ).withHome( homeDir ).build().get( databases_root_path ), databaseName );
+        createDatabaseWithNativeIndexes( databaseLayout );
+        OutputCaptureOutsideWorld outsideWorld = new OutputCaptureOutsideWorld();
         MemoryRecommendationsCommand command = new MemoryRecommendationsCommand( homeDir, configDir, outsideWorld );
         String heap = bytesToString( recommendHeapMemory( gibiBytes( 8 ) ) );
         String pagecache = bytesToString( recommendPageCacheMemory( gibiBytes( 8 ) ) );
 
         // when
-        command.execute( array( "--database", databaseName, "--memory", "8g" ) );
+        command.execute( new String[]{"--memory", "8g"} );
 
         // then
-        String memrecString = output.toString();
+        String memrecString = outsideWorld.getOutput();
         Map<String,String> stringMap = load( new StringReader( memrecString ) );
         assertThat( stringMap.get( initialHeapSize.name() ), is( heap ) );
         assertThat( stringMap.get( maxHeapSize.name() ), is( heap ) );
         assertThat( stringMap.get( pagecache_memory.name() ), is( pagecache ) );
 
-        long[] expectedSizes = calculatePageCacheFileSize( DatabaseLayout.of( databaseDirectory ) );
+        long[] expectedSizes = calculatePageCacheFileSize( databaseLayout );
         long expectedPageCacheSize = expectedSizes[0];
         long expectedLuceneSize = expectedSizes[1];
         assertThat( memrecString, containsString( "Lucene indexes: " + bytesToString( expectedLuceneSize ) ) );
         assertThat( memrecString, containsString( "Data volume and native indexes: " + bytesToString( expectedPageCacheSize ) ) );
+    }
+
+    @Test
+    void includeAllDatabasesToMemoryRecommendations() throws IOException, CommandFailed, IncorrectUsage
+    {
+        Path homeDir = directory.directory().toPath();
+        Path configDir = homeDir.resolve( "conf" );
+        configDir.toFile().mkdirs();
+        Path configFile = configDir.resolve( DEFAULT_CONFIG_FILE_NAME );
+
+        OutputCaptureOutsideWorld outsideWorld = new OutputCaptureOutsideWorld();
+        store( stringMap( data_directory.name(), homeDir.toString() ), configFile.toFile() );
+
+        long totalPageCacheSize = 0;
+        long totalLuceneIndexesSize = 0;
+        for ( int i = 0; i < 5; i++ )
+        {
+            DatabaseLayout databaseLayout = DatabaseLayout.of( fromFile( configFile ).withHome( homeDir ).build().get( databases_root_path ), "db" + i );
+            createDatabaseWithNativeIndexes( databaseLayout );
+            long[] expectedSizes = calculatePageCacheFileSize( databaseLayout );
+            totalPageCacheSize += expectedSizes[0];
+            totalLuceneIndexesSize += expectedSizes[1];
+        }
+
+        MemoryRecommendationsCommand command = new MemoryRecommendationsCommand( homeDir, configDir, outsideWorld );
+        command.execute( new String[]{"--memory", "8g"} );
+
+        String memrecString = outsideWorld.getOutput();
+        assertThat( memrecString, containsString( "Lucene indexes: " + bytesToString( totalLuceneIndexesSize ) ) );
+        assertThat( memrecString, containsString( "Data volume and native indexes: " + bytesToString( totalPageCacheSize ) ) );
     }
 
     private static Matcher<Long> between( long lowerBound, long upperBound )
@@ -254,13 +288,13 @@ public class MemoryRecommendationsCommandTest
         return new long[]{pageCacheTotal.longValue(), luceneTotal.longValue()};
     }
 
-    private static void createDatabaseWithNativeIndexes( File databaseDirectory )
+    private static void createDatabaseWithNativeIndexes( DatabaseLayout databaseLayout )
     {
         // Create one index for every provider that we have
         for ( SchemaIndex schemaIndex : SchemaIndex.values() )
         {
             GraphDatabaseService db =
-                    new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( databaseDirectory )
+                    new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( databaseLayout.databaseDirectory() )
                             .setConfig( default_schema_provider, schemaIndex.providerName() )
                             .newGraphDatabase();
             String key = "key-" + schemaIndex.name();
@@ -294,15 +328,20 @@ public class MemoryRecommendationsCommandTest
     {
         private final StringBuilder output;
 
-        OutputCaptureOutsideWorld( StringBuilder output )
+        OutputCaptureOutsideWorld()
         {
-            this.output = output;
+            this.output = new StringBuilder();
         }
 
         @Override
         public void stdOutLine( String text )
         {
             output.append( text ).append( System.lineSeparator() );
+        }
+
+        String getOutput()
+        {
+            return output.toString();
         }
     }
 }

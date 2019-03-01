@@ -19,8 +19,8 @@
  */
 package org.neo4j.server;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.nio.file.Files;
@@ -31,25 +31,27 @@ import org.neo4j.graphdb.facade.GraphDatabaseDependencies;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.server.database.CommunityGraphFactory;
 import org.neo4j.server.database.GraphFactory;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.SuppressOutputExtension;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.not;
-import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
-import static org.neo4j.configuration.GraphDatabaseSettings.database_path;
 
-public class ServerBootstrapperTest
+@ExtendWith( {TestDirectoryExtension.class, SuppressOutputExtension.class} )
+class ServerBootstrapperTest
 {
-    @Rule
-    public final SuppressOutput suppress = SuppressOutput.suppress( SuppressOutput.System.out );
-
-    @Rule
-    public TestDirectory homeDir = TestDirectory.testDirectory();
+    @Inject
+    private TestDirectory homeDir;
+    @Inject
+    private SuppressOutput suppress;
 
     @Test
-    public void shouldNotThrowNullPointerExceptionIfConfigurationValidationFails() throws Exception
+    void shouldNotThrowNullPointerExceptionIfConfigurationValidationFails() throws Exception
     {
         // given
         ServerBootstrapper serverBootstrapper = new ServerBootstrapper()
@@ -71,8 +73,7 @@ public class ServerBootstrapperTest
         dir.deleteOnExit();
 
         // when
-        serverBootstrapper.start( dir, Optional.empty(), MapUtil.stringMap(
-                database_path.name(), homeDir.absolutePath().getAbsolutePath() ) );
+        serverBootstrapper.start( dir, Optional.empty(), MapUtil.stringMap() );
 
         // then no exceptions are thrown and
         assertThat( suppress.getOutputVoice().lines(), not( empty() ) );

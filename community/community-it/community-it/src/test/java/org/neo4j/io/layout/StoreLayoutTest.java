@@ -26,12 +26,16 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Collection;
+import java.util.stream.Collectors;
 
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
+import static java.util.Arrays.asList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith( TestDirectoryExtension.class )
 class StoreLayoutTest
@@ -74,5 +78,28 @@ class StoreLayoutTest
         File storeLockFile = storeLayout.storeLockFile();
         assertEquals( "store_lock", storeLockFile.getName() );
         assertEquals( storeLayout.storeDirectory(), storeLockFile.getParentFile() );
+    }
+
+    @Test
+    void emptyStoreLayoutDatabasesCollection()
+    {
+        File storeDir = testDirectory.storeDir();
+        StoreLayout storeLayout = StoreLayout.of( storeDir );
+        assertTrue( storeLayout.databaseLayouts().isEmpty() );
+    }
+
+    @Test
+    void storeLayoutDatabasesOnlyBasedOnSubfolders()
+    {
+        File storeDir = testDirectory.storeDir();
+        StoreLayout storeLayout = StoreLayout.of( storeDir );
+
+        testDirectory.directory( "a" );
+        testDirectory.directory( "b" );
+        testDirectory.file( "c" );
+
+        Collection<DatabaseLayout> layouts = storeLayout.databaseLayouts();
+        assertEquals( 2, layouts.size() );
+        assertEquals( asList( "a", "b" ), layouts.stream().map( DatabaseLayout::getDatabaseName ).collect( Collectors.toList() ) );
     }
 }

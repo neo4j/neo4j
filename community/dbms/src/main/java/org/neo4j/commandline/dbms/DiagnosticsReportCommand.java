@@ -59,7 +59,7 @@ import org.neo4j.kernel.diagnostics.InteractiveProgress;
 import org.neo4j.kernel.diagnostics.NonInteractiveProgress;
 
 import static org.apache.commons.text.StringEscapeUtils.escapeCsv;
-import static org.neo4j.configuration.GraphDatabaseSettings.database_path;
+import static org.neo4j.configuration.GraphDatabaseSettings.databases_root_path;
 
 public class DiagnosticsReportCommand implements AdminCommand
 {
@@ -245,7 +245,7 @@ public class DiagnosticsReportCommand implements AdminCommand
         File configFile = configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ).toFile();
         Config config = getConfig( configFile );
 
-        File storeDirectory = config.get( database_path );
+        File storeDirectory = config.get( databases_root_path );
 
         reporter.registerAllOfflineProviders( config, storeDirectory, this.fs );
 

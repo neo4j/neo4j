@@ -137,7 +137,7 @@ public class ImportTool
                         + "Arguments containing spaces needs to be quoted."
                         + "Supplying other arguments in addition to this file argument is not supported." ),
         STORE_DIR( "into", null,
-                "<store-dir>",
+                "<database-dir>",
                 "Database directory to import into. " + "Must not contain existing database." ),
         DB_NAME( "database", null,
                 "<database-name>",
@@ -402,7 +402,7 @@ public class ImportTool
             return;
         }
 
-        File storeDir;
+        File databaseDirectory;
         Collection<Option<File[]>> nodesFiles;
         Collection<Option<File[]>> relationshipsFiles;
         boolean enableStacktrace;
@@ -429,9 +429,10 @@ public class ImportTool
         {
             args = useArgumentsFromFileArgumentIfPresent( args );
 
-            storeDir = args.interpretOption( Options.STORE_DIR.key(), Converters.mandatory(),
+            databaseDirectory = args.interpretOption( Options.STORE_DIR.key(), Converters.mandatory(),
                     Converters.toFile(), Validators.DIRECTORY_IS_WRITABLE );
-            Config config = Config.defaults( GraphDatabaseSettings.neo4j_home, storeDir.getAbsolutePath() );
+            DatabaseLayout databaseLayout = DatabaseLayout.of( databaseDirectory );
+            Config config = Config.defaults( GraphDatabaseSettings.neo4j_home, databaseDirectory.getAbsolutePath() );
             logsDir = config.get( GraphDatabaseSettings.logs_directory );
             fs.mkdirs( logsDir );
 
@@ -439,7 +440,7 @@ public class ImportTool
                     (Boolean) Options.SKIP_BAD_ENTRIES_LOGGING.defaultValue(), false);
             if ( !skipBadEntriesLogging )
             {
-                badFile = new File( storeDir, BAD_FILE_NAME );
+                badFile = new File( databaseDirectory, BAD_FILE_NAME );
                 badOutput = new BufferedOutputStream( fs.openAsOutputStream( badFile, false ) );
             }
             nodesFiles = extractInputFiles( args, Options.NODE_DATA.key(), err );
@@ -474,7 +475,7 @@ public class ImportTool
             boolean allowCacheOnHeap = args.getBoolean( Options.CACHE_ON_HEAP.key(),
                     (Boolean) Options.CACHE_ON_HEAP.defaultValue() );
             configuration = importConfiguration(
-                    processors, defaultSettingsSuitableForTests, dbConfig, maxMemory, storeDir,
+                    processors, defaultSettingsSuitableForTests, dbConfig, maxMemory, databaseLayout,
                     allowCacheOnHeap, defaultHighIO );
             input = new CsvInput( nodeData( inputEncoding, nodesFiles ), defaultFormatNodeFileHeader(),
                     relationshipData( inputEncoding, relationshipsFiles ), defaultFormatRelationshipFileHeader(),
@@ -482,7 +483,7 @@ public class ImportTool
             in = defaultSettingsSuitableForTests ? new ByteArrayInputStream( EMPTY_BYTE_ARRAY ) : System.in;
             boolean detailedPrinting = args.getBoolean( Options.DETAILED_PROGRESS.key(), (Boolean) Options.DETAILED_PROGRESS.defaultValue() );
 
-            doImport( out, err, in, DatabaseLayout.of( storeDir ), logsDir, badFile, fs, nodesFiles, relationshipsFiles,
+            doImport( out, err, in, databaseLayout, logsDir, badFile, fs, nodesFiles, relationshipsFiles,
                     enableStacktrace, input, dbConfig, badOutput, configuration, detailedPrinting );
 
             success = true;
@@ -726,15 +727,15 @@ public class ImportTool
     }
 
     public static org.neo4j.unsafe.impl.batchimport.Configuration importConfiguration(
-            Number processors, boolean defaultSettingsSuitableForTests, Config dbConfig, File storeDir, Boolean defaultHighIO )
+            Number processors, boolean defaultSettingsSuitableForTests, Config dbConfig, DatabaseLayout databaseLayout, Boolean defaultHighIO )
     {
         return importConfiguration(
-                processors, defaultSettingsSuitableForTests, dbConfig, null, storeDir,
+                processors, defaultSettingsSuitableForTests, dbConfig, null, databaseLayout,
                 DEFAULT.allowCacheAllocationOnHeap(), defaultHighIO );
     }
 
     public static org.neo4j.unsafe.impl.batchimport.Configuration importConfiguration(
-            Number processors, boolean defaultSettingsSuitableForTests, Config dbConfig, Long maxMemory, File storeDir,
+            Number processors, boolean defaultSettingsSuitableForTests, Config dbConfig, Long maxMemory, DatabaseLayout databaseLayout,
             boolean allowCacheOnHeap, Boolean defaultHighIO )
     {
         return new org.neo4j.unsafe.impl.batchimport.Configuration()
@@ -766,7 +767,7 @@ public class ImportTool
             @Override
             public boolean highIO()
             {
-                return defaultHighIO != null ? defaultHighIO : FileUtils.highIODevice( storeDir.toPath(), false );
+                return defaultHighIO != null ? defaultHighIO : FileUtils.highIODevice( databaseLayout.databaseDirectory().toPath(), false );
             }
 
             @Override

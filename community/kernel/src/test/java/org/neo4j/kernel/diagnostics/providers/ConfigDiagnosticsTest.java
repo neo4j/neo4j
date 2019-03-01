@@ -25,7 +25,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.Log;
 
-import static org.neo4j.configuration.GraphDatabaseSettings.active_database;
+import static org.neo4j.configuration.GraphDatabaseSettings.default_database;
 import static org.neo4j.configuration.GraphDatabaseSettings.max_concurrent_transactions;
 
 class ConfigDiagnosticsTest
@@ -36,14 +36,14 @@ class ConfigDiagnosticsTest
     @Test
     void dumpConfigValues()
     {
-        Config config = Config.builder().withSetting( active_database, "testDb" ).withSetting( max_concurrent_transactions, "400" ).build();
+        Config config = Config.builder().withSetting( default_database, "testDb" ).withSetting( max_concurrent_transactions, "400" ).build();
 
         ConfigDiagnostics configDiagnostics = new ConfigDiagnostics( config );
         configDiagnostics.dump( log.infoLogger() );
 
         logProvider.assertLogStringContains( "DBMS provided settings:" );
         logProvider.assertLogStringContains( max_concurrent_transactions.name() + "=400" );
-        logProvider.assertLogStringContains( active_database.name() + "=testDb" );
+        logProvider.assertLogStringContains( default_database.name() + "=testDb" );
         logProvider.assertNoMessagesContaining( "No provided DBMS settings." );
     }
 

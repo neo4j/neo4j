@@ -34,11 +34,13 @@ import org.neo4j.commandline.arguments.OptionalBooleanArg;
 import org.neo4j.commandline.arguments.OptionalNamedArg;
 import org.neo4j.commandline.arguments.OptionalNamedArgWithMetadata;
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.configuration.LayoutConfig;
 import org.neo4j.helpers.Args;
+import org.neo4j.io.layout.DatabaseLayout;
 
 import static org.neo4j.commandline.arguments.common.Database.ARG_DATABASE;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.configuration.GraphDatabaseSettings.databases_root_path;
 import static org.neo4j.csv.reader.Configuration.DEFAULT;
 import static org.neo4j.tooling.ImportTool.parseFileArgumentList;
 import static org.neo4j.unsafe.impl.batchimport.Configuration.DEFAULT_MAX_MEMORY_PERCENT;
@@ -230,10 +232,9 @@ public class ImportCommand implements AdminCommand
 
         try
         {
-            Config config =
-                    loadNeo4jConfig( homeDir, configDir, database, loadAdditionalConfig( additionalConfigFile ) );
-
-            Importer importer = importerFactory.getImporterForMode( mode, Args.parse( args ), config, outsideWorld );
+            Config config = loadNeo4jConfig( homeDir, configDir, loadAdditionalConfig( additionalConfigFile ) );
+            DatabaseLayout databaseLayout = DatabaseLayout.of( config.get( databases_root_path ), LayoutConfig.of( config ), database );
+            Importer importer = importerFactory.getImporterForMode( mode, Args.parse( args ), config, outsideWorld, databaseLayout );
             importer.doImport();
         }
         catch ( IllegalArgumentException e )
@@ -258,7 +259,7 @@ public class ImportCommand implements AdminCommand
         return additionalConfigFile.map( path -> Config.fromFile( path ).build() ).orElseGet( Config::defaults );
     }
 
-    private static Config loadNeo4jConfig( Path homeDir, Path configDir, String databaseName, Config additionalConfig )
+    private static Config loadNeo4jConfig( Path homeDir, Path configDir, Config additionalConfig )
     {
         Config config = Config.fromFile( configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ) )
                 .withHome( homeDir )
@@ -266,7 +267,6 @@ public class ImportCommand implements AdminCommand
                 .withNoThrowOnFileLoadFailure()
                 .build();
         config.augment( additionalConfig );
-        config.augment( GraphDatabaseSettings.active_database, databaseName );
         return config;
     }
 }

@@ -79,7 +79,7 @@ public class DatabaseLayout
     protected DatabaseLayout( StoreLayout storeLayout, String databaseName )
     {
         this.storeLayout = storeLayout;
-        this.databaseDirectory = new File( storeLayout.storeDirectory(), databaseName );
+        this.databaseDirectory = getCanonicalFile( new File( storeLayout.storeDirectory(), databaseName ) );
         this.databaseName = databaseName;
     }
 

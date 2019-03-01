@@ -133,7 +133,7 @@ public class DefaultUdcInformationCollector implements UdcInformationCollector
     @Override
     public String getStoreId()
     {
-        return getDatabaseContext( config.get( GraphDatabaseSettings.active_database ) )
+        return getDatabaseContext( config.get( GraphDatabaseSettings.default_database ) )
                 .map( DatabaseContext::getDatabase )
                 .map( Database::getStoreId )
                 .map( DefaultUdcInformationCollector::getStoreIdString )

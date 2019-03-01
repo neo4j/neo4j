@@ -246,7 +246,7 @@ class IdGeneratorRebuildTest
         {
             File absoluteStoreDir = storeDir.getAbsoluteFile();
             File databasesRoot = absoluteStoreDir.getParentFile();
-            params.put( GraphDatabaseSettings.active_database.name(), absoluteStoreDir.getName() );
+            params.put( GraphDatabaseSettings.default_database.name(), absoluteStoreDir.getName() );
             params.put( GraphDatabaseSettings.databases_root_path.name(), databasesRoot.getAbsolutePath() );
             new GraphDatabaseFacadeFactory( DatabaseInfo.COMMUNITY, CommunityEditionModule::new )
             {

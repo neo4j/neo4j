@@ -19,15 +19,11 @@
  */
 package org.neo4j.server.database;
 
-import java.io.File;
-
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
 public interface Database extends Lifecycle
 {
-    File getLocation();
-
     GraphDatabaseFacade getGraph();
 
     boolean isRunning();

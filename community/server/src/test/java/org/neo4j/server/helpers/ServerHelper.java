@@ -19,8 +19,6 @@
  */
 package org.neo4j.server.helpers;
 
-import org.apache.commons.io.FileUtils;
-
 import java.io.File;
 import java.io.IOException;
 
@@ -50,27 +48,12 @@ public class ServerHelper
         rollbackAllOpenTransactions( server );
 
         cleanTheDatabase( server.getDatabase().getGraph() );
-
-        removeLogs( server );
     }
 
     public static void cleanTheDatabase( GraphDatabaseAPI db )
     {
         new Transactor( db, new DeleteAllData( db ), 10 ).execute();
         new Transactor( db, new DeleteAllSchema( db ), 10 ).execute();
-    }
-
-    private static void removeLogs( NeoServer server )
-    {
-        File logDir = new File( server.getDatabase().getLocation() + File.separator + ".." + File.separator + "log" );
-        try
-        {
-            FileUtils.deleteDirectory( logDir );
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
-        }
     }
 
     public static NeoServer createNonPersistentServer() throws IOException

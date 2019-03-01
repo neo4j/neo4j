@@ -19,8 +19,6 @@
  */
 package org.neo4j.server.database;
 
-import java.io.File;
-
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
@@ -39,12 +37,6 @@ public class WrappedDatabase extends LifecycleAdapter implements Database
         {
             throw new RuntimeException( throwable );
         }
-    }
-
-    @Override
-    public File getLocation()
-    {
-        return graph.databaseLayout().databaseDirectory();
     }
 
     @Override

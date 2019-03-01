@@ -66,20 +66,21 @@ class CsvImporter implements Importer
     private final Config databaseConfig;
     private final Args args;
     private final OutsideWorld outsideWorld;
+    private final DatabaseLayout databaseLayout;
     private final String reportFileName;
     private final boolean ignoreBadRelationships;
     private final boolean ignoreDuplicateNodes;
     private final boolean ignoreExtraColumns;
     private final Boolean highIO;
 
-    CsvImporter( Args args, Config databaseConfig, OutsideWorld outsideWorld ) throws IncorrectUsage
+    CsvImporter( Args args, Config databaseConfig, OutsideWorld outsideWorld, DatabaseLayout databaseLayout ) throws IncorrectUsage
     {
         this.args = args;
         this.outsideWorld = outsideWorld;
+        this.databaseLayout = databaseLayout;
         nodesFiles = extractInputFiles( args, "nodes", outsideWorld.errorStream() );
         relationshipsFiles = extractInputFiles( args, "relationships", outsideWorld.errorStream() );
-        reportFileName =
-                args.interpretOption( "report-file", withDefault( ImportCommand.DEFAULT_REPORT_FILE_NAME ), s -> s );
+        reportFileName = args.interpretOption( "report-file", withDefault( ImportCommand.DEFAULT_REPORT_FILE_NAME ), s -> s );
         ignoreExtraColumns = args.getBoolean( "ignore-extra-columns", false );
         ignoreDuplicateNodes = args.getBoolean( "ignore-duplicate-nodes", false );
         ignoreBadRelationships = args.getBoolean( "ignore-missing-nodes", false );
@@ -103,7 +104,6 @@ class CsvImporter implements Importer
     public void doImport() throws IOException
     {
         FileSystemAbstraction fs = outsideWorld.fileSystem();
-        File storeDir = databaseConfig.get( GraphDatabaseSettings.database_path );
         File logsDir = databaseConfig.get( GraphDatabaseSettings.logs_directory );
         File reportFile = new File( reportFileName );
 
@@ -112,7 +112,7 @@ class CsvImporter implements Importer
                 collect( ignoreBadRelationships, ignoreDuplicateNodes, ignoreExtraColumns ) );
 
         Configuration configuration = new WrappedBatchImporterConfigurationForNeo4jAdmin( importConfiguration(
-                null, false, databaseConfig, storeDir, highIO ) );
+                null, false, databaseConfig, databaseLayout, highIO ) );
 
         // Extract the default time zone from the database configuration
         ZoneId dbTimeZone = databaseConfig.get( GraphDatabaseSettings.db_temporal_timezone );
@@ -125,7 +125,7 @@ class CsvImporter implements Importer
                 new WrappedCsvInputConfigurationForNeo4jAdmin( csvConfiguration( args, false ) ),
                 badCollector );
 
-        ImportTool.doImport( outsideWorld.errorStream(), outsideWorld.errorStream(), outsideWorld.inStream(), DatabaseLayout.of( storeDir ), logsDir,
+        ImportTool.doImport( outsideWorld.errorStream(), outsideWorld.errorStream(), outsideWorld.inStream(), databaseLayout, logsDir,
                 reportFile, fs, nodesFiles, relationshipsFiles, false, input, this.databaseConfig, badOutput, configuration, false );
     }
 

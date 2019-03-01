@@ -24,6 +24,7 @@ import java.io.FileFilter;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.Collection;
 import java.util.Locale;
 import java.util.function.ToDoubleFunction;
 
@@ -35,19 +36,19 @@ import org.neo4j.commandline.arguments.Arguments;
 import org.neo4j.commandline.arguments.OptionalNamedArg;
 import org.neo4j.common.Service;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.LayoutConfig;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.layout.StoreLayout;
 import org.neo4j.io.os.OsBeanUtil;
 import org.neo4j.kernel.api.impl.index.storage.FailureStorage;
 import org.neo4j.kernel.internal.NativeIndexFileFilter;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 
 import static java.lang.String.format;
-import static org.neo4j.commandline.arguments.common.Database.ARG_DATABASE;
 import static org.neo4j.configuration.ExternalSettings.initialHeapSize;
 import static org.neo4j.configuration.ExternalSettings.maxHeapSize;
-import static org.neo4j.configuration.GraphDatabaseSettings.active_database;
-import static org.neo4j.configuration.GraphDatabaseSettings.database_path;
+import static org.neo4j.configuration.GraphDatabaseSettings.databases_root_path;
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.configuration.Settings.BYTES;
 import static org.neo4j.configuration.Settings.buildSetting;
@@ -203,7 +204,6 @@ public class MemoryRecommendationsCommand implements AdminCommand
         String os = bytesToString( recommendOsMemory( memory ) );
         String heap = bytesToString( recommendHeapMemory( memory ) );
         String pagecache = bytesToString( recommendPageCacheMemory( memory ) );
-        boolean specificDb = arguments.has( ARG_DATABASE );
 
         print( "# Memory settings recommendation from neo4j-admin memrec:" );
         print( "#" );
@@ -230,33 +230,41 @@ public class MemoryRecommendationsCommand implements AdminCommand
         print( maxHeapSize.name() + "=" + heap );
         print( pagecache_memory.name() + "=" + pagecache );
 
-        if ( !specificDb )
-        {
-            return;
-        }
-        String databaseName = arguments.get( ARG_DATABASE );
         File configFile = configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ).toFile();
-        File databaseDirectory = getConfig( configFile, databaseName ).get( database_path );
-        DatabaseLayout layout = DatabaseLayout.of( databaseDirectory );
-        long pageCacheSize = dbSpecificPageCacheSize( layout );
-        long luceneSize = dbSpecificLuceneSize( databaseDirectory );
+        Config config = getConfig( configFile );
+        File databasesRoot = config.get( databases_root_path );
+        StoreLayout storeLayout = StoreLayout.of( databasesRoot, LayoutConfig.of( config ) );
+        Collection<DatabaseLayout> layouts = storeLayout.databaseLayouts();
+        long pageCacheSize = pageCacheSize( layouts );
+        long luceneSize = luceneSize( layouts );
 
         print( "#" );
-        print( "# The numbers below have been derived based on your current data volume in database and index configuration of database '" + databaseName +
-                "'." );
+        print( "# The numbers below have been derived based on your current data volume in database and index configuration of databases located at: '" +
+                databasesRoot + "'." );
         print( "# They can be used as an input into more detailed memory analysis." );
         print( "# Lucene indexes: " + bytesToString( luceneSize ) );
         print( "# Data volume and native indexes: " + bytesToString( pageCacheSize ) );
     }
 
-    private long dbSpecificPageCacheSize( DatabaseLayout databaseLayout )
+    private long pageCacheSize( Collection<DatabaseLayout> layouts )
     {
-        return sumStoreFiles( databaseLayout ) + sumIndexFiles( baseSchemaIndexFolder( databaseLayout.databaseDirectory() ),
-                getNativeIndexFileFilter( databaseLayout.databaseDirectory(), false ) );
+        return layouts.stream().mapToLong( this::getDatabasePageCacheSize ).sum();
     }
 
-    private long dbSpecificLuceneSize( File databaseDirectory )
+    private long getDatabasePageCacheSize( DatabaseLayout layout )
     {
+        return sumStoreFiles( layout ) +
+                sumIndexFiles( baseSchemaIndexFolder( layout.databaseDirectory() ), getNativeIndexFileFilter( layout.databaseDirectory(), false ) );
+    }
+
+    private long luceneSize( Collection<DatabaseLayout> layouts )
+    {
+        return layouts.stream().mapToLong(this::getDatabaseLuceneSize).sum();
+    }
+
+    private long getDatabaseLuceneSize( DatabaseLayout databaseLayout )
+    {
+        File databaseDirectory = databaseLayout.databaseDirectory();
         return sumIndexFiles( baseSchemaIndexFolder( databaseDirectory ), getNativeIndexFileFilter( databaseDirectory, true ) );
     }
 
@@ -326,7 +334,7 @@ public class MemoryRecommendationsCommand implements AdminCommand
         return total;
     }
 
-    private Config getConfig( File configFile, String databaseName ) throws CommandFailed
+    private Config getConfig( File configFile ) throws CommandFailed
     {
         if ( !outsideWorld.fileSystem().fileExists( configFile ) )
         {
@@ -334,7 +342,7 @@ public class MemoryRecommendationsCommand implements AdminCommand
         }
         try
         {
-            return Config.fromFile( configFile ).withHome( homeDir ).withSetting( active_database, databaseName ).withConnectorsDisabled().build();
+            return Config.fromFile( configFile ).withHome( homeDir ).withConnectorsDisabled().build();
         }
         catch ( Exception e )
         {

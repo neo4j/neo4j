@@ -22,71 +22,53 @@ package org.neo4j.commandline.dbms;
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
-import java.util.HashMap;
 
 import org.neo4j.commandline.admin.IncorrectUsage;
-import org.neo4j.commandline.admin.NullOutsideWorld;
-import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.Args;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.impl.util.Validators;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.core.IsNot.not;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class DatabaseImporterTest
+@ExtendWith( TestDirectoryExtension.class )
+class DatabaseImporterTest
 {
-    @Rule
-    public final TestDirectory testDir = TestDirectory.testDirectory();
+    @Inject
+    private TestDirectory testDir;
 
     @Test
-    public void requiresFromArgument()
+    void requiresFromArgument()
     {
         String[] arguments = {"--mode=database", "--database=bar"};
-
-        try
-        {
-            new DatabaseImporter( Args.parse( arguments ), Config.defaults(), new NullOutsideWorld() );
-
-            fail( "Should have thrown an exception." );
-        }
-        catch ( IncorrectUsage e )
-        {
-            assertThat( e.getMessage(), containsString( "from" ) );
-        }
+        IncorrectUsage usageException = assertThrows( IncorrectUsage.class, () -> new DatabaseImporter( Args.parse( arguments ), testDir.databaseLayout() ) );
+        assertThat( usageException.getMessage(), containsString( "from" ) );
     }
 
     @Test
-    public void failIfSourceIsNotAStore()
+    void failIfSourceIsNotAStore()
     {
         File from = testDir.directory( "empty" );
         String[] arguments = {"--mode=database", "--database=bar", "--from=" + from.getAbsolutePath()};
 
-        try
-        {
-            new DatabaseImporter( Args.parse( arguments ), Config.defaults(), new NullOutsideWorld() );
-            fail( "Should have thrown an exception." );
-        }
-        catch ( IncorrectUsage e )
-        {
-            assertThat( e.getMessage(), containsString( "does not contain a database" ) );
-        }
+        IncorrectUsage usageException = assertThrows( IncorrectUsage.class, () -> new DatabaseImporter( Args.parse( arguments ), testDir.databaseLayout() ) );
+        assertThat( usageException.getMessage(), containsString( "does not contain a database" ) );
     }
 
     @Test
-    public void copiesDatabaseFromOldLocationToNewLocation() throws Exception
+    void copiesDatabaseFromOldLocationToNewLocation() throws Exception
     {
         File home = testDir.directory( "home" );
 
@@ -95,40 +77,12 @@ public class DatabaseImporterTest
 
         String[] arguments = {"--mode=database", "--database=bar", "--from=" + from.getAbsolutePath()};
 
+        DatabaseLayout barLayout = DatabaseLayout.of( destination );
         DatabaseImporter importer =
-                new DatabaseImporter( Args.parse( arguments ), getConfigWith( home, "bar" ), new NullOutsideWorld() );
+                new DatabaseImporter( Args.parse( arguments ), barLayout );
         assertThat( destination, not( isExistingDatabase() ) );
         importer.doImport();
         assertThat( destination, isExistingDatabase() );
-    }
-
-    @Test
-    public void removesOldMessagesLog() throws Exception
-    {
-        File home = testDir.directory();
-
-        File from = provideStoreDirectory();
-        File oldMessagesLog = new File( from, "messages.log" );
-
-        assertTrue( oldMessagesLog.createNewFile() );
-
-        File destination = testDir.databaseDir();
-
-        String[] arguments = {"--mode=database", "--database=bar", "--from=" + from.getAbsolutePath()};
-        DatabaseImporter importer =
-                new DatabaseImporter( Args.parse( arguments ), getConfigWith( home, "bar" ), new NullOutsideWorld() );
-
-        File messagesLog = new File( destination, "messages.log" );
-        importer.doImport();
-        assertFalse( messagesLog.exists() );
-    }
-
-    private static Config getConfigWith( File homeDir, String databaseName )
-    {
-        HashMap<String,String> additionalConfig = new HashMap<>();
-        additionalConfig.put( GraphDatabaseSettings.neo4j_home.name(), homeDir.toString() );
-        additionalConfig.put( GraphDatabaseSettings.active_database.name(), databaseName );
-        return Config.defaults( additionalConfig );
     }
 
     private File provideStoreDirectory()

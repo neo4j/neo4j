@@ -32,10 +32,9 @@ import static org.hamcrest.core.IsEqual.equalTo;
 class DatabaseManagementSystemSettingsTest
 {
     @Test
-    void shouldPutDatabaseDirectoriesIntoDataDatabases()
+    void shouldPutDatabasesDirectoriesIntoData()
     {
         Config config = Config.defaults( GraphDatabaseSettings.data_directory, "the-data-directory" );
-        assertThat( config.get( GraphDatabaseSettings.database_path ),
-                equalTo( new File( "the-data-directory/databases/" + GraphDatabaseSettings.DEFAULT_DATABASE_NAME ) ) );
+        assertThat( config.get( GraphDatabaseSettings.databases_root_path ), equalTo( new File( "the-data-directory/databases/" ) ) );
     }
 }

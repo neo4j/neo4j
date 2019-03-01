@@ -131,7 +131,7 @@ public class GraphDatabaseFactory
         File absoluteStoreDir = storeDir.getAbsoluteFile();
         File databasesRoot = absoluteStoreDir.getParentFile();
         config.augment( GraphDatabaseSettings.ephemeral, Settings.FALSE );
-        config.augment( GraphDatabaseSettings.active_database, absoluteStoreDir.getName() );
+        config.augment( GraphDatabaseSettings.default_database, absoluteStoreDir.getName() );
         config.augment( GraphDatabaseSettings.databases_root_path, databasesRoot.getAbsolutePath() );
         return getGraphDatabaseFacadeFactory().newFacade( databasesRoot, config, dependencies );
     }

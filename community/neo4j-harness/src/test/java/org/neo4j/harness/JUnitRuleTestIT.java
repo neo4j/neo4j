@@ -40,6 +40,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.harness.extensionpackage.MyUnmanagedExtension;
 import org.neo4j.harness.junit.rule.Neo4jRule;
 import org.neo4j.helpers.collection.Iterators;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.LogTimeZone;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -53,6 +54,9 @@ import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.configuration.GraphDatabaseSettings.data_directory;
+import static org.neo4j.configuration.GraphDatabaseSettings.databases_root_path;
 import static org.neo4j.server.ServerTestUtils.getRelativePath;
 import static org.neo4j.server.ServerTestUtils.getSharedTestTemporaryFolder;
 import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
@@ -123,9 +127,9 @@ public class JUnitRuleTestIT
     {
         // given a root folder, create /databases/neo4j folders.
         File oldDir = testDirectory.directory( "old" );
-        File storeDir = Config.defaults( GraphDatabaseSettings.data_directory, oldDir.toPath().toString() )
-                .get( GraphDatabaseSettings.database_path );
-        GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir );
+        DatabaseLayout databaseLayout =
+                DatabaseLayout.of( Config.defaults( data_directory, oldDir.toPath().toString() ).get( databases_root_path ), DEFAULT_DATABASE_NAME );
+        GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( databaseLayout.databaseDirectory() );
 
         try
         {

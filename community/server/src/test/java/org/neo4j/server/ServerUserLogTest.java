@@ -19,8 +19,8 @@
  */
 package org.neo4j.server;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.io.IOException;
@@ -34,62 +34,60 @@ import java.util.stream.Collectors;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.graphdb.facade.GraphDatabaseDependencies;
-import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.server.database.CommunityGraphFactory;
 import org.neo4j.server.database.GraphFactory;
 import org.neo4j.server.modules.ServerModule;
 import org.neo4j.server.rest.management.AdvertisableService;
 import org.neo4j.server.web.WebServer;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.SuppressOutputExtension;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.not;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.neo4j.configuration.GraphDatabaseSettings.database_path;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.store_user_log_to_stdout;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
-public class ServerUserLogTest
+@ExtendWith( {TestDirectoryExtension.class, SuppressOutputExtension.class} )
+class ServerUserLogTest
 {
-    @Rule
-    public final SuppressOutput suppress = SuppressOutput.suppress( SuppressOutput.System.out );
-
-    @Rule
-    public TestDirectory homeDir = TestDirectory.testDirectory();
+    @Inject
+    private SuppressOutput suppress;
+    @Inject
+    private TestDirectory homeDir;
 
     @Test
-    public void shouldLogToStdOutByDefault() throws Exception
+    void shouldLogToStdOutByDefault() throws Exception
     {
         // given
         ServerBootstrapper serverBootstrapper = getServerBootstrapper();
         File dir = homeDir.directory();
 
         // when
-        serverBootstrapper.start( dir, Optional.empty(), MapUtil.stringMap( database_path.name(), homeDir.absolutePath().getAbsolutePath() ) );
+        serverBootstrapper.start( dir, Optional.empty(), stringMap() );
 
         // then no exceptions are thrown and
         assertThat( getStdOut(), not( empty() ) );
-        assertTrue( !Files.exists( getUserLogFileLocation( dir ) ) );
+        assertFalse( Files.exists( getUserLogFileLocation( dir ) ) );
 
         // stop the server so that resources are released and test teardown isn't flaky
         serverBootstrapper.stop();
     }
 
     @Test
-    public void shouldLogToFileWhenConfigured() throws Exception
+    void shouldLogToFileWhenConfigured() throws Exception
     {
         // given
         ServerBootstrapper serverBootstrapper = getServerBootstrapper();
         File dir = homeDir.directory();
 
         // when
-        serverBootstrapper.start( dir, Optional.empty(),
-                MapUtil.stringMap(
-                        database_path.name(), homeDir.absolutePath().getAbsolutePath(),
-                        store_user_log_to_stdout.name(), "false"
-                )
-        );
+        serverBootstrapper.start( dir, Optional.empty(), stringMap( store_user_log_to_stdout.name(), "false" ) );
 
         // then no exceptions are thrown and
         assertThat( getStdOut(), empty() );

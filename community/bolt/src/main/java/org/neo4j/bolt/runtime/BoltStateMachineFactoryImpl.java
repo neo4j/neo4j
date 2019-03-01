@@ -50,7 +50,7 @@ public class BoltStateMachineFactoryImpl implements BoltStateMachineFactory
     private final Authentication authentication;
     private final Config config;
     private final Clock clock;
-    private final String activeDatabaseName;
+    private final String defaultDatabaseName;
 
     public BoltStateMachineFactoryImpl( DatabaseManager databaseManager, UsageData usageData,
             Authentication authentication, Clock clock, Config config, LogService logging )
@@ -61,7 +61,7 @@ public class BoltStateMachineFactoryImpl implements BoltStateMachineFactory
         this.authentication = authentication;
         this.config = config;
         this.clock = clock;
-        this.activeDatabaseName = config.get( GraphDatabaseSettings.active_database );
+        this.defaultDatabaseName = config.get( GraphDatabaseSettings.default_database );
     }
 
     @Override
@@ -87,21 +87,21 @@ public class BoltStateMachineFactoryImpl implements BoltStateMachineFactory
 
     private BoltStateMachine newStateMachineV1( BoltChannel boltChannel )
     {
-        TransactionStateMachineSPI transactionSPI = new TransactionStateMachineV1SPI( getActiveDatabase(), boltChannel, getAwaitDuration(), clock );
+        TransactionStateMachineSPI transactionSPI = new TransactionStateMachineV1SPI( getDefaultDatabase(), boltChannel, getAwaitDuration(), clock );
         BoltStateMachineSPI boltSPI = new BoltStateMachineV1SPI( usageData, logging, authentication, transactionSPI );
         return new BoltStateMachineV1( boltSPI, boltChannel, clock );
     }
 
     private BoltStateMachine newStateMachineV3( BoltChannel boltChannel )
     {
-        TransactionStateMachineSPI transactionSPI = new TransactionStateMachineV3SPI( getActiveDatabase(), boltChannel, getAwaitDuration(), clock );
+        TransactionStateMachineSPI transactionSPI = new TransactionStateMachineV3SPI( getDefaultDatabase(), boltChannel, getAwaitDuration(), clock );
         BoltStateMachineSPI boltSPI = new BoltStateMachineV1SPI( usageData, logging, authentication, transactionSPI );
         return new BoltStateMachineV3( boltSPI, boltChannel, clock );
     }
 
     private BoltStateMachine newStateMachineV4( BoltChannel boltChannel )
     {
-        TransactionStateMachineSPI transactionSPI = new TransactionStateMachineV4SPI( getActiveDatabase(), boltChannel, getAwaitDuration(), clock );
+        TransactionStateMachineSPI transactionSPI = new TransactionStateMachineV4SPI( getDefaultDatabase(), boltChannel, getAwaitDuration(), clock );
         BoltStateMachineSPI boltSPI = new BoltStateMachineV1SPI( usageData, logging, authentication, transactionSPI );
         return new BoltStateMachineV4( boltSPI, boltChannel, clock );
     }
@@ -113,8 +113,8 @@ public class BoltStateMachineFactoryImpl implements BoltStateMachineFactory
         return Duration.ofMillis( bookmarkReadyTimeout );
     }
 
-    private DatabaseContext getActiveDatabase()
+    private DatabaseContext getDefaultDatabase()
     {
-        return databaseManager.getDatabaseContext( activeDatabaseName ).get();
+        return databaseManager.getDatabaseContext( defaultDatabaseName ).get();
     }
 }

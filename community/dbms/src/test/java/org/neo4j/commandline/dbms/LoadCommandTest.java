@@ -143,16 +143,17 @@ class LoadCommandTest
         Path dataDir = testDirectory.directory( "some-other-path" ).toPath();
         Path databaseDir = dataDir.resolve( "databases/foo" );
         Path txLogsDir = dataDir.resolve( DEFAULT_TX_LOGS_ROOT_DIR_NAME );
+        Path databasesDir = dataDir.resolve( "databases" );
 
         Files.createDirectories( realDatabaseDir );
-        Files.createDirectories( dataDir.resolve( "databases" ) );
+        Files.createDirectories( databasesDir );
 
         Files.createSymbolicLink( databaseDir, realDatabaseDir );
 
         Files.write( configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ), singletonList( formatProperty( data_directory, dataDir ) ) );
 
         execute( "foo" );
-        DatabaseLayout databaseLayout = createDatabaseLayout( realDatabaseDir, txLogsDir );
+        DatabaseLayout databaseLayout = createDatabaseLayout( databasesDir, "foo", txLogsDir );
         verify( loader ).load( any(), eq( databaseLayout ) );
     }
 
@@ -315,6 +316,11 @@ class LoadCommandTest
                             "                          [default:false]%n" ),
                     baos.toString() );
         }
+    }
+
+    private static DatabaseLayout createDatabaseLayout( Path storePath, String databaseName, Path transactionLogsPath )
+    {
+        return DatabaseLayout.of( storePath.toFile(), () -> Optional.of( transactionLogsPath.toFile() ), databaseName );
     }
 
     private static DatabaseLayout createDatabaseLayout( Path databasePath, Path transactionLogsPath )

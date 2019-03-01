@@ -36,7 +36,7 @@ public class InMemoryGraphFactory implements GraphFactory
     @Override
     public GraphDatabaseFacade newGraphDatabase( Config config, ExternalDependencies dependencies )
     {
-        File storeDir = config.get( GraphDatabaseSettings.database_path );
+        File storeDir = new File( config.get( GraphDatabaseSettings.databases_root_path ), GraphDatabaseSettings.DEFAULT_DATABASE_NAME );
         config.augment( stringMap( GraphDatabaseSettings.ephemeral.name(), "true",
                 new BoltConnector( "bolt" ).listen_address.name(), "localhost:0" ) );
         return new ImpermanentGraphDatabase( storeDir, config, GraphDatabaseDependencies.newDependencies( dependencies ) );

@@ -37,7 +37,6 @@ import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.test.rule.ImpermanentDbmsRule;
 import org.neo4j.test.rule.SuppressOutput;
 
-import static org.hamcrest.Matchers.is;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
@@ -135,13 +134,5 @@ public class TestLifecycleManagedDatabase
             // Wrapped in a lifecycle exception, needs to be dug out
             assertThat( e.getCause().getCause(), instanceOf( StoreLockException.class ) );
         }
-    }
-
-    @Test
-    public void shouldBeAbleToGetLocation() throws Throwable
-    {
-        theDatabase.start();
-        assertThat( theDatabase.getLocation().getAbsolutePath(),
-                is( dbConfig.get( GraphDatabaseSettings.database_path ).getAbsolutePath() ) );
     }
 }

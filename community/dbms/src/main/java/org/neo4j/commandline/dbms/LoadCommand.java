@@ -34,7 +34,6 @@ import org.neo4j.commandline.arguments.Arguments;
 import org.neo4j.commandline.arguments.OptionalBooleanArg;
 import org.neo4j.commandline.arguments.common.MandatoryCanonicalPath;
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.LayoutConfig;
 import org.neo4j.dbms.archive.IncorrectFormat;
 import org.neo4j.dbms.archive.Loader;
@@ -44,7 +43,7 @@ import static java.util.Objects.requireNonNull;
 import static org.neo4j.commandline.Util.checkLock;
 import static org.neo4j.commandline.Util.wrapIOException;
 import static org.neo4j.commandline.arguments.common.Database.ARG_DATABASE;
-import static org.neo4j.configuration.GraphDatabaseSettings.database_path;
+import static org.neo4j.configuration.GraphDatabaseSettings.databases_root_path;
 import static org.neo4j.io.fs.FileUtils.deleteRecursively;
 
 public class LoadCommand implements AdminCommand
@@ -77,9 +76,9 @@ public class LoadCommand implements AdminCommand
         String database = arguments.get( ARG_DATABASE );
         boolean force = arguments.getBoolean( "force" );
 
-        Config config = buildConfig( database );
+        Config config = buildConfig();
 
-        DatabaseLayout databaseLayout = DatabaseLayout.of( getDatabaseDirectory( config ), LayoutConfig.of( config ) );
+        DatabaseLayout databaseLayout = DatabaseLayout.of( getDatabaseDirectory( config ), LayoutConfig.of( config ), database );
 
         deleteIfNecessary( databaseLayout, force );
         load( archive, databaseLayout );
@@ -87,16 +86,15 @@ public class LoadCommand implements AdminCommand
 
     private File getDatabaseDirectory( Config config )
     {
-        return config.get( database_path );
+        return config.get( databases_root_path );
     }
 
-    private Config buildConfig( String databaseName )
+    private Config buildConfig()
     {
         return Config.fromFile( configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ) )
                 .withHome( homeDir )
                 .withConnectorsDisabled()
                 .withNoThrowOnFileLoadFailure()
-                .withSetting( GraphDatabaseSettings.active_database, databaseName )
                 .build();
     }
 

@@ -180,7 +180,7 @@ public abstract class AbstractEditionModule
     {
         if ( globalAvailabilityGuard == null )
         {
-            globalAvailabilityGuard = new DatabaseAvailabilityGuard( config.get( GraphDatabaseSettings.active_database ), clock,
+            globalAvailabilityGuard = new DatabaseAvailabilityGuard( config.get( GraphDatabaseSettings.default_database ), clock,
                     logService.getInternalLog( DatabaseAvailabilityGuard.class ) );
         }
         return globalAvailabilityGuard;
@@ -193,7 +193,7 @@ public abstract class AbstractEditionModule
 
     public void createDatabases( DatabaseManager databaseManager, Config config )
     {
-        databaseManager.createDatabase( config.get( GraphDatabaseSettings.active_database ) );
+        databaseManager.createDatabase( config.get( GraphDatabaseSettings.default_database ) );
     }
 
     public long getTransactionStartTimeout()
