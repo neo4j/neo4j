@@ -21,6 +21,8 @@ package org.neo4j.kernel.impl.index.schema.fusion;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.DirectoryNotEmptyException;
+import java.nio.file.NoSuchFileException;
 import java.util.Arrays;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -231,7 +233,31 @@ public class FusionIndexProvider extends IndexProvider
             {
                 ZipUtils.zip( fs, rootIndexDirectory, archiveFile( rootIndexDirectory ) );
             }
-            fs.deleteRecursively( rootIndexDirectory );
+            int attempt = 0;
+            while ( attempt < 5 )
+            {
+                attempt++;
+                try
+                {
+                    fs.deleteRecursively( rootIndexDirectory );
+                    break;
+                }
+                catch ( DirectoryNotEmptyException | NoSuchFileException notEmptyException )
+                {
+                    // Looks like someone created a new file in our directory while we where deleting.
+                    // Let's sleep for a bit and try again.
+                    try
+                    {
+                        Thread.sleep( 100 );
+                    }
+                    catch ( InterruptedException e )
+                    {
+                        // Let's abandon this attempt to clean up.
+                        Thread.currentThread().interrupt();
+                        break;
+                    }
+                }
+            }
         }
 
         private File archiveFile( File folder )
