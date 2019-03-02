@@ -87,8 +87,7 @@ public class BlockBasedIndexPopulatorTest
     public void shouldCorrectlyDecideToAwaitMergeDependingOnProgress() throws Throwable
     {
         // given
-        TrappingMonitor monitor = new TrappingMonitor();
-        BlockBasedIndexPopulator<GenericKey,NativeIndexValue> populator = instantiatePopulatorWithSomeData( monitor );
+        BlockBasedIndexPopulator<GenericKey,NativeIndexValue> populator = instantiatePopulatorWithSomeData( BlockStorage.Monitor.NO_MONITOR );
 
         // when
         Race race = new Race();
@@ -101,7 +100,7 @@ public class BlockBasedIndexPopulatorTest
         ephemeralFileSystem.assertNoOpenFiles();
     }
 
-    private BlockBasedIndexPopulator<GenericKey,NativeIndexValue> instantiatePopulatorWithSomeData( TrappingMonitor monitor )
+    private BlockBasedIndexPopulator<GenericKey,NativeIndexValue> instantiatePopulatorWithSomeData( BlockStorage.Monitor monitor )
     {
         IndexProviderDescriptor providerDescriptor = new IndexProviderDescriptor( "test", "v1" );
         Config config = Config.defaults();
