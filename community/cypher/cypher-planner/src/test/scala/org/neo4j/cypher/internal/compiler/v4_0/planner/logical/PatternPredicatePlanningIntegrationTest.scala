@@ -161,8 +161,8 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
       case Projection(
       VarExpand(_, _, _, _, _, _, _, _, _,
                 Some(VariablePredicate(
-                  Variable("n"),
-                  In(Property(Variable("n"), PropertyKeyName("prop") ), ListLiteral(List(SignedDecimalIntegerLiteral("1337"))))
+                  Variable("r_NODES"),
+                  In(Property(Variable("r_NODES"), PropertyKeyName("prop") ), ListLiteral(List(SignedDecimalIntegerLiteral("1337"))))
                 )),
                 _), _) => ()
 
@@ -174,8 +174,8 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
       case Projection(
       VarExpand(_, _, _, _, _, _, _, _, _,
                 Some(VariablePredicate(
-                  Variable("n"),
-                  Not(In(Property(Variable("n"), PropertyKeyName("prop") ), ListLiteral(List(SignedDecimalIntegerLiteral("1337")))))
+                  Variable("r_NODES"),
+                  Not(In(Property(Variable("r_NODES"), PropertyKeyName("prop") ), ListLiteral(List(SignedDecimalIntegerLiteral("1337")))))
                 )),
                 _), _) => ()
 

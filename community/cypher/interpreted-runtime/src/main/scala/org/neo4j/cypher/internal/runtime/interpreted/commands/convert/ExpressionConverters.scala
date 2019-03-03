@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Predicate
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{ManySeekArgs, SeekArgs, SingleSeekArg}
 import org.neo4j.cypher.internal.runtime.interpreted.{CommandProjection, GroupingExpression}
-import org.neo4j.cypher.internal.v4_0.expressions.{SemanticDirection, Variable}
+import org.neo4j.cypher.internal.v4_0.expressions.{LogicalVariable, SemanticDirection}
 import org.neo4j.cypher.internal.v4_0.logical.plans.{ManySeekableArgs, SeekableArgs, SingleSeekableArg}
 import org.neo4j.cypher.internal.v4_0.util._
 import org.neo4j.cypher.internal.v4_0.util.attribution.Id
@@ -107,29 +107,29 @@ class ExpressionConverters(converters: ExpressionConverter*) {
   def toCommandProjectedPath(e: ast.PathExpression): ProjectedPath = {
     def project(pathStep: ast.PathStep): Projector = pathStep match {
 
-      case ast.NodePathStep(ast.Variable(node), next) =>
-        singleNodeProjector(node, project(next))
+      case ast.NodePathStep(node: LogicalVariable, next) =>
+        singleNodeProjector(node.name, project(next))
 
-      case ast.SingleRelationshipPathStep(ast.Variable(rel), _, Some(ast.Variable(target)), next) =>
-        singleRelationshipWithKnownTargetProjector(rel, target, project(next))
+      case ast.SingleRelationshipPathStep(rel: LogicalVariable, _, Some(target: LogicalVariable), next) =>
+        singleRelationshipWithKnownTargetProjector(rel.name, target.name, project(next))
 
-      case ast.SingleRelationshipPathStep(ast.Variable(rel), SemanticDirection.INCOMING, _, next) =>
-        singleIncomingRelationshipProjector(rel, project(next))
+      case ast.SingleRelationshipPathStep(rel: LogicalVariable, SemanticDirection.INCOMING, _, next) =>
+        singleIncomingRelationshipProjector(rel.name, project(next))
 
-      case ast.SingleRelationshipPathStep(ast.Variable(rel), SemanticDirection.OUTGOING, _, next) =>
-        singleOutgoingRelationshipProjector(rel, project(next))
+      case ast.SingleRelationshipPathStep(rel: LogicalVariable, SemanticDirection.OUTGOING, _, next) =>
+        singleOutgoingRelationshipProjector(rel.name, project(next))
 
-      case ast.SingleRelationshipPathStep(ast.Variable(rel), SemanticDirection.BOTH, _, next) =>
-        singleUndirectedRelationshipProjector(rel, project(next))
+      case ast.SingleRelationshipPathStep(rel: LogicalVariable, SemanticDirection.BOTH, _, next) =>
+        singleUndirectedRelationshipProjector(rel.name, project(next))
 
-      case ast.MultiRelationshipPathStep(ast.Variable(rel), SemanticDirection.INCOMING, _, next) =>
-        multiIncomingRelationshipProjector(rel, project(next))
+      case ast.MultiRelationshipPathStep(rel: LogicalVariable, SemanticDirection.INCOMING, _, next) =>
+        multiIncomingRelationshipProjector(rel.name, project(next))
 
-      case ast.MultiRelationshipPathStep(ast.Variable(rel), SemanticDirection.OUTGOING, _, next) =>
-        multiOutgoingRelationshipProjector(rel, project(next))
+      case ast.MultiRelationshipPathStep(rel: LogicalVariable, SemanticDirection.OUTGOING, _, next) =>
+        multiOutgoingRelationshipProjector(rel.name, project(next))
 
-      case ast.MultiRelationshipPathStep(ast.Variable(rel), SemanticDirection.BOTH, _, next) =>
-        multiUndirectedRelationshipProjector(rel, project(next))
+      case ast.MultiRelationshipPathStep(rel: LogicalVariable, SemanticDirection.BOTH, _, next) =>
+        multiUndirectedRelationshipProjector(rel.name, project(next))
 
       case ast.NilPathStep =>
         nilProjector
@@ -139,7 +139,7 @@ class ExpressionConverters(converters: ExpressionConverter*) {
     }
 
     val projector = project(e.step)
-    val dependencies = e.step.dependencies.map(_.asInstanceOf[Variable].name)
+    val dependencies = e.step.dependencies.map(_.asInstanceOf[LogicalVariable].name)
 
     ProjectedPath(dependencies, projector)
   }
