@@ -68,7 +68,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
 
   var parser = new CypherParser
   val rewriterSequencer = RewriterStepSequencer.newValidating _
-  var astRewriter = new ASTRewriter(rewriterSequencer, literalExtraction = Never, getDegreeRewriting = true)
+  var astRewriter = new ASTRewriter(rewriterSequencer, literalExtraction = Never, getDegreeRewriting = true, innerVariableNamer = GeneratingNamer)
   final var planner = new QueryPlanner()
   var queryGraphSolver: QueryGraphSolver = new IDPQueryGraphSolver(SingleComponentPlanner(mock[IDPQueryGraphSolverMonitor]), cartesianProductsOrValueJoins, mock[IDPQueryGraphSolverMonitor])
   val cypherCompilerConfig = CypherPlannerConfiguration(
@@ -165,7 +165,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
       Parsing andThen
       PreparatoryRewriting(Deprecations.V1) andThen
       SemanticAnalysis(warn = true, SemanticFeature.Cypher9Comparability) andThen
-      AstRewriting(newPlain, literalExtraction = Never) andThen
+      AstRewriting(newPlain, literalExtraction = Never, innerVariableNamer = GeneratingNamer) andThen
       RewriteProcedureCalls andThen
       Namespacer andThen
       transitiveClosure andThen

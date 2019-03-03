@@ -27,8 +27,7 @@ import org.neo4j.cypher.internal.v4_0.expressions.Expression
 import org.neo4j.cypher.internal.v4_0.frontend.PlannerName
 import org.neo4j.cypher.internal.v4_0.parser.ParserFixture.parser
 import org.neo4j.cypher.internal.v4_0.rewriting.RewriterStepSequencer
-import org.neo4j.cypher.internal.v4_0.rewriting.rewriters.Never
-import org.neo4j.cypher.internal.v4_0.rewriting.rewriters.normalizeWithAndReturnClauses
+import org.neo4j.cypher.internal.v4_0.rewriting.rewriters.{Never, SameNameNamer, normalizeWithAndReturnClauses}
 import org.neo4j.cypher.internal.v4_0.util.inSequence
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 
@@ -53,7 +52,7 @@ trait RewritePhaseTest {
     override def version: String = "fake"
   }
 
-  val astRewriter = new ASTRewriter(RewriterStepSequencer.newValidating, Never, getDegreeRewriting = true)
+  val astRewriter = new ASTRewriter(RewriterStepSequencer.newValidating, Never, getDegreeRewriting = true, innerVariableNamer = SameNameNamer)
 
   def assertNotRewritten(from: String): Unit = assertRewritten(from, from)
 

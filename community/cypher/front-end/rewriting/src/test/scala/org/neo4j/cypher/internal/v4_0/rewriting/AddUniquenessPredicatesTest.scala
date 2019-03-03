@@ -16,7 +16,7 @@
  */
 package org.neo4j.cypher.internal.v4_0.rewriting
 
-import org.neo4j.cypher.internal.v4_0.rewriting.rewriters.addUniquenessPredicates
+import org.neo4j.cypher.internal.v4_0.rewriting.rewriters.{AddUniquenessPredicates, SameNameNamer}
 import org.neo4j.cypher.internal.v4_0.util.Rewriter
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 
@@ -95,5 +95,5 @@ class AddUniquenessPredicatesTest extends CypherFunSuite with RewriteTest {
       "MATCH (a)-[r1]->(b)-[r2]->(c), allShortestPaths((a)-[r]->(b)) WHERE not(r1 = r2) RETURN *")
   }
 
-  val rewriterUnderTest: Rewriter = addUniquenessPredicates
+  val rewriterUnderTest: Rewriter = AddUniquenessPredicates(SameNameNamer)
 }

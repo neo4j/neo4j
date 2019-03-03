@@ -56,7 +56,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
   val monitors = mock[Monitors]
   val parser = new CypherParser
   val rewriterSequencer = RewriterStepSequencer.newValidating _
-  val astRewriter = new ASTRewriter(rewriterSequencer, literalExtraction = Never, getDegreeRewriting = true)
+  val astRewriter = new ASTRewriter(rewriterSequencer, literalExtraction = Never, getDegreeRewriting = true, innerVariableNamer = GeneratingNamer)
   val mockRel = newPatternRelationship("a", "b", "r")
 
   def newPatternRelationship(start: String, end: String, rel: String, dir: SemanticDirection = SemanticDirection.OUTGOING, types: Seq[RelTypeName] = Seq.empty, length: PatternLength = SimplePatternLength) = {
@@ -248,7 +248,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
     Parsing andThen
     PreparatoryRewriting(Deprecations.V1) andThen
     SemanticAnalysis(warn = true, SemanticFeature.Cypher9Comparability) andThen
-    AstRewriting(newPlain, literalExtraction = Never) andThen
+    AstRewriting(newPlain, literalExtraction = Never, innerVariableNamer = GeneratingNamer) andThen
     RewriteProcedureCalls andThen
     Namespacer andThen
     rewriteEqualityToInPredicate andThen

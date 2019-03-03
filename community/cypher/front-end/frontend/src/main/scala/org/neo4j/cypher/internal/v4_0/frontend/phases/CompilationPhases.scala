@@ -18,7 +18,7 @@ package org.neo4j.cypher.internal.v4_0.frontend.phases
 
 import org.neo4j.cypher.internal.v4_0.ast.Statement
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticState
-import org.neo4j.cypher.internal.v4_0.rewriting.rewriters.{IfNoParameter, LiteralExtraction}
+import org.neo4j.cypher.internal.v4_0.rewriting.rewriters.{IfNoParameter, LiteralExtraction, SameNameNamer}
 import org.neo4j.cypher.internal.v4_0.rewriting.{Deprecations, RewriterStepSequencer}
 
 object CompilationPhases {
@@ -31,7 +31,7 @@ object CompilationPhases {
       SyntaxDeprecationWarnings(deprecations) andThen
       PreparatoryRewriting(deprecations) andThen
       SemanticAnalysis(warn = true).adds(BaseContains[SemanticState]) andThen
-      AstRewriting(sequencer, literalExtraction)
+      AstRewriting(sequencer, literalExtraction, innerVariableNamer = SameNameNamer)
 
   def lateAstRewriting: Transformer[BaseContext, BaseState, BaseState] =
     isolateAggregation andThen

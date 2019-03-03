@@ -24,10 +24,12 @@ object NodeNameGenerator extends PrefixNameGenerator("NODE")
 
 object RelNameGenerator extends PrefixNameGenerator("REL")
 
+object InnerNameGenerator extends PrefixNameGenerator("INNER")
+
 object UnNamedNameGenerator extends PrefixNameGenerator("UNNAMED") {
   implicit class NameString(name: String) {
-    def isNamed = UnNamedNameGenerator.isNamed(name)
-    def unnamed = UnNamedNameGenerator.notNamed(name)
+    def isNamed: Boolean = UnNamedNameGenerator.isNamed(name)
+    def unnamed: Boolean = UnNamedNameGenerator.notNamed(name)
   }
 }
 
@@ -40,6 +42,6 @@ case class PrefixNameGenerator(generatorName: String) {
 
   def name(position: InputPosition): String = s"$prefix${position.toOffsetString}"
 
-  def isNamed(x: String) = !notNamed(x)
-  def notNamed(x: String) = x.startsWith(prefix)
+  def isNamed(x: String): Boolean = !notNamed(x)
+  def notNamed(x: String): Boolean = x.startsWith(prefix)
 }

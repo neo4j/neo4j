@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.v4_0.ast.Where
 import org.neo4j.cypher.internal.v4_0.expressions
 import org.neo4j.cypher.internal.v4_0.expressions._
 
-case object addUniquenessPredicates extends Rewriter {
+case class AddUniquenessPredicates(innerVariableNamer: InnerVariableNamer = SameNameNamer) extends Rewriter {
 
   def apply(that: AnyRef): AnyRef = instance(that)
 
@@ -83,27 +83,41 @@ case object addUniquenessPredicates extends Rewriter {
       x <- uniqueRels
       y <- uniqueRels if x.name < y.name && !x.isAlwaysDifferentFrom(y)
     } yield {
-      val equals = Equals(x.variable.copyId, y.variable.copyId)(pos)
-
       (x.singleLength, y.singleLength) match {
         case (true, true) =>
-          Not(equals)(pos)
+          Not(Equals(x.variable.copyId, y.variable.copyId)(pos))(pos)
 
         case (true, false) =>
-          NoneIterablePredicate(y.variable.copyId, y.variable.copyId, Some(equals))(pos)
+          val innerY = innerVariableNamer.create(y.variable)
+          NoneIterablePredicate(innerY, y.variable.copyId, Some(Equals(innerY.copyId, x.variable.copyId)(pos)))(pos)
 
         case (false, true) =>
-          NoneIterablePredicate(x.variable.copyId, x.variable.copyId, Some(equals))(pos)
+          val innerX = innerVariableNamer.create(x.variable)
+          NoneIterablePredicate(innerX, x.variable.copyId, Some(Equals(innerX.copyId, y.variable.copyId)(pos)))(pos)
 
         case (false, false) =>
-          NoneIterablePredicate(x.variable.copyId, x.variable.copyId, Some(AnyIterablePredicate(y.variable.copyId, y.variable.copyId, Some(equals))(pos)))(pos)
+          val innerX = innerVariableNamer.create(x.variable)
+          val innerY = innerVariableNamer.create(y.variable)
+          NoneIterablePredicate(innerX, x.variable.copyId, Some(AnyIterablePredicate(innerY, y.variable.copyId, Some(Equals(innerX.copyId, innerY.copyId)(pos)))(pos)))(pos)
       }
     }
 
   case class UniqueRel(variable: LogicalVariable, types: Set[RelTypeName], singleLength: Boolean) {
-    def name = variable.name
+    def name: String = variable.name
 
-    def isAlwaysDifferentFrom(other: UniqueRel) =
+    def isAlwaysDifferentFrom(other: UniqueRel): Boolean =
       types.nonEmpty && other.types.nonEmpty && (types intersect other.types).isEmpty
   }
+}
+
+trait InnerVariableNamer {
+  def create(outer: LogicalVariable): LogicalVariable
+}
+
+case object SameNameNamer extends InnerVariableNamer {
+  override def create(outer: LogicalVariable): LogicalVariable = outer.copyId
+}
+
+case object GeneratingNamer extends InnerVariableNamer {
+  override def create(outer: LogicalVariable): LogicalVariable = Variable(InnerNameGenerator.name(outer.position))(outer.position)
 }

@@ -24,9 +24,10 @@ import org.neo4j.cypher.internal.v4_0.rewriting.conditions._
 import org.neo4j.cypher.internal.v4_0.rewriting.rewriters.{replaceLiteralDynamicPropertyLookups, _}
 import org.neo4j.cypher.internal.v4_0.rewriting.{RewriterCondition, RewriterStepSequencer}
 
-class ASTRewriter(rewriterSequencer: (String) => RewriterStepSequencer,
+class ASTRewriter(rewriterSequencer: String => RewriterStepSequencer,
                   literalExtraction: LiteralExtraction,
-                  getDegreeRewriting: Boolean) {
+                  getDegreeRewriting: Boolean,
+                  innerVariableNamer: InnerVariableNamer) {
 
   def rewrite(queryText: String, statement: Statement, semanticState: SemanticState): (Statement, Map[String, Any], Set[RewriterCondition]) = {
 
@@ -49,7 +50,7 @@ class ASTRewriter(rewriterSequencer: (String) => RewriterStepSequencer,
       normalizeArgumentOrder,
       normalizeSargablePredicates,
       enableCondition(normalizedEqualsArguments),
-      addUniquenessPredicates,
+      AddUniquenessPredicates(innerVariableNamer),
       replaceLiteralDynamicPropertyLookups,
       namePatternComprehensionPatternElements,
       enableCondition(noUnnamedPatternElementsInPatternComprehension),
