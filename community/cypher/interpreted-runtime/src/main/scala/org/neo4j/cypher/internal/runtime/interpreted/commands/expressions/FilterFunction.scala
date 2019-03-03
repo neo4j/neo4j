@@ -42,7 +42,7 @@ case class FilterFunction(collection: Expression,
     val inputs = list.iterator()
     while (inputs.hasNext) {
       val value = inputs.next()
-      state.expressionSlots(innerVariableOffset) = value
+      state.expressionVariables(innerVariableOffset) = value
       if (predicate.isTrue(row, state)) {
         filtered += value
       }

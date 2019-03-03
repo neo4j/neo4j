@@ -34,7 +34,7 @@ import scala.collection.mutable
   *   2) allocates slots for these in the expression slot space (separate from ExecutionContext longs and refs)
   *   3) rewrites instances of these variables to [[ExpressionVariable]]s with the correct slots offset
   */
-object expressionVariables {
+object expressionVariableAllocation {
 
   /**
     * Attribute listing the expression variables in scope for nested logical plans. Only the root

@@ -34,7 +34,7 @@ class QueryState(val query: QueryContext,
                  val params: MapValue,
                  val cursors: ExpressionCursors,
                  val queryIndexes: Array[IndexReadSession],
-                 val expressionSlots: Array[AnyValue],
+                 val expressionVariables: Array[AnyValue],
                  val decorator: PipeDecorator = NullPipeDecorator,
                  val initialContext: Option[ExecutionContext] = None,
                  val cachedIn: SingleThreadedLRUCache[Any, InCheckContainer] = new SingleThreadedLRUCache(maxSize = 16),
@@ -67,11 +67,11 @@ class QueryState(val query: QueryContext,
   def getStatistics: QueryStatistics = query.getOptStatistics.getOrElse(QueryState.defaultStatistics)
 
   def withDecorator(decorator: PipeDecorator) =
-    new QueryState(query, resources, params, cursors, queryIndexes, expressionSlots, decorator, initialContext,
+    new QueryState(query, resources, params, cursors, queryIndexes, expressionVariables, decorator, initialContext,
                    cachedIn, lenientCreateRelationship, prePopulateResults, input)
 
   def withInitialContext(initialContext: ExecutionContext) =
-    new QueryState(query, resources, params, cursors, queryIndexes, expressionSlots, decorator, Some(initialContext),
+    new QueryState(query, resources, params, cursors, queryIndexes, expressionVariables, decorator, Some(initialContext),
                    cachedIn, lenientCreateRelationship, prePopulateResults, input)
 
   /**
@@ -83,7 +83,7 @@ class QueryState(val query: QueryContext,
     .foreach(initData => ctx.copyFrom(initData, nLongs, nRefs))
 
   def withQueryContext(query: QueryContext) =
-    new QueryState(query, resources, params, cursors, queryIndexes, expressionSlots, decorator, initialContext,
+    new QueryState(query, resources, params, cursors, queryIndexes, expressionVariables, decorator, initialContext,
                    cachedIn, lenientCreateRelationship, prePopulateResults, input)
 
   def setExecutionContextFactory(exFactory: ExecutionContextFactory): Unit = {

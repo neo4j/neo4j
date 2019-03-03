@@ -37,7 +37,7 @@ case class NestedPipeExpression(pipe: Pipe,
   override def apply(ctx: ExecutionContext, state: QueryState): AnyValue = {
     val initialContext = pipe.executionContextFactory.copyWith(ctx)
     availableExpressionVariables.foreach { expVar =>
-      initialContext.set(expVar.name, state.expressionSlots(expVar.offset))
+      initialContext.set(expVar.name, state.expressionVariables(expVar.offset))
     }
     val innerState = state.withInitialContext(initialContext).withDecorator(state.decorator.innerDecorator(owningPipe))
 

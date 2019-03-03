@@ -34,5 +34,5 @@ object ExpressionVariable {
 
 case class ExpressionVariable(offset: Int, name: String) extends VariableCommand(name) {
 
-  def apply(ctx: ExecutionContext, state: QueryState): AnyValue = state.expressionSlots(offset)
+  def apply(ctx: ExecutionContext, state: QueryState): AnyValue = state.expressionVariables(offset)
 }

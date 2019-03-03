@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.runtime
 
 import org.neo4j.cypher.internal.ir.v4_0.VarPatternLength
 import org.neo4j.cypher.internal.runtime.ast.ExpressionVariable
-import org.neo4j.cypher.internal.runtime.expressionVariables.Result
+import org.neo4j.cypher.internal.runtime.expressionVariableAllocation.Result
 import org.neo4j.cypher.internal.v4_0.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.v4_0.expressions.{Expression, _}
@@ -35,7 +35,7 @@ import org.parboiled.scala.{ReportingParseRunner, Rule1}
 import scala.collection.mutable
 
 //noinspection NameBooleanParameters
-class expressionVariablesTest extends CypherFunSuite with AstConstructionTestSupport {
+class ExpressionVariableAllocationTest extends CypherFunSuite with AstConstructionTestSupport {
 
   private implicit val idGen: IdGen = new SequentialIdGen()
 
@@ -48,7 +48,7 @@ class expressionVariablesTest extends CypherFunSuite with AstConstructionTestSup
     val plan = Selection(List(varFor("x")), Argument())
 
     // when
-    val Result(newPlan, nSlots, _) = expressionVariables.replace(plan)
+    val Result(newPlan, nSlots, _) = expressionVariableAllocation.replace(plan)
 
     // then
     nSlots should be(0)
@@ -61,7 +61,7 @@ class expressionVariablesTest extends CypherFunSuite with AstConstructionTestSup
     val plan = projectPlan(expr)
 
     // when
-    val Result(newPlan, nSlots, _) = expressionVariables.replace(plan)
+    val Result(newPlan, nSlots, _) = expressionVariableAllocation.replace(plan)
 
     // then
     nSlots should be(1)
@@ -76,7 +76,7 @@ class expressionVariablesTest extends CypherFunSuite with AstConstructionTestSup
     val plan = projectPlan(exprX, exprY, exprZ)
 
     // when
-    val Result(newPlan, nSlots, _) = expressionVariables.replace(plan)
+    val Result(newPlan, nSlots, _) = expressionVariableAllocation.replace(plan)
 
     // then
     nSlots should be(1)
@@ -93,7 +93,7 @@ class expressionVariablesTest extends CypherFunSuite with AstConstructionTestSup
     val plan = projectPlan(expr)
 
     // when
-    val Result(newPlan, nSlots, _) = expressionVariables.replace(plan)
+    val Result(newPlan, nSlots, _) = expressionVariableAllocation.replace(plan)
 
     // then
     nSlots should be(1)
@@ -108,7 +108,7 @@ class expressionVariablesTest extends CypherFunSuite with AstConstructionTestSup
     val plan = projectPlan(expr)
 
     // when
-    val Result(newPlan, nSlots, _) = expressionVariables.replace(plan)
+    val Result(newPlan, nSlots, _) = expressionVariableAllocation.replace(plan)
 
     // then
     nSlots should be(2)
@@ -123,7 +123,7 @@ class expressionVariablesTest extends CypherFunSuite with AstConstructionTestSup
     val plan = projectPlan(expr)
 
     // when
-    val Result(newPlan, nSlots, _) = expressionVariables.replace(plan)
+    val Result(newPlan, nSlots, _) = expressionVariableAllocation.replace(plan)
 
     // then
     nSlots should be(2)
@@ -145,7 +145,7 @@ class expressionVariablesTest extends CypherFunSuite with AstConstructionTestSup
                                                   Argument())))
 
     // when
-    val Result(newPlan, nSlots, _) = expressionVariables.replace(selection)
+    val Result(newPlan, nSlots, _) = expressionVariableAllocation.replace(selection)
 
     // then
     nSlots should be(1)
@@ -187,7 +187,7 @@ class expressionVariablesTest extends CypherFunSuite with AstConstructionTestSup
     val outerPlan = projectPlan(outerExpression)
 
     // when
-    val Result(newPlan, nSlots, availableExpressionVars) = expressionVariables.replace(outerPlan)
+    val Result(newPlan, nSlots, availableExpressionVars) = expressionVariableAllocation.replace(outerPlan)
 
     // then
     nSlots should be(3)
@@ -212,7 +212,7 @@ class expressionVariablesTest extends CypherFunSuite with AstConstructionTestSup
     val outerPlan = projectPlan(outerExpression)
 
     // when
-    val Result(newPlan, nSlots, availableExpressionVars) = expressionVariables.replace(outerPlan)
+    val Result(newPlan, nSlots, availableExpressionVars) = expressionVariableAllocation.replace(outerPlan)
 
     // then
     nSlots should be(4)
@@ -234,7 +234,7 @@ class expressionVariablesTest extends CypherFunSuite with AstConstructionTestSup
     val projection = projectPlan(nestedPlanExpression, listComprehension)
 
     // when
-    val Result(newPlan, nSlots, availableExpressionVars) = expressionVariables.replace(projection)
+    val Result(newPlan, nSlots, availableExpressionVars) = expressionVariableAllocation.replace(projection)
 
     // then
     nSlots should be(1)
@@ -249,7 +249,7 @@ class expressionVariablesTest extends CypherFunSuite with AstConstructionTestSup
     val plan = projectPlan(expr)
 
     // when
-    val Result(newPlan, nSlots, _) = expressionVariables.replace(plan)
+    val Result(newPlan, nSlots, _) = expressionVariableAllocation.replace(plan)
 
     // then
     nSlots should be(2)
@@ -264,7 +264,7 @@ class expressionVariablesTest extends CypherFunSuite with AstConstructionTestSup
     val plan = projectPlan(expr)
 
     // when
-    val Result(newPlan, nSlots, _) = expressionVariables.replace(plan)
+    val Result(newPlan, nSlots, _) = expressionVariableAllocation.replace(plan)
 
     // then
     nSlots should be(1)
@@ -279,7 +279,7 @@ class expressionVariablesTest extends CypherFunSuite with AstConstructionTestSup
     val plan = varLengthPlan(varFor("tempNode"), varFor("tempEdge"), nodePred, edgePred)
 
     // when
-    val Result(newPlan, nSlots, _) = expressionVariables.replace(plan)
+    val Result(newPlan, nSlots, _) = expressionVariableAllocation.replace(plan)
 
     // then
     nSlots should be(4)
@@ -303,7 +303,7 @@ class expressionVariablesTest extends CypherFunSuite with AstConstructionTestSup
     val plan = pruningVarLengthPlan(varFor("tempNode"), varFor("tempEdge"), nodePred, edgePred)
 
     // when
-    val Result(newPlan, nSlots, _) = expressionVariables.replace(plan)
+    val Result(newPlan, nSlots, _) = expressionVariableAllocation.replace(plan)
 
     // then
     nSlots should be(4)

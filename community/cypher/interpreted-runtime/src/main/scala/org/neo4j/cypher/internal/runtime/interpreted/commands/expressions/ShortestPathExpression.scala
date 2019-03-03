@@ -135,7 +135,7 @@ case class ShortestPathExpression(shortestPathPattern: ShortestPath,
                                                  predicate: Predicate,
                                                  state: QueryState) = new KernelPredicate[PropertyContainer] {
     override def test(t: PropertyContainer): Boolean = {
-      state.expressionSlots(variableOffset) = ValueUtils.asNodeOrEdgeValue(t)
+      state.expressionVariables(variableOffset) = ValueUtils.asNodeOrEdgeValue(t)
       predicate.isTrue(incomingCtx, state)
     }
   }
@@ -145,7 +145,7 @@ case class ShortestPathExpression(shortestPathPattern: ShortestPath,
                                                  predicate: Predicate,
                                                  state: QueryState) = new KernelPredicate[PropertyContainer] {
     override def test(t: PropertyContainer): Boolean = {
-      state.expressionSlots(variableOffset) = ValueUtils.asNodeOrEdgeValue(t)
+      state.expressionVariables(variableOffset) = ValueUtils.asNodeOrEdgeValue(t)
       !predicate.isTrue(incomingCtx, state)
     }
   }

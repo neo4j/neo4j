@@ -48,11 +48,11 @@ object QueryStateHelper extends MockitoSugar {
                 params: MapValue = EMPTY_MAP,
                 expressionCursors: ExpressionCursors = new ExpressionCursors(mock[CursorFactory]),
                 queryIndexes: Array[IndexReadSession] = Array(mock[IndexReadSession]),
-                expressionSlots: Array[AnyValue] = Array.empty,
+                expressionVariables: Array[AnyValue] = Array.empty,
                 decorator: PipeDecorator = NullPipeDecorator,
                 initialContext: Option[ExecutionContext] = None
                ):QueryState =
-    new QueryState(query, resources, params, expressionCursors, queryIndexes, expressionSlots, decorator, initialContext = initialContext)
+    new QueryState(query, resources, params, expressionCursors, queryIndexes, expressionVariables, decorator, initialContext = initialContext)
 
   def queryStateFrom(db: GraphDatabaseQueryService,
                      tx: InternalTransaction,

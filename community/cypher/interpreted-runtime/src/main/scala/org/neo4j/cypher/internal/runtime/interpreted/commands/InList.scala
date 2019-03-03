@@ -52,7 +52,7 @@ abstract class InList(collection: Expression,
     else {
       val seq = makeTraversable(list)
       seqMethod(seq) { item =>
-        state.expressionSlots(innerVariableOffset) = item
+        state.expressionVariables(innerVariableOffset) = item
         predicate.isMatch(row, state)
       }
     }

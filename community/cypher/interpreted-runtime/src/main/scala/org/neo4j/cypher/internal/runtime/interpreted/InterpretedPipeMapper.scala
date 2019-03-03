@@ -382,7 +382,7 @@ case class InterpretedPipeMapper(readOnly: Boolean,
          val command = buildPredicate(id, astPredicate)
          val ev = ExpressionVariable.cast(variable)
          (context: ExecutionContext, state: QueryState, entity: AnyValue) => {
-           state.expressionSlots(ev.offset) = entity
+           state.expressionVariables(ev.offset) = entity
            command.isTrue(context, state)
          }
      }

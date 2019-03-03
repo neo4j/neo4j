@@ -38,12 +38,12 @@ case class ReduceFunction(collection: Expression,
     val iterator = list.iterator()
     val initialAcc = init(m, state)
 
-    state.expressionSlots(accVariableOffset) = initialAcc
+    state.expressionVariables(accVariableOffset) = initialAcc
     while(iterator.hasNext) {
-      state.expressionSlots(innerVariableOffset) = iterator.next()
-      state.expressionSlots(accVariableOffset) = expression(m, state)
+      state.expressionVariables(innerVariableOffset) = iterator.next()
+      state.expressionVariables(accVariableOffset) = expression(m, state)
     }
-    state.expressionSlots(accVariableOffset)
+    state.expressionVariables(accVariableOffset)
   }
 
   def rewrite(f: Expression => Expression): Expression =

@@ -39,7 +39,7 @@ case class ExtractFunction(collection: Expression,
     var i = 0
     while (values.hasNext) {
       val value = values.next()
-      state.expressionSlots(innerVariableOffset) = value
+      state.expressionVariables(innerVariableOffset) = value
       extracted(i) = expression(row, state)
       i += 1
     }

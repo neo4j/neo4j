@@ -21,10 +21,10 @@ package org.neo4j.cypher.internal.compatibility
 
 import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.ExpressionEvaluator
 import org.neo4j.cypher.internal.planner.v4_0.spi.TokenContext
-import org.neo4j.cypher.internal.runtime.expressionVariables.Result
+import org.neo4j.cypher.internal.runtime.expressionVariableAllocation.Result
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
-import org.neo4j.cypher.internal.runtime.{ExecutionContext, expressionVariables}
+import org.neo4j.cypher.internal.runtime.{ExecutionContext, expressionVariableAllocation}
 import org.neo4j.cypher.internal.v4_0.expressions.Expression
 import org.neo4j.cypher.internal.v4_0.util.attribution.Id
 import org.neo4j.cypher.internal.v4_0.util.{CypherException => InternalCypherException}
@@ -35,7 +35,7 @@ case object simpleExpressionEvaluator extends ExpressionEvaluator {
 
   // Returns Some(value) if the expression can be independently evaluated in an empty context/query state, otherwise None
   def evaluateExpression(expr: Expression): Option[Any] = {
-    val Result(rewritten, nExpressionSlots, _) = expressionVariables.replace(expr)
+    val Result(rewritten, nExpressionSlots, _) = expressionVariableAllocation.replace(expr)
     val converters = new ExpressionConverters(CommunityExpressionConverter(TokenContext.EMPTY))
     val commandExpr = converters.toCommandExpression(Id.INVALID_ID, rewritten)
 

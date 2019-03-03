@@ -34,7 +34,7 @@ class ReduceTest extends CypherFunSuite {
     val expression = Add(ExpressionVariable(0, "acc"), LengthFunction(ExpressionVariable(1, "n")))
     val collection = Variable("l")
     val m = ExecutionContext.from("l" -> l)
-    val s = QueryStateHelper.emptyWith(expressionSlots = new Array(2))
+    val s = QueryStateHelper.emptyWith(expressionVariables = new Array(2))
 
     val reduce = ReduceFunction(collection, "n", 1, expression, "acc", 0, Literal(0))
 
@@ -45,7 +45,7 @@ class ReduceTest extends CypherFunSuite {
     val expression = Add(ExpressionVariable(0, "acc"), LengthFunction(ExpressionVariable(1, "n")))
     val collection = Literal(null)
     val m = ExecutionContext.empty
-    val s = QueryStateHelper.emptyWith(expressionSlots = new Array(2))
+    val s = QueryStateHelper.emptyWith(expressionVariables = new Array(2))
 
     val reduce = ReduceFunction(collection, "n", 1, expression, "acc", 0, Literal(0))
 
