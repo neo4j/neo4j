@@ -75,20 +75,6 @@ class ExpressionsTest extends ParserTest[ast.Expression, legacy.Expression] with
       legacy.GenericCase(IndexedSeq(alt1, alt2), Some(legacy.Literal("OTHER")))
   }
 
-  test("list_comprehension") {
-    val predicate = predicates.Equals(legacy.Property(legacy.Variable("x"), PropertyKey("prop")), legacy.Literal(42))
-    val mapExpression = legacy.Property(legacy.Variable("x"), PropertyKey("name"))
-
-    parsing("[x in collection WHERE x.prop = 42 | x.name]") shouldGive
-      legacy.ExtractFunction(legacy.FilterFunction(legacy.Variable("collection"), "x", 0, predicate), "x", 0, mapExpression)
-
-    parsing("[x in collection WHERE x.prop = 42]") shouldGive
-      legacy.FilterFunction(legacy.Variable("collection"), "x", 0, predicate)
-
-    parsing("[x in collection | x.name]") shouldGive
-      legacy.ExtractFunction(legacy.Variable("collection"), "x", 0, mapExpression)
-  }
-
   test("array_indexing") {
     val collection = legacy.ListLiteral(legacy.Literal(1), legacy.Literal(2), legacy.Literal(3), legacy.Literal(4))
 

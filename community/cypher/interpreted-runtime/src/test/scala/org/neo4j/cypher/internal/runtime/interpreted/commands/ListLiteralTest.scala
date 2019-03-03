@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.runtime.interpreted.commands
 
 import org.neo4j.cypher.internal.runtime.ExecutionContext
-import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{Expression, Literal, Variable}
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{Expression, ExpressionVariable, Literal}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.{CoercedPredicate, Predicate}
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
@@ -96,7 +96,7 @@ class ListLiteralTest extends CypherFunSuite {
 
     private def check(expected: Any,
                       collectionFunction: (Expression, String, Int, Predicate) => InList) {
-      val function = collectionFunction(Literal(values), "x", 0, CoercedPredicate(Variable("x")))
+      val function = collectionFunction(Literal(values), "x", 0, CoercedPredicate(ExpressionVariable(0, "x")))
       val result = function(ExecutionContext.empty, QueryStateHelper.emptyWith(expressionSlots = new Array(1)))
       result should equal(expected)
     }
