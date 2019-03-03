@@ -35,7 +35,7 @@ case object simpleExpressionEvaluator extends ExpressionEvaluator {
 
   // Returns Some(value) if the expression can be independently evaluated in an empty context/query state, otherwise None
   def evaluateExpression(expr: Expression): Option[Any] = {
-    val Result(rewritten, nExpressionSlots, _) = expressionVariableAllocation.replace(expr)
+    val Result(rewritten, nExpressionSlots, _) = expressionVariableAllocation.allocate(expr)
     val converters = new ExpressionConverters(CommunityExpressionConverter(TokenContext.EMPTY))
     val commandExpr = converters.toCommandExpression(Id.INVALID_ID, rewritten)
 

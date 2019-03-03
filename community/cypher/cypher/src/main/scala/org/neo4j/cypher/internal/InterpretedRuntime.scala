@@ -35,7 +35,7 @@ object InterpretedRuntime extends CypherRuntime[RuntimeContext] {
   override def name: String = "interpreted"
 
   override def compileToExecutable(query: LogicalQuery, context: RuntimeContext): ExecutionPlan = {
-    val Result(logicalPlan, nExpressionSlots, availableExpressionVars) = expressionVariableAllocation.replace(query.logicalPlan)
+    val Result(logicalPlan, nExpressionSlots, availableExpressionVars) = expressionVariableAllocation.allocate(query.logicalPlan)
     val converters = new ExpressionConverters(CommunityExpressionConverter(context.tokenContext))
     val queryIndexes = new QueryIndexes(context.schemaRead)
     val pipeMapper = InterpretedPipeMapper(query.readOnly, converters, context.tokenContext, queryIndexes)(query.semanticTable)

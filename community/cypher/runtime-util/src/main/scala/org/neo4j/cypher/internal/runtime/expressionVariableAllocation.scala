@@ -46,14 +46,14 @@ object expressionVariableAllocation {
                        nExpressionSlots: Int,
                        availableExpressionVars: AvailableExpressionVariables)
 
-  def replace[T <: Foldable with Rewritable](input: T): Result[T] = {
+  def allocate[T <: Foldable with Rewritable](input: T): Result[T] = {
 
     val globalMapping = mutable.Map[String, ExpressionVariable]()
     val availableExpressionVars = new AvailableExpressionVariables
 
-    def allocateScope(outerVars: List[ExpressionVariable],
-                      variables: Traversable[LogicalVariable]
-                     ): List[ExpressionVariable] = {
+    def allocateVariables(outerVars: List[ExpressionVariable],
+                          variables: Traversable[LogicalVariable]
+                         ): List[ExpressionVariable] = {
       var innerVars = outerVars
       for (variable <- variables) {
         val nextVariable = ExpressionVariable(innerVars.length, variable.name)
@@ -63,20 +63,23 @@ object expressionVariableAllocation {
       innerVars
     }
 
+    // Note: we use the treeFold to keep track of the expression variables in scope
+    // We don't need the result, the side-effect mutated `globalMapping` and
+    // `availableExpressionVars`contains all the data we need.
     input.treeFold(List.empty[ExpressionVariable]) {
       case x: ScopeExpression =>
         outerVars =>
-          val innerVars = allocateScope(outerVars, x.introducedVariables)
+          val innerVars = allocateVariables(outerVars, x.introducedVariables)
           (innerVars, Some(_ => outerVars))
 
       case x: VarExpand =>
         outerVars =>
-          val innerVars = allocateScope(outerVars, (x.nodePredicate ++ x.relationshipPredicate).map(_.variable))
+          val innerVars = allocateVariables(outerVars, (x.nodePredicate ++ x.relationshipPredicate).map(_.variable))
           (innerVars, Some(_ => outerVars))
 
       case x: PruningVarExpand =>
         outerVars =>
-          val innerVars = allocateScope(outerVars, (x.nodePredicate ++ x.edgePredicate).map(_.variable))
+          val innerVars = allocateVariables(outerVars, (x.nodePredicate ++ x.edgePredicate).map(_.variable))
           (innerVars, Some(_ => outerVars))
 
       case x: NestedPlanExpression =>

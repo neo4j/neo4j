@@ -48,7 +48,7 @@ class ExpressionVariableAllocationTest extends CypherFunSuite with AstConstructi
     val plan = Selection(List(varFor("x")), Argument())
 
     // when
-    val Result(newPlan, nSlots, _) = expressionVariableAllocation.replace(plan)
+    val Result(newPlan, nSlots, _) = expressionVariableAllocation.allocate(plan)
 
     // then
     nSlots should be(0)
@@ -61,7 +61,7 @@ class ExpressionVariableAllocationTest extends CypherFunSuite with AstConstructi
     val plan = projectPlan(expr)
 
     // when
-    val Result(newPlan, nSlots, _) = expressionVariableAllocation.replace(plan)
+    val Result(newPlan, nSlots, _) = expressionVariableAllocation.allocate(plan)
 
     // then
     nSlots should be(1)
@@ -76,7 +76,7 @@ class ExpressionVariableAllocationTest extends CypherFunSuite with AstConstructi
     val plan = projectPlan(exprX, exprY, exprZ)
 
     // when
-    val Result(newPlan, nSlots, _) = expressionVariableAllocation.replace(plan)
+    val Result(newPlan, nSlots, _) = expressionVariableAllocation.allocate(plan)
 
     // then
     nSlots should be(1)
@@ -93,7 +93,7 @@ class ExpressionVariableAllocationTest extends CypherFunSuite with AstConstructi
     val plan = projectPlan(expr)
 
     // when
-    val Result(newPlan, nSlots, _) = expressionVariableAllocation.replace(plan)
+    val Result(newPlan, nSlots, _) = expressionVariableAllocation.allocate(plan)
 
     // then
     nSlots should be(1)
@@ -108,7 +108,7 @@ class ExpressionVariableAllocationTest extends CypherFunSuite with AstConstructi
     val plan = projectPlan(expr)
 
     // when
-    val Result(newPlan, nSlots, _) = expressionVariableAllocation.replace(plan)
+    val Result(newPlan, nSlots, _) = expressionVariableAllocation.allocate(plan)
 
     // then
     nSlots should be(2)
@@ -123,7 +123,7 @@ class ExpressionVariableAllocationTest extends CypherFunSuite with AstConstructi
     val plan = projectPlan(expr)
 
     // when
-    val Result(newPlan, nSlots, _) = expressionVariableAllocation.replace(plan)
+    val Result(newPlan, nSlots, _) = expressionVariableAllocation.allocate(plan)
 
     // then
     nSlots should be(2)
@@ -145,7 +145,7 @@ class ExpressionVariableAllocationTest extends CypherFunSuite with AstConstructi
                                                   Argument())))
 
     // when
-    val Result(newPlan, nSlots, _) = expressionVariableAllocation.replace(selection)
+    val Result(newPlan, nSlots, _) = expressionVariableAllocation.allocate(selection)
 
     // then
     nSlots should be(1)
@@ -183,11 +183,11 @@ class ExpressionVariableAllocationTest extends CypherFunSuite with AstConstructi
     val nestedPlan = projectPlan(nestedExpression)
     val nestedPlanExpression = NestedPlanExpression(nestedPlan, varFor("x1"))(pos)
 
-    val outerExpression = allPredicate("y", nestedPlanExpression, exprParser.parse("[1,2,3]"))
+    val outerExpression = allInList("y", nestedPlanExpression, exprParser.parse("[1,2,3]"))
     val outerPlan = projectPlan(outerExpression)
 
     // when
-    val Result(newPlan, nSlots, availableExpressionVars) = expressionVariableAllocation.replace(outerPlan)
+    val Result(newPlan, nSlots, availableExpressionVars) = expressionVariableAllocation.allocate(outerPlan)
 
     // then
     nSlots should be(3)
@@ -204,15 +204,15 @@ class ExpressionVariableAllocationTest extends CypherFunSuite with AstConstructi
     val nestedNestedPlan = projectPlan(nestedNestedExpression)
     val nestedNestedPlanExpression = NestedPlanExpression(nestedNestedPlan, varFor("x1"))(pos)
 
-    val nestedExpression = allPredicate("yNested", nestedNestedPlanExpression, exprParser.parse("[1,2,3]"))
+    val nestedExpression = allInList("yNested", nestedNestedPlanExpression, exprParser.parse("[1,2,3]"))
     val nestedPlan = projectPlan(nestedExpression)
     val nestedPlanExpression = NestedPlanExpression(nestedPlan, varFor("x1"))(pos)
 
-    val outerExpression = allPredicate("y", nestedPlanExpression, exprParser.parse("[1,2,3]"))
+    val outerExpression = allInList("y", nestedPlanExpression, exprParser.parse("[1,2,3]"))
     val outerPlan = projectPlan(outerExpression)
 
     // when
-    val Result(newPlan, nSlots, availableExpressionVars) = expressionVariableAllocation.replace(outerPlan)
+    val Result(newPlan, nSlots, availableExpressionVars) = expressionVariableAllocation.allocate(outerPlan)
 
     // then
     nSlots should be(4)
@@ -234,7 +234,7 @@ class ExpressionVariableAllocationTest extends CypherFunSuite with AstConstructi
     val projection = projectPlan(nestedPlanExpression, listComprehension)
 
     // when
-    val Result(newPlan, nSlots, availableExpressionVars) = expressionVariableAllocation.replace(projection)
+    val Result(newPlan, nSlots, availableExpressionVars) = expressionVariableAllocation.allocate(projection)
 
     // then
     nSlots should be(1)
@@ -249,7 +249,7 @@ class ExpressionVariableAllocationTest extends CypherFunSuite with AstConstructi
     val plan = projectPlan(expr)
 
     // when
-    val Result(newPlan, nSlots, _) = expressionVariableAllocation.replace(plan)
+    val Result(newPlan, nSlots, _) = expressionVariableAllocation.allocate(plan)
 
     // then
     nSlots should be(2)
@@ -264,7 +264,7 @@ class ExpressionVariableAllocationTest extends CypherFunSuite with AstConstructi
     val plan = projectPlan(expr)
 
     // when
-    val Result(newPlan, nSlots, _) = expressionVariableAllocation.replace(plan)
+    val Result(newPlan, nSlots, _) = expressionVariableAllocation.allocate(plan)
 
     // then
     nSlots should be(1)
@@ -279,7 +279,7 @@ class ExpressionVariableAllocationTest extends CypherFunSuite with AstConstructi
     val plan = varLengthPlan(varFor("tempNode"), varFor("tempEdge"), nodePred, edgePred)
 
     // when
-    val Result(newPlan, nSlots, _) = expressionVariableAllocation.replace(plan)
+    val Result(newPlan, nSlots, _) = expressionVariableAllocation.allocate(plan)
 
     // then
     nSlots should be(4)
@@ -303,7 +303,7 @@ class ExpressionVariableAllocationTest extends CypherFunSuite with AstConstructi
     val plan = pruningVarLengthPlan(varFor("tempNode"), varFor("tempEdge"), nodePred, edgePred)
 
     // when
-    val Result(newPlan, nSlots, _) = expressionVariableAllocation.replace(plan)
+    val Result(newPlan, nSlots, _) = expressionVariableAllocation.allocate(plan)
 
     // then
     nSlots should be(4)
@@ -323,9 +323,9 @@ class ExpressionVariableAllocationTest extends CypherFunSuite with AstConstructi
   // ========== HELPERS ==========
 
   // all(varName IN list WHERE varName IN predicateList)
-  private def allPredicate(varName: String,
-                           predicateList: Expression,
-                           list: Expression): AllIterablePredicate = {
+  private def allInList(varName: String,
+                        predicateList: Expression,
+                        list: Expression): AllIterablePredicate = {
     AllIterablePredicate(
       FilterScope(
         varFor(varName),
