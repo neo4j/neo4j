@@ -33,8 +33,8 @@ import org.neo4j.util.VisibleForTesting;
 
 import static java.lang.Math.toIntExact;
 import static java.util.Objects.requireNonNull;
-import static org.neo4j.kernel.api.StatementConstants.ANY_LABEL;
-import static org.neo4j.kernel.api.StatementConstants.ANY_RELATIONSHIP_TYPE;
+import static org.neo4j.internal.kernel.api.Read.ANY_LABEL;
+import static org.neo4j.internal.kernel.api.Read.ANY_RELATIONSHIP_TYPE;
 
 public class CountsDelta implements CountsAccessor, CountsAccessor.Updater
 {

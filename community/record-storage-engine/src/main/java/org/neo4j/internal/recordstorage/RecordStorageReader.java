@@ -22,7 +22,6 @@ package org.neo4j.internal.recordstorage;
 import java.util.Iterator;
 import java.util.function.Function;
 
-import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.impl.core.TokenHolders;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -42,6 +41,7 @@ import org.neo4j.storageengine.api.schema.ConstraintDescriptor;
 import org.neo4j.storageengine.api.schema.SchemaDescriptor;
 
 import static org.neo4j.helpers.collection.Iterators.map;
+import static org.neo4j.internal.kernel.api.Read.ANY_LABEL;
 import static org.neo4j.register.Registers.newDoubleLongRegister;
 
 /**
@@ -158,7 +158,7 @@ public class RecordStorageReader implements StorageReader
     @Override
     public long countsForRelationship( int startLabelId, int typeId, int endLabelId )
     {
-        if ( !(startLabelId == StatementConstants.ANY_LABEL || endLabelId == StatementConstants.ANY_LABEL) )
+        if ( !(startLabelId == ANY_LABEL || endLabelId == ANY_LABEL) )
         {
             throw new UnsupportedOperationException( "not implemented" );
         }
@@ -172,7 +172,7 @@ public class RecordStorageReader implements StorageReader
         {
             try
             {
-                return counts.nodeCount( StatementConstants.ANY_LABEL, newDoubleLongRegister() ).readSecond();
+                return counts.nodeCount( ANY_LABEL, newDoubleLongRegister() ).readSecond();
             }
             catch ( IllegalStateException e )
             {

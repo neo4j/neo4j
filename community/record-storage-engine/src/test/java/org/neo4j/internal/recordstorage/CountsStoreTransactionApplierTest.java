@@ -24,7 +24,6 @@ import org.junit.Test;
 import java.util.Optional;
 
 import org.neo4j.counts.CountsAccessor;
-import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
@@ -33,6 +32,7 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.internal.kernel.api.Read.ANY_LABEL;
 
 public class CountsStoreTransactionApplierTest
 {
@@ -49,10 +49,10 @@ public class CountsStoreTransactionApplierTest
         // WHEN
         try ( TransactionApplier txApplier = applier.startTx( new TransactionToApply( null, 2L ) ) )
         {
-            txApplier.visitNodeCountsCommand( new Command.NodeCountsCommand( StatementConstants.ANY_LABEL, 1 ) );
+            txApplier.visitNodeCountsCommand( new Command.NodeCountsCommand( ANY_LABEL, 1 ) );
         }
 
         // THEN
-        verify( updater ).incrementNodeCount( StatementConstants.ANY_LABEL, 1 );
+        verify( updater ).incrementNodeCount( ANY_LABEL, 1 );
     }
 }

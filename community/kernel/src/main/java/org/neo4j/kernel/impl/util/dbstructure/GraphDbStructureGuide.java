@@ -48,8 +48,8 @@ import org.neo4j.storageengine.api.schema.ConstraintDescriptor;
 import static java.lang.String.format;
 import static org.neo4j.helpers.collection.Iterators.loop;
 import static org.neo4j.internal.kernel.api.IndexReference.sortByType;
-import static org.neo4j.kernel.api.StatementConstants.ANY_LABEL;
-import static org.neo4j.kernel.api.StatementConstants.ANY_RELATIONSHIP_TYPE;
+import static org.neo4j.internal.kernel.api.Read.ANY_LABEL;
+import static org.neo4j.internal.kernel.api.Read.ANY_RELATIONSHIP_TYPE;
 
 public class GraphDbStructureGuide implements Visitable<DbStructureVisitor>
 {

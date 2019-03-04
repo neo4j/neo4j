@@ -33,7 +33,7 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 
 import static org.neo4j.graphdb.Label.label;
-import static org.neo4j.kernel.api.StatementConstants.ANY_LABEL;
+import static org.neo4j.internal.kernel.api.Read.ANY_LABEL;
 
 public abstract class TokenAccess<R>
 {

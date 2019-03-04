@@ -21,11 +21,12 @@ package org.neo4j.unsafe.impl.batchimport;
 
 import org.neo4j.common.ProgressReporter;
 import org.neo4j.counts.CountsAccessor;
-import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeLabelsCache;
+
+import static org.neo4j.internal.kernel.api.Read.ANY_LABEL;
 
 /**
  * Calculates counts per label and puts data into {@link NodeLabelsCache} for use by {@link
@@ -76,7 +77,7 @@ public class NodeCountsProcessor implements RecordProcessor<NodeRecord>
     {
         for ( int i = 0; i < labelCounts.length; i++ )
         {
-            counts.incrementNodeCount( i == anyLabel ? StatementConstants.ANY_LABEL : i, labelCounts[i] );
+            counts.incrementNodeCount( i == anyLabel ? ANY_LABEL : i, labelCounts[i] );
         }
     }
 

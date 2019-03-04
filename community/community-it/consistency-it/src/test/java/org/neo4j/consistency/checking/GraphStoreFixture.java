@@ -50,7 +50,6 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
-import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.extension.DatabaseExtensions;
 import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
@@ -108,6 +107,7 @@ import org.neo4j.test.rule.TestDirectory;
 import static java.lang.System.currentTimeMillis;
 import static org.neo4j.consistency.ConsistencyCheckService.defaultConsistencyCheckThreadsNumber;
 import static org.neo4j.consistency.internal.SchemaIndexExtensionLoader.instantiateExtensions;
+import static org.neo4j.internal.kernel.api.Read.ANY_LABEL;
 import static org.neo4j.internal.recordstorage.StoreTokens.allReadableTokens;
 
 public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implements TestRule
@@ -570,7 +570,7 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
 
         private void updateCounts( NodeRecord node, int delta )
         {
-            writer.incrementNodeCount( StatementConstants.ANY_LABEL, delta );
+            writer.incrementNodeCount( ANY_LABEL, delta );
             for ( long label : NodeLabelsField.parseLabelsField( node ).get( nodes ) )
             {
                 writer.incrementNodeCount( (int)label, delta );

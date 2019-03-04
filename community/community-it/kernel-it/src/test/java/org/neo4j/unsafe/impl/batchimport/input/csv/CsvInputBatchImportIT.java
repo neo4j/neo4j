@@ -62,7 +62,6 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.internal.kernel.api.NamedToken;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
-import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.TokenStore;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
@@ -98,6 +97,8 @@ import static org.junit.Assert.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.db_timezone;
 import static org.neo4j.configuration.GraphDatabaseSettings.dense_node_threshold;
 import static org.neo4j.helpers.collection.Iterators.asSet;
+import static org.neo4j.internal.kernel.api.Read.ANY_LABEL;
+import static org.neo4j.internal.kernel.api.Read.ANY_RELATIONSHIP_TYPE;
 import static org.neo4j.kernel.impl.util.AutoCreatingHashMap.nested;
 import static org.neo4j.kernel.impl.util.AutoCreatingHashMap.values;
 import static org.neo4j.register.Registers.newDoubleLongRegister;
@@ -365,7 +366,7 @@ public class CsvInputBatchImportIT
             NeoStores neoStores = storageEngine.testAccessNeoStores();
             CountsTracker counts = storageEngine.testAccessCountsStore();
             Function<String, Integer> labelTranslationTable =
-                    translationTable( neoStores.getLabelTokenStore(), StatementConstants.ANY_LABEL );
+                    translationTable( neoStores.getLabelTokenStore(), ANY_LABEL );
             for ( Pair<Integer,Long> count : allNodeCounts( labelTranslationTable, expectedNodeCounts ) )
             {
                 assertEquals( "Label count mismatch for label " + count.first(),
@@ -374,7 +375,7 @@ public class CsvInputBatchImportIT
             }
 
             Function<String, Integer> relationshipTypeTranslationTable =
-                    translationTable( neoStores.getRelationshipTypeTokenStore(), StatementConstants.ANY_RELATIONSHIP_TYPE );
+                    translationTable( neoStores.getRelationshipTypeTokenStore(), ANY_RELATIONSHIP_TYPE );
             for ( Pair<RelationshipCountKey,Long> count : allRelationshipCounts( labelTranslationTable,
                     relationshipTypeTranslationTable, expectedRelationshipCounts ) )
             {
