@@ -17,12 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.properties;
+package org.neo4j.storageengine.api;
 
-import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
+/**
+ * Default implementation of {@link StorageProperty} where the {@link Value} has already been materialized.
+ */
 public class PropertyKeyValue implements StorageProperty
 {
     private final int propertyKeyId;

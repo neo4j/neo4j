@@ -27,9 +27,9 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
-import org.neo4j.kernel.api.properties.PropertyKeyValue;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.PropertyType;
+import org.neo4j.storageengine.api.PropertyKeyValue;
 import org.neo4j.values.storable.Value;
 
 public class PropertyBlock implements Cloneable

@@ -28,8 +28,8 @@ import org.eclipse.collections.impl.factory.primitive.IntSets;
 import java.util.Iterator;
 
 import org.neo4j.helpers.collection.Iterators;
-import org.neo4j.kernel.api.properties.PropertyKeyValue;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactory;
+import org.neo4j.storageengine.api.PropertyKeyValue;
 import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.storageengine.api.txstate.PropertyContainerState;
 import org.neo4j.values.storable.Value;

@@ -24,8 +24,8 @@ import org.junit.Test;
 import java.util.Iterator;
 
 import org.neo4j.helpers.collection.Iterators;
-import org.neo4j.kernel.api.properties.PropertyKeyValue;
 import org.neo4j.kernel.impl.util.collection.OnHeapCollectionsFactory;
+import org.neo4j.storageengine.api.PropertyKeyValue;
 import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.values.storable.Values;
 
