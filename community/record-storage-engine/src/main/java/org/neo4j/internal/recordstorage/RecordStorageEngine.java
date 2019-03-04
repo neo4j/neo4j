@@ -135,8 +135,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         this.constraintSemantics = constraintSemantics;
         this.idController = idController;
 
-        StoreFactory factory = new StoreFactory( databaseLayout, config, idGeneratorFactory, pageCache, fs, logProvider,
-                versionContextSupplier );
+        StoreFactory factory = new StoreFactory( databaseLayout, config, idGeneratorFactory, pageCache, fs, logProvider );
         neoStores = factory.openAllNeoStores( true );
 
         try
@@ -463,12 +462,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             @Override
             public void init()
             {
-                tokenHolders.propertyKeyTokens().setInitialTokens(
-                        neoStores.getPropertyKeyTokenStore().getTokens() );
-                tokenHolders.relationshipTypeTokens().setInitialTokens(
-                        neoStores.getRelationshipTypeTokenStore().getTokens() );
-                tokenHolders.labelTokens().setInitialTokens(
-                        neoStores.getLabelTokenStore().getTokens() );
+                tokenHolders.setInitialTokens( StoreTokens.allTokens( neoStores ) );
                 loadSchemaCache();
             }
         };

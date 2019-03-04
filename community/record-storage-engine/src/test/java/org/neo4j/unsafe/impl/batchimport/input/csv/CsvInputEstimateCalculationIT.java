@@ -128,7 +128,7 @@ public class CsvInputEstimateCalculationIT
             try ( PageCache pageCache = new ConfiguringPageCacheFactory( fs, config, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL, NullLog.getInstance(),
                     contextSupplier, jobScheduler ).getOrCreatePageCache();
                     NeoStores stores = new StoreFactory( databaseLayout, config, new DefaultIdGeneratorFactory( fs ), pageCache, fs,
-                            NullLogProvider.getInstance(), contextSupplier ).openAllNeoStores() )
+                            NullLogProvider.getInstance() ).openAllNeoStores() )
             {
                 assertRoughlyEqual( estimates.numberOfNodes(), stores.getNodeStore().getNumberOfIdsInUse() );
                 assertRoughlyEqual( estimates.numberOfRelationships(), stores.getRelationshipStore().getNumberOfIdsInUse() );

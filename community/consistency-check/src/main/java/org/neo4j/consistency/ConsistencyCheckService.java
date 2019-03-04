@@ -40,6 +40,7 @@ import org.neo4j.consistency.store.DirectStoreAccess;
 import org.neo4j.function.Suppliers;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
+import org.neo4j.internal.recordstorage.StoreTokens;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -190,8 +191,7 @@ public class ConsistencyCheckService
         config.augment( GraphDatabaseSettings.pagecache_warmup_enabled, FALSE );
 
         LifeSupport life = new LifeSupport();
-        StoreFactory factory = new StoreFactory( databaseLayout, config, new DefaultIdGeneratorFactory( fileSystem ), pageCache, fileSystem, logProvider,
-                EmptyVersionContextSupplier.EMPTY );
+        StoreFactory factory = new StoreFactory( databaseLayout, config, new DefaultIdGeneratorFactory( fileSystem ), pageCache, fileSystem, logProvider );
         ReadOnlyCountsTracker counts = new ReadOnlyCountsTracker( logProvider, fileSystem, pageCache, config, databaseLayout );
         life.add( counts );
 
@@ -216,9 +216,7 @@ public class ConsistencyCheckService
         try ( NeoStores neoStores = factory.openAllNeoStores() )
         {
             // Load tokens before starting extensions, etc.
-            tokenHolders.propertyKeyTokens().setInitialTokens( neoStores.getPropertyKeyTokenStore().getTokens() );
-            tokenHolders.labelTokens().setInitialTokens( neoStores.getLabelTokenStore().getTokens() );
-            tokenHolders.relationshipTypeTokens().setInitialTokens( neoStores.getRelationshipTypeTokenStore().getTokens() );
+            tokenHolders.setInitialTokens( StoreTokens.allReadableTokens( neoStores ) );
 
             life.start();
 

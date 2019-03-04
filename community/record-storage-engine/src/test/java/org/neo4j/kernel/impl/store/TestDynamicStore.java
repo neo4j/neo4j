@@ -35,7 +35,6 @@ import java.util.Set;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.logging.NullLogProvider;
@@ -68,7 +67,7 @@ public class TestDynamicStore
     {
         config = config();
         storeFactory = new StoreFactory( testDirectory.databaseLayout(), config, new DefaultIdGeneratorFactory( fs.get() ),
-                pageCacheRule.getPageCache( fs.get() ), fs.get(), NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY );
+                pageCacheRule.getPageCache( fs.get() ), fs.get(), NullLogProvider.getInstance() );
     }
 
     @After

@@ -43,7 +43,6 @@ import org.neo4j.test.rule.PageCacheAndDependenciesRule;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.neo4j.internal.recordstorage.RecordStorageEngineFactory.readOnlyTokenHolders;
 
 public class SchemaStorageTest
 {
@@ -72,7 +71,7 @@ public class SchemaStorageTest
     {
         neoStores = storesRule.builder().with( storageRule.fileSystem() ).with( storageRule.pageCache() ).build();
         SchemaStore store = neoStores.getSchemaStore();
-        storage = new SchemaStorage( store, readOnlyTokenHolders( neoStores ) );
+        storage = new SchemaStorage( store, StoreTokens.readOnlyTokenHolders( neoStores ) );
     }
 
     @After

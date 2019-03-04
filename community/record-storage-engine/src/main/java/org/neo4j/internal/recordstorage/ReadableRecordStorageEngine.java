@@ -23,7 +23,6 @@ import org.neo4j.configuration.Config;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.id.ReadOnlyIdGeneratorFactory;
@@ -36,16 +35,10 @@ public class ReadableRecordStorageEngine extends LifecycleAdapter implements Rea
 {
     private final NeoStores neoStores;
 
-    ReadableRecordStorageEngine(
-            DatabaseLayout databaseLayout,
-            Config config,
-            PageCache pageCache,
-            FileSystemAbstraction fs,
-            LogProvider logProvider,
-            VersionContextSupplier versionContextSupplier )
+    ReadableRecordStorageEngine( DatabaseLayout databaseLayout, Config config, PageCache pageCache, FileSystemAbstraction fs, LogProvider logProvider )
     {
         StoreFactory storeFactory =
-                new StoreFactory( databaseLayout, config, new ReadOnlyIdGeneratorFactory( fs ), pageCache, fs, logProvider, versionContextSupplier );
+                new StoreFactory( databaseLayout, config, new ReadOnlyIdGeneratorFactory( fs ), pageCache, fs, logProvider );
         neoStores = storeFactory.openAllNeoStores();
     }
 

@@ -66,6 +66,7 @@ import org.neo4j.internal.recordstorage.RelationshipCreator;
 import org.neo4j.internal.recordstorage.RelationshipGroupGetter;
 import org.neo4j.internal.recordstorage.SchemaCache;
 import org.neo4j.internal.recordstorage.SchemaRuleAccess;
+import org.neo4j.internal.recordstorage.StoreTokens;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.IOLimiter;
@@ -279,7 +280,7 @@ public class BatchInserterImpl implements BatchInserter
         RecordFormats recordFormats = RecordFormatSelector.selectForStoreOrConfig( config, databaseLayout, fileSystem,
                 pageCache, internalLogProvider );
         StoreFactory sf = new StoreFactory( this.databaseLayout, config, idGeneratorFactory, pageCache, fileSystem,
-                recordFormats, internalLogProvider, EmptyVersionContextSupplier.EMPTY );
+                recordFormats, internalLogProvider );
 
         maxNodeId = recordFormats.node().getMaxId();
 
@@ -319,12 +320,10 @@ public class BatchInserterImpl implements BatchInserter
         indexProviderMap = life.add( new DefaultIndexProviderMap( databaseExtensions, config ) );
 
         TokenHolder propertyKeyTokenHolder = new DelegatingTokenHolder( this::createNewPropertyKeyId, TokenHolder.TYPE_PROPERTY_KEY );
-        propertyKeyTokenHolder.setInitialTokens( propertyKeyTokenStore.getTokens() );
         TokenHolder relationshipTypeTokenHolder = new DelegatingTokenHolder( this::createNewRelationshipType, TokenHolder.TYPE_RELATIONSHIP_TYPE );
-        relationshipTypeTokenHolder.setInitialTokens( relationshipTypeTokenStore.getTokens() );
         TokenHolder labelTokenHolder = new DelegatingTokenHolder( this::createNewLabelId, TokenHolder.TYPE_LABEL );
-        labelTokenHolder.setInitialTokens( labelTokenStore.getTokens() );
         tokenHolders = new TokenHolders( propertyKeyTokenHolder, labelTokenHolder, relationshipTypeTokenHolder );
+        tokenHolders.setInitialTokens( StoreTokens.allTokens( neoStores ) );
 
         schemaRuleAccess = SchemaRuleAccess.getSchemaRuleAccess( schemaStore, tokenHolders );
         schemaCache = new SchemaCache( getConstraintSemantics() );

@@ -41,13 +41,13 @@ import org.neo4j.internal.recordstorage.RecordNodeCursor;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.internal.recordstorage.RecordStorageReader;
 import org.neo4j.internal.recordstorage.SchemaRuleAccess;
+import org.neo4j.internal.recordstorage.StoreTokens;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.layout.DatabaseFile;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.impl.core.DelegatingTokenHolder;
 import org.neo4j.kernel.impl.core.TokenCreator;
 import org.neo4j.kernel.impl.core.TokenHolder;
@@ -109,7 +109,6 @@ import org.neo4j.unsafe.impl.batchimport.staging.CoarseBoundedProgressExecutionM
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitor;
 
 import static java.util.Arrays.asList;
-import static org.neo4j.internal.recordstorage.RecordStorageEngineFactory.createReadOnlyTokenHolder;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForVersion;
 import static org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat.FIELD_NOT_PRESENT;
 import static org.neo4j.kernel.impl.storemigration.FileOperation.COPY;
@@ -444,7 +443,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
     private NeoStores instantiateLegacyStore( RecordFormats format, DatabaseLayout directoryStructure )
     {
         return new StoreFactory( directoryStructure, config, new ReadOnlyIdGeneratorFactory(), pageCache, fileSystem,
-                format, NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY ).openAllNeoStores( true );
+                format, NullLogProvider.getInstance() ).openAllNeoStores( true );
     }
 
     private void prepareBatchImportMigration( DatabaseLayout sourceDirectoryStructure, DatabaseLayout migrationStrcuture, RecordFormats oldFormat,
@@ -516,7 +515,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
             idGeneratorFactory = new DefaultIdGeneratorFactory( fileSystem );
         }
         NullLogProvider logProvider = NullLogProvider.getInstance();
-        return new StoreFactory( databaseLayout, config, idGeneratorFactory, pageCache, fileSystem, formats, logProvider, EmptyVersionContextSupplier.EMPTY );
+        return new StoreFactory( databaseLayout, config, idGeneratorFactory, pageCache, fileSystem, formats, logProvider );
     }
 
     private static AdditionalInitialIds readAdditionalIds( final long lastTxId, final long lastTxChecksum, final long lastTxLogVersion,
@@ -667,10 +666,10 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
                           oldFormat );
                   NeoStores dstStore = dstFactory.openNeoStores( true, StoreType.SCHEMA, StoreType.PROPERTY_KEY_TOKEN, StoreType.PROPERTY ) )
             {
-                TokenHolders srcTokenHolders = new TokenHolders(
-                        createReadOnlyTokenHolder( TokenHolder.TYPE_PROPERTY_KEY ),
-                        createReadOnlyTokenHolder( TokenHolder.TYPE_LABEL ),
-                        createReadOnlyTokenHolder( TokenHolder.TYPE_RELATIONSHIP_TYPE ) );
+                TokenHolders srcTokenHolders = new TokenHolders( StoreTokens.createReadOnlyTokenHolder( TokenHolder.TYPE_PROPERTY_KEY ),
+                        StoreTokens.createReadOnlyTokenHolder( TokenHolder.TYPE_LABEL ),
+                        StoreTokens.createReadOnlyTokenHolder( TokenHolder.TYPE_RELATIONSHIP_TYPE ) );
+                // Only set the property key tokens, because it's the only one we need, and it's the only token store we made sure to be there.
                 srcTokenHolders.propertyKeyTokens().setInitialTokens( srcStore.getPropertyKeyTokenStore().getTokens() );
                 srcSchema.checkAndLoadStorage( true );
                 SchemaStorage35 srcAccess = new SchemaStorage35( srcSchema );
@@ -697,8 +696,8 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
                     return Math.toIntExact( tokenId );
                 };
                 TokenHolder propertyKeyTokens = new DelegatingTokenHolder( propertyKeyTokenCreator, TokenHolder.TYPE_PROPERTY_KEY );
-                TokenHolders dstTokenHolders = new TokenHolders( propertyKeyTokens,
-                        createReadOnlyTokenHolder( TokenHolder.TYPE_LABEL ), createReadOnlyTokenHolder( TokenHolder.TYPE_RELATIONSHIP_TYPE ) );
+                TokenHolders dstTokenHolders = new TokenHolders( propertyKeyTokens, StoreTokens.createReadOnlyTokenHolder( TokenHolder.TYPE_LABEL ),
+                        StoreTokens.createReadOnlyTokenHolder( TokenHolder.TYPE_RELATIONSHIP_TYPE ) );
                 dstTokenHolders.propertyKeyTokens().setInitialTokens( dstStore.getPropertyKeyTokenStore().getTokens() );
                 SchemaRuleAccess dstAccess = SchemaRuleAccess.getSchemaRuleAccess( dstSchema, dstTokenHolders );
 

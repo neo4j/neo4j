@@ -80,7 +80,7 @@ public class NeoStoresRule extends ExternalResource
         testDirectory.prepareDirectory( testClass, null );
         Config configuration = configOf( config );
         StoreFactory storeFactory = new StoreFactory( testDirectory.databaseLayout(), configuration, idGeneratorFactory.apply( fs ),
-                pageCache, fs, format, NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY );
+                pageCache, fs, format, NullLogProvider.getInstance() );
         return neoStores = stores.length == 0
                 ? storeFactory.openAllNeoStores( true )
                 : storeFactory.openNeoStores( true, stores );

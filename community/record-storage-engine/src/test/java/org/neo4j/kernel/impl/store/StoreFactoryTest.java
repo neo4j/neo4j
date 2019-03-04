@@ -32,7 +32,6 @@ import org.neo4j.configuration.Config;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
@@ -76,7 +75,7 @@ public class StoreFactoryTest
         DatabaseLayout databaseLayout = testDirectory.databaseLayout();
         RecordFormats recordFormats = selectForStoreOrConfig( config, databaseLayout, fsRule, pageCache, logProvider );
         return new StoreFactory( databaseLayout, config, idGeneratorFactory, pageCache, fsRule.get(),
-                recordFormats, logProvider, EmptyVersionContextSupplier.EMPTY, openOptions );
+                recordFormats, logProvider, openOptions );
     }
 
     @After

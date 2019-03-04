@@ -23,7 +23,6 @@ import org.neo4j.configuration.Config;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -72,7 +71,7 @@ public class StoreAccess
     public StoreAccess( FileSystemAbstraction fileSystem, PageCache pageCache, DatabaseLayout directoryStructure, Config config )
     {
         this( new StoreFactory( directoryStructure, config, new DefaultIdGeneratorFactory( fileSystem ), pageCache,
-                fileSystem, NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY ).openAllNeoStores() );
+                fileSystem, NullLogProvider.getInstance() ).openAllNeoStores() );
         this.closeable = true;
     }
 
@@ -80,7 +79,7 @@ public class StoreAccess
      * This method exists since {@link #wrapStore(RecordStore)} might depend on the existence of a variable
      * that gets set in a subclass' constructor <strong>after</strong> this constructor of {@link StoreAccess}
      * has been executed. I.e. a correct creation of a {@link StoreAccess} instance must be the creation of the
-     * object plus a call to {@link #initialize()}.
+     * object plus a call to this method.
      *
      * @return this
      */

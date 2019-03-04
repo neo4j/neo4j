@@ -39,7 +39,6 @@ import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
@@ -140,8 +139,7 @@ public class DetectAllRelationshipInconsistenciesIT
     {
         FileSystemAbstraction fileSystem = fileSystemRule.get();
         return new StoreFactory( directory.databaseLayout(), getTuningConfiguration(),
-                new DefaultIdGeneratorFactory( fileSystem ), pageCache, fileSystem, NullLogProvider.getInstance(),
-                EmptyVersionContextSupplier.EMPTY );
+                new DefaultIdGeneratorFactory( fileSystem ), pageCache, fileSystem, NullLogProvider.getInstance() );
     }
 
     private Config getTuningConfiguration()

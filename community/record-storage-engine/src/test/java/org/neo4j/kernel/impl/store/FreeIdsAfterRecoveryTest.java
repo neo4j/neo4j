@@ -27,7 +27,6 @@ import org.neo4j.configuration.Config;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
 import org.neo4j.kernel.impl.store.id.IdType;
@@ -56,7 +55,7 @@ class FreeIdsAfterRecoveryTest
         // GIVEN
         DatabaseLayout databaseLayout = testDirectory.databaseLayout();
         StoreFactory storeFactory = new StoreFactory( databaseLayout, Config.defaults(), new DefaultIdGeneratorFactory( fileSystem ), pageCache, fileSystem,
-                NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY );
+                NullLogProvider.getInstance() );
         long highId;
         try ( NeoStores stores = storeFactory.openAllNeoStores( true ) )
         {

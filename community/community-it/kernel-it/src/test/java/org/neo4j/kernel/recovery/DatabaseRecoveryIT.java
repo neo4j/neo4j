@@ -492,9 +492,9 @@ class DatabaseRecoveryIT
                         PageCursorTracerSupplier.NULL, NullLog.getInstance(), contextSupplier, jobScheduler )
                         .getOrCreatePageCache();
                 NeoStores store1 = new StoreFactory( databaseLayout, defaults(), new DefaultIdGeneratorFactory( fs1 ),
-                        pageCache1, fs1, logProvider, contextSupplier ).openAllNeoStores();
+                        pageCache1, fs1, logProvider ).openAllNeoStores();
                 NeoStores store2 = new StoreFactory( databaseLayout, defaults(), new DefaultIdGeneratorFactory( fs2 ),
-                        pageCache2, fs2, logProvider, contextSupplier ).openAllNeoStores()
+                        pageCache2, fs2, logProvider ).openAllNeoStores()
                 )
         {
             for ( StoreType storeType : StoreType.values() )

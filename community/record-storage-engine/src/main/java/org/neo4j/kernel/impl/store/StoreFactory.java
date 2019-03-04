@@ -26,7 +26,6 @@ import org.neo4j.configuration.Config;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.logging.LogProvider;
@@ -47,25 +46,22 @@ public class StoreFactory
     private final PageCache pageCache;
     private final RecordFormats recordFormats;
     private final OpenOption[] openOptions;
-    private final VersionContextSupplier versionContextSupplier;
 
     public StoreFactory( DatabaseLayout directoryStructure, Config config, IdGeneratorFactory idGeneratorFactory, PageCache pageCache,
-            FileSystemAbstraction fileSystemAbstraction, LogProvider logProvider, VersionContextSupplier versionContextSupplier )
+            FileSystemAbstraction fileSystemAbstraction, LogProvider logProvider )
     {
         this( directoryStructure, config, idGeneratorFactory, pageCache, fileSystemAbstraction,
                 selectForStoreOrConfig( config, directoryStructure, fileSystemAbstraction, pageCache, logProvider ),
-                logProvider, versionContextSupplier );
+                logProvider );
     }
 
-    public StoreFactory( DatabaseLayout databaseLayout, Config config, IdGeneratorFactory idGeneratorFactory,
-            PageCache pageCache, FileSystemAbstraction fileSystemAbstraction, RecordFormats recordFormats,
-            LogProvider logProvider, VersionContextSupplier versionContextSupplier, OpenOption... openOptions )
+    public StoreFactory( DatabaseLayout databaseLayout, Config config, IdGeneratorFactory idGeneratorFactory, PageCache pageCache,
+            FileSystemAbstraction fileSystemAbstraction, RecordFormats recordFormats, LogProvider logProvider, OpenOption... openOptions )
     {
         this.databaseLayout = databaseLayout;
         this.config = config;
         this.idGeneratorFactory = idGeneratorFactory;
         this.fileSystemAbstraction = fileSystemAbstraction;
-        this.versionContextSupplier = versionContextSupplier;
         this.recordFormats = recordFormats;
         this.openOptions = openOptions;
         this.logProvider = logProvider;
@@ -125,8 +121,7 @@ public class StoreFactory
                         "Could not create database directory: " + databaseLayout.databaseDirectory(), e );
             }
         }
-        return new NeoStores( databaseLayout, config, idGeneratorFactory, pageCache, logProvider,
-                fileSystemAbstraction, versionContextSupplier, recordFormats, createStoreIfNotExists, storeTypes,
+        return new NeoStores( databaseLayout, config, idGeneratorFactory, pageCache, logProvider, recordFormats, createStoreIfNotExists, storeTypes,
                 openOptions );
     }
 }

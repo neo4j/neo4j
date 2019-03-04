@@ -29,7 +29,6 @@ import org.neo4j.helpers.ArrayUtil;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
@@ -66,11 +65,10 @@ class DirectRecordStoreMigrator
 
         try (
                 NeoStores fromStores = new StoreFactory( fromDirectoryStructure, config, new DefaultIdGeneratorFactory( fs ),
-                    pageCache, fs, fromFormat, NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY )
+                    pageCache, fs, fromFormat, NullLogProvider.getInstance() )
                         .openNeoStores( true, storesToOpen );
                 NeoStores toStores = new StoreFactory( toDirectoryStructure, withPersistedStoreHeadersAsConfigFrom( fromStores, storesToOpen ),
-                    new DefaultIdGeneratorFactory( fs ), pageCache, fs, toFormat, NullLogProvider.getInstance(),
-                        EmptyVersionContextSupplier.EMPTY )
+                    new DefaultIdGeneratorFactory( fs ), pageCache, fs, toFormat, NullLogProvider.getInstance() )
                         .openNeoStores( true, storesToOpen ) )
         {
             for ( StoreType type : types )

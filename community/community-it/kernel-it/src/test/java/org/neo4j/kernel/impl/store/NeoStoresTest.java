@@ -51,7 +51,6 @@ import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.properties.PropertyKeyValue;
 import org.neo4j.kernel.api.txstate.TransactionState;
@@ -586,7 +585,7 @@ public class NeoStoresTest
         // given
         Config config = Config.defaults();
         StoreFactory sf = new StoreFactory( dir.databaseLayout(), config, new DefaultIdGeneratorFactory( fs.get() ),
-                pageCacheRule.getPageCache( fs.get() ), fs.get(), LOG_PROVIDER, EmptyVersionContextSupplier.EMPTY );
+                pageCacheRule.getPageCache( fs.get() ), fs.get(), LOG_PROVIDER );
 
         // when
         NeoStores neoStores = sf.openAllNeoStores( true );
@@ -755,7 +754,7 @@ public class NeoStoresTest
         Config defaults = Config.defaults( counts_store_rotation_timeout, "60m" );
         String errorMessage = "Failing for the heck of it";
         StoreFactory factory = new StoreFactory( databaseLayout, defaults, new CloseFailingDefaultIdGeneratorFactory( fs, errorMessage ), pageCache,
-                fs, NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY );
+                fs, NullLogProvider.getInstance() );
         NeoStores neoStore = factory.openAllNeoStores( true );
 
         try
@@ -782,7 +781,7 @@ public class NeoStoresTest
         fileSystem.deleteRecursively( databaseLayout.databaseDirectory() );
         DefaultIdGeneratorFactory idFactory = new DefaultIdGeneratorFactory( fileSystem );
         StoreFactory factory = new StoreFactory( databaseLayout, Config.defaults(), idFactory, pageCache, fileSystem,
-                LOG_PROVIDER, EmptyVersionContextSupplier.EMPTY );
+                LOG_PROVIDER );
 
         // when
         try ( NeoStores ignore = factory.openAllNeoStores( true ) )
@@ -800,7 +799,7 @@ public class NeoStoresTest
         fileSystem.deleteRecursively( databaseLayout.databaseDirectory() );
         DefaultIdGeneratorFactory idFactory = new DefaultIdGeneratorFactory( fileSystem );
         StoreFactory factory = new StoreFactory( databaseLayout, Config.defaults(), idFactory, pageCache, fileSystem,
-                LOG_PROVIDER, EmptyVersionContextSupplier.EMPTY );
+                LOG_PROVIDER );
         StoreType[] allStoreTypes = StoreType.values();
         StoreType[] allButLastStoreTypes = Arrays.copyOf( allStoreTypes, allStoreTypes.length - 1 );
 
@@ -822,8 +821,7 @@ public class NeoStoresTest
         RecordFormats recordFormats = RecordFormatSelector.defaultFormat();
         Config config = Config.defaults();
         IdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs );
-        return new StoreFactory( databaseLayout, config, idGeneratorFactory, pageCache, fs, recordFormats, LOG_PROVIDER,
-                EmptyVersionContextSupplier.EMPTY );
+        return new StoreFactory( databaseLayout, config, idGeneratorFactory, pageCache, fs, recordFormats, LOG_PROVIDER );
     }
 
     private void initializeStores( DatabaseLayout databaseLayout, Map<String,String> additionalConfig )
@@ -888,7 +886,7 @@ public class NeoStoresTest
     {
         assertTrue( nodeExists( node ) );
         Map<Integer,Pair<StorageProperty,Long>> props = new HashMap<>();
-        PropertyReceiver<StorageProperty> receiver = newPropertyReceiver( props );
+        PropertyReceiver<PropertyKeyValue> receiver = newPropertyReceiver( props );
         nodeLoadProperties( node, receiver );
         int count = 0;
         for ( int keyId : props.keySet() )
@@ -931,7 +929,7 @@ public class NeoStoresTest
             throws IOException
     {
         int count = 0;
-        try ( KernelStatement statement = (KernelStatement) tx.acquireStatement();
+        try ( KernelStatement ignore = (KernelStatement) tx.acquireStatement();
               StorageNodeCursor nodeCursor = allocateNodeCursor( node ) )
         {
             assertTrue( nodeCursor.next() );
@@ -976,7 +974,7 @@ public class NeoStoresTest
         return nodeCursor;
     }
 
-    private PropertyReceiver<StorageProperty> newPropertyReceiver( Map<Integer,Pair<StorageProperty,Long>> props )
+    private PropertyReceiver<PropertyKeyValue> newPropertyReceiver( Map<Integer,Pair<StorageProperty,Long>> props )
     {
         return ( property, propertyRecordId ) -> props.put( property.propertyKeyId(), Pair.of( property, propertyRecordId ) );
     }
@@ -1022,7 +1020,7 @@ public class NeoStoresTest
         assertEquals( 3, count );
         count = 0;
 
-        try ( KernelStatement statement = (KernelStatement) tx.acquireStatement();
+        try ( KernelStatement ignore = (KernelStatement) tx.acquireStatement();
               StorageNodeCursor nodeCursor = allocateNodeCursor( node ) )
         {
             assertTrue( nodeCursor.next() );
@@ -1233,12 +1231,12 @@ public class NeoStoresTest
         assertHasRelationships( secondNode );
     }
 
-    private static class CountingPropertyReceiver implements PropertyReceiver<StorageProperty>
+    private static class CountingPropertyReceiver implements PropertyReceiver<PropertyKeyValue>
     {
         private int count;
 
         @Override
-        public void receive( StorageProperty property, long propertyRecordId )
+        public void receive( PropertyKeyValue property, long propertyRecordId )
         {
             count++;
         }
@@ -1294,7 +1292,7 @@ public class NeoStoresTest
 
     private void assertHasRelationships( long node )
     {
-        try ( KernelStatement statement = (KernelStatement) tx.acquireStatement();
+        try ( KernelStatement ignore = (KernelStatement) tx.acquireStatement();
               StorageNodeCursor nodeCursor = allocateNodeCursor( node ) )
         {
             assertTrue( nodeCursor.next() );
@@ -1405,7 +1403,7 @@ public class NeoStoresTest
 
     private void deleteRelationships( long nodeId )
     {
-        try ( KernelStatement statement = (KernelStatement) tx.acquireStatement();
+        try ( KernelStatement ignore = (KernelStatement) tx.acquireStatement();
               StorageNodeCursor nodeCursor = allocateNodeCursor( nodeId ) )
         {
             assertTrue( nodeCursor.next() );
@@ -1426,19 +1424,19 @@ public class NeoStoresTest
                 .newImpermanentDatabase( storeDir );
     }
 
-    private <RECEIVER extends PropertyReceiver> void nodeLoadProperties( long nodeId, RECEIVER receiver )
+    private <RECEIVER extends PropertyReceiver<PropertyKeyValue>> void nodeLoadProperties( long nodeId, RECEIVER receiver )
     {
         NodeRecord nodeRecord = nodeStore.getRecord( nodeId, nodeStore.newRecord(), NORMAL );
         loadProperties( nodeRecord.getNextProp(), receiver );
     }
 
-    private <RECEIVER extends PropertyReceiver> void relLoadProperties( long relId, RECEIVER receiver )
+    private <RECEIVER extends PropertyReceiver<PropertyKeyValue>> void relLoadProperties( long relId, RECEIVER receiver )
     {
         RelationshipRecord relRecord = relStore.getRecord( relId, relStore.newRecord(), NORMAL );
         loadProperties( relRecord.getNextProp(), receiver );
     }
 
-    private <RECEIVER extends PropertyReceiver> void loadProperties( long nextProp, RECEIVER receiver )
+    private <RECEIVER extends PropertyReceiver<PropertyKeyValue>> void loadProperties( long nextProp, RECEIVER receiver )
     {
         PropertyRecord record = pStore.newRecord();
         while ( !Record.NULL_REFERENCE.is( nextProp ) )
@@ -1456,7 +1454,7 @@ public class NeoStoresTest
             NullLogProvider logProvider )
     {
         return new StoreFactory( databaseLayout, config, new DefaultIdGeneratorFactory( ephemeralFileSystemAbstraction ), pageCache,
-                ephemeralFileSystemAbstraction, logProvider, EmptyVersionContextSupplier.EMPTY );
+                ephemeralFileSystemAbstraction, logProvider );
     }
 
     private class CloseFailingDefaultIdGeneratorFactory extends DefaultIdGeneratorFactory

@@ -45,12 +45,11 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.internal.recordstorage.RandomSchema;
-import org.neo4j.internal.recordstorage.RecordStorageEngineFactory;
 import org.neo4j.internal.recordstorage.SchemaStorage;
+import org.neo4j.internal.recordstorage.StoreTokens;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.impl.core.TokenHolders;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.SchemaStore;
@@ -85,7 +84,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
-@SuppressWarnings( "OptionalGetWithoutIsPresent" )
 @RunWith( Parameterized.class )
 public class RecordStorageMigratorIT
 {
@@ -155,7 +153,7 @@ public class RecordStorageMigratorIT
         // THEN starting the new store should be successful
         StoreFactory storeFactory = new StoreFactory(
                 databaseLayout, CONFIG, new DefaultIdGeneratorFactory( fs ), pageCache, fs,
-                logService.getInternalLogProvider(), EmptyVersionContextSupplier.EMPTY );
+                logService.getInternalLogProvider() );
         storeFactory.openAllNeoStores().close();
     }
 
@@ -184,7 +182,7 @@ public class RecordStorageMigratorIT
         // THEN starting the new store should be successful
         StoreFactory storeFactory = new StoreFactory(
                 databaseLayout, CONFIG, new DefaultIdGeneratorFactory( fs ), pageCache, fs,
-                logService.getInternalLogProvider(), EmptyVersionContextSupplier.EMPTY );
+                logService.getInternalLogProvider() );
         storeFactory.openAllNeoStores().close();
         logProvider.assertNoLogCallContaining( "ERROR" );
     }
@@ -215,7 +213,7 @@ public class RecordStorageMigratorIT
         // THEN starting the new store should be successful
         StoreFactory storeFactory =
                 new StoreFactory( databaseLayout, CONFIG, new DefaultIdGeneratorFactory( fs ), pageCache, fs,
-                        logService.getInternalLogProvider(), EmptyVersionContextSupplier.EMPTY );
+                        logService.getInternalLogProvider() );
         storeFactory.openAllNeoStores().close();
     }
 
@@ -341,11 +339,11 @@ public class RecordStorageMigratorIT
         generatedRules.sort( Comparator.comparingLong( SchemaRule::getId ) );
 
         // Then the new store should retain an exact representation of the old-format schema rules.
-        StoreFactory storeFactory = new StoreFactory( databaseLayout, CONFIG, igf, pageCache, fs, logProvider, EmptyVersionContextSupplier.EMPTY );
+        StoreFactory storeFactory = new StoreFactory( databaseLayout, CONFIG, igf, pageCache, fs, logProvider );
         try ( NeoStores neoStores = storeFactory.openAllNeoStores() )
         {
             SchemaStore schemaStore = neoStores.getSchemaStore();
-            TokenHolders tokenHolders = RecordStorageEngineFactory.readOnlyTokenHolders( neoStores );
+            TokenHolders tokenHolders = StoreTokens.readOnlyTokenHolders( neoStores );
             SchemaStorage storage = new SchemaStorage( schemaStore, tokenHolders );
             List<SchemaRule> migratedRules = new ArrayList<>();
             storage.getAll().iterator().forEachRemaining( migratedRules::add );

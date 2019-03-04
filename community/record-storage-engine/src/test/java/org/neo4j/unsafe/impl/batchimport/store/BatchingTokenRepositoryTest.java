@@ -27,7 +27,6 @@ import org.neo4j.configuration.Config;
 import org.neo4j.internal.kernel.api.NamedToken;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.StoreFactory;
@@ -117,7 +116,7 @@ class BatchingTokenRepositoryTest
         // given
 
         try ( NeoStores stores = new StoreFactory( testDirectory.databaseLayout(), Config.defaults(), new DefaultIdGeneratorFactory( fileSystem ), pageCache,
-                fileSystem, NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY )
+                fileSystem, NullLogProvider.getInstance() )
                 .openNeoStores( true, StoreType.PROPERTY_KEY_TOKEN, StoreType.PROPERTY_KEY_TOKEN_NAME ) )
         {
             TokenStore<PropertyKeyTokenRecord> tokenStore = stores.getPropertyKeyTokenStore();

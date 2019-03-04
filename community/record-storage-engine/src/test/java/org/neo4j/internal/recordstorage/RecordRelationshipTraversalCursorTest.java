@@ -50,7 +50,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_memory;
-import static org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
 import static org.neo4j.storageengine.api.RelationshipDirection.INCOMING;
 import static org.neo4j.storageengine.api.RelationshipDirection.LOOP;
@@ -95,7 +94,7 @@ public class RecordRelationshipTraversalCursorTest
         FileSystemAbstraction fs = storage.fileSystem();
         DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs );
         NullLogProvider logProvider = NullLogProvider.getInstance();
-        StoreFactory storeFactory = new StoreFactory( storeLayout, config, idGeneratorFactory, pageCache, fs, logProvider, EMPTY );
+        StoreFactory storeFactory = new StoreFactory( storeLayout, config, idGeneratorFactory, pageCache, fs, logProvider );
         neoStores = storeFactory.openAllNeoStores( true );
     }
 

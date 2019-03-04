@@ -123,7 +123,7 @@ class OnlineIndexUpdatesTest
         Config config = Config.defaults( GraphDatabaseSettings.default_schema_provider, EMPTY.getProviderDescriptor().name() );
         NullLogProvider nullLogProvider = NullLogProvider.getInstance();
         StoreFactory storeFactory = new StoreFactory( databaseLayout, config, new DefaultIdGeneratorFactory( fileSystem ), pageCache,
-                        fileSystem, nullLogProvider, EmptyVersionContextSupplier.EMPTY );
+                        fileSystem, nullLogProvider );
 
         neoStores = storeFactory.openAllNeoStores( true );
         CountsTracker counts =

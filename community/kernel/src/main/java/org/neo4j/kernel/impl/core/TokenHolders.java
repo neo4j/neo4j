@@ -51,6 +51,13 @@ public class TokenHolders
         return relationshipTypeTokens;
     }
 
+    public void setInitialTokens( TokensLoader loader )
+    {
+        propertyKeyTokens().setInitialTokens( loader.getPropertyKeyTokens() );
+        labelTokens().setInitialTokens( loader.getLabelTokens() );
+        relationshipTypeTokens().setInitialTokens( loader.getRelationshipTypeTokens() );
+    }
+
     /**
      * @return TokenHolders which can be initialized, but not have any new tokens created.
      */

@@ -33,7 +33,6 @@ import java.util.List;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
-import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -126,7 +125,7 @@ public class TestIdGeneratorRebuilding
 
         StoreFactory storeFactory = new StoreFactory( testDirectory.databaseLayout(), config,
                 new DefaultIdGeneratorFactory( fs ), pageCacheRule.getPageCache( fs ), fs, NullLogProvider
-                .getInstance(), EmptyVersionContextSupplier.EMPTY );
+                .getInstance() );
         NeoStores neoStores = storeFactory.openAllNeoStores( true );
         DynamicStringStore store = neoStores.getPropertyStore().getStringStore();
 

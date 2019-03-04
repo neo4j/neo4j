@@ -30,7 +30,6 @@ import java.util.Map;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.helpers.collection.IteratorWrapper;
-import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
@@ -67,7 +66,7 @@ public class RecordPropertyCursorTest
     public void setup()
     {
         neoStores = new StoreFactory( storage.directory().databaseLayout(), Config.defaults(), new DefaultIdGeneratorFactory( storage.fileSystem() ),
-                storage.pageCache(), storage.fileSystem(), NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY ).openAllNeoStores( true );
+                storage.pageCache(), storage.fileSystem(), NullLogProvider.getInstance() ).openAllNeoStores( true );
         creator = new PropertyCreator( neoStores.getPropertyStore(), new PropertyTraverser() );
         owner = neoStores.getNodeStore().newRecord();
     }

@@ -34,12 +34,10 @@ import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.collection.FilteringIterator;
 import org.neo4j.helpers.collection.IteratorWrapper;
 import org.neo4j.helpers.collection.Visitor;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
-import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.impl.store.format.FormatFamily;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
@@ -99,11 +97,9 @@ public class NeoStores implements AutoCloseable
     private final IdGeneratorFactory idGeneratorFactory;
     private final PageCache pageCache;
     private final LogProvider logProvider;
-    private final VersionContextSupplier versionContextSupplier;
     private final boolean createIfNotExist;
     private final File metadataStore;
     private final StoreType[] initializedStores;
-    private final FileSystemAbstraction fileSystemAbstraction;
     private final RecordFormats recordFormats;
     // All stores, as Object due to CountsTracker being different that all other stores.
     private final CommonAbstractStore[] stores;
@@ -115,8 +111,6 @@ public class NeoStores implements AutoCloseable
             IdGeneratorFactory idGeneratorFactory,
             PageCache pageCache,
             final LogProvider logProvider,
-            FileSystemAbstraction fileSystemAbstraction,
-            VersionContextSupplier versionContextSupplier,
             RecordFormats recordFormats,
             boolean createIfNotExist,
             StoreType[] storeTypes,
@@ -128,8 +122,6 @@ public class NeoStores implements AutoCloseable
         this.idGeneratorFactory = idGeneratorFactory;
         this.pageCache = pageCache;
         this.logProvider = logProvider;
-        this.fileSystemAbstraction = fileSystemAbstraction;
-        this.versionContextSupplier = versionContextSupplier;
         this.recordFormats = recordFormats;
         this.createIfNotExist = createIfNotExist;
         this.openOptions = openOptions;
@@ -308,11 +300,6 @@ public class NeoStores implements AutoCloseable
         return (NodeStore) getStore( StoreType.NODE );
     }
 
-    private DynamicArrayStore getNodeLabelStore()
-    {
-        return (DynamicArrayStore) getStore( StoreType.NODE_LABEL );
-    }
-
     /**
      * The relationship store.
      *
@@ -333,11 +320,6 @@ public class NeoStores implements AutoCloseable
         return (RelationshipTypeTokenStore) getStore( StoreType.RELATIONSHIP_TYPE_TOKEN );
     }
 
-    private DynamicStringStore getRelationshipTypeTokenNamesStore()
-    {
-        return (DynamicStringStore) getStore( StoreType.RELATIONSHIP_TYPE_TOKEN_NAME );
-    }
-
     /**
      * Returns the label store.
      *
@@ -346,11 +328,6 @@ public class NeoStores implements AutoCloseable
     public LabelTokenStore getLabelTokenStore()
     {
         return (LabelTokenStore) getStore( StoreType.LABEL_TOKEN );
-    }
-
-    private DynamicStringStore getLabelTokenNamesStore()
-    {
-        return (DynamicStringStore) getStore( StoreType.LABEL_TOKEN_NAME );
     }
 
     /**
@@ -363,27 +340,12 @@ public class NeoStores implements AutoCloseable
         return (PropertyStore) getStore( StoreType.PROPERTY );
     }
 
-    private DynamicStringStore getStringPropertyStore()
-    {
-        return (DynamicStringStore) getStore( StoreType.PROPERTY_STRING );
-    }
-
-    private DynamicArrayStore getArrayPropertyStore()
-    {
-        return (DynamicArrayStore) getStore( StoreType.PROPERTY_ARRAY );
-    }
-
     /**
      * @return the {@link PropertyKeyTokenStore}
      */
     public PropertyKeyTokenStore getPropertyKeyTokenStore()
     {
         return (PropertyKeyTokenStore) getStore( StoreType.PROPERTY_KEY_TOKEN );
-    }
-
-    private DynamicStringStore getPropertyKeyTokenNamesStore()
-    {
-        return (DynamicStringStore) getStore( StoreType.PROPERTY_KEY_TOKEN_NAME );
     }
 
     /**
@@ -479,14 +441,6 @@ public class NeoStores implements AutoCloseable
         } );
     }
 
-    public void assertOpen()
-    {
-        if ( stores[StoreType.NODE.ordinal()] == null )
-        {
-            throw new IllegalStateException( "Database has been shutdown" );
-        }
-    }
-
     CommonAbstractStore createNodeStore()
     {
         return initialize(
@@ -523,8 +477,7 @@ public class NeoStores implements AutoCloseable
 
     CommonAbstractStore createPropertyStringStore()
     {
-        return createDynamicStringStore( layout.propertyStringStore(), layout.idPropertyStringStore(), IdType.STRING_BLOCK,
-                GraphDatabaseSettings.string_block_size );
+        return createDynamicStringStore( layout.propertyStringStore(), layout.idPropertyStringStore() );
     }
 
     CommonAbstractStore createPropertyArrayStore()
@@ -587,9 +540,9 @@ public class NeoStores implements AutoCloseable
                         recordFormats.metaData(), recordFormats.storeVersion(), openOptions ) );
     }
 
-    private CommonAbstractStore createDynamicStringStore( File storeFile, File idFile, IdType idType, Setting<Integer> blockSizeProperty )
+    private CommonAbstractStore createDynamicStringStore( File storeFile, File idFile )
     {
-        return createDynamicStringStore( storeFile, idFile, idType, config.get( blockSizeProperty ) );
+        return createDynamicStringStore( storeFile, idFile, IdType.STRING_BLOCK, config.get( GraphDatabaseSettings.string_block_size ) );
     }
 
     private CommonAbstractStore createDynamicStringStore( File storeFile, File idFile, IdType idType, int blockSize )

@@ -25,6 +25,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -40,7 +41,6 @@ import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -56,7 +56,6 @@ import org.neo4j.test.extension.pagecache.PageCacheSupportExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.lang.Integer.parseInt;
-import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -169,7 +168,7 @@ class RelationshipGroupStoreTest
             customConfig.put( GraphDatabaseSettings.dense_node_threshold.name(), "" + customThreshold );
         }
         return new StoreFactory( testDirectory.databaseLayout(), Config.defaults( customConfig ), new DefaultIdGeneratorFactory( fs ), pageCache,
-                fs, NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY );
+                fs, NullLogProvider.getInstance() );
     }
 
     @Test
@@ -348,7 +347,7 @@ class RelationshipGroupStoreTest
             relationshipStore.getRecord( nextId, record, NORMAL );
         }
 
-        Set<Long> expectedChain = new HashSet<>( asList( firstId ) );
+        Set<Long> expectedChain = new HashSet<>( Collections.singletonList( firstId ) );
         for ( long id : chainedIds )
         {
             expectedChain.add( id );

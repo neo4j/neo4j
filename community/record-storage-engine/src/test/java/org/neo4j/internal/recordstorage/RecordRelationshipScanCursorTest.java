@@ -30,7 +30,6 @@ import java.util.Set;
 import org.neo4j.configuration.Config;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
@@ -178,7 +177,7 @@ class RecordRelationshipScanCursorTest
     {
         return new StoreFactory(
                 testDirectory.databaseLayout(), Config.defaults(), new DefaultIdGeneratorFactory( fileSystem ),
-                pageCache, fileSystem, NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY );
+                pageCache, fileSystem, NullLogProvider.getInstance() );
     }
 
     private RecordRelationshipScanCursor createRelationshipCursor()

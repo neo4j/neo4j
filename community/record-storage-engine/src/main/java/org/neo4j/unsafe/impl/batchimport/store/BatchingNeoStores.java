@@ -36,9 +36,7 @@ import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
-import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.impl.api.scan.FullStoreChangeStream;
 import org.neo4j.kernel.impl.index.labelscan.NativeLabelScanStore;
@@ -269,8 +267,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
     {
         Config neo4jConfig = getNeo4jConfig( config, dbConfig );
         final PageCacheTracer tracer = new DefaultPageCacheTracer();
-        PageCache pageCache = createPageCache( fileSystem, neo4jConfig, logService.getInternalLogProvider(), tracer,
-                DefaultPageCursorTracerSupplier.INSTANCE, EmptyVersionContextSupplier.EMPTY, jobScheduler );
+        PageCache pageCache = createPageCache( fileSystem, neo4jConfig, logService.getInternalLogProvider(), tracer, jobScheduler );
 
         return new BatchingNeoStores( fileSystem, pageCache, storeDir, recordFormats, neo4jConfig, config, logService,
                 initialIds, false, tracer::bytesWritten );
@@ -292,17 +289,16 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
         return dbConfig;
     }
 
-    private static PageCache createPageCache( FileSystemAbstraction fileSystem, Config config, LogProvider log,
-            PageCacheTracer tracer, PageCursorTracerSupplier cursorTracerSupplier, VersionContextSupplier contextSupplier, JobScheduler jobScheduler )
+    private static PageCache createPageCache(
+            FileSystemAbstraction fileSystem, Config config, LogProvider log, PageCacheTracer tracer, JobScheduler jobScheduler )
     {
-        return new ConfiguringPageCacheFactory( fileSystem, config, tracer, cursorTracerSupplier,
-                log.getLog( BatchingNeoStores.class ), contextSupplier, jobScheduler ).getOrCreatePageCache();
+        return new ConfiguringPageCacheFactory( fileSystem, config, tracer, DefaultPageCursorTracerSupplier.INSTANCE,
+                log.getLog( BatchingNeoStores.class ), EmptyVersionContextSupplier.EMPTY, jobScheduler ).getOrCreatePageCache();
     }
 
     private StoreFactory newStoreFactory( DatabaseLayout databaseLayout, OpenOption... openOptions )
     {
-        return new StoreFactory( databaseLayout, neo4jConfig, idGeneratorFactory, pageCache, fileSystem, recordFormats, logProvider,
-                        EmptyVersionContextSupplier.EMPTY, openOptions );
+        return new StoreFactory( databaseLayout, neo4jConfig, idGeneratorFactory, pageCache, fileSystem, recordFormats, logProvider, openOptions );
     }
 
     /**
