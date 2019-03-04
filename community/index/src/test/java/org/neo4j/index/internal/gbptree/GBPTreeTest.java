@@ -596,6 +596,47 @@ class GBPTreeTest
         verifyHeader( pageCache, expectedBytes );
     }
 
+    @Test
+    void overwriteHeaderMustOnlyOverwriteHeaderNotState() throws Exception
+    {
+        ThreadLocalRandom random = ThreadLocalRandom.current();
+        byte[] initialHeader = new byte[random.nextInt( 100 )];
+        random.nextBytes( initialHeader );
+        Consumer<PageCursor> headerWriter = pc -> pc.putBytes( initialHeader );
+        PageCache pageCache = createPageCache( DEFAULT_PAGE_SIZE );
+        try ( GBPTree<MutableLong,MutableLong> ignore = index( pageCache ).with( headerWriter ).build() )
+        {
+        }
+
+        Pair<TreeState,TreeState> treeStatesBeforeOverwrite = readTreeStates( pageCache );
+
+        byte[] newHeader = new byte[random.nextInt( 100 )];
+        ThreadLocalRandom.current().nextBytes( newHeader );
+        GBPTree.overwriteHeader( pageCache, indexFile, pc -> pc.putBytes( newHeader ) );
+
+        Pair<TreeState,TreeState> treeStatesAfterOverwrite = readTreeStates( pageCache );
+
+        // TreeStates are the same
+        assertEquals( treeStatesBeforeOverwrite.getLeft(), treeStatesAfterOverwrite.getLeft(),
+                "expected tree state to exactly the same before and after overwriting header" );
+        assertEquals( treeStatesBeforeOverwrite.getRight(), treeStatesAfterOverwrite.getRight(),
+                "expected tree state to exactly the same before and after overwriting header" );
+
+        // Verify header was actually overwritten. Do this after reading tree states because it will bump tree generation.
+        verifyHeader( pageCache, newHeader );
+    }
+
+    private Pair<TreeState,TreeState> readTreeStates( PageCache pageCache ) throws IOException
+    {
+        Pair<TreeState,TreeState> treeStatesBeforeOverwrite;
+        try ( PagedFile pagedFile = pageCache.map( indexFile, pageCache.pageSize() );
+              PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK ) )
+        {
+            treeStatesBeforeOverwrite = TreeStatePair.readStatePages( cursor, IdSpace.STATE_PAGE_A, IdSpace.STATE_PAGE_B );
+        }
+        return treeStatesBeforeOverwrite;
+    }
+
     private void verifyHeaderDataAfterClose( BiConsumer<GBPTree<MutableLong,MutableLong>,byte[]> beforeClose )
             throws IOException
     {

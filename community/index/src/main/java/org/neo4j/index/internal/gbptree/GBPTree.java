@@ -42,6 +42,7 @@ import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.util.VisibleForTesting;
 
 import static java.lang.String.format;
 import static org.apache.commons.lang3.ArrayUtils.add;
@@ -762,6 +763,38 @@ public class GBPTree<KEY,VALUE> implements Closeable
 
             int length = cursor.getOffset() - headerDataOffset;
             cursor.putInt( headerOffset, length );
+        }
+    }
+
+    @VisibleForTesting
+    public static void overwriteHeader( PageCache pageCache, File indexFile, Consumer<PageCursor> headerWriter ) throws IOException
+    {
+        Header.Writer writer = replace( headerWriter );
+        try ( PagedFile pagedFile = openExistingIndexFile( pageCache, indexFile ) )
+        {
+            Pair<TreeState,TreeState> states = readStatePages( pagedFile );
+            TreeState newestValidState = TreeStatePair.selectNewestValidState( states );
+            long pageToOverwrite = newestValidState.pageId();
+            try ( PageCursor cursor = pagedFile.io( pageToOverwrite, PagedFile.PF_SHARED_WRITE_LOCK ) )
+            {
+                PageCursorUtil.goTo( cursor, "state page", pageToOverwrite );
+
+                // Place cursor after state data
+                TreeState.read( cursor );
+
+                // Note offset to header
+                int headerOffset = cursor.getOffset();
+                int headerDataOffset = headerOffset + Integer.BYTES; // will contain length of written header data (below)
+
+                // Reserve space to store length
+                cursor.setOffset( headerDataOffset );
+                // Write data
+                writer.write( null, 0, cursor );
+                // Write length
+                int length = cursor.getOffset() - headerDataOffset;
+                cursor.putInt( headerOffset, length );
+                checkOutOfBounds( cursor );
+            }
         }
     }
 
