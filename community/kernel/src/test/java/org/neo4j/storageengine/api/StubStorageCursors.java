@@ -27,9 +27,9 @@ import java.util.function.Function;
 
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.kernel.impl.core.DelegatingTokenHolder;
-import org.neo4j.kernel.impl.core.TokenHolder;
 import org.neo4j.storageengine.api.schema.ConstraintDescriptor;
 import org.neo4j.storageengine.api.schema.SchemaDescriptor;
+import org.neo4j.token.api.TokenHolder;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 
@@ -38,7 +38,7 @@ import static java.util.Collections.emptyIterator;
 import static org.apache.commons.lang3.ArrayUtils.contains;
 import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.helpers.collection.MapUtil.genericMap;
-import static org.neo4j.kernel.impl.core.TokenHolder.TYPE_PROPERTY_KEY;
+import static org.neo4j.token.api.TokenHolder.TYPE_PROPERTY_KEY;
 
 /**
  * Implementation of {@link StorageReader} with focus on making testing the storage read cursors easy without resorting to mocking.

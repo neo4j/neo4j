@@ -24,8 +24,11 @@ import java.util.function.IntPredicate;
 
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.TransactionFailureException;
-import org.neo4j.internal.kernel.api.NamedToken;
 import org.neo4j.kernel.api.exceptions.ReadOnlyDbException;
+import org.neo4j.token.api.NamedToken;
+import org.neo4j.token.api.NonUniqueTokenException;
+import org.neo4j.token.api.TokenHolder;
+import org.neo4j.token.api.TokenNotFoundException;
 
 import static org.neo4j.function.Predicates.ALWAYS_FALSE_INT;
 import static org.neo4j.internal.kernel.api.TokenRead.NO_TOKEN;

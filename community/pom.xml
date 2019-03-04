@@ -23,6 +23,7 @@
   </properties>
 
   <modules>
+    <module>token-api</module>
     <module>import-util</module>
     <module>record-storage-engine</module>
     <module>common</module>

@@ -17,12 +17,26 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.core;
+package org.neo4j.token.api;
 
-public class TokenNotFoundException extends Exception
+public class TokenIdPrettyPrinter
 {
-    public TokenNotFoundException( String message )
+    private TokenIdPrettyPrinter()
     {
-        super( message );
+    }
+
+    public static String label( int id )
+    {
+        return id == TokenConstants.ANY_LABEL ? "" : (":label=" + id);
+    }
+
+    public static String propertyKey( int id )
+    {
+        return id == TokenConstants.ANY_PROPERTY_KEY ? "" : (":propertyKey=" + id);
+    }
+
+    public static String relationshipType( int id )
+    {
+        return id == TokenConstants.ANY_RELATIONSHIP_TYPE ? "" : ("[:type=" + id + "]");
     }
 }

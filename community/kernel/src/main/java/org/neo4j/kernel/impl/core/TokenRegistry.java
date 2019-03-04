@@ -31,7 +31,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.locks.StampedLock;
 
-import org.neo4j.internal.kernel.api.NamedToken;
+import org.neo4j.token.api.NamedToken;
+import org.neo4j.token.api.NonUniqueTokenException;
 
 import static java.util.Collections.unmodifiableCollection;
 import static org.neo4j.internal.kernel.api.TokenRead.NO_TOKEN;

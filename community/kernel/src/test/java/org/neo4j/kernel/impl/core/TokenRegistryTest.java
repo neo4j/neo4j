@@ -24,7 +24,8 @@ import org.junit.jupiter.api.Test;
 
 import java.util.Collection;
 
-import org.neo4j.internal.kernel.api.NamedToken;
+import org.neo4j.token.api.NamedToken;
+import org.neo4j.token.api.NonUniqueTokenException;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;

@@ -51,7 +51,6 @@ import org.neo4j.kernel.impl.core.DelegatingTokenHolder;
 import org.neo4j.kernel.impl.core.ReadOnlyTokenCreator;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.core.TokenCreator;
-import org.neo4j.kernel.impl.core.TokenHolder;
 import org.neo4j.kernel.impl.core.TokenHolders;
 import org.neo4j.kernel.impl.factory.CanWrite;
 import org.neo4j.kernel.impl.factory.CommunityCommitProcessFactory;
@@ -69,6 +68,7 @@ import org.neo4j.logging.internal.LogService;
 import org.neo4j.procedure.builtin.routing.CommunityRoutingProcedureInstaller;
 import org.neo4j.ssl.config.SslPolicyLoader;
 import org.neo4j.time.SystemNanoClock;
+import org.neo4j.token.api.TokenHolder;
 import org.neo4j.udc.UsageData;
 
 import static org.neo4j.graphdb.factory.EditionLocksFactories.createLockFactory;

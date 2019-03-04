@@ -33,7 +33,7 @@ import org.neo4j.kernel.api.impl.index.SearcherReference;
 import org.neo4j.kernel.api.impl.index.partition.AbstractIndexPartition;
 import org.neo4j.kernel.api.impl.index.partition.IndexPartitionFactory;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
-import org.neo4j.kernel.impl.core.TokenHolder;
+import org.neo4j.token.api.TokenHolder;
 
 import static org.neo4j.common.TokenNameLookup.idTokenNameLookup;
 

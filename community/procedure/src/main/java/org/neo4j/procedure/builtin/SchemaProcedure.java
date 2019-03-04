@@ -135,11 +135,11 @@ public class SchemaProcedure
                                 VirtualNodeHack node = getOrCreateLabel( labelName, properties, nodes );
                                 int labelId = tokenRead.nodeLabel( labelName );
 
-                                if ( dataRead.countsForRelationship( labelId, relId, Read.ANY_LABEL ) > 0 )
+                                if ( dataRead.countsForRelationship( labelId, relId, TokenRead.ANY_LABEL ) > 0 )
                                 {
                                     startNodes.add( node );
                                 }
-                                if ( dataRead.countsForRelationship( Read.ANY_LABEL, relId, labelId ) > 0 )
+                                if ( dataRead.countsForRelationship( TokenRead.ANY_LABEL, relId, labelId ) > 0 )
                                 {
                                     endNodes.add( node );
                                 }

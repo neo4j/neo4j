@@ -35,13 +35,13 @@ import java.util.stream.Stream;
 
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.internal.kernel.api.CursorFactory;
-import org.neo4j.internal.kernel.api.NamedToken;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.Transaction;
+import org.neo4j.token.api.NamedToken;
 import org.neo4j.values.storable.Value;
 
 public class SchemaCalculator

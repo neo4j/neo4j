@@ -17,29 +17,27 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.util;
+package org.neo4j.token.api;
 
-import org.neo4j.internal.kernel.api.Read;
-import org.neo4j.internal.kernel.api.TokenRead;
-
-public class IdPrettyPrinter
+public interface TokenConstants
 {
-    private IdPrettyPrinter()
-    {
-    }
+    /**
+     * Value indicating the a token does not exist.
+     */
+    int NO_TOKEN = -1;
 
-    public static String label( int id )
-    {
-        return id == Read.ANY_LABEL ? "" : (":label=" + id);
-    }
+    /**
+     * Value indicating the a relationship type token does not exist.
+     */
+    int ANY_RELATIONSHIP_TYPE = NO_TOKEN;
 
-    public static String propertyKey( int id )
-    {
-        return id == TokenRead.NO_TOKEN ? "" : (":propertyKey=" + id);
-    }
+    /**
+     * Value indicating the a label token does not exist.
+     */
+    int ANY_LABEL = NO_TOKEN;
 
-    public static String relationshipType( int id )
-    {
-        return id == TokenRead.NO_TOKEN ? "" : ("[:type=" + id + "]");
-    }
+    /**
+     * Value indicating the a property key token does not exist.
+     */
+    int ANY_PROPERTY_KEY = NO_TOKEN;
 }

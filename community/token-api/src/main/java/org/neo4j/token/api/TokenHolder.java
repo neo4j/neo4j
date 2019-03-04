@@ -17,12 +17,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.core;
+package org.neo4j.token.api;
 
 import java.util.List;
-
-import org.neo4j.internal.kernel.api.NamedToken;
-import org.neo4j.internal.kernel.api.TokenRead;
 
 public interface TokenHolder
 {
@@ -78,7 +75,7 @@ public interface TokenHolder
     NamedToken getTokenById( int id ) throws TokenNotFoundException;
 
     /**
-     * Returns the id, or {@link TokenRead#NO_TOKEN} if no public token with this name exists.
+     * Returns the id, or {@link TokenConstants#NO_TOKEN} if no token with this name exists.
      */
     int getIdByName( String name );
 
@@ -86,7 +83,7 @@ public interface TokenHolder
      * Resolve the ids of the given token {@code names} into the array for {@code ids}.
      * <p>
      * Any tokens that don't already have an id will not be resolved, and the corrosponding entry in the {@code ids}
-     * array will be left untouched. If you wish for those unresolved id entries to end up with the {@link TokenRead#NO_TOKEN}
+     * array will be left untouched. If you wish for those unresolved id entries to end up with the {@link TokenConstants#NO_TOKEN}
      * value, you must first fill the array with that value before calling this method.
      * <p>
      * This method will not resolve internal tokens; only public ones.

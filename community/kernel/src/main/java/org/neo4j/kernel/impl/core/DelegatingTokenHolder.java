@@ -31,8 +31,9 @@ import java.util.function.IntPredicate;
 
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.TransactionFailureException;
-import org.neo4j.internal.kernel.api.NamedToken;
 import org.neo4j.kernel.api.exceptions.ReadOnlyDbException;
+import org.neo4j.token.api.NamedToken;
+import org.neo4j.token.api.NonUniqueTokenException;
 
 import static org.neo4j.function.Predicates.ALWAYS_TRUE_INT;
 

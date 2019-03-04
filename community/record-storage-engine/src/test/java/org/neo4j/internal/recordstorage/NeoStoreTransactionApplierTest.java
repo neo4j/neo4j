@@ -22,7 +22,6 @@ package org.neo4j.internal.recordstorage;
 import org.junit.Before;
 import org.junit.Test;
 
-import org.neo4j.internal.kernel.api.NamedToken;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.recordstorage.Command.LabelTokenCommand;
 import org.neo4j.internal.recordstorage.Command.PropertyKeyTokenCommand;
@@ -61,6 +60,7 @@ import org.neo4j.locking.LockService;
 import org.neo4j.storageengine.api.IndexUpdateListener;
 import org.neo4j.storageengine.api.NodeLabelUpdateListener;
 import org.neo4j.storageengine.api.StorageEngine;
+import org.neo4j.token.api.NamedToken;
 import org.neo4j.util.concurrent.WorkSync;
 
 import static java.util.Arrays.asList;

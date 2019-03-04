@@ -19,10 +19,10 @@
  */
 package org.neo4j.internal.recordstorage;
 
-import org.neo4j.internal.kernel.api.NamedToken;
 import org.neo4j.kernel.impl.api.SchemaState;
 import org.neo4j.kernel.impl.core.TokenHolders;
 import org.neo4j.storageengine.api.SchemaRule;
+import org.neo4j.token.api.NamedToken;
 
 class BridgingCacheAccess implements CacheAccessBackDoor
 {

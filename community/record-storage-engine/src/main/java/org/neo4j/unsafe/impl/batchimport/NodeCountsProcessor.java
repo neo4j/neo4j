@@ -26,7 +26,7 @@ import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeLabelsCache;
 
-import static org.neo4j.internal.kernel.api.Read.ANY_LABEL;
+import static org.neo4j.token.api.TokenConstants.ANY_LABEL;
 
 /**
  * Calculates counts per label and puts data into {@link NodeLabelsCache} for use by {@link

@@ -45,7 +45,6 @@ import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.PopulationProgress;
-import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
@@ -114,7 +113,7 @@ public class BuiltInProcedures
                 TokenAccess.RELATIONSHIP_TYPES.inUse( tx ).stream().map( type ->
                 {
                     int typeId = tx.tokenRead().relationshipType( type.name() );
-                    return new RelationshipTypeResult( type, tx.dataRead().countsForRelationship( Read.ANY_LABEL, typeId, Read.ANY_LABEL ) );
+                    return new RelationshipTypeResult( type, tx.dataRead().countsForRelationship( TokenRead.ANY_LABEL, typeId, TokenRead.ANY_LABEL ) );
                 } ).collect( Collectors.toList() );
         return relationshipTypes.stream();
     }

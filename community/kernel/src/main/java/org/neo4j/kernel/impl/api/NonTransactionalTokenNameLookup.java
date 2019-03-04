@@ -20,9 +20,9 @@
 package org.neo4j.kernel.impl.api;
 
 import org.neo4j.common.TokenNameLookup;
-import org.neo4j.kernel.impl.core.TokenHolder;
 import org.neo4j.kernel.impl.core.TokenHolders;
-import org.neo4j.kernel.impl.core.TokenNotFoundException;
+import org.neo4j.token.api.TokenHolder;
+import org.neo4j.token.api.TokenNotFoundException;
 
 import static java.lang.String.format;
 

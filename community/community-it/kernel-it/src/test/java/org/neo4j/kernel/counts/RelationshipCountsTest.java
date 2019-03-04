@@ -32,7 +32,6 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
@@ -407,7 +406,7 @@ public class RelationshipCountsTest
             // start
             if ( start == null )
             {
-                startId = Read.ANY_LABEL;
+                startId = TokenRead.ANY_LABEL;
             }
             else
             {
@@ -419,7 +418,7 @@ public class RelationshipCountsTest
             // type
             if ( type == null )
             {
-                typeId = Read.ANY_RELATIONSHIP_TYPE;
+                typeId = TokenRead.ANY_RELATIONSHIP_TYPE;
             }
             else
             {
@@ -431,7 +430,7 @@ public class RelationshipCountsTest
             // end
             if ( end == null )
             {
-                endId = Read.ANY_LABEL;
+                endId = TokenRead.ANY_LABEL;
             }
             else
             {

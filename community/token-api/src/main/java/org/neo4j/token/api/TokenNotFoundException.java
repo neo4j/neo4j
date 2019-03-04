@@ -17,20 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.internal.recordstorage;
+package org.neo4j.token.api;
 
-import org.neo4j.storageengine.api.SchemaRule;
-import org.neo4j.token.api.NamedToken;
-
-public interface CacheAccessBackDoor
+public class TokenNotFoundException extends Exception
 {
-    void addSchemaRule( SchemaRule schemaRule );
-
-    void removeSchemaRuleFromCache( long id );
-
-    void addRelationshipTypeToken( NamedToken type );
-
-    void addLabelToken( NamedToken labelId );
-
-    void addPropertyKeyToken( NamedToken index );
+    public TokenNotFoundException( String message )
+    {
+        super( message );
+    }
 }

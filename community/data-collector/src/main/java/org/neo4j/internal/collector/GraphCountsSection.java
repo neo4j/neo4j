@@ -33,7 +33,6 @@ import org.neo4j.common.EntityType;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.Kernel;
-import org.neo4j.internal.kernel.api.NamedToken;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.TokenRead;
@@ -45,6 +44,7 @@ import org.neo4j.kernel.api.SilentTokenNameLookup;
 import org.neo4j.register.Register;
 import org.neo4j.register.Registers;
 import org.neo4j.storageengine.api.schema.ConstraintDescriptor;
+import org.neo4j.token.api.NamedToken;
 
 /**
  * The Graph Counts section holds all data that is available form the counts store, plus metadata

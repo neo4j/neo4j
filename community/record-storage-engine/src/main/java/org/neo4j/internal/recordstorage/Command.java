@@ -54,8 +54,8 @@ import org.neo4j.values.storable.ValueWriter;
 
 import static java.lang.Math.toIntExact;
 import static java.lang.String.format;
-import static org.neo4j.kernel.impl.util.IdPrettyPrinter.label;
-import static org.neo4j.kernel.impl.util.IdPrettyPrinter.relationshipType;
+import static org.neo4j.token.api.TokenIdPrettyPrinter.label;
+import static org.neo4j.token.api.TokenIdPrettyPrinter.relationshipType;
 import static org.neo4j.util.Bits.bitFlag;
 import static org.neo4j.util.Bits.bitFlags;
 

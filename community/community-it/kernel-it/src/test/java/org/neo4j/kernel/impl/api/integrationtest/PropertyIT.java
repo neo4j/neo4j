@@ -23,11 +23,11 @@ import org.junit.Test;
 
 import java.util.Iterator;
 
-import org.neo4j.internal.kernel.api.NamedToken;
 import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.security.AnonymousContext;
+import org.neo4j.token.api.NamedToken;
 import org.neo4j.values.storable.Values;
 
 import static org.hamcrest.CoreMatchers.equalTo;

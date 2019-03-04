@@ -27,7 +27,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.common.EntityType;
-import org.neo4j.internal.kernel.api.NamedToken;
 import org.neo4j.kernel.api.properties.PropertyKeyValue;
 import org.neo4j.kernel.api.schema.MultiTokenSchemaDescriptor;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
@@ -37,6 +36,7 @@ import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.StubStorageCursors;
 import org.neo4j.storageengine.api.schema.LabelSchemaDescriptor;
+import org.neo4j.token.api.NamedToken;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;

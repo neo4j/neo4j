@@ -21,8 +21,8 @@ package org.neo4j.kernel.impl.store.counts.keys;
 
 import org.neo4j.counts.CountsVisitor;
 
-import static org.neo4j.kernel.impl.util.IdPrettyPrinter.label;
-import static org.neo4j.kernel.impl.util.IdPrettyPrinter.relationshipType;
+import static org.neo4j.token.api.TokenIdPrettyPrinter.label;
+import static org.neo4j.token.api.TokenIdPrettyPrinter.relationshipType;
 
 public final class RelationshipKey implements CountsKey
 {

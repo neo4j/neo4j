@@ -36,6 +36,7 @@ import org.neo4j.internal.kernel.api.RelationshipIndexCursor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.internal.kernel.api.Scan;
+import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.security.AccessMode;
@@ -383,12 +384,12 @@ abstract class Read implements TxStateHolder,
         case SELECTION:
             // Reference was retrieved from RelationshipGroupCursor#outgoingReference() or similar for a sparse node
             // Do lazy selection, i.e. discover type/direction from the first relationship read, so that it can be used to query tx-state.
-            ((DefaultRelationshipTraversalCursor) cursor).init( nodeReference, clearEncoding( reference ), ANY_RELATIONSHIP_TYPE, null, false, this );
+            ((DefaultRelationshipTraversalCursor) cursor).init( nodeReference, clearEncoding( reference ), TokenRead.ANY_RELATIONSHIP_TYPE, null, false, this );
             break;
         case DENSE_SELECTION:
             // Reference was retrieved from RelationshipGroupCursor#outgoingReference() or similar for a dense node
             // Do lazy selection, i.e. discover type/direction from the first relationship read, so that it can be used to query tx-state.
-            ((DefaultRelationshipTraversalCursor) cursor).init( nodeReference, clearEncoding( reference ), ANY_RELATIONSHIP_TYPE, null, true, this );
+            ((DefaultRelationshipTraversalCursor) cursor).init( nodeReference, clearEncoding( reference ), TokenRead.ANY_RELATIONSHIP_TYPE, null, true, this );
             break;
         case NO_OUTGOING_OF_TYPE:
             // Reference was retrieved from RelationshipGroupCursor#outgoingReference() where there were no relationships in store

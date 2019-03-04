@@ -41,8 +41,8 @@ import org.neo4j.storageengine.api.schema.ConstraintDescriptor;
 import org.neo4j.storageengine.api.schema.SchemaDescriptor;
 
 import static org.neo4j.helpers.collection.Iterators.map;
-import static org.neo4j.internal.kernel.api.Read.ANY_LABEL;
 import static org.neo4j.register.Registers.newDoubleLongRegister;
+import static org.neo4j.token.api.TokenConstants.ANY_LABEL;
 
 /**
  * Default implementation of StorageReader. Delegates to NeoStores and indexes.

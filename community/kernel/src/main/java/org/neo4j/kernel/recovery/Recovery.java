@@ -104,9 +104,9 @@ import static java.util.stream.Collectors.toList;
 import static org.neo4j.configuration.Config.defaults;
 import static org.neo4j.helpers.collection.Iterables.stream;
 import static org.neo4j.kernel.impl.constraints.ConstraintSemantics.getConstraintSemantics;
-import static org.neo4j.kernel.impl.core.TokenHolder.TYPE_LABEL;
-import static org.neo4j.kernel.impl.core.TokenHolder.TYPE_PROPERTY_KEY;
-import static org.neo4j.kernel.impl.core.TokenHolder.TYPE_RELATIONSHIP_TYPE;
+import static org.neo4j.token.api.TokenHolder.TYPE_LABEL;
+import static org.neo4j.token.api.TokenHolder.TYPE_PROPERTY_KEY;
+import static org.neo4j.token.api.TokenHolder.TYPE_RELATIONSHIP_TYPE;
 
 /**
  * Utility class to perform store recovery or check is recovery is required.
