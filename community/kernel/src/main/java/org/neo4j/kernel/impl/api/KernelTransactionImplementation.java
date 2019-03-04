@@ -397,6 +397,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.userMetaData = data;
     }
 
+    @Override
     public Map<String, Object> getMetaData()
     {
         return userMetaData;
