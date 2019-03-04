@@ -19,9 +19,9 @@
  */
 package org.neo4j.internal.recordstorage;
 
-import org.neo4j.kernel.impl.locking.LockGroup;
-import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.locking.LockGroup;
+import org.neo4j.locking.LockService;
 import org.neo4j.storageengine.api.CommandVersion;
 import org.neo4j.storageengine.api.CommandsToApply;
 

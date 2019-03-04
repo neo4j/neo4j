@@ -21,8 +21,8 @@ package org.neo4j.internal.recordstorage;
 
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.api.TransactionToApply;
-import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
+import org.neo4j.locking.LockGroup;
 import org.neo4j.storageengine.api.CommandsToApply;
 
 /**
