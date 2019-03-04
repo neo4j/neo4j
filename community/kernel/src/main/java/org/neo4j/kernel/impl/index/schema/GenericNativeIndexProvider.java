@@ -159,7 +159,7 @@ public class GenericNativeIndexProvider extends NativeIndexProvider<GenericKey,N
         if ( blockBasedPopulation )
         {
             return new GenericBlockBasedIndexPopulator( pageCache, fs, indexFiles, layout, monitor, descriptor, layout.getSpaceFillingCurveSettings(),
-                    directoryStructure(), configuration, archiveFailedIndex );
+                    configuration, archiveFailedIndex );
         }
         return new WorkSyncedNativeIndexPopulator<>(
                 new GenericNativeIndexPopulator( pageCache, fs, indexFiles, layout, monitor, descriptor, layout.getSpaceFillingCurveSettings(), configuration,

@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.index.schema;
 import org.neo4j.gis.spatial.index.curves.SpaceFillingCurveConfiguration;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettingsCache;
 import org.neo4j.storageengine.api.StorageIndexReference;
@@ -34,7 +33,7 @@ public class GenericBlockBasedIndexPopulator extends BlockBasedIndexPopulator<Ge
 
     GenericBlockBasedIndexPopulator( PageCache pageCache, FileSystemAbstraction fs, IndexFiles indexFiles, IndexLayout<GenericKey,NativeIndexValue> layout,
             IndexProvider.Monitor monitor, StorageIndexReference descriptor, IndexSpecificSpaceFillingCurveSettingsCache spatialSettings,
-            IndexDirectoryStructure directoryStructure, SpaceFillingCurveConfiguration configuration, boolean archiveFailedIndex )
+            SpaceFillingCurveConfiguration configuration, boolean archiveFailedIndex )
     {
         super( pageCache, fs, indexFiles, layout, monitor, descriptor, spatialSettings, archiveFailedIndex );
         this.spatialSettings = spatialSettings;

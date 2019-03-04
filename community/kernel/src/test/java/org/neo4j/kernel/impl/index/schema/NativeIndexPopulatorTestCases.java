@@ -133,8 +133,7 @@ class NativeIndexPopulatorTestCases
     private static PopulatorFactory<GenericKey,NativeIndexValue> genericBlockBasedPopulatorFactory()
     {
         return ( pageCache, fs, storeFile, layout, monitor, descriptor ) ->
-                new GenericBlockBasedIndexPopulator( pageCache, fs, storeFile, layout, monitor, descriptor, spaceFillingCurveSettings,
-                        SimpleIndexDirectoryStructures.onDirectory( storeFile.getStoreFile() ), configuration, false );
+                new GenericBlockBasedIndexPopulator( pageCache, fs, storeFile, layout, monitor, descriptor, spaceFillingCurveSettings, configuration, false );
     }
 
     @FunctionalInterface
