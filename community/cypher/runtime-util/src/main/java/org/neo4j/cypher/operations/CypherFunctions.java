@@ -854,9 +854,9 @@ public final class CypherFunctions
     public static boolean hasLabel( AnyValue entity, int labelToken, DbAccess access, NodeCursor nodeCursor )
     {
         assert entity != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        if ( entity instanceof NodeValue )
+        if ( entity instanceof VirtualNodeValue )
         {
-            return access.isLabelSetOnNode( labelToken, ((NodeValue) entity).id(), nodeCursor );
+            return access.isLabelSetOnNode( labelToken, ((VirtualNodeValue) entity).id(), nodeCursor );
         }
         else
         {

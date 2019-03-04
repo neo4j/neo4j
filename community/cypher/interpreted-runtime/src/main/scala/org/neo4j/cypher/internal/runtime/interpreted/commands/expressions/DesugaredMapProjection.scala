@@ -28,11 +28,11 @@ import org.neo4j.values.virtual.{MapValueBuilder, VirtualValues}
 
 import scala.collection.Map
 
-case class DesugaredMapProjection(id: String, includeAllProps: Boolean, literalExpressions: Map[String, Expression])
+case class DesugaredMapProjection(variable: VariableCommand, includeAllProps: Boolean, literalExpressions: Map[String, Expression])
   extends Expression with GraphElementPropertyFunctions {
 
   override def apply(ctx: ExecutionContext, state: QueryState): AnyValue = {
-    val variableValue = ctx.getByName(id)
+    val variableValue = variable(ctx, state)
 
     val mapOfProperties = variableValue match {
       case v if v == Values.NO_VALUE => return Values.NO_VALUE
@@ -52,12 +52,12 @@ case class DesugaredMapProjection(id: String, includeAllProps: Boolean, literalE
     mapOfProperties.updatedWith(builder.build())
   }
 
-  override def rewrite(f: (Expression) => Expression) =
-    f(DesugaredMapProjection(id, includeAllProps, literalExpressions.rewrite(f)))
+  override def rewrite(f: Expression => Expression): Expression =
+    f(DesugaredMapProjection(variable, includeAllProps, literalExpressions.rewrite(f)))
 
-  override def arguments = literalExpressions.values.toIndexedSeq
+  override def arguments: Seq[Expression] = literalExpressions.values.toIndexedSeq
 
-  override def symbolTableDependencies = literalExpressions.symboltableDependencies + id
+  override def symbolTableDependencies: Set[String] = literalExpressions.symboltableDependencies + variable.toString
 
-  override def toString = s"$id{.*, " + literalExpressions.mkString + "}"
+  override def toString: String = s"$variable{.*, " + literalExpressions.mkString + "}"
 }

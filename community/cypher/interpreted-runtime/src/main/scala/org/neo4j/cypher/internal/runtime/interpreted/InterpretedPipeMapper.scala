@@ -119,7 +119,7 @@ case class InterpretedPipeMapper(readOnly: Boolean,
         ProjectEndpointsPipe(source, rel,
           start, startInScope,
           end, endInScope,
-          types.map(_.toArray).map(LazyTypes.apply), directed, length.isSimple)()
+          types.map(_.toArray).map(LazyTypes.apply), directed, length.isSimple)(id = id)
 
       case EmptyResult(_) =>
         EmptyResultPipe(source)(id = id)
@@ -139,7 +139,7 @@ case class InterpretedPipeMapper(readOnly: Boolean,
         ExpandIntoPipe(source, fromName, relName, toName, dir, LazyTypes(types.toArray))(id = id)
 
       case LockNodes(_, nodesToLock) =>
-        LockNodesPipe(source, nodesToLock)()
+        LockNodesPipe(source, nodesToLock)(id = id)
 
       case OptionalExpand(_, fromName, dir, types, toName, relName, ExpandAll, predicate) =>
         OptionalExpandAllPipe(source, fromName, relName, toName, dir, LazyTypes(types.toArray), predicate.map(buildExpression))(id = id)

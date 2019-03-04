@@ -89,7 +89,7 @@ case class AddUniquenessPredicates(innerVariableNamer: InnerVariableNamer = Same
 
         case (true, false) =>
           val innerY = innerVariableNamer.create(y.variable)
-          NoneIterablePredicate(innerY, y.variable.copyId, Some(Equals(innerY.copyId, x.variable.copyId)(pos)))(pos)
+          NoneIterablePredicate(innerY, y.variable.copyId, Some(Equals(x.variable.copyId, innerY.copyId)(pos)))(pos)
 
         case (false, true) =>
           val innerX = innerVariableNamer.create(x.variable)

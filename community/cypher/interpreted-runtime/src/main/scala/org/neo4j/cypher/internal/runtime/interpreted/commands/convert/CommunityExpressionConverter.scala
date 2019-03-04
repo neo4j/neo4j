@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands.convert
 import org.neo4j.cypher.internal.planner.v4_0.spi.TokenContext
 import org.neo4j.cypher.internal.runtime.ast.ExpressionVariable
 import org.neo4j.cypher.internal.runtime.interpreted._
-import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{InequalitySeekRangeExpression, PointDistanceSeekRangeExpression, Expression => CommandExpression}
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{InequalitySeekRangeExpression, PointDistanceSeekRangeExpression, VariableCommand, Expression => CommandExpression}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Predicate
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.TokenType.PropertyKey
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.UnresolvedRelType
@@ -180,7 +180,7 @@ case class CommunityExpressionConverter(tokenContext: TokenContext) extends Expr
         .AndedPropertyComparablePredicates(variable(e.variable), toCommandProperty(id, e.property, self),
                                            e.inequalities.map(e => inequalityExpression(id, e, self)))
       case e: DesugaredMapProjection => commandexpressions
-        .DesugaredMapProjection(e.name.name, e.includeAllProps, mapProjectionItems(id, e.items, self))
+        .DesugaredMapProjection(variable(e.variable), e.includeAllProps, mapProjectionItems(id, e.items, self))
       case e: ResolvedFunctionInvocation =>
         val callArgumentCommands = e.callArguments.map(Some(_))
           .zipAll(e.fcnSignature.get.inputSignature.map(_.default.map(_.value)), None, None).map {
@@ -415,7 +415,11 @@ case class CommunityExpressionConverter(tokenContext: TokenContext) extends Expr
                                   self: ExpressionConverters): Seq[CommandExpression] =
     expressions.map(self.toCommandExpression(id,_))
 
-  private def variable(e: ast.LogicalVariable) = commands.expressions.Variable(e.name)
+  private def variable(e: ast.LogicalVariable): VariableCommand =
+    e match {
+      case ExpressionVariable(offset, name) => commands.expressions.ExpressionVariable(offset, name)
+      case x => commands.expressions.Variable(x.name)
+    }
 
   private def inequalityExpression(id: Id, original: ast.InequalityExpression,
                                    self: ExpressionConverters): predicates.ComparablePredicate = original match {

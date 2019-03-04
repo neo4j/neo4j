@@ -36,10 +36,9 @@ case class MapProjection(
   }
 }
 
-case class DesugaredMapProjection(
-                                   name: LogicalVariable,
-                                   items: Seq[LiteralEntry],
-                                   includeAllProps: Boolean
+case class DesugaredMapProjection(variable: LogicalVariable,
+                                  items: Seq[LiteralEntry],
+                                  includeAllProps: Boolean
                                  )(val position: InputPosition) extends Expression
 
 
