@@ -47,6 +47,7 @@ import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.Logger;
+import org.neo4j.storageengine.api.UnderlyingStorageException;
 import org.neo4j.storageengine.api.format.CapabilityType;
 
 import static org.neo4j.helpers.collection.Iterators.iterator;

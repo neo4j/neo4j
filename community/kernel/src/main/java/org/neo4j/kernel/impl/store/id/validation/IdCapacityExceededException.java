@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.impl.store.id.validation;
 
-import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.id.IdType;
+import org.neo4j.storageengine.api.UnderlyingStorageException;
 
 import static java.lang.String.format;
 

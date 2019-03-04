@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.store;
 
+import org.neo4j.storageengine.api.UnderlyingStorageException;
+
 /**
  * Thrown when a cycle was detected while loading a chain of records.
  */

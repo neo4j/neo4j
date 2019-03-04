@@ -30,7 +30,6 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
-import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.counts.keys.CountsKey;
 import org.neo4j.kernel.impl.store.counts.keys.CountsKeyType;
 import org.neo4j.kernel.impl.store.kvstore.AbstractKeyValueStore;
@@ -48,6 +47,7 @@ import org.neo4j.kernel.impl.store.kvstore.WritableBuffer;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.register.Register;
+import org.neo4j.storageengine.api.UnderlyingStorageException;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.SystemNanoClock;
 

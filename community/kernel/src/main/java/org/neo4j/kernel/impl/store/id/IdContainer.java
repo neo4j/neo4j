@@ -29,7 +29,7 @@ import org.neo4j.io.fs.OffsetChannel;
 import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.store.InvalidIdGeneratorException;
-import org.neo4j.kernel.impl.store.UnderlyingStorageException;
+import org.neo4j.storageengine.api.UnderlyingStorageException;
 
 /**
  * This class handles the persisting of a highest id in use. A sticky byte is present in the header to indicate

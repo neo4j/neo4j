@@ -26,7 +26,7 @@ import java.nio.ByteBuffer;
 import org.neo4j.collection.PrimitiveLongArrayQueue;
 import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.io.fs.StoreChannel;
-import org.neo4j.kernel.impl.store.UnderlyingStorageException;
+import org.neo4j.storageengine.api.UnderlyingStorageException;
 
 import static java.lang.Math.max;
 import static java.lang.Math.min;

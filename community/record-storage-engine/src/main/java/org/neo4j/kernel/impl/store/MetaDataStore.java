@@ -46,6 +46,7 @@ import org.neo4j.logging.Logger;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.storageengine.api.TransactionMetaDataStore;
+import org.neo4j.storageengine.api.UnderlyingStorageException;
 import org.neo4j.util.Bits;
 
 import static java.lang.String.format;

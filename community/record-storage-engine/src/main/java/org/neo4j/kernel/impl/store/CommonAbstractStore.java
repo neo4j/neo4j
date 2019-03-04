@@ -52,6 +52,7 @@ import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.Logger;
+import org.neo4j.storageengine.api.UnderlyingStorageException;
 
 import static java.lang.Math.max;
 import static java.lang.String.format;
