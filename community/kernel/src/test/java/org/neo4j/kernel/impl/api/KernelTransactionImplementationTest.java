@@ -27,6 +27,7 @@ import org.junit.runners.Parameterized;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -81,6 +82,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo.EMBEDDED_CONNECTION;
+import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_ID;
@@ -137,7 +139,30 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
             assertNotSame( TransactionInitializationTrace.NONE, ((KernelTransactionImplementation) transaction).getInitializationTrace() );
             transaction.success();
         }
+    }
 
+    @Test
+    public void emptyMetadataReturnedWhenMetadataIsNotSet() throws TransactionFailureException
+    {
+        try ( KernelTransaction transaction = newTransaction( loginContext() ) )
+        {
+            Map<String,Object> metaData = transaction.getMetaData();
+            assertTrue( metaData.isEmpty() );
+        }
+    }
+
+    @Test
+    public void accessSpecifiedTransactionMetadata() throws TransactionFailureException
+    {
+        try ( KernelTransaction transaction = newTransaction( loginContext() ) )
+        {
+            Map<String,Object> externalMetadata = map( "Robot", "Bender", "Human", "Fry" );
+            transaction.setMetaData( externalMetadata );
+            Map<String,Object> transactionMetadata = transaction.getMetaData();
+            assertFalse( transactionMetadata.isEmpty() );
+            assertEquals( "Bender", transactionMetadata.get( "Robot" ) );
+            assertEquals( "Fry", transactionMetadata.get( "Human" ) );
+        }
     }
 
     @Test
