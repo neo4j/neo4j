@@ -37,10 +37,10 @@ import org.neo4j.consistency.report.ConsistencyReport.RelationshipConsistencyRep
 import org.neo4j.consistency.report.ConsistencyReporter;
 import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.consistency.store.synthetic.CountsEntry;
+import org.neo4j.counts.CountsAccessor;
+import org.neo4j.counts.CountsVisitor;
 import org.neo4j.helpers.progress.ProgressListener;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
-import org.neo4j.kernel.impl.api.CountsAccessor;
-import org.neo4j.kernel.impl.api.CountsVisitor;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.RecordStore;

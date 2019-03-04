@@ -20,9 +20,9 @@
 package org.neo4j.kernel.impl.store;
 
 import org.neo4j.common.ProgressReporter;
+import org.neo4j.counts.CountsAccessor;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.store.kvstore.DataInitializer;
 import org.neo4j.unsafe.impl.batchimport.Configuration;

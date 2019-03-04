@@ -23,8 +23,8 @@ import org.junit.Test;
 
 import java.util.Optional;
 
+import org.neo4j.counts.CountsAccessor;
 import org.neo4j.kernel.api.StatementConstants;
-import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.storageengine.api.TransactionApplicationMode;

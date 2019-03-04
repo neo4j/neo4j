@@ -19,8 +19,8 @@
  */
 package org.neo4j.internal.recordstorage;
 
+import org.neo4j.counts.CountsAccessor;
 import org.neo4j.internal.recordstorage.Command.SchemaRuleCommand;
-import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 

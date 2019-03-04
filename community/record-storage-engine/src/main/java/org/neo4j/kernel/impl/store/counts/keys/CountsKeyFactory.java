@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.store.counts.keys;
 
-import org.neo4j.kernel.impl.api.CountsVisitor;
+import org.neo4j.counts.CountsVisitor;
 
 import static java.lang.Math.toIntExact;
 

@@ -22,7 +22,7 @@ package org.neo4j.unsafe.impl.batchimport;
 import org.junit.Test;
 import org.mockito.ArgumentMatcher;
 
-import org.neo4j.kernel.impl.api.CountsAccessor;
+import org.neo4j.counts.CountsAccessor;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeLabelsCache;
 import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;

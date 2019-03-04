@@ -21,8 +21,8 @@ package org.neo4j.internal.recordstorage;
 
 import java.util.Collection;
 
+import org.neo4j.counts.CountsVisitor;
 import org.neo4j.kernel.impl.api.CountsDelta;
-import org.neo4j.kernel.impl.api.CountsVisitor;
 import org.neo4j.storageengine.api.StorageCommand;
 
 public class CountsRecordState extends CountsDelta implements RecordState

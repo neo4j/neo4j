@@ -22,7 +22,7 @@ package org.neo4j.unsafe.impl.batchimport;
 import org.junit.Test;
 
 import org.neo4j.common.ProgressReporter;
-import org.neo4j.kernel.impl.api.CountsAccessor;
+import org.neo4j.counts.CountsAccessor;
 import org.neo4j.unsafe.impl.batchimport.cache.MemoryStatsVisitor;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeLabelsCache;
 import org.neo4j.unsafe.impl.batchimport.staging.SimpleStageControl;

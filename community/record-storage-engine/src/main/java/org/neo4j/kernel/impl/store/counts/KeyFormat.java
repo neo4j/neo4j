@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.impl.store.counts;
 
-import org.neo4j.kernel.impl.api.CountsAccessor;
-import org.neo4j.kernel.impl.api.CountsVisitor;
+import org.neo4j.counts.CountsAccessor;
+import org.neo4j.counts.CountsVisitor;
 import org.neo4j.kernel.impl.store.counts.keys.CountsKey;
 import org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory;
 import org.neo4j.kernel.impl.store.kvstore.ReadableBuffer;
