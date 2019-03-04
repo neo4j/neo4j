@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.store;
+package org.neo4j.util.concurrent;
 
 import org.junit.Test;
 
@@ -27,9 +27,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
-
-import org.neo4j.kernel.impl.util.ArrayQueueOutOfOrderSequence;
-import org.neo4j.kernel.impl.util.OutOfOrderSequence;
 
 import static java.lang.Thread.sleep;
 import static java.lang.Thread.yield;

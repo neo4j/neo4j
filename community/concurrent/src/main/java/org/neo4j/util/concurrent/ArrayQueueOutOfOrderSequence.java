@@ -17,11 +17,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.util;
+package org.neo4j.util.concurrent;
 
 import java.util.concurrent.TimeoutException;
-
-import static java.lang.String.format;
 
 /**
  * A crude, synchronized implementation of OutOfOrderSequence. Please implement a faster one if need be.
@@ -161,6 +159,6 @@ public class ArrayQueueOutOfOrderSequence implements OutOfOrderSequence
     @Override
     public synchronized String toString()
     {
-        return format( "out-of-order-sequence:%d %d [%s]", highestEverSeen, highestGapFreeNumber, outOfOrderQueue );
+        return String.format( "out-of-order-sequence:%d %d [%s]", highestEverSeen, highestGapFreeNumber, outOfOrderQueue );
     }
 }
