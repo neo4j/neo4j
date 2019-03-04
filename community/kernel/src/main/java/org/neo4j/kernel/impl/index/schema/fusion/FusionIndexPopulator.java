@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.index.schema.fusion;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.Collection;
 
@@ -34,24 +32,17 @@ import org.neo4j.kernel.impl.index.schema.IndexFiles;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
 
-import static org.neo4j.kernel.impl.index.schema.NativeIndexes.archiveIndex;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexSampler.combineSamples;
 
 class FusionIndexPopulator extends FusionIndexBase<IndexPopulator> implements IndexPopulator
 {
-    private final long indexId;
-    private final IndexDirectoryStructure directoryStructure;
     private final boolean archiveFailedIndex;
-    private final FileSystemAbstraction fs;
     private final IndexFiles indexFiles;
 
     FusionIndexPopulator( SlotSelector slotSelector, InstanceSelector<IndexPopulator> instanceSelector, long indexId, FileSystemAbstraction fs,
             IndexDirectoryStructure directoryStructure, boolean archiveFailedIndex )
     {
         super( slotSelector, instanceSelector );
-        this.indexId = indexId;
-        this.fs = fs;
-        this.directoryStructure = directoryStructure;
         this.archiveFailedIndex = archiveFailedIndex;
         this.indexFiles = new IndexFiles.Directory( fs, directoryStructure, indexId );
     }
@@ -59,13 +50,9 @@ class FusionIndexPopulator extends FusionIndexBase<IndexPopulator> implements In
     @Override
     public void create()
     {
-        try
+        if ( archiveFailedIndex )
         {
-            archiveIndex( fs, directoryStructure, indexId, archiveFailedIndex );
-        }
-        catch ( IOException e )
-        {
-            throw new UncheckedIOException( e );
+            indexFiles.archiveIndex();
         }
         indexFiles.clear();
         instanceSelector.forAll( IndexPopulator::create );

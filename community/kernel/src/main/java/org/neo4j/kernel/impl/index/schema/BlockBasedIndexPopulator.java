@@ -44,7 +44,6 @@ import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
-import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.impl.api.index.BatchingMultipleIndexPopulator;
@@ -59,8 +58,8 @@ import org.neo4j.util.Preconditions;
 import org.neo4j.values.storable.Value;
 
 import static org.neo4j.helpers.collection.Iterables.first;
+import static org.neo4j.kernel.impl.index.schema.BlockStorage.Monitor.NO_MONITOR;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexUpdater.initializeKeyFromUpdate;
-import static org.neo4j.kernel.impl.index.schema.NativeIndexes.archiveIndex;
 
 public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,VALUE extends NativeIndexValue> extends NativeIndexPopulator<KEY,VALUE>
 {
@@ -85,7 +84,6 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
      */
     private static final int MERGE_FACTOR = FeatureToggles.getInteger( BlockBasedIndexPopulator.class, "mergeFactor", 8 );
 
-    private final IndexDirectoryStructure directoryStructure;
     private final boolean archiveFailedIndex;
     private final int blockSize;
     private final int mergeFactor;
@@ -105,20 +103,18 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
     private volatile long numberOfAppliedScanUpdates;
     private volatile long numberOfAppliedExternalUpdates;
 
-    BlockBasedIndexPopulator( PageCache pageCache, FileSystemAbstraction fs, IndexFiles indexFiles, IndexLayout<KEY,VALUE> layout, IndexProvider.Monitor monitor,
-            StorageIndexReference descriptor, IndexSpecificSpaceFillingCurveSettingsCache spatialSettings,
-            IndexDirectoryStructure directoryStructure, boolean archiveFailedIndex )
+    BlockBasedIndexPopulator( PageCache pageCache, FileSystemAbstraction fs, IndexFiles indexFiles, IndexLayout<KEY,VALUE> layout,
+            IndexProvider.Monitor monitor, StorageIndexReference descriptor, IndexSpecificSpaceFillingCurveSettingsCache spatialSettings,
+            boolean archiveFailedIndex )
     {
-        this( pageCache, fs, indexFiles, layout, monitor, descriptor, spatialSettings, directoryStructure, archiveFailedIndex, parseBlockSize(), MERGE_FACTOR,
-                BlockStorage.Monitor.NO_MONITOR );
+        this( pageCache, fs, indexFiles, layout, monitor, descriptor, spatialSettings, archiveFailedIndex, parseBlockSize(), MERGE_FACTOR, NO_MONITOR );
     }
 
     BlockBasedIndexPopulator( PageCache pageCache, FileSystemAbstraction fs, IndexFiles indexFiles, IndexLayout<KEY,VALUE> layout,
             IndexProvider.Monitor monitor, StorageIndexReference descriptor, IndexSpecificSpaceFillingCurveSettingsCache spatialSettings,
-            IndexDirectoryStructure directoryStructure, boolean archiveFailedIndex, int blockSize, int mergeFactor, BlockStorage.Monitor blockStorageMonitor )
+            boolean archiveFailedIndex, int blockSize, int mergeFactor, BlockStorage.Monitor blockStorageMonitor )
     {
         super( pageCache, fs, indexFiles, layout, monitor, descriptor, new SpaceFillingCurveSettingsWriter( spatialSettings ) );
-        this.directoryStructure = directoryStructure;
         this.archiveFailedIndex = archiveFailedIndex;
         this.blockSize = blockSize;
         this.mergeFactor = mergeFactor;
@@ -153,13 +149,9 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
     @Override
     public void create()
     {
-        try
+        if ( archiveFailedIndex )
         {
-            archiveIndex( fileSystem, directoryStructure, descriptor.indexReference(), archiveFailedIndex );
-        }
-        catch ( IOException e )
-        {
-            throw new UncheckedIOException( e );
+            indexFiles.archiveIndex();
         }
         super.create();
         try

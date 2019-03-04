@@ -36,7 +36,7 @@ public class GenericBlockBasedIndexPopulator extends BlockBasedIndexPopulator<Ge
             IndexProvider.Monitor monitor, StorageIndexReference descriptor, IndexSpecificSpaceFillingCurveSettingsCache spatialSettings,
             IndexDirectoryStructure directoryStructure, SpaceFillingCurveConfiguration configuration, boolean archiveFailedIndex )
     {
-        super( pageCache, fs, indexFiles, layout, monitor, descriptor, spatialSettings, directoryStructure, archiveFailedIndex );
+        super( pageCache, fs, indexFiles, layout, monitor, descriptor, spatialSettings, archiveFailedIndex );
         this.spatialSettings = spatialSettings;
         this.configuration = configuration;
     }

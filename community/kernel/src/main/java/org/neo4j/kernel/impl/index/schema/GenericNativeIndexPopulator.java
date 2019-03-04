@@ -19,34 +19,26 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
-
 import org.neo4j.gis.spatial.index.curves.SpaceFillingCurveConfiguration;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettingsCache;
 import org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettingsWriter;
 import org.neo4j.storageengine.api.StorageIndexReference;
 
-import static org.neo4j.kernel.impl.index.schema.NativeIndexes.archiveIndex;
-
 class GenericNativeIndexPopulator extends NativeIndexPopulator<GenericKey,NativeIndexValue>
 {
     private final IndexSpecificSpaceFillingCurveSettingsCache spatialSettings;
-    private final IndexDirectoryStructure directoryStructure;
     private final SpaceFillingCurveConfiguration configuration;
     private final boolean archiveFailedIndex;
 
     GenericNativeIndexPopulator( PageCache pageCache, FileSystemAbstraction fs, IndexFiles indexFiles, IndexLayout<GenericKey,NativeIndexValue> layout,
             IndexProvider.Monitor monitor, StorageIndexReference descriptor, IndexSpecificSpaceFillingCurveSettingsCache spatialSettings,
-            IndexDirectoryStructure directoryStructure, SpaceFillingCurveConfiguration configuration, boolean archiveFailedIndex )
+            SpaceFillingCurveConfiguration configuration, boolean archiveFailedIndex )
     {
         super( pageCache, fs, indexFiles, layout, monitor, descriptor, new SpaceFillingCurveSettingsWriter( spatialSettings ) );
         this.spatialSettings = spatialSettings;
-        this.directoryStructure = directoryStructure;
         this.configuration = configuration;
         this.archiveFailedIndex = archiveFailedIndex;
     }
@@ -54,20 +46,16 @@ class GenericNativeIndexPopulator extends NativeIndexPopulator<GenericKey,Native
     @Override
     public void create()
     {
-        try
+        // Archive index if it exists. The reason why this isn't done in the generic implementation is that for all other cases a
+        // native index populator lives under a fusion umbrella and the archive function sits on the top-level fusion folder, not every single sub-folder.
+        if ( archiveFailedIndex )
         {
-            // Archive index if it exists. The reason why this isn't done in the generic implementation is that for all other cases a
-            // native index populator lives under a fusion umbrella and the archive function sits on the top-level fusion folder, not every single sub-folder.
-            archiveIndex( fileSystem, directoryStructure, descriptor.indexReference(), archiveFailedIndex );
-            indexFiles.clear();
+            indexFiles.archiveIndex();
+        }
+        indexFiles.clear();
 
-            // Now move on to do the actual creation.
-            super.create();
-        }
-        catch ( IOException e )
-        {
-            throw new UncheckedIOException( e );
-        }
+        // Now move on to do the actual creation.
+        super.create();
     }
 
     @Override

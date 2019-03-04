@@ -140,7 +140,7 @@ public class BlockBasedIndexPopulatorTest
         IndexFiles.SingleFile indexFiles = new IndexFiles.SingleFile( storage.fileSystem(), storage.directory().file( "file" ) );
         BlockBasedIndexPopulator<GenericKey,NativeIndexValue> populator =
                 new BlockBasedIndexPopulator<GenericKey,NativeIndexValue>( storage.pageCache(), storage.fileSystem(), indexFiles, layout, EMPTY,
-                        INDEX_DESCRIPTOR, spatialSettings, directoryStructure, false, 100, 2, monitor )
+                        INDEX_DESCRIPTOR, spatialSettings, false, 100, 2, monitor )
                 {
                     @Override
                     NativeIndexReader<GenericKey,NativeIndexValue> newReader()

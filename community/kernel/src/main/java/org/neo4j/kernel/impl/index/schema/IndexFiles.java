@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.NoSuchFileException;
 
+import org.neo4j.io.compress.ZipUtils;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 
@@ -34,6 +35,8 @@ public abstract class IndexFiles
     abstract File getBase();
 
     public abstract void clear();
+
+    public abstract void archiveIndex();
 
     @Override
     public String toString()
@@ -69,6 +72,21 @@ public abstract class IndexFiles
         }
     }
 
+    static void archiveIndex( FileSystemAbstraction fs, File directory )
+    {
+        if ( fs.isDirectory( directory ) && fs.fileExists( directory ) && fs.listFiles( directory ).length > 0 )
+        {
+            try
+            {
+                ZipUtils.zip( fs, directory, new File( directory.getParent(), "archive-" + directory.getName() + "-" + System.currentTimeMillis() + ".zip" ) );
+            }
+            catch ( IOException e )
+            {
+                throw new UncheckedIOException( e );
+            }
+        }
+    }
+
     public static class Directory extends IndexFiles
     {
         private final FileSystemAbstraction fs;
@@ -98,6 +116,12 @@ public abstract class IndexFiles
         public void clear()
         {
             clearDirectory( fs, directory );
+        }
+
+        @Override
+        public void archiveIndex()
+        {
+            archiveIndex( fs, getBase() );
         }
 
         private String indexFileName( long indexId )
@@ -133,6 +157,12 @@ public abstract class IndexFiles
         public void clear()
         {
             clearSingleFile( fs, singleFile );
+        }
+
+        @Override
+        public void archiveIndex()
+        {
+            archiveIndex( fs, getBase() );
         }
     }
 }

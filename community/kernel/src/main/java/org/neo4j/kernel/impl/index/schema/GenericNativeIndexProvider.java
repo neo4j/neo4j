@@ -162,8 +162,8 @@ public class GenericNativeIndexProvider extends NativeIndexProvider<GenericKey,N
                     directoryStructure(), configuration, archiveFailedIndex );
         }
         return new WorkSyncedNativeIndexPopulator<>(
-                new GenericNativeIndexPopulator( pageCache, fs, indexFiles, layout, monitor, descriptor, layout.getSpaceFillingCurveSettings(),
-                        directoryStructure(), configuration, archiveFailedIndex ) );
+                new GenericNativeIndexPopulator( pageCache, fs, indexFiles, layout, monitor, descriptor, layout.getSpaceFillingCurveSettings(), configuration,
+                        archiveFailedIndex ) );
     }
 
     @Override
