@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.v4_0.frontend.phases.{BaseContext, InternalNoti
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticErrorDef
 import org.neo4j.cypher.internal.planner.v4_0.spi.PlanContext
 import org.neo4j.cypher.internal.v4_0.frontend.phases.CompilationPhaseTracer
+import org.neo4j.cypher.internal.v4_0.rewriting.rewriters.InnerVariableNamer
 import org.neo4j.cypher.internal.v4_0.util.attribution.IdGen
 
 class PlannerContext(val exceptionCreator: (String, InputPosition) => CypherException,
@@ -41,7 +42,8 @@ class PlannerContext(val exceptionCreator: (String, InputPosition) => CypherExce
                      val updateStrategy: UpdateStrategy,
                      val debugOptions: Set[String],
                      val clock: Clock,
-                     val logicalPlanIdGen: IdGen) extends BaseContext {
+                     val logicalPlanIdGen: IdGen,
+                     val innerVariableNamer: InnerVariableNamer) extends BaseContext {
 
   override def errorHandler =
     (errors: Seq[SemanticErrorDef]) => errors.foreach(e => throw exceptionCreator(e.msg, e.position))
@@ -62,7 +64,8 @@ object PlannerContextCreator extends ContextCreator[PlannerContext] {
                       updateStrategy: UpdateStrategy,
                       clock: Clock,
                       logicalPlanIdGen: IdGen,
-                      evaluator: ExpressionEvaluator
+                      evaluator: ExpressionEvaluator,
+                      innerVariableNamer: InnerVariableNamer
                      ): PlannerContext = {
     val exceptionCreator = new SyntaxExceptionCreator(queryText, offset)
 
@@ -72,6 +75,6 @@ object PlannerContextCreator extends ContextCreator[PlannerContext] {
       metricsFactory.newMetrics(planContext.statistics, evaluator, config)
 
     new PlannerContext(exceptionCreator, tracer, notificationLogger, planContext,
-      monitors, metrics, config, queryGraphSolver, updateStrategy, debugOptions, clock, logicalPlanIdGen)
+      monitors, metrics, config, queryGraphSolver, updateStrategy, debugOptions, clock, logicalPlanIdGen, innerVariableNamer)
   }
 }

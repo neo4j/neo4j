@@ -66,7 +66,8 @@ case class QueryPlanner(planSingleQuery: SingleQueryPlanner = PlanSingleQuery())
       legacyCsvQuoteEscaping = context.config.legacyCsvQuoteEscaping,
       csvBufferSize = context.config.csvBufferSize,
       costComparisonListener = costComparisonListener,
-      planningAttributes = planningAttributes
+      planningAttributes = planningAttributes,
+      innerVariableNamer = context.innerVariableNamer
     )
 
     val (perCommit, logicalPlan, newLogicalPlanningContext) = plan(from.unionQuery, logicalPlanningContext, planningAttributes.solveds, planningAttributes.cardinalities, context.logicalPlanIdGen)

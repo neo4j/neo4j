@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.{ExpressionEvalua
 import org.neo4j.cypher.internal.v4_0.frontend.phases.{BaseContext, InternalNotificationLogger, Monitors}
 import org.neo4j.cypher.internal.planner.v4_0.spi.PlanContext
 import org.neo4j.cypher.internal.v4_0.frontend.phases.CompilationPhaseTracer
+import org.neo4j.cypher.internal.v4_0.rewriting.rewriters.InnerVariableNamer
 import org.neo4j.cypher.internal.v4_0.util.attribution.IdGen
 
 trait ContextCreator[Context <: BaseContext] {
@@ -42,5 +43,6 @@ trait ContextCreator[Context <: BaseContext] {
              updateStrategy: UpdateStrategy,
              clock: Clock,
              logicalPlanIdGen: IdGen,
-             evaluator: ExpressionEvaluator): Context
+             evaluator: ExpressionEvaluator,
+             innerVariableNamer: InnerVariableNamer): Context
 }

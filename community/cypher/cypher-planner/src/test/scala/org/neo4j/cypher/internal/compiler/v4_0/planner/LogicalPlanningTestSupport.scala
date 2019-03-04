@@ -56,7 +56,8 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
   val monitors = mock[Monitors]
   val parser = new CypherParser
   val rewriterSequencer = RewriterStepSequencer.newValidating _
-  val astRewriter = new ASTRewriter(rewriterSequencer, literalExtraction = Never, getDegreeRewriting = true, innerVariableNamer = GeneratingNamer)
+  val innerVariableNamer = new GeneratingNamer
+  val astRewriter = new ASTRewriter(rewriterSequencer, literalExtraction = Never, getDegreeRewriting = true, innerVariableNamer = innerVariableNamer)
   val mockRel = newPatternRelationship("a", "b", "r")
 
   def newPatternRelationship(start: String, end: String, rel: String, dir: SemanticDirection = SemanticDirection.OUTGOING, types: Seq[RelTypeName] = Seq.empty, length: PatternLength = SimplePatternLength) = {
@@ -135,7 +136,8 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
       strategy, QueryGraphSolverInput(Map.empty, cardinality, strictness),
       notificationLogger = notificationLogger, useErrorsOverWarnings = useErrorsOverWarnings,
       legacyCsvQuoteEscaping = config.legacyCsvQuoteEscaping, config = QueryPlannerConfiguration.default, costComparisonListener = devNullListener,
-      planningAttributes = planningAttributes)
+      planningAttributes = planningAttributes,
+      innerVariableNamer = innerVariableNamer)
   }
 
   def newMockedLogicalPlanningContextWithFakeAttributes(planContext: PlanContext,
@@ -157,7 +159,8 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
       notificationLogger = notificationLogger, useErrorsOverWarnings = useErrorsOverWarnings,
       legacyCsvQuoteEscaping = config.legacyCsvQuoteEscaping, csvBufferSize = config.csvBufferSize,
                            config = QueryPlannerConfiguration.default, costComparisonListener = devNullListener,
-      planningAttributes = planningAttributes)
+      planningAttributes = planningAttributes,
+      innerVariableNamer = innerVariableNamer)
   }
 
   def newMockedStatistics = mock[GraphStatistics]
@@ -248,7 +251,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
     Parsing andThen
     PreparatoryRewriting(Deprecations.V1) andThen
     SemanticAnalysis(warn = true, SemanticFeature.Cypher9Comparability) andThen
-    AstRewriting(newPlain, literalExtraction = Never, innerVariableNamer = GeneratingNamer) andThen
+    AstRewriting(newPlain, literalExtraction = Never, innerVariableNamer = new GeneratingNamer) andThen
     RewriteProcedureCalls andThen
     Namespacer andThen
     rewriteEqualityToInPredicate andThen

@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.planner.v4_0.spi.PlanContext
 import org.neo4j.cypher.internal.v4_0.frontend.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.v4_0.frontend.phases.CompilationPhaseTracer.NO_TRACING
 import org.neo4j.cypher.internal.v4_0.frontend.phases.{InternalNotificationLogger, Monitors, devNullLogger}
+import org.neo4j.cypher.internal.v4_0.rewriting.rewriters.GeneratingNamer
 import org.neo4j.cypher.internal.v4_0.util.attribution.{IdGen, SequentialIdGen}
 import org.neo4j.cypher.internal.v4_0.util.{CypherException, InputPosition, InternalException}
 import org.scalatest.mock.MockitoSugar
@@ -46,6 +47,6 @@ object ContextHelper extends MockitoSugar {
              clock: Clock = Clock.systemUTC(),
              logicalPlanIdGen: IdGen = new SequentialIdGen()): PlannerContext = {
     new PlannerContext(exceptionCreator, tracer, notificationLogger, planContext,
-      monitors, metrics, config, queryGraphSolver, updateStrategy, debugOptions, clock, logicalPlanIdGen)
+      monitors, metrics, config, queryGraphSolver, updateStrategy, debugOptions, clock, logicalPlanIdGen, new GeneratingNamer)
   }
 }

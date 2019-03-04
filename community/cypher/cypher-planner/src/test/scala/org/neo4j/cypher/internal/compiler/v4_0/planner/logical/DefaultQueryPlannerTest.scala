@@ -142,5 +142,6 @@ class DefaultQueryPlannerTest extends CypherFunSuite with LogicalPlanningTestSup
     config = QueryPlannerConfiguration.default,
     notificationLogger = devNullLogger,
     costComparisonListener = devNullListener,
-    planningAttributes = planningAttributes)
+    planningAttributes = planningAttributes,
+    innerVariableNamer = innerVariableNamer)
 }

@@ -118,6 +118,10 @@ case object SameNameNamer extends InnerVariableNamer {
   override def create(outer: LogicalVariable): LogicalVariable = outer.copyId
 }
 
-case object GeneratingNamer extends InnerVariableNamer {
-  override def create(outer: LogicalVariable): LogicalVariable = Variable(InnerNameGenerator.name(outer.position))(outer.position)
+class GeneratingNamer() extends InnerVariableNamer {
+  private var i = 0
+  override def create(outer: LogicalVariable): LogicalVariable = {
+    i += 1
+    Variable(s"  INNER$i")(outer.position)
+  }
 }

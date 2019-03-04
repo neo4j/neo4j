@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.v4_0.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.v4_0.expressions.Variable
 import org.neo4j.cypher.internal.v4_0.frontend.phases.InternalNotificationLogger
+import org.neo4j.cypher.internal.v4_0.rewriting.rewriters.InnerVariableNamer
 import org.neo4j.cypher.internal.v4_0.util.Cardinality
 
 case class LogicalPlanningContext(planContext: PlanContext,
@@ -47,6 +48,7 @@ case class LogicalPlanningContext(planContext: PlanContext,
                                   leafPlanUpdater: LeafPlanUpdater = EmptyUpdater,
                                   costComparisonListener: CostComparisonListener,
                                   planningAttributes: PlanningAttributes,
+                                  innerVariableNamer: InnerVariableNamer,
                                   /*
                                    * A set of all properties over which aggregation is performed,
                                    * where we potentially could use a NodeIndexScan.

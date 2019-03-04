@@ -35,6 +35,7 @@ import org.neo4j.cypher.internal.planner.v4_0.spi.PlannerNameFor
 import org.neo4j.cypher.internal.v4_0.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.v4_0.frontend.phases.{CompilationPhases => _, _}
 import org.neo4j.cypher.internal.v4_0.rewriting.RewriterStepSequencer
+import org.neo4j.cypher.internal.v4_0.rewriting.rewriters.InnerVariableNamer
 import org.neo4j.cypher.internal.v4_0.util.InputPosition
 
 case class CypherPlanner[Context <: PlannerContext](monitors: Monitors,
@@ -62,13 +63,27 @@ case class CypherPlanner[Context <: PlannerContext](monitors: Monitors,
                  plannerNameText: String = IDPPlannerName.name,
                  debugOptions: Set[String],
                  offset: Option[InputPosition],
-                 tracer: CompilationPhaseTracer): BaseState = {
+                 tracer: CompilationPhaseTracer,
+                 innerVariableNamer: InnerVariableNamer): BaseState = {
     val plannerName = PlannerNameFor(plannerNameText)
     val startState = InitialState(queryText, offset, plannerName)
     //TODO: these nulls are a short cut
-    val context = contextCreation.create(tracer, notificationLogger, planContext = null, rawQueryText, debugOptions,
-      offset, monitors, metricsFactory, null, config, updateStrategy, clock, logicalPlanIdGen = null, evaluator = null)
-    CompilationPhases.parsing(sequencer).transform(startState, context)
+    val context = contextCreation.create(tracer,
+                                         notificationLogger,
+                                         planContext = null,
+                                         rawQueryText,
+                                         debugOptions,
+                                         offset,
+                                         monitors,
+                                         metricsFactory,
+                                         null,
+                                         config,
+                                         updateStrategy,
+                                         clock,
+                                         logicalPlanIdGen = null,
+                                         evaluator = null,
+                                         innerVariableNamer = innerVariableNamer)
+    CompilationPhases.parsing(sequencer, context.innerVariableNamer).transform(startState, context)
   }
 
   val prepareForCaching: Transformer[PlannerContext, BaseState, BaseState] =

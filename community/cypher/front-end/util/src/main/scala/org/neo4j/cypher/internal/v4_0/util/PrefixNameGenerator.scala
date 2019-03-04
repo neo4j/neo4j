@@ -24,8 +24,6 @@ object NodeNameGenerator extends PrefixNameGenerator("NODE")
 
 object RelNameGenerator extends PrefixNameGenerator("REL")
 
-object InnerNameGenerator extends PrefixNameGenerator("INNER")
-
 object UnNamedNameGenerator extends PrefixNameGenerator("UNNAMED") {
   implicit class NameString(name: String) {
     def isNamed: Boolean = UnNamedNameGenerator.isNamed(name)

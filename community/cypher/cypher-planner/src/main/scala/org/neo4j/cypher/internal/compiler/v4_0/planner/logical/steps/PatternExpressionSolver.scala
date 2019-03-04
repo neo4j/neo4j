@@ -148,7 +148,7 @@ object PatternExpressionSolver {
         filter(id => UnNamedNameGenerator.isNamed(id))
 
       val qgArguments = source.availableSymbols intersect dependencies
-      namedExpr.asQueryGraph.withArgumentIds(qgArguments)
+      asQueryGraph(namedExpr, context.innerVariableNamer).withArgumentIds(qgArguments)
     }
 
     def createPlannerContext(context: LogicalPlanningContext, namedMap: Map[PatternElement, Variable]): LogicalPlanningContext = {
@@ -177,7 +177,7 @@ object PatternExpressionSolver {
     def extractQG(source: LogicalPlan, namedExpr: PatternComprehension) = {
       import org.neo4j.cypher.internal.ir.v4_0.helpers.ExpressionConverters._
 
-      val queryGraph = namedExpr.asQueryGraph
+      val queryGraph = asQueryGraph(namedExpr, context.innerVariableNamer)
       val args = queryGraph.idsWithoutOptionalMatchesOrUpdates intersect availableSymbols
       queryGraph.withArgumentIds(args)
     }

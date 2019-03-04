@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.compiler.v4_0.planner.LogicalPlanningTestSuppor
 import org.neo4j.cypher.internal.ir.v4_0._
 import org.neo4j.cypher.internal.v4_0.expressions._
 import org.neo4j.cypher.internal.ir.v4_0.helpers.ExpressionConverters._
+import org.neo4j.cypher.internal.v4_0.rewriting.rewriters.GeneratingNamer
 
 class PatternExpressionConverterTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
@@ -42,7 +43,7 @@ class PatternExpressionConverterTest extends CypherFunSuite with LogicalPlanning
     val patternExpression = createPatternExpression(aNode, rRel, bNode)
 
     // When
-    val qg = patternExpression.asQueryGraph
+    val qg = asQueryGraph(patternExpression, new GeneratingNamer)
 
     // Then
     qg.selections should equal(Selections())
@@ -56,7 +57,7 @@ class PatternExpressionConverterTest extends CypherFunSuite with LogicalPlanning
     val patternExpression = createPatternExpression(aNode, rRelWithType, bNode)
 
     // When
-    val qg = patternExpression.asQueryGraph
+    val qg = asQueryGraph(patternExpression, new GeneratingNamer)
 
     // Then
     qg.selections should equal(Selections())
@@ -70,7 +71,7 @@ class PatternExpressionConverterTest extends CypherFunSuite with LogicalPlanning
     val patternExpression = createPatternExpression(aNode, rRel, anonymousNode)
 
     // When
-    val qg = patternExpression.asQueryGraph
+    val qg = asQueryGraph(patternExpression, new GeneratingNamer)
 
     // Then
     qg.selections should equal(Selections())
@@ -84,7 +85,7 @@ class PatternExpressionConverterTest extends CypherFunSuite with LogicalPlanning
     val patternExpression = createPatternExpression(aNode, rRel, bNode.copy(labels = Seq(labelName("Label")))(pos))
 
     // When
-    val qg = patternExpression.asQueryGraph
+    val qg = asQueryGraph(patternExpression, new GeneratingNamer)
 
     // Then
     val predicate = hasLabels("b", "Label")

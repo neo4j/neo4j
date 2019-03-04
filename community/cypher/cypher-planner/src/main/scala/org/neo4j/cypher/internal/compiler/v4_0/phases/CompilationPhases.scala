@@ -23,19 +23,20 @@ import org.neo4j.cypher.internal.v4_0.ast.Statement
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticFeature.Cypher9Comparability
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.v4_0.frontend.phases._
-import org.neo4j.cypher.internal.v4_0.rewriting.rewriters.{GeneratingNamer, IfNoParameter, LiteralExtraction}
+import org.neo4j.cypher.internal.v4_0.rewriting.rewriters.{GeneratingNamer, IfNoParameter, InnerVariableNamer, LiteralExtraction}
 import org.neo4j.cypher.internal.v4_0.rewriting.{Deprecations, RewriterStepSequencer}
 
 object CompilationPhases {
 
   def parsing(sequencer: String => RewriterStepSequencer,
+              innerVariableNamer: InnerVariableNamer,
               literalExtraction: LiteralExtraction = IfNoParameter
              ): Transformer[BaseContext, BaseState, BaseState] =
     Parsing.adds(BaseContains[Statement]) andThen
       SyntaxDeprecationWarnings(Deprecations.V2) andThen
       PreparatoryRewriting(Deprecations.V2) andThen
       SemanticAnalysis(warn = true, Cypher9Comparability).adds(BaseContains[SemanticState]) andThen
-      AstRewriting(sequencer, literalExtraction, innerVariableNamer = GeneratingNamer)
+      AstRewriting(sequencer, literalExtraction, innerVariableNamer = innerVariableNamer)
 
   def lateAstRewriting: Transformer[BaseContext, BaseState, BaseState] =
     isolateAggregation andThen

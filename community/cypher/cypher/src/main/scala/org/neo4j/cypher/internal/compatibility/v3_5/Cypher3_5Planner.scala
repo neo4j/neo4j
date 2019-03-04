@@ -37,6 +37,7 @@ import org.neo4j.cypher.internal.v4_0.expressions.Parameter
 import org.neo4j.cypher.internal.v4_0.frontend.PlannerName
 import org.neo4j.cypher.internal.v4_0.frontend.phases.{BaseState, CompilationPhaseTracer, InternalNotificationLogger, RecordingNotificationLogger}
 import org.neo4j.cypher.internal.v4_0.logical.plans.{LoadCSV, LogicalPlan}
+import org.neo4j.cypher.internal.v4_0.rewriting.rewriters.{GeneratingNamer, InnerVariableNamer}
 import org.neo4j.cypher.internal.v4_0.util.InputPosition
 import org.neo4j.cypher.internal.v4_0.util.attribution.SequentialIdGen
 import org.neo4j.cypher.{CypherPlannerOption, CypherUpdateStrategy}
@@ -68,8 +69,10 @@ case class Cypher3_5Planner(config: CypherPlannerConfiguration,
 
     runSafely {
       val notificationLogger = new RecordingNotificationLogger(Some(preParsedQuery.offset))
+      val innerVariableNamer = new GeneratingNamer
+
       val syntacticQuery =
-        getOrParse(preParsedQuery, new Parser3_5(planner, notificationLogger, preParsedQuery.offset, tracer))
+        getOrParse(preParsedQuery, new Parser3_5(planner, notificationLogger, preParsedQuery.offset, tracer, innerVariableNamer))
 
       val transactionalContextWrapper = TransactionalContextWrapper(transactionalContext)
       // Context used for db communication during planning
@@ -91,7 +94,8 @@ case class Cypher3_5Planner(config: CypherPlannerConfiguration,
         maybeUpdateStrategy.getOrElse(defaultUpdateStrategy),
         clock,
         logicalPlanIdGen,
-        simpleExpressionEvaluator)
+        simpleExpressionEvaluator,
+        innerVariableNamer)
 
       // Prepare query for caching
       val preparedQuery = planner.normalizeQuery(syntacticQuery, context)
@@ -156,7 +160,8 @@ case class Cypher3_5Planner(config: CypherPlannerConfiguration,
 private[v3_5] class Parser3_5(planner: v4_0.CypherPlanner[PlannerContext],
                               notificationLogger: InternalNotificationLogger,
                               offset: InputPosition,
-                              tracer: CompilationPhaseTracer
+                              tracer: CompilationPhaseTracer,
+                              innerVariableNamer: InnerVariableNamer
                              ) extends Parser[BaseState] {
   // TODO use 3.5 specific things?
   override def parse(preParsedQuery: PreParsedQuery): BaseState = {
@@ -166,6 +171,7 @@ private[v3_5] class Parser3_5(planner: v4_0.CypherPlanner[PlannerContext],
       preParsedQuery.planner.name,
       preParsedQuery.debugOptions,
       Some(offset),
-      tracer)
+      tracer,
+      innerVariableNamer)
   }
 }

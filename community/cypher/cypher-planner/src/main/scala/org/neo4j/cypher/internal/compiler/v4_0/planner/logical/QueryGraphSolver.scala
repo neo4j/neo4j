@@ -41,15 +41,15 @@ trait PatternExpressionSolving {
     val dependencies = expr.dependencies.map(_.name)
     val qgArguments = planArguments intersect dependencies
     val (namedExpr, namedMap) = PatternExpressionPatternElementNamer(expr)
-    val qg = namedExpr.asQueryGraph.withArgumentIds(qgArguments)
+    val qg = asQueryGraph(namedExpr, context.innerVariableNamer).withArgumentIds(qgArguments)
     val plan = planQueryGraph(qg, namedMap, interestingOrder, context)
     (plan, namedExpr)
   }
 
   def planPatternComprehension(planArguments: Set[String], expr: PatternComprehension, interestingOrder: InterestingOrder, context: LogicalPlanningContext): (LogicalPlan, PatternComprehension) = {
-    val asQueryGraph = expr.asQueryGraph
-    val qgArguments = planArguments intersect asQueryGraph.idsWithoutOptionalMatchesOrUpdates
-    val qg = asQueryGraph.withArgumentIds(qgArguments).addPredicates(expr.predicate.toIndexedSeq:_*)
+    val queryGraph = asQueryGraph(expr, context.innerVariableNamer)
+    val qgArguments = planArguments intersect queryGraph.idsWithoutOptionalMatchesOrUpdates
+    val qg = queryGraph.withArgumentIds(qgArguments).addPredicates(expr.predicate.toIndexedSeq:_*)
     val plan: LogicalPlan = planQueryGraph(qg, Map.empty, interestingOrder, context)
     (plan, expr)
   }

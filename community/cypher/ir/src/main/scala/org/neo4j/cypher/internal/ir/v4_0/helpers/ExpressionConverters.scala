@@ -30,49 +30,47 @@ import org.neo4j.cypher.internal.v4_0.expressions.Range
 
 object ExpressionConverters {
   val normalizer = MatchPredicateNormalizerChain(PropertyPredicateNormalizer, LabelPredicateNormalizer)
-  private val addUniquenessPredicates = AddUniquenessPredicates(GeneratingNamer)
-  implicit class PatternExpressionConverter(val exp: PatternExpression) extends AnyVal {
-    def asQueryGraph: QueryGraph = {
-      val uniqueRels = addUniquenessPredicates.collectUniqueRels(exp.pattern)
-      val uniquePredicates = addUniquenessPredicates.createPredicatesFor(uniqueRels, exp.pattern.position)
-      val relChain: RelationshipChain = exp.pattern.element
-      val predicates: IndexedSeq[Expression] = relChain.fold(uniquePredicates.toIndexedSeq) {
-        case pattern: AnyRef if normalizer.extract.isDefinedAt(pattern) => acc => acc ++ normalizer.extract(pattern)
-        case _                                                          => identity
-      }
 
-      val rewrittenChain = relChain.endoRewrite(topDown(Rewriter.lift(normalizer.replace)))
-
-      val patternContent = rewrittenChain.destructed
-      val qg = QueryGraph(
-        patternRelationships = patternContent.rels.toSet,
-        patternNodes = patternContent.nodeIds.toSet
-      ).addPredicates(predicates: _*)
-      qg.addArgumentIds(qg.idsWithoutOptionalMatchesOrUpdates.filter(_.isNamed).toIndexedSeq)
+  def asQueryGraph(exp: PatternExpression, innerVariableNamer: InnerVariableNamer): QueryGraph = {
+    val addUniquenessPredicates = AddUniquenessPredicates(innerVariableNamer)
+    val uniqueRels = addUniquenessPredicates.collectUniqueRels(exp.pattern)
+    val uniquePredicates = addUniquenessPredicates.createPredicatesFor(uniqueRels, exp.pattern.position)
+    val relChain: RelationshipChain = exp.pattern.element
+    val predicates: IndexedSeq[Expression] = relChain.fold(uniquePredicates.toIndexedSeq) {
+      case pattern: AnyRef if normalizer.extract.isDefinedAt(pattern) => acc => acc ++ normalizer.extract(pattern)
+      case _                                                          => identity
     }
+
+    val rewrittenChain = relChain.endoRewrite(topDown(Rewriter.lift(normalizer.replace)))
+
+    val patternContent = rewrittenChain.destructed
+    val qg = QueryGraph(
+      patternRelationships = patternContent.rels.toSet,
+      patternNodes = patternContent.nodeIds.toSet
+    ).addPredicates(predicates: _*)
+    qg.addArgumentIds(qg.idsWithoutOptionalMatchesOrUpdates.filter(_.isNamed).toIndexedSeq)
   }
 
-  implicit class PatternComprehensionConverter(val exp: PatternComprehension) extends AnyVal {
-    def asQueryGraph: QueryGraph = {
-      val uniqueRels = addUniquenessPredicates.collectUniqueRels(exp.pattern)
-      val uniquePredicates = addUniquenessPredicates.createPredicatesFor(uniqueRels, exp.pattern.position)
-      val relChain: RelationshipChain = exp.pattern.element
-      val predicates: IndexedSeq[Expression] = relChain.fold(uniquePredicates.toIndexedSeq) {
-        case pattern: AnyRef if normalizer.extract.isDefinedAt(pattern) => acc => acc ++ normalizer.extract(pattern)
-        case _                                                          => identity
-      } ++ exp.predicate
+  def asQueryGraph(exp: PatternComprehension, innerVariableNamer: InnerVariableNamer): QueryGraph = {
+    val addUniquenessPredicates = AddUniquenessPredicates(innerVariableNamer)
+    val uniqueRels = addUniquenessPredicates.collectUniqueRels(exp.pattern)
+    val uniquePredicates = addUniquenessPredicates.createPredicatesFor(uniqueRels, exp.pattern.position)
+    val relChain: RelationshipChain = exp.pattern.element
+    val predicates: IndexedSeq[Expression] = relChain.fold(uniquePredicates.toIndexedSeq) {
+      case pattern: AnyRef if normalizer.extract.isDefinedAt(pattern) => acc => acc ++ normalizer.extract(pattern)
+      case _                                                          => identity
+    } ++ exp.predicate
 
-      val rewrittenChain = relChain.endoRewrite(topDown(Rewriter.lift(normalizer.replace)))
+    val rewrittenChain = relChain.endoRewrite(topDown(Rewriter.lift(normalizer.replace)))
 
-      val deps = predicates.flatMap(_.dependencies).map(_.name)
-      val patternContent = rewrittenChain.destructed
-      val qg = QueryGraph(
-        patternRelationships = patternContent.rels.toSet,
-        patternNodes = patternContent.nodeIds.toSet
-      ).addPredicates(predicates: _*)
-      qg.addArgumentIds((qg.idsWithoutOptionalMatchesOrUpdates.filter(_.isNamed) ++ deps).toIndexedSeq)
-      // TODO Next Step: Be clever and find out if deps are necessary here and only then add dependencies
-    }
+    val deps = predicates.flatMap(_.dependencies).map(_.name)
+    val patternContent = rewrittenChain.destructed
+    val qg = QueryGraph(
+      patternRelationships = patternContent.rels.toSet,
+      patternNodes = patternContent.nodeIds.toSet
+    ).addPredicates(predicates: _*)
+    qg.addArgumentIds((qg.idsWithoutOptionalMatchesOrUpdates.filter(_.isNamed) ++ deps).toIndexedSeq)
+    // TODO Next Step: Be clever and find out if deps are necessary here and only then add dependencies
   }
 
   implicit class PredicateConverter(val predicate: Expression) extends AnyVal {
