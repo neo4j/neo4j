@@ -17,19 +17,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.store.id;
+package org.neo4j.internal.id;
 
 import java.io.File;
 import java.util.function.LongSupplier;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
-import org.neo4j.internal.id.IdGenerator;
-import org.neo4j.internal.id.IdGeneratorFactory;
-import org.neo4j.internal.id.IdType;
 import org.neo4j.internal.id.configuration.IdTypeConfiguration;
 import org.neo4j.internal.id.configuration.IdTypeConfigurationProvider;
-import org.neo4j.kernel.impl.api.KernelTransactionsSnapshot;
 
 /**
  * Wraps {@link IdGenerator} for those that have {@link IdTypeConfiguration#allowAggressiveReuse() aggressive id reuse}
@@ -40,8 +36,8 @@ public class BufferingIdGeneratorFactory implements IdGeneratorFactory
 {
     private final BufferingIdGenerator[/*IdType#ordinal as key*/] overriddenIdGenerators =
             new BufferingIdGenerator[IdType.values().length];
-    private Supplier<KernelTransactionsSnapshot> boundaries;
-    private final Predicate<KernelTransactionsSnapshot> safeThreshold;
+    private Supplier<IdController.ConditionSnapshot> boundaries;
+    private final Predicate<IdController.ConditionSnapshot> safeThreshold;
     private final IdGeneratorFactory delegate;
     private final IdTypeConfigurationProvider idTypeConfigurationProvider;
 
@@ -49,12 +45,12 @@ public class BufferingIdGeneratorFactory implements IdGeneratorFactory
     {
         this.delegate = delegate;
         this.idTypeConfigurationProvider = idTypeConfigurationProvider;
-        this.safeThreshold = KernelTransactionsSnapshot::allClosed;
+        this.safeThreshold = IdController.ConditionSnapshot::conditionMet;
     }
 
-    public void initialize( Supplier<KernelTransactionsSnapshot> transactionsSnapshotSupplier )
+    public void initialize( Supplier<IdController.ConditionSnapshot> conditionSnapshotSupplier )
     {
-        boundaries = transactionsSnapshotSupplier;
+        boundaries = conditionSnapshotSupplier;
     }
 
     @Override

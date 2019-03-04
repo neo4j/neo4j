@@ -17,17 +17,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.store.id;
-
+package org.neo4j.internal.id;
 
 import java.util.function.Supplier;
 
-import org.neo4j.kernel.impl.api.KernelTransactionsSnapshot;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 /**
  * Default implementation of {@link IdController}.
- * Do not add any additional possibilities or functionality. Wraps provided {@link IdGeneratorFactory}.
+ * Do not add any additional possibilities or functionality.
  */
 public class DefaultIdController extends LifecycleAdapter implements IdController
 {
@@ -46,7 +44,7 @@ public class DefaultIdController extends LifecycleAdapter implements IdControlle
     }
 
     @Override
-    public void initialize( Supplier<KernelTransactionsSnapshot> transactionsSnapshotSupplier )
+    public void initialize( Supplier<ConditionSnapshot> conditionSnapshotSupplier )
     {
     }
 }

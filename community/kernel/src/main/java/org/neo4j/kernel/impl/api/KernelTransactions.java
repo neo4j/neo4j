@@ -35,6 +35,7 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.function.Factory;
 import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.internal.id.IdController;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
@@ -77,7 +78,7 @@ import static java.util.stream.Collectors.toSet;
  * for enumerating all running transactions. During normal operation, acquiring new transactions and enumerating live
  * ones requires no synchronization (although the live list is not guaranteed to be exact).
  */
-public class KernelTransactions extends LifecycleAdapter implements Supplier<KernelTransactionsSnapshot>
+public class KernelTransactions extends LifecycleAdapter implements Supplier<IdController.ConditionSnapshot>
 {
     private final StatementLocksFactory statementLocksFactory;
     private final ConstraintIndexCreator constraintIndexCreator;
@@ -278,7 +279,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
     }
 
     @Override
-    public KernelTransactionsSnapshot get()
+    public IdController.ConditionSnapshot get()
     {
         return new KernelTransactionsSnapshot( activeTransactions(), clock.millis() );
     }

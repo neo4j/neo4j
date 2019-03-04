@@ -17,12 +17,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.store.id;
-
+package org.neo4j.internal.id;
 
 import java.util.function.Supplier;
 
-import org.neo4j.kernel.impl.api.KernelTransactionsSnapshot;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
 /**
@@ -31,6 +29,10 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
  */
 public interface IdController extends Lifecycle
 {
+    interface ConditionSnapshot
+    {
+        boolean conditionMet();
+    }
 
     /**
      * Clear underlying id generation infrastructure (clear buffer of ids to reuse, reset buffers, etc.)
@@ -42,5 +44,5 @@ public interface IdController extends Lifecycle
      */
     void maintenance();
 
-    void initialize( Supplier<KernelTransactionsSnapshot> transactionsSnapshotSupplier );
+    void initialize( Supplier<ConditionSnapshot> conditionSnapshotSupplier );
 }

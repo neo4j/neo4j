@@ -17,25 +17,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.store.id;
+package org.neo4j.internal.id;
 
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
-import org.neo4j.internal.id.IdGenerator;
-import org.neo4j.kernel.impl.api.KernelTransactionsSnapshot;
-
 class BufferingIdGenerator extends IdGenerator.Delegate
 {
-    private DelayedBuffer<KernelTransactionsSnapshot> buffer;
+    private DelayedBuffer<IdController.ConditionSnapshot> buffer;
 
     BufferingIdGenerator( IdGenerator delegate )
     {
         super( delegate );
     }
 
-    void initialize( Supplier<KernelTransactionsSnapshot> boundaries,
-            Predicate<KernelTransactionsSnapshot> safeThreshold )
+    void initialize( Supplier<IdController.ConditionSnapshot> boundaries, Predicate<IdController.ConditionSnapshot> safeThreshold )
     {
         buffer = new DelayedBuffer<>( boundaries, safeThreshold, 10_000, freedIds ->
         {

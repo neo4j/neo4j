@@ -17,18 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.store.id;
+package org.neo4j.internal.id;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.EnumMap;
 import java.util.function.LongSupplier;
 
-import org.neo4j.internal.id.IdGenerator;
-import org.neo4j.internal.id.IdGeneratorFactory;
-import org.neo4j.internal.id.IdGeneratorImpl;
-import org.neo4j.internal.id.IdRange;
-import org.neo4j.internal.id.IdType;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.storageengine.api.UnderlyingStorageException;

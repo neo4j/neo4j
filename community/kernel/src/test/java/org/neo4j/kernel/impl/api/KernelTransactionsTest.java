@@ -41,6 +41,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.graphdb.security.AuthorizationExpiredException;
+import org.neo4j.internal.id.IdController;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
@@ -233,21 +234,21 @@ public class KernelTransactionsTest
         KernelTransaction a = getKernelTransaction( transactions );
         KernelTransaction b = getKernelTransaction( transactions );
         KernelTransaction c = getKernelTransaction( transactions );
-        KernelTransactionsSnapshot snapshot = transactions.get();
-        assertFalse( snapshot.allClosed() );
+        IdController.ConditionSnapshot snapshot = transactions.get();
+        assertFalse( snapshot.conditionMet() );
 
         // WHEN a gets closed
         a.close();
-        assertFalse( snapshot.allClosed() );
+        assertFalse( snapshot.conditionMet() );
 
         // WHEN c gets closed and (test knowing too much) that instance getting reused in another transaction "d".
         c.close();
         KernelTransaction d = getKernelTransaction( transactions );
-        assertFalse( snapshot.allClosed() );
+        assertFalse( snapshot.conditionMet() );
 
         // WHEN b finally gets closed
         b.close();
-        assertTrue( snapshot.allClosed() );
+        assertTrue( snapshot.conditionMet() );
     }
 
     @Test
@@ -258,7 +259,7 @@ public class KernelTransactionsTest
         Race race = new Race();
         final int threads = 50;
         final AtomicBoolean end = new AtomicBoolean();
-        final AtomicReferenceArray<KernelTransactionsSnapshot> snapshots = new AtomicReferenceArray<>( threads );
+        final AtomicReferenceArray<IdController.ConditionSnapshot> snapshots = new AtomicReferenceArray<>( threads );
 
         // Representing "transaction" threads
         for ( int i = 0; i < threads; i++ )
@@ -294,8 +295,8 @@ public class KernelTransactionsTest
             while ( snapshotsLeft > 0 )
             {
                 int threadIndex = random.nextInt( threads );
-                KernelTransactionsSnapshot snapshot = snapshots.get( threadIndex );
-                if ( snapshot != null && snapshot.allClosed() )
+                IdController.ConditionSnapshot snapshot = snapshots.get( threadIndex );
+                if ( snapshot != null && snapshot.conditionMet() )
                 {
                     snapshotsLeft--;
                     snapshots.set( threadIndex, null );

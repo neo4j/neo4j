@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api;
 
 import java.util.Set;
 
+import org.neo4j.internal.id.IdController;
 import org.neo4j.kernel.api.KernelTransactionHandle;
 
 /**
@@ -30,7 +31,7 @@ import org.neo4j.kernel.api.KernelTransactionHandle;
  * Creating a snapshot creates a list and one additional book keeping object per open transaction.
  * No thread doing normal transaction work should create snapshots, only threads that monitor transactions.
  */
-public class KernelTransactionsSnapshot
+public class KernelTransactionsSnapshot implements IdController.ConditionSnapshot
 {
     private Tx relevantTransactions;
     private final long snapshotTime;
@@ -58,7 +59,8 @@ public class KernelTransactionsSnapshot
         this.snapshotTime = snapshotTime;
     }
 
-    public boolean allClosed()
+    @Override
+    public boolean conditionMet()
     {
         while ( relevantTransactions != null )
         {

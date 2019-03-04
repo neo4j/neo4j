@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.store;
 
 import java.util.function.ToIntFunction;
 
-import org.neo4j.kernel.impl.store.id.BatchingIdSequence;
+import org.neo4j.internal.id.BatchingIdSequence;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.values.storable.Value;
 

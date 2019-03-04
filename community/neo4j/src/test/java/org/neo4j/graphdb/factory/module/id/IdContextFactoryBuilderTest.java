@@ -26,14 +26,14 @@ import java.io.File;
 import java.util.function.Function;
 import java.util.function.LongSupplier;
 
+import org.neo4j.internal.id.BufferedIdController;
+import org.neo4j.internal.id.BufferingIdGeneratorFactory;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.id.IdGeneratorImpl;
 import org.neo4j.internal.id.IdType;
 import org.neo4j.internal.id.configuration.CommunityIdTypeConfigurationProvider;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.impl.api.KernelTransactionsSnapshot;
-import org.neo4j.kernel.impl.store.id.BufferedIdController;
-import org.neo4j.kernel.impl.store.id.BufferingIdGeneratorFactory;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.test.extension.DefaultFileSystemExtension;
 import org.neo4j.test.extension.Inject;
