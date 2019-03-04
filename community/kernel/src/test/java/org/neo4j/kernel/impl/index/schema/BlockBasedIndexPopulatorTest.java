@@ -32,7 +32,6 @@ import org.neo4j.configuration.Config;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.internal.kernel.api.PopulationProgress;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
-import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexProviderDescriptor;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.PhaseTracker;
@@ -47,6 +46,7 @@ import org.neo4j.test.rule.PageCacheAndDependenciesRule;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
+import static org.neo4j.kernel.api.index.IndexProvider.Monitor.EMPTY;
 import static org.neo4j.test.OtherThreadExecutor.command;
 import static org.neo4j.test.Race.throwing;
 import static org.neo4j.values.storable.Values.stringValue;
@@ -137,9 +137,10 @@ public class BlockBasedIndexPopulatorTest
                 new IndexSpecificSpaceFillingCurveSettingsCache( new ConfiguredSpaceFillingCurveSettingsCache( config ), new HashMap<>() );
         GenericLayout layout = new GenericLayout( 1, spatialSettings );
         IndexDirectoryStructure directoryStructure = directoriesByProvider( storage.directory().directory( "schema" ) ).forProvider( providerDescriptor );
+        IndexFiles.SingleFile indexFiles = new IndexFiles.SingleFile( storage.fileSystem(), storage.directory().file( "file" ) );
         BlockBasedIndexPopulator<GenericKey,NativeIndexValue> populator =
-                new BlockBasedIndexPopulator<GenericKey,NativeIndexValue>( storage.pageCache(), storage.fileSystem(), storage.directory().file( "file" ),
-                        layout, IndexProvider.Monitor.EMPTY, INDEX_DESCRIPTOR, spatialSettings, directoryStructure, false, 100, 2, monitor )
+                new BlockBasedIndexPopulator<GenericKey,NativeIndexValue>( storage.pageCache(), storage.fileSystem(), indexFiles, layout, EMPTY,
+                        INDEX_DESCRIPTOR, spatialSettings, directoryStructure, false, 100, 2, monitor )
                 {
                     @Override
                     NativeIndexReader<GenericKey,NativeIndexValue> newReader()

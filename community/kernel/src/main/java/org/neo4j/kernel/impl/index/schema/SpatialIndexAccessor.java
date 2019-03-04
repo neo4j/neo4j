@@ -273,7 +273,7 @@ class SpatialIndexAccessor extends SpatialIndexCache<SpatialIndexAccessor.PartAc
                                                                                 monitor,
                                                                                 descriptor,
                                                                                 searchConfiguration,
-                                                                                fileLayout.settings);
+                                                                                fileLayout.settings );
             populator.create();
             populator.close( true );
         }
