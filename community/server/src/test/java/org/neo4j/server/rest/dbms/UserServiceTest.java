@@ -32,11 +32,8 @@ import javax.ws.rs.core.Response;
 import org.neo4j.internal.kernel.api.security.AuthenticationResult;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
-import org.neo4j.kernel.api.security.PasswordPolicy;
 import org.neo4j.kernel.api.security.UserManager;
 import org.neo4j.kernel.api.security.UserManagerSupplier;
-import org.neo4j.server.security.auth.LegacyCredential;
-import org.neo4j.kernel.impl.security.User;
 import org.neo4j.server.rest.repr.OutputFormat;
 import org.neo4j.server.rest.repr.formats.JsonFormat;
 import org.neo4j.server.security.auth.AuthenticationStrategy;
@@ -44,7 +41,6 @@ import org.neo4j.server.security.auth.BasicAuthManager;
 import org.neo4j.server.security.auth.BasicPasswordPolicy;
 import org.neo4j.server.security.auth.BasicLoginContext;
 import org.neo4j.server.security.auth.InMemoryUserRepository;
-import org.neo4j.server.security.auth.UserRepository;
 import org.neo4j.test.server.EntityOutputFormat;
 
 import static org.hamcrest.Matchers.containsString;
@@ -54,40 +50,45 @@ import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
+import static org.neo4j.server.security.auth.BasicAuthManagerTest.password;
 
 public class UserServiceTest
 {
-    protected static final User NEO4J_USER = new User.Builder( "neo4j", LegacyCredential.forPassword( "neo4j" ) )
-            .withRequiredPasswordChange( true ).build();
+    protected static final String USERNAME = "neo";
 
-    protected final PasswordPolicy passwordPolicy = new BasicPasswordPolicy();
-    protected final UserRepository userRepository = new InMemoryUserRepository();
+    private UserManagerSupplier userManagerSupplier;
+    private Principal neo4jPrinciple;
+    private UserManager userManager;
 
-    protected UserManagerSupplier userManagerSupplier;
-    protected LoginContext neo4jContext;
-    protected Principal neo4jPrinciple;
-
-    protected void setupAuthManagerAndSubject()
+    protected UserManagerSupplier setupUserManagerSupplier()
     {
-        BasicAuthManager basicAuthManager = new BasicAuthManager( userRepository, passwordPolicy,
-                mock( AuthenticationStrategy.class), new InMemoryUserRepository() );
+        return new BasicAuthManager( new InMemoryUserRepository(), new BasicPasswordPolicy(),
+                mock( AuthenticationStrategy.class ), new InMemoryUserRepository() );
+    }
 
-        userManagerSupplier = basicAuthManager;
-        neo4jContext = new BasicLoginContext( NEO4J_USER, AuthenticationResult.SUCCESS );
+    protected LoginContext setupSubject() throws InvalidArgumentsException
+    {
+        return new BasicLoginContext( userManager.getUser( USERNAME ), AuthenticationResult.SUCCESS );
     }
 
     @Before
     public void setUp() throws InvalidArgumentsException, IOException
     {
-        userRepository.create( NEO4J_USER );
-        setupAuthManagerAndSubject();
-        neo4jPrinciple = new DelegatingPrincipal( "neo4j", neo4jContext );
+        userManagerSupplier = setupUserManagerSupplier();
+        userManager = userManagerSupplier.getUserManager();
+        userManager.newUser( USERNAME, password( "neo4j" ), true );
+        LoginContext subject = setupSubject();
+
+        neo4jPrinciple = new DelegatingPrincipal( USERNAME, subject );
     }
 
     @After
-    public void tearDown() throws IOException
+    public void tearDown() throws IOException, InvalidArgumentsException
     {
-        userRepository.delete( NEO4J_USER );
+        if ( userManager.silentlyGetUser( USERNAME ) != null )
+        {
+            userManager.deleteUser( USERNAME );
+        }
     }
 
     @Test
@@ -101,14 +102,14 @@ public class UserServiceTest
         UserService userService = new UserService( userManagerSupplier, new JsonFormat(), outputFormat );
 
         // When
-        Response response = userService.getUser( "neo4j", req );
+        Response response = userService.getUser( USERNAME, req );
 
         // Then
         assertThat( response.getStatus(), equalTo( 200 ) );
         String json = new String( (byte[]) response.getEntity() );
         assertNotNull( json );
-        assertThat( json, containsString( "\"username\" : \"neo4j\"" ) );
-        assertThat( json, containsString( "\"password_change\" : \"http://www.example.com/user/neo4j/password\"" ) );
+        assertThat( json, containsString( String.format( "\"username\" : \"%s\"", USERNAME ) ) );
+        assertThat( json, containsString( String.format( "\"password_change\" : \"http://www.example.com/user/%s/password\"", USERNAME ) ) );
         assertThat( json, containsString( "\"password_change_required\" : true" ) );
     }
 
@@ -123,7 +124,7 @@ public class UserServiceTest
         UserService userService = new UserService( userManagerSupplier, new JsonFormat(), outputFormat );
 
         // When
-        Response response = userService.getUser( "neo4j", req );
+        Response response = userService.getUser( USERNAME, req );
 
         // Then
         assertThat( response.getStatus(), equalTo( 404 ) );
@@ -153,13 +154,13 @@ public class UserServiceTest
         HttpServletRequest req = mock( HttpServletRequest.class );
         when( req.getUserPrincipal() ).thenReturn( neo4jPrinciple );
 
-        userManagerSupplier.getUserManager().deleteUser( "neo4j" );
+        userManager.deleteUser( USERNAME );
 
         OutputFormat outputFormat = new EntityOutputFormat( new JsonFormat(), new URI( "http://www.example.com" ), null );
         UserService userService = new UserService( userManagerSupplier, new JsonFormat(), outputFormat );
 
         // When
-        Response response = userService.getUser( "neo4j", req );
+        Response response = userService.getUser( USERNAME, req );
 
         // Then
         assertThat( response.getStatus(), equalTo( 404 ) );
@@ -176,11 +177,11 @@ public class UserServiceTest
         UserService userService = new UserService( userManagerSupplier, new JsonFormat(), outputFormat );
 
         // When
-        Response response = userService.setPassword( "neo4j", req, "{ \"password\" : \"test\" }" );
+        Response response = userService.setPassword( USERNAME, req, "{ \"password\" : \"test\" }" );
 
         // Then
         assertThat( response.getStatus(), equalTo( 200 ) );
-        userManagerSupplier.getUserManager().getUser( "neo4j" ).credentials().matchesPassword( "test" );
+        userManager.getUser( USERNAME ).credentials().matchesPassword( "test" );
     }
 
     @Test
@@ -194,7 +195,7 @@ public class UserServiceTest
         UserService userService = new UserService( mock( BasicAuthManager.class ), new JsonFormat(), outputFormat );
 
         // When
-        Response response = userService.setPassword( "neo4j", req, "{ \"password\" : \"test\" }" );
+        Response response = userService.setPassword( USERNAME, req, "{ \"password\" : \"test\" }" );
 
         // Then
         assertThat( response.getStatus(), equalTo( 404 ) );
@@ -230,10 +231,10 @@ public class UserServiceTest
         OutputFormat outputFormat = new EntityOutputFormat( new JsonFormat(), new URI( "http://www.example.com" ), null );
         UserService userService = new UserService( userManagerSupplier, new JsonFormat(), outputFormat );
 
-        userRepository.delete( NEO4J_USER );
+        userManager.deleteUser( USERNAME );
 
         // When
-        Response response = userService.setPassword( "neo4j", req, "{ \"password\" : \"test\" }" );
+        Response response = userService.setPassword( USERNAME, req, "{ \"password\" : \"test\" }" );
 
         // Then
         assertThat( response.getStatus(), equalTo( 422 ) );
@@ -250,7 +251,7 @@ public class UserServiceTest
         UserService userService = new UserService( mock( BasicAuthManager.class ), new JsonFormat(), outputFormat );
 
         // When
-        Response response = userService.setPassword( "neo4j", req, "xxx" );
+        Response response = userService.setPassword( USERNAME, req, "xxx" );
 
         // Then
         assertThat( response.getStatus(), equalTo( 400 ) );
@@ -270,7 +271,7 @@ public class UserServiceTest
         UserService userService = new UserService( mock( BasicAuthManager.class ), new JsonFormat(), outputFormat );
 
         // When
-        Response response = userService.setPassword( "neo4j", req, "{ \"unknown\" : \"unknown\" }" );
+        Response response = userService.setPassword( USERNAME, req, "{ \"unknown\" : \"unknown\" }" );
 
         // Then
         assertThat( response.getStatus(), equalTo( 422 ) );
@@ -291,7 +292,7 @@ public class UserServiceTest
         UserService userService = new UserService( mock( BasicAuthManager.class ), new JsonFormat(), outputFormat );
 
         // When
-        Response response = userService.setPassword( "neo4j", req, "{ \"password\" : 1 }" );
+        Response response = userService.setPassword( USERNAME, req, "{ \"password\" : 1 }" );
 
         // Then
         assertThat( response.getStatus(), equalTo( 422 ) );
@@ -312,7 +313,7 @@ public class UserServiceTest
         UserService userService = new UserService( userManagerSupplier, new JsonFormat(), outputFormat );
 
         // When
-        Response response = userService.setPassword( "neo4j", req, "{ \"password\" : \"\" }" );
+        Response response = userService.setPassword( USERNAME, req, "{ \"password\" : \"\" }" );
 
         // Then
         assertThat( response.getStatus(), equalTo( 422 ) );
@@ -333,7 +334,7 @@ public class UserServiceTest
         UserService userService = new UserService( userManagerSupplier, new JsonFormat(), outputFormat );
 
         // When
-        Response response = userService.setPassword( "neo4j", req, "{ \"password\" : \"neo4j\" }" );
+        Response response = userService.setPassword( USERNAME, req, "{ \"password\" : \"neo4j\" }" );
 
         // Then
         assertThat( response.getStatus(), equalTo( 422 ) );
