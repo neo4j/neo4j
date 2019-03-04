@@ -47,9 +47,9 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.values.storable.RandomValues;
 
-import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
+import static org.neo4j.logging.AssertableLogProvider.inLog;
 
 public class IndexPopulationIT
 {
@@ -166,36 +166,33 @@ public class IndexPopulationIT
     public void mustLogPhaseTracker()
     {
         Label nodeLabel = Label.label( "testLabel5" );
+        String key = "key";
+        String value = "hej";
         try ( Transaction transaction = database.beginTx() )
         {
-            database.createNode( nodeLabel ).setProperty( "key", "hej" );
+            database.createNode( nodeLabel ).setProperty( key, value );
             transaction.success();
         }
 
         // when
         try ( Transaction tx = database.beginTx() )
         {
-            database.schema().indexFor( nodeLabel ).on( "key" ).create();
+            database.schema().indexFor( nodeLabel ).on( key ).create();
             tx.success();
         }
-        try ( Transaction tx = database.beginTx() )
-        {
-            database.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
-            tx.success();
-        }
+        waitForOnlineIndexes();
 
         // then
-        //noinspection unchecked
-        logProvider.assertContainsMessageMatching( allOf(
-                containsString( "TIME/PHASE" ),
-                containsString( "Final: " ),
-                containsString( "SCAN" ),
-                containsString( "WRITE" ),
-                containsString( "MERGE" ),
-                containsString( "BUILD" ),
-                containsString( "FLIP" ),
-                containsString( "totalTime=" )
-        ) );
+        try ( Transaction tx = database.beginTx() )
+        {
+            ResourceIterator<Node> nodes = database.findNodes( nodeLabel, key, value );
+            long nodeCount = Iterators.count( nodes );
+            assertEquals( "expected exactly one hit in index but was ",1, nodeCount );
+            nodes.close();
+            tx.success();
+        }
+        AssertableLogProvider.LogMatcher matcher = inLog( IndexPopulationJob.class ).info( containsString( "TIME/PHASE Final:" ) );
+        logProvider.assertAtLeastOnce( matcher );
     }
 
     private void prePopulateDatabase( GraphDatabaseService database, Label testLabel, String propertyName )
