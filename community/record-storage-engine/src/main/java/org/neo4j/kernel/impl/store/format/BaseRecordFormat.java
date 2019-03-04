@@ -21,11 +21,11 @@ package org.neo4j.kernel.impl.store.format;
 
 import java.util.function.Function;
 
+import org.neo4j.internal.id.IdSequence;
+import org.neo4j.internal.id.IdValidator;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.impl.store.IntStoreHeader;
 import org.neo4j.kernel.impl.store.StoreHeader;
-import org.neo4j.kernel.impl.store.id.IdSequence;
-import org.neo4j.kernel.impl.store.id.validation.IdValidator;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 

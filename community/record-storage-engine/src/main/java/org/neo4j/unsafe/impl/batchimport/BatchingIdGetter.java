@@ -22,11 +22,11 @@ package org.neo4j.unsafe.impl.batchimport;
 import org.eclipse.collections.api.iterator.LongIterator;
 
 import org.neo4j.collection.PrimitiveLongCollections;
+import org.neo4j.internal.id.IdRange;
+import org.neo4j.internal.id.IdRangeIterator;
+import org.neo4j.internal.id.IdSequence;
+import org.neo4j.internal.id.IdValidator;
 import org.neo4j.kernel.impl.store.RecordStore;
-import org.neo4j.kernel.impl.store.id.IdRange;
-import org.neo4j.kernel.impl.store.id.IdRangeIterator;
-import org.neo4j.kernel.impl.store.id.IdSequence;
-import org.neo4j.kernel.impl.store.id.validation.IdValidator;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 
 /**

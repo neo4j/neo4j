@@ -21,12 +21,12 @@ package org.neo4j.graphdb.factory.module.id;
 
 import java.util.function.Function;
 
+import org.neo4j.internal.id.DefaultIdGeneratorFactory;
+import org.neo4j.internal.id.IdGeneratorFactory;
+import org.neo4j.internal.id.configuration.CommunityIdTypeConfigurationProvider;
+import org.neo4j.internal.id.configuration.IdTypeConfigurationProvider;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
-import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdReuseEligibility;
-import org.neo4j.kernel.impl.store.id.configuration.CommunityIdTypeConfigurationProvider;
-import org.neo4j.kernel.impl.store.id.configuration.IdTypeConfigurationProvider;
 import org.neo4j.scheduler.JobScheduler;
 
 import static java.util.Objects.requireNonNull;

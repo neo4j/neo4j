@@ -19,7 +19,9 @@
  */
 package org.neo4j.kernel.impl.store.id;
 
-import org.neo4j.kernel.impl.store.id.validation.IdValidator;
+import org.neo4j.internal.id.IdRange;
+import org.neo4j.internal.id.IdSequence;
+import org.neo4j.internal.id.IdValidator;
 
 import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 

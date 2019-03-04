@@ -21,7 +21,9 @@ package org.neo4j.kernel.impl.store.id;
 
 import org.junit.Test;
 
-import org.neo4j.kernel.impl.store.id.validation.IdValidator;
+import org.neo4j.internal.id.IdGeneratorImpl;
+import org.neo4j.internal.id.IdRange;
+import org.neo4j.internal.id.IdValidator;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;

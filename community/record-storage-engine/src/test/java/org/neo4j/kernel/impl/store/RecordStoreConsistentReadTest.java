@@ -28,8 +28,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
+import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.logging.NullLogProvider;

@@ -29,13 +29,13 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.LongSupplier;
 
 import org.neo4j.collection.PrimitiveLongCollections;
-import org.neo4j.kernel.impl.store.id.IdGenerator;
-import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
-import org.neo4j.kernel.impl.store.id.IdRange;
-import org.neo4j.kernel.impl.store.id.IdType;
-import org.neo4j.kernel.impl.store.id.configuration.CommunityIdTypeConfigurationProvider;
-import org.neo4j.kernel.impl.store.id.configuration.IdTypeConfiguration;
-import org.neo4j.kernel.impl.store.id.configuration.IdTypeConfigurationProvider;
+import org.neo4j.internal.id.IdGenerator;
+import org.neo4j.internal.id.IdGeneratorFactory;
+import org.neo4j.internal.id.IdRange;
+import org.neo4j.internal.id.IdType;
+import org.neo4j.internal.id.configuration.CommunityIdTypeConfigurationProvider;
+import org.neo4j.internal.id.configuration.IdTypeConfiguration;
+import org.neo4j.internal.id.configuration.IdTypeConfigurationProvider;
 
 import static java.lang.Integer.min;
 

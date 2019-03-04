@@ -23,10 +23,10 @@ import org.junit.Test;
 
 import java.util.Arrays;
 
+import org.neo4j.internal.id.IdGeneratorImpl;
+import org.neo4j.internal.id.IdSequence;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.RecordStore;
-import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
-import org.neo4j.kernel.impl.store.id.IdSequence;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.unsafe.impl.batchimport.staging.BatchSender;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;

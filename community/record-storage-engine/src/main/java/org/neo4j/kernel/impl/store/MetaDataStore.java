@@ -27,14 +27,14 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.helpers.collection.Visitor;
+import org.neo4j.internal.id.IdGeneratorFactory;
+import org.neo4j.internal.id.IdSequence;
+import org.neo4j.internal.id.IdType;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
 import org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat;
-import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
-import org.neo4j.kernel.impl.store.id.IdSequence;
-import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.store.record.MetaDataRecord;
 import org.neo4j.kernel.impl.store.record.NeoStoreRecord;
 import org.neo4j.kernel.impl.store.record.Record;

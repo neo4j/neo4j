@@ -23,9 +23,9 @@ import java.util.Collection;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.LongFunction;
 
+import org.neo4j.internal.id.IdSequence;
+import org.neo4j.internal.id.IdValidator;
 import org.neo4j.kernel.impl.store.RecordStore;
-import org.neo4j.kernel.impl.store.id.IdSequence;
-import org.neo4j.kernel.impl.store.id.validation.IdValidator;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.unsafe.impl.batchimport.staging.BatchSender;
 import org.neo4j.unsafe.impl.batchimport.staging.ProcessorStep;

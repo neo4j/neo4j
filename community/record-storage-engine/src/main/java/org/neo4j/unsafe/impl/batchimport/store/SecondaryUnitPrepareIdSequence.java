@@ -21,8 +21,8 @@ package org.neo4j.unsafe.impl.batchimport.store;
 
 import java.util.function.LongFunction;
 
-import org.neo4j.kernel.impl.store.id.IdRange;
-import org.neo4j.kernel.impl.store.id.IdSequence;
+import org.neo4j.internal.id.IdRange;
+import org.neo4j.internal.id.IdSequence;
 
 /**
  * Assumes that records have been allocated such that there will be a free record, right after a given record,

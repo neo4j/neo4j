@@ -22,8 +22,8 @@ package org.neo4j.unsafe.impl.batchimport.store;
 import java.util.function.Function;
 import java.util.function.LongFunction;
 
+import org.neo4j.internal.id.IdSequence;
 import org.neo4j.kernel.impl.store.CommonAbstractStore;
-import org.neo4j.kernel.impl.store.id.IdSequence;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 
 /**

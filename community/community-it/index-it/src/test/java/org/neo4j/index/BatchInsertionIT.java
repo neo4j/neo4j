@@ -28,8 +28,8 @@ import java.util.Collections;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
-import org.neo4j.kernel.impl.store.id.validation.ReservedIdException;
+import org.neo4j.internal.id.IdGeneratorImpl;
+import org.neo4j.internal.id.ReservedIdException;
 import org.neo4j.test.rule.EmbeddedDbmsRule;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import org.neo4j.unsafe.batchinsert.BatchInserter;

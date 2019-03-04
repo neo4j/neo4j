@@ -20,10 +20,10 @@
 package org.neo4j.internal.recordstorage;
 
 import org.neo4j.graphdb.Resource;
+import org.neo4j.internal.id.IdSequence;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.StoreType;
-import org.neo4j.kernel.impl.store.id.IdSequence;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 
 public class RenewableBatchIdSequences implements Resource

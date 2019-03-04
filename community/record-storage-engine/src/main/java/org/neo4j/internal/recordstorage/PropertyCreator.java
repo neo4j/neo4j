@@ -22,11 +22,11 @@ package org.neo4j.internal.recordstorage;
 import java.util.Iterator;
 import java.util.function.Consumer;
 
+import org.neo4j.internal.id.IdSequence;
 import org.neo4j.internal.recordstorage.RecordAccess.RecordProxy;
 import org.neo4j.kernel.impl.store.DynamicRecordAllocator;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.PropertyType;
-import org.neo4j.kernel.impl.store.id.IdSequence;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;

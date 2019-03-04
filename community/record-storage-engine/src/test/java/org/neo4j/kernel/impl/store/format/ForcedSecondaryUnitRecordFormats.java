@@ -22,8 +22,8 @@ package org.neo4j.kernel.impl.store.format;
 import java.util.Set;
 import java.util.stream.Stream;
 
+import org.neo4j.internal.id.IdSequence;
 import org.neo4j.kernel.impl.store.format.standard.StandardFormatFamily;
-import org.neo4j.kernel.impl.store.id.IdSequence;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;

@@ -24,9 +24,12 @@ import java.util.function.LongSupplier;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
+import org.neo4j.internal.id.IdGenerator;
+import org.neo4j.internal.id.IdGeneratorFactory;
+import org.neo4j.internal.id.IdType;
+import org.neo4j.internal.id.configuration.IdTypeConfiguration;
+import org.neo4j.internal.id.configuration.IdTypeConfigurationProvider;
 import org.neo4j.kernel.impl.api.KernelTransactionsSnapshot;
-import org.neo4j.kernel.impl.store.id.configuration.IdTypeConfiguration;
-import org.neo4j.kernel.impl.store.id.configuration.IdTypeConfigurationProvider;
 
 /**
  * Wraps {@link IdGenerator} for those that have {@link IdTypeConfiguration#allowAggressiveReuse() aggressive id reuse}

@@ -25,8 +25,8 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-import org.neo4j.kernel.impl.store.id.IdRange;
-import org.neo4j.kernel.impl.store.id.IdSequence;
+import org.neo4j.internal.id.IdRange;
+import org.neo4j.internal.id.IdSequence;
 
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;

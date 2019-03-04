@@ -22,10 +22,10 @@ package org.neo4j.internal.recordstorage;
 import java.util.function.LongConsumer;
 
 import org.neo4j.graphdb.Resource;
-import org.neo4j.kernel.impl.store.id.IdRange;
-import org.neo4j.kernel.impl.store.id.IdSequence;
+import org.neo4j.internal.id.IdRange;
+import org.neo4j.internal.id.IdSequence;
 
-import static org.neo4j.kernel.impl.store.id.IdRangeIterator.VALUE_REPRESENTING_NULL;
+import static org.neo4j.internal.id.IdRangeIterator.VALUE_REPRESENTING_NULL;
 
 /**
  * An {@link IdSequence} which does internal batching by using another {@link IdSequence} as source of batches.

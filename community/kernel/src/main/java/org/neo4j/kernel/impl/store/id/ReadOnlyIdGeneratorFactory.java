@@ -24,6 +24,11 @@ import java.io.IOException;
 import java.util.EnumMap;
 import java.util.function.LongSupplier;
 
+import org.neo4j.internal.id.IdGenerator;
+import org.neo4j.internal.id.IdGeneratorFactory;
+import org.neo4j.internal.id.IdGeneratorImpl;
+import org.neo4j.internal.id.IdRange;
+import org.neo4j.internal.id.IdType;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.storageengine.api.UnderlyingStorageException;

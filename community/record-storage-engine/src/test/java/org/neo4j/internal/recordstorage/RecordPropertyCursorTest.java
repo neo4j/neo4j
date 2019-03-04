@@ -30,9 +30,9 @@ import java.util.Map;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.helpers.collection.IteratorWrapper;
+import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreFactory;
-import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.logging.NullLogProvider;

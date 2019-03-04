@@ -21,8 +21,8 @@ package org.neo4j.unsafe.impl.batchimport;
 
 import java.util.function.LongFunction;
 
+import org.neo4j.internal.id.IdSequence;
 import org.neo4j.kernel.impl.store.RelationshipStore;
-import org.neo4j.kernel.impl.store.id.IdSequence;
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;

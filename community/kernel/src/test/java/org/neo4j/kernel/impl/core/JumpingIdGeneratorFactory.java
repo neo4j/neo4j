@@ -25,16 +25,16 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.LongSupplier;
 
-import org.neo4j.kernel.impl.store.id.IdGenerator;
-import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
-import org.neo4j.kernel.impl.store.id.IdRange;
-import org.neo4j.kernel.impl.store.id.IdType;
-import org.neo4j.kernel.impl.store.id.validation.IdValidator;
+import org.neo4j.internal.id.IdGenerator;
+import org.neo4j.internal.id.IdGeneratorFactory;
+import org.neo4j.internal.id.IdRange;
+import org.neo4j.internal.id.IdType;
+import org.neo4j.internal.id.IdValidator;
 import org.neo4j.test.impl.EphemeralIdGenerator;
 
 public class JumpingIdGeneratorFactory implements IdGeneratorFactory
 {
-    private final Map<IdType, IdGenerator> generators = new EnumMap<>( IdType.class );
+    private final Map<IdType,IdGenerator> generators = new EnumMap<>( IdType.class );
     private final IdGenerator forTheRest = new EphemeralIdGenerator( null, null );
 
     private final int sizePerJump;

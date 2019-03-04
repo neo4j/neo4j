@@ -21,7 +21,7 @@ package org.neo4j.unsafe.impl.batchimport.store;
 
 import org.junit.Test;
 
-import org.neo4j.kernel.impl.store.id.IdSequence;
+import org.neo4j.internal.id.IdSequence;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;

@@ -37,6 +37,8 @@ import java.util.List;
 import org.neo4j.common.ProgressReporter;
 import org.neo4j.configuration.Config;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.internal.id.DefaultIdGeneratorFactory;
+import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.recordstorage.RecordNodeCursor;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.internal.recordstorage.RecordStorageReader;
@@ -67,8 +69,6 @@ import org.neo4j.kernel.impl.store.format.Capability;
 import org.neo4j.kernel.impl.store.format.FormatFamily;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat;
-import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
-import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.ReadOnlyIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -659,7 +659,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
                           directoryLayout.schemaStore(),
                           directoryLayout.idSchemaStore(),
                           config,
-                          org.neo4j.kernel.impl.store.id.IdType.SCHEMA,
+                          org.neo4j.internal.id.IdType.SCHEMA,
                           new ReadOnlyIdGeneratorFactory( fileSystem ),
                           pageCache,
                           NullLogProvider.getInstance(),

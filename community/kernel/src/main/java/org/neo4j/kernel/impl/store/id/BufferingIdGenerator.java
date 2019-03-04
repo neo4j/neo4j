@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.store.id;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
+import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.kernel.impl.api.KernelTransactionsSnapshot;
 
 class BufferingIdGenerator extends IdGenerator.Delegate

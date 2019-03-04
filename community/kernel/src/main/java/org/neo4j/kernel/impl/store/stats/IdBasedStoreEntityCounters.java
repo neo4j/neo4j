@@ -19,12 +19,8 @@
  */
 package org.neo4j.kernel.impl.store.stats;
 
-import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
-
-import static org.neo4j.kernel.impl.store.id.IdType.NODE;
-import static org.neo4j.kernel.impl.store.id.IdType.PROPERTY;
-import static org.neo4j.kernel.impl.store.id.IdType.RELATIONSHIP;
-import static org.neo4j.kernel.impl.store.id.IdType.RELATIONSHIP_TYPE_TOKEN;
+import org.neo4j.internal.id.IdGeneratorFactory;
+import org.neo4j.internal.id.IdType;
 
 public class IdBasedStoreEntityCounters implements StoreEntityCounters
 {
@@ -38,24 +34,24 @@ public class IdBasedStoreEntityCounters implements StoreEntityCounters
     @Override
     public long nodes()
     {
-        return idGeneratorFactory.get( NODE ).getNumberOfIdsInUse();
+        return idGeneratorFactory.get( IdType.NODE ).getNumberOfIdsInUse();
     }
 
     @Override
     public long relationships()
     {
-        return idGeneratorFactory.get( RELATIONSHIP ).getNumberOfIdsInUse();
+        return idGeneratorFactory.get( IdType.RELATIONSHIP ).getNumberOfIdsInUse();
     }
 
     @Override
     public long properties()
     {
-        return idGeneratorFactory.get( PROPERTY ).getNumberOfIdsInUse();
+        return idGeneratorFactory.get( IdType.PROPERTY ).getNumberOfIdsInUse();
     }
 
     @Override
     public long relationshipTypes()
     {
-        return idGeneratorFactory.get( RELATIONSHIP_TYPE_TOKEN ).getNumberOfIdsInUse();
+        return idGeneratorFactory.get( IdType.RELATIONSHIP_TYPE_TOKEN ).getNumberOfIdsInUse();
     }
 }
