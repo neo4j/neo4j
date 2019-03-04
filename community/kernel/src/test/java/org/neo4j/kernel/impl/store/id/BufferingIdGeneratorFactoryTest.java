@@ -32,11 +32,7 @@ import org.neo4j.internal.id.IdType;
 import org.neo4j.internal.id.configuration.CommunityIdTypeConfigurationProvider;
 import org.neo4j.kernel.impl.api.KernelTransactionsSnapshot;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
-import org.neo4j.time.Clocks;
-import org.neo4j.time.FakeClock;
 
-import static java.util.concurrent.TimeUnit.MINUTES;
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -53,8 +49,7 @@ public class BufferingIdGeneratorFactoryTest
         // GIVEN
         MockedIdGeneratorFactory actual = new MockedIdGeneratorFactory();
         ControllableSnapshotSupplier boundaries = new ControllableSnapshotSupplier();
-        BufferingIdGeneratorFactory bufferingIdGeneratorFactory = new BufferingIdGeneratorFactory(
-                actual, IdReuseEligibility.ALWAYS, new CommunityIdTypeConfigurationProvider() );
+        BufferingIdGeneratorFactory bufferingIdGeneratorFactory = new BufferingIdGeneratorFactory( actual, new CommunityIdTypeConfigurationProvider() );
         bufferingIdGeneratorFactory.initialize( boundaries );
         IdGenerator idGenerator = bufferingIdGeneratorFactory.open( new File( "doesnt-matter" ), 10, IdType.STRING_BLOCK, () -> 0L, Integer.MAX_VALUE );
 
@@ -68,43 +63,6 @@ public class BufferingIdGeneratorFactoryTest
 
         // although after transactions have all closed
         boundaries.setMostRecentlyReturnedSnapshotToAllClosed();
-        bufferingIdGeneratorFactory.maintenance();
-
-        // THEN
-        verify( actual.get( IdType.STRING_BLOCK ) ).freeId( 7 );
-    }
-
-    @Test
-    public void shouldDelayFreeingOfAggressivelyReusedIdsConsideringTimeAsWell()
-    {
-        // GIVEN
-        MockedIdGeneratorFactory actual = new MockedIdGeneratorFactory();
-        final FakeClock clock = Clocks.fakeClock();
-        final long safeZone = MINUTES.toMillis( 1 );
-        ControllableSnapshotSupplier boundaries = new ControllableSnapshotSupplier();
-        BufferingIdGeneratorFactory bufferingIdGeneratorFactory = new BufferingIdGeneratorFactory( actual,
-                t -> clock.millis() - t.snapshotTime() >= safeZone,
-                new CommunityIdTypeConfigurationProvider() );
-        bufferingIdGeneratorFactory.initialize( boundaries );
-
-        IdGenerator idGenerator = bufferingIdGeneratorFactory.open( new File( "doesnt-matter" ), 10, IdType.STRING_BLOCK, () -> 0L, Integer.MAX_VALUE );
-
-        // WHEN
-        idGenerator.freeId( 7 );
-        verifyNoMoreInteractions( actual.get( IdType.STRING_BLOCK ) );
-
-        // after some maintenance and transaction still not closed
-        bufferingIdGeneratorFactory.maintenance();
-        verifyNoMoreInteractions( actual.get( IdType.STRING_BLOCK ) );
-
-        // although after transactions have all closed
-        boundaries.setMostRecentlyReturnedSnapshotToAllClosed();
-        bufferingIdGeneratorFactory.maintenance();
-        // ... the clock would still say "nope" so no interaction
-        verifyNoMoreInteractions( actual.get( IdType.STRING_BLOCK ) );
-
-        // then finally after time has passed as well
-        clock.forward( 70, SECONDS );
         bufferingIdGeneratorFactory.maintenance();
 
         // THEN

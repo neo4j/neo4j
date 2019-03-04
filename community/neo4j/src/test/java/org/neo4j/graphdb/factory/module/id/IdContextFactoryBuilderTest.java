@@ -26,7 +26,6 @@ import java.io.File;
 import java.util.function.Function;
 import java.util.function.LongSupplier;
 
-import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.id.IdGeneratorImpl;
 import org.neo4j.internal.id.IdType;
@@ -35,7 +34,6 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.impl.api.KernelTransactionsSnapshot;
 import org.neo4j.kernel.impl.store.id.BufferedIdController;
 import org.neo4j.kernel.impl.store.id.BufferingIdGeneratorFactory;
-import org.neo4j.kernel.impl.store.id.IdReuseEligibility;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.test.extension.DefaultFileSystemExtension;
 import org.neo4j.test.extension.Inject;
@@ -109,30 +107,6 @@ class IdContextFactoryBuilderTest
         idGeneratorFactory.open( file, idType, highIdSupplier, maxId );
 
         verify( idGeneratorFactory ).open( file, idType, highIdSupplier, maxId );
-    }
-
-    @Test
-    void createContextWithProvidedReusabilityCheck()
-    {
-        IdReuseEligibility reuseEligibility = mock( IdReuseEligibility.class );
-        IdContextFactory contextFactory = IdContextFactoryBuilder.of( fs, jobScheduler ).withIdReuseEligibility( reuseEligibility ).build();
-        DatabaseIdContext idContext = contextFactory.createIdContext( "database" );
-        IdGeneratorFactory bufferedGeneratorFactory = idContext.getIdGeneratorFactory();
-
-        assertThat( bufferedGeneratorFactory, instanceOf( BufferingIdGeneratorFactory.class ) );
-        BufferingIdGeneratorFactory bufferedFactory = (BufferingIdGeneratorFactory) bufferedGeneratorFactory;
-
-        KernelTransactionsSnapshot snapshot = mock( KernelTransactionsSnapshot.class );
-        when( snapshot.allClosed() ).thenReturn( true );
-
-        bufferedFactory.initialize( () -> snapshot );
-        try ( IdGenerator idGenerator = bufferedFactory.open( testDirectory.file( "a" ), IdType.PROPERTY, () -> 100, 100 ) )
-        {
-            idGenerator.freeId( 15 );
-
-            bufferedFactory.maintenance();
-            verify( reuseEligibility ).isEligible( snapshot );
-        }
     }
 
     @Test

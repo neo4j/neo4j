@@ -66,7 +66,6 @@ import org.neo4j.kernel.impl.query.QueryEngineProvider;
 import org.neo4j.kernel.impl.store.id.BufferedIdController;
 import org.neo4j.kernel.impl.store.id.BufferingIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdController;
-import org.neo4j.kernel.impl.store.id.IdReuseEligibility;
 import org.neo4j.kernel.impl.storemigration.DatabaseMigrator;
 import org.neo4j.kernel.impl.storemigration.DatabaseMigratorFactory;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
@@ -163,7 +162,7 @@ public class DatabaseRule extends ExternalResource
                 pageCache, new StandardConstraintSemantics(), monitors,
                 new Tracers( "null", NullLog.getInstance(), monitors, jobScheduler, clock ),
                 mock( GlobalProcedures.class ), IOLimiter.UNLIMITED, clock, new CanWrite(), new StoreCopyCheckPointMutex(),
-                new BufferedIdController( new BufferingIdGeneratorFactory( idGeneratorFactory, IdReuseEligibility.ALWAYS, idConfigurationProvider ),
+                new BufferedIdController( new BufferingIdGeneratorFactory( idGeneratorFactory, idConfigurationProvider ),
                         jobScheduler ), DatabaseInfo.COMMUNITY, new TransactionVersionContextSupplier(), ON_HEAP,
                 Iterables.iterable( new EmptyIndexExtensionFactory() ),
                 file -> mock( DatabaseLayoutWatcher.class ), new GraphDatabaseFacade(), Iterables.empty(),

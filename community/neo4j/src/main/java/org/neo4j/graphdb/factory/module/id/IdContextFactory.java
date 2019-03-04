@@ -27,7 +27,6 @@ import org.neo4j.kernel.impl.store.id.BufferedIdController;
 import org.neo4j.kernel.impl.store.id.BufferingIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.DefaultIdController;
 import org.neo4j.kernel.impl.store.id.IdController;
-import org.neo4j.kernel.impl.store.id.IdReuseEligibility;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.util.FeatureToggles;
 
@@ -38,17 +37,14 @@ public class IdContextFactory
     private final JobScheduler jobScheduler;
     private final Function<String,IdGeneratorFactory> idFactoryProvider;
     private final IdTypeConfigurationProvider idTypeConfigurationProvider;
-    private final IdReuseEligibility eligibleForIdReuse;
     private final Function<IdGeneratorFactory,IdGeneratorFactory> factoryWrapper;
 
-    IdContextFactory( JobScheduler jobScheduler, Function<String,IdGeneratorFactory> idFactoryProvider,
-            IdTypeConfigurationProvider idTypeConfigurationProvider, IdReuseEligibility eligibleForIdReuse,
+    IdContextFactory( JobScheduler jobScheduler, Function<String,IdGeneratorFactory> idFactoryProvider, IdTypeConfigurationProvider idTypeConfigurationProvider,
             Function<IdGeneratorFactory,IdGeneratorFactory> factoryWrapper )
     {
         this.jobScheduler = jobScheduler;
         this.idFactoryProvider = idFactoryProvider;
         this.idTypeConfigurationProvider = idTypeConfigurationProvider;
-        this.eligibleForIdReuse = eligibleForIdReuse;
         this.factoryWrapper = factoryWrapper;
     }
 
@@ -69,7 +65,7 @@ public class IdContextFactory
     {
         IdGeneratorFactory idGeneratorFactory = idGeneratorFactoryProvider.apply( databaseName );
         BufferingIdGeneratorFactory bufferingIdGeneratorFactory =
-                new BufferingIdGeneratorFactory( idGeneratorFactory, eligibleForIdReuse, idTypeConfigurationProvider );
+                new BufferingIdGeneratorFactory( idGeneratorFactory, idTypeConfigurationProvider );
         BufferedIdController bufferingController = createBufferedIdController( bufferingIdGeneratorFactory, jobScheduler );
         return createIdContext( bufferingIdGeneratorFactory, bufferingController );
     }

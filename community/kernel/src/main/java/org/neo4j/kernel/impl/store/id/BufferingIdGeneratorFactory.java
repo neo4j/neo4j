@@ -45,12 +45,11 @@ public class BufferingIdGeneratorFactory implements IdGeneratorFactory
     private final IdGeneratorFactory delegate;
     private final IdTypeConfigurationProvider idTypeConfigurationProvider;
 
-    public BufferingIdGeneratorFactory( IdGeneratorFactory delegate,
-            IdReuseEligibility eligibleForReuse, IdTypeConfigurationProvider idTypeConfigurationProvider )
+    public BufferingIdGeneratorFactory( IdGeneratorFactory delegate, IdTypeConfigurationProvider idTypeConfigurationProvider )
     {
         this.delegate = delegate;
         this.idTypeConfigurationProvider = idTypeConfigurationProvider;
-        this.safeThreshold = snapshot -> snapshot.allClosed() && eligibleForReuse.isEligible( snapshot );
+        this.safeThreshold = KernelTransactionsSnapshot::allClosed;
     }
 
     public void initialize( Supplier<KernelTransactionsSnapshot> transactionsSnapshotSupplier )

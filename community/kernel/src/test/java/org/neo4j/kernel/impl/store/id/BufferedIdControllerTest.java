@@ -47,8 +47,8 @@ class BufferedIdControllerTest
 
     private BufferedIdController newController()
     {
-        BufferingIdGeneratorFactory idGeneratorFactory = new BufferingIdGeneratorFactory( new DefaultIdGeneratorFactory( fs ),
-                IdReuseEligibility.ALWAYS, new CommunityIdTypeConfigurationProvider() );
+        BufferingIdGeneratorFactory idGeneratorFactory =
+                new BufferingIdGeneratorFactory( new DefaultIdGeneratorFactory( fs ), new CommunityIdTypeConfigurationProvider() );
         return new BufferedIdController( idGeneratorFactory, new OnDemandJobScheduler() );
     }
 }

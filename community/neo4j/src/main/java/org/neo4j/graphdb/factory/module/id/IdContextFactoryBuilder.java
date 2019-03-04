@@ -26,7 +26,6 @@ import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.id.configuration.CommunityIdTypeConfigurationProvider;
 import org.neo4j.internal.id.configuration.IdTypeConfigurationProvider;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.impl.store.id.IdReuseEligibility;
 import org.neo4j.scheduler.JobScheduler;
 
 import static java.util.Objects.requireNonNull;
@@ -34,7 +33,6 @@ import static java.util.function.Function.identity;
 
 public class IdContextFactoryBuilder
 {
-    private IdReuseEligibility idReuseEligibility = IdReuseEligibility.ALWAYS;
     private FileSystemAbstraction fileSystemAbstraction;
     private JobScheduler jobScheduler;
     private Function<String,IdGeneratorFactory> idGeneratorFactoryProvider;
@@ -67,12 +65,6 @@ public class IdContextFactoryBuilder
         return this;
     }
 
-    public IdContextFactoryBuilder withIdReuseEligibility( IdReuseEligibility eligibleForIdReuse )
-    {
-        this.idReuseEligibility = eligibleForIdReuse;
-        return this;
-    }
-
     public IdContextFactoryBuilder withIdGenerationFactoryProvider( Function<String,IdGeneratorFactory> idGeneratorFactoryProvider )
     {
         this.idGeneratorFactoryProvider = idGeneratorFactoryProvider;
@@ -100,6 +92,6 @@ public class IdContextFactoryBuilder
         {
             factoryWrapper = identity();
         }
-        return new IdContextFactory( jobScheduler, idGeneratorFactoryProvider, idTypeConfigurationProvider, idReuseEligibility, factoryWrapper );
+        return new IdContextFactory( jobScheduler, idGeneratorFactoryProvider, idTypeConfigurationProvider, factoryWrapper );
     }
 }

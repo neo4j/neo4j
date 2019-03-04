@@ -43,7 +43,6 @@ import org.neo4j.kernel.impl.core.TokenHolders;
 import org.neo4j.kernel.impl.store.id.BufferedIdController;
 import org.neo4j.kernel.impl.store.id.BufferingIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdController;
-import org.neo4j.kernel.impl.store.id.IdReuseEligibility;
 import org.neo4j.kernel.impl.transaction.state.DefaultIndexProviderMap;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.internal.DatabaseEventHandlers;
@@ -100,7 +99,7 @@ public class RecordStorageEngineRule extends ExternalResource
         dependencies.satisfyDependency( indexProvider );
 
         BufferingIdGeneratorFactory bufferingIdGeneratorFactory =
-                new BufferingIdGeneratorFactory( idGeneratorFactory, IdReuseEligibility.ALWAYS, new CommunityIdTypeConfigurationProvider() );
+                new BufferingIdGeneratorFactory( idGeneratorFactory, new CommunityIdTypeConfigurationProvider() );
         DefaultIndexProviderMap indexProviderMap = new DefaultIndexProviderMap( dependencies, config );
         NullLogProvider nullLogProvider = NullLogProvider.getInstance();
         life.add( indexProviderMap );
