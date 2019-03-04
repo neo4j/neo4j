@@ -38,6 +38,8 @@ public abstract class IndexFiles
 
     public abstract void archiveIndex();
 
+    public abstract void ensureDirectoryExist();
+
     @Override
     public String toString()
     {
@@ -87,6 +89,18 @@ public abstract class IndexFiles
         }
     }
 
+    static void ensureDirectoryExists( FileSystemAbstraction fs, File directory )
+    {
+        try
+        {
+            fs.mkdirs( directory );
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
+        }
+    }
+
     public static class Directory extends IndexFiles
     {
         private final FileSystemAbstraction fs;
@@ -122,6 +136,12 @@ public abstract class IndexFiles
         public void archiveIndex()
         {
             archiveIndex( fs, getBase() );
+        }
+
+        @Override
+        public void ensureDirectoryExist()
+        {
+            ensureDirectoryExists( fs, directory );
         }
 
         private String indexFileName( long indexId )
@@ -163,6 +183,12 @@ public abstract class IndexFiles
         public void archiveIndex()
         {
             archiveIndex( fs, getBase() );
+        }
+
+        @Override
+        public void ensureDirectoryExist()
+        {
+            ensureDirectoryExists( fs, singleFile.getParentFile() );
         }
     }
 }

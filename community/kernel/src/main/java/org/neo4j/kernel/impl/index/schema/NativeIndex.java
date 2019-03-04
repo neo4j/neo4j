@@ -82,14 +82,7 @@ abstract class NativeIndex<KEY extends NativeIndexKey<KEY>, VALUE extends Native
 
     private void ensureDirectoryExist()
     {
-        try
-        {
-            fileSystem.mkdirs( indexFiles.getStoreFile().getParentFile() );
-        }
-        catch ( IOException e )
-        {
-            throw new UncheckedIOException( e );
-        }
+        indexFiles.ensureDirectoryExist();
     }
 
     void closeTree()
