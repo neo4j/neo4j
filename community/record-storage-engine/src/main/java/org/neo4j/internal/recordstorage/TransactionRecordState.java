@@ -28,6 +28,7 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.function.Function;
 
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.recordstorage.Command.Mode;
 import org.neo4j.internal.recordstorage.RecordAccess.RecordProxy;
@@ -39,6 +40,7 @@ import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
+import org.neo4j.kernel.impl.store.TokenStore;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
@@ -52,6 +54,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
+import org.neo4j.kernel.impl.store.record.TokenRecord;
 import org.neo4j.kernel.impl.util.statistics.IntCounter;
 import org.neo4j.storageengine.api.SchemaRule;
 import org.neo4j.storageengine.api.StorageCommand;
@@ -61,6 +64,7 @@ import org.neo4j.values.storable.Value;
 
 import static java.lang.String.format;
 import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
+import static org.neo4j.kernel.impl.store.PropertyStore.encodeString;
 
 /**
  * Transaction containing {@link Command commands} reflecting the operations
@@ -458,9 +462,7 @@ public class TransactionRecordState implements RecordState
      */
     void createPropertyKeyToken( String key, long id )
     {
-        TokenCreator<PropertyKeyTokenRecord> creator =
-                new TokenCreator<>( neoStores.getPropertyKeyTokenStore() );
-        creator.createToken( key, id, recordChangeSet.getPropertyKeyTokenChanges() );
+        createToken( neoStores.getPropertyKeyTokenStore(), key, id, recordChangeSet.getPropertyKeyTokenChanges() );
     }
 
     /**
@@ -471,9 +473,7 @@ public class TransactionRecordState implements RecordState
      */
     void createLabelToken( String name, long id )
     {
-        TokenCreator<LabelTokenRecord> creator =
-                new TokenCreator<>( neoStores.getLabelTokenStore() );
-        creator.createToken( name, id, recordChangeSet.getLabelTokenChanges() );
+        createToken( neoStores.getLabelTokenStore(), name, id, recordChangeSet.getLabelTokenChanges() );
     }
 
     /**
@@ -485,9 +485,17 @@ public class TransactionRecordState implements RecordState
      */
     void createRelationshipTypeToken( String name, long id )
     {
-        TokenCreator<RelationshipTypeTokenRecord> creator =
-                new TokenCreator<>( neoStores.getRelationshipTypeTokenStore() );
-        creator.createToken( name, id, recordChangeSet.getRelationshipTypeTokenChanges() );
+        createToken( neoStores.getRelationshipTypeTokenStore(), name, id, recordChangeSet.getRelationshipTypeTokenChanges() );
+    }
+
+    private static <R extends TokenRecord> void createToken( TokenStore<R> store, String name, long id, RecordAccess<R, Void> recordAccess )
+    {
+        R record = recordAccess.create( id, null ).forChangingData();
+        record.setInUse( true );
+        record.setCreated();
+        Collection<DynamicRecord> nameRecords = store.allocateNameRecords( encodeString( name ) );
+        record.setNameId( (int) Iterables.first( nameRecords ).getId() );
+        record.addNameRecords( nameRecords );
     }
 
     private static class CommandComparator implements Comparator<Command>
