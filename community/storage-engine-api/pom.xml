@@ -83,6 +83,11 @@
             <artifactId>neo4j-token-api</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>org.neo4j</groupId>
+            <artifactId>neo4j-schema</artifactId>
+            <version>${project.version}</version>
+        </dependency>
     </dependencies>
 
 </project>

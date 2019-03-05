@@ -24,10 +24,10 @@ import java.util.Optional;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.IndexValueCapability;
+import org.neo4j.internal.schema.DefaultIndexDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 import org.neo4j.kernel.api.index.IndexProviderDescriptor;
-import org.neo4j.storageengine.api.DefaultIndexDescriptor;
-import org.neo4j.storageengine.api.schema.SchemaDescriptor;
-import org.neo4j.storageengine.api.schema.SchemaDescriptorSupplier;
 import org.neo4j.values.storable.ValueCategory;
 
 /**
@@ -42,11 +42,11 @@ import org.neo4j.values.storable.ValueCategory;
  * it doesn't <strong>have to</strong> extend it.
  */
 public class IndexDescriptor extends DefaultIndexDescriptor
-        implements SchemaDescriptorSupplier, IndexReference, org.neo4j.storageengine.api.schema.IndexDescriptor
+        implements SchemaDescriptorSupplier, IndexReference, org.neo4j.internal.schema.IndexDescriptor
 {
     protected final IndexProviderDescriptor providerDescriptor;
 
-    public IndexDescriptor( org.neo4j.storageengine.api.schema.IndexDescriptor indexDescriptor )
+    public IndexDescriptor( org.neo4j.internal.schema.IndexDescriptor indexDescriptor )
     {
         this( indexDescriptor.schema(), indexDescriptor.isUnique(),
                 indexDescriptor.hasUserSuppliedName() ? Optional.of( indexDescriptor.name() ) : Optional.empty(),

@@ -27,17 +27,17 @@ import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.internal.kernel.api.exceptions.schema.MalformedSchemaRuleException;
 import org.neo4j.internal.recordstorage.SchemaRuleAccess;
+import org.neo4j.internal.schema.LabelSchemaDescriptor;
+import org.neo4j.internal.schema.RelationTypeSchemaDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.SchemaProcessor;
 import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
-import org.neo4j.kernel.impl.store.record.ConstraintRule;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
+import org.neo4j.storageengine.api.ConstraintRule;
 import org.neo4j.storageengine.api.SchemaRule;
-import org.neo4j.storageengine.api.schema.LabelSchemaDescriptor;
-import org.neo4j.storageengine.api.schema.RelationTypeSchemaDescriptor;
-import org.neo4j.storageengine.api.schema.SchemaDescriptor;
-import org.neo4j.storageengine.api.schema.SchemaProcessor;
 
 /**
  * Note that this class builds up an in-memory representation of the complete schema store by being used in

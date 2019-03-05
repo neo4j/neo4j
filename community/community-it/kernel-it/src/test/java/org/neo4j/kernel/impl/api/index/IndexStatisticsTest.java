@@ -55,6 +55,7 @@ import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.internal.recordstorage.SchemaRuleAccess;
+import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
@@ -66,7 +67,6 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.register.Registers;
-import org.neo4j.storageengine.api.schema.LabelSchemaDescriptor;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.rule.DbmsRule;
 import org.neo4j.test.rule.EmbeddedDbmsRule;
@@ -83,7 +83,7 @@ import static org.junit.runners.Parameterized.Parameter;
 import static org.junit.runners.Parameterized.Parameters;
 import static org.neo4j.helpers.ArrayUtil.single;
 import static org.neo4j.helpers.collection.Iterables.filter;
-import static org.neo4j.storageengine.api.schema.SchemaDescriptorFactory.forLabel;
+import static org.neo4j.internal.schema.SchemaDescriptorFactory.forLabel;
 
 /**
  * This test validates that we count the correct amount of index updates. In the process it also verifies that the populated index has
@@ -217,7 +217,8 @@ public class IndexStatisticsTest
         IndexReference index = createPersonNameIndex();
         awaitIndexesOnline();
 
-        SchemaRuleAccess schemaRuleAccess = SchemaRuleAccess.getSchemaRuleAccess( neoStores().getSchemaStore(), resolveDependency( TokenHolders.class ) );
+        SchemaRuleAccess schemaRuleAccess =
+                SchemaRuleAccess.getSchemaRuleAccess( neoStores().getSchemaStore(), resolveDependency( TokenHolders.class ).propertyKeyTokens() );
         long indexId = single( schemaRuleAccess.indexGetForSchema( index ) ).getId();
 
         // when

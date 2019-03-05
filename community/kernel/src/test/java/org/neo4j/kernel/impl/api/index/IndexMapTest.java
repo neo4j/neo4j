@@ -27,10 +27,10 @@ import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import org.neo4j.internal.schema.LabelSchemaDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.impl.index.schema.CapableIndexDescriptor;
-import org.neo4j.storageengine.api.schema.LabelSchemaDescriptor;
-import org.neo4j.storageengine.api.schema.SchemaDescriptor;
-import org.neo4j.storageengine.api.schema.SchemaDescriptorFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -42,7 +42,6 @@ import static org.neo4j.kernel.impl.index.schema.IndexDescriptorFactory.forSchem
 
 class IndexMapTest
 {
-
     private static final long[] noEntityToken = {};
     private IndexMap indexMap;
 

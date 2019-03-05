@@ -19,9 +19,9 @@
  */
 package org.neo4j.storageengine.api;
 
-import org.neo4j.storageengine.api.schema.IndexDescriptor;
+import org.neo4j.internal.schema.IndexDescriptor;
 
-public interface StorageIndexReference extends IndexDescriptor
+public interface StorageIndexReference extends IndexDescriptor, SchemaRule
 {
     /**
      * @return reference to this index.

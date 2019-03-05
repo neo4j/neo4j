@@ -50,6 +50,14 @@ import org.neo4j.internal.kernel.api.exceptions.schema.CreateConstraintFailureEx
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
+import org.neo4j.internal.schema.ConstraintDescriptor;
+import org.neo4j.internal.schema.LabelSchemaDescriptor;
+import org.neo4j.internal.schema.RelationTypeSchemaDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
+import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
+import org.neo4j.internal.schema.constraints.NodeKeyConstraintDescriptor;
+import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.api.SilentTokenNameLookup;
 import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
@@ -65,10 +73,6 @@ import org.neo4j.kernel.api.exceptions.schema.RepeatedPropertyInCompositeSchemaE
 import org.neo4j.kernel.api.exceptions.schema.UnableToValidateConstraintException;
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
 import org.neo4j.kernel.api.index.IndexProviderDescriptor;
-import org.neo4j.kernel.api.schema.constraints.ConstraintDescriptorFactory;
-import org.neo4j.kernel.api.schema.constraints.IndexBackedConstraintDescriptor;
-import org.neo4j.kernel.api.schema.constraints.NodeKeyConstraintDescriptor;
-import org.neo4j.kernel.api.schema.constraints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.index.IndexingProvidersService;
@@ -80,10 +84,6 @@ import org.neo4j.kernel.impl.locking.ResourceIds;
 import org.neo4j.lock.ResourceType;
 import org.neo4j.lock.ResourceTypes;
 import org.neo4j.storageengine.api.CommandCreationContext;
-import org.neo4j.storageengine.api.schema.ConstraintDescriptor;
-import org.neo4j.storageengine.api.schema.LabelSchemaDescriptor;
-import org.neo4j.storageengine.api.schema.RelationTypeSchemaDescriptor;
-import org.neo4j.storageengine.api.schema.SchemaDescriptor;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
@@ -91,6 +91,7 @@ import static java.lang.Math.max;
 import static java.lang.Math.min;
 import static org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException.Phase.VALIDATION;
 import static org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException.OperationContext.CONSTRAINT_CREATION;
+import static org.neo4j.internal.schema.SchemaDescriptor.schemaTokenLockingIds;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_LABEL;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_PROPERTY_KEY;
@@ -98,7 +99,6 @@ import static org.neo4j.kernel.impl.locking.ResourceIds.indexEntryResourceId;
 import static org.neo4j.kernel.impl.newapi.IndexTxStateUpdater.LabelChangeType.ADDED_LABEL;
 import static org.neo4j.kernel.impl.newapi.IndexTxStateUpdater.LabelChangeType.REMOVED_LABEL;
 import static org.neo4j.lock.ResourceTypes.INDEX_ENTRY;
-import static org.neo4j.storageengine.api.schema.SchemaDescriptor.schemaTokenLockingIds;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 
 /**
@@ -169,7 +169,7 @@ public class Operations implements Write, SchemaWrite
         // And we don't need to take the exclusive lock on the node, because it was created in this transaction and
         // isn't visible to anyone else yet.
         ktx.assertOpen();
-        long[] lockingIds = SchemaDescriptor.schemaTokenLockingIds( labels );
+        long[] lockingIds = schemaTokenLockingIds( labels );
         Arrays.sort( lockingIds ); // Sort to ensure labels are locked and assigned in order.
         ktx.statementLocks().optimistic().acquireShared( ktx.lockTracer(), ResourceTypes.LABEL, lockingIds );
         long nodeId = commandCreationContext.reserveNode();
@@ -436,10 +436,10 @@ public class Operations implements Write, SchemaWrite
      * Check so that there is not an existing node with the exact match of label and property
      */
     private void validateNoExistingNodeWithExactValues( IndexBackedConstraintDescriptor constraint,
-            IndexQuery.ExactPredicate[] propertyValues, long modifiedNode
-    ) throws UniquePropertyValueValidationException, UnableToValidateConstraintException
+            IndexQuery.ExactPredicate[] propertyValues, long modifiedNode )
+            throws UniquePropertyValueValidationException, UnableToValidateConstraintException
     {
-        IndexReference schemaIndexDescriptor = constraint.ownedIndexDescriptor();
+        IndexReference schemaIndexDescriptor = allStoreHolder.indexGetForSchema( constraint.ownedIndexDescriptor().schema() );
         try ( DefaultNodeValueIndexCursor valueCursor = cursors.allocateNodeValueIndexCursor();
               IndexReaders indexReaders = new IndexReaders( schemaIndexDescriptor, allStoreHolder ) )
         {

@@ -68,6 +68,7 @@ import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.recordstorage.SchemaRuleAccess;
 import org.neo4j.internal.recordstorage.StoreTokens;
+import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
@@ -75,7 +76,6 @@ import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProviderDescriptor;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.kernel.impl.api.index.EntityUpdates;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
@@ -92,7 +92,6 @@ import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.store.allocator.ReusableRecordsAllocator;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
-import org.neo4j.kernel.impl.store.record.ConstraintRule;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -105,9 +104,11 @@ import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.FormattedLog;
+import org.neo4j.storageengine.api.ConstraintRule;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.NodeLabelUpdate;
 import org.neo4j.storageengine.api.SchemaRule;
+import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.string.UTF8;
 import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.util.Bits;
@@ -133,6 +134,8 @@ import static org.neo4j.helpers.collection.Iterables.asIterable;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.internal.kernel.api.TokenRead.ANY_LABEL;
 import static org.neo4j.internal.kernel.api.TokenRead.ANY_RELATIONSHIP_TYPE;
+import static org.neo4j.internal.schema.SchemaDescriptorFactory.forLabel;
+import static org.neo4j.kernel.api.index.IndexProviderDescriptor.from;
 import static org.neo4j.kernel.impl.index.schema.IndexDescriptorFactory.forSchema;
 import static org.neo4j.kernel.impl.index.schema.IndexDescriptorFactory.uniqueForSchema;
 import static org.neo4j.kernel.impl.store.AbstractDynamicStore.readFullByteArrayFromHeavyRecords;
@@ -148,7 +151,6 @@ import static org.neo4j.kernel.impl.store.record.Record.NO_PREVIOUS_PROPERTY;
 import static org.neo4j.kernel.impl.store.record.Record.NO_PREV_RELATIONSHIP;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 import static org.neo4j.storageengine.api.NodeLabelUpdate.labelChanges;
-import static org.neo4j.storageengine.api.schema.SchemaDescriptorFactory.forLabel;
 import static org.neo4j.test.Property.property;
 import static org.neo4j.test.Property.set;
 import static org.neo4j.util.Bits.bits;
@@ -448,12 +450,12 @@ public class FullCheckIntegrationTest
         DirectStoreAccess storeAccess = fixture.directStoreAccess();
 
         // fail all indexes
-        Iterator<StoreIndexDescriptor> rules = getIndexDescriptors();
+        Iterator<StorageIndexReference> rules = getIndexDescriptors();
         while ( rules.hasNext() )
         {
-            StoreIndexDescriptor rule = rules.next();
+            StorageIndexReference rule = rules.next();
             IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.defaults() );
-            IndexPopulator populator = storeAccess.indexes().lookup( rule.providerDescriptor() )
+            IndexPopulator populator = storeAccess.indexes().lookup( from( rule ) )
                 .getPopulator( rule, samplingConfig );
             populator.markAsFailed( "Oh noes! I was a shiny index and then I was failed" );
             populator.close( false );
@@ -555,12 +557,12 @@ public class FullCheckIntegrationTest
     {
         // given
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.defaults() );
-        Iterator<StoreIndexDescriptor> indexDescriptorIterator = getIndexDescriptors();
+        Iterator<StorageIndexReference> indexDescriptorIterator = getIndexDescriptors();
         while ( indexDescriptorIterator.hasNext() )
         {
-            StoreIndexDescriptor indexDescriptor = indexDescriptorIterator.next();
+            StorageIndexReference indexDescriptor = indexDescriptorIterator.next();
             IndexAccessor accessor = fixture.directStoreAccess().indexes().
-                    lookup( indexDescriptor.providerDescriptor() ).getOnlineAccessor( indexDescriptor, samplingConfig );
+                    lookup( from( indexDescriptor ) ).getOnlineAccessor( indexDescriptor, samplingConfig );
             try ( IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE ) )
             {
                 for ( long nodeId : indexedNodes )
@@ -589,11 +591,11 @@ public class FullCheckIntegrationTest
     {
         // given
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.defaults() );
-        Iterator<StoreIndexDescriptor> indexRuleIterator = getIndexDescriptors();
+        Iterator<StorageIndexReference> indexRuleIterator = getIndexDescriptors();
         while ( indexRuleIterator.hasNext() )
         {
-            StoreIndexDescriptor indexRule = indexRuleIterator.next();
-            IndexAccessor accessor = fixture.directStoreAccess().indexes().lookup( indexRule.providerDescriptor() )
+            StorageIndexReference indexRule = indexRuleIterator.next();
+            IndexAccessor accessor = fixture.directStoreAccess().indexes().lookup( from( indexRule ) )
                     .getOnlineAccessor( indexRule, samplingConfig );
             IndexUpdater updater = accessor.newUpdater( IndexUpdateMode.ONLINE );
             updater.process( IndexEntryUpdate.add( 42, indexRule.schema(), values( indexRule ) ) );
@@ -611,7 +613,7 @@ public class FullCheckIntegrationTest
                    .andThatsAllFolks();
     }
 
-    private Value[] values( StoreIndexDescriptor indexRule )
+    private Value[] values( StorageIndexReference indexRule )
     {
         switch ( indexRule.schema().getPropertyIds().length )
         {
@@ -2388,15 +2390,20 @@ public class FullCheckIntegrationTest
 
     private void writeToSchemaStore( SchemaStore schemaStore, SchemaRule rule )
     {
-        SchemaRuleAccess schemaRuleAccess = SchemaRuleAccess.getSchemaRuleAccess( schemaStore, fixture.writableTokenHolders() );
+        SchemaRuleAccess schemaRuleAccess = SchemaRuleAccess.getSchemaRuleAccess( schemaStore, fixture.writableTokenHolders().propertyKeyTokens() );
         schemaRuleAccess.writeSchemaRule( rule );
     }
 
-    private Iterator<StoreIndexDescriptor> getIndexDescriptors()
+    private Iterator<StorageIndexReference> getIndexDescriptors()
     {
         StoreAccess storeAccess = fixture.directStoreAccess().nativeStores();
+<<<<<<< HEAD
         TokenHolders tokenHolders = StoreTokens.readOnlyTokenHolders( storeAccess.getRawNeoStores() );
         SchemaRuleAccess schema = SchemaRuleAccess.getSchemaRuleAccess( storeAccess.getSchemaStore(), tokenHolders );
+=======
+        TokenHolders tokenHolders = RecordStorageEngineFactory.readOnlyTokenHolders( storeAccess.getRawNeoStores() );
+        SchemaRuleAccess schema = SchemaRuleAccess.getSchemaRuleAccess( storeAccess.getSchemaStore(), tokenHolders.propertyKeyTokens() );
+>>>>>>> Moves schema descriptors to new neo4j-schema component
         return schema.indexesGetAll();
     }
 

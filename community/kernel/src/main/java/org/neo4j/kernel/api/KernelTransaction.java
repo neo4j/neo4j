@@ -31,9 +31,9 @@ import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
+import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.availability.AvailabilityGuard;
 import org.neo4j.kernel.impl.api.ClockContext;
-import org.neo4j.storageengine.api.schema.SchemaDescriptor;
 
 /**
  * Extends the outwards-facing {@link org.neo4j.internal.kernel.api.Transaction} with additional functionality

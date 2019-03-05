@@ -21,8 +21,8 @@ package org.neo4j.kernel.api.index;
 
 import org.junit.jupiter.api.Test;
 
+import org.neo4j.internal.schema.SchemaDescriptorFactory;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
-import org.neo4j.storageengine.api.schema.SchemaDescriptorFactory;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 

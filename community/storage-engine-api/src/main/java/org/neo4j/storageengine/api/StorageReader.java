@@ -22,8 +22,8 @@ package org.neo4j.storageengine.api;
 import java.util.Iterator;
 import java.util.function.Function;
 
-import org.neo4j.storageengine.api.schema.ConstraintDescriptor;
-import org.neo4j.storageengine.api.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.ConstraintDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptor;
 
 /**
  * Abstraction for accessing data from a {@link StorageEngine}.

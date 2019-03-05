@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.planner.spi.{IndexLimitation, SlowContains, Ind
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundTokenContext
 import org.neo4j.internal.kernel
 import org.neo4j.internal.kernel.api.{IndexLimitation => KernelIndexLimitation}
-import org.neo4j.storageengine.api.schema.{LabelSchemaDescriptor, SchemaDescriptorFactory}
+import org.neo4j.internal.schema.{LabelSchemaDescriptor, SchemaDescriptorFactory}
 
 trait IndexDescriptorCompatibility {
   def kernelToCypher(limitation: kernel.api.IndexLimitation): IndexLimitation = {

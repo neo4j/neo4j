@@ -25,17 +25,17 @@ import org.neo4j.consistency.checking.RecordCheck;
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.consistency.store.synthetic.IndexEntry;
-import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
-import org.neo4j.storageengine.api.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.storageengine.api.StorageIndexReference;
 
 public class IndexCheck implements RecordCheck<IndexEntry,ConsistencyReport.IndexConsistencyReport>
 {
     private final EntityType entityType;
-    private final StoreIndexDescriptor indexRule;
+    private final StorageIndexReference indexRule;
     private NodeInUseWithCorrectLabelsCheck<IndexEntry,ConsistencyReport.IndexConsistencyReport> nodeChecker;
     private RelationshipInUseWithCorrectRelationshipTypeCheck<IndexEntry,ConsistencyReport.IndexConsistencyReport> relationshipChecker;
 
-    IndexCheck( StoreIndexDescriptor indexRule )
+    IndexCheck( StorageIndexReference indexRule )
     {
         this.indexRule = indexRule;
         SchemaDescriptor schema = indexRule.schema();

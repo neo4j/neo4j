@@ -36,27 +36,26 @@ import org.neo4j.configuration.Config;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.id.IdType;
 import org.neo4j.internal.kernel.api.exceptions.schema.MalformedSchemaRuleException;
+import org.neo4j.internal.schema.ConstraintDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptorFactory;
+import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
+import org.neo4j.internal.schema.constraints.NodeKeyConstraintDescriptor;
+import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.api.index.IndexProviderDescriptor;
-import org.neo4j.kernel.api.schema.constraints.ConstraintDescriptor;
-import org.neo4j.kernel.api.schema.constraints.ConstraintDescriptorFactory;
-import org.neo4j.kernel.api.schema.constraints.NodeKeyConstraintDescriptor;
-import org.neo4j.kernel.api.schema.constraints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.impl.store.format.Capability;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
-import org.neo4j.kernel.impl.store.record.ConstraintRule;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.storageengine.api.ConstraintRule;
 import org.neo4j.storageengine.api.DefaultStorageIndexReference;
 import org.neo4j.storageengine.api.PropertyKeyValue;
 import org.neo4j.storageengine.api.SchemaRule;
 import org.neo4j.storageengine.api.StorageConstraintReference;
 import org.neo4j.storageengine.api.StorageIndexReference;
-import org.neo4j.storageengine.api.schema.SchemaDescriptor;
-import org.neo4j.storageengine.api.schema.SchemaDescriptorFactory;
 import org.neo4j.token.api.NamedToken;
 import org.neo4j.token.api.TokenHolder;
 import org.neo4j.token.api.TokenNotFoundException;
@@ -276,7 +275,7 @@ public class SchemaStore extends CommonAbstractStore<SchemaRecord,IntStoreHeader
     {
         // Rule
         putStringProperty( map, PROP_SCHEMA_RULE_TYPE, "CONSTRAINT" );
-        org.neo4j.storageengine.api.schema.ConstraintDescriptor.Type type = rule.getConstraintDescriptor().type();
+        ConstraintDescriptor.Type type = rule.getConstraintDescriptor().type();
         switch ( type )
         {
         case UNIQUE:
@@ -436,13 +435,6 @@ public class SchemaStore extends CommonAbstractStore<SchemaRecord,IntStoreHeader
         default:
             throw new MalformedSchemaRuleException( "Did not recognize property schema type: " + propertySchemaType );
         }
-    }
-
-    private static IndexProviderDescriptor buildIndexProviderDescriptor( Map<String,Value> props ) throws MalformedSchemaRuleException
-    {
-        String key = getString( PROP_INDEX_PROVIDER_NAME, props );
-        String version = getString( PROP_INDEX_PROVIDER_VERSION, props );
-        return new IndexProviderDescriptor( key, version );
     }
 
     private static int singleEntityId( int[] entityIds ) throws MalformedSchemaRuleException

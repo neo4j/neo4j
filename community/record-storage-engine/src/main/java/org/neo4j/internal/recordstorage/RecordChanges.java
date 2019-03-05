@@ -23,8 +23,8 @@ import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
 import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap;
 
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.impl.util.statistics.IntCounter;
-import org.neo4j.kernel.impl.util.statistics.LocalIntCounter;
+import org.neo4j.util.IntCounter;
+import org.neo4j.util.LocalIntCounter;
 
 /**
  * Manages changes to records in a transaction. Before/after state is supported as well as

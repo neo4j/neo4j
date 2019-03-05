@@ -19,14 +19,14 @@
  */
 package org.neo4j.consistency.store.synthetic;
 
-import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
+import org.neo4j.storageengine.api.StorageIndexReference;
 
 public class IndexRecord extends AbstractBaseRecord
 {
-    private final StoreIndexDescriptor indexRule;
+    private final StorageIndexReference indexRule;
 
-    public IndexRecord( StoreIndexDescriptor indexRule )
+    public IndexRecord( StorageIndexReference indexRule )
     {
         super( indexRule.getId() );
         this.indexRule = indexRule;

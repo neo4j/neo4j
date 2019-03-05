@@ -21,9 +21,9 @@ package org.neo4j.kernel.api.schema.index;
 
 import org.junit.jupiter.api.Test;
 
+import org.neo4j.internal.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.impl.index.schema.IndexDescriptor;
 import org.neo4j.kernel.impl.index.schema.IndexDescriptorFactory;
-import org.neo4j.storageengine.api.schema.SchemaDescriptorFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;

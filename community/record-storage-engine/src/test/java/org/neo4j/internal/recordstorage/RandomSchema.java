@@ -25,16 +25,16 @@ import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import org.neo4j.common.EntityType;
+import org.neo4j.internal.schema.LabelSchemaDescriptor;
+import org.neo4j.internal.schema.MultiTokenSchemaDescriptor;
+import org.neo4j.internal.schema.RelationTypeSchemaDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptorFactory;
+import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.index.IndexProviderDescriptor;
-import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
-import org.neo4j.kernel.api.schema.RelationTypeSchemaDescriptor;
-import org.neo4j.kernel.api.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.store.format.standard.StandardFormatSettings;
-import org.neo4j.kernel.impl.store.record.ConstraintRule;
+import org.neo4j.storageengine.api.ConstraintRule;
 import org.neo4j.storageengine.api.SchemaRule;
-import org.neo4j.storageengine.api.schema.MultiTokenSchemaDescriptor;
-import org.neo4j.storageengine.api.schema.SchemaDescriptorFactory;
 import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.ValueGroup;
@@ -42,7 +42,7 @@ import org.neo4j.values.storable.ValueType;
 
 import static org.neo4j.kernel.impl.index.schema.IndexDescriptorFactory.forSchema;
 import static org.neo4j.kernel.impl.index.schema.IndexDescriptorFactory.uniqueForSchema;
-import static org.neo4j.kernel.impl.store.record.ConstraintRule.constraintRule;
+import static org.neo4j.storageengine.api.ConstraintRule.constraintRule;
 
 @SuppressWarnings( "WeakerAccess" ) // Keep accessibility high in case someone wants to extend this class in the future.
 public class RandomSchema implements Supplier<SchemaRule>

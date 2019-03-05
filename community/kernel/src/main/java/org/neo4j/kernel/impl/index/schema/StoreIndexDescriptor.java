@@ -29,7 +29,7 @@ import org.neo4j.storageengine.api.StorageIndexReference;
  *
  * Adds an index id, a name, and optionally an owning constraint id to the general IndexDescriptor.
  */
-public class StoreIndexDescriptor extends IndexDescriptor implements SchemaRule, StorageIndexReference
+public class StoreIndexDescriptor extends IndexDescriptor implements StorageIndexReference
 {
     private final long id;
     private final Long owningConstraintId;
@@ -59,19 +59,19 @@ public class StoreIndexDescriptor extends IndexDescriptor implements SchemaRule,
     }
 
     /**
-     * Convert a non-committed {@link org.neo4j.storageengine.api.schema.IndexDescriptor} to a {@link StoreIndexDescriptor},
+     * Convert a non-committed {@link org.neo4j.internal.schema.IndexDescriptor} to a {@link StoreIndexDescriptor},
      * supplying an id, which effectively makes it act like a committed descriptor.
      */
-    public StoreIndexDescriptor( org.neo4j.storageengine.api.schema.IndexDescriptor descriptor, long id )
+    public StoreIndexDescriptor( org.neo4j.internal.schema.IndexDescriptor descriptor, long id )
     {
         this( descriptor, id, null );
     }
 
     /**
-     * Convert a non-committed {@link org.neo4j.storageengine.api.schema.IndexDescriptor} to a {@link StoreIndexDescriptor},
+     * Convert a non-committed {@link org.neo4j.internal.schema.IndexDescriptor} to a {@link StoreIndexDescriptor},
      * supplying an id and owning constraint, which effectively makes it act like a committed descriptor.
      */
-    public StoreIndexDescriptor( org.neo4j.storageengine.api.schema.IndexDescriptor descriptor, long id, Long owningConstraintId )
+    public StoreIndexDescriptor( org.neo4j.internal.schema.IndexDescriptor descriptor, long id, Long owningConstraintId )
     {
         super( descriptor );
 

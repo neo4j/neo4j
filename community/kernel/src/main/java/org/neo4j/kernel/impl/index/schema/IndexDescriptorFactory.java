@@ -21,8 +21,8 @@ package org.neo4j.kernel.impl.index.schema;
 
 import java.util.Optional;
 
+import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.index.IndexProviderDescriptor;
-import org.neo4j.storageengine.api.schema.SchemaDescriptor;
 
 import static org.neo4j.kernel.api.index.IndexProviderDescriptor.UNDECIDED;
 
@@ -58,7 +58,7 @@ public class IndexDescriptorFactory
     public static IndexDescriptor uniqueForSchema( SchemaDescriptor schema,
                                                    IndexProviderDescriptor providerDescriptor )
     {
-        return uniqueForSchema( schema,Optional.empty(), providerDescriptor );
+        return uniqueForSchema( schema, Optional.empty(), providerDescriptor );
     }
 
     public static IndexDescriptor uniqueForSchema( SchemaDescriptor schema,

@@ -22,7 +22,7 @@ package org.neo4j.storageengine.api;
 import java.io.IOException;
 
 import org.neo4j.exceptions.KernelException;
-import org.neo4j.storageengine.api.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptor;
 
 public interface IndexUpdateListener
 {

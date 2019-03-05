@@ -23,10 +23,10 @@ import java.util.Properties;
 
 import org.neo4j.common.EntityType;
 import org.neo4j.common.TokenNameLookup;
+import org.neo4j.internal.schema.SchemaComputer;
+import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.SchemaProcessor;
 import org.neo4j.lock.ResourceType;
-import org.neo4j.storageengine.api.schema.SchemaComputer;
-import org.neo4j.storageengine.api.schema.SchemaDescriptor;
-import org.neo4j.storageengine.api.schema.SchemaProcessor;
 
 class FulltextSchemaDescriptor implements SchemaDescriptor
 {

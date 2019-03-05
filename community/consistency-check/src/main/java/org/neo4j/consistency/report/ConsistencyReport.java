@@ -30,7 +30,6 @@ import org.neo4j.consistency.store.synthetic.CountsEntry;
 import org.neo4j.consistency.store.synthetic.IndexEntry;
 import org.neo4j.consistency.store.synthetic.LabelScanDocument;
 import org.neo4j.kernel.impl.annotations.Documented;
-import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.NeoStoreRecord;
@@ -43,6 +42,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.storageengine.api.SchemaRule;
+import org.neo4j.storageengine.api.StorageIndexReference;
 
 public interface ConsistencyReport
 {
@@ -197,13 +197,13 @@ public interface ConsistencyReport
         void dynamicRecordChainCycle( DynamicRecord nextRecord );
 
         @Documented( "This node was not found in the expected index." )
-        void notIndexed( StoreIndexDescriptor index, Object[] propertyValues );
+        void notIndexed( StorageIndexReference index, Object[] propertyValues );
 
         @Documented( "This node was found in the expected index, although multiple times" )
-        void indexedMultipleTimes( StoreIndexDescriptor index, Object[] propertyValues, long count );
+        void indexedMultipleTimes( StorageIndexReference index, Object[] propertyValues, long count );
 
         @Documented( "There is another node in the unique index with the same property value(s)." )
-        void uniqueIndexNotUnique( StoreIndexDescriptor index, Object[] propertyValues, long duplicateNodeId );
+        void uniqueIndexNotUnique( StorageIndexReference index, Object[] propertyValues, long duplicateNodeId );
 
         @Documented( "The referenced relationship group record is not in use." )
         void relationshipGroupNotInUse( RelationshipGroupRecord group );
@@ -273,10 +273,10 @@ public interface ConsistencyReport
         void targetNextDoesNotReferenceBack( RelationshipRecord relationship );
 
         @Documented( "This relationship was not found in the expected index." )
-        void notIndexed( StoreIndexDescriptor index, Object[] propertyValues );
+        void notIndexed( StorageIndexReference index, Object[] propertyValues );
 
         @Documented( "This relationship was found in the expected index, although multiple times" )
-        void indexedMultipleTimes( StoreIndexDescriptor index, Object[] propertyValues, long count );
+        void indexedMultipleTimes( StorageIndexReference index, Object[] propertyValues, long count );
     }
 
     interface PropertyConsistencyReport extends ConsistencyReport

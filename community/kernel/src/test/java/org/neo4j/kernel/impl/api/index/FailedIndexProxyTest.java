@@ -31,9 +31,9 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.neo4j.internal.schema.SchemaDescriptorFactory.forLabel;
 import static org.neo4j.kernel.impl.index.schema.IndexDescriptorFactory.forSchema;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
-import static org.neo4j.storageengine.api.schema.SchemaDescriptorFactory.forLabel;
 
 class FailedIndexProxyTest
 {

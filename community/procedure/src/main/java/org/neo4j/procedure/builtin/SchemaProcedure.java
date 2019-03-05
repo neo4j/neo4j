@@ -43,12 +43,12 @@ import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.TokenRead;
+import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.SilentTokenNameLookup;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.impl.coreapi.schema.PropertyNameUtils;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.storageengine.api.schema.ConstraintDescriptor;
 
 public class SchemaProcedure
 {
@@ -199,10 +199,7 @@ public class SchemaProcedure
             relationshipsForType = relationshipMap.get( relType );
         }
         VirtualRelationshipHack relationship = new VirtualRelationshipHack( startNode, endNode, relType );
-        if ( !relationshipsForType.contains( relationship ) )
-        {
-            relationshipsForType.add( relationship );
-        }
+        relationshipsForType.add( relationship );
     }
 
     private GraphResult getGraphResult( final Map<String,VirtualNodeHack> nodeMap,

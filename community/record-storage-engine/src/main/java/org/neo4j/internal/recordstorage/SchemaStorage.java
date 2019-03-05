@@ -25,28 +25,27 @@ import org.eclipse.collections.api.map.primitive.IntObjectMap;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
-import java.util.function.Predicate;
 import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
 import org.neo4j.internal.kernel.api.exceptions.schema.MalformedSchemaRuleException;
+import org.neo4j.internal.schema.ConstraintDescriptor;
+import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 import org.neo4j.kernel.api.exceptions.schema.DuplicateSchemaRuleException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
-import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
-import org.neo4j.kernel.impl.store.record.ConstraintRule;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
+import org.neo4j.storageengine.api.ConstraintRule;
 import org.neo4j.storageengine.api.SchemaRule;
-import org.neo4j.storageengine.api.schema.ConstraintDescriptor;
-import org.neo4j.storageengine.api.schema.IndexDescriptor;
-import org.neo4j.storageengine.api.schema.SchemaDescriptor;
-import org.neo4j.storageengine.api.schema.SchemaDescriptorSupplier;
+import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.token.api.TokenHolder;
 import org.neo4j.util.VisibleForTesting;
 import org.neo4j.values.storable.Value;
@@ -84,31 +83,31 @@ public class SchemaStorage implements SchemaRuleAccess
     }
 
     @Override
-    public Iterator<StoreIndexDescriptor> indexesGetAll()
+    public Iterator<StorageIndexReference> indexesGetAll()
     {
         return indexRules( streamAllSchemaRules( false ) ).iterator();
     }
 
     @Override
-    public StoreIndexDescriptor[] indexGetForSchema( SchemaDescriptorSupplier supplier )
+    public StorageIndexReference[] indexGetForSchema( SchemaDescriptorSupplier supplier )
     {
         SchemaDescriptor schema = supplier.schema();
         return indexRules( streamAllSchemaRules( false ) )
                 .filter( rule -> rule.schema().equals( schema ) )
-                .toArray( StoreIndexDescriptor[]::new );
+                .toArray( StorageIndexReference[]::new );
     }
 
     @Override
-    public StoreIndexDescriptor[] indexGetForSchema( IndexDescriptor descriptor, boolean filterOnType )
+    public StorageIndexReference[] indexGetForSchema( IndexDescriptor descriptor, boolean filterOnType )
     {
         SchemaDescriptor schema = descriptor.schema();
         return indexRules( streamAllSchemaRules( false ) )
                 .filter( filterOnType ? descriptor::equals : index -> index.schema().equals( schema ) )
-                .toArray( StoreIndexDescriptor[]::new );
+                .toArray( StorageIndexReference[]::new );
     }
 
     @Override
-    public StoreIndexDescriptor indexGetForName( String indexName )
+    public StorageIndexReference indexGetForName( String indexName )
     {
         return indexRules( streamAllSchemaRules( false ) )
                 .filter( idx -> idx.hasUserSuppliedName() && idx.name().equals( indexName ) )
@@ -247,11 +246,11 @@ public class SchemaStorage implements SchemaRuleAccess
                 .flatMap( record -> readSchemaRuleThrowingRuntimeException( record, ignoreMalformed ) );
     }
 
-    private Stream<StoreIndexDescriptor> indexRules( Stream<SchemaRule> stream )
+    private Stream<StorageIndexReference> indexRules( Stream<SchemaRule> stream )
     {
         return stream
-                .filter( rule -> rule instanceof StoreIndexDescriptor )
-                .map( rule -> (StoreIndexDescriptor) rule );
+                .filter( rule -> rule instanceof StorageIndexReference )
+                .map( rule -> (StorageIndexReference) rule );
     }
 
     private Stream<ConstraintRule> constraintRules( Stream<SchemaRule> stream )

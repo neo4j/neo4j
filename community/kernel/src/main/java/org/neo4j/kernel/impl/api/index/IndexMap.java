@@ -40,8 +40,8 @@ import java.util.Map;
 import java.util.Set;
 
 import org.neo4j.common.EntityType;
+import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
-import org.neo4j.storageengine.api.schema.SchemaDescriptor;
 
 /**
  * Bundles various mappings to IndexProxy. Used by IndexingService via IndexMapReference.

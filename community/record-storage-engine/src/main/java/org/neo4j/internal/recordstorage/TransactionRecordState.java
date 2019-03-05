@@ -32,8 +32,6 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.recordstorage.Command.Mode;
 import org.neo4j.internal.recordstorage.RecordAccess.RecordProxy;
-import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
@@ -55,11 +53,13 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.kernel.impl.store.record.TokenRecord;
-import org.neo4j.kernel.impl.util.statistics.IntCounter;
 import org.neo4j.lock.ResourceLocker;
+import org.neo4j.storageengine.api.DefaultStorageIndexReference;
 import org.neo4j.storageengine.api.SchemaRule;
 import org.neo4j.storageengine.api.StorageCommand;
+import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.storageengine.api.StorageProperty;
+import org.neo4j.util.IntCounter;
 import org.neo4j.values.storable.Value;
 
 import static java.lang.String.format;
@@ -67,12 +67,10 @@ import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
 import static org.neo4j.kernel.impl.store.PropertyStore.encodeString;
 
 /**
- * Transaction containing {@link Command commands} reflecting the operations
- * performed in the transaction.
- *
- * This class currently has a symbiotic relationship with {@link KernelTransaction}, with which it always has a 1-1
- * relationship.
- *
+ * Transaction containing {@link Command commands} reflecting the operations performed in the transaction.
+ * <p>
+ * This class currently has a symbiotic relationship with a transaction, with which it always has a 1-1 relationship.
+ * <p>
  * The idea here is that KernelTransaction will eventually take on the responsibilities of WriteTransaction, such as
  * keeping track of transaction state, serialization and deserialization to and from logical log, and applying things
  * to store. It would most likely do this by keeping a component derived from the current WriteTransaction
@@ -608,14 +606,14 @@ public class TransactionRecordState implements RecordState
         propertyCreator.primitiveSetProperty( record, propertyKeyId, value, recordChangeSet.getPropertyRecords() );
     }
 
-    void schemaRuleSetIndexOwner( StoreIndexDescriptor rule, long constraintId, int propertyKeyId, Value value )
+    void schemaRuleSetIndexOwner( StorageIndexReference rule, long constraintId, int propertyKeyId, Value value )
     {
         // It is possible that the added property will only modify the property chain and leave the owning record untouched.
         // However, we need the schema record to be marked as updated so that an UPDATE schema command is generated.
         // Otherwise, the command appliers, who are responsible for activating index proxies and clearing the schema cache,
         // will not notice our change.
         long ruleId = rule.getId();
-        rule = rule.withOwningConstraint( constraintId );
+        rule = new DefaultStorageIndexReference( rule, constraintId );
         RecordAccess<SchemaRecord,SchemaRule> changes = recordChangeSet.getSchemaRuleChanges();
         RecordProxy<SchemaRecord,SchemaRule> record = changes.getOrLoad( ruleId, rule );
         changes.setRecord( ruleId, record.forReadingData(), rule ).forChangingData();

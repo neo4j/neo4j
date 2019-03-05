@@ -27,7 +27,7 @@ import java.util.Map;
 import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
-import org.neo4j.kernel.impl.util.statistics.IntCounter;
+import org.neo4j.util.IntCounter;
 
 /**
  * Provides direct access to records in a store. Changes are batched up and written whenever {@link #commit()}

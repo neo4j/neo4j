@@ -22,9 +22,9 @@ package org.neo4j.kernel.api.impl.fulltext;
 import java.util.Properties;
 import java.util.stream.Stream;
 
-import org.neo4j.graphdb.index.fulltext.AnalyzerProvider;
 import org.neo4j.common.EntityType;
-import org.neo4j.storageengine.api.schema.SchemaDescriptor;
+import org.neo4j.graphdb.index.fulltext.AnalyzerProvider;
+import org.neo4j.internal.schema.SchemaDescriptor;
 
 public interface FulltextAdapter
 {

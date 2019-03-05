@@ -35,24 +35,26 @@ import org.neo4j.internal.recordstorage.StoreTokens;
 import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexProvider;
+import org.neo4j.kernel.api.index.IndexProviderDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.core.TokenHolders;
-import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.store.StoreAccess;
+import org.neo4j.storageengine.api.StorageIndexReference;
 
 public class IndexAccessors implements Closeable
 {
     private final MutableLongObjectMap<IndexAccessor> accessors = new LongObjectHashMap<>();
-    private final List<StoreIndexDescriptor> onlineIndexRules = new ArrayList<>();
-    private final List<StoreIndexDescriptor> notOnlineIndexRules = new ArrayList<>();
+    private final List<StorageIndexReference> onlineIndexRules = new ArrayList<>();
+    private final List<StorageIndexReference> notOnlineIndexRules = new ArrayList<>();
 
     public IndexAccessors( IndexProviderMap providers,
                            StoreAccess storeAccess,
                            IndexSamplingConfig samplingConfig ) throws IOException
     {
         TokenHolders tokenHolders = StoreTokens.readOnlyTokenHolders( storeAccess.getRawNeoStores() );
-        Iterator<StoreIndexDescriptor> indexes = SchemaRuleAccess.getSchemaRuleAccess( storeAccess.getSchemaStore(), tokenHolders ).indexesGetAll();
+        Iterator<StorageIndexReference> indexes =
+                SchemaRuleAccess.getSchemaRuleAccess( storeAccess.getSchemaStore(), tokenHolders.propertyKeyTokens() ).indexesGetAll();
         for (; ; )
         {
             try
@@ -62,7 +64,7 @@ public class IndexAccessors implements Closeable
                     // we intentionally only check indexes that are online since
                     // - populating indexes will be rebuilt on next startup
                     // - failed indexes have to be dropped by the user anyways
-                    StoreIndexDescriptor indexDescriptor = indexes.next();
+                    StorageIndexReference indexDescriptor = indexes.next();
                     if ( indexDescriptor.isUnique() && !indexDescriptor.hasOwningConstraintReference() )
                     {
                         notOnlineIndexRules.add( indexDescriptor );
@@ -91,7 +93,7 @@ public class IndexAccessors implements Closeable
             }
         }
 
-        for ( StoreIndexDescriptor indexRule : onlineIndexRules )
+        for ( StorageIndexReference indexRule : onlineIndexRules )
         {
             long indexId = indexRule.getId();
             accessors.put( indexId, provider( providers, indexRule )
@@ -99,22 +101,22 @@ public class IndexAccessors implements Closeable
         }
     }
 
-    private IndexProvider provider( IndexProviderMap providers, StoreIndexDescriptor indexRule )
+    private IndexProvider provider( IndexProviderMap providers, StorageIndexReference indexRule )
     {
-        return providers.lookup( indexRule.providerDescriptor() );
+        return providers.lookup( IndexProviderDescriptor.from( indexRule ) );
     }
 
-    public Collection<StoreIndexDescriptor> notOnlineRules()
+    public Collection<StorageIndexReference> notOnlineRules()
     {
         return notOnlineIndexRules;
     }
 
-    public IndexAccessor accessorFor( StoreIndexDescriptor indexRule )
+    public IndexAccessor accessorFor( StorageIndexReference indexRule )
     {
         return accessors.get( indexRule.getId() );
     }
 
-    public Iterable<StoreIndexDescriptor> onlineRules()
+    public Iterable<StorageIndexReference> onlineRules()
     {
         return onlineIndexRules;
     }

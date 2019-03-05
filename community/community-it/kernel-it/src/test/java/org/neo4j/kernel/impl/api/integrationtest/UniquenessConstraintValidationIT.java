@@ -41,7 +41,7 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.neo4j.internal.kernel.api.IndexQuery.exact;
-import static org.neo4j.storageengine.api.schema.SchemaDescriptorFactory.forLabel;
+import static org.neo4j.internal.schema.SchemaDescriptorFactory.forLabel;
 
 public class UniquenessConstraintValidationIT extends KernelIntegrationTest
 {

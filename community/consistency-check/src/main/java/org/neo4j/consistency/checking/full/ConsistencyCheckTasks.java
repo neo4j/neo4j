@@ -49,11 +49,11 @@ import org.neo4j.internal.index.label.NativeLabelScanStore;
 import org.neo4j.internal.recordstorage.SchemaRuleAccess;
 import org.neo4j.internal.recordstorage.StoreTokens;
 import org.neo4j.kernel.impl.core.TokenHolders;
-import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.Scanner;
 import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
+import org.neo4j.storageengine.api.StorageIndexReference;
 
 import static java.lang.String.format;
 import static org.neo4j.consistency.checking.full.MultiPassStore.ARRAYS;
@@ -152,7 +152,7 @@ public class ConsistencyCheckTasks
                     new IterableStore<>( nativeStores.getPropertyStore(), true ) ) );
 
             // Checking that relationships are in their expected relationship indexes.
-            List<StoreIndexDescriptor> relationshipIndexes = Iterables.stream( indexes.onlineRules() )
+            List<StorageIndexReference> relationshipIndexes = Iterables.stream( indexes.onlineRules() )
                     .filter( rule -> rule.schema().entityType() == EntityType.RELATIONSHIP )
                     .collect( Collectors.toList() );
             if ( checkIndexes && !relationshipIndexes.isEmpty() )
@@ -177,7 +177,7 @@ public class ConsistencyCheckTasks
         // PASS 2: Rule integrity and obligation build up
         TokenHolders tokenHolders = StoreTokens.readOnlyTokenHolders( nativeStores.getRawNeoStores() );
         final SchemaRecordCheck schemaCheck =
-                new SchemaRecordCheck( SchemaRuleAccess.getSchemaRuleAccess( nativeStores.getSchemaStore(), tokenHolders ), indexes );
+                new SchemaRecordCheck( SchemaRuleAccess.getSchemaRuleAccess( nativeStores.getSchemaStore(), tokenHolders.propertyKeyTokens() ), indexes );
         tasks.add( new SchemaStoreProcessorTask<>( "SchemaStoreProcessor-check_rules", statistics, numberOfThreads,
                 nativeStores.getSchemaStore(), nativeStores, "check_rules",
                 schemaCheck, multiPartBuilder, cacheAccess, defaultProcessor, ROUND_ROBIN ) );
@@ -210,7 +210,7 @@ public class ConsistencyCheckTasks
         if ( checkIndexes )
         {
             tasks.add( new IndexDirtyCheckTask() );
-            for ( StoreIndexDescriptor indexRule : indexes.onlineRules() )
+            for ( StorageIndexReference indexRule : indexes.onlineRules() )
             {
                 tasks.add( recordScanner( format( "Index_%d", indexRule.getId() ),
                         new IndexIterator( indexes.accessorFor( indexRule ) ),
@@ -278,7 +278,7 @@ public class ConsistencyCheckTasks
         @Override
         public void run()
         {
-            for ( StoreIndexDescriptor indexRule : indexes.onlineRules() )
+            for ( StorageIndexReference indexRule : indexes.onlineRules() )
             {
                 if ( indexes.accessorFor( indexRule ).isDirty() )
                 {
@@ -286,7 +286,6 @@ public class ConsistencyCheckTasks
                             RecordType.INDEX ).dirtyIndex();
                 }
             }
-
         }
     }
 }

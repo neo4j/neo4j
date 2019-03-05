@@ -25,8 +25,8 @@ import java.util.List;
 
 import org.neo4j.internal.recordstorage.Command.NodeCommand;
 import org.neo4j.internal.recordstorage.Command.PropertyCommand;
+import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
-import org.neo4j.storageengine.api.schema.SchemaDescriptor;
 
 /**
  * Set of updates ({@link IndexEntryUpdate}) to apply to indexes.

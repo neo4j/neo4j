@@ -21,9 +21,9 @@ package org.neo4j.kernel.api.schema;
 
 import org.junit.jupiter.api.Test;
 
-import org.neo4j.storageengine.api.schema.DefaultLabelSchemaDescriptor;
-import org.neo4j.storageengine.api.schema.DefaultRelationTypeSchemaDescriptor;
-import org.neo4j.storageengine.api.schema.SchemaDescriptorFactory;
+import org.neo4j.internal.schema.DefaultLabelSchemaDescriptor;
+import org.neo4j.internal.schema.DefaultRelationTypeSchemaDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptorFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -31,7 +31,6 @@ import static org.neo4j.kernel.api.schema.SchemaTestUtil.assertArray;
 
 class SchemaDescriptorFactoryTest
 {
-
     private static final int REL_TYPE_ID = 0;
     private static final int LABEL_ID = 0;
 
@@ -45,11 +44,11 @@ class SchemaDescriptorFactoryTest
 
         labelDesc = SchemaDescriptorFactory.forLabel( LABEL_ID, 1, 2, 3 );
         assertThat( labelDesc.getLabelId(), equalTo( LABEL_ID ) );
-        SchemaTestUtil.assertArray( labelDesc.getPropertyIds(), 1, 2, 3 );
+        assertArray( labelDesc.getPropertyIds(), 1, 2, 3 );
 
         labelDesc = SchemaDescriptorFactory.forLabel( LABEL_ID );
         assertThat( labelDesc.getLabelId(), equalTo( LABEL_ID ) );
-        SchemaTestUtil.assertArray( labelDesc.getPropertyIds() );
+        assertArray( labelDesc.getPropertyIds() );
     }
 
     @Test
@@ -62,11 +61,11 @@ class SchemaDescriptorFactoryTest
 
         relTypeDesc = SchemaDescriptorFactory.forRelType( REL_TYPE_ID, 1, 2, 3 );
         assertThat( relTypeDesc.getRelTypeId(), equalTo( REL_TYPE_ID ) );
-        SchemaTestUtil.assertArray( relTypeDesc.getPropertyIds(), 1, 2, 3 );
+        assertArray( relTypeDesc.getPropertyIds(), 1, 2, 3 );
 
         relTypeDesc = SchemaDescriptorFactory.forRelType( REL_TYPE_ID );
         assertThat( relTypeDesc.getRelTypeId(), equalTo( REL_TYPE_ID ) );
-        SchemaTestUtil.assertArray( relTypeDesc.getPropertyIds() );
+        assertArray( relTypeDesc.getPropertyIds() );
     }
 
     @Test

@@ -19,7 +19,7 @@
  */
 package org.neo4j.storageengine.api;
 
-import org.neo4j.storageengine.api.schema.ConstraintDescriptor;
+import org.neo4j.internal.schema.ConstraintDescriptor;
 
 public interface StorageConstraintReference extends ConstraintDescriptor.Supplier
 {

@@ -28,8 +28,8 @@ import java.util.Iterator;
 import org.neo4j.function.ThrowingBiConsumer;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
-import org.neo4j.storageengine.api.schema.SchemaDescriptor;
-import org.neo4j.storageengine.api.schema.SchemaDescriptorSupplier;
+import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 
 /**
  * This class holds functionality to match LabelSchemaDescriptors to nodes

@@ -26,9 +26,9 @@ import java.util.Set;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
+import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
-import org.neo4j.kernel.api.schema.constraints.IndexBackedConstraintDescriptor;
-import org.neo4j.storageengine.api.schema.SchemaDescriptor;
 
 public class UniquePropertyValueValidationException extends ConstraintValidationException
 {

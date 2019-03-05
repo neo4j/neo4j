@@ -26,9 +26,9 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 
 import org.neo4j.internal.kernel.api.Read;
+import org.neo4j.internal.schema.ConstraintDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.impl.core.DelegatingTokenHolder;
-import org.neo4j.storageengine.api.schema.ConstraintDescriptor;
-import org.neo4j.storageengine.api.schema.SchemaDescriptor;
 import org.neo4j.token.api.TokenHolder;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;

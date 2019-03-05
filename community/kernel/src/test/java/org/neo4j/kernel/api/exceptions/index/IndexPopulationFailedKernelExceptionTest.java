@@ -22,8 +22,8 @@ package org.neo4j.kernel.api.exceptions.index;
 import org.junit.jupiter.api.Test;
 
 import org.neo4j.common.TokenNameLookup;
-import org.neo4j.storageengine.api.schema.DefaultLabelSchemaDescriptor;
-import org.neo4j.storageengine.api.schema.SchemaDescriptorFactory;
+import org.neo4j.internal.schema.DefaultLabelSchemaDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptorFactory;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;

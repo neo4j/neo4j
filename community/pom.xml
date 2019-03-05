@@ -24,6 +24,7 @@
 
   <modules>
     <module>token-api</module>
+    <module>schema</module>
     <module>import-util</module>
     <module>id-generator</module>
     <module>lock</module>

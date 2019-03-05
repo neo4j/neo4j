@@ -700,7 +700,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
                 TokenHolders dstTokenHolders = new TokenHolders( propertyKeyTokens, StoreTokens.createReadOnlyTokenHolder( TokenHolder.TYPE_LABEL ),
                         StoreTokens.createReadOnlyTokenHolder( TokenHolder.TYPE_RELATIONSHIP_TYPE ) );
                 dstTokenHolders.propertyKeyTokens().setInitialTokens( dstStore.getPropertyKeyTokenStore().getTokens() );
-                SchemaRuleAccess dstAccess = SchemaRuleAccess.getSchemaRuleAccess( dstSchema, dstTokenHolders );
+                SchemaRuleAccess dstAccess = SchemaRuleAccess.getSchemaRuleAccess( dstSchema, dstTokenHolders.propertyKeyTokens() );
 
                 Iterable<SchemaRule> rules = srcAccess.getAll();
                 for ( SchemaRule rule : rules )

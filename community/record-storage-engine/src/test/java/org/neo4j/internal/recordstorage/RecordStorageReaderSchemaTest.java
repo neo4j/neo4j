@@ -24,8 +24,8 @@ import org.junit.Test;
 import java.util.Set;
 
 import org.neo4j.graphdb.Label;
-import org.neo4j.kernel.api.schema.constraints.ConstraintDescriptorFactory;
-import org.neo4j.storageengine.api.schema.ConstraintDescriptor;
+import org.neo4j.internal.schema.ConstraintDescriptor;
+import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.helpers.collection.Iterators.asSet;

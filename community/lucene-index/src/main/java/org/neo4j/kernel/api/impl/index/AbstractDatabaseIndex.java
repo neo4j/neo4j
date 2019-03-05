@@ -22,9 +22,9 @@ package org.neo4j.kernel.api.impl.index;
 import java.io.IOException;
 import java.util.List;
 
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.impl.index.partition.AbstractIndexPartition;
 import org.neo4j.kernel.api.index.IndexReader;
-import org.neo4j.storageengine.api.schema.IndexDescriptor;
 
 /**
  * This class collects the common features of {@link ReadOnlyAbstractDatabaseIndex} and {@link WritableAbstractDatabaseIndex}.

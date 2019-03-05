@@ -21,7 +21,10 @@ package org.neo4j.kernel.api.schema.constraints;
 
 import org.junit.jupiter.api.Test;
 
-import org.neo4j.storageengine.api.schema.SchemaDescriptorFactory;
+import org.neo4j.internal.schema.ConstraintDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptorFactory;
+import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
+import org.neo4j.internal.schema.constraints.DefaultConstraintDescriptor;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -36,7 +39,7 @@ class ConstraintDescriptorFactoryTest
     @Test
     void shouldCreateExistsConstraintDescriptors()
     {
-        ConstraintDescriptor desc;
+        DefaultConstraintDescriptor desc;
 
         desc = ConstraintDescriptorFactory.existsForLabel( LABEL_ID, 1 );
         assertThat( desc.type(), equalTo( ConstraintDescriptor.Type.EXISTS ) );
@@ -50,7 +53,7 @@ class ConstraintDescriptorFactoryTest
     @Test
     void shouldCreateUniqueConstraintDescriptors()
     {
-        ConstraintDescriptor desc;
+        DefaultConstraintDescriptor desc;
 
         desc = ConstraintDescriptorFactory.uniqueForLabel( LABEL_ID, 1 );
         assertThat( desc.type(), equalTo( ConstraintDescriptor.Type.UNIQUE ) );
@@ -60,7 +63,7 @@ class ConstraintDescriptorFactoryTest
     @Test
     void shouldCreateNodeKeyConstraintDescriptors()
     {
-        ConstraintDescriptor desc;
+        DefaultConstraintDescriptor desc;
 
         desc = ConstraintDescriptorFactory.nodeKeyForLabel( LABEL_ID, 1 );
         assertThat( desc.type(), equalTo( ConstraintDescriptor.Type.UNIQUE_EXISTS ) );
@@ -70,7 +73,7 @@ class ConstraintDescriptorFactoryTest
     @Test
     void shouldCreateConstraintDescriptorsFromSchema()
     {
-        ConstraintDescriptor desc;
+        DefaultConstraintDescriptor desc;
 
         desc = ConstraintDescriptorFactory.uniqueForSchema( SchemaDescriptorFactory.forLabel( LABEL_ID, 1 ) );
         assertThat( desc.type(), equalTo( ConstraintDescriptor.Type.UNIQUE ) );
@@ -88,8 +91,8 @@ class ConstraintDescriptorFactoryTest
     @Test
     void shouldCreateEqualDescriptors()
     {
-        ConstraintDescriptor desc1;
-        ConstraintDescriptor desc2;
+        DefaultConstraintDescriptor desc1;
+        DefaultConstraintDescriptor desc2;
 
         desc1 = ConstraintDescriptorFactory.uniqueForLabel( LABEL_ID, 1 );
         desc2 = ConstraintDescriptorFactory.uniqueForLabel( LABEL_ID, 1 );

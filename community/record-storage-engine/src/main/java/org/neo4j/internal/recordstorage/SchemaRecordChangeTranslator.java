@@ -19,8 +19,8 @@
  */
 package org.neo4j.internal.recordstorage;
 
-import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
 import org.neo4j.storageengine.api.SchemaRule;
+import org.neo4j.storageengine.api.StorageIndexReference;
 
 public interface SchemaRecordChangeTranslator
 {
@@ -28,5 +28,5 @@ public interface SchemaRecordChangeTranslator
 
     void dropSchemaRule( TransactionRecordState recordState, SchemaRule rule );
 
-    void setConstraintIndexOwner( TransactionRecordState recordState, StoreIndexDescriptor indexRule, long constraintId );
+    void setConstraintIndexOwner( TransactionRecordState recordState, StorageIndexReference indexRule, long constraintId );
 }

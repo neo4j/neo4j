@@ -21,12 +21,14 @@ package org.neo4j.storageengine.api;
 
 import java.util.Optional;
 
-import org.neo4j.storageengine.api.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.DefaultIndexDescriptor;
+import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptor;
 
 /**
  * Default implementation of a {@link StorageIndexReference}. Mainly used as data carrier between the storage engine API and kernel.
  */
-public class DefaultStorageIndexReference extends DefaultIndexDescriptor implements StorageIndexReference, SchemaRule
+public class DefaultStorageIndexReference extends DefaultIndexDescriptor implements StorageIndexReference
 {
     private final long indexReference;
     private final Long owningConstraintReference;
@@ -45,6 +47,19 @@ public class DefaultStorageIndexReference extends DefaultIndexDescriptor impleme
         super( schema, providerKey, providerVersion, name, isUnique, isFulltext, isEventuallyConsistent );
         this.indexReference = indexReference;
         this.owningConstraintReference = owningConstraintReference;
+    }
+
+    public DefaultStorageIndexReference( IndexDescriptor index, long indexReference )
+    {
+        this( index.schema(), index.providerKey(), index.providerVersion(), indexReference, optionalName( index ), index.isUnique(), null,
+                index.isFulltextIndex(), index.isEventuallyConsistent() );
+    }
+
+    public DefaultStorageIndexReference( StorageIndexReference index, long owningConstraintReference )
+    {
+        this( index.schema(), index.providerKey(), index.providerVersion(), index.indexReference(),
+                optionalName( index ), index.isUnique(), owningConstraintReference,
+                index.isFulltextIndex(), index.isEventuallyConsistent() );
     }
 
     @Override

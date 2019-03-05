@@ -22,8 +22,8 @@ package org.neo4j.kernel.api.exceptions.schema;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
+import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.storageengine.api.schema.ConstraintDescriptor;
 
 public class DropConstraintFailureException extends SchemaKernelException
 {

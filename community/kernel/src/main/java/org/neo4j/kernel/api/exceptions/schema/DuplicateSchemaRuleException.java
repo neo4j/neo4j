@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.api.exceptions.schema;
 
+import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.storageengine.api.SchemaRule;
-import org.neo4j.storageengine.api.schema.SchemaDescriptor;
 
 public class DuplicateSchemaRuleException extends SchemaRuleException
 {

@@ -22,9 +22,9 @@ package org.neo4j.internal.recordstorage;
 import org.eclipse.collections.api.block.procedure.primitive.IntObjectProcedure;
 import org.eclipse.collections.api.map.primitive.IntObjectMap;
 
-import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
-import org.neo4j.kernel.impl.store.record.ConstraintRule;
+import org.neo4j.storageengine.api.ConstraintRule;
 import org.neo4j.storageengine.api.SchemaRule;
+import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.values.storable.Value;
 
 public abstract class PropertyBasedSchemaRecordChangeTranslator implements SchemaRecordChangeTranslator
@@ -45,7 +45,7 @@ public abstract class PropertyBasedSchemaRecordChangeTranslator implements Schem
     }
 
     @Override
-    public void setConstraintIndexOwner( TransactionRecordState recordState, StoreIndexDescriptor indexRule, long constraintId )
+    public void setConstraintIndexOwner( TransactionRecordState recordState, StorageIndexReference indexRule, long constraintId )
     {
         setConstraintIndexOwnerProperty( constraintId,
                 ( propertyKeyId, value ) -> recordState.schemaRuleSetIndexOwner( indexRule, constraintId, propertyKeyId, value ) );

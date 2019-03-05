@@ -40,10 +40,10 @@ import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
+import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.kernel.api.SilentTokenNameLookup;
 import org.neo4j.register.Register;
 import org.neo4j.register.Registers;
-import org.neo4j.storageengine.api.schema.ConstraintDescriptor;
 import org.neo4j.token.api.NamedToken;
 
 /**

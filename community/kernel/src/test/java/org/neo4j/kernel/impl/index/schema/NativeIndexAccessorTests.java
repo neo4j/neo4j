@@ -939,7 +939,7 @@ public abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, 
         return new IndexProgressor.EntityValueClient()
         {
             @Override
-            public void initialize( org.neo4j.storageengine.api.schema.IndexDescriptor descriptor, IndexProgressor progressor,
+            public void initialize( org.neo4j.internal.schema.IndexDescriptor descriptor, IndexProgressor progressor,
                     IndexQuery[] query, IndexOrder indexOrder, boolean needsValues,
                     boolean indexIncludesTransactionState )
             {

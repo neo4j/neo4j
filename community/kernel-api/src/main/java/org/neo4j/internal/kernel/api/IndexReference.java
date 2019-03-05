@@ -24,8 +24,8 @@ import java.util.List;
 
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.helpers.collection.Iterators;
-import org.neo4j.storageengine.api.schema.SchemaDescriptor;
-import org.neo4j.storageengine.api.schema.SchemaDescriptorSupplier;
+import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 import org.neo4j.values.storable.ValueCategory;
 
 /**

@@ -24,8 +24,8 @@ import org.apache.commons.lang3.ArrayUtils;
 import java.util.function.Predicate;
 
 import org.neo4j.common.EntityType;
-import org.neo4j.storageengine.api.schema.SchemaDescriptor;
-import org.neo4j.storageengine.api.schema.SchemaDescriptorSupplier;
+import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 
 public class SchemaDescriptorPredicates
 {

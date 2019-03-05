@@ -21,7 +21,7 @@ package org.neo4j.internal.recordstorage;
 
 import org.junit.Test;
 
-import org.neo4j.kernel.impl.util.statistics.IntCounter;
+import org.neo4j.util.IntCounter;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;

@@ -21,8 +21,8 @@ package org.neo4j.storageengine.api;
 
 import java.util.Arrays;
 
-import org.neo4j.storageengine.api.schema.LabelSchemaSupplier;
-import org.neo4j.storageengine.api.schema.SchemaDescriptorSupplier;
+import org.neo4j.internal.schema.LabelSchemaSupplier;
+import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 import org.neo4j.values.storable.Value;
 
 import static java.lang.String.format;

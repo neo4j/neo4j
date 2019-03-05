@@ -21,7 +21,7 @@ package org.neo4j.kernel.api.exceptions.schema;
 
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
-import org.neo4j.storageengine.api.schema.ConstraintDescriptor;
+import org.neo4j.internal.schema.ConstraintDescriptor;
 
 import static java.lang.String.format;
 import static org.neo4j.common.TokenNameLookup.idTokenNameLookup;

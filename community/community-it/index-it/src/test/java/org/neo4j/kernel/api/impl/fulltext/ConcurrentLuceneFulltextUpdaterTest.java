@@ -33,10 +33,10 @@ import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.SchemaWrite;
+import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.index.schema.IndexDescriptorFactory;
-import org.neo4j.storageengine.api.schema.SchemaDescriptor;
 import org.neo4j.test.Race;
 import org.neo4j.test.rule.RepeatRule;
 
