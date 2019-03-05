@@ -62,7 +62,14 @@ public enum Capability implements org.neo4j.storageengine.api.format.Capability
     /**
      * The schema store can store arbitrary properties of schema elements, such as index configurations.
      */
-    FLEXIBLE_SCHEMA_STORE( CapabilityType.STORE );
+    FLEXIBLE_SCHEMA_STORE( CapabilityType.STORE ),
+
+    /**
+     * Tokens can be marked as internal, and internal tokens will not be shown in the product surface, but can still be used, well, internally.
+     * <p>
+     * This has {@link CapabilityType#STORE} because it is a format addition, and not a format change per se. We just use a record header bit that was free.
+     */
+    INTERNAL_TOKENS( true, CapabilityType.STORE );
 
     private final CapabilityType[] types;
     private boolean additive;

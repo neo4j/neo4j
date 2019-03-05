@@ -46,7 +46,7 @@ public class StandardV4_0 extends BaseRecordFormats
     {
         super( STORE_VERSION, StoreVersion.STANDARD_V4_0.introductionVersion(), 9, Capability.SCHEMA,
                 Capability.DENSE_NODES, LuceneCapability.LUCENE_7, Capability.POINT_PROPERTIES, Capability.TEMPORAL_PROPERTIES,
-                Capability.FLEXIBLE_SCHEMA_STORE );
+                Capability.FLEXIBLE_SCHEMA_STORE, Capability.INTERNAL_TOKENS );
     }
 
     @Override
