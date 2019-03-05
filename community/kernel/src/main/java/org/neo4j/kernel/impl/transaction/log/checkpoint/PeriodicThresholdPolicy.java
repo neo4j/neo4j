@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.transaction.log.checkpoint;
 
 import java.time.Clock;
 
+import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.kernel.impl.transaction.log.pruning.LogPruning;
@@ -32,11 +33,13 @@ import static org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointThresho
  * The {@code periodic} check point threshold policy uses the {@link GraphDatabaseSettings#check_point_interval_time}
  * and {@link GraphDatabaseSettings#check_point_interval_tx} to decide when check points processes should be started.
  */
-public class PeriodicThresholdPolicy extends CheckPointThresholdPolicy
+@ServiceProvider
+public class PeriodicThresholdPolicy implements CheckPointThresholdPolicy
 {
-    public PeriodicThresholdPolicy()
+    @Override
+    public String getName()
     {
-        super( "periodic" );
+        return "periodic";
     }
 
     @Override

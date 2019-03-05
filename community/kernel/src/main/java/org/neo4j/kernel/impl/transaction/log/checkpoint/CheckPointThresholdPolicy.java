@@ -22,11 +22,13 @@ package org.neo4j.kernel.impl.transaction.log.checkpoint;
 import java.time.Clock;
 import java.util.NoSuchElementException;
 
-import org.neo4j.common.Service;
+import org.neo4j.annotations.service.Service;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.kernel.impl.transaction.log.pruning.LogPruning;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.service.NamedService;
+import org.neo4j.service.Services;
 
 /**
  * The {@link CheckPointThresholdPolicy} specifies the overall <em>type</em> of threshold that should be used for
@@ -37,33 +39,21 @@ import org.neo4j.logging.LogProvider;
  * {@link CheckPointThreshold#createThreshold(Config, Clock, LogPruning, LogProvider) create} the final and fully
  * configured check point thresholds.
  */
-public abstract class CheckPointThresholdPolicy extends Service
+@Service
+public interface CheckPointThresholdPolicy extends NamedService
 {
-    /**
-     * Create a new instance of a service implementation identified with the
-     * specified key(s).
-     *
-     * @param key the main key for identifying this service implementation
-     * @param altKeys alternative spellings of the identifier of this service
-     */
-    protected CheckPointThresholdPolicy( String key, String... altKeys )
-    {
-        super( key, altKeys );
-    }
-
     /**
      * Load the {@link CheckPointThresholdPolicy} by the given name.
      *
      * @throws NoSuchElementException if the policy was not found.
      */
-    public static CheckPointThresholdPolicy loadPolicy( String policyName ) throws NoSuchElementException
+        static CheckPointThresholdPolicy loadPolicy( String policyName ) throws NoSuchElementException
     {
-        return Service.loadOrFail( CheckPointThresholdPolicy.class, policyName );
+        return Services.loadOrFail( CheckPointThresholdPolicy.class, policyName );
     }
 
     /**
      * Create a {@link CheckPointThreshold} instance based on this policy and the given configurations.
      */
-    public abstract CheckPointThreshold createThreshold(
-            Config config, Clock clock, LogPruning logPruning, LogProvider logProvider );
+    CheckPointThreshold createThreshold( Config config, Clock clock, LogPruning logPruning, LogProvider logProvider );
 }
