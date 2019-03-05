@@ -28,16 +28,36 @@ import org.neo4j.io.compress.ZipUtils;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 
+/**
+ * Surface for a schema indexes to act on the files that it owns.
+ * One instance of this class maps to a single index or sub-index if living under a Fusion umbrella.
+ * Wraps all {@link IOException IOExceptions} in {@link UncheckedIOException}.
+ */
 public abstract class IndexFiles
 {
+    /**
+     * @return The single {@link File} where the online index should live.
+     */
     abstract File getStoreFile();
 
+    /**
+     * @return The base directory or file belonging to this index.
+     */
     abstract File getBase();
 
+    /**
+     * Delete all files belonging to this index.
+     */
     public abstract void clear();
 
+    /**
+     * Create an archive file in parent directory containing this index.
+     */
     public abstract void archiveIndex();
 
+    /**
+     * Make sure that parent directory to {@link #getStoreFile() store file} exists.
+     */
     public abstract void ensureDirectoryExist();
 
     @Override
@@ -46,6 +66,9 @@ public abstract class IndexFiles
         return String.format( "%s[base=%s,storeFile=%s]", getClass().getSimpleName(), getBase(), getStoreFile() );
     }
 
+    /**
+     * Recursively delete directory and wrap any {@link IOException} in {@link UncheckedIOException}.
+     */
     static void clearDirectory( FileSystemAbstraction fs, File directory )
     {
         try
@@ -58,6 +81,9 @@ public abstract class IndexFiles
         }
     }
 
+    /**
+     * Delete file and wrap any {@link IOException} in {@link UncheckedIOException}.
+     */
     static void clearSingleFile( FileSystemAbstraction fs, File file )
     {
         try
@@ -74,6 +100,11 @@ public abstract class IndexFiles
         }
     }
 
+    /**
+     * Create an archive file for directory using {@link ZipUtils#zip(FileSystemAbstraction, File, File)}.
+     * Will only create the archive if directory exist and is not empty.
+     * Wrap any {@link IOException} in {@link UncheckedIOException}.
+     */
     static void archiveIndex( FileSystemAbstraction fs, File directory )
     {
         if ( fs.isDirectory( directory ) && fs.fileExists( directory ) && fs.listFiles( directory ).length > 0 )
@@ -89,6 +120,9 @@ public abstract class IndexFiles
         }
     }
 
+    /**
+     * Create directory and any non existing parent directories and wrap any {@link IOException} in {@link UncheckedIOException}.
+     */
     static void ensureDirectoryExists( FileSystemAbstraction fs, File directory )
     {
         try
@@ -101,6 +135,9 @@ public abstract class IndexFiles
         }
     }
 
+    /**
+     * This index own a whole directory.
+     */
     public static class Directory extends IndexFiles
     {
         private final FileSystemAbstraction fs;
@@ -150,6 +187,10 @@ public abstract class IndexFiles
         }
     }
 
+    /**
+     * This index own only a single file.
+     * Typically a Spatial or Temporal part index.
+     */
     static class SingleFile extends IndexFiles
     {
         private final FileSystemAbstraction fs;
