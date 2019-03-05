@@ -55,6 +55,7 @@ import static org.neo4j.internal.kernel.api.security.AuthenticationResult.PASSWO
 import static org.neo4j.internal.kernel.api.security.AuthenticationResult.SUCCESS;
 import static org.neo4j.internal.kernel.api.security.AuthenticationResult.TOO_MANY_ATTEMPTS;
 import static org.neo4j.server.security.auth.SecurityTestUtils.authToken;
+import static org.neo4j.server.security.auth.SecurityTestUtils.password;
 import static org.neo4j.test.assertion.Assert.assertException;
 
 public class BasicAuthManagerTest extends InitialUserTest
@@ -392,11 +393,6 @@ public class BasicAuthManagerTest extends InitialUserTest
     protected AuthManager authManager()
     {
         return manager;
-    }
-
-    public static byte[] password( String passwordString )
-    {
-        return passwordString != null ? passwordString.getBytes( StandardCharsets.UTF_8 ) : null;
     }
 
     public static byte[] clearedPasswordWithSameLenghtAs( String passwordString )

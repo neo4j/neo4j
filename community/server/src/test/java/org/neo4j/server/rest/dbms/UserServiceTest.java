@@ -50,7 +50,7 @@ import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
-import static org.neo4j.server.security.auth.BasicAuthManagerTest.password;
+import static org.neo4j.server.security.auth.SecurityTestUtils.password;
 
 public class UserServiceTest
 {
