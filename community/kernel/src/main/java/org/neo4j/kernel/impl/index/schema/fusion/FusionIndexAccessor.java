@@ -29,9 +29,9 @@ import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
-import org.neo4j.kernel.impl.index.schema.fusion.FusionIndexProvider.DropAction;
+import org.neo4j.kernel.impl.index.schema.IndexDropAction;
+import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
 import org.neo4j.values.storable.Value;
@@ -41,12 +41,12 @@ import static org.neo4j.helpers.collection.Iterators.concatResourceIterators;
 class FusionIndexAccessor extends FusionIndexBase<IndexAccessor> implements IndexAccessor
 {
     private final StoreIndexDescriptor descriptor;
-    private final DropAction dropAction;
+    private final IndexDropAction dropAction;
 
     FusionIndexAccessor( SlotSelector slotSelector,
             InstanceSelector<IndexAccessor> instanceSelector,
             StoreIndexDescriptor descriptor,
-            DropAction dropAction )
+            IndexDropAction dropAction )
     {
         super( slotSelector, instanceSelector );
         this.descriptor = descriptor;

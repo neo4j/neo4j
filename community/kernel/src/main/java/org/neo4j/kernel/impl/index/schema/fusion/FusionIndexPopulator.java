@@ -26,8 +26,8 @@ import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
+import org.neo4j.kernel.impl.index.schema.IndexDropAction;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
-import org.neo4j.kernel.impl.index.schema.fusion.FusionIndexProvider.DropAction;
 import org.neo4j.storageengine.api.schema.IndexSample;
 
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexSampler.combineSamples;
@@ -35,10 +35,10 @@ import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexSampler.combi
 class FusionIndexPopulator extends FusionIndexBase<IndexPopulator> implements IndexPopulator
 {
     private final long indexId;
-    private final DropAction dropAction;
+    private final IndexDropAction dropAction;
     private final boolean archiveFailedIndex;
 
-    FusionIndexPopulator( SlotSelector slotSelector, InstanceSelector<IndexPopulator> instanceSelector, long indexId, DropAction dropAction,
+    FusionIndexPopulator( SlotSelector slotSelector, InstanceSelector<IndexPopulator> instanceSelector, long indexId, IndexDropAction dropAction,
             boolean archiveFailedIndex )
     {
         super( slotSelector, instanceSelector );
