@@ -42,8 +42,6 @@ import org.neo4j.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema.constraints.NodeKeyConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constraints.UniquenessConstraintDescriptor;
-import org.neo4j.kernel.impl.core.TokenHolders;
-import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.store.format.Capability;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.record.ConstraintRule;
@@ -55,6 +53,8 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.storageengine.api.DefaultStorageIndexReference;
 import org.neo4j.storageengine.api.PropertyKeyValue;
 import org.neo4j.storageengine.api.SchemaRule;
+import org.neo4j.storageengine.api.StorageConstraintReference;
+import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.storageengine.api.schema.SchemaDescriptor;
 import org.neo4j.storageengine.api.schema.SchemaDescriptorFactory;
 import org.neo4j.token.api.NamedToken;
@@ -168,10 +168,10 @@ public class SchemaStore extends CommonAbstractStore<SchemaRecord,IntStoreHeader
     private static final String PROP_INDEX_TYPE = PROP_SCHEMA_RULE_PREFIX + "indexType";
     private static final String PROP_INDEX_CONFIG_PREFIX = PROP_SCHEMA_RULE_PREFIX + "IndexConfig.";
 
-    public static int getOwningConstraintPropertyKeyId( TokenHolders tokenHolders )
+    public static int getOwningConstraintPropertyKeyId( TokenHolder propertyKeyTokenHolder )
     {
         int[] ids = new int[1];
-        tokenHolders.propertyKeyTokens().getOrCreateInternalIds( new String[]{PROP_OWNING_CONSTRAINT}, ids );
+        propertyKeyTokenHolder.getOrCreateInternalIds( new String[]{PROP_OWNING_CONSTRAINT}, ids );
         return ids[0];
     }
 
@@ -190,18 +190,18 @@ public class SchemaStore extends CommonAbstractStore<SchemaRecord,IntStoreHeader
         schemaDescriptorToMap( rule.schema(), map );
 
         // Rule
-        if ( rule instanceof StoreIndexDescriptor )
+        if ( rule instanceof StorageIndexReference )
         {
-            schemaIndexToMap( (StoreIndexDescriptor) rule, map );
+            schemaIndexToMap( (StorageIndexReference) rule, map );
         }
-        else if ( rule instanceof ConstraintRule )
+        else if ( rule instanceof StorageConstraintReference )
         {
-            schemaConstraintToMap( (ConstraintRule) rule, map );
+            schemaConstraintToMap( (StorageConstraintReference) rule, map );
         }
         return map;
     }
 
-    public static IntObjectMap<Value> convertSchemaRuleToMap( SchemaRule rule, TokenHolders tokenHolders )
+    public static IntObjectMap<Value> convertSchemaRuleToMap( SchemaRule rule, TokenHolder propertyKeyTokenHolder )
     {
         // The dance we do in here with map to arrays to another map, allows us to resolve (and allocate) all of the tokens in a single batch operation.
         Map<String,Value> stringlyMap = mapifySchemaRule( rule );
@@ -219,8 +219,7 @@ public class SchemaStore extends CommonAbstractStore<SchemaRecord,IntStoreHeader
             values[i] = entry.getValue();
         }
 
-        TokenHolder tokens = tokenHolders.propertyKeyTokens();
-        tokens.getOrCreateInternalIds( keys, keyIds );
+        propertyKeyTokenHolder.getOrCreateInternalIds( keys, keyIds );
 
         MutableIntObjectMap<Value> tokenisedMap = new IntObjectHashMap<>();
         for ( int i = 0; i < size; i++ )
@@ -244,7 +243,7 @@ public class SchemaStore extends CommonAbstractStore<SchemaRecord,IntStoreHeader
         putIntArrayProperty( map, PROP_SCHEMA_DESCRIPTOR_PROPERTY_IDS, propertyIds );
     }
 
-    private static void schemaIndexToMap( StoreIndexDescriptor rule, Map<String,Value> map )
+    private static void schemaIndexToMap( StorageIndexReference rule, Map<String,Value> map )
     {
         // Rule
         putStringProperty( map, PROP_SCHEMA_RULE_TYPE, "INDEX" );
@@ -262,19 +261,18 @@ public class SchemaStore extends CommonAbstractStore<SchemaRecord,IntStoreHeader
         }
 
         // Provider
-        IndexProviderDescriptor indexProviderDescriptor = rule.providerDescriptor();
-        indexProviderToMap( indexProviderDescriptor, map );
+        indexProviderToMap( rule, map );
     }
 
-    private static void indexProviderToMap( IndexProviderDescriptor indexProviderDescriptor, Map<String,Value> map )
+    private static void indexProviderToMap( StorageIndexReference rule, Map<String,Value> map )
     {
-        String name = indexProviderDescriptor.getKey();
-        String version = indexProviderDescriptor.getVersion();
+        String name = rule.providerKey();
+        String version = rule.providerVersion();
         putStringProperty( map, PROP_INDEX_PROVIDER_NAME, name );
         putStringProperty( map, PROP_INDEX_PROVIDER_VERSION, version );
     }
 
-    private static void schemaConstraintToMap( ConstraintRule rule, Map<String,Value> map )
+    private static void schemaConstraintToMap( StorageConstraintReference rule, Map<String,Value> map )
     {
         // Rule
         putStringProperty( map, PROP_SCHEMA_RULE_TYPE, "CONSTRAINT" );
@@ -297,9 +295,10 @@ public class SchemaStore extends CommonAbstractStore<SchemaRecord,IntStoreHeader
         }
     }
 
-    public static SchemaRule readSchemaRule( SchemaRecord record, PropertyStore propertyStore, TokenHolders tokenHolders ) throws MalformedSchemaRuleException
+    public static SchemaRule readSchemaRule( SchemaRecord record, PropertyStore propertyStore, TokenHolder propertyKeyTokenHolder )
+            throws MalformedSchemaRuleException
     {
-        Map<String,Value> map = schemaRecordToMap( record, propertyStore, tokenHolders );
+        Map<String,Value> map = schemaRecordToMap( record, propertyStore, propertyKeyTokenHolder );
         return unmapifySchemaRule( record.getId(), map );
     }
 
@@ -369,7 +368,7 @@ public class SchemaStore extends CommonAbstractStore<SchemaRecord,IntStoreHeader
         }
     }
 
-    private static Map<String,Value> schemaRecordToMap( SchemaRecord record, PropertyStore propertyStore, TokenHolders tokenHolders )
+    private static Map<String,Value> schemaRecordToMap( SchemaRecord record, PropertyStore propertyStore, TokenHolder propertyKeyTokenHolder )
             throws MalformedSchemaRuleException
     {
         Map<String,Value> props = new HashMap<>();
@@ -389,19 +388,19 @@ public class SchemaStore extends CommonAbstractStore<SchemaRecord,IntStoreHeader
             for ( PropertyBlock propertyBlock : propRecord )
             {
                 PropertyKeyValue propertyKeyValue = propertyBlock.newPropertyKeyValue( propertyStore );
-                insertPropertyIntoMap( propertyKeyValue, props, tokenHolders );
+                insertPropertyIntoMap( propertyKeyValue, props, propertyKeyTokenHolder );
             }
             nextProp = propRecord.getNextProp();
         }
         return props;
     }
 
-    private static void insertPropertyIntoMap( PropertyKeyValue propertyKeyValue, Map<String,Value> props, TokenHolders tokenHolders )
+    private static void insertPropertyIntoMap( PropertyKeyValue propertyKeyValue, Map<String,Value> props, TokenHolder propertyKeyTokenHolder )
             throws MalformedSchemaRuleException
     {
         try
         {
-            NamedToken propertyKeyTokenName = tokenHolders.propertyKeyTokens().getInternalTokenById( propertyKeyValue.propertyKeyId() );
+            NamedToken propertyKeyTokenName = propertyKeyTokenHolder.getInternalTokenById( propertyKeyValue.propertyKeyId() );
             props.put( propertyKeyTokenName.name(), propertyKeyValue.value() );
         }
         catch ( TokenNotFoundException | InvalidRecordException e )

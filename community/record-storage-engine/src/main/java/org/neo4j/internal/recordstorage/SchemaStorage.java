@@ -32,7 +32,6 @@ import java.util.stream.Stream;
 import org.neo4j.internal.kernel.api.exceptions.schema.MalformedSchemaRuleException;
 import org.neo4j.kernel.api.exceptions.schema.DuplicateSchemaRuleException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
-import org.neo4j.kernel.impl.core.TokenHolders;
 import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.SchemaStore;
@@ -48,6 +47,7 @@ import org.neo4j.storageengine.api.schema.ConstraintDescriptor;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
 import org.neo4j.storageengine.api.schema.SchemaDescriptor;
 import org.neo4j.storageengine.api.schema.SchemaDescriptorSupplier;
+import org.neo4j.token.api.TokenHolder;
 import org.neo4j.util.VisibleForTesting;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
@@ -55,12 +55,12 @@ import org.neo4j.values.storable.Values;
 public class SchemaStorage implements SchemaRuleAccess
 {
     private final SchemaStore schemaStore;
-    private final TokenHolders tokenHolders;
+    private final TokenHolder propertyKeyTokenHolder;
 
-    public SchemaStorage( SchemaStore schemaStore, TokenHolders tokenHolders )
+    public SchemaStorage( SchemaStore schemaStore, TokenHolder propertyKeyTokenHolder )
     {
         this.schemaStore = schemaStore;
-        this.tokenHolders = tokenHolders;
+        this.propertyKeyTokenHolder = propertyKeyTokenHolder;
     }
 
     @Override
@@ -146,13 +146,13 @@ public class SchemaStorage implements SchemaRuleAccess
             @Override
             protected IntObjectMap<Value> asMap( SchemaRule rule )
             {
-                return SchemaStore.convertSchemaRuleToMap( rule, tokenHolders );
+                return SchemaStore.convertSchemaRuleToMap( rule, propertyKeyTokenHolder );
             }
 
             @Override
             protected void setConstraintIndexOwnerProperty( long constraintId, IntObjectProcedure<Value> proc )
             {
-                int propertyId = SchemaStore.getOwningConstraintPropertyKeyId( tokenHolders );
+                int propertyId = SchemaStore.getOwningConstraintPropertyKeyId( propertyKeyTokenHolder );
                 proc.value( propertyId, Values.longValue( constraintId ) );
             }
         };
@@ -161,7 +161,7 @@ public class SchemaStorage implements SchemaRuleAccess
     @Override
     public void writeSchemaRule( SchemaRule rule )
     {
-        IntObjectMap<Value> protoProperties = SchemaStore.convertSchemaRuleToMap( rule, tokenHolders );
+        IntObjectMap<Value> protoProperties = SchemaStore.convertSchemaRuleToMap( rule, propertyKeyTokenHolder );
         PropertyStore propertyStore = schemaStore.propertyStore();
         Collection<PropertyBlock> blocks = new ArrayList<>();
         protoProperties.forEachKeyValue( ( keyId, value ) ->
@@ -280,6 +280,6 @@ public class SchemaStorage implements SchemaRuleAccess
 
     private SchemaRule readSchemaRule( SchemaRecord record ) throws MalformedSchemaRuleException
     {
-        return SchemaStore.readSchemaRule( record, schemaStore.propertyStore(), tokenHolders );
+        return SchemaStore.readSchemaRule( record, schemaStore.propertyStore(), propertyKeyTokenHolder );
     }
 }
