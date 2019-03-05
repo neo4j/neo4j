@@ -39,6 +39,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.configuration.ssl.BaseSslPolicyConfig.Format.PEM;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 @ExtendWith( TestDirectoryExtension.class )
@@ -60,7 +61,7 @@ class PemSslPolicyConfigTest
 
         params.put( GraphDatabaseSettings.neo4j_home.name(), homeDir.getAbsolutePath() );
         params.put( policyConfig.base_directory.name(), "certificates/XYZ" );
-        params.put( policyConfig.format.name(), BaseSslPolicyConfig.Format.PEM.name() );
+        params.put( policyConfig.format.name(), PEM.name() );
         Config config = Config.defaults( params );
 
         // derived defaults
@@ -106,7 +107,7 @@ class PemSslPolicyConfigTest
         File homeDir = testDirectory.directory( "home" );
 
         params.put( GraphDatabaseSettings.neo4j_home.name(), homeDir.getAbsolutePath() );
-        params.put( policyConfig.format.name(), BaseSslPolicyConfig.Format.PEM.name() );
+        params.put( policyConfig.format.name(), PEM.name() );
         params.put( policyConfig.base_directory.name(), "certificates/XYZ" );
 
         File privateKey = testDirectory.directory( "/path/to/my.key" );
@@ -169,7 +170,7 @@ class PemSslPolicyConfigTest
 
         params.put( GraphDatabaseSettings.neo4j_home.name(), homeDir.getAbsolutePath() );
         params.put( policyConfig.base_directory.name(), "certificates" );
-        params.put( policyConfig.format.name(), BaseSslPolicyConfig.Format.PEM.name() );
+        params.put( policyConfig.format.name(), PEM.name() );
         params.put( policyConfig.private_key.name(), "my.key" );
         params.put( policyConfig.public_certificate.name(), "path/to/my.crt" );
 

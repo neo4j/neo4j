@@ -67,9 +67,9 @@ import org.neo4j.ssl.PkiUtils;
 import org.neo4j.ssl.SslPolicy;
 
 import static java.lang.String.format;
-import static org.neo4j.configuration.ssl.LegacySslPolicyConfig.LEGACY_POLICY_NAME;
 import static org.neo4j.configuration.ssl.BaseSslPolicyConfig.CIPHER_SUITES_DEFAULTS;
 import static org.neo4j.configuration.ssl.BaseSslPolicyConfig.TLS_VERSION_DEFAULTS;
+import static org.neo4j.configuration.ssl.LegacySslPolicyConfig.LEGACY_POLICY_NAME;
 
 /**
  * Each component which utilises SSL policies is recommended to provide a component
@@ -281,7 +281,7 @@ public class SslPolicyLoader
         String keyPass = config.get( policyConfig.entry_pass );
         String keyAlias = config.get( policyConfig.entry_alias );
 
-        KeyStore keyStore = null;
+        KeyStore keyStore;
         String type = config.get( policyConfig.format ).name();
         try
         {
@@ -302,7 +302,7 @@ public class SslPolicyLoader
         }
         catch ( CertificateException | NoSuchAlgorithmException e )
         {
-            throw new RuntimeException( "Unable to load keystore from file: " + keyStoreFile, e );
+            throw new RuntimeException( "Cryptographic error creating keystore from file: " + keyStoreFile, e );
         }
 
         X509Certificate[] certificateChain;

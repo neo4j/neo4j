@@ -28,7 +28,6 @@ import java.io.FileNotFoundException;
 import java.util.Map;
 
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.ssl.BaseSslPolicyConfig;
 import org.neo4j.configuration.ssl.LegacySslPolicyConfig;
 import org.neo4j.configuration.ssl.PemSslPolicyConfig;
 import org.neo4j.io.fs.FileUtils;
@@ -44,6 +43,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
+import static org.neo4j.configuration.ssl.BaseSslPolicyConfig.Format.PEM;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 @ExtendWith( TestDirectoryExtension.class )
@@ -83,7 +83,7 @@ class PemSslPolicyLoaderTest
 
         params.put( neo4j_home.name(), home.getAbsolutePath() );
         params.put( policyConfig.base_directory.name(), "certificates/default" );
-        params.put( policyConfig.format.name(), BaseSslPolicyConfig.Format.PEM.name() );
+        params.put( policyConfig.format.name(), PEM.name() );
         Config config = Config.defaults( params );
 
         // when
@@ -121,7 +121,7 @@ class PemSslPolicyLoaderTest
 
         params.put( neo4j_home.name(), home.getAbsolutePath() );
         params.put( policyConfig.base_directory.name(), "certificates/default" );
-        params.put( policyConfig.format.name(), BaseSslPolicyConfig.Format.PEM.name() );
+        params.put( policyConfig.format.name(), PEM.name() );
 
         Config config = Config.defaults( params );
 
@@ -140,7 +140,7 @@ class PemSslPolicyLoaderTest
 
         params.put( neo4j_home.name(), home.getAbsolutePath() );
         params.put( policyConfig.base_directory.name(), "certificates/default" );
-        params.put( policyConfig.format.name(), BaseSslPolicyConfig.Format.PEM.name() );
+        params.put( policyConfig.format.name(), PEM.name() );
 
         Config config = Config.defaults( params );
 
@@ -173,7 +173,7 @@ class PemSslPolicyLoaderTest
 
         params.put( neo4j_home.name(), home.getAbsolutePath() );
         params.put( policyConfig.base_directory.name(), "certificates/default" );
-        params.put( policyConfig.format.name(), BaseSslPolicyConfig.Format.PEM.name() );
+        params.put( policyConfig.format.name(), PEM.name() );
 
         Config config = Config.defaults( params );
 
