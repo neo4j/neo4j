@@ -85,6 +85,7 @@ public class CommunityEditionModule extends DefaultEditionModule
 
     private final Config config;
     private final ConnectorPortRegister portRegister;
+    protected final SslPolicyLoader sslPolicyLoader;
 
     public CommunityEditionModule( GlobalModule globalModule )
     {
@@ -104,8 +105,8 @@ public class CommunityEditionModule extends DefaultEditionModule
 
         this.accessCapability = globalConfig.get( GraphDatabaseSettings.read_only ) ? new ReadOnly() : new CanWrite();
 
-        globalDependencies.satisfyDependency(
-                SslPolicyLoader.create( globalConfig, logService.getInternalLogProvider() ) ); // for bolt and web server
+        this.sslPolicyLoader = SslPolicyLoader.create( globalConfig, logService.getInternalLogProvider() );
+        globalDependencies.satisfyDependency( sslPolicyLoader ); // for bolt and web server
 
         LocksFactory lockFactory = createLockFactory( globalConfig, logService );
         locksSupplier = () -> createLockManager( lockFactory, globalConfig, globalClock );
