@@ -26,18 +26,20 @@ import javax.management.MBeanServer;
 import javax.management.MalformedObjectNameException;
 import javax.management.ObjectName;
 
-import org.neo4j.common.Service;
+import org.neo4j.annotations.service.Service;
 import org.neo4j.jmx.ManagementInterface;
+import org.neo4j.service.Services;
 
 import static java.lang.management.ManagementFactory.getPlatformMBeanServer;
 
 @Deprecated
+@Service
 public class ManagementSupport
 {
     public static ManagementSupport load()
     {
         ManagementSupport support = new ManagementSupport();
-        for ( ManagementSupport candidate : Service.loadAll( ManagementSupport.class ) )
+        for ( ManagementSupport candidate : Services.loadAll( ManagementSupport.class ) )
         {
             // Can we know that there aren't going to be multiple instances?
             support = candidate;

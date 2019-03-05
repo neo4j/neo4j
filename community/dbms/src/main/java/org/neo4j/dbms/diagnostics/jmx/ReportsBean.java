@@ -21,6 +21,7 @@ package org.neo4j.dbms.diagnostics.jmx;
 
 import java.util.Map;
 
+import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.graphdb.QueryExecutionException;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.jmx.impl.ManagementBeanProvider;
@@ -28,6 +29,7 @@ import org.neo4j.jmx.impl.ManagementData;
 import org.neo4j.jmx.impl.Neo4jMBean;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 
+@ServiceProvider
 public class ReportsBean extends ManagementBeanProvider
 {
     public ReportsBean()

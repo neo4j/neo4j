@@ -24,23 +24,30 @@ import java.util.Collections;
 import javax.management.DynamicMBean;
 import javax.management.NotCompliantMBeanException;
 
-import org.neo4j.common.Service;
+import org.neo4j.annotations.service.Service;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.internal.KernelData;
+import org.neo4j.service.NamedService;
 
+@Service
 @Deprecated
-public abstract class ManagementBeanProvider extends Service
+public abstract class ManagementBeanProvider implements NamedService
 {
     final Class<?> beanInterface;
 
     public ManagementBeanProvider( Class<?> beanInterface )
     {
-        super( ManagementSupport.beanName( beanInterface ) );
         if ( DynamicMBean.class.isAssignableFrom( beanInterface ) )
         {
             beanInterface = DynamicMBean.class;
         }
         this.beanInterface = beanInterface;
+    }
+
+    @Override
+    public String getName()
+    {
+        return ManagementSupport.beanName( beanInterface );
     }
 
     private Iterable<? extends Neo4jMBean> createMBeans( ManagementData management ) throws NotCompliantMBeanException

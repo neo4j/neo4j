@@ -26,13 +26,13 @@ import java.util.LinkedList;
 import java.util.List;
 import javax.management.MBeanServer;
 
-import org.neo4j.common.Service;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.internal.KernelData;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.service.Services;
 
 @Deprecated
 public class JmxExtension extends LifecycleAdapter
@@ -68,7 +68,7 @@ public class JmxExtension extends LifecycleAdapter
             log.info( "Failed to register Kernel JMX Bean" );
         }
 
-        for ( ManagementBeanProvider provider : Service.loadAll( ManagementBeanProvider.class ) )
+        for ( ManagementBeanProvider provider : Services.loadAll( ManagementBeanProvider.class ) )
         {
             try
             {

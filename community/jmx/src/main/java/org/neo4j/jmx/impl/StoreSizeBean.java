@@ -24,6 +24,7 @@ import org.apache.commons.lang3.mutable.MutableLong;
 import java.io.File;
 import java.time.Clock;
 
+import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemUtils;
@@ -57,6 +58,7 @@ import static org.neo4j.io.layout.DatabaseFile.SCHEMA_STORE;
 import static org.neo4j.jmx.impl.ThrottlingBeanSnapshotProxy.newThrottlingBeanSnapshotProxy;
 
 @Deprecated
+@ServiceProvider
 public final class StoreSizeBean extends ManagementBeanProvider
 {
     private static final long UPDATE_INTERVAL = 60000;
