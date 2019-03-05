@@ -738,7 +738,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
     {
         // Write/carry over header
         int headerOffset = cursor.getOffset();
-        int headerDataOffset = headerOffset + Integer.BYTES; // will contain length of written header data (below)
+        int headerDataOffset = getHeaderDataOffset( headerOffset );
         if ( otherState.isValid() || headerWriter != CARRY_OVER_PREVIOUS_HEADER )
         {
             PageCursor previousCursor = pagedFile.io( otherState.pageId(), PagedFile.PF_SHARED_READ_LOCK );
@@ -784,7 +784,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
 
                 // Note offset to header
                 int headerOffset = cursor.getOffset();
-                int headerDataOffset = headerOffset + Integer.BYTES; // will contain length of written header data (below)
+                int headerDataOffset = getHeaderDataOffset( headerOffset );
 
                 // Reserve space to store length
                 cursor.setOffset( headerDataOffset );
@@ -796,6 +796,12 @@ public class GBPTree<KEY,VALUE> implements Closeable
                 checkOutOfBounds( cursor );
             }
         }
+    }
+
+    private static int getHeaderDataOffset( int headerOffset )
+    {
+        // Int reserved to store length of header
+        return headerOffset + Integer.BYTES;
     }
 
     private static TreeState other( Pair<TreeState,TreeState> states, TreeState state )
