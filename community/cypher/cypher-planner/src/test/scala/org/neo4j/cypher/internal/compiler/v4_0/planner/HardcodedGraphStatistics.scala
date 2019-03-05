@@ -19,8 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v4_0.planner
 
-import org.neo4j.cypher.internal.planner.v4_0.spi.GraphStatistics
-import org.neo4j.cypher.internal.planner.v4_0.spi.IndexDescriptor
+import org.neo4j.cypher.internal.planner.spi.{GraphStatistics, IndexDescriptor}
 import org.neo4j.cypher.internal.v4_0.util.Cardinality
 import org.neo4j.cypher.internal.v4_0.util.LabelId
 import org.neo4j.cypher.internal.v4_0.util.RelTypeId

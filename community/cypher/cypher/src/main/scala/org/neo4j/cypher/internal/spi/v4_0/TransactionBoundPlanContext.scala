@@ -22,8 +22,8 @@ package org.neo4j.cypher.internal.spi.v4_0
 import java.util.Optional
 
 import org.neo4j.cypher.internal.LastCommittedTxIdProvider
-import org.neo4j.cypher.internal.planner.v4_0.spi.IndexDescriptor.{OrderCapability, ValueCapability}
-import org.neo4j.cypher.internal.planner.v4_0.spi._
+import org.neo4j.cypher.internal.planner.spi._
+import org.neo4j.cypher.internal.planner.spi.IndexDescriptor.{OrderCapability, ValueCapability}
 import org.neo4j.cypher.internal.runtime.interpreted._
 import org.neo4j.cypher.internal.v4_0.frontend.phases.InternalNotificationLogger
 import org.neo4j.cypher.internal.v4_0.logical.plans._

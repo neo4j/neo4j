@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v4_0.planner
 import java.util
 
 import org.neo4j.cypher.internal.compiler.v4_0.CypherPlannerConfiguration
-import org.neo4j.cypher.internal.planner.v4_0.spi.{GraphStatistics, IndexOrderCapability, StatisticsCompletingGraphStatistics}
+import org.neo4j.cypher.internal.planner.spi.{GraphStatistics, IndexOrderCapability, StatisticsCompletingGraphStatistics}
 import org.neo4j.cypher.internal.v4_0.logical.plans.ProcedureSignature
 import org.neo4j.helpers.collection.{Pair, Visitable}
 import org.neo4j.kernel.impl.util.dbstructure.{DbStructureCollector, DbStructureLookup, DbStructureVisitor}

@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v4_0.planner.logical.cardinality
 
 import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.Metrics.QueryGraphCardinalityModel
 import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.cardinality.assumeIndependence.AssumeIndependenceQueryGraphCardinalityModel
-import org.neo4j.cypher.internal.planner.v4_0.spi.GraphStatistics
+import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 
 object QueryGraphCardinalityModel {
   def default(statistics: GraphStatistics): QueryGraphCardinalityModel =

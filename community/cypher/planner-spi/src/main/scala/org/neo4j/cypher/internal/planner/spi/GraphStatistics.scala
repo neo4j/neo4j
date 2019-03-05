@@ -17,12 +17,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.planner.v4_0.spi
+package org.neo4j.cypher.internal.planner.spi
 
-import org.neo4j.cypher.internal.v4_0.util.Cardinality
-import org.neo4j.cypher.internal.v4_0.util.LabelId
-import org.neo4j.cypher.internal.v4_0.util.RelTypeId
-import org.neo4j.cypher.internal.v4_0.util.Selectivity
+import org.neo4j.cypher.internal.v4_0.util.{Cardinality, LabelId, RelTypeId, Selectivity}
 
 object GraphStatistics {
   val DEFAULT_RANGE_SELECTIVITY          = Selectivity(0.3)

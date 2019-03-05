@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v4_0.planner.logical.cardinality
 import org.neo4j.cypher.internal.compiler.v4_0.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.Metrics
 import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.Metrics._
-import org.neo4j.cypher.internal.planner.v4_0.spi.GraphStatistics
+import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 import org.neo4j.cypher.internal.v4_0.util.Cardinality
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 

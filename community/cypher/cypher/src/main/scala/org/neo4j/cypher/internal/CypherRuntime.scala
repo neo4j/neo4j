@@ -24,8 +24,8 @@ import java.time.Clock
 
 import org.neo4j.cypher.internal.compiler.v4_0.RuntimeUnsupportedNotification
 import org.neo4j.cypher.internal.compiler.v4_0.planner.CantCompileQueryException
-import org.neo4j.cypher.internal.planner.v4_0.spi.PlanningAttributes.Cardinalities
-import org.neo4j.cypher.internal.planner.v4_0.spi.TokenContext
+import org.neo4j.cypher.internal.planner.spi.TokenContext
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.v4_0.frontend.phases.RecordingNotificationLogger
 import org.neo4j.cypher.internal.v4_0.logical.plans.LogicalPlan

@@ -30,8 +30,7 @@ import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.steps.replaceProp
 import org.neo4j.cypher.internal.compiler.v4_0.planner.CheckForUnresolvedTokens
 import org.neo4j.cypher.internal.compiler.v4_0.planner.ResolveTokens
 import org.neo4j.cypher.internal.ir.v4_0.UnionQuery
-import org.neo4j.cypher.internal.planner.v4_0.spi.IDPPlannerName
-import org.neo4j.cypher.internal.planner.v4_0.spi.PlannerNameFor
+import org.neo4j.cypher.internal.planner.spi.{IDPPlannerName, PlannerNameFor}
 import org.neo4j.cypher.internal.v4_0.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.v4_0.frontend.phases.{CompilationPhases => _, _}
 import org.neo4j.cypher.internal.v4_0.rewriting.RewriterStepSequencer

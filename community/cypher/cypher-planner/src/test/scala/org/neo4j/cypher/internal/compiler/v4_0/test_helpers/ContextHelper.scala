@@ -24,7 +24,7 @@ import java.time.Clock
 import org.neo4j.cypher.internal.compiler.v4_0._
 import org.neo4j.cypher.internal.compiler.v4_0.phases.PlannerContext
 import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.{Metrics, QueryGraphSolver}
-import org.neo4j.cypher.internal.planner.v4_0.spi.PlanContext
+import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.v4_0.frontend.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.v4_0.frontend.phases.CompilationPhaseTracer.NO_TRACING
 import org.neo4j.cypher.internal.v4_0.frontend.phases.{InternalNotificationLogger, Monitors, devNullLogger}

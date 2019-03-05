@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.profiler
 
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.when
-import org.neo4j.cypher.internal.planner.v4_0.spi.{EmptyKernelStatisticProvider, KernelStatisticProvider}
+import org.neo4j.cypher.internal.planner.spi.{EmptyKernelStatisticProvider, KernelStatisticProvider}
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.InterpretedCommandProjection
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{NestedPipeExpression, ProjectedPath}

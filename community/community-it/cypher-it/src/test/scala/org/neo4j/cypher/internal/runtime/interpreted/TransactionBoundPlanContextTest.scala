@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.runtime.interpreted
 import java.util.concurrent.TimeUnit.SECONDS
 
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
-import org.neo4j.cypher.internal.planner.v4_0.spi.{IndexDescriptor, IndexLimitation, SlowContains}
+import org.neo4j.cypher.internal.planner.spi.{IndexDescriptor, IndexLimitation, SlowContains}
 import org.neo4j.cypher.internal.spi.v4_0.TransactionBoundPlanContext
 import org.neo4j.graphdb.{GraphDatabaseService, Label, RelationshipType}
 import org.neo4j.internal.kernel.api.Transaction.Type._

@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.plandescription
 
 import org.neo4j.cypher.CypherVersion
 import org.neo4j.cypher.internal.plandescription.Arguments._
-import org.neo4j.cypher.internal.planner.v4_0.spi.PlanningAttributes.{Cardinalities, ProvidedOrders}
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.{Cardinalities, ProvidedOrders}
 import org.neo4j.cypher.internal.v4_0.expressions.functions.Point
 import org.neo4j.cypher.internal.v4_0.expressions.{FunctionInvocation, FunctionName, LabelToken, MapExpression, Namespace, PropertyKeyToken, Expression => ASTExpression}
 import org.neo4j.cypher.internal.v4_0.frontend.PlannerName

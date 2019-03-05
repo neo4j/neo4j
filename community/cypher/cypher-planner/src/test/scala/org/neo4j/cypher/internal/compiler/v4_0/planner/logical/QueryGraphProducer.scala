@@ -24,8 +24,7 @@ import org.neo4j.cypher.internal.compiler.v4_0.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.v4_0.planner._
 import org.neo4j.cypher.internal.compiler.v4_0.test_helpers.ContextHelper
 import org.neo4j.cypher.internal.ir.v4_0.PlannerQuery
-import org.neo4j.cypher.internal.planner.v4_0.spi.IDPPlannerName
-import org.neo4j.cypher.internal.planner.v4_0.spi.PlanningAttributes
+import org.neo4j.cypher.internal.planner.spi.{IDPPlannerName, PlanningAttributes}
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticCheckResult
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticChecker
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable

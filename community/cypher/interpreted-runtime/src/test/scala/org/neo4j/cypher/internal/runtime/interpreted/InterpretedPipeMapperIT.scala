@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.runtime.interpreted
 import org.mockito.Mockito.{atLeastOnce, verify, when}
 import org.neo4j.cypher.internal.compiler.v4_0.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.ir.v4_0._
-import org.neo4j.cypher.internal.planner.v4_0.spi.{PlanContext, TokenContext}
+import org.neo4j.cypher.internal.planner.spi.{PlanContext, TokenContext}
 import org.neo4j.cypher.internal.runtime.QueryIndexes
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.KeyToken.Resolved

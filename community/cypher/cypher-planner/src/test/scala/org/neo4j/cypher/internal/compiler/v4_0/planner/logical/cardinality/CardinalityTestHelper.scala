@@ -23,8 +23,7 @@ import org.neo4j.cypher.internal.compiler.v4_0.helpers.MapSupport._
 import org.neo4j.cypher.internal.compiler.v4_0.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.QueryGraphProducer
 import org.neo4j.cypher.internal.ir.v4_0._
-import org.neo4j.cypher.internal.planner.v4_0.spi.GraphStatistics
-import org.neo4j.cypher.internal.planner.v4_0.spi.IndexDescriptor
+import org.neo4j.cypher.internal.planner.spi.{GraphStatistics, IndexDescriptor}
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.v4_0.expressions.Variable
 import org.neo4j.cypher.internal.v4_0.util.Cardinality.NumericCardinality

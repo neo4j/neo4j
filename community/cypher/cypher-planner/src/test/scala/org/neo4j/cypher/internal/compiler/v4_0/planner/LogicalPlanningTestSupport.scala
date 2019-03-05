@@ -32,8 +32,8 @@ import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.idp._
 import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.steps.{LogicalPlanProducer, devNullListener}
 import org.neo4j.cypher.internal.compiler.v4_0.test_helpers.ContextHelper
 import org.neo4j.cypher.internal.ir.v4_0._
-import org.neo4j.cypher.internal.planner.v4_0.spi.PlanningAttributes.{Cardinalities, ProvidedOrders, Solveds}
-import org.neo4j.cypher.internal.planner.v4_0.spi.{CostBasedPlannerName, GraphStatistics, PlanContext, PlanningAttributes}
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.{Cardinalities, ProvidedOrders, Solveds}
+import org.neo4j.cypher.internal.planner.spi.{CostBasedPlannerName, GraphStatistics, PlanContext, PlanningAttributes}
 import org.neo4j.cypher.internal.v4_0.ast._
 import org.neo4j.cypher.internal.v4_0.ast.semantics.{SemanticFeature, SemanticTable}
 import org.neo4j.cypher.internal.v4_0.expressions._

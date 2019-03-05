@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.spi.v4_0
 
 import org.neo4j.cypher.internal.compatibility.v4_0.ExceptionTranslationSupport
-import org.neo4j.cypher.internal.planner.v4_0.spi.{GraphStatistics, IndexDescriptor, PlanContext}
+import org.neo4j.cypher.internal.planner.spi.{GraphStatistics, IndexDescriptor, PlanContext}
 import org.neo4j.cypher.internal.v4_0.frontend.phases.InternalNotificationLogger
 import org.neo4j.cypher.internal.v4_0.logical.plans.{ProcedureSignature, QualifiedName, UserFunctionSignature}
 

@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v4_0.planner.logical.cardinality.assu
 import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.Metrics.QueryGraphCardinalityModel
 import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.cardinality.ABCDCardinalityData
 import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.cardinality.RandomizedCardinalityModelTestSuite
-import org.neo4j.cypher.internal.planner.v4_0.spi.GraphStatistics
+import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 
 class AssumeIndependenceQueryGraphCardinalityModelTest extends RandomizedCardinalityModelTestSuite with ABCDCardinalityData {
 

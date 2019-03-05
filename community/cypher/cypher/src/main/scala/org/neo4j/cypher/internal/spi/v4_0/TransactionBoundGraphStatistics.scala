@@ -19,9 +19,7 @@
  */
 package org.neo4j.cypher.internal.spi.v4_0
 
-import org.neo4j.cypher.internal.planner.v4_0.spi.GraphStatistics
-import org.neo4j.cypher.internal.planner.v4_0.spi.IndexDescriptor
-import org.neo4j.cypher.internal.planner.v4_0.spi.StatisticsCompletingGraphStatistics
+import org.neo4j.cypher.internal.planner.spi.{GraphStatistics, IndexDescriptor, StatisticsCompletingGraphStatistics}
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException
 import org.neo4j.internal.kernel.api.{Read, SchemaRead}
 import org.neo4j.kernel.impl.query.TransactionalContext

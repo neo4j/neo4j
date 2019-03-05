@@ -24,15 +24,14 @@ import org.mockito.Mockito.when
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
 import org.neo4j.cypher.internal.ir.v4_0._
-import org.neo4j.cypher.internal.planner.v4_0.spi.GraphStatistics
-import org.neo4j.cypher.internal.planner.v4_0.spi.GraphStatistics.DEFAULT_EQUALITY_SELECTIVITY
-import org.neo4j.cypher.internal.planner.v4_0.spi.GraphStatistics.DEFAULT_LIST_CARDINALITY
-import org.neo4j.cypher.internal.planner.v4_0.spi.GraphStatistics.DEFAULT_PROPERTY_SELECTIVITY
-import org.neo4j.cypher.internal.planner.v4_0.spi.GraphStatistics.DEFAULT_RANGE_SEEK_FACTOR
-import org.neo4j.cypher.internal.planner.v4_0.spi.GraphStatistics.DEFAULT_RANGE_SELECTIVITY
-import org.neo4j.cypher.internal.planner.v4_0.spi.GraphStatistics.DEFAULT_STRING_LENGTH
-import org.neo4j.cypher.internal.planner.v4_0.spi.GraphStatistics.DEFAULT_TYPE_SELECTIVITY
-import org.neo4j.cypher.internal.planner.v4_0.spi.IndexDescriptor
+import org.neo4j.cypher.internal.planner.spi.{GraphStatistics, IndexDescriptor}
+import org.neo4j.cypher.internal.planner.spi.GraphStatistics.DEFAULT_EQUALITY_SELECTIVITY
+import org.neo4j.cypher.internal.planner.spi.GraphStatistics.DEFAULT_LIST_CARDINALITY
+import org.neo4j.cypher.internal.planner.spi.GraphStatistics.DEFAULT_PROPERTY_SELECTIVITY
+import org.neo4j.cypher.internal.planner.spi.GraphStatistics.DEFAULT_RANGE_SEEK_FACTOR
+import org.neo4j.cypher.internal.planner.spi.GraphStatistics.DEFAULT_RANGE_SELECTIVITY
+import org.neo4j.cypher.internal.planner.spi.GraphStatistics.DEFAULT_STRING_LENGTH
+import org.neo4j.cypher.internal.planner.spi.GraphStatistics.DEFAULT_TYPE_SELECTIVITY
 import org.neo4j.cypher.internal.v4_0.ast._
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.v4_0.expressions._

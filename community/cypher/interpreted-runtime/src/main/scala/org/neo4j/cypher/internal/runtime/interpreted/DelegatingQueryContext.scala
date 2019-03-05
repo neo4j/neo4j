@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.runtime.interpreted
 import java.net.URL
 
 import org.eclipse.collections.api.iterator.LongIterator
-import org.neo4j.cypher.internal.planner.v4_0.spi.{IdempotentResult, KernelStatisticProvider}
+import org.neo4j.cypher.internal.planner.spi.{IdempotentResult, KernelStatisticProvider}
 import org.neo4j.cypher.internal.runtime._
 import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
 import org.neo4j.cypher.internal.v4_0.logical.plans.IndexOrder

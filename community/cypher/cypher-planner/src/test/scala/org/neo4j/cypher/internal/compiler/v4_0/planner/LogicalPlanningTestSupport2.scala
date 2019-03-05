@@ -33,12 +33,9 @@ import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.LogicalPlanningCo
 import org.neo4j.cypher.internal.compiler.v4_0.planner.logical._
 import org.neo4j.cypher.internal.compiler.v4_0.test_helpers.ContextHelper
 import org.neo4j.cypher.internal.ir.v4_0._
-import org.neo4j.cypher.internal.planner.v4_0.spi.IndexDescriptor.OrderCapability
-import org.neo4j.cypher.internal.planner.v4_0.spi.IndexDescriptor.ValueCapability
-import org.neo4j.cypher.internal.planner.v4_0.spi.PlanningAttributes.Cardinalities
-import org.neo4j.cypher.internal.planner.v4_0.spi.PlanningAttributes.ProvidedOrders
-import org.neo4j.cypher.internal.planner.v4_0.spi.PlanningAttributes.Solveds
-import org.neo4j.cypher.internal.planner.v4_0.spi._
+import org.neo4j.cypher.internal.planner.spi._
+import org.neo4j.cypher.internal.planner.spi.IndexDescriptor.{OrderCapability, ValueCapability}
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.{Cardinalities, ProvidedOrders, Solveds}
 import org.neo4j.cypher.internal.v4_0.logical.plans._
 import org.neo4j.helpers.collection.Visitable
 import org.neo4j.kernel.impl.util.dbstructure.DbStructureVisitor

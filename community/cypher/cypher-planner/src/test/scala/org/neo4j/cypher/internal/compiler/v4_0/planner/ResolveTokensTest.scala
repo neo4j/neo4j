@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v4_0.planner
 
 import org.mockito.Mockito._
-import org.neo4j.cypher.internal.planner.v4_0.spi.PlanContext
+import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.v4_0.ast.{Match, Query, SingleQuery, Where, _}
 import org.neo4j.cypher.internal.v4_0.expressions._

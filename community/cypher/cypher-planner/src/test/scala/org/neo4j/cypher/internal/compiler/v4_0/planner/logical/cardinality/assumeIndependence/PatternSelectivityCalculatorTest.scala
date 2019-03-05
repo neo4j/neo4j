@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.cardinality.Indep
 import org.neo4j.cypher.internal.v4_0.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.ir.v4_0._
-import org.neo4j.cypher.internal.planner.v4_0.spi.GraphStatistics
+import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 import org.neo4j.cypher.internal.v4_0.util.{Cardinality, LabelId, Selectivity}
 import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
 import scala.collection.mutable

@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.ordering.ResultOr
 import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.{LeafPlanFromExpressions, LeafPlanner, LeafPlansForVariable, LogicalPlanningContext}
 import org.neo4j.cypher.internal.ir.v4_0.{InterestingOrder, ProvidedOrder, QueryGraph}
-import org.neo4j.cypher.internal.planner.v4_0.spi.IndexDescriptor
+import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
 import org.neo4j.cypher.internal.v4_0.logical.plans._
 import org.neo4j.cypher.internal.v4_0.ast._
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable

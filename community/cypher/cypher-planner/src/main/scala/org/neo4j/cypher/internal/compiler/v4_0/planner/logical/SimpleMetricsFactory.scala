@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v4_0.planner.logical
 import org.neo4j.cypher.internal.compiler.v4_0.CypherPlannerConfiguration
 import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.Metrics._
 import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.cardinality.QueryGraphCardinalityModel
-import org.neo4j.cypher.internal.planner.v4_0.spi.GraphStatistics
+import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 
 object SimpleMetricsFactory extends MetricsFactory {
   def newCostModel(config: CypherPlannerConfiguration): CostModel = CardinalityCostModel(config)

@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v4_0.planner.logical.idp
 import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.idp.joinSolverStep._
 import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.{LogicalPlanningContext, LogicalPlanningSupport}
 import org.neo4j.cypher.internal.ir.v4_0.{InterestingOrder, PatternRelationship, QueryGraph}
-import org.neo4j.cypher.internal.planner.v4_0.spi.PlanningAttributes.Solveds
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Solveds
 import org.neo4j.cypher.internal.v4_0.logical.plans.LogicalPlan
 
 object joinSolverStep {

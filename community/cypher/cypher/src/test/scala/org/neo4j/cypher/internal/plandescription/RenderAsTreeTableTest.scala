@@ -23,7 +23,7 @@ import java.util.Locale
 
 import org.neo4j.cypher.internal.plandescription.Arguments._
 import org.neo4j.cypher.internal.ir.v4_0.ProvidedOrder
-import org.neo4j.cypher.internal.planner.v4_0.spi.PlanningAttributes.{Cardinalities, ProvidedOrders}
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.{Cardinalities, ProvidedOrders}
 import org.neo4j.cypher.internal.v4_0.expressions.{Expression => ASTExpression, LabelName => ASTLabelName, Range => ASTRange, _}
 import org.neo4j.cypher.internal.v4_0.logical.plans
 import org.neo4j.cypher.internal.v4_0.logical.plans._

@@ -24,11 +24,11 @@ import org.neo4j.cypher.internal.compiler.v4_0.planner._
 import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.Metrics.{CardinalityModel, QueryGraphCardinalityModel, QueryGraphSolverInput}
 import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.cardinality.{IndependenceCombiner, SelectivityCombiner}
 import org.neo4j.cypher.internal.ir.v4_0._
-import org.neo4j.cypher.internal.planner.v4_0.spi.GraphStatistics
+import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 import org.neo4j.values.storable.NumberValue
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.v4_0.expressions.IntegerLiteral
-import org.neo4j.cypher.internal.v4_0.util.{Cardinality, Multiplier, Selectivity}
+import org.neo4j.cypher.internal.v4_0.util.{Cardinality, Multiplier}
 
 class StatisticsBackedCardinalityModel(queryGraphCardinalityModel: QueryGraphCardinalityModel, simpleExpressionEvaluator: ExpressionEvaluator) extends CardinalityModel {
 

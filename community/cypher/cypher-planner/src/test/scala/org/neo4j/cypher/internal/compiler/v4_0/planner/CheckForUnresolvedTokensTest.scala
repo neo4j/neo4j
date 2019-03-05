@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v4_0.planner
 import org.neo4j.cypher.internal.compiler.v4_0.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.v4_0.test_helpers.ContextHelper
 import org.neo4j.cypher.internal.compiler.v4_0.{MissingLabelNotification, MissingPropertyNameNotification, MissingRelTypeNotification}
-import org.neo4j.cypher.internal.planner.v4_0.spi.{IDPPlannerName, PlanningAttributes}
+import org.neo4j.cypher.internal.planner.spi.{IDPPlannerName, PlanningAttributes}
 import org.neo4j.values.storable.TemporalValue.TemporalFields
 import org.neo4j.values.storable.{DurationFields, PointFields}
 import org.neo4j.cypher.internal.v4_0.ast.Query

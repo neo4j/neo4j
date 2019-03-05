@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.runtime.interpreted
 
 import java.util.concurrent.atomic.AtomicInteger
 
-import org.neo4j.cypher.internal.planner.v4_0.spi.IdempotentResult
+import org.neo4j.cypher.internal.planner.spi.IdempotentResult
 import org.neo4j.cypher.internal.runtime.{Operations, QueryContext, QueryStatistics, _}
 import org.neo4j.internal.kernel.api.{IndexReference, NodeCursor, RelationshipScanCursor}
 import org.neo4j.values.storable.Value

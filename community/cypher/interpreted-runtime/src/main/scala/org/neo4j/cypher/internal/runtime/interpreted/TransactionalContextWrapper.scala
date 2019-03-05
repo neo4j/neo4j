@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted
 
-import org.neo4j.cypher.internal.planner.v4_0.spi.KernelStatisticProvider
+import org.neo4j.cypher.internal.planner.spi.KernelStatisticProvider
 import org.neo4j.cypher.internal.runtime.QueryTransactionalContext
 import org.neo4j.internal.kernel.api._
 import org.neo4j.kernel.GraphDatabaseQueryService

@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v4_0.spi
 
-import org.neo4j.cypher.internal.planner.v4_0.spi._
+import org.neo4j.cypher.internal.planner.spi._
 import org.neo4j.cypher.internal.v4_0.util._
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 

@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v4_0.phases._
 import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.Metrics.{CostModel, QueryGraphSolverInput}
 import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.steps.{LogicalPlanProducer, SystemOutCostLogger, devNullListener}
 import org.neo4j.cypher.internal.ir.v4_0._
-import org.neo4j.cypher.internal.planner.v4_0.spi.PlanningAttributes.{Cardinalities, Solveds}
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.neo4j.cypher.internal.v4_0.logical.plans._
 import org.neo4j.cypher.internal.v4_0.frontend.phases.CompilationPhaseTracer.CompilationPhase.LOGICAL_PLANNING
 import org.neo4j.cypher.internal.v4_0.frontend.phases.Phase

@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v4_0.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v4_0.planner.logical._
 import org.neo4j.cypher.internal.ir.v4_0.{QueryGraph, InterestingOrder, Selections}
-import org.neo4j.cypher.internal.planner.v4_0.spi.PlanningAttributes.Solveds
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Solveds
 import org.neo4j.cypher.internal.v4_0.logical.plans._
 import org.neo4j.cypher.internal.v4_0.expressions.PartialPredicate.PartialPredicateWrapper
 import org.neo4j.cypher.internal.v4_0.expressions.{Expression, Ors}

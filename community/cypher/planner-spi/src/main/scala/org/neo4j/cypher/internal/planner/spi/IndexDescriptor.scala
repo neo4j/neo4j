@@ -17,9 +17,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.planner.v4_0.spi
+package org.neo4j.cypher.internal.planner.spi
 
-import org.neo4j.cypher.internal.planner.v4_0.spi.IndexDescriptor.{OrderCapability, ValueCapability}
+import org.neo4j.cypher.internal.planner.spi.IndexDescriptor.{OrderCapability, ValueCapability}
 import org.neo4j.cypher.internal.v4_0.logical.plans.{DoNotGetValue, GetValueFromIndexBehavior}
 import org.neo4j.cypher.internal.v4_0.util.symbols.CypherType
 import org.neo4j.cypher.internal.v4_0.util.{LabelId, PropertyKeyId}

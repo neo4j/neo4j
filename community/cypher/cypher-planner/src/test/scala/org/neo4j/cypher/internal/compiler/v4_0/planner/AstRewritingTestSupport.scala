@@ -21,9 +21,7 @@ package org.neo4j.cypher.internal.compiler.v4_0.planner
 
 import org.neo4j.cypher.internal.ir.v4_0.PlannerQuery
 import org.neo4j.cypher.internal.ir.v4_0.ProvidedOrder
-import org.neo4j.cypher.internal.planner.v4_0.spi.PlanningAttributes.Cardinalities
-import org.neo4j.cypher.internal.planner.v4_0.spi.PlanningAttributes.ProvidedOrders
-import org.neo4j.cypher.internal.planner.v4_0.spi.PlanningAttributes.Solveds
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.{Cardinalities, ProvidedOrders, Solveds}
 import org.neo4j.cypher.internal.v4_0.logical.plans.CachedNodeProperty
 import org.neo4j.cypher.internal.v4_0.logical.plans.GetValue
 import org.neo4j.cypher.internal.v4_0.logical.plans.IndexOrderNone
