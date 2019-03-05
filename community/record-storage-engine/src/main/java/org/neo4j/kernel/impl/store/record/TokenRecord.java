@@ -27,6 +27,10 @@ public abstract class TokenRecord extends AbstractBaseRecord
 {
     private int nameId;
     private List<DynamicRecord> nameRecords;
+    /**
+     * This is {@code true} if this token is internal to the database, and should not show up on the product surface.
+     */
+    private boolean internal;
 
     public TokenRecord( long id )
     {
@@ -78,6 +82,16 @@ public abstract class TokenRecord extends AbstractBaseRecord
         {
             addNameRecord( record );
         }
+    }
+
+    public boolean isInternal()
+    {
+        return internal;
+    }
+
+    public void setInternal( boolean internal )
+    {
+        this.internal = internal;
     }
 
     @Override

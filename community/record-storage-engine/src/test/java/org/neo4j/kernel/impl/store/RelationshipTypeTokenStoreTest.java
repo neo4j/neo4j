@@ -25,15 +25,15 @@ import org.neo4j.configuration.Config;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
-import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
+import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.logging.LogProvider;
 
-class LabelTokenStoreTest extends TokenStoreTestTemplate<LabelTokenRecord>
+class RelationshipTypeTokenStoreTest extends TokenStoreTestTemplate<RelationshipTypeTokenRecord>
 {
     @Override
-    protected TokenStore<LabelTokenRecord> createStore( File file, File idFile, IdGeneratorFactory generatorFactory, PageCache pageCache,
+    protected TokenStore<RelationshipTypeTokenRecord> createStore( File file, File idFile, IdGeneratorFactory generatorFactory, PageCache pageCache,
             LogProvider logProvider, DynamicStringStore nameStore, RecordFormats formats, Config config )
     {
-        return new LabelTokenStore( file, idFile, config, generatorFactory, pageCache, logProvider, nameStore, formats );
+        return new RelationshipTypeTokenStore( file, idFile, config, generatorFactory, pageCache, logProvider, nameStore, formats );
     }
 }

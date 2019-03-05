@@ -27,9 +27,11 @@ import org.neo4j.kernel.impl.store.record.TokenRecord;
 
 public abstract class TokenRecordFormat<RECORD extends TokenRecord> extends BaseOneByteHeaderRecordFormat<RECORD>
 {
-    protected static final int BASE_RECORD_SIZE = 1/*inUse*/ + 4/*nameId*/;
+    static final int BASE_RECORD_SIZE = 1/*inUse*/ + 4/*nameId*/;
 
-    protected TokenRecordFormat( int recordSize, int idBits )
+    private static final byte INTERNAL_FLAG = IN_USE_BIT << 1;
+
+    TokenRecordFormat( int recordSize, int idBits )
     {
         super( fixedRecordSize( recordSize ), 0, IN_USE_BIT, idBits );
     }
@@ -37,12 +39,13 @@ public abstract class TokenRecordFormat<RECORD extends TokenRecord> extends Base
     @Override
     public void read( RECORD record, PageCursor cursor, RecordLoad mode, int recordSize )
     {
-        byte inUseByte = cursor.getByte();
-        boolean inUse = isInUse( inUseByte );
+        byte headerByte = cursor.getByte();
+        boolean inUse = isInUse( headerByte );
         record.setInUse( inUse );
         if ( mode.shouldLoad( inUse ) )
         {
             readRecordData( cursor, record, inUse );
+            record.setInternal( has( headerByte, INTERNAL_FLAG ) );
         }
     }
 
@@ -56,7 +59,12 @@ public abstract class TokenRecordFormat<RECORD extends TokenRecord> extends Base
     {
         if ( record.inUse() )
         {
-            cursor.putByte( Record.IN_USE.byteValue() );
+            byte headerByte = Record.IN_USE.byteValue();
+            if ( record.isInternal() )
+            {
+                headerByte += INTERNAL_FLAG;
+            }
+            cursor.putByte( headerByte );
             writeRecordData( record, cursor );
         }
         else
