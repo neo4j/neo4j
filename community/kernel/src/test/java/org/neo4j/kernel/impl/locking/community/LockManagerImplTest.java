@@ -25,8 +25,8 @@ import org.junit.rules.ExpectedException;
 import org.mockito.Mockito;
 
 import org.neo4j.configuration.Config;
-import org.neo4j.kernel.impl.locking.ResourceTypes;
-import org.neo4j.storageengine.api.lock.LockTracer;
+import org.neo4j.lock.LockTracer;
+import org.neo4j.lock.ResourceTypes;
 import org.neo4j.time.Clocks;
 
 import static org.junit.Assert.assertEquals;
@@ -34,7 +34,6 @@ import static org.junit.Assert.assertTrue;
 
 public class LockManagerImplTest
 {
-
     @Rule
     public ExpectedException expectedException = ExpectedException.none();
 
@@ -154,5 +153,4 @@ public class LockManagerImplTest
             return lock;
         }
     }
-
 }

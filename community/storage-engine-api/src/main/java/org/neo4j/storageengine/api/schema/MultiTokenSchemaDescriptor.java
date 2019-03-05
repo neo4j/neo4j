@@ -26,8 +26,8 @@ import java.util.Objects;
 
 import org.neo4j.common.EntityType;
 import org.neo4j.common.TokenNameLookup;
-import org.neo4j.kernel.impl.locking.ResourceTypes;
-import org.neo4j.storageengine.api.lock.ResourceType;
+import org.neo4j.lock.ResourceType;
+import org.neo4j.lock.ResourceTypes;
 import org.neo4j.token.api.TokenIdPrettyPrinter;
 
 import static org.neo4j.common.TokenNameLookup.idTokenNameLookup;

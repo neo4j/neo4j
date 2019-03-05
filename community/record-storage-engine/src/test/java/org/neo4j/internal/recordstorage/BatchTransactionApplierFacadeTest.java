@@ -24,7 +24,7 @@ import org.junit.Test;
 import org.mockito.InOrder;
 
 import org.neo4j.kernel.impl.api.TransactionToApply;
-import org.neo4j.locking.LockGroup;
+import org.neo4j.lock.LockGroup;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;

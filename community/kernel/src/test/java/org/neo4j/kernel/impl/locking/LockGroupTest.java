@@ -21,8 +21,8 @@ package org.neo4j.kernel.impl.locking;
 
 import org.junit.Test;
 
-import org.neo4j.locking.Lock;
-import org.neo4j.locking.LockGroup;
+import org.neo4j.lock.Lock;
+import org.neo4j.lock.LockGroup;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;

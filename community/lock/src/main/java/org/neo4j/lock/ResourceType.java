@@ -17,33 +17,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.storageengine.api.lock;
+package org.neo4j.lock;
 
-public interface LockTracer
+/** Locks are split by resource types. It is up to the implementation to define the contract for these. */
+public interface ResourceType
 {
-    LockWaitEvent waitForLock( boolean exclusive, ResourceType resourceType, long... resourceIds );
+    /** Must be unique among all existing resource types, should preferably be a sequence starting at 0. */
+    int typeId();
 
-    default LockTracer combine( LockTracer tracer )
-    {
-        if ( tracer == NONE )
-        {
-            return this;
-        }
-        return new CombinedTracer( this, tracer );
-    }
+    /** What to do if the lock cannot immediately be acquired. */
+    WaitStrategy waitStrategy();
 
-    LockTracer NONE = new LockTracer()
-    {
-        @Override
-        public LockWaitEvent waitForLock( boolean exclusive, ResourceType resourceType, long... resourceIds )
-        {
-            return LockWaitEvent.NONE;
-        }
-
-        @Override
-        public LockTracer combine( LockTracer tracer )
-        {
-            return tracer;
-        }
-    };
+    /** Must be unique among all existing resource types. */
+    String name();
 }

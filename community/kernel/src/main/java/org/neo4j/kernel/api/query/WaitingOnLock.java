@@ -26,7 +26,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.kernel.impl.locking.ActiveLock;
-import org.neo4j.storageengine.api.lock.ResourceType;
+import org.neo4j.lock.ResourceType;
 
 class WaitingOnLock extends ExecutingQueryStatus
 {

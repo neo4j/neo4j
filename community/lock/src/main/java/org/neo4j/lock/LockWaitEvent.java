@@ -17,17 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.storageengine.api.lock;
+package org.neo4j.lock;
 
-/** Locks are split by resource types. It is up to the implementation to define the contract for these. */
-public interface ResourceType
+public interface LockWaitEvent extends AutoCloseable
 {
-    /** Must be unique among all existing resource types, should preferably be a sequence starting at 0. */
-    int typeId();
+    @Override
+    void close();
 
-    /** What to do if the lock cannot immediately be acquired. */
-    WaitStrategy waitStrategy();
-
-    /** Must be unique among all existing resource types. */
-    String name();
+    LockWaitEvent NONE = () -> {};
 }

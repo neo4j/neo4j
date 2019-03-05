@@ -17,13 +17,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.util.concurrent;
+package org.neo4j.lock;
 
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.storageengine.api.lock.AcquireLockTimeoutException;
-import org.neo4j.storageengine.api.lock.WaitStrategy;
-
-import static org.neo4j.kernel.api.exceptions.Status.Transaction.Interrupted;
 
 public enum LockWaitStrategies implements WaitStrategy
 {
@@ -76,7 +72,7 @@ public enum LockWaitStrategies implements WaitStrategy
             catch ( InterruptedException e )
             {
                 Thread.interrupted();
-                throw new AcquireLockTimeoutException( e, "Interrupted while waiting.", Interrupted );
+                throw new AcquireLockTimeoutException( e, "Interrupted while waiting.", Status.Transaction.Interrupted );
             }
         }
     },

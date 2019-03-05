@@ -24,11 +24,11 @@ import org.junit.Test;
 
 import java.util.concurrent.Future;
 
-import org.neo4j.storageengine.api.lock.LockTracer;
-import org.neo4j.storageengine.api.lock.ResourceType;
+import org.neo4j.lock.LockTracer;
+import org.neo4j.lock.ResourceType;
 
 import static org.junit.Assert.assertEquals;
-import static org.neo4j.kernel.impl.locking.ResourceTypes.NODE;
+import static org.neo4j.lock.ResourceTypes.NODE;
 
 @Ignore( "Not a test. This is a compatibility suite, run from LockingCompatibilityTestSuite." )
 public class LockReentrancyCompatibility extends LockingCompatibilityTestSuite.Compatibility

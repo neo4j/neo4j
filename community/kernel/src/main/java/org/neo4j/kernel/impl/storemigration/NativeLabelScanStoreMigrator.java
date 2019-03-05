@@ -49,7 +49,7 @@ import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.migration.AbstractStoreMigrationParticipant;
 
-import static org.neo4j.locking.LockService.NO_LOCK_SERVICE;
+import static org.neo4j.lock.LockService.NO_LOCK_SERVICE;
 
 class NativeLabelScanStoreMigrator extends AbstractStoreMigrationParticipant
 {

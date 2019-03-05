@@ -50,11 +50,11 @@ import org.neo4j.graphdb.factory.module.edition.CommunityEditionModule;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.locking.LockAcquisitionTimeoutException;
 import org.neo4j.kernel.impl.locking.Locks;
-import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.locking.community.CommunityLockClient;
 import org.neo4j.kernel.impl.locking.community.CommunityLockManger;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.storageengine.api.lock.LockTracer;
+import org.neo4j.lock.LockTracer;
+import org.neo4j.lock.ResourceTypes;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.mockito.matcher.RootCauseMatcher;
@@ -67,7 +67,6 @@ import static org.junit.Assert.fail;
 
 public class CommunityLockAcquisitionTimeoutIT
 {
-
     @ClassRule
     public static final TestDirectory directory = TestDirectory.testDirectory();
     @Rule
@@ -252,6 +251,5 @@ public class CommunityLockAcquisitionTimeoutIT
                 }
             };
         }
-
     }
 }

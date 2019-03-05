@@ -48,7 +48,7 @@ import org.neo4j.kernel.impl.factory.GraphDatabaseFacade
 import org.neo4j.kernel.impl.newapi.DefaultPooledCursors
 import org.neo4j.kernel.impl.query.{Neo4jTransactionalContext, Neo4jTransactionalContextFactory}
 import org.neo4j.kernel.impl.util.DefaultValueMapper
-import org.neo4j.storageengine.api.lock.LockTracer
+import org.neo4j.lock.LockTracer
 import org.neo4j.test.TestGraphDatabaseFactory
 import org.neo4j.values.ValueMapper
 import org.neo4j.values.virtual.VirtualValues.EMPTY_MAP

@@ -23,7 +23,7 @@ import java.util.function.Predicate;
 
 import org.neo4j.common.EntityType;
 import org.neo4j.common.TokenNameLookup;
-import org.neo4j.storageengine.api.lock.ResourceType;
+import org.neo4j.lock.ResourceType;
 
 /**
  * Internal representation of one schema unit, for example a label-property pair.
@@ -54,7 +54,6 @@ public interface SchemaDescriptor extends SchemaDescriptorSupplier
         @Override
         public void processWith( SchemaProcessor processor )
         {
-
         }
 
         @Override

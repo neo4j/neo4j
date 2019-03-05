@@ -21,11 +21,11 @@ package org.neo4j.kernel.impl.locking;
 
 import java.util.stream.Stream;
 
-import org.neo4j.storageengine.api.lock.AcquireLockTimeoutException;
-import org.neo4j.storageengine.api.lock.LockTracer;
-import org.neo4j.storageengine.api.lock.ResourceLocker;
-import org.neo4j.storageengine.api.lock.ResourceType;
-import org.neo4j.storageengine.api.lock.WaitStrategy;
+import org.neo4j.lock.AcquireLockTimeoutException;
+import org.neo4j.lock.LockTracer;
+import org.neo4j.lock.ResourceLocker;
+import org.neo4j.lock.ResourceType;
+import org.neo4j.lock.WaitStrategy;
 
 /**
  * API for managing locks.
@@ -48,7 +48,6 @@ import org.neo4j.storageengine.api.lock.WaitStrategy;
  */
 public interface Locks
 {
-
     /** For introspection and debugging. */
     interface Visitor
     {

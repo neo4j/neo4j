@@ -26,8 +26,8 @@ import java.time.Clock;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.kernel.impl.locking.LocksFactory;
-import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.locking.community.CommunityLocksFactory;
+import org.neo4j.lock.ResourceTypes;
 import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.time.Clocks;
 

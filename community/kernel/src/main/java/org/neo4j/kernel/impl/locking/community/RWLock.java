@@ -30,9 +30,9 @@ import org.neo4j.helpers.MathUtil;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.impl.locking.LockAcquisitionTimeoutException;
 import org.neo4j.kernel.impl.locking.LockType;
+import org.neo4j.lock.LockTracer;
+import org.neo4j.lock.LockWaitEvent;
 import org.neo4j.logging.Logger;
-import org.neo4j.storageengine.api.lock.LockTracer;
-import org.neo4j.storageengine.api.lock.LockWaitEvent;
 
 import static java.lang.Thread.currentThread;
 import static java.lang.Thread.interrupted;

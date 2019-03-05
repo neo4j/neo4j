@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.impl.locking;
 
+import org.neo4j.lock.ResourceType;
 import org.neo4j.logging.Log;
-import org.neo4j.storageengine.api.lock.ResourceType;
 
 public class DumpLocksVisitor implements Locks.Visitor
 {

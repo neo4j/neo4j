@@ -56,10 +56,10 @@ import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.kernel.impl.store.record.TokenRecord;
 import org.neo4j.kernel.impl.util.statistics.IntCounter;
+import org.neo4j.lock.ResourceLocker;
 import org.neo4j.storageengine.api.SchemaRule;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageProperty;
-import org.neo4j.storageengine.api.lock.ResourceLocker;
 import org.neo4j.values.storable.Value;
 
 import static java.lang.String.format;

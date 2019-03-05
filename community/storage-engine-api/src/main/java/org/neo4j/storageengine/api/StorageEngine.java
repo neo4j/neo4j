@@ -29,8 +29,8 @@ import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationExcep
 import org.neo4j.internal.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.lock.ResourceLocker;
 import org.neo4j.logging.Log;
-import org.neo4j.storageengine.api.lock.ResourceLocker;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 

@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.api.query;
 
-import org.neo4j.storageengine.api.lock.LockTracer;
-import org.neo4j.storageengine.api.lock.LockWaitEvent;
-import org.neo4j.storageengine.api.lock.ResourceType;
+import org.neo4j.lock.LockTracer;
+import org.neo4j.lock.LockWaitEvent;
+import org.neo4j.lock.ResourceType;
 
 /**
  * This is both a status state in the state machine of {@link ExecutingQuery}, and a {@link LockWaitEvent}.

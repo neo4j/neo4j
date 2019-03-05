@@ -17,12 +17,33 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.storageengine.api.lock;
+package org.neo4j.lock;
 
-public interface LockWaitEvent extends AutoCloseable
+public interface LockTracer
 {
-    @Override
-    void close();
+    LockWaitEvent waitForLock( boolean exclusive, ResourceType resourceType, long... resourceIds );
 
-    LockWaitEvent NONE = () -> {};
+    default LockTracer combine( LockTracer tracer )
+    {
+        if ( tracer == NONE )
+        {
+            return this;
+        }
+        return new CombinedTracer( this, tracer );
+    }
+
+    LockTracer NONE = new LockTracer()
+    {
+        @Override
+        public LockWaitEvent waitForLock( boolean exclusive, ResourceType resourceType, long... resourceIds )
+        {
+            return LockWaitEvent.NONE;
+        }
+
+        @Override
+        public LockTracer combine( LockTracer tracer )
+        {
+            return tracer;
+        }
+    };
 }

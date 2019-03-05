@@ -26,10 +26,10 @@ import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelE
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.impl.locking.Locks;
-import org.neo4j.storageengine.api.lock.LockTracer;
+import org.neo4j.lock.LockTracer;
 
 import static org.neo4j.kernel.impl.locking.ResourceIds.indexEntryResourceId;
-import static org.neo4j.kernel.impl.locking.ResourceTypes.INDEX_ENTRY;
+import static org.neo4j.lock.ResourceTypes.INDEX_ENTRY;
 
 public class LockingNodeUniqueIndexSeek
 {

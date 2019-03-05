@@ -22,11 +22,11 @@ package org.neo4j.kernel.impl.locking;
 import java.util.concurrent.Future;
 
 import org.neo4j.kernel.DeadlockDetectedException;
-import org.neo4j.storageengine.api.lock.AcquireLockTimeoutException;
-import org.neo4j.storageengine.api.lock.LockTracer;
+import org.neo4j.lock.AcquireLockTimeoutException;
+import org.neo4j.lock.LockTracer;
 import org.neo4j.test.OtherThreadExecutor;
 
-import static org.neo4j.kernel.impl.locking.ResourceTypes.NODE;
+import static org.neo4j.lock.ResourceTypes.NODE;
 
 public class LockWorker extends OtherThreadExecutor<LockWorkerState>
 {

@@ -32,7 +32,8 @@ import java.util.concurrent.TimeUnit;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.helpers.Exceptions;
-import org.neo4j.storageengine.api.lock.LockTracer;
+import org.neo4j.lock.LockTracer;
+import org.neo4j.lock.ResourceTypes;
 import org.neo4j.test.rule.VerboseTimeout;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
@@ -45,7 +46,6 @@ import static org.neo4j.test.rule.OtherThreadRule.isWaiting;
 @Ignore( "Not a test. This is a compatibility suite, run from LockingCompatibilityTestSuite." )
 public class AcquisitionTimeoutCompatibility extends LockingCompatibilityTestSuite.Compatibility
 {
-
     private final long TEST_TIMEOUT_SECONDS = 30;
     private FakeClock clock;
     private Config customConfig;

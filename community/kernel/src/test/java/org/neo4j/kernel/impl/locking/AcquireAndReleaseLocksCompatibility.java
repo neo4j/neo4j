@@ -24,12 +24,12 @@ import org.junit.Test;
 
 import java.util.concurrent.Future;
 
-import org.neo4j.storageengine.api.lock.LockTracer;
+import org.neo4j.lock.LockTracer;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.kernel.impl.locking.ResourceTypes.NODE;
+import static org.neo4j.lock.ResourceTypes.NODE;
 
 /**
  * Tests simple acquiring and releasing of single locks.

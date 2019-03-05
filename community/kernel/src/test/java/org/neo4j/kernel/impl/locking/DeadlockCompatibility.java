@@ -32,10 +32,10 @@ import java.util.concurrent.TimeoutException;
 
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.kernel.DeadlockDetectedException;
-import org.neo4j.storageengine.api.lock.LockTracer;
+import org.neo4j.lock.LockTracer;
 
 import static org.neo4j.kernel.impl.locking.Locks.Client;
-import static org.neo4j.kernel.impl.locking.ResourceTypes.NODE;
+import static org.neo4j.lock.ResourceTypes.NODE;
 
 @Ignore( "Not a test. This is a compatibility suite, run from LockingCompatibilityTestSuite." )
 public class DeadlockCompatibility extends LockingCompatibilityTestSuite.Compatibility

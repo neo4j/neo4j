@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.locking;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.storageengine.api.lock.ResourceType;
+import org.neo4j.lock.ResourceType;
 
 /**
  * Used in lock clients for cases when we unable to acquire a lock for a time that exceed configured

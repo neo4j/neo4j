@@ -23,7 +23,7 @@ import java.io.IOException;
 import java.util.Collection;
 
 import org.neo4j.io.fs.WritableChannel;
-import org.neo4j.storageengine.api.lock.ResourceLocker;
+import org.neo4j.lock.ResourceLocker;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 

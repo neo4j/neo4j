@@ -20,7 +20,7 @@
 package org.neo4j.kernel.impl.locking.community;
 
 import org.neo4j.helpers.MathUtil;
-import org.neo4j.storageengine.api.lock.ResourceType;
+import org.neo4j.lock.ResourceType;
 
 public class LockResource
 {

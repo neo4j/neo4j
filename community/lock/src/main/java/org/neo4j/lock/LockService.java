@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.locking;
+package org.neo4j.lock;
 
 /**
  * Note: This is confusing to you. What is the difference between this and {@link Locks}? Well. {@link Locks} is the

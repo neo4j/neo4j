@@ -183,7 +183,7 @@ import static org.neo4j.kernel.impl.api.index.IndexingService.NO_MONITOR;
 import static org.neo4j.kernel.impl.constraints.ConstraintSemantics.getConstraintSemantics;
 import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
 import static org.neo4j.kernel.impl.store.PropertyStore.encodeString;
-import static org.neo4j.locking.LockService.NO_LOCK_SERVICE;
+import static org.neo4j.lock.LockService.NO_LOCK_SERVICE;
 
 public class BatchInserterImpl implements BatchInserter
 {

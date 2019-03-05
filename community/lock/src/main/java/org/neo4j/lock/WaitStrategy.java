@@ -17,27 +17,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.locking;
+package org.neo4j.lock;
 
-import java.util.ArrayList;
-import java.util.List;
-
-public class LockGroup implements AutoCloseable
+/** What to do if we need to wait. */
+public interface WaitStrategy
 {
-    private final List<Lock> locks = new ArrayList<>();
-
-    public final void add( Lock lock )
-    {
-        if ( lock == null )
-        {
-            throw new IllegalArgumentException( "Cannot add null locks. See LockService.NOLOCK instead." );
-        }
-        locks.add( lock );
-    }
-
-    @Override
-    public void close()
-    {
-        locks.forEach( Lock::release );
-    }
+    /**
+     * Throws Exception to force users of this interface to handle any possible failure, since this is used in
+     * potentially very sensitive code.
+     *
+     * @throws AcquireLockTimeoutException in case of timeout
+     */
+    void apply( long iteration );
 }

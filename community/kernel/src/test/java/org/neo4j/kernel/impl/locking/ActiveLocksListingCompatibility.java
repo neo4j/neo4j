@@ -25,16 +25,16 @@ import org.junit.Test;
 import java.util.HashSet;
 import java.util.stream.Stream;
 
-import org.neo4j.storageengine.api.lock.LockTracer;
+import org.neo4j.lock.LockTracer;
 
 import static java.util.Arrays.asList;
 import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.kernel.impl.locking.ActiveLock.exclusiveLock;
 import static org.neo4j.kernel.impl.locking.ActiveLock.sharedLock;
-import static org.neo4j.kernel.impl.locking.ResourceTypes.LABEL;
-import static org.neo4j.kernel.impl.locking.ResourceTypes.NODE;
-import static org.neo4j.kernel.impl.locking.ResourceTypes.RELATIONSHIP;
+import static org.neo4j.lock.ResourceTypes.LABEL;
+import static org.neo4j.lock.ResourceTypes.NODE;
+import static org.neo4j.lock.ResourceTypes.RELATIONSHIP;
 
 @Ignore( "Not a test. This is a compatibility suite, run from LockingCompatibilityTestSuite." )
 public class ActiveLocksListingCompatibility extends LockingCompatibilityTestSuite.Compatibility

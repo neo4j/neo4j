@@ -23,12 +23,13 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 import org.neo4j.kernel.impl.locking.Locks.Client;
-import org.neo4j.storageengine.api.lock.LockTracer;
+import org.neo4j.lock.LockTracer;
+import org.neo4j.lock.ResourceTypes;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.neo4j.kernel.impl.locking.ResourceTypes.NODE;
+import static org.neo4j.lock.ResourceTypes.NODE;
 
 @Ignore( "Not a test. This is a compatibility suite, run from LockingCompatibilityTestSuite." )
 public class CloseCompatibility extends LockingCompatibilityTestSuite.Compatibility

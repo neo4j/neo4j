@@ -29,8 +29,8 @@ import org.neo4j.graphdb.factory.module.edition.CommunityEditionModule;
 import org.neo4j.kernel.impl.locking.DynamicLocksFactory;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.LocksFactory;
-import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.locking.community.CommunityLocksFactory;
+import org.neo4j.lock.ResourceTypes;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.service.Services;
 

@@ -26,6 +26,7 @@
     <module>token-api</module>
     <module>import-util</module>
     <module>id-generator</module>
+    <module>lock</module>
     <module>label-index</module>
     <module>record-storage-engine</module>
     <module>common</module>

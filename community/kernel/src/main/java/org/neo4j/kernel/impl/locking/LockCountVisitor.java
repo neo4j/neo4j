@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.locking;
 
-import org.neo4j.storageengine.api.lock.ResourceType;
+import org.neo4j.lock.ResourceType;
 
 public class LockCountVisitor implements  Locks.Visitor
 {

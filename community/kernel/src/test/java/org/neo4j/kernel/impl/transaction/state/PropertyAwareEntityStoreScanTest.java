@@ -28,7 +28,7 @@ import java.util.function.Supplier;
 import org.neo4j.internal.kernel.api.PopulationProgress;
 import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.kernel.impl.transaction.state.storeview.PropertyAwareEntityStoreScan;
-import org.neo4j.locking.LockService;
+import org.neo4j.lock.LockService;
 import org.neo4j.storageengine.api.StorageNodeCursor;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.StubStorageCursors;

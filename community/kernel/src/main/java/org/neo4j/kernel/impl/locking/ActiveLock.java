@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.locking;
 
 import java.util.Objects;
 
-import org.neo4j.storageengine.api.lock.ResourceType;
+import org.neo4j.lock.ResourceType;
 
 public interface ActiveLock
 {
