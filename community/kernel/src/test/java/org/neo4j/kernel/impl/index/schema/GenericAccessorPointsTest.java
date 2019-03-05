@@ -40,7 +40,6 @@ import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelE
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
-import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
@@ -93,7 +92,6 @@ public class GenericAccessorPointsTest
         GenericLayout layout = new GenericLayout( 1, indexSettings );
         RecoveryCleanupWorkCollector collector = RecoveryCleanupWorkCollector.ignore();
         descriptor = TestIndexDescriptorFactory.forLabel( 1, 1 ).withId( 1 );
-        IndexDirectoryStructure.Factory factory = IndexDirectoryStructure.directoriesByProvider( directory.storeDir() );
         accessor = new GenericNativeIndexAccessor( pc, fs, indexFiles, layout, collector, EMPTY, descriptor, indexSettings, new StandardConfiguration() );
     }
 
