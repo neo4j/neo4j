@@ -76,7 +76,7 @@ public class StoreIndexDescriptor extends IndexDescriptor implements SchemaRule,
         super( descriptor );
 
         this.id = id;
-        userSuppliedName.ifPresent( SchemaRule::checkName );
+        name.ifPresent( SchemaRule::checkName );
 
         if ( descriptor.providerKey() == null || descriptor.providerVersion() == null )
         {
@@ -95,7 +95,7 @@ public class StoreIndexDescriptor extends IndexDescriptor implements SchemaRule,
     public String name()
     {
         // Override the otherwise bland default to provide a bit more information now that we at least know the id
-        return userSuppliedName.orElse( "index_" + id );
+        return name.orElse( "index_" + id );
     }
 
     // ** Owning constraint

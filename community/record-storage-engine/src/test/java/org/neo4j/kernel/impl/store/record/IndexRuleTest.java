@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.store.record;
 import org.junit.Test;
 
 import org.neo4j.kernel.impl.index.schema.IndexDescriptor;
-import org.neo4j.kernel.impl.index.schema.IndexDescriptor.Type;
 import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -94,8 +93,7 @@ public class IndexRuleTest extends SchemaRuleTestBase
     {
         StoreIndexDescriptor rule1 = descriptor.withId( RULE_ID );
         StoreIndexDescriptor rule2 = descriptor.withId( RULE_ID_2 );
-        StoreIndexDescriptor rule3 =
-                (descriptor.type() == Type.GENERAL ? forSchema( descriptor.schema() ) : uniqueForSchema( descriptor.schema() )).withId( RULE_ID );
+        StoreIndexDescriptor rule3 = (!descriptor.isUnique() ? forSchema( descriptor.schema() ) : uniqueForSchema( descriptor.schema() )).withId( RULE_ID );
 
         assertEquality( rule1, rule2 );
         assertEquality( rule1, rule3 );

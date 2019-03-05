@@ -39,7 +39,6 @@ import org.neo4j.storageengine.api.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.storageengine.api.schema.SchemaDescriptor;
 
 import static java.lang.String.format;
-import static org.neo4j.kernel.impl.index.schema.IndexDescriptor.Type.GENERAL;
 
 public enum DbStructureArgumentFormatter implements ArgumentFormatter
 {
@@ -107,7 +106,7 @@ public enum DbStructureArgumentFormatter implements ArgumentFormatter
             IndexDescriptor descriptor = (IndexDescriptor) arg;
             String className = IndexDescriptorFactory.class.getSimpleName();
             SchemaDescriptor schema = descriptor.schema();
-            String methodName = descriptor.type() == GENERAL ? "forSchema" : "uniqueForSchema";
+            String methodName = !descriptor.isUnique() ? "forSchema" : "uniqueForSchema";
             builder.append( String.format( "%s.%s( ", className, methodName));
             formatArgument( builder, schema );
             builder.append( " )" );

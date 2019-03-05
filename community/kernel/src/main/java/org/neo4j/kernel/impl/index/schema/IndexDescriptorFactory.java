@@ -25,8 +25,6 @@ import org.neo4j.kernel.api.index.IndexProviderDescriptor;
 import org.neo4j.storageengine.api.schema.SchemaDescriptor;
 
 import static org.neo4j.kernel.api.index.IndexProviderDescriptor.UNDECIDED;
-import static org.neo4j.kernel.impl.index.schema.IndexDescriptor.Type.GENERAL;
-import static org.neo4j.kernel.impl.index.schema.IndexDescriptor.Type.UNIQUE;
 
 public class IndexDescriptorFactory
 {
@@ -49,7 +47,7 @@ public class IndexDescriptorFactory
                                              Optional<String> name,
                                              IndexProviderDescriptor providerDescriptor )
     {
-        return new IndexDescriptor( schema, GENERAL, name, providerDescriptor, schema.isFulltextIndex() );
+        return new IndexDescriptor( schema, false, name, providerDescriptor, schema.isFulltextIndex() );
     }
 
     public static IndexDescriptor uniqueForSchema( SchemaDescriptor schema )
@@ -67,6 +65,6 @@ public class IndexDescriptorFactory
                                                    Optional<String> name,
                                                    IndexProviderDescriptor providerDescriptor )
     {
-        return new IndexDescriptor( schema, UNIQUE, name, providerDescriptor, schema.isFulltextIndex() );
+        return new IndexDescriptor( schema, true, name, providerDescriptor, schema.isFulltextIndex() );
     }
 }

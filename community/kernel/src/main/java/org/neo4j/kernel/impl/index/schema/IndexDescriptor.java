@@ -21,102 +21,57 @@ package org.neo4j.kernel.impl.index.schema;
 
 import java.util.Optional;
 
-import org.neo4j.common.TokenNameLookup;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.IndexValueCapability;
 import org.neo4j.kernel.api.index.IndexProviderDescriptor;
+import org.neo4j.storageengine.api.DefaultIndexDescriptor;
 import org.neo4j.storageengine.api.schema.SchemaDescriptor;
 import org.neo4j.storageengine.api.schema.SchemaDescriptorSupplier;
 import org.neo4j.values.storable.ValueCategory;
 
-import static java.lang.String.format;
-
 /**
  * Internal representation of a graph index, including the schema unit it targets (eg. label-property combination)
  * and the type of index. UNIQUE indexes are used to back uniqueness constraints.
- *
+ * <p>
  * An IndexDescriptor might represent an index that has not yet been committed, and therefore carries an optional
  * user-supplied name. On commit the descriptor is upgraded to a {@link StoreIndexDescriptor} using
  * {@link IndexDescriptor#withId(long)} or {@link IndexDescriptor#withIds(long, long)}.
+ *
+ * This class extends {@link DefaultIndexDescriptor} just to cut down on the code duplication of implementing these methods,
+ * it doesn't <strong>have to</strong> extend it.
  */
-public class IndexDescriptor implements SchemaDescriptorSupplier, IndexReference, org.neo4j.storageengine.api.schema.IndexDescriptor
+public class IndexDescriptor extends DefaultIndexDescriptor
+        implements SchemaDescriptorSupplier, IndexReference, org.neo4j.storageengine.api.schema.IndexDescriptor
 {
-    protected final SchemaDescriptor schema;
-    protected final IndexDescriptor.Type type;
-    protected final Optional<String> userSuppliedName;
     protected final IndexProviderDescriptor providerDescriptor;
-    private final boolean isFulltextIndex;
 
     public IndexDescriptor( org.neo4j.storageengine.api.schema.IndexDescriptor indexDescriptor )
     {
-        this( indexDescriptor.schema(),
-              indexDescriptor.isUnique() ? Type.UNIQUE : Type.GENERAL,
-              indexDescriptor.hasUserSuppliedName() ? Optional.of( indexDescriptor.name() ) : Optional.empty(),
-              IndexProviderDescriptor.from( indexDescriptor ),
-              indexDescriptor.isFulltextIndex() );
+        this( indexDescriptor.schema(), indexDescriptor.isUnique(),
+                indexDescriptor.hasUserSuppliedName() ? Optional.of( indexDescriptor.name() ) : Optional.empty(),
+                IndexProviderDescriptor.from( indexDescriptor ), indexDescriptor.isFulltextIndex() );
     }
 
-    public IndexDescriptor( SchemaDescriptor schema,
-                            Type type,
-                            Optional<String> userSuppliedName,
-                            IndexProviderDescriptor providerDescriptor,
-                            boolean isFulltextIndex )
+    public IndexDescriptor( SchemaDescriptor schema, boolean isUnique, Optional<String> userSuppliedName, IndexProviderDescriptor providerDescriptor,
+            boolean isFulltextIndex )
     {
-        this.schema = schema;
-        this.type = type;
-        this.userSuppliedName = userSuppliedName;
+        super( schema, providerDescriptor.getKey(), providerDescriptor.getVersion(), userSuppliedName, isUnique, isFulltextIndex, false );
         this.providerDescriptor = providerDescriptor;
-        this.isFulltextIndex = isFulltextIndex;
     }
 
     // METHODS
 
-    public Type type()
-    {
-        return type;
-    }
-
-    @Override
-    public SchemaDescriptor schema()
-    {
-        return schema;
-    }
-
-    @Override
-    public boolean isUnique()
-    {
-        return type == Type.UNIQUE;
-    }
-
     @Override
     public int[] properties()
     {
-        return schema.getPropertyIds();
-    }
-
-    @Override
-    public String providerKey()
-    {
-        return providerDescriptor.getKey();
-    }
-
-    @Override
-    public String providerVersion()
-    {
-        return providerDescriptor.getVersion();
-    }
-
-    @Override
-    public boolean hasUserSuppliedName()
-    {
-        return userSuppliedName.isPresent();
+        return schema().getPropertyIds();
     }
 
     @Override
     public String name()
     {
-        return userSuppliedName.orElse( UNNAMED_INDEX );
+        return name.orElse( UNNAMED_INDEX );
     }
 
     public IndexProviderDescriptor providerDescriptor()
@@ -134,53 +89,6 @@ public class IndexDescriptor implements SchemaDescriptorSupplier, IndexReference
     public IndexValueCapability valueCapability( ValueCategory... valueCategories )
     {
         return IndexValueCapability.NO;
-    }
-
-    @Override
-    public boolean isFulltextIndex()
-    {
-        return isFulltextIndex;
-    }
-
-    @Override
-    public boolean isEventuallyConsistent()
-    {
-        return false;
-    }
-
-    /**
-     * Returns a user friendly description of what this index indexes.
-     *
-     * @param tokenNameLookup used for looking up names for token ids.
-     * @return a user friendly description of what this index indexes.
-     */
-    @Override
-    public String userDescription( TokenNameLookup tokenNameLookup )
-    {
-        return format( "Index( %s, %s )", type.name(), schema.userDescription( tokenNameLookup ) );
-    }
-
-    @Override
-    public boolean equals( Object o )
-    {
-        if ( o instanceof IndexDescriptor )
-        {
-            IndexDescriptor that = (IndexDescriptor)o;
-            return this.type() == that.type() && this.schema().equals( that.schema() );
-        }
-        return false;
-    }
-
-    @Override
-    public int hashCode()
-    {
-        return type.hashCode() & schema.hashCode();
-    }
-
-    @Override
-    public String toString()
-    {
-        return userDescription( TokenNameLookup.idTokenNameLookup );
     }
 
     /**
@@ -216,11 +124,5 @@ public class IndexDescriptor implements SchemaDescriptorSupplier, IndexReference
         {
             throw new IllegalArgumentException( "A " + getClass().getSimpleName() + " " + idName + " must be positive, got " + id );
         }
-    }
-
-    public enum Type
-    {
-        GENERAL,
-        UNIQUE
     }
 }

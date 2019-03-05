@@ -27,6 +27,8 @@ import org.neo4j.kernel.impl.index.schema.IndexDescriptorFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.kernel.api.schema.SchemaTestUtil.assertEquality;
 import static org.neo4j.kernel.api.schema.SchemaTestUtil.simpleNameLookup;
 
@@ -40,7 +42,7 @@ class SchemaIndexDescriptorFactoryTest
         IndexDescriptor desc;
 
         desc = TestIndexDescriptorFactory.forLabel( LABEL_ID, 1 );
-        assertThat( desc.type(), equalTo( IndexDescriptor.Type.GENERAL ) );
+        assertFalse( desc.isUnique() );
         assertThat( desc.schema(), equalTo( SchemaDescriptorFactory.forLabel( LABEL_ID, 1 ) ) );
     }
 
@@ -50,7 +52,7 @@ class SchemaIndexDescriptorFactoryTest
         IndexDescriptor desc;
 
         desc = TestIndexDescriptorFactory.uniqueForLabel( LABEL_ID, 1 );
-        assertThat( desc.type(), equalTo( IndexDescriptor.Type.UNIQUE ) );
+        assertTrue( desc.isUnique() );
         assertThat( desc.schema(), equalTo( SchemaDescriptorFactory.forLabel( LABEL_ID, 1 ) ) );
     }
 
@@ -60,11 +62,11 @@ class SchemaIndexDescriptorFactoryTest
         IndexDescriptor desc;
 
         desc = IndexDescriptorFactory.forSchema( SchemaDescriptorFactory.forLabel( LABEL_ID, 1 ) );
-        assertThat( desc.type(), equalTo( IndexDescriptor.Type.GENERAL ) );
+        assertFalse( desc.isUnique() );
         assertThat( desc.schema(), equalTo( SchemaDescriptorFactory.forLabel( LABEL_ID, 1 ) ) );
 
         desc = IndexDescriptorFactory.uniqueForSchema( SchemaDescriptorFactory.forLabel( LABEL_ID, 1 ) );
-        assertThat( desc.type(), equalTo( IndexDescriptor.Type.UNIQUE) );
+        assertTrue( desc.isUnique() );
         assertThat( desc.schema(), equalTo( SchemaDescriptorFactory.forLabel( LABEL_ID, 1 ) ) );
     }
 

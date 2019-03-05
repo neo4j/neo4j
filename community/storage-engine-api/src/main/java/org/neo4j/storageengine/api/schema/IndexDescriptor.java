@@ -40,6 +40,8 @@ public interface IndexDescriptor extends SchemaDescriptorSupplier
     String name();
 
     /**
+     * Returns a user friendly description of what this index indexes.
+     *
      * @param tokenNameLookup used for looking up names for token ids.
      * @return a user friendly description of what this index indexes.
      */

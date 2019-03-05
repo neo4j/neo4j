@@ -703,7 +703,7 @@ public class IndexingServiceTest
         // given
         IndexingService indexingService = newIndexingServiceWithMockedDependencies( populator, accessor, withData() );
         StoreIndexDescriptor index = new IndexDescriptor( SchemaDescriptorFactory.forLabel( 0, 0 ),
-                IndexDescriptor.Type.GENERAL, Optional.empty(), PROVIDER_DESCRIPTOR, false ).withId( 0 );
+                false, Optional.empty(), PROVIDER_DESCRIPTOR, false ).withId( 0 );
 
         // when
         indexingService.activateIndex( index );

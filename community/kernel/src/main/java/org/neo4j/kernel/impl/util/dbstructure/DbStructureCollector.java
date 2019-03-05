@@ -41,7 +41,6 @@ import org.neo4j.storageengine.api.schema.LabelSchemaSupplier;
 import org.neo4j.storageengine.api.schema.SchemaDescriptor;
 
 import static java.lang.String.format;
-import static org.neo4j.kernel.impl.index.schema.IndexDescriptor.Type.UNIQUE;
 
 public class DbStructureCollector implements DbStructureVisitor
 {
@@ -196,7 +195,7 @@ public class DbStructureCollector implements DbStructureVisitor
     public void visitIndex( IndexDescriptor descriptor, String userDescription,
                             double uniqueValuesPercentage, long size )
     {
-        IndexDescriptorMap indices = descriptor.type() == UNIQUE ? uniqueIndices : regularIndices;
+        IndexDescriptorMap indices = descriptor.isUnique() ? uniqueIndices : regularIndices;
         indices.putIndex( descriptor.schema(), userDescription, uniqueValuesPercentage, size );
     }
 

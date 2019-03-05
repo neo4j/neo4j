@@ -57,6 +57,7 @@ import org.neo4j.test.rule.ImpermanentDbmsRule;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -119,7 +120,7 @@ public class SchemaStorageIT
 
         // Then
         assertNotNull( rule );
-        assertRule( rule, LABEL1, PROP2, IndexDescriptor.Type.GENERAL );
+        assertRule( rule, LABEL1, PROP2, false );
     }
 
     @Test
@@ -145,7 +146,7 @@ public class SchemaStorageIT
         assertTrue( SchemaDescriptorPredicates.hasProperty( rule, propId( d ) ) );
         assertTrue( SchemaDescriptorPredicates.hasProperty( rule, propId( e ) ) );
         assertTrue( SchemaDescriptorPredicates.hasProperty( rule, propId( f ) ) );
-        assertEquals( IndexDescriptor.Type.GENERAL, rule.type() );
+        assertFalse( rule.isUnique() );
     }
 
     @Test
@@ -171,7 +172,7 @@ public class SchemaStorageIT
         {
             assertTrue( SchemaDescriptorPredicates.hasProperty( rule, propId( prop ) ) );
         }
-        assertEquals( IndexDescriptor.Type.GENERAL, rule.type() );
+        assertFalse( rule.isUnique() );
     }
 
     @Test
@@ -201,7 +202,7 @@ public class SchemaStorageIT
 
         // Then
         assertNotNull( rule );
-        assertRule( rule, LABEL1, PROP1, IndexDescriptor.Type.UNIQUE );
+        assertRule( rule, LABEL1, PROP1, true );
     }
 
     @Test
@@ -243,11 +244,11 @@ public class SchemaStorageIT
         assertRule( rule, LABEL1, PROP1, ConstraintDescriptor.Type.UNIQUE );
     }
 
-    private void assertRule( StoreIndexDescriptor rule, String label, String propertyKey, IndexDescriptor.Type type )
+    private void assertRule( StoreIndexDescriptor rule, String label, String propertyKey, boolean isUnique )
     {
         assertTrue( SchemaDescriptorPredicates.hasLabel( rule, labelId( label ) ) );
         assertTrue( SchemaDescriptorPredicates.hasProperty( rule, propId( propertyKey ) ) );
-        assertEquals( type, rule.type() );
+        assertEquals( isUnique, rule.isUnique() );
     }
 
     private void assertRule( ConstraintRule rule, String label, String propertyKey, ConstraintDescriptor.Type type )

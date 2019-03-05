@@ -57,7 +57,6 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.kernel.impl.index.schema.IndexDescriptor.Type.UNIQUE;
 
 @RunWith( Parameterized.class )
 public class CompositeIndexingIT
@@ -83,7 +82,7 @@ public class CompositeIndexingIT
         try ( Transaction tx = graphDatabaseAPI.beginTx() )
         {
             KernelTransaction ktx = ktx();
-            if ( index.type() == UNIQUE )
+            if ( index.isUnique() )
             {
                 ktx.schemaWrite().uniquePropertyConstraintCreate( index.schema() );
             }
@@ -111,7 +110,7 @@ public class CompositeIndexingIT
         try ( Transaction tx = graphDatabaseAPI.beginTx() )
         {
             KernelTransaction ktx = ktx();
-            if ( index.type() == UNIQUE )
+            if ( index.isUnique() )
             {
                 ktx.schemaWrite().constraintDrop(
                         ConstraintDescriptorFactory.uniqueForSchema( index.schema() ) );
@@ -243,7 +242,7 @@ public class CompositeIndexingIT
     @Test
     public void shouldSeeAllNodesAddedInTransaction() throws Exception
     {
-        if ( index.type() != UNIQUE ) // this test does not make any sense for UNIQUE indexes
+        if ( !index.isUnique() ) // this test does not make any sense for UNIQUE indexes
         {
             try ( Transaction ignore = graphDatabaseAPI.beginTx() )
             {
@@ -267,7 +266,7 @@ public class CompositeIndexingIT
     @Test
     public void shouldSeeAllNodesAddedBeforeTransaction() throws Exception
     {
-        if ( index.type() != UNIQUE ) // this test does not make any sense for UNIQUE indexes
+        if ( !index.isUnique() ) // this test does not make any sense for UNIQUE indexes
         {
             long nodeID1 = createNode();
             long nodeID2 = createNode();

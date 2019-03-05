@@ -455,7 +455,7 @@ public class FulltextIndexProviderTest
         {
             IndexReference descriptor = transaction.schemaRead().indexGetForName( NAME );
             assertEquals( fulltextIndexDescriptor.schema(), descriptor.schema() );
-            assertEquals( ((IndexDescriptor) fulltextIndexDescriptor).type(), ((IndexDescriptor) descriptor).type() );
+            assertEquals( ((IndexDescriptor) fulltextIndexDescriptor).isUnique(), ((IndexDescriptor) descriptor).isUnique() );
             transaction.success();
         }
     }
