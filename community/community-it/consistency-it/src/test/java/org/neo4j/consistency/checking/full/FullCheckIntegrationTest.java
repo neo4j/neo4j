@@ -2464,7 +2464,7 @@ public class FullCheckIntegrationTest
 
     private void serializeRule( SchemaRule rule, SchemaRecord schemaRecord, TransactionDataBuilder tx, IdGenerator next )
     {
-        IntObjectMap<Value> protoProperties = SchemaStore.convertSchemaRuleToMap( rule, tx.tokenHolders() );
+        IntObjectMap<Value> protoProperties = SchemaStore.convertSchemaRuleToMap( rule, tx.tokenHolders().propertyKeyTokens() );
         Collection<PropertyBlock> blocks = new ArrayList<>();
         DynamicRecordAllocator stringAllocator = null;
         DynamicRecordAllocator arrayAllocator = null;

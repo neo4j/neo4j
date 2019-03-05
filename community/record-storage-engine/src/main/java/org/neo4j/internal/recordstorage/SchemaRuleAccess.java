@@ -40,7 +40,7 @@ public interface SchemaRuleAccess
 {
     static SchemaRuleAccess getSchemaRuleAccess( SchemaStore store, TokenHolders tokenHolders )
     {
-        return new SchemaStorage( store, tokenHolders );
+        return new SchemaStorage( store, tokenHolders.propertyKeyTokens() );
     }
 
     long newRuleId();

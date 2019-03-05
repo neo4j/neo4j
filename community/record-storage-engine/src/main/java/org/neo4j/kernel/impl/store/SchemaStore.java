@@ -345,7 +345,7 @@ public class SchemaStore extends CommonAbstractStore<SchemaRecord,IntStoreHeader
         }
         if ( props.containsKey( PROP_OWNING_CONSTRAINT ) )
         {
-            indexRule = indexRule.withOwningConstraint( getLong( PROP_OWNING_CONSTRAINT, props ) );
+            indexRule = new StoreIndexDescriptor( (StorageIndexReference) indexRule, getLong( PROP_OWNING_CONSTRAINT, props ) );
         }
         return indexRule;
     }
