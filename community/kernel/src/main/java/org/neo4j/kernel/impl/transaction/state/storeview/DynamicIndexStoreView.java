@@ -25,7 +25,7 @@ import java.util.function.IntPredicate;
 import java.util.function.Supplier;
 
 import org.neo4j.helpers.collection.Visitor;
-import org.neo4j.kernel.api.labelscan.LabelScanStore;
+import org.neo4j.internal.index.label.LabelScanStore;
 import org.neo4j.kernel.impl.api.index.EntityUpdates;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.kernel.impl.api.index.StoreScan;

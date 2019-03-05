@@ -19,9 +19,30 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
-import java.io.IOException;
+import java.nio.ByteBuffer;
 
-public interface PositionableChannel
+import org.neo4j.io.fs.PhysicalFlushableChannel;
+import org.neo4j.io.fs.StoreChannel;
+
+public class PhysicalFlushableLogChannel extends PhysicalFlushableChannel
 {
-    void setCurrentPosition( long byteOffset ) throws IOException;
+    public PhysicalFlushableLogChannel( StoreChannel channel )
+    {
+        super( channel );
+    }
+
+    public PhysicalFlushableLogChannel( StoreChannel channel, int bufferSize )
+    {
+        super( channel, bufferSize );
+    }
+
+    public PhysicalFlushableLogChannel( StoreChannel channel, ByteBuffer byteBuffer )
+    {
+        super( channel, byteBuffer );
+    }
+
+    void setChannel( StoreChannel channel )
+    {
+        this.channel = channel;
+    }
 }

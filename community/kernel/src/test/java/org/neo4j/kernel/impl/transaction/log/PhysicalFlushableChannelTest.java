@@ -32,6 +32,7 @@ import java.util.Random;
 
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.OpenMode;
+import org.neo4j.io.fs.PhysicalFlushableChannel;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.test.extension.DefaultFileSystemExtension;
 import org.neo4j.test.extension.Inject;
@@ -142,7 +143,7 @@ class PhysicalFlushableChannelTest
         StoreChannel storeChannel = fileSystem.open( firstFile, OpenMode.READ_WRITE );
         PhysicalLogVersionedStoreChannel versionedStoreChannel =
                 new PhysicalLogVersionedStoreChannel( storeChannel, 1, (byte) -1 /* ignored */ );
-        PhysicalFlushableChannel channel = new PhysicalFlushableChannel( versionedStoreChannel );
+        PhysicalFlushableLogChannel channel = new PhysicalFlushableLogChannel( versionedStoreChannel );
 
         // WHEN writing a transaction, of sorts
         byte byteValue = (byte) 4;

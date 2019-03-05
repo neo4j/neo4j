@@ -17,14 +17,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction.log;
+package org.neo4j.io.fs;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-
-import org.neo4j.io.fs.ReadPastEndException;
-import org.neo4j.io.fs.ReadableClosableChannel;
-import org.neo4j.io.fs.StoreChannel;
 
 import static java.lang.Math.min;
 import static java.lang.Math.toIntExact;

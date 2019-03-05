@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import org.neo4j.io.fs.FlushableChannel;
+import org.neo4j.io.fs.PhysicalFlushableChannel;
 
 /**
  * Decorator around a {@link LogVersionedStoreChannel} making it expose {@link FlushablePositionAwareChannel}. This
@@ -34,12 +35,12 @@ public class PositionAwarePhysicalFlushableChannel implements FlushablePositionA
 {
     private static final ByteBuffer EMPTY_READ_ONLY_BUFFER = ByteBuffer.allocate( 0 ).asReadOnlyBuffer();
     private LogVersionedStoreChannel logVersionedStoreChannel;
-    private final PhysicalFlushableChannel channel;
+    private final PhysicalFlushableLogChannel channel;
 
     public PositionAwarePhysicalFlushableChannel( LogVersionedStoreChannel logVersionedStoreChannel, ByteBuffer buffer )
     {
         this.logVersionedStoreChannel = logVersionedStoreChannel;
-        this.channel = new PhysicalFlushableChannel( logVersionedStoreChannel, buffer );
+        this.channel = new PhysicalFlushableLogChannel( logVersionedStoreChannel, buffer );
     }
 
     @Override

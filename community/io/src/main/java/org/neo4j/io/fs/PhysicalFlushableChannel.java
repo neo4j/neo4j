@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction.log;
+package org.neo4j.io.fs;
 
 import java.io.Flushable;
 import java.io.IOException;
@@ -25,8 +25,6 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 
 import org.neo4j.io.ByteUnit;
-import org.neo4j.io.fs.FlushableChannel;
-import org.neo4j.io.fs.StoreChannel;
 
 import static java.lang.Math.min;
 
@@ -57,11 +55,6 @@ public class PhysicalFlushableChannel implements FlushableChannel
     {
         this.channel = channel;
         this.buffer = byteBuffer;
-    }
-
-    void setChannel( LogVersionedStoreChannel channel )
-    {
-        this.channel = channel;
     }
 
     void setBuffer( ByteBuffer byteBuffer )
