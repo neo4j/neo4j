@@ -39,16 +39,18 @@ class GenericNativeIndexPopulator extends NativeIndexPopulator<GenericKey,Native
     private final IndexSpecificSpaceFillingCurveSettingsCache spatialSettings;
     private final IndexDirectoryStructure directoryStructure;
     private final SpaceFillingCurveConfiguration configuration;
+    private final IndexDropAction dropAction;
     private final boolean archiveFailedIndex;
 
     GenericNativeIndexPopulator( PageCache pageCache, FileSystemAbstraction fs, File storeFile, IndexLayout<GenericKey,NativeIndexValue> layout,
             IndexProvider.Monitor monitor, StoreIndexDescriptor descriptor, IndexSpecificSpaceFillingCurveSettingsCache spatialSettings,
-            IndexDirectoryStructure directoryStructure, SpaceFillingCurveConfiguration configuration, boolean archiveFailedIndex )
+            IndexDirectoryStructure directoryStructure, SpaceFillingCurveConfiguration configuration, IndexDropAction dropAction, boolean archiveFailedIndex )
     {
         super( pageCache, fs, storeFile, layout, monitor, descriptor, new SpaceFillingCurveSettingsWriter( spatialSettings ) );
         this.spatialSettings = spatialSettings;
         this.directoryStructure = directoryStructure;
         this.configuration = configuration;
+        this.dropAction = dropAction;
         this.archiveFailedIndex = archiveFailedIndex;
     }
 
@@ -68,6 +70,15 @@ class GenericNativeIndexPopulator extends NativeIndexPopulator<GenericKey,Native
         {
             throw new UncheckedIOException( e );
         }
+    }
+
+    @Override
+    public synchronized void drop()
+    {
+        // Close resources
+        super.drop();
+        // Cleanup directory
+        dropAction.drop( descriptor.getId(), archiveFailedIndex );
     }
 
     @Override

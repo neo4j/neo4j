@@ -29,16 +29,17 @@ import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettingsCache;
 import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
 
-public class GenericBlockBasedIndexPopulator extends BlockBasedIndexPopulator<GenericKey,NativeIndexValue>
+class GenericBlockBasedIndexPopulator extends BlockBasedIndexPopulator<GenericKey,NativeIndexValue>
 {
     private final IndexSpecificSpaceFillingCurveSettingsCache spatialSettings;
     private final SpaceFillingCurveConfiguration configuration;
 
     GenericBlockBasedIndexPopulator( PageCache pageCache, FileSystemAbstraction fs, File file, IndexLayout<GenericKey,NativeIndexValue> layout,
             IndexProvider.Monitor monitor, StoreIndexDescriptor descriptor, IndexSpecificSpaceFillingCurveSettingsCache spatialSettings,
-            IndexDirectoryStructure directoryStructure, SpaceFillingCurveConfiguration configuration, boolean archiveFailedIndex )
+            IndexDirectoryStructure directoryStructure, SpaceFillingCurveConfiguration configuration,
+            IndexDropAction dropAction, boolean archiveFailedIndex )
     {
-        super( pageCache, fs, file, layout, monitor, descriptor, spatialSettings, directoryStructure, archiveFailedIndex );
+        super( pageCache, fs, file, layout, monitor, descriptor, spatialSettings, directoryStructure, dropAction, archiveFailedIndex );
         this.spatialSettings = spatialSettings;
         this.configuration = configuration;
     }
