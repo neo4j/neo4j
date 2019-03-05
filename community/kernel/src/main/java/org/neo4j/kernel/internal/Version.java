@@ -22,9 +22,7 @@ package org.neo4j.kernel.internal;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.neo4j.common.Service;
-
-public class Version extends Service
+public class Version
 {
     public static Version getKernel()
     {
@@ -95,7 +93,6 @@ public class Version extends Service
 
     protected Version( String artifactId, String version )
     {
-        super( artifactId );
         this.artifactId = artifactId;
         this.title = artifactId;
         this.vendor = "Neo Technology";
