@@ -19,71 +19,45 @@
  */
 package org.neo4j.kernel.impl.index.labelscan;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
-
-import org.neo4j.cursor.RawCursor;
+import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.graphdb.Resource;
-import org.neo4j.index.internal.gbptree.Hit;
 import org.neo4j.kernel.api.index.IndexProgressor;
 
 /**
- * {@link IndexProgressor} which steps over multiple {@link LabelScanValue} and for each
- * iterate over each set bit, returning actual node ids, i.e. {@code nodeIdRange+bitOffset}.
- *
+ * {@link IndexProgressor} over a set of nodes with a given set of of labels.
  */
-public class LabelScanValueIndexProgressor extends LabelScanValueIndexAccessor implements IndexProgressor, Resource
+public class LabelScanValueIndexProgressor implements IndexProgressor, Resource
 {
-
+    private final PrimitiveLongResourceIterator ids;
     private final NodeLabelClient client;
 
-    LabelScanValueIndexProgressor( RawCursor<Hit<LabelScanKey,LabelScanValue>,IOException> cursor,
-            NodeLabelClient client )
+    public LabelScanValueIndexProgressor( PrimitiveLongResourceIterator ids, NodeLabelClient client )
     {
-        super( cursor );
+        this.ids = ids;
         this.client = client;
     }
 
     /**
-     *  Progress through the index until the next accepted entry.
-     *
-     *  Progress the cursor to the current {@link LabelScanValue}, if this is not accepted by the client or if current
-     *  value is exhausted it continues to the next {@link LabelScanValue}  from {@link RawCursor}.
+     * Progress through the index until the next accepted entry.
      * @return <code>true</code> if an accepted entry was found, <code>false</code> otherwise
      */
     @Override
     public boolean next()
     {
-        for ( ; ; )
+        while ( ids.hasNext() )
         {
-            while ( bits != 0 )
+            long id = ids.next();
+            if ( client.acceptNode( id, null ) )
             {
-                int delta = Long.numberOfTrailingZeros( bits );
-                bits &= bits - 1;
-                if ( client.acceptNode( baseNodeId + delta, null ) )
-                {
-                    return true;
-                }
+                return true;
             }
-            try
-            {
-                if ( !cursor.next() )
-                {
-                    close();
-                    return false;
-                }
-            }
-            catch ( IOException e )
-            {
-                throw new UncheckedIOException( e );
-            }
-
-            Hit<LabelScanKey,LabelScanValue> hit = cursor.get();
-            baseNodeId = hit.key().idRange * LabelScanValue.RANGE_SIZE;
-            bits = hit.value().bits;
-
-            //noinspection AssertWithSideEffects
-            assert keysInOrder( hit.key() );
         }
+        return false;
+    }
+
+    @Override
+    public void close()
+    {
+        ids.close();
     }
 }

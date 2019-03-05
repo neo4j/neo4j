@@ -21,6 +21,8 @@ package org.neo4j.kernel.api.labelscan;
 
 import org.junit.jupiter.api.Test;
 
+import org.neo4j.internal.index.label.NodeLabelRange;
+
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 
 class NodeLabelRangeTest

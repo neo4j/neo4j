@@ -58,7 +58,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
-
+DetectAllRelationshipInconsistenciesIT
 @EphemeralPageCacheExtension
 abstract class TokenStoreTestTemplate<R extends TokenRecord>
 {

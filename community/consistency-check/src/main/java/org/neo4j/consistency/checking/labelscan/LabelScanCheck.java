@@ -25,7 +25,7 @@ import org.neo4j.consistency.checking.full.NodeInUseWithCorrectLabelsCheck;
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.consistency.store.synthetic.LabelScanDocument;
-import org.neo4j.kernel.api.labelscan.NodeLabelRange;
+import org.neo4j.internal.index.label.NodeLabelRange;
 
 import static org.neo4j.storageengine.api.schema.SchemaDescriptor.PropertySchemaType.COMPLETE_ALL_TOKENS;
 

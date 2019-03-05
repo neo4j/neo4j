@@ -45,4 +45,9 @@ public class PhysicalFlushableLogChannel extends PhysicalFlushableChannel
     {
         this.channel = channel;
     }
+
+    void setBuffer( ByteBuffer byteBuffer )
+    {
+        this.buffer = byteBuffer;
+    }
 }

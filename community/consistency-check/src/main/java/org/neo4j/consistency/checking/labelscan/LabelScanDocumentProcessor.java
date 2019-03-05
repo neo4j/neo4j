@@ -22,7 +22,7 @@ package org.neo4j.consistency.checking.labelscan;
 import org.neo4j.consistency.checking.full.RecordProcessor;
 import org.neo4j.consistency.report.ConsistencyReporter;
 import org.neo4j.consistency.store.synthetic.LabelScanDocument;
-import org.neo4j.kernel.api.labelscan.NodeLabelRange;
+import org.neo4j.internal.index.label.NodeLabelRange;
 
 public class LabelScanDocumentProcessor extends RecordProcessor.Adapter<NodeLabelRange>
 {

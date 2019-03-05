@@ -57,11 +57,6 @@ public class PhysicalFlushableChannel implements FlushableChannel
         this.buffer = byteBuffer;
     }
 
-    void setBuffer( ByteBuffer byteBuffer )
-    {
-        this.buffer = byteBuffer;
-    }
-
     /**
      * External synchronization between this method and close is required so that they aren't called concurrently.
      * Currently that's done by acquiring the PhysicalLogFile monitor.

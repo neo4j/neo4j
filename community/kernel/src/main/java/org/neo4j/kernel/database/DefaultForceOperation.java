@@ -21,8 +21,8 @@ package org.neo4j.kernel.database;
 
 import java.io.IOException;
 
+import org.neo4j.internal.index.label.LabelScanStore;
 import org.neo4j.io.pagecache.IOLimiter;
-import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointerImpl;
 import org.neo4j.storageengine.api.StorageEngine;

@@ -26,12 +26,12 @@ import java.time.Clock;
 
 import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.common.DependencyResolver;
+import org.neo4j.internal.index.label.LabelScanStore;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemUtils;
 import org.neo4j.io.layout.DatabaseFile;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.jmx.StoreSize;
-import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;

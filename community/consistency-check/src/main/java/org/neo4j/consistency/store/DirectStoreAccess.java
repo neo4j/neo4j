@@ -19,7 +19,7 @@
  */
 package org.neo4j.consistency.store;
 
-import org.neo4j.kernel.api.labelscan.LabelScanStore;
+import org.neo4j.internal.index.label.LabelScanStore;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;

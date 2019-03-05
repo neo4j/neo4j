@@ -85,13 +85,20 @@
         </dependency>
         <dependency>
             <groupId>org.neo4j</groupId>
-            <artifactId>log-test-utils</artifactId>
+            <artifactId>import-test-utils</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.neo4j</groupId>
-            <artifactId>import-test-utils</artifactId>
+            <artifactId>neo4j-label-index</artifactId>
+            <version>${project.version}</version>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.neo4j</groupId>
+            <artifactId>log-test-utils</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
         </dependency>

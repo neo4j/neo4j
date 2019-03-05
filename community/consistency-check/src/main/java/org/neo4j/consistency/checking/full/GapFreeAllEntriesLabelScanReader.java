@@ -22,8 +22,8 @@ package org.neo4j.consistency.checking.full;
 import java.util.Iterator;
 
 import org.neo4j.helpers.collection.PrefetchingIterator;
-import org.neo4j.kernel.api.labelscan.AllEntriesLabelScanReader;
-import org.neo4j.kernel.api.labelscan.NodeLabelRange;
+import org.neo4j.internal.index.label.AllEntriesLabelScanReader;
+import org.neo4j.internal.index.label.NodeLabelRange;
 
 /**
  * Inserts empty {@link NodeLabelRange} for those ranges missing from the source iterator.

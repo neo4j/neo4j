@@ -21,6 +21,8 @@ package org.neo4j.kernel.impl.newapi;
 
 import org.neo4j.common.EntityType;
 import org.neo4j.exceptions.KernelException;
+import org.neo4j.internal.index.label.LabelScan;
+import org.neo4j.internal.index.label.LabelScanReader;
 import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
@@ -44,11 +46,10 @@ import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.api.index.IndexReader;
-import org.neo4j.kernel.api.labelscan.LabelScan;
-import org.neo4j.kernel.api.labelscan.LabelScanReader;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
+import org.neo4j.kernel.impl.index.labelscan.LabelScanValueIndexProgressor;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.storageengine.api.StorageReader;
@@ -282,7 +283,7 @@ abstract class Read implements TxStateHolder,
         DefaultNodeLabelIndexCursor indexCursor = (DefaultNodeLabelIndexCursor) cursor;
         indexCursor.setRead( this );
         LabelScan labelScan = labelScanReader().nodeLabelScan( label );
-        indexCursor.scan( labelScan.initialize( indexCursor ), label );
+        indexCursor.scan( new LabelScanValueIndexProgressor( labelScan.initialize(), indexCursor ), label );
     }
 
     @Override

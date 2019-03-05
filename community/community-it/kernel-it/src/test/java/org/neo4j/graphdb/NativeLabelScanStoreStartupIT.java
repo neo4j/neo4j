@@ -27,14 +27,14 @@ import java.io.IOException;
 
 import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
+import org.neo4j.internal.index.label.LabelScanReader;
+import org.neo4j.internal.index.label.LabelScanStore;
+import org.neo4j.internal.index.label.LabelScanWriter;
+import org.neo4j.internal.index.label.NativeLabelScanStoreTest;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.labelscan.LabelScanReader;
-import org.neo4j.kernel.api.labelscan.LabelScanStore;
-import org.neo4j.kernel.api.labelscan.LabelScanWriter;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
-import org.neo4j.kernel.impl.index.labelscan.NativeLabelScanStoreTest;
 import org.neo4j.storageengine.api.NodeLabelUpdate;
 import org.neo4j.test.rule.DbmsRule;
 import org.neo4j.test.rule.EmbeddedDbmsRule;

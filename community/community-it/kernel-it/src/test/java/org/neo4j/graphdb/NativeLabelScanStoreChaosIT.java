@@ -27,8 +27,8 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Set;
 
+import org.neo4j.internal.index.label.NativeLabelScanStoreTest;
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.kernel.impl.index.labelscan.NativeLabelScanStoreTest;
 import org.neo4j.test.rule.DbmsRule;
 import org.neo4j.test.rule.EmbeddedDbmsRule;
 import org.neo4j.test.rule.RandomRule;
