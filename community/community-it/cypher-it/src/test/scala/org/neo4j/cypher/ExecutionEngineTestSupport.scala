@@ -156,9 +156,6 @@ trait ExecutionEngineHelper {
   def executeOfficial(q: String, params: (String, Any)*): Result =
     eengine.execute(q, ExecutionEngineHelper.asMapValue(params.toMap), graph.transactionalContext(query = q -> params.toMap))
 
-  def profile(q: String, params: (String, Any)*): RewindableExecutionResult =
-    RewindableExecutionResult(eengine.profile(q, ExecutionEngineHelper.asMapValue(params.toMap), graph.transactionalContext(query = q -> params.toMap)))
-
   def executeScalar[T](q: String, params: (String, Any)*): T = {
     val res = eengine.execute(q, ExecutionEngineHelper.asMapValue(params.toMap), graph.transactionalContext(query = q -> params.toMap))
     ExecutionEngineHelper.scalar[T](asScalaResult(res).toList)

@@ -89,9 +89,6 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
 
   // ACTUAL FUNCTIONALITY
 
-  def profile(query: String, params: MapValue, context: TransactionalContext): Result =
-    execute(query, params, context, profile = true)
-
   /**@deprecated The translation to [[Result]] should happen further up the stack.*/
   @deprecated
   def execute(query: String,
