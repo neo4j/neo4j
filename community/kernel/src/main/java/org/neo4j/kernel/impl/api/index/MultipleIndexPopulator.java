@@ -350,6 +350,11 @@ public class MultipleIndexPopulator implements IndexPopulator
         indexPopulation.cancel();
     }
 
+    void dropIndexPopulation( IndexPopulation indexPopulation )
+    {
+        indexPopulation.cancelAndDrop();
+    }
+
     private boolean removeFromOngoingPopulations( IndexPopulation indexPopulation )
     {
         return populations.remove( indexPopulation );
@@ -542,6 +547,20 @@ public class MultipleIndexPopulator implements IndexPopulator
 
         void cancel()
         {
+            cancel( () -> populator.close( false ) );
+        }
+
+        void cancelAndDrop()
+        {
+            cancel( populator::drop );
+        }
+
+        /**
+         * Cancels population also executing a specific operation on the populator
+         * @param specificPopulatorOperation specific operation in addition to closing the populator.
+         */
+        private void cancel( Runnable specificPopulatorOperation )
+        {
             populatorLock.lock();
             try
             {
@@ -550,8 +569,7 @@ public class MultipleIndexPopulator implements IndexPopulator
                     // First of all remove this population from the list of ongoing populations so that it won't receive more updates.
                     // This is good because closing the populator may wait for an opportunity to perform the close, among the incoming writes to it.
                     removeFromOngoingPopulations( this );
-
-                    populator.close( false );
+                    specificPopulatorOperation.run();
                     resetIndexCountsForPopulation( this );
                     populationOngoing = false;
                 }
