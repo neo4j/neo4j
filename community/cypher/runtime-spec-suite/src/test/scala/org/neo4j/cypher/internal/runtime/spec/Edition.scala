@@ -19,18 +19,47 @@
  */
 package org.neo4j.cypher.internal.runtime.spec
 
+import java.util
+
 import org.neo4j.common.DependencyResolver
-import org.neo4j.configuration.Config
+import org.neo4j.configuration.{Config, GraphDatabaseSettings}
 import org.neo4j.cypher.internal._
+import org.neo4j.graphdb.GraphDatabaseService
+import org.neo4j.graphdb.config.Setting
 import org.neo4j.test.TestGraphDatabaseFactory
 
-abstract class Edition[CONTEXT <: RuntimeContext](val graphDatabaseFactory: TestGraphDatabaseFactory) {
-  def runtimeContextCreator(resolver: DependencyResolver): RuntimeContextCreator[CONTEXT]
+class Edition[CONTEXT <: RuntimeContext](graphDatabaseFactory: TestGraphDatabaseFactory,
+                                         runtimeContextCreatorFun: (CypherRuntimeConfiguration, DependencyResolver) => RuntimeContextCreator[CONTEXT],
+                                         configs: (Setting[_], String)*) {
+
+  import scala.collection.JavaConverters._
+
+  def newGraphDb(): GraphDatabaseService = {
+    val graphBuilder = graphDatabaseFactory.newImpermanentDatabaseBuilder
+    configs.foreach{
+      case (setting, value) => graphBuilder.setConfig(setting, value)
+    }
+    graphBuilder.newGraphDatabase()
+  }
+
+  def copyWith(additionalConfigs: (Setting[_], String)*): Edition[CONTEXT] = {
+    val newConfigs = configs ++ additionalConfigs
+    new Edition(graphDatabaseFactory, runtimeContextCreatorFun, newConfigs: _*)
+  }
+
+  def runtimeContextCreator(resolver: DependencyResolver): RuntimeContextCreator[CONTEXT] =
+    runtimeContextCreatorFun(runtimeConfig(), resolver)
+
+  private def runtimeConfig() = {
+    val javaConfigMap: util.Map[String, String] = configs.map { case (setting, value) => (setting.name(), value) }.toMap.asJava
+    val config = Config.fromSettings(javaConfigMap).build()
+    CypherConfiguration.fromConfig(config).toCypherRuntimeConfiguration
+  }
 }
 
-object COMMUNITY_EDITION extends Edition[CommunityRuntimeContext](new TestGraphDatabaseFactory) {
-  override def runtimeContextCreator(resolver: DependencyResolver): CommunityRuntimeContextCreator = {
-    val runtimeConfig = CypherConfiguration.fromConfig(Config.defaults()).toCypherRuntimeConfiguration
-    CommunityRuntimeContextCreator(runtimeConfig)
-  }
+object COMMUNITY {
+  val EDITION = new Edition(
+    new TestGraphDatabaseFactory,
+    (runtimeConfig, _) => CommunityRuntimeContextCreator(runtimeConfig),
+    GraphDatabaseSettings.cypher_hints_error -> "true")
 }

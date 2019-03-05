@@ -63,15 +63,18 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
   var runtimeTestSupport: RuntimeTestSupport[CONTEXT] = _
   val ANY_VALUE_ORDERING: Ordering[AnyValue] = Ordering.comparatorToOrdering(AnyValues.COMPARATOR)
 
-  override def beforeEach(): Unit = {
-    graphDb = edition.graphDatabaseFactory.newImpermanentDatabase()
+  final override def beforeEach(): Unit = {
+    graphDb = edition.newGraphDb()
     runtimeTestSupport = new RuntimeTestSupport[CONTEXT](graphDb, edition)
     super.beforeEach()
   }
 
-  override def afterEach(): Unit = {
+  final override def afterEach(): Unit = {
     graphDb.shutdown()
+    afterShutdown()
   }
+
+  def afterShutdown(): Unit = {}
 
   override def test(testName: String, testTags: Tag*)(testFun: => Any)(implicit pos: Position): Unit = {
     super.test(testName, Tag(runtime.name) +: testTags: _*)(testFun)
@@ -187,6 +190,17 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
   }
 
   // GRAPHS
+
+  def bipartiteGraph(nNodes: Int, aLabel: String, bLabel: String, relType: String): Unit = {
+    val aNodes = nodeGraph(nNodes, aLabel)
+    val bNodes = nodeGraph(nNodes, bLabel)
+    inTx {
+      val relationshipType = RelationshipType.withName(relType)
+      for {a <- aNodes; b <- bNodes} {
+        a.createRelationshipTo(b, relationshipType)
+      }
+    }
+  }
 
   def nodeGraph(nNodes: Int, labels: String*): Seq[Node] = {
     inTx {
@@ -364,6 +378,10 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
   def singleRow(values: Any*): RowsMatcher = {
     val anyValues = Array(values.toArray.map(ValueUtils.of))
     EqualInAnyOrder(anyValues)
+  }
+
+  def rowCount(value: Int): RowsMatcher = {
+    RowCount(value)
   }
 
   def matching(func: PartialFunction[Any, _]): RowsMatcher = {

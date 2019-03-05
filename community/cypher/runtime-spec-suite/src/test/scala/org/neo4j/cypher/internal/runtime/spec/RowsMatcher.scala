@@ -85,6 +85,13 @@ case class EqualInOrder(expected: IndexedSeq[Array[AnyValue]]) extends RowsMatch
   }
 }
 
+case class RowCount(expected: Int) extends RowsMatcher {
+  override def toString: String = s"Expected $expected"
+
+  override def matches(columns: IndexedSeq[String], rows: IndexedSeq[Array[AnyValue]]): Boolean =
+    rows.size == expected
+}
+
 case class CustomRowsMatcher(inner: Matcher[Seq[Array[AnyValue]]]) extends RowsMatcher {
   override def toString: String = s"Rows matching $inner"
   override def matches(columns: IndexedSeq[String], rows: IndexedSeq[Array[AnyValue]]): Boolean =
