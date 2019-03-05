@@ -21,6 +21,7 @@ package org.neo4j.server.security.auth;
 
 import java.io.File;
 
+import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
@@ -35,15 +36,15 @@ import org.neo4j.kernel.api.security.UserManagerSupplier;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.time.Clocks;
 
+@ServiceProvider
 public class CommunitySecurityModule extends SecurityModule
 {
-    public static final String COMMUNITY_SECURITY_MODULE_ID = "community-security-module";
-
     private BasicAuthManager authManager;
 
-    public CommunitySecurityModule()
+    @Override
+    public String getName()
     {
-        super( COMMUNITY_SECURITY_MODULE_ID );
+        return "community-security-module";
     }
 
     @Override

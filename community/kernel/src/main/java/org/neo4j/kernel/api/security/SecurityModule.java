@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.api.security;
 
+import org.neo4j.annotations.service.Service;
 import org.neo4j.common.DependencySatisfier;
-import org.neo4j.common.Service;
 import org.neo4j.configuration.Config;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -31,15 +31,12 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.service.NamedService;
 
-public abstract class SecurityModule extends Service implements Lifecycle, SecurityProvider
+@Service
+public abstract class SecurityModule implements Lifecycle, SecurityProvider, NamedService
 {
     protected final LifeSupport life = new LifeSupport();
-
-    public SecurityModule( String key, String... altKeys )
-    {
-        super( key, altKeys );
-    }
 
     public abstract void setup( Dependencies dependencies ) throws KernelException;
 

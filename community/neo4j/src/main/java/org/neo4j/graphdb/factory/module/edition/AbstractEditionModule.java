@@ -22,7 +22,6 @@ package org.neo4j.graphdb.factory.module.edition;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-import org.neo4j.common.Service;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.database.DatabaseManager;
@@ -60,6 +59,7 @@ import org.neo4j.procedure.builtin.BuiltInFunctions;
 import org.neo4j.procedure.builtin.BuiltInProcedures;
 import org.neo4j.procedure.builtin.TokenProcedures;
 import org.neo4j.procedure.impl.ProcedureConfig;
+import org.neo4j.service.Services;
 import org.neo4j.udc.UsageData;
 import org.neo4j.udc.UsageDataKeys;
 
@@ -138,7 +138,7 @@ public abstract class AbstractEditionModule
             GlobalProcedures globalProcedures, String key )
     {
         SecurityModule.Dependencies securityModuleDependencies = new SecurityModuleDependencies( globalModule, editionModule, globalProcedures );
-        SecurityModule securityModule = Service.load( SecurityModule.class, key )
+        SecurityModule securityModule = Services.load( SecurityModule.class, key )
                 .orElseThrow( () ->
                 {
                     String errorMessage = "Failed to load security module with key '" + key + "'.";
