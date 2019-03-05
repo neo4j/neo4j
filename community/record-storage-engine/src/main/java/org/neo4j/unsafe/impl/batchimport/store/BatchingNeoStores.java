@@ -36,13 +36,15 @@ import org.neo4j.internal.index.label.NativeLabelScanStore;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseFile;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.mem.MemoryAllocator;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
+import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
-import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
@@ -61,6 +63,7 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.internal.LogService;
+import org.neo4j.memory.GlobalMemoryTracker;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds;
@@ -76,6 +79,7 @@ import static java.lang.String.valueOf;
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.io.IOUtils.closeAll;
+import static org.neo4j.io.mem.MemoryAllocator.createAllocator;
 import static org.neo4j.io.pagecache.IOLimiter.UNLIMITED;
 import static org.neo4j.kernel.impl.store.StoreType.PROPERTY;
 import static org.neo4j.kernel.impl.store.StoreType.PROPERTY_ARRAY;
@@ -291,8 +295,11 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
     private static PageCache createPageCache(
             FileSystemAbstraction fileSystem, Config config, LogProvider log, PageCacheTracer tracer, JobScheduler jobScheduler )
     {
-        return new ConfiguringPageCacheFactory( fileSystem, config, tracer, DefaultPageCursorTracerSupplier.INSTANCE,
-                log.getLog( BatchingNeoStores.class ), EmptyVersionContextSupplier.EMPTY, jobScheduler ).getOrCreatePageCache();
+        SingleFilePageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory();
+        swapperFactory.open( fileSystem, config );
+        MemoryAllocator memoryAllocator = createAllocator( config.get( pagecache_memory ), GlobalMemoryTracker.INSTANCE );
+        return new MuninnPageCache( swapperFactory, memoryAllocator, tracer, DefaultPageCursorTracerSupplier.INSTANCE,
+                EmptyVersionContextSupplier.EMPTY, jobScheduler );
     }
 
     private StoreFactory newStoreFactory( DatabaseLayout databaseLayout, OpenOption... openOptions )
