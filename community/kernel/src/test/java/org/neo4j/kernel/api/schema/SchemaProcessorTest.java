@@ -28,6 +28,7 @@ import java.util.List;
 import org.neo4j.storageengine.api.schema.LabelSchemaDescriptor;
 import org.neo4j.storageengine.api.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.storageengine.api.schema.SchemaDescriptor;
+import org.neo4j.storageengine.api.schema.SchemaDescriptorFactory;
 import org.neo4j.storageengine.api.schema.SchemaProcessor;
 
 import static org.hamcrest.MatcherAssert.assertThat;

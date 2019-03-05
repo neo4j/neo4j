@@ -85,8 +85,8 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.hamcrest.MockitoHamcrest.argThat;
 import static org.neo4j.consistency.report.ConsistencyReporter.NO_MONITOR;
-import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forLabel;
 import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.nodeKey;
+import static org.neo4j.storageengine.api.schema.SchemaDescriptorFactory.forLabel;
 
 @RunWith( Suite.class )
 @Suite.SuiteClasses( {ConsistencyReporterTest.TestAllReportMessages.class,

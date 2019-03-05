@@ -20,8 +20,8 @@
 package org.neo4j.kernel.api.schema.constraints;
 
 import org.neo4j.common.TokenNameLookup;
-import org.neo4j.internal.kernel.api.schema.SchemaUtil;
 import org.neo4j.storageengine.api.schema.LabelSchemaDescriptor;
+import org.neo4j.token.api.TokenIdPrettyPrinter;
 
 public class NodeKeyConstraintDescriptor extends IndexBackedConstraintDescriptor
 {
@@ -38,6 +38,6 @@ public class NodeKeyConstraintDescriptor extends IndexBackedConstraintDescriptor
 
     protected String formatProperties( int[] propertyIds, TokenNameLookup tokenNameLookup, String nodeName )
     {
-        return SchemaUtil.niceProperties( tokenNameLookup, propertyIds, nodeName + ".", true );
+        return TokenIdPrettyPrinter.niceProperties( tokenNameLookup, propertyIds, nodeName + ".", true );
     }
 }

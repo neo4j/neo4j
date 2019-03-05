@@ -27,7 +27,7 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.neo4j.internal.kernel.api.IndexQuery.exact;
-import static org.neo4j.kernel.impl.locking.ResourceTypes.indexEntryResourceId;
+import static org.neo4j.kernel.impl.locking.ResourceIds.indexEntryResourceId;
 
 /**
  * This is an *IT integration test because it uses a large amount of memory.

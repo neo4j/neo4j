@@ -34,9 +34,8 @@ import org.neo4j.internal.kernel.api
 import org.neo4j.internal.kernel.api.procs.Neo4jTypes.AnyType
 import org.neo4j.internal.kernel.api.procs.{DefaultParameterValue, Neo4jTypes}
 import org.neo4j.internal.kernel.api.{IndexReference, InternalIndexState, procs, _}
-import org.neo4j.kernel.api.schema.SchemaDescriptorFactory
 import org.neo4j.procedure.Mode
-import org.neo4j.storageengine.api.schema.ConstraintDescriptor
+import org.neo4j.storageengine.api.schema.{ConstraintDescriptor, SchemaDescriptorFactory}
 import org.neo4j.values.storable.ValueCategory
 
 import scala.collection.JavaConverters._

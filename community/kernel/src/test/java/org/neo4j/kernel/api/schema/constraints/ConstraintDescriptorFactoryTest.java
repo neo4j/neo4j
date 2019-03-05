@@ -21,7 +21,7 @@ package org.neo4j.kernel.api.schema.constraints;
 
 import org.junit.jupiter.api.Test;
 
-import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
+import org.neo4j.storageengine.api.schema.SchemaDescriptorFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;

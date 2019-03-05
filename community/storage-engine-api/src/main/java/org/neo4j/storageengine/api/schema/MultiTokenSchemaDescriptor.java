@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.schema;
+package org.neo4j.storageengine.api.schema;
 
 import org.apache.commons.lang3.ArrayUtils;
 
@@ -26,12 +26,9 @@ import java.util.Objects;
 
 import org.neo4j.common.EntityType;
 import org.neo4j.common.TokenNameLookup;
-import org.neo4j.internal.kernel.api.schema.SchemaUtil;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.storageengine.api.lock.ResourceType;
-import org.neo4j.storageengine.api.schema.SchemaComputer;
-import org.neo4j.storageengine.api.schema.SchemaDescriptor;
-import org.neo4j.storageengine.api.schema.SchemaProcessor;
+import org.neo4j.token.api.TokenIdPrettyPrinter;
 
 import static org.neo4j.common.TokenNameLookup.idTokenNameLookup;
 
@@ -83,7 +80,7 @@ public class MultiTokenSchemaDescriptor implements SchemaDescriptor
     public String userDescription( TokenNameLookup tokenNameLookup )
     {
         return String.format( entityType + ":%s(%s)", String.join( ", ", tokenNameLookup.entityTokensGetNames( entityType, entityTokens ) ),
-                SchemaUtil.niceProperties( tokenNameLookup, propertyIds ) );
+                TokenIdPrettyPrinter.niceProperties( tokenNameLookup, propertyIds ) );
     }
 
     @Override

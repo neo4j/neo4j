@@ -52,10 +52,10 @@ import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 import static java.nio.ByteBuffer.wrap;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.helpers.collection.Iterables.asCollection;
-import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forLabel;
-import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.multiToken;
 import static org.neo4j.kernel.impl.api.index.TestIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 import static org.neo4j.kernel.impl.index.schema.IndexDescriptorFactory.forSchema;
+import static org.neo4j.storageengine.api.schema.SchemaDescriptorFactory.forLabel;
+import static org.neo4j.storageengine.api.schema.SchemaDescriptorFactory.multiToken;
 
 public class SchemaStore35Test
 {

@@ -76,6 +76,7 @@ import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.index.schema.IndexDescriptor;
 import org.neo4j.kernel.impl.index.schema.IndexDescriptorFactory;
+import org.neo4j.kernel.impl.locking.ResourceIds;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.storageengine.api.CommandCreationContext;
 import org.neo4j.storageengine.api.lock.ResourceType;
@@ -93,8 +94,8 @@ import static org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelExcept
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_LABEL;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_PROPERTY_KEY;
+import static org.neo4j.kernel.impl.locking.ResourceIds.indexEntryResourceId;
 import static org.neo4j.kernel.impl.locking.ResourceTypes.INDEX_ENTRY;
-import static org.neo4j.kernel.impl.locking.ResourceTypes.indexEntryResourceId;
 import static org.neo4j.kernel.impl.newapi.IndexTxStateUpdater.LabelChangeType.ADDED_LABEL;
 import static org.neo4j.kernel.impl.newapi.IndexTxStateUpdater.LabelChangeType.REMOVED_LABEL;
 import static org.neo4j.storageengine.api.schema.SchemaDescriptor.schemaTokenLockingIds;
@@ -607,7 +608,7 @@ public class Operations implements Write, SchemaWrite
     public Value graphSetProperty( int propertyKey, Value value )
     {
         ktx.statementLocks().optimistic()
-                .acquireExclusive( ktx.lockTracer(), ResourceTypes.GRAPH_PROPS, ResourceTypes.graphPropertyResource() );
+                .acquireExclusive( ktx.lockTracer(), ResourceTypes.GRAPH_PROPS, ResourceIds.graphPropertyResource() );
         ktx.assertOpen();
 
         Value existingValue = readGraphProperty( propertyKey );
@@ -622,7 +623,7 @@ public class Operations implements Write, SchemaWrite
     public Value graphRemoveProperty( int propertyKey )
     {
         ktx.statementLocks().optimistic()
-                .acquireExclusive( ktx.lockTracer(), ResourceTypes.GRAPH_PROPS, ResourceTypes.graphPropertyResource() );
+                .acquireExclusive( ktx.lockTracer(), ResourceTypes.GRAPH_PROPS, ResourceIds.graphPropertyResource() );
         ktx.assertOpen();
         Value existingValue = readGraphProperty( propertyKey );
         if ( existingValue != Values.NO_VALUE )

@@ -56,11 +56,11 @@ import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.index.IndexProgressor;
-import org.neo4j.kernel.api.schema.MultiTokenSchemaDescriptor;
 import org.neo4j.kernel.impl.api.KernelImpl;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.index.schema.IndexDescriptor;
 import org.neo4j.kernel.impl.newapi.ExtendedNodeValueIndexCursorAdapter;
+import org.neo4j.storageengine.api.schema.MultiTokenSchemaDescriptor;
 import org.neo4j.test.rule.DbmsRule;
 import org.neo4j.test.rule.EmbeddedDbmsRule;
 import org.neo4j.test.rule.VerboseTimeout;
@@ -82,7 +82,7 @@ import static org.neo4j.kernel.api.impl.fulltext.FulltextProceduresTest.NODE_CRE
 import static org.neo4j.kernel.api.impl.fulltext.FulltextProceduresTest.RELATIONSHIP_CREATE;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextProceduresTest.array;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextProceduresTest.assertQueryFindsIds;
-import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.multiToken;
+import static org.neo4j.storageengine.api.schema.SchemaDescriptorFactory.multiToken;
 
 public class FulltextIndexProviderTest
 {

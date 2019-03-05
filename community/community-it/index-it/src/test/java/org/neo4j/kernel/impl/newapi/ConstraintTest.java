@@ -19,10 +19,10 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.storageengine.api.schema.ConstraintDescriptor;
 import org.neo4j.storageengine.api.schema.LabelSchemaDescriptor;
+import org.neo4j.storageengine.api.schema.SchemaDescriptorFactory;
 
 public class ConstraintTest extends ConstraintTestBase<WriteTestSupport>
 {

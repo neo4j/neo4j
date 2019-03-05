@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.schema;
+package org.neo4j.storageengine.api.schema;
 
 import org.apache.commons.lang3.ArrayUtils;
 
@@ -25,29 +25,25 @@ import java.util.Arrays;
 
 import org.neo4j.common.EntityType;
 import org.neo4j.common.TokenNameLookup;
-import org.neo4j.internal.kernel.api.schema.SchemaUtil;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.storageengine.api.lock.ResourceType;
-import org.neo4j.storageengine.api.schema.SchemaComputer;
-import org.neo4j.storageengine.api.schema.SchemaProcessor;
+import org.neo4j.token.api.TokenIdPrettyPrinter;
 
-import static org.neo4j.common.TokenNameLookup.idTokenNameLookup;
-
-public class LabelSchemaDescriptor implements org.neo4j.storageengine.api.schema.LabelSchemaDescriptor
+public class DefaultRelationTypeSchemaDescriptor implements RelationTypeSchemaDescriptor
 {
-    private final int labelId;
+    private final int relTypeId;
     private final int[] propertyIds;
 
-    LabelSchemaDescriptor( int labelId, int... propertyIds )
+    DefaultRelationTypeSchemaDescriptor( int relTypeId, int... propertyIds )
     {
-        this.labelId = labelId;
+        this.relTypeId = relTypeId;
         this.propertyIds = propertyIds;
     }
 
     @Override
     public boolean isAffected( long[] entityTokenIds )
     {
-        return ArrayUtils.contains( entityTokenIds, labelId );
+        return ArrayUtils.contains( entityTokenIds, relTypeId );
     }
 
     @Override
@@ -65,38 +61,14 @@ public class LabelSchemaDescriptor implements org.neo4j.storageengine.api.schema
     @Override
     public String userDescription( TokenNameLookup tokenNameLookup )
     {
-        return String.format( ":%s(%s)", tokenNameLookup.labelGetName( labelId ),
-                SchemaUtil.niceProperties( tokenNameLookup, propertyIds ) );
+        return String.format( "-[:%s(%s)]-", tokenNameLookup.relationshipTypeGetName( relTypeId ),
+                TokenIdPrettyPrinter.niceProperties( tokenNameLookup, propertyIds ) );
     }
 
     @Override
-    public int getLabelId()
+    public int getRelTypeId()
     {
-        return labelId;
-    }
-
-    @Override
-    public int keyId()
-    {
-        return getLabelId();
-    }
-
-    @Override
-    public ResourceType keyType()
-    {
-        return ResourceTypes.LABEL;
-    }
-
-    @Override
-    public EntityType entityType()
-    {
-        return EntityType.NODE;
-    }
-
-    @Override
-    public PropertySchemaType propertySchemaType()
-    {
-        return PropertySchemaType.COMPLETE_ALL_TOKENS;
+        return relTypeId;
     }
 
     @Override
@@ -108,7 +80,31 @@ public class LabelSchemaDescriptor implements org.neo4j.storageengine.api.schema
     @Override
     public int[] getEntityTokenIds()
     {
-        return new int[]{labelId};
+        return new int[]{relTypeId};
+    }
+
+    @Override
+    public int keyId()
+    {
+        return getRelTypeId();
+    }
+
+    @Override
+    public ResourceType keyType()
+    {
+        return ResourceTypes.RELATIONSHIP_TYPE;
+    }
+
+    @Override
+    public EntityType entityType()
+    {
+        return EntityType.RELATIONSHIP;
+    }
+
+    @Override
+    public PropertySchemaType propertySchemaType()
+    {
+        return PropertySchemaType.COMPLETE_ALL_TOKENS;
     }
 
     @Override
@@ -120,10 +116,10 @@ public class LabelSchemaDescriptor implements org.neo4j.storageengine.api.schema
     @Override
     public boolean equals( Object o )
     {
-        if ( o instanceof LabelSchemaDescriptor )
+        if ( o instanceof RelationTypeSchemaDescriptor )
         {
-            LabelSchemaDescriptor that = (LabelSchemaDescriptor)o;
-            return labelId == that.getLabelId() && Arrays.equals( propertyIds, that.getPropertyIds() );
+            RelationTypeSchemaDescriptor that = (RelationTypeSchemaDescriptor)o;
+            return relTypeId == that.getRelTypeId() && Arrays.equals( propertyIds, that.getPropertyIds() );
         }
         return false;
     }
@@ -131,17 +127,11 @@ public class LabelSchemaDescriptor implements org.neo4j.storageengine.api.schema
     @Override
     public int hashCode()
     {
-        return Arrays.hashCode( propertyIds ) + 31 * labelId;
+        return Arrays.hashCode( propertyIds ) + 31 * relTypeId;
     }
 
     @Override
-    public String toString()
-    {
-        return "LabelSchemaDescriptor( " + userDescription( idTokenNameLookup ) + " )";
-    }
-
-    @Override
-    public LabelSchemaDescriptor schema()
+    public SchemaDescriptor schema()
     {
         return this;
     }

@@ -45,7 +45,7 @@ import org.neo4j.test.rule.ImpermanentDbmsRule;
 import org.neo4j.values.storable.Values;
 
 import static org.junit.Assert.fail;
-import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forLabel;
+import static org.neo4j.storageengine.api.schema.SchemaDescriptorFactory.forLabel;
 import static org.neo4j.test.assertion.Assert.assertException;
 
 @RunWith( Parameterized.class )

@@ -53,8 +53,14 @@ import org.neo4j.kernel.api.index.IndexProviderDescriptor;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.procedure.Context;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
-import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
-import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
+import org.neo4j.kernel.api.txstate.TransactionState;
+import org.neo4j.kernel.impl.api.IndexReaderCache;
+import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
+import org.neo4j.kernel.impl.api.SchemaState;
+import org.neo4j.kernel.impl.api.index.IndexingService;
+import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
+import org.neo4j.kernel.impl.util.DefaultValueMapper;
+import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.kernel.api.txstate.TransactionCountingStateVisitor;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.CountsDelta;
@@ -75,8 +81,10 @@ import org.neo4j.storageengine.api.SchemaRule;
 import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.schema.ConstraintDescriptor;
+import org.neo4j.storageengine.api.schema.DefaultLabelSchemaDescriptor;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
 import org.neo4j.storageengine.api.schema.SchemaDescriptor;
+import org.neo4j.storageengine.api.schema.SchemaDescriptorFactory;
 import org.neo4j.storageengine.api.txstate.DiffSets;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.Value;
@@ -283,7 +291,7 @@ public class AllStoreHolder extends Read
     {
         ktx.assertOpen();
 
-        LabelSchemaDescriptor descriptor;
+        DefaultLabelSchemaDescriptor descriptor;
         try
         {
             descriptor = SchemaDescriptorFactory.forLabel( label, properties );

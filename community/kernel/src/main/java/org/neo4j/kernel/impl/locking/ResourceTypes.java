@@ -22,12 +22,9 @@ package org.neo4j.kernel.impl.locking;
 import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
 import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
 
-import org.neo4j.hashing.HashFunction;
-import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.impl.util.concurrent.LockWaitStrategies;
 import org.neo4j.storageengine.api.lock.ResourceType;
 import org.neo4j.storageengine.api.lock.WaitStrategy;
-import org.neo4j.values.storable.Value;
 
 public enum ResourceTypes implements ResourceType
 {
@@ -41,7 +38,6 @@ public enum ResourceTypes implements ResourceType
     RELATIONSHIP_TYPE( 7, LockWaitStrategies.INCREMENTAL_BACKOFF );
 
     private static final MutableIntObjectMap<ResourceType> idToType = new IntObjectHashMap<>();
-    private static final HashFunction indexEntryHash_4_x = HashFunction.incrementalXXH64();
 
     static
     {
@@ -73,43 +69,8 @@ public enum ResourceTypes implements ResourceType
         return waitStrategy;
     }
 
-    /**
-     * Produces a 64-bit hashcode for locking index entries.
-     */
-    public static long indexEntryResourceId( long labelId, IndexQuery.ExactPredicate... predicates )
-    {
-        return indexEntryResourceId_4_x( labelId, predicates );
-    }
-
-    public static long graphPropertyResource()
-    {
-        return 0L;
-    }
-
     public static ResourceType fromId( int typeId )
     {
         return idToType.get( typeId );
-    }
-
-    /**
-     * This is a stronger, full 64-bit hashing method for schema index entries.
-     *
-     * @see HashFunction#incrementalXXH64()
-     */
-    static long indexEntryResourceId_4_x( long labelId, IndexQuery.ExactPredicate[] predicates )
-    {
-        long hash = indexEntryHash_4_x.initialise( 0x0123456789abcdefL );
-
-        hash = indexEntryHash_4_x.update( hash, labelId );
-
-        for ( IndexQuery.ExactPredicate predicate : predicates )
-        {
-            int propertyKeyId = predicate.propertyKeyId();
-            hash = indexEntryHash_4_x.update( hash, propertyKeyId );
-            Value value = predicate.value();
-            hash = value.updateHash( indexEntryHash_4_x, hash );
-        }
-
-        return indexEntryHash_4_x.finalise( hash );
     }
 }

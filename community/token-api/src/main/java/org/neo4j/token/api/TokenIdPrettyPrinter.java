@@ -19,6 +19,8 @@
  */
 package org.neo4j.token.api;
 
+import org.neo4j.common.TokenNameLookup;
+
 public class TokenIdPrettyPrinter
 {
     private TokenIdPrettyPrinter()
@@ -38,5 +40,33 @@ public class TokenIdPrettyPrinter
     public static String relationshipType( int id )
     {
         return id == TokenConstants.ANY_RELATIONSHIP_TYPE ? "" : ("[:type=" + id + "]");
+    }
+
+    public static String niceProperties( TokenNameLookup tokenNameLookup, int[] propertyIds )
+    {
+        return niceProperties( tokenNameLookup, propertyIds, "", false );
+    }
+
+    public static String niceProperties( TokenNameLookup tokenNameLookup, int[] propertyIds, String prefix,
+            boolean useBrackets )
+    {
+        StringBuilder properties = new StringBuilder();
+        if ( useBrackets )
+        {
+            properties.append( "(" );
+        }
+        for ( int i = 0; i < propertyIds.length; i++ )
+        {
+            if ( i > 0 )
+            {
+                properties.append( ", " );
+            }
+            properties.append( prefix ).append( tokenNameLookup.propertyKeyGetName( propertyIds[i] ) );
+        }
+        if ( useBrackets )
+        {
+            properties.append( ")" );
+        }
+        return properties.toString();
     }
 }

@@ -21,9 +21,9 @@ package org.neo4j.kernel.api.exceptions.schema;
 
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
-import org.neo4j.internal.kernel.api.schema.SchemaUtil;
 import org.neo4j.kernel.api.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.storageengine.api.schema.LabelSchemaDescriptor;
+import org.neo4j.token.api.TokenIdPrettyPrinter;
 
 import static java.lang.String.format;
 
@@ -48,6 +48,6 @@ public class NodePropertyExistenceException extends ConstraintValidationExceptio
         return format( "Node(%d) with label `%s` must have the %s `%s`",
                 nodeId,
                 tokenNameLookup.labelGetName( schema.getLabelId() ), propertyNoun,
-                SchemaUtil.niceProperties( tokenNameLookup, schema.getPropertyIds() ) );
+                TokenIdPrettyPrinter.niceProperties( tokenNameLookup, schema.getPropertyIds() ) );
     }
 }

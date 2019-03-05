@@ -17,10 +17,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.schema;
+package org.neo4j.storageengine.api.schema;
 
 import org.neo4j.common.EntityType;
-import org.neo4j.kernel.api.StatementConstants;
+import org.neo4j.token.api.TokenConstants;
 
 public class SchemaDescriptorFactory
 {
@@ -28,18 +28,18 @@ public class SchemaDescriptorFactory
     {
     }
 
-    public static LabelSchemaDescriptor forLabel( int labelId, int... propertyIds )
+    public static DefaultLabelSchemaDescriptor forLabel( int labelId, int... propertyIds )
     {
         validateLabelIds( labelId );
         validatePropertyIds( propertyIds );
-        return new LabelSchemaDescriptor( labelId, propertyIds );
+        return new DefaultLabelSchemaDescriptor( labelId, propertyIds );
     }
 
-    public static RelationTypeSchemaDescriptor forRelType( int relTypeId, int... propertyIds )
+    public static DefaultRelationTypeSchemaDescriptor forRelType( int relTypeId, int... propertyIds )
     {
         validateRelationshipTypeIds( relTypeId );
         validatePropertyIds( propertyIds );
-        return new RelationTypeSchemaDescriptor( relTypeId, propertyIds );
+        return new DefaultRelationTypeSchemaDescriptor( relTypeId, propertyIds );
     }
 
     public static MultiTokenSchemaDescriptor multiToken( int[] entityTokens, EntityType entityType, int... propertyIds )
@@ -63,7 +63,7 @@ public class SchemaDescriptorFactory
     {
         for ( int propertyId : propertyIds )
         {
-            if ( StatementConstants.NO_SUCH_PROPERTY_KEY == propertyId )
+            if ( TokenConstants.ANY_PROPERTY_KEY == propertyId )
             {
                 throw new IllegalArgumentException(
                         "Index schema descriptor can't be created for non existent property." );
@@ -75,7 +75,7 @@ public class SchemaDescriptorFactory
     {
         for ( int relType : relTypes )
         {
-            if ( StatementConstants.NO_SUCH_RELATIONSHIP_TYPE == relType )
+            if ( TokenConstants.ANY_RELATIONSHIP_TYPE == relType )
             {
                 throw new IllegalArgumentException( "Index schema descriptor can't be created for non existent relationship type." );
             }
@@ -86,7 +86,7 @@ public class SchemaDescriptorFactory
     {
         for ( int labelId : labelIds )
         {
-            if ( StatementConstants.NO_SUCH_LABEL == labelId )
+            if ( TokenConstants.ANY_LABEL == labelId )
             {
                 throw new IllegalArgumentException( "Index schema descriptor can't be created for non existent label." );
             }

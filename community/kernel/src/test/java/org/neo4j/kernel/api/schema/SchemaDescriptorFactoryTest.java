@@ -21,6 +21,10 @@ package org.neo4j.kernel.api.schema;
 
 import org.junit.jupiter.api.Test;
 
+import org.neo4j.storageengine.api.schema.DefaultLabelSchemaDescriptor;
+import org.neo4j.storageengine.api.schema.DefaultRelationTypeSchemaDescriptor;
+import org.neo4j.storageengine.api.schema.SchemaDescriptorFactory;
+
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.neo4j.kernel.api.schema.SchemaTestUtil.assertArray;
@@ -34,7 +38,7 @@ class SchemaDescriptorFactoryTest
     @Test
     void shouldCreateLabelDescriptors()
     {
-        LabelSchemaDescriptor labelDesc;
+        DefaultLabelSchemaDescriptor labelDesc;
         labelDesc = SchemaDescriptorFactory.forLabel( LABEL_ID, 1 );
         assertThat( labelDesc.getLabelId(), equalTo( LABEL_ID ) );
         assertArray( labelDesc.getPropertyIds(), 1 );
@@ -51,7 +55,7 @@ class SchemaDescriptorFactoryTest
     @Test
     void shouldCreateRelTypeDescriptors()
     {
-        RelationTypeSchemaDescriptor relTypeDesc;
+        DefaultRelationTypeSchemaDescriptor relTypeDesc;
         relTypeDesc = SchemaDescriptorFactory.forRelType( REL_TYPE_ID, 1 );
         assertThat( relTypeDesc.getRelTypeId(), equalTo( REL_TYPE_ID ) );
         assertArray( relTypeDesc.getPropertyIds(), 1 );
@@ -68,16 +72,16 @@ class SchemaDescriptorFactoryTest
     @Test
     void shouldCreateEqualLabels()
     {
-        LabelSchemaDescriptor desc1 = SchemaDescriptorFactory.forLabel( LABEL_ID, 1 );
-        LabelSchemaDescriptor desc2 = SchemaDescriptorFactory.forLabel( LABEL_ID, 1 );
+        DefaultLabelSchemaDescriptor desc1 = SchemaDescriptorFactory.forLabel( LABEL_ID, 1 );
+        DefaultLabelSchemaDescriptor desc2 = SchemaDescriptorFactory.forLabel( LABEL_ID, 1 );
         SchemaTestUtil.assertEquality( desc1, desc2 );
     }
 
     @Test
     void shouldCreateEqualRelTypes()
     {
-        RelationTypeSchemaDescriptor desc1 = SchemaDescriptorFactory.forRelType( REL_TYPE_ID, 1 );
-        RelationTypeSchemaDescriptor desc2 = SchemaDescriptorFactory.forRelType( REL_TYPE_ID, 1 );
+        DefaultRelationTypeSchemaDescriptor desc1 = SchemaDescriptorFactory.forRelType( REL_TYPE_ID, 1 );
+        DefaultRelationTypeSchemaDescriptor desc2 = SchemaDescriptorFactory.forRelType( REL_TYPE_ID, 1 );
         SchemaTestUtil.assertEquality( desc1, desc2 );
     }
 

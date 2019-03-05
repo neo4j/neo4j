@@ -33,7 +33,7 @@ import org.neo4j.storageengine.api.schema.LabelSchemaDescriptor;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
-import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forLabel;
+import static org.neo4j.storageengine.api.schema.SchemaDescriptorFactory.forLabel;
 
 public class IndexCreateIT extends KernelIntegrationTest
 {

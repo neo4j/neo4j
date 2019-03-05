@@ -19,11 +19,11 @@
  */
 package org.neo4j.kernel.api.schema.constraints;
 
-import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.storageengine.api.schema.LabelSchemaDescriptor;
 import org.neo4j.storageengine.api.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.storageengine.api.schema.SchemaComputer;
 import org.neo4j.storageengine.api.schema.SchemaDescriptor;
+import org.neo4j.storageengine.api.schema.SchemaDescriptorFactory;
 
 import static java.lang.String.format;
 import static org.neo4j.common.TokenNameLookup.idTokenNameLookup;

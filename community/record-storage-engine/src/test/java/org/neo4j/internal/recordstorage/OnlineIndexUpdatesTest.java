@@ -75,7 +75,6 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.not;
 import static org.hamcrest.collection.IsIterableContainingInAnyOrder.containsInAnyOrder;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -85,11 +84,11 @@ import static org.neo4j.common.EntityType.RELATIONSHIP;
 import static org.neo4j.common.TokenNameLookup.idTokenNameLookup;
 import static org.neo4j.helpers.collection.Iterables.empty;
 import static org.neo4j.kernel.api.index.IndexProvider.EMPTY;
-import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.multiToken;
 import static org.neo4j.kernel.impl.index.schema.IndexDescriptorFactory.forSchema;
 import static org.neo4j.kernel.impl.store.record.Record.NO_LABELS_FIELD;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
+import static org.neo4j.storageengine.api.schema.SchemaDescriptorFactory.multiToken;
 
 @PageCacheExtension
 class OnlineIndexUpdatesTest

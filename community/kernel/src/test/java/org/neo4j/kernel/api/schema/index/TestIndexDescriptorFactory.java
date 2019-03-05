@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.api.schema.index;
 
-import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.impl.index.schema.IndexDescriptor;
 import org.neo4j.kernel.impl.index.schema.IndexDescriptorFactory;
+import org.neo4j.storageengine.api.schema.SchemaDescriptorFactory;
 
 public class TestIndexDescriptorFactory
 {
