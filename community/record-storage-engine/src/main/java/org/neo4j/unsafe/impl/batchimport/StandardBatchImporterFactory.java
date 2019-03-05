@@ -19,6 +19,7 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
+import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.configuration.Config;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -29,13 +30,18 @@ import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitor;
 
+@ServiceProvider
 public class StandardBatchImporterFactory extends BatchImporterFactory
 {
-    public static final String NAME = "standard";
-
     public StandardBatchImporterFactory()
     {
-        super( NAME, 1 );
+        super( 1 );
+    }
+
+    @Override
+    public String getName()
+    {
+        return "standard";
     }
 
     @Override

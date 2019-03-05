@@ -21,7 +21,7 @@ package org.neo4j.unsafe.impl.batchimport;
 
 import java.util.NoSuchElementException;
 
-import org.neo4j.common.Service;
+import org.neo4j.annotations.service.Service;
 import org.neo4j.configuration.Config;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -29,16 +29,18 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.service.NamedService;
+import org.neo4j.service.Services;
 import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitor;
 
-public abstract class BatchImporterFactory extends Service
+@Service
+public abstract class BatchImporterFactory implements NamedService
 {
     private final int priority;
 
-    protected BatchImporterFactory( String key, int priority )
+    protected BatchImporterFactory( int priority )
     {
-        super( key );
         this.priority = priority;
     }
 
@@ -50,7 +52,7 @@ public abstract class BatchImporterFactory extends Service
     public static BatchImporterFactory withHighestPriority()
     {
         BatchImporterFactory highestPrioritized = null;
-        for ( BatchImporterFactory candidate : Service.loadAll( BatchImporterFactory.class ) )
+        for ( BatchImporterFactory candidate : Services.loadAll( BatchImporterFactory.class ) )
         {
             if ( highestPrioritized == null || candidate.priority > highestPrioritized.priority )
             {
