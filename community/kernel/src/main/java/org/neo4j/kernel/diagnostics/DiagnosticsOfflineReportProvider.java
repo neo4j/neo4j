@@ -25,7 +25,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import org.neo4j.common.Service;
+import org.neo4j.annotations.service.Service;
 import org.neo4j.configuration.Config;
 import org.neo4j.io.fs.FileSystemAbstraction;
 
@@ -35,7 +35,8 @@ import org.neo4j.io.fs.FileSystemAbstraction;
  * classes is service loaded and initialized through the
  * {@link DiagnosticsOfflineReportProvider#init(FileSystemAbstraction, Config, File)} method.
  */
-public abstract class DiagnosticsOfflineReportProvider extends Service
+@Service
+public abstract class DiagnosticsOfflineReportProvider
 {
     private final Set<String> filterClassifiers;
 
@@ -43,13 +44,11 @@ public abstract class DiagnosticsOfflineReportProvider extends Service
      * A provider needs to know all the available classifiers in advance. A classifier is a group in the context of
      * diagnostics reporting, e.g. 'logs', 'config' or 'threaddump'.
      *
-     * @param identifier a unique identifier for tagging during service loading, used for useful debug information.
      * @param classifier one
      * @param classifiers or more classifiers have to be provided.
      */
-    protected DiagnosticsOfflineReportProvider( String identifier, String classifier, String... classifiers )
+    protected DiagnosticsOfflineReportProvider( String classifier, String... classifiers )
     {
-        super( identifier );
         filterClassifiers = new HashSet<>( Arrays.asList( classifiers ) );
         filterClassifiers.add( classifier );
     }

@@ -35,9 +35,9 @@ import java.util.TreeSet;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
-import org.neo4j.common.Service;
 import org.neo4j.configuration.Config;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.service.Services;
 
 import static java.lang.String.format;
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -149,7 +149,7 @@ public class DiagnosticsReporter
 
     public void registerAllOfflineProviders( Config config, File storeDirectory, FileSystemAbstraction fs )
     {
-        for ( DiagnosticsOfflineReportProvider provider : Service.loadAll( DiagnosticsOfflineReportProvider.class ) )
+        for ( DiagnosticsOfflineReportProvider provider : Services.loadAll( DiagnosticsOfflineReportProvider.class ) )
         {
             provider.init( fs, config, storeDirectory );
             registerOfflineProvider( provider );

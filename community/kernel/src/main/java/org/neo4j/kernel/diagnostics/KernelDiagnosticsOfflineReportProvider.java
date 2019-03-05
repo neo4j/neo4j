@@ -25,7 +25,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
-import org.neo4j.common.Service;
+import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -34,8 +34,10 @@ import org.neo4j.kernel.diagnostics.providers.StoreFilesDiagnostics;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.logging.BufferingLog;
+import org.neo4j.service.Services;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 
+@ServiceProvider
 public class KernelDiagnosticsOfflineReportProvider extends DiagnosticsOfflineReportProvider
 {
     private FileSystemAbstraction fs;
@@ -44,7 +46,7 @@ public class KernelDiagnosticsOfflineReportProvider extends DiagnosticsOfflineRe
 
     public KernelDiagnosticsOfflineReportProvider()
     {
-        super( "kernel", "logs", "plugins", "tree", "tx" );
+        super( "logs", "plugins", "tree", "tx" );
     }
 
     @Override
@@ -125,7 +127,7 @@ public class KernelDiagnosticsOfflineReportProvider extends DiagnosticsOfflineRe
      */
     private void listDataDirectory( List<DiagnosticsReportSource> sources )
     {
-        StorageEngineFactory storageEngineFactory = StorageEngineFactory.selectStorageEngine( Service.loadAll( StorageEngineFactory.class ) );
+        StorageEngineFactory storageEngineFactory = StorageEngineFactory.selectStorageEngine( Services.loadAll( StorageEngineFactory.class ) );
         StoreFilesDiagnostics storeFiles = new StoreFilesDiagnostics( storageEngineFactory, fs, databaseLayout );
 
         BufferingLog logger = new BufferingLog();

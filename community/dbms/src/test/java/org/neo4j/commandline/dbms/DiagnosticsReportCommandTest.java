@@ -36,6 +36,7 @@ import java.util.List;
 import java.util.Set;
 import javax.annotation.Nonnull;
 
+import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.commandline.admin.CommandFailed;
 import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.commandline.admin.OutsideWorld;
@@ -74,11 +75,12 @@ public class DiagnosticsReportCommandTest
     private Path configFile;
     private String originalUserDir;
 
+    @ServiceProvider
     public static class MyDiagnosticsOfflineReportProvider extends DiagnosticsOfflineReportProvider
     {
         public MyDiagnosticsOfflineReportProvider()
         {
-            super( "my-provider", "logs", "tx" );
+            super( "logs", "tx" );
         }
 
         @Override
