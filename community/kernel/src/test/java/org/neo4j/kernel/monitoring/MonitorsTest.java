@@ -21,6 +21,8 @@ package org.neo4j.kernel.monitoring;
 
 import org.junit.jupiter.api.Test;
 
+import org.neo4j.monitoring.Monitors;
+
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;

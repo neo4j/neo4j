@@ -43,8 +43,8 @@ import org.neo4j.cypher.internal.v4_0.util.InputPosition
 import org.neo4j.cypher.internal.v4_0.util.attribution.SequentialIdGen
 import org.neo4j.helpers.collection.Pair
 import org.neo4j.kernel.impl.query.TransactionalContext
-import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.logging.Log
+import org.neo4j.monitoring
 import org.neo4j.values.AnyValue
 import org.neo4j.values.virtual.MapValue
 
@@ -58,7 +58,7 @@ object Cypher4_0Planner {
 
 case class Cypher4_0Planner(config: CypherPlannerConfiguration,
                             clock: Clock,
-                            kernelMonitors: KernelMonitors,
+                            kernelMonitors: monitoring.Monitors,
                             log: Log,
                             plannerOption: CypherPlannerOption,
                             updateStrategy: CypherUpdateStrategy,

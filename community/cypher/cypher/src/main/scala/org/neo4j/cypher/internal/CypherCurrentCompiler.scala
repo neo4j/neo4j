@@ -41,7 +41,7 @@ import org.neo4j.graphdb.{Notification, Result}
 import org.neo4j.kernel.api.query.{CompilerInfo, SchemaIndexUsage}
 import org.neo4j.kernel.impl.query.QuerySubscriber.NOT_A_SUBSCRIBER
 import org.neo4j.kernel.impl.query.{QueryExecution, QueryExecutionMonitor, QuerySubscriber, TransactionalContext}
-import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
+import org.neo4j.monitoring.Monitors
 import org.neo4j.values.virtual.MapValue
 
 import scala.collection.JavaConverters._
@@ -59,7 +59,7 @@ import scala.collection.JavaConverters._
 case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlanner,
                                                             runtime: CypherRuntime[CONTEXT],
                                                             contextCreator: RuntimeContextCreator[CONTEXT],
-                                                            kernelMonitors: KernelMonitors
+                                                            kernelMonitors: Monitors
                                                            ) extends org.neo4j.cypher.internal.Compiler {
 
   /**

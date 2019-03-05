@@ -43,14 +43,14 @@ import org.neo4j.cypher.internal.v4_0.util.attribution.SequentialIdGen
 import org.neo4j.cypher.{CypherPlannerOption, CypherUpdateStrategy}
 import org.neo4j.helpers.collection.Pair
 import org.neo4j.kernel.impl.query.TransactionalContext
-import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.logging.Log
+import org.neo4j.monitoring.Monitors
 import org.neo4j.values.AnyValue
 import org.neo4j.values.virtual.MapValue
 
 case class Cypher3_5Planner(config: CypherPlannerConfiguration,
                             clock: Clock,
-                            kernelMonitors: KernelMonitors,
+                            kernelMonitors: Monitors,
                             log: Log,
                             plannerOption: CypherPlannerOption,
                             updateStrategy: CypherUpdateStrategy,

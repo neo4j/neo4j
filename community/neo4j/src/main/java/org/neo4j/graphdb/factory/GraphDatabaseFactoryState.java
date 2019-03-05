@@ -31,8 +31,8 @@ import org.neo4j.configuration.LoadableConfig;
 import org.neo4j.graphdb.facade.ExternalDependencies;
 import org.neo4j.graphdb.security.URLAccessRule;
 import org.neo4j.kernel.extension.ExtensionFactory;
-import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.monitoring.Monitors;
 import org.neo4j.service.Services;
 
 import static org.neo4j.graphdb.facade.GraphDatabaseDependencies.newDependencies;

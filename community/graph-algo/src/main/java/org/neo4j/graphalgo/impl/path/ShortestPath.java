@@ -53,7 +53,7 @@ import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.collection.NestingResourceIterator;
 import org.neo4j.helpers.collection.PrefetchingResourceIterator;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
-import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.monitoring.Monitors;
 
 /**
  * Find (all or one) simple shortest path(s) between two nodes. It starts

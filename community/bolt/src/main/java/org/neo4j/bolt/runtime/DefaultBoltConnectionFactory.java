@@ -26,8 +26,8 @@ import org.neo4j.bolt.transport.TransportThrottleGroup;
 import org.neo4j.bolt.v1.transport.ChunkedOutput;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.internal.LogService;
+import org.neo4j.monitoring.Monitors;
 
 import static java.util.Objects.requireNonNull;
 import static org.neo4j.bolt.runtime.DefaultBoltConnection.DEFAULT_MAX_BATCH_SIZE;

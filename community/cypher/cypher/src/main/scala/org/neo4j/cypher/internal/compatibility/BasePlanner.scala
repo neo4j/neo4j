@@ -24,9 +24,9 @@ import java.time.Clock
 import org.neo4j.cypher.internal.QueryCache.ParameterTypeMap
 import org.neo4j.cypher.internal._
 import org.neo4j.cypher.internal.compatibility.v4_0.{WrappedMonitors => WrappedMonitorsv4_0}
-import org.neo4j.cypher.internal.compiler.{CypherPlanner => CypherPlannerv4_0, _}
 import org.neo4j.cypher.internal.compiler.phases.{LogicalPlanState, PlannerContext, PlannerContextCreator}
 import org.neo4j.cypher.internal.compiler.planner.logical.idp._
+import org.neo4j.cypher.internal.compiler.{CypherPlanner => CypherPlannerv4_0, _}
 import org.neo4j.cypher.internal.planner.spi.{CostBasedPlannerName, DPPlannerName, IDPPlannerName, PlanContext}
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionalContextWrapper
 import org.neo4j.cypher.internal.v4_0.frontend.phases._
@@ -34,8 +34,8 @@ import org.neo4j.cypher.internal.v4_0.rewriting.RewriterStepSequencer
 import org.neo4j.cypher.{CypherPlannerOption, CypherUpdateStrategy}
 import org.neo4j.helpers.collection.Pair
 import org.neo4j.kernel.impl.api.SchemaStateKey
-import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.logging.Log
+import org.neo4j.monitoring.{Monitors => KernelMonitors}
 
 /**
   * Base planner.

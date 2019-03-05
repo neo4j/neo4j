@@ -35,8 +35,8 @@ import org.neo4j.helpers.collection.Pair
 import org.neo4j.internal.kernel.api.security.AccessMode
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.impl.query.{FunctionInformation, QueryExecution, QuerySubscriber, TransactionalContext}
-import org.neo4j.kernel.monitoring.Monitors
 import org.neo4j.logging.LogProvider
+import org.neo4j.monitoring.Monitors
 import org.neo4j.values.virtual.MapValue
 
 import scala.collection.JavaConverters._

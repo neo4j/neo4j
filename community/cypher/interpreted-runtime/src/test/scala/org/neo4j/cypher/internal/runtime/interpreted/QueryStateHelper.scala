@@ -32,7 +32,7 @@ import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.impl.coreapi.InternalTransaction
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory
 import org.neo4j.kernel.impl.util.BaseToObjectValueWriter
-import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
+import org.neo4j.monitoring.Monitors
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.CoordinateReferenceSystem
 import org.neo4j.values.virtual.VirtualValues.EMPTY_MAP
@@ -57,7 +57,7 @@ object QueryStateHelper extends MockitoSugar {
                      tx: InternalTransaction,
                      params: Array[AnyValue] = Array.empty
                     ): QueryState = {
-    val searchMonitor = new KernelMonitors().newMonitor(classOf[IndexSearchMonitor])
+    val searchMonitor = new Monitors().newMonitor(classOf[IndexSearchMonitor])
     val contextFactory = Neo4jTransactionalContextFactory.create(db)
     val transactionalContext = TransactionalContextWrapper(contextFactory.newContext(tx, "X", EMPTY_MAP))
     val queryContext = new TransactionBoundQueryContext(transactionalContext)(searchMonitor)

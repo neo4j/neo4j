@@ -29,11 +29,11 @@ import org.neo4j.internal.kernel.api.helpers.Indexes
 import org.neo4j.internal.kernel.api.procs._
 import org.neo4j.internal.kernel.api.security.LoginContext
 import org.neo4j.internal.kernel.api.{Kernel, TokenRead, Transaction => KernelTransaction}
+import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.InwardKernel
 import org.neo4j.kernel.api.procedure.{CallableProcedure, CallableUserAggregationFunction, CallableUserFunction, GlobalProcedures}
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
-import org.neo4j.kernel.monitoring.Monitors
-import org.neo4j.kernel.{GraphDatabaseQueryService, monitoring}
+import org.neo4j.monitoring.Monitors
 import org.neo4j.test.TestGraphDatabaseFactory
 import org.scalatest.matchers.{MatchResult, Matcher}
 
@@ -304,7 +304,7 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
     procs.function(new QualifiedName(namespace, name))
   }
 
-  def kernelMonitors: Monitors = graph.getDependencyResolver.resolveDependency(classOf[monitoring.Monitors])
+  def kernelMonitors: Monitors = graph.getDependencyResolver.resolveDependency(classOf[Monitors])
 
   private def kernelAPI: InwardKernel = graph.getDependencyResolver.resolveDependency(classOf[InwardKernel])
 

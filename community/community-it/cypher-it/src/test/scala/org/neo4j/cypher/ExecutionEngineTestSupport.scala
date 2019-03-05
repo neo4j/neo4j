@@ -33,8 +33,8 @@ import org.neo4j.cypher.internal.v4_0.util.test_helpers.{CypherFunSuite, CypherT
 import org.neo4j.graphdb.{GraphDatabaseService, Result}
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.impl.util.ValueUtils
-import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.logging.{LogProvider, NullLogProvider}
+import org.neo4j.monitoring.Monitors
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.{MapValue, VirtualValues}
@@ -90,7 +90,7 @@ object ExecutionEngineHelper {
 
   def createEngine(graphDatabaseCypherService: GraphDatabaseQueryService, logProvider: LogProvider = NullLogProvider.getInstance()): ExecutionEngine = {
     val resolver = graphDatabaseCypherService.getDependencyResolver
-    val kernelMonitors: KernelMonitors = resolver.resolveDependency(classOf[KernelMonitors])
+    val kernelMonitors: Monitors = resolver.resolveDependency(classOf[Monitors])
     val cacheTracer = new MonitoringCacheTracer( kernelMonitors.newMonitor( classOf[StringCacheMonitor] ) )
     val compilerFactory = resolver.resolveDependency( classOf[CompilerFactory] )
     val config = resolver.resolveDependency(classOf[Config])

@@ -31,10 +31,10 @@ import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.extension.ExtensionType;
 import org.neo4j.kernel.extension.context.ExtensionContext;
 import org.neo4j.kernel.impl.factory.OperationalMode;
-import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.kernel.recovery.RecoveryExtension;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.internal.LogService;
+import org.neo4j.monitoring.Monitors;
 
 @RecoveryExtension
 public abstract class AbstractIndexProviderFactory<DEPENDENCIES extends AbstractIndexProviderFactory.Dependencies> extends ExtensionFactory<DEPENDENCIES>

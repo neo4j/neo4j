@@ -35,7 +35,7 @@ import org.neo4j.kernel.impl.coreapi.InternalTransaction
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory
 import org.neo4j.kernel.impl.query.QuerySubscriber.NOT_A_SUBSCRIBER
 import org.neo4j.kernel.impl.util.DefaultValueMapper
-import org.neo4j.kernel.monitoring.Monitors
+import org.neo4j.monitoring.Monitors
 import org.neo4j.values.virtual.VirtualValues
 import org.scalatest.BeforeAndAfterAll
 

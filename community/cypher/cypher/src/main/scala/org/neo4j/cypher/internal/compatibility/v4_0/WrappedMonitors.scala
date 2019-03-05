@@ -20,11 +20,11 @@
 package org.neo4j.cypher.internal.compatibility.v4_0
 
 import org.neo4j.cypher.internal.v4_0.frontend.phases.Monitors
-import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
+import org.neo4j.monitoring
 
 import scala.reflect.ClassTag
 
-case class WrappedMonitors(kernelMonitors: KernelMonitors) extends Monitors {
+case class WrappedMonitors(kernelMonitors: monitoring.Monitors) extends Monitors {
   def addMonitorListener[T](monitor: T, tags: String*) {
     kernelMonitors.addMonitorListener(monitor, tags: _*)
   }
