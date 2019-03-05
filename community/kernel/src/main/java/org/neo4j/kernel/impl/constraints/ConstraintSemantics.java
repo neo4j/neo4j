@@ -19,12 +19,11 @@
  */
 package org.neo4j.kernel.impl.constraints;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.List;
 
-import org.neo4j.common.Service;
-import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.annotations.service.Service;
 import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
@@ -35,6 +34,8 @@ import org.neo4j.internal.kernel.api.exceptions.schema.CreateConstraintFailureEx
 import org.neo4j.kernel.api.schema.constraints.NodeKeyConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constraints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.impl.store.record.ConstraintRule;
+import org.neo4j.service.NamedService;
+import org.neo4j.service.Services;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.schema.ConstraintDescriptor;
 import org.neo4j.storageengine.api.schema.LabelSchemaDescriptor;
@@ -48,22 +49,20 @@ import static org.neo4j.util.Preconditions.checkState;
 /**
  * Implements semantics of constraint creation and enforcement.
  */
-public abstract class ConstraintSemantics extends Service
+@Service
+public abstract class ConstraintSemantics implements NamedService
 {
     private final int priority;
 
     public static ConstraintSemantics getConstraintSemantics()
     {
-        Iterable<ConstraintSemantics> semantics = Service.loadAll( ConstraintSemantics.class );
-        List<ConstraintSemantics> candidates = Iterables.asList( semantics );
+        final Collection<ConstraintSemantics> candidates = Services.loadAll( ConstraintSemantics.class );
         checkState( !candidates.isEmpty(), format( "At least one implementation of %s should be available.", ConstraintSemantics.class ) );
-
         return Collections.max( candidates, Comparator.comparingInt( ConstraintSemantics::getPriority ) );
     }
 
-    protected ConstraintSemantics( String key, int priority )
+    protected ConstraintSemantics( int priority )
     {
-        super( key );
         this.priority = priority;
     }
 

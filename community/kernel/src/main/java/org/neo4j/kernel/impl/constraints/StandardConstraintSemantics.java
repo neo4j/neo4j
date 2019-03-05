@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.constraints;
 
+import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
@@ -38,6 +39,7 @@ import org.neo4j.storageengine.api.schema.SchemaDescriptor;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 
+@ServiceProvider
 public class StandardConstraintSemantics extends ConstraintSemantics
 {
     public static final String ERROR_MESSAGE_EXISTS = "Property existence constraint requires Neo4j Enterprise Edition";
@@ -45,12 +47,18 @@ public class StandardConstraintSemantics extends ConstraintSemantics
 
     public StandardConstraintSemantics()
     {
-        this( "standardConstraints", 1 );
+        this( 1 );
     }
 
-    protected StandardConstraintSemantics( String key, int priority )
+    protected StandardConstraintSemantics( int priority )
     {
-        super( key, priority );
+        super( priority );
+    }
+
+    @Override
+    public String getName()
+    {
+        return "standardConstraints";
     }
 
     @Override
