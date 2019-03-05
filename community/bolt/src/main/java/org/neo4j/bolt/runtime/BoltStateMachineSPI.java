@@ -26,7 +26,7 @@ import org.neo4j.bolt.security.auth.AuthenticationResult;
 
 public interface BoltStateMachineSPI
 {
-    TransactionStateMachineSPI transactionSpi();
+    TransactionStateMachineSPIProvider transactionStateMachineSPIProvider();
 
     void reportError( Neo4jError err );
 

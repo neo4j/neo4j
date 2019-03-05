@@ -19,6 +19,7 @@
  */
 package org.neo4j.bolt.v4.messaging;
 
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -35,10 +36,11 @@ import org.neo4j.bolt.v1.messaging.request.InitMessage;
 import org.neo4j.bolt.v1.messaging.request.PullAllMessage;
 import org.neo4j.bolt.v1.messaging.request.ResetMessage;
 import org.neo4j.bolt.v1.packstream.PackedInputArray;
-import org.neo4j.bolt.v3.messaging.request.BeginMessage;
-import org.neo4j.bolt.v3.messaging.request.RunMessage;
+import org.neo4j.bolt.v3.messaging.request.TransactionInitiallingMessage;
 
 import static java.util.Collections.singletonMap;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -69,6 +71,37 @@ class BoltRequestMessageReaderV4Test
         assertThrows( Exception.class, () -> testMessageDecoding( message ) );
     }
 
+    @Test
+    void shouldDecodeBoltV3RunAndBeginMessageAsBoltV4Message() throws Exception
+    {
+        org.neo4j.bolt.v3.messaging.request.RunMessage runMessageV3 =
+                new org.neo4j.bolt.v3.messaging.request.RunMessage( "RETURN 1", EMPTY_MAP, EMPTY_MAP );
+        org.neo4j.bolt.v3.messaging.request.BeginMessage beginMessageV3 = new org.neo4j.bolt.v3.messaging.request.BeginMessage();
+
+        RunMessage runMessageV4 = new RunMessage( "RETURN 1", EMPTY_MAP, EMPTY_MAP );
+        BeginMessage beginMessageV4 = new BeginMessage();
+
+        verifyBoltV3MessageIsReadAsBoltV4Message( runMessageV3, runMessageV4 );
+        verifyBoltV3MessageIsReadAsBoltV4Message( beginMessageV3, beginMessageV4 );
+    }
+
+    private static <T extends TransactionInitiallingMessage, U extends TransactionInitiallingMessage>
+    void verifyBoltV3MessageIsReadAsBoltV4Message( T messageV3, U messageV4 ) throws Exception
+    {
+        Neo4jPack neo4jPack = newNeo4jPack();
+
+        BoltStateMachine stateMachine = mock( BoltStateMachine.class );
+        BoltRequestMessageReader reader = requestMessageReader( stateMachine );
+
+        PackedInputArray input = new PackedInputArray( encode( neo4jPack, messageV3 ) );
+        Neo4jPack.Unpacker unpacker = neo4jPack.newUnpacker( input );
+
+        reader.read( unpacker );
+
+        verify( stateMachine ).process( eq( messageV4 ), any() );
+        assertThat( messageV3.meta(), equalTo( messageV4.meta() ) );
+    }
+
     private static void testMessageDecoding( RequestMessage message ) throws Exception
     {
         Neo4jPack neo4jPack = newNeo4jPack();
@@ -90,14 +123,14 @@ class BoltRequestMessageReaderV4Test
                 new PullNMessage( asMapValue( singletonMap( "n",  100L ) ) ),
                 new DiscardNMessage( asMapValue( singletonMap( "n", 100L ) ) ),
                 new RunMessage( "RETURN 1", EMPTY_MAP, EMPTY_MAP ),
-
                 new BeginMessage(),
+
                 COMMIT_MESSAGE,
                 ROLLBACK_MESSAGE,
                 ResetMessage.INSTANCE );
     }
 
-    private static Stream<RequestMessage> boltV4UnsupportedMessages()
+    private static Stream<RequestMessage> boltV4UnsupportedMessages() throws BoltIOException
     {
         return Stream.of(
                 new InitMessage( "My driver", map( "one", 1L, "two", 2L ) ),
@@ -107,5 +140,4 @@ class BoltRequestMessageReaderV4Test
                 DiscardAllMessage.INSTANCE
         );
     }
-
 }

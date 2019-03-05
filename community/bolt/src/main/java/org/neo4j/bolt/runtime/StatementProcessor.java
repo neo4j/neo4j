@@ -54,6 +54,8 @@ public interface StatementProcessor
 
     void validateTransaction() throws KernelException;
 
+    String databaseName();
+
     StatementProcessor EMPTY = new StatementProcessor()
     {
         @Override
@@ -124,6 +126,18 @@ public interface StatementProcessor
         @Override
         public void validateTransaction() throws KernelException
         {
+        }
+
+        @Override
+        public String databaseName()
+        {
+            throw new UnsupportedOperationException( "Unable to read the database name" );
+        }
+
+        @Override
+        public String toString()
+        {
+            return "Empty Statement Processor";
         }
     };
 }

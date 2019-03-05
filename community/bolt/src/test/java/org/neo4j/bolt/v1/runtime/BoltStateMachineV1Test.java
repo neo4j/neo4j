@@ -50,8 +50,6 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.values.virtual.VirtualValues;
 
 import static java.util.Collections.emptyMap;
-import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
@@ -143,6 +141,7 @@ public class BoltStateMachineV1Test
     {
         BoltStateMachine machine = init( newMachine() );
         assertThat( machine, canReset() );
+        assertThat( machine, hasNoTransaction() );
     }
 
     @Test
@@ -150,6 +149,7 @@ public class BoltStateMachineV1Test
     {
         BoltStateMachine machine = newMachineWithTransaction();
         assertThat( machine, canReset() );
+        assertThat( machine, hasNoTransaction() );
     }
 
     @Test
@@ -163,6 +163,7 @@ public class BoltStateMachineV1Test
 
         // Then
         assertThat( machine, canReset() );
+        assertThat( machine, hasNoTransaction() );
     }
 
     @Test
@@ -176,6 +177,7 @@ public class BoltStateMachineV1Test
 
         // Then
         assertThat( machine, canReset() );
+        assertThat( machine, hasNoTransaction() );
     }
 
     @Test
@@ -494,27 +496,6 @@ public class BoltStateMachineV1Test
         {
             assertEquals( "Auth expired!", e.getCause().getMessage() );
         }
-    }
-
-    @Test
-    public void callResetEvenThoughAlreadyClosed() throws Throwable
-    {
-        // Given
-        BoltStateMachine machine = init( newMachine() );
-
-        // When we close
-        TransactionStateMachine statementProcessor = txStateMachine( machine );
-        machine.close();
-        assertThat( statementProcessor.ctx.currentTransaction, nullValue() );
-        assertThat( machine, isClosed() );
-
-        //But someone runs a query and thus opens a new transaction
-        statementProcessor.run( "RETURN 1", EMPTY_PARAMS );
-        assertThat( statementProcessor.ctx.currentTransaction, notNullValue() );
-
-        // Then, when we close again we should make sure the transaction is closed again
-        machine.close();
-        assertThat( statementProcessor.ctx.currentTransaction, nullValue() );
     }
 
     @Test

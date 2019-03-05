@@ -17,28 +17,36 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.bolt.v3.messaging.request;
+package org.neo4j.bolt.v4.messaging;
 
 import org.neo4j.bolt.messaging.BoltIOException;
 import org.neo4j.values.virtual.MapValue;
+import org.neo4j.values.virtual.VirtualValues;
 
-public class BeginMessage extends TransactionInitiallingMessage
+import static org.neo4j.bolt.v4.messaging.MessageMetadataParser.parseDatabaseName;
+
+public class RunMessage extends org.neo4j.bolt.v3.messaging.request.RunMessage
 {
-    public static final byte SIGNATURE = 0x11;
+    private String databaseName;
 
-    public BeginMessage() throws BoltIOException
+    public RunMessage( String statement ) throws BoltIOException
     {
-        super();
+        this( statement, VirtualValues.EMPTY_MAP, VirtualValues.EMPTY_MAP );
     }
 
-    public BeginMessage( MapValue meta ) throws BoltIOException
+    public RunMessage( String statement, MapValue params ) throws BoltIOException
     {
-        super( meta );
+        this( statement, params, VirtualValues.EMPTY_MAP );
     }
 
-    @Override
-    public String toString()
+    public RunMessage( String statement, MapValue params, MapValue meta ) throws BoltIOException
     {
-        return "BEGIN " + meta();
+        super( statement, params, meta );
+        databaseName = parseDatabaseName( meta );
+    }
+
+    public String databaseName()
+    {
+        return databaseName;
     }
 }

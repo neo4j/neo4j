@@ -17,30 +17,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.bolt.runtime;
-
-import java.time.Clock;
+package org.neo4j.bolt.v4.messaging;
 
 import org.neo4j.bolt.messaging.BoltIOException;
-import org.neo4j.bolt.security.auth.AuthenticationResult;
+import org.neo4j.bolt.runtime.BoltResponseHandler;
+import org.neo4j.values.virtual.MapValue;
 
-public interface StateMachineContext
+public class RunMessageDecoder extends org.neo4j.bolt.v3.messaging.decoder.RunMessageDecoder
 {
-    void authenticatedAsUser( String username, String userAgent );
+    public RunMessageDecoder( BoltResponseHandler responseHandler )
+    {
+        super( responseHandler );
+    }
 
-    void handleFailure( Throwable cause, boolean fatal ) throws BoltConnectionFatality;
-
-    boolean resetMachine() throws BoltConnectionFatality;
-
-    BoltStateMachineSPI boltSpi();
-
-    MutableConnectionState connectionState();
-
-    Clock clock();
-
-    String connectionId();
-
-    void initStatementProcessorProvider( AuthenticationResult authResult );
-
-    StatementProcessor setCurrentStatementProcessorForDatabase( String databaseName ) throws BoltProtocolBreachFatality, BoltIOException;
+    protected RunMessage newRunMessage( String statement, MapValue params, MapValue meta ) throws BoltIOException
+    {
+        return new RunMessage( statement, params, meta ); // v4 RUN message
+    }
 }
+

@@ -64,6 +64,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.bolt.security.auth.AuthenticationResult.AUTH_DISABLED;
+import static org.neo4j.bolt.v4.messaging.MessageMetadataParser.ABSENT_DB_NAME;
 import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
 
 class TransactionStateMachineTest
@@ -92,7 +93,7 @@ class TransactionStateMachineTest
         FakeClock clock = new FakeClock();
         stateMachineSPI = mock( TransactionStateMachineV1SPI.class );
         mutableState = new MutableTransactionState( AUTH_DISABLED, clock );
-        stateMachine = new TransactionStateMachine( stateMachineSPI, AUTH_DISABLED, clock );
+        stateMachine = new TransactionStateMachine( ABSENT_DB_NAME, stateMachineSPI, AUTH_DISABLED, clock );
     }
 
     @Test
@@ -521,7 +522,7 @@ class TransactionStateMachineTest
 
     private static TransactionStateMachine newTransactionStateMachine( TransactionStateMachineV1SPI stateMachineSPI )
     {
-        return new TransactionStateMachine( stateMachineSPI, AUTH_DISABLED, new FakeClock() );
+        return new TransactionStateMachine( ABSENT_DB_NAME, stateMachineSPI, AUTH_DISABLED, new FakeClock() );
     }
 
     private static MapValue map( Object... keyValues )

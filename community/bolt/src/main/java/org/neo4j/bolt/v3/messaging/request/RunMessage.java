@@ -19,31 +19,20 @@
  */
 package org.neo4j.bolt.v3.messaging.request;
 
-import java.time.Duration;
-import java.util.Map;
 import java.util.Objects;
 
 import org.neo4j.bolt.messaging.BoltIOException;
-import org.neo4j.bolt.messaging.RequestMessage;
-import org.neo4j.bolt.v1.runtime.bookmarking.Bookmark;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.VirtualValues;
 
 import static java.util.Objects.requireNonNull;
-import static org.neo4j.bolt.v3.messaging.request.MessageMetadataParser.parseTransactionMetadata;
-import static org.neo4j.bolt.v3.messaging.request.MessageMetadataParser.parseTransactionTimeout;
 
-public class RunMessage implements RequestMessage
+public class RunMessage extends TransactionInitiallingMessage
 {
     public static final byte SIGNATURE = 0x10;
 
     private final String statement;
     private final MapValue params;
-    private final MapValue meta;
-
-    private final Bookmark bookmark;
-    private final Duration txTimeout;
-    private final Map<String,Object> txMetadata;
 
     public RunMessage( String statement ) throws BoltIOException
     {
@@ -57,13 +46,9 @@ public class RunMessage implements RequestMessage
 
     public RunMessage( String statement, MapValue params, MapValue meta ) throws BoltIOException
     {
+        super( meta );
         this.statement = requireNonNull( statement );
         this.params = requireNonNull( params );
-        this.meta = requireNonNull( meta );
-
-        this.bookmark = Bookmark.fromParamsOrNull( meta );
-        this.txTimeout = parseTransactionTimeout( meta );
-        this.txMetadata = parseTransactionMetadata( meta );
     }
 
     public String statement()
@@ -76,56 +61,30 @@ public class RunMessage implements RequestMessage
         return params;
     }
 
-    public MapValue meta()
-    {
-        return meta;
-    }
-
-    @Override
-    public boolean safeToProcessInAnyState()
-    {
-        return false;
-    }
-
     @Override
     public boolean equals( Object o )
     {
-        if ( this == o )
+        if ( super.equals( o ) )
         {
-            return true;
+            RunMessage that = (RunMessage) o;
+            return Objects.equals( statement, that.statement ) && Objects.equals( params, that.params );
         }
-        if ( o == null || getClass() != o.getClass() )
+        else
         {
             return false;
         }
-        RunMessage that = (RunMessage) o;
-        return Objects.equals( statement, that.statement ) && Objects.equals( params, that.params ) && Objects.equals( meta, that.meta );
     }
 
     @Override
     public int hashCode()
     {
-        return Objects.hash( statement, params, meta );
+        return Objects.hash( statement, params, meta() );
     }
 
     @Override
     public String toString()
     {
-        return "RUN " + statement + ' ' + params + ' ' + meta;
+        return "RUN " + statement + ' ' + params + ' ' + meta();
     }
 
-    public Bookmark bookmark()
-    {
-        return bookmark;
-    }
-
-    public Duration transactionTimeout()
-    {
-        return txTimeout;
-    }
-
-    public Map<String,Object> transactionMetadata()
-    {
-        return txMetadata;
-    }
 }

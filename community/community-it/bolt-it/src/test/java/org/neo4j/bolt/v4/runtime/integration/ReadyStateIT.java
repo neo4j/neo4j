@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.bolt.v3.runtime.integration;
+package org.neo4j.bolt.v4.runtime.integration;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -25,6 +25,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.stream.Stream;
 
+import org.neo4j.bolt.messaging.BoltIOException;
 import org.neo4j.bolt.messaging.RequestMessage;
 import org.neo4j.bolt.runtime.BoltConnectionFatality;
 import org.neo4j.bolt.testing.BoltResponseRecorder;
@@ -33,13 +34,13 @@ import org.neo4j.bolt.v1.messaging.request.DiscardAllMessage;
 import org.neo4j.bolt.v1.messaging.request.InitMessage;
 import org.neo4j.bolt.v1.messaging.request.InterruptSignal;
 import org.neo4j.bolt.v1.messaging.request.PullAllMessage;
-import org.neo4j.bolt.v3.BoltStateMachineV3;
-import org.neo4j.bolt.v3.messaging.request.BeginMessage;
-import org.neo4j.bolt.v3.messaging.request.RunMessage;
-import org.neo4j.bolt.v3.runtime.FailedState;
 import org.neo4j.bolt.v3.runtime.InterruptedState;
-import org.neo4j.bolt.v3.runtime.StreamingState;
-import org.neo4j.bolt.v3.runtime.TransactionReadyState;
+import org.neo4j.bolt.v4.BoltStateMachineV4;
+import org.neo4j.bolt.v4.messaging.BeginMessage;
+import org.neo4j.bolt.v4.messaging.RunMessage;
+import org.neo4j.bolt.v4.runtime.AutoCommitState;
+import org.neo4j.bolt.v4.runtime.FailedState;
+import org.neo4j.bolt.v4.runtime.InTransactionState;
 import org.neo4j.kernel.api.exceptions.Status;
 
 import static java.util.Collections.emptyMap;
@@ -60,10 +61,10 @@ import static org.neo4j.bolt.v3.messaging.request.RollbackMessage.ROLLBACK_MESSA
 class ReadyStateIT extends BoltStateMachineStateTestBase
 {
     @Test
-    void shouldMoveToStreamingOnRun_succ() throws Throwable
+    void shouldMoveToAutoCommitOnRun_succ() throws Throwable
     {
         // Given
-        BoltStateMachineV3 machine = newStateMachine();
+        BoltStateMachineV4 machine = newStateMachine();
         machine.process( newHelloMessage(), nullResponseHandler() );
 
         // When
@@ -76,14 +77,14 @@ class ReadyStateIT extends BoltStateMachineStateTestBase
         assertThat( response, succeeded() );
         assertTrue( response.hasMetadata( "fields" ) );
         assertTrue( response.hasMetadata( "t_first") );
-        assertThat( machine.state(), instanceOf( StreamingState.class ) );
+        assertThat( machine.state(), instanceOf( AutoCommitState.class ) );
     }
 
     @Test
-    void shouldMoveToTransactionReadyOnBegin_succ() throws Throwable
+    void shouldMoveToInTransactionOnBegin_succ() throws Throwable
     {
         // Given
-        BoltStateMachineV3 machine = newStateMachine();
+        BoltStateMachineV4 machine = newStateMachine();
         machine.process( newHelloMessage(), nullResponseHandler() );
 
         // When
@@ -93,14 +94,14 @@ class ReadyStateIT extends BoltStateMachineStateTestBase
         // Then
         RecordedBoltResponse response = recorder.nextResponse();
         assertThat( response, succeeded() );
-        assertThat( machine.state(), instanceOf( TransactionReadyState.class ) );
+        assertThat( machine.state(), instanceOf( InTransactionState.class ) );
     }
 
     @Test
     void shouldMoveToInterruptedOnInterrupt() throws Throwable
     {
         // Given
-        BoltStateMachineV3 machine = newStateMachine();
+        BoltStateMachineV4 machine = newStateMachine();
         machine.process( newHelloMessage(), nullResponseHandler() );
 
         // When
@@ -115,7 +116,7 @@ class ReadyStateIT extends BoltStateMachineStateTestBase
     void shouldMoveToFailedStateOnRun_fail() throws Throwable
     {
         // Given
-        BoltStateMachineV3 machine = newStateMachine();
+        BoltStateMachineV4 machine = newStateMachine();
         machine.process( newHelloMessage(), nullResponseHandler() );
 
         // When
@@ -133,7 +134,7 @@ class ReadyStateIT extends BoltStateMachineStateTestBase
     void shouldMoveToFailedStateOnBegin_fail() throws Throwable
     {
         // Given
-        BoltStateMachineV3 machine = newStateMachine();
+        BoltStateMachineV4 machine = newStateMachine();
         machine.process( newHelloMessage(), nullResponseHandler() );
 
         // When
@@ -148,14 +149,14 @@ class ReadyStateIT extends BoltStateMachineStateTestBase
     }
 
     @ParameterizedTest
-    @MethodSource( "illegalV3Messages" )
+    @MethodSource( "illegalV4Messages" )
     void shouldCloseConnectionOnIllegalV3Messages( RequestMessage message ) throws Throwable
     {
         shouldCloseConnectionOnIllegalMessages( message );
     }
 
     @ParameterizedTest
-    @MethodSource( "illegalV2Messages" )
+    @MethodSource( "illegalV3Messages" )
     void shouldCloseConnectionOnIllegalV2Messages( RequestMessage message ) throws Throwable
     {
         shouldCloseConnectionOnIllegalMessages( message );
@@ -164,7 +165,7 @@ class ReadyStateIT extends BoltStateMachineStateTestBase
     private void shouldCloseConnectionOnIllegalMessages( RequestMessage message ) throws InterruptedException, BoltConnectionFatality
     {
         // Given
-        BoltStateMachineV3 machine = newStateMachine();
+        BoltStateMachineV4 machine = newStateMachine();
         machine.process( newHelloMessage(), nullResponseHandler() );
 
         // when
@@ -176,13 +177,17 @@ class ReadyStateIT extends BoltStateMachineStateTestBase
         assertNull( machine.state() );
     }
 
-    private static Stream<RequestMessage> illegalV3Messages()
+    private static Stream<RequestMessage> illegalV4Messages()
     {
         return Stream.of( newHelloMessage(), DiscardAllMessage.INSTANCE, PullAllMessage.INSTANCE, COMMIT_MESSAGE, ROLLBACK_MESSAGE, GOODBYE_MESSAGE );
     }
 
-    private static Stream<RequestMessage> illegalV2Messages()
+    private static Stream<RequestMessage> illegalV3Messages() throws BoltIOException
     {
-        return Stream.of( new InitMessage( USER_AGENT, emptyMap() ), new org.neo4j.bolt.v1.messaging.request.RunMessage( "RETURN 1", EMPTY_PARAMS ) );
+        return Stream.of( new InitMessage( USER_AGENT, emptyMap() ),
+                new org.neo4j.bolt.v1.messaging.request.RunMessage( "RETURN 1", EMPTY_PARAMS ),
+                new org.neo4j.bolt.v3.messaging.request.RunMessage( "RETURN 1", EMPTY_PARAMS ),
+                new org.neo4j.bolt.v3.messaging.request.BeginMessage()
+        );
     }
 }

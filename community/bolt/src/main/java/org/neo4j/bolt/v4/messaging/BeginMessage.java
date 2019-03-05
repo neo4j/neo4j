@@ -17,30 +17,32 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.bolt.runtime;
-
-import java.time.Clock;
+package org.neo4j.bolt.v4.messaging;
 
 import org.neo4j.bolt.messaging.BoltIOException;
-import org.neo4j.bolt.security.auth.AuthenticationResult;
+import org.neo4j.values.virtual.MapValue;
 
-public interface StateMachineContext
+import static org.neo4j.bolt.v4.messaging.MessageMetadataParser.ABSENT_DB_NAME;
+import static org.neo4j.bolt.v4.messaging.MessageMetadataParser.parseDatabaseName;
+
+public class BeginMessage extends org.neo4j.bolt.v3.messaging.request.BeginMessage
 {
-    void authenticatedAsUser( String username, String userAgent );
+    private final String databaseName;
 
-    void handleFailure( Throwable cause, boolean fatal ) throws BoltConnectionFatality;
+    public BeginMessage() throws BoltIOException
+    {
+        super();
+        this.databaseName = ABSENT_DB_NAME;
+    }
 
-    boolean resetMachine() throws BoltConnectionFatality;
+    public BeginMessage( MapValue meta ) throws BoltIOException
+    {
+        super( meta );
+        this.databaseName = parseDatabaseName( meta );
+    }
 
-    BoltStateMachineSPI boltSpi();
-
-    MutableConnectionState connectionState();
-
-    Clock clock();
-
-    String connectionId();
-
-    void initStatementProcessorProvider( AuthenticationResult authResult );
-
-    StatementProcessor setCurrentStatementProcessorForDatabase( String databaseName ) throws BoltProtocolBreachFatality, BoltIOException;
+    public String databaseName()
+    {
+        return this.databaseName;
+    }
 }

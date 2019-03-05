@@ -24,7 +24,6 @@ import java.util.Map;
 import org.neo4j.bolt.runtime.BoltConnectionFatality;
 import org.neo4j.bolt.runtime.BoltStateMachineSPI;
 import org.neo4j.bolt.runtime.StateMachineContext;
-import org.neo4j.bolt.runtime.StatementProcessor;
 import org.neo4j.bolt.security.auth.AuthenticationResult;
 import org.neo4j.values.storable.Values;
 
@@ -39,9 +38,7 @@ public class BoltAuthenticationHelper
             AuthenticationResult authResult = boltSpi.authenticate( authToken );
             String username = authResult.getLoginContext().subject().username();
             context.authenticatedAsUser( username, userAgent );
-
-            StatementProcessor statementProcessor = new TransactionStateMachine( boltSpi.transactionSpi(), authResult, context.clock() );
-            context.connectionState().setStatementProcessor( statementProcessor );
+            context.initStatementProcessorProvider( authResult );
 
             if ( authResult.credentialsExpired() )
             {

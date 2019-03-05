@@ -23,7 +23,7 @@ import java.util.Map;
 
 import org.neo4j.bolt.runtime.BoltStateMachineSPI;
 import org.neo4j.bolt.runtime.Neo4jError;
-import org.neo4j.bolt.runtime.TransactionStateMachineSPI;
+import org.neo4j.bolt.runtime.TransactionStateMachineSPIProvider;
 import org.neo4j.bolt.security.auth.Authentication;
 import org.neo4j.bolt.security.auth.AuthenticationException;
 import org.neo4j.bolt.security.auth.AuthenticationResult;
@@ -39,22 +39,22 @@ public class BoltStateMachineV1SPI implements BoltStateMachineSPI
     private final ErrorReporter errorReporter;
     private final Authentication authentication;
     private final String version;
-    private final TransactionStateMachineSPI transactionSpi;
+    private final TransactionStateMachineSPIProvider transactionSpiProvider;
 
-    public BoltStateMachineV1SPI( UsageData usageData, LogService logging,
-            Authentication authentication, TransactionStateMachineSPI transactionStateMachineSPI )
+    public BoltStateMachineV1SPI( UsageData usageData, LogService logging, Authentication authentication,
+            TransactionStateMachineSPIProvider transactionSpiProvider )
     {
         this.usageData = usageData;
         this.errorReporter = new ErrorReporter( logging );
         this.authentication = authentication;
-        this.transactionSpi = transactionStateMachineSPI;
+        this.transactionSpiProvider = transactionSpiProvider;
         this.version = BOLT_SERVER_VERSION_PREFIX + Version.getNeo4jVersion();
     }
 
     @Override
-    public TransactionStateMachineSPI transactionSpi()
+    public TransactionStateMachineSPIProvider transactionStateMachineSPIProvider()
     {
-        return transactionSpi;
+        return transactionSpiProvider;
     }
 
     @Override

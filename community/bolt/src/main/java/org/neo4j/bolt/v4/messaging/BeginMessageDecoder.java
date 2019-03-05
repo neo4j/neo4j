@@ -17,30 +17,27 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.bolt.runtime;
+package org.neo4j.bolt.v4.messaging;
 
-import java.time.Clock;
+import java.io.IOException;
 
-import org.neo4j.bolt.messaging.BoltIOException;
-import org.neo4j.bolt.security.auth.AuthenticationResult;
+import org.neo4j.bolt.messaging.Neo4jPack;
+import org.neo4j.bolt.messaging.RequestMessage;
+import org.neo4j.bolt.runtime.BoltResponseHandler;
+import org.neo4j.values.virtual.MapValue;
 
-public interface StateMachineContext
+public class BeginMessageDecoder extends org.neo4j.bolt.v3.messaging.decoder.BeginMessageDecoder
 {
-    void authenticatedAsUser( String username, String userAgent );
+    public BeginMessageDecoder( BoltResponseHandler responseHandler )
+    {
+        super( responseHandler );
+    }
 
-    void handleFailure( Throwable cause, boolean fatal ) throws BoltConnectionFatality;
-
-    boolean resetMachine() throws BoltConnectionFatality;
-
-    BoltStateMachineSPI boltSpi();
-
-    MutableConnectionState connectionState();
-
-    Clock clock();
-
-    String connectionId();
-
-    void initStatementProcessorProvider( AuthenticationResult authResult );
-
-    StatementProcessor setCurrentStatementProcessorForDatabase( String databaseName ) throws BoltProtocolBreachFatality, BoltIOException;
+    @Override
+    public RequestMessage decode( Neo4jPack.Unpacker unpacker ) throws IOException
+    {
+        MapValue meta = unpacker.unpackMap();
+        return new BeginMessage( meta ); // v4 Begin Message
+    }
 }
+

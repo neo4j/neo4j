@@ -34,11 +34,11 @@ import org.neo4j.bolt.v1.messaging.request.DiscardAllMessage;
 import org.neo4j.bolt.v1.messaging.request.InterruptSignal;
 import org.neo4j.bolt.v1.messaging.request.PullAllMessage;
 import org.neo4j.bolt.v1.messaging.request.ResetMessage;
-import org.neo4j.bolt.v3.messaging.request.BeginMessage;
-import org.neo4j.bolt.v3.messaging.request.RunMessage;
 import org.neo4j.bolt.v3.runtime.InterruptedState;
 import org.neo4j.bolt.v3.runtime.ReadyState;
 import org.neo4j.bolt.v4.BoltStateMachineV4;
+import org.neo4j.bolt.v4.messaging.BeginMessage;
+import org.neo4j.bolt.v4.messaging.RunMessage;
 import org.neo4j.bolt.v4.runtime.AutoCommitState;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.values.storable.BooleanValue;
@@ -57,7 +57,7 @@ import static org.neo4j.bolt.v3.messaging.request.CommitMessage.COMMIT_MESSAGE;
 import static org.neo4j.bolt.v3.messaging.request.GoodbyeMessage.GOODBYE_MESSAGE;
 import static org.neo4j.bolt.v3.messaging.request.RollbackMessage.ROLLBACK_MESSAGE;
 
-class AutoCommitStateIT extends BoltStateMachineV4StateTestBase
+class AutoCommitStateIT extends BoltStateMachineStateTestBase
 {
     @Test
     void shouldMoveFromAutoCommitToReadyOnPullN_succ() throws Throwable

@@ -37,7 +37,7 @@ import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.VirtualValues;
 
-public class BoltStateMachineV4StateTestBase
+public class BoltStateMachineStateTestBase
 {
     protected static final MapValue EMPTY_PARAMS = VirtualValues.EMPTY_MAP;
     protected static final String USER_AGENT = "BoltConnectionIT/0.0";

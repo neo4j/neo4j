@@ -32,11 +32,11 @@ import org.neo4j.bolt.testing.BoltResponseRecorder;
 import org.neo4j.bolt.v1.messaging.request.DiscardAllMessage;
 import org.neo4j.bolt.v1.messaging.request.InterruptSignal;
 import org.neo4j.bolt.v1.messaging.request.PullAllMessage;
-import org.neo4j.bolt.v3.messaging.request.BeginMessage;
-import org.neo4j.bolt.v3.messaging.request.RunMessage;
-import org.neo4j.bolt.v4.runtime.FailedState;
 import org.neo4j.bolt.v3.runtime.InterruptedState;
 import org.neo4j.bolt.v4.BoltStateMachineV4;
+import org.neo4j.bolt.v4.messaging.BeginMessage;
+import org.neo4j.bolt.v4.messaging.RunMessage;
+import org.neo4j.bolt.v4.runtime.FailedState;
 import org.neo4j.kernel.api.exceptions.Status;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
@@ -53,7 +53,7 @@ import static org.neo4j.bolt.v3.messaging.request.CommitMessage.COMMIT_MESSAGE;
 import static org.neo4j.bolt.v3.messaging.request.GoodbyeMessage.GOODBYE_MESSAGE;
 import static org.neo4j.bolt.v3.messaging.request.RollbackMessage.ROLLBACK_MESSAGE;
 
-class FailedStateIT extends BoltStateMachineV4StateTestBase
+class FailedStateIT extends BoltStateMachineStateTestBase
 {
     @ParameterizedTest
     @MethodSource( "ignoredMessages" )

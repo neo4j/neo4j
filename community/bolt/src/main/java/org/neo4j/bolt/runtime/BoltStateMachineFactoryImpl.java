@@ -23,21 +23,19 @@ import java.time.Clock;
 import java.time.Duration;
 
 import org.neo4j.bolt.BoltChannel;
+import org.neo4j.bolt.runtime.TransactionStateMachineSPIProvider.TransactionStateMachineSPIProviderV1;
+import org.neo4j.bolt.runtime.TransactionStateMachineSPIProvider.TransactionStateMachineSPIProviderV3;
 import org.neo4j.bolt.security.auth.Authentication;
 import org.neo4j.bolt.v1.BoltProtocolV1;
 import org.neo4j.bolt.v1.runtime.BoltStateMachineV1;
 import org.neo4j.bolt.v1.runtime.BoltStateMachineV1SPI;
-import org.neo4j.bolt.v1.runtime.TransactionStateMachineV1SPI;
 import org.neo4j.bolt.v2.BoltProtocolV2;
 import org.neo4j.bolt.v3.BoltProtocolV3;
 import org.neo4j.bolt.v3.BoltStateMachineV3;
-import org.neo4j.bolt.v3.runtime.TransactionStateMachineV3SPI;
 import org.neo4j.bolt.v4.BoltProtocolV4;
 import org.neo4j.bolt.v4.BoltStateMachineV4;
-import org.neo4j.bolt.v4.runtime.TransactionStateMachineV4SPI;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.udc.UsageData;
@@ -87,22 +85,25 @@ public class BoltStateMachineFactoryImpl implements BoltStateMachineFactory
 
     private BoltStateMachine newStateMachineV1( BoltChannel boltChannel )
     {
-        TransactionStateMachineSPI transactionSPI = new TransactionStateMachineV1SPI( getDefaultDatabase(), boltChannel, getAwaitDuration(), clock );
-        BoltStateMachineSPI boltSPI = new BoltStateMachineV1SPI( usageData, logging, authentication, transactionSPI );
+        TransactionStateMachineSPIProvider transactionSpiProvider =
+                new TransactionStateMachineSPIProviderV1( databaseManager, defaultDatabaseName, boltChannel, getAwaitDuration(), clock );
+        BoltStateMachineSPI boltSPI = new BoltStateMachineV1SPI( usageData, logging, authentication, transactionSpiProvider );
         return new BoltStateMachineV1( boltSPI, boltChannel, clock );
     }
 
     private BoltStateMachine newStateMachineV3( BoltChannel boltChannel )
     {
-        TransactionStateMachineSPI transactionSPI = new TransactionStateMachineV3SPI( getDefaultDatabase(), boltChannel, getAwaitDuration(), clock );
-        BoltStateMachineSPI boltSPI = new BoltStateMachineV1SPI( usageData, logging, authentication, transactionSPI );
+        TransactionStateMachineSPIProvider transactionSpiProvider =
+                new TransactionStateMachineSPIProviderV3( databaseManager, defaultDatabaseName, boltChannel, getAwaitDuration(), clock );
+        BoltStateMachineSPI boltSPI = new BoltStateMachineV1SPI( usageData, logging, authentication, transactionSpiProvider );
         return new BoltStateMachineV3( boltSPI, boltChannel, clock );
     }
 
     private BoltStateMachine newStateMachineV4( BoltChannel boltChannel )
     {
-        TransactionStateMachineSPI transactionSPI = new TransactionStateMachineV4SPI( getDefaultDatabase(), boltChannel, getAwaitDuration(), clock );
-        BoltStateMachineSPI boltSPI = new BoltStateMachineV1SPI( usageData, logging, authentication, transactionSPI );
+        TransactionStateMachineSPIProvider transactionSpiProvider =
+                new TransactionStateMachineSPIProviderV4( databaseManager, defaultDatabaseName, boltChannel, getAwaitDuration(), clock );
+        BoltStateMachineSPI boltSPI = new BoltStateMachineV1SPI( usageData, logging, authentication, transactionSpiProvider );
         return new BoltStateMachineV4( boltSPI, boltChannel, clock );
     }
 
@@ -111,10 +112,5 @@ public class BoltStateMachineFactoryImpl implements BoltStateMachineFactory
         long bookmarkReadyTimeout = config.get( GraphDatabaseSettings.bookmark_ready_timeout ).toMillis();
 
         return Duration.ofMillis( bookmarkReadyTimeout );
-    }
-
-    private DatabaseContext getDefaultDatabase()
-    {
-        return databaseManager.getDatabaseContext( defaultDatabaseName ).get();
     }
 }

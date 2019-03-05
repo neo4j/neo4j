@@ -37,7 +37,7 @@ import org.neo4j.bolt.runtime.Neo4jError;
 import org.neo4j.bolt.runtime.StateMachineContext;
 import org.neo4j.bolt.runtime.StatementProcessor;
 import org.neo4j.bolt.security.auth.AuthenticationException;
-import org.neo4j.bolt.v1.messaging.BoltStateMachineV1Context;
+import org.neo4j.bolt.v1.messaging.BoltStateMachineContextImp;
 import org.neo4j.bolt.v1.messaging.request.InterruptSignal;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.security.AuthorizationExpiredException;
@@ -74,7 +74,7 @@ public class BoltStateMachineV1 implements BoltStateMachine
         this.boltChannel = boltChannel;
         this.spi = spi;
         this.connectionState = new MutableConnectionState();
-        this.context = new BoltStateMachineV1Context( this, boltChannel, spi, connectionState, clock );
+        this.context = new BoltStateMachineContextImp( this, boltChannel, spi, connectionState, clock );
 
         States states = buildStates();
         this.state = states.initial;
@@ -334,7 +334,10 @@ public class BoltStateMachineV1 implements BoltStateMachine
     {
         try
         {
+            // We first reset the on going statement processor,
+            // Then we set the current statement processor to empty.
             statementProcessor().reset();
+            connectionState.setStatementProcessor( StatementProcessor.EMPTY );
         }
         catch ( TransactionFailureException e )
         {

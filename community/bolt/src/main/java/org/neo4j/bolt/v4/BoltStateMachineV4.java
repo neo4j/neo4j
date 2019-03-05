@@ -25,11 +25,11 @@ import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.runtime.BoltStateMachineSPI;
 import org.neo4j.bolt.v1.runtime.BoltStateMachineV1;
 import org.neo4j.bolt.v3.runtime.ConnectedState;
-import org.neo4j.bolt.v4.runtime.FailedState;
 import org.neo4j.bolt.v3.runtime.InterruptedState;
-import org.neo4j.bolt.v3.runtime.ReadyState;
-import org.neo4j.bolt.v4.runtime.InTransactionState;
 import org.neo4j.bolt.v4.runtime.AutoCommitState;
+import org.neo4j.bolt.v4.runtime.FailedState;
+import org.neo4j.bolt.v4.runtime.InTransactionState;
+import org.neo4j.bolt.v4.runtime.ReadyState;
 
 public class BoltStateMachineV4 extends BoltStateMachineV1
 {
@@ -42,7 +42,7 @@ public class BoltStateMachineV4 extends BoltStateMachineV1
     protected States buildStates()
     {
         ConnectedState connected = new ConnectedState();
-        ReadyState ready = new ReadyState();
+        ReadyState ready = new ReadyState(); // v4
         AutoCommitState autoCommitState = new AutoCommitState(); // v4
         InTransactionState inTransaction = new InTransactionState(); // v4
         FailedState failed = new FailedState(); // v4

@@ -51,14 +51,16 @@ import static org.neo4j.util.Preconditions.checkState;
 
 public class TransactionStateMachine implements StatementProcessor
 {
-    final TransactionStateMachineSPI spi;
+    private final TransactionStateMachineSPI spi;
     final MutableTransactionState ctx;
     State state = State.AUTO_COMMIT;
+    private final String databaseName;
 
-    TransactionStateMachine( TransactionStateMachineSPI spi, AuthenticationResult authenticationResult, Clock clock )
+    public TransactionStateMachine( String databaseName, TransactionStateMachineSPI spi, AuthenticationResult authenticationResult, Clock clock )
     {
         this.spi = spi;
         ctx = new MutableTransactionState( authenticationResult, clock );
+        this.databaseName = databaseName;
     }
 
     public State state()
@@ -231,6 +233,12 @@ public class TransactionStateMachine implements StatementProcessor
                 }
             }
         }
+    }
+
+    @Override
+    public String databaseName()
+    {
+        return databaseName;
     }
 
     private void ensureNoPendingTerminationNotice()

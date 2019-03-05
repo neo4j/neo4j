@@ -43,7 +43,7 @@ import org.neo4j.bolt.runtime.CachedThreadPoolExecutorFactory;
 import org.neo4j.bolt.runtime.DefaultBoltConnectionFactory;
 import org.neo4j.bolt.runtime.ExecutorBoltSchedulerProvider;
 import org.neo4j.bolt.runtime.Neo4jError;
-import org.neo4j.bolt.runtime.TransactionStateMachineSPI;
+import org.neo4j.bolt.runtime.TransactionStateMachineSPIProvider;
 import org.neo4j.bolt.security.auth.AuthenticationResult;
 import org.neo4j.bolt.testing.BoltResponseRecorder;
 import org.neo4j.bolt.testing.BoltTestUtil;
@@ -200,7 +200,7 @@ public class ResetFuzzTest
     {
 
         @Override
-        public TransactionStateMachineSPI transactionSpi()
+        public TransactionStateMachineSPIProvider transactionStateMachineSPIProvider()
         {
             return null;
         }

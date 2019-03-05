@@ -174,7 +174,6 @@ public class BoltMatchers
             @Override
             public boolean matches( final Object item )
             {
-
                 final RecordedBoltResponse response = (RecordedBoltResponse) item;
                 List<AnyValue[]> records = response.records();
                 return response.message() == SUCCESS &&
@@ -281,7 +280,7 @@ public class BoltMatchers
             {
                 final BoltStateMachineV1 machine = (BoltStateMachineV1) item;
                 final StatementProcessor statementProcessor = machine.statementProcessor();
-                return statementProcessor == null || !statementProcessor.hasTransaction();
+                return statementProcessor == StatementProcessor.EMPTY || !statementProcessor.hasTransaction();
             }
 
             @Override

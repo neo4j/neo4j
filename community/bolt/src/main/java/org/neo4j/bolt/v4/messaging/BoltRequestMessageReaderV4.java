@@ -30,12 +30,10 @@ import org.neo4j.bolt.runtime.BoltResponseHandler;
 import org.neo4j.bolt.v1.messaging.MessageProcessingHandler;
 import org.neo4j.bolt.v1.messaging.ResultHandler;
 import org.neo4j.bolt.v1.messaging.decoder.ResetMessageDecoder;
-import org.neo4j.bolt.v3.messaging.decoder.BeginMessageDecoder;
 import org.neo4j.bolt.v3.messaging.decoder.CommitMessageDecoder;
 import org.neo4j.bolt.v3.messaging.decoder.GoodbyeMessageDecoder;
 import org.neo4j.bolt.v3.messaging.decoder.HelloMessageDecoder;
 import org.neo4j.bolt.v3.messaging.decoder.RollbackMessageDecoder;
-import org.neo4j.bolt.v3.messaging.decoder.RunMessageDecoder;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.internal.LogService;
 
@@ -56,10 +54,10 @@ public class BoltRequestMessageReaderV4 extends BoltRequestMessageReader
 
         return Arrays.asList(
                 new HelloMessageDecoder( defaultHandler ),
-                new RunMessageDecoder( defaultHandler ),
+                new RunMessageDecoder( defaultHandler ), // New
                 new DiscardNMessageDecoder( resultHandler ), // New
                 new PullNMessageDecoder( resultHandler ), // New
-                new BeginMessageDecoder( defaultHandler ),
+                new BeginMessageDecoder( defaultHandler ), // New
                 new CommitMessageDecoder( resultHandler ),
                 new RollbackMessageDecoder( resultHandler ),
                 new ResetMessageDecoder( connection, defaultHandler ),

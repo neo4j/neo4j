@@ -61,7 +61,6 @@ import static org.neo4j.internal.kernel.api.Transaction.Type.implicit;
 
 public class TransactionStateMachineV1SPI implements TransactionStateMachineSPI
 {
-    private final BoltChannel boltChannel;
     private final ThreadToStatementContextBridge txBridge;
     private final QueryExecutionEngine queryExecutionEngine;
     private final TransactionIdTracker transactionIdTracker;
@@ -69,15 +68,16 @@ public class TransactionStateMachineV1SPI implements TransactionStateMachineSPI
     private final Duration txAwaitDuration;
     private final Clock clock;
     private final GraphDatabaseFacade databaseFacade;
+    private final BoltChannel boltChannel;
 
     public TransactionStateMachineV1SPI( DatabaseContext databaseContext, BoltChannel boltChannel, Duration txAwaitDuration, Clock clock )
     {
-        this.boltChannel = boltChannel;
         this.txBridge = resolveDependency( databaseContext, ThreadToStatementContextBridge.class );
         this.queryExecutionEngine = resolveDependency( databaseContext, QueryExecutionEngine.class );
         this.transactionIdTracker = newTransactionIdTracker( databaseContext );
         this.contextFactory = newTransactionalContextFactory( databaseContext );
         this.databaseFacade = databaseContext.getDatabaseFacade();
+        this.boltChannel = boltChannel;
         this.txAwaitDuration = txAwaitDuration;
         this.clock = clock;
     }

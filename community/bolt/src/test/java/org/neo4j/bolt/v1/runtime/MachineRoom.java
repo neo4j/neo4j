@@ -22,15 +22,18 @@ package org.neo4j.bolt.v1.runtime;
 import java.time.Clock;
 
 import org.neo4j.bolt.BoltChannel;
+import org.neo4j.bolt.messaging.BoltIOException;
 import org.neo4j.bolt.runtime.BoltConnectionFatality;
 import org.neo4j.bolt.runtime.BoltStateMachine;
 import org.neo4j.bolt.runtime.BoltStateMachineSPI;
 import org.neo4j.bolt.runtime.TransactionStateMachineSPI;
+import org.neo4j.bolt.runtime.TransactionStateMachineSPIProvider;
 import org.neo4j.bolt.security.auth.AuthenticationException;
 import org.neo4j.bolt.testing.BoltTestUtil;
 import org.neo4j.bolt.v1.messaging.request.DiscardAllMessage;
 import org.neo4j.bolt.v1.messaging.request.InitMessage;
 import org.neo4j.bolt.v1.messaging.request.RunMessage;
+import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.kernel.api.security.AuthToken;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.VirtualValues;
@@ -38,6 +41,7 @@ import org.neo4j.values.virtual.VirtualValues;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonMap;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -64,6 +68,7 @@ public class MachineRoom
     public static BoltStateMachine newMachine( BoltStateMachineV1SPI spi )
     {
         BoltChannel boltChannel = BoltTestUtil.newTestBoltChannel();
+        DatabaseManager databaseManager = mock( DatabaseManager.class );
         return new BoltStateMachineV1( spi, boltChannel, Clock.systemUTC() );
     }
 
@@ -75,13 +80,16 @@ public class MachineRoom
         return machine;
     }
 
-    public static BoltStateMachine newMachineWithTransactionSPI( TransactionStateMachineSPI transactionSPI ) throws
-            AuthenticationException, BoltConnectionFatality
+    public static BoltStateMachine newMachineWithTransactionSPI( TransactionStateMachineSPI transactionSPI )
+            throws AuthenticationException, BoltConnectionFatality, BoltIOException
     {
         BoltStateMachineSPI spi = mock( BoltStateMachineSPI.class, RETURNS_MOCKS );
-        when( spi.transactionSpi() ).thenReturn( transactionSPI );
+        TransactionStateMachineSPIProvider transactionSPIProvider = mock( TransactionStateMachineSPIProvider.class );
+        when( transactionSPIProvider.getTransactionStateMachineSPI( any( String.class ) ) ).thenReturn( transactionSPI );
+        when( spi.transactionStateMachineSPIProvider() ).thenReturn( transactionSPIProvider );
 
         BoltChannel boltChannel = BoltTestUtil.newTestBoltChannel();
+        DatabaseManager databaseManager = mock( DatabaseManager.class );
         BoltStateMachine machine = new BoltStateMachineV1( spi, boltChannel, Clock.systemUTC() );
         init( machine );
         return machine;

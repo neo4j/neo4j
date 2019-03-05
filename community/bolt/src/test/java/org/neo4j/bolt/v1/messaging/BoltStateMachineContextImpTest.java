@@ -29,17 +29,18 @@ import org.neo4j.bolt.runtime.BoltConnectionFatality;
 import org.neo4j.bolt.runtime.BoltStateMachine;
 import org.neo4j.bolt.runtime.BoltStateMachineSPI;
 import org.neo4j.bolt.runtime.MutableConnectionState;
+import org.neo4j.dbms.database.DatabaseManager;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-class BoltStateMachineV1ContextTest
+class BoltStateMachineContextImpTest
 {
     @Test
     void shouldHandleFailure() throws BoltConnectionFatality
     {
         BoltStateMachine machine = mock( BoltStateMachine.class );
-        BoltStateMachineV1Context context = newContext( machine, mock( BoltStateMachineSPI.class ) );
+        BoltStateMachineContextImp context = newContext( machine, mock( BoltStateMachineSPI.class ) );
 
         RuntimeException cause = new RuntimeException();
         context.handleFailure( cause, true );
@@ -51,16 +52,17 @@ class BoltStateMachineV1ContextTest
     void shouldResetMachine() throws BoltConnectionFatality
     {
         BoltStateMachine machine = mock( BoltStateMachine.class );
-        BoltStateMachineV1Context context = newContext( machine, mock( BoltStateMachineSPI.class ) );
+        BoltStateMachineContextImp context = newContext( machine, mock( BoltStateMachineSPI.class ) );
 
         context.resetMachine();
 
         verify( machine ).reset();
     }
 
-    private static BoltStateMachineV1Context newContext( BoltStateMachine machine, BoltStateMachineSPI boltSPI )
+    private static BoltStateMachineContextImp newContext( BoltStateMachine machine, BoltStateMachineSPI boltSPI )
     {
         BoltChannel boltChannel = new BoltChannel( "bolt-1", "bolt", mock( Channel.class ) );
-        return new BoltStateMachineV1Context( machine, boltChannel, boltSPI, new MutableConnectionState(), Clock.systemUTC() );
+        DatabaseManager databaseManager = mock( DatabaseManager.class );
+        return new BoltStateMachineContextImp( machine, boltChannel, boltSPI, new MutableConnectionState(), Clock.systemUTC() );
     }
 }

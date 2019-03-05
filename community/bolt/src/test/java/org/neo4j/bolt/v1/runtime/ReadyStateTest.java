@@ -71,7 +71,7 @@ class ReadyStateTest
     private final MutableConnectionState connectionState = new MutableConnectionState();
 
     @BeforeEach
-    void setUp()
+    void setUp() throws Exception
     {
         state.setStreamingState( streamingState );
         state.setInterruptedState( interruptedState );
@@ -79,7 +79,7 @@ class ReadyStateTest
 
         when( context.connectionState() ).thenReturn( connectionState );
         when( context.clock() ).thenReturn( Clock.systemUTC() );
-        connectionState.setStatementProcessor( statementProcessor );
+        when( context.setCurrentStatementProcessorForDatabase( any() ) ).thenReturn( statementProcessor );
     }
 
     @Test

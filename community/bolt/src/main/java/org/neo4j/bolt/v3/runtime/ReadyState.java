@@ -19,16 +19,19 @@
  */
 package org.neo4j.bolt.v3.runtime;
 
+import org.neo4j.bolt.messaging.BoltIOException;
 import org.neo4j.bolt.messaging.RequestMessage;
+import org.neo4j.bolt.runtime.BoltProtocolBreachFatality;
 import org.neo4j.bolt.runtime.BoltStateMachineState;
 import org.neo4j.bolt.runtime.StateMachineContext;
 import org.neo4j.bolt.runtime.StatementMetadata;
 import org.neo4j.bolt.runtime.StatementProcessor;
 import org.neo4j.bolt.v3.messaging.request.BeginMessage;
 import org.neo4j.bolt.v3.messaging.request.RunMessage;
-import org.neo4j.exceptions.KernelException;
+import org.neo4j.bolt.v3.messaging.request.TransactionInitiallingMessage;
 import org.neo4j.values.storable.Values;
 
+import static org.neo4j.bolt.v4.messaging.MessageMetadataParser.ABSENT_DB_NAME;
 import static org.neo4j.util.Preconditions.checkState;
 import static org.neo4j.values.storable.Values.stringArray;
 
@@ -78,10 +81,10 @@ public class ReadyState extends FailSafeBoltStateMachineState
         this.txReadyState = txReadyState;
     }
 
-    private BoltStateMachineState processRunMessage( RunMessage message, StateMachineContext context ) throws KernelException
+    private BoltStateMachineState processRunMessage( RunMessage message, StateMachineContext context ) throws Exception
     {
         long start = context.clock().millis();
-        StatementProcessor statementProcessor = context.connectionState().getStatementProcessor();
+        StatementProcessor statementProcessor = getStatementProcessor( message, context );
         StatementMetadata statementMetadata = statementProcessor.run( message.statement(), message.params(), message.bookmark(), message.transactionTimeout(),
                 message.transactionMetadata() );
         long end = context.clock().millis();
@@ -94,7 +97,7 @@ public class ReadyState extends FailSafeBoltStateMachineState
 
     private BoltStateMachineState processBeginMessage( BeginMessage message, StateMachineContext context ) throws Exception
     {
-        StatementProcessor statementProcessor = context.connectionState().getStatementProcessor();
+        StatementProcessor statementProcessor = getStatementProcessor( message, context );
         statementProcessor.beginTransaction( message.bookmark(), message.transactionTimeout(), message.transactionMetadata() );
         return txReadyState;
     }
@@ -107,4 +110,9 @@ public class ReadyState extends FailSafeBoltStateMachineState
         super.assertInitialized();
     }
 
+    protected StatementProcessor getStatementProcessor( TransactionInitiallingMessage message, StateMachineContext context )
+            throws BoltProtocolBreachFatality, BoltIOException
+    {
+        return context.setCurrentStatementProcessorForDatabase( ABSENT_DB_NAME );
+    }
 }

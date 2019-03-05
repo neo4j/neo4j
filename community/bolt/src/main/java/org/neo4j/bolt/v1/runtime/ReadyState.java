@@ -35,6 +35,7 @@ import org.neo4j.values.storable.Values;
 import static org.neo4j.bolt.v1.runtime.RunMessageChecker.isBegin;
 import static org.neo4j.bolt.v1.runtime.RunMessageChecker.isCommit;
 import static org.neo4j.bolt.v1.runtime.RunMessageChecker.isRollback;
+import static org.neo4j.bolt.v4.messaging.MessageMetadataParser.ABSENT_DB_NAME;
 import static org.neo4j.util.Preconditions.checkState;
 import static org.neo4j.values.storable.Values.stringArray;
 
@@ -97,7 +98,8 @@ public class ReadyState implements BoltStateMachineState
         try
         {
             long start = context.clock().millis();
-            StatementMetadata statementMetadata = processRunMessage( message, context.connectionState().getStatementProcessor() );
+            StatementProcessor statementProcessor = context.setCurrentStatementProcessorForDatabase( ABSENT_DB_NAME );
+            StatementMetadata statementMetadata = processRunMessage( message, statementProcessor );
             long end = context.clock().millis();
 
             context.connectionState().onMetadata( "fields", stringArray( statementMetadata.fieldNames() ) );

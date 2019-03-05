@@ -21,6 +21,7 @@ package org.neo4j.bolt.v3.messaging.decoder;
 
 import java.io.IOException;
 
+import org.neo4j.bolt.messaging.BoltIOException;
 import org.neo4j.bolt.messaging.Neo4jPack;
 import org.neo4j.bolt.messaging.RequestMessage;
 import org.neo4j.bolt.messaging.RequestMessageDecoder;
@@ -57,6 +58,11 @@ public class RunMessageDecoder implements RequestMessageDecoder
         String statement = unpacker.unpackString();
         MapValue params = unpacker.unpackMap();
         MapValue meta = unpacker.unpackMap();
+        return newRunMessage( statement, params, meta );
+    }
+
+    protected RunMessage newRunMessage( String statement, MapValue params, MapValue meta ) throws BoltIOException
+    {
         return new RunMessage( statement, params, meta );
     }
 }

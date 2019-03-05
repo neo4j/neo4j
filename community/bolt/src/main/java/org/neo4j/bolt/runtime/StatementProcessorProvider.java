@@ -23,24 +23,24 @@ import java.time.Clock;
 
 import org.neo4j.bolt.messaging.BoltIOException;
 import org.neo4j.bolt.security.auth.AuthenticationResult;
+import org.neo4j.bolt.v1.runtime.TransactionStateMachine;
 
-public interface StateMachineContext
+public class StatementProcessorProvider
 {
-    void authenticatedAsUser( String username, String userAgent );
+    private final Clock clock;
+    private final AuthenticationResult authResult;
+    private final TransactionStateMachineSPIProvider spiProvider;
 
-    void handleFailure( Throwable cause, boolean fatal ) throws BoltConnectionFatality;
+    public StatementProcessorProvider( AuthenticationResult authResult, TransactionStateMachineSPIProvider transactionSpiProvider, Clock clock )
+    {
+        this.authResult = authResult;
+        this.spiProvider = transactionSpiProvider;
+        this.clock = clock;
+    }
 
-    boolean resetMachine() throws BoltConnectionFatality;
-
-    BoltStateMachineSPI boltSpi();
-
-    MutableConnectionState connectionState();
-
-    Clock clock();
-
-    String connectionId();
-
-    void initStatementProcessorProvider( AuthenticationResult authResult );
-
-    StatementProcessor setCurrentStatementProcessorForDatabase( String databaseName ) throws BoltProtocolBreachFatality, BoltIOException;
+    public StatementProcessor getStatementProcessor( String databaseName ) throws BoltProtocolBreachFatality, BoltIOException
+    {
+        TransactionStateMachineSPI transactionSPI = spiProvider.getTransactionStateMachineSPI( databaseName );
+        return new TransactionStateMachine( databaseName, transactionSPI, authResult, clock );
+    }
 }
