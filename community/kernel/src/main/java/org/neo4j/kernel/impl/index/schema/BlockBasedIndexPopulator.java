@@ -122,6 +122,7 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
     private synchronized BlockStorage<KEY,VALUE> newThreadLocalBlockStorage()
     {
         Preconditions.checkState( !merged, "Already merged" );
+        Preconditions.checkState( !cancellation.cancelled(), "Already closed" );
         try
         {
             int id = allScanUpdates.size();

@@ -158,6 +158,11 @@ public class IndexPopulationJob implements Runnable
         multiPopulator.cancelIndexPopulation( population );
     }
 
+    void dropPopulation( MultipleIndexPopulator.IndexPopulation population )
+    {
+        multiPopulator.dropIndexPopulation( population );
+    }
+
     /**
      * A transaction happened that produced the given updates. Let this job incorporate its data,
      * feeding it to the {@link IndexPopulator}.

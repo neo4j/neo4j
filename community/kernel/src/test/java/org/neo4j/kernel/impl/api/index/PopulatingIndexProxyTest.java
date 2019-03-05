@@ -59,6 +59,6 @@ public class PopulatingIndexProxyTest
     {
         populatingIndexProxy.drop();
 
-        verify( indexPopulationJob ).cancelPopulation( indexPopulation );
+        verify( indexPopulationJob ).dropPopulation( indexPopulation );
     }
 }

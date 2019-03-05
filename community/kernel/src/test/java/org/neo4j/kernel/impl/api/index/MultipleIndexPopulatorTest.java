@@ -130,6 +130,18 @@ public class MultipleIndexPopulatorTest
     }
 
     @Test
+    public void cancelAndDropShouldCallDropOnPopulator() throws FlipFailedKernelException
+    {
+        IndexPopulator populator = createIndexPopulator();
+        IndexPopulation indexPopulation = addPopulator( populator, 1 );
+
+        indexPopulation.cancelAndDrop();
+
+        verify( populator, never() ).close( false );
+        verify( populator ).drop();
+    }
+
+    @Test
     public void testMultiplePopulatorsCreation() throws FlipFailedKernelException
     {
         IndexPopulator indexPopulator1 = createIndexPopulator();
