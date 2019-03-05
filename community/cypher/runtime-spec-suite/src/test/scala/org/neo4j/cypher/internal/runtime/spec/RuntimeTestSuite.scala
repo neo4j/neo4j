@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.runtime.{InputCursor, InputDataStream, NoInput,
 import org.neo4j.cypher.internal.v4_0.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.{CypherRuntime, LogicalQuery, RuntimeContext}
+import org.neo4j.cypher.result.QueryResult.QueryResultVisitor
 import org.neo4j.cypher.result.{QueryResult, RuntimeResult}
 import org.neo4j.graphdb._
 import org.neo4j.kernel.impl.coreapi.InternalTransaction
@@ -117,15 +118,17 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
                        ): (RuntimeResult, CONTEXT) =
     runtimeTestSupport.run(logicalQuery, runtime, input.stream(), (context, result) => (result, context))
 
-  def executeUntil(logicalQuery: LogicalQuery,
-                   input: InputValues,
-                   condition: ContextCondition[CONTEXT]): RuntimeResult = {
+  def executeAndAssertCondition(logicalQuery: LogicalQuery,
+                                input: InputValues,
+                                condition: ContextCondition[CONTEXT]): Unit = {
     val nAttempts = 100
-    for (i <- 0 until nAttempts) {
+    for (_ <- 0 until nAttempts) {
       val (result, context) = executeAndContext(logicalQuery, runtime, input)
-      if (condition.test(context)) {
-        return result
-      }
+      result.accept(new QueryResultVisitor[Exception] {
+        override def visit(row: QueryResult.Record): Boolean = true
+      })
+      if (condition.test(context))
+        return
     }
     fail(s"${condition.errorMsg} in $nAttempts attempts!")
   }
