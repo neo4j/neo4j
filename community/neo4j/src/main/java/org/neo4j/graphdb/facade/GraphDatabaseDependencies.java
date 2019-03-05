@@ -29,8 +29,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import org.neo4j.common.Service;
 import org.neo4j.common.DependencyResolver;
+import org.neo4j.common.Service;
 import org.neo4j.graphdb.security.URLAccessRule;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.kernel.extension.ExtensionFactory;
@@ -40,6 +40,7 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.scheduler.DeferredExecutor;
 import org.neo4j.scheduler.Group;
+import org.neo4j.service.Services;
 
 import static org.neo4j.helpers.collection.Iterables.asImmutableList;
 import static org.neo4j.helpers.collection.Iterables.asImmutableMap;
@@ -69,7 +70,7 @@ public class GraphDatabaseDependencies implements ExternalDependencies
                 "file", URLAccessRules.fileAccess()
         );
 
-        ImmutableList<QueryEngineProvider> queryEngineProviders = asImmutableList( Service.loadAll( QueryEngineProvider.class ) );
+        ImmutableList<QueryEngineProvider> queryEngineProviders = asImmutableList( Services.loadAll( QueryEngineProvider.class ) );
         ImmutableList<Pair<DeferredExecutor,Group>> deferredExecutors = ImmutableListFactoryImpl.INSTANCE.empty();
 
         return new GraphDatabaseDependencies( null, null, null, settingsClasses, extensions,

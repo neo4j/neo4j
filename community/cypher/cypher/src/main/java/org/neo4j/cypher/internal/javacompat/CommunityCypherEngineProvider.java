@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.javacompat;
 
+import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -34,11 +35,13 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.internal.LogService;
 
+@ServiceProvider
 public class CommunityCypherEngineProvider extends QueryEngineProvider
 {
-    public CommunityCypherEngineProvider()
+    @Override
+    public String getName()
     {
-        super( "cypher" );
+        return "cypher";
     }
 
     @Override

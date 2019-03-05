@@ -22,20 +22,17 @@ package org.neo4j.kernel.impl.query;
 import java.util.Comparator;
 import java.util.List;
 
-import org.neo4j.common.Service;
+import org.neo4j.annotations.service.Service;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.service.NamedService;
 
 import static org.neo4j.helpers.collection.Iterables.asList;
 
-public abstract class QueryEngineProvider extends Service
+@Service
+public abstract class QueryEngineProvider implements NamedService
 {
-    public QueryEngineProvider( String name )
-    {
-        super( name );
-    }
-
     protected abstract QueryExecutionEngine createEngine( Dependencies deps, GraphDatabaseAPI graphAPI );
 
     protected abstract int enginePriority();
