@@ -132,14 +132,12 @@ class GBPTreeTest
     void shouldReadWrittenMetaData() throws Exception
     {
         // GIVEN
-        try ( GBPTree<MutableLong,MutableLong> ignored = index().build() )
-        {   // open/close is enough
-        }
+        // open/close is enough
+        index().build().close();
 
         // WHEN
-        try ( GBPTree<MutableLong,MutableLong> ignored = index().build() )
-        {   // open/close is enough
-        }
+        // open/close is enough
+        index().build().close();
 
         // THEN being able to open validates that the same meta data was read
     }
@@ -148,9 +146,7 @@ class GBPTreeTest
     void shouldFailToOpenOnDifferentMetaData() throws Exception
     {
         // GIVEN
-        try ( GBPTree<MutableLong,MutableLong> ignored = index( 1024 ).build() )
-        {   // Open/close is enough
-        }
+        index( 1024 ).build().close();
 
         // WHEN
         SimpleLongLayout otherLayout = longLayout().withCustomerNameAsMetaData( "Something else" ).build();
@@ -172,9 +168,7 @@ class GBPTreeTest
     void shouldFailToOpenOnDifferentLayout() throws Exception
     {
         // GIVEN
-        try ( GBPTree<MutableLong,MutableLong> ignored = index().build() )
-        {   // Open/close is enough
-        }
+        index().build().close();
 
         // WHEN
         SimpleLongLayout otherLayout = longLayout().withIdentifier( 123456 ).build();
@@ -192,9 +186,7 @@ class GBPTreeTest
     void shouldFailToOpenOnDifferentMajorVersion() throws Exception
     {
         // GIVEN
-        try ( GBPTree<MutableLong,MutableLong> ignored = index( 1024 ).build() )
-        {   // Open/close is enough
-        }
+        index( 1024 ).build().close();
 
         // WHEN
         SimpleLongLayout otherLayout = longLayout().withMajorVersion( 123 ).build();
@@ -212,9 +204,7 @@ class GBPTreeTest
     void shouldFailToOpenOnDifferentMinorVersion() throws Exception
     {
         // GIVEN
-        try ( GBPTree<MutableLong,MutableLong> ignored = index().build() )
-        {   // Open/close is enough
-        }
+        index().build().close();
 
         // WHEN
         SimpleLongLayout otherLayout = longLayout().withMinorVersion( 123 ).build();
@@ -233,9 +223,7 @@ class GBPTreeTest
     {
         // GIVEN
         int pageSize = 1024;
-        try ( GBPTree<MutableLong,MutableLong> ignored = index( pageSize ).build() )
-        {   // Open/close is enough
-        }
+        index( pageSize ).build().close();
 
         // WHEN
         try ( GBPTree<MutableLong,MutableLong> ignored = index( pageSize / 2 ).build() )
@@ -272,12 +260,7 @@ class GBPTreeTest
     {
         // WHEN
         int pageCachePageSize = 1024;
-        try ( GBPTree<MutableLong,MutableLong> ignored = index( pageCachePageSize )
-                .withIndexPageSize( pageCachePageSize / 2 )
-                .build() )
-        {
-            // Good
-        }
+        index( pageCachePageSize ).withIndexPageSize( pageCachePageSize / 2 ).build().close();
     }
 
     @Test
@@ -285,10 +268,7 @@ class GBPTreeTest
     {
         // WHEN
         int pageCachePageSize = 1024;
-        try ( GBPTree<MutableLong,MutableLong> ignored = index( pageCachePageSize ).build() )
-        {
-            // Good
-        }
+        index( pageCachePageSize ).build().close();
 
         try ( GBPTree<MutableLong, MutableLong> ignored = index( pageCachePageSize / 2 )
                 .withIndexPageSize( pageCachePageSize )
@@ -358,9 +338,7 @@ class GBPTreeTest
         // GIVEN
         PageCache pageCache = createPageCache( DEFAULT_PAGE_SIZE );
         GBPTreeBuilder<MutableLong,MutableLong> builder = index( pageCache );
-        try ( GBPTree<MutableLong,MutableLong> ignored = builder.build() )
-        {   // Open/close is enough
-        }
+        builder.build().close();
 
         try
         {
@@ -560,9 +538,7 @@ class GBPTreeTest
 
         // WHEN
         PageCache pageCache = createPageCache( DEFAULT_PAGE_SIZE );
-        try ( GBPTree<MutableLong,MutableLong> ignore = index( pageCache ).with( headerWriter ).build() )
-        {
-        }
+        index( pageCache ).with( headerWriter ).build().close();
 
         // THEN
         verifyHeader( pageCache, headerBytes );
@@ -576,9 +552,7 @@ class GBPTreeTest
         ThreadLocalRandom.current().nextBytes( expectedBytes );
         Consumer<PageCursor> headerWriter = pc -> pc.putBytes( expectedBytes );
         PageCache pageCache = createPageCache( DEFAULT_PAGE_SIZE );
-        try ( GBPTree<MutableLong,MutableLong> ignore = index( pageCache ).with( headerWriter ).build() )
-        {
-        }
+        index( pageCache ).with( headerWriter ).build().close();
 
         // WHEN
         byte[] fraudulentBytes = new byte[12];
@@ -588,9 +562,7 @@ class GBPTreeTest
         }
         while ( Arrays.equals( expectedBytes, fraudulentBytes ) );
 
-        try ( GBPTree<MutableLong,MutableLong> ignore = index( pageCache ).with( headerWriter ).build() )
-        {
-        }
+        index( pageCache ).with( headerWriter ).build().close();
 
         // THEN
         verifyHeader( pageCache, expectedBytes );
@@ -604,9 +576,7 @@ class GBPTreeTest
         random.nextBytes( initialHeader );
         Consumer<PageCursor> headerWriter = pc -> pc.putBytes( initialHeader );
         PageCache pageCache = createPageCache( DEFAULT_PAGE_SIZE );
-        try ( GBPTree<MutableLong,MutableLong> ignore = index( pageCache ).with( headerWriter ).build() )
-        {
-        }
+        index( pageCache ).with( headerWriter ).build().close();
 
         Pair<TreeState,TreeState> treeStatesBeforeOverwrite = readTreeStates( pageCache );
 
@@ -654,7 +624,7 @@ class GBPTreeTest
     }
 
     @Test
-    void writeHeaderInDirtyTreeMustNotDeadlock() throws Exception
+    void writeHeaderInDirtyTreeMustNotDeadlock()
     {
         assertTimeoutPreemptively( ofSeconds( 10 ), () ->
         {
@@ -683,9 +653,8 @@ class GBPTreeTest
         };
 
         // Read as part of construction
-        try ( GBPTree<MutableLong,MutableLong> ignored = index( pageCache ).with( headerReader ).build() )
-        {   // open/close is enough to read header
-        }
+        // open/close is enough to read header
+        index( pageCache ).with( headerReader ).build().close();
 
         // THEN
         assertEquals( expectedHeader.length, length.get() );
@@ -762,9 +731,7 @@ class GBPTreeTest
     {
         // given an existing index with only the first page in it
         PageCache pageCache = createPageCache( DEFAULT_PAGE_SIZE );
-        try ( GBPTree<MutableLong,MutableLong> ignored = index( pageCache ).build() )
-        {   // Just for creating it
-        }
+        index( pageCache ).build().close();
         fileSystem.truncate( indexFile, DEFAULT_PAGE_SIZE /*truncate right after the first page*/ );
 
         // when
@@ -796,9 +763,7 @@ class GBPTreeTest
     {
         // given an existing index with all-zero state pages
         PageCache pageCache = createPageCache( DEFAULT_PAGE_SIZE );
-        try ( GBPTree<MutableLong,MutableLong> ignored = index( pageCache ).build() )
-        {   // Just for creating it
-        }
+        index( pageCache ).build().close();
         fileSystem.truncate( indexFile, DEFAULT_PAGE_SIZE /*truncate right after the first page*/ );
         try ( OutputStream out = fileSystem.openAsOutputStream( indexFile, true ) )
         {
@@ -849,7 +814,7 @@ class GBPTreeTest
     /* Mutex tests */
 
     @Test
-    void checkPointShouldLockOutWriter() throws Exception
+    void checkPointShouldLockOutWriter()
     {
         assertTimeoutPreemptively( ofSeconds( 5 ), () ->
         {
@@ -880,7 +845,7 @@ class GBPTreeTest
     }
 
     @Test
-    void checkPointShouldWaitForWriter() throws Exception
+    void checkPointShouldWaitForWriter()
     {
         assertTimeoutPreemptively( ofSeconds( 5 ), () ->
         {
@@ -910,7 +875,7 @@ class GBPTreeTest
     }
 
     @Test
-    void closeShouldLockOutWriter() throws Exception
+    void closeShouldLockOutWriter()
     {
         assertTimeoutPreemptively( ofSeconds( 50 ), () ->
         {
@@ -977,7 +942,7 @@ class GBPTreeTest
     }
 
     @Test
-    void writerShouldLockOutClose() throws Exception
+    void writerShouldLockOutClose()
     {
         assertTimeoutPreemptively( ofSeconds( 5 ), () ->
         {
@@ -1034,7 +999,7 @@ class GBPTreeTest
     }
 
     @Test
-    void cleanJobShouldLockOutCheckpoint() throws Exception
+    void cleanJobShouldLockOutCheckpoint()
     {
         assertTimeoutPreemptively( ofSeconds( 5 ), () -> {
             // GIVEN
@@ -1061,7 +1026,7 @@ class GBPTreeTest
     }
 
     @Test
-    void cleanJobShouldLockOutCheckpointOnNoUpdate() throws Exception
+    void cleanJobShouldLockOutCheckpointOnNoUpdate()
     {
         assertTimeoutPreemptively( ofSeconds( 5 ), () -> {
             // GIVEN
@@ -1087,7 +1052,7 @@ class GBPTreeTest
     }
 
     @Test
-    void cleanJobShouldNotLockOutClose() throws Exception
+    void cleanJobShouldNotLockOutClose()
     {
         assertTimeoutPreemptively( ofSeconds( 5 ), () -> {
             // GIVEN
@@ -1112,7 +1077,7 @@ class GBPTreeTest
     }
 
     @Test
-    void cleanJobShouldNotLockOutWriter() throws Exception
+    void cleanJobShouldNotLockOutWriter()
     {
         assertTimeoutPreemptively( ofSeconds( 5 ), () -> {
             // GIVEN
@@ -1422,9 +1387,7 @@ class GBPTreeTest
 
         // WHEN
         SimpleCleanupMonitor monitor = new SimpleCleanupMonitor();
-        try ( GBPTree<MutableLong, MutableLong> ignore = index().with( monitor ).build() )
-        {
-        }
+        index().with( monitor ).build().close();
 
         // THEN
         assertTrue( monitor.cleanupFinished, "Expected monitor to get recovery complete message" );
@@ -1443,9 +1406,7 @@ class GBPTreeTest
         MonitorDirty monitorDirty = new MonitorDirty();
 
         // WHEN
-        try ( GBPTree<MutableLong, MutableLong> ignored = index().with( monitorDirty ).build() )
-        {
-        }
+        index().with( monitorDirty ).build().close();
 
         // THEN
         assertTrue( monitorDirty.cleanOnStart(), "Expected to be clean on start" );
@@ -1455,15 +1416,11 @@ class GBPTreeTest
     void indexMustBeCleanWhenClosedWithoutAnyChanges() throws Exception
     {
         // GIVEN
-        try ( GBPTree<MutableLong, MutableLong> ignored = index().build() )
-        {
-        }
+        index().build().close();
 
         // WHEN
         MonitorDirty monitorDirty = new MonitorDirty();
-        try ( GBPTree<MutableLong, MutableLong> ignored = index().with( monitorDirty ).build() )
-        {
-        }
+        index().with( monitorDirty ).build().close();
 
         // THEN
         assertTrue( monitorDirty.cleanOnStart(), "Expected to be clean on start after close with no changes" );
@@ -1482,9 +1439,7 @@ class GBPTreeTest
 
         // WHEN
         MonitorDirty monitorDirty = new MonitorDirty();
-        try ( GBPTree<MutableLong, MutableLong> ignored = index().with( monitorDirty ).build() )
-        {
-        }
+        index().with( monitorDirty ).build().close();
 
         // THEN
         assertTrue( monitorDirty.cleanOnStart(), "Expected to be clean on start after close with checkpoint" );
@@ -1503,9 +1458,7 @@ class GBPTreeTest
 
         // WHEN
         MonitorDirty monitorDirty = new MonitorDirty();
-        try ( GBPTree<MutableLong, MutableLong> ignored = index().with( monitorDirty ).build() )
-        {
-        }
+        index().with( monitorDirty ).build().close();
 
         // THEN
         assertFalse( monitorDirty.cleanOnStart(), "Expected to be dirty on start after close without checkpoint" );
@@ -1533,9 +1486,7 @@ class GBPTreeTest
             // THEN
             MonitorDirty monitorDirty = new MonitorDirty();
             pageCache = pageCacheExtension.getPageCache( snapshot );
-            try ( GBPTree<MutableLong, MutableLong> ignored = index( pageCache ).with( monitorDirty ).build() )
-            {
-            }
+            index( pageCache ).with( monitorDirty ).build().close();
             assertFalse( monitorDirty.cleanOnStart(), "Expected to be dirty on start after crash" );
         }
     }
@@ -1588,9 +1539,7 @@ class GBPTreeTest
         // GIVEN
         try ( PageCache specificPageCache = createPageCache( DEFAULT_PAGE_SIZE ) )
         {
-            try ( GBPTree<MutableLong,MutableLong> ignore = index( specificPageCache ).build() )
-            {
-            }
+            index( specificPageCache ).build().close();
 
             // a tree state pointing to root with valid successor
             try ( PagedFile pagedFile = specificPageCache.map( indexFile, specificPageCache.pageSize() );
