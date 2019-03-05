@@ -193,10 +193,4 @@ public class StoreIndexDescriptor extends IndexDescriptor implements SchemaRule,
     {
         return id;
     }
-
-    @Override
-    public String getName()
-    {
-        return name();
-    }
 }

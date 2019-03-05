@@ -87,7 +87,7 @@ public interface SchemaRule extends SchemaDescriptorSupplier
     /**
      * @return The (possibly user supplied) name of this schema rule.
      */
-    String getName();
+    String name();
 
     /**
      * This enum is used for the legacy schema store, and should not be extended.

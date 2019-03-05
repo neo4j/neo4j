@@ -372,7 +372,7 @@ public class SchemaCache
                 indexDescriptorById.put( index.indexReference(), index );
                 SchemaDescriptor schemaDescriptor = index.schema();
                 indexDescriptors.put( schemaDescriptor, index );
-                indexDescriptorsByName.put( rule.getName(), index );
+                indexDescriptorsByName.put( rule.name(), index );
 
                 // Per entity type
                 EntityDescriptors entityDescriptors = descriptorsByEntityType( schemaDescriptor.entityType() );

@@ -191,7 +191,7 @@ public class SchemaRuleSerialization35
         }
 
         constraintDescriptor.schema().processWith( new SchemaDescriptorSerializer( target ) );
-        UTF8.putEncodedStringInto( constraintRule.getName(), target );
+        UTF8.putEncodedStringInto( constraintRule.name(), target );
         return target.array();
     }
 
@@ -237,7 +237,7 @@ public class SchemaRuleSerialization35
         }
 
         length += constraintDescriptor.schema().computeWith( schemaSizeComputer );
-        length += UTF8.computeRequiredByteBufferSize( constraintRule.getName() );
+        length += UTF8.computeRequiredByteBufferSize( constraintRule.name() );
         return length;
     }
 

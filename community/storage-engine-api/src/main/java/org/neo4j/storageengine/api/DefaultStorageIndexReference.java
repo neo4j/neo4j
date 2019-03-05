@@ -26,7 +26,7 @@ import org.neo4j.storageengine.api.schema.SchemaDescriptor;
 /**
  * Default implementation of a {@link StorageIndexReference}. Mainly used as data carrier between the storage engine API and kernel.
  */
-public class DefaultStorageIndexReference extends DefaultIndexDescriptor implements StorageIndexReference
+public class DefaultStorageIndexReference extends DefaultIndexDescriptor implements StorageIndexReference, SchemaRule
 {
     private final long indexReference;
     private final Long owningConstraintReference;
@@ -88,5 +88,11 @@ public class DefaultStorageIndexReference extends DefaultIndexDescriptor impleme
         {
             throw new IllegalStateException( "No owning constraint for this descriptor" );
         }
+    }
+
+    @Override
+    public long getId()
+    {
+        return indexReference;
     }
 }
