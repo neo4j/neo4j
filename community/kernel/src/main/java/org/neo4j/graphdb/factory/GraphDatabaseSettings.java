@@ -111,7 +111,11 @@ public class GraphDatabaseSettings implements LoadableConfig
     public static final Setting<File> neo4j_home =
             setting( "unsupported.dbms.directories.neo4j_home", PATH, NO_DEFAULT );
 
+    /**
+     * @deprecated This setting is deprecated and will be removed in 4.0.
+     */
     @Description( "Name of the database to load" )
+    @Deprecated
     public static final Setting<String> active_database =
             buildSetting( "dbms.active_database", STRING, DEFAULT_DATABASE_NAME ).constraint( except( SYSTEM_DATABASE_NAME ) ).build();
 
@@ -123,7 +127,11 @@ public class GraphDatabaseSettings implements LoadableConfig
     public static final Setting<File> databases_root_path = derivedSetting( "unsupported.dbms.directories.databases.root",
             data_directory,  data -> new File( data, "databases" ), PATH );
 
+    /**
+     * @deprecated This setting is deprecated and will be removed in 4.0.
+     */
     @Internal
+    @Deprecated
     public static final Setting<File> database_path = derivedSetting( "unsupported.dbms.directories.database",
             databases_root_path, active_database, ( parent, child ) -> new File( parent, child ), PATH );
 
