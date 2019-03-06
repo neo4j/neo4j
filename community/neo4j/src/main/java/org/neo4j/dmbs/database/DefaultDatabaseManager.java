@@ -19,62 +19,43 @@
  */
 package org.neo4j.dmbs.database;
 
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 
 import org.neo4j.dbms.database.DatabaseContext;
-import org.neo4j.dbms.database.DatabaseManager;
-import org.neo4j.graphdb.facade.spi.ClassicCoreSPI;
-import org.neo4j.graphdb.factory.module.DatabaseModule;
 import org.neo4j.graphdb.factory.module.GlobalModule;
 import org.neo4j.graphdb.factory.module.edition.AbstractEditionModule;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
-import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
-import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Logger;
 
-import static java.util.Collections.emptyList;
-import static java.util.Collections.singletonList;
+import static java.util.Objects.requireNonNull;
 import static org.neo4j.util.Preconditions.checkState;
 
-public final class DefaultDatabaseManager extends LifecycleAdapter implements DatabaseManager
+public final class DefaultDatabaseManager extends AbstractDatabaseManager
 {
-    private DatabaseContext databaseContext;
-    private final GlobalModule platform;
-    private final AbstractEditionModule edition;
-    private final GlobalProcedures globalProcedures;
-    private final Logger log;
-    private final GraphDatabaseFacade graphDatabaseFacade;
+    private final Map<String,DatabaseContext> databases = new HashMap<>();
 
-    public DefaultDatabaseManager( GlobalModule platform, AbstractEditionModule edition, GlobalProcedures globalProcedures,
+    public DefaultDatabaseManager( GlobalModule globalModule, AbstractEditionModule edition, GlobalProcedures globalProcedures,
             Logger log, GraphDatabaseFacade graphDatabaseFacade )
     {
-        this.platform = platform;
-        this.edition = edition;
-        this.globalProcedures = globalProcedures;
-        this.log = log;
-        this.graphDatabaseFacade = graphDatabaseFacade;
+        super( globalModule, edition, globalProcedures, log, graphDatabaseFacade );
     }
 
     @Override
     public Optional<DatabaseContext> getDatabaseContext( String name )
     {
-        return Optional.ofNullable( databaseContext );
+        return Optional.ofNullable( databases.get( name ) );
     }
 
     @Override
     public DatabaseContext createDatabase( String databaseName )
     {
-        checkState( databaseContext == null, "Database is already created, fail to create another one." );
-        log.log( "Creating '%s' database.", databaseName );
-        DatabaseModule databaseModule = new DatabaseModule( databaseName, platform, edition, globalProcedures, graphDatabaseFacade );
-        Database database = databaseModule.database;
-        ClassicCoreSPI spi =
-                new ClassicCoreSPI( platform, databaseModule, log, databaseModule.getCoreAPIAvailabilityGuard(), edition.getThreadToTransactionBridge() );
-        graphDatabaseFacade.init( spi, edition.getThreadToTransactionBridge(), platform.getGlobalConfig(), database.getTokenHolders() );
-
-        databaseContext = new DatabaseContext( database, graphDatabaseFacade );
+        requireNonNull( databaseName );
+        checkState( databases.size() < 2, "System and default database are already created. Fail to create another database:" + databaseName );
+        DatabaseContext databaseContext = createNewDatabaseContext( databaseName );
+        databases.put( databaseName, databaseContext );
         return databaseContext;
     }
 
@@ -87,7 +68,7 @@ public final class DefaultDatabaseManager extends LifecycleAdapter implements Da
     @Override
     public void stopDatabase( String ignore )
     {
-        stopDatabase();
+        throw new UnsupportedOperationException( "Default database manager does not support database stop." );
     }
 
     @Override
@@ -97,47 +78,14 @@ public final class DefaultDatabaseManager extends LifecycleAdapter implements Da
     }
 
     @Override
-    public void start()
-    {
-        if ( databaseContext != null )
-        {
-            databaseContext.getDatabase().start();
-        }
-    }
-
-    @Override
-    public void stop()
-    {
-        if ( databaseContext != null )
-        {
-            databaseContext.getDatabase().stop();
-        }
-    }
-
-    @Override
     public void shutdown()
     {
-        stopDatabase();
+        databases.clear();
     }
 
     @Override
-    public List<String> listDatabases()
+    protected Map<String,DatabaseContext> getDatabaseMap()
     {
-        if ( databaseContext == null )
-        {
-            return emptyList();
-        }
-        return singletonList( databaseContext.getDatabase().getDatabaseName() );
-    }
-
-    private void stopDatabase()
-    {
-        if ( databaseContext != null )
-        {
-            Database database = databaseContext.getDatabase();
-            log.log( "Shutting down '%s' database.", database.getDatabaseName() );
-            database.stop();
-            databaseContext = null;
-        }
+        return databases;
     }
 }

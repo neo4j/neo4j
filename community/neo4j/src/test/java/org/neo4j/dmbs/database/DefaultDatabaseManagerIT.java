@@ -44,6 +44,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 
 @ExtendWith( TestDirectoryExtension.class )
 class DefaultDatabaseManagerIT
@@ -68,15 +69,18 @@ class DefaultDatabaseManagerIT
     void createDatabase()
     {
         DatabaseManager databaseManager = getDatabaseManager();
-        assertThrows( IllegalStateException.class, () -> databaseManager.createDatabase( DEFAULT_DATABASE_NAME ) );
+        assertThrows( IllegalStateException.class, () -> databaseManager.createDatabase( "any database name" ) );
     }
 
     @Test
     void lookupExistingDatabase()
     {
         DatabaseManager databaseManager = getDatabaseManager();
-        Optional<DatabaseContext> database = databaseManager.getDatabaseContext( DEFAULT_DATABASE_NAME );
-        assertTrue( database.isPresent() );
+        Optional<DatabaseContext> defaultDatabaseContext = databaseManager.getDatabaseContext( DEFAULT_DATABASE_NAME );
+        Optional<DatabaseContext> systemDatabaseContext = databaseManager.getDatabaseContext( DEFAULT_DATABASE_NAME );
+
+        assertTrue( defaultDatabaseContext.isPresent() );
+        assertTrue( systemDatabaseContext.isPresent() );
     }
 
     @Test
@@ -84,8 +88,9 @@ class DefaultDatabaseManagerIT
     {
         DatabaseManager databaseManager = getDatabaseManager();
         List<String> databases = databaseManager.listDatabases();
-        assertThat( databases, hasSize( 1 ) );
+        assertThat( databases, hasSize( 2 ) );
         assertEquals( DEFAULT_DATABASE_NAME, databases.get( 0 ) );
+        assertEquals( SYSTEM_DATABASE_NAME, databases.get( 1 ) );
     }
 
     @Test

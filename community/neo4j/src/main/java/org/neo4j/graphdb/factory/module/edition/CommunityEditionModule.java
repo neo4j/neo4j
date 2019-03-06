@@ -71,7 +71,6 @@ import org.neo4j.ssl.config.SslPolicyLoader;
 import org.neo4j.time.SystemNanoClock;
 import org.neo4j.udc.UsageData;
 
-import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.graphdb.factory.EditionLocksFactories.createLockFactory;
 import static org.neo4j.graphdb.factory.EditionLocksFactories.createLockManager;
 
@@ -145,7 +144,7 @@ public class CommunityEditionModule extends DefaultEditionModule
     {
         Config globalConfig = platform.getGlobalConfig();
         Supplier<Kernel> kernelSupplier = () -> platform.getGlobalDependencies().resolveDependency( DatabaseManager.class )
-                        .getDatabaseContext( DEFAULT_DATABASE_NAME )
+                        .getDatabaseContext( config.get( GraphDatabaseSettings.active_database ) )
                         .map( DatabaseContext::getDatabase)
                         .map( Database::getKernel )
                         .orElseThrow( () -> new IllegalStateException( "Default database kernel should be always accessible" ) );

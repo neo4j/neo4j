@@ -193,6 +193,7 @@ public abstract class AbstractEditionModule
 
     public void createDatabases( DatabaseManager databaseManager, Config config )
     {
+        databaseManager.createDatabase( GraphDatabaseSettings.SYSTEM_DATABASE_NAME );
         databaseManager.createDatabase( config.get( GraphDatabaseSettings.default_database ) );
     }
 
