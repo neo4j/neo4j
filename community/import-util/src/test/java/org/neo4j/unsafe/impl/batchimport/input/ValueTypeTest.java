@@ -22,10 +22,10 @@ package org.neo4j.unsafe.impl.batchimport.input;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.io.Flushable;
 import java.io.IOException;
 
-import org.neo4j.io.fs.OpenMode;
-import org.neo4j.kernel.impl.transaction.log.PhysicalFlushableChannel;
+import org.neo4j.io.fs.FlushableChannel;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
@@ -48,7 +48,7 @@ public class ValueTypeTest
             value[i] = 100 + i;
         }
         ValueType valueType = ValueType.typeOf( value );
-        PhysicalFlushableChannel channel = new PhysicalFlushableChannel( fs.open( directory.file( "file" ), OpenMode.READ_WRITE ) );
+        CountingChannel channel = new CountingChannel();
 
         // when
         int length = valueType.length( value );
@@ -61,5 +61,75 @@ public class ValueTypeTest
                 value.length * Integer.BYTES; // array data
         assertEquals( expected, length );
         assertEquals( expected, channel.position() );
+    }
+
+    private static class CountingChannel implements FlushableChannel
+    {
+        private long position;
+
+        @Override
+        public Flushable prepareForFlush()
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public FlushableChannel put( byte value )
+        {
+            position += Byte.BYTES;
+            return this;
+        }
+
+        @Override
+        public FlushableChannel putShort( short value )
+        {
+            position += Short.BYTES;
+            return this;
+        }
+
+        @Override
+        public FlushableChannel putInt( int value )
+        {
+            position += Integer.BYTES;
+            return this;
+        }
+
+        @Override
+        public FlushableChannel putLong( long value )
+        {
+            position += Long.BYTES;
+            return this;
+        }
+
+        @Override
+        public FlushableChannel putFloat( float value )
+        {
+            position += Float.BYTES;
+            return this;
+        }
+
+        @Override
+        public FlushableChannel putDouble( double value )
+        {
+            position += Double.BYTES;
+            return this;
+        }
+
+        @Override
+        public FlushableChannel put( byte[] value, int length )
+        {
+            position += length;
+            return this;
+        }
+
+        @Override
+        public void close()
+        {
+        }
+
+        long position()
+        {
+            return position;
+        }
     }
 }

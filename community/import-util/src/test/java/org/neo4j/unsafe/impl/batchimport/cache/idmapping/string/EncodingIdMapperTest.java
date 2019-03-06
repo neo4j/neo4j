@@ -251,12 +251,12 @@ public class EncodingIdMapperTest
         Monitor monitor = mock( Monitor.class );
         Encoder encoder = mock( Encoder.class );
         // Create these explicit instances so that we can use them in mock, even for same values
-        String a = new String( "a" );
-        String b = new String( "b" );
-        String c = new String( "c" );
-        String a2 = new String( "a" );
-        String e = new String( "e" );
-        String f = new String( "f" );
+        String a = "a";
+        String b = "b";
+        String c = "c";
+        String a2 = "a";
+        String e = "e";
+        String f = "f";
         when( encoder.encode( a ) ).thenReturn( 1L );
         when( encoder.encode( b ) ).thenReturn( 1L );
         when( encoder.encode( c ) ).thenReturn( 3L );

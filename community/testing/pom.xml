@@ -64,5 +64,6 @@
         <module>log-utils</module>
         <module>kernel-api-utils</module>
         <module>test-utils</module>
+        <module>import-utils</module>
     </modules>
 </project>

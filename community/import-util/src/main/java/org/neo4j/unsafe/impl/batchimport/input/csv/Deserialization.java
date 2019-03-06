@@ -31,7 +31,6 @@ package org.neo4j.unsafe.impl.batchimport.input.csv;
  */
 public interface Deserialization<ENTITY>
 {
-
     /**
      * Handles one value of a type described by the {@code entry}. One or more values will be able to
      * {@link #materialize()} into an entity later on.
