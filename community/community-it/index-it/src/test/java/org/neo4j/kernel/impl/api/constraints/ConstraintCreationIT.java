@@ -23,22 +23,18 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
-import java.util.Arrays;
 
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.api.impl.index.storage.layout.IndexFolderLayout;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.test.rule.EmbeddedDbmsRule;
 
-import static org.hamcrest.Matchers.array;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex.NATIVE20;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_schema_provider;
@@ -63,7 +59,7 @@ public class ConstraintCreationIT
                 db.getDependencyResolver().resolveDependency( IndexProviderMap.class ).getDefaultProvider();
         File indexDir = indexProvider.directoryStructure().directoryForIndex( indexId );
 
-        assertFalse( new IndexFolderLayout( indexDir ).getIndexFolder().exists() );
+        assertFalse( indexDir.exists() );
     }
 
     @SuppressWarnings( "unchecked" )
@@ -78,8 +74,7 @@ public class ConstraintCreationIT
                 db.getDependencyResolver().resolveDependency( IndexProviderMap.class ).getDefaultProvider();
         File indexDir = indexProvider.directoryStructure().directoryForIndex( indexId );
 
-        File[] files = indexDir.listFiles();
-        assertThat( Arrays.toString( files ), files, array() );
+        assertFalse( indexDir.exists() );
     }
 
     private void attemptAndFailConstraintCreation()
