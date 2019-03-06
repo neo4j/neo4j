@@ -26,7 +26,7 @@ import java.util.List;
 public abstract class TokenRecord extends AbstractBaseRecord
 {
     private int nameId;
-    List<DynamicRecord> nameRecords;
+    private List<DynamicRecord> nameRecords;
 
     public TokenRecord( long id )
     {
@@ -102,5 +102,17 @@ public abstract class TokenRecord extends AbstractBaseRecord
     protected void additionalToString( StringBuilder buf )
     {
         // default: nothing additional
+    }
+
+    @Override
+    public TokenRecord clone() throws CloneNotSupportedException
+    {
+        TokenRecord clone = (TokenRecord) super.clone();
+        clone.nameRecords = new ArrayList<>( nameRecords.size() );
+        for ( DynamicRecord record : nameRecords )
+        {
+            nameRecords.add( record.clone() );
+        }
+        return clone;
     }
 }

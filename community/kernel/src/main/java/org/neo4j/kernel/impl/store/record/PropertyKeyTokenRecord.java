@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.store.record;
 
-import java.util.ArrayList;
-
 public class PropertyKeyTokenRecord extends TokenRecord
 {
     private int propCount;
@@ -69,8 +67,6 @@ public class PropertyKeyTokenRecord extends TokenRecord
     @Override
     public PropertyKeyTokenRecord clone() throws CloneNotSupportedException
     {
-        PropertyKeyTokenRecord clone = (PropertyKeyTokenRecord) super.clone();
-        clone.nameRecords = new ArrayList<>( nameRecords );
-        return clone;
+        return (PropertyKeyTokenRecord) super.clone();
     }
 }
