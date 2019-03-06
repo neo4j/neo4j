@@ -1,0 +1,2 @@
+org.neo4j.service.test.FooService
+org.neo4j.service.test.BarService
