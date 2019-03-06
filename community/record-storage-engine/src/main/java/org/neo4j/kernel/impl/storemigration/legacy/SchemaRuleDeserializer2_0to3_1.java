@@ -26,13 +26,11 @@ import org.neo4j.internal.kernel.api.exceptions.schema.MalformedSchemaRuleExcept
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorFactory;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
-import org.neo4j.kernel.api.index.IndexProviderDescriptor;
-import org.neo4j.kernel.impl.index.schema.IndexDescriptor;
-import org.neo4j.kernel.impl.index.schema.IndexDescriptorFactory;
-import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
 import org.neo4j.storageengine.api.ConstraintRule;
+import org.neo4j.storageengine.api.DefaultStorageIndexReference;
 import org.neo4j.storageengine.api.SchemaRule;
 import org.neo4j.storageengine.api.SchemaRule.Kind;
+import org.neo4j.storageengine.api.StorageIndexReference;
 
 import static org.neo4j.helpers.Numbers.safeCastLongToInt;
 import static org.neo4j.string.UTF8.getDecodedStringFrom;
@@ -95,26 +93,15 @@ public class SchemaRuleDeserializer2_0to3_1
 
     // === INDEX RULES ===
 
-    private static StoreIndexDescriptor readIndexRule( long id, boolean constraintIndex, int label, ByteBuffer serialized )
-    {
-        IndexProviderDescriptor providerDescriptor = readIndexProviderDescriptor( serialized );
-        int[] propertyKeyIds = readIndexPropertyKeys( serialized );
-        LabelSchemaDescriptor schema = SchemaDescriptorFactory.forLabel( label, propertyKeyIds );
-        Optional<String> name = Optional.empty();
-        IndexDescriptor descriptor = constraintIndex ?
-                                     IndexDescriptorFactory.uniqueForSchema( schema, name, providerDescriptor ) :
-                                     IndexDescriptorFactory.forSchema( schema, name, providerDescriptor );
-        StoreIndexDescriptor storeIndexDescriptor = constraintIndex
-                                                    ? descriptor.withIds( id, readOwningConstraint( serialized ) )
-                                                    : descriptor.withId( id );
-        return storeIndexDescriptor;
-    }
-
-    private static IndexProviderDescriptor readIndexProviderDescriptor( ByteBuffer serialized )
+    private static StorageIndexReference readIndexRule( long id, boolean constraintIndex, int label, ByteBuffer serialized )
     {
         String providerKey = getDecodedStringFrom( serialized );
         String providerVersion = getDecodedStringFrom( serialized );
-        return new IndexProviderDescriptor( providerKey, providerVersion );
+        int[] propertyKeyIds = readIndexPropertyKeys( serialized );
+        LabelSchemaDescriptor schema = SchemaDescriptorFactory.forLabel( label, propertyKeyIds );
+        Optional<String> name = Optional.empty();
+        Long owningConstraintReference = constraintIndex ? readOwningConstraint( serialized ) : null;
+        return new DefaultStorageIndexReference( schema, providerKey, providerVersion, id, name, constraintIndex, owningConstraintReference, false );
     }
 
     private static int[] readIndexPropertyKeys( ByteBuffer serialized )

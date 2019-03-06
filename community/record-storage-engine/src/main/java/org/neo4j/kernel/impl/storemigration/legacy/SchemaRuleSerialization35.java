@@ -34,11 +34,8 @@ import org.neo4j.internal.schema.SchemaProcessor;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.internal.schema.constraints.NodeKeyConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
-import org.neo4j.kernel.api.index.IndexProviderDescriptor;
-import org.neo4j.kernel.impl.index.schema.IndexDescriptor;
-import org.neo4j.kernel.impl.index.schema.IndexDescriptorFactory;
-import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
 import org.neo4j.storageengine.api.ConstraintRule;
+import org.neo4j.storageengine.api.DefaultStorageIndexReference;
 import org.neo4j.storageengine.api.SchemaRule;
 import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.string.UTF8;
@@ -86,9 +83,9 @@ public class SchemaRuleSerialization35
      */
     public static byte[] serialize( SchemaRule schemaRule )
     {
-        if ( schemaRule instanceof StoreIndexDescriptor )
+        if ( schemaRule instanceof StorageIndexReference )
         {
-            return serialize( (StoreIndexDescriptor) schemaRule );
+            return serialize( (StorageIndexReference) schemaRule );
         }
         else if ( schemaRule instanceof ConstraintRule )
         {
@@ -131,7 +128,7 @@ public class SchemaRuleSerialization35
      * @param indexDescriptor the StoreIndexDescriptor to serialize
      * @throws IllegalStateException if the StoreIndexDescriptor is of type unique, but the owning constrain has not been set
      */
-    public static byte[] serialize( StoreIndexDescriptor indexDescriptor )
+    public static byte[] serialize( StorageIndexReference indexDescriptor )
     {
         ByteBuffer target = ByteBuffer.allocate( lengthOf( indexDescriptor ) );
         target.putInt( LEGACY_LABEL_OR_REL_TYPE_ID );
@@ -245,9 +242,10 @@ public class SchemaRuleSerialization35
 
     // READ INDEX
 
-    private static StoreIndexDescriptor readIndexRule( long id, ByteBuffer source ) throws MalformedSchemaRuleException
+    private static StorageIndexReference readIndexRule( long id, ByteBuffer source ) throws MalformedSchemaRuleException
     {
-        IndexProviderDescriptor indexProvider = readIndexProviderDescriptor( source );
+        String providerKey = getDecodedStringFrom( source );
+        String providerVersion = getDecodedStringFrom( source );
         byte indexRuleType = source.get();
         Optional<String> name;
         switch ( indexRuleType )
@@ -256,27 +254,19 @@ public class SchemaRuleSerialization35
         {
             SchemaDescriptor schema = readSchema( source );
             name = readRuleName( source );
-            return IndexDescriptorFactory.forSchema( schema, name, indexProvider ).withId( id );
+            return new DefaultStorageIndexReference( schema, providerKey, providerVersion, id, name, false, null, false );
         }
         case UNIQUE_INDEX:
         {
-            long owningConstraint = source.getLong();
+            long readOwningConstraint = source.getLong();
+            Long owningConstraint = readOwningConstraint == NO_OWNING_CONSTRAINT_YET ? null : readOwningConstraint;
             SchemaDescriptor schema = readSchema( source );
             name = readRuleName( source );
-            IndexDescriptor descriptor = IndexDescriptorFactory.uniqueForSchema( schema, name, indexProvider );
-            return owningConstraint == NO_OWNING_CONSTRAINT_YET ? descriptor.withId( id ) : descriptor.withIds( id, owningConstraint );
+            return new DefaultStorageIndexReference( schema, providerKey, providerVersion, id, name, true, owningConstraint, false );
         }
         default:
             throw new MalformedSchemaRuleException( format( "Got unknown index rule type '%d'.", indexRuleType ) );
         }
-
-    }
-
-    private static IndexProviderDescriptor readIndexProviderDescriptor( ByteBuffer source )
-    {
-        String providerKey = getDecodedStringFrom( source );
-        String providerVersion = getDecodedStringFrom( source );
-        return new IndexProviderDescriptor( providerKey, providerVersion );
     }
 
     // READ CONSTRAINT

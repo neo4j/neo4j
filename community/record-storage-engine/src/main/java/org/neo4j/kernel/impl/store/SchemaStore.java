@@ -329,8 +329,10 @@ public class SchemaStore extends CommonAbstractStore<SchemaRecord,IntStoreHeader
         String name = getString( PROP_SCHEMA_RULE_NAME, props );
         String indexRuleType = getString( PROP_INDEX_RULE_TYPE, props );
         Long owningConstraint = props.containsKey( PROP_OWNING_CONSTRAINT ) ? getLong( PROP_OWNING_CONSTRAINT, props ) : null;
-        return new DefaultStorageIndexReference( schema, getString( PROP_INDEX_PROVIDER_NAME, props ), getString( PROP_INDEX_PROVIDER_VERSION, props ),
-                schemaRuleId, Optional.of( name ), parseIndexType( indexRuleType ), owningConstraint, schema.isFulltextIndex(), false );
+        String providerKey = getString( PROP_INDEX_PROVIDER_NAME, props );
+        String providerVersion = getString( PROP_INDEX_PROVIDER_VERSION, props );
+        boolean unique = parseIndexType( indexRuleType );
+        return new DefaultStorageIndexReference( schema, providerKey, providerVersion, schemaRuleId, Optional.of( name ), unique, owningConstraint, false );
     }
 
     private static boolean parseIndexType( String indexRuleType ) throws MalformedSchemaRuleException

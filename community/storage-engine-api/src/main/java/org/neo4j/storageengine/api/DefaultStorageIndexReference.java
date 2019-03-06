@@ -41,10 +41,9 @@ public class DefaultStorageIndexReference extends DefaultIndexDescriptor impleme
             Optional<String> name,
             boolean isUnique,
             Long owningConstraintReference,
-            boolean isFulltext,
             boolean isEventuallyConsistent )
     {
-        super( schema, providerKey, providerVersion, name, isUnique, isFulltext, isEventuallyConsistent );
+        super( schema, providerKey, providerVersion, name, isUnique, isEventuallyConsistent );
         this.indexReference = indexReference;
         this.owningConstraintReference = owningConstraintReference;
     }
@@ -52,14 +51,13 @@ public class DefaultStorageIndexReference extends DefaultIndexDescriptor impleme
     public DefaultStorageIndexReference( IndexDescriptor index, long indexReference )
     {
         this( index.schema(), index.providerKey(), index.providerVersion(), indexReference, optionalName( index ), index.isUnique(), null,
-                index.isFulltextIndex(), index.isEventuallyConsistent() );
+                index.isEventuallyConsistent() );
     }
 
     public DefaultStorageIndexReference( StorageIndexReference index, long owningConstraintReference )
     {
         this( index.schema(), index.providerKey(), index.providerVersion(), index.indexReference(),
-                optionalName( index ), index.isUnique(), owningConstraintReference,
-                index.isFulltextIndex(), index.isEventuallyConsistent() );
+                optionalName( index ), index.isUnique(), owningConstraintReference, index.isEventuallyConsistent() );
     }
 
     @Override

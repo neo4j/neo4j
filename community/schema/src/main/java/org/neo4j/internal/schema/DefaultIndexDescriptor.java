@@ -35,7 +35,6 @@ public class DefaultIndexDescriptor implements IndexDescriptor
     private final String providerVersion;
     protected final Optional<String> name;
     private final boolean isUnique;
-    private final boolean isFulltext;
     private final boolean isEventuallyConsistent;
 
     public DefaultIndexDescriptor(
@@ -44,7 +43,6 @@ public class DefaultIndexDescriptor implements IndexDescriptor
             String providerVersion,
             Optional<String> name,
             boolean isUnique,
-            boolean isFulltext,
             boolean isEventuallyConsistent )
     {
         name.ifPresent( SchemaRule::checkName );
@@ -53,13 +51,12 @@ public class DefaultIndexDescriptor implements IndexDescriptor
         this.providerVersion = providerVersion;
         this.name = name;
         this.isUnique = isUnique;
-        this.isFulltext = isFulltext;
         this.isEventuallyConsistent = isEventuallyConsistent;
     }
 
     public DefaultIndexDescriptor( SchemaDescriptor schema, boolean isUnique )
     {
-        this( schema, "Undecided", "0", Optional.empty(), isUnique, false, false );
+        this( schema, "Undecided", "0", Optional.empty(), isUnique, false );
     }
 
     @Override
@@ -89,7 +86,7 @@ public class DefaultIndexDescriptor implements IndexDescriptor
     @Override
     public boolean isFulltextIndex()
     {
-        return isFulltext;
+        return schema.isFulltextIndex();
     }
 
     @Override

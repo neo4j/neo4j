@@ -47,7 +47,7 @@ public class IndexDescriptorFactory
                                              Optional<String> name,
                                              IndexProviderDescriptor providerDescriptor )
     {
-        return new IndexDescriptor( schema, false, name, providerDescriptor, schema.isFulltextIndex() );
+        return new IndexDescriptor( schema, false, name, providerDescriptor );
     }
 
     public static IndexDescriptor uniqueForSchema( SchemaDescriptor schema )
@@ -65,6 +65,6 @@ public class IndexDescriptorFactory
                                                    Optional<String> name,
                                                    IndexProviderDescriptor providerDescriptor )
     {
-        return new IndexDescriptor( schema, true, name, providerDescriptor, schema.isFulltextIndex() );
+        return new IndexDescriptor( schema, true, name, providerDescriptor );
     }
 }

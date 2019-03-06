@@ -50,13 +50,12 @@ public class IndexDescriptor extends DefaultIndexDescriptor
     {
         this( indexDescriptor.schema(), indexDescriptor.isUnique(),
                 indexDescriptor.hasUserSuppliedName() ? Optional.of( indexDescriptor.name() ) : Optional.empty(),
-                IndexProviderDescriptor.from( indexDescriptor ), indexDescriptor.isFulltextIndex() );
+                IndexProviderDescriptor.from( indexDescriptor ) );
     }
 
-    public IndexDescriptor( SchemaDescriptor schema, boolean isUnique, Optional<String> userSuppliedName, IndexProviderDescriptor providerDescriptor,
-            boolean isFulltextIndex )
+    public IndexDescriptor( SchemaDescriptor schema, boolean isUnique, Optional<String> userSuppliedName, IndexProviderDescriptor providerDescriptor )
     {
-        super( schema, providerDescriptor.getKey(), providerDescriptor.getVersion(), userSuppliedName, isUnique, isFulltextIndex, false );
+        super( schema, providerDescriptor.getKey(), providerDescriptor.getVersion(), userSuppliedName, isUnique, false );
         this.providerDescriptor = providerDescriptor;
     }
 
