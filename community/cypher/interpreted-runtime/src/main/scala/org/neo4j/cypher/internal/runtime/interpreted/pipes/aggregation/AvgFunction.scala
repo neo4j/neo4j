@@ -54,7 +54,7 @@ class AvgFunction(val value: Expression)
     case Some(AggregatingNumbers) =>
       sumNumber
     case Some(AggregatingDurations) =>
-      DurationValue.approximate(monthsRunningAvg, daysRunningAvg, secondsRunningAvg, nanosRunningAvg)
+      DurationValue.approximate(monthsRunningAvg, daysRunningAvg, secondsRunningAvg, nanosRunningAvg).normalize()
     case _ => throw new InternalException(s"invalid aggregation type $aggregatingType")
   }
 

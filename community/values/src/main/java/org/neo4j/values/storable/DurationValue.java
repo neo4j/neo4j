@@ -977,6 +977,42 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
     }
 
     /**
+     * Normalize parts so that
+     *
+     *   nanos < NANOS_PER_SECOND
+     *   seconds < SECONDS_PER_DAY
+     *
+     * Days are not normalized to months because the big variance in days/month.
+     */
+    public DurationValue normalize()
+    {
+        long d = days;
+        long s = seconds;
+        long n = nanos;
+
+        if ( n < NANOS_PER_SECOND && s < SECONDS_PER_DAY )
+        {
+            return this;
+        }
+
+        if ( n >= NANOS_PER_SECOND )
+        {
+            long extraSeconds = n / NANOS_PER_SECOND;
+            s += extraSeconds;
+            n -= extraSeconds * NANOS_PER_SECOND;
+        }
+
+        if ( s >= SECONDS_PER_DAY )
+        {
+            long extraDays = s / SECONDS_PER_DAY;
+            d += extraDays;
+            s -= extraDays * SECONDS_PER_DAY;
+        }
+
+        return duration( months, d, s, n );
+    }
+
+    /**
      * Will cast a double to a long, but only if it is inside the limits of [Long.MIN_VALUE, LONG.MAX_VALUE]
      * We need this to detect overflow errors, whereas normal truncation is OK while approximating.
      */
