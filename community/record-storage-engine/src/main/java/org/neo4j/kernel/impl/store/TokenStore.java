@@ -112,7 +112,7 @@ public abstract class TokenStore<RECORD extends TokenRecord>
                 try
                 {
                     String name = getStringFor( record );
-                    records.add( new NamedToken( name, i ) );
+                    records.add( new NamedToken( name, i, record.isInternal() ) );
                 }
                 catch ( Exception e )
                 {

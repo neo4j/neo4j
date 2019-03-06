@@ -26,11 +26,18 @@ public final class NamedToken
 {
     private final int id;
     private final String name;
+    private final boolean internal;
 
     public NamedToken( String name, int id )
     {
+        this( name, id, false );
+    }
+
+    public NamedToken( String name, int id, boolean internal )
+    {
         this.id = id;
         this.name = name;
+        this.internal = internal;
     }
 
     /**
@@ -67,20 +74,25 @@ public final class NamedToken
 
         NamedToken that = (NamedToken) o;
 
-        return id == that.id && name.equals( that.name );
+        return id == that.id && name.equals( that.name ) && internal == that.internal;
     }
 
     @Override
     public int hashCode()
     {
         int result = id;
-        result = 31 * result + name.hashCode();
+        result = 31 * result + name.hashCode() + (internal ? 333_333_313 : 777_777_773 );
         return result;
     }
 
     @Override
     public String toString()
     {
-        return String.format( "%s[name:%s, id:%d]", getClass().getSimpleName(), name, id );
+        return String.format( "%s[name:%s, id:%d, internal:%s]", getClass().getSimpleName(), name, id, internal );
+    }
+
+    public boolean isInternal()
+    {
+        return internal;
     }
 }

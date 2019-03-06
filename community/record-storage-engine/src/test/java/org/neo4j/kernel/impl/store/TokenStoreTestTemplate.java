@@ -28,10 +28,12 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
+import org.neo4j.internal.kernel.api.NamedToken;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
@@ -114,22 +116,14 @@ abstract class TokenStoreTestTemplate<R extends TokenRecord>
     {
         createEmptyPageZero();
 
-        Assertions.assertThrows( InvalidRecordException.class, () ->
-        {
-            store.getRecord( 7, store.newRecord(), NORMAL );
-        } );
+        Assertions.assertThrows( InvalidRecordException.class, () -> store.getRecord( 7, store.newRecord(), NORMAL ) );
     }
 
     @Test
     void tokensMustNotBeInternalByDefault()
     {
-        List<DynamicRecord> nameRecords = allocateNameRecords( "MyToken" );
-        R tokenRecord = createInUseRecord( nameRecords );
-        for ( DynamicRecord nameRecord : nameRecords )
-        {
-            nameStore.updateRecord( nameRecord );
-        }
-        store.updateRecord( tokenRecord );
+        R tokenRecord = createInUseRecord( allocateNameRecords( "MyToken" ) );
+        storeToken( tokenRecord );
 
         R readBack = store.getRecord( tokenRecord.getId(), store.newRecord(), NORMAL );
         assertThat( readBack, is( equalTo( tokenRecord ) ) );
@@ -140,19 +134,63 @@ abstract class TokenStoreTestTemplate<R extends TokenRecord>
     @Test
     void tokensMustPreserveTheirInternalFlag()
     {
-        List<DynamicRecord> nameRecords = allocateNameRecords( "MyInternalToken" );
-        R tokenRecord = createInUseRecord( nameRecords );
+        R tokenRecord = createInUseRecord( allocateNameRecords( "MyInternalToken" ) );
         tokenRecord.setInternal( true );
-        for ( DynamicRecord nameRecord : nameRecords )
-        {
-            nameStore.updateRecord( nameRecord );
-        }
-        store.updateRecord( tokenRecord );
+        storeToken( tokenRecord );
 
         R readBack = store.getRecord( tokenRecord.getId(), store.newRecord(), NORMAL );
         assertThat( readBack, is( equalTo( tokenRecord ) ) );
         assertThat( tokenRecord.isInternal(), is( true ) );
         assertThat( readBack.isInternal(), is( true ) );
+    }
+
+    @Test
+    void gettingAllReadableTokensAndAllTokensMustAlsoReturnTokensThatAreInternal()
+    {
+        R tokenA = createInUseRecord( allocateNameRecords( "TokenA" ) );
+        R tokenB = createInUseRecord( allocateNameRecords( "TokenB" ) );
+        R tokenC = createInUseRecord( allocateNameRecords( "TokenC" ) );
+        tokenC.setInternal( true );
+        R tokenD = createInUseRecord( allocateNameRecords( "TokenD" ) );
+
+        storeToken( tokenA );
+        storeToken( tokenB );
+        storeToken( tokenC );
+        storeToken( tokenD );
+
+        R readA = store.getRecord( tokenA.getId(), store.newRecord(), NORMAL );
+        R readB = store.getRecord( tokenB.getId(), store.newRecord(), NORMAL );
+        R readC = store.getRecord( tokenC.getId(), store.newRecord(), NORMAL );
+        R readD = store.getRecord( tokenD.getId(), store.newRecord(), NORMAL );
+
+        assertThat( readA, is( equalTo( tokenA ) ) );
+        assertThat( readA.isInternal(), is( tokenA.isInternal() ) );
+        assertThat( readB, is( equalTo( tokenB ) ) );
+        assertThat( readB.isInternal(), is( tokenB.isInternal() ) );
+        assertThat( readC, is( equalTo( tokenC ) ) );
+        assertThat( readC.isInternal(), is( tokenC.isInternal() ) );
+        assertThat( readD, is( equalTo( tokenD ) ) );
+        assertThat( readD.isInternal(), is( tokenD.isInternal() ) );
+
+        Iterator<NamedToken> itr = store.getAllReadableTokens().iterator();
+        assertTrue( itr.hasNext() );
+        assertThat( itr.next(), is( new NamedToken( "TokenA", 0 ) ) );
+        assertTrue( itr.hasNext() );
+        assertThat( itr.next(), is( new NamedToken( "TokenB", 1 ) ) );
+        assertTrue( itr.hasNext() );
+        assertThat( itr.next(), is( new NamedToken( "TokenC", 2, true ) ) );
+        assertTrue( itr.hasNext() );
+        assertThat( itr.next(), is( new NamedToken( "TokenD", 3 ) ) );
+
+        itr = store.getTokens().iterator();
+        assertTrue( itr.hasNext() );
+        assertThat( itr.next(), is( new NamedToken( "TokenA", 0 ) ) );
+        assertTrue( itr.hasNext() );
+        assertThat( itr.next(), is( new NamedToken( "TokenB", 1 ) ) );
+        assertTrue( itr.hasNext() );
+        assertThat( itr.next(), is( new NamedToken( "TokenC", 2, true ) ) );
+        assertTrue( itr.hasNext() );
+        assertThat( itr.next(), is( new NamedToken( "TokenD", 3 ) ) );
     }
 
     private R createInUseRecord( List<DynamicRecord> nameRecords )
@@ -178,5 +216,14 @@ abstract class TokenStoreTestTemplate<R extends TokenRecord>
         List<DynamicRecord> nameRecords = new ArrayList<>();
         nameStore.allocateRecordsFromBytes( nameRecords, tokenName.getBytes( StandardCharsets.UTF_8 ) );
         return nameRecords;
+    }
+
+    private void storeToken( R tokenRecord )
+    {
+        for ( DynamicRecord nameRecord : tokenRecord.getNameRecords() )
+        {
+            nameStore.updateRecord( nameRecord );
+        }
+        store.updateRecord( tokenRecord );
     }
 }
