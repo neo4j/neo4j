@@ -152,13 +152,13 @@ public class Neo4jError
     {
         for ( Throwable cause = any; cause != null; cause = cause.getCause() )
         {
-            if ( cause instanceof Status.HasStatus )
-            {
-                return new Neo4jError( ((Status.HasStatus) cause).status(), any.getMessage(), any, isFatal );
-            }
             if ( cause instanceof DatabaseShutdownException )
             {
                 return new Neo4jError( Status.General.DatabaseUnavailable, cause, isFatal );
+            }
+            if ( cause instanceof Status.HasStatus )
+            {
+                return new Neo4jError( ((Status.HasStatus) cause).status(), any.getMessage(), any, isFatal );
             }
             if ( cause instanceof OutOfMemoryError )
             {
