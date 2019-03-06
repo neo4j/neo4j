@@ -51,6 +51,7 @@
     <module>codegen</module>
     <module>index</module>
     <module>kernel</module>
+    <module>batch-insert</module>
     <module>jmx</module>
     <module>udc</module>
     <module>lucene-index</module>

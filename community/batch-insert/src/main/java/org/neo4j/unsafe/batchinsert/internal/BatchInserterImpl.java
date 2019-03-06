@@ -526,9 +526,9 @@ public class BatchInserterImpl implements BatchInserter
         life.add( indexingService );
         try
         {
-            StoreIndexDescriptor[] descriptors = getIndexesNeedingPopulation();
+            StorageIndexReference[] descriptors = getIndexesNeedingPopulation();
             indexingService.createIndexes( true /*verify constraints before flipping over*/, descriptors );
-            for ( StoreIndexDescriptor descriptor : descriptors )
+            for ( StorageIndexReference descriptor : descriptors )
             {
                 IndexProxy indexProxy = getIndexProxy( indexingService, descriptor );
                 try
@@ -549,7 +549,7 @@ public class BatchInserterImpl implements BatchInserter
         }
     }
 
-    private static IndexProxy getIndexProxy( IndexingService indexingService, StoreIndexDescriptor descriptpr )
+    private static IndexProxy getIndexProxy( IndexingService indexingService, StorageIndexReference descriptpr )
     {
         try
         {
@@ -566,7 +566,7 @@ public class BatchInserterImpl implements BatchInserter
         CountsComputer.recomputeCounts( neoStores, counts, pageCache, databaseLayout );
     }
 
-    private StoreIndexDescriptor[] getIndexesNeedingPopulation()
+    private StorageIndexReference[] getIndexesNeedingPopulation()
     {
         List<StorageIndexReference> indexesNeedingPopulation = new ArrayList<>();
         for ( StorageIndexReference descriptor : schemaCache.indexDescriptors() )
@@ -578,7 +578,7 @@ public class BatchInserterImpl implements BatchInserter
                 indexesNeedingPopulation.add( descriptor );
             }
         }
-        return indexesNeedingPopulation.toArray( new StoreIndexDescriptor[0] );
+        return indexesNeedingPopulation.toArray( new StorageIndexReference[0] );
     }
 
     @Override

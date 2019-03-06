@@ -30,7 +30,6 @@ import static org.mockito.Mockito.mock;
 
 class FileSystemClosingBatchInserterTest
 {
-
     @Test
     void closeFileSystemOnShutdown() throws Exception
     {

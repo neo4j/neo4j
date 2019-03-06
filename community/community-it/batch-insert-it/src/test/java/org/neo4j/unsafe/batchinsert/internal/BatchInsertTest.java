@@ -92,6 +92,7 @@ import org.neo4j.monitoring.Monitors;
 import org.neo4j.storageengine.api.ConstraintRule;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.storageengine.api.SchemaRule;
+import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
@@ -766,17 +767,17 @@ public class BatchInsertTest
             assertEquals( "records in use", 2, inUse.size() );
             SchemaRule rule0 = schemaRuleAccess.loadSingleSchemaRule( inUse.get( 0 ) );
             SchemaRule rule1 = schemaRuleAccess.loadSingleSchemaRule( inUse.get( 1 ) );
-            StoreIndexDescriptor indexRule;
+            StorageIndexReference indexRule;
             ConstraintRule constraintRule;
-            if ( rule0 instanceof StoreIndexDescriptor )
+            if ( rule0 instanceof StorageIndexReference )
             {
-                indexRule = (StoreIndexDescriptor) rule0;
+                indexRule = (StorageIndexReference) rule0;
                 constraintRule = (ConstraintRule) rule1;
             }
             else
             {
                 constraintRule = (ConstraintRule) rule0;
-                indexRule = (StoreIndexDescriptor) rule1;
+                indexRule = (StorageIndexReference) rule1;
             }
             assertEquals( "index should reference constraint",
                           constraintRule.getId(), indexRule.owningConstraintReference() );
