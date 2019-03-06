@@ -144,7 +144,7 @@ public class CommunityEditionModule extends DefaultEditionModule
     {
         Config globalConfig = platform.getGlobalConfig();
         Supplier<Kernel> kernelSupplier = () -> platform.getGlobalDependencies().resolveDependency( DatabaseManager.class )
-                        .getDatabaseContext( config.get( GraphDatabaseSettings.active_database ) )
+                        .getDatabaseContext( config.get( GraphDatabaseSettings.default_database ) )
                         .map( DatabaseContext::getDatabase)
                         .map( Database::getKernel )
                         .orElseThrow( () -> new IllegalStateException( "Default database kernel should be always accessible" ) );
