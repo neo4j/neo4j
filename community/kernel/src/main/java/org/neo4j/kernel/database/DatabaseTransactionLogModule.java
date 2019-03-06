@@ -19,12 +19,12 @@
  */
 package org.neo4j.kernel.database;
 
+import org.neo4j.common.Dependencies;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
-import org.neo4j.kernel.impl.util.Dependencies;
 
 class DatabaseTransactionLogModule
 {

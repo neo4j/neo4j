@@ -22,13 +22,13 @@ package org.neo4j.internal.recordstorage;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.function.Consumer;
 
 import org.neo4j.kernel.impl.store.PropertyType;
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
-import org.neo4j.kernel.impl.util.Listener;
 
 public class PropertyTraverser
 {
@@ -71,14 +71,14 @@ public class PropertyTraverser
 
     public void getPropertyChain( long nextProp,
             RecordAccess<PropertyRecord, PrimitiveRecord> propertyRecords,
-            Listener<PropertyBlock> collector )
+            Consumer<PropertyBlock> collector )
     {
         while ( nextProp != Record.NO_NEXT_PROPERTY.intValue() )
         {
             PropertyRecord propRecord = propertyRecords.getOrLoad( nextProp, null ).forReadingData();
             for ( PropertyBlock propBlock : propRecord )
             {
-                collector.receive( propBlock );
+                collector.accept( propBlock );
             }
             nextProp = propRecord.getNextProp();
         }

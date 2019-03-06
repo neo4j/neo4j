@@ -17,21 +17,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.util;
+package org.neo4j.common;
 
 import org.eclipse.collections.api.RichIterable;
 import org.eclipse.collections.api.multimap.set.MutableSetMultimap;
 import org.eclipse.collections.api.set.MutableSet;
 import org.eclipse.collections.impl.factory.Multimaps;
+import org.eclipse.collections.impl.factory.Sets;
 
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Supplier;
 
-import org.neo4j.common.DependencyResolver;
-import org.neo4j.common.DependencySatisfier;
 import org.neo4j.exceptions.UnsatisfiedDependencyException;
-import org.neo4j.helpers.collection.Iterables;
 
 import static org.apache.commons.lang3.ClassUtils.getAllInterfaces;
 import static org.apache.commons.lang3.ClassUtils.getAllSuperclasses;
@@ -78,7 +76,8 @@ public class Dependencies extends DependencyResolver.Adapter implements Dependen
         MutableSet<T> options = (MutableSet<T>) typeDependencies.get( type );
         if ( parent != null )
         {
-            return Iterables.concat( options, parent.resolveTypeDependencies( type ) );
+            options = Sets.mutable.ofAll( options );
+            parent.resolveTypeDependencies( type ).forEach( options::add );
         }
         return options;
     }

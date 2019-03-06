@@ -30,6 +30,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.LongSupplier;
 
+import org.neo4j.common.Dependencies;
 import org.neo4j.common.Edition;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -44,7 +45,6 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.impl.factory.OperationalMode;
-import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.test.extension.Inject;

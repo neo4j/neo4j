@@ -19,11 +19,11 @@
  */
 package org.neo4j.kernel.database;
 
+import org.neo4j.common.Dependencies;
 import org.neo4j.kernel.impl.api.KernelImpl;
 import org.neo4j.kernel.impl.api.KernelTransactions;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.transaction.state.DatabaseFileListing;
-import org.neo4j.kernel.impl.util.Dependencies;
 
 class DatabaseKernelModule
 {

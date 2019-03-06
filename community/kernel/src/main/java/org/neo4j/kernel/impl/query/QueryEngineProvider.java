@@ -23,8 +23,8 @@ import java.util.Comparator;
 import java.util.List;
 
 import org.neo4j.annotations.service.Service;
+import org.neo4j.common.Dependencies;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.service.NamedService;
 

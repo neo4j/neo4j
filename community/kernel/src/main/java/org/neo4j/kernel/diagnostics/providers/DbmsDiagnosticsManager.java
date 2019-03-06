@@ -21,6 +21,7 @@ package org.neo4j.kernel.diagnostics.providers;
 
 import java.util.List;
 
+import org.neo4j.common.Dependencies;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseManager;
@@ -28,7 +29,6 @@ import org.neo4j.internal.diagnostics.DiagnosticsManager;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
-import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.storageengine.api.StorageEngine;

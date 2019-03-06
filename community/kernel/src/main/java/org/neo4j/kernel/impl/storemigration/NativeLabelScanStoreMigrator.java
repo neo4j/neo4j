@@ -25,6 +25,7 @@ import java.nio.file.NoSuchFileException;
 import java.util.Optional;
 import java.util.function.Supplier;
 
+import org.neo4j.common.Dependencies;
 import org.neo4j.common.ProgressReporter;
 import org.neo4j.configuration.Config;
 import org.neo4j.function.Predicates;
@@ -38,7 +39,6 @@ import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.kernel.impl.api.scan.FullLabelStream;
 import org.neo4j.kernel.impl.transaction.state.storeview.NeoStoreIndexStoreView;
-import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.lifecycle.LifecycleException;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.logging.internal.NullLogService;

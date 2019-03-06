@@ -19,9 +19,9 @@
  */
 package org.neo4j.dbms.database;
 
+import org.neo4j.common.Dependencies;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
-import org.neo4j.kernel.impl.util.Dependencies;
 
 import static java.util.Objects.requireNonNull;
 

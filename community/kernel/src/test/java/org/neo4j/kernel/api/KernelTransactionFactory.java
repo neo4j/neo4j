@@ -22,6 +22,7 @@ package org.neo4j.kernel.api;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.collection.pool.Pool;
+import org.neo4j.common.Dependencies;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.internal.index.label.LabelScanStore;
@@ -48,7 +49,6 @@ import org.neo4j.kernel.impl.locking.StatementLocks;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.impl.util.DefaultValueMapper;
-import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.resources.CpuClock;
 import org.neo4j.resources.HeapAllocation;

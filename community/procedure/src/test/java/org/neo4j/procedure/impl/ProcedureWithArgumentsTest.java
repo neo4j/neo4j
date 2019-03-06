@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.stream.Stream;
 
 import org.neo4j.collection.RawIterator;
+import org.neo4j.common.Dependencies;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
@@ -35,7 +36,6 @@ import org.neo4j.kernel.api.procedure.CallableProcedure;
 import org.neo4j.kernel.api.procedure.Context;
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
 import org.neo4j.kernel.impl.util.DefaultValueMapper;
-import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.logging.NullLog;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;

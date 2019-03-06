@@ -29,6 +29,7 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.Optional;
 
+import org.neo4j.common.Dependencies;
 import org.neo4j.configuration.Config;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.helpers.collection.Iterators;
@@ -62,7 +63,6 @@ import org.neo4j.kernel.impl.index.schema.CapableIndexDescriptor;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.SimpleStatementLocks;
 import org.neo4j.kernel.impl.util.DefaultValueMapper;
-import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.ResourceTypes;
 import org.neo4j.storageengine.api.CommandCreationContext;

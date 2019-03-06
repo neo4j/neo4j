@@ -28,6 +28,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.common.Dependencies;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -38,7 +39,6 @@ import org.neo4j.internal.kernel.api.procs.Neo4jTypes;
 import org.neo4j.kernel.api.procedure.CallableUserFunction;
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
 import org.neo4j.kernel.impl.util.DefaultValueMapper;
-import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLog;

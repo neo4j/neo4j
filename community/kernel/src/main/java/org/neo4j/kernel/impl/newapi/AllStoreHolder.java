@@ -27,6 +27,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 
 import org.neo4j.collection.RawIterator;
+import org.neo4j.common.Dependencies;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.internal.index.label.LabelScanReader;
@@ -70,7 +71,6 @@ import org.neo4j.kernel.impl.api.security.OverriddenAccessMode;
 import org.neo4j.kernel.impl.api.security.RestrictedAccessMode;
 import org.neo4j.kernel.impl.index.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.util.DefaultValueMapper;
-import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.lock.ResourceTypes;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.register.Registers;

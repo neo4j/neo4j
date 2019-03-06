@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.function.Function;
 
 import org.neo4j.bolt.BoltServer;
+import org.neo4j.common.Dependencies;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -49,7 +50,6 @@ import org.neo4j.kernel.impl.api.dbms.NonTransactionalDbmsOperations;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.pagecache.PublishPageCacheTracerMetricsAfterStart;
-import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.internal.Version;
 import org.neo4j.kernel.lifecycle.LifeSupport;

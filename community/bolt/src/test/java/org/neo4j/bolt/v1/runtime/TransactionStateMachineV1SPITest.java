@@ -30,6 +30,7 @@ import java.util.concurrent.Future;
 import java.util.function.Supplier;
 
 import org.neo4j.bolt.BoltChannel;
+import org.neo4j.common.Dependencies;
 import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.GraphDatabaseQueryService;
@@ -37,7 +38,6 @@ import org.neo4j.kernel.availability.CompositeDatabaseAvailabilityGuard;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
-import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.logging.NullLog;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.test.rule.OtherThreadRule;
