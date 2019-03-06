@@ -142,7 +142,7 @@ public class GraphDatabaseFacadeFactory
         Dependencies globalDependencies = globalPlatform.getGlobalDependencies();
         LifeSupport globalLife = globalPlatform.getGlobalLife();
 
-        GlobalProcedures globalProcedures = setupProcedures( globalPlatform, edition, graphDatabaseFacade );
+        GlobalProcedures globalProcedures = setupProcedures( globalPlatform, edition );
         globalDependencies.satisfyDependency( new NonTransactionalDbmsOperations( globalProcedures ) );
 
         LogService logService = globalPlatform.getLogService();
@@ -210,7 +210,7 @@ public class GraphDatabaseFacadeFactory
         return new GlobalModule( storeDir, config, databaseInfo, dependencies );
     }
 
-    private static GlobalProcedures setupProcedures( GlobalModule platform, AbstractEditionModule editionModule, GraphDatabaseFacade facade )
+    private static GlobalProcedures setupProcedures( GlobalModule platform, AbstractEditionModule editionModule )
     {
         Config globalConfig = platform.getGlobalConfig();
         File proceduresDirectory = globalConfig.get( GraphDatabaseSettings.plugin_dir );

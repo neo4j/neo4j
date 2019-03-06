@@ -52,6 +52,7 @@ import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats;
+import org.neo4j.kernel.impl.transaction.stats.GlobalTransactionStats;
 import org.neo4j.kernel.impl.transaction.stats.TransactionCounters;
 import org.neo4j.kernel.impl.util.watcher.DefaultFileDeletionListenerFactory;
 import org.neo4j.logging.Log;
@@ -73,7 +74,7 @@ import static org.neo4j.procedure.impl.temporal.TemporalFunction.registerTempora
  */
 public abstract class AbstractEditionModule
 {
-    private final DatabaseTransactionStats databaseStatistics = new DatabaseTransactionStats();
+    private final GlobalTransactionStats transactionStatistic = new GlobalTransactionStats();
     protected NetworkConnectionTracker connectionTracker;
     protected ThreadToStatementContextBridge threadToTransactionBridge;
     protected long transactionStartTimeout;
@@ -168,12 +169,12 @@ public abstract class AbstractEditionModule
 
     public DatabaseTransactionStats createTransactionMonitor()
     {
-        return databaseStatistics;
+        return transactionStatistic.createDatabaseTransactionMonitor();
     }
 
     public TransactionCounters globalTransactionCounter()
     {
-        return databaseStatistics;
+        return transactionStatistic;
     }
 
     public AvailabilityGuard getGlobalAvailabilityGuard( Clock clock, LogService logService, Config config )
