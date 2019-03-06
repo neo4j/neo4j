@@ -19,10 +19,37 @@
  */
 package org.neo4j.util.concurrent;
 
+import org.neo4j.helpers.Exceptions;
+
 public class Runnables
 {
     public static final Runnable EMPTY_RUNNABLE = () ->
     {
         // empty
     };
+
+    /**
+     * Run all runnables, chaining exceptions, if any, into a single {@link RuntimeException} with provided message as message.
+     * @param message passed to resulting {@link RuntimeException} if any runnable throw.
+     * @param runnables to run.
+     */
+    public static void runAll( String message, Runnable... runnables )
+    {
+        Throwable exceptions = null;
+        for ( Runnable runnable : runnables )
+        {
+            try
+            {
+                runnable.run();
+            }
+            catch ( Throwable t )
+            {
+                exceptions = Exceptions.chain( exceptions, t );
+            }
+        }
+        if ( exceptions != null )
+        {
+            throw new RuntimeException( message, exceptions );
+        }
+    }
 }
