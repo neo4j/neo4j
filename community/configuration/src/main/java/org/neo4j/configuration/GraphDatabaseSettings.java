@@ -25,6 +25,7 @@ import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.List;
 
+import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.common.Edition;
 import org.neo4j.configuration.connectors.BoltConnectorValidator;
 import org.neo4j.configuration.connectors.HttpConnectorValidator;
@@ -66,6 +67,7 @@ import static org.neo4j.util.Preconditions.checkArgument;
 /**
  * Settings for Neo4j.
  */
+@ServiceProvider
 public class GraphDatabaseSettings implements LoadableConfig
 {
     /**

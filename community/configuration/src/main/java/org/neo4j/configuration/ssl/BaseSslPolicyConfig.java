@@ -22,6 +22,7 @@ package org.neo4j.configuration.ssl;
 import java.io.File;
 import java.util.List;
 
+import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.configuration.Description;
 import org.neo4j.configuration.Group;
 import org.neo4j.configuration.GroupSettingSupport;

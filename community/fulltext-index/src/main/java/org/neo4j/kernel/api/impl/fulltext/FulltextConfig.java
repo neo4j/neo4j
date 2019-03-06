@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api.impl.fulltext;
 
+import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.configuration.Description;
 import org.neo4j.configuration.LoadableConfig;
 import org.neo4j.configuration.Settings;
@@ -36,6 +37,7 @@ import static org.neo4j.configuration.Settings.setting;
 /**
  * Configuration settings for the fulltext index.
  */
+@ServiceProvider
 public class FulltextConfig implements LoadableConfig
 {
     private static final String DEFAULT_ANALYZER = Standard.STANDARD_ANALYZER_NAME;

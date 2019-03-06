@@ -19,6 +19,7 @@
  */
 package org.neo4j.consistency;
 
+import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.configuration.Description;
 import org.neo4j.configuration.LoadableConfig;
 import org.neo4j.graphdb.config.Setting;
@@ -32,6 +33,7 @@ import static org.neo4j.configuration.Settings.setting;
  * Settings for consistency checker
  */
 @Description( "Consistency check configuration settings" )
+@ServiceProvider
 public class ConsistencyCheckSettings implements LoadableConfig
 {
     @Description( "This setting is deprecated. See commandline arguments for neoj4-admin check-consistency " +

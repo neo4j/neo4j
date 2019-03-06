@@ -21,6 +21,7 @@ package org.neo4j.configuration.ssl;
 
 import java.io.File;
 
+import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.configuration.Description;
 import org.neo4j.configuration.Internal;
 import org.neo4j.configuration.LoadableConfig;
@@ -35,6 +36,7 @@ import static org.neo4j.configuration.Settings.pathSetting;
  * incorporated in a backwards compatible manner, under the "legacy" policy name.
  */
 @Description( "Legacy SSL policy settings" )
+@ServiceProvider
 public class LegacySslPolicyConfig implements LoadableConfig
 {
     public static final String LEGACY_POLICY_NAME = "legacy";

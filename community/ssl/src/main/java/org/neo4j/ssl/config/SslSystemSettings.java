@@ -21,6 +21,7 @@ package org.neo4j.ssl.config;
 
 import io.netty.handler.ssl.SslProvider;
 
+import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.configuration.Description;
 import org.neo4j.configuration.LoadableConfig;
 import org.neo4j.configuration.Settings;
@@ -30,6 +31,7 @@ import org.neo4j.graphdb.config.Setting;
  * System-wide settings for SSL.
  */
 @Description( "System-wide settings for SSL." )
+@ServiceProvider
 public class SslSystemSettings implements LoadableConfig
 {
     @Description( "Netty SSL provider" )

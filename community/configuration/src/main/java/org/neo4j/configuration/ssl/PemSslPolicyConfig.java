@@ -21,6 +21,7 @@ package org.neo4j.configuration.ssl;
 
 import java.io.File;
 
+import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.configuration.Description;
 import org.neo4j.configuration.Group;
 import org.neo4j.configuration.GroupSettingSupport;
@@ -34,6 +35,7 @@ import static org.neo4j.configuration.Settings.NO_DEFAULT;
 import static org.neo4j.configuration.Settings.STRING;
 import static org.neo4j.configuration.Settings.setting;
 
+@ServiceProvider
 @Group( "dbms.ssl.policy" )
 public class PemSslPolicyConfig extends BaseSslPolicyConfig implements LoadableConfig
 {

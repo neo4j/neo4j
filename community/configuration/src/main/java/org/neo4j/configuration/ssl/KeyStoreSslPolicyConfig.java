@@ -22,6 +22,7 @@ package org.neo4j.configuration.ssl;
 import java.io.File;
 import java.util.function.Function;
 
+import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.configuration.Description;
 import org.neo4j.configuration.Group;
 import org.neo4j.configuration.GroupSettingSupport;
@@ -35,6 +36,7 @@ import static org.neo4j.configuration.Settings.STRING;
 import static org.neo4j.configuration.Settings.derivedSetting;
 import static org.neo4j.configuration.Settings.setting;
 
+@ServiceProvider
 @Group( "dbms.ssl.policy" )
 public class KeyStoreSslPolicyConfig extends BaseSslPolicyConfig implements LoadableConfig
 {

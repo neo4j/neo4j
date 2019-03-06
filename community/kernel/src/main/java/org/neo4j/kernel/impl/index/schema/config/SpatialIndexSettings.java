@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.index.schema.config;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.configuration.ConfigOptions;
 import org.neo4j.configuration.Description;
 import org.neo4j.configuration.Internal;
@@ -34,6 +35,7 @@ import static org.neo4j.configuration.Settings.DOUBLE;
 import static org.neo4j.configuration.Settings.INTEGER;
 import static org.neo4j.configuration.Settings.setting;
 
+@ServiceProvider
 public class SpatialIndexSettings implements LoadableConfig
 {
     @Description( "When searching the spatial index we need to convert a 2D range in the quad tree into a set of 1D ranges on the " +

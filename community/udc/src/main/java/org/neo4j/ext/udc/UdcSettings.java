@@ -21,6 +21,7 @@ package org.neo4j.ext.udc;
 
 import java.util.function.Function;
 
+import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.configuration.Description;
 import org.neo4j.configuration.Internal;
 import org.neo4j.configuration.LoadableConfig;
@@ -40,6 +41,7 @@ import static org.neo4j.configuration.Settings.min;
 import static org.neo4j.configuration.Settings.setting;
 
 @Description( "Usage Data Collector configuration settings" )
+@ServiceProvider
 public class UdcSettings implements LoadableConfig
 {
     /** Configuration key for enabling the UDC extension. */

@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
 
+import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.configuration.Description;
 import org.neo4j.configuration.DocumentedDefaultValue;
 import org.neo4j.configuration.Internal;
@@ -55,6 +56,7 @@ import static org.neo4j.configuration.Settings.setting;
 import static org.neo4j.configuration.ssl.LegacySslPolicyConfig.LEGACY_POLICY_NAME;
 
 @Description( "Settings used by the server configuration" )
+@ServiceProvider
 public class ServerSettings implements LoadableConfig
 {
     @Description( "Maximum request header size" )

@@ -22,18 +22,18 @@ package org.neo4j.configuration;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.ServiceLoader;
-import java.util.stream.Collectors;
 
+import org.neo4j.annotations.service.Service;
+import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.graphdb.config.BaseSetting;
 import org.neo4j.graphdb.config.SettingGroup;
-import org.neo4j.helpers.collection.Iterators;
+import org.neo4j.service.Services;
 
 /**
- * Every class which contains settings should implement this interface to allow the configuration to find the
- * settings via service loading. Note that service loading requires you to additionally list the service class
- * under META-INF/services/org.neo4j.configuration.LoadableConfig
+ * Every class which contains  settings should implement this interface and be annotated with {@link ServiceProvider}.
+ * This allows the configuration to find all settings via service loading.
  */
+@Service
 public interface LoadableConfig
 {
     /**
@@ -103,6 +103,6 @@ public interface LoadableConfig
      */
     static List<LoadableConfig> allConfigClasses()
     {
-        return Iterators.stream( ServiceLoader.load( LoadableConfig.class ).iterator() ).collect( Collectors.toList() );
+        return new ArrayList<>( Services.loadAll( LoadableConfig.class ) );
     }
 }

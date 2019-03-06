@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
+import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.graphdb.config.BaseSetting;
 import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.graphdb.config.Setting;
@@ -36,6 +37,7 @@ import org.neo4j.graphdb.config.Setting;
  * Be aware that values are still validated.
  */
 @SuppressWarnings( "unused" )
+@ServiceProvider
 public class ExternalSettings implements LoadableConfig
 {
     @Description( "Name of the Windows Service." )
