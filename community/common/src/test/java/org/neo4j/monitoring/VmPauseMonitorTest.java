@@ -17,15 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.monitoring;
+package org.neo4j.monitoring;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.function.Consumer;
 
-import org.neo4j.kernel.monitoring.VmPauseMonitor.VmPauseInfo;
-import org.neo4j.logging.NullLog;
+import org.neo4j.monitoring.VmPauseMonitor.VmPauseInfo;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobHandle;
 import org.neo4j.scheduler.JobScheduler;
@@ -40,6 +39,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.neo4j.monitoring.VmPauseMonitor.Monitor.EMPTY;
 
 class VmPauseMonitorTest
 {
@@ -47,7 +47,7 @@ class VmPauseMonitorTest
     private final Consumer<VmPauseInfo> listener = mock( Consumer.class );
     private final JobHandle jobHandle = mock( JobHandle.class );
     private final JobScheduler jobScheduler = mock( JobScheduler.class );
-    private final VmPauseMonitor monitor = spy( new VmPauseMonitor( ofMillis( 1 ), ofMillis( 0 ), NullLog.getInstance(), jobScheduler, listener ) );
+    private final VmPauseMonitor monitor = spy( new VmPauseMonitor( ofMillis( 1 ), ofMillis( 0 ), EMPTY, jobScheduler, listener ) );
 
     @BeforeEach
     void setUp()
@@ -61,15 +61,15 @@ class VmPauseMonitorTest
         assertThrows( NullPointerException.class,
                 () -> new VmPauseMonitor( ofSeconds( 1 ), ofSeconds( 1 ), null, jobScheduler, listener ) );
         assertThrows( NullPointerException.class,
-                () -> new VmPauseMonitor( ofSeconds( 1 ), ofSeconds( 1 ), NullLog.getInstance(), null, listener ) );
+                () -> new VmPauseMonitor( ofSeconds( 1 ), ofSeconds( 1 ), EMPTY, null, listener ) );
         assertThrows( NullPointerException.class,
-                () -> new VmPauseMonitor( ofSeconds( 1 ), ofSeconds( 1 ), NullLog.getInstance(), jobScheduler, null ) );
+                () -> new VmPauseMonitor( ofSeconds( 1 ), ofSeconds( 1 ), EMPTY, jobScheduler, null ) );
         assertThrows( IllegalArgumentException.class,
-                () -> new VmPauseMonitor( ofSeconds( 0 ), ofSeconds( 1 ), NullLog.getInstance(), jobScheduler, listener ) );
+                () -> new VmPauseMonitor( ofSeconds( 0 ), ofSeconds( 1 ), EMPTY, jobScheduler, listener ) );
         assertThrows( IllegalArgumentException.class,
-                () -> new VmPauseMonitor( ofSeconds( 1 ), ofSeconds( -1 ), NullLog.getInstance(), jobScheduler, listener ) );
+                () -> new VmPauseMonitor( ofSeconds( 1 ), ofSeconds( -1 ), EMPTY, jobScheduler, listener ) );
         assertThrows( IllegalArgumentException.class,
-                () -> new VmPauseMonitor( ofSeconds( -1 ), ofSeconds( 1 ), NullLog.getInstance(), jobScheduler, listener ) );
+                () -> new VmPauseMonitor( ofSeconds( -1 ), ofSeconds( 1 ), EMPTY, jobScheduler, listener ) );
     }
 
     @Test

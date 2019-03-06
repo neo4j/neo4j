@@ -17,17 +17,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.monitoring;
+package org.neo4j.monitoring;
 
 import java.lang.management.GarbageCollectorMXBean;
 import java.lang.management.ManagementFactory;
 import java.time.Duration;
 import java.util.function.Consumer;
 
-import org.neo4j.logging.Log;
 import org.neo4j.scheduler.Group;
-import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.scheduler.JobHandle;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.util.VisibleForTesting;
 
 import static java.lang.Math.max;
@@ -44,30 +43,30 @@ public class VmPauseMonitor
 {
     private final long measurementDurationNs;
     private final long stallAlertThresholdNs;
-    private final Log log;
+    private final Monitor monitor;
     private final JobScheduler jobScheduler;
     private final Consumer<VmPauseInfo> listener;
     private JobHandle job;
 
-    public VmPauseMonitor( Duration measureInterval, Duration stallAlertThreshold, Log log, JobScheduler jobScheduler, Consumer<VmPauseInfo> listener )
+    public VmPauseMonitor( Duration measureInterval, Duration stallAlertThreshold, Monitor monitor, JobScheduler jobScheduler, Consumer<VmPauseInfo> listener )
     {
         this.measurementDurationNs = requirePositive( measureInterval.toNanos() );
         this.stallAlertThresholdNs = requireNonNegative( stallAlertThreshold.toNanos() );
-        this.log = requireNonNull( log );
+        this.monitor = requireNonNull( monitor );
         this.jobScheduler = requireNonNull( jobScheduler );
         this.listener = requireNonNull( listener );
     }
 
     public void start()
     {
-        log.debug( "Starting VM pause monitor" );
+        monitor.started();
         checkState( job == null, "VM pause monitor is already started" );
         job = requireNonNull( jobScheduler.schedule( Group.VM_PAUSE_MONITOR, this::run ) );
     }
 
     public void stop()
     {
-        log.debug( "Stopping VM pause monitor" );
+        monitor.stopped();
         checkState( job != null, "VM pause monitor is not started" );
         job.cancel( true );
         job = null;
@@ -81,11 +80,11 @@ public class VmPauseMonitor
         }
         catch ( InterruptedException ignore )
         {
-            log.debug( "VM pause monitor stopped" );
+            monitor.interrupted();
         }
         catch ( RuntimeException e )
         {
-            log.debug( "VM pause monitor failed", e );
+            monitor.failed( e );
         }
     }
 
@@ -170,5 +169,41 @@ public class VmPauseMonitor
             this.time = time;
             this.count = count;
         }
+    }
+
+    public interface Monitor
+    {
+        void started();
+
+        void stopped();
+
+        void interrupted();
+
+        void failed( Exception e );
+
+        class Adapter implements Monitor
+        {
+            @Override
+            public void started()
+            {   // no-op
+            }
+
+            @Override
+            public void stopped()
+            {   // no-op
+            }
+
+            @Override
+            public void interrupted()
+            {   // no-op
+            }
+
+            @Override
+            public void failed( Exception e )
+            {   // no-op
+            }
+        }
+
+        Monitor EMPTY = new Adapter();
     }
 }

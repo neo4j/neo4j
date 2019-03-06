@@ -38,9 +38,8 @@ import org.neo4j.helpers.Format;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.os.OsBeanUtil;
-import org.neo4j.kernel.monitoring.VmPauseMonitor;
-import org.neo4j.kernel.monitoring.VmPauseMonitor.VmPauseInfo;
-import org.neo4j.logging.NullLog;
+import org.neo4j.monitoring.VmPauseMonitor;
+import org.neo4j.monitoring.VmPauseMonitor.VmPauseInfo;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.unsafe.impl.batchimport.stats.DetailLevel;
 import org.neo4j.unsafe.impl.batchimport.stats.Keys;
@@ -95,7 +94,7 @@ public class OnDemandDetailsExecutionMonitor implements ExecutionMonitor
         this.actions.put( "i", Pair.of( "Print more detailed information", this::printDetails ) );
         this.actions.put( "c", Pair.of( "Print more detailed information about current stage", this::printDetailsForCurrentStage ) );
         this.vmPauseMonitor = new VmPauseMonitor( Duration.ofMillis( 100 ), Duration.ofMillis( 100 ),
-                NullLog.getInstance(), jobScheduler, vmPauseTimeAccumulator );
+                VmPauseMonitor.Monitor.EMPTY, jobScheduler, vmPauseTimeAccumulator );
     }
 
     @Override
