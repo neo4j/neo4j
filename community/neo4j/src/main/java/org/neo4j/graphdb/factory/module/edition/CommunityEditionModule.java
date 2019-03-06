@@ -112,7 +112,7 @@ public class CommunityEditionModule extends DefaultEditionModule
         statementLocksFactoryProvider = locks -> createStatementLocksFactory( locks, globalConfig, logService );
 
         threadToTransactionBridge = globalDependencies.satisfyDependency(
-                new ThreadToStatementContextBridge( getGlobalAvailabilityGuard( globalClock, logService, globalConfig ) ) );
+                new ThreadToStatementContextBridge( getGlobalAvailabilityGuard( globalClock, logService ) ) );
 
         idContextFactory = createIdContextFactory( globalModule, fileSystem );
 

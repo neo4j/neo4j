@@ -159,6 +159,6 @@ public class DefaultEditionDatabaseContext implements EditionDatabaseContext
     @Override
     public DatabaseAvailabilityGuard createDatabaseAvailabilityGuard( SystemNanoClock clock, LogService logService, Config config )
     {
-        return editionModule.createDatabaseAvailabilityGuard( databaseName, clock, logService, config );
+        return editionModule.createDatabaseAvailabilityGuard( databaseName, clock, logService );
     }
 }

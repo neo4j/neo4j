@@ -158,7 +158,7 @@ public class GraphDatabaseFacadeFactory
         globalLife.add( createBoltServer( globalPlatform, edition, databaseManager ) );
         globalDependencies.satisfyDependency( edition.globalTransactionCounter() );
         globalLife.add( new StartupWaiter( edition.getGlobalAvailabilityGuard( globalPlatform.getGlobalClock(),
-                logService, globalPlatform.getGlobalConfig() ), edition.getTransactionStartTimeout() ) );
+                logService ), edition.getTransactionStartTimeout() ) );
         globalDependencies.satisfyDependency( edition.getSchemaWriteGuard() );
         globalLife.add( new PublishPageCacheTracerMetricsAfterStart( globalPlatform.getTracers().getPageCursorTracerSupplier() ) );
 
