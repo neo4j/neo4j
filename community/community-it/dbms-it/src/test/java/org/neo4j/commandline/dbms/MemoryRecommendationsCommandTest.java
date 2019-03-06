@@ -38,6 +38,7 @@ import org.neo4j.commandline.admin.CommandFailed;
 import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.commandline.admin.RealOutsideWorld;
+import org.neo4j.configuration.Config;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
@@ -199,7 +200,8 @@ class MemoryRecommendationsCommandTest
         Path configFile = configDir.resolve( DEFAULT_CONFIG_FILE_NAME );
         String databaseName = "mydb";
         store( stringMap( data_directory.name(), homeDir.toString() ), configFile.toFile() );
-        DatabaseLayout databaseLayout = DatabaseLayout.of( fromFile( configFile ).withHome( homeDir ).build().get( databases_root_path ), databaseName );
+        Config config = fromFile( configFile ).withHome( homeDir ).build();
+        DatabaseLayout databaseLayout = DatabaseLayout.of( config.get( databases_root_path ), databaseName );
         createDatabaseWithNativeIndexes( databaseLayout );
         OutputCaptureOutsideWorld outsideWorld = new OutputCaptureOutsideWorld();
         MemoryRecommendationsCommand command = new MemoryRecommendationsCommand( homeDir, configDir, outsideWorld );
@@ -238,7 +240,8 @@ class MemoryRecommendationsCommandTest
         long totalLuceneIndexesSize = 0;
         for ( int i = 0; i < 5; i++ )
         {
-            DatabaseLayout databaseLayout = DatabaseLayout.of( fromFile( configFile ).withHome( homeDir ).build().get( databases_root_path ), "db" + i );
+            Config config = fromFile( configFile ).withHome( homeDir ).build();
+            DatabaseLayout databaseLayout = DatabaseLayout.of( config.get( databases_root_path ), "db" + i );
             createDatabaseWithNativeIndexes( databaseLayout );
             long[] expectedSizes = calculatePageCacheFileSize( databaseLayout );
             totalPageCacheSize += expectedSizes[0];

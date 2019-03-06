@@ -27,15 +27,15 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
-import java.util.stream.Collectors;
 
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
-import static java.util.Arrays.asList;
+import static java.util.stream.Collectors.toSet;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.helpers.collection.Iterators.asSet;
 
 @ExtendWith( TestDirectoryExtension.class )
 class StoreLayoutTest
@@ -100,6 +100,6 @@ class StoreLayoutTest
 
         Collection<DatabaseLayout> layouts = storeLayout.databaseLayouts();
         assertEquals( 2, layouts.size() );
-        assertEquals( asList( "a", "b" ), layouts.stream().map( DatabaseLayout::getDatabaseName ).collect( Collectors.toList() ) );
+        assertEquals( asSet( "a", "b" ), layouts.stream().map( DatabaseLayout::getDatabaseName ).collect( toSet() ) );
     }
 }

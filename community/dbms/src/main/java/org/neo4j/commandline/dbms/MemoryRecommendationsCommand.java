@@ -259,7 +259,7 @@ public class MemoryRecommendationsCommand implements AdminCommand
 
     private long luceneSize( Collection<DatabaseLayout> layouts )
     {
-        return layouts.stream().mapToLong(this::getDatabaseLuceneSize).sum();
+        return layouts.stream().mapToLong( this::getDatabaseLuceneSize ).sum();
     }
 
     private long getDatabaseLuceneSize( DatabaseLayout databaseLayout )
