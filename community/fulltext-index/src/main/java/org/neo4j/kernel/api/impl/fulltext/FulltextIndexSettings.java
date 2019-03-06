@@ -40,6 +40,7 @@ import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 import org.neo4j.kernel.impl.core.TokenHolder;
 import org.neo4j.kernel.impl.core.TokenNotFoundException;
+import org.neo4j.service.Services;
 import org.neo4j.storageengine.api.StorageIndexReference;
 
 class FulltextIndexSettings
@@ -99,8 +100,7 @@ class FulltextIndexSettings
     {
         try
         {
-            AnalyzerProvider provider = AnalyzerProvider.getProviderByName( analyzerName );
-            return provider.createAnalyzer();
+            return Services.loadOrFail( AnalyzerProvider.class, analyzerName ).createAnalyzer();
         }
         catch ( Exception e )
         {

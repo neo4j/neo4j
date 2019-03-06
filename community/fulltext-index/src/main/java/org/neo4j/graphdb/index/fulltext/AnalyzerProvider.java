@@ -21,9 +21,10 @@ package org.neo4j.graphdb.index.fulltext;
 
 import org.apache.lucene.analysis.Analyzer;
 
-import java.util.NoSuchElementException;
+import org.neo4j.annotations.service.Service;
+import org.neo4j.service.NamedService;
 
-import org.neo4j.common.Service;
+import static java.util.Objects.requireNonNull;
 
 /**
  * This is the base-class for all service-loadable factory classes, that build the Lucene Analyzer instances that are available to the fulltext schema index.
@@ -50,8 +51,11 @@ import org.neo4j.common.Service;
  * The {@code jar} that includes this implementation must also contain a {@code META-INF/services/org.neo4j.graphdb.index.fulltext.AnalyzerProvider} file,
  * that contains the fully-qualified class names of all of the {@code AnalyzerProvider} implementations it contains.
  */
-public abstract class AnalyzerProvider extends Service
+@Service
+public abstract class AnalyzerProvider implements NamedService
 {
+    private final String name;
+
     /**
      * Sub-classes MUST have a public no-arg constructor, and must call this super-constructor with the names it uses to identify itself.
      * <p>
@@ -59,17 +63,17 @@ public abstract class AnalyzerProvider extends Service
      * If the names are not unique among all analyzer providers on the class path, then the indexes may fail to load the correct analyzers that they are
      * configured with.
      *
-     * @param analyzerName The name of this analyzer provider, which will be used for analyzer settings values for identifying which implementation to use.
-     * @param alternativeNames The alternative names that can also be used to identify this analyzer provider.
+     * @param name The name of this analyzer provider, which will be used for analyzer settings values for identifying which implementation to use.
      */
-    public AnalyzerProvider( String analyzerName, String... alternativeNames )
+    protected AnalyzerProvider( String name )
     {
-        super( analyzerName, alternativeNames );
+        this.name = requireNonNull( name );
     }
 
-    public static AnalyzerProvider getProviderByName( String analyzerName ) throws NoSuchElementException
+    @Override
+    public String getName()
     {
-        return loadOrFail( AnalyzerProvider.class, analyzerName );
+        return name;
     }
 
     /**

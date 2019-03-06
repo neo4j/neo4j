@@ -25,7 +25,6 @@ import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 
 import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
@@ -54,6 +53,7 @@ import org.neo4j.kernel.impl.index.schema.IndexDescriptor;
 import org.neo4j.kernel.impl.storemigration.SchemaIndexMigrator;
 import org.neo4j.logging.Log;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.service.Services;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.storageengine.api.schema.SchemaDescriptor;
@@ -305,7 +305,6 @@ class FulltextIndexProvider extends IndexProvider implements FulltextAdapter
     @Override
     public Stream<AnalyzerProvider> listAvailableAnalyzers()
     {
-        Iterable<AnalyzerProvider> providers = AnalyzerProvider.loadAll( AnalyzerProvider.class );
-        return StreamSupport.stream( providers.spliterator(), false );
+        return Services.loadAll( AnalyzerProvider.class ).stream();
     }
 }

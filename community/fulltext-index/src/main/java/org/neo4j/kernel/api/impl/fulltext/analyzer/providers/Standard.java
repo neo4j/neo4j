@@ -22,8 +22,10 @@ package org.neo4j.kernel.api.impl.fulltext.analyzer.providers;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 
+import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.graphdb.index.fulltext.AnalyzerProvider;
 
+@ServiceProvider
 public class Standard extends AnalyzerProvider
 {
     public static final String STANDARD_ANALYZER_NAME = "standard";

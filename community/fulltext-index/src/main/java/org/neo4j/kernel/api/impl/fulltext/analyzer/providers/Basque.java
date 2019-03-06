@@ -22,8 +22,10 @@ package org.neo4j.kernel.api.impl.fulltext.analyzer.providers;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.eu.BasqueAnalyzer;
 
+import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.graphdb.index.fulltext.AnalyzerProvider;
 
+@ServiceProvider
 public class Basque extends AnalyzerProvider
 {
     public Basque()
