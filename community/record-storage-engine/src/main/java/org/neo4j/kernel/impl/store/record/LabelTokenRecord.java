@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.store.record;
 
-import java.util.ArrayList;
-
 public class LabelTokenRecord extends TokenRecord
 {
     public LabelTokenRecord( long id )
@@ -44,8 +42,6 @@ public class LabelTokenRecord extends TokenRecord
     @Override
     public LabelTokenRecord clone() throws CloneNotSupportedException
     {
-        LabelTokenRecord clone = (LabelTokenRecord) super.clone();
-        clone.nameRecords = new ArrayList<>( nameRecords );
-        return clone;
+        return (LabelTokenRecord) super.clone();
     }
 }
