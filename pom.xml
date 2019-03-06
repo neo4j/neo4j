@@ -106,6 +106,7 @@
     </properties>
 
     <modules>
+        <module>annotations</module>
         <module>build-resources</module>
         <module>community</module>
         <module>packaging</module>
