@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.util;
+package org.neo4j.io.fs;
 
 import java.io.IOException;
 import java.lang.reflect.Array;
@@ -26,9 +26,6 @@ import java.nio.channels.ReadableByteChannel;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.io.fs.ReadableChannel;
-import org.neo4j.io.fs.StoreChannel;
-import org.neo4j.io.fs.WritableChannel;
 import org.neo4j.string.UTF8;
 
 public abstract class IoPrimitiveUtils

@@ -44,7 +44,7 @@ import org.neo4j.test.Unzip;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
-import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.readAndFlip;
+import static org.neo4j.io.fs.IoPrimitiveUtils.readAndFlip;
 
 public class MigrationTestUtils
 {

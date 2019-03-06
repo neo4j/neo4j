@@ -39,7 +39,7 @@ import org.neo4j.util.VisibleForTesting;
 
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
-import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.write2bLengthAndString;
+import static org.neo4j.io.fs.IoPrimitiveUtils.write2bLengthAndString;
 
 /**
  * A command which have to be first in the transaction. It will map index names

@@ -29,8 +29,8 @@ import org.neo4j.internal.recordstorage.NeoCommandType;
 import org.neo4j.io.fs.WritableChannel;
 
 import static java.lang.String.format;
-import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.write2bLengthAndString;
-import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.write3bLengthAndString;
+import static org.neo4j.io.fs.IoPrimitiveUtils.write2bLengthAndString;
+import static org.neo4j.io.fs.IoPrimitiveUtils.write3bLengthAndString;
 
 /**
  * Created from {@link IndexDefineCommand} or read from a logical log.

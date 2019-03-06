@@ -63,9 +63,9 @@ import static org.neo4j.internal.recordstorage.CommandReading.COLLECTION_DYNAMIC
 import static org.neo4j.internal.recordstorage.CommandReading.PROPERTY_BLOCK_DYNAMIC_RECORD_ADDER;
 import static org.neo4j.internal.recordstorage.CommandReading.PROPERTY_DELETED_DYNAMIC_RECORD_ADDER;
 import static org.neo4j.internal.recordstorage.CommandReading.PROPERTY_INDEX_DYNAMIC_RECORD_ADDER;
-import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.read2bLengthAndString;
-import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.read2bMap;
-import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.read3bLengthAndString;
+import static org.neo4j.io.fs.IoPrimitiveUtils.read2bLengthAndString;
+import static org.neo4j.io.fs.IoPrimitiveUtils.read2bMap;
+import static org.neo4j.io.fs.IoPrimitiveUtils.read3bLengthAndString;
 import static org.neo4j.util.Bits.bitFlag;
 
 @ServiceProvider
