@@ -272,7 +272,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
 
         KernelTransaction ktx = statementContext.getKernelTransactionBoundToThisThread( true );
         assertTransactionOpen( ktx );
-        try ( Statement ignore = statementContext.get() )
+        try ( Statement ignore = ktx.acquireStatement() )
         {
             if ( !ktx.dataRead().relationshipExists( id ) )
             {
