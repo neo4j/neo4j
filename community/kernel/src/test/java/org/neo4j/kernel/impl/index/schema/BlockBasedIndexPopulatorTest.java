@@ -30,6 +30,7 @@ import java.util.concurrent.Future;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
+import org.neo4j.internal.kernel.api.PopulationProgress;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexProviderDescriptor;
@@ -43,6 +44,7 @@ import org.neo4j.test.Race;
 import org.neo4j.test.rule.OtherThreadRule;
 import org.neo4j.test.rule.PageCacheAndDependenciesRule;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 import static org.neo4j.test.OtherThreadExecutor.command;
@@ -66,7 +68,7 @@ public class BlockBasedIndexPopulatorTest
     public void shouldAwaitMergeToBeFullyAbortedBeforeLeavingCloseMethod() throws Exception
     {
         // given
-        TrappingMonitor monitor = new TrappingMonitor();
+        TrappingMonitor monitor = new TrappingMonitor( false );
         BlockBasedIndexPopulator<GenericKey,NativeIndexValue> populator = instantiatePopulatorWithSomeData( monitor );
 
         // when starting to merge (in a separate thread)
@@ -81,6 +83,33 @@ public class BlockBasedIndexPopulatorTest
 
         // then
         assertTrue( mergeFuture.isDone() );
+    }
+
+    @Test
+    public void shouldReportAccurateProgressThroughoutThePhases() throws Exception
+    {
+        // given
+        TrappingMonitor monitor = new TrappingMonitor( true );
+        BlockBasedIndexPopulator<GenericKey,NativeIndexValue> populator = instantiatePopulatorWithSomeData( monitor );
+        try
+        {
+            // when starting to merge (in a separate thread)
+            Future<Object> mergeFuture = t2.execute( command( () -> populator.scanCompleted( PhaseTracker.nullInstance ) ) );
+            // and waiting for merge to get going
+            monitor.barrier.awaitUninterruptibly();
+            // this is a bit fuzzy, but what we want is to assert that the scan doesn't represent 100% of the work
+            assertEquals( 0.5f, populator.progress( PopulationProgress.DONE ).getProgress(), 0.1f );
+            monitor.barrier.release();
+            monitor.mergeFinishedBarrier.awaitUninterruptibly();
+            assertEquals( 0.7f, populator.progress( PopulationProgress.DONE ).getProgress(), 0.1f );
+            monitor.mergeFinishedBarrier.release();
+            mergeFuture.get();
+            assertEquals( 1f, populator.progress( PopulationProgress.DONE ).getProgress(), 0f );
+        }
+        finally
+        {
+            populator.close( true );
+        }
     }
 
     @Test
@@ -136,11 +165,27 @@ public class BlockBasedIndexPopulatorTest
     private static class TrappingMonitor extends BlockStorage.Monitor.Adapter
     {
         private final Barrier.Control barrier = new Barrier.Control();
+        private final Barrier.Control mergeFinishedBarrier = new Barrier.Control();
+        private final boolean alsoTrapAfterMergeCompleted;
+
+        TrappingMonitor( boolean alsoTrapAfterMergeCompleted )
+        {
+            this.alsoTrapAfterMergeCompleted = alsoTrapAfterMergeCompleted;
+        }
 
         @Override
-        public void mergedBlocks( long resultingBlockSize, long resultingEntryCount, int numberOfBlocks )
+        public void mergedBlocks( long resultingBlockSize, long resultingEntryCount, long numberOfBlocks )
         {
             barrier.reached();
+        }
+
+        @Override
+        public void mergeIterationFinished( long numberOfBlocksBefore, long numberOfBlocksAfter )
+        {
+            if ( numberOfBlocksAfter == 1 && alsoTrapAfterMergeCompleted )
+            {
+                mergeFinishedBarrier.reached();
+            }
         }
     }
 }

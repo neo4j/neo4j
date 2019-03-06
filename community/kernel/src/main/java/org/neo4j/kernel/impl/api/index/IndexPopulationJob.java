@@ -132,14 +132,15 @@ public class IndexPopulationJob implements Runnable
         storeScan.run();
     }
 
-    PopulationProgress getPopulationProgress()
+    PopulationProgress getPopulationProgress( MultipleIndexPopulator.IndexPopulation indexPopulation )
     {
         if ( storeScan == null )
         {
             // indexing hasn't begun yet
             return PopulationProgress.NONE;
         }
-        return storeScan.getProgress();
+        PopulationProgress storeScanProgress = storeScan.getProgress();
+        return indexPopulation.progress( storeScanProgress );
     }
 
     public void cancel()

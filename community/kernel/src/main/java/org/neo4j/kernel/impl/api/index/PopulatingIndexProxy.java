@@ -161,7 +161,7 @@ public class PopulatingIndexProxy implements IndexProxy
     @Override
     public PopulationProgress getIndexPopulationProgress()
     {
-        return job.getPopulationProgress();
+        return job.getPopulationProgress( indexPopulation );
     }
 
     @Override

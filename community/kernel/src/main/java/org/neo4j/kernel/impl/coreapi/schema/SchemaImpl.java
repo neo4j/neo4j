@@ -314,7 +314,7 @@ public class SchemaImpl implements Schema
             SchemaRead schemaRead = transaction.schemaRead();
             IndexReference descriptor = getIndexReference( schemaRead, transaction.tokenRead(), (IndexDefinitionImpl) index );
             PopulationProgress progress = schemaRead.indexGetPopulationProgress( descriptor );
-            return new IndexPopulationProgress( progress.getCompleted(), progress.getTotal() );
+            return progress.toIndexPopulationProgress();
         }
         catch ( SchemaRuleNotFoundException | IndexNotFoundKernelException e )
         {

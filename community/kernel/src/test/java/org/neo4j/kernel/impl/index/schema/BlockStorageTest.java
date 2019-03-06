@@ -49,6 +49,7 @@ import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static java.util.Comparator.comparingLong;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.lessThan;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -215,6 +216,8 @@ class BlockStorageTest
 
             // then
             assertContents( layout, storage, asOneBigBlock( expectedBlocks ) );
+            assertThat( monitor.totalEntriesToMerge, greaterThanOrEqualTo( monitor.entryAddedCallCount ) );
+            assertEquals( monitor.totalEntriesToMerge, monitor.entriesMerged );
         }
     }
 
@@ -275,7 +278,7 @@ class BlockStorageTest
         TrackingMonitor monitor = new TrackingMonitor()
         {
             @Override
-            public void mergedBlocks( long resultingBlockSize, long resultingEntryCount, int numberOfBlocks )
+            public void mergedBlocks( long resultingBlockSize, long resultingEntryCount, long numberOfBlocks )
             {
                 super.mergedBlocks( resultingBlockSize, resultingEntryCount, numberOfBlocks );
                 barrier.reached();
@@ -305,6 +308,22 @@ class BlockStorageTest
 
         // then there should not be any more merge iterations done, i.e. merge was cancelled
         assertEquals( 1, monitor.mergeIterationCallCount );
+    }
+
+    @Test
+    void shouldCalculateCorrectNumberOfEntriesToWriteDuringMerge()
+    {
+        // when
+        long entryCountForOneBlock = BlockStorage.calculateNumberOfEntriesWrittenDuringMerges( 100, 1, 2 );
+        long entryCountForMergeFactorBlocks = BlockStorage.calculateNumberOfEntriesWrittenDuringMerges( 100, 4, 4 );
+        long entryCountForMoreThanMergeFactorBlocks = BlockStorage.calculateNumberOfEntriesWrittenDuringMerges( 100, 5, 4 );
+        long entryCountForThreeFactorsMergeFactorBlocks = BlockStorage.calculateNumberOfEntriesWrittenDuringMerges( 100, 4 * 4 * 4 - 3, 4 );
+
+        // then
+        assertEquals( 0, entryCountForOneBlock );
+        assertEquals( 100, entryCountForMergeFactorBlocks );
+        assertEquals( 200, entryCountForMoreThanMergeFactorBlocks );
+        assertEquals( 300, entryCountForThreeFactorsMergeFactorBlocks );
     }
 
     private Iterable<List<BlockEntry<MutableLong,MutableLong>>> asOneBigBlock( List<List<BlockEntry<MutableLong,MutableLong>>> expectedBlocks )
@@ -412,7 +431,7 @@ class BlockStorageTest
     private static class TrackingMonitor implements BlockStorage.Monitor
     {
         // For entryAdded
-        int entryAddedCallCount;
+        long entryAddedCallCount;
         int lastEntrySize;
         long totalEntrySize;
 
@@ -424,10 +443,13 @@ class BlockStorageTest
 
         // For mergeIteration
         int mergeIterationCallCount;
-        int lastNumberOfBlocksBefore;
-        int lastNumberOfBlocksAfter;
+        long lastNumberOfBlocksBefore;
+        long lastNumberOfBlocksAfter;
 
-        // For mergeBlocks
+        // For mergeStarted
+        long totalEntriesToMerge;
+        long entriesMerged;
+
         @Override
         public void entryAdded( int entrySize )
         {
@@ -446,7 +468,7 @@ class BlockStorageTest
         }
 
         @Override
-        public void mergeIterationFinished( int numberOfBlocksBefore, int numberOfBlocksAfter )
+        public void mergeIterationFinished( long numberOfBlocksBefore, long numberOfBlocksAfter )
         {
             mergeIterationCallCount++;
             lastNumberOfBlocksBefore = numberOfBlocksBefore;
@@ -454,8 +476,20 @@ class BlockStorageTest
         }
 
         @Override
-        public void mergedBlocks( long resultingBlockSize, long resultingEntryCount, int numberOfBlocks )
+        public void mergedBlocks( long resultingBlockSize, long resultingEntryCount, long numberOfBlocks )
         {   // no-op
+        }
+
+        @Override
+        public void mergeStarted( long entryCount, long totalEntriesToWriteDuringMerge )
+        {
+            this.totalEntriesToMerge = totalEntriesToWriteDuringMerge;
+        }
+
+        @Override
+        public void entriesMerged( int entries )
+        {
+            entriesMerged += entries;
         }
     }
 }

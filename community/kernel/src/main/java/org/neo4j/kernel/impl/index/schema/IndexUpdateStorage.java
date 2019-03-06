@@ -56,6 +56,7 @@ public class IndexUpdateStorage<KEY extends NativeIndexKey<KEY>,VALUE extends Na
     private final KEY key1;
     private final KEY key2;
     private final VALUE value;
+    private volatile long count;
 
     IndexUpdateStorage( Layout<KEY,VALUE> layout, FileSystemAbstraction fs, File file, ByteBufferFactory byteBufferFactory, int blockSize ) throws IOException
     {
@@ -102,6 +103,8 @@ public class IndexUpdateStorage<KEY extends NativeIndexKey<KEY>,VALUE extends Na
 
         pageCursor.putByte( (byte) updateMode.ordinal() );
         IndexUpdateEntry.write( pageCursor, layout, updateMode, key1, key2, value );
+        // a single thread, and the same thread every time, increments this count
+        count++;
     }
 
     void doneAdding() throws IOException
@@ -126,6 +129,11 @@ public class IndexUpdateStorage<KEY extends NativeIndexKey<KEY>,VALUE extends Na
         buffer.flip();
         storeChannel.write( buffer );
         buffer.clear();
+    }
+
+    long count()
+    {
+        return count;
     }
 
     @Override
