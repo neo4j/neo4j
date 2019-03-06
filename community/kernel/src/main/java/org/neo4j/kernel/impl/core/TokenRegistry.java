@@ -19,32 +19,44 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import java.util.HashMap;
+import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
+import org.eclipse.collections.api.map.primitive.MutableObjectIntMap;
+import org.eclipse.collections.api.set.primitive.MutableIntSet;
+import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
+import org.eclipse.collections.impl.map.mutable.primitive.ObjectIntHashMap;
+import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
+
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.StampedLock;
 
 import org.neo4j.internal.kernel.api.NamedToken;
 
 import static java.util.Collections.unmodifiableCollection;
+import static org.neo4j.internal.kernel.api.TokenRead.NO_TOKEN;
 
 /**
  * Token registry provide id -> TOKEN and name -> id mappings.
  * Name -> id mapping will be updated last since it's used to check if the token already exists.
  *
- * Implementation does not provide any atomicity guarantees. Mapping updates will be visible independently from each
- * other.
- * Implementation is not thread safe.
+ * Implementation guarantees the atomicity of each method using internal locking.
  */
 public class TokenRegistry
 {
-    private final Map<String, Integer> nameToId = new ConcurrentHashMap<>();
-    private final Map<Integer,NamedToken> idToToken = new ConcurrentHashMap<>();
     private final String tokenType;
+    private final StampedLock lock;
+    private final MutableObjectIntMap<String> publicNameToId;
+    private final MutableObjectIntMap<String> internalNameToId;
+    private final MutableIntObjectMap<NamedToken> idToToken;
 
     public TokenRegistry( String tokenType )
     {
         this.tokenType = tokenType;
+        lock = new StampedLock();
+        publicNameToId = new ObjectIntHashMap<>();
+        internalNameToId = new ObjectIntHashMap<>();
+        idToToken = new IntObjectHashMap<>();
     }
 
     public String getTokenType()
@@ -54,60 +66,225 @@ public class TokenRegistry
 
     public void setInitialTokens( List<NamedToken> tokens )
     {
-        nameToId.clear();
-        idToToken.clear();
-        putAll( tokens );
+        long stamp = lock.writeLock();
+        try
+        {
+            publicNameToId.clear();
+            internalNameToId.clear();
+            idToToken.clear();
+
+            insertAllChecked( tokens );
+        }
+        finally
+        {
+            lock.unlockWrite( stamp );
+        }
     }
 
-    private void putAndEnsureUnique( Map<String,Integer> nameToId, NamedToken token )
+    public void put( NamedToken token ) throws NonUniqueTokenException
     {
-        Integer previous = nameToId.putIfAbsent( token.name(), token.id() );
-        if ( previous != null && previous != token.id() )
+        long stamp = lock.writeLock();
+        try
         {
-            // since we optimistically put token into a map before, now we need to remove it.
-            idToToken.remove( token.id(), token );
-            throw new NonUniqueTokenException( tokenType, token.name(), token.id(), previous );
+            if ( idToToken.containsKey( token.id() ) )
+            {
+                throw new NonUniqueTokenException( tokenType, token.name(), token.id(), token.id() );
+            }
+            insertChecked( token.isInternal() ? internalNameToId : publicNameToId, token );
+            idToToken.put( token.id(), token );
+        }
+        finally
+        {
+            lock.unlockWrite( stamp );
+        }
+    }
+
+    public Integer getId( String name )
+    {
+        return lockAndGetIdForName( publicNameToId, name );
+    }
+
+    public Integer getIdInternal( String name )
+    {
+        return lockAndGetIdForName( internalNameToId, name );
+    }
+
+    public NamedToken getToken( int id )
+    {
+        long stamp = lock.readLock();
+        try
+        {
+            NamedToken token = idToToken.get( id );
+            return token == null || token.isInternal() ? null : token;
+        }
+        finally
+        {
+            lock.unlockRead( stamp );
+        }
+    }
+
+    public NamedToken getTokenInternal( int id )
+    {
+        long stamp = lock.readLock();
+        try
+        {
+            NamedToken token = idToToken.get( id );
+            return token != null && token.isInternal() ? token : null;
+        }
+        finally
+        {
+            lock.unlockRead( stamp );
+        }
+    }
+
+    public Collection<NamedToken> allTokens()
+    {
+        long stamp = lock.readLock();
+        try
+        {
+            // Likely nearly all tokens are returned here.
+            List<NamedToken> list = new ArrayList<>( idToToken.size() );
+            for ( NamedToken token : idToToken )
+            {
+                if ( !token.isInternal() )
+                {
+                    list.add( token );
+                }
+            }
+            return unmodifiableCollection( list );
+        }
+        finally
+        {
+            lock.unlockRead( stamp );
+        }
+    }
+
+    public Collection<NamedToken> allInternalTokens()
+    {
+        long stamp = lock.readLock();
+        try
+        {
+            // Likely only a small fraction of all tokens are returned here.
+            List<NamedToken> list = new ArrayList<>();
+            for ( NamedToken token : idToToken )
+            {
+                if ( token.isInternal() )
+                {
+                    list.add( token );
+                }
+            }
+            return unmodifiableCollection( list );
+        }
+        finally
+        {
+            lock.unlockRead( stamp );
+        }
+    }
+
+    public int size()
+    {
+        long stamp = lock.readLock();
+        try
+        {
+            return publicNameToId.size();
+        }
+        finally
+        {
+            lock.unlockRead( stamp );
+        }
+    }
+
+    public int sizeInternal()
+    {
+        long stamp = lock.readLock();
+        try
+        {
+            return internalNameToId.size();
+        }
+        finally
+        {
+            lock.unlockRead( stamp );
         }
     }
 
     public void putAll( List<NamedToken> tokens ) throws NonUniqueTokenException
     {
-        Map<String, Integer> newNameToId = new HashMap<>();
-        Map<Integer, NamedToken> newIdToToken = new HashMap<>();
+        long stamp = lock.writeLock();
+        try
+        {
+            insertAllChecked( tokens );
+        }
+        finally
+        {
+            lock.unlockWrite( stamp );
+        }
+    }
+
+    private void insertAllChecked( List<NamedToken> tokens )
+    {
+        MutableObjectIntMap<String> uniquePublicNames = new ObjectIntHashMap<>();
+        MutableObjectIntMap<String> uniqueInternalNames = new ObjectIntHashMap<>();
+        MutableIntSet uniqueIds = new IntHashSet();
 
         for ( NamedToken token : tokens )
         {
-            newIdToToken.put( token.id(), token );
-            putAndEnsureUnique( newNameToId, token );
+            insertChecked( token.isInternal() ? uniqueInternalNames : uniquePublicNames, token );
+            if ( !uniqueIds.add( token.id() ) || idToToken.containsKey( token.id() ) )
+            {
+                throw new NonUniqueTokenException( tokenType, token.name(), token.id(), token.id() );
+            }
         }
 
-        idToToken.putAll( newIdToToken );
-        nameToId.putAll( newNameToId );
+        for ( NamedToken token : tokens )
+        {
+            insertUnchecked( token );
+        }
     }
 
-    public void put( NamedToken token ) throws NonUniqueTokenException
+    private void insertChecked( MutableObjectIntMap<String> namesToId, NamedToken token )
+    {
+        checkNameUniqueness( namesToId, token );
+        MutableObjectIntMap<String> additionalCheck;
+        if ( namesToId != ( additionalCheck = token.isInternal() ? internalNameToId : publicNameToId ) )
+        {
+            checkNameUniqueness( additionalCheck, token );
+        }
+        namesToId.put( token.name(), token.id() );
+    }
+
+    private void checkNameUniqueness( MutableObjectIntMap<String> namesToId, NamedToken token )
+    {
+        if ( namesToId.containsKey( token.name() ) )
+        {
+            int existingKey = namesToId.get( token.name() );
+            throw new NonUniqueTokenException( tokenType, token.name(), token.id(), existingKey );
+        }
+    }
+
+    private void insertUnchecked( NamedToken token )
     {
         idToToken.put( token.id(), token );
-        putAndEnsureUnique( nameToId, token );
+        if ( token.isInternal() )
+        {
+            internalNameToId.put( token.name(), token.id() );
+        }
+        else
+        {
+            publicNameToId.put( token.name(), token.id() );
+        }
     }
 
-    public Integer getId( String name )
+    private Integer lockAndGetIdForName( MutableObjectIntMap<String> nameToId, String name )
     {
-        return nameToId.get( name );
-    }
-
-    public NamedToken getToken( int id )
-    {
-        return idToToken.get( id );
-    }
-
-    public Iterable<NamedToken> allTokens()
-    {
-        return unmodifiableCollection( idToToken.values() );
-    }
-
-    public int size()
-    {
-        return nameToId.size();
+        long stamp = lock.readLock();
+        try
+        {
+            int id = nameToId.getIfAbsent( name, NO_TOKEN );
+            return id == NO_TOKEN ? null : id;
+        }
+        finally
+        {
+            lock.unlockRead( stamp );
+        }
     }
 }
