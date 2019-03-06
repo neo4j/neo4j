@@ -146,7 +146,7 @@ public class BuiltInProcedures
                     String state = internalIndexState.toString();
                     Map<String,String> providerDescriptorMap = indexProviderDescriptorMap( schemaRead.index( schema ) );
                     PopulationProgress progress = schemaRead.indexGetPopulationProgress( index );
-                    IndexPopulationProgress indexProgress = new IndexPopulationProgress( progress.getCompleted(), progress.getTotal() );
+                    IndexPopulationProgress indexProgress = progress.toIndexPopulationProgress();
                     String failureMessage = internalIndexState == InternalIndexState.FAILED ? schemaRead.indexGetFailure( index ) : "";
                     result.add( new IndexResult( indexId,
                                                  description,

@@ -27,6 +27,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Comparator;
+import java.util.function.IntConsumer;
 
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.io.IOUtils;
@@ -35,6 +36,8 @@ import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.ByteArrayPageCursor;
 import org.neo4j.util.Preconditions;
+
+import static java.lang.Math.ceil;
 
 /**
  * Transforms an unordered stream of key-value pairs ({@link BlockEntry}) to an ordered one. It does so in two phases:
@@ -60,9 +63,10 @@ class BlockStorage<KEY, VALUE> implements Closeable
     private final int blockSize;
     private final ByteBufferFactory bufferFactory;
     private final File blockFile;
-    private int numberOfBlocksInCurrentFile;
+    private long numberOfBlocksInCurrentFile;
     private int currentBufferSize;
     private boolean doneAdding;
+    private long entryCount;
 
     BlockStorage( Layout<KEY,VALUE> layout, ByteBufferFactory bufferFactory, FileSystemAbstraction fs, File blockFile, Monitor monitor, int blockSize )
             throws IOException
@@ -120,7 +124,7 @@ class BlockStorage<KEY, VALUE> implements Closeable
         bufferedEntries.sortThis( comparator );
 
         ListBasedBlockEntryCursor<KEY,VALUE> entries = new ListBasedBlockEntryCursor<>( bufferedEntries );
-        writeBlock( storeChannel, entries, blockSize, bufferedEntries.size(), NOT_CANCELLABLE );
+        writeBlock( storeChannel, entries, blockSize, bufferedEntries.size(), NOT_CANCELLABLE, count -> entryCount += count );
 
         // Append to file
         monitor.blockFlushed( bufferedEntries.size(), currentBufferSize, storeChannel.position() );
@@ -144,6 +148,7 @@ class BlockStorage<KEY, VALUE> implements Closeable
      */
     public void merge( int mergeFactor, Cancellation cancellation ) throws IOException
     {
+        monitor.mergeStarted( entryCount, calculateNumberOfEntriesWrittenDuringMerges( entryCount, numberOfBlocksInCurrentFile, mergeFactor ) );
         File sourceFile = blockFile;
         File tempFile = new File( blockFile.getParent(), blockFile.getName() + ".b" );
         try
@@ -156,8 +161,8 @@ class BlockStorage<KEY, VALUE> implements Closeable
                 try ( BlockReader<KEY,VALUE> reader = reader( sourceFile );
                       StoreChannel targetChannel = fs.open( targetFile, OpenMode.READ_WRITE ) )
                 {
-                    int blocksMergedSoFar = 0;
-                    int blocksInMergedFile = 0;
+                    long blocksMergedSoFar = 0;
+                    long blocksInMergedFile = 0;
                     while ( !cancellation.cancelled() && blocksMergedSoFar < numberOfBlocksInCurrentFile )
                     {
                         blocksMergedSoFar += performSingleMerge( mergeFactor, reader, targetChannel, cancellation );
@@ -167,7 +172,7 @@ class BlockStorage<KEY, VALUE> implements Closeable
                     monitor.mergeIterationFinished( blocksMergedSoFar, blocksInMergedFile );
                 }
 
-                // Flip and restore the channelz
+                // Flip and restore the channels
                 File tmpSourceFile = sourceFile;
                 sourceFile = targetFile;
                 targetFile = tmpSourceFile;
@@ -188,6 +193,26 @@ class BlockStorage<KEY, VALUE> implements Closeable
     }
 
     /**
+     * Calculates number of entries that will be written, given an entry count, number of blocks and a merge factor.
+     * During merge entries are merged and written, potentially multiple times depending on number of blocks and merge factor.
+     *
+     * @param entryCount number of entries to merge.
+     * @param numberOfBlocks number of blocks that these entries exist in.
+     * @param mergeFactor the merge factor to use when merging.
+     * @return number of entries written in total when merging these entries, which exists in the given number of blocks,
+     * merged with the given merge factor.
+     */
+    static long calculateNumberOfEntriesWrittenDuringMerges( long entryCount, long numberOfBlocks, int mergeFactor )
+    {
+        int singleMerges = 0;
+        for ( long blocks = numberOfBlocks; blocks > 1; blocks = (long) ceil( (double) blocks / mergeFactor ) )
+        {
+            singleMerges++;
+        }
+        return singleMerges * entryCount;
+    }
+
+    /**
      * Merge some number of blocks, how many is decided by mergeFactor, into a single sorted block. This is done by opening {@link BlockEntryReader} on each
      * block that we want to merge and give them to a {@link MergingBlockEntryReader}. The {@link BlockEntryReader}s are pulled from a {@link BlockReader}
      * that iterate over Blocks in file in sequential order.
@@ -196,7 +221,7 @@ class BlockStorage<KEY, VALUE> implements Closeable
      * like a single large and sorted entry reader.
      *
      * The large block resulting from the merge is written down to targetChannel by calling
-     * {@link #writeBlock(StoreChannel, BlockEntryCursor, long, long, Cancellation)}.
+     * {@link #writeBlock(StoreChannel, BlockEntryCursor, long, long, Cancellation, IntConsumer)}.
      *
      * @param mergeFactor How many blocks to merge at the same time. Influence how much memory will be used because each merge block will have it's own
      * {@link ByteBuffer} that they read from.
@@ -230,17 +255,17 @@ class BlockStorage<KEY, VALUE> implements Closeable
                 }
             }
 
-            writeBlock( targetChannel, merger, blockSize, entryCount, cancellation );
+            writeBlock( targetChannel, merger, blockSize, entryCount, cancellation, monitor::entriesMerged );
             monitor.mergedBlocks( blockSize, entryCount, blocksMerged );
             return blocksMerged;
         }
     }
 
     private void writeBlock( StoreChannel targetChannel, BlockEntryCursor<KEY,VALUE> blockEntryCursor, long blockSize, long entryCount,
-            Cancellation cancellation ) throws IOException
+            Cancellation cancellation, IntConsumer entryCountReporter ) throws IOException
     {
         writeHeader( byteBuffer, blockSize, entryCount );
-        long actualDataSize = writeEntries( targetChannel, byteBuffer, layout, blockEntryCursor, cancellation );
+        long actualDataSize = writeEntries( targetChannel, byteBuffer, layout, blockEntryCursor, cancellation, entryCountReporter );
         writeLastEntriesWithPadding( targetChannel, byteBuffer, blockSize - actualDataSize );
     }
 
@@ -251,17 +276,19 @@ class BlockStorage<KEY, VALUE> implements Closeable
     }
 
     private static <KEY, VALUE> long writeEntries( StoreChannel targetChannel, ByteBuffer byteBuffer, Layout<KEY,VALUE> layout,
-            BlockEntryCursor<KEY,VALUE> blockEntryCursor, Cancellation cancellation ) throws IOException
+            BlockEntryCursor<KEY,VALUE> blockEntryCursor, Cancellation cancellation, IntConsumer entryCountReporter ) throws IOException
     {
         // Loop over block entries
         long actualDataSize = BLOCK_HEADER_SIZE;
         ByteArrayPageCursor pageCursor = new ByteArrayPageCursor( byteBuffer );
+        int entryCountToReport = 0;
         while ( blockEntryCursor.next() )
         {
             KEY key = blockEntryCursor.key();
             VALUE value = blockEntryCursor.value();
             int entrySize = BlockEntry.entrySize( layout, key, value );
             actualDataSize += entrySize;
+            entryCountToReport++;
 
             if ( byteBuffer.remaining() < entrySize )
             {
@@ -275,9 +302,15 @@ class BlockStorage<KEY, VALUE> implements Closeable
                 byteBuffer.flip();
                 targetChannel.writeAll( byteBuffer );
                 byteBuffer.clear();
+                entryCountReporter.accept( entryCountToReport );
+                entryCountToReport = 0;
             }
 
             BlockEntry.write( pageCursor, layout, key, value );
+        }
+        if ( entryCountToReport > 0 )
+        {
+            entryCountReporter.accept( entryCountToReport );
         }
         return actualDataSize;
     }
@@ -325,9 +358,22 @@ class BlockStorage<KEY, VALUE> implements Closeable
 
         void blockFlushed( long keyCount, int numberOfBytes, long positionAfterFlush );
 
-        void mergeIterationFinished( int numberOfBlocksBefore, int numberOfBlocksAfter );
+        /**
+         * @param entryCount number of entries there are in this block storage.
+         * @param totalEntriesToWriteDuringMerge total entries that will be written, even accounting for that entries may need to be
+         * written multiple times back and forth.
+         */
+        void mergeStarted( long entryCount, long totalEntriesToWriteDuringMerge );
 
-        void mergedBlocks( long resultingBlockSize, long resultingEntryCount, int numberOfBlocks );
+        /**
+         * @param entries number of entries merged since last call. The sum of this value from all calls to this method
+         * will in the end match the value provided in {@link #mergeStarted(long, long)}.
+         */
+        void entriesMerged( int entries );
+
+        void mergeIterationFinished( long numberOfBlocksBefore, long numberOfBlocksAfter );
+
+        void mergedBlocks( long resultingBlockSize, long resultingEntryCount, long numberOfBlocks );
 
         class Adapter implements Monitor
         {
@@ -342,13 +388,69 @@ class BlockStorage<KEY, VALUE> implements Closeable
             }
 
             @Override
-            public void mergeIterationFinished( int numberOfBlocksBefore, int numberOfBlocksAfter )
+            public void mergeStarted( long entryCount, long totalEntriesToWriteDuringMerge )
             {   // no-op
             }
 
             @Override
-            public void mergedBlocks( long resultingBlockSize, long resultingEntryCount, int numberOfBlocks )
+            public void entriesMerged( int entries )
             {   // no-op
+            }
+
+            @Override
+            public void mergeIterationFinished( long numberOfBlocksBefore, long numberOfBlocksAfter )
+            {   // no-op
+            }
+
+            @Override
+            public void mergedBlocks( long resultingBlockSize, long resultingEntryCount, long numberOfBlocks )
+            {   // no-op
+            }
+        }
+
+        class Delegate implements Monitor
+        {
+            private final Monitor actual;
+
+            Delegate( Monitor actual )
+            {
+                this.actual = actual;
+            }
+
+            @Override
+            public void entryAdded( int entrySize )
+            {
+                actual.entryAdded( entrySize );
+            }
+
+            @Override
+            public void blockFlushed( long keyCount, int numberOfBytes, long positionAfterFlush )
+            {
+                actual.blockFlushed( keyCount, numberOfBytes, positionAfterFlush );
+            }
+
+            @Override
+            public void mergeStarted( long entryCount, long totalEntriesToWriteDuringMerge )
+            {
+                actual.mergeStarted( entryCount, totalEntriesToWriteDuringMerge );
+            }
+
+            @Override
+            public void entriesMerged( int entries )
+            {
+                actual.entriesMerged( entries );
+            }
+
+            @Override
+            public void mergeIterationFinished( long numberOfBlocksBefore, long numberOfBlocksAfter )
+            {
+                actual.mergeIterationFinished( numberOfBlocksBefore, numberOfBlocksAfter );
+            }
+
+            @Override
+            public void mergedBlocks( long resultingBlockSize, long resultingEntryCount, long numberOfBlocks )
+            {
+                actual.mergedBlocks( resultingBlockSize, resultingEntryCount, numberOfBlocks );
             }
         }
 

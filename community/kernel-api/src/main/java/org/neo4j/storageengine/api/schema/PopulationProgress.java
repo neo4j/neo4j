@@ -19,27 +19,134 @@
  */
 package org.neo4j.storageengine.api.schema;
 
-public class PopulationProgress
+import java.util.ArrayList;
+import java.util.List;
+
+import org.neo4j.graphdb.index.IndexPopulationProgress;
+import org.neo4j.helpers.collection.Pair;
+
+import static java.lang.String.format;
+
+public interface PopulationProgress
 {
-    public static final PopulationProgress NONE = new PopulationProgress( 0, 0 );
-    public static final PopulationProgress DONE = new PopulationProgress( 1, 1 );
+    PopulationProgress NONE = single( 0, 0 );
+    PopulationProgress DONE = single( 1, 1 );
 
-    private final long completed;
-    private final long total;
+    long getCompleted();
 
-    public PopulationProgress( long completed, long total )
+    long getTotal();
+
+    float getProgress();
+
+    IndexPopulationProgress toIndexPopulationProgress();
+
+    static PopulationProgress single( long completed, long total )
     {
-        this.completed = completed;
-        this.total = total;
+        return new PopulationProgress()
+        {
+            @Override
+            public long getCompleted()
+            {
+                return completed;
+            }
+
+            @Override
+            public long getTotal()
+            {
+                return total;
+            }
+
+            @Override
+            public float getProgress()
+            {
+                return (total == 0) ? 0 : (float) ((double) completed / total);
+            }
+
+            @Override
+            public IndexPopulationProgress toIndexPopulationProgress()
+            {
+                return new IndexPopulationProgress( completed, total );
+            }
+
+            @Override
+            public String toString()
+            {
+                return format( "[%d/%d:%f]", completed, total, getProgress() );
+            }
+        };
     }
 
-    public long getCompleted()
+    static MultiBuilder multiple()
     {
-        return completed;
+        return new MultiBuilder();
     }
 
-    public long getTotal()
+    class MultiBuilder
     {
-        return total;
+        private final List<Pair<PopulationProgress,Float>> parts = new ArrayList<>();
+        private float totalWeight;
+
+        public MultiBuilder add( PopulationProgress part, float weight )
+        {
+            parts.add( Pair.of( part, weight ) );
+            totalWeight += weight;
+            return this;
+        }
+
+        public PopulationProgress build()
+        {
+            float[] weightFactors = buildWeightFactors();
+            return new PopulationProgress()
+            {
+                @Override
+                public long getCompleted()
+                {
+                    return parts.stream().mapToLong( part -> part.first().getCompleted() ).sum();
+                }
+
+                @Override
+                public long getTotal()
+                {
+                    return parts.stream().mapToLong( part -> part.first().getTotal() ).sum();
+                }
+
+                @Override
+                public float getProgress()
+                {
+                    float combined = 0;
+                    for ( int i = 0; i < parts.size(); i++ )
+                    {
+                        combined += parts.get( i ).first().getProgress() * weightFactors[i];
+                    }
+                    return combined;
+                }
+
+                @Override
+                public IndexPopulationProgress toIndexPopulationProgress()
+                {
+                    // Here we want to control the progress percentage and the best way to do that without introducing
+                    // another IndexPopulationProgress constructor is to make up completed/total values that will generate
+                    // the progress we want (nobody uses getCompleted()/getTotal() anyway since even the widely used IndexPopulationProgress#DONE)
+                    // destroys any actual numbers by having 1/1.
+                    float progress = getProgress();
+                    long fakeTotal = 1_000; // because we have 4 value digits in the report there
+                    long fakeCompleted = (long) ((float) fakeTotal * progress);
+                    return new IndexPopulationProgress( fakeCompleted, fakeTotal );
+                }
+            };
+        }
+
+        private float[] buildWeightFactors()
+        {
+            float[] weightFactors = new float[parts.size()];
+            float weightSum = 0;
+            for ( int i = 0; i < parts.size(); i++ )
+            {
+                Pair<PopulationProgress,Float> part = parts.get( i );
+                weightFactors[i] = i == parts.size() - 1 ? 1 - weightSum : part.other() / totalWeight;
+                weightSum += weightFactors[i];
+            }
+            return weightFactors;
+        }
     }
 }

@@ -53,6 +53,7 @@ public class IndexPopulationProgress
 
     /**
      * @return number of completed items
+     * @deprecated since this number won't be reliable throughout a population and should therefore not be used.
      */
     public long getCompletedCount()
     {
@@ -61,6 +62,7 @@ public class IndexPopulationProgress
 
     /**
      * @return total number of items to index
+     * @deprecated since this number won't be reliable throughout a population and should therefore not be used.
      */
     public long getTotalCount()
     {
