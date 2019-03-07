@@ -362,9 +362,10 @@ public abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>,
             populator.close( true );
             fail( "Expected successful close to fail after markedAsFailed" );
         }
-        catch ( IllegalStateException e )
+        catch ( RuntimeException e )
         {
-            // good
+            // then good
+            assertTrue( "Expected cause to contain " + IllegalStateException.class, Exceptions.contains( e, IllegalStateException.class ) );
         }
         populator.close( false );
     }
@@ -428,9 +429,10 @@ public abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>,
             populator.close( true );
             fail( "Should have failed" );
         }
-        catch ( IllegalStateException e )
+        catch ( RuntimeException e )
         {
             // then good
+            assertTrue( "Expected cause to contain " + IllegalStateException.class, Exceptions.contains( e, IllegalStateException.class ) );
         }
     }
 
@@ -464,9 +466,10 @@ public abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>,
             populator.close( true );
             fail( "Should have failed" );
         }
-        catch ( IllegalStateException e )
+        catch ( RuntimeException e )
         {
             // then good
+            assertTrue( "Expected cause to contain " + IllegalStateException.class, Exceptions.contains( e, IllegalStateException.class ) );
         }
     }
 
@@ -485,9 +488,10 @@ public abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>,
             populator.close( false );
             fail( "Should have failed" );
         }
-        catch ( IllegalStateException e )
+        catch ( RuntimeException e )
         {
             // then good
+            assertTrue( "Expected cause to contain " + IllegalStateException.class, Exceptions.contains( e, IllegalStateException.class ) );
         }
     }
 
