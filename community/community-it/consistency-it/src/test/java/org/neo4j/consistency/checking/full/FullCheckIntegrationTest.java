@@ -2390,20 +2390,15 @@ public class FullCheckIntegrationTest
 
     private void writeToSchemaStore( SchemaStore schemaStore, SchemaRule rule ) throws KernelException
     {
-        SchemaRuleAccess schemaRuleAccess = SchemaRuleAccess.getSchemaRuleAccess( schemaStore, fixture.writableTokenHolders().propertyKeyTokens() );
+        SchemaRuleAccess schemaRuleAccess = SchemaRuleAccess.getSchemaRuleAccess( schemaStore, fixture.writableTokenHolders() );
         schemaRuleAccess.writeSchemaRule( rule );
     }
 
     private Iterator<StorageIndexReference> getIndexDescriptors()
     {
         StoreAccess storeAccess = fixture.directStoreAccess().nativeStores();
-<<<<<<< HEAD
         TokenHolders tokenHolders = StoreTokens.readOnlyTokenHolders( storeAccess.getRawNeoStores() );
         SchemaRuleAccess schema = SchemaRuleAccess.getSchemaRuleAccess( storeAccess.getSchemaStore(), tokenHolders );
-=======
-        TokenHolders tokenHolders = RecordStorageEngineFactory.readOnlyTokenHolders( storeAccess.getRawNeoStores() );
-        SchemaRuleAccess schema = SchemaRuleAccess.getSchemaRuleAccess( storeAccess.getSchemaStore(), tokenHolders.propertyKeyTokens() );
->>>>>>> Moves schema descriptors to new neo4j-schema component
         return schema.indexesGetAll();
     }
 
@@ -2471,7 +2466,7 @@ public class FullCheckIntegrationTest
 
     private void serializeRule( SchemaRule rule, SchemaRecord schemaRecord, TransactionDataBuilder tx, IdGenerator next ) throws KernelException
     {
-        IntObjectMap<Value> protoProperties = SchemaStore.convertSchemaRuleToMap( rule, tx.tokenHolders().propertyKeyTokens() );
+        IntObjectMap<Value> protoProperties = SchemaStore.convertSchemaRuleToMap( rule, tx.tokenHolders() );
         Collection<PropertyBlock> blocks = new ArrayList<>();
         DynamicRecordAllocator stringAllocator = null;
         DynamicRecordAllocator arrayAllocator = null;

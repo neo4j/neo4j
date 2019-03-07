@@ -54,7 +54,7 @@ public class IndexAccessors implements Closeable
     {
         TokenHolders tokenHolders = StoreTokens.readOnlyTokenHolders( storeAccess.getRawNeoStores() );
         Iterator<StorageIndexReference> indexes =
-                SchemaRuleAccess.getSchemaRuleAccess( storeAccess.getSchemaStore(), tokenHolders.propertyKeyTokens() ).indexesGetAll();
+                SchemaRuleAccess.getSchemaRuleAccess( storeAccess.getSchemaStore(), tokenHolders ).indexesGetAll();
         for (; ; )
         {
             try

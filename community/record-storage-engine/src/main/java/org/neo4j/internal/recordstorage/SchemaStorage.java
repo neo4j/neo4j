@@ -47,7 +47,7 @@ import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.storageengine.api.ConstraintRule;
 import org.neo4j.storageengine.api.SchemaRule;
 import org.neo4j.storageengine.api.StorageIndexReference;
-import org.neo4j.token.api.TokenHolder;
+import org.neo4j.token.TokenHolders;
 import org.neo4j.util.VisibleForTesting;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
@@ -55,12 +55,12 @@ import org.neo4j.values.storable.Values;
 public class SchemaStorage implements SchemaRuleAccess
 {
     private final SchemaStore schemaStore;
-    private final TokenHolder propertyKeyTokenHolder;
+    private final TokenHolders tokenHolders;
 
-    public SchemaStorage( SchemaStore schemaStore, TokenHolder propertyKeyTokenHolder )
+    public SchemaStorage( SchemaStore schemaStore, TokenHolders tokenHolders )
     {
         this.schemaStore = schemaStore;
-        this.propertyKeyTokenHolder = propertyKeyTokenHolder;
+        this.tokenHolders = tokenHolders;
     }
 
     @Override
@@ -146,13 +146,13 @@ public class SchemaStorage implements SchemaRuleAccess
             @Override
             protected IntObjectMap<Value> asMap( SchemaRule rule ) throws KernelException
             {
-                return SchemaStore.convertSchemaRuleToMap( rule, propertyKeyTokenHolder );
+                return SchemaStore.convertSchemaRuleToMap( rule, tokenHolders );
             }
 
             @Override
             protected void setConstraintIndexOwnerProperty( long constraintId, IntObjectProcedure<Value> proc ) throws KernelException
             {
-                int propertyId = SchemaStore.getOwningConstraintPropertyKeyId( propertyKeyTokenHolder );
+                int propertyId = SchemaStore.getOwningConstraintPropertyKeyId( tokenHolders );
                 proc.value( propertyId, Values.longValue( constraintId ) );
             }
         };
@@ -161,7 +161,7 @@ public class SchemaStorage implements SchemaRuleAccess
     @Override
     public void writeSchemaRule( SchemaRule rule ) throws KernelException
     {
-        IntObjectMap<Value> protoProperties = SchemaStore.convertSchemaRuleToMap( rule, propertyKeyTokenHolder );
+        IntObjectMap<Value> protoProperties = SchemaStore.convertSchemaRuleToMap( rule, tokenHolders );
         PropertyStore propertyStore = schemaStore.propertyStore();
         Collection<PropertyBlock> blocks = new ArrayList<>();
         protoProperties.forEachKeyValue( ( keyId, value ) ->
@@ -280,6 +280,6 @@ public class SchemaStorage implements SchemaRuleAccess
 
     private SchemaRule readSchemaRule( SchemaRecord record ) throws MalformedSchemaRuleException
     {
-        return SchemaStore.readSchemaRule( record, schemaStore.propertyStore(), propertyKeyTokenHolder );
+        return SchemaStore.readSchemaRule( record, schemaStore.propertyStore(), tokenHolders );
     }
 }

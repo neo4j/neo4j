@@ -33,14 +33,14 @@ import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.storageengine.api.ConstraintRule;
 import org.neo4j.storageengine.api.SchemaRule;
 import org.neo4j.storageengine.api.StorageIndexReference;
-import org.neo4j.token.api.TokenHolder;
+import org.neo4j.token.TokenHolders;
 import org.neo4j.util.VisibleForTesting;
 
 public interface SchemaRuleAccess
 {
-    static SchemaRuleAccess getSchemaRuleAccess( SchemaStore store, TokenHolder propertyKeyTokenHolder )
+    static SchemaRuleAccess getSchemaRuleAccess( SchemaStore store, TokenHolders tokenHolders )
     {
-        return new SchemaStorage( store, propertyKeyTokenHolder );
+        return new SchemaStorage( store, tokenHolders );
     }
 
     long newRuleId();

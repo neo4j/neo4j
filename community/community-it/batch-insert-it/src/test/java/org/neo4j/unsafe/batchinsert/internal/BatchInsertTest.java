@@ -753,7 +753,7 @@ public class BatchInsertTest
                     .resolveDependency( RecordStorageEngine.class ).testAccessNeoStores();
             SchemaStore store = neoStores.getSchemaStore();
             TokenHolders tokenHolders = graphdb.getDependencyResolver().resolveDependency( TokenHolders.class );
-            SchemaRuleAccess schemaRuleAccess = SchemaRuleAccess.getSchemaRuleAccess( store, tokenHolders.propertyKeyTokens() );
+            SchemaRuleAccess schemaRuleAccess = SchemaRuleAccess.getSchemaRuleAccess( store, tokenHolders );
             List<Long> inUse = new ArrayList<>();
             SchemaRecord record = store.newRecord();
             for ( long i = 1, high = store.getHighestPossibleIdInUse(); i <= high; i++ )

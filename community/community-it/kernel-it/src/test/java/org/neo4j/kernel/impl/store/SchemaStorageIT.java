@@ -98,7 +98,7 @@ public class SchemaStorageIT
             transaction.success();
         }
         SchemaStore schemaStore = resolveDependency( RecordStorageEngine.class ).testAccessNeoStores().getSchemaStore();
-        storage = new SchemaStorage( schemaStore, resolveDependency( TokenHolders.class ).propertyKeyTokens() );
+        storage = new SchemaStorage( schemaStore, resolveDependency( TokenHolders.class ) );
     }
 
     @Before

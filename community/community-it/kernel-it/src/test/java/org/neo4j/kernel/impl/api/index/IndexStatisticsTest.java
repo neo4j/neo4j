@@ -218,7 +218,7 @@ public class IndexStatisticsTest
         awaitIndexesOnline();
 
         SchemaRuleAccess schemaRuleAccess =
-                SchemaRuleAccess.getSchemaRuleAccess( neoStores().getSchemaStore(), resolveDependency( TokenHolders.class ).propertyKeyTokens() );
+                SchemaRuleAccess.getSchemaRuleAccess( neoStores().getSchemaStore(), resolveDependency( TokenHolders.class ) );
         long indexId = single( schemaRuleAccess.indexGetForSchema( index ) ).getId();
 
         // when

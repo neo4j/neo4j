@@ -57,8 +57,8 @@ import org.neo4j.storageengine.api.PropertyKeyValue;
 import org.neo4j.storageengine.api.SchemaRule;
 import org.neo4j.storageengine.api.StorageConstraintReference;
 import org.neo4j.storageengine.api.StorageIndexReference;
+import org.neo4j.token.TokenHolders;
 import org.neo4j.token.api.NamedToken;
-import org.neo4j.token.api.TokenHolder;
 import org.neo4j.token.api.TokenNotFoundException;
 import org.neo4j.values.storable.IntArray;
 import org.neo4j.values.storable.LongValue;
@@ -168,10 +168,10 @@ public class SchemaStore extends CommonAbstractStore<SchemaRecord,IntStoreHeader
     private static final String PROP_INDEX_TYPE = PROP_SCHEMA_RULE_PREFIX + "indexType";
     private static final String PROP_INDEX_CONFIG_PREFIX = PROP_SCHEMA_RULE_PREFIX + "IndexConfig.";
 
-    public static int getOwningConstraintPropertyKeyId( TokenHolder propertyKeyTokenHolder ) throws KernelException
+    public static int getOwningConstraintPropertyKeyId( TokenHolders tokenHolders ) throws KernelException
     {
         int[] ids = new int[1];
-        propertyKeyTokenHolder.getOrCreateInternalIds( new String[]{PROP_OWNING_CONSTRAINT}, ids );
+        tokenHolders.propertyKeyTokens().getOrCreateInternalIds( new String[]{PROP_OWNING_CONSTRAINT}, ids );
         return ids[0];
     }
 
@@ -201,7 +201,7 @@ public class SchemaStore extends CommonAbstractStore<SchemaRecord,IntStoreHeader
         return map;
     }
 
-    public static IntObjectMap<Value> convertSchemaRuleToMap( SchemaRule rule, TokenHolder propertyKeyTokenHolder ) throws KernelException
+    public static IntObjectMap<Value> convertSchemaRuleToMap( SchemaRule rule, TokenHolders tokenHolders ) throws KernelException
     {
         // The dance we do in here with map to arrays to another map, allows us to resolve (and allocate) all of the tokens in a single batch operation.
         Map<String,Value> stringlyMap = mapifySchemaRule( rule );
@@ -219,7 +219,7 @@ public class SchemaStore extends CommonAbstractStore<SchemaRecord,IntStoreHeader
             values[i] = entry.getValue();
         }
 
-        propertyKeyTokenHolder.getOrCreateInternalIds( keys, keyIds );
+        tokenHolders.propertyKeyTokens().getOrCreateInternalIds( keys, keyIds );
 
         MutableIntObjectMap<Value> tokenisedMap = new IntObjectHashMap<>();
         for ( int i = 0; i < size; i++ )
@@ -295,10 +295,10 @@ public class SchemaStore extends CommonAbstractStore<SchemaRecord,IntStoreHeader
         }
     }
 
-    public static SchemaRule readSchemaRule( SchemaRecord record, PropertyStore propertyStore, TokenHolder propertyKeyTokenHolder )
+    public static SchemaRule readSchemaRule( SchemaRecord record, PropertyStore propertyStore, TokenHolders tokenHolders )
             throws MalformedSchemaRuleException
     {
-        Map<String,Value> map = schemaRecordToMap( record, propertyStore, propertyKeyTokenHolder );
+        Map<String,Value> map = schemaRecordToMap( record, propertyStore, tokenHolders );
         return unmapifySchemaRule( record.getId(), map );
     }
 
@@ -370,7 +370,7 @@ public class SchemaStore extends CommonAbstractStore<SchemaRecord,IntStoreHeader
         }
     }
 
-    private static Map<String,Value> schemaRecordToMap( SchemaRecord record, PropertyStore propertyStore, TokenHolder propertyKeyTokenHolder )
+    private static Map<String,Value> schemaRecordToMap( SchemaRecord record, PropertyStore propertyStore, TokenHolders tokenHolders )
             throws MalformedSchemaRuleException
     {
         Map<String,Value> props = new HashMap<>();
@@ -390,19 +390,19 @@ public class SchemaStore extends CommonAbstractStore<SchemaRecord,IntStoreHeader
             for ( PropertyBlock propertyBlock : propRecord )
             {
                 PropertyKeyValue propertyKeyValue = propertyBlock.newPropertyKeyValue( propertyStore );
-                insertPropertyIntoMap( propertyKeyValue, props, propertyKeyTokenHolder );
+                insertPropertyIntoMap( propertyKeyValue, props, tokenHolders );
             }
             nextProp = propRecord.getNextProp();
         }
         return props;
     }
 
-    private static void insertPropertyIntoMap( PropertyKeyValue propertyKeyValue, Map<String,Value> props, TokenHolder propertyKeyTokenHolder )
+    private static void insertPropertyIntoMap( PropertyKeyValue propertyKeyValue, Map<String,Value> props, TokenHolders tokenHolders )
             throws MalformedSchemaRuleException
     {
         try
         {
-            NamedToken propertyKeyTokenName = propertyKeyTokenHolder.getInternalTokenById( propertyKeyValue.propertyKeyId() );
+            NamedToken propertyKeyTokenName = tokenHolders.propertyKeyTokens().getInternalTokenById( propertyKeyValue.propertyKeyId() );
             props.put( propertyKeyTokenName.name(), propertyKeyValue.value() );
         }
         catch ( TokenNotFoundException | InvalidRecordException e )
