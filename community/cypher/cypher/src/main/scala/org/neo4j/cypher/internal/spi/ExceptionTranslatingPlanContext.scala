@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.spi.v4_0
+package org.neo4j.cypher.internal.spi
 
 import org.neo4j.cypher.internal.compatibility.v4_0.ExceptionTranslationSupport
 import org.neo4j.cypher.internal.planner.spi.{GraphStatistics, IndexDescriptor, PlanContext}
