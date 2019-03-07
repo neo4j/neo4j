@@ -281,28 +281,19 @@ public class SslPolicyLoader
         String keyPass = config.get( policyConfig.entry_pass );
         String keyAlias = config.get( policyConfig.entry_alias );
 
-        KeyStore keyStore;
-        String type = config.get( policyConfig.format ).name();
-        try
-        {
-            keyStore = KeyStore.getInstance( type );
-        }
-        catch ( KeyStoreException e )
-        {
-            throw new RuntimeException( "Unable to create keystore with type: " + type, e );
-        }
+        BaseSslPolicyConfig.Format type = config.get( policyConfig.format );
+        KeyStore keyStore = loadKeyStore( keyStoreFile, storePass, type );
 
-        try ( FileInputStream fis = new FileInputStream( keyStoreFile ) )
+        KeyStore trustStore;
+        File trustStoreFile = config.get( policyConfig.truststore );
+        if ( trustStoreFile != null && !trustStoreFile.equals( keyStoreFile ) )
         {
-            keyStore.load( fis, storePass == null ? null : storePass.toCharArray() );
+            String trustStorePass = config.get( policyConfig.truststore_pass );
+            trustStore = loadKeyStore( trustStoreFile, trustStorePass, type );
         }
-        catch ( IOException e )
+        else
         {
-            throw new RuntimeException( "Unable to open file: " + keyStoreFile, e );
-        }
-        catch ( CertificateException | NoSuchAlgorithmException e )
-        {
-            throw new RuntimeException( "Cryptographic error creating keystore from file: " + keyStoreFile, e );
+            trustStore = keyStore;
         }
 
         X509Certificate[] certificateChain;
@@ -325,7 +316,34 @@ public class SslPolicyLoader
             throw new RuntimeException( String.format( "Unable to load private key from: %s alias %s ", keyStoreFile, keyAlias ), e );
         }
 
-        return new KeyAndChain( key, certificateChain, keyStore );
+        return new KeyAndChain( key, certificateChain, trustStore );
+    }
+
+    private KeyStore loadKeyStore( File keyStoreFile, String storePass, BaseSslPolicyConfig.Format type )
+    {
+        KeyStore keyStore;
+        try
+        {
+            keyStore = KeyStore.getInstance( type.name() );
+        }
+        catch ( KeyStoreException e )
+        {
+            throw new RuntimeException( "Unable to create keystore with type: " + type, e );
+        }
+
+        try ( FileInputStream fis = new FileInputStream( keyStoreFile ) )
+        {
+            keyStore.load( fis, storePass == null ? null : storePass.toCharArray() );
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( "Unable to open file: " + keyStoreFile, e );
+        }
+        catch ( CertificateException | NoSuchAlgorithmException e )
+        {
+            throw new RuntimeException( "Cryptographic error creating keystore from file: " + keyStoreFile, e );
+        }
+        return keyStore;
     }
 
     private SslPolicy sslPolicy( Config config, BaseSslPolicyConfig policyConfig, File revokedCertificatesDir, KeyAndChain keyAndChain )

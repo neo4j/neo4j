@@ -30,6 +30,7 @@ import org.neo4j.configuration.Settings;
 import org.neo4j.graphdb.config.Setting;
 
 import static org.neo4j.configuration.Settings.NO_DEFAULT;
+import static org.neo4j.configuration.Settings.PATH;
 import static org.neo4j.configuration.Settings.STRING;
 import static org.neo4j.configuration.Settings.derivedSetting;
 import static org.neo4j.configuration.Settings.setting;
@@ -37,13 +38,19 @@ import static org.neo4j.configuration.Settings.setting;
 @Group( "dbms.ssl.policy" )
 public class KeyStoreSslPolicyConfig extends BaseSslPolicyConfig implements LoadableConfig
 {
-    @Description( "Keystore file managed with Java Keytool." )
+    @Description( "File containing private key and certificate chain, managed with Java Keytool." )
     public final Setting<File> keystore;
 
     @Description( "The password for the keystore." )
     public final Setting<String> keystore_pass;
 
-    @Description( "The alias for the private key entry, including the associated certificate (chain)." )
+    @Description( "File containing trusted certificates, managed by Java Keytool. Defaults to value of 'keystore'." )
+    public final Setting<File> truststore;
+
+    @Description( "The password for the truststore." )
+    public final Setting<String> truststore_pass;
+
+    @Description( "The alias for the private key entry in the keystore, including the associated certificate chain." )
     public final Setting<String> entry_alias;
 
     @Description( "The password for the private key entry. Should not be set if format is PKCS12." )
@@ -60,6 +67,8 @@ public class KeyStoreSslPolicyConfig extends BaseSslPolicyConfig implements Load
 
         this.keystore = group.scope( derivedDefault( "keystore", base_directory, ".keystore" ) );
         this.keystore_pass = group.scope( setting( "keystore_pass", Settings.STRING, NO_DEFAULT ) );
+        this.truststore = group.scope( derivedSetting( "truststore", keystore, Function.identity(), PATH ) );
+        this.truststore_pass = group.scope( derivedSetting( "truststore_pass", keystore_pass, Function.identity(), STRING ) );
         this.entry_alias = group.scope( setting( "entry_alias", Settings.STRING, NO_DEFAULT ) );
         this.entry_pass = group.scope( derivedSetting( "entry_pass", keystore_pass, Function.identity(), STRING ) );
     }
