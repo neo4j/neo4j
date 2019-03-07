@@ -102,7 +102,7 @@ public abstract class AbstractDatabaseManager extends LifecycleAdapter implement
         return new DatabaseContext( database, facade );
     }
 
-    Throwable doWithAllDatabases( Map<String,DatabaseContext> databases, BiConsumer<String,DatabaseContext> consumer )
+    private Throwable doWithAllDatabases( Map<String,DatabaseContext> databases, BiConsumer<String,DatabaseContext> consumer )
     {
         Throwable combinedException = null;
         for ( Map.Entry<String,DatabaseContext> databaseContextEntry : databases.entrySet() )

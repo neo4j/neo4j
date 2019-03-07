@@ -40,6 +40,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.api.security.SecurityModule;
 import org.neo4j.kernel.api.security.provider.NoAuthSecurityProvider;
+import org.neo4j.kernel.availability.CompositeDatabaseAvailabilityGuard;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
@@ -122,7 +123,9 @@ public class CommunityEditionModule extends DefaultEditionModule
         globalDependencies.satisfyDependency( kernelData );
         globalLife.add( kernelData );
 
-        globalDependencies.satisfyDependency( getGlobalAvailabilityGuard( globalClock, logService ) );
+        CompositeDatabaseAvailabilityGuard availabilityGuard = getGlobalAvailabilityGuard( globalClock, logService );
+        globalDependencies.satisfyDependency( availabilityGuard );
+        globalLife.setLast( availabilityGuard );
 
         commitProcessFactory = new CommunityCommitProcessFactory();
 

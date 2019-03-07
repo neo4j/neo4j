@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.util.VisibleForTesting;
@@ -36,11 +37,12 @@ import static java.util.stream.Collectors.joining;
  *
  * @see AvailabilityGuard
  */
-public class CompositeDatabaseAvailabilityGuard implements AvailabilityGuard
+public class CompositeDatabaseAvailabilityGuard extends LifecycleAdapter implements AvailabilityGuard
 {
     private final Clock clock;
     private final LogService logService;
-    private final CopyOnWriteArrayList<DatabaseAvailabilityGuard> guards = new CopyOnWriteArrayList<>();
+    private volatile CopyOnWriteArrayList<DatabaseAvailabilityGuard> guards = new CopyOnWriteArrayList<>();
+    private volatile boolean started = true;
 
     public CompositeDatabaseAvailabilityGuard( Clock clock, LogService logService )
     {
@@ -74,15 +76,28 @@ public class CompositeDatabaseAvailabilityGuard implements AvailabilityGuard
     }
 
     @Override
+    public void stop() throws Throwable
+    {
+        started = false;
+    }
+
+    @Override
     public boolean isAvailable()
     {
-        return guards.stream().allMatch( DatabaseAvailabilityGuard::isAvailable );
+        for ( DatabaseAvailabilityGuard guard : guards )
+        {
+            if ( !guard.isAvailable() )
+            {
+                return false;
+            }
+        }
+        return started;
     }
 
     @Override
     public boolean isShutdown()
     {
-        throw new UnsupportedOperationException( "Composite guard does not support this operation." );
+        return !started;
     }
 
     @Override
@@ -102,7 +117,7 @@ public class CompositeDatabaseAvailabilityGuard implements AvailabilityGuard
                 return false;
             }
         }
-        return true;
+        return started;
     }
 
     @Override
@@ -111,6 +126,10 @@ public class CompositeDatabaseAvailabilityGuard implements AvailabilityGuard
         for ( DatabaseAvailabilityGuard guard : guards )
         {
             guard.checkAvailable();
+        }
+        if ( !started )
+        {
+            throw new UnavailableException( getUnavailableMessage() );
         }
     }
 
@@ -125,8 +144,12 @@ public class CompositeDatabaseAvailabilityGuard implements AvailabilityGuard
             totalWait += clock.millis() - startMillis;
             if ( totalWait > millis )
             {
-                throw new UnavailableException( "Database is not available: " + describe() );
+                throw new UnavailableException( getUnavailableMessage() );
             }
+        }
+        if ( !started )
+        {
+            throw new UnavailableException( getUnavailableMessage() );
         }
     }
 
@@ -152,5 +175,10 @@ public class CompositeDatabaseAvailabilityGuard implements AvailabilityGuard
     public List<DatabaseAvailabilityGuard> getGuards()
     {
         return Collections.unmodifiableList( guards );
+    }
+
+    private String getUnavailableMessage()
+    {
+        return "Database is not available: " + describe();
     }
 }

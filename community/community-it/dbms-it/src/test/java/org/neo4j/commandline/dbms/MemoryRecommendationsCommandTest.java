@@ -69,6 +69,7 @@ import static org.neo4j.configuration.Config.DEFAULT_CONFIG_FILE_NAME;
 import static org.neo4j.configuration.Config.fromFile;
 import static org.neo4j.configuration.ExternalSettings.initialHeapSize;
 import static org.neo4j.configuration.ExternalSettings.maxHeapSize;
+import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex;
 import static org.neo4j.configuration.GraphDatabaseSettings.data_directory;
 import static org.neo4j.configuration.GraphDatabaseSettings.databases_root_path;
@@ -201,7 +202,9 @@ class MemoryRecommendationsCommandTest
         String databaseName = "mydb";
         store( stringMap( data_directory.name(), homeDir.toString() ), configFile.toFile() );
         Config config = fromFile( configFile ).withHome( homeDir ).build();
-        DatabaseLayout databaseLayout = DatabaseLayout.of( config.get( databases_root_path ), databaseName );
+        File rootPath = config.get( databases_root_path );
+        DatabaseLayout databaseLayout = DatabaseLayout.of( rootPath, databaseName );
+        DatabaseLayout systemLayout = DatabaseLayout.of( rootPath, SYSTEM_DATABASE_NAME );
         createDatabaseWithNativeIndexes( databaseLayout );
         OutputCaptureOutsideWorld outsideWorld = new OutputCaptureOutsideWorld();
         MemoryRecommendationsCommand command = new MemoryRecommendationsCommand( homeDir, configDir, outsideWorld );
@@ -219,8 +222,9 @@ class MemoryRecommendationsCommandTest
         assertThat( stringMap.get( pagecache_memory.name() ), is( pagecache ) );
 
         long[] expectedSizes = calculatePageCacheFileSize( databaseLayout );
-        long expectedPageCacheSize = expectedSizes[0];
-        long expectedLuceneSize = expectedSizes[1];
+        long[] systemSizes = calculatePageCacheFileSize( systemLayout );
+        long expectedPageCacheSize = expectedSizes[0] + systemSizes[0];
+        long expectedLuceneSize = expectedSizes[1] + systemSizes[1];
         assertThat( memrecString, containsString( "Lucene indexes: " + bytesToString( expectedLuceneSize ) ) );
         assertThat( memrecString, containsString( "Data volume and native indexes: " + bytesToString( expectedPageCacheSize ) ) );
     }
@@ -238,15 +242,20 @@ class MemoryRecommendationsCommandTest
 
         long totalPageCacheSize = 0;
         long totalLuceneIndexesSize = 0;
+        Config config = fromFile( configFile ).withHome( homeDir ).build();
+        File rootDirectory = config.get( databases_root_path );
         for ( int i = 0; i < 5; i++ )
         {
-            Config config = fromFile( configFile ).withHome( homeDir ).build();
-            DatabaseLayout databaseLayout = DatabaseLayout.of( config.get( databases_root_path ), "db" + i );
+            DatabaseLayout databaseLayout = DatabaseLayout.of( rootDirectory, "db" + i );
             createDatabaseWithNativeIndexes( databaseLayout );
             long[] expectedSizes = calculatePageCacheFileSize( databaseLayout );
             totalPageCacheSize += expectedSizes[0];
             totalLuceneIndexesSize += expectedSizes[1];
         }
+        DatabaseLayout systemLayout = DatabaseLayout.of( rootDirectory, SYSTEM_DATABASE_NAME );
+        long[] expectedSizes = calculatePageCacheFileSize( systemLayout );
+        totalPageCacheSize += expectedSizes[0];
+        totalLuceneIndexesSize += expectedSizes[1];
 
         MemoryRecommendationsCommand command = new MemoryRecommendationsCommand( homeDir, configDir, outsideWorld );
         command.execute( new String[]{"--memory", "8g"} );
@@ -271,22 +280,26 @@ class MemoryRecommendationsCommandTest
             pageCacheTotal.add( length );
         }
 
-        Files.walkFileTree( IndexDirectoryStructure.baseSchemaIndexFolder( databaseLayout.databaseDirectory() ).toPath(), new SimpleFileVisitor<Path>()
+        File indexFolder = IndexDirectoryStructure.baseSchemaIndexFolder( databaseLayout.databaseDirectory() );
+        if ( indexFolder.exists() )
         {
-            @Override
-            public FileVisitResult visitFile( Path path, BasicFileAttributes attrs )
+            Files.walkFileTree( indexFolder.toPath(), new SimpleFileVisitor<Path>()
             {
-                File file = path.toFile();
-                Path name = path.getName( path.getNameCount() - 3 );
-                boolean isLuceneFile = (path.getNameCount() >= 3 && name.toString().startsWith( "lucene-" )) ||
-                        (path.getNameCount() >= 4 && path.getName( path.getNameCount() - 4 ).toString().equals( "lucene" ));
-                if ( !FailureStorage.DEFAULT_FAILURE_FILE_NAME.equals( file.getName() ) )
+                @Override
+                public FileVisitResult visitFile( Path path, BasicFileAttributes attrs )
                 {
-                    (isLuceneFile ? luceneTotal : pageCacheTotal).add( file.length() );
+                    File file = path.toFile();
+                    Path name = path.getName( path.getNameCount() - 3 );
+                    boolean isLuceneFile = (path.getNameCount() >= 3 && name.toString().startsWith( "lucene-" )) ||
+                            (path.getNameCount() >= 4 && path.getName( path.getNameCount() - 4 ).toString().equals( "lucene" ));
+                    if ( !FailureStorage.DEFAULT_FAILURE_FILE_NAME.equals( file.getName() ) )
+                    {
+                        (isLuceneFile ? luceneTotal : pageCacheTotal).add( file.length() );
+                    }
+                    return FileVisitResult.CONTINUE;
                 }
-                return FileVisitResult.CONTINUE;
-            }
-        } );
+            } );
+        }
         pageCacheTotal.add( databaseLayout.labelScanStore().length() );
         return new long[]{pageCacheTotal.longValue(), luceneTotal.longValue()};
     }

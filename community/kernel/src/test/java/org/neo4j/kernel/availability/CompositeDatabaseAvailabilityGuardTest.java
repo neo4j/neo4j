@@ -31,6 +31,7 @@ import org.neo4j.logging.internal.NullLogService;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.lessThan;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -50,12 +51,13 @@ class CompositeDatabaseAvailabilityGuardTest
     private Clock mockClock;
 
     @BeforeEach
-    void setUp()
+    void setUp() throws Throwable
     {
         mockClock = mock( Clock.class );
         compositeGuard = new CompositeDatabaseAvailabilityGuard( mockClock, NullLogService.getInstance() );
         defaultGuard = compositeGuard.createDatabaseAvailabilityGuard( DEFAULT_DATABASE_NAME );
         systemGuard = compositeGuard.createDatabaseAvailabilityGuard( SYSTEM_DATABASE_NAME );
+        compositeGuard.start();
     }
 
     @Test
@@ -92,12 +94,6 @@ class CompositeDatabaseAvailabilityGuardTest
         defaultGuard.require( requirement );
 
         assertFalse( compositeGuard.isAvailable() );
-    }
-
-    @Test
-    void compositeGuardDoesNotSupportShutdownCheck()
-    {
-        assertThrows( UnsupportedOperationException.class, () -> compositeGuard.isShutdown() );
     }
 
     @Test
@@ -168,6 +164,36 @@ class CompositeDatabaseAvailabilityGuardTest
         new Lifespan( secondGuard ).close();
 
         assertEquals( 0, countNewGuards( initialGuards ) );
+    }
+
+    @Test
+    void compositeGuardIsAvailableByDefault()
+    {
+        CompositeDatabaseAvailabilityGuard testGuard = new CompositeDatabaseAvailabilityGuard( mockClock, NullLogService.getInstance() );
+        assertTrue( testGuard.isAvailable() );
+    }
+
+    @Test
+    void guardIsShutdownStateAfterStop() throws Throwable
+    {
+        CompositeDatabaseAvailabilityGuard testGuard = new CompositeDatabaseAvailabilityGuard( mockClock, NullLogService.getInstance() );
+        testGuard.start();
+        assertFalse( testGuard.isShutdown() );
+
+        testGuard.stop();
+        assertTrue( testGuard.isShutdown() );
+    }
+
+    @Test
+    void stoppedGuardIsNotAvailableInAwait() throws Throwable
+    {
+        CompositeDatabaseAvailabilityGuard testGuard = new CompositeDatabaseAvailabilityGuard( mockClock, NullLogService.getInstance() );
+
+        testGuard.start();
+        assertDoesNotThrow( () -> testGuard.await( 0 ) );
+
+        testGuard.stop();
+        assertThrows( UnavailableException.class, () -> testGuard.await( 0 ) );
     }
 
     private int countNewGuards( int initialGuards )
