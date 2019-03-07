@@ -23,6 +23,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.TreeSet;
@@ -100,6 +101,7 @@ public class IndexProvidedOrderNativeBTree10Test extends KernelAPIReadTestBase<R
                 ValueType.CARTESIAN_POINT_3D_ARRAY
         );
         targetedTypes = randomValues.selection( allExceptNonOrderable, 1, allExceptNonOrderable.length, false );
+        targetedTypes = ensureHighEnoughCardinality( targetedTypes );
         try ( Transaction tx = graphDb.beginTx() )
         {
             for ( int i = 0; i < N_NODES; i++ )
@@ -186,6 +188,27 @@ public class IndexProvidedOrderNativeBTree10Test extends KernelAPIReadTestBase<R
             Collections.reverse( expectedIdsInOrder );
         }
         return expectedIdsInOrder;
+    }
+
+    /**
+     * If targetedTypes only contain types that has very low cardinality, then add one random high cardinality value type to the array.
+     * This is to prevent createTestGraph from looping forever when trying to generate unique values.
+     */
+    private ValueType[] ensureHighEnoughCardinality( ValueType[] targetedTypes )
+    {
+        ValueType[] lowCardinalityArray = new ValueType[]{ValueType.BOOLEAN, ValueType.BYTE, ValueType.BOOLEAN_ARRAY};
+        List<ValueType> typesOfLowCardinality = new ArrayList<>( Arrays.asList( lowCardinalityArray ) );
+        for ( ValueType targetedType : targetedTypes )
+        {
+            if ( !typesOfLowCardinality.contains( targetedType ) )
+            {
+                return targetedTypes;
+            }
+        }
+        ArrayList<ValueType> result = new ArrayList<>( Arrays.asList( targetedTypes ) );
+        ValueType highCardinalityType = randomRule.randomValues().among( RandomValues.excluding( lowCardinalityArray ) );
+        result.add( highCardinalityType );
+        return result.toArray( new ValueType[0] );
     }
 
     private class NodeValueTuple extends ValueTuple
