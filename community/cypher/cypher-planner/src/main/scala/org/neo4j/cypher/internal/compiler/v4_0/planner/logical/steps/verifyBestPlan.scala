@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.{LogicalPlanningC
 import org.neo4j.cypher.internal.compiler.v4_0.{IndexHintUnfulfillableNotification, JoinHintUnfulfillableNotification}
 import org.neo4j.cypher.internal.ir.PlannerQuery
 import org.neo4j.cypher.internal.planner.spi.PlanContext
-import org.neo4j.cypher.internal.v4_0.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.v4_0.ast._
 import org.neo4j.cypher.internal.v4_0.expressions.LabelName
 import org.neo4j.cypher.internal.v4_0.util._

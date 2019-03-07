@@ -24,8 +24,7 @@ import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.steps.CostCompari
 import org.neo4j.cypher.internal.ir.PlannerQuery
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.{Cardinalities, ProvidedOrders, Solveds}
-import org.neo4j.cypher.internal.v4_0.logical.plans._
-import org.neo4j.cypher.internal.v4_0.logical.plans.UnwindCollection
+import org.neo4j.cypher.internal.logical.plans._
 import org.neo4j.cypher.internal.v4_0.ast._
 import org.neo4j.cypher.internal.v4_0.expressions._
 import org.neo4j.cypher.internal.v4_0.util.attribution.{Id, SequentialIdGen}

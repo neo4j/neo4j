@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compatibility.notification
 import org.neo4j.cypher.internal.compiler.v4_0.{SuboptimalIndexForConstainsQueryNotification, SuboptimalIndexForEndsWithQueryNotification}
 import org.neo4j.cypher.internal.planner.spi.{IndexLimitation, PlanContext, SlowContains}
 import org.neo4j.cypher.internal.v4_0.expressions.{LabelToken, PropertyKeyToken}
-import org.neo4j.cypher.internal.v4_0.logical.plans.{LogicalPlan, NodeIndexContainsScan, NodeIndexEndsWithScan}
+import org.neo4j.cypher.internal.logical.plans.{LogicalPlan, NodeIndexContainsScan, NodeIndexEndsWithScan}
 import org.neo4j.cypher.internal.v4_0.util.InternalNotification
 
 case class checkForIndexLimitation(planContext: PlanContext) extends NotificationChecker {

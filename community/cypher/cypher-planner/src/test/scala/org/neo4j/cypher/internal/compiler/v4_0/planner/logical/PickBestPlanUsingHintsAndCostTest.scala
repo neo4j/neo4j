@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.steps.{LogicalPla
 import org.neo4j.cypher.internal.ir.PlannerQuery
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Solveds
-import org.neo4j.cypher.internal.v4_0.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.v4_0.ast.UsingIndexHint
 import org.neo4j.cypher.internal.v4_0.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.v4_0.frontend.phases.devNullLogger

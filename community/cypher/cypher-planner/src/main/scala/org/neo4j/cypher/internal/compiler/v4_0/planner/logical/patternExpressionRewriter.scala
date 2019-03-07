@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v4_0.planner.logical
 
 import org.neo4j.cypher.internal.ir.InterestingOrder
-import org.neo4j.cypher.internal.v4_0.logical.plans.NestedPlanExpression
+import org.neo4j.cypher.internal.logical.plans.NestedPlanExpression
 import org.neo4j.cypher.internal.v4_0.expressions._
 import org.neo4j.cypher.internal.v4_0.rewriting.rewriters.projectNamedPaths
 import org.neo4j.cypher.internal.v4_0.util.Foldable._

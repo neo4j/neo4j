@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.cardinality.Expre
 import org.neo4j.cypher.internal.ir.{PlannerQuery, StrictnessMode, QueryGraph}
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.{Cardinalities, Solveds}
-import org.neo4j.cypher.internal.v4_0.logical.plans.{LogicalPlan, ResolvedFunctionInvocation}
+import org.neo4j.cypher.internal.logical.plans.{LogicalPlan, ResolvedFunctionInvocation}
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.v4_0.expressions.functions.Rand
 import org.neo4j.cypher.internal.v4_0.expressions.{Expression, FunctionInvocation, LabelName, Parameter}

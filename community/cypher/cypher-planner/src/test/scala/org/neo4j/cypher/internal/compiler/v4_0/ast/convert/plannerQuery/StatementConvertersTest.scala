@@ -22,10 +22,8 @@ package org.neo4j.cypher.internal.compiler.v4_0.ast.convert.plannerQuery
 import org.neo4j.cypher.internal.compiler.v4_0.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.v4_0.planner._
 import org.neo4j.cypher.internal.ir._
-import org.neo4j.cypher.internal.v4_0.logical.plans.FieldSignature
-import org.neo4j.cypher.internal.v4_0.logical.plans.ProcedureReadOnlyAccess
-import org.neo4j.cypher.internal.v4_0.logical.plans.ProcedureSignature
-import org.neo4j.cypher.internal.v4_0.logical.plans.QualifiedName
+import org.neo4j.cypher.internal.logical.plans.{FieldSignature, ProcedureReadOnlyAccess, ProcedureSignature, QualifiedName}
+
 import org.neo4j.cypher.internal.v4_0.ast.Hint
 import org.neo4j.cypher.internal.v4_0.ast.UsingIndexHint
 import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection.BOTH

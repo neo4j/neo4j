@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.values.UnresolvedR
 import org.neo4j.cypher.internal.runtime.interpreted.commands.{PathExtractorExpression, predicates, expressions => commandexpressions, values => commandvalues}
 import org.neo4j.cypher.internal.v4_0.expressions._
 import org.neo4j.cypher.internal.v4_0.expressions.functions._
-import org.neo4j.cypher.internal.v4_0.logical.plans._
+import org.neo4j.cypher.internal.logical.plans._
 import org.neo4j.cypher.internal.v4_0.util.attribution.Id
 import org.neo4j.cypher.internal.v4_0.util.{InternalException, NonEmptyList}
 import org.neo4j.cypher.internal.v4_0.{expressions => ast}

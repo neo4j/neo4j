@@ -21,8 +21,8 @@ package org.neo4j.cypher.internal.compiler.v4_0
 
 import org.neo4j.cypher.internal.compiler.v4_0.phases._
 import org.neo4j.cypher.internal.planner.spi.ProcedurePlannerName
-import org.neo4j.cypher.internal.v4_0.logical.plans
-import org.neo4j.cypher.internal.v4_0.logical.plans.{LogicalPlan, ResolvedCall}
+import org.neo4j.cypher.internal.logical.plans
+import org.neo4j.cypher.internal.logical.plans.{LogicalPlan, ResolvedCall}
 import org.neo4j.cypher.internal.v4_0.ast._
 import org.neo4j.cypher.internal.v4_0.ast.semantics.{SemanticCheckResult, SemanticState}
 import org.neo4j.cypher.internal.v4_0.frontend.phases.CompilationPhaseTracer.CompilationPhase

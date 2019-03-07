@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v4_0.planner.LogicalPlanningTestSuppor
 import org.neo4j.cypher.internal.v4_0.util.NonEmptyList
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.v4_0.expressions.AndedPropertyInequalities
-import org.neo4j.cypher.internal.v4_0.logical.plans.{Argument, LogicalPlan, Selection}
+import org.neo4j.cypher.internal.logical.plans.{Argument, LogicalPlan, Selection}
 
 class SimplifyPredicatesTest extends CypherFunSuite with LogicalPlanningTestSupport {
   test("should rewrite WHERE x.prop in [1] to WHERE x.prop = 1") {

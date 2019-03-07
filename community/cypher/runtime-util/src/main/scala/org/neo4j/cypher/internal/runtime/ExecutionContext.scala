@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime
 
-import org.neo4j.cypher.internal.v4_0.logical.plans.CachedNodeProperty
+import org.neo4j.cypher.internal.logical.plans.CachedNodeProperty
 import org.neo4j.cypher.internal.v4_0.util.InternalException
 import org.neo4j.graphdb.NotFoundException
 import org.neo4j.values.AnyValue

@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.Metrics._
 import org.neo4j.cypher.internal.ir.{PlannerQuery, QueryGraph}
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.planner.spi.{GraphStatistics, IndexOrderCapability}
-import org.neo4j.cypher.internal.v4_0.logical.plans.{LogicalPlan, ProcedureSignature}
+import org.neo4j.cypher.internal.logical.plans.{LogicalPlan, ProcedureSignature}
 import org.neo4j.cypher.internal.v4_0.ast.semantics.{ExpressionTypeInfo, SemanticTable}
 import org.neo4j.cypher.internal.v4_0.expressions.Expression
 import org.neo4j.cypher.internal.v4_0.util.symbols.TypeSpec

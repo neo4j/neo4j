@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.Metrics.{Cardinal
 import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.steps.{CostComparisonListener, LogicalPlanProducer}
 import org.neo4j.cypher.internal.ir.StrictnessMode
 import org.neo4j.cypher.internal.planner.spi.{GraphStatistics, PlanContext, PlanningAttributes}
-import org.neo4j.cypher.internal.v4_0.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.v4_0.expressions.Variable
 import org.neo4j.cypher.internal.v4_0.frontend.phases.InternalNotificationLogger

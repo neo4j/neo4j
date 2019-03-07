@@ -22,8 +22,7 @@ package org.neo4j.cypher.internal.compiler.v4_0.planner.logical.steps
 import org.neo4j.cypher.internal.compiler.v4_0.planner._
 import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.ir.{InterestingOrder, RegularQueryProjection, RegularPlannerQuery, QueryGraph}
-import org.neo4j.cypher.internal.v4_0.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.v4_0.logical.plans.Projection
+import org.neo4j.cypher.internal.logical.plans.{LogicalPlan, Projection}
 import org.neo4j.cypher.internal.v4_0.ast
 import org.neo4j.cypher.internal.v4_0.ast.semantics.ExpressionTypeInfo
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable

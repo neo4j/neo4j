@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v4_0.planner.logical.plans.rewriter
 import org.neo4j.cypher.internal.compiler.v4_0.planner.{FakePlan, LogicalPlanningTestSupport}
 import org.neo4j.cypher.internal.v4_0.util.symbols.CTAny
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.v4_0.logical.plans.{DropResult, LogicalPlan, Selection}
+import org.neo4j.cypher.internal.logical.plans.{DropResult, LogicalPlan, Selection}
 import org.neo4j.cypher.internal.v4_0.expressions.DummyExpression
 
 class SimplifySelectionsTest extends CypherFunSuite with LogicalPlanningTestSupport {

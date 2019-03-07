@@ -23,7 +23,7 @@ import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.{verify, verifyZeroInteractions, when}
 import org.neo4j.cypher.internal.compiler.v4_0.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.ir.{QueryGraph, InterestingOrder}
-import org.neo4j.cypher.internal.v4_0.logical.plans.Argument
+import org.neo4j.cypher.internal.logical.plans.Argument
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 
 class PriorityLeafPlannerListTest extends CypherFunSuite with LogicalPlanningTestSupport2 {

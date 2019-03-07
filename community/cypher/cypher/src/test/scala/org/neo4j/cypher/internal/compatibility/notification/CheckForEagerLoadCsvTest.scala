@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v4_0.EagerLoadCsvNotification
 import org.neo4j.cypher.internal.compiler.v4_0.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.ir.NoHeaders
 import org.neo4j.cypher.internal.runtime.interpreted.CSVResources
-import org.neo4j.cypher.internal.v4_0.logical.plans.{AllNodesScan, Eager, LoadCSV}
+import org.neo4j.cypher.internal.logical.plans.{AllNodesScan, Eager, LoadCSV}
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 
 class CheckForEagerLoadCsvTest extends CypherFunSuite with LogicalPlanningTestSupport {

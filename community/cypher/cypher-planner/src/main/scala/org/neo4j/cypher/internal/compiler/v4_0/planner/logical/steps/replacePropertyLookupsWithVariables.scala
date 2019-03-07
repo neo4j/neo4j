@@ -21,8 +21,7 @@ package org.neo4j.cypher.internal.compiler.v4_0.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v4_0.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.v4_0.phases.PlannerContext
-import org.neo4j.cypher.internal.v4_0.logical.plans.CachedNodeProperty
-import org.neo4j.cypher.internal.v4_0.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.logical.plans.{CachedNodeProperty, LogicalPlan}
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.v4_0.expressions.Property
 import org.neo4j.cypher.internal.v4_0.frontend.phases.Transformer

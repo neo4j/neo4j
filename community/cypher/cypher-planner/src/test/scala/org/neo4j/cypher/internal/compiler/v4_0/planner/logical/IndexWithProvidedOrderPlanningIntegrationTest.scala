@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.ir.RegularPlannerQuery
 import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability
 import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability.{ASC, BOTH, DESC}
 import org.neo4j.cypher.internal.v4_0.expressions.{LabelToken, SemanticDirection}
-import org.neo4j.cypher.internal.v4_0.logical.plans.{Limit => LimitPlan, Skip => SkipPlan, _}
+import org.neo4j.cypher.internal.logical.plans.{Limit => LimitPlan, Skip => SkipPlan, _}
 import org.neo4j.cypher.internal.v4_0.util._
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 

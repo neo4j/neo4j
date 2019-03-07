@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.idp._
 import org.neo4j.cypher.internal.v4_0.util.Foldable.FoldableAny
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.ir.RegularPlannerQuery
-import org.neo4j.cypher.internal.v4_0.logical.plans.{LogicalPlan, NodeHashJoin}
+import org.neo4j.cypher.internal.logical.plans.{LogicalPlan, NodeHashJoin}
 import org.scalacheck.Gen
 
 import scala.util.Random

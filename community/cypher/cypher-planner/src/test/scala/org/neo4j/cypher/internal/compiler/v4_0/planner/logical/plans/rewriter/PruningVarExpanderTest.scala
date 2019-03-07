@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v4_0.planner.LogicalPlanningTestSuppor
 import org.neo4j.cypher.internal.ir.VarPatternLength
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.v4_0.expressions._
-import org.neo4j.cypher.internal.v4_0.logical.plans._
+import org.neo4j.cypher.internal.logical.plans._
 
 class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupport {
   test("simplest possible query that can use PruningVarExpand") {

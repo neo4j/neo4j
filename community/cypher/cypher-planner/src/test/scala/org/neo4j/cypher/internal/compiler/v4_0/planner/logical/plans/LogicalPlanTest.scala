@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v4_0.planner.logical.plans
 
 import org.neo4j.cypher.internal.compiler.v4_0.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.v4_0.logical.plans.{Apply, Argument}
+import org.neo4j.cypher.internal.logical.plans.{Apply, Argument}
 
 class LogicalPlanTest extends CypherFunSuite with LogicalPlanningTestSupport  {
 

@@ -31,7 +31,7 @@ import org.neo4j.cypher.internal.v4_0.ast.semantics.{ExpressionTypeInfo, Semanti
 import org.neo4j.cypher.internal.v4_0.ast.{ASTAnnotationMap, Hint}
 import org.neo4j.cypher.internal.v4_0.expressions.Expression
 import org.neo4j.cypher.internal.v4_0.frontend.phases.devNullLogger
-import org.neo4j.cypher.internal.v4_0.logical.plans._
+import org.neo4j.cypher.internal.logical.plans.{Argument, LogicalPlan, ProduceResult, Projection}
 import org.neo4j.cypher.internal.v4_0.util.attribution.IdGen
 import org.neo4j.cypher.internal.v4_0.util.symbols._
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite

@@ -24,8 +24,8 @@ import org.neo4j.cypher.internal.plandescription.Arguments.{Expression => argExp
 import org.neo4j.cypher.internal.plandescription.PlanDescriptionArgumentSerializer.serialize
 import org.neo4j.cypher.internal.v4_0.util.{DummyPosition, InputPosition}
 import org.neo4j.cypher.internal.v4_0.expressions._
-import org.neo4j.cypher.internal.v4_0.logical.plans
-import org.neo4j.cypher.internal.v4_0.logical.plans.{LogicalPlan, NestedPlanExpression}
+import org.neo4j.cypher.internal.logical.plans
+import org.neo4j.cypher.internal.logical.plans.{LogicalPlan, NestedPlanExpression}
 import org.neo4j.cypher.internal.v4_0.util.attribution.SequentialIdGen
 import org.neo4j.cypher.internal.v4_0.util.symbols.{CTBoolean, CTList, CTNode, CTString}
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite

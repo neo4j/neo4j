@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v4_0.planner.logical.steps
 import org.neo4j.cypher.internal.compiler.v4_0.planner.logical._
 import org.neo4j.cypher.internal.compiler.v4_0.planner.unsolvedPreds
 import org.neo4j.cypher.internal.ir.{QueryGraph, InterestingOrder}
-import org.neo4j.cypher.internal.v4_0.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 
 case object selectCovered extends CandidateGenerator[LogicalPlan] {
   val patternExpressionSolver = PatternExpressionSolver()

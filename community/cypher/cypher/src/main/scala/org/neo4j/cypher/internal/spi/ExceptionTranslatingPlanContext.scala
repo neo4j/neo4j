@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.spi
 import org.neo4j.cypher.internal.compatibility.v4_0.ExceptionTranslationSupport
 import org.neo4j.cypher.internal.planner.spi.{GraphStatistics, IndexDescriptor, PlanContext}
 import org.neo4j.cypher.internal.v4_0.frontend.phases.InternalNotificationLogger
-import org.neo4j.cypher.internal.v4_0.logical.plans.{ProcedureSignature, QualifiedName, UserFunctionSignature}
+import org.neo4j.cypher.internal.logical.plans.{ProcedureSignature, QualifiedName, UserFunctionSignature}
 
 class ExceptionTranslatingPlanContext(inner: PlanContext) extends PlanContext with ExceptionTranslationSupport {
 

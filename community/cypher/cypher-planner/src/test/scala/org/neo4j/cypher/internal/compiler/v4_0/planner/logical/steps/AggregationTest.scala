@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v4_0.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v4_0.planner._
 import org.neo4j.cypher.internal.ir.{AggregatingQueryProjection, InterestingOrder}
-import org.neo4j.cypher.internal.v4_0.logical.plans.{Aggregation, LogicalPlan, Projection}
+import org.neo4j.cypher.internal.logical.plans.{Aggregation, LogicalPlan, Projection}
 import org.neo4j.cypher.internal.v4_0.expressions.CountStar
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 

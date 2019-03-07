@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.planner.spi._
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor.{OrderCapability, ValueCapability}
 import org.neo4j.cypher.internal.runtime.interpreted._
 import org.neo4j.cypher.internal.v4_0.frontend.phases.InternalNotificationLogger
-import org.neo4j.cypher.internal.v4_0.logical.plans._
+import org.neo4j.cypher.internal.logical.plans._
 import org.neo4j.cypher.internal.v4_0.util.symbols._
 import org.neo4j.cypher.internal.v4_0.util.{CypherExecutionException, LabelId, PropertyKeyId, symbols => types}
 import org.neo4j.exceptions.KernelException

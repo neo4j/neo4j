@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.plans.rewriter.un
 import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.planner.spi.DelegatingGraphStatistics
 import org.neo4j.cypher.internal.v4_0.expressions.{Ands, RelTypeName, SemanticDirection}
-import org.neo4j.cypher.internal.v4_0.logical.plans.{Limit, _}
+import org.neo4j.cypher.internal.logical.plans._
 import org.neo4j.cypher.internal.v4_0.util.Foldable._
 import org.neo4j.cypher.internal.v4_0.util.{Cardinality, LabelId, RelTypeId}
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite

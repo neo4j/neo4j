@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.idp.expandSolverS
 import org.neo4j.cypher.internal.ir.{Predicate, ShortestPathPattern, _}
 import org.neo4j.cypher.internal.v4_0.expressions._
 import org.neo4j.cypher.internal.v4_0.expressions.functions.Length
-import org.neo4j.cypher.internal.v4_0.logical.plans.{Ascending, DoNotIncludeTies, IncludeTies, LogicalPlan}
+import org.neo4j.cypher.internal.logical.plans.{Ascending, DoNotIncludeTies, IncludeTies, LogicalPlan}
 import org.neo4j.cypher.internal.v4_0.rewriting.rewriters.projectNamedPaths
 import org.neo4j.cypher.internal.v4_0.util.{ExhaustiveShortestPathForbiddenException, FreshIdNameGenerator, InternalException}
 

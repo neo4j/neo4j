@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.idp.joinSolverSte
 import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.{LogicalPlanningContext, LogicalPlanningSupport}
 import org.neo4j.cypher.internal.ir.{InterestingOrder, PatternRelationship, QueryGraph}
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Solveds
-import org.neo4j.cypher.internal.v4_0.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 
 object joinSolverStep {
   val VERBOSE = false

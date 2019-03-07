@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.runtime.spec.tests
 
 import org.neo4j.cypher.internal.runtime.spec._
-import org.neo4j.cypher.internal.v4_0.logical.plans.{Ascending, Descending}
+import org.neo4j.cypher.internal.logical.plans.{Ascending, Descending}
 import org.neo4j.cypher.internal.{CypherRuntime, RuntimeContext}
 
 abstract class PartialTop1TestBase[CONTEXT <: RuntimeContext](

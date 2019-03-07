@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.planner.spi.TokenContext
 import org.neo4j.cypher.internal.runtime.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.KeyToken
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
-import org.neo4j.cypher.internal.v4_0.logical.plans
+import org.neo4j.cypher.internal.logical.plans
 import org.neo4j.cypher.internal.v4_0.util.CypherTypeException
 import org.neo4j.kernel.api.StatementConstants
 import org.neo4j.values.AnyValue

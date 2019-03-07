@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v4_0.planner.logical.plans.rewriter
 
 import org.neo4j.cypher.internal.compiler.v4_0.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.v4_0.logical.plans.{Argument, Selection}
+import org.neo4j.cypher.internal.logical.plans.{Argument, Selection}
 
 class FuseSelectionsTest extends CypherFunSuite with LogicalPlanningTestSupport {
   test("merges two selections into one") {

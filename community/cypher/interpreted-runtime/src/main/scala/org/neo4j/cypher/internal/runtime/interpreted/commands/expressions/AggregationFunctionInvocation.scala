@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation.AggregationFunction
 import org.neo4j.cypher.internal.runtime.{ExecutionContext, UserDefinedAggregator}
-import org.neo4j.cypher.internal.v4_0.logical.plans.UserFunctionSignature
+import org.neo4j.cypher.internal.logical.plans.UserFunctionSignature
 import org.neo4j.values.AnyValue
 
 case class AggregationFunctionInvocation(signature: UserFunctionSignature, arguments: IndexedSeq[Expression])

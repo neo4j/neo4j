@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v4_0.planner.logical.plans.rewriter
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Solveds
 import org.neo4j.cypher.internal.v4_0.util.attribution.{Attributes, SameId}
 import org.neo4j.cypher.internal.v4_0.util.{Rewriter, topDown}
-import org.neo4j.cypher.internal.v4_0.logical.plans._
+import org.neo4j.cypher.internal.logical.plans._
 
 case class unnestApply(solveds: Solveds, attributes: Attributes) extends Rewriter {
 

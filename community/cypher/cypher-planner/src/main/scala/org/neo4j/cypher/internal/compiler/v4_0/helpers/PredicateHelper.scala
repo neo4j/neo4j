@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v4_0.helpers
 
 import org.neo4j.cypher.internal.v4_0.expressions._
-import org.neo4j.cypher.internal.v4_0.logical.plans.{CoerceToPredicate, ResolvedFunctionInvocation}
+import org.neo4j.cypher.internal.logical.plans.{CoerceToPredicate, ResolvedFunctionInvocation}
 import org.neo4j.cypher.internal.v4_0.util.{InternalException, symbols}
 
 object PredicateHelper {

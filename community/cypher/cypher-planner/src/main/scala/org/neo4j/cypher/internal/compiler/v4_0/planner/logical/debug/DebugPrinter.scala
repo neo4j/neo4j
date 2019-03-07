@@ -20,8 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v4_0.planner.logical.debug
 
 import org.neo4j.cypher.internal.compiler.v4_0.phases.{LogicalPlanState, PlannerContext}
-import org.neo4j.cypher.internal.v4_0.logical.plans.{Argument, LogicalPlan, ProduceResult}
-import org.neo4j.cypher.internal.v4_0.logical.plans.UnwindCollection
+import org.neo4j.cypher.internal.logical.plans.{Argument, LogicalPlan, ProduceResult, UnwindCollection}
 import org.neo4j.cypher.internal.v4_0.ast._
 import org.neo4j.cypher.internal.v4_0.expressions.{ListLiteral, StringLiteral, Variable}
 import org.neo4j.cypher.internal.v4_0.frontend.phases.CompilationPhaseTracer.CompilationPhase.LOGICAL_PLANNING

@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.planner.spi
 
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor.{OrderCapability, ValueCapability}
-import org.neo4j.cypher.internal.v4_0.logical.plans.{DoNotGetValue, GetValueFromIndexBehavior}
+import org.neo4j.cypher.internal.logical.plans.{DoNotGetValue, GetValueFromIndexBehavior}
 import org.neo4j.cypher.internal.v4_0.util.symbols.CypherType
 import org.neo4j.cypher.internal.v4_0.util.{LabelId, PropertyKeyId}
 

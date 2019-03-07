@@ -20,10 +20,9 @@
 package org.neo4j.cypher.internal.compiler.v4_0.planner.logical.plans.rewriter
 
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Solveds
-import org.neo4j.cypher.internal.v4_0.logical.plans.UnwindCollection
 import org.neo4j.cypher.internal.v4_0.util.attribution.{Attributes, SameId}
 import org.neo4j.cypher.internal.v4_0.util.{Rewriter, bottomUp}
-import org.neo4j.cypher.internal.v4_0.logical.plans.{Eager, Limit, LoadCSV}
+import org.neo4j.cypher.internal.logical.plans.{Eager, Limit, LoadCSV, UnwindCollection}
 
 case class cleanUpEager(solveds: Solveds, attributes: Attributes) extends Rewriter {
 

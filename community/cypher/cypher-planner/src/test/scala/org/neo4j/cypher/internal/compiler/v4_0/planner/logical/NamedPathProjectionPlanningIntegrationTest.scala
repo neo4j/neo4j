@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v4_0.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v4_0.planner.LogicalPlanningTestSupport2
-import org.neo4j.cypher.internal.v4_0.logical.plans.{Expand, NodeByLabelScan, Projection, Selection}
+import org.neo4j.cypher.internal.logical.plans.{Expand, NodeByLabelScan, Projection, Selection}
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.v4_0.expressions.{NodePathStep, PathExpression, SemanticDirection, SingleRelationshipPathStep, NilPathStep}
 

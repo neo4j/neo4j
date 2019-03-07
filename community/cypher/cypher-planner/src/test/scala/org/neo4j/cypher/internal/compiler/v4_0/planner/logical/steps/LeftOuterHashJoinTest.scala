@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.{ExpressionEvalua
 import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.Metrics.QueryGraphSolverInput
 import org.neo4j.cypher.internal.ir.{PatternRelationship, QueryGraph, SimplePatternLength, InterestingOrder}
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
-import org.neo4j.cypher.internal.v4_0.logical.plans.{AllNodesScan, LeftOuterHashJoin, LogicalPlan}
+import org.neo4j.cypher.internal.logical.plans.{AllNodesScan, LeftOuterHashJoin, LogicalPlan}
 import org.neo4j.cypher.internal.v4_0.ast.{Hint, UsingJoinHint}
 import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
 import org.neo4j.cypher.internal.v4_0.util.Cost

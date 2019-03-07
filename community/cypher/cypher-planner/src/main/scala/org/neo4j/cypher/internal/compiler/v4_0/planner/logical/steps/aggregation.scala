@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v4_0.helpers.AggregationHelper
 import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.ir.ProvidedOrder.{Asc, Desc}
 import org.neo4j.cypher.internal.ir.{AggregatingQueryProjection, InterestingOrder}
-import org.neo4j.cypher.internal.v4_0.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.v4_0.expressions.Expression
 
 object aggregation {

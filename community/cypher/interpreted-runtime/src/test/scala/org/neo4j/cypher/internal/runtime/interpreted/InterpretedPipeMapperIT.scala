@@ -31,7 +31,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.{expressions => le
 import org.neo4j.cypher.internal.runtime.interpreted.pipes._
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
-import org.neo4j.cypher.internal.v4_0.logical.plans._
+import org.neo4j.cypher.internal.logical.plans._
 import org.neo4j.cypher.internal.v4_0.util.RelTypeId
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 

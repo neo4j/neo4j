@@ -31,7 +31,7 @@ import org.neo4j.cypher.internal.compiler.v4_0.planner.CheckForUnresolvedTokens
 import org.neo4j.cypher.internal.compiler.v4_0.planner.ResolveTokens
 import org.neo4j.cypher.internal.ir.UnionQuery
 import org.neo4j.cypher.internal.planner.spi.{IDPPlannerName, PlannerNameFor}
-import org.neo4j.cypher.internal.v4_0.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.v4_0.frontend.phases.{CompilationPhases => _, _}
 import org.neo4j.cypher.internal.v4_0.rewriting.RewriterStepSequencer
 import org.neo4j.cypher.internal.v4_0.rewriting.rewriters.InnerVariableNamer

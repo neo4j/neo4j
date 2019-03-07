@@ -26,7 +26,7 @@ import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
 import org.neo4j.cypher.internal.runtime.interpreted.ImplicitDummyPos
 import org.neo4j.cypher.internal.runtime.{NodeValueHit, QueryContext}
-import org.neo4j.cypher.internal.v4_0.logical.plans.CachedNodeProperty
+import org.neo4j.cypher.internal.logical.plans.CachedNodeProperty
 import org.neo4j.internal.kernel.api.{IndexQuery, NodeCursor, NodeValueIndexCursor}
 import org.neo4j.values.storable.Values.stringValue
 import org.neo4j.values.storable.{Value, Values}

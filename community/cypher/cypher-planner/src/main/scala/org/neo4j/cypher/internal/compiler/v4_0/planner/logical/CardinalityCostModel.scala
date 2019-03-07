@@ -23,10 +23,7 @@ import org.neo4j.cypher.internal.compiler.v4_0.CypherPlannerConfiguration
 import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.Metrics._
 import org.neo4j.cypher.internal.ir.LazyMode
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
-import org.neo4j.cypher.internal.v4_0.logical.plans._
-import org.neo4j.cypher.internal.v4_0.logical.plans.Union
-import org.neo4j.cypher.internal.v4_0.logical.plans.UnwindCollection
-import org.neo4j.cypher.internal.v4_0.logical.plans.ValueHashJoin
+import org.neo4j.cypher.internal.logical.plans._
 import org.neo4j.cypher.internal.v4_0.expressions.HasLabels
 import org.neo4j.cypher.internal.v4_0.expressions.Property
 import org.neo4j.cypher.internal.v4_0.util.Cardinality

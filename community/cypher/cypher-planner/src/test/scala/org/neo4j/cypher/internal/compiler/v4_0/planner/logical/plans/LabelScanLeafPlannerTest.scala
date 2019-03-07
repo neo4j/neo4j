@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.Metrics.QueryGrap
 import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.steps.labelScanLeafPlanner
 import org.neo4j.cypher.internal.ir.{Predicate, QueryGraph, Selections, InterestingOrder}
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
-import org.neo4j.cypher.internal.v4_0.logical.plans.{LogicalPlan, NodeByLabelScan}
+import org.neo4j.cypher.internal.logical.plans.{LogicalPlan, NodeByLabelScan}
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.v4_0.expressions.PatternExpression
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite

@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v4_0
 
 import org.neo4j.cypher.internal.planner.spi.{GraphStatistics, IndexDescriptor, PlanContext}
 import org.neo4j.cypher.internal.v4_0.frontend.phases.InternalNotificationLogger
-import org.neo4j.cypher.internal.v4_0.logical.plans.{ProcedureSignature, QualifiedName, UserFunctionSignature}
+import org.neo4j.cypher.internal.logical.plans.{ProcedureSignature, QualifiedName, UserFunctionSignature}
 
 class NotImplementedPlanContext extends PlanContext {
   override def indexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] = ???

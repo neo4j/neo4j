@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.v4_0.ast.semantics.{SemanticState, SemanticTabl
 import org.neo4j.cypher.internal.v4_0.ast.{Query, Statement}
 import org.neo4j.cypher.internal.v4_0.frontend.PlannerName
 import org.neo4j.cypher.internal.v4_0.frontend.phases.{BaseState, Condition}
-import org.neo4j.cypher.internal.v4_0.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.v4_0.util.InputPosition
 import org.neo4j.cypher.internal.v4_0.util.symbols.CypherType
 

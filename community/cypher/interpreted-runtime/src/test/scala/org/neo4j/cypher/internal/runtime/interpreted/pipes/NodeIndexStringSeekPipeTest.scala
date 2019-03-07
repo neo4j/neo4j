@@ -23,7 +23,7 @@ import org.mockito.Mockito._
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Literal
 import org.neo4j.cypher.internal.runtime.interpreted.{ImplicitDummyPos, QueryStateHelper}
 import org.neo4j.cypher.internal.v4_0.expressions.{LabelName, LabelToken, PropertyKeyName, PropertyKeyToken}
-import org.neo4j.cypher.internal.v4_0.logical.plans.{GetValue, IndexOrderNone, IndexedProperty}
+import org.neo4j.cypher.internal.logical.plans.{GetValue, IndexOrderNone, IndexedProperty}
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.{CypherFunSuite, WindowsStringSafe}
 import org.neo4j.cypher.internal.v4_0.util.{LabelId, PropertyKeyId}
 import org.neo4j.values.storable.Values

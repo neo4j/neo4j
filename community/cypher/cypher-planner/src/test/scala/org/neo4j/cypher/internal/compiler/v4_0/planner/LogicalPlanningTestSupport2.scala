@@ -36,7 +36,7 @@ import org.neo4j.cypher.internal.ir.{PeriodicCommit, QueryGraph, PlannerQuery, P
 import org.neo4j.cypher.internal.planner.spi._
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor.{OrderCapability, ValueCapability}
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.{Cardinalities, ProvidedOrders, Solveds}
-import org.neo4j.cypher.internal.v4_0.logical.plans._
+import org.neo4j.cypher.internal.logical.plans._
 import org.neo4j.helpers.collection.Visitable
 import org.neo4j.kernel.impl.util.dbstructure.DbStructureVisitor
 import org.neo4j.cypher.internal.v4_0.ast._

@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v4_0.phases.PlannerContext
 import org.neo4j.cypher.internal.compiler.v4_0.planner.LogicalPlanConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.PlanMatchHelp
 import org.neo4j.cypher.internal.planner.spi.IDPPlannerName
-import org.neo4j.cypher.internal.v4_0.logical.plans.{LogicalPlan, NodeHashJoin, Selection}
+import org.neo4j.cypher.internal.logical.plans.{LogicalPlan, NodeHashJoin, Selection}
 import org.neo4j.cypher.internal.v4_0.ast.ASTAnnotationMap
 import org.neo4j.cypher.internal.v4_0.ast.semantics.ExpressionTypeInfo
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable

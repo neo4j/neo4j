@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.v4_0.expressions.{Ands, Expression}
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.neo4j.cypher.internal.v4_0.util.attribution.{Attributes, SameId}
-import org.neo4j.cypher.internal.v4_0.logical.plans.{NodeHashJoin, Selection}
+import org.neo4j.cypher.internal.logical.plans.{NodeHashJoin, Selection}
 
 /*
 A join on given variable is similar to a logical AND - any predicates evaluated on the LHS will in effect

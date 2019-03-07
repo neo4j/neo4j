@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.planner.spi
 
 import org.neo4j.cypher.internal.v4_0.frontend.phases.InternalNotificationLogger
-import org.neo4j.cypher.internal.v4_0.logical.plans.{ProcedureSignature, QualifiedName, UserFunctionSignature}
+import org.neo4j.cypher.internal.logical.plans.{ProcedureSignature, QualifiedName, UserFunctionSignature}
 
 /**
  * PlanContext is an internal access layer to the graph that is solely used during plan building
