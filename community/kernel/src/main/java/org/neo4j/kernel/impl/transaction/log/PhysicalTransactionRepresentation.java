@@ -57,6 +57,11 @@ public class PhysicalTransactionRepresentation implements TransactionRepresentat
         setHeader( additionalHeader, masterId, authorId, timeStarted, latestCommittedTxWhenStarted, timeCommitted, lockSession );
     }
 
+    public void setAdditionalHeader( byte[] additionalHeader )
+    {
+        this.additionalHeader = additionalHeader;
+    }
+
     public void setHeader( byte[] additionalHeader, int masterId, int authorId, long timeStarted,
                            long latestCommittedTxWhenStarted, long timeCommitted, int lockSession )
     {
