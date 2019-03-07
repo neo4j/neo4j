@@ -37,7 +37,6 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
-import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreFactory;
@@ -53,6 +52,7 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.storageengine.api.ConstraintRuleAccessor;
 import org.neo4j.storageengine.api.LogVersionRepository;
 import org.neo4j.storageengine.api.ReadableStorageEngine;
 import org.neo4j.storageengine.api.StorageEngine;
@@ -110,7 +110,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
                 resolveLogProvider( dependencyResolver ),
                 dependencyResolver.resolveDependency( TokenHolders.class ),
                 dependencyResolver.resolveDependency( SchemaState.class ),
-                dependencyResolver.resolveDependency( ConstraintSemantics.class ),
+                dependencyResolver.resolveDependency( ConstraintRuleAccessor.class ),
                 dependencyResolver.resolveDependency( LockService.class ),
                 dependencyResolver.resolveDependency( DatabaseHealth.class ),
                 dependencyResolver.resolveDependency( IdGeneratorFactory.class ),

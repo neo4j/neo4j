@@ -47,7 +47,6 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.api.exceptions.TransactionApplyKernelException;
 import org.neo4j.kernel.api.txstate.TransactionCountingStateVisitor;
-import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.store.CountsComputer;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -69,6 +68,7 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.storageengine.api.CommandCreationContext;
 import org.neo4j.storageengine.api.CommandsToApply;
+import org.neo4j.storageengine.api.ConstraintRuleAccessor;
 import org.neo4j.storageengine.api.IndexUpdateListener;
 import org.neo4j.storageengine.api.LogVersionRepository;
 import org.neo4j.storageengine.api.NodeLabelUpdateListener;
@@ -100,7 +100,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     private final CacheAccessBackDoor cacheAccess;
     private final SchemaState schemaState;
     private final SchemaRuleAccess schemaRuleAccess;
-    private final ConstraintSemantics constraintSemantics;
+    private final ConstraintRuleAccessor constraintSemantics;
     private final LockService lockService;
     private WorkSync<NodeLabelUpdateListener,LabelUpdateWork> labelScanStoreSync;
     private WorkSync<IndexUpdateListener,IndexUpdatesWork> indexUpdatesSync;
@@ -122,7 +122,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             LogProvider logProvider,
             TokenHolders tokenHolders,
             SchemaState schemaState,
-            ConstraintSemantics constraintSemantics,
+            ConstraintRuleAccessor constraintSemantics,
             LockService lockService,
             DatabaseHealth databaseHealth,
             IdGeneratorFactory idGeneratorFactory,

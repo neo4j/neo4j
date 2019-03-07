@@ -35,8 +35,8 @@ import org.neo4j.internal.schema.constraints.NodeKeyConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.api.exceptions.schema.DuplicateSchemaRuleException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
-import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.storageengine.api.ConstraintRule;
+import org.neo4j.storageengine.api.ConstraintRuleAccessor;
 import org.neo4j.storageengine.api.DefaultStorageIndexReference;
 import org.neo4j.storageengine.api.SchemaRule;
 import org.neo4j.storageengine.api.StorageIndexReference;
@@ -50,10 +50,10 @@ class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
     private final SchemaState schemaState;
     private final SchemaRuleAccess schemaStorage;
     private final SchemaRecordChangeTranslator schemaStateChanger;
-    private final ConstraintSemantics constraintSemantics;
+    private final ConstraintRuleAccessor constraintSemantics;
 
     TransactionToRecordStateVisitor( TransactionRecordState recordState, SchemaState schemaState, SchemaRuleAccess schemaRuleAccess,
-            ConstraintSemantics constraintSemantics )
+            ConstraintRuleAccessor constraintSemantics )
     {
         this.recordState = recordState;
         this.schemaState = schemaState;
