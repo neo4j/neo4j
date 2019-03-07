@@ -37,7 +37,13 @@ Apache Software License, Version 2.0
   Caffeine cache
   Commons Lang
   Data Mapper for Jackson
+  error-prone annotations
   fastinfoset
+  FindBugs-jsr305
+  Guava InternalFutureFailureAccess and InternalFutures
+  Guava ListenableFuture only
+  Guava: Google Core Libraries for Java
+  J2ObjC Annotations
   Jackson
   Javassist
   JAX-RS provider for JSON content type
@@ -130,6 +136,8 @@ GNU General Public License, version 2 with the Classpath Exception
   Java Servlet API
 
 MIT License
+  Animal Sniffer Annotations
+  Checker Qual
   jersey-container-servlet
   jersey-container-servlet-core
   jersey-core-client

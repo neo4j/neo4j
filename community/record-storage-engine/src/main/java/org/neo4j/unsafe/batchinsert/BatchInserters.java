@@ -23,10 +23,10 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Map;
 
-import org.neo4j.common.Service;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.extension.ExtensionFactory;
+import org.neo4j.service.Services;
 import org.neo4j.unsafe.batchinsert.internal.BatchInserterImpl;
 import org.neo4j.unsafe.batchinsert.internal.FileSystemClosingBatchInserter;
 
@@ -89,6 +89,6 @@ public final class BatchInserters
 
     private static Iterable loadExtension()
     {
-        return Service.loadAll( ExtensionFactory.class );
+        return Services.loadAll( ExtensionFactory.class );
     }
 }

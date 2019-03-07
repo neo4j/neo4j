@@ -19,7 +19,6 @@
  */
 package org.neo4j.consistency.internal;
 
-import org.neo4j.common.Service;
 import org.neo4j.configuration.Config;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -36,6 +35,7 @@ import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.service.Services;
 
 /**
  * Utility for loading {@link IndexProvider} instances from {@link DatabaseExtensions}.
@@ -51,7 +51,7 @@ public class SchemaIndexExtensionLoader
         Dependencies deps = new Dependencies();
         deps.satisfyDependencies( fileSystem, config, logService, pageCache, recoveryCollector, monitors, jobScheduler, tokenHolders );
         @SuppressWarnings( "rawtypes" )
-        Iterable extensions = Service.loadAll( ExtensionFactory.class );
+        Iterable extensions = Services.loadAll( ExtensionFactory.class );
         DatabaseExtensionContext extensionContext = new DatabaseExtensionContext( databaseLayout, databaseInfo, deps );
         return new DatabaseExtensions( extensionContext, extensions, deps, ExtensionFailureStrategies.ignore() );
     }

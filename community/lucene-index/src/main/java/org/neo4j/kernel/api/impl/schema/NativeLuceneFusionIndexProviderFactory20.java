@@ -21,6 +21,7 @@ package org.neo4j.kernel.api.impl.schema;
 
 import java.io.File;
 
+import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
@@ -41,6 +42,7 @@ import org.neo4j.kernel.impl.index.schema.fusion.FusionSlotSelector20;
 import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex.NATIVE20;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 
+@ServiceProvider
 public class NativeLuceneFusionIndexProviderFactory20 extends NativeLuceneFusionIndexProviderFactory<NativeLuceneFusionIndexProviderFactory20.Dependencies>
 {
     public static final String KEY = NATIVE20.providerKey();

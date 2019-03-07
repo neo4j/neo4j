@@ -21,6 +21,7 @@ package org.neo4j.kernel.api.impl.fulltext;
 
 import java.io.File;
 
+import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -44,6 +45,7 @@ import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByPr
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesBySubProvider;
 
 @RecoveryExtension
+@ServiceProvider
 public class FulltextIndexProviderFactory extends ExtensionFactory<FulltextIndexProviderFactory.Dependencies>
 {
     private static final String KEY = "fulltext";

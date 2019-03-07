@@ -30,7 +30,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.common.DependencyResolver;
-import org.neo4j.common.Service;
 import org.neo4j.graphdb.security.URLAccessRule;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.kernel.extension.ExtensionFactory;
@@ -61,7 +60,7 @@ public class GraphDatabaseDependencies implements ExternalDependencies
     {
         ImmutableList<Class<?>> settingsClasses = ImmutableListFactoryImpl.INSTANCE.empty();
         ImmutableList<ExtensionFactory<?>> extensions = asImmutableList(
-                getExtensions( Service.loadAll( ExtensionFactory.class ).iterator() ) );
+                getExtensions( Services.loadAll( ExtensionFactory.class ).iterator() ) );
 
         ImmutableMap<String,URLAccessRule> urlAccessRules = ImmutableMapFactoryImpl.INSTANCE.of(
                 "http", URLAccessRules.alwaysPermitted(),

@@ -25,7 +25,6 @@ import java.util.Map;
 import java.util.Optional;
 
 import org.neo4j.common.ProgressReporter;
-import org.neo4j.common.Service;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -94,6 +93,7 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.logging.internal.SimpleLogService;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.service.Services;
 import org.neo4j.storageengine.api.LogVersionRepository;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageEngineFactory;
@@ -368,7 +368,7 @@ public final class Recovery
 
     private static Iterable<ExtensionFactory<?>> loadExtensions()
     {
-        return Iterables.cast( Service.loadAll( ExtensionFactory.class ) );
+        return Iterables.cast( Services.loadAll( ExtensionFactory.class ) );
     }
 
     private static DatabaseExtensions instantiateRecoveryExtensions( DatabaseLayout databaseLayout, FileSystemAbstraction fileSystem, Config config,

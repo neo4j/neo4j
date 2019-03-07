@@ -19,6 +19,7 @@
  */
 package org.neo4j.harness;
 
+import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.extension.ExtensionType;
@@ -33,6 +34,7 @@ import org.neo4j.logging.internal.LogService;
 // non-public mechanism for adding new context components, but in this
 // case the goal is to provide alternative Core API's and as such it wraps
 // the old Core API.
+@ServiceProvider
 public class MyExtensionThatAddsAlternativeCoreAPI
         extends ExtensionFactory<MyExtensionThatAddsAlternativeCoreAPI.Dependencies>
 {

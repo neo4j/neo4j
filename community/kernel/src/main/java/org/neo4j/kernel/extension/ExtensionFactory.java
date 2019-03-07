@@ -19,23 +19,34 @@
  */
 package org.neo4j.kernel.extension;
 
-import org.neo4j.common.Service;
+import org.neo4j.annotations.service.Service;
 import org.neo4j.kernel.extension.context.ExtensionContext;
 import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.service.NamedService;
 
-public abstract class ExtensionFactory<DEPENDENCIES> extends Service
+import static java.lang.String.format;
+
+@Service
+public abstract class ExtensionFactory<DEPENDENCIES> implements NamedService
 {
     private final ExtensionType extensionType;
+    private final String name;
 
-    protected ExtensionFactory( String key )
+    protected ExtensionFactory( String name )
     {
-        this( ExtensionType.GLOBAL, key );
+        this( ExtensionType.GLOBAL, name );
     }
 
-    protected ExtensionFactory( ExtensionType extensionType, String key )
+    protected ExtensionFactory( ExtensionType extensionType, String name )
     {
-        super( key );
         this.extensionType = extensionType;
+        this.name = name;
+    }
+
+    @Override
+    public String getName()
+    {
+        return name;
     }
 
     /**
@@ -50,11 +61,32 @@ public abstract class ExtensionFactory<DEPENDENCIES> extends Service
     @Override
     public String toString()
     {
-        return "Extension:" + getClass().getSimpleName() + getKeys();
+        return format( "Extension:%s[%s]", getClass().getSimpleName(), name );
     }
 
     ExtensionType getExtensionType()
     {
         return extensionType;
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return name.hashCode();
+    }
+
+    @Override
+    public boolean equals( Object o )
+    {
+        if ( this == o )
+        {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() )
+        {
+            return false;
+        }
+        final ExtensionFactory<?> that = (ExtensionFactory<?>) o;
+        return name.equals( that.name );
     }
 }

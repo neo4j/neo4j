@@ -19,6 +19,7 @@
  */
 package org.neo4j.harness;
 
+import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.extension.context.ExtensionContext;
@@ -30,12 +31,15 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 // this is a vital mechanism to cover use cases Procedures need to cover,
 // and is in place as an approach that should either eventually be made
 // public, or the relevant use cases addressed in other ways.
+@ServiceProvider
 public class MyExtensionThatAddsInjectable
         extends ExtensionFactory<MyExtensionThatAddsInjectable.Dependencies>
 {
+    static final String NAME = "my-ext";
+
     public MyExtensionThatAddsInjectable()
     {
-        super( "my-ext" );
+        super( NAME );
     }
 
     @Override

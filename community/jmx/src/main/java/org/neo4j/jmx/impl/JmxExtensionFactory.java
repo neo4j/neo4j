@@ -19,6 +19,7 @@
  */
 package org.neo4j.jmx.impl;
 
+import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.extension.ExtensionFactory;
@@ -31,6 +32,7 @@ import org.neo4j.logging.internal.LogService;
 import static org.neo4j.kernel.extension.ExtensionType.DATABASE;
 
 @Deprecated
+@ServiceProvider
 public final class JmxExtensionFactory extends ExtensionFactory<JmxExtensionFactory.Dependencies>
 {
     public interface Dependencies

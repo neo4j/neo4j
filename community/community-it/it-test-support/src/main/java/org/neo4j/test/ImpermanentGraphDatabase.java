@@ -24,7 +24,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.neo4j.common.Service;
 import org.neo4j.configuration.Config;
 import org.neo4j.graphdb.facade.ExternalDependencies;
 import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory;
@@ -41,6 +40,7 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.logging.internal.SimpleLogService;
+import org.neo4j.service.Services;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.ephemeral;
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_memory;
@@ -100,7 +100,7 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
     public ImpermanentGraphDatabase( File storeDir, Map<String, String> params )
     {
         this( storeDir, params,
-                Iterables.cast( Service.loadAll( ExtensionFactory.class ) ) );
+                Iterables.cast( Services.loadAll( ExtensionFactory.class ) ) );
     }
 
     /**

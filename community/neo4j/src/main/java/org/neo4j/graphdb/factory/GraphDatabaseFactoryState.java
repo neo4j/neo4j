@@ -26,7 +26,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Predicate;
 
 import org.neo4j.common.DependencyResolver;
-import org.neo4j.common.Service;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.LoadableConfig;
 import org.neo4j.graphdb.facade.ExternalDependencies;
@@ -34,6 +33,7 @@ import org.neo4j.graphdb.security.URLAccessRule;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.service.Services;
 
 import static org.neo4j.graphdb.facade.GraphDatabaseDependencies.newDependencies;
 
@@ -58,10 +58,7 @@ public class GraphDatabaseFactoryState
         settingsClasses = new CopyOnWriteArrayList<>();
         settingsClasses.add( GraphDatabaseSettings.class );
         extensions = new CopyOnWriteArrayList<>();
-        for ( ExtensionFactory<?> factory : Service.loadAll( ExtensionFactory.class ) )
-        {
-            extensions.add( factory );
-        }
+        Services.loadAll( ExtensionFactory.class ).forEach( extensions::add );
         urlAccessRules = new ConcurrentHashMap<>();
     }
 

@@ -21,6 +21,7 @@ package org.neo4j.kernel.api.impl.schema;
 
 import java.io.File;
 
+import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
@@ -41,6 +42,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex.NATIVE10
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 import static org.neo4j.kernel.api.index.IndexProvider.EMPTY;
 
+@ServiceProvider
 public class NativeLuceneFusionIndexProviderFactory10 extends NativeLuceneFusionIndexProviderFactory<NativeLuceneFusionIndexProviderFactory10.Dependencies>
 {
     private static final String KEY = NATIVE10.providerKey();
@@ -65,8 +67,8 @@ public class NativeLuceneFusionIndexProviderFactory10 extends NativeLuceneFusion
     }
 
     public static FusionIndexProvider create( PageCache pageCache, File databaseDirectory, FileSystemAbstraction fs,
-                                                   IndexProvider.Monitor monitor, Config config, OperationalMode operationalMode,
-                                                   RecoveryCleanupWorkCollector recoveryCleanupWorkCollector )
+            IndexProvider.Monitor monitor, Config config, OperationalMode operationalMode,
+            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector )
     {
         IndexDirectoryStructure.Factory childDirectoryStructure = subProviderDirectoryStructure( databaseDirectory );
         boolean readOnly = IndexProviderFactoryUtil.isReadOnly( config, operationalMode );

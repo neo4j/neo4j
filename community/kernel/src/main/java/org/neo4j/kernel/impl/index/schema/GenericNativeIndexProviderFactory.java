@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.index.schema;
 
 import java.io.File;
 
+import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
@@ -32,6 +33,7 @@ import org.neo4j.kernel.impl.factory.OperationalMode;
 
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 
+@ServiceProvider
 public class GenericNativeIndexProviderFactory extends AbstractIndexProviderFactory<GenericNativeIndexProviderFactory.Dependencies>
 {
     public GenericNativeIndexProviderFactory()

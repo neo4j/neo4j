@@ -21,6 +21,7 @@ package org.neo4j.kernel.api.impl.schema;
 
 import java.io.File;
 
+import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
@@ -41,6 +42,7 @@ import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByPr
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProviderKey;
 import static org.neo4j.kernel.api.index.IndexProvider.EMPTY;
 
+@ServiceProvider
 public class LuceneIndexProviderFactory extends AbstractIndexProviderFactory<LuceneIndexProviderFactory.Dependencies>
 {
     private static final String KEY = LUCENE10.providerKey();
