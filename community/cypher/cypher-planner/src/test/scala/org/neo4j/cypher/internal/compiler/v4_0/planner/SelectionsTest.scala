@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v4_0.planner
 
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.ir.v4_0.{Predicate, Selections}
+import org.neo4j.cypher.internal.ir.{Predicate, Selections}
 import org.neo4j.cypher.internal.v4_0.expressions.PartialPredicate
 
 class SelectionsTest extends CypherFunSuite with LogicalPlanningTestSupport {

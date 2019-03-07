@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.v4_0.logical.plans
 
 import org.neo4j.cypher.internal.v4_0.expressions.Expression
-import org.neo4j.cypher.internal.ir.v4_0._
+import org.neo4j.cypher.internal.ir.{CSVFormat, StrictnessMode}
 import org.neo4j.cypher.internal.v4_0.util.attribution.IdGen
 
 /**

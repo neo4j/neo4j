@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.plandescription
 
-import org.neo4j.cypher.internal.ir.v4_0.ProvidedOrder
+import org.neo4j.cypher.internal.ir.ProvidedOrder
 import org.neo4j.cypher.internal.plandescription.Arguments.{Expression => argExpression, _}
 import org.neo4j.cypher.internal.plandescription.PlanDescriptionArgumentSerializer.serialize
 import org.neo4j.cypher.internal.v4_0.util.{DummyPosition, InputPosition}

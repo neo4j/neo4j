@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v4_0.planner.logical.steps
 import org.neo4j.cypher.internal.compiler.v4_0.ExhaustiveShortestPathForbiddenNotification
 import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.idp.expandSolverStep
-import org.neo4j.cypher.internal.ir.v4_0.{Predicate, ShortestPathPattern, _}
+import org.neo4j.cypher.internal.ir.{Predicate, ShortestPathPattern, _}
 import org.neo4j.cypher.internal.v4_0.expressions._
 import org.neo4j.cypher.internal.v4_0.expressions.functions.Length
 import org.neo4j.cypher.internal.v4_0.logical.plans.{Ascending, DoNotIncludeTies, IncludeTies, LogicalPlan}

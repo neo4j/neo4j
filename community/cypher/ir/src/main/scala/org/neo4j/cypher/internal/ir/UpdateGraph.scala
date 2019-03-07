@@ -17,11 +17,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.ir.v4_0
+package org.neo4j.cypher.internal.ir
 
 import org.neo4j.cypher.internal.v4_0.util.InternalException
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
-import org.neo4j.cypher.internal.v4_0.util.symbols._
+import org.neo4j.cypher.internal.v4_0.util.symbols.{CTAny, CTNode, CTRelationship, TypeSpec}
 import org.neo4j.cypher.internal.v4_0.expressions._
 
 import org.neo4j.cypher.internal.v4_0.expressions.functions.Labels

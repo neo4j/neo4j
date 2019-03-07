@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v4_0.planner.logical.ordering
 
 import org.neo4j.cypher.internal.compiler.v4_0.helpers.AggregationHelper
-import org.neo4j.cypher.internal.ir.v4_0._
+import org.neo4j.cypher.internal.ir.{InterestingOrder, ProvidedOrder}
 import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability
 import org.neo4j.cypher.internal.v4_0.expressions.{Expression, Property}
 import org.neo4j.cypher.internal.v4_0.util.symbols.CypherType

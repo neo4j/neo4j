@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v4_0.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v4_0.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.plans.rewriter.unnestOptional
-import org.neo4j.cypher.internal.ir.v4_0.SimplePatternLength
+import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.planner.spi.DelegatingGraphStatistics
 import org.neo4j.cypher.internal.v4_0.expressions.{Ands, RelTypeName, SemanticDirection}
 import org.neo4j.cypher.internal.v4_0.logical.plans.{Limit, _}

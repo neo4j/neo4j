@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v4_0.ast.convert.plannerQuery
 
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v4_0.planner.LogicalPlanningTestSupport
-import org.neo4j.cypher.internal.ir.v4_0.RegularQueryProjection
+import org.neo4j.cypher.internal.ir.RegularQueryProjection
 
 class UnionStatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSupport {
 

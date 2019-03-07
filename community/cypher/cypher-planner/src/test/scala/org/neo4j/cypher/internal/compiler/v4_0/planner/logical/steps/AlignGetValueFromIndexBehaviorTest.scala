@@ -21,12 +21,7 @@ package org.neo4j.cypher.internal.compiler.v4_0.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v4_0.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.PlanMatchHelp
-import org.neo4j.cypher.internal.ir.v4_0.PassthroughAllHorizon
-import org.neo4j.cypher.internal.ir.v4_0.Predicate
-import org.neo4j.cypher.internal.ir.v4_0.QueryGraph
-import org.neo4j.cypher.internal.ir.v4_0.Selections
-import org.neo4j.cypher.internal.ir.v4_0.RegularPlannerQuery
-import org.neo4j.cypher.internal.ir.v4_0.RegularQueryProjection
+import org.neo4j.cypher.internal.ir._
 import org.neo4j.cypher.internal.v4_0.logical.plans._
 import org.neo4j.cypher.internal.v4_0.logical.plans.Union
 import org.neo4j.cypher.internal.v4_0.expressions.LabelToken

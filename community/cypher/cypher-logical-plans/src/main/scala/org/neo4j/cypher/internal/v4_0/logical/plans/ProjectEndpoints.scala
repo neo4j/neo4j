@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.v4_0.logical.plans
 
-import org.neo4j.cypher.internal.ir.v4_0.PatternLength
+import org.neo4j.cypher.internal.ir.PatternLength
 import org.neo4j.cypher.internal.v4_0.util.attribution.IdGen
 import org.neo4j.cypher.internal.v4_0.expressions.RelTypeName
 

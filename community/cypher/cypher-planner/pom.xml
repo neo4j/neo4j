@@ -86,7 +86,7 @@
 
         <dependency>
             <groupId>org.neo4j</groupId>
-            <artifactId>neo4j-cypher-ir-4.0</artifactId>
+            <artifactId>neo4j-cypher-ir</artifactId>
             <version>${project.version}</version>
         </dependency>
 

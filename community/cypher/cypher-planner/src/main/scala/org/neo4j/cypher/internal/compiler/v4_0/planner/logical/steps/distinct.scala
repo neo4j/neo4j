@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v4_0.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.LogicalPlanningContext
-import org.neo4j.cypher.internal.ir.v4_0.{DistinctQueryProjection, InterestingOrder}
+import org.neo4j.cypher.internal.ir.{DistinctQueryProjection, InterestingOrder}
 import org.neo4j.cypher.internal.v4_0.logical.plans.LogicalPlan
 
 object distinct {

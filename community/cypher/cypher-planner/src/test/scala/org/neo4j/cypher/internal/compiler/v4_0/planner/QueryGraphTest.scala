@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v4_0.planner
 
 import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection.BOTH
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.ir.v4_0.{PatternRelationship, QueryGraph, SimplePatternLength}
+import org.neo4j.cypher.internal.ir.{PatternRelationship, QueryGraph, SimplePatternLength}
 
 class QueryGraphTest extends CypherFunSuite {
   val x = "x"

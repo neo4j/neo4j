@@ -17,16 +17,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.ir.v4_0
+package org.neo4j.cypher.internal.ir
 
-sealed trait StrictnessMode extends (Strictness => Boolean) {
-  self: Product =>
+sealed trait CSVFormat
 
-  def apply(havingStrictness: Strictness) = havingStrictness.strictness == self
+case object HasHeaders extends CSVFormat
 
-  override def toString: String = self.productPrefix
-}
-
-case object LazyMode extends StrictnessMode
-
-case object EagerMode extends StrictnessMode
+case object NoHeaders extends CSVFormat

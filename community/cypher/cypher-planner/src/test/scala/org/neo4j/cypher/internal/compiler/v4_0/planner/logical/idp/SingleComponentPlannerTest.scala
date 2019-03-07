@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v4_0.planner.logical.idp
 
 import org.neo4j.cypher.internal.compiler.v4_0.planner.LogicalPlanningTestSupport
-import org.neo4j.cypher.internal.ir.v4_0.{PatternRelationship, QueryGraph, SimplePatternLength}
+import org.neo4j.cypher.internal.ir.{PatternRelationship, QueryGraph, SimplePatternLength}
 import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Solveds
 import org.neo4j.cypher.internal.v4_0.ast.{Hint, UsingIndexHint, UsingJoinHint}

@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v4_0.planner.BeLikeMatcher._
 import org.neo4j.cypher.internal.compiler.v4_0.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.v4_0.planner.StubbedLogicalPlanningConfiguration
 import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.Metrics.QueryGraphSolverInput
-import org.neo4j.cypher.internal.ir.v4_0.RegularPlannerQuery
+import org.neo4j.cypher.internal.ir.RegularPlannerQuery
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.v4_0.logical.plans._
 import org.neo4j.cypher.internal.v4_0.logical.plans.Union

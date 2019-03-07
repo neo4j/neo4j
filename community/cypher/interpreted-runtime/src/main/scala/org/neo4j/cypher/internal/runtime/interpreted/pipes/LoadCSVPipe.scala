@@ -21,9 +21,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import java.net.URL
 
-import org.neo4j.cypher.internal.ir.v4_0.CSVFormat
-import org.neo4j.cypher.internal.ir.v4_0.HasHeaders
-import org.neo4j.cypher.internal.ir.v4_0.NoHeaders
+import org.neo4j.cypher.internal.ir.{CSVFormat, HasHeaders, NoHeaders}
 import org.neo4j.cypher.internal.runtime.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.ArrayBackedMap

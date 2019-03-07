@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v4_0.ast.convert.plannerQuery.Statemen
 import org.neo4j.cypher.internal.v4_0.ast.Query
 import org.neo4j.cypher.internal.v4_0.frontend.phases.CompilationPhaseTracer.CompilationPhase.LOGICAL_PLANNING
 import org.neo4j.cypher.internal.v4_0.frontend.phases.{BaseContext, BaseState, Phase}
-import org.neo4j.cypher.internal.ir.v4_0.UnionQuery
+import org.neo4j.cypher.internal.ir.UnionQuery
 
 
 object CreatePlannerQuery extends Phase[BaseContext, BaseState, LogicalPlanState] {

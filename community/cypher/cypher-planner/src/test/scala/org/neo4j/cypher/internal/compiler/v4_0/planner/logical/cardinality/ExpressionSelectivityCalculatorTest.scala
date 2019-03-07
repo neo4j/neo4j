@@ -23,7 +23,7 @@ import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.when
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
-import org.neo4j.cypher.internal.ir.v4_0._
+import org.neo4j.cypher.internal.ir.{Predicate, Selections}
 import org.neo4j.cypher.internal.planner.spi.{GraphStatistics, IndexDescriptor}
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics.DEFAULT_EQUALITY_SELECTIVITY
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics.DEFAULT_LIST_CARDINALITY

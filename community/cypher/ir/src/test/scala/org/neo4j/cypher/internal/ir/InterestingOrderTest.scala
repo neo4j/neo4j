@@ -17,9 +17,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.ir.v4_0
+package org.neo4j.cypher.internal.ir
 
-import org.neo4j.cypher.internal.ir.v4_0.InterestingOrder.{Asc, Desc, FullSatisfaction, NoSatisfaction, Satisfaction}
+import org.neo4j.cypher.internal.ir.InterestingOrder.{Asc, Desc, FullSatisfaction, NoSatisfaction, Satisfaction}
 import org.neo4j.cypher.internal.v4_0.expressions._
 import org.neo4j.cypher.internal.v4_0.util.{DummyPosition, InputPosition}
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite

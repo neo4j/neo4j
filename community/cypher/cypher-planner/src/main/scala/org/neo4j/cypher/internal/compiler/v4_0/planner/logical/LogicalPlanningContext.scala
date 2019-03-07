@@ -23,7 +23,7 @@ import org.neo4j.csv.reader.Configuration
 import org.neo4j.csv.reader.Configuration.DEFAULT_LEGACY_STYLE_QUOTING
 import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.Metrics.{CardinalityModel, CostModel, QueryGraphSolverInput}
 import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.steps.{CostComparisonListener, LogicalPlanProducer}
-import org.neo4j.cypher.internal.ir.v4_0.StrictnessMode
+import org.neo4j.cypher.internal.ir.StrictnessMode
 import org.neo4j.cypher.internal.planner.spi.{GraphStatistics, PlanContext, PlanningAttributes}
 import org.neo4j.cypher.internal.v4_0.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable

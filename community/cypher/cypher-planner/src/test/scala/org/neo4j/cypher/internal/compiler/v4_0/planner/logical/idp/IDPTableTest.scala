@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v4_0.planner.logical.idp
 
 import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.idp
-import org.neo4j.cypher.internal.ir.v4_0.InterestingOrder
+import org.neo4j.cypher.internal.ir.InterestingOrder
 import org.neo4j.cypher.internal.v4_0.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 

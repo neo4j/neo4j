@@ -17,15 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.ir.v4_0.helpers
+package org.neo4j.cypher.internal.ir.helpers
 
 import org.neo4j.cypher.internal.v4_0.util.{Rewriter, topDown}
 import org.neo4j.cypher.internal.v4_0.rewriting.rewriters._
 import org.neo4j.cypher.internal.v4_0.expressions.{Ands, Expression, HasLabels, Not, Ors, PatternComprehension, PatternExpression, RelationshipChain, Variable}
 import org.neo4j.cypher.internal.v4_0.util.UnNamedNameGenerator._
-import org.neo4j.cypher.internal.ir.v4_0._
-import org.neo4j.cypher.internal.ir.v4_0.helpers.PatternConverters._
-import org.neo4j.cypher.internal.ir.v4_0.QueryGraph
+import org.neo4j.cypher.internal.ir._
+import org.neo4j.cypher.internal.ir.helpers.PatternConverters._
 import org.neo4j.cypher.internal.v4_0.expressions.Range
 
 object ExpressionConverters {

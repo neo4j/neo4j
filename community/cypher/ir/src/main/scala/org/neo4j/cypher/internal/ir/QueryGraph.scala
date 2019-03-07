@@ -17,17 +17,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.ir.v4_0
+package org.neo4j.cypher.internal.ir
 
-import org.neo4j.cypher.internal.ir.v4_0.helpers.ExpressionConverters._
+import org.neo4j.cypher.internal.ir.helpers.ExpressionConverters._
 import org.neo4j.cypher.internal.v4_0.ast._
 import org.neo4j.cypher.internal.v4_0.ast.prettifier.ExpressionStringifier
 import org.neo4j.cypher.internal.v4_0.expressions._
 
 import scala.collection.mutable.ArrayBuffer
-import scala.collection.GenSeq
-import scala.collection.GenTraversableOnce
-import scala.collection.mutable
+import scala.collection.{GenSeq, GenTraversableOnce, mutable}
 import scala.runtime.ScalaRunTime
 
 /*

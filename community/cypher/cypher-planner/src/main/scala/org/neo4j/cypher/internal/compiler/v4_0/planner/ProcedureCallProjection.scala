@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v4_0.planner
 
-import org.neo4j.cypher.internal.ir.v4_0._
+import org.neo4j.cypher.internal.ir.{EagerMode, LazyMode, QueryHorizon}
 import org.neo4j.cypher.internal.v4_0.logical.plans.{ProcedureReadOnlyAccess, ResolvedCall}
 
 case class ProcedureCallProjection(call: ResolvedCall) extends QueryHorizon {

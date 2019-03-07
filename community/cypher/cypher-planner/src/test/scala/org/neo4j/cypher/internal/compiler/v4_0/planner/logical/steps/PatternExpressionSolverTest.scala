@@ -25,7 +25,7 @@ import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
 import org.neo4j.cypher.internal.compiler.v4_0.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.{LogicalPlanningContext, QueryGraphSolver}
-import org.neo4j.cypher.internal.ir.v4_0.InterestingOrder
+import org.neo4j.cypher.internal.ir.InterestingOrder
 import org.neo4j.cypher.internal.v4_0.logical.plans.{LogicalPlan, Projection, RollUpApply}
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.v4_0.expressions._

@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.spec
 
-import org.neo4j.cypher.internal.ir.v4_0.{SimplePatternLength, VarPatternLength}
+import org.neo4j.cypher.internal.ir.{SimplePatternLength, VarPatternLength}
 import org.neo4j.cypher.internal.runtime.spec.PatternParser.Pattern
 import org.neo4j.cypher.internal.v4_0.expressions.RelTypeName
 import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection.{BOTH, INCOMING, OUTGOING}

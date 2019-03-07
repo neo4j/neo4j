@@ -17,13 +17,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.ir.v4_0
+package org.neo4j.cypher.internal.ir
 
-import org.neo4j.cypher.internal.v4_0.expressions.{Expression, LabelName}
+import org.neo4j.cypher.internal.v4_0.expressions.Expression
 
-/**
-  * Create a new node with the provided labels and properties and assign it to the variable 'idName'.
-  */
-case class CreateNode(idName: String, labels: Seq[LabelName], properties: Option[Expression]) {
-  def dependencies: Set[String] = properties.map(_.dependencies.map(_.name)).getOrElse(Set.empty)
+case class Predicate(dependencies: Set[String], expr: Expression) {
+
+  def hasDependenciesMet(symbols: Set[String]): Boolean =
+    (dependencies -- symbols).isEmpty
+
+  def hasDependenciesMetForRequiredSymbol(symbols: Set[String], required: String): Boolean =
+    dependencies.contains(required) && hasDependenciesMet(symbols)
+}
+
+object Predicate {
+  implicit val byPosition = Ordering.by { (predicate: Predicate) => predicate.expr.position }
 }

@@ -20,9 +20,9 @@
 package org.neo4j.cypher.internal.compiler.v4_0.ast.convert.plannerQuery
 
 import org.neo4j.cypher.internal.compiler.v4_0.planner._
-import org.neo4j.cypher.internal.ir.v4_0.helpers.ExpressionConverters._
-import org.neo4j.cypher.internal.ir.v4_0.helpers.PatternConverters._
-import org.neo4j.cypher.internal.ir.v4_0.{NoHeaders, _}
+import org.neo4j.cypher.internal.ir.helpers.ExpressionConverters._
+import org.neo4j.cypher.internal.ir.helpers.PatternConverters._
+import org.neo4j.cypher.internal.ir.{NoHeaders, _}
 import org.neo4j.cypher.internal.v4_0.logical.plans.ResolvedCall
 import org.neo4j.cypher.internal.v4_0.ast._
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
@@ -107,7 +107,7 @@ object ClauseConverters {
 
   def findRequiredOrder(horizon: QueryHorizon, optOrderBy: Option[OrderBy]): InterestingOrder = {
     import org.neo4j.cypher.internal.compiler.v4_0.helpers.AggregationHelper
-    import org.neo4j.cypher.internal.ir.v4_0.InterestingOrder.{Asc, ColumnOrder, Desc}
+    import org.neo4j.cypher.internal.ir.InterestingOrder.{Asc, ColumnOrder, Desc}
 
     val sortItems = if(optOrderBy.isDefined) optOrderBy.get.sortItems else Seq.empty
     val (requiredOrderColumns, interestingOrderColumns) = horizon match {

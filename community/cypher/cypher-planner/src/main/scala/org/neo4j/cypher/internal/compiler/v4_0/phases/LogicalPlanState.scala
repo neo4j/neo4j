@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v4_0.phases
 
-import org.neo4j.cypher.internal.ir.v4_0.{PeriodicCommit, UnionQuery}
+import org.neo4j.cypher.internal.ir.{PeriodicCommit, UnionQuery}
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.{Cardinalities, ProvidedOrders, Solveds}
 import org.neo4j.cypher.internal.v4_0.ast.semantics.{SemanticState, SemanticTable}

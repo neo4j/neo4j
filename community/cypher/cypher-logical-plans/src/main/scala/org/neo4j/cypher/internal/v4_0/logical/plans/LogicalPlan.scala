@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.v4_0.logical.plans
 
 import java.lang.reflect.Method
 
-import org.neo4j.cypher.internal.ir.v4_0.{PlannerQuery, Strictness}
+import org.neo4j.cypher.internal.ir.{PlannerQuery, Strictness}
 import org.neo4j.cypher.internal.v4_0.expressions._
 import org.neo4j.cypher.internal.v4_0.util.Foldable._
 import org.neo4j.cypher.internal.v4_0.util.{Foldable, InternalException, Rewritable}

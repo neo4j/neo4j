@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v4_0.planner
 
 import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.ExpressionEvaluator
 import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.Metrics._
-import org.neo4j.cypher.internal.ir.v4_0.{PlannerQuery, QueryGraph}
+import org.neo4j.cypher.internal.ir.{PlannerQuery, QueryGraph}
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.planner.spi.{GraphStatistics, IndexOrderCapability}
 import org.neo4j.cypher.internal.v4_0.logical.plans.{LogicalPlan, ProcedureSignature}

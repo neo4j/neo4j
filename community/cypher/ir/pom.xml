@@ -9,7 +9,7 @@
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
-    <artifactId>neo4j-cypher-ir-4.0</artifactId>
+    <artifactId>neo4j-cypher-ir</artifactId>
     <packaging>jar</packaging>
     <version>4.0.0-SNAPSHOT</version>
     <name>Neo4j - Cypher Intermediate Representation</name>
@@ -25,7 +25,7 @@
 
     <properties>
         <license-text.header>headers/GPL-3-header.txt</license-text.header>
-        <moduleName>org.neo4j.cypher.internal.ir.v4_0</moduleName>
+        <moduleName>org.neo4j.cypher.internal.ir</moduleName>
     </properties>
 
     <licenses>

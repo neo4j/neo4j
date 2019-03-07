@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v4_0.ast.convert.plannerQuery
 import org.neo4j.cypher.internal.compiler.v4_0.helpers.ListSupport
 import org.neo4j.cypher.internal.v4_0.ast.RelationshipStartItem
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
-import org.neo4j.cypher.internal.ir.v4_0._
+import org.neo4j.cypher.internal.ir._
 import org.neo4j.cypher.internal.v4_0.util.UnNamedNameGenerator
 import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
 

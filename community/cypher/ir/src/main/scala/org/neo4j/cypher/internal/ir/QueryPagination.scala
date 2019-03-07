@@ -17,10 +17,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.ir.v4_0
+package org.neo4j.cypher.internal.ir
 
 import org.neo4j.cypher.internal.v4_0.util.InternalException
-import org.neo4j.cypher.internal.v4_0.ast.{Limit, Skip, SortItem}
+import org.neo4j.cypher.internal.v4_0.ast.{Limit, Skip}
 import org.neo4j.cypher.internal.v4_0.expressions.Expression
 
 final case class QueryPagination(skip: Option[Expression] = None,

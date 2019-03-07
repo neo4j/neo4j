@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.plandescription
 
-import org.neo4j.cypher.internal.ir.v4_0.ProvidedOrder
+import org.neo4j.cypher.internal.ir.ProvidedOrder
 import org.neo4j.cypher.internal.plandescription.Arguments._
 import org.neo4j.cypher.internal.v4_0.ast.prettifier.ExpressionStringifier
 import org.neo4j.cypher.internal.v4_0.expressions

@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.OptionalMatchRemo
 import org.neo4j.cypher.internal.v4_0.ast.Query
 import org.neo4j.cypher.internal.v4_0.rewriting.rewriters.flattenBooleanOperators
 import org.neo4j.cypher.internal.v4_0.ast.semantics.{SemanticChecker, SemanticTable}
-import org.neo4j.cypher.internal.ir.v4_0._
+import org.neo4j.cypher.internal.ir.{PatternRelationship, QueryGraph, SimplePatternLength, UnionQuery}
 import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection.BOTH
 import org.neo4j.cypher.internal.v4_0.util.helpers.fixedPoint
 

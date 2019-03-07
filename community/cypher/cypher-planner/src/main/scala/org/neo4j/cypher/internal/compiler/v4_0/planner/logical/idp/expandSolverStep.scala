@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v4_0.planner.logical.idp
 
 import org.neo4j.cypher.internal.compiler.v4_0.helpers.PredicateHelper
 import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.LogicalPlanningContext
-import org.neo4j.cypher.internal.ir.v4_0._
+import org.neo4j.cypher.internal.ir._
 import org.neo4j.cypher.internal.v4_0.expressions.{Expression, LogicalVariable}
 import org.neo4j.cypher.internal.v4_0.logical.plans.{ExpandAll, ExpandInto, LogicalPlan}
 import org.neo4j.cypher.internal.v4_0.expressions.{Ands, Expression, Variable}

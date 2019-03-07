@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v4_0.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.{LogicalPlanningContext, patternExpressionRewriter}
-import org.neo4j.cypher.internal.ir.v4_0.{QueryGraph, InterestingOrder}
+import org.neo4j.cypher.internal.ir.{QueryGraph, InterestingOrder}
 import org.neo4j.cypher.internal.v4_0.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.v4_0.expressions._
 import org.neo4j.cypher.internal.v4_0.expressions.functions.Exists
@@ -140,7 +140,7 @@ object PatternExpressionSolver {
   def solvePatternExpressions(availableSymbols: Set[String], interestingOrder: InterestingOrder, context: LogicalPlanningContext, pathStepBuilder: EveryPath => PathStep): ListSubQueryExpressionSolver[PatternExpression] = {
 
     def extractQG(source: LogicalPlan, namedExpr: PatternExpression): QueryGraph = {
-      import org.neo4j.cypher.internal.ir.v4_0.helpers.ExpressionConverters._
+      import org.neo4j.cypher.internal.ir.helpers.ExpressionConverters._
 
       val dependencies = namedExpr.
         dependencies.
@@ -175,7 +175,7 @@ object PatternExpressionSolver {
 
   def solvePatternComprehensions(availableSymbols: Set[String], interestingOrder: InterestingOrder, context: LogicalPlanningContext, pathStepBuilder: EveryPath => PathStep): ListSubQueryExpressionSolver[PatternComprehension] = {
     def extractQG(source: LogicalPlan, namedExpr: PatternComprehension) = {
-      import org.neo4j.cypher.internal.ir.v4_0.helpers.ExpressionConverters._
+      import org.neo4j.cypher.internal.ir.helpers.ExpressionConverters._
 
       val queryGraph = asQueryGraph(namedExpr, context.innerVariableNamer)
       val args = queryGraph.idsWithoutOptionalMatchesOrUpdates intersect availableSymbols

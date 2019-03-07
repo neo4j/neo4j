@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v4_0.planner.logical.idp
 
 import org.mockito.Mockito.{times, verify, verifyNoMoreInteractions}
 import org.neo4j.cypher.internal.compiler.v4_0.planner.LogicalPlanningTestSupport2
-import org.neo4j.cypher.internal.ir.v4_0._
+import org.neo4j.cypher.internal.ir._
 import org.neo4j.cypher.internal.v4_0.logical.plans._
 import org.neo4j.cypher.internal.v4_0.expressions.{Expression, SemanticDirection}
 import org.neo4j.cypher.internal.v4_0.util.Cardinality

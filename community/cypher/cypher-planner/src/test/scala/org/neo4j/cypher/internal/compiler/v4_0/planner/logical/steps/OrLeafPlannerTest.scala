@@ -24,7 +24,7 @@ import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compiler.v4_0.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.{LeafPlanFromExpressions, LeafPlansForVariable}
-import org.neo4j.cypher.internal.ir.v4_0.{InterestingOrder, QueryGraph, Selections}
+import org.neo4j.cypher.internal.ir.{InterestingOrder, QueryGraph, Selections}
 import org.neo4j.cypher.internal.v4_0.logical.plans.Distinct
 import org.neo4j.cypher.internal.v4_0.logical.plans.Union
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite

@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.v4_0.logical.plans
 
-import org.neo4j.cypher.internal.ir.v4_0.StrictnessMode
+import org.neo4j.cypher.internal.ir.StrictnessMode
 import org.neo4j.cypher.internal.v4_0.util.attribution.IdGen
 import org.neo4j.cypher.internal.v4_0.expressions.{Expression, PropertyKeyName}
 

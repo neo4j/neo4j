@@ -17,18 +17,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.ir.v4_0
+package org.neo4j.cypher.internal.ir
 
-import org.neo4j.cypher.internal.v4_0.expressions.ShortestPaths
+sealed trait StrictnessMode extends (Strictness => Boolean) {
+  self: Product =>
 
-final case class ShortestPathPattern(name: Option[String], rel: PatternRelationship, single: Boolean)
-                                    (val expr: ShortestPaths) {
+  def apply(havingStrictness: Strictness) = havingStrictness.strictness == self
 
-  def isFindableFrom(symbols: Set[String]) = symbols.contains(rel.left) && symbols.contains(rel.right)
-
-  def availableSymbols: Set[String] = name.toSet ++ rel.coveredIds
+  override def toString: String = self.productPrefix
 }
 
-object ShortestPathPattern {
-  implicit val byRelName = Ordering.by { (sp: ShortestPathPattern) => sp.rel }
-}
+case object LazyMode extends StrictnessMode
+
+case object EagerMode extends StrictnessMode

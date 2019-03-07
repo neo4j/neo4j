@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v4_0.CypherPlannerConfiguration
 import org.neo4j.cypher.internal.compiler.v4_0.helpers.CachedFunction
 import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.Metrics.{CardinalityModel, QueryGraphCardinalityModel}
 import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.cardinality.ExpressionSelectivityCalculator
-import org.neo4j.cypher.internal.ir.v4_0.{PlannerQuery, QueryGraph}
+import org.neo4j.cypher.internal.ir.{PlannerQuery, QueryGraph}
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.v4_0.util.Cardinality

@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v4_0.planner.logical
 
-import org.neo4j.cypher.internal.ir.v4_0.{QueryGraph, InterestingOrder}
+import org.neo4j.cypher.internal.ir.{QueryGraph, InterestingOrder}
 import org.neo4j.cypher.internal.v4_0.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.v4_0.expressions._
 import org.neo4j.cypher.internal.v4_0.rewriting.rewriters.PatternExpressionPatternElementNamer
@@ -35,7 +35,7 @@ trait PatternExpressionSolving {
 
   self: QueryGraphSolver =>
 
-  import org.neo4j.cypher.internal.ir.v4_0.helpers.ExpressionConverters._
+  import org.neo4j.cypher.internal.ir.helpers.ExpressionConverters._
 
   def planPatternExpression(planArguments: Set[String], expr: PatternExpression, interestingOrder: InterestingOrder, context: LogicalPlanningContext): (LogicalPlan, PatternExpression) = {
     val dependencies = expr.dependencies.map(_.name)

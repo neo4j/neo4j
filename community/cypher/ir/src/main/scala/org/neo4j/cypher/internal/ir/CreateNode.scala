@@ -17,13 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.ir.v4_0
+package org.neo4j.cypher.internal.ir
 
-import org.neo4j.cypher.internal.v4_0.ast.PeriodicCommitHint
+import org.neo4j.cypher.internal.v4_0.expressions.{Expression, LabelName}
 
-case class PeriodicCommit(batchSize: Option[Long])
-
-object PeriodicCommit {
-  def apply(periodicCommitHint: Option[PeriodicCommitHint]): Option[PeriodicCommit] =
-    periodicCommitHint.map(hint => new PeriodicCommit(hint.size.map(_.value)))
+/**
+  * Create a new node with the provided labels and properties and assign it to the variable 'idName'.
+  */
+case class CreateNode(idName: String, labels: Seq[LabelName], properties: Option[Expression]) {
+  def dependencies: Set[String] = properties.map(_.dependencies.map(_.name)).getOrElse(Set.empty)
 }
