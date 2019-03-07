@@ -19,9 +19,11 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -30,12 +32,11 @@ import java.util.concurrent.Future;
 
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.internal.kernel.api.schema.IndexProviderDescriptor;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
-import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.api.index.PhaseTracker;
 import org.neo4j.kernel.impl.index.schema.config.ConfiguredSpaceFillingCurveSettingsCache;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettingsCache;
 import org.neo4j.storageengine.api.schema.IndexDescriptorFactory;
@@ -47,8 +48,12 @@ import org.neo4j.test.rule.PageCacheAndDependenciesRule;
 import org.neo4j.test.rule.concurrent.OtherThreadRule;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
+import static org.neo4j.kernel.api.index.IndexProvider.Monitor.EMPTY;
+import static org.neo4j.kernel.impl.api.index.PhaseTracker.nullInstance;
+import static org.neo4j.kernel.impl.index.schema.BlockStorage.Monitor.NO_MONITOR;
 import static org.neo4j.test.OtherThreadExecutor.command;
 import static org.neo4j.test.Race.throwing;
 import static org.neo4j.values.storable.Values.stringValue;
@@ -66,6 +71,23 @@ public class BlockBasedIndexPopulatorTest
     @Rule
     public final OtherThreadRule<Void> t3 = new OtherThreadRule<>( "CLOSER" );
 
+    private IndexDirectoryStructure directoryStructure;
+    private File indexDir;
+    private File indexFile;
+    private FileSystemAbstraction fs;
+    private IndexDropAction dropAction;
+
+    @Before
+    public void setup()
+    {
+        IndexProviderDescriptor providerDescriptor = new IndexProviderDescriptor( "test", "v1" );
+        directoryStructure = directoriesByProvider( storage.directory().databaseDir() ).forProvider( providerDescriptor );
+        indexDir = directoryStructure.directoryForIndex( INDEX_DESCRIPTOR.getId() );
+        indexFile = new File( indexDir, "index" );
+        fs = storage.fileSystem();
+        dropAction = new FileSystemIndexDropAction( fs, directoryStructure );
+    }
+
     @Test
     public void shouldAwaitMergeToBeFullyAbortedBeforeLeavingCloseMethod() throws Exception
     {
@@ -74,7 +96,7 @@ public class BlockBasedIndexPopulatorTest
         BlockBasedIndexPopulator<GenericKey,NativeIndexValue> populator = instantiatePopulatorWithSomeData( monitor );
 
         // when starting to merge (in a separate thread)
-        Future<Object> mergeFuture = t2.execute( command( () -> populator.scanCompleted( PhaseTracker.nullInstance ) ) );
+        Future<Object> mergeFuture = t2.execute( command( () -> populator.scanCompleted( nullInstance ) ) );
         // and waiting for merge to get going
         monitor.barrier.awaitUninterruptibly();
         // calling close here should wait for the merge future, so that checking the merge future for "done" immediately afterwards must say true
@@ -96,7 +118,7 @@ public class BlockBasedIndexPopulatorTest
         try
         {
             // when starting to merge (in a separate thread)
-            Future<Object> mergeFuture = t2.execute( command( () -> populator.scanCompleted( PhaseTracker.nullInstance ) ) );
+            Future<Object> mergeFuture = t2.execute( command( () -> populator.scanCompleted( nullInstance ) ) );
             // and waiting for merge to get going
             monitor.barrier.awaitUninterruptibly();
             // this is a bit fuzzy, but what we want is to assert that the scan doesn't represent 100% of the work
@@ -118,30 +140,54 @@ public class BlockBasedIndexPopulatorTest
     public void shouldCorrectlyDecideToAwaitMergeDependingOnProgress() throws Throwable
     {
         // given
-        BlockBasedIndexPopulator<GenericKey,NativeIndexValue> populator = instantiatePopulatorWithSomeData( BlockStorage.Monitor.NO_MONITOR );
+        BlockBasedIndexPopulator<GenericKey,NativeIndexValue> populator = instantiatePopulatorWithSomeData( NO_MONITOR );
 
         // when
         Race race = new Race();
-        race.addContestant( throwing( () -> populator.scanCompleted( PhaseTracker.nullInstance ) ) );
+        race.addContestant( throwing( () -> populator.scanCompleted( nullInstance ) ) );
         race.addContestant( throwing( () -> populator.close( false ) ) );
         race.go();
 
         // then regardless of who wins (close/merge) after close call returns no files should still be mapped
-        EphemeralFileSystemAbstraction ephemeralFileSystem = (EphemeralFileSystemAbstraction) storage.fileSystem();
+        EphemeralFileSystemAbstraction ephemeralFileSystem = (EphemeralFileSystemAbstraction) fs;
         ephemeralFileSystem.assertNoOpenFiles();
+    }
+
+    @Test
+    public void shouldDeleteDirectoryOnDrop() throws Exception
+    {
+        // given
+        TrappingMonitor monitor = new TrappingMonitor( false );
+        BlockBasedIndexPopulator<GenericKey,NativeIndexValue> populator = instantiatePopulatorWithSomeData( monitor );
+
+        // when starting to merge (in a separate thread)
+        Future<Object> mergeFuture = t2.execute( command( () -> populator.scanCompleted( nullInstance ) ) );
+        // and waiting for merge to get going
+        monitor.barrier.awaitUninterruptibly();
+        // calling drop here should wait for the merge future and then delete index directory
+        assertTrue( fs.fileExists( indexDir ) );
+        assertTrue( fs.isDirectory( indexDir ) );
+        assertTrue( fs.listFiles( indexDir ).length > 0 );
+
+        Future<Object> dropFuture = t3.execute( command( populator::drop ) );
+        t3.get().waitUntilWaiting();
+        monitor.barrier.release();
+        dropFuture.get();
+
+        // then
+        assertTrue( mergeFuture.isDone() );
+        assertFalse( fs.fileExists( indexDir ) );
     }
 
     private BlockBasedIndexPopulator<GenericKey,NativeIndexValue> instantiatePopulatorWithSomeData( BlockStorage.Monitor monitor )
     {
-        IndexProviderDescriptor providerDescriptor = new IndexProviderDescriptor( "test", "v1" );
         Config config = Config.defaults();
-        IndexSpecificSpaceFillingCurveSettingsCache spatialSettings =
-                new IndexSpecificSpaceFillingCurveSettingsCache( new ConfiguredSpaceFillingCurveSettingsCache( config ), new HashMap<>() );
+        ConfiguredSpaceFillingCurveSettingsCache settingsCache = new ConfiguredSpaceFillingCurveSettingsCache( config );
+        IndexSpecificSpaceFillingCurveSettingsCache spatialSettings = new IndexSpecificSpaceFillingCurveSettingsCache( settingsCache, new HashMap<>() );
         GenericLayout layout = new GenericLayout( 1, spatialSettings );
-        IndexDirectoryStructure directoryStructure = directoriesByProvider( storage.directory().directory( "schema" ) ).forProvider( providerDescriptor );
         BlockBasedIndexPopulator<GenericKey,NativeIndexValue> populator =
-                new BlockBasedIndexPopulator<GenericKey,NativeIndexValue>( storage.pageCache(), storage.fileSystem(), storage.directory().file( "file" ),
-                        layout, IndexProvider.Monitor.EMPTY, INDEX_DESCRIPTOR, spatialSettings, directoryStructure, false, 100, 2, monitor )
+                new BlockBasedIndexPopulator<GenericKey,NativeIndexValue>( storage.pageCache(), fs, indexFile, layout, EMPTY,
+                        INDEX_DESCRIPTOR, spatialSettings, directoryStructure, dropAction, false, 100, 2, monitor )
                 {
                     @Override
                     NativeIndexReader<GenericKey,NativeIndexValue> newReader()

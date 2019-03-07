@@ -28,6 +28,7 @@ import java.util.HashMap;
 import org.neo4j.gis.spatial.index.curves.StandardConfiguration;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.index.schema.config.ConfiguredSpaceFillingCurveSettingsCache;
@@ -133,15 +134,23 @@ class NativeIndexPopulatorTestCases
     private static PopulatorFactory<GenericKey,NativeIndexValue> genericPopulatorFactory()
     {
         return ( pageCache, fs, storeFile, layout, monitor, descriptor ) ->
-                new GenericNativeIndexPopulator( pageCache, fs, storeFile, layout, monitor, descriptor, spaceFillingCurveSettings,
-                        SimpleIndexDirectoryStructures.onIndexFile( storeFile ), configuration, false );
+        {
+            IndexDirectoryStructure directoryStructure = SimpleIndexDirectoryStructures.onIndexFile( storeFile );
+            IndexDropAction dropAction = new FileSystemIndexDropAction( fs, directoryStructure );
+            return new GenericNativeIndexPopulator( pageCache, fs, storeFile, layout, monitor, descriptor, spaceFillingCurveSettings,
+                    directoryStructure, configuration, dropAction, false );
+        };
     }
 
     private static PopulatorFactory<GenericKey,NativeIndexValue> genericBlockBasedPopulatorFactory()
     {
         return ( pageCache, fs, storeFile, layout, monitor, descriptor ) ->
-                new GenericBlockBasedIndexPopulator( pageCache, fs, storeFile, layout, monitor, descriptor, spaceFillingCurveSettings,
-                        SimpleIndexDirectoryStructures.onIndexFile( storeFile ), configuration, false );
+        {
+            IndexDirectoryStructure directoryStructure = SimpleIndexDirectoryStructures.onIndexFile( storeFile );
+            IndexDropAction dropAction = new FileSystemIndexDropAction( fs, directoryStructure );
+            return new GenericBlockBasedIndexPopulator( pageCache, fs, storeFile, layout, monitor, descriptor, spaceFillingCurveSettings,
+                    directoryStructure, configuration, dropAction, false );
+        };
     }
 
     @FunctionalInterface

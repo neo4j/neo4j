@@ -74,7 +74,7 @@ public class ConstraintCreationIT
                 db.getDependencyResolver().resolveDependency( IndexProviderMap.class ).getDefaultProvider();
         File indexDir = indexProvider.directoryStructure().directoryForIndex( indexId );
 
-        assertEquals( 0, indexDir.listFiles().length );
+        assertFalse( indexDir.exists() );
     }
 
     private void attemptAndFailConstraintCreation()

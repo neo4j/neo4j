@@ -189,8 +189,11 @@ public class NativeIndexAccessorTest<KEY extends NativeIndexKey<KEY>, VALUE exte
     private static AccessorFactory<GenericKey,NativeIndexValue> genericAccessorFactory()
     {
         return ( pageCache, fs, storeFile, layout, cleanup, monitor, descriptor, directory ) ->
-                new GenericNativeIndexAccessor( pageCache, fs, storeFile, layout, cleanup, monitor, descriptor, spaceFillingCurveSettings,
-                        directory, configuration );
+        {
+            IndexDropAction dropAction = new FileSystemIndexDropAction( fs, directory );
+            return new GenericNativeIndexAccessor( pageCache, fs, storeFile, layout, cleanup, monitor, descriptor, spaceFillingCurveSettings,
+                    configuration, dropAction );
+        };
     }
 
     @FunctionalInterface

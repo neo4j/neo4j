@@ -59,6 +59,7 @@ import org.neo4j.util.Preconditions;
 import org.neo4j.values.storable.Value;
 
 import static org.neo4j.helpers.collection.Iterables.first;
+import static org.neo4j.kernel.impl.index.schema.BlockStorage.Monitor.NO_MONITOR;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexUpdater.initializeKeyFromUpdate;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexes.deleteIndex;
 
@@ -86,6 +87,7 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
     private static final int MERGE_FACTOR = FeatureToggles.getInteger( BlockBasedIndexPopulator.class, "mergeFactor", 8 );
 
     private final IndexDirectoryStructure directoryStructure;
+    private final IndexDropAction dropAction;
     private final boolean archiveFailedIndex;
     private final int blockSize;
     private final int mergeFactor;
@@ -107,18 +109,20 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
 
     BlockBasedIndexPopulator( PageCache pageCache, FileSystemAbstraction fs, File file, IndexLayout<KEY,VALUE> layout, IndexProvider.Monitor monitor,
             StoreIndexDescriptor descriptor, IndexSpecificSpaceFillingCurveSettingsCache spatialSettings,
-            IndexDirectoryStructure directoryStructure, boolean archiveFailedIndex )
+            IndexDirectoryStructure directoryStructure, IndexDropAction dropAction, boolean archiveFailedIndex )
     {
-        this( pageCache, fs, file, layout, monitor, descriptor, spatialSettings, directoryStructure, archiveFailedIndex, parseBlockSize(), MERGE_FACTOR,
-                BlockStorage.Monitor.NO_MONITOR );
+        this( pageCache, fs, file, layout, monitor, descriptor, spatialSettings, directoryStructure, dropAction, archiveFailedIndex, parseBlockSize(),
+                MERGE_FACTOR, NO_MONITOR );
     }
 
     BlockBasedIndexPopulator( PageCache pageCache, FileSystemAbstraction fs, File file, IndexLayout<KEY,VALUE> layout, IndexProvider.Monitor monitor,
             StoreIndexDescriptor descriptor, IndexSpecificSpaceFillingCurveSettingsCache spatialSettings,
-            IndexDirectoryStructure directoryStructure, boolean archiveFailedIndex, int blockSize, int mergeFactor, BlockStorage.Monitor blockStorageMonitor )
+            IndexDirectoryStructure directoryStructure, IndexDropAction dropAction, boolean archiveFailedIndex,
+            int blockSize, int mergeFactor, BlockStorage.Monitor blockStorageMonitor )
     {
         super( pageCache, fs, file, layout, monitor, descriptor, new SpaceFillingCurveSettingsWriter( spatialSettings ) );
         this.directoryStructure = directoryStructure;
+        this.dropAction = dropAction;
         this.archiveFailedIndex = archiveFailedIndex;
         this.blockSize = blockSize;
         this.mergeFactor = mergeFactor;
@@ -471,11 +475,15 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
     {
         try
         {
+            // Close internal resources
             closeBlockStorage();
         }
         finally
         {
+            // Super drop will close inherited resources
             super.drop();
+            // Cleanup files
+            dropAction.drop( descriptor.getId(), archiveFailedIndex );
         }
     }
 

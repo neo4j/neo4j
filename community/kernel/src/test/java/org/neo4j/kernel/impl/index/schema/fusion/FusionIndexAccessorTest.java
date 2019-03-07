@@ -41,7 +41,7 @@ import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
-import org.neo4j.kernel.impl.index.schema.fusion.FusionIndexProvider.DropAction;
+import org.neo4j.kernel.impl.index.schema.IndexDropAction;
 import org.neo4j.storageengine.api.schema.IndexDescriptorFactory;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
@@ -83,7 +83,7 @@ public class FusionIndexAccessorTest
 {
     private FusionIndexAccessor fusionIndexAccessor;
     private final long indexId = 0;
-    private final DropAction dropAction = mock( DropAction.class );
+    private final IndexDropAction dropAction = mock( IndexDropAction.class );
     private EnumMap<IndexSlot,IndexAccessor> accessors;
     private IndexAccessor[] aliveAccessors;
     private StoreIndexDescriptor indexDescriptor =

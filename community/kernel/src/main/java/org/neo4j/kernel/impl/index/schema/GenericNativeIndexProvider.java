@@ -122,6 +122,7 @@ public class GenericNativeIndexProvider extends NativeIndexProvider<GenericKey,N
      */
     private final SpaceFillingCurveConfiguration configuration;
     private final boolean archiveFailedIndex;
+    private final IndexDropAction dropAction;
 
     GenericNativeIndexProvider( IndexDirectoryStructure.Factory directoryStructureFactory, PageCache pageCache, FileSystemAbstraction fs, Monitor monitor,
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, boolean readOnly, Config config )
@@ -131,6 +132,7 @@ public class GenericNativeIndexProvider extends NativeIndexProvider<GenericKey,N
         this.configuredSettings = new ConfiguredSpaceFillingCurveSettingsCache( config );
         this.configuration = getConfiguredSpaceFillingCurveConfiguration( config );
         this.archiveFailedIndex = config.get( GraphDatabaseSettings.archive_failed_index );
+        this.dropAction = new FileSystemIndexDropAction( fs, directoryStructure() );
     }
 
     @Override
@@ -159,18 +161,18 @@ public class GenericNativeIndexProvider extends NativeIndexProvider<GenericKey,N
         if ( blockBasedPopulation )
         {
             return new GenericBlockBasedIndexPopulator( pageCache, fs, storeFile, layout, monitor, descriptor, layout.getSpaceFillingCurveSettings(),
-                    directoryStructure(), configuration, archiveFailedIndex );
+                    directoryStructure(), configuration, dropAction, archiveFailedIndex );
         }
         return new WorkSyncedNativeIndexPopulator<>(
                 new GenericNativeIndexPopulator( pageCache, fs, storeFile, layout, monitor, descriptor, layout.getSpaceFillingCurveSettings(),
-                        directoryStructure(), configuration, archiveFailedIndex ) );
+                        directoryStructure(), configuration, dropAction, archiveFailedIndex ) );
     }
 
     @Override
     protected IndexAccessor newIndexAccessor( File storeFile, GenericLayout layout, StoreIndexDescriptor descriptor )
     {
         return new GenericNativeIndexAccessor( pageCache, fs, storeFile, layout, recoveryCleanupWorkCollector, monitor, descriptor,
-                layout.getSpaceFillingCurveSettings(), directoryStructure(), configuration );
+                layout.getSpaceFillingCurveSettings(), configuration, dropAction );
     }
 
     @Override
