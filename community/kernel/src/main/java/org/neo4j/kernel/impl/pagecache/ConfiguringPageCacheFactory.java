@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.pagecache;
 
-import org.neo4j.common.Service;
 import org.neo4j.configuration.Config;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -35,7 +34,9 @@ import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.logging.Log;
 import org.neo4j.memory.GlobalMemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.service.Services;
 
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_swapper;
 import static org.neo4j.configuration.Settings.BYTES;
@@ -179,17 +180,13 @@ public class ConfiguringPageCacheFactory
     private static PageSwapperFactory getPageSwapperFactory( Config config, Log log )
     {
         String desiredImplementation = config.get( pagecache_swapper );
-        if ( desiredImplementation != null )
+        if ( isNotBlank( desiredImplementation ) )
         {
-            for ( PageSwapperFactory factory : Service.loadAll( PageSwapperFactory.class ) )
-            {
-                if ( factory.implementationName().equals( desiredImplementation ) )
-                {
-                    log.info( "Configured " + pagecache_swapper.name() + ": " + desiredImplementation );
-                    return factory;
-                }
-            }
-            throw new IllegalArgumentException( "Cannot find PageSwapperFactory: " + desiredImplementation );
+
+            final PageSwapperFactory factory = Services.load( PageSwapperFactory.class, desiredImplementation )
+                    .orElseThrow( () -> new IllegalArgumentException( "Cannot find PageSwapperFactory: " + desiredImplementation ) );
+            log.info( "Configured " + pagecache_swapper.name() + ": " + desiredImplementation );
+            return factory;
         }
         return new SingleFilePageSwapperFactory();
     }

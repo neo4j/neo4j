@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.NoSuchFileException;
 
+import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageEvictionCallback;
@@ -34,6 +35,7 @@ import org.neo4j.io.pagecache.PageSwapperFactory;
  *
  * @see org.neo4j.io.pagecache.impl.SingleFilePageSwapper
  */
+@ServiceProvider
 public class SingleFilePageSwapperFactory implements PageSwapperFactory
 {
     private FileSystemAbstraction fs;
@@ -79,7 +81,7 @@ public class SingleFilePageSwapperFactory implements PageSwapperFactory
     }
 
     @Override
-    public String implementationName()
+    public String getName()
     {
         return "single";
     }

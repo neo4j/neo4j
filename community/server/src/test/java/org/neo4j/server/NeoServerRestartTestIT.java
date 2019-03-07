@@ -1,4 +1,5 @@
 /*
+/*
  * Copyright (c) 2002-2019 "Neo4j,"
  * Neo4j Sweden AB [http://neo4j.com]
  *
@@ -26,6 +27,7 @@ import java.io.IOException;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.io.pagecache.PageEvictionCallback;
 import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
@@ -105,10 +107,11 @@ public abstract class NeoServerRestartTestIT extends ExclusiveServerTestBase
     }
 
     // This class is used to notify the test that the server has started its startup procedure.
+    @ServiceProvider
     public static class CustomSwapper extends SingleFilePageSwapperFactory
     {
         @Override
-        public String implementationName()
+        public String getName()
         {
             return CUSTOM_SWAPPER;
         }

@@ -22,9 +22,11 @@ package org.neo4j.io.pagecache;
 import java.io.File;
 import java.io.IOException;
 
+import org.neo4j.annotations.service.Service;
 import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.internal.unsafe.UnsafeUtil;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.service.NamedService;
 
 /**
  * Creates PageSwappers for the given files.
@@ -37,7 +39,8 @@ import org.neo4j.io.fs.FileSystemAbstraction;
  * Note that this API is <em>only</em> intended to be used by a {@link PageCache} implementation.
  * It should never be used directly by user code.
  */
-public interface PageSwapperFactory
+@Service
+public interface PageSwapperFactory extends NamedService
 {
     /**
      * Open page swapper factory with provided filesystem and config
@@ -45,11 +48,6 @@ public interface PageSwapperFactory
      * @param config custom page swapper configuration
      */
     void open( FileSystemAbstraction fs, Configuration config );
-
-    /**
-     * Get the name of this PageSwapperFactory implementation, for configuration purpose.
-     */
-    String implementationName();
 
     /**
      * Get the unit of alignment that the swappers require of the memory buffers. For instance, if page alignment is

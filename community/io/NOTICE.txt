@@ -28,6 +28,12 @@ Third-party licenses
 Apache Software License, Version 2.0
   Apache Commons Lang
   Apache Commons Text
+  error-prone annotations
+  FindBugs-jsr305
+  Guava InternalFutureFailureAccess and InternalFutures
+  Guava ListenableFuture only
+  Guava: Google Core Libraries for Java
+  J2ObjC Annotations
 
 Eclipse Distribution License - v 1.0
   Eclipse Collections API
@@ -36,6 +42,10 @@ Eclipse Distribution License - v 1.0
 Eclipse Public License - v 1.0
   Eclipse Collections API
   Eclipse Collections Main Library
+
+MIT License
+  Animal Sniffer Annotations
+  Checker Qual
 
 Dependencies with multiple licenses
 -----------------------------------
