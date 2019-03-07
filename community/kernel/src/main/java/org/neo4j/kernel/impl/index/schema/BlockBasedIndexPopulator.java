@@ -51,6 +51,7 @@ import org.neo4j.kernel.impl.api.index.PhaseTracker;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettingsCache;
 import org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettingsWriter;
 import org.neo4j.memory.LocalMemoryTracker;
+import org.neo4j.memory.MemoryAllocationTracker;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.util.FeatureToggles;
@@ -60,6 +61,7 @@ import org.neo4j.values.storable.Value;
 import static org.neo4j.helpers.collection.Iterables.first;
 import static org.neo4j.kernel.impl.index.schema.BlockStorage.Monitor.NO_MONITOR;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexUpdater.initializeKeyFromUpdate;
+import static org.neo4j.util.concurrent.Runnables.runAll;
 
 public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,VALUE extends NativeIndexValue> extends NativeIndexPopulator<KEY,VALUE>
 {
@@ -91,7 +93,7 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
     // written to in a synchronized method when creating new thread-local instances, read from when population completes
     private final List<ThreadLocalBlockStorage> allScanUpdates = new CopyOnWriteArrayList<>();
     private final ThreadLocal<ThreadLocalBlockStorage> scanUpdates;
-    private final ByteBufferFactory bufferFactory = new UnsafeDirectByteBufferFactory( new LocalMemoryTracker() /*plug in actual tracker when available*/ );
+    private final ByteBufferFactory bufferFactory;
     private IndexUpdateStorage<KEY,VALUE> externalUpdates;
     // written in a synchronized method when creating new thread-local instances, read when processing external updates
     private volatile boolean scanCompleted;
@@ -107,12 +109,13 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
             IndexProvider.Monitor monitor, StorageIndexReference descriptor, IndexSpecificSpaceFillingCurveSettingsCache spatialSettings,
             boolean archiveFailedIndex )
     {
-        this( pageCache, fs, indexFiles, layout, monitor, descriptor, spatialSettings, archiveFailedIndex, parseBlockSize(), MERGE_FACTOR, NO_MONITOR );
+        this( pageCache, fs, indexFiles, layout, monitor, descriptor, spatialSettings, archiveFailedIndex, parseBlockSize(), MERGE_FACTOR, NO_MONITOR,
+                new LocalMemoryTracker() /*plug in actual tracker when available*/ );
     }
 
     BlockBasedIndexPopulator( PageCache pageCache, FileSystemAbstraction fs, IndexFiles indexFiles, IndexLayout<KEY,VALUE> layout,
             IndexProvider.Monitor monitor, StorageIndexReference descriptor, IndexSpecificSpaceFillingCurveSettingsCache spatialSettings,
-            boolean archiveFailedIndex, int blockSize, int mergeFactor, BlockStorage.Monitor blockStorageMonitor )
+            boolean archiveFailedIndex, int blockSize, int mergeFactor, BlockStorage.Monitor blockStorageMonitor, MemoryAllocationTracker memoryTracker )
     {
         super( pageCache, fs, indexFiles, layout, monitor, descriptor, new SpaceFillingCurveSettingsWriter( spatialSettings ) );
         this.archiveFailedIndex = archiveFailedIndex;
@@ -120,6 +123,7 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
         this.mergeFactor = mergeFactor;
         this.blockStorageMonitor = blockStorageMonitor;
         this.scanUpdates = ThreadLocal.withInitial( this::newThreadLocalBlockStorage );
+        this.bufferFactory = new UnsafeDirectByteBufferFactory( memoryTracker );
     }
 
     private synchronized ThreadLocalBlockStorage newThreadLocalBlockStorage()
@@ -226,28 +230,7 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
             phaseTracker.enterPhase( PhaseTracker.Phase.MERGE );
             if ( !allScanUpdates.isEmpty() )
             {
-                ExecutorService executorService = Executors.newFixedThreadPool( allScanUpdates.size() );
-                List<Future<?>> mergeFutures = new ArrayList<>();
-                for ( ThreadLocalBlockStorage part : allScanUpdates )
-                {
-                    BlockStorage<KEY,VALUE> scanUpdates = part.blockStorage;
-                    mergeFutures.add( executorService.submit( () ->
-                    {
-                        scanUpdates.doneAdding();
-                        scanUpdates.merge( mergeFactor, cancellation );
-                        return null;
-                    } ) );
-                }
-                executorService.shutdown();
-                while ( !executorService.awaitTermination( 1, TimeUnit.SECONDS ) )
-                {
-                    // just wait longer
-                }
-                // Let potential exceptions in the merge threads have a chance to propagate
-                for ( Future<?> mergeFuture : mergeFutures )
-                {
-                    mergeFuture.get();
-                }
+                mergeScanUpdates();
             }
 
             externalUpdates.doneAdding();
@@ -283,6 +266,32 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
         finally
         {
             mergeOngoingLatch.countDown();
+        }
+    }
+
+    private void mergeScanUpdates() throws InterruptedException, ExecutionException
+    {
+        ExecutorService executorService = Executors.newFixedThreadPool( allScanUpdates.size() );
+        List<Future<?>> mergeFutures = new ArrayList<>();
+        for ( ThreadLocalBlockStorage part : allScanUpdates )
+        {
+            BlockStorage<KEY,VALUE> scanUpdates = part.blockStorage;
+            mergeFutures.add( executorService.submit( () ->
+            {
+                scanUpdates.doneAdding();
+                scanUpdates.merge( mergeFactor, cancellation );
+                return null;
+            } ) );
+        }
+        executorService.shutdown();
+        while ( !executorService.awaitTermination( 1, TimeUnit.SECONDS ) )
+        {
+            // just wait longer
+        }
+        // Let potential exceptions in the merge threads have a chance to propagate
+        for ( Future<?> mergeFuture : mergeFutures )
+        {
+            mergeFuture.get();
         }
     }
 
@@ -462,28 +471,21 @@ public abstract class BlockBasedIndexPopulator<KEY extends NativeIndexKey<KEY>,V
     @Override
     public synchronized void drop()
     {
-        try
-        {
-            closeBlockStorage();
-        }
-        finally
-        {
-            super.drop();
-        }
+        runAll( "Failed while trying to drop index",
+                this::closeBlockStorage /* Close internal resources */,
+                bufferFactory::close /* Free all allocated byte buffers */,
+                super::drop /* Super drop will close inherited resources */
+        );
     }
 
     @Override
     public synchronized void close( boolean populationCompletedSuccessfully )
     {
-        try
-        {
-            closeBlockStorage();
-        }
-        finally
-        {
-            bufferFactory.close();
-            super.close( populationCompletedSuccessfully );
-        }
+        runAll( "Failed while trying to close index",
+                this::closeBlockStorage /* Close internal resources */,
+                bufferFactory::close /* Free all allocated byte buffers */,
+                () -> super.close( populationCompletedSuccessfully ) /* Super close will close inherited resources */
+        );
     }
 
     // Always called from synchronized method
