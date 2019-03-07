@@ -170,7 +170,9 @@ public class SchemaStore extends CommonAbstractStore<SchemaRecord,IntStoreHeader
 
     public static int getOwningConstraintPropertyKeyId( TokenHolders tokenHolders )
     {
-        return tokenHolders.propertyKeyTokens().getOrCreateId( PROP_OWNING_CONSTRAINT );
+        int[] ids = new int[1];
+        tokenHolders.propertyKeyTokens().getOrCreateInternalIds( new String[]{PROP_OWNING_CONSTRAINT}, ids );
+        return ids[0];
     }
 
     /**
@@ -218,7 +220,7 @@ public class SchemaStore extends CommonAbstractStore<SchemaRecord,IntStoreHeader
         }
 
         TokenHolder tokens = tokenHolders.propertyKeyTokens();
-        tokens.getOrCreateIds( keys, keyIds );
+        tokens.getOrCreateInternalIds( keys, keyIds );
 
         MutableIntObjectMap<Value> tokenisedMap = new IntObjectHashMap<>();
         for ( int i = 0; i < size; i++ )
@@ -401,7 +403,7 @@ public class SchemaStore extends CommonAbstractStore<SchemaRecord,IntStoreHeader
     {
         try
         {
-            NamedToken propertyKeyTokenName = tokenHolders.propertyKeyTokens().getTokenById( propertyKeyValue.propertyKeyId() );
+            NamedToken propertyKeyTokenName = tokenHolders.propertyKeyTokens().getInternalTokenById( propertyKeyValue.propertyKeyId() );
             props.put( propertyKeyTokenName.name(), propertyKeyValue.value() );
         }
         catch ( TokenNotFoundException | InvalidRecordException e )
@@ -473,7 +475,7 @@ public class SchemaStore extends CommonAbstractStore<SchemaRecord,IntStoreHeader
         Value value = props.get( property );
         if ( value instanceof IntArray )
         {
-            return ((IntArray) value).asObject();
+            return (int[]) value.asObject();
         }
         throw new MalformedSchemaRuleException( "Expected property " + property + " to be a IntArray but was " + value );
     }
