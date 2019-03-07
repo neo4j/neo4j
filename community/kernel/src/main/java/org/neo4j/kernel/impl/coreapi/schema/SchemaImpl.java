@@ -204,7 +204,7 @@ public class SchemaImpl implements Schema
             case FAILED:
                 String cause = getIndexFailure( index );
                 String message = IndexPopulationFailure
-                        .appendCauseOfFailure( String.format( "Index entered a %s state. Please see database logs. Index: %s", state, index ), cause );
+                        .appendCauseOfFailure( String.format( "Index %s entered a %s state. Please see database logs.", index, state ), cause );
                 throw new IllegalStateException( message );
             default:
                 try
