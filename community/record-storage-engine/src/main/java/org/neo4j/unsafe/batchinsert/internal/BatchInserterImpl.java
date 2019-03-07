@@ -128,6 +128,7 @@ import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.RelationshipTypeTokenStore;
 import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
+import org.neo4j.kernel.impl.store.TokenStore;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
@@ -149,6 +150,7 @@ import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
+import org.neo4j.kernel.impl.store.record.TokenRecord;
 import org.neo4j.kernel.impl.transaction.state.DefaultIndexProviderMap;
 import org.neo4j.kernel.impl.transaction.state.storeview.DynamicIndexStoreView;
 import org.neo4j.kernel.impl.transaction.state.storeview.NeoStoreIndexStoreView;
@@ -1016,46 +1018,31 @@ public class BatchInserterImpl implements BatchInserter
 
     private int createNewPropertyKeyId( String stringKey )
     {
-        int keyId = (int) propertyKeyTokenStore.nextId();
-        PropertyKeyTokenRecord record = new PropertyKeyTokenRecord( keyId );
-        record.setInUse( true );
-        record.setCreated();
-        Collection<DynamicRecord> keyRecords =
-                propertyKeyTokenStore.allocateNameRecords( encodeString( stringKey ) );
-        record.setNameId( (int) Iterables.first( keyRecords ).getId() );
-        record.addNameRecords( keyRecords );
-        propertyKeyTokenStore.updateRecord( record );
-        tokenHolders.propertyKeyTokens().addToken( new NamedToken( stringKey, keyId ) );
-        return keyId;
+        return createNewToken( propertyKeyTokenStore, stringKey );
     }
 
     private int createNewLabelId( String stringKey )
     {
-        int keyId = (int) labelTokenStore.nextId();
-        LabelTokenRecord record = new LabelTokenRecord( keyId );
-        record.setInUse( true );
-        record.setCreated();
-        Collection<DynamicRecord> keyRecords =
-                labelTokenStore.allocateNameRecords( encodeString( stringKey ) );
-        record.setNameId( (int) Iterables.first( keyRecords ).getId() );
-        record.addNameRecords( keyRecords );
-        labelTokenStore.updateRecord( record );
-        tokenHolders.labelTokens().addToken( new NamedToken( stringKey, keyId ) );
-        return keyId;
+        return createNewToken( labelTokenStore, stringKey );
     }
 
     private int createNewRelationshipType( String name )
     {
-        int id = (int) relationshipTypeTokenStore.nextId();
-        RelationshipTypeTokenRecord record = new RelationshipTypeTokenRecord( id );
+        return createNewToken( relationshipTypeTokenStore, name );
+    }
+
+    private <R extends TokenRecord> int createNewToken( TokenStore<R> store, String name )
+    {
+        int keyId = (int) store.nextId();
+        R record = store.newRecord();
+        record.setId( keyId );
         record.setInUse( true );
         record.setCreated();
-        Collection<DynamicRecord> nameRecords = relationshipTypeTokenStore.allocateNameRecords( encodeString( name ) );
-        record.setNameId( (int) Iterables.first( nameRecords ).getId() );
-        record.addNameRecords( nameRecords );
-        relationshipTypeTokenStore.updateRecord( record );
-        tokenHolders.relationshipTypeTokens().addToken( new NamedToken( name, id ) );
-        return id;
+        Collection<DynamicRecord> keyRecords = store.allocateNameRecords( encodeString( name ) );
+        record.setNameId( (int) Iterables.first( keyRecords ).getId() );
+        record.addNameRecords( keyRecords );
+        store.updateRecord( record );
+        return keyId;
     }
 
     private RecordProxy<NodeRecord,Void> getNodeRecord( long id )

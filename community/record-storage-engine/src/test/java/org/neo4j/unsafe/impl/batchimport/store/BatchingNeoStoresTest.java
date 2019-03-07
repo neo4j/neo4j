@@ -383,7 +383,7 @@ class BatchingNeoStoresTest
         {
             storageEngine.createCommands( commands, txState, storageReader, commandCreationContext, ResourceLocker.NONE, BASE_TX_ID, v -> v );
             CommandsToApply apply = new TransactionToApply( new PhysicalTransactionRepresentation( commands, new byte[0], 0, 0, 0, 0, 0, 0 ) );
-            storageEngine.apply( apply, TransactionApplicationMode.EXTERNAL );
+            storageEngine.apply( apply, TransactionApplicationMode.INTERNAL );
         }
     }
 
