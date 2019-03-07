@@ -27,7 +27,6 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import java.io.File;
 import java.io.IOException;
 
-import org.neo4j.common.Service;
 import org.neo4j.configuration.Config;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
@@ -36,6 +35,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.service.Services;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.extension.EphemeralFileSystemExtension;
@@ -64,7 +64,7 @@ class RecoveryRequiredCheckerTest
 
     private File storeDir;
     private DatabaseLayout databaseLayout;
-    private final StorageEngineFactory storageEngineFactory = StorageEngineFactory.selectStorageEngine( Service.loadAll( StorageEngineFactory.class ) );
+    private final StorageEngineFactory storageEngineFactory = StorageEngineFactory.selectStorageEngine( Services.loadAll( StorageEngineFactory.class ) );
 
     @BeforeEach
     void setup()

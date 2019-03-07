@@ -25,6 +25,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.internal.kernel.api.exceptions.schema.MalformedSchemaRuleException;
 import org.neo4j.io.fs.ReadableChannel;
 import org.neo4j.io.fs.WritableChannel;
@@ -55,6 +56,7 @@ import static org.neo4j.internal.recordstorage.CommandReading.PROPERTY_DELETED_D
 import static org.neo4j.internal.recordstorage.CommandReading.PROPERTY_INDEX_DYNAMIC_RECORD_ADDER;
 import static org.neo4j.util.Bits.bitFlag;
 
+@ServiceProvider
 public class PhysicalLogCommandReaderV4_0 extends BaseCommandReader
 {
     @Override

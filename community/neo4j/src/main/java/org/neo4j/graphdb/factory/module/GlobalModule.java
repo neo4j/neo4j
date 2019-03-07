@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.common.DependencyResolver;
-import org.neo4j.common.Service;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
@@ -83,6 +82,7 @@ import org.neo4j.logging.internal.StoreLogService;
 import org.neo4j.scheduler.DeferredExecutor;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.service.Services;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.SystemNanoClock;
@@ -213,7 +213,7 @@ public class GlobalModule
 
         // There's no way of actually configuring storage engine right now and this is on purpose since
         // we have neither figured out the surface, use cases nor other storage engines.
-        storageEngineFactory = StorageEngineFactory.selectStorageEngine( Service.loadAll( StorageEngineFactory.class ) );
+        storageEngineFactory = StorageEngineFactory.selectStorageEngine( Services.loadAll( StorageEngineFactory.class ) );
         globalDependencies.satisfyDependency( storageEngineFactory );
 
         checkLegacyDefaultDatabase();

@@ -22,7 +22,6 @@ package org.neo4j.test.rule;
 import java.util.function.Function;
 
 import org.neo4j.common.DependencyResolver;
-import org.neo4j.common.Service;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.DatabaseConfig;
@@ -88,6 +87,7 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.logging.internal.SimpleLogService;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.service.Services;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.SystemNanoClock;
@@ -154,7 +154,7 @@ public class DatabaseRule extends ExternalResource
                 deps -> new DatabaseTransactionStats() );
         dependency( mutableDependencies, DbmsDiagnosticsManager.class, deps -> mock( DbmsDiagnosticsManager.class ) );
         StorageEngineFactory storageEngineFactory = dependency( mutableDependencies, StorageEngineFactory.class,
-                deps -> StorageEngineFactory.selectStorageEngine( Service.loadAll( StorageEngineFactory.class ) ) );
+                deps -> StorageEngineFactory.selectStorageEngine( Services.loadAll( StorageEngineFactory.class ) ) );
 
         database = new Database( new TestDatabaseCreationContext( databaseName, databaseLayout, config, idGeneratorFactory, logService,
                 mock( JobScheduler.class, RETURNS_MOCKS ), mock( TokenNameLookup.class ), mutableDependencies, mockedTokenHolders(), locksFactory,

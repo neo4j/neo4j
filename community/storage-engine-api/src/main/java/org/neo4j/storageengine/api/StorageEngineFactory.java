@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.stream.Stream;
 
+import org.neo4j.annotations.service.Service;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -35,6 +36,7 @@ import org.neo4j.storageengine.migration.StoreMigrationParticipant;
  * A factory suitable for something like service-loading to load {@link StorageEngine} instances.
  * Also migration logic is provided by this factory.
  */
+@Service
 public interface StorageEngineFactory
 {
     /**

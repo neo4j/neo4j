@@ -28,6 +28,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
 
+import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.internal.kernel.api.exceptions.schema.MalformedSchemaRuleException;
 import org.neo4j.internal.recordstorage.CommandReading.DynamicRecordAdder;
@@ -67,6 +68,7 @@ import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.read2bMap;
 import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.read3bLengthAndString;
 import static org.neo4j.util.Bits.bitFlag;
 
+@ServiceProvider
 public class PhysicalLogCommandReaderV3_0_10 extends BaseCommandReader
 {
     @Override

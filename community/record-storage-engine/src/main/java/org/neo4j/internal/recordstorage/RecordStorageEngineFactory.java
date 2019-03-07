@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.exceptions.UnsatisfiedDependencyException;
@@ -71,6 +72,7 @@ import static org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextS
 import static org.neo4j.kernel.impl.store.StoreType.META_DATA;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForStoreOrConfig;
 
+@ServiceProvider
 public class RecordStorageEngineFactory implements StorageEngineFactory
 {
     @Override

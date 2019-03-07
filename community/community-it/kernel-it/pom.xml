@@ -51,6 +51,12 @@
     <dependencies>
         <dependency>
             <groupId>org.neo4j</groupId>
+            <artifactId>annotations</artifactId>
+            <version>${project.version}</version>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>org.neo4j</groupId>
             <artifactId>neo4j</artifactId>
             <version>${project.version}</version>
         </dependency>

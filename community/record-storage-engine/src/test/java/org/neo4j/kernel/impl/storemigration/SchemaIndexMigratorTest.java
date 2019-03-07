@@ -25,7 +25,6 @@ import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.common.ProgressReporter;
-import org.neo4j.common.Service;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
@@ -33,6 +32,7 @@ import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexProviderDescriptor;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_4;
 import org.neo4j.kernel.impl.store.format.standard.StandardV4_0;
+import org.neo4j.service.Services;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 
 import static org.mockito.Mockito.mock;
@@ -49,7 +49,7 @@ class SchemaIndexMigratorTest
     private final DatabaseLayout migrationLayout = DatabaseLayout.of( new File( "migrationDir" ), DEFAULT_DATABASE_NAME );
 
     private final SchemaIndexMigrator migrator =
-            new SchemaIndexMigrator( fs, indexProvider, StorageEngineFactory.selectStorageEngine( Service.loadAll( StorageEngineFactory.class ) ) );
+            new SchemaIndexMigrator( fs, indexProvider, StorageEngineFactory.selectStorageEngine( Services.loadAll( StorageEngineFactory.class ) ) );
 
     @Test
     void schemaAndLabelIndexesRemovedAfterSuccessfulMigration() throws IOException

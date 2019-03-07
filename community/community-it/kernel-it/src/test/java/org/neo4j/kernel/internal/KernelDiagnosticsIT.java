@@ -31,7 +31,6 @@ import java.util.stream.Stream;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-import org.neo4j.common.Service;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -41,6 +40,7 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.diagnostics.providers.StoreFilesDiagnostics;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.logging.Logger;
+import org.neo4j.service.Services;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.TestDirectory;
@@ -72,7 +72,7 @@ public class KernelDiagnosticsIT
             createIndexInIsolatedDbInstance( dbDir, schemaIndex );
 
             // when
-            StorageEngineFactory storageEngineFactory = StorageEngineFactory.selectStorageEngine( Service.loadAll( StorageEngineFactory.class ) );
+            StorageEngineFactory storageEngineFactory = StorageEngineFactory.selectStorageEngine( Services.loadAll( StorageEngineFactory.class ) );
             StoreFilesDiagnostics files = new StoreFilesDiagnostics( storageEngineFactory, fs, DatabaseLayout.of( dbDir ) );
             SizeCapture capture = new SizeCapture();
             files.dump( capture );

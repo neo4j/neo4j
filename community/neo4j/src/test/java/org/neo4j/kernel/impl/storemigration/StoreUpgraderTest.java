@@ -39,7 +39,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.neo4j.common.ProgressReporter;
-import org.neo4j.common.Service;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.LayoutConfig;
@@ -66,6 +65,7 @@ import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.service.Services;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.StoreVersionCheck;
 import org.neo4j.storageengine.migration.AbstractStoreMigrationParticipant;
@@ -499,7 +499,7 @@ public class StoreUpgraderTest
     {
         NullLogService instance = NullLogService.getInstance();
         RecordStorageMigrator defaultMigrator = new RecordStorageMigrator( fileSystem, pageCache, getTuningConfig(), instance, jobScheduler );
-        StorageEngineFactory storageEngineFactory = StorageEngineFactory.selectStorageEngine( Service.loadAll( StorageEngineFactory.class ) );
+        StorageEngineFactory storageEngineFactory = StorageEngineFactory.selectStorageEngine( Services.loadAll( StorageEngineFactory.class ) );
         SchemaIndexMigrator indexMigrator = new SchemaIndexMigrator( fileSystem, IndexProvider.EMPTY, storageEngineFactory );
 
         LogFiles logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( databaseLayout.databaseDirectory(), fileSystem )

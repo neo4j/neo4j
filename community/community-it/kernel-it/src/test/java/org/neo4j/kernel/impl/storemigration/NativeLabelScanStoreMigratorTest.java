@@ -29,7 +29,6 @@ import java.nio.file.Paths;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.common.ProgressReporter;
-import org.neo4j.common.Service;
 import org.neo4j.configuration.Config;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -53,6 +52,7 @@ import org.neo4j.kernel.impl.store.format.standard.StandardV3_4;
 import org.neo4j.kernel.impl.store.format.standard.StandardV4_0;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.service.Services;
 import org.neo4j.storageengine.api.NodeLabelUpdate;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -98,7 +98,7 @@ class NativeLabelScanStoreMigratorTest
         migrationLayout = testDirectory.databaseLayout( "migrationDir" );
         luceneLabelScanStore = testDirectory.databaseDir().toPath().resolve( Paths.get( "schema", "label", "lucene" ) ).toFile();
 
-        StorageEngineFactory storageEngineFactory = StorageEngineFactory.selectStorageEngine( Service.loadAll( StorageEngineFactory.class ) );
+        StorageEngineFactory storageEngineFactory = StorageEngineFactory.selectStorageEngine( Services.loadAll( StorageEngineFactory.class ) );
         indexMigrator = new NativeLabelScanStoreMigrator( fileSystem, pageCache, Config.defaults(), storageEngineFactory );
         fileSystem.mkdirs( luceneLabelScanStore );
     }
