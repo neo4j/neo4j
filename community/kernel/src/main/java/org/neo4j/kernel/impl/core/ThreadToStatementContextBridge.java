@@ -86,7 +86,7 @@ public class ThreadToStatementContextBridge implements Supplier<Statement>
     {
         if ( transaction == null )
         {
-            throw new BridgeNotInTransactionException();
+            throw new NotInTransactionException();
         }
         if ( transaction.getAvailabilityGuard().isShutdown() )
         {
@@ -95,15 +95,6 @@ public class ThreadToStatementContextBridge implements Supplier<Statement>
         if ( transaction.isTerminated() )
         {
             throw new TransactionTerminatedException( transaction.getReasonIfTerminated().orElse( Status.Transaction.Terminated ) );
-        }
-    }
-
-    private static class BridgeNotInTransactionException extends NotInTransactionException implements Status.HasStatus
-    {
-        @Override
-        public Status status()
-        {
-            return Status.Request.TransactionRequired;
         }
     }
 }
