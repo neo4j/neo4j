@@ -19,15 +19,13 @@
  */
 package org.neo4j.kernel.impl.locking;
 
-import org.neo4j.common.Service;
+import org.neo4j.annotations.service.Service;
+import org.neo4j.service.NamedService;
 
 /**
  * Factory for lock managers that can be loaded over service loading.
  */
-public abstract class DynamicLocksFactory extends Service implements LocksFactory
+@Service
+public interface DynamicLocksFactory extends LocksFactory, NamedService
 {
-    public DynamicLocksFactory( String key, String... altKeys )
-    {
-        super( key, altKeys );
-    }
 }

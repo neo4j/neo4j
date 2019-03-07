@@ -29,6 +29,7 @@ import org.neo4j.kernel.impl.locking.SimpleStatementLocksFactory;
 import org.neo4j.kernel.impl.locking.StatementLocksFactory;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.internal.LogService;
+import org.neo4j.service.Services;
 import org.neo4j.util.VisibleForTesting;
 
 public class StatementLocksFactorySelector
@@ -83,6 +84,6 @@ public class StatementLocksFactorySelector
     @VisibleForTesting
     Collection<StatementLocksFactory> serviceLoadFactories()
     {
-        return Service.loadAll( StatementLocksFactory.class );
+        return Services.loadAll( StatementLocksFactory.class );
     }
 }
