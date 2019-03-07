@@ -29,12 +29,14 @@ import java.util.List;
 import java.util.Map;
 import javax.ws.rs.core.MediaType;
 
+import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.server.rest.repr.BadInputException;
 import org.neo4j.server.rest.repr.DefaultFormat;
 import org.neo4j.server.rest.repr.ListWriter;
 import org.neo4j.server.rest.repr.MappingWriter;
 import org.neo4j.server.rest.repr.RepresentationFormat;
 
+@ServiceProvider
 public class UrlFormFormat extends RepresentationFormat
 {
     public UrlFormFormat()

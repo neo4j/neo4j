@@ -21,10 +21,13 @@ package org.neo4j.server.rest.repr;
 
 import javax.ws.rs.core.MediaType;
 
+import org.neo4j.annotations.service.Service;
+
 /**
  * Implementations of this class must be stateless. Implementations of this
  * class must have a public no arguments constructor.
  */
+@Service
 public abstract class RepresentationFormat implements InputFormat
 {
     final MediaType mediaType;

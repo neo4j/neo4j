@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import javax.ws.rs.core.MediaType;
 
+import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.server.rest.repr.BadInputException;
@@ -39,6 +40,7 @@ import org.neo4j.server.rest.repr.RepresentationFormat;
 import static org.neo4j.server.rest.domain.JsonHelper.assertSupportedPropertyValue;
 import static org.neo4j.server.rest.domain.JsonHelper.readJson;
 
+@ServiceProvider
 public class JsonFormat extends RepresentationFormat
 {
     public JsonFormat()

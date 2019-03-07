@@ -31,12 +31,14 @@ import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
+import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.server.rest.domain.HtmlHelper;
 import org.neo4j.server.rest.repr.ListWriter;
 import org.neo4j.server.rest.repr.MappingWriter;
 import org.neo4j.server.rest.repr.Representation;
 import org.neo4j.server.rest.repr.RepresentationFormat;
 
+@ServiceProvider
 public class HtmlFormat extends RepresentationFormat
 {
     public HtmlFormat()

@@ -30,6 +30,7 @@ import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
+import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
@@ -43,6 +44,7 @@ import org.neo4j.server.rest.repr.RepresentationFormat;
 import static org.neo4j.server.rest.domain.JsonHelper.assertSupportedPropertyValue;
 import static org.neo4j.server.rest.domain.JsonHelper.readJson;
 
+@ServiceProvider
 public class CompactJsonFormat extends RepresentationFormat
 {
     public static final MediaType MEDIA_TYPE = new MediaType( MediaType.APPLICATION_JSON_TYPE.getType(),
@@ -56,44 +58,42 @@ public class CompactJsonFormat extends RepresentationFormat
     private enum MappingTemplate
     {
         NODE( Representation.NODE )
-        {
-            @Override
-            String render( Map<String, Object> serialized )
-            {
+                {
+                    @Override
+                    String render( Map<String, Object> serialized )
+                    {
 
-                return JsonHelper.createJsonFrom( MapUtil.map( "self", serialized.get( "self" ), "data",
-                        serialized.get( "data" ) ) );
-            }
-        },
+                        return JsonHelper.createJsonFrom( MapUtil.map( "self", serialized.get( "self" ), "data",
+                                serialized.get( "data" ) ) );
+                    }
+                },
         RELATIONSHIP( Representation.RELATIONSHIP )
-        {
-            @Override
-            String render( Map<String, Object> serialized )
-            {
+                {
+                    @Override
+                    String render( Map<String, Object> serialized )
+                    {
 
-                return JsonHelper.createJsonFrom( MapUtil.map( "self", serialized.get( "self" ), "data",
-                        serialized.get( "data" ) ) );
-            }
-        },
+                        return JsonHelper.createJsonFrom( MapUtil.map( "self", serialized.get( "self" ), "data",
+                                serialized.get( "data" ) ) );
+                    }
+                },
         STRING( Representation.STRING )
-        {
-            @Override
-            String render( Map<String, Object> serialized )
-            {
+                {
+                    @Override
+                    String render( Map<String, Object> serialized )
+                    {
 
-                return JsonHelper.createJsonFrom( serialized );
-            }
-        },
+                        return JsonHelper.createJsonFrom( serialized );
+                    }
+                },
         EXCEPTION( Representation.EXCEPTION )
-        {
-
-            @Override
-            String render( Map<String, Object> data )
-            {
-                return JsonHelper.createJsonFrom( data );
-            }
-
-        };
+                {
+                    @Override
+                    String render( Map<String, Object> data )
+                    {
+                        return JsonHelper.createJsonFrom( data );
+                    }
+                };
         private final String key;
 
         MappingTemplate( String key )
@@ -102,6 +102,7 @@ public class CompactJsonFormat extends RepresentationFormat
         }
 
         static final Map<String, MappingTemplate> TEMPLATES = new HashMap<>();
+
         static
         {
             for ( MappingTemplate template : values() )
@@ -149,7 +150,6 @@ public class CompactJsonFormat extends RepresentationFormat
         {
             return template.render( this.data );
         }
-
     }
 
     @Override
