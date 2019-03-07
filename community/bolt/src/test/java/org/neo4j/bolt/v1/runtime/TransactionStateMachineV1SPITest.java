@@ -33,6 +33,7 @@ import org.neo4j.bolt.BoltChannel;
 import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.GraphDatabaseQueryService;
+import org.neo4j.kernel.availability.CompositeDatabaseAvailabilityGuard;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
@@ -64,7 +65,9 @@ public class TransactionStateMachineV1SPITest
         Duration txAwaitDuration = Duration.ofSeconds( 42 );
         FakeClock clock = new FakeClock();
 
-        DatabaseAvailabilityGuard databaseAvailabilityGuard = spy( new DatabaseAvailabilityGuard( DEFAULT_DATABASE_NAME, clock, NullLog.getInstance() ) );
+        DatabaseAvailabilityGuard guard =
+                new DatabaseAvailabilityGuard( DEFAULT_DATABASE_NAME, clock, NullLog.getInstance(), mock( CompositeDatabaseAvailabilityGuard.class ) );
+        DatabaseAvailabilityGuard databaseAvailabilityGuard = spy( guard );
         when( databaseAvailabilityGuard.isAvailable() ).then( invocation ->
         {
             // move clock forward on the first availability check
@@ -117,10 +120,11 @@ public class TransactionStateMachineV1SPITest
         return txIdStore;
     }
 
-    private static TransactionStateMachineV1SPI createTxSpi( Supplier<TransactionIdStore> txIdStore, Duration txAwaitDuration,
-            Clock clock )
+    private static TransactionStateMachineV1SPI createTxSpi( Supplier<TransactionIdStore> txIdStore, Duration txAwaitDuration, Clock clock )
     {
-        DatabaseAvailabilityGuard databaseAvailabilityGuard = new DatabaseAvailabilityGuard( DEFAULT_DATABASE_NAME, clock, NullLog.getInstance() );
+        CompositeDatabaseAvailabilityGuard compositeGuard = mock( CompositeDatabaseAvailabilityGuard.class );
+        DatabaseAvailabilityGuard databaseAvailabilityGuard =
+                new DatabaseAvailabilityGuard( DEFAULT_DATABASE_NAME, clock, NullLog.getInstance(), compositeGuard );
         return createTxSpi( txIdStore, txAwaitDuration, databaseAvailabilityGuard, clock );
     }
 

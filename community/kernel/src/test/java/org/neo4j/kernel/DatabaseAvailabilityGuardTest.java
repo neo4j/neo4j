@@ -29,6 +29,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.neo4j.kernel.availability.AvailabilityGuard;
 import org.neo4j.kernel.availability.AvailabilityListener;
 import org.neo4j.kernel.availability.AvailabilityRequirement;
+import org.neo4j.kernel.availability.CompositeDatabaseAvailabilityGuard;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.availability.DescriptiveAvailabilityRequirement;
 import org.neo4j.kernel.availability.UnavailableException;
@@ -337,6 +338,6 @@ class DatabaseAvailabilityGuardTest
 
     private static DatabaseAvailabilityGuard getDatabaseAvailabilityGuard( Clock clock, Log log )
     {
-        return new DatabaseAvailabilityGuard( DEFAULT_DATABASE_NAME, clock, log );
+        return new DatabaseAvailabilityGuard( DEFAULT_DATABASE_NAME, clock, log, mock( CompositeDatabaseAvailabilityGuard.class ) );
     }
 }

@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.coreapi;
 
 import org.neo4j.graphdb.DatabaseShutdownException;
+import org.neo4j.kernel.availability.AvailabilityGuard;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.availability.UnavailableException;
 
@@ -29,10 +30,10 @@ import org.neo4j.kernel.availability.UnavailableException;
  */
 public class CoreAPIAvailabilityGuard
 {
-    private final DatabaseAvailabilityGuard guard;
+    private final AvailabilityGuard guard;
     private final long timeout;
 
-    public CoreAPIAvailabilityGuard( DatabaseAvailabilityGuard guard, long timeout )
+    public CoreAPIAvailabilityGuard( AvailabilityGuard guard, long timeout )
     {
         this.guard = guard;
         this.timeout = timeout;

@@ -43,11 +43,11 @@ public class ProcedureGDSFactory implements ThrowingFunction<Context,GraphDataba
     private final TokenHolders tokenHolders;
     private final ThreadToStatementContextBridge bridge;
 
-    ProcedureGDSFactory( GlobalModule platform, DatabaseModule dataSource, CoreAPIAvailabilityGuard coreAPIAvailabilityGuard, TokenHolders tokenHolders,
+    ProcedureGDSFactory( GlobalModule platform, DatabaseModule databaseModule, CoreAPIAvailabilityGuard coreAPIAvailabilityGuard, TokenHolders tokenHolders,
             ThreadToStatementContextBridge bridge )
     {
         this.platform = platform;
-        this.dataSource = dataSource;
+        this.dataSource = databaseModule;
         this.availability = coreAPIAvailabilityGuard;
         this.urlValidator = url -> platform.getUrlAccessRule().validate( platform.getGlobalConfig(), url );
         this.tokenHolders = tokenHolders;

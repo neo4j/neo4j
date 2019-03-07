@@ -26,10 +26,12 @@ import org.mockito.stubbing.Answer;
 
 import java.time.Clock;
 
+import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.logging.internal.NullLogService;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.lessThan;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -148,5 +150,28 @@ class CompositeDatabaseAvailabilityGuardTest
         assertThat( counter.getValue(), lessThan( 20L ) );
         assertTrue( defaultGuard.isAvailable() );
         assertFalse( systemGuard.isAvailable() );
+    }
+
+    @Test
+    void stopOfAvailabilityGuardDeregisterItInCompositeParent()
+    {
+        int initialGuards = compositeGuard.getGuards().size();
+        DatabaseAvailabilityGuard firstGuard = compositeGuard.createDatabaseAvailabilityGuard( "first" );
+        DatabaseAvailabilityGuard secondGuard = compositeGuard.createDatabaseAvailabilityGuard( "second" );
+
+        assertEquals( 2, countNewGuards( initialGuards ) );
+
+        new Lifespan( firstGuard ).close();
+
+        assertEquals( 1, countNewGuards( initialGuards ) );
+
+        new Lifespan( secondGuard ).close();
+
+        assertEquals( 0, countNewGuards( initialGuards ) );
+    }
+
+    private int countNewGuards( int initialGuards )
+    {
+        return compositeGuard.getGuards().size() - initialGuards;
     }
 }

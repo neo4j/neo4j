@@ -24,8 +24,8 @@ import java.util.function.Function;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.database.DatabaseConfig;
+import org.neo4j.function.Factory;
 import org.neo4j.graphdb.factory.module.edition.context.EditionDatabaseContext;
 import org.neo4j.graphdb.factory.module.id.DatabaseIdContext;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -35,7 +35,6 @@ import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
-import org.neo4j.kernel.availability.DatabaseAvailability;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.database.DatabaseCreationContext;
 import org.neo4j.kernel.extension.ExtensionFactory;
@@ -45,7 +44,6 @@ import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.core.DatabasePanicEventGenerator;
 import org.neo4j.kernel.impl.core.TokenHolders;
-import org.neo4j.kernel.impl.coreapi.CoreAPIAvailabilityGuard;
 import org.neo4j.kernel.impl.factory.AccessCapability;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
@@ -56,7 +54,6 @@ import org.neo4j.kernel.impl.store.id.IdController;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.storemigration.DatabaseMigratorFactory;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
-import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.StoreCopyCheckPointMutex;
 import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier;
@@ -96,8 +93,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     private final Tracers tracers;
     private final GlobalProcedures globalProcedures;
     private final IOLimiter ioLimiter;
-    private final DatabaseAvailabilityGuard databaseAvailabilityGuard;
-    private final CoreAPIAvailabilityGuard coreAPIAvailabilityGuard;
+    private final Factory<DatabaseAvailabilityGuard> databaseAvailabilityGuardFactory;
     private final SystemNanoClock clock;
     private final AccessCapability accessCapability;
     private final StoreCopyCheckPointMutex storeCopyCheckPointMutex;
@@ -110,7 +106,6 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     private final GraphDatabaseFacade facade;
     private final Iterable<QueryEngineProvider> engineProviders;
     private final DatabaseLayout databaseLayout;
-    private final DatabaseAvailability databaseAvailability;
     private final DatabaseEventHandlers eventHandlers;
     private final DatabaseMigratorFactory databaseMigratorFactory;
     private final StorageEngineFactory storageEngineFactory;
@@ -147,10 +142,6 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
         this.globalProcedures = globalProcedures;
         this.ioLimiter = editionContext.getIoLimiter();
         this.clock = globalModule.getGlobalClock();
-        this.databaseAvailabilityGuard = editionContext.createDatabaseAvailabilityGuard( clock, logService, globalConfig );
-        this.databaseAvailability =
-                new DatabaseAvailability( databaseAvailabilityGuard, transactionStats, clock, getAwaitActiveTransactionDeadlineMillis() );
-        this.coreAPIAvailabilityGuard = new CoreAPIAvailabilityGuard( databaseAvailabilityGuard, editionContext.getTransactionStartTimeout() );
         this.accessCapability = editionContext.getAccessCapability();
         this.storeCopyCheckPointMutex = new StoreCopyCheckPointMutex();
         this.databaseInfo = globalModule.getDatabaseInfo();
@@ -160,6 +151,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
         this.watcherServiceFactory = editionContext.getWatcherServiceFactory();
         this.facade = facade;
         this.engineProviders = globalModule.getQueryEngineProviders();
+        this.databaseAvailabilityGuardFactory = () -> editionContext.createDatabaseAvailabilityGuard( clock, logService, globalConfig );
         this.databaseMigratorFactory = new DatabaseMigratorFactory( fs, globalConfig, logService, pageCache, scheduler );
         this.storageEngineFactory = globalModule.getStorageEngineFactory();
     }
@@ -255,7 +247,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     }
 
     @Override
-    public TransactionMonitor getTransactionMonitor()
+    public DatabaseTransactionStats getTransactionStats()
     {
         return transactionStats;
     }
@@ -315,15 +307,9 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     }
 
     @Override
-    public DatabaseAvailabilityGuard getDatabaseAvailabilityGuard()
+    public Factory<DatabaseAvailabilityGuard> getDatabaseAvailabilityGuardFactory()
     {
-        return databaseAvailabilityGuard;
-    }
-
-    @Override
-    public CoreAPIAvailabilityGuard getCoreAPIAvailabilityGuard()
-    {
-        return coreAPIAvailabilityGuard;
+        return databaseAvailabilityGuardFactory;
     }
 
     @Override
@@ -390,17 +376,6 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     public Iterable<QueryEngineProvider> getEngineProviders()
     {
         return engineProviders;
-    }
-
-    @Override
-    public DatabaseAvailability getDatabaseAvailability()
-    {
-        return databaseAvailability;
-    }
-
-    private long getAwaitActiveTransactionDeadlineMillis()
-    {
-        return globalConfig.get( GraphDatabaseSettings.shutdown_transaction_end_timeout ).toMillis();
     }
 
     @Override

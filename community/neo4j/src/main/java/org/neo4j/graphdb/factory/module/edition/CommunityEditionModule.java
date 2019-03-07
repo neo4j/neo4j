@@ -122,6 +122,8 @@ public class CommunityEditionModule extends DefaultEditionModule
         globalDependencies.satisfyDependency( kernelData );
         globalLife.add( kernelData );
 
+        globalDependencies.satisfyDependency( getGlobalAvailabilityGuard( globalClock, logService ) );
+
         commitProcessFactory = new CommunityCommitProcessFactory();
 
         headerInformationFactory = createHeaderInformationFactory();

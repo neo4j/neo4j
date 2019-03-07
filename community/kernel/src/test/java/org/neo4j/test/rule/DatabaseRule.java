@@ -28,6 +28,7 @@ import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.DatabaseConfig;
 import org.neo4j.exceptions.UnsatisfiedDependencyException;
+import org.neo4j.function.Factory;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.watcher.DatabaseLayoutWatcher;
@@ -37,7 +38,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
-import org.neo4j.kernel.availability.DatabaseAvailability;
+import org.neo4j.kernel.availability.CompositeDatabaseAvailabilityGuard;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.database.DatabaseCreationContext;
@@ -51,7 +52,6 @@ import org.neo4j.kernel.impl.context.TransactionVersionContextSupplier;
 import org.neo4j.kernel.impl.core.DatabasePanicEventGenerator;
 import org.neo4j.kernel.impl.core.TokenHolder;
 import org.neo4j.kernel.impl.core.TokenHolders;
-import org.neo4j.kernel.impl.coreapi.CoreAPIAvailabilityGuard;
 import org.neo4j.kernel.impl.factory.AccessCapability;
 import org.neo4j.kernel.impl.factory.CanWrite;
 import org.neo4j.kernel.impl.factory.CommunityCommitProcessFactory;
@@ -72,10 +72,8 @@ import org.neo4j.kernel.impl.store.id.configuration.IdTypeConfigurationProvider;
 import org.neo4j.kernel.impl.storemigration.DatabaseMigrator;
 import org.neo4j.kernel.impl.storemigration.DatabaseMigratorFactory;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
-import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.StoreCopyCheckPointMutex;
 import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats;
-import org.neo4j.kernel.impl.transaction.stats.TransactionCounters;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier;
 import org.neo4j.kernel.internal.DatabaseEventHandlers;
@@ -150,11 +148,8 @@ public class DatabaseRule extends ExternalResource
         DatabaseHealth databaseHealth = dependency( mutableDependencies, DatabaseHealth.class,
                 deps -> new DatabaseHealth( mock( DatabasePanicEventGenerator.class ), NullLog.getInstance() ) );
         SystemNanoClock clock = dependency( mutableDependencies, SystemNanoClock.class, deps -> Clocks.nanoClock() );
-        TransactionMonitor transactionMonitor = dependency( mutableDependencies, TransactionMonitor.class,
+        DatabaseTransactionStats transactionStats = dependency( mutableDependencies, DatabaseTransactionStats.class,
                 deps -> new DatabaseTransactionStats() );
-        DatabaseAvailabilityGuard databaseAvailabilityGuard = dependency( mutableDependencies, DatabaseAvailabilityGuard.class,
-                deps -> new DatabaseAvailabilityGuard( databaseName, deps.resolveDependency( SystemNanoClock.class ),
-                        NullLog.getInstance() ) );
         dependency( mutableDependencies, DbmsDiagnosticsManager.class, deps -> mock( DbmsDiagnosticsManager.class ) );
         dependency( mutableDependencies, IndexProvider.class, deps -> EMPTY );
         StorageEngineFactory storageEngineFactory = dependency( mutableDependencies, StorageEngineFactory.class,
@@ -162,11 +157,11 @@ public class DatabaseRule extends ExternalResource
 
         database = new Database( new TestDatabaseCreationContext( databaseName, databaseLayout, config, idGeneratorFactory, logService,
                 mock( JobScheduler.class, RETURNS_MOCKS ), mock( TokenNameLookup.class ), mutableDependencies, mockedTokenHolders(), locksFactory,
-                mock( SchemaWriteGuard.class ), mock( TransactionEventHandlers.class ), fs, transactionMonitor, databaseHealth,
+                mock( SchemaWriteGuard.class ), mock( TransactionEventHandlers.class ), fs, transactionStats, databaseHealth,
                 TransactionHeaderInformationFactory.DEFAULT, new CommunityCommitProcessFactory(),
                 pageCache, new StandardConstraintSemantics(), monitors,
                 new Tracers( "null", NullLog.getInstance(), monitors, jobScheduler, clock ),
-                mock( GlobalProcedures.class ), IOLimiter.UNLIMITED, databaseAvailabilityGuard, clock, new CanWrite(), new StoreCopyCheckPointMutex(),
+                mock( GlobalProcedures.class ), IOLimiter.UNLIMITED, clock, new CanWrite(), new StoreCopyCheckPointMutex(),
                 new BufferedIdController( new BufferingIdGeneratorFactory( idGeneratorFactory, IdReuseEligibility.ALWAYS, idConfigurationProvider ),
                         jobScheduler ), DatabaseInfo.COMMUNITY, new TransactionVersionContextSupplier(), ON_HEAP, Collections.emptyList(),
                 file -> mock( DatabaseLayoutWatcher.class ), new GraphDatabaseFacade(), Iterables.empty(),
@@ -223,7 +218,7 @@ public class DatabaseRule extends ExternalResource
         private final SchemaWriteGuard schemaWriteGuard;
         private final TransactionEventHandlers transactionEventHandlers;
         private final FileSystemAbstraction fs;
-        private final TransactionMonitor transactionMonitor;
+        private final DatabaseTransactionStats databaseTransactionStats;
         private final DatabaseHealth databaseHealth;
         private final TransactionHeaderInformationFactory transactionHeaderInformationFactory;
         private final CommitProcessFactory commitProcessFactory;
@@ -233,7 +228,6 @@ public class DatabaseRule extends ExternalResource
         private final Tracers tracers;
         private final GlobalProcedures globalProcedures;
         private final IOLimiter ioLimiter;
-        private final DatabaseAvailabilityGuard databaseAvailabilityGuard;
         private final SystemNanoClock clock;
         private final AccessCapability accessCapability;
         private final StoreCopyCheckPointMutex storeCopyCheckPointMutex;
@@ -245,8 +239,6 @@ public class DatabaseRule extends ExternalResource
         private final Function<DatabaseLayout,DatabaseLayoutWatcher> watcherServiceFactory;
         private final GraphDatabaseFacade facade;
         private final Iterable<QueryEngineProvider> engineProviders;
-        private final DatabaseAvailability databaseAvailability;
-        private final CoreAPIAvailabilityGuard coreAPIAvailabilityGuard;
         private final DatabaseEventHandlers eventHandlers;
         private final DatabaseMigratorFactory databaseMigratorFactory;
         private final StorageEngineFactory storageEngineFactory;
@@ -254,13 +246,12 @@ public class DatabaseRule extends ExternalResource
         TestDatabaseCreationContext( String databaseName, DatabaseLayout databaseLayout, Config config, IdGeneratorFactory idGeneratorFactory,
                 LogService logService, JobScheduler scheduler, TokenNameLookup tokenNameLookup, DependencyResolver dependencyResolver,
                 TokenHolders tokenHolders, StatementLocksFactory statementLocksFactory, SchemaWriteGuard schemaWriteGuard,
-                TransactionEventHandlers transactionEventHandlers, FileSystemAbstraction fs,
-                TransactionMonitor transactionMonitor, DatabaseHealth databaseHealth,
-                TransactionHeaderInformationFactory transactionHeaderInformationFactory, CommitProcessFactory commitProcessFactory,
-                PageCache pageCache, ConstraintSemantics constraintSemantics,
-                Monitors monitors, Tracers tracers, GlobalProcedures globalProcedures, IOLimiter ioLimiter, DatabaseAvailabilityGuard databaseAvailabilityGuard,
-                SystemNanoClock clock, AccessCapability accessCapability, StoreCopyCheckPointMutex storeCopyCheckPointMutex, IdController idController,
-                DatabaseInfo databaseInfo, VersionContextSupplier versionContextSupplier, CollectionsFactorySupplier collectionsFactorySupplier,
+                TransactionEventHandlers transactionEventHandlers, FileSystemAbstraction fs, DatabaseTransactionStats databaseTransactionStats,
+                DatabaseHealth databaseHealth, TransactionHeaderInformationFactory transactionHeaderInformationFactory,
+                CommitProcessFactory commitProcessFactory, PageCache pageCache, ConstraintSemantics constraintSemantics, Monitors monitors, Tracers tracers,
+                GlobalProcedures globalProcedures, IOLimiter ioLimiter, SystemNanoClock clock, AccessCapability accessCapability,
+                StoreCopyCheckPointMutex storeCopyCheckPointMutex, IdController idController, DatabaseInfo databaseInfo,
+                VersionContextSupplier versionContextSupplier, CollectionsFactorySupplier collectionsFactorySupplier,
                 Iterable<ExtensionFactory<?>> extensionFactories, Function<DatabaseLayout,DatabaseLayoutWatcher> watcherServiceFactory,
                 GraphDatabaseFacade facade, Iterable<QueryEngineProvider> engineProviders, DatabaseMigratorFactory databaseMigratorFactory,
                 StorageEngineFactory storageEngineFactory )
@@ -279,7 +270,7 @@ public class DatabaseRule extends ExternalResource
             this.schemaWriteGuard = schemaWriteGuard;
             this.transactionEventHandlers = transactionEventHandlers;
             this.fs = fs;
-            this.transactionMonitor = transactionMonitor;
+            this.databaseTransactionStats = databaseTransactionStats;
             this.databaseHealth = databaseHealth;
             this.transactionHeaderInformationFactory = transactionHeaderInformationFactory;
             this.commitProcessFactory = commitProcessFactory;
@@ -289,7 +280,6 @@ public class DatabaseRule extends ExternalResource
             this.tracers = tracers;
             this.globalProcedures = globalProcedures;
             this.ioLimiter = ioLimiter;
-            this.databaseAvailabilityGuard = databaseAvailabilityGuard;
             this.clock = clock;
             this.accessCapability = accessCapability;
             this.storeCopyCheckPointMutex = storeCopyCheckPointMutex;
@@ -301,8 +291,6 @@ public class DatabaseRule extends ExternalResource
             this.watcherServiceFactory = watcherServiceFactory;
             this.facade = facade;
             this.engineProviders = engineProviders;
-            this.databaseAvailability = new DatabaseAvailability( databaseAvailabilityGuard, mock( TransactionCounters.class ), clock, 0 );
-            this.coreAPIAvailabilityGuard = new CoreAPIAvailabilityGuard( databaseAvailabilityGuard, 0 );
             this.eventHandlers = mock( DatabaseEventHandlers.class );
             this.databaseMigratorFactory = databaseMigratorFactory;
             this.storageEngineFactory = storageEngineFactory;
@@ -403,9 +391,9 @@ public class DatabaseRule extends ExternalResource
         }
 
         @Override
-        public TransactionMonitor getTransactionMonitor()
+        public DatabaseTransactionStats getTransactionStats()
         {
-            return transactionMonitor;
+            return databaseTransactionStats;
         }
 
         @Override
@@ -463,15 +451,9 @@ public class DatabaseRule extends ExternalResource
         }
 
         @Override
-        public DatabaseAvailabilityGuard getDatabaseAvailabilityGuard()
+        public Factory<DatabaseAvailabilityGuard> getDatabaseAvailabilityGuardFactory()
         {
-            return databaseAvailabilityGuard;
-        }
-
-        @Override
-        public CoreAPIAvailabilityGuard getCoreAPIAvailabilityGuard()
-        {
-            return coreAPIAvailabilityGuard;
+            return () -> new DatabaseAvailabilityGuard( databaseName, clock, NullLog.getInstance(), mock( CompositeDatabaseAvailabilityGuard.class ) );
         }
 
         @Override
@@ -538,12 +520,6 @@ public class DatabaseRule extends ExternalResource
         public Iterable<QueryEngineProvider> getEngineProviders()
         {
             return engineProviders;
-        }
-
-        @Override
-        public DatabaseAvailability getDatabaseAvailability()
-        {
-            return databaseAvailability;
         }
 
         @Override

@@ -25,6 +25,7 @@ import org.neo4j.common.DependencyResolver;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.DatabaseConfig;
+import org.neo4j.function.Factory;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.watcher.DatabaseLayoutWatcher;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -32,14 +33,12 @@ import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
-import org.neo4j.kernel.availability.DatabaseAvailability;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.core.TokenHolders;
-import org.neo4j.kernel.impl.coreapi.CoreAPIAvailabilityGuard;
 import org.neo4j.kernel.impl.factory.AccessCapability;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
@@ -50,8 +49,8 @@ import org.neo4j.kernel.impl.store.id.IdController;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.storemigration.DatabaseMigratorFactory;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
-import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.StoreCopyCheckPointMutex;
+import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier;
 import org.neo4j.kernel.internal.DatabaseEventHandlers;
 import org.neo4j.kernel.internal.DatabaseHealth;
@@ -95,7 +94,7 @@ public interface DatabaseCreationContext
 
     FileSystemAbstraction getFs();
 
-    TransactionMonitor getTransactionMonitor();
+    DatabaseTransactionStats getTransactionStats();
 
     DatabaseHealth getDatabaseHealth();
 
@@ -115,9 +114,7 @@ public interface DatabaseCreationContext
 
     IOLimiter getIoLimiter();
 
-    DatabaseAvailabilityGuard getDatabaseAvailabilityGuard();
-
-    CoreAPIAvailabilityGuard getCoreAPIAvailabilityGuard();
+    Factory<DatabaseAvailabilityGuard> getDatabaseAvailabilityGuardFactory();
 
     SystemNanoClock getClock();
 
@@ -140,8 +137,6 @@ public interface DatabaseCreationContext
     GraphDatabaseFacade getFacade();
 
     Iterable<QueryEngineProvider> getEngineProviders();
-
-    DatabaseAvailability getDatabaseAvailability();
 
     DatabaseEventHandlers getEventHandlers();
 

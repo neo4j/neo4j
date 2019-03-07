@@ -26,6 +26,7 @@ import org.neo4j.graphdb.factory.module.edition.AbstractEditionModule;
 import org.neo4j.graphdb.factory.module.edition.context.EditionDatabaseContext;
 import org.neo4j.kernel.api.InwardKernel;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
+import org.neo4j.kernel.availability.CompositeDatabaseAvailabilityGuard;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.impl.coreapi.CoreAPIAvailabilityGuard;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
@@ -49,7 +50,9 @@ public class DatabaseModule
                 new ModularDatabaseCreationContext( databaseName, globalModule, editionContext, globalProcedures, graphDatabaseFacade );
         database = new Database( context );
 
-        this.coreAPIAvailabilityGuard = context.getCoreAPIAvailabilityGuard();
+        CompositeDatabaseAvailabilityGuard globalAvailabilityGuard =
+                editionModule.getGlobalAvailabilityGuard( globalModule.getGlobalClock(), globalModule.getLogService() );
+        this.coreAPIAvailabilityGuard = new CoreAPIAvailabilityGuard( globalAvailabilityGuard, editionContext.getTransactionStartTimeout() );
         this.storeId = database::getStoreId;
         this.kernelAPI = database::getKernel;
 

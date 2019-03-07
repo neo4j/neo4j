@@ -36,6 +36,7 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.SettingChangeListener;
 import org.neo4j.dbms.database.DatabaseConfig;
 import org.neo4j.dbms.database.DatabasePageCache;
+import org.neo4j.function.Factory;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.kernel.api.Kernel;
@@ -96,7 +97,6 @@ import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.stats.IdBasedStoreEntityCounters;
 import org.neo4j.kernel.impl.storemigration.DatabaseMigratorFactory;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
-import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.log.BatchingTransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.LogVersionUpgradeChecker;
 import org.neo4j.kernel.impl.transaction.log.LoggingLogFileMonitor;
@@ -130,6 +130,7 @@ import org.neo4j.kernel.impl.transaction.state.DatabaseFileListing;
 import org.neo4j.kernel.impl.transaction.state.DefaultIndexProviderMap;
 import org.neo4j.kernel.impl.transaction.state.storeview.DynamicIndexStoreView;
 import org.neo4j.kernel.impl.transaction.state.storeview.NeoStoreIndexStoreView;
+import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats;
 import org.neo4j.kernel.impl.util.DefaultValueMapper;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier;
@@ -185,19 +186,17 @@ public class Database extends LifecycleAdapter
     private final JobScheduler scheduler;
     private final LockService lockService;
     private final FileSystemAbstraction fs;
-    private final TransactionMonitor transactionMonitor;
+    private final DatabaseTransactionStats transactionStats;
     private final DatabaseHealth databaseHealth;
     private final TransactionHeaderInformationFactory transactionHeaderInformationFactory;
     private final CommitProcessFactory commitProcessFactory;
     private final ConstraintSemantics constraintSemantics;
     private final GlobalProcedures globalProcedures;
     private final IOLimiter ioLimiter;
-    private final DatabaseAvailabilityGuard databaseAvailabilityGuard;
     private final SystemNanoClock clock;
     private final StoreCopyCheckPointMutex storeCopyCheckPointMutex;
     private final CollectionsFactorySupplier collectionsFactorySupplier;
     private final Locks locks;
-    private final DatabaseAvailability databaseAvailability;
     private final DatabaseEventHandlers eventHandlers;
     private final DatabaseMigratorFactory databaseMigratorFactory;
 
@@ -205,6 +204,8 @@ public class Database extends LifecycleAdapter
     private LifeSupport life;
     private IndexProviderMap indexProviderMap;
     private DatabaseConfig config;
+    private DatabaseAvailabilityGuard databaseAvailabilityGuard;
+    private DatabaseAvailability databaseAvailability;
     private final String databaseName;
     private final DatabaseLayout databaseLayout;
     private final boolean readOnly;
@@ -219,6 +220,7 @@ public class Database extends LifecycleAdapter
     private DatabaseKernelModule kernelModule;
     private final Iterable<ExtensionFactory<?>> extensionFactories;
     private final Function<DatabaseLayout,DatabaseLayoutWatcher> watcherServiceFactory;
+    private final Factory<DatabaseAvailabilityGuard> availabilityGuardFactory;
     private final GraphDatabaseFacade facade;
     private final Iterable<QueryEngineProvider> engineProviders;
     private volatile boolean started;
@@ -245,7 +247,7 @@ public class Database extends LifecycleAdapter
         this.schemaWriteGuard = context.getSchemaWriteGuard();
         this.transactionEventHandlers = context.getTransactionEventHandlers();
         this.fs = context.getFs();
-        this.transactionMonitor = context.getTransactionMonitor();
+        this.transactionStats = context.getTransactionStats();
         this.databaseHealth = context.getDatabaseHealth();
         this.transactionHeaderInformationFactory = context.getTransactionHeaderInformationFactory();
         this.constraintSemantics = context.getConstraintSemantics();
@@ -254,7 +256,6 @@ public class Database extends LifecycleAdapter
         this.globalConfig = context.getGlobalConfig();
         this.globalProcedures = context.getGlobalProcedures();
         this.ioLimiter = context.getIoLimiter();
-        this.databaseAvailabilityGuard = context.getDatabaseAvailabilityGuard();
         this.clock = context.getClock();
         this.accessCapability = context.getAccessCapability();
         this.eventHandlers = context.getEventHandlers();
@@ -272,8 +273,8 @@ public class Database extends LifecycleAdapter
         this.commitProcessFactory = context.getCommitProcessFactory();
         this.globalPageCache = context.getPageCache();
         this.collectionsFactorySupplier = context.getCollectionsFactorySupplier();
-        this.databaseAvailability = context.getDatabaseAvailability();
         this.databaseMigratorFactory = context.getDatabaseMigratorFactory();
+        this.availabilityGuardFactory = context.getDatabaseAvailabilityGuardFactory();
         this.storageEngineFactory = context.getStorageEngineFactory();
     }
 
@@ -293,6 +294,9 @@ public class Database extends LifecycleAdapter
             life = new LifeSupport();
             life.add( config );
 
+            databaseAvailabilityGuard = availabilityGuardFactory.newInstance();
+            databaseAvailability = new DatabaseAvailability( databaseAvailabilityGuard, transactionStats, clock, getAwaitActiveTransactionDeadlineMillis() );
+
             LogFileCreationMonitor physicalLogMonitor = databaseMonitors.newMonitor( LogFileCreationMonitor.class );
 
             databaseDependencies.satisfyDependency( this );
@@ -303,7 +307,7 @@ public class Database extends LifecycleAdapter
             databaseDependencies.satisfyDependency( facade );
             databaseDependencies.satisfyDependency( databaseHealth );
             databaseDependencies.satisfyDependency( storeCopyCheckPointMutex );
-            databaseDependencies.satisfyDependency( transactionMonitor );
+            databaseDependencies.satisfyDependency( transactionStats );
             databaseDependencies.satisfyDependency( locks );
             databaseDependencies.satisfyDependency( databaseAvailabilityGuard );
             databaseDependencies.satisfyDependency( databaseAvailability );
@@ -417,6 +421,7 @@ public class Database extends LifecycleAdapter
 
             databaseDependencies.resolveDependency( DbmsDiagnosticsManager.class ).dumpDatabaseDiagnostics( this );
 
+            life.add( databaseAvailabilityGuard );
             life.add( databaseAvailability );
             life.setLast( checkpointerLifecycle );
         }
@@ -633,15 +638,15 @@ public class Database extends LifecycleAdapter
 
         KernelTransactions kernelTransactions = life.add(
                 new KernelTransactions( config, statementLocksFactory, constraintIndexCreator, statementOperationParts, schemaWriteGuard,
-                        transactionHeaderInformationFactory, transactionCommitProcess, hooks,
-                        transactionMonitor, databaseAvailabilityGuard, globalTracers, storageEngine, globalProcedures, transactionIdStore, clock, cpuClockRef,
+                        transactionHeaderInformationFactory, transactionCommitProcess, hooks, transactionStats, databaseAvailabilityGuard, globalTracers,
+                        storageEngine, globalProcedures, transactionIdStore, clock, cpuClockRef,
                         heapAllocationRef, accessCapability, versionContextSupplier, collectionsFactorySupplier,
                         constraintSemantics, databaseSchemaState, tokenHolders, getDatabaseName(), indexingService, labelScanStore, indexStatisticsStore,
                         databaseDependencies ) );
 
         buildTransactionMonitor( kernelTransactions, clock, config );
 
-        final KernelImpl kernel = new KernelImpl( kernelTransactions, hooks, databaseHealth, transactionMonitor, globalProcedures,
+        final KernelImpl kernel = new KernelImpl( kernelTransactions, hooks, databaseHealth, transactionStats, globalProcedures,
                 config, storageEngine );
 
         kernel.registerTransactionHook( transactionEventHandlers );
@@ -854,6 +859,11 @@ public class Database extends LifecycleAdapter
             pagedFile.setDeleteOnClose( true );
         }
         checkpointerLifecycle.setCheckpointOnShutdown( false );
+    }
+
+    private long getAwaitActiveTransactionDeadlineMillis()
+    {
+        return globalConfig.get( GraphDatabaseSettings.shutdown_transaction_end_timeout ).toMillis();
     }
 
     @VisibleForTesting

@@ -20,9 +20,13 @@
 package org.neo4j.kernel.availability;
 
 import java.time.Clock;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import org.neo4j.logging.Log;
 import org.neo4j.logging.internal.LogService;
+import org.neo4j.util.VisibleForTesting;
 
 import static java.util.stream.Collectors.joining;
 
@@ -46,9 +50,15 @@ public class CompositeDatabaseAvailabilityGuard implements AvailabilityGuard
 
     public DatabaseAvailabilityGuard createDatabaseAvailabilityGuard( String databaseName )
     {
-        DatabaseAvailabilityGuard guard = new DatabaseAvailabilityGuard( databaseName, clock, logService.getInternalLog( DatabaseAvailabilityGuard.class ) );
+        Log guardLog = logService.getInternalLog( DatabaseAvailabilityGuard.class );
+        DatabaseAvailabilityGuard guard = new DatabaseAvailabilityGuard( databaseName, clock, guardLog, this );
         guards.add( guard );
         return guard;
+    }
+
+    void removeDatabaseAvailabilityGuard( DatabaseAvailabilityGuard guard )
+    {
+        guards.remove( guard );
     }
 
     @Override
@@ -136,5 +146,11 @@ public class CompositeDatabaseAvailabilityGuard implements AvailabilityGuard
     public String describe()
     {
         return guards.stream().map( DatabaseAvailabilityGuard::describe ).collect( joining( ", " ) );
+    }
+
+    @VisibleForTesting
+    public List<DatabaseAvailabilityGuard> getGuards()
+    {
+        return Collections.unmodifiableList( guards );
     }
 }

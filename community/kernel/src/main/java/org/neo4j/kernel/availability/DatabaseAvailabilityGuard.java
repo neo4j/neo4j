@@ -28,6 +28,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.neo4j.helpers.Format;
 import org.neo4j.helpers.Listeners;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 
 /**
@@ -35,7 +36,7 @@ import org.neo4j.logging.Log;
  *
  * @see AvailabilityGuard
  */
-public class DatabaseAvailabilityGuard implements AvailabilityGuard
+public class DatabaseAvailabilityGuard extends LifecycleAdapter implements AvailabilityGuard
 {
     private static final String DATABASE_AVAILABLE_MSG = "Fulfilling of requirement '%s' makes database %s available.";
     private static final String DATABASE_UNAVAILABLE_MSG = "Requirement `%s` makes database %s unavailable.";
@@ -47,13 +48,21 @@ public class DatabaseAvailabilityGuard implements AvailabilityGuard
     private final String databaseName;
     private final Clock clock;
     private final Log log;
+    private final CompositeDatabaseAvailabilityGuard globalGuard;
 
-    public DatabaseAvailabilityGuard( String databaseName, Clock clock, Log log )
+    public DatabaseAvailabilityGuard( String databaseName, Clock clock, Log log, CompositeDatabaseAvailabilityGuard globalGuard )
     {
         this.databaseName = databaseName;
         this.clock = clock;
         this.log = log;
+        this.globalGuard = globalGuard;
         this.listeners.add( new LoggingAvailabilityListener( log, databaseName ) );
+    }
+
+    @Override
+    public void stop() throws Throwable
+    {
+        globalGuard.removeDatabaseAvailabilityGuard( this );
     }
 
     @Override
