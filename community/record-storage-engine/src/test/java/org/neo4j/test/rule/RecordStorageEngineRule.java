@@ -43,7 +43,6 @@ import org.neo4j.kernel.impl.api.SchemaState;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.core.DatabasePanicEventGenerator;
-import org.neo4j.kernel.impl.core.TokenHolders;
 import org.neo4j.kernel.impl.transaction.state.DefaultIndexProviderMap;
 import org.neo4j.kernel.internal.DatabaseEventHandlers;
 import org.neo4j.kernel.internal.DatabaseHealth;
@@ -57,6 +56,7 @@ import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.IndexUpdateListener;
 import org.neo4j.storageengine.api.NodeLabelUpdateListener;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
+import org.neo4j.token.TokenHolders;
 
 import static org.mockito.Mockito.mock;
 import static org.neo4j.kernel.impl.scheduler.JobSchedulerFactory.createScheduler;

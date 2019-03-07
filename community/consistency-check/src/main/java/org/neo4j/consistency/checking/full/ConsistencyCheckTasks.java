@@ -48,12 +48,12 @@ import org.neo4j.internal.index.label.LabelScanStore;
 import org.neo4j.internal.index.label.NativeLabelScanStore;
 import org.neo4j.internal.recordstorage.SchemaRuleAccess;
 import org.neo4j.internal.recordstorage.StoreTokens;
-import org.neo4j.kernel.impl.core.TokenHolders;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.Scanner;
 import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.storageengine.api.StorageIndexReference;
+import org.neo4j.token.TokenHolders;
 
 import static java.lang.String.format;
 import static org.neo4j.consistency.checking.full.MultiPassStore.ARRAYS;

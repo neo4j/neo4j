@@ -24,7 +24,6 @@ import java.util.function.Function;
 
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
-import org.neo4j.kernel.impl.core.TokenHolders;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
@@ -39,6 +38,7 @@ import org.neo4j.storageengine.api.StoragePropertyCursor;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.StorageRelationshipGroupCursor;
 import org.neo4j.storageengine.api.StorageRelationshipTraversalCursor;
+import org.neo4j.token.TokenHolders;
 
 import static org.neo4j.helpers.collection.Iterators.map;
 import static org.neo4j.register.Registers.newDoubleLongRegister;

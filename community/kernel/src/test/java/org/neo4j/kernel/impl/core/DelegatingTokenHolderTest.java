@@ -28,6 +28,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.IntPredicate;
 
 import org.neo4j.exceptions.KernelException;
+import org.neo4j.token.DelegatingTokenHolder;
+import org.neo4j.token.TokenCreator;
 import org.neo4j.token.api.NamedToken;
 import org.neo4j.token.api.TokenHolder;
 

@@ -38,9 +38,9 @@ import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexProviderDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
-import org.neo4j.kernel.impl.core.TokenHolders;
 import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.storageengine.api.StorageIndexReference;
+import org.neo4j.token.TokenHolders;
 
 public class IndexAccessors implements Closeable
 {

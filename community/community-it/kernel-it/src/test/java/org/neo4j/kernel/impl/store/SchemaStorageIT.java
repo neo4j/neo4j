@@ -47,7 +47,6 @@ import org.neo4j.kernel.api.exceptions.schema.DuplicateSchemaRuleException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
-import org.neo4j.kernel.impl.core.TokenHolders;
 import org.neo4j.kernel.impl.index.schema.IndexDescriptor;
 import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
 import org.neo4j.storageengine.api.ConstraintRule;
@@ -55,6 +54,7 @@ import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.test.GraphDatabaseServiceCleaner;
 import org.neo4j.test.rule.DbmsRule;
 import org.neo4j.test.rule.ImpermanentDbmsRule;
+import org.neo4j.token.TokenHolders;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;

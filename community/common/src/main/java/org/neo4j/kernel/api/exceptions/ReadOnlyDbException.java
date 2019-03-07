@@ -17,26 +17,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.core;
+package org.neo4j.kernel.api.exceptions;
 
-import java.util.function.IntPredicate;
-
-import org.neo4j.kernel.api.exceptions.ReadOnlyDbException;
+import org.neo4j.exceptions.KernelException;
 
 /**
- * When the database is marked as read-only, then no tokens can be created.
+ * This exception is thrown when committing an updating transaction in a read only database. Can also be thrown when
+ * trying to create tokens (like new property names) in a read only database.
  */
-public class ReadOnlyTokenCreator implements TokenCreator
+public class ReadOnlyDbException extends KernelException
 {
-    @Override
-    public int createToken( String name, boolean internal ) throws ReadOnlyDbException
+    public ReadOnlyDbException()
     {
-        throw new ReadOnlyDbException();
-    }
-
-    @Override
-    public void createTokens( String[] names, int[] ids, boolean internal, IntPredicate filter ) throws ReadOnlyDbException
-    {
-        throw new ReadOnlyDbException();
+        super( Status.General.ForbiddenOnReadOnlyDatabase, "This is a read only Neo4j instance" );
     }
 }

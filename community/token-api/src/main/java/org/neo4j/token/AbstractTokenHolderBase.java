@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.core;
+package org.neo4j.token;
 
 import java.util.List;
 import java.util.function.IntPredicate;
@@ -25,11 +25,11 @@ import java.util.function.IntPredicate;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.token.api.NamedToken;
 import org.neo4j.token.api.NonUniqueTokenException;
+import org.neo4j.token.api.TokenConstants;
 import org.neo4j.token.api.TokenHolder;
 import org.neo4j.token.api.TokenNotFoundException;
 
 import static org.neo4j.function.Predicates.ALWAYS_FALSE_INT;
-import static org.neo4j.internal.kernel.api.TokenRead.NO_TOKEN;
 
 public abstract class AbstractTokenHolderBase implements TokenHolder
 {
@@ -87,7 +87,7 @@ public abstract class AbstractTokenHolderBase implements TokenHolder
         Integer id = tokenRegistry.getId( name );
         if ( id == null )
         {
-            return NO_TOKEN;
+            return TokenConstants.NO_TOKEN;
         }
         return id;
     }

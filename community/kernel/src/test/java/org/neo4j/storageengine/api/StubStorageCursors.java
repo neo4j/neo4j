@@ -29,7 +29,7 @@ import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
-import org.neo4j.kernel.impl.core.DelegatingTokenHolder;
+import org.neo4j.token.DelegatingTokenHolder;
 import org.neo4j.token.api.TokenHolder;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;

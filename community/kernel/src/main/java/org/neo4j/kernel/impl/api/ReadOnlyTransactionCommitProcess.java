@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import org.neo4j.kernel.api.exceptions.ReadOnlyDbException;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 
@@ -34,6 +34,6 @@ public class ReadOnlyTransactionCommitProcess implements TransactionCommitProces
     public long commit( TransactionToApply batch, CommitEvent commitEvent,
                         TransactionApplicationMode mode ) throws TransactionFailureException
     {
-        throw new ReadOnlyDbException();
+        throw new TransactionFailureException( Status.General.ForbiddenOnReadOnlyDatabase, "Transactions cannot be committed in a read-only Neo4j database" );
     }
 }

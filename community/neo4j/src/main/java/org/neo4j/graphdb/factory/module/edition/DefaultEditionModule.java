@@ -26,9 +26,9 @@ import org.neo4j.graphdb.factory.module.edition.context.DefaultEditionDatabaseCo
 import org.neo4j.graphdb.factory.module.edition.context.EditionDatabaseContext;
 import org.neo4j.graphdb.factory.module.id.IdContextFactory;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
-import org.neo4j.kernel.impl.core.TokenHolders;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.StatementLocksFactory;
+import org.neo4j.token.TokenHolders;
 
 public abstract class DefaultEditionModule extends AbstractEditionModule
 {

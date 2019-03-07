@@ -80,7 +80,6 @@ import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.kernel.impl.api.transaction.trace.TraceProvider;
 import org.neo4j.kernel.impl.api.transaction.trace.TransactionInitializationTrace;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
-import org.neo4j.kernel.impl.core.TokenHolders;
 import org.neo4j.kernel.impl.factory.AccessCapability;
 import org.neo4j.kernel.impl.locking.ActiveLock;
 import org.neo4j.kernel.impl.locking.Locks;
@@ -106,6 +105,7 @@ import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
+import org.neo4j.token.TokenHolders;
 
 import static java.lang.String.format;
 import static java.lang.Thread.currentThread;

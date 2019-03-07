@@ -21,7 +21,7 @@ package org.neo4j.internal.recordstorage;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.neo4j.kernel.impl.core.TokenCreator;
+import org.neo4j.token.TokenCreator;
 
 class SimpleTokenCreator implements TokenCreator
 {

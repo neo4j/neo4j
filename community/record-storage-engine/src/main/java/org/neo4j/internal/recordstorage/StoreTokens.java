@@ -21,14 +21,14 @@ package org.neo4j.internal.recordstorage;
 
 import java.util.List;
 
-import org.neo4j.internal.kernel.api.NamedToken;
-import org.neo4j.kernel.impl.core.DelegatingTokenHolder;
-import org.neo4j.kernel.impl.core.ReadOnlyTokenCreator;
-import org.neo4j.kernel.impl.core.TokenHolder;
-import org.neo4j.kernel.impl.core.TokenHolders;
-import org.neo4j.kernel.impl.core.TokensLoader;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.TokenStore;
+import org.neo4j.token.DelegatingTokenHolder;
+import org.neo4j.token.ReadOnlyTokenCreator;
+import org.neo4j.token.TokenHolders;
+import org.neo4j.token.api.NamedToken;
+import org.neo4j.token.api.TokenHolder;
+import org.neo4j.token.api.TokensLoader;
 
 /**
  * Utility methods for getting tokens out of token stores in various ways.

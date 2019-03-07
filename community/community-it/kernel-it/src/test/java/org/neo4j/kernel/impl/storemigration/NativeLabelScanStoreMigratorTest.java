@@ -57,6 +57,7 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.token.TokenCreator;
 
 import static java.lang.String.format;
 import static org.junit.jupiter.api.Assertions.assertEquals;
