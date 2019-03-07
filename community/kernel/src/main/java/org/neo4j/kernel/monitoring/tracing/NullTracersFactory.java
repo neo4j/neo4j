@@ -37,7 +37,7 @@ public class NullTracersFactory implements TracerFactory
     static final String NULL_TRACERS_NAME = "null";
 
     @Override
-    public String getImplementationName()
+    public String getName()
     {
         return NULL_TRACERS_NAME;
     }

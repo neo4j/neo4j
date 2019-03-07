@@ -68,16 +68,6 @@ class TracersTest
     }
 
     @Test
-    void mustProduceNullImplementationsWhenRequestedIgnoringCase()
-    {
-        Tracers tracers = createTracers( "NuLl" );
-        assertThat( tracers.getPageCacheTracer(), is( PageCacheTracer.NULL ) );
-        assertThat( tracers.getPageCursorTracerSupplier(), is( PageCursorTracerSupplier.NULL ) );
-        assertThat( tracers.getTransactionTracer(), is( TransactionTracer.NULL ) );
-        assertNoWarning();
-    }
-
-    @Test
     void mustProduceDefaultImplementationForNullConfiguration()
     {
         Tracers tracers = createTracers( null );
@@ -89,14 +79,6 @@ class TracersTest
     void mustProduceDefaultImplementationWhenRequested()
     {
         Tracers tracers = createTracers( "default" );
-        assertDefaultImplementation( tracers );
-        assertNoWarning();
-    }
-
-    @Test
-    void mustProduceDefaultImplementationWhenRequestedIgnoringCase()
-    {
-        Tracers tracers = createTracers( "DeFaUlT" );
         assertDefaultImplementation( tracers );
         assertNoWarning();
     }

@@ -21,6 +21,7 @@ package org.neo4j.kernel.monitoring.tracing;
 
 import java.time.Clock;
 
+import org.neo4j.annotations.service.Service;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier;
@@ -30,6 +31,7 @@ import org.neo4j.kernel.impl.transaction.tracing.TransactionTracer;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.service.NamedService;
 import org.neo4j.storageengine.api.lock.LockTracer;
 import org.neo4j.time.SystemNanoClock;
 
@@ -38,14 +40,9 @@ import org.neo4j.time.SystemNanoClock;
  * a particular name, which is given by the getImplementationName method, and is used for identifying it in the
  * {@link GraphDatabaseSettings#tracer} setting.
  */
-public interface TracerFactory
+@Service
+public interface TracerFactory extends NamedService
 {
-    /**
-     * @return The name this implementation is identified by in the
-     * {@link GraphDatabaseSettings#tracer} setting.
-     */
-    String getImplementationName();
-
     /**
      * Create a new PageCacheTracer instance.
      *

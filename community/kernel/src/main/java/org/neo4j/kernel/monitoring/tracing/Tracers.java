@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.monitoring.tracing;
 
-import org.neo4j.common.Service;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.kernel.impl.transaction.tracing.CheckPointTracer;
@@ -27,9 +26,11 @@ import org.neo4j.kernel.impl.transaction.tracing.TransactionTracer;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.service.Services;
 import org.neo4j.storageengine.api.lock.LockTracer;
 import org.neo4j.time.SystemNanoClock;
 
+import static java.lang.String.format;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.neo4j.kernel.monitoring.tracing.NullTracersFactory.NULL_TRACERS_NAME;
 
@@ -113,7 +114,7 @@ public class Tracers
      *
      * Otherwise the default implementation is used, and a warning is logged to the given StringLogger.
      * @param desiredImplementationName The name of the desired {@link org.neo4j.kernel.monitoring.tracing
-     * .TracerFactory} implementation, as given by its {@link TracerFactory#getImplementationName()} method.
+     * .TracerFactory} implementation, as given by its {@link TracerFactory#getName()} method.
      * @param msgLog A {@link Log} for logging when the desired implementation cannot be created.
      * @param monitors the monitoring manager
      * @param jobScheduler a scheduler for async jobs
@@ -174,23 +175,21 @@ public class Tracers
         }
         try
         {
-            for ( TracerFactory factory : Service.loadAll( TracerFactory.class ) )
-            {
-                if ( factory.getImplementationName().equalsIgnoreCase( desiredImplementationName ) )
-                {
-                    return factory;
-                }
-            }
+            return Services.load( TracerFactory.class, desiredImplementationName )
+                    .orElseGet( () ->
+                    {
+                        msgLog.warn( "Using default tracer implementations instead of '%s'", desiredImplementationName );
+                        return Tracers.createDefaultTracerFactory();
+                    } );
         }
         catch ( Exception e )
         {
-            msgLog.warn( "Failed to instantiate desired tracer implementations '" + desiredImplementationName + "'", e );
+            msgLog.warn( format( "Failed to instantiate desired tracer implementations '%s', using default", desiredImplementationName ), e );
+            return createDefaultTracerFactory();
         }
-        msgLog.warn( "Using default tracer implementations instead of '%s'", desiredImplementationName );
-        return createDefaultTracerFactory();
     }
 
-    private static DefaultTracerFactory createDefaultTracerFactory()
+    private static TracerFactory createDefaultTracerFactory()
     {
         return new DefaultTracerFactory();
     }
