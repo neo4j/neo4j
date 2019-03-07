@@ -20,11 +20,10 @@
 package org.neo4j.kernel.impl.store.format.standard;
 
 import org.neo4j.kernel.impl.store.format.BaseRecordFormats;
-import org.neo4j.kernel.impl.store.format.Capability;
 import org.neo4j.kernel.impl.store.format.FormatFamily;
-import org.neo4j.kernel.impl.store.format.LuceneCapability;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
+import org.neo4j.kernel.impl.store.format.RecordStorageCapability;
 import org.neo4j.kernel.impl.store.format.StoreVersion;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
@@ -35,6 +34,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
+import org.neo4j.storageengine.api.LuceneCapability;
 
 public class StandardV4_0 extends BaseRecordFormats
 {
@@ -44,9 +44,14 @@ public class StandardV4_0 extends BaseRecordFormats
 
     public StandardV4_0()
     {
-        super( STORE_VERSION, StoreVersion.STANDARD_V4_0.introductionVersion(), 9, Capability.SCHEMA,
-                Capability.DENSE_NODES, LuceneCapability.LUCENE_7, Capability.POINT_PROPERTIES, Capability.TEMPORAL_PROPERTIES,
-                Capability.FLEXIBLE_SCHEMA_STORE, Capability.INTERNAL_TOKENS );
+        super( STORE_VERSION, StoreVersion.STANDARD_V4_0.introductionVersion(), 9,
+                RecordStorageCapability.SCHEMA,
+                RecordStorageCapability.DENSE_NODES,
+                RecordStorageCapability.POINT_PROPERTIES,
+                RecordStorageCapability.TEMPORAL_PROPERTIES,
+                RecordStorageCapability.FLEXIBLE_SCHEMA_STORE,
+                RecordStorageCapability.INTERNAL_TOKENS,
+                LuceneCapability.LUCENE_7 );
     }
 
     @Override

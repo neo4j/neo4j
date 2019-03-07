@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.store.format;
 
+import org.neo4j.storageengine.api.format.Capability;
 import org.neo4j.storageengine.api.format.CapabilityType;
 
 import static org.neo4j.helpers.ArrayUtil.contains;
@@ -27,7 +28,7 @@ import static org.neo4j.helpers.ArrayUtil.contains;
  * A collection of high level capabilities a store can have, should not be more granular than necessary
  * for differentiating different version from one another.
  */
-public enum Capability implements org.neo4j.storageengine.api.format.Capability
+public enum RecordStorageCapability implements Capability
 {
     /**
      * Store has schema support
@@ -74,12 +75,12 @@ public enum Capability implements org.neo4j.storageengine.api.format.Capability
     private final CapabilityType[] types;
     private boolean additive;
 
-    Capability( CapabilityType... types )
+    RecordStorageCapability( CapabilityType... types )
     {
         this( false, types );
     }
 
-    Capability( boolean additive, CapabilityType... types )
+    RecordStorageCapability( boolean additive, CapabilityType... types )
     {
         this.additive = additive;
         this.types = types;

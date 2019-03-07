@@ -19,14 +19,14 @@
  */
 package org.neo4j.kernel.impl.store.format;
 
+import org.neo4j.storageengine.api.format.Capability;
+
 import static java.lang.String.format;
 
 public class UnsupportedFormatCapabilityException extends RuntimeException
 {
     public UnsupportedFormatCapabilityException( Capability capability )
     {
-        super( format( "Current record format does not support %s. " +
-                        "Please upgrade your store to the format that support requested capability.",
-                capability.name() ) );
+        super( format( "Current record format does not support %s. Please upgrade your store to the format that support requested capability.", capability ) );
     }
 }

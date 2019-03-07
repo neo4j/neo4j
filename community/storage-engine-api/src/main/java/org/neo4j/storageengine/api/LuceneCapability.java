@@ -17,11 +17,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.store.format;
+package org.neo4j.storageengine.api;
 
+import org.neo4j.storageengine.api.format.Capability;
 import org.neo4j.storageengine.api.format.CapabilityType;
 
-public enum LuceneCapability implements org.neo4j.storageengine.api.format.Capability
+/**
+ * Oh dear... so what does Lucene stuff do in the storage engine API??? Listen to this:
+ * Historically versions of everything about the database including indexing was tied to the format of the store.
+ * Now that indexing is more disconnected from storage this no longer makes sense, but these are still used for letting
+ * store migration know when to migrate Lucene indexes as well. Also since indexes are disconnected from storage this means
+ * that Lucene indexes can very well be used by any type of storage, which sort of justifies that this versioning
+ * lives in the component that is common to them all.
+ *
+ * Until the index versioning somehow gets broken apart from store versioning or redesigned these will have to stay here.
+ */
+public enum LuceneCapability implements Capability
 {
     /**
      * Lucene version 7.x

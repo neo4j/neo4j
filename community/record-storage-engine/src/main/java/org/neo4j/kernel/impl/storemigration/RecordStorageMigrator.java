@@ -65,9 +65,9 @@ import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.StoreHeader;
 import org.neo4j.kernel.impl.store.StoreType;
-import org.neo4j.kernel.impl.store.format.Capability;
 import org.neo4j.kernel.impl.store.format.FormatFamily;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
+import org.neo4j.kernel.impl.store.format.RecordStorageCapability;
 import org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -641,11 +641,12 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
 
     private boolean requiresSchemaStoreMigration( RecordFormats oldFormat, RecordFormats newFormat )
     {
-        return oldFormat.hasCapability( Capability.FLEXIBLE_SCHEMA_STORE ) != newFormat.hasCapability( Capability.FLEXIBLE_SCHEMA_STORE );
+        return oldFormat.hasCapability( RecordStorageCapability.FLEXIBLE_SCHEMA_STORE ) !=
+                newFormat.hasCapability( RecordStorageCapability.FLEXIBLE_SCHEMA_STORE );
     }
 
     /**
-     * Migration of the schema store is invoked if the old and new formats differ in their {@link Capability#FLEXIBLE_SCHEMA_STORE} capability.
+     * Migration of the schema store is invoked if the old and new formats differ in their {@link RecordStorageCapability#FLEXIBLE_SCHEMA_STORE} capability.
      */
     private void migrateSchemaStore( DatabaseLayout directoryLayout, DatabaseLayout migrationLayout, RecordFormats oldFormat, RecordFormats newFormat )
             throws IOException, KernelException
@@ -653,7 +654,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
         StoreFactory srcFactory = createStoreFactory( directoryLayout, oldFormat, true );
         StoreFactory dstFactory = createStoreFactory( migrationLayout, newFormat, false );
 
-        if ( newFormat.hasCapability( Capability.FLEXIBLE_SCHEMA_STORE ) )
+        if ( newFormat.hasCapability( RecordStorageCapability.FLEXIBLE_SCHEMA_STORE ) )
         {
             try ( NeoStores srcStore = srcFactory.openNeoStores( StoreType.PROPERTY_KEY_TOKEN, StoreType.PROPERTY_KEY_TOKEN_NAME );
                   SchemaStore35 srcSchema = new SchemaStore35(

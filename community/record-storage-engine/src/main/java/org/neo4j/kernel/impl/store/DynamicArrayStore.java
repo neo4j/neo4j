@@ -35,11 +35,12 @@ import org.neo4j.helpers.collection.Pair;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.id.IdType;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.impl.store.format.Capability;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
+import org.neo4j.kernel.impl.store.format.RecordStorageCapability;
 import org.neo4j.kernel.impl.store.format.UnsupportedFormatCapabilityException;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.storageengine.api.format.Capability;
 import org.neo4j.util.Bits;
 import org.neo4j.values.storable.CRSTable;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
@@ -114,8 +115,8 @@ public class DynamicArrayStore extends AbstractDynamicStore
     {
         super( file, idFile, configuration, idType, idGeneratorFactory, pageCache,
                 logProvider, TYPE_DESCRIPTOR, dataSizeFromConfiguration, recordFormats.dynamic(), recordFormats.storeVersion(), openOptions );
-        allowStorePointsAndTemporal = recordFormats.hasCapability( Capability.POINT_PROPERTIES )
-                && recordFormats.hasCapability( Capability.TEMPORAL_PROPERTIES );
+        allowStorePointsAndTemporal = recordFormats.hasCapability( RecordStorageCapability.POINT_PROPERTIES )
+                && recordFormats.hasCapability( RecordStorageCapability.TEMPORAL_PROPERTIES );
     }
 
     @Override
@@ -275,37 +276,37 @@ public class DynamicArrayStore extends AbstractDynamicStore
         else if ( type.equals( PointValue.class ) )
         {
             allocateFromCompositeType( target,GeometryType.encodePointArray( (PointValue[]) array ),
-                    recordAllocator, allowStorePointsAndTemporal, Capability.POINT_PROPERTIES );
+                    recordAllocator, allowStorePointsAndTemporal, RecordStorageCapability.POINT_PROPERTIES );
         }
         else if ( type.equals( LocalDate.class ) )
         {
             allocateFromCompositeType( target, TemporalType.encodeDateArray( (LocalDate[]) array ),
-                    recordAllocator, allowStorePointsAndTemporal, Capability.TEMPORAL_PROPERTIES );
+                    recordAllocator, allowStorePointsAndTemporal, RecordStorageCapability.TEMPORAL_PROPERTIES );
         }
         else if ( type.equals( LocalTime.class ) )
         {
             allocateFromCompositeType( target, TemporalType.encodeLocalTimeArray( (LocalTime[]) array ),
-                    recordAllocator, allowStorePointsAndTemporal, Capability.TEMPORAL_PROPERTIES );
+                    recordAllocator, allowStorePointsAndTemporal, RecordStorageCapability.TEMPORAL_PROPERTIES );
         }
         else if ( type.equals( LocalDateTime.class ) )
         {
             allocateFromCompositeType( target, TemporalType.encodeLocalDateTimeArray( (LocalDateTime[]) array ),
-                    recordAllocator, allowStorePointsAndTemporal, Capability.TEMPORAL_PROPERTIES );
+                    recordAllocator, allowStorePointsAndTemporal, RecordStorageCapability.TEMPORAL_PROPERTIES );
         }
         else if ( type.equals( OffsetTime.class ) )
         {
             allocateFromCompositeType( target, TemporalType.encodeTimeArray( (OffsetTime[]) array ),
-                    recordAllocator, allowStorePointsAndTemporal, Capability.TEMPORAL_PROPERTIES );
+                    recordAllocator, allowStorePointsAndTemporal, RecordStorageCapability.TEMPORAL_PROPERTIES );
         }
         else if ( type.equals( ZonedDateTime.class ) )
         {
             allocateFromCompositeType( target, TemporalType.encodeDateTimeArray( (ZonedDateTime[]) array ),
-                    recordAllocator, allowStorePointsAndTemporal, Capability.TEMPORAL_PROPERTIES );
+                    recordAllocator, allowStorePointsAndTemporal, RecordStorageCapability.TEMPORAL_PROPERTIES );
         }
         else if ( type.equals( DurationValue.class ) )
         {
             allocateFromCompositeType( target, TemporalType.encodeDurationArray( (DurationValue[]) array ),
-                    recordAllocator, allowStorePointsAndTemporal, Capability.TEMPORAL_PROPERTIES );
+                    recordAllocator, allowStorePointsAndTemporal, RecordStorageCapability.TEMPORAL_PROPERTIES );
         }
         else
         {

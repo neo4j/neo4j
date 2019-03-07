@@ -39,7 +39,7 @@ import org.neo4j.storageengine.api.format.Capability;
 import org.neo4j.storageengine.api.format.CapabilityType;
 
 import static java.util.stream.Collectors.toSet;
-import static org.neo4j.kernel.impl.store.format.Capability.SECONDARY_RECORD_UNITS;
+import static org.neo4j.kernel.impl.store.format.RecordStorageCapability.SECONDARY_RECORD_UNITS;
 
 /**
  * Wraps another {@link RecordFormats} and merely forces {@link AbstractBaseRecord#setSecondaryUnitId(long)}

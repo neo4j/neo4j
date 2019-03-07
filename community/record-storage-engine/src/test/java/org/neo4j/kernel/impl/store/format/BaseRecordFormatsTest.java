@@ -33,7 +33,7 @@ import static org.neo4j.helpers.collection.Iterators.array;
 
 public class BaseRecordFormatsTest
 {
-    private static final Capability[] CAPABILITIES = Capability.values();
+    private static final RecordStorageCapability[] CAPABILITIES = RecordStorageCapability.values();
     private static final CapabilityType[] CAPABILITY_TYPES = CapabilityType.values();
 
     @Rule
@@ -43,7 +43,7 @@ public class BaseRecordFormatsTest
     public void shouldReportCompatibilityBetweenTwoEqualSetsOfCapabilities()
     {
         // given
-        Capability[] capabilities = random.selection( CAPABILITIES, CAPABILITIES.length / 2, CAPABILITIES.length, false );
+        RecordStorageCapability[] capabilities = random.selection( CAPABILITIES, CAPABILITIES.length / 2, CAPABILITIES.length, false );
 
         // then
         assertCompatibility( capabilities, capabilities, true, CAPABILITY_TYPES );
@@ -53,8 +53,9 @@ public class BaseRecordFormatsTest
     public void shouldReportCompatibilityForAdditiveAdditionalCapabilities()
     {
         // given
-        Capability[] from = array( Capability.SCHEMA );
-        Capability[] to = array( Capability.SCHEMA, Capability.POINT_PROPERTIES, Capability.TEMPORAL_PROPERTIES );
+        RecordStorageCapability[] from = array( RecordStorageCapability.SCHEMA );
+        RecordStorageCapability[] to = array( RecordStorageCapability.SCHEMA, RecordStorageCapability.POINT_PROPERTIES,
+                RecordStorageCapability.TEMPORAL_PROPERTIES );
 
         // then
         assertCompatibility( from, to, true, CAPABILITY_TYPES );
@@ -64,8 +65,8 @@ public class BaseRecordFormatsTest
     public void shouldReportIncompatibilityForChangingAdditionalCapabilities()
     {
         // given
-        Capability[] from = array( Capability.SCHEMA );
-        Capability[] to = array( Capability.SCHEMA, Capability.DENSE_NODES );
+        RecordStorageCapability[] from = array( RecordStorageCapability.SCHEMA );
+        RecordStorageCapability[] to = array( RecordStorageCapability.SCHEMA, RecordStorageCapability.DENSE_NODES );
 
         // then
         assertCompatibility( from, to, false, CapabilityType.STORE );
@@ -75,14 +76,15 @@ public class BaseRecordFormatsTest
     public void shouldReportIncompatibilityForAdditiveRemovedCapabilities()
     {
         // given
-        Capability[] from = array( Capability.SCHEMA, Capability.POINT_PROPERTIES, Capability.TEMPORAL_PROPERTIES );
-        Capability[] to = array( Capability.SCHEMA );
+        RecordStorageCapability[] from = array( RecordStorageCapability.SCHEMA, RecordStorageCapability.POINT_PROPERTIES,
+                RecordStorageCapability.TEMPORAL_PROPERTIES );
+        RecordStorageCapability[] to = array( RecordStorageCapability.SCHEMA );
 
         // then
         assertCompatibility( from, to, false, CapabilityType.STORE );
     }
 
-    private void assertCompatibility( Capability[] from, Capability[] to, boolean compatible, CapabilityType... capabilityTypes )
+    private void assertCompatibility( RecordStorageCapability[] from, RecordStorageCapability[] to, boolean compatible, CapabilityType... capabilityTypes )
     {
         for ( CapabilityType type : capabilityTypes )
         {
@@ -90,7 +92,7 @@ public class BaseRecordFormatsTest
         }
     }
 
-    private RecordFormats format( Capability... capabilities )
+    private RecordFormats format( RecordStorageCapability... capabilities )
     {
         RecordFormats formats = mock( BaseRecordFormats.class );
         when( formats.capabilities() ).thenReturn( capabilities );

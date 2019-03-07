@@ -45,8 +45,8 @@ import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.internal.schema.constraints.NodeKeyConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.impl.store.format.Capability;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
+import org.neo4j.kernel.impl.store.format.RecordStorageCapability;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
@@ -137,7 +137,7 @@ public class SchemaStore extends CommonAbstractStore<SchemaRecord,IntStoreHeader
 
     private static IntStoreHeaderFormat getStoreHeaderFormat( RecordFormats recordFormats )
     {
-        return recordFormats.hasCapability( Capability.FLEXIBLE_SCHEMA_STORE ) ? VALID_STORE_HEADER : DISABLED_STORE_HEADER;
+        return recordFormats.hasCapability( RecordStorageCapability.FLEXIBLE_SCHEMA_STORE ) ? VALID_STORE_HEADER : DISABLED_STORE_HEADER;
     }
 
     @Override
