@@ -52,7 +52,7 @@ import org.neo4j.test.rule.TestDirectory;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.kernel.impl.api.TestCommandReaderFactory.logEntryReader;
+import static org.neo4j.kernel.impl.transaction.log.TestLogEntryReader.logEntryReader;
 
 @ExtendWith( {DefaultFileSystemExtension.class, TestDirectoryExtension.class,} )
 class CorruptedLogsTruncatorTest

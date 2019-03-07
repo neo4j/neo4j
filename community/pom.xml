@@ -29,6 +29,7 @@
     <module>id-generator</module>
     <module>lock</module>
     <module>label-index</module>
+    <module>wal</module>
     <module>record-storage-engine</module>
     <module>common</module>
     <module>configuration</module>

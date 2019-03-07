@@ -24,21 +24,29 @@
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>org.neo4j</groupId>
-        <artifactId>parent</artifactId>
+        <artifactId>testing-parent</artifactId>
         <version>4.0.0-SNAPSHOT</version>
-        <relativePath>../..</relativePath>
     </parent>
 
-    <name>Neo4j - Testing Utils Parent</name>
-    <artifactId>testing-parent</artifactId>
+    <artifactId>storage-engine-test-utils</artifactId>
     <version>4.0.0-SNAPSHOT</version>
-    <packaging>pom</packaging>
+    <packaging>jar</packaging>
 
     <properties>
         <license-text.header>headers/GPL-3-header.txt</license-text.header>
         <licensing.prepend.text>licensing/notice-gpl-prefix.txt</licensing.prepend.text>
-        <moduleName>org.neo4j.testing.parent</moduleName>
+        <moduleName>org.neo4j.test.storageengine</moduleName>
     </properties>
+
+    <name>Neo4j - Storage Engine Test Utilities</name>
+    <description>A set of storage engine utilities used by tests.</description>
+    <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
+
+    <scm>
+        <connection>scm:git:git://github.com/neo4j/neo4j.git</connection>
+        <developerConnection>scm:git:git@github.com:neo4j/neo4j.git</developerConnection>
+        <url>https://github.com/neo4j/neo4j</url>
+    </scm>
 
     <licenses>
         <license>
@@ -59,13 +67,26 @@
         </license>
     </licenses>
 
-    <modules>
-        <module>io-utils</module>
-        <module>log-utils</module>
-        <module>kernel-api-utils</module>
-        <module>test-utils</module>
-        <module>import-utils</module>
-        <module>storage-engine-utils</module>
-        <module>wal-utils</module>
-    </modules>
+    <dependencies>
+        <dependency>
+            <groupId>org.neo4j</groupId>
+            <artifactId>neo4j-storage-engine-api</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <!--<dependency>-->
+            <!--<groupId>org.neo4j</groupId>-->
+            <!--<artifactId>neo4j-wal</artifactId>-->
+            <!--<version>${project.version}</version>-->
+        <!--</dependency>-->
+        <dependency>
+            <groupId>org.junit.vintage</groupId>
+            <artifactId>junit-vintage-engine</artifactId>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>compile</scope>
+        </dependency>
+    </dependencies>
 </project>

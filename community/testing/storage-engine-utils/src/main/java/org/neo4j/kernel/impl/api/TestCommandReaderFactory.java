@@ -22,10 +22,6 @@ package org.neo4j.kernel.impl.api;
 import java.io.IOException;
 
 import org.neo4j.io.fs.ReadableChannel;
-import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
-import org.neo4j.kernel.impl.transaction.log.entry.InvalidLogEntryHandler;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
-import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.storageengine.api.CommandReader;
 import org.neo4j.storageengine.api.CommandReaderFactory;
 import org.neo4j.storageengine.api.StorageCommand;
@@ -62,10 +58,5 @@ public class TestCommandReaderFactory implements CommandReaderFactory
             channel.get( bytes, length );
             return new TestCommand( bytes );
         }
-    }
-
-    public static <C extends ReadableClosablePositionAwareChannel> LogEntryReader<C> logEntryReader()
-    {
-        return new VersionAwareLogEntryReader<>( new TestCommandReaderFactory(), InvalidLogEntryHandler.STRICT );
     }
 }

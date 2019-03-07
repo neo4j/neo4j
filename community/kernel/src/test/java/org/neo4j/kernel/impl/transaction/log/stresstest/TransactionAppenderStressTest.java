@@ -49,7 +49,7 @@ import org.neo4j.test.rule.TestDirectory;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.function.Suppliers.untilTimeExpired;
-import static org.neo4j.kernel.impl.api.TestCommandReaderFactory.logEntryReader;
+import static org.neo4j.kernel.impl.transaction.log.TestLogEntryReader.logEntryReader;
 
 @ExtendWith( TestDirectoryExtension.class )
 public class TransactionAppenderStressTest
