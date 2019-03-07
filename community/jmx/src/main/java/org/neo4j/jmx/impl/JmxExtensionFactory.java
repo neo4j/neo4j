@@ -19,11 +19,13 @@
  */
 package org.neo4j.jmx.impl;
 
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.extension.context.ExtensionContext;
 import org.neo4j.kernel.internal.KernelData;
 import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.internal.LogService;
 
 import static org.neo4j.kernel.extension.ExtensionType.DATABASE;
@@ -50,6 +52,11 @@ public final class JmxExtensionFactory extends ExtensionFactory<JmxExtensionFact
     @Override
     public Lifecycle newInstance( ExtensionContext context, Dependencies dependencies )
     {
+        String defaultDatabaseName = dependencies.getKernelData().getConfig().get( GraphDatabaseSettings.default_database );
+        if ( !dependencies.getDatabase().getDatabaseName().equals( defaultDatabaseName ) )
+        {
+            return new LifecycleAdapter();
+        }
         return new JmxExtension( dependencies.getKernelData(),
                 dependencies.getDatabase(),
                 dependencies.getLogService().getInternalLogProvider() );
