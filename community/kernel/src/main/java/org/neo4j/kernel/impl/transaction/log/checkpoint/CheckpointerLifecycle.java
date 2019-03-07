@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.impl.transaction.log.checkpoint;
 
-import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.monitoring.DatabaseHealth;
 
 public class CheckpointerLifecycle extends LifecycleAdapter
 {

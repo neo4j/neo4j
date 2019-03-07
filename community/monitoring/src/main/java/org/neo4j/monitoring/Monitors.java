@@ -126,7 +126,7 @@ public class Monitors
     private static MonitorListenerInvocationHandler createInvocationHandler( Object monitorListener, String[] tags )
     {
         return isEmpty( tags ) ? new UntaggedMonitorListenerInvocationHandler( monitorListener )
-                               : new TaggedMonitorListenerInvocationHandler( monitorListener, tags );
+                                          : new TaggedMonitorListenerInvocationHandler( monitorListener, tags );
     }
 
     private static void requireInterface( Class monitorClass )

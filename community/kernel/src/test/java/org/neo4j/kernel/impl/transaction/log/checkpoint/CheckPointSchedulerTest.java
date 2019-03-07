@@ -35,7 +35,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.io.pagecache.IOLimiter;
-import org.neo4j.kernel.internal.DatabaseHealth;
+import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.scheduler.Group;
 import org.neo4j.storageengine.api.UnderlyingStorageException;
 import org.neo4j.test.DoubleLatch;

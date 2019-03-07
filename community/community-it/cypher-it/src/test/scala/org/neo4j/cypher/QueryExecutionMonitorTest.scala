@@ -36,6 +36,7 @@ import org.neo4j.test.TestGraphDatabaseFactory
 import scala.collection.JavaConverters._
 import scala.collection.immutable.Map
 import scala.language.implicitConversions
+
 class QueryExecutionMonitorTest extends CypherFunSuite with GraphIcing with GraphDatabaseTestSupport with ExecutionEngineTestSupport {
   implicit def contextQuery(context: TransactionalContext): ExecutingQuery = context.executingQuery()
 

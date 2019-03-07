@@ -35,8 +35,8 @@ import org.neo4j.kernel.api.procedure.CallableUserFunction;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.impl.newapi.DefaultThreadSafeCursors;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
-import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.storageengine.api.StorageEngine;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_timeout;

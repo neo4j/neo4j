@@ -11,16 +11,16 @@
     <properties>
         <license-text.header>headers/GPL-3-header.txt</license-text.header>
         <licensing.prepend.text>licensing/notice-gpl-prefix.txt</licensing.prepend.text>
-        <moduleName>org.neo4j.internal.index.label</moduleName>
+        <moduleName>org.neo4j.internal.monitoring</moduleName>
     </properties>
 
     <modelVersion>4.0.0</modelVersion>
-    <artifactId>neo4j-label-index</artifactId>
+    <artifactId>neo4j-monitoring</artifactId>
     <version>4.0.0-SNAPSHOT</version>
 
     <packaging>jar</packaging>
-    <name>Neo4j - Label index</name>
-    <description>Label index for Neo4j.</description>
+    <name>Neo4j - Monitoring</name>
+    <description>Internal utilities for monitoring aspects of Neo4j.</description>
     <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
     <scm>
@@ -51,49 +51,29 @@
 
     <dependencies>
         <dependency>
+            <groupId>org.eclipse.collections</groupId>
+            <artifactId>eclipse-collections</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.neo4j</groupId>
-            <artifactId>neo4j-storage-engine-api</artifactId>
+            <artifactId>neo4j-common</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>org.neo4j</groupId>
-            <artifactId>neo4j-io</artifactId>
+            <artifactId>neo4j-graphdb-api</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>org.neo4j</groupId>
-            <artifactId>neo4j-index</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.neo4j</groupId>
-            <artifactId>neo4j-collections</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.neo4j</groupId>
-            <artifactId>neo4j-monitoring</artifactId>
+            <artifactId>neo4j-logging</artifactId>
             <version>${project.version}</version>
         </dependency>
 
-        <dependency>
-            <groupId>org.neo4j</groupId>
-            <artifactId>test-utils</artifactId>
-            <version>${project.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.neo4j</groupId>
-            <artifactId>neo4j-random-values</artifactId>
-            <version>${project.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.neo4j</groupId>
-            <artifactId>io-test-utils</artifactId>
-            <version>${project.version}</version>
-            <scope>test</scope>
-        </dependency>
         <dependency>
             <groupId>org.junit.vintage</groupId>
             <artifactId>junit-vintage-engine</artifactId>
@@ -101,6 +81,14 @@
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.hamcrest</groupId>
+            <artifactId>hamcrest</artifactId>
         </dependency>
     </dependencies>
 </project>

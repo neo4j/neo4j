@@ -27,7 +27,7 @@ import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.rotation.monitor.LogRotationMonitor;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogRotateEvent;
-import org.neo4j.kernel.internal.DatabaseHealth;
+import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.util.VisibleForTesting;
 
 /**

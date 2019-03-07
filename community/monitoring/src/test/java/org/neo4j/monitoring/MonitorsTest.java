@@ -17,17 +17,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.monitoring;
+package org.neo4j.monitoring;
 
 import org.junit.jupiter.api.Test;
-
-import org.neo4j.monitoring.Monitors;
-
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.verifyZeroInteractions;
+import org.mockito.Mockito;
 
 class MonitorsTest
 {
@@ -57,7 +50,7 @@ class MonitorsTest
         // Given
         Monitors monitors = new Monitors();
 
-        MyMonitor listener = mock( MyMonitor.class );
+        MyMonitor listener = Mockito.mock( MyMonitor.class );
         MyMonitor monitor = monitors.newMonitor( MyMonitor.class );
         Object obj = new Object();
 
@@ -67,8 +60,8 @@ class MonitorsTest
         monitor.takesArgs( "ha", 12, obj );
 
         // Then
-        verify(listener).aVoid();
-        verify(listener).takesArgs( "ha", 12, obj );
+        Mockito.verify(listener).aVoid();
+        Mockito.verify(listener).takesArgs( "ha", 12, obj );
     }
 
     @Test
@@ -77,7 +70,7 @@ class MonitorsTest
         // Given
         Monitors monitors = new Monitors();
 
-        MyMonitor listener = mock( MyMonitor.class );
+        MyMonitor listener = Mockito.mock( MyMonitor.class );
         MyMonitor monitor = monitors.newMonitor( MyMonitor.class );
         Object obj = new Object();
 
@@ -89,7 +82,7 @@ class MonitorsTest
         monitor.takesArgs( "ha", 12, obj );
 
         // Then
-        verifyNoMoreInteractions( listener );
+        Mockito.verifyNoMoreInteractions( listener );
     }
 
     @Test
@@ -98,7 +91,7 @@ class MonitorsTest
         // Given
         Monitors monitors = new Monitors();
 
-        MyMonitor listener = mock( MyMonitor.class );
+        MyMonitor listener = Mockito.mock( MyMonitor.class );
         MyMonitor monitorTag1 = monitors.newMonitor( MyMonitor.class, "tag1" );
         MyMonitor monitorTag2 = monitors.newMonitor( MyMonitor.class, "tag2" );
 
@@ -107,33 +100,33 @@ class MonitorsTest
 
         // Then
         monitorTag1.aVoid();
-        verifyZeroInteractions( listener );
+        Mockito.verifyZeroInteractions( listener );
         monitorTag2.aVoid();
-        verify( listener ).aVoid();
-        verifyNoMoreInteractions( listener );
+        Mockito.verify( listener ).aVoid();
+        Mockito.verifyNoMoreInteractions( listener );
     }
 
     @Test
     void eventShouldBubbleUp()
     {
         Monitors parent = new Monitors();
-        MyMonitor parentListener = mock( MyMonitor.class );
+        MyMonitor parentListener = Mockito.mock( MyMonitor.class );
         parent.addMonitorListener( parentListener );
 
         Monitors child = new Monitors( parent );
-        MyMonitor childListener = mock( MyMonitor.class );
+        MyMonitor childListener = Mockito.mock( MyMonitor.class );
         child.addMonitorListener( childListener );
 
         // Calls on monitors from parent should not reach child listeners
         MyMonitor parentMonitor = parent.newMonitor( MyMonitor.class );
         parentMonitor.aVoid();
-        verify( parentListener ).aVoid();
-        verifyZeroInteractions( childListener );
+        Mockito.verify( parentListener ).aVoid();
+        Mockito.verifyZeroInteractions( childListener );
 
         // Calls on monitors from child should reach both listeners
         MyMonitor childMonitor = child.newMonitor( MyMonitor.class );
         childMonitor.aVoid();
-        verify( parentListener, times( 2 ) ).aVoid();
-        verify( childListener ).aVoid();
+        Mockito.verify( parentListener, Mockito.times( 2 ) ).aVoid();
+        Mockito.verify( childListener ).aVoid();
     }
 }

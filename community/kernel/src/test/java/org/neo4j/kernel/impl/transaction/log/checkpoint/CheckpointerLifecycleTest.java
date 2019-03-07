@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.transaction.log.checkpoint;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import org.neo4j.kernel.internal.DatabaseHealth;
+import org.neo4j.monitoring.DatabaseHealth;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;

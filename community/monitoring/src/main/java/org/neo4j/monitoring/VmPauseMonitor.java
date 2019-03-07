@@ -27,6 +27,7 @@ import java.util.function.Consumer;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobHandle;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.util.Preconditions;
 import org.neo4j.util.VisibleForTesting;
 
 import static java.lang.Math.max;
@@ -35,9 +36,6 @@ import static java.lang.System.nanoTime;
 import static java.lang.Thread.currentThread;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
-import static org.neo4j.util.Preconditions.checkState;
-import static org.neo4j.util.Preconditions.requireNonNegative;
-import static org.neo4j.util.Preconditions.requirePositive;
 
 public class VmPauseMonitor
 {
@@ -50,8 +48,8 @@ public class VmPauseMonitor
 
     public VmPauseMonitor( Duration measureInterval, Duration stallAlertThreshold, Monitor monitor, JobScheduler jobScheduler, Consumer<VmPauseInfo> listener )
     {
-        this.measurementDurationNs = requirePositive( measureInterval.toNanos() );
-        this.stallAlertThresholdNs = requireNonNegative( stallAlertThreshold.toNanos() );
+        this.measurementDurationNs = Preconditions.requirePositive( measureInterval.toNanos() );
+        this.stallAlertThresholdNs = Preconditions.requireNonNegative( stallAlertThreshold.toNanos() );
         this.monitor = requireNonNull( monitor );
         this.jobScheduler = requireNonNull( jobScheduler );
         this.listener = requireNonNull( listener );
@@ -60,14 +58,14 @@ public class VmPauseMonitor
     public void start()
     {
         monitor.started();
-        checkState( job == null, "VM pause monitor is already started" );
+        Preconditions.checkState( job == null, "VM pause monitor is already started" );
         job = requireNonNull( jobScheduler.schedule( Group.VM_PAUSE_MONITOR, this::run ) );
     }
 
     public void stop()
     {
         monitor.stopped();
-        checkState( job != null, "VM pause monitor is not started" );
+        Preconditions.checkState( job != null, "VM pause monitor is not started" );
         job.cancel( true );
         job = null;
     }

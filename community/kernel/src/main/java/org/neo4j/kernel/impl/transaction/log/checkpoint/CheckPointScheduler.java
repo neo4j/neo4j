@@ -24,8 +24,8 @@ import java.util.function.BooleanSupplier;
 
 import org.neo4j.function.Predicates;
 import org.neo4j.io.pagecache.IOLimiter;
-import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobHandle;
 import org.neo4j.scheduler.JobScheduler;

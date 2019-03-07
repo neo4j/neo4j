@@ -23,9 +23,10 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
-import org.neo4j.kernel.impl.core.DatabasePanicEventGenerator;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.monitoring.DatabaseHealth;
+import org.neo4j.monitoring.DatabasePanicEventGenerator;
 
 import static org.hamcrest.Matchers.sameInstance;
 import static org.hamcrest.core.Is.is;

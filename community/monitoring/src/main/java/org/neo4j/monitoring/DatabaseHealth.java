@@ -17,11 +17,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.internal;
+package org.neo4j.monitoring;
 
 import org.neo4j.graphdb.event.ErrorState;
 import org.neo4j.helpers.Exceptions;
-import org.neo4j.kernel.impl.core.DatabasePanicEventGenerator;
 import org.neo4j.logging.Log;
 
 public class DatabaseHealth

@@ -21,6 +21,8 @@ package org.neo4j.monitoring;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentMatchers;
+import org.mockito.Mockito;
 
 import java.util.function.Consumer;
 
@@ -32,27 +34,20 @@ import org.neo4j.scheduler.JobScheduler;
 import static java.time.Duration.ofMillis;
 import static java.time.Duration.ofSeconds;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
 import static org.neo4j.monitoring.VmPauseMonitor.Monitor.EMPTY;
 
 class VmPauseMonitorTest
 {
     @SuppressWarnings( "unchecked" )
-    private final Consumer<VmPauseInfo> listener = mock( Consumer.class );
-    private final JobHandle jobHandle = mock( JobHandle.class );
-    private final JobScheduler jobScheduler = mock( JobScheduler.class );
-    private final VmPauseMonitor monitor = spy( new VmPauseMonitor( ofMillis( 1 ), ofMillis( 0 ), EMPTY, jobScheduler, listener ) );
+    private final Consumer<VmPauseInfo> listener = Mockito.mock( Consumer.class );
+    private final JobHandle jobHandle = Mockito.mock( JobHandle.class );
+    private final JobScheduler jobScheduler = Mockito.mock( JobScheduler.class );
+    private final VmPauseMonitor monitor = Mockito.spy( new VmPauseMonitor( ofMillis( 1 ), ofMillis( 0 ), EMPTY, jobScheduler, listener ) );
 
     @BeforeEach
     void setUp()
     {
-        doReturn( jobHandle ).when( jobScheduler ).schedule( any( Group.class ), any( Runnable.class ) );
+        Mockito.doReturn( jobHandle ).when( jobScheduler ).schedule( ArgumentMatchers.any( Group.class ), ArgumentMatchers.any( Runnable.class ) );
     }
 
     @Test
@@ -78,8 +73,8 @@ class VmPauseMonitorTest
         monitor.start();
         monitor.stop();
 
-        verify( jobScheduler ).schedule( any( Group.class ), any( Runnable.class ) );
-        verify( jobHandle ).cancel( eq( true ) );
+        Mockito.verify( jobScheduler ).schedule( ArgumentMatchers.any( Group.class ), ArgumentMatchers.any( Runnable.class ) );
+        Mockito.verify( jobHandle ).cancel( ArgumentMatchers.eq( true ) );
     }
 
     @Test
@@ -89,8 +84,8 @@ class VmPauseMonitorTest
         monitor.stop();
         monitor.start();
 
-        verify( jobScheduler, times( 2 ) ).schedule( any( Group.class ), any( Runnable.class ) );
-        verify( jobHandle ).cancel( eq( true ) );
+        Mockito.verify( jobScheduler, Mockito.times( 2 ) ).schedule( ArgumentMatchers.any( Group.class ), ArgumentMatchers.any( Runnable.class ) );
+        Mockito.verify( jobHandle ).cancel( ArgumentMatchers.eq( true ) );
     }
 
     @Test
@@ -123,8 +118,8 @@ class VmPauseMonitorTest
     @Test
     void testNotifyListener() throws Exception
     {
-        doReturn( false, true ).when( monitor ).isStopped();
+        Mockito.doReturn( false, true ).when( monitor ).isStopped();
         monitor.monitor();
-        verify( listener ).accept( any(VmPauseInfo.class) );
+        Mockito.verify( listener ).accept( ArgumentMatchers.any(VmPauseInfo.class) );
     }
 }
