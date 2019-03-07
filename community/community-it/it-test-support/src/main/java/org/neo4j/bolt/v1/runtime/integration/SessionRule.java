@@ -66,11 +66,12 @@ public class SessionRule implements TestRule
             @Override
             public void evaluate() throws Throwable
             {
-                Map<Setting<?>,String> config = new HashMap<>();
-                config.put( GraphDatabaseSettings.auth_enabled, Boolean.toString( authEnabled ) );
-                gdb = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabase( config );
+                Map<Setting<?>,String> configMap = new HashMap<>();
+                configMap.put( GraphDatabaseSettings.auth_enabled, Boolean.toString( authEnabled ) );
+                gdb = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabase( configMap );
                 DependencyResolver resolver = gdb.getDependencyResolver();
                 DatabaseManager databaseManager = resolver.resolveDependency( DatabaseManager.class );
+                Config config = gdb.getDependencyResolver().resolveDependency( Config.class );
                 Authentication authentication = authentication( resolver.resolveDependency( AuthManager.class ),
                         resolver.resolveDependency( UserManagerSupplier.class ) );
                 boltFactory = new BoltStateMachineFactoryImpl(
@@ -78,7 +79,7 @@ public class SessionRule implements TestRule
                                         new UsageData( null ),
                                         authentication,
                                         Clock.systemUTC(),
-                                        Config.defaults(),
+                                        config,
                                         NullLogService.getInstance()
                                     );
                 try

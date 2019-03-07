@@ -73,18 +73,19 @@ public class SessionExtension implements BeforeEachCallback, AfterEachCallback
     @Override
     public void beforeEach( ExtensionContext extensionContext )
     {
-        Map<Setting<?>,String> config = new HashMap<>();
-        config.put( GraphDatabaseSettings.auth_enabled, Boolean.toString( authEnabled ) );
-        gdb = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabase( config );
+        Map<Setting<?>,String> configMap = new HashMap<>();
+        configMap.put( GraphDatabaseSettings.auth_enabled, Boolean.toString( authEnabled ) );
+        gdb = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabase( configMap );
         DependencyResolver resolver = gdb.getDependencyResolver();
         Authentication authentication = authentication( resolver.resolveDependency( AuthManager.class ),
                 resolver.resolveDependency( UserManagerSupplier.class ) );
+        Config config = resolver.resolveDependency( Config.class );
         boltFactory = new BoltStateMachineFactoryImpl(
                 resolver.resolveDependency( DatabaseManager.class ),
                 new UsageData( null ),
                 authentication,
                 Clock.systemUTC(),
-                Config.defaults(),
+                config,
                 NullLogService.getInstance()
         );
     }
