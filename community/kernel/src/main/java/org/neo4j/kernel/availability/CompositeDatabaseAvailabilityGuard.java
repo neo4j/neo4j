@@ -72,8 +72,7 @@ public class CompositeDatabaseAvailabilityGuard implements AvailabilityGuard
     @Override
     public boolean isShutdown()
     {
-        //TODO:
-        return guards.stream().anyMatch( DatabaseAvailabilityGuard::isShutdown );
+        throw new UnsupportedOperationException( "Composite guard does not support this operation." );
     }
 
     @Override

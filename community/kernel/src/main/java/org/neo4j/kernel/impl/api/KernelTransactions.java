@@ -376,7 +376,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
                             tracers.getLockTracer(),
                             tracers.getPageCursorTracerSupplier(), storageEngine, accessCapability,
                             versionContextSupplier, collectionsFactorySupplier, constraintSemantics,
-                            schemaState, tokenHolders, indexingService, labelScanStore, indexStatisticsStore, databaseDependendies );
+                            schemaState, tokenHolders, indexingService, labelScanStore, indexStatisticsStore, databaseDependendies, databaseAvailabilityGuard );
             this.transactions.add( tx );
             return tx;
         }

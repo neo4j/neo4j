@@ -130,7 +130,7 @@ public class TransactionStateMachineV1SPITest
         QueryExecutionEngine queryExecutionEngine = mock( QueryExecutionEngine.class );
 
         Dependencies dependencyResolver = mock( Dependencies.class );
-        ThreadToStatementContextBridge bridge = new ThreadToStatementContextBridge( availabilityGuard );
+        ThreadToStatementContextBridge bridge = new ThreadToStatementContextBridge();
         when( dependencyResolver.resolveDependency( ThreadToStatementContextBridge.class ) ).thenReturn( bridge );
         when( dependencyResolver.resolveDependency( QueryExecutionEngine.class ) ).thenReturn( queryExecutionEngine );
         when( dependencyResolver.resolveDependency( DatabaseAvailabilityGuard.class ) ).thenReturn( availabilityGuard );

@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.api;
 
-import java.util.Map;
-
 import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.Kernel;
@@ -28,11 +26,12 @@ import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.Transaction;
-import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
+import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
+import org.neo4j.kernel.availability.AvailabilityGuard;
 import org.neo4j.kernel.impl.api.ClockContext;
 import org.neo4j.storageengine.api.schema.SchemaDescriptor;
 
@@ -172,9 +171,14 @@ public interface KernelTransaction extends Transaction, AssertOpen
     /**
      * USE WITH CAUTION:
      * The internal property cursor instance used to serve kernel API calls. If some kernel
-     * API call is made while this cursor is used, it might get corrupted and return wrong results.
+     * API call is made while this cursor is used, it might get corrupted and retu;rn wrong results.
      */
     PropertyCursor ambientPropertyCursor();
+
+    /**
+     * @return database availability guard of database this transaction was started against.
+     */
+    AvailabilityGuard getAvailabilityGuard();
 
     @FunctionalInterface
     interface Revertable extends AutoCloseable

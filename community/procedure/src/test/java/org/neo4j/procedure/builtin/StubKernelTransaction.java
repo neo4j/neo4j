@@ -42,6 +42,7 @@ import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.availability.AvailabilityGuard;
 import org.neo4j.kernel.impl.api.ClockContext;
 import org.neo4j.kernel.impl.index.schema.IndexDescriptor;
 import org.neo4j.storageengine.api.schema.SchemaDescriptor;
@@ -265,6 +266,12 @@ public class StubKernelTransaction implements KernelTransaction
 
     @Override
     public PropertyCursor ambientPropertyCursor()
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public AvailabilityGuard getAvailabilityGuard()
     {
         throw new UnsupportedOperationException( "not implemented" );
     }
