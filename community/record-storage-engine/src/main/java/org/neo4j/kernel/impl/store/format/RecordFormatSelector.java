@@ -29,7 +29,6 @@ import java.util.stream.StreamSupport;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-import org.neo4j.common.Service;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Iterables;
@@ -42,6 +41,7 @@ import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_4;
 import org.neo4j.kernel.impl.store.format.standard.StandardV4_0;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.service.Services;
 
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
@@ -323,7 +323,7 @@ public class RecordFormatSelector
      */
     public static Iterable<RecordFormats> allFormats()
     {
-        Iterable<RecordFormats.Factory> loadableFormatFactories = Service.loadAll( RecordFormats.Factory.class );
+        Iterable<RecordFormats.Factory> loadableFormatFactories = Services.loadAll( RecordFormats.Factory.class );
         Iterable<RecordFormats> loadableFormats = map( RecordFormats.Factory::newInstance, loadableFormatFactories );
         return concat( KNOWN_FORMATS, loadableFormats );
     }
@@ -357,7 +357,7 @@ public class RecordFormatSelector
                 return knownFormat;
             }
         }
-        return Service.load( RecordFormats.Factory.class, recordFormat )
+        return Services.load( RecordFormats.Factory.class, recordFormat )
                 .map( RecordFormats.Factory::newInstance )
                 .orElse( null );
     }

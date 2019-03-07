@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.store.format;
 
-import org.neo4j.common.Service;
+import org.neo4j.annotations.service.Service;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.MetaDataRecord;
@@ -30,6 +30,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
+import org.neo4j.service.NamedService;
 import org.neo4j.storageengine.api.format.Capability;
 import org.neo4j.storageengine.api.format.CapabilityType;
 
@@ -39,14 +40,10 @@ import org.neo4j.storageengine.api.format.CapabilityType;
  */
 public interface RecordFormats
 {
-    abstract class Factory extends Service
+    @Service
+    interface Factory extends NamedService
     {
-        public Factory( String key, String... altKeys )
-        {
-            super( key, altKeys );
-        }
-
-        public abstract RecordFormats newInstance();
+        RecordFormats newInstance();
     }
 
     String storeVersion();
