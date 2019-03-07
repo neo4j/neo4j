@@ -21,6 +21,8 @@ package org.neo4j.kernel.impl.api;
 
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.neo4j.internal.schema.SchemaState;
+
 /**
  * Recommended way to create keys for {@link SchemaState}, to guarantee control over equality uniqueness.
  */

@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
+import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 

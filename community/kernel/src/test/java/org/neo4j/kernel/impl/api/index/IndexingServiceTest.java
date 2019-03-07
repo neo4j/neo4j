@@ -64,6 +64,7 @@ import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelExcept
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorFactory;
+import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
@@ -75,7 +76,6 @@ import org.neo4j.kernel.api.index.IndexProviderDescriptor;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.impl.api.SchemaState;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingController;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode;

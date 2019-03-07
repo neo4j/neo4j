@@ -35,6 +35,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.internal.index.label.LabelScanStore;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.api.KernelTransaction;

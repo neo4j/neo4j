@@ -39,6 +39,7 @@ import org.neo4j.internal.kernel.api.exceptions.schema.CreateConstraintFailureEx
 import org.neo4j.internal.recordstorage.NeoStoresDiagnostics.NeoStoreIdUsage;
 import org.neo4j.internal.recordstorage.NeoStoresDiagnostics.NeoStoreRecords;
 import org.neo4j.internal.recordstorage.NeoStoresDiagnostics.NeoStoreVersions;
+import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.IOLimiter;
@@ -46,7 +47,6 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.api.exceptions.TransactionApplyKernelException;
 import org.neo4j.kernel.api.txstate.TransactionCountingStateVisitor;
-import org.neo4j.kernel.impl.api.SchemaState;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.store.CountsComputer;
 import org.neo4j.kernel.impl.store.MetaDataStore;

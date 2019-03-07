@@ -38,6 +38,7 @@ import org.neo4j.internal.index.label.LabelScanStore;
 import org.neo4j.internal.kernel.api.Transaction.Type;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
+import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.availability.AvailabilityGuard;

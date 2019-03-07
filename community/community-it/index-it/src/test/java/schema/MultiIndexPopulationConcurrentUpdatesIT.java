@@ -57,6 +57,7 @@ import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorFactory;
 import org.neo4j.internal.schema.SchemaDescriptorSupplier;
+import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.SilentTokenNameLookup;
 import org.neo4j.kernel.api.Statement;
@@ -65,7 +66,6 @@ import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelExceptio
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexProviderDescriptor;
 import org.neo4j.kernel.api.index.IndexReader;
-import org.neo4j.kernel.impl.api.SchemaState;
 import org.neo4j.kernel.impl.api.index.EntityUpdates;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
