@@ -28,6 +28,7 @@ import java.time.ZonedDateTime;
 import java.util.Collection;
 import java.util.Map;
 
+import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.io.fs.ReadableChannel;
 import org.neo4j.io.fs.WritableChannel;
 import org.neo4j.kernel.impl.store.SchemaStore;
@@ -45,7 +46,6 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.kernel.impl.store.record.TokenRecord;
-import org.neo4j.storageengine.api.SchemaRule;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.string.UTF8;
 import org.neo4j.values.storable.CoordinateReferenceSystem;

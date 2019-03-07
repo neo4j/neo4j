@@ -23,8 +23,8 @@ import org.eclipse.collections.api.block.procedure.primitive.IntObjectProcedure;
 import org.eclipse.collections.api.map.primitive.IntObjectMap;
 
 import org.neo4j.exceptions.KernelException;
+import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.storageengine.api.ConstraintRule;
-import org.neo4j.storageengine.api.SchemaRule;
 import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.values.storable.Value;
 

@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.util.concurrent.ThreadLocalRandom;
 
 import org.neo4j.internal.schema.SchemaDescriptorFactory;
+import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.kernel.impl.index.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.store.PropertyType;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
@@ -40,7 +41,6 @@ import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
 import org.neo4j.storageengine.api.CommandReader;
-import org.neo4j.storageengine.api.SchemaRule;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;

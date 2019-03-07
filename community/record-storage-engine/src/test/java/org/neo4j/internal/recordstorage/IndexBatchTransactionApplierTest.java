@@ -22,6 +22,7 @@ package org.neo4j.internal.recordstorage;
 import org.junit.Test;
 
 import org.neo4j.internal.recordstorage.Command.NodeCommand;
+import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.kernel.api.index.IndexProviderDescriptor;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
@@ -34,7 +35,6 @@ import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.storageengine.api.IndexUpdateListener;
 import org.neo4j.storageengine.api.NodeLabelUpdate;
 import org.neo4j.storageengine.api.NodeLabelUpdateListener;
-import org.neo4j.storageengine.api.SchemaRule;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.util.concurrent.WorkSync;
 

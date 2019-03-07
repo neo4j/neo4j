@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 import org.neo4j.internal.recordstorage.Command.PropertyCommand;
+import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.kernel.impl.store.NodeLabels;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
@@ -33,7 +34,6 @@ import org.neo4j.storageengine.api.CommandsToApply;
 import org.neo4j.storageengine.api.IndexUpdateListener;
 import org.neo4j.storageengine.api.NodeLabelUpdate;
 import org.neo4j.storageengine.api.NodeLabelUpdateListener;
-import org.neo4j.storageengine.api.SchemaRule;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.util.concurrent.AsyncApply;

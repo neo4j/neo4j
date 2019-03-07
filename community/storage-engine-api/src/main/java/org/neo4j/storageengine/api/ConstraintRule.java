@@ -22,6 +22,7 @@ package org.neo4j.storageengine.api;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
 
 public class ConstraintRule implements SchemaRule, StorageConstraintReference

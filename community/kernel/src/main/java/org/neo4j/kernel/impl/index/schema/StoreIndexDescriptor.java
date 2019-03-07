@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.index.schema;
 
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.internal.kernel.api.IndexCapability;
-import org.neo4j.storageengine.api.SchemaRule;
+import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.storageengine.api.StorageIndexReference;
 
 /**

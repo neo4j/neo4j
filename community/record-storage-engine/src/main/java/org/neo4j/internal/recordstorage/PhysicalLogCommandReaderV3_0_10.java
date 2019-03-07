@@ -39,6 +39,7 @@ import org.neo4j.internal.recordstorage.legacy.IndexCommand.CreateCommand;
 import org.neo4j.internal.recordstorage.legacy.IndexCommand.DeleteCommand;
 import org.neo4j.internal.recordstorage.legacy.IndexCommand.RemoveCommand;
 import org.neo4j.internal.recordstorage.legacy.IndexDefineCommand;
+import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.io.fs.ReadableChannel;
 import org.neo4j.kernel.impl.store.AbstractDynamicStore;
 import org.neo4j.kernel.impl.store.PropertyType;
@@ -56,7 +57,6 @@ import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.kernel.impl.storemigration.legacy.SchemaRuleSerialization35;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion;
-import org.neo4j.storageengine.api.SchemaRule;
 
 import static org.neo4j.helpers.Numbers.unsignedShortToInt;
 import static org.neo4j.internal.recordstorage.CommandReading.COLLECTION_DYNAMIC_RECORD_ADDER;

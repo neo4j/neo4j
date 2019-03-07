@@ -20,7 +20,7 @@
 package org.neo4j.internal.recordstorage;
 
 import org.neo4j.exceptions.KernelException;
-import org.neo4j.storageengine.api.SchemaRule;
+import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.storageengine.api.StorageIndexReference;
 
 public interface SchemaRecordChangeTranslator

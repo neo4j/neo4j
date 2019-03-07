@@ -51,8 +51,8 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.Iterators.filter;
-import static org.neo4j.internal.kernel.api.schema.SchemaDescriptorPredicates.hasLabel;
-import static org.neo4j.internal.kernel.api.schema.SchemaDescriptorPredicates.hasProperty;
+import static org.neo4j.internal.schema.SchemaDescriptorPredicates.hasLabel;
+import static org.neo4j.internal.schema.SchemaDescriptorPredicates.hasProperty;
 import static org.neo4j.kernel.impl.newapi.IndexTxStateUpdater.LabelChangeType.ADDED_LABEL;
 import static org.neo4j.kernel.impl.newapi.IndexTxStateUpdater.LabelChangeType.REMOVED_LABEL;
 

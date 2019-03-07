@@ -20,6 +20,7 @@
 package org.neo4j.storageengine.api;
 
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.SchemaRule;
 
 public interface StorageIndexReference extends IndexDescriptor, SchemaRule
 {

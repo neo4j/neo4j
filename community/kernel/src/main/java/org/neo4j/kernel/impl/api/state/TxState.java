@@ -36,10 +36,10 @@ import javax.annotation.Nullable;
 
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.internal.kernel.api.schema.SchemaDescriptorPredicates;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptorPredicates;
 import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactory;

@@ -17,15 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.internal.kernel.api.schema;
+package org.neo4j.internal.schema;
 
 import org.apache.commons.lang3.ArrayUtils;
 
 import java.util.function.Predicate;
 
 import org.neo4j.common.EntityType;
-import org.neo4j.internal.schema.SchemaDescriptor;
-import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 
 public class SchemaDescriptorPredicates
 {

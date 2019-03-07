@@ -33,6 +33,7 @@ import org.neo4j.internal.recordstorage.Command.RelationshipGroupCommand;
 import org.neo4j.internal.recordstorage.Command.RelationshipTypeTokenCommand;
 import org.neo4j.internal.recordstorage.Command.SchemaRuleCommand;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
+import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.kernel.api.index.IndexProviderDescriptor;
 import org.neo4j.kernel.impl.index.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.store.DynamicNodeLabels;
@@ -52,7 +53,6 @@ import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.kernel.impl.store.record.TokenRecord;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
-import org.neo4j.storageengine.api.SchemaRule;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.values.storable.Values;
 

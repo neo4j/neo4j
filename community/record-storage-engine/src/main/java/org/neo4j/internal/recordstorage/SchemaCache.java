@@ -41,13 +41,13 @@ import java.util.function.Function;
 
 import org.neo4j.common.EntityType;
 import org.neo4j.helpers.collection.Iterators;
-import org.neo4j.internal.kernel.api.schema.SchemaDescriptorPredicates;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptorPredicates;
 import org.neo4j.internal.schema.SchemaDescriptorSupplier;
+import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.storageengine.api.ConstraintRule;
 import org.neo4j.storageengine.api.ConstraintRuleAccessor;
-import org.neo4j.storageengine.api.SchemaRule;
 import org.neo4j.storageengine.api.StorageIndexReference;
 
 import static java.util.Collections.emptyIterator;

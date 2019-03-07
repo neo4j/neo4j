@@ -27,6 +27,7 @@ import org.neo4j.consistency.checking.index.IndexAccessors;
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.internal.kernel.api.exceptions.schema.MalformedSchemaRuleException;
 import org.neo4j.internal.recordstorage.SchemaRuleAccess;
+import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.kernel.api.index.IndexProviderDescriptor;
 import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
@@ -34,7 +35,6 @@ import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.storageengine.api.ConstraintRule;
-import org.neo4j.storageengine.api.SchemaRule;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;

@@ -17,11 +17,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.exceptions.schema;
+package org.neo4j.internal.kernel.api.exceptions.schema;
 
 import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.storageengine.api.SchemaRule;
 
 public class DuplicateSchemaRuleException extends SchemaRuleException
 {

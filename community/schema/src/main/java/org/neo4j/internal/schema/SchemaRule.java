@@ -17,16 +17,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.storageengine.api;
+package org.neo4j.internal.schema;
 
 import org.neo4j.internal.kernel.api.exceptions.schema.MalformedSchemaRuleException;
-import org.neo4j.internal.schema.ConstraintDescriptor;
-import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.internal.schema.LabelSchemaDescriptor;
-import org.neo4j.internal.schema.RelationTypeSchemaDescriptor;
-import org.neo4j.internal.schema.SchemaComputer;
-import org.neo4j.internal.schema.SchemaDescriptor;
-import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 
 /**
  * Represents a stored schema rule.

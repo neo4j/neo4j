@@ -38,6 +38,7 @@ import org.neo4j.internal.recordstorage.RecordAccessSet;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.internal.recordstorage.RelationshipCreator;
 import org.neo4j.internal.recordstorage.RelationshipGroupGetter;
+import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.impl.locking.NoOpClient;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -54,7 +55,6 @@ import org.neo4j.lock.AcquireLockTimeoutException;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.ResourceType;
 import org.neo4j.lock.ResourceTypes;
-import org.neo4j.storageengine.api.SchemaRule;
 import org.neo4j.test.rule.DbmsRule;
 import org.neo4j.test.rule.ImpermanentDbmsRule;
 

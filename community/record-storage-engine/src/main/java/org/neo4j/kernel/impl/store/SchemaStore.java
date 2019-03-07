@@ -40,6 +40,7 @@ import org.neo4j.internal.kernel.api.exceptions.schema.MalformedSchemaRuleExcept
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorFactory;
+import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.internal.schema.constraints.NodeKeyConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
@@ -54,7 +55,6 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.storageengine.api.ConstraintRule;
 import org.neo4j.storageengine.api.DefaultStorageIndexReference;
 import org.neo4j.storageengine.api.PropertyKeyValue;
-import org.neo4j.storageengine.api.SchemaRule;
 import org.neo4j.storageengine.api.StorageConstraintReference;
 import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.token.TokenHolders;

@@ -24,8 +24,9 @@ import org.junit.jupiter.api.Test;
 
 import java.util.function.Predicate;
 
-import org.neo4j.internal.kernel.api.schema.SchemaDescriptorPredicates;
 import org.neo4j.internal.recordstorage.Command.SchemaRuleCommand;
+import org.neo4j.internal.schema.SchemaDescriptorPredicates;
+import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
@@ -44,7 +45,6 @@ import org.neo4j.lock.LockService;
 import org.neo4j.storageengine.api.ConstraintRule;
 import org.neo4j.storageengine.api.IndexUpdateListener;
 import org.neo4j.storageengine.api.NodeLabelUpdateListener;
-import org.neo4j.storageengine.api.SchemaRule;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.util.concurrent.WorkSync;
 

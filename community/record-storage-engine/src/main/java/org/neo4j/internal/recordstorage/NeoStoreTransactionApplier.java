@@ -20,13 +20,13 @@
 package org.neo4j.internal.recordstorage;
 
 import org.neo4j.internal.recordstorage.Command.BaseCommand;
+import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.lock.LockGroup;
 import org.neo4j.lock.LockService;
 import org.neo4j.storageengine.api.CommandVersion;
-import org.neo4j.storageengine.api.SchemaRule;
 
 /**
  * Visits commands targeted towards the {@link NeoStores} and update corresponding stores.
