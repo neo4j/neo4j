@@ -39,16 +39,14 @@ import java.util.function.Supplier;
 import java.util.function.ToLongFunction;
 import java.util.stream.Collectors;
 
+import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.Scan;
 import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.Write;
-import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
-import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
-import org.neo4j.internal.kernel.api.exceptions.schema.IllegalTokenNameException;
 
 import static java.lang.String.format;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -61,7 +59,6 @@ import static org.neo4j.kernel.impl.newapi.TestUtils.singleBatchWorker;
 public abstract class ParallelRelationshipCursorTransactionStateTestBase<G extends KernelAPIWriteTestSupport>
         extends KernelAPIWriteTestBase<G>
 {
-
     private static final ToLongFunction<RelationshipScanCursor> REL_GET = RelationshipScanCursor::relationshipReference;
 
     @Test
@@ -167,9 +164,7 @@ public abstract class ParallelRelationshipCursorTransactionStateTestBase<G exten
     }
 
     @Test
-    public void shouldReserveBatchFromTxState()
-            throws TransactionFailureException, InvalidTransactionTypeKernelException, IllegalTokenNameException,
-            EntityNotFoundException
+    public void shouldReserveBatchFromTxState() throws KernelException
     {
         try ( Transaction tx = beginTransaction() )
         {
@@ -200,8 +195,7 @@ public abstract class ParallelRelationshipCursorTransactionStateTestBase<G exten
 
     @Test
     public void shouldScanAllRelationshipsFromMultipleThreads()
-            throws InterruptedException, ExecutionException, TransactionFailureException,
-            InvalidTransactionTypeKernelException, IllegalTokenNameException, EntityNotFoundException
+            throws InterruptedException, ExecutionException, KernelException
     {
         // given
         ExecutorService service = Executors.newFixedThreadPool( 4 );
@@ -250,8 +244,7 @@ public abstract class ParallelRelationshipCursorTransactionStateTestBase<G exten
 
     @Test
     public void shouldScanAllRelationshipsFromMultipleThreadWithBigSizeHints()
-            throws InterruptedException, ExecutionException, TransactionFailureException,
-            InvalidTransactionTypeKernelException, IllegalTokenNameException, EntityNotFoundException
+            throws InterruptedException, ExecutionException, KernelException
     {
         // given
         ExecutorService service = Executors.newFixedThreadPool( 4 );
@@ -296,8 +289,7 @@ public abstract class ParallelRelationshipCursorTransactionStateTestBase<G exten
 
     @Test
     public void shouldScanAllRelationshipFromRandomlySizedWorkers()
-            throws InterruptedException, TransactionFailureException,
-            InvalidTransactionTypeKernelException, EntityNotFoundException, IllegalTokenNameException
+            throws InterruptedException, KernelException
     {
         // given
         ExecutorService service = Executors.newFixedThreadPool( 4 );
@@ -343,8 +335,7 @@ public abstract class ParallelRelationshipCursorTransactionStateTestBase<G exten
 
     @Test
     public void parallelTxStateScanStressTest()
-            throws InvalidTransactionTypeKernelException, TransactionFailureException, InterruptedException,
-            IllegalTokenNameException, EntityNotFoundException
+            throws InterruptedException, KernelException
     {
         LongSet existingRelationships = createRelationships( 77 );
         int workers = Runtime.getRuntime().availableProcessors();
@@ -395,9 +386,7 @@ public abstract class ParallelRelationshipCursorTransactionStateTestBase<G exten
         }
     }
 
-    private MutableLongSet createRelationships( int size )
-            throws TransactionFailureException, InvalidTransactionTypeKernelException, IllegalTokenNameException,
-            EntityNotFoundException
+    private MutableLongSet createRelationships( int size ) throws KernelException
     {
         MutableLongSet rels = LongSets.mutable.empty();
         try ( Transaction tx = beginTransaction() )

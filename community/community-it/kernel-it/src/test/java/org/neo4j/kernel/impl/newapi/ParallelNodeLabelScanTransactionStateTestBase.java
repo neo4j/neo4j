@@ -47,9 +47,6 @@ import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.Scan;
 import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.Write;
-import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
-import org.neo4j.internal.kernel.api.exceptions.schema.IllegalTokenNameException;
-import org.neo4j.internal.kernel.api.exceptions.schema.TooManyLabelsException;
 
 import static java.lang.String.format;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -64,12 +61,10 @@ import static org.neo4j.kernel.impl.newapi.TestUtils.singleBatchWorker;
 public abstract class ParallelNodeLabelScanTransactionStateTestBase<G extends KernelAPIWriteTestSupport>
         extends KernelAPIWriteTestBase<G>
 {
-
     private static final ToLongFunction<NodeLabelIndexCursor> NODE_GET = NodeLabelIndexCursor::nodeReference;
 
     @Test
-    void shouldHandleEmptyDatabase()
-            throws TransactionFailureException, IllegalTokenNameException, TooManyLabelsException
+    void shouldHandleEmptyDatabase() throws KernelException
     {
         try ( Transaction tx = beginTransaction() )
         {
@@ -352,8 +347,7 @@ public abstract class ParallelNodeLabelScanTransactionStateTestBase<G extends Ke
         return ids;
     }
 
-    private int label( String name )
-            throws TransactionFailureException, IllegalTokenNameException, TooManyLabelsException
+    private int label( String name ) throws KernelException
     {
         int label;
         try ( Transaction tx = beginTransaction() )

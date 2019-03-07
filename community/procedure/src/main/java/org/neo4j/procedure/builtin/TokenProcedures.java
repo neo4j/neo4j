@@ -19,8 +19,7 @@
  */
 package org.neo4j.procedure.builtin;
 
-import org.neo4j.internal.kernel.api.exceptions.schema.IllegalTokenNameException;
-import org.neo4j.internal.kernel.api.exceptions.schema.TooManyLabelsException;
+import org.neo4j.exceptions.KernelException;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Description;
@@ -36,25 +35,22 @@ public class TokenProcedures
 
     @Description( "Create a label" )
     @Procedure( name = "db.createLabel", mode = WRITE )
-    public void createLabel( @Name( "newLabel" ) String newLabel )
-            throws IllegalTokenNameException, TooManyLabelsException
+    public void createLabel( @Name( "newLabel" ) String newLabel ) throws KernelException
     {
-
         tx.tokenWrite().labelGetOrCreateForName( newLabel );
     }
 
     @Description( "Create a RelationshipType" )
     @Procedure( name = "db.createRelationshipType", mode = WRITE )
-    public void createRelationshipType( @Name( "newRelationshipType" ) String newRelationshipType ) throws IllegalTokenNameException
+    public void createRelationshipType( @Name( "newRelationshipType" ) String newRelationshipType ) throws KernelException
     {
         tx.tokenWrite().relationshipTypeGetOrCreateForName( newRelationshipType );
     }
 
     @Description( "Create a Property" )
     @Procedure( name = "db.createProperty", mode = WRITE )
-    public void createProperty( @Name( "newProperty" ) String newProperty ) throws IllegalTokenNameException
+    public void createProperty( @Name( "newProperty" ) String newProperty ) throws KernelException
     {
         tx.tokenWrite().propertyKeyGetOrCreateForName( newProperty );
     }
-
 }

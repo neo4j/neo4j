@@ -37,6 +37,7 @@ import java.util.function.IntPredicate;
 import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -48,8 +49,6 @@ import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.internal.kernel.api.PopulationProgress;
 import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
-import org.neo4j.internal.kernel.api.exceptions.schema.IllegalTokenNameException;
-import org.neo4j.internal.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorFactory;
@@ -749,8 +748,7 @@ public class IndexPopulationJobTest
         }
     }
 
-    private IndexPopulator indexPopulator( boolean constraint )
-            throws TransactionFailureException, IllegalTokenNameException, TooManyLabelsException
+    private IndexPopulator indexPopulator( boolean constraint ) throws KernelException
     {
         IndexDescriptor descriptor = indexDescriptor( FIRST, name, constraint );
         return indexPopulator( descriptor );
@@ -787,8 +785,7 @@ public class IndexPopulationJobTest
         return job;
     }
 
-    private IndexDescriptor indexDescriptor( Label label, String propertyKey, boolean constraint )
-            throws TransactionFailureException, IllegalTokenNameException, TooManyLabelsException
+    private IndexDescriptor indexDescriptor( Label label, String propertyKey, boolean constraint ) throws KernelException
     {
         try ( Transaction tx = kernel.beginTransaction( implicit, AUTH_DISABLED ) )
         {

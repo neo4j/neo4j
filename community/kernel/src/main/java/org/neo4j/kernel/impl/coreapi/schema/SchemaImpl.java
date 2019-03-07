@@ -37,6 +37,7 @@ import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.graphdb.index.IndexPopulationProgress;
 import org.neo4j.graphdb.schema.ConstraintCreator;
@@ -561,7 +562,6 @@ public class SchemaImpl implements Schema
                     IndexReference indexReference = transaction.schemaWrite().indexCreate( descriptor, indexName );
                     return new IndexDefinitionImpl( this, indexReference, new Label[]{label}, propertyKeys, false );
                 }
-
                 catch ( IllegalTokenNameException e )
                 {
                     throw new IllegalArgumentException( e );
@@ -570,6 +570,10 @@ public class SchemaImpl implements Schema
                 {
                     throw new ConstraintViolationException(
                             e.getUserMessage( new SilentTokenNameLookup( transaction.tokenRead() ) ), e );
+                }
+                catch ( KernelException e )
+                {
+                    throw new TransactionFailureException( "Unknown error trying to create token ids", e );
                 }
             }
         }
@@ -640,6 +644,10 @@ public class SchemaImpl implements Schema
                 {
                     throw new ConstraintViolationException( e.getMessage(), e );
                 }
+                catch ( KernelException e )
+                {
+                    throw new TransactionFailureException( "Unknown error trying to create token ids", e );
+                }
             }
         }
 
@@ -682,6 +690,10 @@ public class SchemaImpl implements Schema
                 {
                     throw new ConstraintViolationException( e.getMessage(), e );
                 }
+                catch ( KernelException e )
+                {
+                    throw new TransactionFailureException( "Unknown error trying to create token ids", e );
+                }
             }
         }
 
@@ -718,6 +730,10 @@ public class SchemaImpl implements Schema
                 {
                     throw new ConstraintViolationException( e.getMessage(), e );
                 }
+                catch ( KernelException e )
+                {
+                    throw new TransactionFailureException( "Unknown error trying to create token ids", e );
+                }
             }
         }
 
@@ -749,6 +765,10 @@ public class SchemaImpl implements Schema
                 catch ( InvalidTransactionTypeKernelException | SchemaKernelException e )
                 {
                     throw new ConstraintViolationException( e.getMessage(), e );
+                }
+                catch ( KernelException e )
+                {
+                    throw new TransactionFailureException( "Unknown error trying to create token ids", e );
                 }
             }
         }

@@ -34,9 +34,8 @@ import java.util.NavigableMap;
 import java.util.TreeMap;
 import javax.annotation.Nullable;
 
+import org.neo4j.exceptions.KernelException;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
-import org.neo4j.internal.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptorPredicates;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -115,7 +114,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     }
 
     @Override
-    public void accept( final TxStateVisitor visitor ) throws ConstraintValidationException, CreateConstraintFailureException
+    public void accept( final TxStateVisitor visitor ) throws KernelException
     {
         if ( nodes != null )
         {
@@ -167,7 +166,10 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
 
         if ( indexChanges != null )
         {
-            indexChanges.getAdded().forEach( visitor::visitAddedIndex );
+            for ( IndexDescriptor indexDescriptor : indexChanges.getAdded() )
+            {
+                visitor.visitAddedIndex( indexDescriptor );
+            }
             indexChanges.getRemoved().forEach( visitor::visitRemovedIndex );
         }
 

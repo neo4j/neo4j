@@ -39,6 +39,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.internal.kernel.api.LabelSet;
 import org.neo4j.internal.kernel.api.NodeCursor;
@@ -230,6 +231,10 @@ public class NodeProxy implements Node, RelationshipFactory<Relationship>
         {
             throw new IllegalArgumentException( format( "Invalid property key '%s'.", key ), e );
         }
+        catch ( KernelException e )
+        {
+            throw new TransactionFailureException( "Unknown error trying to create property key token", e );
+        }
 
         try ( Statement ignore = transaction.acquireStatement() )
         {
@@ -260,18 +265,27 @@ public class NodeProxy implements Node, RelationshipFactory<Relationship>
     public Object removeProperty( String key ) throws NotFoundException
     {
         KernelTransaction transaction = spi.kernelTransaction();
+        int propertyKeyId;
         try ( Statement ignore = transaction.acquireStatement() )
         {
-            int propertyKeyId = transaction.tokenWrite().propertyKeyGetOrCreateForName( key );
+            propertyKeyId = transaction.tokenWrite().propertyKeyGetOrCreateForName( key );
+        }
+        catch ( IllegalTokenNameException e )
+        {
+            throw new IllegalArgumentException( format( "Invalid property key '%s'.", key ), e );
+        }
+        catch ( KernelException e )
+        {
+            throw new TransactionFailureException( "Unknown error trying to get property key token", e );
+        }
+
+        try
+        {
             return transaction.dataWrite().nodeRemoveProperty( nodeId, propertyKeyId ).asObjectCopy();
         }
         catch ( EntityNotFoundException e )
         {
             throw new NotFoundException( e );
-        }
-        catch ( IllegalTokenNameException e )
-        {
-            throw new IllegalArgumentException( format( "Invalid property key '%s'.", key ), e );
         }
         catch ( InvalidTransactionTypeKernelException e )
         {
@@ -520,21 +534,28 @@ public class NodeProxy implements Node, RelationshipFactory<Relationship>
         //}
 
         KernelTransaction transaction = safeAcquireTransaction();
+        int relationshipTypeId;
         try ( Statement ignore = transaction.acquireStatement() )
         {
-            int relationshipTypeId = transaction.tokenWrite().relationshipTypeGetOrCreateForName( type.name() );
-            long relationshipId = transaction.dataWrite()
-                    .relationshipCreate( nodeId, relationshipTypeId, otherNode.getId() );
-            return spi.newRelationshipProxy( relationshipId, nodeId, relationshipTypeId, otherNode.getId() );
+            relationshipTypeId = transaction.tokenWrite().relationshipTypeGetOrCreateForName( type.name() );
         }
         catch ( IllegalTokenNameException e )
         {
             throw new IllegalArgumentException( e );
         }
+        catch ( KernelException e )
+        {
+            throw new TransactionFailureException( "Unknown error trying to create relationship type token", e );
+        }
+
+        try
+        {
+            long relationshipId = transaction.dataWrite().relationshipCreate( nodeId, relationshipTypeId, otherNode.getId() );
+            return spi.newRelationshipProxy( relationshipId, nodeId, relationshipTypeId, otherNode.getId() );
+        }
         catch ( EntityNotFoundException e )
         {
-            throw new NotFoundException( "Node[" + e.entityId() +
-                                         "] is deleted and cannot be used to create a relationship" );
+            throw new NotFoundException( "Node[" + e.entityId() + "] is deleted and cannot be used to create a relationship" );
         }
         catch ( InvalidTransactionTypeKernelException e )
         {
@@ -546,15 +567,10 @@ public class NodeProxy implements Node, RelationshipFactory<Relationship>
     public void addLabel( Label label )
     {
         KernelTransaction transaction = spi.kernelTransaction();
+        int labelId;
         try ( Statement ignore = transaction.acquireStatement() )
         {
-            transaction.dataWrite().nodeAddLabel( getId(),
-                    transaction.tokenWrite().labelGetOrCreateForName( label.name() ) );
-        }
-        catch ( ConstraintValidationException e )
-        {
-            throw new ConstraintViolationException(
-                    e.getUserMessage( new SilentTokenNameLookup( transaction.tokenRead() ) ), e );
+            labelId = transaction.tokenWrite().labelGetOrCreateForName( label.name() );
         }
         catch ( IllegalTokenNameException e )
         {
@@ -563,6 +579,20 @@ public class NodeProxy implements Node, RelationshipFactory<Relationship>
         catch ( TooManyLabelsException e )
         {
             throw new ConstraintViolationException( "Unable to add label.", e );
+        }
+        catch ( KernelException e )
+        {
+            throw new TransactionFailureException( "Unknown error trying to create label token", e );
+        }
+
+        try
+        {
+            transaction.dataWrite().nodeAddLabel( getId(), labelId );
+        }
+        catch ( ConstraintValidationException e )
+        {
+            throw new ConstraintViolationException(
+            e.getUserMessage( new SilentTokenNameLookup( transaction.tokenRead() ) ), e );
         }
         catch ( EntityNotFoundException e )
         {

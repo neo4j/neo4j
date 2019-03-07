@@ -46,11 +46,10 @@ import java.util.NavigableMap;
 import java.util.Set;
 import java.util.TreeMap;
 
+import org.neo4j.exceptions.KernelException;
 import org.neo4j.function.Predicates;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.collection.Pair;
-import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
-import org.neo4j.internal.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
@@ -581,7 +580,7 @@ public class TxStateTest
     }
 
     @Test
-    public void doNotVisitNotModifiedPropertiesOnModifiedNodes() throws ConstraintValidationException, CreateConstraintFailureException
+    public void doNotVisitNotModifiedPropertiesOnModifiedNodes() throws KernelException
     {
         state.nodeDoAddLabel( 5, 1 );
         MutableBoolean labelsChecked = new MutableBoolean();
@@ -607,7 +606,7 @@ public class TxStateTest
     }
 
     @Test
-    public void doNotVisitNotModifiedLabelsOnModifiedNodes() throws ConstraintValidationException, CreateConstraintFailureException
+    public void doNotVisitNotModifiedLabelsOnModifiedNodes() throws KernelException
     {
         state.nodeDoAddProperty( 1, 2, stringValue( "propertyValue" ) );
         MutableBoolean propertiesChecked = new MutableBoolean();

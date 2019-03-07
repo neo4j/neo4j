@@ -29,6 +29,7 @@ import org.neo4j.common.DependencySatisfier;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.counts.CountsAccessor;
+import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.diagnostics.DiagnosticsManager;
 import org.neo4j.internal.id.IdController;
 import org.neo4j.internal.id.IdGeneratorFactory;
@@ -218,6 +219,12 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         this.labelScanStoreSync = new WorkSync<>( listener );
     }
 
+    /**
+     * @throws TransactionFailureException if command generation fails or some prerequisite of some command didn't validate,
+     * for example if trying to delete a node that still has relationships.
+     * @throws CreateConstraintFailureException if this transaction was set to create a constraint and that failed.
+     * @throws ConstraintValidationException if this transaction was set to create a constraint and some data violates that constraint.
+     */
     @SuppressWarnings( "resource" )
     @Override
     public void createCommands(
@@ -228,7 +235,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             ResourceLocker locks,
             long lastTransactionIdWhenStarted,
             TxStateVisitor.Decorator additionalTxStateVisitor )
-            throws TransactionFailureException, CreateConstraintFailureException, ConstraintValidationException
+            throws KernelException
     {
         if ( txState != null )
         {

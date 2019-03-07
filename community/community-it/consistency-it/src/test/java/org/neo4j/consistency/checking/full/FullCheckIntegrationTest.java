@@ -65,7 +65,7 @@ import org.neo4j.internal.index.label.LabelScanStore;
 import org.neo4j.internal.index.label.LabelScanWriter;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.TokenWrite;
-import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.internal.recordstorage.RecordStorageEngineFactory;
 import org.neo4j.internal.recordstorage.SchemaRuleAccess;
 import org.neo4j.internal.recordstorage.StoreTokens;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
@@ -758,7 +758,7 @@ public class FullCheckIntegrationTest
     }
 
     private Pair<List<DynamicRecord>,List<Integer>> chainOfDynamicRecordsWithLabelsForANode( int labelCount )
-            throws TransactionFailureException
+            throws KernelException
     {
         final long[] labels = new long[labelCount + 1]; // allocate enough labels to need three records
         final List<Integer> createdLabels = new ArrayList<>();
@@ -1032,7 +1032,7 @@ public class FullCheckIntegrationTest
         {
             @Override
             protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
-                                            GraphStoreFixture.IdGenerator next )
+                                            GraphStoreFixture.IdGenerator next ) throws KernelException
             {
                 int ruleId1 = (int) next.schema();
                 int ruleId2 = (int) next.schema();
@@ -1073,7 +1073,7 @@ public class FullCheckIntegrationTest
         {
             @Override
             protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
-                                            GraphStoreFixture.IdGenerator next )
+                                            GraphStoreFixture.IdGenerator next ) throws KernelException
             {
                 int ruleId1 = (int) next.schema();
                 int ruleId2 = (int) next.schema();
@@ -2327,7 +2327,7 @@ public class FullCheckIntegrationTest
         fixture.apply( new GraphStoreFixture.Transaction()
         {
             @Override
-            protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx, GraphStoreFixture.IdGenerator next )
+            protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx, GraphStoreFixture.IdGenerator next ) throws KernelException
             {
                 int id = (int) next.schema();
                 StoreIndexDescriptor index = forSchema( forLabel( labelId, propertyKeyIds ), DESCRIPTOR ).withId( id );
@@ -2342,7 +2342,7 @@ public class FullCheckIntegrationTest
         } );
     }
 
-    private void createUniquenessConstraintRule( final int labelId, final int... propertyKeyIds )
+    private void createUniquenessConstraintRule( final int labelId, final int... propertyKeyIds ) throws KernelException
     {
         SchemaStore schemaStore = fixture.directStoreAccess().nativeStores().getSchemaStore();
 
@@ -2358,7 +2358,7 @@ public class FullCheckIntegrationTest
         writeToSchemaStore( schemaStore, uniqueRule );
     }
 
-    private void createNodeKeyConstraintRule( final int labelId, final int... propertyKeyIds )
+    private void createNodeKeyConstraintRule( final int labelId, final int... propertyKeyIds ) throws KernelException
     {
         SchemaStore schemaStore = fixture.directStoreAccess().nativeStores().getSchemaStore();
 
@@ -2374,21 +2374,21 @@ public class FullCheckIntegrationTest
         writeToSchemaStore( schemaStore, nodeKeyRule );
     }
 
-    private void createNodePropertyExistenceConstraint( int labelId, int propertyKeyId )
+    private void createNodePropertyExistenceConstraint( int labelId, int propertyKeyId ) throws KernelException
     {
         SchemaStore schemaStore = fixture.directStoreAccess().nativeStores().getSchemaStore();
         ConstraintRule rule = nodePropertyExistenceConstraintRule( schemaStore.nextId(), labelId, propertyKeyId );
         writeToSchemaStore( schemaStore, rule );
     }
 
-    private void createRelationshipPropertyExistenceConstraint( int relTypeId, int propertyKeyId )
+    private void createRelationshipPropertyExistenceConstraint( int relTypeId, int propertyKeyId ) throws KernelException
     {
         SchemaStore schemaStore = fixture.directStoreAccess().nativeStores().getSchemaStore();
         ConstraintRule rule = relPropertyExistenceConstraintRule( schemaStore.nextId(), relTypeId, propertyKeyId );
         writeToSchemaStore( schemaStore, rule );
     }
 
-    private void writeToSchemaStore( SchemaStore schemaStore, SchemaRule rule )
+    private void writeToSchemaStore( SchemaStore schemaStore, SchemaRule rule ) throws KernelException
     {
         SchemaRuleAccess schemaRuleAccess = SchemaRuleAccess.getSchemaRuleAccess( schemaStore, fixture.writableTokenHolders().propertyKeyTokens() );
         schemaRuleAccess.writeSchemaRule( rule );
@@ -2469,7 +2469,7 @@ public class FullCheckIntegrationTest
         }
     }
 
-    private void serializeRule( SchemaRule rule, SchemaRecord schemaRecord, TransactionDataBuilder tx, IdGenerator next )
+    private void serializeRule( SchemaRule rule, SchemaRecord schemaRecord, TransactionDataBuilder tx, IdGenerator next ) throws KernelException
     {
         IntObjectMap<Value> protoProperties = SchemaStore.convertSchemaRuleToMap( rule, tx.tokenHolders().propertyKeyTokens() );
         Collection<PropertyBlock> blocks = new ArrayList<>();

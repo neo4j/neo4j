@@ -34,6 +34,7 @@ import java.util.stream.Stream;
 import org.neo4j.collection.pool.Pool;
 import org.neo4j.common.Dependencies;
 import org.neo4j.configuration.Config;
+import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.internal.index.label.LabelScanStore;
@@ -580,6 +581,14 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 return commit();
             }
         }
+        catch ( TransactionFailureException e )
+        {
+            throw e;
+        }
+        catch ( KernelException e )
+        {
+            throw new TransactionFailureException( e.status(), e, "Unexpected kernel exception" );
+        }
         finally
         {
             try
@@ -635,7 +644,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         }
     }
 
-    private long commit() throws TransactionFailureException
+    private long commit() throws KernelException
     {
         boolean success = false;
         long txId = READ_ONLY;
@@ -730,7 +739,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         }
     }
 
-    private void rollback() throws TransactionFailureException
+    private void rollback() throws KernelException
     {
         try
         {

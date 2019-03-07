@@ -35,7 +35,6 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
-import java.util.function.ToIntFunction;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -51,7 +50,6 @@ import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.test.mockito.matcher.RootCauseMatcher;
@@ -197,7 +195,7 @@ public class TransactionEventsIT
             }
 
             @Override
-            public SecurityContext authorize( ToIntFunction<String> propertyIdLookup, String dbName )
+            public SecurityContext authorize( PropertyKeyIdLookup propertyKeyIdLookup, String dbName )
             {
                 return new SecurityContext( subject, AccessMode.Static.WRITE );
             }

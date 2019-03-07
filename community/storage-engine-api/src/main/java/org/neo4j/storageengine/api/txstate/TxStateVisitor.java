@@ -25,8 +25,8 @@ import org.eclipse.collections.api.set.primitive.LongSet;
 import java.util.Iterator;
 import java.util.function.Function;
 
+import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
-import org.neo4j.internal.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.storageengine.api.StorageProperty;
@@ -56,11 +56,11 @@ public interface TxStateVisitor extends AutoCloseable
 
     void visitNodeLabelChanges( long id, LongSet added, LongSet removed ) throws ConstraintValidationException;
 
-    void visitAddedIndex( IndexDescriptor element );
+    void visitAddedIndex( IndexDescriptor element ) throws KernelException;
 
     void visitRemovedIndex( IndexDescriptor element );
 
-    void visitAddedConstraint( ConstraintDescriptor element ) throws CreateConstraintFailureException;
+    void visitAddedConstraint( ConstraintDescriptor element ) throws KernelException;
 
     void visitRemovedConstraint( ConstraintDescriptor element );
 
@@ -119,7 +119,7 @@ public interface TxStateVisitor extends AutoCloseable
         }
 
         @Override
-        public void visitAddedIndex( IndexDescriptor index )
+        public void visitAddedIndex( IndexDescriptor index ) throws KernelException
         {
         }
 
@@ -129,7 +129,7 @@ public interface TxStateVisitor extends AutoCloseable
         }
 
         @Override
-        public void visitAddedConstraint( ConstraintDescriptor element ) throws CreateConstraintFailureException
+        public void visitAddedConstraint( ConstraintDescriptor element ) throws KernelException
         {
         }
 
@@ -226,7 +226,7 @@ public interface TxStateVisitor extends AutoCloseable
         }
 
         @Override
-        public void visitAddedIndex( IndexDescriptor index )
+        public void visitAddedIndex( IndexDescriptor index ) throws KernelException
         {
             actual.visitAddedIndex( index );
         }
@@ -238,7 +238,7 @@ public interface TxStateVisitor extends AutoCloseable
         }
 
         @Override
-        public void visitAddedConstraint( ConstraintDescriptor constraint ) throws CreateConstraintFailureException
+        public void visitAddedConstraint( ConstraintDescriptor constraint ) throws KernelException
         {
             actual.visitAddedConstraint( constraint );
         }

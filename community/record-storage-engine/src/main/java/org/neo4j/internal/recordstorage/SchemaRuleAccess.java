@@ -21,6 +21,7 @@ package org.neo4j.internal.recordstorage;
 
 import java.util.Iterator;
 
+import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.MalformedSchemaRuleException;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -93,7 +94,7 @@ public interface SchemaRuleAccess
      * Write the given schema rule at the location given by its persistent id, overwriting any data that might be at that location already.
      * This is a non-transactional operation that is used during schema store migration.
      */
-    void writeSchemaRule( SchemaRule rule );
+    void writeSchemaRule( SchemaRule rule ) throws KernelException;
 
     /**
      * Deletes the schema rule at the location given by the persistent id of the schema rule given as an argument.

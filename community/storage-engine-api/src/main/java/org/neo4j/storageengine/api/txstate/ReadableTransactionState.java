@@ -25,8 +25,7 @@ import org.eclipse.collections.impl.UnmodifiableMap;
 import java.util.NavigableMap;
 import javax.annotation.Nullable;
 
-import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
-import org.neo4j.internal.kernel.api.exceptions.schema.CreateConstraintFailureException;
+import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
@@ -39,7 +38,7 @@ import org.neo4j.values.storable.ValueTuple;
  */
 public interface ReadableTransactionState
 {
-    void accept( TxStateVisitor visitor ) throws ConstraintValidationException, CreateConstraintFailureException;
+    void accept( TxStateVisitor visitor ) throws KernelException;
 
     boolean hasChanges();
 

@@ -24,6 +24,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Stream;
 
+import org.neo4j.exceptions.KernelException;
 import org.neo4j.function.Predicates;
 import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.InternalIndexState;
@@ -31,10 +32,8 @@ import org.neo4j.internal.kernel.api.SchemaWrite;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
-import org.neo4j.internal.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
-import org.neo4j.internal.kernel.api.exceptions.schema.TooManyLabelsException;
 import org.neo4j.internal.kernel.api.helpers.Indexes;
 import org.neo4j.internal.schema.DefaultLabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorFactory;
@@ -183,7 +182,7 @@ public class IndexProcedures implements AutoCloseable
         {
             return ktx.tokenWrite().labelGetOrCreateForName( labelName );
         }
-        catch ( TooManyLabelsException | IllegalTokenNameException e )
+        catch ( KernelException e )
         {
             throw new ProcedureException( e.status(), e, e.getMessage() );
         }
@@ -198,7 +197,7 @@ public class IndexProcedures implements AutoCloseable
             {
                 propertyKeyIds[i] = ktx.tokenWrite().propertyKeyGetOrCreateForName( propertyKeyNames[i] );
             }
-            catch ( IllegalTokenNameException e )
+            catch ( KernelException e )
             {
                 throw new ProcedureException( e.status(), e, e.getMessage() );
             }

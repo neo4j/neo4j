@@ -37,8 +37,6 @@ import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.PopulationProgress;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
-import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
-import org.neo4j.internal.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.procs.ProcedureHandle;
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
@@ -183,7 +181,7 @@ public class AllStoreHolder extends Read
                     count += counts.nodeCount( labelId, newDoubleLongRegister() ).readSecond();
                 }
             }
-            catch ( ConstraintValidationException | CreateConstraintFailureException e )
+            catch ( KernelException e )
             {
                 throw new IllegalArgumentException( "Unexpected error: " + e.getMessage() );
             }
@@ -213,7 +211,7 @@ public class AllStoreHolder extends Read
                     count += counts.relationshipCount( startLabelId, typeId, endLabelId, newDoubleLongRegister() ).readSecond();
                 }
             }
-            catch ( ConstraintValidationException | CreateConstraintFailureException e )
+            catch ( KernelException e )
             {
                 throw new IllegalArgumentException( "Unexpected error: " + e.getMessage() );
             }

@@ -23,10 +23,8 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.stream.Stream;
 
+import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.diagnostics.DiagnosticsManager;
-import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
-import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
-import org.neo4j.internal.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.lock.ResourceLocker;
@@ -81,12 +79,7 @@ public interface StorageEngine extends ReadableStorageEngine
      * transaction started, i.e. before any changes were made and before any data was read.
      * TODO Transitional (Collection), might be {@link Stream} or whatever.
      * @param additionalTxStateVisitor any additional tx state visitor decoration.
-     *
-     * @throws TransactionFailureException if command generation fails or some prerequisite of some command
-     * didn't validate, for example if trying to delete a node that still has relationships.
-     * @throws CreateConstraintFailureException if this transaction was set to create a constraint and that failed.
-     * @throws ConstraintValidationException if this transaction was set to create a constraint
-     * and some data violates that constraint.
+     * @throws KernelException on known errors while creating commands.
      */
     void createCommands(
             Collection<StorageCommand> target,
@@ -96,7 +89,7 @@ public interface StorageEngine extends ReadableStorageEngine
             ResourceLocker locks,
             long lastTransactionIdWhenStarted,
             TxStateVisitor.Decorator additionalTxStateVisitor )
-            throws TransactionFailureException, CreateConstraintFailureException, ConstraintValidationException;
+            throws KernelException;
 
     /**
      * Apply a batch of groups of commands to this storage.

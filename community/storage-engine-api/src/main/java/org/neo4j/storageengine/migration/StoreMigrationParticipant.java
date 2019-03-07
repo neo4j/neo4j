@@ -22,6 +22,7 @@ package org.neo4j.storageengine.migration;
 import java.io.IOException;
 
 import org.neo4j.common.ProgressReporter;
+import org.neo4j.exceptions.KernelException;
 import org.neo4j.exceptions.UnsatisfiedDependencyException;
 import org.neo4j.io.layout.DatabaseLayout;
 
@@ -74,7 +75,7 @@ public interface StoreMigrationParticipant
      * @throws UnsatisfiedDependencyException if one or more dependencies were unsatisfied.
      */
     void migrate( DatabaseLayout directoryLayout, DatabaseLayout migrationLayout, ProgressReporter progress,
-            String versionToMigrateFrom, String versionToMigrateTo ) throws IOException;
+            String versionToMigrateFrom, String versionToMigrateTo ) throws IOException, KernelException;
 
     /**
      * After a successful migration, move all affected files from {@code upgradeDirectory} over to

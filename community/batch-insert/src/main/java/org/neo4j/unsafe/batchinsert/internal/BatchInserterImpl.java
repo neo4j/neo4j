@@ -44,6 +44,7 @@ import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.schema.ConstraintCreator;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexCreator;
@@ -505,11 +506,18 @@ public class BatchInserterImpl implements BatchInserter
                     "Unable to create index. The index configuration was refused by the '" + providerDescriptor + "' index provider.", e );
         }
 
-        schemaRuleAccess.writeSchemaRule( schemaRule );
-        schemaCache.addSchemaRule( schemaRule );
-        labelsTouched = true;
-        flushStrategy.forceFlush();
-        return schemaRule;
+        try
+        {
+            schemaRuleAccess.writeSchemaRule( schemaRule );
+            schemaCache.addSchemaRule( schemaRule );
+            labelsTouched = true;
+            flushStrategy.forceFlush();
+            return schemaRule;
+        }
+        catch ( KernelException e )
+        {
+            throw kernelExceptionToUserException( e );
+        }
     }
 
     private void repopulateAllIndexes( NativeLabelScanStore labelIndex ) throws IOException
@@ -611,12 +619,25 @@ public class BatchInserterImpl implements BatchInserter
 
         ConstraintRule constraintRule = ConstraintRule.constraintRule( constraintRuleId, constraintDescriptor, indexId );
 
-        schemaRuleAccess.writeSchemaRule( constraintRule );
-        schemaCache.addSchemaRule( constraintRule );
-        schemaRuleAccess.writeSchemaRule( storeIndexDescriptor );
-        schemaCache.addSchemaRule( storeIndexDescriptor );
-        labelsTouched = true;
-        flushStrategy.forceFlush();
+        try
+        {
+            schemaRuleAccess.writeSchemaRule( constraintRule );
+            schemaCache.addSchemaRule( constraintRule );
+            schemaRuleAccess.writeSchemaRule( storeIndexDescriptor );
+            schemaCache.addSchemaRule( storeIndexDescriptor );
+            labelsTouched = true;
+            flushStrategy.forceFlush();
+        }
+        catch ( KernelException e )
+        {
+            throw kernelExceptionToUserException( e );
+        }
+    }
+
+    private TransactionFailureException kernelExceptionToUserException( KernelException e )
+    {
+        // This may look odd, but previously TokenHolder#getOrCreateId silently converted KernelException into TransactionFailureException
+        throw new TransactionFailureException( "Unexpected kernel exception writing schema rules", e );
     }
 
     private void createUniquenessConstraintRule( LabelSchemaDescriptor descriptor )
@@ -634,10 +655,17 @@ public class BatchInserterImpl implements BatchInserter
         SchemaRule rule = ConstraintRule.constraintRule( schemaStore.nextId(),
                 ConstraintDescriptorFactory.existsForLabel( labelId, propertyKeyIds ) );
 
-        schemaRuleAccess.writeSchemaRule( rule );
-        schemaCache.addSchemaRule( rule );
-        labelsTouched = true;
-        flushStrategy.forceFlush();
+        try
+        {
+            schemaRuleAccess.writeSchemaRule( rule );
+            schemaCache.addSchemaRule( rule );
+            labelsTouched = true;
+            flushStrategy.forceFlush();
+        }
+        catch ( KernelException e )
+        {
+            throw kernelExceptionToUserException( e );
+        }
     }
 
     private void createRelTypePropertyExistenceConstraintRule( int relTypeId, int... propertyKeyIds )
@@ -645,24 +673,43 @@ public class BatchInserterImpl implements BatchInserter
         SchemaRule rule = ConstraintRule.constraintRule( schemaStore.nextId(),
                 ConstraintDescriptorFactory.existsForRelType( relTypeId, propertyKeyIds ) );
 
-        schemaRuleAccess.writeSchemaRule( rule );
-        schemaCache.addSchemaRule( rule );
-        flushStrategy.forceFlush();
+        try
+        {
+            schemaRuleAccess.writeSchemaRule( rule );
+            schemaCache.addSchemaRule( rule );
+            flushStrategy.forceFlush();
+        }
+        catch ( KernelException e )
+        {
+            throw kernelExceptionToUserException( e );
+        }
+    }
+
+    private int silentGetOrCreateTokenId( TokenHolder tokens, String name )
+    {
+        try
+        {
+            return tokens.getOrCreateId( name );
+        }
+        catch ( KernelException e )
+        {
+            throw kernelExceptionToUserException( e );
+        }
     }
 
     private int getOrCreatePropertyKeyId( String name )
     {
-        return tokenHolders.propertyKeyTokens().getOrCreateId( name );
+        return silentGetOrCreateTokenId( tokenHolders.propertyKeyTokens(), name );
     }
 
     private int getOrCreateRelationshipTypeId( String name )
     {
-        return tokenHolders.relationshipTypeTokens().getOrCreateId( name );
+        return silentGetOrCreateTokenId( tokenHolders.relationshipTypeTokens(), name );
     }
 
     private int getOrCreateLabelId( String name )
     {
-        return tokenHolders.labelTokens().getOrCreateId( name );
+        return silentGetOrCreateTokenId( tokenHolders.labelTokens(), name );
     }
 
     private boolean primitiveHasProperty( PrimitiveRecord record, String propertyName )

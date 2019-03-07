@@ -192,17 +192,17 @@ public abstract class RecordStorageReaderTestBase
         apply( txState );
     }
 
-    private int getOrCreatePropertyKeyId( String propertyKey )
+    private int getOrCreatePropertyKeyId( String propertyKey ) throws KernelException
     {
         return tokenHolders.propertyKeyTokens().getOrCreateId( propertyKey );
     }
 
-    private int getOrCreateLabelId( Label label )
+    private int getOrCreateLabelId( Label label ) throws KernelException
     {
         return tokenHolders.labelTokens().getOrCreateId( label.name() );
     }
 
-    private int getOrCreateRelationshipTypeId( RelationshipType relationshipType )
+    private int getOrCreateRelationshipTypeId( RelationshipType relationshipType ) throws KernelException
     {
         return tokenHolders.relationshipTypeTokens().getOrCreateId( relationshipType.name() );
     }

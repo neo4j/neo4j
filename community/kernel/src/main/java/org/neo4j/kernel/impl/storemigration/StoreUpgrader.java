@@ -30,6 +30,7 @@ import java.util.regex.Pattern;
 import org.neo4j.common.ProgressReporter;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.exceptions.KernelException;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.impl.store.format.LuceneCapability;
@@ -349,7 +350,7 @@ public class StoreUpgrader
                 progressReporter.completed();
             }
         }
-        catch ( IOException | UncheckedIOException e )
+        catch ( IOException | UncheckedIOException | KernelException e )
         {
             throw new UnableToUpgradeException( "Failure doing migration", e );
         }

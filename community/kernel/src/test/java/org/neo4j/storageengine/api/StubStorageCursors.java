@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 
+import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
@@ -84,8 +85,23 @@ public class StubStorageCursors implements StorageReader
         }
         long propertyId = nextPropertyId.incrementAndGet();
         propertyData.put( propertyId, new PropertyData( properties ) );
-        properties.keySet().forEach( propertyKeyTokenHolder::getOrCreateId );
+        for ( String key : properties.keySet() )
+        {
+            silentGetOrCreatePropertyKey( key );
+        }
         return propertyId;
+    }
+
+    private int silentGetOrCreatePropertyKey( String key )
+    {
+        try
+        {
+            return propertyKeyTokenHolder.getOrCreateId( key );
+        }
+        catch ( KernelException e )
+        {
+            throw new RuntimeException( e );
+        }
     }
 
     @Override
@@ -617,7 +633,7 @@ public class StubStorageCursors implements StorageReader
         @Override
         public int propertyKey()
         {
-            return propertyKeyTokenHolder.getOrCreateId( current.getKey() );
+            return silentGetOrCreatePropertyKey( current.getKey() );
         }
 
         @Override

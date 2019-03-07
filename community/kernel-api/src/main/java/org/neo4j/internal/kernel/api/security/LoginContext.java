@@ -19,11 +19,11 @@
  */
 package org.neo4j.internal.kernel.api.security;
 
-import java.util.function.ToIntFunction;
+import org.neo4j.exceptions.KernelException;
 
 /**
  * The LoginContext hold the executing authenticated user (subject).
- * By calling {@link #authorize(ToIntFunction, String)} the user is also authorized, and a full SecurityContext is returned,
+ * By calling {@link #authorize(PropertyKeyIdLookup, String)} the user is also authorized, and a full SecurityContext is returned,
  * which can be used to assert user permissions during query execution.
  */
 public interface LoginContext
@@ -36,11 +36,11 @@ public interface LoginContext
     /**
      * Authorize the user and return a SecurityContext.
      *
-     * @param propertyIdLookup token lookup, used to compile property level security verification
+     * @param propertyKeyIdLookup token lookup, used to compile property level security verification
      * @param dbName the name of the database the user should be authorized against
      * @return the security context
      */
-    SecurityContext authorize( ToIntFunction<String> propertyIdLookup, String dbName );
+    SecurityContext authorize( PropertyKeyIdLookup propertyKeyIdLookup, String dbName );
 
     LoginContext AUTH_DISABLED = new LoginContext()
     {
@@ -51,9 +51,14 @@ public interface LoginContext
         }
 
         @Override
-        public SecurityContext authorize( ToIntFunction<String> propertyIdLookup, String dbName )
+        public SecurityContext authorize( PropertyKeyIdLookup propertyKeyIdLookup, String dbName )
         {
             return SecurityContext.AUTH_DISABLED;
         }
     };
+
+    interface PropertyKeyIdLookup
+    {
+        int getOrCreatePropertyKeyId( String name ) throws KernelException;
+    }
 }

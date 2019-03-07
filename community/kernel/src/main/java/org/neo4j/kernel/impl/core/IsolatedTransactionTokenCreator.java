@@ -26,8 +26,6 @@ import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.Transaction.Type;
-import org.neo4j.internal.kernel.api.exceptions.schema.IllegalTokenNameException;
-import org.neo4j.internal.kernel.api.exceptions.schema.TooManyLabelsException;
 
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 
@@ -74,5 +72,5 @@ abstract class IsolatedTransactionTokenCreator implements TokenCreator
         }
     }
 
-    abstract int createKey( Transaction transaction, String name, boolean internal ) throws IllegalTokenNameException, TooManyLabelsException;
+    abstract int createKey( Transaction transaction, String name, boolean internal ) throws KernelException;
 }

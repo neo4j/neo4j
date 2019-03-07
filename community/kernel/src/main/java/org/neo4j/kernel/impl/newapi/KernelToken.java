@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.newapi;
 
 import java.util.Iterator;
 
-import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.exceptions.KernelException;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.Token;
 import org.neo4j.internal.kernel.api.exceptions.LabelNotFoundKernelException;
@@ -55,18 +55,17 @@ public class KernelToken implements Token
     }
 
     @Override
-    public int labelGetOrCreateForName( String labelName ) throws IllegalTokenNameException, TooManyLabelsException
+    public int labelGetOrCreateForName( String labelName ) throws KernelException
     {
         try
         {
             return getOrCreateForName( tokenHolders.labelTokens(), labelName );
         }
-        catch ( TransactionFailureException e )
+        catch ( UnderlyingStorageException e )
         {
             // Temporary workaround for the property store based label implementation.
             // Actual implementation should not depend on internal kernel exception messages like this.
-            if ( e.getCause() instanceof UnderlyingStorageException &&
-                    e.getCause().getMessage().equals( "Id capacity exceeded" ) )
+            if ( e.getMessage().equals( "Id capacity exceeded" ) )
             {
                 throw new TooManyLabelsException( e );
             }
@@ -75,19 +74,17 @@ public class KernelToken implements Token
     }
 
     @Override
-    public void labelGetOrCreateForNames( String[] labelNames, int[] labelIds )
-            throws IllegalTokenNameException, TooManyLabelsException
+    public void labelGetOrCreateForNames( String[] labelNames, int[] labelIds ) throws KernelException
     {
         try
         {
             getOrCreateForNames( tokenHolders.labelTokens(), labelNames, labelIds );
         }
-        catch ( TransactionFailureException e )
+        catch ( UnderlyingStorageException e )
         {
             // Temporary workaround for the property store based label implementation.
             // Actual implementation should not depend on internal kernel exception messages like this.
-            if ( e.getCause() instanceof UnderlyingStorageException &&
-                    e.getCause().getMessage().equals( "Id capacity exceeded" ) )
+            if ( e.getMessage().equals( "Id capacity exceeded" ) )
             {
                 throw new TooManyLabelsException( e );
             }
@@ -96,7 +93,7 @@ public class KernelToken implements Token
     }
 
     @Override
-    public int labelCreateForName( String labelName, boolean internal ) throws IllegalTokenNameException, TooManyLabelsException
+    public int labelCreateForName( String labelName, boolean internal )
     {
         ktx.assertOpen();
         int id = commandCreationContext.reserveLabelTokenId();
@@ -105,7 +102,7 @@ public class KernelToken implements Token
     }
 
     @Override
-    public int relationshipTypeCreateForName( String relationshipTypeName, boolean internal ) throws IllegalTokenNameException
+    public int relationshipTypeCreateForName( String relationshipTypeName, boolean internal )
     {
         ktx.assertOpen();
         int id = commandCreationContext.reserveRelationshipTypeTokenId();
@@ -114,7 +111,7 @@ public class KernelToken implements Token
     }
 
     @Override
-    public int propertyKeyCreateForName( String propertyKeyName, boolean internal ) throws IllegalTokenNameException
+    public int propertyKeyCreateForName( String propertyKeyName, boolean internal )
     {
         ktx.assertOpen();
         int id = commandCreationContext.reservePropertyKeyTokenId();
@@ -123,25 +120,25 @@ public class KernelToken implements Token
     }
 
     @Override
-    public int propertyKeyGetOrCreateForName( String propertyKeyName ) throws IllegalTokenNameException
+    public int propertyKeyGetOrCreateForName( String propertyKeyName ) throws KernelException
     {
         return getOrCreateForName( tokenHolders.propertyKeyTokens(), propertyKeyName );
     }
 
     @Override
-    public void propertyKeyGetOrCreateForNames( String[] propertyKeys, int[] ids ) throws IllegalTokenNameException
+    public void propertyKeyGetOrCreateForNames( String[] propertyKeys, int[] ids ) throws KernelException
     {
         getOrCreateForNames( tokenHolders.propertyKeyTokens(), propertyKeys, ids );
     }
 
     @Override
-    public int relationshipTypeGetOrCreateForName( String relationshipTypeName ) throws IllegalTokenNameException
+    public int relationshipTypeGetOrCreateForName( String relationshipTypeName ) throws KernelException
     {
         return getOrCreateForName( tokenHolders.relationshipTypeTokens(), relationshipTypeName );
     }
 
     @Override
-    public void relationshipTypeGetOrCreateForNames( String[] relationshipTypes, int[] ids ) throws IllegalTokenNameException
+    public void relationshipTypeGetOrCreateForNames( String[] relationshipTypes, int[] ids ) throws KernelException
     {
         getOrCreateForNames( tokenHolders.relationshipTypeTokens(), relationshipTypes, ids );
     }
@@ -263,7 +260,7 @@ public class KernelToken implements Token
         return name;
     }
 
-    private int getOrCreateForName( TokenHolder tokens, String name ) throws IllegalTokenNameException
+    private int getOrCreateForName( TokenHolder tokens, String name ) throws KernelException
     {
         ktx.assertOpen();
         int id = tokens.getIdByName( checkValidTokenName( name ) );
@@ -275,7 +272,7 @@ public class KernelToken implements Token
         return tokens.getOrCreateId( name );
     }
 
-    private void getOrCreateForNames( TokenHolder tokenHolder, String[] names, int[] ids ) throws IllegalTokenNameException
+    private void getOrCreateForNames( TokenHolder tokenHolder, String[] names, int[] ids ) throws KernelException
     {
         ktx.assertOpen();
         assertSameLength( names, ids );

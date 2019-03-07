@@ -22,15 +22,18 @@ package org.neo4j.graphdb.schema;
 import org.junit.Rule;
 import org.junit.Test;
 
+import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.internal.recordstorage.SchemaRuleAccess;
 import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
+import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.test.rule.DbmsRule;
 import org.neo4j.test.rule.EmbeddedDbmsRule;
 
 import static org.junit.Assert.assertFalse;
+import static org.neo4j.helpers.collection.Iterators.loop;
 import static org.neo4j.helpers.collection.Iterators.single;
 
 public class DropBrokenUniquenessConstraintIT
@@ -72,7 +75,7 @@ public class DropBrokenUniquenessConstraintIT
     }
 
     @Test
-    public void shouldDropUniquenessConstraintWithBackingIndexHavingNoOwner()
+    public void shouldDropUniquenessConstraintWithBackingIndexHavingNoOwner() throws KernelException
     {
         // given
         try ( Transaction tx = db.beginTx() )
@@ -84,7 +87,7 @@ public class DropBrokenUniquenessConstraintIT
         // when intentionally breaking the schema by setting the backing index rule to unused
         RecordStorageEngine storageEngine = db.getDependencyResolver().resolveDependency( RecordStorageEngine.class );
         SchemaRuleAccess schemaRules = storageEngine.testAccessSchemaRules();
-        schemaRules.indexesGetAll().forEachRemaining( index -> schemaRules.writeSchemaRule( new StoreIndexDescriptor( index, null ) ) );
+        writeSchemaRulesWithoutConstraint( schemaRules );
         // At this point the SchemaCache doesn't know about this change so we have to reload it
         storageEngine.loadSchemaCache();
         try ( Transaction tx = db.beginTx() )
@@ -135,7 +138,7 @@ public class DropBrokenUniquenessConstraintIT
     }
 
     @Test
-    public void shouldDropUniquenessConstraintWhereConstraintRecordIsMissingAndIndexHasNoOwner()
+    public void shouldDropUniquenessConstraintWhereConstraintRecordIsMissingAndIndexHasNoOwner() throws KernelException
     {
         // given
         try ( Transaction tx = db.beginTx() )
@@ -148,7 +151,7 @@ public class DropBrokenUniquenessConstraintIT
         RecordStorageEngine storageEngine = db.getDependencyResolver().resolveDependency( RecordStorageEngine.class );
         SchemaRuleAccess schemaRules = storageEngine.testAccessSchemaRules();
         schemaRules.constraintsGetAllIgnoreMalformed().forEachRemaining( schemaRules::deleteSchemaRule );
-        schemaRules.indexesGetAll().forEachRemaining( index -> schemaRules.writeSchemaRule( new StoreIndexDescriptor( index, null ) ) );
+        writeSchemaRulesWithoutConstraint( schemaRules );
 
         // At this point the SchemaCache doesn't know about this change so we have to reload it
         storageEngine.loadSchemaCache();
@@ -165,6 +168,14 @@ public class DropBrokenUniquenessConstraintIT
         {
             assertFalse( db.schema().getConstraints().iterator().hasNext() );
             assertFalse( db.schema().getIndexes().iterator().hasNext() );
+        }
+    }
+
+    private void writeSchemaRulesWithoutConstraint( SchemaRuleAccess schemaRules ) throws KernelException
+    {
+        for ( StorageIndexReference rule : loop( schemaRules.indexesGetAll() ) )
+        {
+            schemaRules.writeSchemaRule( new StoreIndexDescriptor( rule, null ) );
         }
     }
 }

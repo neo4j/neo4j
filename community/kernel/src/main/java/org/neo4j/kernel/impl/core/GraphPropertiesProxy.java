@@ -26,9 +26,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.NotFoundException;
+import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.TokenRead;
@@ -156,6 +158,10 @@ public class GraphPropertiesProxy implements GraphProperties
         {
             throw new IllegalArgumentException( format( "Invalid property key '%s'.", key ), e );
         }
+        catch ( KernelException e )
+        {
+            throw new TransactionFailureException( "Unknown error trying to create property key token", e );
+        }
 
         try ( Statement ignore = transaction.acquireStatement() )
         {
@@ -180,6 +186,11 @@ public class GraphPropertiesProxy implements GraphProperties
         {
             throw new IllegalArgumentException( format( "Invalid property key '%s'.", key ), e );
         }
+        catch ( KernelException e )
+        {
+            throw new TransactionFailureException( "Unknown error trying to get property key token", e );
+        }
+
         try ( Statement ignore = transaction.acquireStatement() )
         {
             return transaction.dataWrite().graphRemoveProperty( propertyKeyId ).asObjectCopy();

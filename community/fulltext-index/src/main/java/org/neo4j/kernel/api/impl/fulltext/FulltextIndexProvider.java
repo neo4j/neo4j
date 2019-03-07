@@ -28,6 +28,8 @@ import java.util.stream.Stream;
 
 import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
+import org.neo4j.exceptions.KernelException;
+import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.index.fulltext.AnalyzerProvider;
 import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.InternalIndexState;
@@ -280,20 +282,28 @@ class FulltextIndexProvider extends IndexProvider implements FulltextAdapter
                     LuceneFulltextDocumentStructure.FIELD_ENTITY_ID );
         }
         int[] entityTokenIds = new int[entityTokens.length];
-        if ( type == EntityType.NODE )
+        try
         {
-            tokenHolders.labelTokens().getOrCreateIds( entityTokens, entityTokenIds );
-        }
-        else
-        {
-            tokenHolders.relationshipTypeTokens().getOrCreateIds( entityTokens, entityTokenIds );
-        }
-        int[] propertyIds = Arrays.stream( properties ).mapToInt( tokenHolders.propertyKeyTokens()::getOrCreateId ).toArray();
+            if ( type == EntityType.NODE )
+            {
+                tokenHolders.labelTokens().getOrCreateIds( entityTokens, entityTokenIds );
+            }
+            else
+            {
+                tokenHolders.relationshipTypeTokens().getOrCreateIds( entityTokens, entityTokenIds );
+            }
+            int[] propertyIds = new int[properties.length];
+            tokenHolders.propertyKeyTokens().getOrCreateIds( properties, propertyIds );
 
-        SchemaDescriptor schema = SchemaDescriptorFactory.multiToken( entityTokenIds, type, propertyIds );
-        indexConfiguration.putIfAbsent( FulltextIndexSettings.INDEX_CONFIG_ANALYZER, defaultAnalyzerName );
-        indexConfiguration.putIfAbsent( FulltextIndexSettings.INDEX_CONFIG_EVENTUALLY_CONSISTENT, defaultEventuallyConsistentSetting );
-        return new FulltextSchemaDescriptor( schema, indexConfiguration );
+            SchemaDescriptor schema = SchemaDescriptorFactory.multiToken( entityTokenIds, type, propertyIds );
+            indexConfiguration.putIfAbsent( FulltextIndexSettings.INDEX_CONFIG_ANALYZER, defaultAnalyzerName );
+            indexConfiguration.putIfAbsent( FulltextIndexSettings.INDEX_CONFIG_EVENTUALLY_CONSISTENT, defaultEventuallyConsistentSetting );
+            return new FulltextSchemaDescriptor( schema, indexConfiguration );
+        }
+        catch ( KernelException e )
+        {
+            throw new TransactionFailureException( "Error creating token", e );
+        }
     }
 
     @Override

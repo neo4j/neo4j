@@ -26,7 +26,7 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.stream.Stream;
 
-import org.neo4j.internal.kernel.api.exceptions.schema.CreateConstraintFailureException;
+import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
@@ -164,7 +164,7 @@ class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
     }
 
     @Override
-    public void visitAddedIndex( IndexDescriptor index )
+    public void visitAddedIndex( IndexDescriptor index ) throws KernelException
     {
         SchemaRule rule = new DefaultStorageIndexReference( index, schemaStorage.newRuleId() );
         schemaStateChanger.createSchemaRule( recordState, rule );
@@ -212,7 +212,7 @@ class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
     }
 
     @Override
-    public void visitAddedConstraint( ConstraintDescriptor constraint ) throws CreateConstraintFailureException
+    public void visitAddedConstraint( ConstraintDescriptor constraint ) throws KernelException
     {
         clearSchemaState = true;
         long constraintId = schemaStorage.newRuleId();
@@ -237,7 +237,7 @@ class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
         }
     }
 
-    private void visitAddedUniquenessConstraint( UniquenessConstraintDescriptor uniqueConstraint, long constraintId )
+    private void visitAddedUniquenessConstraint( UniquenessConstraintDescriptor uniqueConstraint, long constraintId ) throws KernelException
     {
         StorageIndexReference indexRule = firstUniqueConstraintIndex( schemaStorage.indexGetForSchema( uniqueConstraint.ownedIndexDescriptor() ) );
         ConstraintRule constraintRule = constraintSemantics.createUniquenessConstraintRule( constraintId, uniqueConstraint, indexRule.getId() );
@@ -245,8 +245,7 @@ class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
         schemaStateChanger.setConstraintIndexOwner( recordState, indexRule, constraintId );
     }
 
-    private void visitAddedNodeKeyConstraint( NodeKeyConstraintDescriptor uniqueConstraint, long constraintId )
-            throws CreateConstraintFailureException
+    private void visitAddedNodeKeyConstraint( NodeKeyConstraintDescriptor uniqueConstraint, long constraintId ) throws KernelException
     {
         StorageIndexReference indexRule = firstUniqueConstraintIndex( schemaStorage.indexGetForSchema( uniqueConstraint.ownedIndexDescriptor() ) );
         ConstraintRule constraintRule = constraintSemantics.createNodeKeyConstraintRule( constraintId, uniqueConstraint, indexRule.getId() );

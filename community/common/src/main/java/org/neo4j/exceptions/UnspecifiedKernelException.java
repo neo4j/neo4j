@@ -17,17 +17,24 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.internal.recordstorage;
+package org.neo4j.exceptions;
 
-import org.neo4j.exceptions.KernelException;
-import org.neo4j.storageengine.api.SchemaRule;
-import org.neo4j.storageengine.api.StorageIndexReference;
+import org.neo4j.kernel.api.exceptions.Status;
 
-public interface SchemaRecordChangeTranslator
+public class UnspecifiedKernelException extends KernelException
 {
-    void createSchemaRule( TransactionRecordState recordState, SchemaRule rule ) throws KernelException;
+    public UnspecifiedKernelException( Status statusCode, Throwable cause, String message, Object... parameters )
+    {
+        super( statusCode, cause, message, parameters );
+    }
 
-    void dropSchemaRule( TransactionRecordState recordState, SchemaRule rule );
+    public UnspecifiedKernelException( Status statusCode, Throwable cause )
+    {
+        super( statusCode, cause );
+    }
 
-    void setConstraintIndexOwner( TransactionRecordState recordState, StorageIndexReference indexRule, long constraintId ) throws KernelException;
+    public UnspecifiedKernelException( Status statusCode, String message, Object... parameters )
+    {
+        super( statusCode, message, parameters );
+    }
 }

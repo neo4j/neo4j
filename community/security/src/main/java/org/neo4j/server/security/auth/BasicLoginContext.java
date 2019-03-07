@@ -19,8 +19,6 @@
  */
 package org.neo4j.server.security.auth;
 
-import java.util.function.ToIntFunction;
-
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.AuthenticationResult;
@@ -108,7 +106,7 @@ public class BasicLoginContext implements LoginContext
     }
 
     @Override
-    public SecurityContext authorize( ToIntFunction<String> propertyIdLookup, String dbName )
+    public SecurityContext authorize( PropertyKeyIdLookup propertyKeyIdLookup, String dbName )
     {
         return new SecurityContext( authSubject, accessMode );
     }

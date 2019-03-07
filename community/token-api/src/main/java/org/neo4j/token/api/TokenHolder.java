@@ -21,6 +21,8 @@ package org.neo4j.token.api;
 
 import java.util.List;
 
+import org.neo4j.exceptions.KernelException;
+
 public interface TokenHolder
 {
     String TYPE_PROPERTY_KEY = "PropertyKey";
@@ -54,7 +56,7 @@ public interface TokenHolder
      * @param name The name of the token to get the id for.
      * @return The (possibly newly created) id of the given token.
      */
-    int getOrCreateId( String name );
+    int getOrCreateId( String name ) throws KernelException;
 
     /**
      * Resolve the ids of the given token {@code names} into the array for {@code ids}.
@@ -63,7 +65,7 @@ public interface TokenHolder
      * <p>
      * Note that this only looks at public tokens. For internal tokens, use {@link #getOrCreateInternalIds(String[], int[])}.
      */
-    void getOrCreateIds( String[] names, int[] ids );
+    void getOrCreateIds( String[] names, int[] ids ) throws KernelException;
 
     /**
      * Get the (public) token that has the given id, or throw {@link TokenNotFoundException}.
@@ -107,7 +109,7 @@ public interface TokenHolder
      * <p>
      * This method does not take public tokens into consideration.
      */
-    void getOrCreateInternalIds( String[] names, int[] ids );
+    void getOrCreateInternalIds( String[] names, int[] ids ) throws KernelException;
 
     /**
      * This is the same as {@link #getTokenById(int)}, but for internal tokens.

@@ -36,6 +36,7 @@ import java.util.List;
 
 import org.neo4j.common.ProgressReporter;
 import org.neo4j.configuration.Config;
+import org.neo4j.exceptions.KernelException;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.id.IdGeneratorFactory;
@@ -155,7 +156,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
 
     @Override
     public void migrate( DatabaseLayout directoryLayout, DatabaseLayout migrationLayout, ProgressReporter progressReporter,
-            String versionToMigrateFrom, String versionToMigrateTo ) throws IOException
+            String versionToMigrateFrom, String versionToMigrateTo ) throws IOException, KernelException
     {
         // Extract information about the last transaction from legacy neostore
         File neoStore = directoryLayout.metadataStore();
@@ -647,7 +648,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
      * Migration of the schema store is invoked if the old and new formats differ in their {@link Capability#FLEXIBLE_SCHEMA_STORE} capability.
      */
     private void migrateSchemaStore( DatabaseLayout directoryLayout, DatabaseLayout migrationLayout, RecordFormats oldFormat, RecordFormats newFormat )
-            throws IOException
+            throws IOException, KernelException
     {
         StoreFactory srcFactory = createStoreFactory( directoryLayout, oldFormat, true );
         StoreFactory dstFactory = createStoreFactory( migrationLayout, newFormat, false );

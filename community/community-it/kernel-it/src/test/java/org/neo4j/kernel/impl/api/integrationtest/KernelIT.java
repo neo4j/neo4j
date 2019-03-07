@@ -24,6 +24,7 @@ import org.junit.Test;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -31,8 +32,6 @@ import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.SchemaWrite;
 import org.neo4j.internal.kernel.api.TokenWrite;
-import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
-import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -207,7 +206,7 @@ public class KernelIT extends KernelIntegrationTest
     }
 
     private IndexReference createIndex( org.neo4j.internal.kernel.api.Transaction transaction )
-            throws SchemaKernelException, InvalidTransactionTypeKernelException
+            throws KernelException
     {
         TokenWrite tokenWrite = transaction.tokenWrite();
         SchemaWrite schemaWrite = transaction.schemaWrite();

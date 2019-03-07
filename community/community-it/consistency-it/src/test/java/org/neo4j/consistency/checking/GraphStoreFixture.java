@@ -39,13 +39,13 @@ import org.neo4j.consistency.statistics.DefaultCounts;
 import org.neo4j.consistency.statistics.Statistics;
 import org.neo4j.consistency.statistics.VerboseStatistics;
 import org.neo4j.consistency.store.DirectStoreAccess;
+import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.index.label.LabelScanStore;
 import org.neo4j.internal.index.label.NativeLabelScanStore;
-import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.internal.recordstorage.RecordStorageReader;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
@@ -169,7 +169,7 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
         }
     }
 
-    public void apply( Transaction transaction ) throws TransactionFailureException
+    public void apply( Transaction transaction ) throws KernelException
     {
         applyTransaction( transaction );
     }
@@ -329,10 +329,10 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
     {
         final long startTimestamp = currentTimeMillis();
 
-        protected abstract void transactionData( TransactionDataBuilder tx, IdGenerator next );
+        protected abstract void transactionData( TransactionDataBuilder tx, IdGenerator next ) throws KernelException;
 
         public TransactionRepresentation representation( IdGenerator idGenerator, int masterId, int authorId,
-                                                         long lastCommittedTx, NeoStores neoStores )
+                                                         long lastCommittedTx, NeoStores neoStores ) throws KernelException
         {
             TransactionWriter writer = new TransactionWriter( neoStores );
             transactionData( new TransactionDataBuilder( writer, neoStores, idGenerator ), idGenerator );
@@ -642,7 +642,7 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
                     .testAccessNeoStores();
         }
 
-        public void apply( Transaction transaction ) throws TransactionFailureException
+        public void apply( Transaction transaction ) throws KernelException
         {
             TransactionRepresentation representation = transaction.representation( idGenerator(), masterId(), myId(),
                     transactionIdStore.getLastCommittedTransactionId(), neoStores );
@@ -662,7 +662,7 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
         return new Applier();
     }
 
-    private void applyTransaction( Transaction transaction ) throws TransactionFailureException
+    private void applyTransaction( Transaction transaction ) throws KernelException
     {
         // TODO you know... we could have just appended the transaction representation to the log
         // and the next startup of the store would do recovery where the transaction would have been

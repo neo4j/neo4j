@@ -33,6 +33,7 @@ import java.util.Optional;
 
 import org.neo4j.common.EntityType;
 import org.neo4j.configuration.Config;
+import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.id.IdType;
 import org.neo4j.internal.kernel.api.exceptions.schema.MalformedSchemaRuleException;
@@ -167,7 +168,7 @@ public class SchemaStore extends CommonAbstractStore<SchemaRecord,IntStoreHeader
     private static final String PROP_INDEX_TYPE = PROP_SCHEMA_RULE_PREFIX + "indexType";
     private static final String PROP_INDEX_CONFIG_PREFIX = PROP_SCHEMA_RULE_PREFIX + "IndexConfig.";
 
-    public static int getOwningConstraintPropertyKeyId( TokenHolder propertyKeyTokenHolder )
+    public static int getOwningConstraintPropertyKeyId( TokenHolder propertyKeyTokenHolder ) throws KernelException
     {
         int[] ids = new int[1];
         propertyKeyTokenHolder.getOrCreateInternalIds( new String[]{PROP_OWNING_CONSTRAINT}, ids );
@@ -200,7 +201,7 @@ public class SchemaStore extends CommonAbstractStore<SchemaRecord,IntStoreHeader
         return map;
     }
 
-    public static IntObjectMap<Value> convertSchemaRuleToMap( SchemaRule rule, TokenHolder propertyKeyTokenHolder )
+    public static IntObjectMap<Value> convertSchemaRuleToMap( SchemaRule rule, TokenHolder propertyKeyTokenHolder ) throws KernelException
     {
         // The dance we do in here with map to arrays to another map, allows us to resolve (and allocate) all of the tokens in a single batch operation.
         Map<String,Value> stringlyMap = mapifySchemaRule( rule );

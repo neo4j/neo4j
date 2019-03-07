@@ -21,10 +21,9 @@ package org.neo4j.kernel.impl.core;
 
 import java.util.function.Supplier;
 
+import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.internal.kernel.api.Transaction;
-import org.neo4j.internal.kernel.api.exceptions.schema.IllegalTokenNameException;
-import org.neo4j.internal.kernel.api.exceptions.schema.TooManyLabelsException;
 
 public class DefaultLabelIdCreator extends IsolatedTransactionTokenCreator
 {
@@ -34,7 +33,7 @@ public class DefaultLabelIdCreator extends IsolatedTransactionTokenCreator
     }
 
     @Override
-    protected int createKey( Transaction transaction, String name, boolean internal ) throws IllegalTokenNameException, TooManyLabelsException
+    protected int createKey( Transaction transaction, String name, boolean internal ) throws KernelException
     {
         return transaction.tokenWrite().labelCreateForName( name, internal );
     }

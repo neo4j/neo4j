@@ -28,6 +28,7 @@ import java.util.Iterator;
 import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
+import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.MalformedSchemaRuleException;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -143,13 +144,13 @@ public class SchemaStorage implements SchemaRuleAccess
         return new PropertyBasedSchemaRecordChangeTranslator()
         {
             @Override
-            protected IntObjectMap<Value> asMap( SchemaRule rule )
+            protected IntObjectMap<Value> asMap( SchemaRule rule ) throws KernelException
             {
                 return SchemaStore.convertSchemaRuleToMap( rule, propertyKeyTokenHolder );
             }
 
             @Override
-            protected void setConstraintIndexOwnerProperty( long constraintId, IntObjectProcedure<Value> proc )
+            protected void setConstraintIndexOwnerProperty( long constraintId, IntObjectProcedure<Value> proc ) throws KernelException
             {
                 int propertyId = SchemaStore.getOwningConstraintPropertyKeyId( propertyKeyTokenHolder );
                 proc.value( propertyId, Values.longValue( constraintId ) );
@@ -158,7 +159,7 @@ public class SchemaStorage implements SchemaRuleAccess
     }
 
     @Override
-    public void writeSchemaRule( SchemaRule rule )
+    public void writeSchemaRule( SchemaRule rule ) throws KernelException
     {
         IntObjectMap<Value> protoProperties = SchemaStore.convertSchemaRuleToMap( rule, propertyKeyTokenHolder );
         PropertyStore propertyStore = schemaStore.propertyStore();

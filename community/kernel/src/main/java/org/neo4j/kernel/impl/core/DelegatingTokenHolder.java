@@ -30,8 +30,8 @@ import java.util.List;
 import java.util.function.IntPredicate;
 
 import org.neo4j.exceptions.KernelException;
-import org.neo4j.graphdb.TransactionFailureException;
-import org.neo4j.kernel.api.exceptions.ReadOnlyDbException;
+import org.neo4j.exceptions.UnspecifiedKernelException;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.token.api.NamedToken;
 import org.neo4j.token.api.NonUniqueTokenException;
 
@@ -57,7 +57,6 @@ public class DelegatingTokenHolder extends AbstractTokenHolderBase
      *
      * @param name token name
      * @return newly created token id
-     * @throws KernelException
      */
     @Override
     protected synchronized int createToken( String name, boolean internal ) throws KernelException
@@ -75,24 +74,24 @@ public class DelegatingTokenHolder extends AbstractTokenHolderBase
         }
         catch ( NonUniqueTokenException e )
         {
-            throw new IllegalStateException( "Newly created token should be unique.", e );
+            throw new UnspecifiedKernelException( Status.General.UnknownError, "Newly created token should be unique.", e );
         }
         return id;
     }
 
     @Override
-    public void getOrCreateIds( String[] names, int[] ids )
+    public void getOrCreateIds( String[] names, int[] ids ) throws KernelException
     {
         innerBatchGetOrCreate( names, ids, false );
     }
 
     @Override
-    public void getOrCreateInternalIds( String[] names, int[] ids )
+    public void getOrCreateInternalIds( String[] names, int[] ids ) throws KernelException
     {
         innerBatchGetOrCreate( names, ids, true );
     }
 
-    private void innerBatchGetOrCreate( String[] names, int[] ids, boolean internal )
+    private void innerBatchGetOrCreate( String[] names, int[] ids, boolean internal ) throws KernelException
     {
         assertSameArrayLength( names, ids );
         // Assume all tokens exist and try to resolve them. Break out on the first missing token.
@@ -112,7 +111,7 @@ public class DelegatingTokenHolder extends AbstractTokenHolderBase
         }
     }
 
-    private synchronized void createMissingTokens( String[] names, int[] ids, boolean internal )
+    private synchronized void createMissingTokens( String[] names, int[] ids, boolean internal ) throws KernelException
     {
         // We redo the resolving under the lock, to make sure that these ids are really missing, and won't be
         // created concurrently with us.
@@ -130,62 +129,51 @@ public class DelegatingTokenHolder extends AbstractTokenHolderBase
         }
     }
 
-    private ObjectIntHashMap<String> createUnresolvedTokens( IntSet unresolvedIndexes, String[] names, int[] ids, boolean internal )
+    private ObjectIntHashMap<String> createUnresolvedTokens( IntSet unresolvedIndexes, String[] names, int[] ids, boolean internal ) throws KernelException
     {
-        try
+        // First, we need to filter out all of the tokens that are already resolved, so we only create tokens for
+        // indexes that are in the unresolvedIndexes set.
+        // However, we also need to deal with duplicate token names. For any token index we decide needs to have a
+        // token created, we will add a mapping from the token name, to the ids-index into which the token id will
+        // be written. This is the 'createdTokens' map. It maps token names to indexes into the 'ids' array.
+        // If we find that the 'created'Tokens' map already has an entry for a given name, then that name is a
+        // duplicate, and we will need to "remap" it later, by reading the token id from the correct index in the
+        // 'ids' array, and storing it at the indexes of the duplicates. This is what the 'remappingIndexes' map is
+        // for. This is a map from 'a' to 'b', where both 'a' and 'b' are indexes into the 'ids' array, and where
+        // the corresponding name for 'a' is a duplicate of the name for 'b', and where we have already decided
+        // that we will create a token id for index 'b'. After the token ids have been created, we go through the
+        // 'remappingIndexes' map, and for every '(a,b)' entry, we store the token id created for 'b' and 'ids'
+        // index 'a'.
+        ObjectIntHashMap<String> createdTokens = new ObjectIntHashMap<>();
+        IntIntHashMap remappingIndexes = new IntIntHashMap();
+        IntPredicate tokenCreateFilter = index ->
         {
-            // First, we need to filter out all of the tokens that are already resolved, so we only create tokens for
-            // indexes that are in the unresolvedIndexes set.
-            // However, we also need to deal with duplicate token names. For any token index we decide needs to have a
-            // token created, we will add a mapping from the token name, to the ids-index into which the token id will
-            // be written. This is the 'createdTokens' map. It maps token names to indexes into the 'ids' array.
-            // If we find that the 'created'Tokens' map already has an entry for a given name, then that name is a
-            // duplicate, and we will need to "remap" it later, by reading the token id from the correct index in the
-            // 'ids' array, and storing it at the indexes of the duplicates. This is what the 'remappingIndexes' map is
-            // for. This is a map from 'a' to 'b', where both 'a' and 'b' are indexes into the 'ids' array, and where
-            // the corresponding name for 'a' is a duplicate of the name for 'b', and where we have already decided
-            // that we will create a token id for index 'b'. After the token ids have been created, we go through the
-            // 'remappingIndexes' map, and for every '(a,b)' entry, we store the token id created for 'b' and 'ids'
-            // index 'a'.
-            ObjectIntHashMap<String> createdTokens = new ObjectIntHashMap<>();
-            IntIntHashMap remappingIndexes = new IntIntHashMap();
-            IntPredicate tokenCreateFilter = index ->
+            boolean needsCreate = unresolvedIndexes.contains( index );
+            if ( needsCreate )
             {
-                boolean needsCreate = unresolvedIndexes.contains( index );
-                if ( needsCreate )
+                // The name at this index is unresolved.
+                String name = names[index];
+                int creatingIndex = createdTokens.getIfAbsentPut( name, index );
+                if ( creatingIndex != index )
                 {
-                    // The name at this index is unresolved.
-                    String name = names[index];
-                    int creatingIndex = createdTokens.getIfAbsentPut( name, index );
-                    if ( creatingIndex != index )
-                    {
-                        // This entry has a duplicate name, so we need to remap this entry instead of creating a token
-                        // for it.
-                        remappingIndexes.put( index, creatingIndex );
-                        needsCreate = false;
-                    }
+                    // This entry has a duplicate name, so we need to remap this entry instead of creating a token
+                    // for it.
+                    remappingIndexes.put( index, creatingIndex );
+                    needsCreate = false;
                 }
-                return needsCreate;
-            };
-
-            // Create tokens for all the indexes that we don't filter out.
-            tokenCreator.createTokens( names, ids, internal, tokenCreateFilter );
-
-            // Remap duplicate tokens to the token id we created for the first instance of any duplicate token name.
-            if ( remappingIndexes.notEmpty() )
-            {
-                remappingIndexes.forEachKeyValue( ( index, creatingIndex ) -> ids[index] = ids[creatingIndex] );
             }
+            return needsCreate;
+        };
 
-            return createdTokens;
-        }
-        catch ( ReadOnlyDbException e )
+        // Create tokens for all the indexes that we don't filter out.
+        tokenCreator.createTokens( names, ids, internal, tokenCreateFilter );
+
+        // Remap duplicate tokens to the token id we created for the first instance of any duplicate token name.
+        if ( remappingIndexes.notEmpty() )
         {
-            throw new TransactionFailureException( e.getMessage(), e );
+            remappingIndexes.forEachKeyValue( ( index, creatingIndex ) -> ids[index] = ids[creatingIndex] );
         }
-        catch ( Throwable e )
-        {
-            throw new TransactionFailureException( "Could not create tokens.", e );
-        }
+
+        return createdTokens;
     }
 }

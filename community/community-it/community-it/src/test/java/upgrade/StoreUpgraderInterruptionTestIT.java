@@ -37,6 +37,7 @@ import org.neo4j.common.ProgressReporter;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
+import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -132,7 +133,7 @@ public class StoreUpgraderInterruptionTestIT
             @Override
             public void migrate( DatabaseLayout directoryLayout, DatabaseLayout migrationLayout,
                     ProgressReporter progressReporter,
-                    String versionToMigrateFrom, String versionToMigrateTo ) throws IOException
+                    String versionToMigrateFrom, String versionToMigrateTo ) throws IOException, KernelException
             {
                 super.migrate( directoryLayout, migrationLayout, progressReporter, versionToMigrateFrom,
                         versionToMigrateTo );

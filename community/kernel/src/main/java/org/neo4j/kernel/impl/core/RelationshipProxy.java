@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.Objects;
 
 import org.neo4j.common.EntityType;
+import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -35,6 +36,7 @@ import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.TokenRead;
@@ -418,6 +420,10 @@ public class RelationshipProxy implements Relationship, RelationshipVisitor<Runt
         {
             throw new IllegalArgumentException( format( "Invalid property key '%s'.", key ), e );
         }
+        catch ( KernelException e )
+        {
+            throw new TransactionFailureException( "Unknown error trying to create property key token", e );
+        }
 
         try ( Statement ignore = transaction.acquireStatement() )
         {
@@ -443,22 +449,31 @@ public class RelationshipProxy implements Relationship, RelationshipVisitor<Runt
     public Object removeProperty( String key )
     {
         KernelTransaction transaction = spi.kernelTransaction();
+        int propertyKeyId;
         try ( Statement ignore = transaction.acquireStatement() )
         {
-            int propertyKeyId = transaction.tokenWrite().propertyKeyGetOrCreateForName( key );
-            return transaction.dataWrite().relationshipRemoveProperty( id, propertyKeyId ).asObjectCopy();
-        }
-        catch ( EntityNotFoundException e )
-        {
-            throw new NotFoundException( e );
+            propertyKeyId = transaction.tokenWrite().propertyKeyGetOrCreateForName( key );
         }
         catch ( IllegalTokenNameException e )
         {
             throw new IllegalArgumentException( format( "Invalid property key '%s'.", key ), e );
         }
+        catch ( KernelException e )
+        {
+            throw new TransactionFailureException( "Unknown error trying to get property key token", e );
+        }
+
+        try
+        {
+            return transaction.dataWrite().relationshipRemoveProperty( id, propertyKeyId ).asObjectCopy();
+        }
         catch ( InvalidTransactionTypeKernelException e )
         {
             throw new ConstraintViolationException( e.getMessage(), e );
+        }
+        catch ( EntityNotFoundException e )
+        {
+            throw new NotFoundException( e );
         }
     }
 
