@@ -234,8 +234,15 @@ class AdminToolTest
 
     private static CannedLocator cannedCommand( final String name, AdminCommand command )
     {
-        return new CannedLocator( new AdminCommand.Provider( name )
+        return new CannedLocator( new AdminCommand.Provider()
         {
+            @Nonnull
+            @Override
+            public String getName()
+            {
+                return name;
+            }
+
             @Override
             @Nonnull
             public Arguments allArguments()
@@ -288,11 +295,13 @@ class AdminToolTest
         }
     }
 
-    private static class NullCommandProvider extends AdminCommand.Provider
+    private static class NullCommandProvider implements AdminCommand.Provider
     {
-        NullCommandProvider()
+        @Nonnull
+        @Override
+        public String getName()
         {
-            super( "null" );
+            return "null";
         }
 
         @Override

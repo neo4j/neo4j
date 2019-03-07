@@ -24,56 +24,47 @@ import java.util.List;
 import java.util.function.Consumer;
 import javax.annotation.Nonnull;
 
+import org.neo4j.annotations.service.Service;
+import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.commandline.arguments.Arguments;
-import org.neo4j.common.Service;
-import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.service.NamedService;
+
+import static java.lang.String.format;
 
 /**
  * To create a command for {@code neo4j-admin}:
  * <ol>
  *   <li>implement {@code AdminCommand}</li>
- *   <li>create a concrete subclass of {@code AdminCommand.Provider} which instantiates the command</li>
- *   <li>register the {@code Provider} in {@code META-INF/services} as described
- *     <a href='https://docs.oracle.com/javase/8/docs/api/java/util/ServiceLoader.html'>here</a></li>
+ *   <li>implement {@code AdminCommand.Provider} which instantiates the command;
+ *   annotate it with {@link ServiceProvider}, make {@link Provider#getName()} return command name
  * </ol>
  */
 public interface AdminCommand
 {
-    abstract class Provider extends Service
-    {
-        /**
-         * Create a new instance of a service implementation identified with the
-         * specified key(s).
-         *
-         * @param key     the main key for identifying this service implementation
-         * @param altKeys alternative spellings of the identifier of this service
-         */
-        protected Provider( String key, String... altKeys )
-        {
-            super( key, altKeys );
-        }
+    void execute( String[] args ) throws IncorrectUsage, CommandFailed;
 
+    @Service
+    interface Provider extends NamedService
+    {
         /**
          * @return The command's name
          */
+        @Override
         @Nonnull
-        public String name()
-        {
-            return Iterables.last( getKeys() );
-        }
+        String getName();
 
         /**
          * @return The arguments this command accepts.
          */
         @Nonnull
-        public abstract Arguments allArguments();
+        Arguments allArguments();
 
         /**
          *
          * @return A list of possibly mutually-exclusive argument sets for this command.
          */
         @Nonnull
-        public List<Arguments> possibleArguments()
+        default List<Arguments> possibleArguments()
         {
             return Collections.singletonList( allArguments() );
         }
@@ -82,29 +73,27 @@ public interface AdminCommand
          * @return A single-line summary for the command. Should be 70 characters or less.
          */
         @Nonnull
-        public abstract String summary();
+        String summary();
 
         /**
          * @return AdminCommandSection the command using the provider is grouped under
          */
         @Nonnull
-        public abstract AdminCommandSection commandSection();
+        AdminCommandSection commandSection();
 
         /**
          * @return A description for the command's help text.
          */
         @Nonnull
-        public abstract String description();
+        String description();
 
         @Nonnull
-        public abstract AdminCommand create( CommandContext ctx );
+        AdminCommand create( CommandContext ctx );
 
-        public final void printSummary( Consumer<String> output )
+        default void printSummary( Consumer<String> output )
         {
-            output.accept( String.format( "%s", name() ) );
+            output.accept( format( "%s", getName() ) );
             output.accept( "    " + summary() );
         }
     }
-
-    void execute( String[] args ) throws IncorrectUsage, CommandFailed;
 }

@@ -23,8 +23,8 @@ import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.function.Supplier;
 
-import org.neo4j.common.Service;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.service.Services;
 
 /**
  * The CommandLocator locates named commands for the AdminTool, or supplies the set of available commands for printing
@@ -47,8 +47,7 @@ public interface CommandLocator
     Iterable<AdminCommand.Provider> getAllProviders();
 
     /**
-     * Get a command locator that uses the {@link Service service locator} mechanism to find providers by their service
-     * key.
+     * Get a command locator that uses the service loading mechanism to find providers by their service key.
      * @return A service locator based command locator.
      */
     static CommandLocator fromServiceLocator()
@@ -58,13 +57,13 @@ public interface CommandLocator
             @Override
             public AdminCommand.Provider findProvider( String name )
             {
-                return Service.loadOrFail( AdminCommand.Provider.class, name );
+                return Services.loadOrFail( AdminCommand.Provider.class, name );
             }
 
             @Override
             public Iterable<AdminCommand.Provider> getAllProviders()
             {
-                return Service.loadAll( AdminCommand.Provider.class );
+                return Services.loadAll( AdminCommand.Provider.class );
             }
         };
     }
@@ -83,7 +82,7 @@ public interface CommandLocator
             public AdminCommand.Provider findProvider( String name )
             {
                 AdminCommand.Provider provider = command.get();
-                return Objects.equals( name, provider.name() ) ? provider : commands.findProvider( name );
+                return Objects.equals( name, provider.getName() ) ? provider : commands.findProvider( name );
             }
 
             @Override

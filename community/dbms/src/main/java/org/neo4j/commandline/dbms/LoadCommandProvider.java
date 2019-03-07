@@ -21,17 +21,21 @@ package org.neo4j.commandline.dbms;
 
 import javax.annotation.Nonnull;
 
+import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.commandline.admin.AdminCommand;
 import org.neo4j.commandline.admin.AdminCommandSection;
 import org.neo4j.commandline.admin.CommandContext;
 import org.neo4j.commandline.arguments.Arguments;
 import org.neo4j.dbms.archive.Loader;
 
-public class LoadCommandProvider extends AdminCommand.Provider
+@ServiceProvider
+public class LoadCommandProvider implements AdminCommand.Provider
 {
-    public LoadCommandProvider()
+    @Nonnull
+    @Override
+    public String getName()
     {
-        super( "load" );
+        return "load";
     }
 
     @Override

@@ -21,16 +21,24 @@ package org.neo4j.commandline.admin;
 
 import javax.annotation.Nonnull;
 
+import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.commandline.arguments.Arguments;
 
-public class HelpCommandProvider extends AdminCommand.Provider
+@ServiceProvider
+public class HelpCommandProvider implements AdminCommand.Provider
 {
     private final Usage usage;
 
-    public HelpCommandProvider( Usage usage )
+    HelpCommandProvider( Usage usage )
     {
-        super( "help" );
         this.usage = usage;
+    }
+
+    @Nonnull
+    @Override
+    public String getName()
+    {
+        return "help";
     }
 
     @Override

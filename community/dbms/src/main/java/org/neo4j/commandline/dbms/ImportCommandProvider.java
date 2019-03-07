@@ -23,16 +23,20 @@ import java.util.Arrays;
 import java.util.List;
 import javax.annotation.Nonnull;
 
+import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.commandline.admin.AdminCommand;
 import org.neo4j.commandline.admin.AdminCommandSection;
 import org.neo4j.commandline.admin.CommandContext;
 import org.neo4j.commandline.arguments.Arguments;
 
-public class ImportCommandProvider extends AdminCommand.Provider
+@ServiceProvider
+public class ImportCommandProvider implements AdminCommand.Provider
 {
-    public ImportCommandProvider()
+    @Nonnull
+    @Override
+    public String getName()
     {
-        super( "import" );
+        return "import";
     }
 
     @Override

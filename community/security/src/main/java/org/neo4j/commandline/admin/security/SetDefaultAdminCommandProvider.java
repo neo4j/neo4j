@@ -21,16 +21,20 @@ package org.neo4j.commandline.admin.security;
 
 import javax.annotation.Nonnull;
 
+import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.commandline.admin.AdminCommand;
 import org.neo4j.commandline.admin.AdminCommandSection;
 import org.neo4j.commandline.admin.CommandContext;
 import org.neo4j.commandline.arguments.Arguments;
 
-public class SetDefaultAdminCommandProvider extends AdminCommand.Provider
+@ServiceProvider
+public class SetDefaultAdminCommandProvider implements AdminCommand.Provider
 {
-    public SetDefaultAdminCommandProvider()
+    @Nonnull
+    @Override
+    public String getName()
     {
-        super( SetDefaultAdminCommand.COMMAND_NAME );
+        return SetDefaultAdminCommand.COMMAND_NAME;
     }
 
     @Override

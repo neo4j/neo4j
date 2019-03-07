@@ -21,17 +21,22 @@ package org.neo4j.commandline.dbms;
 
 import javax.annotation.Nonnull;
 
+import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.commandline.admin.AdminCommand;
 import org.neo4j.commandline.admin.AdminCommandSection;
 import org.neo4j.commandline.admin.CommandContext;
 import org.neo4j.commandline.arguments.Arguments;
 import org.neo4j.dbms.archive.Dumper;
 
-public class DumpCommandProvider extends AdminCommand.Provider
+@ServiceProvider
+public class DumpCommandProvider implements AdminCommand.Provider
 {
-    public DumpCommandProvider()
+
+    @Nonnull
+    @Override
+    public String getName()
     {
-        super( "dump" );
+        return "dump";
     }
 
     @Override

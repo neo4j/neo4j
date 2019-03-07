@@ -21,6 +21,7 @@ package org.neo4j.commandline.dbms;
 
 import javax.annotation.Nonnull;
 
+import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.commandline.admin.AdminCommand;
 import org.neo4j.commandline.admin.AdminCommandSection;
 import org.neo4j.commandline.admin.CommandContext;
@@ -28,11 +29,14 @@ import org.neo4j.commandline.arguments.Arguments;
 
 import static org.neo4j.commandline.dbms.DiagnosticsReportCommand.DEFAULT_CLASSIFIERS;
 
-public class DiagnosticsReportCommandProvider extends AdminCommand.Provider
+@ServiceProvider
+public class DiagnosticsReportCommandProvider implements AdminCommand.Provider
 {
-    public DiagnosticsReportCommandProvider()
+    @Nonnull
+    @Override
+    public String getName()
     {
-        super( "report" );
+        return "report";
     }
 
     @Nonnull

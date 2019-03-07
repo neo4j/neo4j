@@ -31,6 +31,7 @@ import javax.annotation.Nonnull;
 
 import org.neo4j.commandline.arguments.Arguments;
 
+import static org.mockito.Answers.CALLS_REAL_METHODS;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -149,8 +150,8 @@ class UsageTest
 
     private static AdminCommand.Provider mockCommand( String name, String summary, AdminCommandSection section )
     {
-        AdminCommand.Provider commandProvider = mock( AdminCommand.Provider.class );
-        when( commandProvider.name() ).thenReturn( name );
+        AdminCommand.Provider commandProvider = mock( AdminCommand.Provider.class, CALLS_REAL_METHODS );
+        when( commandProvider.getName() ).thenReturn( name );
         when( commandProvider.summary() ).thenReturn( summary );
         when( commandProvider.allArguments() ).thenReturn( Arguments.NO_ARGS );
         when( commandProvider.possibleArguments() ).thenReturn( Collections.singletonList( Arguments.NO_ARGS ) );

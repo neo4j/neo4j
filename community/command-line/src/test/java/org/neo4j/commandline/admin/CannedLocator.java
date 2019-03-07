@@ -31,7 +31,7 @@ class CannedLocator implements CommandLocator
         this.commands = new HashMap<>();
         for ( AdminCommand.Provider provider : commands )
         {
-            this.commands.put( provider.name(), provider );
+            this.commands.put( provider.getName(), provider );
         }
     }
 

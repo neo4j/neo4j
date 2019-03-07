@@ -33,6 +33,7 @@ import javax.annotation.Nonnull;
 import static java.util.Arrays.asList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.mockito.Answers.CALLS_REAL_METHODS;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -115,8 +116,8 @@ class AdminCommandSectionTest
 
     private static AdminCommand.Provider mockCommand( String name, String summary )
     {
-        AdminCommand.Provider commandProvider = mock( AdminCommand.Provider.class );
-        when( commandProvider.name() ).thenReturn( name );
+        AdminCommand.Provider commandProvider = mock( AdminCommand.Provider.class, CALLS_REAL_METHODS );
+        when( commandProvider.getName() ).thenReturn( name );
         when( commandProvider.summary() ).thenReturn( summary );
         when( commandProvider.commandSection() ).thenReturn( AdminCommandSection.general() );
         return commandProvider;

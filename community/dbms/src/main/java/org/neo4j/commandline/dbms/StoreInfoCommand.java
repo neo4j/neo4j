@@ -27,7 +27,6 @@ import org.neo4j.commandline.admin.CommandFailed;
 import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.commandline.arguments.Arguments;
 import org.neo4j.commandline.arguments.common.MandatoryCanonicalPath;
-import org.neo4j.common.Service;
 import org.neo4j.configuration.Config;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -37,6 +36,7 @@ import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.Validators;
 import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.service.Services;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.StoreVersion;
 import org.neo4j.storageengine.api.StoreVersionCheck;
@@ -68,7 +68,7 @@ public class StoreInfoCommand implements AdminCommand
                 PageCache pageCache = StandalonePageCacheFactory.createPageCache( fileSystem, jobScheduler ) )
         {
             DatabaseLayout databaseLayout = DatabaseLayout.of( databaseDirectory.toFile() );
-            StorageEngineFactory storageEngineFactory = StorageEngineFactory.selectStorageEngine( Service.loadAll( StorageEngineFactory.class ) );
+            StorageEngineFactory storageEngineFactory = StorageEngineFactory.selectStorageEngine( Services.loadAll( StorageEngineFactory.class ) );
             Dependencies dependencies = new Dependencies();
             dependencies.satisfyDependencies( pageCache, databaseLayout, fileSystem, NullLogService.getInstance(), Config.defaults() );
             StoreVersionCheck storeVersionCheck = storageEngineFactory.versionCheck( dependencies );

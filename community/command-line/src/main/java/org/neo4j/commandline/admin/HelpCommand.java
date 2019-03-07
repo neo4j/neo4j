@@ -52,7 +52,7 @@ public class HelpCommand implements AdminCommand
             {
                 StringBuilder validCommands = new StringBuilder();
                 locator.getAllProviders()
-                        .forEach( commandProvider -> validCommands.append( commandProvider.name() ).append( " " ) );
+                        .forEach( commandProvider -> validCommands.append( commandProvider.getName() ).append( " " ) );
 
                 throw new IncorrectUsage(
                         format( "Unknown command: %s. Available commands are: %s\n", args[0], validCommands ) );

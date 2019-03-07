@@ -39,6 +39,7 @@ import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Answers.CALLS_REAL_METHODS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -128,7 +129,7 @@ class HelpCommandTest
     {
         CommandLocator commandLocator = mock( CommandLocator.class );
         AdminCommand.Provider commandProvider = mock( AdminCommand.Provider.class );
-        when( commandProvider.name() ).thenReturn( "foobar" );
+        when( commandProvider.getName() ).thenReturn( "foobar" );
         Arguments arguments = new Arguments().withDatabase();
         when( commandProvider.allArguments() ).thenReturn( arguments );
         when( commandProvider.possibleArguments() ).thenReturn( Collections.singletonList( arguments ) );
@@ -162,8 +163,8 @@ class HelpCommandTest
 
     private static AdminCommand.Provider mockCommand( String name )
     {
-        AdminCommand.Provider commandProvider = mock( AdminCommand.Provider.class );
-        when( commandProvider.name() ).thenReturn( name );
+        AdminCommand.Provider commandProvider = mock( AdminCommand.Provider.class, CALLS_REAL_METHODS );
+        when( commandProvider.getName() ).thenReturn( name );
         when( commandProvider.commandSection() ).thenReturn( AdminCommandSection.general() );
         return commandProvider;
     }

@@ -21,6 +21,7 @@ package org.neo4j.commandline.admin.security;
 
 import javax.annotation.Nonnull;
 
+import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.commandline.admin.AdminCommand;
 import org.neo4j.commandline.admin.AdminCommandSection;
 import org.neo4j.commandline.admin.CommandContext;
@@ -28,12 +29,14 @@ import org.neo4j.commandline.arguments.Arguments;
 
 import static org.neo4j.kernel.api.security.UserManager.INITIAL_USER_NAME;
 
-public class SetInitialPasswordCommandProvider extends AdminCommand.Provider
+@ServiceProvider
+public class SetInitialPasswordCommandProvider implements AdminCommand.Provider
 {
-
-    public SetInitialPasswordCommandProvider()
+    @Nonnull
+    @Override
+    public String getName()
     {
-        super( "set-initial-password" );
+        return "set-initial-password";
     }
 
     @Override

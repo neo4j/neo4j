@@ -21,6 +21,7 @@ package org.neo4j.commandline.dbms;
 
 import javax.annotation.Nonnull;
 
+import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.commandline.admin.AdminCommand;
 import org.neo4j.commandline.admin.AdminCommandSection;
 import org.neo4j.commandline.admin.CommandContext;
@@ -28,11 +29,15 @@ import org.neo4j.commandline.arguments.Arguments;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
-public class StoreInfoCommandProvider extends AdminCommand.Provider
+@ServiceProvider
+public class StoreInfoCommandProvider implements AdminCommand.Provider
 {
-    public StoreInfoCommandProvider()
+
+    @Nonnull
+    @Override
+    public String getName()
     {
-        super( "store-info" );
+        return "store-info";
     }
 
     @Override
