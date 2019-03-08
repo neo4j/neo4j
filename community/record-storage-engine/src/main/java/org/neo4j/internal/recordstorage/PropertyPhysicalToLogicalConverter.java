@@ -26,10 +26,10 @@ import org.eclipse.collections.api.set.primitive.MutableIntSet;
 import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
 import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
 
-import org.neo4j.kernel.impl.api.index.EntityUpdates;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
+import org.neo4j.storageengine.api.EntityUpdates;
 import org.neo4j.values.storable.Value;
 
 public class PropertyPhysicalToLogicalConverter

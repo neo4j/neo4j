@@ -26,11 +26,11 @@ import java.util.function.LongFunction;
 
 import org.neo4j.internal.kernel.api.PopulationProgress;
 import org.neo4j.io.IOUtils;
-import org.neo4j.kernel.impl.api.index.EntityUpdates;
 import org.neo4j.kernel.impl.api.index.MultipleIndexPopulator;
 import org.neo4j.kernel.impl.api.index.PhaseTracker;
 import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.lock.Lock;
+import org.neo4j.storageengine.api.EntityUpdates;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.StorageEntityScanCursor;
 import org.neo4j.storageengine.api.StoragePropertyCursor;

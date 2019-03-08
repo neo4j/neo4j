@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api.index;
+package org.neo4j.storageengine.api;
 
 import org.eclipse.collections.api.iterator.IntIterator;
 import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
@@ -36,19 +36,13 @@ import org.neo4j.common.EntityType;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorSupplier;
-import org.neo4j.storageengine.api.IndexEntryUpdate;
-import org.neo4j.storageengine.api.StorageEntityCursor;
-import org.neo4j.storageengine.api.StorageNodeCursor;
-import org.neo4j.storageengine.api.StoragePropertyCursor;
-import org.neo4j.storageengine.api.StorageReader;
-import org.neo4j.storageengine.api.StorageRelationshipScanCursor;
 import org.neo4j.values.storable.Value;
 
 import static java.lang.String.format;
 import static org.neo4j.internal.schema.SchemaDescriptor.PropertySchemaType.COMPLETE_ALL_TOKENS;
-import static org.neo4j.kernel.impl.api.index.EntityUpdates.PropertyValueType.Changed;
-import static org.neo4j.kernel.impl.api.index.EntityUpdates.PropertyValueType.NoValue;
-import static org.neo4j.kernel.impl.api.index.EntityUpdates.PropertyValueType.UnChanged;
+import static org.neo4j.storageengine.api.EntityUpdates.PropertyValueType.Changed;
+import static org.neo4j.storageengine.api.EntityUpdates.PropertyValueType.NoValue;
+import static org.neo4j.storageengine.api.EntityUpdates.PropertyValueType.UnChanged;
 
 /**
  * Subclasses of this represent events related to property changes due to entity addition, deletion or update.

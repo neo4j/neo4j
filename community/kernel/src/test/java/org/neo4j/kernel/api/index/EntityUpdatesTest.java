@@ -30,7 +30,7 @@ import org.neo4j.common.EntityType;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.MultiTokenSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorFactory;
-import org.neo4j.kernel.impl.api.index.EntityUpdates;
+import org.neo4j.storageengine.api.EntityUpdates;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.PropertyKeyValue;
 import org.neo4j.storageengine.api.StorageProperty;
