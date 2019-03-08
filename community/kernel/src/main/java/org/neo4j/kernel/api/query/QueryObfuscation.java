@@ -32,11 +32,11 @@ public class QueryObfuscation
 {
     private static final Pattern PASSWORD_PATTERN = Pattern.compile(
             // call signature
-            "(?:(?i)call)\\s+dbms(?:\\.security)?\\.change(?:User)?Password\\(" +
+            "(?:(?i)call)\\s+(?:dbms(?:\\.security)?\\.change(?:User)?Password|dbms\\.security\\.createUser)\\(\\s*" +
             // optional username parameter, in single, double quotes, or parametrized
             "(?:\\s*(?:'(?:(?<=\\\\)'|[^'])*'|\"(?:(?<=\\\\)\"|[^\"])*\"|[^,]*)\\s*,)?" +
             // password parameter, in single, double quotes, or parametrized
-            "\\s*('(?:(?<=\\\\)'|[^'])*'|\"(?:(?<=\\\\)\"|[^\"])*\"|\\$\\w*|\\{\\w*})\\s*" );
+            "\\s*('(?:(?<=\\\\)'|[^'])*'|\"(?:(?<=\\\\)\"|[^\"])*\"|\\$\\w*|\\{\\w*})" );
 
     static final TextValue OBFUSCATED = stringValue( "******" );
     static final String OBFUSCATED_LITERAL = "'******'";
