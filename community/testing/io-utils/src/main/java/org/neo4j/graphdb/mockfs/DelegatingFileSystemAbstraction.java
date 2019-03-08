@@ -83,6 +83,12 @@ public class DelegatingFileSystemAbstraction implements FileSystemAbstraction
     }
 
     @Override
+    public void copyFile( File from, File to, CopyOption... copyOptions ) throws IOException
+    {
+        delegate.copyFile( from, to, copyOptions );
+    }
+
+    @Override
     public void truncate( File path, long size ) throws IOException
     {
         delegate.truncate( path, size );

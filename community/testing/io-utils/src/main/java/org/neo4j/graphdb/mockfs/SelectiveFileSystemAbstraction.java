@@ -179,6 +179,12 @@ public class SelectiveFileSystemAbstraction implements FileSystemAbstraction
     }
 
     @Override
+    public void copyFile( File from, File to, CopyOption... copyOptions ) throws IOException
+    {
+        chooseFileSystem( from ).copyFile( from, to, copyOptions );
+    }
+
+    @Override
     public void copyRecursively( File fromDirectory, File toDirectory ) throws IOException
     {
         chooseFileSystem( fromDirectory ).copyRecursively( fromDirectory, toDirectory );

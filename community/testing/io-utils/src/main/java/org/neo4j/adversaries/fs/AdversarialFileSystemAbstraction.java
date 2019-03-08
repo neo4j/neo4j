@@ -144,10 +144,10 @@ public class AdversarialFileSystemAbstraction implements FileSystemAbstraction
     }
 
     @Override
-    public void copyFile( File from, File to ) throws IOException
+    public void copyFile( File from, File to, CopyOption... copyOptions ) throws IOException
     {
         adversary.injectFailure( SecurityException.class, FileNotFoundException.class, IOException.class );
-        delegate.copyFile( from, to );
+        delegate.copyFile( from, to, copyOptions );
     }
 
     @Override

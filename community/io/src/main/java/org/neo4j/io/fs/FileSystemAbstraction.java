@@ -30,12 +30,14 @@ import java.io.Writer;
 import java.nio.charset.Charset;
 import java.nio.file.CopyOption;
 import java.nio.file.NoSuchFileException;
+import java.nio.file.StandardCopyOption;
 import java.util.stream.Stream;
 
 import org.neo4j.io.fs.watcher.FileWatcher;
 
 public interface FileSystemAbstraction extends Closeable
 {
+    CopyOption[] EMPTY_COPY_OPTIONS = new CopyOption[0];
 
     /**
      * Create file watcher that provides possibilities to monitor directories on underlying file system
@@ -82,7 +84,26 @@ public interface FileSystemAbstraction extends Closeable
 
     void copyToDirectory( File file, File toDirectory ) throws IOException;
 
-    void copyFile( File from, File to ) throws IOException;
+    /**
+     * Copies file, allowing overwrite.
+     *
+     * @param from File to copy.
+     * @param to File location to copy file to, overwritten if exists.
+     * @throws IOException on I/O error.
+     */
+    default void copyFile( File from, File to ) throws IOException
+    {
+        copyFile( from, to, StandardCopyOption.REPLACE_EXISTING );
+    }
+
+    /**
+     * Copies file, configurable behaviour by passing copy options explicitly.
+     *
+     * @param from File to copy.
+     * @param to File location to copy file to.
+     * @throws IOException on I/O error.
+     */
+    void copyFile( File from, File to, CopyOption... copyOptions ) throws IOException;
 
     void copyRecursively( File fromDirectory, File toDirectory ) throws IOException;
 

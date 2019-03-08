@@ -19,6 +19,8 @@
  */
 package org.neo4j.graphdb.mockfs;
 
+import org.apache.commons.lang3.ArrayUtils;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -543,12 +545,16 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
     }
 
     @Override
-    public void copyFile( File from, File to ) throws IOException
+    public void copyFile( File from, File to, CopyOption... copyOptions ) throws IOException
     {
         EphemeralFileData data = files.get( canonicalFile( from ) );
         if ( data == null )
         {
             throw new FileNotFoundException( "File " + from + " not found" );
+        }
+        if ( !ArrayUtils.contains( copyOptions, REPLACE_EXISTING ) && files.get( canonicalFile( from ) ) != null )
+        {
+            throw new FileAlreadyExistsException( to.getAbsolutePath() );
         }
         copyFile( from, this, to, newCopyBuffer() );
     }

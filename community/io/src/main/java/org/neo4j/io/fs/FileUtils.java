@@ -60,8 +60,6 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.neo4j.helpers.Exceptions;
-
 import static java.nio.file.StandardOpenOption.APPEND;
 import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.DSYNC;
@@ -300,9 +298,14 @@ public class FileUtils
 
     public static void copyFile( File srcFile, File dstFile ) throws IOException
     {
+        copyFile( srcFile, dstFile, StandardCopyOption.REPLACE_EXISTING );
+    }
+
+    public static void copyFile( File srcFile, File dstFile, CopyOption... copyOptions ) throws IOException
+    {
         //noinspection ResultOfMethodCallIgnored
         dstFile.getParentFile().mkdirs();
-        Files.copy( srcFile.toPath(), dstFile.toPath(), StandardCopyOption.REPLACE_EXISTING );
+        Files.copy( srcFile.toPath(), dstFile.toPath(), copyOptions );
     }
 
     public static void copyRecursively( File fromDirectory, File toDirectory ) throws IOException

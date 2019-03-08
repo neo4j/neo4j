@@ -193,6 +193,20 @@ public abstract class FileSystemAbstractionTest
     }
 
     @Test
+    void copyFileShouldFailOnExistingTargetIfNoReplaceCopyOptionSupplied() throws Exception
+    {
+        // given
+        fsa.mkdirs( path );
+        File source = new File( path, "source" );
+        File target = new File( path, "target" );
+        fsa.create( source ).close();
+        fsa.create( target ).close();
+
+        // then
+        assertThrows( FileAlreadyExistsException.class, () -> fsa.copyFile( source, target, FileSystemAbstraction.EMPTY_COPY_OPTIONS ) );
+    }
+
+    @Test
     void deleteRecursivelyMustDeleteAllFilesInDirectory() throws Exception
     {
         fsa.mkdirs( path );

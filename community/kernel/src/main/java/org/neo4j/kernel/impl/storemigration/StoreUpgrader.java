@@ -45,9 +45,7 @@ import org.neo4j.storageengine.migration.MigrationProgressMonitor;
 import org.neo4j.storageengine.migration.StoreMigrationParticipant;
 import org.neo4j.storageengine.migration.UpgradeNotAllowedException;
 
-import static org.neo4j.kernel.impl.storemigration.ExistingTargetStrategy.FAIL;
-import static org.neo4j.kernel.impl.storemigration.FileOperation.COPY;
-import static org.neo4j.kernel.impl.storemigration.FileOperation.DELETE;
+import static org.neo4j.io.fs.FileSystemAbstraction.EMPTY_COPY_OPTIONS;
 
 /**
  * A migration process to migrate {@link StoreMigrationParticipant migration participants}, if there's
@@ -222,11 +220,11 @@ public class StoreUpgrader
             {
                 for ( File legacyFile : legacyFiles )
                 {
-                    COPY.perform( fileSystem, legacyFile.getName(), legacyFile.getParentFile(), false, transactionLogsDirectory, FAIL );
+                    fileSystem.copyFile( legacyFile, new File( transactionLogsDirectory, legacyFile.getName() ), EMPTY_COPY_OPTIONS );
                 }
                 for ( File legacyFile : legacyFiles )
                 {
-                    DELETE.perform( fileSystem, legacyFile.getName(), legacyFile.getParentFile(), false, transactionLogsDirectory, FAIL );
+                    fileSystem.deleteFile( legacyFile );
                 }
             }
         }

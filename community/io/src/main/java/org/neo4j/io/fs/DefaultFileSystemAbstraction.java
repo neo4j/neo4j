@@ -187,6 +187,12 @@ public class DefaultFileSystemAbstraction implements FileSystemAbstraction
     }
 
     @Override
+    public void copyFile( File from, File to, CopyOption... copyOptions ) throws IOException
+    {
+        FileUtils.copyFile( from, to, copyOptions );
+    }
+
+    @Override
     public void copyRecursively( File fromDirectory, File toDirectory ) throws IOException
     {
         FileUtils.copyRecursively( fromDirectory, toDirectory );

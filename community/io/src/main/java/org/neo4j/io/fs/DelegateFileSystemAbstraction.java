@@ -234,6 +234,12 @@ public class DelegateFileSystemAbstraction implements FileSystemAbstraction
     }
 
     @Override
+    public void copyFile( File from, File to, CopyOption... copyOptions ) throws IOException
+    {
+        Files.copy( path( from ), path( to ), copyOptions );
+    }
+
+    @Override
     public void copyRecursively( File fromDirectory, File toDirectory ) throws IOException
     {
         Path target = path( toDirectory );
