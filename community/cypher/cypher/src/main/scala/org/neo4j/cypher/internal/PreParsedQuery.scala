@@ -62,6 +62,9 @@ case class PreParsedQuery(statement: String,
     s"CYPHER ${version.name} $plannerInfo $runtimeInfo $updateStrategyInfo $expressionEngineInfo $debugFlags $statement"
   }
 
+  def rawPreparserOptions: String =
+    rawStatement.take(rawStatement.length - statement.length)
+
   def useCompiledExpressions: Boolean = expressionEngine == CypherExpressionEngineOption.compiled ||
     (expressionEngine == CypherExpressionEngineOption.onlyWhenHot && recompilationLimitReached)
 }

@@ -21,6 +21,8 @@ package org.neo4j.internal.collector
 
 import java.time.ZonedDateTime
 
+import org.neo4j.cypher.internal.PreParser
+import org.neo4j.cypher.{CypherExpressionEngineOption, CypherPlannerOption, CypherRuntimeOption, CypherVersion}
 import org.neo4j.cypher.internal.v3_5.parser.CypherParser
 import org.scalatest.matchers.{MatchResult, Matcher}
 
@@ -31,6 +33,8 @@ import scala.reflect.Manifest
   * Matchers allowing more flexible matching on results from RewindableExecutionResult.
   */
 object DataCollectorMatchers {
+
+  private val preParser = new PreParser(CypherVersion.default, CypherPlannerOption.default, CypherRuntimeOption.default, CypherExpressionEngineOption.default, 0)
 
   /**
     * Matches a ZonedDateTime if it occurs between (inclusive) to given points in time.
@@ -235,12 +239,12 @@ object DataCollectorMatchers {
   case class BeCypherMatcher(expected: String) extends Matcher[AnyRef] {
 
     val parser = new CypherParser
-    private val expectedAst = parser.parse(expected)
+    private val expectedAst = parser.parse(preParser.preParseQuery(expected, false).statement)
 
     override def apply(left: AnyRef): MatchResult =
       MatchResult(
         matches = left match {
-          case text: String => parser.parse(text) == expectedAst
+          case text: String => parser.parse(preParser.preParseQuery(text, false).statement) == expectedAst
           case _ => false
         },
         rawFailureMessage = s"'$left' is not the same Cypher as '$expected'",
