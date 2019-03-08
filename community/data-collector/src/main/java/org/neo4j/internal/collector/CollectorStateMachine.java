@@ -67,9 +67,11 @@ abstract class CollectorStateMachine<DATA>
 
     private State state;
     private long collectionId;
+    private final boolean canGetDataWhileCollecting;
 
-    CollectorStateMachine()
+    CollectorStateMachine( boolean canGetDataWhileCollecting )
     {
+        this.canGetDataWhileCollecting = canGetDataWhileCollecting;
         state = State.IDLE;
     }
 
@@ -140,14 +142,18 @@ abstract class CollectorStateMachine<DATA>
         case IDLE:
             return doGetData();
         case COLLECTING:
+            if ( canGetDataWhileCollecting )
+            {
+                return doGetData();
+            }
             throw new IllegalStateException( "Collector is still collecting." );
         default:
             throw new IllegalStateException( "Unknown state " + state );
         }
     }
 
-    abstract Result doCollect( Map<String,Object> config, long collectionId ) throws InvalidArgumentsException;
-    abstract Result doStop();
-    abstract Result doClear();
-    abstract DATA doGetData();
+    protected abstract Result doCollect( Map<String,Object> config, long collectionId ) throws InvalidArgumentsException;
+    protected abstract Result doStop();
+    protected abstract Result doClear();
+    protected abstract DATA doGetData();
 }

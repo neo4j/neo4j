@@ -21,26 +21,19 @@ package org.neo4j.internal.collector
 
 import java.nio.file.Files
 
-import org.neo4j.cypher._
 import org.scalatest.matchers.{MatchResult, Matcher}
 
 import scala.collection.mutable.ArrayBuffer
 
-class DataCollectorQueriesAcceptanceTest extends ExecutionEngineFunSuite {
+class DataCollectorQueriesAcceptanceTest extends DataCollectorTestSupport {
 
   import DataCollectorMatchers._
 
   test("should collect and retrieve queries") {
     // given
-    execute("RETURN 'not collected!'")
-    execute("CALL db.stats.collect('QUERIES')").single
-
     execute("MATCH (n) RETURN count(n)")
     execute("MATCH (n)-->(m) RETURN n,m")
     execute("WITH 'hi' AS x RETURN x+'-ho'")
-
-    execute("CALL db.stats.stop('QUERIES')").single
-    execute("RETURN 'not collected!'")
 
     // when
     val res = execute("CALL db.stats.retrieve('QUERIES')").toList
@@ -68,9 +61,33 @@ class DataCollectorQueriesAcceptanceTest extends ExecutionEngineFunSuite {
     )
   }
 
+  test("should allow explicit control over query collection") {
+    // given
+    execute("CALL db.stats.stop('QUERIES')").single
+
+    execute("RETURN 'not collected!'")
+    execute("CALL db.stats.collect('QUERIES')").single
+    execute("MATCH (n) RETURN count(n)")
+    execute("CALL db.stats.stop('QUERIES')").single
+    execute("RETURN 'not collected!'")
+
+    // when
+    val res = execute("CALL db.stats.retrieve('QUERIES')").toList
+
+    // then
+    res should beListWithoutOrder(
+      beMapContaining(
+        "section" -> "QUERIES",
+        "data" -> beMapContaining(
+          "query" -> "MATCH (n) RETURN count(n)"
+        )
+      )
+    )
+  }
+
   test("should clear queries") {
     // given
-    execute("CALL db.stats.collect('QUERIES')").single
+    assertCollecting("QUERIES")
     execute("MATCH (n) RETURN count(n)")
     execute("CALL db.stats.stop('QUERIES')").single
     execute("CALL db.stats.retrieve('QUERIES')").toList should have size 1
@@ -84,7 +101,7 @@ class DataCollectorQueriesAcceptanceTest extends ExecutionEngineFunSuite {
 
   test("should append queries if restarted collection") {
     // given
-    execute("CALL db.stats.collect('QUERIES')").single
+    assertCollecting("QUERIES")
     execute("MATCH (n) RETURN count(n)")
     execute("CALL db.stats.stop('QUERIES')").single
     execute("CALL db.stats.retrieve('QUERIES')").toList should have size 1
@@ -99,15 +116,13 @@ class DataCollectorQueriesAcceptanceTest extends ExecutionEngineFunSuite {
 
   test("should stop collection after specified time") {
     // given
+    execute("CALL db.stats.stop('QUERIES')").single
     execute("CALL db.stats.collect('QUERIES', {durationSeconds: 3})").single
     execute("MATCH (n) RETURN count(n)")
     Thread.sleep(4000)
 
     // then
-    execute("CALL db.stats.status()").single should beMapContaining(
-      "status" -> "idle",
-      "section" -> "QUERIES"
-    )
+    assertIdle("QUERIES")
 
     // and when
     execute("RETURN 'late query'")
@@ -118,6 +133,7 @@ class DataCollectorQueriesAcceptanceTest extends ExecutionEngineFunSuite {
 
   test("should not stop later collection event after initial timeout") {
     // given
+    execute("CALL db.stats.stop('QUERIES')").single
     execute("CALL db.stats.collect('QUERIES', {durationSeconds: 3})").single
     execute("MATCH (n) RETURN count(n)")
     execute("CALL db.stats.stop('QUERIES')").single
@@ -125,14 +141,12 @@ class DataCollectorQueriesAcceptanceTest extends ExecutionEngineFunSuite {
     Thread.sleep(4000)
 
     // then
-    execute("CALL db.stats.status()").single should beMapContaining(
-      "status" -> "collecting",
-      "section" -> "QUERIES"
-    )
+    assertCollecting("QUERIES")
   }
 
   test("should retrieve query execution plan and estimated rows") {
     // given
+    execute("CALL db.stats.stop('QUERIES')").single
     execute("CREATE (a), (b), (c)")
 
     execute("CALL db.stats.collect('QUERIES')").single
@@ -184,13 +198,11 @@ class DataCollectorQueriesAcceptanceTest extends ExecutionEngineFunSuite {
 
   test("should retrieve invocations of query") {
     // given
-    execute("CALL db.stats.collect('QUERIES')").single
     execute("MATCH (n {p: $param}) RETURN count(n)", Map("param" -> "BrassLeg"))
     execute("MATCH (n {p: $param}) RETURN count(n)", Map("param" -> 2))
     execute("WITH 42 AS x RETURN x")
     execute("MATCH (n {p: $param}) RETURN count(n)", Map("param" -> List(3.1, 3.2)))
     execute("WITH 42 AS x RETURN x")
-    execute("CALL db.stats.stop('QUERIES')").single
 
     // when
     val res = execute("CALL db.stats.retrieve('QUERIES')").toList
@@ -220,13 +232,11 @@ class DataCollectorQueriesAcceptanceTest extends ExecutionEngineFunSuite {
 
   test("should retrieve invocation summary of query") {
     // given
-    execute("CALL db.stats.collect('QUERIES')").single
     execute("MATCH (n {p: $param}) RETURN count(n)", Map("param" -> "BrassLeg"))
     execute("MATCH (n {p: $param}) RETURN count(n)", Map("param" -> 2))
     execute("WITH 42 AS x RETURN x")
     execute("MATCH (n {p: $param}) RETURN count(n)", Map("param" -> List(3.1, 3.2)))
     execute("WITH 42 AS x RETURN x")
-    execute("CALL db.stats.stop('QUERIES')").single
 
     // when
     val res = execute("CALL db.stats.retrieve('QUERIES')").toList
@@ -246,7 +256,6 @@ class DataCollectorQueriesAcceptanceTest extends ExecutionEngineFunSuite {
 
   test("should limit number of retrieved invocations of query") {
     // given
-    execute("CALL db.stats.collect('QUERIES')").single
     execute("MATCH (n {p: $param}) RETURN count(n)", Map("param" -> "BrassLeg"))
     execute("MATCH (n {p: $param}) RETURN count(n)", Map("param" -> 2))
     execute("WITH 42 AS x RETURN x")
@@ -254,7 +263,6 @@ class DataCollectorQueriesAcceptanceTest extends ExecutionEngineFunSuite {
     execute("WITH 42 AS x RETURN x")
     execute("WITH 42 AS x RETURN x")
     execute("WITH 42 AS x RETURN x")
-    execute("CALL db.stats.stop('QUERIES')").single
 
     // when
     val res = execute("CALL db.stats.retrieve('QUERIES', {maxInvocations: 2})").toList
@@ -290,7 +298,9 @@ class DataCollectorQueriesAcceptanceTest extends ExecutionEngineFunSuite {
 
   test("[retrieveAllAnonymized] should anonymize tokens inside queries") {
     // given
+    execute("CALL db.stats.stop('QUERIES')").single
     execute("CREATE (:User {age: 99})-[:KNOWS]->(:Buddy {p: 42})-[:WANTS]->(:Raccoon)") // create tokens
+
     execute("CALL db.stats.collect('QUERIES')").single
     execute("MATCH (:User)-[:KNOWS]->(:Buddy)-[:WANTS]->(:Raccoon) RETURN 1")
     execute("MATCH ({p: 42}), ({age: 43}) RETURN 1")
@@ -346,10 +356,8 @@ class DataCollectorQueriesAcceptanceTest extends ExecutionEngineFunSuite {
 
   test("[retrieveAllAnonymized] should anonymize unknown tokens inside queries") {
     // given
-    execute("CALL db.stats.collect('QUERIES')").single
     execute("MATCH (:User)-[:KNOWS]->(:Buddy)-[:WANTS]->(:Raccoon) RETURN 1")
     execute("MATCH ({p: 42}), ({age: 43}) RETURN 1")
-    execute("CALL db.stats.stop('QUERIES')").single
 
     // when
     val res = execute("CALL db.stats.retrieveAllAnonymized('myToken')")
@@ -363,9 +371,7 @@ class DataCollectorQueriesAcceptanceTest extends ExecutionEngineFunSuite {
 
   test("[retrieveAllAnonymized] should anonymize string literals inside queries") {
     // given
-    execute("CALL db.stats.collect('QUERIES')").single
     execute("RETURN 'Scrooge' AS uncle, 'Donald' AS name")
-    execute("CALL db.stats.stop('QUERIES')").single
 
     // when
     val res = execute("CALL db.stats.retrieveAllAnonymized('myToken')")
@@ -378,11 +384,9 @@ class DataCollectorQueriesAcceptanceTest extends ExecutionEngineFunSuite {
 
   test("[retrieveAllAnonymized] should anonymize variables and return names") {
     // given
-    execute("CALL db.stats.collect('QUERIES')").single
     execute("RETURN 42 AS x")
     execute("WITH 42 AS x RETURN x")
     execute("WITH 1 AS k RETURN k + k")
-    execute("CALL db.stats.stop('QUERIES')").single
 
     // when
     val res = execute("CALL db.stats.retrieveAllAnonymized('myToken')")
@@ -397,12 +401,10 @@ class DataCollectorQueriesAcceptanceTest extends ExecutionEngineFunSuite {
 
   test("[retrieveAllAnonymized] should anonymize parameters") {
     // given
-    execute("CALL db.stats.collect('QUERIES')").single
     execute("RETURN 42 = $user, $name", Map("user" -> "BrassLeg", "name" -> "George"))
     execute("RETURN 42 = $user, $name", Map("user" -> 2, "name" -> "Glinda"))
     execute("RETURN 42 = $user, $name", Map("user" -> List(3.1, 3.2), "name" -> "Kim"))
     execute("RETURN $user, $name, $user + $name", Map("user" -> List(3.1, 3.2), "name" -> "Kim"))
-    execute("CALL db.stats.stop('QUERIES')").single
 
     // when
     val res = execute("CALL db.stats.retrieveAllAnonymized('myToken')")
@@ -439,11 +441,6 @@ class DataCollectorQueriesAcceptanceTest extends ExecutionEngineFunSuite {
         "query" -> beCypher(queryText)
       )
     )
-
-  private def assertInvalidArgument(query: String): Unit = {
-    val e = intercept[CypherExecutionException](execute(query))
-    e.status should be(org.neo4j.kernel.api.exceptions.Status.General.InvalidArguments)
-  }
 
   case class QueryWithInvocationSummary(expectedQuery: String) extends Matcher[AnyRef] {
     override def apply(left: AnyRef): MatchResult = {

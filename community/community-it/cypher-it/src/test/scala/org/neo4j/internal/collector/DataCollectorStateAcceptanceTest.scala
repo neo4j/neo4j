@@ -19,25 +19,12 @@
  */
 package org.neo4j.internal.collector
 
-import org.neo4j.cypher._
-
-class DataCollectorStateAcceptanceTest extends ExecutionEngineFunSuite {
+class DataCollectorStateAcceptanceTest extends DataCollectorTestSupport {
 
   import DataCollectorMatchers._
 
-  private val IDLE = "idle"
-  private val COLLECTING = "collecting"
-
   test("QUERIES: happy path collect cycle") {
-    assertStatus(IDLE)
-
-    execute("CALL db.stats.collect('QUERIES')").single should beMap(
-      "section" -> "QUERIES",
-      "success" -> true,
-      "message" -> "Collection started."
-    )
-
-    assertStatus(COLLECTING)
+    assertCollecting("QUERIES")
 
     execute("CALL db.stats.stop('QUERIES')").single should beMap(
       "section" -> "QUERIES",
@@ -45,7 +32,7 @@ class DataCollectorStateAcceptanceTest extends ExecutionEngineFunSuite {
       "message" -> "Collection stopped."
     )
 
-    assertStatus(IDLE)
+    assertIdle("QUERIES")
 
     execute("CALL db.stats.collect('QUERIES')").single should beMap(
       "section" -> "QUERIES",
@@ -53,10 +40,30 @@ class DataCollectorStateAcceptanceTest extends ExecutionEngineFunSuite {
       "message" -> "Collection started."
     )
 
-    assertStatus(COLLECTING)
+    assertCollecting("QUERIES")
+
+    execute("CALL db.stats.stop('QUERIES')").single should beMap(
+      "section" -> "QUERIES",
+      "success" -> true,
+      "message" -> "Collection stopped."
+    )
+
+    assertIdle("QUERIES")
+
+    execute("CALL db.stats.collect('QUERIES')").single should beMap(
+      "section" -> "QUERIES",
+      "success" -> true,
+      "message" -> "Collection started."
+    )
+
+    assertCollecting("QUERIES")
   }
 
   test("QUERIES: stop while idle is idempotent") {
+    // given
+    execute("CALL db.stats.stop('QUERIES')").single
+    assertIdle("QUERIES")
+
     // when
     execute("CALL db.stats.stop('QUERIES')").single should beMap(
       "section" -> "QUERIES",
@@ -65,13 +72,12 @@ class DataCollectorStateAcceptanceTest extends ExecutionEngineFunSuite {
     )
 
     // then
-    assertStatus(IDLE)
+    assertIdle("QUERIES")
   }
 
   test("QUERIES: collect while collecting is idempotent") {
     // given
-    execute("CALL db.stats.collect('QUERIES')")
-    assertStatus(COLLECTING)
+    assertCollecting("QUERIES")
 
     // when
     execute("CALL db.stats.collect('QUERIES')").single should beMap(
@@ -81,13 +87,12 @@ class DataCollectorStateAcceptanceTest extends ExecutionEngineFunSuite {
     )
 
     // then
-    assertStatus(COLLECTING)
+    assertCollecting("QUERIES")
   }
 
   test("QUERIES: clear while collecting is not allowed") {
     // given
-    execute("CALL db.stats.collect('QUERIES')")
-    assertStatus(COLLECTING)
+    assertCollecting("QUERIES")
 
     // when
     execute("CALL db.stats.clear('QUERIES')").single should beMap(
@@ -97,7 +102,7 @@ class DataCollectorStateAcceptanceTest extends ExecutionEngineFunSuite {
     )
 
     // then
-    assertStatus(COLLECTING)
+    assertCollecting("QUERIES")
   }
 
   test("collect/stop/clear of invalid section should throw") {
@@ -110,24 +115,5 @@ class DataCollectorStateAcceptanceTest extends ExecutionEngineFunSuite {
     assertInvalidArgument("CALL db.stats.collect('GRAPH COUNTS')")
     assertInvalidArgument("CALL db.stats.stop('GRAPH COUNTS')")
     assertInvalidArgument("CALL db.stats.clear('GRAPH COUNTS')")
-  }
-
-  private def assertInvalidArgument(query: String): Unit = {
-     try {
-       execute(query)
-     } catch {
-       case e: CypherExecutionException =>
-         e.status should be(org.neo4j.kernel.api.exceptions.Status.General.InvalidArguments)
-       case x =>
-         x shouldBe a[CypherExecutionException]
-     }
-  }
-
-  private def assertStatus(status: String): Unit = {
-    val res = execute("CALL db.stats.status()").single
-    res should beMapContaining(
-      "status" -> status,
-      "section" -> "QUERIES"
-    )
   }
 }

@@ -19,9 +19,10 @@
  */
 package org.neo4j.internal.collector;
 
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
@@ -45,45 +46,51 @@ import org.neo4j.scheduler.JobScheduler;
 class QueryCollector extends CollectorStateMachine<Iterator<QuerySnapshot>> implements QueryExecutionMonitor
 {
     private volatile boolean isCollecting;
-    private final ConcurrentLinkedQueue<QuerySnapshot> queries;
+    private final RingRecentBuffer<QuerySnapshot> queries;
     private final JobScheduler jobScheduler;
 
     QueryCollector( JobScheduler jobScheduler )
     {
+        super( true );
         this.jobScheduler = jobScheduler;
         isCollecting = false;
-        queries = new ConcurrentLinkedQueue<>();
+        queries = new RingRecentBuffer<>( 13 );
     }
 
     // CollectorStateMachine
 
     @Override
-    Result doCollect( Map<String,Object> config, long collectionId ) throws InvalidArgumentsException
+    protected Result doCollect( Map<String,Object> config, long collectionId ) throws InvalidArgumentsException
     {
         int collectSeconds = QueryCollectorConfig.of( config ).collectSeconds;
-        jobScheduler.schedule( Group.DATA_COLLECTOR, () -> QueryCollector.this.stop( collectionId ), collectSeconds, TimeUnit.SECONDS );
+        if ( collectSeconds > 0 )
+        {
+            jobScheduler.schedule( Group.DATA_COLLECTOR, () -> QueryCollector.this.stop( collectionId ), collectSeconds, TimeUnit.SECONDS );
+        }
         isCollecting = true;
         return success( "Collection started." );
     }
 
     @Override
-    Result doStop()
+    protected Result doStop()
     {
         isCollecting = false;
         return success( "Collection stopped." );
     }
 
     @Override
-    Result doClear()
+    protected Result doClear()
     {
         queries.clear();
         return success( "Data cleared." );
     }
 
     @Override
-    Iterator<QuerySnapshot> doGetData()
+    protected Iterator<QuerySnapshot> doGetData()
     {
-        return queries.iterator();
+        List<QuerySnapshot> querySnapshots = new ArrayList<>();
+        queries.foreach( querySnapshots::add );
+        return querySnapshots.iterator();
     }
 
     // QueryExecutionMonitor
@@ -98,7 +105,7 @@ class QueryCollector extends CollectorStateMachine<Iterator<QuerySnapshot>> impl
     {
         if ( isCollecting )
         {
-            queries.add( query.snapshot() );
+            queries.produce( query.snapshot() );
         }
     }
 }
