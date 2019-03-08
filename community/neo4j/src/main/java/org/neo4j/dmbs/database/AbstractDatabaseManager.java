@@ -62,7 +62,7 @@ public abstract class AbstractDatabaseManager extends LifecycleAdapter implement
     @Override
     public void start() throws Throwable
     {
-        Throwable startException = doWithAllDatabases( getDatabaseMap(), this::startDatabase );
+        Throwable startException = doWithAllDatabases( this::startDatabase );
         if ( startException != null )
         {
             throw startException;
@@ -72,7 +72,7 @@ public abstract class AbstractDatabaseManager extends LifecycleAdapter implement
     @Override
     public void stop() throws Throwable
     {
-        Throwable stopException = doWithAllDatabases( getDatabaseMap(), this::stopDatabase );
+        Throwable stopException = doWithAllDatabases( this::stopDatabase );
         if ( stopException != null )
         {
             throw stopException;
@@ -102,10 +102,10 @@ public abstract class AbstractDatabaseManager extends LifecycleAdapter implement
         return new DatabaseContext( database, facade );
     }
 
-    private Throwable doWithAllDatabases( Map<String,DatabaseContext> databases, BiConsumer<String,DatabaseContext> consumer )
+    private Throwable doWithAllDatabases( BiConsumer<String,DatabaseContext> consumer )
     {
         Throwable combinedException = null;
-        for ( Map.Entry<String,DatabaseContext> databaseContextEntry : databases.entrySet() )
+        for ( Map.Entry<String,DatabaseContext> databaseContextEntry : getDatabaseMap().entrySet() )
         {
             try
             {

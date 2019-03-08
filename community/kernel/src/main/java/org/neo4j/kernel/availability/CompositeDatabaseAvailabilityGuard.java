@@ -41,7 +41,7 @@ public class CompositeDatabaseAvailabilityGuard extends LifecycleAdapter impleme
 {
     private final Clock clock;
     private final LogService logService;
-    private volatile CopyOnWriteArrayList<DatabaseAvailabilityGuard> guards = new CopyOnWriteArrayList<>();
+    private final CopyOnWriteArrayList<DatabaseAvailabilityGuard> guards = new CopyOnWriteArrayList<>();
     private volatile boolean started = true;
 
     public CompositeDatabaseAvailabilityGuard( Clock clock, LogService logService )
@@ -84,14 +84,7 @@ public class CompositeDatabaseAvailabilityGuard extends LifecycleAdapter impleme
     @Override
     public boolean isAvailable()
     {
-        for ( DatabaseAvailabilityGuard guard : guards )
-        {
-            if ( !guard.isAvailable() )
-            {
-                return false;
-            }
-        }
-        return started;
+        return guards.stream().allMatch( DatabaseAvailabilityGuard::isAvailable ) && started;
     }
 
     @Override

@@ -171,7 +171,7 @@ public interface KernelTransaction extends Transaction, AssertOpen
     /**
      * USE WITH CAUTION:
      * The internal property cursor instance used to serve kernel API calls. If some kernel
-     * API call is made while this cursor is used, it might get corrupted and retu;rn wrong results.
+     * API call is made while this cursor is used, it might get corrupted and return wrong results.
      */
     PropertyCursor ambientPropertyCursor();
 

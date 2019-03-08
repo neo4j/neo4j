@@ -30,7 +30,9 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static co.unruly.matchers.OptionalMatchers.empty;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.not;
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_database;
 
@@ -49,8 +51,8 @@ class GraphDatabaseFactoryIT
             DependencyResolver dependencyResolver = database.getDependencyResolver();
             DatabaseManager databaseManager = dependencyResolver.resolveDependency( DatabaseManager.class );
             Config config = dependencyResolver.resolveDependency( Config.class );
-            assertTrue( databaseManager.getDatabaseContext( config.get( default_database ) ).isPresent() );
-            assertTrue( databaseManager.getDatabaseContext( SYSTEM_DATABASE_NAME ).isPresent() );
+            assertThat( databaseManager.getDatabaseContext( config.get( default_database ) ), not( empty() ) );
+            assertThat( databaseManager.getDatabaseContext( SYSTEM_DATABASE_NAME ), not( empty() ) );
         }
         finally
         {
