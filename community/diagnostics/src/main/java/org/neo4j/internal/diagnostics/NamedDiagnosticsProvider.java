@@ -17,9 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.diagnostics.providers;
-
-import org.neo4j.internal.diagnostics.DiagnosticsProvider;
+package org.neo4j.internal.diagnostics;
 
 public abstract class NamedDiagnosticsProvider implements DiagnosticsProvider
 {

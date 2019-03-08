@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.diagnostics.providers;
 
+import org.neo4j.internal.diagnostics.NamedDiagnosticsProvider;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.internal.Version;
 import org.neo4j.logging.Logger;

@@ -21,6 +21,7 @@ package org.neo4j.kernel.diagnostics.providers;
 
 import java.io.IOException;
 
+import org.neo4j.internal.diagnostics.NamedDiagnosticsProvider;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;

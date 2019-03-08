@@ -30,6 +30,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.TimeZone;
 
+import org.neo4j.internal.diagnostics.NamedDiagnosticsProvider;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.internal.NativeIndexFileFilter;
