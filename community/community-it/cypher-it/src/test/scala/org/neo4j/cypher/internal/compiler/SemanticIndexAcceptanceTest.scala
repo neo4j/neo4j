@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v4_0
+package org.neo4j.cypher.internal.compiler
 
 import java.time.{ZoneId, ZoneOffset}
 import java.util.concurrent.TimeUnit
@@ -27,7 +27,6 @@ import org.neo4j.values.storable._
 import org.neo4j.values.utils.TemporalUtil
 import org.scalacheck.{Gen, Shrink}
 import org.scalacheck.Arbitrary.arbitrary
-import org.scalacheck.Gen
 import org.scalatest.matchers.{MatchResult, Matcher}
 import org.scalatest.prop.PropertyChecks
 
