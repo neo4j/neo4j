@@ -123,7 +123,9 @@ public class StringLengthIndexValidationIT
         }
         catch ( IllegalStateException e )
         {
-            assertThat( e.getMessage(), Matchers.containsString( "Index entered a FAILED state." ) );
+            assertThat( e.getMessage(), Matchers.containsString(
+                    "Index IndexDefinition[label:LABEL_ONE on:largeString] (IndexRule[id=1, descriptor=Index( GENERAL, :label[0](property[0]) ), " +
+                            "provider={key=lucene+native, version=2.0}]) entered a FAILED state." ) );
         }
 
         // Index should be in failed state
