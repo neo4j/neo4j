@@ -87,7 +87,9 @@ public abstract class SeekCursorTestBase<KEY, VALUE>
     private static long unstableGeneration = stableGeneration + 1;
 
     private long rootId;
+    private long rootGeneration;
     private int numberOfRootSplits;
+    private Supplier<Root> realRootCatchup = () -> new Root( rootId, rootGeneration );
 
     @Before
     public void setUp() throws IOException
@@ -121,6 +123,7 @@ public abstract class SeekCursorTestBase<KEY, VALUE>
     private void updateRoot()
     {
         rootId = cursor.getCurrentPageId();
+        rootGeneration = unstableGeneration;
         treeLogic.initialize( cursor );
     }
 
@@ -954,6 +957,34 @@ public abstract class SeekCursorTestBase<KEY, VALUE>
                 readKeys++;
             }
             assertEquals( maxKeyCount - 1, readKeys );
+        }
+    }
+
+    /* INCONSISTENCY */
+
+    @Test( timeout = 10_000L )
+    public void mustThrowIfStuckInInfiniteBeginFromRootLoop() throws IOException
+    {
+        // given
+        rootWithTwoLeaves();
+
+        // Find left child and corrupt it by overwriting type to make it look like freelist node instead of tree node.
+        goTo( utilCursor, rootId );
+        long leftChild = node.childAt( utilCursor, 0, stableGeneration, unstableGeneration );
+        goTo( utilCursor, leftChild );
+        utilCursor.putByte( TreeNode.BYTE_POS_NODE_TYPE, TreeNode.NODE_TYPE_FREE_LIST_NODE );
+
+        // when
+        try ( SeekCursor<KEY, VALUE> ignore = seekCursor( 0, 0, cursor, stableGeneration, unstableGeneration, realRootCatchup ) )
+        {
+            fail( "Expected to throw." );
+        }
+        catch ( TreeInconsistencyException e )
+        {
+            // then
+            assertThat( e.getMessage(), containsString(
+                    "Index traversal aborted due to being stuck in infinite loop. This is most likely caused by an inconsistency in the index. " +
+                            "Loop occurred when restarting search from root from page " + leftChild ) );
         }
     }
 
@@ -2196,8 +2227,14 @@ public abstract class SeekCursorTestBase<KEY, VALUE>
     private SeekCursor<KEY,VALUE> seekCursor( long fromInclusive, long toExclusive,
             PageCursor pageCursor, long stableGeneration, long unstableGeneration ) throws IOException
     {
+        return seekCursor( fromInclusive, toExclusive, pageCursor, stableGeneration, unstableGeneration, failingRootCatchup );
+    }
+
+    private SeekCursor<KEY,VALUE> seekCursor( long fromInclusive, long toExclusive,
+            PageCursor pageCursor, long stableGeneration, long unstableGeneration, Supplier<Root> rootCatchup ) throws IOException
+    {
         return new SeekCursor<>( pageCursor, node, key( fromInclusive ), key( toExclusive ), layout, stableGeneration, unstableGeneration,
-                generationSupplier, failingRootCatchup, unstableGeneration , exceptionDecorator, random.nextInt( 1, DEFAULT_MAX_READ_AHEAD ) );
+                generationSupplier, rootCatchup, unstableGeneration , exceptionDecorator, random.nextInt( 1, DEFAULT_MAX_READ_AHEAD ) );
     }
 
     /**
