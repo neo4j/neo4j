@@ -108,24 +108,23 @@ class CsvImporter implements Importer
         File reportFile = new File( reportFileName );
 
         OutputStream badOutput = new BufferedOutputStream( fs.openAsOutputStream( reportFile, false ) );
-        Collector badCollector = badCollector( badOutput, isIgnoringSomething() ? BadCollector.UNLIMITED_TOLERANCE : 0,
-                collect( ignoreBadRelationships, ignoreDuplicateNodes, ignoreExtraColumns ) );
+        try ( Collector badCollector = badCollector( badOutput, isIgnoringSomething() ? BadCollector.UNLIMITED_TOLERANCE : 0,
+                collect( ignoreBadRelationships, ignoreDuplicateNodes, ignoreExtraColumns ) ) )
+        {
+            Configuration configuration =
+                    new WrappedBatchImporterConfigurationForNeo4jAdmin( importConfiguration( null, false, databaseConfig, databaseLayout, highIO ) );
 
-        Configuration configuration = new WrappedBatchImporterConfigurationForNeo4jAdmin( importConfiguration(
-                null, false, databaseConfig, databaseLayout, highIO ) );
+            // Extract the default time zone from the database configuration
+            ZoneId dbTimeZone = databaseConfig.get( GraphDatabaseSettings.db_temporal_timezone );
+            Supplier<ZoneId> defaultTimeZone = () -> dbTimeZone;
 
-        // Extract the default time zone from the database configuration
-        ZoneId dbTimeZone = databaseConfig.get( GraphDatabaseSettings.db_temporal_timezone );
-        Supplier<ZoneId> defaultTimeZone = () -> dbTimeZone;
+            CsvInput input = new CsvInput( nodeData( inputEncoding, nodesFiles ), defaultFormatNodeFileHeader( defaultTimeZone ),
+                    relationshipData( inputEncoding, relationshipsFiles ), defaultFormatRelationshipFileHeader( defaultTimeZone ), idType,
+                    new WrappedCsvInputConfigurationForNeo4jAdmin( csvConfiguration( args, false ) ) );
 
-        CsvInput input = new CsvInput(
-                nodeData( inputEncoding, nodesFiles ), defaultFormatNodeFileHeader( defaultTimeZone ),
-                relationshipData( inputEncoding, relationshipsFiles ), defaultFormatRelationshipFileHeader( defaultTimeZone ),
-                idType,
-                new WrappedCsvInputConfigurationForNeo4jAdmin( csvConfiguration( args, false ) ) );
-
-        ImportTool.doImport( outsideWorld.errorStream(), outsideWorld.errorStream(), outsideWorld.inStream(), databaseLayout, logsDir,
-                reportFile, fs, nodesFiles, relationshipsFiles, false, input, this.databaseConfig, badCollector, configuration, false );
+            ImportTool.doImport( outsideWorld.errorStream(), outsideWorld.errorStream(), outsideWorld.inStream(), databaseLayout, logsDir, reportFile, fs,
+                    nodesFiles, relationshipsFiles, false, input, this.databaseConfig, badCollector, configuration, false );
+        }
     }
 
     private boolean isIgnoringSomething()
