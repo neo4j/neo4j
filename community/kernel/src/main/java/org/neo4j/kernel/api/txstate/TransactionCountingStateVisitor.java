@@ -25,8 +25,8 @@ import java.util.function.LongConsumer;
 
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.io.IOUtils;
-import org.neo4j.kernel.impl.api.CountsDelta;
 import org.neo4j.kernel.impl.api.DegreeVisitor;
+import org.neo4j.storageengine.api.CountsDelta;
 import org.neo4j.storageengine.api.StorageNodeCursor;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.StorageRelationshipGroupCursor;

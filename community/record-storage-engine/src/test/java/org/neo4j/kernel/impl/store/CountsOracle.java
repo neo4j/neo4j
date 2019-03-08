@@ -23,8 +23,8 @@ import java.util.List;
 
 import org.neo4j.counts.CountsAccessor;
 import org.neo4j.counts.CountsVisitor;
-import org.neo4j.kernel.impl.api.CountsDelta;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
+import org.neo4j.storageengine.api.CountsDelta;
 
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.register.Registers.newDoubleLongRegister;

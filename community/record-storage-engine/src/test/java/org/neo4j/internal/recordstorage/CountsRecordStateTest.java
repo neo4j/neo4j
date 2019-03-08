@@ -25,7 +25,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.impl.api.CountsDelta;
+import org.neo4j.storageengine.api.CountsDelta;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
