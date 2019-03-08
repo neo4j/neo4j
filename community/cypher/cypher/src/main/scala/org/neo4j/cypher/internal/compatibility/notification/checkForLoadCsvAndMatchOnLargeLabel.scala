@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compatibility.notification
 
-import org.neo4j.cypher.internal.compiler.v4_0.LargeLabelWithLoadCsvNotification
+import org.neo4j.cypher.internal.compiler.LargeLabelWithLoadCsvNotification
 import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.logical.plans.{LoadCSV, LogicalPlan, NodeByLabelScan}
 import org.neo4j.cypher.internal.v4_0.util.{Cardinality, InternalNotification, LabelId}

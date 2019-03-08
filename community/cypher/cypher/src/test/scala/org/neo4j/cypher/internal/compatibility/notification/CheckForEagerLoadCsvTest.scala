@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.compatibility.notification
 
-import org.neo4j.cypher.internal.compiler.v4_0.EagerLoadCsvNotification
-import org.neo4j.cypher.internal.compiler.v4_0.planner.LogicalPlanningTestSupport
+import org.neo4j.cypher.internal.compiler.EagerLoadCsvNotification
+import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.ir.NoHeaders
 import org.neo4j.cypher.internal.runtime.interpreted.CSVResources
 import org.neo4j.cypher.internal.logical.plans.{AllNodesScan, Eager, LoadCSV}

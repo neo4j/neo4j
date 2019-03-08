@@ -23,8 +23,8 @@ import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito._
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
-import org.neo4j.cypher.internal.compiler.v4_0.LargeLabelWithLoadCsvNotification
-import org.neo4j.cypher.internal.compiler.v4_0.planner.LogicalPlanningTestSupport
+import org.neo4j.cypher.internal.compiler.LargeLabelWithLoadCsvNotification
+import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.ir.HasHeaders
 import org.neo4j.cypher.internal.planner.spi.{GraphStatistics, PlanContext}
 import org.neo4j.cypher.internal.runtime.interpreted.CSVResources

@@ -26,10 +26,10 @@ import org.neo4j.cypher.exceptionHandler.runSafely
 import org.neo4j.cypher.internal._
 import org.neo4j.cypher.internal.compatibility._
 import org.neo4j.cypher.internal.compatibility.notification.LogicalPlanNotifications
-import org.neo4j.cypher.internal.compiler.v4_0
-import org.neo4j.cypher.internal.compiler.v4_0.phases.PlannerContext
-import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.{CachedMetricsFactory, SimpleMetricsFactory}
-import org.neo4j.cypher.internal.compiler.v4_0.{CypherPlanner => _, _}
+import org.neo4j.cypher.internal.compiler
+import org.neo4j.cypher.internal.compiler.phases.PlannerContext
+import org.neo4j.cypher.internal.compiler.planner.logical.{CachedMetricsFactory, SimpleMetricsFactory}
+import org.neo4j.cypher.internal.compiler.{CypherPlanner => _, _}
 import org.neo4j.cypher.internal.runtime.interpreted._
 import org.neo4j.cypher.internal.spi.{ExceptionTranslatingPlanContext, TransactionBoundPlanContext}
 import org.neo4j.cypher.internal.v4_0.ast.Statement
@@ -157,7 +157,7 @@ case class Cypher3_5Planner(config: CypherPlannerConfiguration,
   override val name: PlannerName = plannerName
 }
 
-private[v3_5] class Parser3_5(planner: v4_0.CypherPlanner[PlannerContext],
+private[v3_5] class Parser3_5(planner: compiler.CypherPlanner[PlannerContext],
                               notificationLogger: InternalNotificationLogger,
                               offset: InputPosition,
                               tracer: CompilationPhaseTracer,

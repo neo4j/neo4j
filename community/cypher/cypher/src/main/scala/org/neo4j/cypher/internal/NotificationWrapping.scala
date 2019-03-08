@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal
 
-import org.neo4j.cypher.internal.compiler.v4_0._
+import org.neo4j.cypher.internal.compiler._
 import org.neo4j.cypher.internal.v4_0.util._
 import org.neo4j.graphdb
 import org.neo4j.graphdb.impl.notification.{NotificationCode, NotificationDetail}

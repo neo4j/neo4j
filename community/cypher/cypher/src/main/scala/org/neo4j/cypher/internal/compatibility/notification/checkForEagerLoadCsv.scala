@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compatibility.notification
 
-import org.neo4j.cypher.internal.compiler.v4_0.EagerLoadCsvNotification
+import org.neo4j.cypher.internal.compiler.EagerLoadCsvNotification
 import org.neo4j.cypher.internal.logical.plans.{Eager, LoadCSV, LogicalPlan}
 import org.neo4j.cypher.internal.v4_0.util.InternalNotification
 

@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal
 import java.time.Clock
 
 import org.neo4j.cypher.internal.NotificationWrapping.asKernelNotification
-import org.neo4j.cypher.internal.compiler.v4_0.{StatsDivergenceCalculator, _}
+import org.neo4j.cypher.internal.compiler.{DeprecatedCompiledRuntimeNotification, StatsDivergenceCalculator}
 import org.neo4j.cypher._
 import org.neo4j.graphdb.Notification
 import org.neo4j.kernel.GraphDatabaseQueryService
