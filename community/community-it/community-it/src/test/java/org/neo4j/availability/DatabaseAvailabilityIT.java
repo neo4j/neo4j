@@ -59,7 +59,10 @@ class DatabaseAvailabilityIT
     @AfterEach
     void tearDown()
     {
-        database.shutdown();
+        if ( database != null )
+        {
+            database.shutdown();
+        }
     }
 
     @Test

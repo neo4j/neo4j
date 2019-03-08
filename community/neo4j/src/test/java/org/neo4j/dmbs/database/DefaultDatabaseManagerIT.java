@@ -37,7 +37,6 @@ import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.hasSize;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -91,16 +90,6 @@ class DefaultDatabaseManagerIT
         assertThat( databases, hasSize( 2 ) );
         assertEquals( DEFAULT_DATABASE_NAME, databases.get( 0 ) );
         assertEquals( SYSTEM_DATABASE_NAME, databases.get( 1 ) );
-    }
-
-    @Test
-    void listDatabaseEmptyWhenManagerShutdown() throws Throwable
-    {
-        DatabaseManager databaseManager = getDatabaseManager();
-        databaseManager.stop();
-        databaseManager.shutdown();
-        List<String> databases = databaseManager.listDatabases();
-        assertThat( databases, empty() );
     }
 
     @Test

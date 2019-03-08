@@ -51,8 +51,11 @@ class TestNeo4jApiExceptions
     @AfterEach
     void cleanUp()
     {
-        rollback();
-        graph.shutdown();
+        if ( graph != null )
+        {
+            rollback();
+            graph.shutdown();
+        }
     }
 
     @Test

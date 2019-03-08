@@ -78,12 +78,6 @@ public final class DefaultDatabaseManager extends AbstractDatabaseManager
     }
 
     @Override
-    public void shutdown()
-    {
-        databases.clear();
-    }
-
-    @Override
     protected Map<String,DatabaseContext> getDatabaseMap()
     {
         return databases;
