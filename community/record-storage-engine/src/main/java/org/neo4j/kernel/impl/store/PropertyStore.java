@@ -50,6 +50,7 @@ import org.neo4j.values.storable.ArrayValue;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
+import org.neo4j.values.utils.TemporalValueWriterAdapter;
 
 import static org.neo4j.kernel.impl.store.DynamicArrayStore.getRightArray;
 import static org.neo4j.kernel.impl.store.NoStoreHeaderFormat.NO_STORE_HEADER_FORMAT;
@@ -399,7 +400,6 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
 
     private static class PropertyBlockValueWriter extends TemporalValueWriterAdapter<IllegalArgumentException>
     {
-
         private final PropertyBlock block;
         private final int keyId;
         private final DynamicRecordAllocator stringAllocator;

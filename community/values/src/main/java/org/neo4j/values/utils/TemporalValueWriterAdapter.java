@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.store;
+package org.neo4j.values.utils;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -28,7 +28,6 @@ import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 
 import org.neo4j.values.storable.ValueWriter;
-import org.neo4j.values.utils.TemporalUtil;
 
 import static java.time.ZoneOffset.UTC;
 
