@@ -32,7 +32,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFiles;
+import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesHelper;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
@@ -169,7 +169,7 @@ class ArchiveTest
         DatabaseLayout testDatabaseLayout = testDirectory.databaseLayout( "testDatabase", () -> Optional.of( txLogsRoot ) );
         Path txLogsDirectory = testDatabaseLayout.getTransactionLogsDirectory().toPath();
         Files.write( testDatabaseLayout.databaseDirectory().toPath().resolve( "dbfile" ), new byte[0] );
-        Files.write( txLogsDirectory.resolve( TransactionLogFiles.DEFAULT_NAME + ".0" ), new byte[0] );
+        Files.write( txLogsDirectory.resolve( TransactionLogFilesHelper.DEFAULT_NAME + ".0" ), new byte[0] );
 
         Path archive = testDirectory.file( "the-archive.dump" ).toPath();
         new Dumper().dump( testDatabaseLayout.databaseDirectory().toPath(), txLogsDirectory, archive, alwaysFalse() );
@@ -184,7 +184,7 @@ class ArchiveTest
         Files.write( expectedOutput.resolve( "dbfile" ), new byte[0] );
 
         Path expectedTxLogs = testDirectory.directory( "expectedTxLogs" ).toPath();
-        Files.write( expectedTxLogs.resolve( TransactionLogFiles.DEFAULT_NAME + ".0" ), new byte[0] );
+        Files.write( expectedTxLogs.resolve( TransactionLogFilesHelper.DEFAULT_NAME + ".0" ), new byte[0] );
 
         assertEquals( describeRecursively( expectedOutput ), describeRecursively( newDatabaseLayout.databaseDirectory().toPath() ) );
         assertEquals( describeRecursively( expectedTxLogs ), describeRecursively( newDatabaseLayout.getTransactionLogsDirectory().toPath() ) );

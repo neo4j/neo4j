@@ -35,8 +35,6 @@ public interface LogFiles extends Lifecycle
 {
     long getLogVersion( File historyLogFile );
 
-    long getLogVersion( String historyLogFilename );
-
     File[] logFiles();
 
     boolean isLogFile( File file );

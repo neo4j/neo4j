@@ -23,32 +23,44 @@ import java.io.File;
 import java.io.FilenameFilter;
 import java.util.regex.Pattern;
 
+import org.neo4j.io.fs.FileSystemAbstraction;
+
 import static java.util.regex.Pattern.compile;
 
-class TransactionLogFilesHelper
+public class TransactionLogFilesHelper
 {
+    public static final String DEFAULT_NAME = "neostore.transaction.db";
     private static final String REGEX_DEFAULT_NAME = "neostore\\.transaction\\.db";
+    static final FilenameFilter DEFAULT_FILENAME_FILTER = new LogicalLogFilenameFilter( REGEX_DEFAULT_NAME );
+
     private static final String VERSION_SUFFIX = ".";
     private static final String REGEX_VERSION_SUFFIX = "\\.";
-
-    static final FilenameFilter DEFAULT_FILENAME_FILTER = new LogicalLogFilenameFilter( REGEX_DEFAULT_NAME );
+    private static final File[] EMPTY_FILES_ARRAY = {};
 
     private final File logBaseName;
     private final FilenameFilter logFileFilter;
+    private final FileSystemAbstraction fileSystem;
 
-    TransactionLogFilesHelper( File directory, String name )
+    public TransactionLogFilesHelper( FileSystemAbstraction fileSystem, File directory )
     {
+        this( fileSystem, directory, DEFAULT_NAME );
+    }
+
+    public TransactionLogFilesHelper( FileSystemAbstraction fileSystem, File directory, String name )
+    {
+        this.fileSystem = fileSystem;
         this.logBaseName = new File( directory, name );
         this.logFileFilter = new LogicalLogFilenameFilter( name );
     }
 
-    File getLogFileForVersion( long version )
+    public File getLogFileForVersion( long version )
     {
         return new File( logBaseName.getPath() + VERSION_SUFFIX + version );
     }
 
-    long getLogVersion( String historyLogFilename )
+    public long getLogVersion( File historyLogFile )
     {
+        String historyLogFilename = historyLogFile.getName();
         int index = historyLogFilename.lastIndexOf( VERSION_SUFFIX );
         if ( index == -1 )
         {
@@ -57,14 +69,27 @@ class TransactionLogFilesHelper
         return Long.parseLong( historyLogFilename.substring( index + VERSION_SUFFIX.length() ) );
     }
 
-    File getParentDirectory()
-    {
-        return logBaseName.getParentFile();
-    }
-
     FilenameFilter getLogFilenameFilter()
     {
         return logFileFilter;
+    }
+
+    public File[] getLogFiles()
+    {
+        File[] files = fileSystem.listFiles( logBaseName.getParentFile(), getLogFilenameFilter() );
+        if ( files == null )
+        {
+            return EMPTY_FILES_ARRAY;
+        }
+        return files;
+    }
+
+    public void accept( LogVersionVisitor visitor )
+    {
+        for ( File file : getLogFiles() )
+        {
+            visitor.visit( file, getLogVersion( file ) );
+        }
     }
 
     private static final class LogicalLogFilenameFilter implements FilenameFilter

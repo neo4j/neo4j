@@ -77,8 +77,8 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.storemigration.legacy.SchemaStorage35;
 import org.neo4j.kernel.impl.storemigration.legacy.SchemaStore35;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
-import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
-import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
+import org.neo4j.kernel.impl.transaction.log.files.RangeLogVersionVisitor;
+import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesHelper;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.scheduler.JobScheduler;
@@ -345,15 +345,15 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
             return new LogPosition( BASE_TX_LOG_VERSION, BASE_TX_LOG_BYTE_OFFSET );
         }
 
-        LogFiles logFiles = LogFilesBuilder.activeFilesBuilder( sourceDirectoryStructure, fileSystem, pageCache )
-                                           .withConfig( config )
-                                           .build();
-        long logVersion = logFiles.getHighestLogVersion();
-        if ( logVersion == -1 )
+        TransactionLogFilesHelper logFiles = new TransactionLogFilesHelper( fileSystem, sourceDirectoryStructure.getTransactionLogsDirectory() );
+        RangeLogVersionVisitor versionVisitor = new RangeLogVersionVisitor();
+        logFiles.accept( versionVisitor );
+        long logVersion = versionVisitor.getHighestVersion();
+        if ( logVersion == RangeLogVersionVisitor.UNKNOWN )
         {
             return new LogPosition( BASE_TX_LOG_VERSION, BASE_TX_LOG_BYTE_OFFSET );
         }
-        long offset = fileSystem.getFileSize( logFiles.getHighestLogFile() );
+        long offset = fileSystem.getFileSize( versionVisitor.getHighestFile() );
         return new LogPosition( logVersion, offset );
 
     }

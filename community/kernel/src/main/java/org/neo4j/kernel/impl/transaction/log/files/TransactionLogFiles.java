@@ -35,8 +35,6 @@ import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
-import static java.lang.Math.max;
-import static java.lang.Math.min;
 import static java.lang.String.format;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.readLogHeader;
@@ -67,7 +65,7 @@ public class TransactionLogFiles extends LifecycleAdapter implements LogFiles
     {
         this.logFilesContext = context;
         this.logsDirectory = logsDirectory;
-        this.fileHelper = new TransactionLogFilesHelper( logsDirectory, name );
+        this.fileHelper = new TransactionLogFilesHelper( context.getFileSystem(), logsDirectory, name );
         this.fileSystem = context.getFileSystem();
         this.monitor = context.getLogFileCreationMonitor();
         this.logHeaderCache = new LogHeaderCache( 1000 );
@@ -96,24 +94,13 @@ public class TransactionLogFiles extends LifecycleAdapter implements LogFiles
     @Override
     public long getLogVersion( File historyLogFile )
     {
-        return getLogVersion( historyLogFile.getName() );
-    }
-
-    @Override
-    public long getLogVersion( String historyLogFilename )
-    {
-        return fileHelper.getLogVersion( historyLogFilename );
+        return fileHelper.getLogVersion( historyLogFile );
     }
 
     @Override
     public File[] logFiles()
     {
-        File[] files = fileSystem.listFiles( fileHelper.getParentDirectory(), fileHelper.getLogFilenameFilter() );
-        if ( files == null )
-        {
-            return EMPTY_FILES_ARRAY;
-        }
-        return files;
+        return fileHelper.getLogFiles();
     }
 
     @Override
@@ -163,7 +150,7 @@ public class TransactionLogFiles extends LifecycleAdapter implements LogFiles
     {
         RangeLogVersionVisitor visitor = new RangeLogVersionVisitor();
         accept( visitor );
-        return visitor.highest;
+        return visitor.getHighestVersion();
     }
 
     @Override
@@ -171,7 +158,7 @@ public class TransactionLogFiles extends LifecycleAdapter implements LogFiles
     {
         RangeLogVersionVisitor visitor = new RangeLogVersionVisitor();
         accept( visitor );
-        return visitor.lowest;
+        return visitor.getLowestVersion();
     }
 
     @Override
@@ -311,18 +298,5 @@ public class TransactionLogFiles extends LifecycleAdapter implements LogFiles
     private StoreChannel openLogFileChannel( File file, OpenMode mode ) throws IOException
     {
         return fileSystem.open( file, mode );
-    }
-
-    private static class RangeLogVersionVisitor implements LogVersionVisitor
-    {
-        private long lowest = -1;
-        private long highest = -1;
-
-        @Override
-        public void visit( File file, long logVersion )
-        {
-            highest = max( highest, logVersion );
-            lowest = lowest == -1 ? logVersion : min( lowest, logVersion );
-        }
     }
 }

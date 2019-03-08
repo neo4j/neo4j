@@ -50,7 +50,7 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.StoreLayout;
-import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFiles;
+import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesHelper;
 import org.neo4j.kernel.internal.locker.StoreLocker;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.TestDirectoryExtension;
@@ -206,7 +206,7 @@ class DumpCommandTest
         Config config = Config.builder().withHome( homeDir ).build();
         DatabaseLayout databaseLayout = testDirectory.databaseLayout( "foo", LayoutConfig.of( config ) );
         testDirectory.getFileSystem().mkdirs( databaseLayout.getTransactionLogsDirectory() );
-        File logFile = new File( databaseLayout.getTransactionLogsDirectory(), TransactionLogFiles.DEFAULT_NAME + ".0" );
+        File logFile = new File( databaseLayout.getTransactionLogsDirectory(), TransactionLogFilesHelper.DEFAULT_NAME + ".0" );
 
         try ( FileWriter fileWriter = new FileWriter( logFile ) )
         {

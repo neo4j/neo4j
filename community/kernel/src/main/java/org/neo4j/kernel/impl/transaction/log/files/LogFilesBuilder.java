@@ -68,7 +68,7 @@ public class LogFilesBuilder
     private LogVersionRepository logVersionRepository;
     private TransactionIdStore transactionIdStore;
     private LongSupplier lastCommittedTransactionIdSupplier;
-    private String logFileName = TransactionLogFiles.DEFAULT_NAME;
+    private String logFileName = TransactionLogFilesHelper.DEFAULT_NAME;
     private boolean fileBasedOperationsOnly;
 
     private LogFilesBuilder()

@@ -31,7 +31,7 @@ import org.neo4j.internal.id.BufferingIdGeneratorFactory;
 import org.neo4j.internal.id.IdController;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFiles;
+import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesHelper;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.TestDirectoryExtension;
@@ -74,7 +74,7 @@ class CommunityEditionModuleIntegrationTest
         Predicate<String> filter = CommunityEditionModule.communityFileWatcherFileNameFilter();
         assertFalse( filter.test( layout.metadataStore().getName() ) );
         assertFalse( filter.test( layout.nodeStore().getName() ) );
-        assertTrue( filter.test( TransactionLogFiles.DEFAULT_NAME + ".1" ) );
+        assertTrue( filter.test( TransactionLogFilesHelper.DEFAULT_NAME + ".1" ) );
     }
 
 }
