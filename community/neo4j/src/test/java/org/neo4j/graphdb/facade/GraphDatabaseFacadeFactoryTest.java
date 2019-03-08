@@ -110,7 +110,7 @@ class GraphDatabaseFacadeFactoryTest
         return new GraphDatabaseFacadeFactory( DatabaseInfo.UNKNOWN, p -> editionModule )
         {
             @Override
-            protected GlobalModule createGlobalPlatform( File storeDir, Config config, ExternalDependencies dependencies )
+            protected GlobalModule createGlobalModule( File storeDir, Config config, ExternalDependencies dependencies )
             {
                 final LifeSupport lifeMock = mock( LifeSupport.class );
                 doThrow( startupError ).when( lifeMock ).start();

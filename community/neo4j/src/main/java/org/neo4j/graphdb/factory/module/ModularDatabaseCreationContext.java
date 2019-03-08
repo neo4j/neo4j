@@ -151,7 +151,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
         this.watcherServiceFactory = editionContext.getWatcherServiceFactory();
         this.facade = facade;
         this.engineProviders = globalModule.getQueryEngineProviders();
-        this.databaseAvailabilityGuardFactory = () -> editionContext.createDatabaseAvailabilityGuard( clock, logService, globalConfig );
+        this.databaseAvailabilityGuardFactory = () -> globalModule.getGlobalAvailabilityGuard().createDatabaseAvailabilityGuard( databaseName );
         this.databaseMigratorFactory = new DatabaseMigratorFactory( fs, globalConfig, logService, pageCache, scheduler );
         this.storageEngineFactory = globalModule.getStorageEngineFactory();
     }

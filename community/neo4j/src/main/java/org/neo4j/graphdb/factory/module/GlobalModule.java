@@ -43,6 +43,7 @@ import org.neo4j.io.layout.StoreLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
+import org.neo4j.kernel.availability.CompositeDatabaseAvailabilityGuard;
 import org.neo4j.kernel.diagnostics.providers.DbmsDiagnosticsManager;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.extension.ExtensionFailureStrategies;
@@ -119,6 +120,7 @@ public class GlobalModule
     private final CollectionsFactorySupplier collectionsFactorySupplier;
     private final UsageData usageData;
     private final ConnectorPortRegister connectorPortRegister;
+    private final CompositeDatabaseAvailabilityGuard globalAvailabilityGuard;
     private final FileSystemWatcherService fileSystemWatcher;
     // In the future this may not be a global decision, but for now this is a good central place to make the decision about which storage engine to use
     private final StorageEngineFactory storageEngineFactory;
@@ -168,6 +170,10 @@ public class GlobalModule
                 new JvmMetadataRepository() ).checkJvmCompatibilityAndIssueWarning();
 
         globalLife.add( new VmPauseMonitorComponent( globalConfig, logService.getInternalLog( VmPauseMonitorComponent.class ), jobScheduler ) );
+
+        globalAvailabilityGuard = new CompositeDatabaseAvailabilityGuard( globalClock, logService );
+        globalDependencies.satisfyDependency( globalAvailabilityGuard );
+        globalLife.setLast( globalAvailabilityGuard );
 
         String desiredImplementationName = globalConfig.get( GraphDatabaseSettings.tracer );
         tracers = globalDependencies.satisfyDependency( new Tracers( desiredImplementationName,
@@ -478,6 +484,11 @@ public class GlobalModule
     public LogService getLogService()
     {
         return logService;
+    }
+
+    public CompositeDatabaseAvailabilityGuard getGlobalAvailabilityGuard()
+    {
+        return globalAvailabilityGuard;
     }
 
     public StorageEngineFactory getStorageEngineFactory()

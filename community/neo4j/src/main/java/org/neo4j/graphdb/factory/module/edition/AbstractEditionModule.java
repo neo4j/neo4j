@@ -19,7 +19,6 @@
  */
 package org.neo4j.graphdb.factory.module.edition;
 
-import java.time.Clock;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -42,8 +41,6 @@ import org.neo4j.kernel.api.net.NetworkConnectionTracker;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.api.security.SecurityModule;
 import org.neo4j.kernel.api.security.provider.SecurityProvider;
-import org.neo4j.kernel.availability.CompositeDatabaseAvailabilityGuard;
-import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
@@ -84,7 +81,6 @@ public abstract class AbstractEditionModule
     protected AccessCapability accessCapability;
     protected IOLimiter ioLimiter;
     protected Function<DatabaseLayout,DatabaseLayoutWatcher> watcherServiceFactory;
-    protected CompositeDatabaseAvailabilityGuard globalAvailabilityGuard;
     protected SecurityProvider securityProvider;
 
     public abstract EditionDatabaseContext createDatabaseContext( String databaseName );
@@ -175,20 +171,6 @@ public abstract class AbstractEditionModule
     public TransactionCounters globalTransactionCounter()
     {
         return transactionStatistic;
-    }
-
-    public CompositeDatabaseAvailabilityGuard getGlobalAvailabilityGuard( Clock clock, LogService logService )
-    {
-        if ( globalAvailabilityGuard == null )
-        {
-            globalAvailabilityGuard = new CompositeDatabaseAvailabilityGuard( clock, logService );
-        }
-        return globalAvailabilityGuard;
-    }
-
-    public DatabaseAvailabilityGuard createDatabaseAvailabilityGuard( String databaseName, Clock clock, LogService logService )
-    {
-        return getGlobalAvailabilityGuard( clock, logService ).createDatabaseAvailabilityGuard( databaseName );
     }
 
     public void createDatabases( DatabaseManager databaseManager, Config config )

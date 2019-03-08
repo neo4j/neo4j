@@ -268,7 +268,7 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
         }
 
         @Override
-        protected GlobalModule createGlobalPlatform( File storeDir, Config config, ExternalDependencies dependencies )
+        protected GlobalModule createGlobalModule( File storeDir, Config config, ExternalDependencies dependencies )
         {
             File databasesRoot = configureAndGetDatabaseRoot( storeDir, config );
 

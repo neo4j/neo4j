@@ -251,7 +251,7 @@ class IdGeneratorRebuildTest
             new GraphDatabaseFacadeFactory( DatabaseInfo.COMMUNITY, CommunityEditionModule::new )
             {
                 @Override
-                protected GlobalModule createGlobalPlatform( File storeDir, Config config, ExternalDependencies dependencies )
+                protected GlobalModule createGlobalModule( File storeDir, Config config, ExternalDependencies dependencies )
                 {
                     return new ImpermanentGlobalModule( storeDir, config, databaseInfo, dependencies )
                     {

@@ -21,14 +21,12 @@ package org.neo4j.graphdb.factory.module.edition.context;
 
 import java.util.function.Function;
 
-import org.neo4j.configuration.Config;
 import org.neo4j.graphdb.factory.module.edition.AbstractEditionModule;
 import org.neo4j.graphdb.factory.module.edition.DefaultEditionModule;
 import org.neo4j.graphdb.factory.module.id.DatabaseIdContext;
 import org.neo4j.io.fs.watcher.DatabaseLayoutWatcher;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.IOLimiter;
-import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
@@ -38,8 +36,6 @@ import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.StatementLocksFactory;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats;
-import org.neo4j.logging.internal.LogService;
-import org.neo4j.time.SystemNanoClock;
 
 public class DefaultEditionDatabaseContext implements EditionDatabaseContext
 {
@@ -156,9 +152,4 @@ public class DefaultEditionDatabaseContext implements EditionDatabaseContext
         return transactionMonitor;
     }
 
-    @Override
-    public DatabaseAvailabilityGuard createDatabaseAvailabilityGuard( SystemNanoClock clock, LogService logService, Config config )
-    {
-        return editionModule.createDatabaseAvailabilityGuard( databaseName, clock, logService );
-    }
 }

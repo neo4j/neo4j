@@ -137,30 +137,29 @@ public class GraphDatabaseFacadeFactory
     public GraphDatabaseFacade initFacade( File storeDir, Config config, final ExternalDependencies dependencies,
             final GraphDatabaseFacade graphDatabaseFacade )
     {
-        GlobalModule globalPlatform = createGlobalPlatform( storeDir, config, dependencies );
-        AbstractEditionModule edition = editionFactory.apply( globalPlatform );
-        Dependencies globalDependencies = globalPlatform.getGlobalDependencies();
-        LifeSupport globalLife = globalPlatform.getGlobalLife();
+        GlobalModule globalModule = createGlobalModule( storeDir, config, dependencies );
+        AbstractEditionModule edition = editionFactory.apply( globalModule );
+        Dependencies globalDependencies = globalModule.getGlobalDependencies();
+        LifeSupport globalLife = globalModule.getGlobalLife();
 
-        GlobalProcedures globalProcedures = setupProcedures( globalPlatform, edition );
+        GlobalProcedures globalProcedures = setupProcedures( globalModule, edition );
         globalDependencies.satisfyDependency( new NonTransactionalDbmsOperations( globalProcedures ) );
 
-        LogService logService = globalPlatform.getLogService();
+        LogService logService = globalModule.getLogService();
         Logger logger = logService.getInternalLog( getClass() ).infoLogger();
-        DatabaseManager databaseManager = createAndInitializeDatabaseManager( globalPlatform, edition, graphDatabaseFacade, globalProcedures, logger );
+        DatabaseManager databaseManager = createAndInitializeDatabaseManager( globalModule, edition, graphDatabaseFacade, globalProcedures, logger );
 
-        edition.createSecurityModule( globalPlatform, globalProcedures );
+        edition.createSecurityModule( globalModule, globalProcedures );
         SecurityProvider securityProvider = edition.getSecurityProvider();
         globalDependencies.satisfyDependencies( securityProvider.authManager() );
         globalDependencies.satisfyDependencies( securityProvider.userManagerSupplier() );
 
-        globalLife.add( globalPlatform.getGlobalExtensions() );
-        globalLife.add( createBoltServer( globalPlatform, edition, databaseManager ) );
+        globalLife.add( globalModule.getGlobalExtensions() );
+        globalLife.add( createBoltServer( globalModule, edition, databaseManager ) );
         globalDependencies.satisfyDependency( edition.globalTransactionCounter() );
-        globalLife.add( new StartupWaiter( edition.getGlobalAvailabilityGuard( globalPlatform.getGlobalClock(),
-                logService ), edition.getTransactionStartTimeout() ) );
+        globalLife.add( new StartupWaiter( globalModule.getGlobalAvailabilityGuard(), edition.getTransactionStartTimeout() ) );
         globalDependencies.satisfyDependency( edition.getSchemaWriteGuard() );
-        globalLife.add( new PublishPageCacheTracerMetricsAfterStart( globalPlatform.getTracers().getPageCursorTracerSupplier() ) );
+        globalLife.add( new PublishPageCacheTracerMetricsAfterStart( globalModule.getTracers().getPageCursorTracerSupplier() ) );
 
         RuntimeException error = null;
         GraphDatabaseFacade databaseFacade = null;
@@ -176,7 +175,7 @@ public class GraphDatabaseFacadeFactory
         catch ( final Throwable throwable )
         {
             error = new RuntimeException( "Error starting " + getClass().getName() + ", " +
-                    globalPlatform.getStoreLayout().storeDirectory(), throwable );
+                    globalModule.getStoreLayout().storeDirectory(), throwable );
         }
         finally
         {
@@ -205,7 +204,7 @@ public class GraphDatabaseFacadeFactory
     /**
      * Create the platform module. Override to replace with custom module.
      */
-    protected GlobalModule createGlobalPlatform( File storeDir, Config config, final ExternalDependencies dependencies )
+    protected GlobalModule createGlobalModule( File storeDir, Config config, final ExternalDependencies dependencies )
     {
         return new GlobalModule( storeDir, config, databaseInfo, dependencies );
     }

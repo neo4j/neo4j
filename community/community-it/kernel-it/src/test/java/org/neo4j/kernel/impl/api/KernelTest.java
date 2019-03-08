@@ -96,7 +96,7 @@ public class KernelTest
             new GraphDatabaseFacadeFactory( DatabaseInfo.COMMUNITY,  factory )
             {
                 @Override
-                protected GlobalModule createGlobalPlatform( File storeDir, Config config, ExternalDependencies dependencies )
+                protected GlobalModule createGlobalModule( File storeDir, Config config, ExternalDependencies dependencies )
                 {
                     return new ImpermanentGlobalModule( storeDir, config, databaseInfo, dependencies );
                 }

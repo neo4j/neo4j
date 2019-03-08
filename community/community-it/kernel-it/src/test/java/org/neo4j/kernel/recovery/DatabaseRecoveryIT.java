@@ -440,9 +440,9 @@ class DatabaseRecoveryIT
                                 TestGraphDatabaseFacadeFactory factory = new TestGraphDatabaseFacadeFactory( state, true )
                                 {
                                     @Override
-                                    protected GlobalModule createGlobalPlatform( File storeDir, Config config, ExternalDependencies dependencies )
+                                    protected GlobalModule createGlobalModule( File storeDir, Config config, ExternalDependencies dependencies )
                                     {
-                                        GlobalModule globalModule = super.createGlobalPlatform( storeDir, config, dependencies );
+                                        GlobalModule globalModule = super.createGlobalModule( storeDir, config, dependencies );
                                         // nice way of getting the page cache dependency before db is created, huh?
                                         pageCache.set( globalModule.getPageCache() );
                                         return globalModule;

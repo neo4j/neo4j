@@ -99,7 +99,7 @@ class DatabaseShutdownTest
             {
 
                 @Override
-                protected GlobalModule createGlobalPlatform( File storeDir, Config config, ExternalDependencies dependencies )
+                protected GlobalModule createGlobalModule( File storeDir, Config config, ExternalDependencies dependencies )
                 {
                     GlobalModule globalModule = new GlobalModule( storeDir, config, databaseInfo, dependencies )
                     {

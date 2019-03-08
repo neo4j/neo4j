@@ -58,7 +58,7 @@ public class AdversarialPageCacheGraphDatabaseFactory
                 {
 
                     @Override
-                    protected GlobalModule createGlobalPlatform( File storeDir, Config config, ExternalDependencies dependencies )
+                    protected GlobalModule createGlobalModule( File storeDir, Config config, ExternalDependencies dependencies )
                     {
                         File absoluteStoreDir = storeDir.getAbsoluteFile();
                         File databasesRoot = absoluteStoreDir.getParentFile();
