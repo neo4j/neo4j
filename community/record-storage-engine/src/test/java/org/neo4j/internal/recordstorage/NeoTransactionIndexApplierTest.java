@@ -19,52 +19,40 @@
  */
 package org.neo4j.internal.recordstorage;
 
-import org.junit.Before;
 import org.junit.Test;
 
 import java.util.Collection;
 import java.util.Collections;
 
-import org.neo4j.kernel.api.index.IndexProviderDescriptor;
-import org.neo4j.kernel.impl.api.TransactionToApply;
-import org.neo4j.kernel.impl.api.index.IndexingService;
-import org.neo4j.kernel.impl.index.schema.IndexDescriptorFactory;
-import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
+import org.neo4j.storageengine.api.CommandsToApply;
+import org.neo4j.storageengine.api.DefaultStorageIndexReference;
 import org.neo4j.storageengine.api.IndexUpdateListener;
 import org.neo4j.storageengine.api.NodeLabelUpdateListener;
 import org.neo4j.storageengine.api.StorageEngine;
+import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.util.concurrent.WorkSync;
 
 import static org.junit.Assert.assertFalse;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 import static org.neo4j.internal.schema.SchemaDescriptorFactory.forLabel;
 
 public class NeoTransactionIndexApplierTest
 {
-    private static final IndexProviderDescriptor INDEX_DESCRIPTOR = new IndexProviderDescriptor( "in-memory", "1.0" );
-
-    private final IndexingService indexingService = mock( IndexingService.class );
+    private final IndexUpdateListener indexingService = mock( IndexUpdateListener.class );
     private final IndexUpdateListener indexUpdateListener = mock( IndexUpdateListener.class );
     private final SchemaCache schemaCache = mock( SchemaCache.class );
     private final NodeLabelUpdateListener labelUpdateListener = mock( NodeLabelUpdateListener.class );
     private final Collection<DynamicRecord> emptyDynamicRecords = Collections.emptySet();
     private final WorkSync<NodeLabelUpdateListener,LabelUpdateWork> labelScanStoreSynchronizer = new WorkSync<>( labelUpdateListener );
     private final WorkSync<IndexUpdateListener,IndexUpdatesWork> indexUpdatesSync = new WorkSync<>( indexUpdateListener );
-    private final TransactionToApply transactionToApply = mock( TransactionToApply.class );
-
-    @Before
-    public void setup()
-    {
-        when( transactionToApply.transactionId() ).thenReturn( 1L );
-    }
+    private final CommandsToApply transactionToApply = new GroupOfCommands( 1L );
 
     @Test
     public void shouldUpdateLabelStoreScanOnNodeCommands() throws Exception
@@ -99,7 +87,7 @@ public class NeoTransactionIndexApplierTest
     public void shouldCreateIndexGivenCreateSchemaRuleCommand() throws Exception
     {
         // Given
-        final StoreIndexDescriptor indexRule = indexRule( 1, 42, 42, INDEX_DESCRIPTOR );
+        final StorageIndexReference indexRule = indexRule( 1, 42, 42 );
 
         final IndexBatchTransactionApplier applier = newIndexTransactionApplier();
 
@@ -121,16 +109,16 @@ public class NeoTransactionIndexApplierTest
         verify( indexingService ).createIndexes( indexRule );
     }
 
-    private StoreIndexDescriptor indexRule( long ruleId, int labelId, int propertyId, IndexProviderDescriptor descriptor )
+    private StorageIndexReference indexRule( long ruleId, int labelId, int propertyId )
     {
-        return IndexDescriptorFactory.forSchema( forLabel( labelId, propertyId ), descriptor ).withId( ruleId );
+        return new DefaultStorageIndexReference( forLabel( labelId, propertyId ), false, ruleId );
     }
 
     @Test
     public void shouldDropIndexGivenDropSchemaRuleCommand() throws Exception
     {
         // Given
-        final StoreIndexDescriptor indexRule = indexRule( 1, 42, 42, INDEX_DESCRIPTOR );
+        final StorageIndexReference indexRule = indexRule( 1, 42, 42 );
 
         final IndexBatchTransactionApplier applier = newIndexTransactionApplier();
 

@@ -24,7 +24,6 @@ import org.junit.Test;
 import java.util.Optional;
 
 import org.neo4j.counts.CountsAccessor;
-import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 
@@ -47,7 +46,7 @@ public class CountsStoreTransactionApplierTest
                 TransactionApplicationMode.INTERNAL );
 
         // WHEN
-        try ( TransactionApplier txApplier = applier.startTx( new TransactionToApply( null, 2L ) ) )
+        try ( TransactionApplier txApplier = applier.startTx( new GroupOfCommands( 2L ) ) )
         {
             txApplier.visitNodeCountsCommand( new Command.NodeCountsCommand( ANY_LABEL, 1 ) );
         }

@@ -23,8 +23,8 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InOrder;
 
-import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.lock.LockGroup;
+import org.neo4j.storageengine.api.CommandsToApply;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -34,7 +34,6 @@ import static org.mockito.Mockito.when;
 
 public class BatchTransactionApplierFacadeTest
 {
-
     private BatchTransactionApplierFacade facade;
     private BatchTransactionApplier applier1;
     private BatchTransactionApplier applier2;
@@ -48,18 +47,18 @@ public class BatchTransactionApplierFacadeTest
     {
         txApplier1 = mock( TransactionApplier.class );
         applier1 = mock( BatchTransactionApplier.class );
-        when( applier1.startTx( any( TransactionToApply.class ) ) ).thenReturn( txApplier1 );
-        when( applier1.startTx( any( TransactionToApply.class ), any( LockGroup.class ) ) ).thenReturn( txApplier1 );
+        when( applier1.startTx( any( CommandsToApply.class ) ) ).thenReturn( txApplier1 );
+        when( applier1.startTx( any( CommandsToApply.class ), any( LockGroup.class ) ) ).thenReturn( txApplier1 );
 
         txApplier2 = mock( TransactionApplier.class );
         applier2 = mock( BatchTransactionApplier.class );
-        when( applier2.startTx( any( TransactionToApply.class ) ) ).thenReturn( txApplier2 );
-        when( applier2.startTx( any( TransactionToApply.class ), any( LockGroup.class ) ) ).thenReturn( txApplier2 );
+        when( applier2.startTx( any( CommandsToApply.class ) ) ).thenReturn( txApplier2 );
+        when( applier2.startTx( any( CommandsToApply.class ), any( LockGroup.class ) ) ).thenReturn( txApplier2 );
 
         txApplier3 = mock( TransactionApplier.class );
         applier3 = mock( BatchTransactionApplier.class );
-        when( applier3.startTx( any( TransactionToApply.class ) ) ).thenReturn( txApplier3 );
-        when( applier3.startTx( any( TransactionToApply.class ), any( LockGroup.class ) ) ).thenReturn( txApplier3 );
+        when( applier3.startTx( any( CommandsToApply.class ) ) ).thenReturn( txApplier3 );
+        when( applier3.startTx( any( CommandsToApply.class ), any( LockGroup.class ) ) ).thenReturn( txApplier3 );
 
         facade = new BatchTransactionApplierFacade( applier1, applier2, applier3 );
     }
@@ -68,7 +67,7 @@ public class BatchTransactionApplierFacadeTest
     public void testStartTxCorrectOrder() throws Exception
     {
         // GIVEN
-        TransactionToApply tx = mock( TransactionToApply.class );
+        CommandsToApply tx = mock( CommandsToApply.class );
 
         // WHEN
         TransactionApplierFacade result = (TransactionApplierFacade) facade.startTx( tx );
@@ -90,7 +89,7 @@ public class BatchTransactionApplierFacadeTest
     public void testStartTxCorrectOrderWithLockGroup() throws Exception
     {
         // GIVEN
-        TransactionToApply tx = mock( TransactionToApply.class );
+        CommandsToApply tx = mock( CommandsToApply.class );
         LockGroup lockGroup = mock( LockGroup.class );
 
         // WHEN

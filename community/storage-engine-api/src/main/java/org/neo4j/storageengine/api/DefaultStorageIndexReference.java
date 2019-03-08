@@ -48,9 +48,16 @@ public class DefaultStorageIndexReference extends DefaultIndexDescriptor impleme
         this.owningConstraintReference = owningConstraintReference;
     }
 
-    public DefaultStorageIndexReference( IndexDescriptor index, long indexReference )
+    public DefaultStorageIndexReference( SchemaDescriptor schema, boolean isUnique, long indexReference, Long owningConstraintReference )
     {
-        this( index.schema(), index.providerKey(), index.providerVersion(), indexReference, optionalName( index ), index.isUnique(), null,
+        super( schema, isUnique );
+        this.indexReference = indexReference;
+        this.owningConstraintReference = owningConstraintReference;
+    }
+
+    public DefaultStorageIndexReference( IndexDescriptor index, long indexReference, Long owningConstraintReference )
+    {
+        this( index.schema(), index.providerKey(), index.providerVersion(), indexReference, optionalName( index ), index.isUnique(), owningConstraintReference,
                 index.isEventuallyConsistent() );
     }
 

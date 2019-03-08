@@ -34,11 +34,9 @@ import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorFactory;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
-import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
-import org.neo4j.kernel.impl.index.schema.IndexDescriptorFactory;
-import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
 import org.neo4j.storageengine.api.ConstraintRule;
+import org.neo4j.storageengine.api.DefaultStorageIndexReference;
 import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.test.Race;
 
@@ -72,8 +70,8 @@ public class SchemaCacheTest
     private SchemaRule schema3_4 = newIndexRule( 10, 3, 4 );
     private SchemaRule schema5_6_7 = newIndexRule( 11, 5, 6, 7 );
     private SchemaRule schema5_8 = newIndexRule( 12, 5, 8 );
-    private SchemaRule node35_8 = IndexDescriptorFactory.forSchema( SchemaDescriptorFactory.multiToken( new int[] {3,5}, NODE, 8 ) ).withId( 13 );
-    private SchemaRule rel35_8 = IndexDescriptorFactory.forSchema( SchemaDescriptorFactory.multiToken( new int[] {3,5}, RELATIONSHIP, 8 ) ).withId( 14 );
+    private SchemaRule node35_8 = new DefaultStorageIndexReference( SchemaDescriptorFactory.multiToken( new int[]{3, 5}, NODE, 8 ), false, 13, null );
+    private SchemaRule rel35_8 = new DefaultStorageIndexReference( SchemaDescriptorFactory.multiToken( new int[] {3,5}, RELATIONSHIP, 8 ), false, 14, null );
 
     @Test
     public void should_construct_schema_cache()
@@ -91,8 +89,8 @@ public class SchemaCacheTest
     {
         SchemaCache cache = newSchemaCache( hans, witch, gretel, robot );
 
-        StoreIndexDescriptor rule1 = newIndexRule( 10, 11, 12 );
-        StoreIndexDescriptor rule2 = newIndexRule( 13, 14, 15 );
+        StorageIndexReference rule1 = newIndexRule( 10, 11, 12 );
+        StorageIndexReference rule2 = newIndexRule( 13, 14, 15 );
         cache.addSchemaRule( rule1 );
         cache.addSchemaRule( rule2 );
 
@@ -465,9 +463,9 @@ public class SchemaCacheTest
         return new IntHashSet( propertyIds );
     }
 
-    private StoreIndexDescriptor newIndexRule( long id, int label, int... propertyKeys )
+    private StorageIndexReference newIndexRule( long id, int label, int... propertyKeys )
     {
-        return TestIndexDescriptorFactory.forLabel( label, propertyKeys ).withId( id );
+        return new DefaultStorageIndexReference( SchemaDescriptorFactory.forLabel( label, propertyKeys ), false, id, null );
     }
 
     private ConstraintRule nodePropertyExistenceConstraintRule( long ruleId, int labelId, int propertyId )

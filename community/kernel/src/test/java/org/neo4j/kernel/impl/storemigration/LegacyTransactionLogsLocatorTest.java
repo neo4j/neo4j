@@ -66,5 +66,4 @@ class LegacyTransactionLogsLocatorTest
         LegacyTransactionLogsLocator logsLocator = new LegacyTransactionLogsLocator( config, systemDbLayout );
         assertEquals( systemDbLayout.databaseDirectory(), logsLocator.getTransactionLogsDirectory() );
     }
-
 }

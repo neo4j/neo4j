@@ -44,11 +44,8 @@ import org.neo4j.io.pagecache.DelegatingPageCache;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
-import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.log.FakeCommitment;
 import org.neo4j.lock.Lock;
 import org.neo4j.lock.LockGroup;
 import org.neo4j.lock.LockService;
@@ -57,7 +54,6 @@ import org.neo4j.storageengine.api.CommandsToApply;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StoreFileMetadata;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
-import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.storageengine.api.UnderlyingStorageException;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.RecordStorageEngineRule;
@@ -249,7 +245,7 @@ public class RecordStorageEngineTest
     private static Exception executeFailingTransaction( RecordStorageEngine engine ) throws IOException
     {
         Exception applicationError = new UnderlyingStorageException( "No space left on device" );
-        TransactionToApply txToApply = newTransactionThatFailsWith( applicationError );
+        CommandsToApply txToApply = newTransactionThatFailsWith( applicationError );
         try
         {
             engine.apply( txToApply, TransactionApplicationMode.INTERNAL );
@@ -262,18 +258,13 @@ public class RecordStorageEngineTest
         return applicationError;
     }
 
-    private static TransactionToApply newTransactionThatFailsWith( Exception error ) throws IOException
+    private static CommandsToApply newTransactionThatFailsWith( Exception error ) throws IOException
     {
-        TransactionRepresentation transaction = mock( TransactionRepresentation.class );
-        when( transaction.additionalHeader() ).thenReturn( new byte[0] );
-        // allow to build validated index updates but fail on actual tx application
+        CommandsToApply transaction = mock( CommandsToApply.class );
         doThrow( error ).when( transaction ).accept( any() );
-
         long txId = ThreadLocalRandom.current().nextLong( 0, 1000 );
-        TransactionToApply txToApply = new TransactionToApply( transaction );
-        FakeCommitment commitment = new FakeCommitment( txId, mock( TransactionIdStore.class ) );
-        txToApply.commitment( commitment, txId );
-        return txToApply;
+        when( transaction.transactionId() ).thenReturn( txId );
+        return transaction;
     }
 
     private static class FailingBatchTransactionApplierFacade extends BatchTransactionApplierFacade

@@ -30,11 +30,13 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexProviderDescriptor;
-import org.neo4j.kernel.impl.store.format.standard.StandardV3_4;
-import org.neo4j.kernel.impl.store.format.standard.StandardV4_0;
-import org.neo4j.service.Services;
 import org.neo4j.storageengine.api.StorageEngineFactory;
+import org.neo4j.storageengine.api.StoreVersion;
+import org.neo4j.storageengine.api.format.CapabilityType;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -48,12 +50,17 @@ class SchemaIndexMigratorTest
     private final DatabaseLayout databaseLayout = DatabaseLayout.of( new File( "store" ), DEFAULT_DATABASE_NAME );
     private final DatabaseLayout migrationLayout = DatabaseLayout.of( new File( "migrationDir" ), DEFAULT_DATABASE_NAME );
 
-    private final SchemaIndexMigrator migrator =
-            new SchemaIndexMigrator( fs, indexProvider, StorageEngineFactory.selectStorageEngine( Services.loadAll( StorageEngineFactory.class ) ) );
+    private final StorageEngineFactory storageEngineFactory = mock( StorageEngineFactory.class );
+    private final SchemaIndexMigrator migrator = new SchemaIndexMigrator( fs, indexProvider, storageEngineFactory );
 
     @Test
     void schemaAndLabelIndexesRemovedAfterSuccessfulMigration() throws IOException
     {
+        StorageEngineFactory storageEngineFactory = mock( StorageEngineFactory.class );
+        StoreVersion version = mock( StoreVersion.class );
+        when( version.hasCompatibleCapabilities( any(), eq( CapabilityType.INDEX ) ) ).thenReturn( false );
+        when( storageEngineFactory.versionInformation( anyString() ) ).thenReturn( version );
+        SchemaIndexMigrator migrator = new SchemaIndexMigrator( fs, indexProvider, storageEngineFactory );
         IndexDirectoryStructure directoryStructure = mock( IndexDirectoryStructure.class );
         File indexProviderRootDirectory = databaseLayout.file( "just-some-directory" );
         when( directoryStructure.rootDirectory() ).thenReturn( indexProviderRootDirectory );
@@ -61,10 +68,8 @@ class SchemaIndexMigratorTest
         when( indexProvider.getProviderDescriptor() )
                 .thenReturn( new IndexProviderDescriptor( "key", "version" ) );
 
-        migrator.migrate( databaseLayout, migrationLayout, progressReporter, StandardV3_4.STORE_VERSION,
-                StandardV4_0.STORE_VERSION );
-
-        migrator.moveMigratedFiles( migrationLayout, databaseLayout, StandardV3_4.STORE_VERSION, StandardV4_0.STORE_VERSION );
+        migrator.migrate( databaseLayout, migrationLayout, progressReporter, "from", "to" );
+        migrator.moveMigratedFiles( migrationLayout, databaseLayout, "from", "to" );
 
         verify( fs ).deleteRecursively( indexProviderRootDirectory );
     }

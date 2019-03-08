@@ -45,7 +45,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
-import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
+import org.neo4j.storageengine.api.CommandsToApply;
 import org.neo4j.storageengine.api.StorageCommand;
 
 import static org.mockito.Mockito.mock;
@@ -80,19 +80,19 @@ class WriteTransactionCommandOrderingTest
         TransactionRecordState tx = injectAllPossibleCommands();
 
         // When
-        PhysicalTransactionRepresentation commands = transactionRepresentationOf( tx );
+        CommandsToApply commands = transactionRepresentationOf( tx );
 
         // Then
         final OrderVerifyingCommandHandler orderVerifyingCommandHandler = new OrderVerifyingCommandHandler();
         commands.accept( element -> ((Command)element).handle( orderVerifyingCommandHandler ) );
     }
 
-    private PhysicalTransactionRepresentation transactionRepresentationOf( TransactionRecordState tx )
+    private CommandsToApply transactionRepresentationOf( TransactionRecordState tx )
             throws TransactionFailureException
     {
         List<StorageCommand> commands = new ArrayList<>();
         tx.extractCommands( commands );
-        return new PhysicalTransactionRepresentation( commands );
+        return new GroupOfCommands( commands.toArray( new StorageCommand[0] ) );
     }
 
     private TransactionRecordState injectAllPossibleCommands()

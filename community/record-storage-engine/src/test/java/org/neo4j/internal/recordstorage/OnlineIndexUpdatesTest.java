@@ -26,25 +26,14 @@ import org.junit.jupiter.api.Test;
 
 import java.util.Iterator;
 
-import org.neo4j.common.Dependencies;
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
-import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
-import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
-import org.neo4j.kernel.impl.api.DatabaseSchemaState;
-import org.neo4j.kernel.impl.api.index.IndexingService;
-import org.neo4j.kernel.impl.api.index.IndexingServiceFactory;
-import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
-import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
-import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
 import org.neo4j.kernel.impl.store.CountsComputer;
 import org.neo4j.kernel.impl.store.InlineNodeLabels;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -58,13 +47,11 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
-import org.neo4j.kernel.impl.transaction.state.DefaultIndexProviderMap;
-import org.neo4j.kernel.impl.transaction.state.storeview.NeoStoreIndexStoreView;
 import org.neo4j.kernel.lifecycle.LifeSupport;
-import org.neo4j.lock.LockService;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.storageengine.api.DefaultStorageIndexReference;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
+import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.rule.TestDirectory;
@@ -73,7 +60,6 @@ import org.neo4j.values.storable.Values;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.collection.IsIterableContainingInAnyOrder.containsInAnyOrder;
@@ -82,11 +68,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.common.EntityType.NODE;
 import static org.neo4j.common.EntityType.RELATIONSHIP;
-import static org.neo4j.common.TokenNameLookup.idTokenNameLookup;
-import static org.neo4j.helpers.collection.Iterables.empty;
 import static org.neo4j.internal.schema.SchemaDescriptorFactory.multiToken;
-import static org.neo4j.kernel.api.index.IndexProvider.EMPTY;
-import static org.neo4j.kernel.impl.index.schema.IndexDescriptorFactory.forSchema;
 import static org.neo4j.kernel.impl.store.record.Record.NO_LABELS_FIELD;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
@@ -107,7 +89,6 @@ class OnlineIndexUpdatesTest
 
     private NodeStore nodeStore;
     private RelationshipStore relationshipStore;
-    private IndexingService indexingService;
     private SchemaCache schemaCache;
     private PropertyPhysicalToLogicalConverter propertyPhysicalToLogicalConverter;
     private NeoStores neoStores;
@@ -120,7 +101,7 @@ class OnlineIndexUpdatesTest
     {
         life = new LifeSupport();
         DatabaseLayout databaseLayout = testDirectory.databaseLayout();
-        Config config = Config.defaults( GraphDatabaseSettings.default_schema_provider, EMPTY.getProviderDescriptor().name() );
+        Config config = Config.defaults();
         NullLogProvider nullLogProvider = NullLogProvider.getInstance();
         StoreFactory storeFactory = new StoreFactory( databaseLayout, config, new DefaultIdGeneratorFactory( fileSystem ), pageCache,
                         fileSystem, nullLogProvider );
@@ -133,21 +114,9 @@ class OnlineIndexUpdatesTest
         nodeStore = neoStores.getNodeStore();
         relationshipStore = neoStores.getRelationshipStore();
         PropertyStore propertyStore = neoStores.getPropertyStore();
-        JobScheduler scheduler = JobSchedulerFactory.createScheduler();
-        Dependencies dependencies = new Dependencies();
-        dependencies.satisfyDependency( EMPTY );
-        DefaultIndexProviderMap providerMap = new DefaultIndexProviderMap( dependencies, config );
-        life.add( providerMap );
-        IndexStatisticsStore indexStatisticsStore = new IndexStatisticsStore( pageCache, databaseLayout, RecoveryCleanupWorkCollector.immediate() );
-        indexingService = IndexingServiceFactory.createIndexingService( config, scheduler, providerMap,
-                new NeoStoreIndexStoreView( LockService.NO_LOCK_SERVICE, () -> new RecordStorageReader( neoStores ) ),
-                idTokenNameLookup, empty(), nullLogProvider, nullLogProvider,
-                IndexingService.NO_MONITOR, new DatabaseSchemaState( nullLogProvider ), indexStatisticsStore );
 
         schemaCache = new SchemaCache( new StandardConstraintSemantics() );
         propertyPhysicalToLogicalConverter = new PropertyPhysicalToLogicalConverter( neoStores.getPropertyStore() );
-        life.add( indexingService );
-        life.add( scheduler );
         life.start();
         CountsComputer.recomputeCounts( neoStores, counts, pageCache, databaseLayout );
         propertyCreator = new PropertyCreator( neoStores.getPropertyStore(), new PropertyTraverser() );
@@ -179,7 +148,7 @@ class OnlineIndexUpdatesTest
         propertyBlocks.setNodeId( nodeId );
         Command.PropertyCommand propertyCommand = new Command.PropertyCommand( recordAccess.getIfLoaded( propertyId ).forReadingData(), propertyBlocks );
 
-        StoreIndexDescriptor indexDescriptor = forSchema( multiToken( ENTITY_TOKENS, NODE, 1, 4, 6 ), EMPTY.getProviderDescriptor() ).withId( 0 );
+        StorageIndexReference indexDescriptor = new DefaultStorageIndexReference( multiToken( ENTITY_TOKENS, NODE, 1, 4, 6 ), false, 0, null );
         createIndexes( indexDescriptor );
 
         onlineIndexUpdates.feed( LongObjectMaps.immutable.of( nodeId, singletonList( propertyCommand ) ), LongObjectMaps.immutable.empty(),
@@ -208,7 +177,7 @@ class OnlineIndexUpdatesTest
         propertyBlocks.setRelId( relId );
         Command.PropertyCommand propertyCommand = new Command.PropertyCommand( recordAccess.getIfLoaded( propertyId ).forReadingData(), propertyBlocks );
 
-        StoreIndexDescriptor indexDescriptor = forSchema( multiToken( ENTITY_TOKENS, RELATIONSHIP, 1, 4, 6 ), EMPTY.getProviderDescriptor() ).withId( 0 );
+        StorageIndexReference indexDescriptor = new DefaultStorageIndexReference( multiToken( ENTITY_TOKENS, RELATIONSHIP, 1, 4, 6 ), false, 0, null );
         createIndexes( indexDescriptor );
 
         onlineIndexUpdates.feed( LongObjectMaps.immutable.empty(), LongObjectMaps.immutable.of( relId, singletonList( propertyCommand ) ),
@@ -238,7 +207,7 @@ class OnlineIndexUpdatesTest
         Command.PropertyCommand nodePropertyCommand =
                 new Command.PropertyCommand( recordAccess.getIfLoaded( nodePropertyId ).forReadingData(), nodePropertyBlocks );
 
-        StoreIndexDescriptor nodeIndexDescriptor = forSchema( multiToken( ENTITY_TOKENS, NODE, 1, 4, 6 ), EMPTY.getProviderDescriptor() ).withId( 0 );
+        StorageIndexReference nodeIndexDescriptor = new DefaultStorageIndexReference( multiToken( ENTITY_TOKENS, NODE, 1, 4, 6 ), false, 0, null );
         createIndexes( nodeIndexDescriptor );
 
         long relId = 0;
@@ -254,8 +223,8 @@ class OnlineIndexUpdatesTest
         Command.PropertyCommand relationshipPropertyCommand =
                 new Command.PropertyCommand( recordAccess.getIfLoaded( propertyId ).forReadingData(), relationshipPropertyBlocks );
 
-        StoreIndexDescriptor relationshipIndexDescriptor =
-                forSchema( multiToken( ENTITY_TOKENS, RELATIONSHIP, 1, 4, 6 ), EMPTY.getProviderDescriptor() ).withId( 1 );
+        StorageIndexReference relationshipIndexDescriptor =
+                new DefaultStorageIndexReference( multiToken( ENTITY_TOKENS, RELATIONSHIP, 1, 4, 6 ), false, 1, null );
         createIndexes( relationshipIndexDescriptor );
 
         onlineIndexUpdates.feed( LongObjectMaps.immutable.of( nodeId, singletonList( nodePropertyCommand ) ),
@@ -291,12 +260,12 @@ class OnlineIndexUpdatesTest
         propertyBlocks2.setRelId( relId );
         Command.PropertyCommand propertyCommand2 = new Command.PropertyCommand( recordAccess.getIfLoaded( propertyId2 ).forReadingData(), propertyBlocks2 );
 
-        StoreIndexDescriptor indexDescriptor0 = forSchema( multiToken( ENTITY_TOKENS, RELATIONSHIP, 1, 4, 6 ), EMPTY.getProviderDescriptor() ).withId( 0 );
-        StoreIndexDescriptor indexDescriptor1 = forSchema( multiToken( ENTITY_TOKENS, RELATIONSHIP, 2, 4, 6 ), EMPTY.getProviderDescriptor() ).withId( 1 );
-        StoreIndexDescriptor indexDescriptor2 =
-                forSchema( multiToken( new int[]{ENTITY_TOKEN, OTHER_ENTITY_TOKEN}, RELATIONSHIP, 1 ), EMPTY.getProviderDescriptor() ).withId( 2 );
-        StoreIndexDescriptor indexDescriptor3 =
-                forSchema( multiToken( new int[]{OTHER_ENTITY_TOKEN}, RELATIONSHIP, 1 ), EMPTY.getProviderDescriptor() ).withId( 3 );
+        StorageIndexReference indexDescriptor0 = new DefaultStorageIndexReference( multiToken( ENTITY_TOKENS, RELATIONSHIP, 1, 4, 6 ), false, 0, null );
+        StorageIndexReference indexDescriptor1 = new DefaultStorageIndexReference( multiToken( ENTITY_TOKENS, RELATIONSHIP, 2, 4, 6 ), false, 1, null );
+        StorageIndexReference indexDescriptor2 = new DefaultStorageIndexReference( multiToken( new int[]{ENTITY_TOKEN, OTHER_ENTITY_TOKEN}, RELATIONSHIP, 1 ),
+                false, 2, null );
+        StorageIndexReference indexDescriptor3 = new DefaultStorageIndexReference( multiToken( new int[]{OTHER_ENTITY_TOKEN}, RELATIONSHIP, 1 ),
+                false, 3, null );
         createIndexes( indexDescriptor0, indexDescriptor1, indexDescriptor2 );
 
         onlineIndexUpdates.feed( LongObjectMaps.immutable.empty(), LongObjectMaps.immutable.of( relId, asList( propertyCommand, propertyCommand2 ) ),
@@ -308,13 +277,10 @@ class OnlineIndexUpdatesTest
         assertThat( onlineIndexUpdates, not( containsInAnyOrder( indexDescriptor3 ) ) ); // This index is only for a different relationship type.
     }
 
-    private void createIndexes( StoreIndexDescriptor... indexDescriptors )
-            throws IndexPopulationFailedKernelException, InterruptedException, IndexNotFoundKernelException
+    private void createIndexes( StorageIndexReference... indexDescriptors )
     {
-        indexingService.createIndexes( indexDescriptors );
-        for ( StoreIndexDescriptor indexDescriptor : indexDescriptors )
+        for ( StorageIndexReference indexDescriptor : indexDescriptors )
         {
-            indexingService.getIndexProxy( indexDescriptor.schema() ).awaitStoreScanCompleted( 0, MILLISECONDS );
             schemaCache.addSchemaRule( indexDescriptor );
         }
     }

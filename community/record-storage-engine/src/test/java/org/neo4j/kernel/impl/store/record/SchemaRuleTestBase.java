@@ -21,10 +21,9 @@ package org.neo4j.kernel.impl.store.record;
 
 import java.util.Optional;
 
+import org.neo4j.internal.schema.DefaultIndexDescriptor;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorFactory;
-import org.neo4j.kernel.api.index.IndexProviderDescriptor;
-import org.neo4j.kernel.impl.index.schema.IndexDescriptor;
-import org.neo4j.kernel.impl.index.schema.IndexDescriptorFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -39,7 +38,8 @@ abstract class SchemaRuleTestBase
     protected static final int PROPERTY_ID_1 = 30;
     protected static final int PROPERTY_ID_2 = 31;
 
-    protected static final IndexProviderDescriptor PROVIDER_DESCRIPTOR = new IndexProviderDescriptor( "index-provider", "1.0" );
+    protected static final String PROVIDER_KEY = "index-provider";
+    protected static final String PROVIDER_VERSION = "1.0";
 
     protected void assertEquality( Object o1, Object o2 )
     {
@@ -50,25 +50,25 @@ abstract class SchemaRuleTestBase
 
     public static IndexDescriptor forLabel( int labelId, int... propertyIds )
     {
-        return IndexDescriptorFactory.forSchema(
-                SchemaDescriptorFactory.forLabel( labelId, propertyIds ), PROVIDER_DESCRIPTOR );
+        return new DefaultIndexDescriptor( SchemaDescriptorFactory.forLabel( labelId, propertyIds ),
+                PROVIDER_KEY, PROVIDER_VERSION, Optional.empty(), false, false );
     }
 
     public static IndexDescriptor namedForLabel( String name, int labelId, int... propertyIds )
     {
-        return IndexDescriptorFactory.forSchema(
-                SchemaDescriptorFactory.forLabel( labelId, propertyIds ), Optional.of( name ), PROVIDER_DESCRIPTOR );
+        return new DefaultIndexDescriptor( SchemaDescriptorFactory.forLabel( labelId, propertyIds ),
+                PROVIDER_KEY, PROVIDER_VERSION, Optional.of( name ), false, false );
     }
 
     public static IndexDescriptor uniqueForLabel( int labelId, int... propertyIds )
     {
-        return IndexDescriptorFactory.uniqueForSchema( SchemaDescriptorFactory.forLabel( labelId, propertyIds ),
-                                                       Optional.empty(), PROVIDER_DESCRIPTOR );
+        return new DefaultIndexDescriptor( SchemaDescriptorFactory.forLabel( labelId, propertyIds ),
+                PROVIDER_KEY, PROVIDER_VERSION, Optional.empty(), true, false );
     }
 
     public static IndexDescriptor namedUniqueForLabel( String name, int labelId, int... propertyIds )
     {
-        return IndexDescriptorFactory.uniqueForSchema( SchemaDescriptorFactory.forLabel( labelId, propertyIds ),
-                                                       Optional.of( name ), PROVIDER_DESCRIPTOR );
+        return new DefaultIndexDescriptor( SchemaDescriptorFactory.forLabel( labelId, propertyIds ),
+                PROVIDER_KEY, PROVIDER_VERSION, Optional.empty(), true, false );
     }
 }

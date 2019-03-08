@@ -20,9 +20,9 @@
 package org.neo4j.internal.recordstorage;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
 import org.neo4j.internal.recordstorage.Command.LabelTokenCommand;
 import org.neo4j.internal.recordstorage.Command.NodeCommand;
@@ -34,8 +34,6 @@ import org.neo4j.internal.recordstorage.Command.RelationshipTypeTokenCommand;
 import org.neo4j.internal.recordstorage.Command.SchemaRuleCommand;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaRule;
-import org.neo4j.kernel.api.index.IndexProviderDescriptor;
-import org.neo4j.kernel.impl.index.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.store.DynamicNodeLabels;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.PropertyType;
@@ -51,9 +49,8 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.kernel.impl.store.record.TokenRecord;
-import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
-import org.neo4j.storageengine.api.StorageCommand;
+import org.neo4j.storageengine.api.CommandsToApply;
+import org.neo4j.storageengine.api.DefaultStorageIndexReference;
 import org.neo4j.values.storable.Values;
 
 public class Commands
@@ -142,10 +139,10 @@ public class Commands
         return new RelationshipGroupCommand( before, after );
     }
 
-    public static SchemaRuleCommand createIndexRule( IndexProviderDescriptor provider,
+    public static SchemaRuleCommand createIndexRule( String providerKey, String providerVersion,
             long id, LabelSchemaDescriptor descriptor )
     {
-        SchemaRule rule = IndexDescriptorFactory.forSchema( descriptor, provider ).withId( id );
+        SchemaRule rule = new DefaultStorageIndexReference( descriptor, providerKey, providerVersion, id, Optional.empty(), false, null, false );
         SchemaRecord before = new SchemaRecord( id ).initialize( false, Record.NO_NEXT_PROPERTY.longValue() );
         SchemaRecord after = new SchemaRecord( id ).initialize( true, 33 );
         return new SchemaRuleCommand( before, after, rule );
@@ -171,15 +168,8 @@ public class Commands
         return new PropertyCommand( new PropertyRecord( id ), record );
     }
 
-    public static TransactionRepresentation transactionRepresentation( Command... commands )
+    public static CommandsToApply transaction( Command... commands )
     {
-        return transactionRepresentation( Arrays.asList( commands ) );
-    }
-
-    public static TransactionRepresentation transactionRepresentation( Collection<StorageCommand> commands )
-    {
-        PhysicalTransactionRepresentation tx = new PhysicalTransactionRepresentation( commands );
-        tx.setHeader( new byte[0], 0, 0, 0, 0, 0, 0 );
-        return tx;
+        return new GroupOfCommands( commands );
     }
 }

@@ -25,14 +25,11 @@ import org.junit.jupiter.api.Test;
 import java.util.function.Predicate;
 
 import org.neo4j.internal.recordstorage.Command.SchemaRuleCommand;
+import org.neo4j.internal.schema.SchemaDescriptorFactory;
 import org.neo4j.internal.schema.SchemaDescriptorPredicates;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.io.ByteUnit;
-import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
-import org.neo4j.kernel.impl.api.TransactionToApply;
-import org.neo4j.kernel.impl.api.index.IndexingService;
-import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
@@ -40,15 +37,15 @@ import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
-import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.lock.LockService;
 import org.neo4j.storageengine.api.ConstraintRule;
+import org.neo4j.storageengine.api.DefaultStorageIndexReference;
 import org.neo4j.storageengine.api.IndexUpdateListener;
 import org.neo4j.storageengine.api.NodeLabelUpdateListener;
 import org.neo4j.storageengine.api.StorageEngine;
+import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.util.concurrent.WorkSync;
 
-import static java.util.Collections.singletonList;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.junit.Assert.assertEquals;
@@ -68,7 +65,7 @@ class SchemaRuleCommandTest
     private final NeoStores neoStores = mock( NeoStores.class );
     private final MetaDataStore metaDataStore = mock( MetaDataStore.class );
     private final SchemaStore schemaStore = mock( SchemaStore.class );
-    private final IndexingService indexes = mock( IndexingService.class );
+    private final IndexUpdateListener indexes = mock( IndexUpdateListener.class );
     private final IndexUpdateListener indexUpdateListener = mock( IndexUpdateListener.class );
     private final SchemaCache schemaCache = mock( SchemaCache.class );
     private final StorageEngine storageEngine = mock( StorageEngine.class );
@@ -83,7 +80,7 @@ class SchemaRuleCommandTest
                     neoStores.getRelationshipStore(), new PropertyPhysicalToLogicalConverter( propertyStore ), storageEngine, schemaCache,
                     new IndexActivator( indexes ) );
     private final BaseCommandReader reader = new PhysicalLogCommandReaderV4_0();
-    private final StoreIndexDescriptor rule = TestIndexDescriptorFactory.forLabel( labelId, propertyKey ).withId( id );
+    private final StorageIndexReference rule = new DefaultStorageIndexReference( SchemaDescriptorFactory.forLabel( labelId, propertyKey ), false, id, null );
 
     @Test
     void shouldWriteCreatedSchemaRuleToStore() throws Exception
@@ -271,8 +268,6 @@ class SchemaRuleCommandTest
 
     private void visitSchemaRuleCommand( BatchTransactionApplier applier, SchemaRuleCommand command ) throws Exception
     {
-        TransactionToApply tx = new TransactionToApply(
-                new PhysicalTransactionRepresentation( singletonList( command ) ), txId );
-        CommandHandlerContract.apply( applier, tx );
+        CommandHandlerContract.apply( applier, new GroupOfCommands( txId, command ) );
     }
 }

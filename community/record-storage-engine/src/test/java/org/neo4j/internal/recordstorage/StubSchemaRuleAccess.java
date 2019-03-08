@@ -26,7 +26,6 @@ import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 import org.neo4j.internal.schema.SchemaRule;
-import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
 import org.neo4j.storageengine.api.ConstraintRule;
 import org.neo4j.storageengine.api.StorageIndexReference;
 
@@ -57,19 +56,19 @@ public class StubSchemaRuleAccess implements SchemaRuleAccess
     }
 
     @Override
-    public StoreIndexDescriptor[] indexGetForSchema( SchemaDescriptorSupplier supplier )
+    public StorageIndexReference[] indexGetForSchema( SchemaDescriptorSupplier supplier )
     {
-        return new StoreIndexDescriptor[0];
+        return new StorageIndexReference[0];
     }
 
     @Override
-    public StoreIndexDescriptor[] indexGetForSchema( IndexDescriptor descriptor, boolean filterOnType )
+    public StorageIndexReference[] indexGetForSchema( IndexDescriptor descriptor, boolean filterOnType )
     {
-        return new StoreIndexDescriptor[0];
+        return new StorageIndexReference[0];
     }
 
     @Override
-    public StoreIndexDescriptor indexGetForName( String indexName )
+    public StorageIndexReference indexGetForName( String indexName )
     {
         return null;
     }

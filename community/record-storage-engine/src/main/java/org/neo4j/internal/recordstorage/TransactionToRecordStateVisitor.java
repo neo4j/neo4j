@@ -166,7 +166,7 @@ class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
     @Override
     public void visitAddedIndex( IndexDescriptor index ) throws KernelException
     {
-        SchemaRule rule = new DefaultStorageIndexReference( index, schemaStorage.newRuleId() );
+        SchemaRule rule = new DefaultStorageIndexReference( index, schemaStorage.newRuleId(), null );
         schemaStateChanger.createSchemaRule( recordState, rule );
     }
 

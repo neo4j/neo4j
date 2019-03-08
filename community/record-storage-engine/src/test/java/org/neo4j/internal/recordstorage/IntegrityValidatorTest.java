@@ -21,10 +21,9 @@ package org.neo4j.internal.recordstorage;
 
 import org.junit.jupiter.api.Test;
 
-import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
+import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
-import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -49,9 +48,7 @@ class IntegrityValidatorTest
         validator.setIndexValidator( indexes );
         UniquenessConstraintDescriptor constraint = ConstraintDescriptorFactory.uniqueForLabel( 1, 1 );
 
-        doThrow( new UniquePropertyValueValidationException( constraint,
-                ConstraintValidationException.Phase.VERIFICATION, new RuntimeException() ) )
-                .when( indexes ).validateIndex( 2L );
+        doThrow( new ConstraintViolationException( "error", new RuntimeException() ) ).when( indexes ).validateIndex( 2L );
 
         ConstraintRule record = ConstraintRule.constraintRule( 1L, constraint, 2L );
 

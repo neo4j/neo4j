@@ -36,9 +36,13 @@ public interface ResourceLocker
      */
     void acquireExclusive( LockTracer tracer, ResourceType resourceType, long... resourceIds );
 
-    ResourceLocker NONE = ( tracer, resourceType, resourceIds ) ->
+    ResourceLocker PREVENT = ( tracer, resourceType, resourceIds ) ->
     {
         throw new UnsupportedOperationException(
                 "Unexpected call to lock a resource " + resourceType + " " + Arrays.toString( resourceIds ) );
+    };
+
+    ResourceLocker IGNORE = ( tracer, resourceType, resourceIds ) ->
+    {
     };
 }

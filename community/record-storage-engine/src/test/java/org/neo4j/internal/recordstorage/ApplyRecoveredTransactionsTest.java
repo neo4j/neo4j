@@ -25,23 +25,19 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
-import java.util.Arrays;
-
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.recordstorage.Command.NodeCommand;
 import org.neo4j.internal.recordstorage.Command.RelationshipCommand;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
-import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.lock.LockService;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.storageengine.api.CommandsToApply;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
@@ -114,12 +110,12 @@ public class ApplyRecoveredTransactionsTest
         when( lockService.acquireRelationshipLock( anyLong(), any(LockService.LockType.class) )).thenReturn( LockService.NO_LOCK );
         NeoStoreBatchTransactionApplier applier = new NeoStoreBatchTransactionApplier( neoStores,
                 mock( CacheAccessBackDoor.class ), lockService );
-        TransactionRepresentation tx = new PhysicalTransactionRepresentation( Arrays.asList( commands ) );
+        CommandsToApply tx = new GroupOfCommands( transactionId, commands );
         CommandHandlerContract.apply( applier, txApplier ->
         {
             tx.accept( txApplier );
             return false;
-        }, new TransactionToApply( tx, transactionId ) );
+        }, new GroupOfCommands( transactionId, commands ) );
     }
 
     private static <RECORD extends AbstractBaseRecord> RECORD inUse( RECORD record )

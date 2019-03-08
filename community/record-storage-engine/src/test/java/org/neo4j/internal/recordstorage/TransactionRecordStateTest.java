@@ -46,11 +46,8 @@ import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.io.fs.FlushableChannel;
-import org.neo4j.kernel.impl.api.TransactionToApply;
+import org.neo4j.io.fs.ReadPastEndException;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
-import org.neo4j.kernel.impl.index.schema.IndexDescriptorFactory;
-import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
-import org.neo4j.kernel.impl.locking.NoOpClient;
 import org.neo4j.kernel.impl.store.DynamicArrayStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
@@ -63,21 +60,17 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
-import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.InMemoryVersionableReadableClosablePositionAwareChannel;
-import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionCursor;
-import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
-import org.neo4j.kernel.impl.transaction.log.TransactionLogWriter;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
-import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.lock.Lock;
 import org.neo4j.lock.LockService;
+import org.neo4j.lock.ResourceLocker;
+import org.neo4j.storageengine.api.CommandsToApply;
 import org.neo4j.storageengine.api.ConstraintRule;
+import org.neo4j.storageengine.api.DefaultStorageIndexReference;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.StorageCommand;
+import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.test.rule.NeoStoresRule;
 import org.neo4j.values.storable.Value;
@@ -108,8 +101,6 @@ import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.internal.schema.SchemaDescriptorFactory.forLabel;
 import static org.neo4j.internal.schema.SchemaDescriptorFactory.forRelType;
 import static org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory.uniqueForLabel;
-import static org.neo4j.kernel.impl.api.index.TestIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
-import static org.neo4j.kernel.impl.index.schema.IndexDescriptorFactory.forSchema;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 import static org.neo4j.storageengine.api.ConstraintRule.constraintRule;
@@ -218,10 +209,10 @@ public class TransactionRecordStateTest
         // -- indexes
         long nodeRuleId = 0;
         TransactionRecordState recordState = newTransactionRecordState( neoStores );
-        SchemaRule nodeRule = forSchema( forLabel( labelId, propertyKeyId ), PROVIDER_DESCRIPTOR ).withId( nodeRuleId );
+        SchemaRule nodeRule = new DefaultStorageIndexReference( forLabel( labelId, propertyKeyId ), false, nodeRuleId, null );
         recordState.schemaRuleCreate( nodeRuleId, false, nodeRule );
         long relRuleId = 1;
-        SchemaRule relRule = forSchema( forRelType( relTypeId, propertyKeyId ), PROVIDER_DESCRIPTOR ).withId( relRuleId );
+        SchemaRule relRule = new DefaultStorageIndexReference( forRelType( relTypeId, propertyKeyId ), false, relRuleId, null );
         recordState.schemaRuleCreate( relRuleId, false, relRule );
         apply( neoStores, recordState );
 
@@ -234,7 +225,7 @@ public class TransactionRecordStateTest
         recordState.relAddProperty( relId, propertyKeyId, Values.of( "Oen" ) );
 
         // WHEN
-        TransactionRepresentation transaction = transaction( recordState );
+        CommandsToApply transaction = transaction( recordState );
         PropertyCommandsExtractor extractor = new PropertyCommandsExtractor();
         transaction.accept( extractor );
 
@@ -287,7 +278,7 @@ public class TransactionRecordStateTest
         recordState.nodeAddProperty( nodeId, index2, string( 40 ) ); // will require a block of size 4
 
         // THEN
-        TransactionRepresentation representation = transaction( recordState );
+        CommandsToApply representation = transaction( recordState );
         representation.accept( command -> ((Command) command).handle( new CommandVisitor.Adapter()
         {
             @Override
@@ -325,8 +316,8 @@ public class TransactionRecordStateTest
         recordState.nodeAddProperty( nodeId, propertyId1, value1 );
         recordState.nodeAddProperty( nodeId, propertyId2, value2 );
         apply( neoStores, recordState );
-        StoreIndexDescriptor rule1 = createIndex( labelIdOne, propertyId1 );
-        StoreIndexDescriptor rule2 = createIndex( labelIdOne, propertyId2 );
+        StorageIndexReference rule1 = createIndex( labelIdOne, propertyId1 );
+        StorageIndexReference rule2 = createIndex( labelIdOne, propertyId2 );
 
         // WHEN
         recordState = newTransactionRecordState( neoStores );
@@ -351,8 +342,8 @@ public class TransactionRecordStateTest
         recordState.nodeAddProperty( nodeId, propertyId1, value1 );
         addLabelsToNode( recordState, nodeId, oneLabelId );
         apply( neoStores, recordState );
-        StoreIndexDescriptor rule1 = createIndex( labelIdOne, propertyId2 );
-        StoreIndexDescriptor rule2 = createIndex( labelIdOne, propertyId1, propertyId2 );
+        StorageIndexReference rule1 = createIndex( labelIdOne, propertyId2 );
+        StorageIndexReference rule2 = createIndex( labelIdOne, propertyId1, propertyId2 );
 
         // WHEN
         recordState = newTransactionRecordState( neoStores );
@@ -379,7 +370,7 @@ public class TransactionRecordStateTest
         recordState.nodeAddProperty( nodeId, propertyId2, value2 );
         addLabelsToNode( recordState, nodeId, oneLabelId );
         apply( neoStores, recordState );
-        StoreIndexDescriptor rule = createIndex( labelIdOne, propertyId1 );
+        StorageIndexReference rule = createIndex( labelIdOne, propertyId1 );
 
         // WHEN
         recordState = newTransactionRecordState( neoStores );
@@ -401,8 +392,8 @@ public class TransactionRecordStateTest
         recordState.nodeAddProperty( nodeId, propertyId1, value1 );
         addLabelsToNode( recordState, nodeId, bothLabelIds );
         apply( neoStores, recordState );
-        StoreIndexDescriptor rule1 = createIndex( labelIdOne, propertyId1 );
-        StoreIndexDescriptor rule2 = createIndex( labelIdSecond, propertyId1 );
+        StorageIndexReference rule1 = createIndex( labelIdOne, propertyId1 );
+        StorageIndexReference rule2 = createIndex( labelIdSecond, propertyId1 );
 
         // WHEN
         recordState = newTransactionRecordState( neoStores );
@@ -428,8 +419,8 @@ public class TransactionRecordStateTest
         recordState.nodeAddProperty( nodeId, propertyId1, value1 );
         addLabelsToNode( recordState, nodeId, bothLabelIds );
         apply( neoStores, recordState );
-        StoreIndexDescriptor rule2 = createIndex( labelIdOne, propertyId2 );
-        StoreIndexDescriptor rule3 = createIndex( labelIdSecond, propertyId1 );
+        StorageIndexReference rule2 = createIndex( labelIdOne, propertyId2 );
+        StorageIndexReference rule3 = createIndex( labelIdSecond, propertyId1 );
 
         // WHEN
         recordState = newTransactionRecordState( neoStores );
@@ -456,9 +447,9 @@ public class TransactionRecordStateTest
         recordState.nodeAddProperty( nodeId, propertyId2, value2 );
         addLabelsToNode( recordState, nodeId, oneLabelId );
         apply( neoStores, transaction( recordState ) );
-        StoreIndexDescriptor rule1 = createIndex( labelIdOne, propertyId1 );
-        StoreIndexDescriptor rule2 = createIndex( labelIdOne, propertyId2 );
-        StoreIndexDescriptor rule3 = createIndex( labelIdOne, propertyId1, propertyId2 );
+        StorageIndexReference rule1 = createIndex( labelIdOne, propertyId1 );
+        StorageIndexReference rule2 = createIndex( labelIdOne, propertyId2 );
+        StorageIndexReference rule3 = createIndex( labelIdOne, propertyId1, propertyId2 );
 
         // WHEN
         Value newValue1 = Values.of( "new" );
@@ -488,9 +479,9 @@ public class TransactionRecordStateTest
         recordState.nodeAddProperty( nodeId, propertyId1, value1 );
         recordState.nodeAddProperty( nodeId, propertyId2, value2 );
         apply( neoStores, transaction( recordState ) );
-        StoreIndexDescriptor rule1 = createIndex( labelIdOne, propertyId1 );
-        StoreIndexDescriptor rule2 = createIndex( labelIdOne, propertyId2 );
-        StoreIndexDescriptor rule3 = createIndex( labelIdOne, propertyId1, propertyId2 );
+        StorageIndexReference rule1 = createIndex( labelIdOne, propertyId1 );
+        StorageIndexReference rule2 = createIndex( labelIdOne, propertyId2 );
+        StorageIndexReference rule3 = createIndex( labelIdOne, propertyId1, propertyId2 );
 
         // WHEN
         recordState = newTransactionRecordState( neoStores );
@@ -536,12 +527,12 @@ public class TransactionRecordStateTest
         assertDynamicLabelRecordInUse( store, dynamicLabelRecordId.get(), true );
 
         // WHEN applying a transaction, which has first round-tripped through a log (written then read)
-        TransactionRepresentation transaction = transaction( deleteNode( store, nodeId.get() ) );
+        CommandsToApply transaction = transaction( deleteNode( store, nodeId.get() ) );
         InMemoryVersionableReadableClosablePositionAwareChannel channel = new InMemoryVersionableReadableClosablePositionAwareChannel();
         writeToChannel( transaction, channel );
-        CommittedTransactionRepresentation recoveredTransaction = readFromChannel( channel );
+        CommandsToApply recoveredTransaction = readFromChannel( channel );
         // and applying that recovered transaction
-        apply( applier, recoveredTransaction.getTransactionRepresentation() );
+        apply( applier, recoveredTransaction );
 
         // THEN should have the dynamic label record should be deleted as well
         assertDynamicLabelRecordInUse( store, dynamicLabelRecordId.get(), false );
@@ -752,9 +743,9 @@ public class TransactionRecordStateTest
         NeoStores neoStores = neoStoresRule.builder().build();
         long nodeId = 0;
         TransactionRecordState recordState = newTransactionRecordState( neoStores );
-        StoreIndexDescriptor rule1 = createIndex( labelIdOne, propertyId1 );
-        StoreIndexDescriptor rule2 = createIndex( labelIdOne, propertyId2 );
-        StoreIndexDescriptor rule3 = createIndex( labelIdOne, propertyId1, propertyId2 );
+        StorageIndexReference rule1 = createIndex( labelIdOne, propertyId1 );
+        StorageIndexReference rule2 = createIndex( labelIdOne, propertyId2 );
+        StorageIndexReference rule3 = createIndex( labelIdOne, propertyId1, propertyId2 );
 
         // WHEN
         recordState.nodeCreate( nodeId );
@@ -872,7 +863,7 @@ public class TransactionRecordStateTest
             tx.relDelete( relationshipToDelete );
         }
 
-        TransactionRepresentation ptx = transaction( tx );
+        CommandsToApply ptx = transaction( tx );
         apply( applier, ptx );
 
         // THEN
@@ -1185,7 +1176,7 @@ public class TransactionRecordStateTest
         NeoStores stores = neoStoresRule.builder().build();
         TransactionRecordState state = newTransactionRecordState( stores );
         long ruleId = stores.getSchemaStore().nextId();
-        StoreIndexDescriptor rule = IndexDescriptorFactory.forSchema( forLabel( 0, 1 ) ).withId( ruleId );
+        StorageIndexReference rule = new DefaultStorageIndexReference( forLabel( 0, 1 ), false, ruleId, null );
         state.schemaRuleCreate( ruleId, false, rule );
 
         List<StorageCommand> commands = new ArrayList<>();
@@ -1233,7 +1224,7 @@ public class TransactionRecordStateTest
         NeoStores stores = neoStoresRule.builder().build();
         TransactionRecordState state = newTransactionRecordState( stores );
         long ruleId = stores.getSchemaStore().nextId();
-        StoreIndexDescriptor rule = IndexDescriptorFactory.forSchema( forLabel( 0, 1 ) ).withId( ruleId );
+        StorageIndexReference rule = new DefaultStorageIndexReference( forLabel( 0, 1 ), false, ruleId, null );
         state.schemaRuleCreate( ruleId, false, rule );
 
         apply( stores, state );
@@ -1282,7 +1273,7 @@ public class TransactionRecordStateTest
         NeoStores stores = neoStoresRule.builder().build();
         TransactionRecordState state = newTransactionRecordState( stores );
         long ruleId = stores.getSchemaStore().nextId();
-        StoreIndexDescriptor rule = IndexDescriptorFactory.forSchema( forLabel( 0, 1 ) ).withId( ruleId );
+        StorageIndexReference rule = new DefaultStorageIndexReference( forLabel( 0, 1 ), false, ruleId, null );
         state.schemaRuleCreate( ruleId, false, rule );
         state.schemaRuleSetProperty( ruleId, 42, Values.booleanValue( true ), rule );
 
@@ -1312,7 +1303,7 @@ public class TransactionRecordStateTest
         NeoStores stores = neoStoresRule.builder().build();
         TransactionRecordState state = newTransactionRecordState( stores );
         long ruleId = stores.getSchemaStore().nextId();
-        StoreIndexDescriptor rule = IndexDescriptorFactory.uniqueForSchema( forLabel( 0, 1 ) ).withId( ruleId );
+        StorageIndexReference rule = new DefaultStorageIndexReference( forLabel( 0, 1 ), true, ruleId, null );
         state.schemaRuleCreate( ruleId, false, rule );
 
         apply( stores, state );
@@ -1351,7 +1342,7 @@ public class TransactionRecordStateTest
         NeoStores stores = neoStoresRule.builder().build();
         TransactionRecordState state = newTransactionRecordState( stores );
         long ruleId = stores.getSchemaStore().nextId();
-        StoreIndexDescriptor rule = IndexDescriptorFactory.uniqueForSchema( forLabel( 0, 1 ) ).withId( ruleId );
+        StorageIndexReference rule = new DefaultStorageIndexReference( forLabel( 0, 1 ), true, ruleId, null );
         state.schemaRuleCreate( ruleId, false, rule );
         state.schemaRuleSetProperty( ruleId, 42, Values.booleanValue( true ), rule );
 
@@ -1437,7 +1428,7 @@ public class TransactionRecordStateTest
         return indexUpdatesOf( neoStores, transaction( state ) );
     }
 
-    private Iterable<Iterable<IndexEntryUpdate<SchemaDescriptor>>> indexUpdatesOf( NeoStores neoStores, TransactionRepresentation transaction )
+    private Iterable<Iterable<IndexEntryUpdate<SchemaDescriptor>>> indexUpdatesOf( NeoStores neoStores, CommandsToApply transaction )
             throws IOException
     {
         PropertyCommandsExtractor extractor = new PropertyCommandsExtractor();
@@ -1454,11 +1445,9 @@ public class TransactionRecordStateTest
         return updates;
     }
 
-    private TransactionRepresentation transaction( List<StorageCommand> commands )
+    private CommandsToApply transaction( List<StorageCommand> commands )
     {
-        PhysicalTransactionRepresentation tx = new PhysicalTransactionRepresentation( commands );
-        tx.setHeader( new byte[0], 0, 0, 0, 0, 0, 0 );
-        return tx;
+        return new GroupOfCommands( commands.toArray( new StorageCommand[0] ) );
     }
 
     private void assertCommand( StorageCommand next, Class<?> klass )
@@ -1466,20 +1455,31 @@ public class TransactionRecordStateTest
         assertTrue( "Expected " + klass + ". was: " + next, klass.isInstance( next ) );
     }
 
-    private CommittedTransactionRepresentation readFromChannel( ReadableLogChannel channel ) throws IOException
+    private CommandsToApply readFromChannel( ReadableLogChannel channel ) throws IOException
     {
-        LogEntryReader<ReadableLogChannel> logEntryReader = new VersionAwareLogEntryReader<>();
-        try ( PhysicalTransactionCursor<ReadableLogChannel> cursor = new PhysicalTransactionCursor<>( channel, logEntryReader ) )
+        PhysicalLogCommandReaderV4_0 reader = new PhysicalLogCommandReaderV4_0();
+        List<StorageCommand> commands = new ArrayList<>();
+        try
         {
-            assertTrue( cursor.next() );
-            return cursor.get();
+            while ( true )
+            {
+                commands.add( reader.read( channel ) );
+            }
         }
+        catch ( ReadPastEndException e )
+        {
+            // reached the end
+        }
+        return new GroupOfCommands( commands.toArray( new StorageCommand[0] ) );
     }
 
-    private void writeToChannel( TransactionRepresentation transaction, FlushableChannel channel ) throws IOException
+    private void writeToChannel( CommandsToApply transaction, FlushableChannel channel ) throws IOException
     {
-        TransactionLogWriter writer = new TransactionLogWriter( new LogEntryWriter( channel ) );
-        writer.append( transaction, 2 );
+        transaction.accept( command ->
+        {
+            command.serialize( channel );
+            return false;
+        } );
     }
 
     private TransactionRecordState nodeWithDynamicLabelRecord( NeoStores store, AtomicLong nodeId, AtomicLong dynamicLabelRecordId )
@@ -1514,12 +1514,12 @@ public class TransactionRecordStateTest
         return recordState;
     }
 
-    private void apply( BatchTransactionApplier applier, TransactionRepresentation transaction ) throws Exception
+    private void apply( BatchTransactionApplier applier, CommandsToApply transaction ) throws Exception
     {
-        CommandHandlerContract.apply( applier, new TransactionToApply( transaction ) );
+        CommandHandlerContract.apply( applier, transaction );
     }
 
-    private void apply( NeoStores neoStores, TransactionRepresentation transaction ) throws Exception
+    private void apply( NeoStores neoStores, CommandsToApply transaction ) throws Exception
     {
         BatchTransactionApplier applier = buildApplier( neoStores, LockService.NO_LOCK_SERVICE );
         apply( applier, transaction );
@@ -1543,13 +1543,13 @@ public class TransactionRecordStateTest
         PropertyTraverser propertyTraverser = new PropertyTraverser();
         RelationshipGroupGetter relationshipGroupGetter = new RelationshipGroupGetter( neoStores.getRelationshipGroupStore() );
         PropertyDeleter propertyDeleter = new PropertyDeleter( propertyTraverser );
-        return new TransactionRecordState( neoStores, integrityValidator, recordChangeSet, 0, new NoOpClient(),
+        return new TransactionRecordState( neoStores, integrityValidator, recordChangeSet, 0, ResourceLocker.IGNORE,
                 new RelationshipCreator( relationshipGroupGetter, neoStores.getRelationshipGroupStore().getStoreHeaderInt() ),
                 new RelationshipDeleter( relationshipGroupGetter, propertyDeleter ), new PropertyCreator( neoStores.getPropertyStore(), propertyTraverser ),
                 propertyDeleter );
     }
 
-    private TransactionRepresentation transaction( TransactionRecordState recordState ) throws TransactionFailureException
+    private CommandsToApply transaction( TransactionRecordState recordState ) throws TransactionFailureException
     {
         List<StorageCommand> commands = new ArrayList<>();
         recordState.extractCommands( commands );
@@ -1584,9 +1584,9 @@ public class TransactionRecordStateTest
         return (RelationshipGroupCommand) single( filter( t -> t instanceof RelationshipGroupCommand, commands ) );
     }
 
-    private StoreIndexDescriptor createIndex( int labeId, int... propertyKeyIds )
+    private StorageIndexReference createIndex( int labeId, int... propertyKeyIds )
     {
-        StoreIndexDescriptor descriptor = forSchema( forLabel( labeId, propertyKeyIds ) ).withId( nextRuleId++ );
+        StorageIndexReference descriptor = new DefaultStorageIndexReference( forLabel( labeId, propertyKeyIds ), false, nextRuleId++, null );
         schemaCache.addSchemaRule( descriptor );
         return descriptor;
     }

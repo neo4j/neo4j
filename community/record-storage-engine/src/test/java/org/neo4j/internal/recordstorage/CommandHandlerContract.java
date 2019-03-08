@@ -20,9 +20,8 @@
 package org.neo4j.internal.recordstorage;
 
 import org.neo4j.helpers.collection.Visitor;
-import org.neo4j.kernel.impl.api.TransactionToApply;
-import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.lock.LockGroup;
+import org.neo4j.storageengine.api.CommandStream;
 import org.neo4j.storageengine.api.CommandsToApply;
 
 /**
@@ -43,20 +42,20 @@ public class CommandHandlerContract
     }
 
     /**
-     * Simply calls through to the {@link TransactionRepresentation#accept(Visitor)} method for each {@link
-     * TransactionToApply} given. This assumes that the {@link BatchTransactionApplier} will return {@link
+     * Simply calls through to the {@link CommandStream#accept(Visitor)} method for each {@link
+     * CommandsToApply} given. This assumes that the {@link BatchTransactionApplier} will return {@link
      * TransactionApplier}s which actually do the work and that the transaction has all the relevant data.
      *
      * @param applier to use
      * @param transactions to apply
      */
-    public static void apply( BatchTransactionApplier applier, TransactionToApply... transactions ) throws Exception
+    public static void apply( BatchTransactionApplier applier, CommandsToApply... transactions ) throws Exception
     {
-        for ( TransactionToApply tx : transactions )
+        for ( CommandsToApply tx : transactions )
         {
             try ( TransactionApplier txApplier = applier.startTx( tx, new LockGroup() ) )
             {
-                tx.transactionRepresentation().accept( txApplier );
+                tx.accept( txApplier );
             }
         }
         applier.close();
@@ -73,10 +72,10 @@ public class CommandHandlerContract
      * @return the boolean-and result of all function operations.
      */
     public static boolean apply( BatchTransactionApplier applier, ApplyFunction function,
-            TransactionToApply... transactions ) throws Exception
+            CommandsToApply... transactions ) throws Exception
     {
         boolean result = true;
-        for ( TransactionToApply tx : transactions )
+        for ( CommandsToApply tx : transactions )
         {
             try ( TransactionApplier txApplier = applier.startTx( tx, new LockGroup() ) )
             {

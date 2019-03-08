@@ -22,17 +22,14 @@ package org.neo4j.internal.recordstorage;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.Optional;
+
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.recordstorage.Command.LabelTokenCommand;
 import org.neo4j.internal.recordstorage.Command.PropertyKeyTokenCommand;
 import org.neo4j.internal.recordstorage.Command.RelationshipTypeTokenCommand;
 import org.neo4j.internal.recordstorage.CommandHandlerContract.ApplyFunction;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
-import org.neo4j.kernel.api.index.IndexProviderDescriptor;
-import org.neo4j.kernel.impl.api.TransactionToApply;
-import org.neo4j.kernel.impl.api.index.IndexingService;
-import org.neo4j.kernel.impl.index.schema.IndexDescriptorFactory;
-import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.store.DynamicArrayStore;
 import org.neo4j.kernel.impl.store.LabelTokenStore;
 import org.neo4j.kernel.impl.store.MetaDataStore;
@@ -56,10 +53,13 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.lock.LockService;
+import org.neo4j.storageengine.api.CommandsToApply;
 import org.neo4j.storageengine.api.ConstraintRule;
+import org.neo4j.storageengine.api.DefaultStorageIndexReference;
 import org.neo4j.storageengine.api.IndexUpdateListener;
 import org.neo4j.storageengine.api.NodeLabelUpdateListener;
 import org.neo4j.storageengine.api.StorageEngine;
+import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.token.api.NamedToken;
 import org.neo4j.util.concurrent.WorkSync;
 
@@ -80,7 +80,7 @@ import static org.neo4j.internal.schema.SchemaDescriptorFactory.forLabel;
 public class NeoStoreTransactionApplierTest
 {
     private final NeoStores neoStores = mock( NeoStores.class );
-    private final IndexingService indexingService = mock( IndexingService.class );
+    private final IndexUpdateListener indexingService = mock( IndexUpdateListener.class );
     private final IndexUpdateListener indexUpdateListener = mock( IndexUpdateListener.class );
     private final NodeLabelUpdateListener labelUpdateListener = mock( NodeLabelUpdateListener.class );
     private final CacheAccessBackDoor cacheAccess = mock( CacheAccessBackDoor.class );
@@ -103,7 +103,7 @@ public class NeoStoreTransactionApplierTest
     private final DynamicRecord two = DynamicRecord.dynamicRecord( 2, true );
     private final DynamicRecord three = DynamicRecord.dynamicRecord( 3, true );
     private final WorkSync<NodeLabelUpdateListener,LabelUpdateWork> labelScanStoreSynchronizer = new WorkSync<>( labelUpdateListener );
-    private final TransactionToApply transactionToApply = mock( TransactionToApply.class );
+    private final CommandsToApply transactionToApply = mock( CommandsToApply.class );
     private final WorkSync<IndexUpdateListener,IndexUpdatesWork> indexUpdatesSync = new WorkSync<>( indexUpdateListener );
     private final IndexActivator indexActivator = new IndexActivator( indexingService );
 
@@ -551,7 +551,7 @@ public class NeoStoreTransactionApplierTest
     {
         // given
         final BatchTransactionApplier applier = newApplierFacade( newApplier( false ), newIndexApplier() );
-        final StoreIndexDescriptor rule = indexRule( 0, 1, 2, new IndexProviderDescriptor( "K", "X.Y" ) );
+        final StorageIndexReference rule = indexRule( 0, 1, 2, "K", "X.Y" );
         SchemaRecord before = new SchemaRecord( rule.getId() );
         SchemaRecord after = before.clone().initialize( true, Record.NO_NEXT_PROPERTY.longValue() );
         after.setCreated();
@@ -576,7 +576,7 @@ public class NeoStoreTransactionApplierTest
         SchemaRecord before = new SchemaRecord( 21 );
         SchemaRecord after = before.clone().initialize( true, Record.NO_NEXT_PROPERTY.longValue() );
         after.setCreated();
-        final StoreIndexDescriptor rule = indexRule( 21, 1, 2, new IndexProviderDescriptor( "K", "X.Y" ) );
+        final StorageIndexReference rule = indexRule( 21, 1, 2, "K", "X.Y" );
         final Command.SchemaRuleCommand command = new Command.SchemaRuleCommand( before, after, rule );
 
         // when
@@ -599,7 +599,7 @@ public class NeoStoreTransactionApplierTest
         SchemaRecord before = new SchemaRecord( 21 );
         SchemaRecord after = before.clone().initialize( true, Record.NO_NEXT_PROPERTY.longValue() );
         after.setConstraint( true );
-        final StoreIndexDescriptor rule = constraintIndexRule( 21, 1, 2, new IndexProviderDescriptor( "K", "X.Y" ), 42L );
+        final StorageIndexReference rule = constraintIndexRule( 21, 1, 2, "K", "X.Y", 42L );
         final Command.SchemaRuleCommand command = new Command.SchemaRuleCommand( before, after, rule );
 
         // when
@@ -620,7 +620,7 @@ public class NeoStoreTransactionApplierTest
         final BatchTransactionApplier applier = newApplierFacade( newIndexApplier(), newApplier( true ) );
         SchemaRecord before = new SchemaRecord( 21 );
         SchemaRecord after = before.clone().initialize( true, Record.NO_NEXT_PROPERTY.longValue() );
-        final StoreIndexDescriptor rule = constraintIndexRule( 0, 1, 2, new IndexProviderDescriptor( "K", "X.Y" ), 42L );
+        final StorageIndexReference rule = constraintIndexRule( 0, 1, 2, "K", "X.Y", 42L );
         final Command.SchemaRuleCommand command = new Command.SchemaRuleCommand( before, after, rule );
 
         // when
@@ -644,7 +644,7 @@ public class NeoStoreTransactionApplierTest
 
         SchemaRecord before = new SchemaRecord( 21 );
         SchemaRecord after = before.clone().initialize( true, Record.NO_NEXT_PROPERTY.longValue() );
-        final StoreIndexDescriptor rule = constraintIndexRule( 0, 1, 2, new IndexProviderDescriptor( "K", "X.Y" ), 42L );
+        final StorageIndexReference rule = constraintIndexRule( 0, 1, 2, "K", "X.Y", 42L );
         final Command.SchemaRuleCommand command = new Command.SchemaRuleCommand( before, after, rule );
 
         // when
@@ -669,7 +669,7 @@ public class NeoStoreTransactionApplierTest
         final BatchTransactionApplierFacade applier = new BatchTransactionApplierFacade( base, indexApplier );
         SchemaRecord before = new SchemaRecord( 21 ).initialize( true, Record.NO_NEXT_PROPERTY.longValue() );
         SchemaRecord after = before.clone().initialize( false, Record.NO_NEXT_PROPERTY.longValue() );
-        final StoreIndexDescriptor rule = indexRule( 0, 1, 2, new IndexProviderDescriptor( "K", "X.Y" ) );
+        final StorageIndexReference rule = indexRule( 0, 1, 2, "K", "X.Y" );
         final Command.SchemaRuleCommand command = new Command.SchemaRuleCommand( before, after, rule );
 
         // when
@@ -690,7 +690,7 @@ public class NeoStoreTransactionApplierTest
         final BatchTransactionApplier applier = newApplierFacade( newIndexApplier(), newApplier( true ) );
         SchemaRecord before = new SchemaRecord( 21 ).initialize( true, Record.NO_NEXT_PROPERTY.longValue() );
         SchemaRecord after = before.clone().initialize( false, Record.NO_NEXT_PROPERTY.longValue() );
-        final StoreIndexDescriptor rule = indexRule( 0, 1, 2, new IndexProviderDescriptor( "K", "X.Y" ) );
+        final StorageIndexReference rule = indexRule( 0, 1, 2, "K", "X.Y" );
         final Command.SchemaRuleCommand command = new Command.SchemaRuleCommand( before, after, rule );
 
         // when
@@ -903,7 +903,7 @@ public class NeoStoreTransactionApplierTest
                 mock( StorageEngine.class ), schemaCache, indexActivator );
     }
 
-    private boolean apply( BatchTransactionApplier applier, ApplyFunction function, TransactionToApply transactionToApply ) throws Exception
+    private boolean apply( BatchTransactionApplier applier, ApplyFunction function, CommandsToApply transactionToApply ) throws Exception
     {
         try
         {
@@ -917,15 +917,16 @@ public class NeoStoreTransactionApplierTest
 
     // SCHEMA RULE COMMAND
 
-    private static StoreIndexDescriptor indexRule( long id, int label, int propertyKeyId, IndexProviderDescriptor providerDescriptor )
+    private static StorageIndexReference indexRule( long id, int label, int propertyKeyId, String providerKey, String providerVersion )
     {
-        return IndexDescriptorFactory.forSchema( forLabel( label, propertyKeyId ), providerDescriptor ).withId( id );
+        return new DefaultStorageIndexReference( forLabel( label, propertyKeyId ), providerKey, providerVersion, id, Optional.empty(), false, null, false );
     }
 
-    private static StoreIndexDescriptor constraintIndexRule( long id, int label, int propertyKeyId, IndexProviderDescriptor providerDescriptor,
+    private static StorageIndexReference constraintIndexRule( long id, int label, int propertyKeyId, String providerKey, String providerVersion,
             Long owningConstraint )
     {
-        return IndexDescriptorFactory.uniqueForSchema( forLabel( label, propertyKeyId ), providerDescriptor ).withIds( id, owningConstraint );
+        return new DefaultStorageIndexReference( forLabel( label, propertyKeyId ), providerKey, providerVersion, id, Optional.empty(), true, owningConstraint,
+                false );
     }
 
     private static ConstraintRule uniquenessConstraintRule( long id, int labelId, int propertyKeyId, long ownedIndexRule )

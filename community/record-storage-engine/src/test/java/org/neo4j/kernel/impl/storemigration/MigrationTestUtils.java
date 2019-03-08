@@ -29,20 +29,11 @@ import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_4;
 import org.neo4j.kernel.impl.storemigration.legacystore.v34.Legacy34Store;
-import org.neo4j.kernel.impl.transaction.log.LogPosition;
-import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
-import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
-import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
-import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
-import org.neo4j.kernel.recovery.LogTailScanner;
-import org.neo4j.monitoring.Monitors;
 import org.neo4j.storageengine.api.StoreVersionCheck;
 import org.neo4j.string.UTF8;
 import org.neo4j.test.Unzip;
 
 import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 import static org.neo4j.io.fs.IoPrimitiveUtils.readAndFlip;
 
@@ -134,28 +125,5 @@ public class MigrationTestUtils
                 }
             }
         }
-    }
-
-    public static void removeCheckPointFromTxLog( FileSystemAbstraction fileSystem, File databaseDirectory )
-            throws IOException
-    {
-        LogFiles logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( databaseDirectory, fileSystem ).build();
-        LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader = new VersionAwareLogEntryReader<>();
-        LogTailScanner tailScanner = new LogTailScanner( logFiles, logEntryReader, new Monitors() );
-        LogTailScanner.LogTailInformation logTailInformation = tailScanner.getTailInformation();
-
-        if ( logTailInformation.commitsAfterLastCheckpoint() )
-        {
-            // done already
-            return;
-        }
-
-        // let's assume there is at least a checkpoint
-        assertNotNull( logTailInformation.lastCheckPoint );
-
-        LogPosition logPosition = logTailInformation.lastCheckPoint.getLogPosition();
-        File logFile = logFiles.getLogFileForVersion( logPosition.getLogVersion() );
-        long byteOffset = logPosition.getByteOffset();
-        fileSystem.truncate( logFile, byteOffset );
     }
 }

@@ -55,6 +55,9 @@ import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_4;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader.UnableToUpgradeException;
+import org.neo4j.kernel.impl.transaction.log.LogPosition;
+import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
@@ -94,7 +97,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
-import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.removeCheckPointFromTxLog;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.verifyFilesHaveSameContent;
 import static org.neo4j.storageengine.migration.StoreMigrationParticipant.NOT_PARTICIPATING;
 
@@ -537,5 +539,28 @@ public class StoreUpgraderTest
     protected String getRecordFormatsName()
     {
         return Standard.LATEST_NAME;
+    }
+
+    public static void removeCheckPointFromTxLog( FileSystemAbstraction fileSystem, File databaseDirectory )
+            throws IOException
+    {
+        LogFiles logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( databaseDirectory, fileSystem ).build();
+        LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader = new VersionAwareLogEntryReader<>();
+        LogTailScanner tailScanner = new LogTailScanner( logFiles, logEntryReader, new Monitors() );
+        LogTailScanner.LogTailInformation logTailInformation = tailScanner.getTailInformation();
+
+        if ( logTailInformation.commitsAfterLastCheckpoint() )
+        {
+            // done already
+            return;
+        }
+
+        // let's assume there is at least a checkpoint
+        assertNotNull( logTailInformation.lastCheckPoint );
+
+        LogPosition logPosition = logTailInformation.lastCheckPoint.getLogPosition();
+        File logFile = logFiles.getLogFileForVersion( logPosition.getLogVersion() );
+        long byteOffset = logPosition.getByteOffset();
+        fileSystem.truncate( logFile, byteOffset );
     }
 }

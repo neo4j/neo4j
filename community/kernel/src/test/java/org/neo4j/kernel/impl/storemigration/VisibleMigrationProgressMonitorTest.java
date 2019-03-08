@@ -79,7 +79,7 @@ class VisibleMigrationProgressMonitorTest
         logProvider.assertContainsMessageContaining( VisibleMigrationProgressMonitor.MESSAGE_STARTED );
         for ( int i = 10; i <= 100; i += 10 )
         {
-            logProvider.assertContainsMessageContaining( String.valueOf( i ) + "%" );
+            logProvider.assertContainsMessageContaining( i + "%" );
         }
         logProvider.assertNone( AssertableLogProvider.inLog( VisibleMigrationProgressMonitor.class ).info( containsString( "110%" ) ) );
         logProvider.assertContainsMessageContaining( VisibleMigrationProgressMonitor.MESSAGE_COMPLETED );

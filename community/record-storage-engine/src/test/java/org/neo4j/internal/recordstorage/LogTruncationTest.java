@@ -29,8 +29,8 @@ import java.util.Map;
 
 import org.neo4j.internal.recordstorage.Command.NodeCountsCommand;
 import org.neo4j.internal.recordstorage.Command.RelationshipCountsCommand;
-import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
-import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptorFactory;
+import org.neo4j.io.fs.ReadPastEndException;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.NeoStoreRecord;
@@ -41,18 +41,12 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
-import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommand;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
-import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
+import org.neo4j.storageengine.api.DefaultStorageIndexReference;
 import org.neo4j.storageengine.api.StorageCommand;
+import org.neo4j.storageengine.api.StorageIndexReference;
 
 import static java.lang.reflect.Modifier.isAbstract;
 import static java.util.Arrays.asList;
-import static java.util.Collections.singletonList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
@@ -63,8 +57,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 class LogTruncationTest
 {
     private final InMemoryClosableChannel inMemoryChannel = new InMemoryClosableChannel();
-    private final LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader = new VersionAwareLogEntryReader<>();
-    private final LogEntryWriter writer = new LogEntryWriter( inMemoryChannel );
+    private final PhysicalLogCommandReaderV4_0 reader = new PhysicalLogCommandReaderV4_0();
     /** Stores all known commands, and an arbitrary set of different permutations for them */
     private final Map<Class<?>, Command[]> permutations = new HashMap<>();
     {
@@ -83,7 +76,7 @@ class LogTruncationTest
         permutations.put( Command.RelationshipGroupCommand.class,
                 new Command[] { new Command.LabelTokenCommand( new LabelTokenRecord( 1 ),
                         createLabelTokenRecord( 1 ) ) } );
-        StoreIndexDescriptor schemaRule = TestIndexDescriptorFactory.forLabel( 3, 4 ).withId( 1 );
+        StorageIndexReference schemaRule = new DefaultStorageIndexReference( SchemaDescriptorFactory.forLabel( 3, 4 ), false, 1, null );
         permutations.put( Command.SchemaRuleCommand.class, new Command[]{
                 new Command.SchemaRuleCommand( new SchemaRecord( 1 ).initialize( true, 41 ), new SchemaRecord( 1 ).initialize( true, 42 ), schemaRule ),
                 new Command.SchemaRuleCommand( new SchemaRecord( 1 ), new SchemaRecord( 1 ).initialize( true, 42 ), schemaRule ),
@@ -143,12 +136,11 @@ class LogTruncationTest
     private void assertHandlesLogTruncation( Command cmd ) throws IOException
     {
         inMemoryChannel.reset();
-        writer.serialize( new PhysicalTransactionRepresentation( singletonList( cmd ) ) );
+        cmd.serialize( inMemoryChannel );
         int bytesSuccessfullyWritten = inMemoryChannel.writerPosition();
         try
         {
-            LogEntry logEntry = logEntryReader.readLogEntry( inMemoryChannel );
-            StorageCommand command = ((LogEntryCommand) logEntry).getCommand();
+            StorageCommand command = reader.read( inMemoryChannel );
             assertEquals( cmd, command );
         }
         catch ( Exception e )
@@ -159,11 +151,18 @@ class LogTruncationTest
         while ( bytesSuccessfullyWritten-- > 0 )
         {
             inMemoryChannel.reset();
-            writer.serialize( new PhysicalTransactionRepresentation( singletonList( cmd ) ) );
+            cmd.serialize( inMemoryChannel );
             inMemoryChannel.truncateTo( bytesSuccessfullyWritten );
-            LogEntry deserialized = logEntryReader.readLogEntry( inMemoryChannel );
-            assertNull( deserialized, "Deserialization did not detect log truncation!" +
-                    "Record: " + cmd + ", deserialized: " + deserialized );
+            Command command = null;
+            try
+            {
+                command = reader.read( inMemoryChannel );
+            }
+            catch ( ReadPastEndException e )
+            {
+                assertNull( command, "Deserialization did not detect log truncation!" +
+                        "Record: " + cmd + ", deserialized: " + command );
+            }
         }
     }
 

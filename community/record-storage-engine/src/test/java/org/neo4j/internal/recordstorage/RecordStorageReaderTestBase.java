@@ -37,13 +37,15 @@ import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier
 import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
 import org.neo4j.kernel.impl.api.ClockContext;
 import org.neo4j.kernel.impl.api.KernelStatement;
-import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.kernel.impl.index.schema.IndexDescriptorFactory;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.ResourceLocker;
 import org.neo4j.storageengine.api.CommandCreationContext;
 import org.neo4j.storageengine.api.StorageCommand;
+import org.neo4j.storageengine.api.StorageEngine;
+import org.neo4j.storageengine.api.StorageReader;
+import org.neo4j.storageengine.api.StorageRelationshipScanCursor;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.test.rule.PageCacheAndDependenciesRule;
@@ -56,7 +58,6 @@ import org.neo4j.values.storable.Values;
 
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.graphdb.Label.label;
-import static org.neo4j.internal.recordstorage.Commands.transactionRepresentation;
 
 /**
  * Base class for disk layer tests, which test read-access to committed data.
@@ -80,9 +81,9 @@ public abstract class RecordStorageReaderTestBase
     private final AtomicLong nextTxId = new AtomicLong( TransactionIdStore.BASE_TX_ID );
     private TokenHolders tokenHolders;
     protected KernelStatement state;
-    protected RecordStorageReader storageReader;
-    protected RecordStorageEngine storageEngine;
-    private RecordStorageReader commitReader;
+    protected StorageReader storageReader;
+    protected StorageEngine storageEngine;
+    private StorageReader commitReader;
     private CommandCreationContext commitContext;
 
     @SuppressWarnings( "deprecation" )
@@ -144,7 +145,7 @@ public abstract class RecordStorageReaderTestBase
     protected void deleteRelationship( long relationshipId ) throws Exception
     {
         TxState txState = new TxState();
-        try ( RecordRelationshipScanCursor cursor = commitReader.allocateRelationshipScanCursor() )
+        try ( StorageRelationshipScanCursor cursor = commitReader.allocateRelationshipScanCursor() )
         {
             cursor.single( relationshipId );
             assertTrue( cursor.next() );
@@ -212,7 +213,7 @@ public abstract class RecordStorageReaderTestBase
         List<StorageCommand> commands = new ArrayList<>();
         long txId = nextTxId.incrementAndGet();
         storageEngine.createCommands( commands, txState, commitReader, commitContext, IGNORE_LOCKING, txId, state -> state );
-        storageEngine.apply( new TransactionToApply( transactionRepresentation( commands ), txId ), TransactionApplicationMode.EXTERNAL );
+        storageEngine.apply( new GroupOfCommands( txId, commands.toArray( new StorageCommand[0] ) ), TransactionApplicationMode.EXTERNAL );
     }
 
     protected int labelId( Label label )

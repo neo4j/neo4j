@@ -21,28 +21,23 @@ package org.neo4j.test.rule;
 
 import java.util.function.Function;
 
-import org.neo4j.common.Dependencies;
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.internal.id.BufferedIdController;
-import org.neo4j.internal.id.BufferingIdGeneratorFactory;
+import org.neo4j.internal.id.DefaultIdController;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.id.IdController;
 import org.neo4j.internal.id.IdGeneratorFactory;
-import org.neo4j.internal.id.configuration.CommunityIdTypeConfigurationProvider;
 import org.neo4j.internal.recordstorage.BatchTransactionApplierFacade;
 import org.neo4j.internal.recordstorage.IndexActivator;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
+import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.SchemaState;
+import org.neo4j.internal.schema.constraints.NodeKeyConstraintDescriptor;
+import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
-import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
-import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
-import org.neo4j.kernel.impl.transaction.state.DefaultIndexProviderMap;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.lock.LockService;
 import org.neo4j.lock.ReentrantLockService;
@@ -52,14 +47,14 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.monitoring.DatabaseEventHandlers;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.DatabasePanicEventGenerator;
-import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.storageengine.api.ConstraintRule;
+import org.neo4j.storageengine.api.ConstraintRuleAccessor;
 import org.neo4j.storageengine.api.IndexUpdateListener;
 import org.neo4j.storageengine.api.NodeLabelUpdateListener;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.token.TokenHolders;
 
 import static org.mockito.Mockito.mock;
-import static org.neo4j.kernel.impl.scheduler.JobSchedulerFactory.createScheduler;
 
 /**
  * Conveniently manages a {@link RecordStorageEngine} in a test. Needs {@link FileSystemAbstraction} and
@@ -86,27 +81,17 @@ public class RecordStorageEngineRule extends ExternalResource
         return new Builder( fs, pageCache, databaseLayout );
     }
 
-    private RecordStorageEngine get( FileSystemAbstraction fs, PageCache pageCache, IndexProvider indexProvider, DatabaseHealth databaseHealth,
+    private RecordStorageEngine get( FileSystemAbstraction fs, PageCache pageCache, DatabaseHealth databaseHealth,
             DatabaseLayout databaseLayout, Function<BatchTransactionApplierFacade,BatchTransactionApplierFacade> transactionApplierTransformer,
             IndexUpdateListener indexUpdateListener, NodeLabelUpdateListener nodeLabelUpdateListener, LockService lockService, TokenHolders tokenHolders,
-            Config config, ConstraintSemantics constraintSemantics )
+            Config config, ConstraintRuleAccessor constraintSemantics )
     {
         IdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs );
-        JobScheduler scheduler = life.add( createScheduler() );
-        config.augment( GraphDatabaseSettings.default_schema_provider, indexProvider.getProviderDescriptor().name() );
-
-        Dependencies dependencies = new Dependencies();
-        dependencies.satisfyDependency( indexProvider );
-
-        BufferingIdGeneratorFactory bufferingIdGeneratorFactory =
-                new BufferingIdGeneratorFactory( idGeneratorFactory, new CommunityIdTypeConfigurationProvider() );
-        DefaultIndexProviderMap indexProviderMap = new DefaultIndexProviderMap( dependencies, config );
         NullLogProvider nullLogProvider = NullLogProvider.getInstance();
-        life.add( indexProviderMap );
         RecordStorageEngine engine = life.add(
                 new ExtendedRecordStorageEngine( databaseLayout, config, pageCache, fs, nullLogProvider, tokenHolders, mock( SchemaState.class ),
                         constraintSemantics, lockService, databaseHealth, idGeneratorFactory,
-                        new BufferedIdController( bufferingIdGeneratorFactory, scheduler ), transactionApplierTransformer ) );
+                        new DefaultIdController(), transactionApplierTransformer ) );
         engine.addIndexUpdateListener( indexUpdateListener );
         engine.addNodeLabelUpdateListener( nodeLabelUpdateListener );
         return engine;
@@ -129,13 +114,37 @@ public class RecordStorageEngineRule extends ExternalResource
         private final DatabaseLayout databaseLayout;
         private Function<BatchTransactionApplierFacade,BatchTransactionApplierFacade> transactionApplierTransformer =
                 applierFacade -> applierFacade;
-        private IndexProvider indexProvider = IndexProvider.EMPTY;
         private IndexUpdateListener indexUpdateListener = new IndexUpdateListener.Adapter();
         private NodeLabelUpdateListener nodeLabelUpdateListener = new NodeLabelUpdateListener.Adapter();
         private LockService lockService = new ReentrantLockService();
         private TokenHolders tokenHolders = DatabaseRule.mockedTokenHolders();
         private Config config = Config.defaults();
-        private ConstraintSemantics constraintSemantics = new StandardConstraintSemantics();
+        private ConstraintRuleAccessor constraintSemantics = new ConstraintRuleAccessor()
+        {
+            @Override
+            public ConstraintDescriptor readConstraint( ConstraintRule rule )
+            {
+                return rule.getConstraintDescriptor();
+            }
+
+            @Override
+            public ConstraintRule createUniquenessConstraintRule( long ruleId, UniquenessConstraintDescriptor descriptor, long indexId )
+            {
+                return ConstraintRule.constraintRule( ruleId, descriptor, indexId );
+            }
+
+            @Override
+            public ConstraintRule createNodeKeyConstraintRule( long ruleId, NodeKeyConstraintDescriptor descriptor, long indexId )
+            {
+                throw new UnsupportedOperationException( "Not needed a.t.m." );
+            }
+
+            @Override
+            public ConstraintRule createExistenceConstraint( long ruleId, ConstraintDescriptor descriptor )
+            {
+                throw new UnsupportedOperationException( "Not needed a.t.m." );
+            }
+        };
 
         public Builder( FileSystemAbstraction fs, PageCache pageCache, DatabaseLayout databaseLayout )
         {
@@ -148,12 +157,6 @@ public class RecordStorageEngineRule extends ExternalResource
                 Function<BatchTransactionApplierFacade,BatchTransactionApplierFacade> transactionApplierTransformer )
         {
             this.transactionApplierTransformer = transactionApplierTransformer;
-            return this;
-        }
-
-        public Builder indexProvider( IndexProvider indexProvider )
-        {
-            this.indexProvider = indexProvider;
             return this;
         }
 
@@ -193,7 +196,7 @@ public class RecordStorageEngineRule extends ExternalResource
             return this;
         }
 
-        public Builder constraintSemantics( ConstraintSemantics constraintSemantics )
+        public Builder constraintSemantics( ConstraintRuleAccessor constraintSemantics )
         {
             this.constraintSemantics = constraintSemantics;
             return this;
@@ -201,7 +204,7 @@ public class RecordStorageEngineRule extends ExternalResource
 
         public RecordStorageEngine build()
         {
-            return get( fs, pageCache, indexProvider, databaseHealth, databaseLayout, transactionApplierTransformer, indexUpdateListener,
+            return get( fs, pageCache, databaseHealth, databaseLayout, transactionApplierTransformer, indexUpdateListener,
                     nodeLabelUpdateListener, lockService, tokenHolders, config, constraintSemantics );
         }
     }
@@ -213,7 +216,7 @@ public class RecordStorageEngineRule extends ExternalResource
 
         ExtendedRecordStorageEngine( DatabaseLayout databaseLayout, Config config, PageCache pageCache, FileSystemAbstraction fs,
                 LogProvider logProvider, TokenHolders tokenHolders, SchemaState schemaState,
-                ConstraintSemantics constraintSemantics,
+                ConstraintRuleAccessor constraintSemantics,
                 LockService lockService, DatabaseHealth databaseHealth,
                 IdGeneratorFactory idGeneratorFactory, IdController idController,
                 Function<BatchTransactionApplierFacade,BatchTransactionApplierFacade> transactionApplierTransformer )

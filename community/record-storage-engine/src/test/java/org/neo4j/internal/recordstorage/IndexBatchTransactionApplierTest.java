@@ -21,21 +21,23 @@ package org.neo4j.internal.recordstorage;
 
 import org.junit.Test;
 
+import java.util.Optional;
+
 import org.neo4j.internal.recordstorage.Command.NodeCommand;
+import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaRule;
-import org.neo4j.kernel.api.index.IndexProviderDescriptor;
-import org.neo4j.kernel.impl.api.TransactionToApply;
-import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
+import org.neo4j.storageengine.api.DefaultStorageIndexReference;
 import org.neo4j.storageengine.api.IndexUpdateListener;
 import org.neo4j.storageengine.api.NodeLabelUpdate;
 import org.neo4j.storageengine.api.NodeLabelUpdateListener;
 import org.neo4j.storageengine.api.StorageEngine;
+import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.util.concurrent.WorkSync;
 
 import static org.junit.Assert.assertEquals;
@@ -45,7 +47,6 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.neo4j.internal.schema.SchemaDescriptorFactory.forLabel;
-import static org.neo4j.kernel.impl.index.schema.IndexDescriptorFactory.uniqueForSchema;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
 
@@ -59,13 +60,12 @@ public class IndexBatchTransactionApplierTest
         OrderVerifyingUpdateListener listener = new OrderVerifyingUpdateListener( 10, 15, 20 );
         WorkSync<NodeLabelUpdateListener,LabelUpdateWork> labelScanSync = spy( new WorkSync<>( listener ) );
         WorkSync<IndexUpdateListener,IndexUpdatesWork> indexUpdatesSync = new WorkSync<>( indexUpdateListener );
-        TransactionToApply tx = mock( TransactionToApply.class );
         PropertyStore propertyStore = mock( PropertyStore.class );
         try ( IndexBatchTransactionApplier applier = new IndexBatchTransactionApplier( indexUpdateListener, labelScanSync, indexUpdatesSync,
                 mock( NodeStore.class ), mock( RelationshipStore.class ), new PropertyPhysicalToLogicalConverter( propertyStore ),
                 mock( StorageEngine.class ), mock( SchemaCache.class ), new IndexActivator( indexUpdateListener ) ) )
         {
-            try ( TransactionApplier txApplier = applier.startTx( tx ) )
+            try ( TransactionApplier txApplier = applier.startTx( new GroupOfCommands() ) )
             {
                 // WHEN
                 txApplier.visitNodeCommand( node( 15 ) );
@@ -87,7 +87,6 @@ public class IndexBatchTransactionApplierTest
         WorkSync<NodeLabelUpdateListener,LabelUpdateWork> labelScanSync = spy( new WorkSync<>( listener ) );
         WorkSync<IndexUpdateListener,IndexUpdatesWork> indexUpdatesSync = new WorkSync<>( indexUpdateListener );
         PropertyStore propertyStore = mock( PropertyStore.class );
-        TransactionToApply tx = mock( TransactionToApply.class );
         IndexActivator indexActivator = new IndexActivator( indexUpdateListener );
         long indexId1 = 1;
         long indexId2 = 2;
@@ -95,15 +94,16 @@ public class IndexBatchTransactionApplierTest
         long constraintId1 = 10;
         long constraintId2 = 11;
         long constraintId3 = 12;
-        IndexProviderDescriptor providerDescriptor = new IndexProviderDescriptor( "index-key", "v1" );
-        StoreIndexDescriptor rule1 = uniqueForSchema( forLabel( 1, 1 ), providerDescriptor ).withIds( indexId1, constraintId1 );
-        StoreIndexDescriptor rule2 = uniqueForSchema( forLabel( 2, 1 ), providerDescriptor ).withIds( indexId2, constraintId2 );
-        StoreIndexDescriptor rule3 = uniqueForSchema( forLabel( 3, 1 ), providerDescriptor ).withIds( indexId3, constraintId3 );
+        String providerKey = "index-key";
+        String providerVersion = "v1";
+        StorageIndexReference rule1 = uniqueForSchema( forLabel( 1, 1 ), providerKey, providerVersion, indexId1, constraintId1 );
+        StorageIndexReference rule2 = uniqueForSchema( forLabel( 2, 1 ), providerKey, providerVersion, indexId2, constraintId2 );
+        StorageIndexReference rule3 = uniqueForSchema( forLabel( 3, 1 ), providerKey, providerVersion, indexId3, constraintId3 );
         try ( IndexBatchTransactionApplier applier = new IndexBatchTransactionApplier( indexUpdateListener, labelScanSync,
                 indexUpdatesSync, mock( NodeStore.class ), mock( RelationshipStore.class ), new PropertyPhysicalToLogicalConverter( propertyStore ),
                 mock( StorageEngine.class ), mock( SchemaCache.class ), indexActivator ) )
         {
-            try ( TransactionApplier txApplier = applier.startTx( tx ) )
+            try ( TransactionApplier txApplier = applier.startTx( new GroupOfCommands() ) )
             {
                 // WHEN
                 // activate index 1
@@ -125,6 +125,11 @@ public class IndexBatchTransactionApplierTest
         verify( indexUpdateListener ).activateIndex( rule1 );
         verify( indexUpdateListener ).activateIndex( rule3 );
         verifyNoMoreInteractions( indexUpdateListener );
+    }
+
+    private StorageIndexReference uniqueForSchema( SchemaDescriptor schema, String providerKey, String providerVersion, long id, long owningConstraint )
+    {
+        return new DefaultStorageIndexReference( schema, providerKey, providerVersion, id, Optional.empty(), true, owningConstraint, false );
     }
 
     private SchemaRecord asSchemaRecord( SchemaRule rule, boolean inUse )

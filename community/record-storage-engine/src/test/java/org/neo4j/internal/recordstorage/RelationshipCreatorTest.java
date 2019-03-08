@@ -21,10 +21,9 @@ package org.neo4j.internal.recordstorage;
 
 import org.junit.Test;
 
-import org.neo4j.kernel.impl.locking.Locks;
-import org.neo4j.kernel.impl.locking.NoOpClient;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
+import org.neo4j.lock.ResourceLocker;
 
 import static org.junit.Assert.assertThat;
 import static org.neo4j.internal.recordstorage.RecordBuilders.filterType;
@@ -234,11 +233,9 @@ public class RelationshipCreatorTest
 
     private void createRelationshipBetween( long fromNode, long toNode )
     {
-        Locks.Client locks = new NoOpClient();
-        RelationshipCreator logic =
-                new RelationshipCreator( newRelGroupGetter( givenState ), denseNodeThreshold );
+        RelationshipCreator logic = new RelationshipCreator( newRelGroupGetter( givenState ), denseNodeThreshold );
 
-        logic.relationshipCreate( nextRelId( givenState ), 0, fromNode, toNode, changeset, locks );
+        logic.relationshipCreate( nextRelId( givenState ), 0, fromNode, toNode, changeset, ResourceLocker.IGNORE );
     }
 
     private long nextRelId( AbstractBaseRecord[] existingRecords )
