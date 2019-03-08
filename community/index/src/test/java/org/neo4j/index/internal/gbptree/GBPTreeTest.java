@@ -21,6 +21,7 @@ package org.neo4j.index.internal.gbptree;
 
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.apache.commons.lang3.tuple.Pair;
+import org.hamcrest.CoreMatchers;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -61,9 +62,13 @@ import org.neo4j.io.pagecache.DelegatingPagedFile;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.impl.FileIsNotMappedException;
-import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.io.pagecache.tracing.PinEvent;
+import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.RandomRule;
@@ -1610,6 +1615,83 @@ public class GBPTreeTest
         }
     }
 
+    /* Inconsistency tests */
+
+    @Test( timeout = 60_000L )
+    public void mustThrowIfStuckInInfiniteRootCatchup() throws IOException
+    {
+        // Create a tree with root and two children.
+        // Corrupt one of the children and make it look like a freelist node.
+        // This will cause seekCursor to start from root in an attempt, believing it went wrong because of concurrent updates.
+        // When seekCursor comes back to the same corrupt child again and again it should eventually escape from that loop
+        // with an exception.
+
+        // A page cache tracer that we can use to see when tree has seen enough updates and to figure out on which page the child sits.
+        List<Long> trace = new ArrayList<>();
+        PageCursorTracer pageCursorTracer = new DefaultPageCursorTracer()
+        {
+            @Override
+            public PinEvent beginPin( boolean writeLock, long filePageId, PageSwapper swapper )
+            {
+                trace.add( filePageId );
+                return super.beginPin( writeLock, filePageId, swapper );
+            }
+        };
+        PageCursorTracerSupplier pageCursorTracerSupplier = () -> pageCursorTracer;
+        PageCache pageCache = createPageCache( DEFAULT_PAGE_SIZE, pageCursorTracerSupplier );
+
+        // Build a tree with root and two children.
+        try ( GBPTree<MutableLong,MutableLong> tree = index( pageCache ).build() )
+        {
+            // Insert data until we have a split in root
+            long count = 0;
+            for ( int i = 0; i < 100; i++ )
+            {
+                try ( Writer<MutableLong,MutableLong> writer = tree.writer() )
+                {
+                    writer.put( new MutableLong( count ), new MutableLong( count ) );
+                    count++;
+                }
+                trace.clear();
+                try ( RawCursor<Hit<MutableLong,MutableLong>,IOException> seek = tree.seek( new MutableLong( 0 ), new MutableLong( 0 ) ) )
+                {
+                    seek.next();
+                }
+                if ( trace.size() > 1 )
+                {
+                    // Now a child exist
+                    break;
+                }
+            }
+
+            // Corrupt the child
+            long corruptChild = trace.get( trace.size() - 1 );
+            try ( PagedFile pagedFile = pageCache.map( indexFile, DEFAULT_PAGE_SIZE );
+                  PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK ) )
+            {
+                assertTrue( cursor.next( corruptChild ) );
+                assertTrue( TreeNode.isLeaf( cursor ) );
+
+                // Make child look like freelist node
+                cursor.putByte( TreeNode.BYTE_POS_NODE_TYPE, TreeNode.NODE_TYPE_FREE_LIST_NODE );
+            }
+
+            // when seek end up in this corrupt child we should eventually fail with a tree inconsistency exception
+            try ( RawCursor<Hit<MutableLong,MutableLong>,IOException> seek = tree.seek( new MutableLong( 0 ), new MutableLong( 0 ) ) )
+            {
+                seek.next();
+                fail( "Expected to throw" );
+            }
+            catch ( TreeInconsistencyException e )
+            {
+                // then good
+                assertThat( e.getMessage(), CoreMatchers.containsString(
+                        "Index traversal aborted due to being stuck in infinite loop. This is most likely caused by an inconsistency in the index. " +
+                                "Loop occurred when restarting search from root from page " + corruptChild + "." ) );
+            }
+        }
+    }
+
     private static class ControlledRecoveryCleanupWorkCollector extends RecoveryCleanupWorkCollector
     {
         Queue<CleanupJob> jobs = new LinkedList<>();
@@ -1751,6 +1833,11 @@ public class GBPTreeTest
     private PageCache createPageCache( int pageSize )
     {
         return pageCacheRule.getPageCache( fs.get(), config().withPageSize( pageSize ) );
+    }
+
+    private PageCache createPageCache( int pageSize, PageCursorTracerSupplier pageCursorTracerSupplier )
+    {
+        return pageCacheRule.getPageCache( fs.get(), config().withPageSize( pageSize ).withCursorTracerSupplier( pageCursorTracerSupplier ) );
     }
 
     private static class CleanJobControlledMonitor extends Monitor.Adaptor
