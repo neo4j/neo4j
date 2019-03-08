@@ -28,7 +28,6 @@ import java.util.List;
 
 import org.neo4j.internal.recordstorage.Command.NodeCommand;
 import org.neo4j.internal.recordstorage.Command.PropertyCommand;
-import org.neo4j.kernel.impl.api.index.EntityUpdates;
 import org.neo4j.lock.LockGroup;
 import org.neo4j.storageengine.api.CommandsToApply;
 
@@ -36,7 +35,7 @@ import static org.neo4j.kernel.impl.store.NodeLabelsField.fieldPointsToDynamicRe
 
 /**
  * Implements both BatchTransactionApplier and TransactionApplier in order to reduce garbage.
- * Gathers node/property commands by node id, preparing for extraction of {@link EntityUpdates updates}.
+ * Gathers node/property commands by node id, preparing for extraction of updates.
  */
 public class PropertyCommandsExtractor extends TransactionApplier.Adapter
         implements BatchTransactionApplier

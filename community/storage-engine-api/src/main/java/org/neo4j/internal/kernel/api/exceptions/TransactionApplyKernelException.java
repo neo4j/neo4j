@@ -17,18 +17,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.exceptions;
+package org.neo4j.internal.kernel.api.exceptions;
 
 import org.neo4j.exceptions.KernelException;
+import org.neo4j.kernel.api.exceptions.Status;
 
 /**
- * A {@link KernelException} thrown by a {@link org.neo4j.storageengine.api.StorageEngine} if it failed to apply a
- * transaction.
+ * A {@link KernelException} thrown by a {@link org.neo4j.storageengine.api.StorageEngine} if it failed to apply a transaction.
  */
 public class TransactionApplyKernelException extends KernelException
 {
-    public TransactionApplyKernelException( Throwable cause, String message,
-                                               Object... parameters )
+    public TransactionApplyKernelException( Throwable cause, String message, Object... parameters )
     {
         super( Status.General.UnknownError, cause, message, parameters );
     }
