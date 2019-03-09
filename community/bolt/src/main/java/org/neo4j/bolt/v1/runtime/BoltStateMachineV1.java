@@ -179,13 +179,18 @@ public class BoltStateMachineV1 implements BoltStateMachine
 
     /**
      * When this is invoked, the machine will check whether the related transaction is
-     * marked for termination and will reset the TransactionStateMachine to AUTO_COMMIT mode
-     * while releasing the related transactional resources.
+     * marked for termination and releasing the related transactional resources.
+     * If the transaction
      */
     @Override
     public void validateTransaction() throws KernelException
     {
-        statementProcessor().validateTransaction();
+        Status status = statementProcessor().validateTransaction();
+        if ( status != null )
+        {
+            // only set the status if there is a new status
+            connectionState().setPendingTerminationNotice( status );
+        }
     }
 
     @Override
@@ -334,10 +339,7 @@ public class BoltStateMachineV1 implements BoltStateMachine
     {
         try
         {
-            // We first reset the on going statement processor,
-            // Then we set the current statement processor to empty.
             statementProcessor().reset();
-            connectionState.setStatementProcessor( StatementProcessor.EMPTY );
         }
         catch ( TransactionFailureException e )
         {

@@ -27,6 +27,7 @@ import java.util.Optional;
 
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.messaging.BoltIOException;
+import org.neo4j.bolt.v1.runtime.TransactionStateMachine.StatementProcessorReleaseManager;
 import org.neo4j.bolt.v4.runtime.TransactionStateMachineV4SPI;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.dbms.database.DatabaseContext;
@@ -51,7 +52,7 @@ class TransactionStateMachineSPIProviderV4Test
         DatabaseManager databaseManager = databaseManager( "database" );
         TransactionStateMachineSPIProvider spiProvider = newSpiProvider( databaseManager );
 
-        TransactionStateMachineSPI spi = spiProvider.getTransactionStateMachineSPI( "database" );
+        TransactionStateMachineSPI spi = spiProvider.getTransactionStateMachineSPI( "database", mock( StatementProcessorReleaseManager.class ) );
         assertThat( spi, instanceOf( TransactionStateMachineV4SPI.class ) );
     }
 
@@ -61,7 +62,7 @@ class TransactionStateMachineSPIProviderV4Test
         DatabaseManager databaseManager = databaseManager( "neo4j" );
         TransactionStateMachineSPIProvider spiProvider = newSpiProvider( databaseManager );
 
-        TransactionStateMachineSPI spi = spiProvider.getTransactionStateMachineSPI( "" );
+        TransactionStateMachineSPI spi = spiProvider.getTransactionStateMachineSPI( "", mock( StatementProcessorReleaseManager.class ) );
         assertThat( spi, instanceOf( TransactionStateMachineV4SPI.class ) );
     }
 
@@ -72,7 +73,8 @@ class TransactionStateMachineSPIProviderV4Test
         when( databaseManager.getDatabaseContext( "database" ) ).thenReturn( Optional.empty() );
         TransactionStateMachineSPIProvider spiProvider = newSpiProvider( databaseManager );
 
-        BoltIOException error = assertThrows( BoltIOException.class, () -> spiProvider.getTransactionStateMachineSPI( "database" ) );
+        BoltIOException error = assertThrows( BoltIOException.class, () ->
+                spiProvider.getTransactionStateMachineSPI( "database", mock( StatementProcessorReleaseManager.class ) ) );
         assertThat( error.status(), equalTo( Status.Request.Invalid ) );
         assertThat( error.getMessage(), containsString( "The database requested does not exists. Requested database name: 'database'." ) );
     }

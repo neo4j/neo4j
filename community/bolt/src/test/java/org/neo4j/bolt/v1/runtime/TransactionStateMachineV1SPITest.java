@@ -30,6 +30,7 @@ import java.util.concurrent.Future;
 import java.util.function.Supplier;
 
 import org.neo4j.bolt.BoltChannel;
+import org.neo4j.bolt.v1.runtime.TransactionStateMachine.StatementProcessorReleaseManager;
 import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.GraphDatabaseQueryService;
@@ -149,6 +150,6 @@ public class TransactionStateMachineV1SPITest
 
         BoltChannel boltChannel = new BoltChannel( "bolt-42", "bolt", new EmbeddedChannel() );
 
-        return new TransactionStateMachineV1SPI( context, boltChannel, txAwaitDuration, clock );
+        return new TransactionStateMachineV1SPI( context, boltChannel, txAwaitDuration, clock, mock( StatementProcessorReleaseManager.class ) );
     }
 }

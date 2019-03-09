@@ -25,14 +25,23 @@ import org.junit.jupiter.api.Test;
 import java.time.Clock;
 
 import org.neo4j.bolt.BoltChannel;
+import org.neo4j.bolt.messaging.BoltIOException;
 import org.neo4j.bolt.runtime.BoltConnectionFatality;
+import org.neo4j.bolt.runtime.BoltProtocolBreachFatality;
 import org.neo4j.bolt.runtime.BoltStateMachine;
 import org.neo4j.bolt.runtime.BoltStateMachineSPI;
 import org.neo4j.bolt.runtime.MutableConnectionState;
-import org.neo4j.dbms.database.DatabaseManager;
+import org.neo4j.bolt.runtime.StatementProcessor;
+import org.neo4j.bolt.runtime.StatementProcessorProvider;
 
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import static org.neo4j.bolt.runtime.StatementProcessor.EMPTY;
 
 class BoltStateMachineContextImpTest
 {
@@ -59,10 +68,78 @@ class BoltStateMachineContextImpTest
         verify( machine ).reset();
     }
 
+    @Test
+    void shouldAllowToSetNewStatementProcessor() throws Throwable
+    {
+        // Given
+        StatementProcessor txStateMachine = mock( StatementProcessor.class );
+        // Then we can set tx state machine on a context.
+        boltStateMachineContextWithStatementProcessor( txStateMachine, "Molly" );
+    }
+
+    @Test
+    void shouldErrorToSetNewStatementProcessorWhilePreviousIsNotReleased() throws Throwable
+    {
+        // Given a context that has a active tx state machine set.
+        StatementProcessor txStateMachine = mock( StatementProcessor.class );
+        BoltStateMachineContextImp context = boltStateMachineContextWithStatementProcessor( txStateMachine, "Molly" );
+
+        // When & Then
+        BoltProtocolBreachFatality error = assertThrows( BoltProtocolBreachFatality.class,
+                () -> context.setCurrentStatementProcessorForDatabase( "Bossi" ) );
+        assertThat( error.getMessage(), containsString( "Changing database without closing the previous is forbidden." ) );
+        assertThat( context.connectionState().getStatementProcessor(), equalTo( txStateMachine ) );
+    }
+
+
+    @Test
+    void shouldReturnTheSameStatementProcessorIfDatabaseNameAreTheSame() throws Throwable
+    {
+        // Given a context that has a active tx state machine set.
+        StatementProcessor txStateMachine = mock( StatementProcessor.class );
+        BoltStateMachineContextImp context = boltStateMachineContextWithStatementProcessor( txStateMachine, "Molly" );
+        StatementProcessor molly = context.connectionState().getStatementProcessor();
+
+        // When & Then
+        StatementProcessor processor = context.setCurrentStatementProcessorForDatabase( "Molly" );
+        assertThat( processor, equalTo( molly ) );
+    }
+
+    @Test
+    void releaseShouldResetStatementProcessorBackToEmpty() throws Throwable
+    {
+        // Given a context that has a active tx state machine set.
+        StatementProcessor txStateMachine = mock( StatementProcessor.class );
+        BoltStateMachineContextImp context = boltStateMachineContextWithStatementProcessor( txStateMachine, "Molly" );
+
+        // When
+        context.releaseStatementProcessor();
+
+        // Then
+        assertThat( context.connectionState().getStatementProcessor(), equalTo( EMPTY ) );
+    }
+
+    private static BoltStateMachineContextImp boltStateMachineContextWithStatementProcessor( StatementProcessor txStateMachine, String databaseName )
+            throws BoltProtocolBreachFatality, BoltIOException
+    {
+        StatementProcessorProvider provider = mock( StatementProcessorProvider.class );
+        when( provider.getStatementProcessor( databaseName ) ).thenReturn( txStateMachine );
+        when( txStateMachine.databaseName() ).thenReturn( databaseName );
+
+        BoltStateMachineContextImp context = newContext( mock( BoltStateMachine.class ), mock( BoltStateMachineSPI.class ) );
+        context.statementProcessorProvider( provider );
+        assertThat( context.connectionState().getStatementProcessor(), equalTo( EMPTY ) );
+
+        StatementProcessor processor = context.setCurrentStatementProcessorForDatabase( databaseName );
+
+        assertThat( processor, equalTo( txStateMachine ) );
+        assertThat( context.connectionState().getStatementProcessor(), equalTo( txStateMachine ) );
+        return context;
+    }
+
     private static BoltStateMachineContextImp newContext( BoltStateMachine machine, BoltStateMachineSPI boltSPI )
     {
         BoltChannel boltChannel = new BoltChannel( "bolt-1", "bolt", mock( Channel.class ) );
-        DatabaseManager databaseManager = mock( DatabaseManager.class );
         return new BoltStateMachineContextImp( machine, boltChannel, boltSPI, new MutableConnectionState(), Clock.systemUTC() );
     }
 }

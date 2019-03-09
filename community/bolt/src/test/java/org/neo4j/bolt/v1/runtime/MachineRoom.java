@@ -33,7 +33,7 @@ import org.neo4j.bolt.testing.BoltTestUtil;
 import org.neo4j.bolt.v1.messaging.request.DiscardAllMessage;
 import org.neo4j.bolt.v1.messaging.request.InitMessage;
 import org.neo4j.bolt.v1.messaging.request.RunMessage;
-import org.neo4j.dbms.database.DatabaseManager;
+import org.neo4j.bolt.v1.runtime.TransactionStateMachine.StatementProcessorReleaseManager;
 import org.neo4j.kernel.api.security.AuthToken;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.VirtualValues;
@@ -68,7 +68,6 @@ public class MachineRoom
     public static BoltStateMachine newMachine( BoltStateMachineV1SPI spi )
     {
         BoltChannel boltChannel = BoltTestUtil.newTestBoltChannel();
-        DatabaseManager databaseManager = mock( DatabaseManager.class );
         return new BoltStateMachineV1( spi, boltChannel, Clock.systemUTC() );
     }
 
@@ -85,11 +84,11 @@ public class MachineRoom
     {
         BoltStateMachineSPI spi = mock( BoltStateMachineSPI.class, RETURNS_MOCKS );
         TransactionStateMachineSPIProvider transactionSPIProvider = mock( TransactionStateMachineSPIProvider.class );
-        when( transactionSPIProvider.getTransactionStateMachineSPI( any( String.class ) ) ).thenReturn( transactionSPI );
+        when( transactionSPIProvider.getTransactionStateMachineSPI( any( String.class ), any( StatementProcessorReleaseManager.class ) ) )
+                .thenReturn( transactionSPI );
         when( spi.transactionStateMachineSPIProvider() ).thenReturn( transactionSPIProvider );
 
         BoltChannel boltChannel = BoltTestUtil.newTestBoltChannel();
-        DatabaseManager databaseManager = mock( DatabaseManager.class );
         BoltStateMachine machine = new BoltStateMachineV1( spi, boltChannel, Clock.systemUTC() );
         init( machine );
         return machine;
@@ -100,7 +99,7 @@ public class MachineRoom
         return init( machine, null );
     }
 
-    private static BoltStateMachine init( BoltStateMachine machine, String owner ) throws AuthenticationException, BoltConnectionFatality
+    private static BoltStateMachine init( BoltStateMachine machine, String owner ) throws BoltConnectionFatality
     {
         machine.process( new InitMessage( USER_AGENT, owner == null ? emptyMap() : singletonMap( AuthToken.PRINCIPAL, owner ) ), nullResponseHandler() );
         return machine;

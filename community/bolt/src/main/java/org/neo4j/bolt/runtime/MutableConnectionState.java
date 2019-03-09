@@ -21,6 +21,9 @@ package org.neo4j.bolt.runtime;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.neo4j.bolt.v1.runtime.TransactionStateMachine;
+import org.neo4j.graphdb.TransactionTerminatedException;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.values.AnyValue;
 
 /**
@@ -49,6 +52,12 @@ public class MutableConnectionState implements BoltResponseHandler
      * can be called to "purge" all the messages ahead of the reset message.
      */
     private final AtomicInteger interruptCounter = new AtomicInteger();
+
+    /**
+     * This will be set if the previous transaction (rolled back already) has left some error.
+     * The error shall be rethrow before setting {@link #statementProcessor} towards a new database {@link TransactionStateMachine}.
+     */
+    private Status pendingTerminationNotice;
 
     @Override
     public boolean onPullRecords( BoltResult result, long size ) throws Exception
@@ -151,14 +160,26 @@ public class MutableConnectionState implements BoltResponseHandler
         this.responseHandler = responseHandler;
     }
 
+    public void setPendingTerminationNotice( Status terminationNotice )
+    {
+        this.pendingTerminationNotice = terminationNotice;
+    }
+
     public StatementProcessor getStatementProcessor()
     {
+        ensureNoPendingTerminationNotice();
         return statementProcessor;
     }
 
     public void setStatementProcessor( StatementProcessor statementProcessor )
     {
+        ensureNoPendingTerminationNotice();
         this.statementProcessor = statementProcessor;
+    }
+
+    public void clearStatementProcessor()
+    {
+        statementProcessor = StatementProcessor.EMPTY;
     }
 
     public boolean isInterrupted()
@@ -194,5 +215,17 @@ public class MutableConnectionState implements BoltResponseHandler
     public void markClosed()
     {
         closed = true;
+    }
+
+    private void ensureNoPendingTerminationNotice()
+    {
+        if ( pendingTerminationNotice != null )
+        {
+            Status status = pendingTerminationNotice;
+
+            pendingTerminationNotice = null;
+
+            throw new TransactionTerminatedException( status );
+        }
     }
 }

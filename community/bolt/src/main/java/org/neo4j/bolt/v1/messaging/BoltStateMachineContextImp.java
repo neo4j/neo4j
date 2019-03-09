@@ -37,8 +37,9 @@ import org.neo4j.bolt.v1.runtime.TransactionStateMachine;
 
 import static java.lang.String.format;
 import static org.neo4j.bolt.runtime.StatementProcessor.EMPTY;
+import static org.neo4j.bolt.v1.runtime.TransactionStateMachine.StatementProcessorReleaseManager;
 
-public class BoltStateMachineContextImp implements StateMachineContext
+public class BoltStateMachineContextImp implements StateMachineContext, StatementProcessorReleaseManager
 {
     private final BoltStateMachine machine;
     private final BoltChannel boltChannel;
@@ -103,14 +104,14 @@ public class BoltStateMachineContextImp implements StateMachineContext
     public void initStatementProcessorProvider( AuthenticationResult authResult )
     {
         TransactionStateMachineSPIProvider transactionSpiProvider = spi.transactionStateMachineSPIProvider();
-        this.statementProcessorProvider = new StatementProcessorProvider( authResult, transactionSpiProvider, clock );
+        statementProcessorProvider( new StatementProcessorProvider( authResult, transactionSpiProvider, clock, this ) );
     }
 
     /**
-     * We select the {@link StatementProcessor}, a.k.a. {@link TransactionStateMachine} based on the database name provided here.
-     * As {@link MutableConnectionState} claims it holds all states of {@link BoltStateMachine}, we let it holds the current statement processor.
-     * We will stick to this {@link StatementProcessor} until a RESET message arrives
-     * to reset the current statement process and release all resources it may hold.
+     * We select the {@link TransactionStateMachine} based on the database name provided here.
+     * This transaction state machine will be kept in {@link MutableConnectionState} until the transaction is closed.
+     * When closing, the transaction state machine will perform a callback to {@link #releaseStatementProcessor()} to release itself from {@link
+     * MutableConnectionState}.
      */
     @Override
     public StatementProcessor setCurrentStatementProcessorForDatabase( String databaseName ) throws BoltProtocolBreachFatality, BoltIOException
@@ -123,8 +124,18 @@ public class BoltStateMachineContextImp implements StateMachineContext
         }
         else
         {
-            return connectionState.getStatementProcessor();
+            return connectionState().getStatementProcessor();
         }
+    }
+
+    /**
+     * This callback is expected to be invoked inside a {@link TransactionStateMachine} to release itself for GC when the transaction is closed.
+     * The reason that we have this callback is that the {@link TransactionStateMachine} has a better knowledge of when itself can be released.
+     */
+    @Override
+    public void releaseStatementProcessor()
+    {
+        connectionState.clearStatementProcessor();
     }
 
     private boolean isCurrentStatementProcessorNotSet( String databaseName ) throws BoltProtocolBreachFatality
@@ -143,5 +154,10 @@ public class BoltStateMachineContextImp implements StateMachineContext
             }
         }
         return true;
+    }
+
+    void statementProcessorProvider( StatementProcessorProvider statementProcessorProvider )
+    {
+        this.statementProcessorProvider = statementProcessorProvider;
     }
 }

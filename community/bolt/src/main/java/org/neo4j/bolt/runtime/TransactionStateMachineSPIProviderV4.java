@@ -26,6 +26,7 @@ import java.util.Optional;
 
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.messaging.BoltIOException;
+import org.neo4j.bolt.v1.runtime.TransactionStateMachine.StatementProcessorReleaseManager;
 import org.neo4j.bolt.v4.runtime.TransactionStateMachineV4SPI;
 import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseManager;
@@ -52,7 +53,8 @@ public class TransactionStateMachineSPIProviderV4 implements TransactionStateMac
     }
 
     @Override
-    public TransactionStateMachineSPI getTransactionStateMachineSPI( String databaseName ) throws BoltIOException
+    public TransactionStateMachineSPI getTransactionStateMachineSPI( String databaseName, StatementProcessorReleaseManager resourceReleaseManger )
+            throws BoltIOException
     {
         if ( Objects.equals( databaseName, ABSENT_DB_NAME ) )
         {
@@ -65,6 +67,6 @@ public class TransactionStateMachineSPIProviderV4 implements TransactionStateMac
                     String.format( "The database requested does not exists. " + "Requested database name: '%s'.", databaseName ) );
         }
         DatabaseContext databaseContext = databaseContextOptional.get();
-        return new TransactionStateMachineV4SPI( databaseContext, boltChannel, txAwaitDuration, clock );
+        return new TransactionStateMachineV4SPI( databaseContext, boltChannel, txAwaitDuration, clock, resourceReleaseManger );
     }
 }

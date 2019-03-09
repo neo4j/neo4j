@@ -30,6 +30,7 @@ import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.runtime.BoltResult;
 import org.neo4j.bolt.runtime.BoltResultHandle;
 import org.neo4j.bolt.runtime.TransactionStateMachineSPI;
+import org.neo4j.bolt.v1.runtime.TransactionStateMachine.StatementProcessorReleaseManager;
 import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.function.ThrowingConsumer;
@@ -69,8 +70,10 @@ public class TransactionStateMachineV1SPI implements TransactionStateMachineSPI
     private final Clock clock;
     private final GraphDatabaseFacade databaseFacade;
     private final BoltChannel boltChannel;
+    private final StatementProcessorReleaseManager resourceReleaseManager;
 
-    public TransactionStateMachineV1SPI( DatabaseContext databaseContext, BoltChannel boltChannel, Duration txAwaitDuration, Clock clock )
+    public TransactionStateMachineV1SPI( DatabaseContext databaseContext, BoltChannel boltChannel, Duration txAwaitDuration, Clock clock,
+            StatementProcessorReleaseManager resourceReleaseManger )
     {
         this.txBridge = resolveDependency( databaseContext, ThreadToStatementContextBridge.class );
         this.queryExecutionEngine = resolveDependency( databaseContext, QueryExecutionEngine.class );
@@ -80,6 +83,7 @@ public class TransactionStateMachineV1SPI implements TransactionStateMachineSPI
         this.boltChannel = boltChannel;
         this.txAwaitDuration = txAwaitDuration;
         this.clock = clock;
+        this.resourceReleaseManager = resourceReleaseManger;
     }
 
     @Override
@@ -132,6 +136,12 @@ public class TransactionStateMachineV1SPI implements TransactionStateMachineSPI
     public boolean supportsNestedStatementsInTransaction()
     {
         return false;
+    }
+
+    @Override
+    public void release()
+    {
+        resourceReleaseManager.releaseStatementProcessor();
     }
 
     protected BoltResultHandle newBoltResultHandle( String statement, MapValue params, TransactionalContext transactionalContext )

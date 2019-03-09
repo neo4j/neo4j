@@ -25,6 +25,7 @@ import java.time.Duration;
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.runtime.BoltResult;
 import org.neo4j.bolt.runtime.BoltResultHandle;
+import org.neo4j.bolt.v1.runtime.TransactionStateMachine.StatementProcessorReleaseManager;
 import org.neo4j.bolt.v1.runtime.TransactionStateMachineV1SPI;
 import org.neo4j.bolt.v3.runtime.CypherAdapterStreamV3;
 import org.neo4j.dbms.database.DatabaseContext;
@@ -34,9 +35,10 @@ import org.neo4j.values.virtual.MapValue;
 
 public class TransactionStateMachineV4SPI extends TransactionStateMachineV1SPI
 {
-    public TransactionStateMachineV4SPI( DatabaseContext db, BoltChannel boltChannel, Duration txAwaitDuration, Clock clock )
+    public TransactionStateMachineV4SPI( DatabaseContext db, BoltChannel boltChannel, Duration txAwaitDuration, Clock clock,
+            StatementProcessorReleaseManager resourceReleaseManger )
     {
-        super( db, boltChannel, txAwaitDuration, clock );
+        super( db, boltChannel, txAwaitDuration, clock, resourceReleaseManger );
     }
 
     @Override

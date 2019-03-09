@@ -33,7 +33,6 @@ import org.neo4j.bolt.v1.runtime.TransactionStateMachine.StatementOutcome;
 import org.neo4j.bolt.v1.runtime.bookmarking.Bookmark;
 import org.neo4j.bolt.v4.messaging.ResultConsumer;
 import org.neo4j.exceptions.KernelException;
-import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -349,38 +348,6 @@ class TransactionStateMachineTest
         stateMachine.streamResult( StatementMetadata.ABSENT_STATEMENT_ID, EMPTY );
 
         verify( stateMachineSPI, times( 2 ) ).unbindTransactionFromCurrentThread();
-    }
-
-    @Test
-    void shouldThrowDuringRunIfPendingTerminationNoticeExists() throws Exception
-    {
-        KernelTransaction transaction = newTimedOutTransaction();
-        TransactionStateMachineV1SPI stateMachineSPI = newTransactionStateMachineSPI( transaction );
-        TransactionStateMachine stateMachine = newTransactionStateMachine( stateMachineSPI );
-
-        stateMachine.ctx.pendingTerminationNotice = Status.Transaction.TransactionTimedOut;
-
-        TransactionTerminatedException e = assertThrows( TransactionTerminatedException.class,
-                () -> stateMachine.run( "SOME STATEMENT", null ) );
-
-        assertEquals( Status.Transaction.TransactionTimedOut, e.status() );
-    }
-
-    @Test
-    void shouldThrowDuringStreamResultIfPendingTerminationNoticeExists() throws Exception
-    {
-        KernelTransaction transaction = newTimedOutTransaction();
-        TransactionStateMachineV1SPI stateMachineSPI = newTransactionStateMachineSPI( transaction );
-        TransactionStateMachine stateMachine = newTransactionStateMachine( stateMachineSPI );
-
-        stateMachine.run( "SOME STATEMENT", null );
-        stateMachine.ctx.pendingTerminationNotice = Status.Transaction.TransactionTimedOut;
-
-        TransactionTerminatedException e = assertThrows( TransactionTerminatedException.class, () ->
-        {
-            stateMachine.streamResult( StatementMetadata.ABSENT_STATEMENT_ID, EMPTY );
-        } );
-        assertEquals( Status.Transaction.TransactionTimedOut, e.status() );
     }
 
     @Test

@@ -21,13 +21,19 @@ package org.neo4j.bolt.runtime;
 
 import org.junit.jupiter.api.Test;
 
+import org.neo4j.graphdb.TransactionTerminatedException;
+
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.bolt.v1.ResultConsumerV1Adaptor.PULL_DISCARD_ALL_N_SIZE;
+import static org.neo4j.kernel.api.exceptions.Status.Request.Invalid;
 import static org.neo4j.values.storable.Values.stringValue;
 
 class MutableConnectionStateTest
@@ -239,5 +245,53 @@ class MutableConnectionStateTest
 
         assertEquals( 0, state.decrementInterruptCounter() );
         assertFalse( state.isInterrupted() );
+    }
+
+    @Test
+    void shouldSetAndGetStatementProcessor() throws Throwable
+    {
+        StatementProcessor processor = mock( StatementProcessor.class );
+        state.setStatementProcessor( processor );
+
+        assertThat( state.getStatementProcessor(), equalTo( processor ) );
+    }
+
+    @Test
+    void shouldThrowErrorWhenSetStatementProcessorAndThereIsPendingTerminationError() throws Throwable
+    {
+        state.setPendingTerminationNotice( Invalid );
+        StatementProcessor processor = mock( StatementProcessor.class );
+        TransactionTerminatedException error =
+                assertThrows( TransactionTerminatedException.class, () -> state.setStatementProcessor( processor ) );
+        assertThat( error.status(), equalTo( Invalid ) );
+
+        // The second set shall be fine
+        state.setStatementProcessor( processor );
+        assertThat( state.getStatementProcessor(), equalTo( processor ) );
+    }
+
+    @Test
+    void shouldThrowErrorWhenGetStatementProcessorAndThereIsPendingTerminationError() throws Throwable
+    {
+        state.setPendingTerminationNotice( Invalid );
+        TransactionTerminatedException error = assertThrows( TransactionTerminatedException.class, state::getStatementProcessor );
+        assertThat( error.status(), equalTo( Invalid ) );
+
+        // The second get shall be fine
+        assertThat( state.getStatementProcessor(), equalTo( StatementProcessor.EMPTY ) );
+    }
+
+    @Test
+    void shouldClearResetStatmentProcessorToEmpty() throws Throwable
+    {
+        // Given
+        StatementProcessor processor = mock( StatementProcessor.class );
+        state.setStatementProcessor( processor );
+        assertThat( state.getStatementProcessor(), equalTo( processor ) );
+
+        // When
+        state.clearStatementProcessor();
+        // Then
+        assertThat( state.getStatementProcessor(), equalTo( StatementProcessor.EMPTY ) );
     }
 }

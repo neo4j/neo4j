@@ -26,6 +26,7 @@ import org.neo4j.bolt.v1.runtime.bookmarking.Bookmark;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.bolt.v4.messaging.ResultConsumer;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.values.virtual.MapValue;
 
 public interface StatementProcessor
@@ -52,7 +53,7 @@ public interface StatementProcessor
 
     boolean hasOpenStatement();
 
-    void validateTransaction() throws KernelException;
+    Status validateTransaction() throws KernelException;
 
     String databaseName();
 
@@ -124,8 +125,9 @@ public interface StatementProcessor
         }
 
         @Override
-        public void validateTransaction() throws KernelException
+        public Status validateTransaction() throws KernelException
         {
+            return null;
         }
 
         @Override

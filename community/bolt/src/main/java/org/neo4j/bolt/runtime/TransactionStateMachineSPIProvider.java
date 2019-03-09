@@ -26,6 +26,7 @@ import java.util.Optional;
 
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.messaging.BoltIOException;
+import org.neo4j.bolt.v1.runtime.TransactionStateMachine.StatementProcessorReleaseManager;
 import org.neo4j.bolt.v1.runtime.TransactionStateMachineV1SPI;
 import org.neo4j.bolt.v3.runtime.TransactionStateMachineV3SPI;
 import org.neo4j.dbms.database.DatabaseContext;
@@ -37,7 +38,7 @@ import static org.neo4j.bolt.v4.messaging.MessageMetadataParser.ABSENT_DB_NAME;
 
 public interface TransactionStateMachineSPIProvider
 {
-    TransactionStateMachineSPI getTransactionStateMachineSPI( String databaseName )
+    TransactionStateMachineSPI getTransactionStateMachineSPI( String databaseName, StatementProcessorReleaseManager resourceReleaseManger )
             throws BoltProtocolBreachFatality, BoltIOException;
 
     abstract class DefaultDatabaseTransactionStatementSPIProvider implements TransactionStateMachineSPIProvider
@@ -59,7 +60,7 @@ public interface TransactionStateMachineSPIProvider
         }
 
         @Override
-        public TransactionStateMachineSPI getTransactionStateMachineSPI( String databaseName )
+        public TransactionStateMachineSPI getTransactionStateMachineSPI( String databaseName, StatementProcessorReleaseManager resourceReleaseManger )
                 throws BoltProtocolBreachFatality, BoltIOException
         {
             if ( !Objects.equals( databaseName, ABSENT_DB_NAME ) )
@@ -68,10 +69,11 @@ public interface TransactionStateMachineSPIProvider
                 throw new BoltProtocolBreachFatality( format( "Database selection by name not supported by Bolt protocol version lower than BoltV4. " +
                         "Please contact your Bolt client author to report this bug in the client code. Requested database name: '%s'.", databaseName ) );
             }
-            return newTransactionStateMachineSPI( getDefaultDatabase() );
+            return newTransactionStateMachineSPI( getDefaultDatabase(), resourceReleaseManger );
         }
 
-        protected abstract TransactionStateMachineSPI newTransactionStateMachineSPI( DatabaseContext activeDatabase );
+        protected abstract TransactionStateMachineSPI newTransactionStateMachineSPI( DatabaseContext activeDatabase,
+                StatementProcessorReleaseManager resourceReleaseManger );
 
         private DatabaseContext getDefaultDatabase() throws BoltIOException
         {
@@ -94,9 +96,10 @@ public interface TransactionStateMachineSPIProvider
         }
 
         @Override
-        protected TransactionStateMachineSPI newTransactionStateMachineSPI( DatabaseContext databaseContext )
+        protected TransactionStateMachineSPI newTransactionStateMachineSPI( DatabaseContext databaseContext,
+                StatementProcessorReleaseManager resourceReleaseManger )
         {
-            return new TransactionStateMachineV1SPI( databaseContext, boltChannel, txAwaitDuration, clock );
+            return new TransactionStateMachineV1SPI( databaseContext, boltChannel, txAwaitDuration, clock, resourceReleaseManger );
         }
     }
 
@@ -110,9 +113,10 @@ public interface TransactionStateMachineSPIProvider
         }
 
         @Override
-        protected TransactionStateMachineSPI newTransactionStateMachineSPI( DatabaseContext databaseContext )
+        protected TransactionStateMachineSPI newTransactionStateMachineSPI( DatabaseContext databaseContext,
+                StatementProcessorReleaseManager resourceReleaseManger )
         {
-            return new TransactionStateMachineV3SPI( databaseContext, boltChannel, txAwaitDuration, clock );
+            return new TransactionStateMachineV3SPI( databaseContext, boltChannel, txAwaitDuration, clock, resourceReleaseManger );
         }
     }
 }

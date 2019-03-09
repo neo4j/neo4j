@@ -45,4 +45,6 @@ public interface TransactionStateMachineSPI
             Map<String,Object> txMetaData );
 
     boolean supportsNestedStatementsInTransaction();
+
+    void release();
 }

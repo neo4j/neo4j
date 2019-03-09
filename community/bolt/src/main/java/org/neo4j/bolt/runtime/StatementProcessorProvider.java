@@ -24,23 +24,27 @@ import java.time.Clock;
 import org.neo4j.bolt.messaging.BoltIOException;
 import org.neo4j.bolt.security.auth.AuthenticationResult;
 import org.neo4j.bolt.v1.runtime.TransactionStateMachine;
+import org.neo4j.bolt.v1.runtime.TransactionStateMachine.StatementProcessorReleaseManager;
 
 public class StatementProcessorProvider
 {
     private final Clock clock;
     private final AuthenticationResult authResult;
     private final TransactionStateMachineSPIProvider spiProvider;
+    private final StatementProcessorReleaseManager resourceReleaseManger;
 
-    public StatementProcessorProvider( AuthenticationResult authResult, TransactionStateMachineSPIProvider transactionSpiProvider, Clock clock )
+    public StatementProcessorProvider( AuthenticationResult authResult, TransactionStateMachineSPIProvider transactionSpiProvider, Clock clock,
+            StatementProcessorReleaseManager releaseManager )
     {
         this.authResult = authResult;
         this.spiProvider = transactionSpiProvider;
         this.clock = clock;
+        this.resourceReleaseManger = releaseManager;
     }
 
     public StatementProcessor getStatementProcessor( String databaseName ) throws BoltProtocolBreachFatality, BoltIOException
     {
-        TransactionStateMachineSPI transactionSPI = spiProvider.getTransactionStateMachineSPI( databaseName );
+        TransactionStateMachineSPI transactionSPI = spiProvider.getTransactionStateMachineSPI( databaseName, resourceReleaseManger );
         return new TransactionStateMachine( databaseName, transactionSPI, authResult, clock );
     }
 }

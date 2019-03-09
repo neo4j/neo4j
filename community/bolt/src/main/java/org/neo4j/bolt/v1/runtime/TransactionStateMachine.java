@@ -38,7 +38,6 @@ import org.neo4j.bolt.v1.runtime.spi.BookmarkResult;
 import org.neo4j.bolt.v4.messaging.ResultConsumer;
 import org.neo4j.cypher.InvalidSemanticsException;
 import org.neo4j.exceptions.KernelException;
-import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -88,8 +87,6 @@ public class TransactionStateMachine implements StatementProcessor
         before();
         try
         {
-            ensureNoPendingTerminationNotice();
-
             state = state.beginTransaction( ctx, spi, bookmark, txTimeout, txMetadata );
         }
         finally
@@ -111,8 +108,6 @@ public class TransactionStateMachine implements StatementProcessor
         before();
         try
         {
-            ensureNoPendingTerminationNotice();
-
             state = state.run( ctx, spi, statement, params, bookmark, txTimeout, txMetaData );
 
             StatementMetadata metadata = ctx.lastStatementMetadata;
@@ -131,8 +126,6 @@ public class TransactionStateMachine implements StatementProcessor
         before();
         try
         {
-            ensureNoPendingTerminationNotice();
-
             return state.streamResult( ctx, spi, statementId, resultConsumer );
         }
         finally
@@ -147,8 +140,6 @@ public class TransactionStateMachine implements StatementProcessor
         before();
         try
         {
-            ensureNoPendingTerminationNotice();
-
             state = state.commitTransaction( ctx, spi );
             return newestBookmark( spi );
         }
@@ -169,7 +160,6 @@ public class TransactionStateMachine implements StatementProcessor
         before();
         try
         {
-            ensureNoPendingTerminationNotice();
             state = state.rollbackTransaction( ctx, spi );
         }
         finally
@@ -195,7 +185,7 @@ public class TransactionStateMachine implements StatementProcessor
     @Override
     public void reset() throws TransactionFailureException
     {
-        state.terminateQueryAndRollbackTransaction( ctx );
+        state.terminateQueryAndRollbackTransaction( spi, ctx );
         state = State.AUTO_COMMIT;
     }
 
@@ -215,7 +205,7 @@ public class TransactionStateMachine implements StatementProcessor
     }
 
     @Override
-    public void validateTransaction() throws KernelException
+    public Status validateTransaction() throws KernelException
     {
         KernelTransaction tx = ctx.currentTransaction;
 
@@ -227,30 +217,19 @@ public class TransactionStateMachine implements StatementProcessor
             {
                 if ( statusOpt.get().code().classification().rollbackTransaction() )
                 {
-                    ctx.pendingTerminationNotice = statusOpt.get();
-
+                    Status pendingTerminationNotice = statusOpt.get();
                     reset();
+                    return pendingTerminationNotice;
                 }
             }
         }
+        return null;
     }
 
     @Override
     public String databaseName()
     {
         return databaseName;
-    }
-
-    private void ensureNoPendingTerminationNotice()
-    {
-        if ( ctx.pendingTerminationNotice != null )
-        {
-            Status status = ctx.pendingTerminationNotice;
-
-            ctx.pendingTerminationNotice = null;
-
-            throw new TransactionTerminatedException( status );
-        }
     }
 
     @Override
@@ -273,7 +252,7 @@ public class TransactionStateMachine implements StatementProcessor
                         int statementId = StatementMetadata.ABSENT_STATEMENT_ID;
                         ctx.statementOutcomes.put( statementId, new StatementOutcome( BoltResult.EMPTY ) );
 
-                        ctx.currentTransaction = spi.beginTransaction( ctx.loginContext, txTimeout, txMetadata );
+                        beginTransaction( ctx, spi, txTimeout, txMetadata );
                         return EXPLICIT_TRANSACTION;
                     }
 
@@ -308,7 +287,7 @@ public class TransactionStateMachine implements StatementProcessor
                         // only acquire a new transaction when the statement does not contain periodic commit
                         if ( !isPeriodicCommit )
                         {
-                            ctx.currentTransaction = spi.beginTransaction( ctx.loginContext, txTimeout, txMetadata );
+                            beginTransaction( ctx, spi, txTimeout, txMetadata );
                         }
 
                         boolean failed = true;
@@ -332,13 +311,28 @@ public class TransactionStateMachine implements StatementProcessor
                             {
                                 if ( failed )
                                 {
-                                    closeTransaction( ctx, false );
+                                    closeTransaction( ctx, spi, false );
                                 }
                             }
                             else
                             {
-                                ctx.currentTransaction = spi.beginTransaction( ctx.loginContext, txTimeout, txMetadata );
+                                beginTransaction( ctx, spi, txTimeout, txMetadata );
                             }
+                        }
+                    }
+
+                    private void beginTransaction( MutableTransactionState ctx, TransactionStateMachineSPI spi, Duration txTimeout,
+                            Map<String,Object> txMetadata ) throws TransactionFailureException
+                    {
+                        try
+                        {
+                            ctx.currentTransaction = spi.beginTransaction( ctx.loginContext, txTimeout, txMetadata );
+                        }
+                        catch ( Throwable e )
+                        {
+                            // If we failed to begin a transaction for some reason such as the database is stopped, we need to release ourselves
+                            spi.release();
+                            throw e;
                         }
                     }
 
@@ -358,7 +352,7 @@ public class TransactionStateMachine implements StatementProcessor
                             consumeResult( ctx, statementId, outcome, resultConsumer );
                             if ( !resultConsumer.hasMore() )
                             {
-                                closeTransaction( ctx, true );
+                                closeTransaction( ctx, spi, true );
                                 success = true;
                                 return newestBookmark( spi );
                             }
@@ -369,7 +363,7 @@ public class TransactionStateMachine implements StatementProcessor
                             // throw error
                             if ( !success )
                             {
-                                closeTransaction( ctx, false );
+                                closeTransaction( ctx, spi, false );
                             }
                         }
                         return EMPTY_BOOKMARK;
@@ -460,7 +454,7 @@ public class TransactionStateMachine implements StatementProcessor
                     @Override
                     State commitTransaction( MutableTransactionState ctx, TransactionStateMachineSPI spi ) throws KernelException
                     {
-                        closeTransaction( ctx, true );
+                        closeTransaction( ctx, spi, true );
                         Bookmark bookmark = newestBookmark( spi );
 
                         int statementId = StatementMetadata.ABSENT_STATEMENT_ID;
@@ -473,7 +467,7 @@ public class TransactionStateMachine implements StatementProcessor
                     @Override
                     State rollbackTransaction( MutableTransactionState ctx, TransactionStateMachineSPI spi ) throws KernelException
                     {
-                        closeTransaction( ctx, false );
+                        closeTransaction( ctx, spi, false );
 
                         // add dummy outcome useful for < Bolt V3, i.e. `RUN "ROLLBACK" & PULL_ALL`
                         int statementId = StatementMetadata.ABSENT_STATEMENT_ID;
@@ -498,17 +492,17 @@ public class TransactionStateMachine implements StatementProcessor
 
         abstract State rollbackTransaction( MutableTransactionState ctx, TransactionStateMachineSPI spi ) throws KernelException;
 
-        void terminateQueryAndRollbackTransaction( MutableTransactionState ctx ) throws TransactionFailureException
+        void terminateQueryAndRollbackTransaction( TransactionStateMachineSPI spi, MutableTransactionState ctx ) throws TransactionFailureException
         {
             terminateActiveStatements( ctx );
-            closeTransaction( ctx, false );
+            closeTransaction( ctx, spi, false );
         }
 
         /*
          * This is overly careful about always closing and nulling the transaction since
          * reset can cause ctx.currentTransaction to be null we store in local variable.
          */
-        void closeTransaction( MutableTransactionState ctx, boolean success ) throws TransactionFailureException
+        void closeTransaction( MutableTransactionState ctx, TransactionStateMachineSPI spi, boolean success ) throws TransactionFailureException
         {
             closeActiveStatements( ctx, success );
 
@@ -535,6 +529,7 @@ public class TransactionStateMachine implements StatementProcessor
                 {
                     ctx.currentTransaction = null;
                     ctx.statementCounter = 0;
+                    spi.release(); // we need to release ourselves, after this point we are in the hand of GC
                 }
             }
         }
@@ -683,7 +678,6 @@ public class TransactionStateMachine implements StatementProcessor
         /** The current transaction, if present */
         KernelTransaction currentTransaction;
 
-        Status pendingTerminationNotice;
 
         /** Last Cypher statement executed */
         String lastStatement = "";
@@ -726,5 +720,16 @@ public class TransactionStateMachine implements StatementProcessor
             this.resultHandle = resultHandle;
             this.result = result;
         }
+    }
+
+    public interface StatementProcessorReleaseManager
+    {
+        void releaseStatementProcessor();
+    }
+
+    @Override
+    public String toString()
+    {
+        return "TransactionStateMachine{" + "state=" + state + ", databaseName='" + databaseName + '\'' + '}';
     }
 }

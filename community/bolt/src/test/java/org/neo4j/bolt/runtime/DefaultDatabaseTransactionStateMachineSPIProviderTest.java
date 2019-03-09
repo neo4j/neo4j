@@ -26,6 +26,7 @@ import java.time.Duration;
 import java.util.Optional;
 
 import org.neo4j.bolt.BoltChannel;
+import org.neo4j.bolt.v1.runtime.TransactionStateMachine.StatementProcessorReleaseManager;
 import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseManager;
 
@@ -44,7 +45,7 @@ class DefaultDatabaseTransactionStateMachineSPIProviderTest
         DatabaseManager databaseManager = databaseManagerWithDatabase( "neo4j" );
         TransactionStateMachineSPIProvider spiProvider = newSpiProvider( databaseManager );
 
-        TransactionStateMachineSPI spi = spiProvider.getTransactionStateMachineSPI( "" );
+        TransactionStateMachineSPI spi = spiProvider.getTransactionStateMachineSPI( "", mock( StatementProcessorReleaseManager.class ) );
         assertThat( spi, instanceOf( TransactionStateMachineSPI.class ) );
     }
 
@@ -54,7 +55,8 @@ class DefaultDatabaseTransactionStateMachineSPIProviderTest
         DatabaseManager databaseManager = databaseManagerWithDatabase( "database" );
         TransactionStateMachineSPIProvider spiProvider = newSpiProvider( databaseManager );
 
-        BoltProtocolBreachFatality error = assertThrows( BoltProtocolBreachFatality.class, () -> spiProvider.getTransactionStateMachineSPI( "database" ) );
+        BoltProtocolBreachFatality error = assertThrows( BoltProtocolBreachFatality.class, () ->
+                spiProvider.getTransactionStateMachineSPI( "database", mock( StatementProcessorReleaseManager.class ) ) );
         assertThat( error.getMessage(), containsString( "Database selection by name not supported by Bolt protocol version lower than BoltV4." ) );
     }
 
@@ -72,7 +74,8 @@ class DefaultDatabaseTransactionStateMachineSPIProviderTest
                 Duration.ZERO, mock( Clock.class ) )
         {
             @Override
-            protected TransactionStateMachineSPI newTransactionStateMachineSPI( DatabaseContext activeDatabase )
+            protected TransactionStateMachineSPI newTransactionStateMachineSPI( DatabaseContext activeDatabase,
+                    StatementProcessorReleaseManager resourceReleaseManger )
             {
                 return mock( TransactionStateMachineSPI.class );
             }
