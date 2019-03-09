@@ -34,7 +34,6 @@ import org.neo4j.bolt.runtime.StatementProcessor;
 import org.neo4j.bolt.runtime.TransactionStateMachineSPI;
 import org.neo4j.bolt.security.auth.AuthenticationResult;
 import org.neo4j.bolt.v1.runtime.bookmarking.Bookmark;
-import org.neo4j.bolt.v1.runtime.spi.BookmarkResult;
 import org.neo4j.bolt.v4.messaging.ResultConsumer;
 import org.neo4j.cypher.InvalidSemanticsException;
 import org.neo4j.exceptions.KernelException;
@@ -248,10 +247,6 @@ public class TransactionStateMachine implements StatementProcessor
                     {
                         waitForBookmark( spi, bookmark );
 
-                        // add dummy outcome useful for < Bolt V3, i.e. `RUN "BEGIN" & PULL_ALL`
-                        int statementId = StatementMetadata.ABSENT_STATEMENT_ID;
-                        ctx.statementOutcomes.put( statementId, new StatementOutcome( BoltResult.EMPTY ) );
-
                         beginTransaction( ctx, spi, txTimeout, txMetadata );
                         return EXPLICIT_TRANSACTION;
                     }
@@ -448,19 +443,13 @@ public class TransactionStateMachine implements StatementProcessor
                         }
 
                         consumeResult( ctx, statementId, outcome, resultConsumer );
-                        return EMPTY_BOOKMARK; // Explict tx shall not get a bookmark in PULL_ALL or DISCARD_ALL
+                        return EMPTY_BOOKMARK; // Explicit tx shall not get a bookmark in PULL_ALL or DISCARD_ALL
                     }
 
                     @Override
                     State commitTransaction( MutableTransactionState ctx, TransactionStateMachineSPI spi ) throws KernelException
                     {
                         closeTransaction( ctx, spi, true );
-                        Bookmark bookmark = newestBookmark( spi );
-
-                        int statementId = StatementMetadata.ABSENT_STATEMENT_ID;
-                        ctx.statementOutcomes.put( statementId, new StatementOutcome( new BookmarkResult( bookmark ) ) );
-                        ctx.lastStatementId = StatementMetadata.ABSENT_STATEMENT_ID;
-
                         return AUTO_COMMIT;
                     }
 
@@ -468,12 +457,6 @@ public class TransactionStateMachine implements StatementProcessor
                     State rollbackTransaction( MutableTransactionState ctx, TransactionStateMachineSPI spi ) throws KernelException
                     {
                         closeTransaction( ctx, spi, false );
-
-                        // add dummy outcome useful for < Bolt V3, i.e. `RUN "ROLLBACK" & PULL_ALL`
-                        int statementId = StatementMetadata.ABSENT_STATEMENT_ID;
-                        ctx.statementOutcomes.put( statementId, new StatementOutcome( BoltResult.EMPTY ) );
-                        ctx.lastStatementId = StatementMetadata.ABSENT_STATEMENT_ID;
-
                         return AUTO_COMMIT;
                     }
                 };
@@ -677,7 +660,6 @@ public class TransactionStateMachine implements StatementProcessor
 
         /** The current transaction, if present */
         KernelTransaction currentTransaction;
-
 
         /** Last Cypher statement executed */
         String lastStatement = "";

@@ -22,14 +22,18 @@ package org.neo4j.bolt.v1.runtime;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.time.Clock;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 
 import org.neo4j.bolt.messaging.RequestMessage;
 import org.neo4j.bolt.runtime.BoltResponseHandler;
+import org.neo4j.bolt.runtime.BoltResult;
 import org.neo4j.bolt.runtime.BoltStateMachineState;
 import org.neo4j.bolt.runtime.MutableConnectionState;
 import org.neo4j.bolt.runtime.StateMachineContext;
@@ -42,6 +46,7 @@ import org.neo4j.bolt.v1.messaging.request.PullAllMessage;
 import org.neo4j.bolt.v1.messaging.request.ResetMessage;
 import org.neo4j.bolt.v1.messaging.request.RunMessage;
 import org.neo4j.bolt.v1.runtime.bookmarking.Bookmark;
+import org.neo4j.bolt.v1.runtime.spi.BookmarkResult;
 import org.neo4j.graphdb.security.AuthorizationExpiredException;
 
 import static java.util.Arrays.asList;
@@ -49,6 +54,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -176,7 +182,7 @@ class ReadyStateTest
     {
         List<RequestMessage> unsupportedMessages = asList( PullAllMessage.INSTANCE, DiscardAllMessage.INSTANCE, AckFailureMessage.INSTANCE );
 
-        for ( RequestMessage message: unsupportedMessages )
+        for ( RequestMessage message : unsupportedMessages )
         {
             assertNull( state.process( message, context ) );
         }
@@ -186,7 +192,7 @@ class ReadyStateTest
     void shouldBeginTransactionWithoutBookmark() throws Exception
     {
         BoltStateMachineState newState = state.process( new RunMessage( "BEGIN", EMPTY_MAP ), context );
-        assertEquals( streamingState, newState );
+        assertEquals( state, newState );
         verify( statementProcessor ).beginTransaction( null );
     }
 
@@ -196,18 +202,18 @@ class ReadyStateTest
         Map<String,Object> params = map( "bookmark", "neo4j:bookmark:v1:tx15" );
 
         BoltStateMachineState newState = state.process( new RunMessage( "BEGIN", asMapValue( params ) ), context );
-        assertEquals( streamingState, newState );
+        assertEquals( state, newState );
         verify( statementProcessor ).beginTransaction( new Bookmark( 15 ) );
     }
 
     @Test
     void shouldBeginTransactionWithMultipleBookmarks() throws Exception
     {
-        Map<String,Object> params = map( "bookmarks",
-                asList( "neo4j:bookmark:v1:tx7", "neo4j:bookmark:v1:tx1", "neo4j:bookmark:v1:tx92", "neo4j:bookmark:v1:tx39" ) );
+        Map<String,Object> params =
+                map( "bookmarks", asList( "neo4j:bookmark:v1:tx7", "neo4j:bookmark:v1:tx1", "neo4j:bookmark:v1:tx92", "neo4j:bookmark:v1:tx39" ) );
 
         BoltStateMachineState newState = state.process( new RunMessage( "BEGIN", asMapValue( params ) ), context );
-        assertEquals( streamingState, newState );
+        assertEquals( state, newState );
         verify( statementProcessor ).beginTransaction( new Bookmark( 92 ) );
     }
 
@@ -216,7 +222,7 @@ class ReadyStateTest
     void shouldBeginTransaction( String statement ) throws Exception
     {
         BoltStateMachineState newState = state.process( new RunMessage( statement ), context );
-        assertEquals( streamingState, newState );
+        assertEquals( state, newState );
         verify( statementProcessor ).beginTransaction( any() );
     }
 
@@ -225,8 +231,14 @@ class ReadyStateTest
     void shouldCommitTransaction( String statement ) throws Exception
     {
         BoltStateMachineState newState = state.process( new RunMessage( statement ), context );
-        assertEquals( streamingState, newState );
+        assertEquals( state, newState );
         verify( statementProcessor ).commitTransaction();
+
+        BoltResponseHandler responseHandler = mock( BoltResponseHandler.class );
+        context.connectionState().setResponseHandler( responseHandler );
+        newState = newState.process( PullAllMessage.INSTANCE, context );
+        assertEquals( state, newState );
+        verify( responseHandler ).onPullRecords( any( BookmarkResult.class ), anyLong() );
     }
 
     @ParameterizedTest
@@ -234,7 +246,39 @@ class ReadyStateTest
     void shouldRollbackTransaction( String statement ) throws Exception
     {
         BoltStateMachineState newState = state.process( new RunMessage( statement ), context );
-        assertEquals( streamingState, newState );
+        assertEquals( state, newState );
         verify( statementProcessor ).rollbackTransaction();
+    }
+
+    @ParameterizedTest
+    @MethodSource( "createWordsWithLength" )
+    void shouldHandlePullAllDiscardAll( String runStatement, RequestMessage message, Class<BoltResult> resultClass ) throws Throwable
+    {
+        BoltStateMachineState newState = state.process( new RunMessage( runStatement ), context );
+        assertEquals( state, newState );
+
+        BoltResponseHandler responseHandler = mock( BoltResponseHandler.class );
+        context.connectionState().setResponseHandler( responseHandler );
+
+        newState = newState.process( message, context );
+        assertEquals( state, newState );
+        if ( message instanceof PullAllMessage )
+        {
+            verify( responseHandler ).onPullRecords( any( resultClass ), anyLong() );
+        }
+        else
+        {
+            verify( responseHandler ).onDiscardRecords( any( resultClass ), anyLong() );
+        }
+    }
+
+    private static Stream<Arguments> createWordsWithLength()
+    {
+        return Stream.of( Arguments.of( "BEGIN", PullAllMessage.INSTANCE, BoltResult.EMPTY.getClass() ),
+                Arguments.of( "BEGIN", DiscardAllMessage.INSTANCE, BoltResult.EMPTY.getClass() ),
+                Arguments.of( "COMMIT", PullAllMessage.INSTANCE, BookmarkResult.class ),
+                Arguments.of( "COMMIT", DiscardAllMessage.INSTANCE, BookmarkResult.class ),
+                Arguments.of( "ROLLBACK", PullAllMessage.INSTANCE, BoltResult.EMPTY.getClass() ),
+                Arguments.of( "ROLLBACK", DiscardAllMessage.INSTANCE, BoltResult.EMPTY.getClass() ) );
     }
 }

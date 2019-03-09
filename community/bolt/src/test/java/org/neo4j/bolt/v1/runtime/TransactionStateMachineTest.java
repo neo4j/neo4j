@@ -400,7 +400,6 @@ class TransactionStateMachineTest
         RuntimeException e = assertThrows( RuntimeException.class, () ->
         {
             stateMachine.beginTransaction( null );
-            stateMachine.streamResult( StatementMetadata.ABSENT_STATEMENT_ID, EMPTY );
             stateMachine.run( "SOME STATEMENT", null );
         } );
         assertEquals( "some error", e.getMessage() );
@@ -417,7 +416,6 @@ class TransactionStateMachineTest
         TransactionStateMachine stateMachine = newTransactionStateMachine( stateMachineSPI );
 
         stateMachine.beginTransaction( null );
-        stateMachine.streamResult( StatementMetadata.ABSENT_STATEMENT_ID, EMPTY );
         stateMachine.run( "SOME STATEMENT", null );
 
         StatementOutcome outcome = stateMachine.ctx.statementOutcomes.get( StatementMetadata.ABSENT_STATEMENT_ID );

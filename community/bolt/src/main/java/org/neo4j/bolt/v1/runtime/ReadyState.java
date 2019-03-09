@@ -21,14 +21,20 @@ package org.neo4j.bolt.v1.runtime;
 
 import org.neo4j.bolt.messaging.RequestMessage;
 import org.neo4j.bolt.runtime.BoltConnectionFatality;
+import org.neo4j.bolt.runtime.BoltResult;
 import org.neo4j.bolt.runtime.BoltStateMachineState;
 import org.neo4j.bolt.runtime.StateMachineContext;
 import org.neo4j.bolt.runtime.StatementMetadata;
 import org.neo4j.bolt.runtime.StatementProcessor;
+import org.neo4j.bolt.v1.ResultConsumerV1Adaptor;
+import org.neo4j.bolt.v1.messaging.request.DiscardAllMessage;
 import org.neo4j.bolt.v1.messaging.request.InterruptSignal;
+import org.neo4j.bolt.v1.messaging.request.PullAllMessage;
 import org.neo4j.bolt.v1.messaging.request.ResetMessage;
 import org.neo4j.bolt.v1.messaging.request.RunMessage;
 import org.neo4j.bolt.v1.runtime.bookmarking.Bookmark;
+import org.neo4j.bolt.v1.runtime.spi.BookmarkResult;
+import org.neo4j.bolt.v4.messaging.ResultConsumer;
 import org.neo4j.graphdb.security.AuthorizationExpiredException;
 import org.neo4j.values.storable.Values;
 
@@ -52,6 +58,7 @@ public class ReadyState implements BoltStateMachineState
     private BoltStateMachineState streamingState;
     private BoltStateMachineState interruptedState;
     private BoltStateMachineState failedState;
+    private BoltResult txBeginCommitRollbackResponse;
 
     @Override
     public BoltStateMachineState process( RequestMessage message, StateMachineContext context ) throws BoltConnectionFatality
@@ -60,6 +67,14 @@ public class ReadyState implements BoltStateMachineState
         if ( message instanceof RunMessage )
         {
             return processRunMessage( (RunMessage) message, context );
+        }
+        if ( message instanceof PullAllMessage )
+        {
+            return processStreamingMessageAfterRunBeginCommitRollback( message, context, true );
+        }
+        else if ( message instanceof DiscardAllMessage )
+        {
+            return processStreamingMessageAfterRunBeginCommitRollback( message, context, false );
         }
         if ( message instanceof ResetMessage )
         {
@@ -99,13 +114,11 @@ public class ReadyState implements BoltStateMachineState
         {
             long start = context.clock().millis();
             StatementProcessor statementProcessor = context.setCurrentStatementProcessorForDatabase( ABSENT_DB_NAME );
-            StatementMetadata statementMetadata = processRunMessage( message, statementProcessor );
+            BoltStateMachineState state = processRunMessage( message, statementProcessor, context );
             long end = context.clock().millis();
-
-            context.connectionState().onMetadata( "fields", stringArray( statementMetadata.fieldNames() ) );
             context.connectionState().onMetadata( "result_available_after", Values.longValue( end - start ) );
 
-            return streamingState;
+            return state;
         }
         catch ( AuthorizationExpiredException e )
         {
@@ -119,32 +132,60 @@ public class ReadyState implements BoltStateMachineState
         }
     }
 
-    private static StatementMetadata processRunMessage( RunMessage message, StatementProcessor statementProcessor ) throws Exception
+    private BoltStateMachineState processRunMessage( RunMessage message, StatementProcessor statementProcessor, StateMachineContext context ) throws Exception
     {
         if ( isBegin( message ) )
         {
             Bookmark bookmark = Bookmark.fromParamsOrNull( message.params() );
             statementProcessor.beginTransaction( bookmark );
-            return StatementMetadata.EMPTY;
+            txBeginCommitRollbackResponse = BoltResult.EMPTY;
+            return this;
         }
         else if ( isCommit( message ) )
         {
-            statementProcessor.commitTransaction();
-            return StatementMetadata.EMPTY;
+            Bookmark bookmark = statementProcessor.commitTransaction();
+            txBeginCommitRollbackResponse = new BookmarkResult( bookmark );
+            return this;
         }
         else if ( isRollback( message ) )
         {
             statementProcessor.rollbackTransaction();
-            return StatementMetadata.EMPTY;
+            txBeginCommitRollbackResponse = BoltResult.EMPTY;
+            return this;
         }
         else
         {
-            return statementProcessor.run( message.statement(), message.params() );
+            StatementMetadata statementMetadata = statementProcessor.run( message.statement(), message.params() );
+            context.connectionState().onMetadata( "fields", stringArray( statementMetadata.fieldNames() ) );
+            return streamingState;
+        }
+    }
+
+    private BoltStateMachineState processStreamingMessageAfterRunBeginCommitRollback( RequestMessage message, StateMachineContext context, boolean pull )
+            throws BoltConnectionFatality
+    {
+        try
+        {
+            if ( txBeginCommitRollbackResponse == null )
+            {
+                // This means a PULL_ALL or DISCARD_ALL happens before Begin/Commit/Rollback
+                return null;
+            }
+            ResultConsumer resultConsumer = new ResultConsumerV1Adaptor( context, pull );
+            resultConsumer.consume( txBeginCommitRollbackResponse );
+            txBeginCommitRollbackResponse = null;
+            return this;
+        }
+        catch ( Throwable e )
+        {
+            context.handleFailure( e, false );
+            return failedState;
         }
     }
 
     private BoltStateMachineState processResetMessage( StateMachineContext context ) throws BoltConnectionFatality
     {
+        txBeginCommitRollbackResponse = null;
         boolean success = context.resetMachine();
         return success ? this : failedState;
     }

@@ -85,12 +85,10 @@ class BoltStateMachineContextImpTest
         BoltStateMachineContextImp context = boltStateMachineContextWithStatementProcessor( txStateMachine, "Molly" );
 
         // When & Then
-        BoltProtocolBreachFatality error = assertThrows( BoltProtocolBreachFatality.class,
-                () -> context.setCurrentStatementProcessorForDatabase( "Bossi" ) );
+        BoltProtocolBreachFatality error = assertThrows( BoltProtocolBreachFatality.class, () -> context.setCurrentStatementProcessorForDatabase( "Bossi" ) );
         assertThat( error.getMessage(), containsString( "Changing database without closing the previous is forbidden." ) );
         assertThat( context.connectionState().getStatementProcessor(), equalTo( txStateMachine ) );
     }
-
 
     @Test
     void shouldReturnTheSameStatementProcessorIfDatabaseNameAreTheSame() throws Throwable
