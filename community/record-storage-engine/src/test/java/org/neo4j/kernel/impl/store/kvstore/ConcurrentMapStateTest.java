@@ -29,7 +29,7 @@ import java.util.concurrent.locks.Lock;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContext;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
-import org.neo4j.kernel.impl.context.TransactionVersionContextSupplier;
+import org.neo4j.kernel.impl.store.counts.TxVersionContextSupplier;
 import org.neo4j.util.concurrent.Runnables;
 
 import static org.junit.Assert.assertEquals;
@@ -41,7 +41,6 @@ import static org.mockito.Mockito.when;
 
 public class ConcurrentMapStateTest
 {
-
     private final ReadableState<String> store = mock( ReadableState.class );
     private final File file = mock( File.class );
     private final Lock lock = mock( Lock.class );
@@ -170,7 +169,7 @@ public class ConcurrentMapStateTest
     {
         long updaterVersionTxId = 25;
         long lastClosedTxId = 20;
-        TransactionVersionContextSupplier versionContextSupplier = new TransactionVersionContextSupplier();
+        TxVersionContextSupplier versionContextSupplier = new TxVersionContextSupplier();
         versionContextSupplier.init( () -> lastClosedTxId );
         ConcurrentMapState<String> mapState = createMapState( versionContextSupplier );
         VersionContext versionContext = versionContextSupplier.getVersionContext();
@@ -192,7 +191,7 @@ public class ConcurrentMapStateTest
         long updaterVersionTxId = 25;
         long lastClosedTxId = 20;
         when( store.version() ).thenReturn( updaterVersionTxId );
-        TransactionVersionContextSupplier versionContextSupplier = new TransactionVersionContextSupplier();
+        TxVersionContextSupplier versionContextSupplier = new TxVersionContextSupplier();
         versionContextSupplier.init( () -> lastClosedTxId );
         VersionContext versionContext = versionContextSupplier.getVersionContext();
 
@@ -209,7 +208,7 @@ public class ConcurrentMapStateTest
     {
         long updaterVersionTxId = 25;
         long lastClosedTxId = 20;
-        TransactionVersionContextSupplier versionContextSupplier = new TransactionVersionContextSupplier();
+        TxVersionContextSupplier versionContextSupplier = new TxVersionContextSupplier();
         versionContextSupplier.init( () -> lastClosedTxId );
         ConcurrentMapState<String> mapState = createMapState( versionContextSupplier );
         VersionContext versionContext = versionContextSupplier.getVersionContext();

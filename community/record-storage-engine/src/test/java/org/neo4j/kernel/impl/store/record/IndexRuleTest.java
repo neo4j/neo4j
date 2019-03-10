@@ -47,9 +47,9 @@ public class IndexRuleTest extends SchemaRuleTestBase
         assertFalse( indexRule.isUnique() );
         assertThat( indexRule.schema(), equalTo( descriptor.schema() ) );
         assertThat( indexRule, equalTo( descriptor ) );
-        assertThat( indexRule.providerDescriptor(), equalTo( PROVIDER_DESCRIPTOR ) );
+        assertThat( indexRule.providerKey(), equalTo( PROVIDER_KEY ) );
+        assertThat( indexRule.providerVersion(), equalTo( PROVIDER_VERSION ) );
         assertException( indexRule::owningConstraintReference, IllegalStateException.class );
-        assertException( () -> indexRule.withOwningConstraint( RULE_ID_2 ), IllegalStateException.class );
     }
 
     @Test
@@ -64,10 +64,11 @@ public class IndexRuleTest extends SchemaRuleTestBase
         assertTrue( indexRule.isUnique() );
         assertThat( indexRule.schema(), equalTo( descriptor.schema() ) );
         assertThat( indexRule, equalTo( descriptor ) );
-        assertThat( indexRule.providerDescriptor(), equalTo( PROVIDER_DESCRIPTOR ) );
+        assertThat( indexRule.providerKey(), equalTo( PROVIDER_KEY ) );
+        assertThat( indexRule.providerVersion(), equalTo( PROVIDER_VERSION ) );
         assertThat( indexRule.hasOwningConstraintReference(), equalTo( false ) );
 
-        StorageIndexReference withConstraint = indexRule.withOwningConstraint( RULE_ID_2 );
+        StorageIndexReference withConstraint = new DefaultStorageIndexReference( indexRule, RULE_ID_2 );
         assertThat( withConstraint.owningConstraintReference(), equalTo( RULE_ID_2 ) );
         assertThat( indexRule.hasOwningConstraintReference(), equalTo( false ) ); // this is unchanged
     }

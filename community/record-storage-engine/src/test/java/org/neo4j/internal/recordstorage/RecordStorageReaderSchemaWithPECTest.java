@@ -29,9 +29,7 @@ import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorFactory;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
-import org.neo4j.internal.schema.constraints.NodeKeyConstraintDescriptor;
-import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
-import org.neo4j.storageengine.api.ConstraintRule;
+import org.neo4j.storageengine.api.StandardConstraintRuleAccessor;
 import org.neo4j.test.rule.RecordStorageEngineRule;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -45,26 +43,7 @@ public class RecordStorageReaderSchemaWithPECTest extends RecordStorageReaderTes
     RecordStorageEngineRule.Builder modify( RecordStorageEngineRule.Builder builder )
     {
         // Basically temporarily allow PEC and node key constraints here, which is usually is only allowed in enterprise edition
-        return builder.constraintSemantics( new StandardConstraintSemantics()
-        {
-            @Override
-            public ConstraintRule createExistenceConstraint( long ruleId, ConstraintDescriptor descriptor )
-            {
-                return ConstraintRule.constraintRule( ruleId, descriptor );
-            }
-
-            @Override
-            public ConstraintRule createNodeKeyConstraintRule( long ruleId, NodeKeyConstraintDescriptor descriptor, long indexId )
-            {
-                return ConstraintRule.constraintRule( ruleId, descriptor, indexId );
-            }
-
-            @Override
-            protected ConstraintDescriptor readNonStandardConstraint( ConstraintRule constraint, String errorMessage )
-            {
-                return constraint.getConstraintDescriptor();
-            }
-        } );
+        return builder.constraintSemantics( new StandardConstraintRuleAccessor() );
     }
 
     @Test

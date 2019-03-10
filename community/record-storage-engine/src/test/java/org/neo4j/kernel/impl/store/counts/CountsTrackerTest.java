@@ -26,7 +26,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
-import java.util.function.Predicate;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -36,7 +35,6 @@ import org.neo4j.function.IOFunction;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContext;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
-import org.neo4j.kernel.impl.context.TransactionVersionContextSupplier;
 import org.neo4j.kernel.impl.store.CountsOracle;
 import org.neo4j.kernel.impl.store.counts.keys.CountsKey;
 import org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory;
@@ -47,14 +45,17 @@ import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.register.Register;
 import org.neo4j.register.Registers;
 import org.neo4j.test.Barrier;
+import org.neo4j.test.rule.OtherThreadRule;
 import org.neo4j.test.rule.Resources;
-import org.neo4j.test.rule.concurrent.ThreadingRule;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
 import org.neo4j.time.SystemNanoClock;
 
+import static java.lang.Thread.State.BLOCKED;
+import static java.lang.Thread.State.TERMINATED;
+import static java.lang.Thread.State.TIMED_WAITING;
+import static java.lang.Thread.State.WAITING;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertSame;
@@ -63,10 +64,7 @@ import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.neo4j.function.Predicates.all;
-import static org.neo4j.kernel.impl.util.DebugUtil.classNameContains;
-import static org.neo4j.kernel.impl.util.DebugUtil.methodIs;
-import static org.neo4j.kernel.impl.util.DebugUtil.stackTraceContains;
+import static org.neo4j.test.OtherThreadExecutor.command;
 import static org.neo4j.test.rule.Resources.InitialLifecycle.STARTED;
 
 public class CountsTrackerTest
@@ -74,7 +72,7 @@ public class CountsTrackerTest
     @Rule
     public final Resources resourceManager = new Resources();
     @Rule
-    public final ThreadingRule threading = new ThreadingRule();
+    public final OtherThreadRule<Void> threading = new OtherThreadRule<>();
 
     @Test
     public void shouldBeAbleToStartAndStopTheStore()
@@ -187,7 +185,7 @@ public class CountsTrackerTest
         int labelId = 1;
         long lastClosedTransactionId = 11L;
         long writeTransactionId = 22L;
-        TransactionVersionContextSupplier versionContextSupplier = new TransactionVersionContextSupplier();
+        TxVersionContextSupplier versionContextSupplier = new TxVersionContextSupplier();
         versionContextSupplier.init( () -> lastClosedTransactionId );
         VersionContext versionContext = versionContextSupplier.getVersionContext();
 
@@ -211,7 +209,7 @@ public class CountsTrackerTest
         int labelId = 1;
         long lastClosedTransactionId = 15L;
         long writeTransactionId = 13L;
-        TransactionVersionContextSupplier versionContextSupplier = new TransactionVersionContextSupplier();
+        TxVersionContextSupplier versionContextSupplier = new TxVersionContextSupplier();
         versionContextSupplier.init( () -> lastClosedTransactionId );
         VersionContext versionContext = versionContextSupplier.getVersionContext();
 
@@ -267,19 +265,11 @@ public class CountsTrackerTest
                     return super.include( countsKey, value );
                 }
             } );
-            Future<Void> task = threading.execute( t ->
+            Future<Void> task = threading.execute( command( () ->
             {
-                try
-                {
-                    delta.update( t, secondTransaction );
-                    t.rotate( secondTransaction );
-                }
-                catch ( IOException e )
-                {
-                    throw new AssertionError( e );
-                }
-                return null;
-            }, tracker );
+                delta.update( tracker, secondTransaction );
+                tracker.rotate( secondTransaction );
+            } ) );
 
             // then
             barrier.await();
@@ -335,19 +325,8 @@ public class CountsTrackerTest
         }
 
         // when
-        Future<Long> rotated = threading.executeAndAwait( new Rotation( 2 ), tracker, thread ->
-        {
-            switch ( thread.getState() )
-            {
-            case BLOCKED:
-            case WAITING:
-            case TIMED_WAITING:
-            case TERMINATED:
-                return true;
-            default:
-                return false;
-            }
-        }, 10, SECONDS );
+        Future<Long> rotated = threading.execute( state -> tracker.rotate( 2 ) );
+        threading.get().waitUntilThreadState( BLOCKED, WAITING, TIMED_WAITING, TERMINATED );
         try ( CountsAccessor.Updater tx = tracker.apply( 5 ).get() )
         {
             tx.incrementNodeCount( 1, 1 );
@@ -388,9 +367,8 @@ public class CountsTrackerTest
         }
 
         // WHEN
-        Predicate<Thread> arrived = thread ->
-            stackTraceContains( thread, all( classNameContains( "Rotation" ), methodIs( "rotate" ) ) );
-        Future<Object> rotation = threading.executeAndAwait( t -> t.rotate( 4 ), tracker, arrived, 1, SECONDS );
+        Future<Object> rotation = threading.execute( command( () -> tracker.rotate( 4 ) ) );
+        threading.get().waitUntilWaiting( details -> details.isAt( "Rotation", "rotate" ) );
         try ( CountsAccessor.Updater tx = tracker.apply( 3 ).get() )
         {
             tx.incrementNodeCount( labelId, 1 ); // now at 2

@@ -47,7 +47,6 @@ import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.io.fs.FlushableChannel;
 import org.neo4j.io.fs.ReadPastEndException;
-import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.store.DynamicArrayStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
@@ -69,6 +68,7 @@ import org.neo4j.storageengine.api.CommandsToApply;
 import org.neo4j.storageengine.api.ConstraintRule;
 import org.neo4j.storageengine.api.DefaultStorageIndexReference;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
+import org.neo4j.storageengine.api.StandardConstraintRuleAccessor;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.storageengine.api.StorageReader;
@@ -125,7 +125,7 @@ public class TransactionRecordStateTest
     private final long[] bothLabelIds = new long[]{labelIdOne, labelIdSecond};
     private final IntegrityValidator integrityValidator = mock( IntegrityValidator.class );
     private RecordChangeSet recordChangeSet;
-    private final SchemaCache schemaCache = new SchemaCache( new StandardConstraintSemantics() );
+    private final SchemaCache schemaCache = new SchemaCache( new StandardConstraintRuleAccessor() );
     private long nextRuleId = 1;
 
     private static void assertRelationshipGroupDoesNotExist( RecordChangeSet recordChangeSet, NodeRecord node, int type )

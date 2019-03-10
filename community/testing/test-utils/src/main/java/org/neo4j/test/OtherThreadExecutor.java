@@ -340,6 +340,18 @@ public class OtherThreadExecutor<T> implements ThreadFactory, Closeable
             }
             return false;
         }
+
+        public boolean isAt( String classNameContains, String method )
+        {
+            for ( StackTraceElement element : stackTrace )
+            {
+                if ( element.getClassName().contains( classNameContains ) && element.getMethodName().equals( method ) )
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
     }
 
     public Thread.State state()

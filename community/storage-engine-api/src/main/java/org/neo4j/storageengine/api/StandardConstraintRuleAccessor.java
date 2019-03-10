@@ -19,20 +19,37 @@
  */
 package org.neo4j.storageengine.api;
 
-import org.neo4j.internal.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.NodeKeyConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
 
-public interface ConstraintRuleAccessor
+public class StandardConstraintRuleAccessor implements ConstraintRuleAccessor
 {
-    ConstraintDescriptor readConstraint( ConstraintRule rule );
+    public static final ConstraintRuleAccessor STANDARD = new StandardConstraintRuleAccessor();
 
-    ConstraintRule createUniquenessConstraintRule( long ruleId, UniquenessConstraintDescriptor descriptor, long indexId );
+    @Override
+    public ConstraintDescriptor readConstraint( ConstraintRule rule )
+    {
+        return rule.getConstraintDescriptor();
+    }
 
-    ConstraintRule createNodeKeyConstraintRule( long ruleId, NodeKeyConstraintDescriptor descriptor, long indexId )
-            throws CreateConstraintFailureException;
+    @Override
+    public ConstraintRule createUniquenessConstraintRule(
+            long ruleId, UniquenessConstraintDescriptor descriptor, long indexId )
+    {
+        return ConstraintRule.constraintRule( ruleId, descriptor, indexId );
+    }
 
-    ConstraintRule createExistenceConstraint( long ruleId, ConstraintDescriptor descriptor )
-            throws CreateConstraintFailureException;
+    @Override
+    public ConstraintRule createNodeKeyConstraintRule(
+            long ruleId, NodeKeyConstraintDescriptor descriptor, long indexId )
+    {
+        return ConstraintRule.constraintRule( ruleId, descriptor, indexId );
+    }
+
+    @Override
+    public ConstraintRule createExistenceConstraint( long ruleId, ConstraintDescriptor descriptor )
+    {
+        return ConstraintRule.constraintRule( ruleId, descriptor );
+    }
 }

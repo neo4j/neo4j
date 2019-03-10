@@ -23,7 +23,6 @@ import org.junit.Test;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.io.os.OsBeanUtil;
-import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
 
 import static java.lang.Math.abs;
 import static java.lang.Math.max;
@@ -32,7 +31,6 @@ import static java.lang.String.valueOf;
 import static org.hamcrest.Matchers.lessThan;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.configuration.Settings.parseLongWithUnit;
@@ -68,20 +66,6 @@ public class ConfigurationTest
 
         // THEN
         assertEquals( overridden, memory );
-    }
-
-    @Test
-    public void shouldParseDefaultPageCacheMemorySetting()
-    {
-        // GIVEN
-        Configuration config = Configuration.DEFAULT;
-
-        // WHEN
-        long memory = config.pageCacheMemory();
-
-        // THEN
-        long heuristic = ConfiguringPageCacheFactory.defaultHeuristicPageCacheMemory();
-        assertTrue( within( memory, heuristic, MAX_PAGE_CACHE_MEMORY ) );
     }
 
     @Test

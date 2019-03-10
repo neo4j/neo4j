@@ -35,6 +35,7 @@ import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.internal.schema.constraints.NodeKeyConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
 import org.neo4j.storageengine.api.ConstraintRule;
+import org.neo4j.storageengine.api.StandardConstraintRuleAccessor;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
@@ -44,6 +45,8 @@ public class StandardConstraintSemantics extends ConstraintSemantics
 {
     public static final String ERROR_MESSAGE_EXISTS = "Property existence constraint requires Neo4j Enterprise Edition";
     public static final String ERROR_MESSAGE_NODE_KEY = "Node Key constraint requires Neo4j Enterprise Edition";
+
+    protected final StandardConstraintRuleAccessor accessor = new StandardConstraintRuleAccessor();
 
     public StandardConstraintSemantics()
     {
@@ -121,7 +124,7 @@ public class StandardConstraintSemantics extends ConstraintSemantics
     public ConstraintRule createUniquenessConstraintRule(
             long ruleId, UniquenessConstraintDescriptor descriptor, long indexId )
     {
-        return ConstraintRule.constraintRule( ruleId, descriptor, indexId );
+        return accessor.createUniquenessConstraintRule( ruleId, descriptor, indexId );
     }
 
     @Override

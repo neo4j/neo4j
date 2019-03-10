@@ -30,13 +30,14 @@ import java.util.Set;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.internal.schema.ConstraintDescriptor;
+import org.neo4j.internal.schema.ConstraintDescriptor.Type;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorFactory;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
-import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.storageengine.api.ConstraintRule;
 import org.neo4j.storageengine.api.DefaultStorageIndexReference;
+import org.neo4j.storageengine.api.StandardConstraintRuleAccessor;
 import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.test.Race;
 
@@ -495,16 +496,17 @@ public class SchemaCacheTest
         return newSchemaCache( schema3_4, schema5_6_7, schema5_8, node35_8, rel35_8 );
     }
 
-    private static class ConstraintSemantics extends StandardConstraintSemantics
+    private static class ConstraintSemantics extends StandardConstraintRuleAccessor
     {
         @Override
-        protected ConstraintDescriptor readNonStandardConstraint( ConstraintRule rule, String errorMessage )
+        public ConstraintDescriptor readConstraint( ConstraintRule rule )
         {
-            if ( !rule.getConstraintDescriptor().enforcesPropertyExistence() )
+            ConstraintDescriptor descriptor = rule.getConstraintDescriptor();
+            if ( (descriptor.type() == Type.EXISTS || descriptor.type() == Type.UNIQUE_EXISTS) && !descriptor.enforcesPropertyExistence() )
             {
                 throw new IllegalStateException( "Unsupported constraint type: " + rule );
             }
-            return rule.getConstraintDescriptor();
+            return super.readConstraint( rule );
         }
     }
 }

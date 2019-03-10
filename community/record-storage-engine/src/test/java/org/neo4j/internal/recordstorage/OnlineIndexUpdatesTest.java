@@ -33,7 +33,6 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
-import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.store.CountsComputer;
 import org.neo4j.kernel.impl.store.InlineNodeLabels;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -51,6 +50,7 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.DefaultStorageIndexReference;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
+import org.neo4j.storageengine.api.StandardConstraintRuleAccessor;
 import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
@@ -115,7 +115,7 @@ class OnlineIndexUpdatesTest
         relationshipStore = neoStores.getRelationshipStore();
         PropertyStore propertyStore = neoStores.getPropertyStore();
 
-        schemaCache = new SchemaCache( new StandardConstraintSemantics() );
+        schemaCache = new SchemaCache( new StandardConstraintRuleAccessor() );
         propertyPhysicalToLogicalConverter = new PropertyPhysicalToLogicalConverter( neoStores.getPropertyStore() );
         life.start();
         CountsComputer.recomputeCounts( neoStores, counts, pageCache, databaseLayout );
