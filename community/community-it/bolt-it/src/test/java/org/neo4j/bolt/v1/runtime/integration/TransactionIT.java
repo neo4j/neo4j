@@ -260,7 +260,7 @@ public class TransactionIT
         // When
         machine.process( new RunMessage( "RETURN 1", EMPTY_MAP ), nullResponseHandler() );
         machine.process( PullAllMessage.INSTANCE, recorder );
-        machine.process( new RunMessage( "", EMPTY_MAP ), nullResponseHandler() );
+        machine.process( new RunMessage( "RETURN 1", EMPTY_MAP ), nullResponseHandler() );
         machine.process( PullAllMessage.INSTANCE, recorder );
 
         // Then
@@ -304,7 +304,7 @@ public class TransactionIT
         machine.process( PullAllMessage.INSTANCE, recorder );
         machine.process( new RunMessage( "BEGIN", EMPTY_MAP ), nullResponseHandler() );
         machine.process( DiscardAllMessage.INSTANCE, nullResponseHandler() );
-        machine.process( new RunMessage( "", EMPTY_MAP ), nullResponseHandler() );
+        machine.process( new RunMessage( "RETURN 1", EMPTY_MAP ), nullResponseHandler() );
         machine.process( PullAllMessage.INSTANCE, recorder );
         machine.process( new RunMessage( "COMMIT", EMPTY_MAP ), nullResponseHandler() );
         machine.process( DiscardAllMessage.INSTANCE, nullResponseHandler() );

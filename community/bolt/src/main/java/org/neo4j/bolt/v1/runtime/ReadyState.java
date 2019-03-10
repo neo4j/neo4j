@@ -134,31 +134,31 @@ public class ReadyState implements BoltStateMachineState
 
     private BoltStateMachineState processRunMessage( RunMessage message, StatementProcessor statementProcessor, StateMachineContext context ) throws Exception
     {
+        BoltStateMachineState nextState = this;
+        StatementMetadata statementMetadata = StatementMetadata.EMPTY;
         if ( isBegin( message ) )
         {
             Bookmark bookmark = Bookmark.fromParamsOrNull( message.params() );
             statementProcessor.beginTransaction( bookmark );
             txBeginCommitRollbackResponse = BoltResult.EMPTY;
-            return this;
         }
         else if ( isCommit( message ) )
         {
             Bookmark bookmark = statementProcessor.commitTransaction();
             txBeginCommitRollbackResponse = new BookmarkResult( bookmark );
-            return this;
         }
         else if ( isRollback( message ) )
         {
             statementProcessor.rollbackTransaction();
             txBeginCommitRollbackResponse = BoltResult.EMPTY;
-            return this;
         }
         else
         {
-            StatementMetadata statementMetadata = statementProcessor.run( message.statement(), message.params() );
-            context.connectionState().onMetadata( "fields", stringArray( statementMetadata.fieldNames() ) );
-            return streamingState;
+            statementMetadata = statementProcessor.run( message.statement(), message.params() );
+            nextState = streamingState;
         }
+        context.connectionState().onMetadata( "fields", stringArray( statementMetadata.fieldNames() ) );
+        return nextState;
     }
 
     private BoltStateMachineState processStreamingMessageAfterRunBeginCommitRollback( RequestMessage message, StateMachineContext context, boolean pull )
