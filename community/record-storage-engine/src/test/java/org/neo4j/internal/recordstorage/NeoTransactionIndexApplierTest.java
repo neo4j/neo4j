@@ -111,7 +111,7 @@ public class NeoTransactionIndexApplierTest
 
     private StorageIndexReference indexRule( long ruleId, int labelId, int propertyId )
     {
-        return new DefaultStorageIndexReference( forLabel( labelId, propertyId ), false, ruleId );
+        return new DefaultStorageIndexReference( forLabel( labelId, propertyId ), false, ruleId, null );
     }
 
     @Test

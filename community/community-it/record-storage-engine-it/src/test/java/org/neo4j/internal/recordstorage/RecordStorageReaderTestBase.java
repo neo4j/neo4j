@@ -43,9 +43,6 @@ import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.ResourceLocker;
 import org.neo4j.storageengine.api.CommandCreationContext;
 import org.neo4j.storageengine.api.StorageCommand;
-import org.neo4j.storageengine.api.StorageEngine;
-import org.neo4j.storageengine.api.StorageReader;
-import org.neo4j.storageengine.api.StorageRelationshipScanCursor;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.test.rule.PageCacheAndDependenciesRule;
@@ -81,9 +78,9 @@ public abstract class RecordStorageReaderTestBase
     private final AtomicLong nextTxId = new AtomicLong( TransactionIdStore.BASE_TX_ID );
     private TokenHolders tokenHolders;
     protected KernelStatement state;
-    protected StorageReader storageReader;
-    protected StorageEngine storageEngine;
-    private StorageReader commitReader;
+    protected RecordStorageReader storageReader;
+    protected RecordStorageEngine storageEngine;
+    private RecordStorageReader commitReader;
     private CommandCreationContext commitContext;
 
     @SuppressWarnings( "deprecation" )
@@ -145,7 +142,7 @@ public abstract class RecordStorageReaderTestBase
     protected void deleteRelationship( long relationshipId ) throws Exception
     {
         TxState txState = new TxState();
-        try ( StorageRelationshipScanCursor cursor = commitReader.allocateRelationshipScanCursor() )
+        try ( RecordRelationshipScanCursor cursor = commitReader.allocateRelationshipScanCursor() )
         {
             cursor.single( relationshipId );
             assertTrue( cursor.next() );

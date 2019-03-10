@@ -87,11 +87,13 @@ import static org.junit.Assert.assertTrue;
 @RunWith( Parameterized.class )
 public class RecordStorageMigratorIT
 {
+    private static final String MIGRATION_DIRECTORY = "upgrade";
+    private static final Config CONFIG = Config.defaults( GraphDatabaseSettings.pagecache_memory, "8m" );
+
     private final TestDirectory directory = TestDirectory.testDirectory();
     private final PageCacheRule pageCacheRule = new PageCacheRule();
     private final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
     private final MigrationProgressMonitor progressMonitor = MigrationProgressMonitor.SILENT;
-    private static final Config CONFIG = Config.defaults( GraphDatabaseSettings.pagecache_memory, "8m" );
 
     @Rule
     public RuleChain ruleChain = RuleChain.outerRule( directory ).around( fileSystemRule ).around( pageCacheRule );
@@ -143,7 +145,7 @@ public class RecordStorageMigratorIT
         String versionToMigrateFrom = getVersionToMigrateFrom( check );
         MigrationProgressMonitor progressMonitor = MigrationProgressMonitor.SILENT;
         RecordStorageMigrator migrator = new RecordStorageMigrator( fs, pageCache, CONFIG, logService, jobScheduler );
-        DatabaseLayout migrationLayout = directory.databaseLayout( StoreUpgrader.MIGRATION_DIRECTORY );
+        DatabaseLayout migrationLayout = directory.databaseLayout( MIGRATION_DIRECTORY );
         migrator.migrate( databaseLayout, migrationLayout, progressMonitor.startSection( "section" ), versionToMigrateFrom, getVersionToMigrateTo( check ) );
 
         // WHEN simulating resuming the migration
@@ -173,7 +175,7 @@ public class RecordStorageMigratorIT
 
         String versionToMigrateFrom = getVersionToMigrateFrom( check );
         RecordStorageMigrator migrator = new RecordStorageMigrator( fs, pageCache, CONFIG, logService, jobScheduler );
-        DatabaseLayout migrationLayout = directory.databaseLayout( StoreUpgrader.MIGRATION_DIRECTORY );
+        DatabaseLayout migrationLayout = directory.databaseLayout( MIGRATION_DIRECTORY );
 
         // WHEN migrating
         migrator.migrate( databaseLayout, migrationLayout, progressMonitor.startSection( "section" ), versionToMigrateFrom, getVersionToMigrateTo( check ) );
@@ -202,7 +204,7 @@ public class RecordStorageMigratorIT
         String versionToMigrateFrom = getVersionToMigrateFrom( check );
         MigrationProgressMonitor progressMonitor = MigrationProgressMonitor.SILENT;
         RecordStorageMigrator migrator = new RecordStorageMigrator( fs, pageCache, CONFIG, logService, jobScheduler );
-        DatabaseLayout migrationLayout = directory.databaseLayout( StoreUpgrader.MIGRATION_DIRECTORY );
+        DatabaseLayout migrationLayout = directory.databaseLayout( MIGRATION_DIRECTORY );
         migrator.migrate( databaseLayout, migrationLayout, progressMonitor.startSection( "section" ),
                 versionToMigrateFrom, getVersionToMigrateTo( check ) );
 
@@ -232,7 +234,7 @@ public class RecordStorageMigratorIT
         String versionToMigrateFrom = getVersionToMigrateFrom( check );
         MigrationProgressMonitor progressMonitor = MigrationProgressMonitor.SILENT;
         RecordStorageMigrator migrator = new RecordStorageMigrator( fs, pageCache, CONFIG, logService, jobScheduler );
-        DatabaseLayout migrationLayout = directory.databaseLayout( StoreUpgrader.MIGRATION_DIRECTORY );
+        DatabaseLayout migrationLayout = directory.databaseLayout( MIGRATION_DIRECTORY );
 
         // WHEN migrating
         migrator.migrate( databaseLayout, migrationLayout, progressMonitor.startSection( "section" ), versionToMigrateFrom, getVersionToMigrateTo( check ) );
@@ -256,7 +258,7 @@ public class RecordStorageMigratorIT
         String versionToMigrateFrom = getVersionToMigrateFrom( check );
         MigrationProgressMonitor progressMonitor = MigrationProgressMonitor.SILENT;
         RecordStorageMigrator migrator = new RecordStorageMigrator( fs, pageCache, CONFIG, logService, jobScheduler );
-        DatabaseLayout migrationLayout = directory.databaseLayout( StoreUpgrader.MIGRATION_DIRECTORY );
+        DatabaseLayout migrationLayout = directory.databaseLayout( MIGRATION_DIRECTORY );
 
         // when
         migrator.migrate( databaseLayout, migrationLayout, progressMonitor.startSection( "section" ), versionToMigrateFrom, getVersionToMigrateTo( check ) );
@@ -329,7 +331,7 @@ public class RecordStorageMigratorIT
         String versionToMigrateFrom = getVersionToMigrateFrom( check );
         MigrationProgressMonitor progressMonitor = MigrationProgressMonitor.SILENT;
         RecordStorageMigrator migrator = new RecordStorageMigrator( fs, pageCache, CONFIG, logService, jobScheduler );
-        DatabaseLayout migrationLayout = directory.databaseLayout( StoreUpgrader.MIGRATION_DIRECTORY );
+        DatabaseLayout migrationLayout = directory.databaseLayout( MIGRATION_DIRECTORY );
 
         // When we migrate it to the new store format.
         String versionToMigrateTo = getVersionToMigrateTo( check );

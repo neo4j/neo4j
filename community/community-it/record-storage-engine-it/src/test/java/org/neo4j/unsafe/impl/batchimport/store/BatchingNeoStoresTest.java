@@ -29,6 +29,7 @@ import java.util.stream.Stream;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.function.Predicates;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.internal.id.DefaultIdController;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
@@ -39,7 +40,6 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.api.txstate.TransactionState;
-import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.impl.api.DatabaseSchemaState;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.state.TxState;
@@ -104,6 +104,8 @@ import static org.neo4j.unsafe.impl.batchimport.store.BatchingNeoStores.DOUBLE_R
 @PageCacheExtension
 class BatchingNeoStoresTest
 {
+    private static final RelationshipType RELTYPE = RelationshipType.withName( "TEST" );
+
     @Inject
     private TestDirectory testDirectory;
     @Inject
@@ -362,7 +364,7 @@ class BatchingNeoStoresTest
             propertyKeyTokenCreator.initialize( neoStores.getPropertyKeyTokenStore(), txState );
             labelTokenCreator.initialize( neoStores.getLabelTokenStore(), txState );
             relationshipTypeTokenCreator.initialize( neoStores.getRelationshipTypeTokenStore(), txState );
-            int relTypeId = tokenHolders.relationshipTypeTokens().getOrCreateId( MyRelTypes.TEST.name() );
+            int relTypeId = tokenHolders.relationshipTypeTokens().getOrCreateId( RELTYPE.name() );
             apply( txState, commandCreationContext, storageEngine );
 
             // Finally, we're initialized and ready to create two nodes and a relationship
