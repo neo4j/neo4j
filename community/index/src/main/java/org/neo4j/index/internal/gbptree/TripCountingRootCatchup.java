@@ -25,9 +25,9 @@ import org.neo4j.util.FeatureToggles;
 
 /**
  * This class counts the number of round trips we take from the same node back to
- * root in a row and throw {@link TreeInconsistencyException} if it becomes to many.
+ * root in a row and throw {@link TreeInconsistencyException} if it becomes too many.
  * <p>
- * Starting over from root happens when we've ended up on an unexpected node, such as
+ * Starting over from root happens when a seek cursor ended up on an unexpected node, such as
  * <ul>
  *  <li>Node is internal when we actually expect it to be a leaf.</li>
  *  <li>Generation of node is higher than the generation of the pointer that we followed to get here.</li>
