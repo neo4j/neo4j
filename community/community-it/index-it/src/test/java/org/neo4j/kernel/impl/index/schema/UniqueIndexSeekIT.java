@@ -24,6 +24,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.common.DependencyResolver;
+import org.neo4j.configuration.Config;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -49,6 +51,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.neo4j.configuration.GraphDatabaseSettings.default_database;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_schema_provider;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.kernel.api.impl.schema.NativeLuceneFusionIndexProviderFactory20.DESCRIPTOR;
@@ -64,6 +67,8 @@ class UniqueIndexSeekIT
     {
         TrackingIndexExtensionFactory indexExtensionFactory = new TrackingIndexExtensionFactory();
         GraphDatabaseAPI database = createDatabase( indexExtensionFactory );
+        DependencyResolver dependencyResolver = database.getDependencyResolver();
+        Config config = dependencyResolver.resolveDependency( Config.class );
         try
         {
 
@@ -73,7 +78,7 @@ class UniqueIndexSeekIT
 
             generateRandomData( database, label, nameProperty );
 
-            assertNotNull( indexExtensionFactory.getIndexProvider() );
+            assertNotNull( indexExtensionFactory.getIndexProvider( config.get( default_database ) ) );
             assertThat( TrackingReadersIndexAccessor.numberOfClosedReaders(), greaterThan( 0L ) );
             assertThat( TrackingReadersIndexAccessor.numberOfOpenReaders(), greaterThan( 0L ) );
             assertEquals( TrackingReadersIndexAccessor.numberOfClosedReaders(), TrackingReadersIndexAccessor.numberOfOpenReaders() );
