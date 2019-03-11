@@ -29,7 +29,7 @@ class FailedExecutionResult(fieldNames: Array[String],
   extends EmptyExecutionResult(fieldNames, InternalPlanDescription.error("Query has failed, no plan available"), queryType, Set.empty) {
 
   override def request(numberOfRecords: Long): Unit = {
-    subscriber.onError(new IllegalStateException("query has failed not possible to request more data"))
+    subscriber.onError(new IllegalStateException("The query has already failed, it is not possible to request more data"))
   }
 
   override def cancel(): Unit = {
