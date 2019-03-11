@@ -19,11 +19,9 @@
  */
 package org.neo4j.internal.collector
 
-import java.util.concurrent.TimeUnit
-
 import org.neo4j.cypher._
 
-class DataCollectorGraphCountsAcceptanceTest extends ExecutionEngineFunSuite with GraphIcing {
+class DataCollectorGraphCountsAcceptanceTest extends ExecutionEngineFunSuite with GraphIcing with SampleGraphs {
 
   test("retrieve empty") {
     // when
@@ -120,55 +118,6 @@ class DataCollectorGraphCountsAcceptanceTest extends ExecutionEngineFunSuite wit
                                                "p2",
                                                "p3",
                                                "p4"))
-  }
-
-  private def createSteelfaceGraph(): Unit = {
-    val users =
-      graph.inTx {
-        val users = (0 until 1000).map(i => createLabeledNode(Map("email" -> s"user$i@mail.com"), "User"))
-        users.take(500).foreach(user => user.setProperty("lastName", "Steelface"+user.getId))
-        users.take(300).foreach(user => user.setProperty("firstName", "Bob"+user.getId))
-        users
-      }
-
-    val cars =
-      graph.inTx {
-        (0 until 120).map(i => createLabeledNode(Map("number" -> i), "Car"))
-      }
-
-    val rooms =
-      graph.inTx {
-        (0 until 150).map(i => createLabeledNode(Map("hotel" -> "Clarion", "number" -> i % 50), "Room"))
-      }
-
-    graph.inTx(
-      for (source <- users.take(100))
-        relate(source, cars.head, "OWNS")
-    )
-
-    graph.inTx(
-      for (source <- users.take(70))
-        relate(source, rooms.head, "OWNS")
-    )
-
-    graph.inTx(
-      for (source <- users.take(150))
-        relate(source, rooms.head, "STAYS_IN")
-    )
-
-    graph.createConstraint("User", "email")
-    graph.createIndex("User", "lastName")
-    graph.createIndex("User", "firstName", "lastName")
-    graph.createIndex("Room", "hotel", "number")
-    graph.createIndex("Car", "number")
-
-    graph.inTx(
-      graph.schema().awaitIndexesOnline(5, TimeUnit.MINUTES)
-    )
-
-    graph.inTx { // these are added after index uniqueness estimation
-      (0 until 8).map(i => createLabeledNode(Map("number" -> i), "Car"))
-    }
   }
 
   case class TokenNames(User: String,

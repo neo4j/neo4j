@@ -34,9 +34,6 @@ Apache Software License, Version 2.0
   Gherkin Repackaged Dependencies
   Joda convert
   Joda-Time
-  json4s-ast
-  json4s-core
-  json4s-native
   MongoDB Java Driver
   nscala-time
   openCypher TCK API
@@ -52,7 +49,6 @@ BSD - Scala License
 
 BSD License
   ANTLR 4 Runtime
-  ParaNamer Core
   Scala Compiler
 
 Eclipse Distribution License - v 1.0

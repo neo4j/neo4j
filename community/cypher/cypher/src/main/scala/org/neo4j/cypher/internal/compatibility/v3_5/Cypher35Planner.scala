@@ -34,13 +34,6 @@ import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.idp._
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.{CachedMetricsFactory, SimpleMetricsFactory}
 import org.neo4j.cypher.internal.planner.v3_5.spi.{CostBasedPlannerName, DPPlannerName, IDPPlannerName, PlanContext}
 import org.neo4j.cypher.internal.runtime.interpreted._
-import org.neo4j.helpers.collection.Pair
-import org.neo4j.kernel.impl.api.SchemaStateKey
-import org.neo4j.kernel.impl.query.TransactionalContext
-import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
-import org.neo4j.logging.Log
-import org.neo4j.values.AnyValue
-import org.neo4j.values.virtual.MapValue
 import org.neo4j.cypher.internal.v3_5.ast.Statement
 import org.neo4j.cypher.internal.v3_5.expressions.Parameter
 import org.neo4j.cypher.internal.v3_5.frontend.PlannerName
@@ -48,6 +41,21 @@ import org.neo4j.cypher.internal.v3_5.frontend.phases._
 import org.neo4j.cypher.internal.v3_5.rewriting.RewriterStepSequencer
 import org.neo4j.cypher.internal.v3_5.util.InputPosition
 import org.neo4j.cypher.internal.v3_5.util.attribution.SequentialIdGen
+import org.neo4j.helpers.collection.Pair
+import org.neo4j.kernel.impl.api.SchemaStateKey
+import org.neo4j.kernel.impl.query.TransactionalContext
+import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
+import org.neo4j.logging.Log
+import org.neo4j.values.AnyValue
+import org.neo4j.values.virtual.MapValue
+
+object Cypher35Planner {
+  /**
+    * This back-door is intended for quick handling of bugs and support cases
+    * where we need to inject some specific indexes and statistics.
+    */
+  var customPlanContextCreator: Option[(TransactionalContextWrapper, InternalNotificationLogger) => PlanContext] = None
+}
 
 case class Cypher35Planner(config: CypherPlannerConfiguration,
                            clock: Clock,
@@ -120,8 +128,11 @@ case class Cypher35Planner(config: CypherPlannerConfiguration,
 
       val transactionalContextWrapper = TransactionalContextWrapper(transactionalContext)
       // Context used for db communication during planning
-      val planContext = new ExceptionTranslatingPlanContext(TransactionBoundPlanContext(
-        transactionalContextWrapper, notificationLogger))
+      val createPlanContext = Cypher35Planner.customPlanContextCreator.getOrElse(TransactionBoundPlanContext.apply _)
+      val planContext =
+        new ExceptionTranslatingPlanContext(
+          createPlanContext(transactionalContextWrapper, notificationLogger)
+        )
 
       // Context used to create logical plans
       val logicalPlanIdGen = new SequentialIdGen()
