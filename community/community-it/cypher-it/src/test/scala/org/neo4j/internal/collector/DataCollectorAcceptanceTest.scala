@@ -53,4 +53,9 @@ class DataCollectorAcceptanceTest extends ExecutionEngineFunSuite {
       )
     )
   }
+
+  test("should fail on empty graphToken") {
+    intercept[CypherExecutionException](execute("CALL db.stats.retrieveAllAnonymized(null)"))
+    intercept[CypherExecutionException](execute("CALL db.stats.retrieveAllAnonymized('')"))
+  }
 }

@@ -23,7 +23,6 @@ import java.util.Arrays;
 
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 
-@SuppressWarnings( "WeakerAccess" )
 class Sections
 {
     private Sections()
@@ -32,6 +31,7 @@ class Sections
 
     static final String GRAPH_COUNTS = "GRAPH COUNTS";
     static final String TOKENS = "TOKENS";
+    static final String META = "META";
     static final String QUERIES = "QUERIES";
 
     private static final String[] SECTIONS = {GRAPH_COUNTS, TOKENS, QUERIES};
