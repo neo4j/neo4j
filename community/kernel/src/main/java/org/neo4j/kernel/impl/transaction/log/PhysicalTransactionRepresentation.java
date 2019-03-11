@@ -161,10 +161,7 @@ public class PhysicalTransactionRepresentation implements TransactionRepresentat
         builder.append( "timeCommitted:" ).append( timeCommitted ).append( ',' );
         builder.append( "lockSession:" ).append( lockSessionIdentifier ).append( ',' );
         builder.append( "additionalHeader:" ).append( Arrays.toString( additionalHeader ) );
-        for ( StorageCommand command : commands )
-        {
-            builder.append( '\n' ).append( command );
-        }
+        builder.append( "commands.length:" ).append( commands.size() );
         return builder.toString();
     }
 
