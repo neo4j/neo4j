@@ -22,16 +22,16 @@ package org.neo4j.cypher.internal.result
 import java.io.PrintWriter
 import java.util
 
-import org.neo4j.cypher.CypherException
 import org.neo4j.cypher.exceptionHandler.RunSafely
-import org.neo4j.cypher.internal.compatibility.ExceptionHandler
 import org.neo4j.cypher.internal.plandescription.InternalPlanDescription
 import org.neo4j.cypher.internal.runtime._
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.result.QueryResult
+import org.neo4j.cypher.{CypherException, CypherExecutionException}
 import org.neo4j.graphdb.Result.ResultVisitor
 import org.neo4j.graphdb.{Notification, ResourceIterator, Result}
 import org.neo4j.helpers.collection.Iterators
+import org.neo4j.kernel.api.exceptions.Status
 import org.neo4j.kernel.api.query.ExecutingQuery
 import org.neo4j.kernel.impl.query.QueryExecutionMonitor
 
@@ -369,17 +369,15 @@ class ClosingExecutionResultTest extends CypherFunSuite {
   case object NEXT_EXPLODE extends IteratorMode
 
   private val testRunSafely = new RunSafely {
-    override def apply[T](body: => T)(implicit f: ExceptionHandler, g: CypherException => T = (e: CypherException) => throw e): T = {
+    override def apply[T](body: => T)(implicit f: CypherException => T): T = {
       try {
         body
       } catch {
         case t: TestInnerException =>
-          f(t)
-          throw TestOuterException(t.msg)
+          f(TestOuterException(t.msg))
 
         case t: Throwable =>
-          f(t)
-          throw t
+          f(new CypherExecutionException(t.getMessage, t))
       }
     }
   }
@@ -422,9 +420,10 @@ class ClosingExecutionResultTest extends CypherFunSuite {
   }
 }
 
-trait TestException extends Throwable {
-  def msg:String
+abstract class TestException(msg: String) extends CypherException(msg, null) {
+  override def status: Status = Status.General.UnknownError
   override def toString: String = s"${getClass.getSimpleName}($msg)"
 }
-case class TestInnerException(msg: String) extends TestException
-case class TestOuterException(msg: String) extends TestException
+
+case class TestInnerException(msg: String) extends TestException(msg)
+case class TestOuterException(msg: String) extends TestException(msg)

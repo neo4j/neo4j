@@ -23,6 +23,7 @@ import java.io.PrintWriter
 import java.util
 import java.util.NoSuchElementException
 
+import org.neo4j.cypher.CypherException
 import org.neo4j.cypher.exceptionHandler.RunSafely
 import org.neo4j.cypher.internal.plandescription.InternalPlanDescription
 import org.neo4j.cypher.internal.runtime._
@@ -165,26 +166,37 @@ class ClosingExecutionResult private(val query: ExecutingQuery,
 
   // HELPERS
 
-  private def safely[T](body: => T): T = runSafely(body)(closeOnError)
+  private def safely[T](body: => T): T = runSafely(body)(closeAndRethrowOnError)
 
   private def safelyAndClose[T](body: => T): T =
     runSafely({
       val x = body
       close(Success)
       x
-    })(closeOnError)
+    })(closeAndRethrowOnError)
 
   private def closeIfEmpty(iterator: java.util.Iterator[_]): Unit =
     if (!iterator.hasNext) {
       close(Success)
     }
 
-  private def closeOnError(t: Throwable): Unit = {
+  private def closeAndRethrowOnError[T](t: CypherException): T = {
     try {
       close(Error(t))
     } catch {
-      case thrownDuringClose: Throwable =>
+      case _: Throwable =>
         // ignore
+    }
+    throw t
+  }
+
+  private def closeAndCallOnError(t: CypherException): Unit = {
+    try {
+      close(Error(t))
+      subscriber.onError(t)
+    } catch {
+      case _: Throwable =>
+      // ignore
     }
   }
 
@@ -205,13 +217,13 @@ class ClosingExecutionResult private(val query: ExecutingQuery,
   override def isClosed: Boolean = inner.isClosed
 
   override def request(numberOfRows: Long): Unit =
-    runSafely(inner.request(numberOfRows))(closeOnError, subscriber.onError(_))
+    runSafely(inner.request(numberOfRows))(closeAndCallOnError)
 
-  override def cancel(): Unit = runSafely(inner.cancel())(closeOnError, subscriber.onError(_))
+  override def cancel(): Unit = runSafely(inner.cancel())(closeAndCallOnError)
 
   override def await(): Boolean = {
-    val hasMore = runSafely(inner.await())(closeOnError, e => {
-      subscriber.onError(e)
+    val hasMore = runSafely(inner.await())(e => {
+      closeAndCallOnError(e)
       false
     })
     if (!hasMore) close()

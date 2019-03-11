@@ -200,7 +200,10 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
         val internalExecutionResult =  innerExecute(transactionalContext, preParsedQuery, taskCloser, queryContext, params,
                                              prePopulateResults, NOT_A_SUBSCRIBER)
         new ExecutionResult(internalExecutionResult)
-      } (_ => taskCloser.close(false))
+      } (e => {
+        taskCloser.close(false)
+        throw e
+      })
     }
 
 
@@ -217,7 +220,8 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
       runSafely {
         innerExecute(transactionalContext, preParsedQuery, taskCloser, queryContext, params, prePopulateResults,
                      subscriber)
-      }(_ => taskCloser.close(false), e => {
+      }( e => {
+        taskCloser.close(false)
         subscriber.onError(e)
         new FailedExecutionResult(columnNames(logicalPlan), queryType, subscriber)
       })

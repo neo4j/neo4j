@@ -86,36 +86,31 @@ object exceptionHandler extends MapToPublicExceptions[CypherException] {
   override def failedIndexException(indexName: String, failureMessage: String, cause: Throwable): CypherException = new FailedIndexException(indexName, failureMessage, cause)
 
   object runSafely extends RunSafely {
-    override def apply[T](body: => T)(implicit f: ExceptionHandler = ExceptionHandler.default,
-                                      g: CypherException => T = e => throw e): T = {
+    override def apply[T](body: => T)(implicit onError: CypherException => T = e => throw e): T = {
       try {
         body
       }
       catch {
         case e: InternalCypherException =>
-          f(e)
-          g(e.mapToPublic(exceptionHandler))
+          onError(e.mapToPublic(exceptionHandler))
 
         case e: ValuesException =>
-          f(e)
-          g(mapToCypher(e))
+          onError(mapToCypher(e))
 
         // ValueMath do not wrap java.lang.ArithmeticExceptions, so we map it to public here
         // (This will also catch if we happened to produce arithmetic exceptions internally (as a runtime bug and not as the result of the query),
         //  which is not optimal but hopefully rare)
         case e: java.lang.ArithmeticException =>
-          f(e)
-          g(exceptionHandler.arithmeticException(e.getMessage, e))
+          onError(exceptionHandler.arithmeticException(e.getMessage, e))
 
         case e: Throwable =>
-          f(e)
-          throw e
+          onError(new CypherExecutionException(e.getMessage, e))
       }
     }
   }
 
   trait RunSafely {
-    def apply[T](body: => T)(implicit f: ExceptionHandler = ExceptionHandler.default, g: CypherException => T = (e:CypherException) => throw e): T
+    def apply[T](body: => T)(implicit onError: CypherException => T = (e:CypherException) => throw e): T
   }
 
   def mapToCypher(exception: ValuesException): CypherException = {
