@@ -69,12 +69,6 @@
             <artifactId>neo4j-configuration</artifactId>
             <version>${project.version}</version>
         </dependency>
-        <!--TODO this dependency is a temporary hack and must be removed-->
-        <dependency>
-            <groupId>org.neo4j</groupId>
-            <artifactId>neo4j-kernel</artifactId>
-            <version>${project.version}</version>
-        </dependency>
         <dependency>
             <groupId>org.neo4j</groupId>
             <artifactId>neo4j-id-generator</artifactId>
