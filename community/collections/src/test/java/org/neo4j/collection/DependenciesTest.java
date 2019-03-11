@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.util;
+package org.neo4j.collection;
 
 import org.junit.jupiter.api.Test;
 
@@ -26,7 +26,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-import org.neo4j.common.Dependencies;
 import org.neo4j.exceptions.UnsatisfiedDependencyException;
 
 import static java.util.Collections.singletonList;

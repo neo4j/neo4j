@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.transaction.state;
 
 import org.junit.jupiter.api.Test;
 
-import org.neo4j.common.Dependencies;
+import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.kernel.api.index.IndexProvider;

@@ -25,7 +25,7 @@ import org.junit.jupiter.api.Test;
 import java.io.File;
 import java.io.IOException;
 
-import org.neo4j.common.Dependencies;
+import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
 import org.neo4j.graphdb.config.InvalidSettingException;
 import org.neo4j.io.ByteUnit;

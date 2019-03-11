@@ -23,7 +23,7 @@ import java.lang.reflect.ParameterizedType;
 import java.util.List;
 import java.util.Objects;
 
-import org.neo4j.common.Dependencies;
+import org.neo4j.collection.Dependencies;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.exceptions.UnsatisfiedDependencyException;
 import org.neo4j.kernel.extension.context.ExtensionContext;

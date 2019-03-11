@@ -31,7 +31,7 @@ import java.util.Objects;
 import java.util.function.LongFunction;
 import java.util.function.Predicate;
 
-import org.neo4j.common.Dependencies;
+import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.counts.CountsAccessor;

@@ -21,7 +21,7 @@ package org.neo4j.kernel.diagnostics.providers;
 
 import java.util.List;
 
-import org.neo4j.common.Dependencies;
+import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseManager;

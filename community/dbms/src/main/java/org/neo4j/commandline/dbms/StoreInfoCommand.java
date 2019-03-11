@@ -22,12 +22,12 @@ package org.neo4j.commandline.dbms;
 import java.nio.file.Path;
 import java.util.function.Consumer;
 
+import org.neo4j.collection.Dependencies;
 import org.neo4j.commandline.admin.AdminCommand;
 import org.neo4j.commandline.admin.CommandFailed;
 import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.commandline.arguments.Arguments;
 import org.neo4j.commandline.arguments.common.MandatoryCanonicalPath;
-import org.neo4j.common.Dependencies;
 import org.neo4j.configuration.Config;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;

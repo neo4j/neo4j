@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.query;
 
 import org.junit.jupiter.api.Test;
 
-import org.neo4j.common.Dependencies;
+import org.neo4j.collection.Dependencies;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 

@@ -29,12 +29,12 @@ import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.messaging.BoltIOException;
 import org.neo4j.bolt.v1.runtime.StatementProcessorReleaseManager;
 import org.neo4j.bolt.v4.runtime.TransactionStateMachineV4SPI;
+import org.neo4j.collection.Dependencies;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.impl.util.Dependencies;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;

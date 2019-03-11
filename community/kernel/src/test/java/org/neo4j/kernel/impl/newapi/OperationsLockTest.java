@@ -29,7 +29,7 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.Optional;
 
-import org.neo4j.common.Dependencies;
+import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.helpers.collection.Iterators;

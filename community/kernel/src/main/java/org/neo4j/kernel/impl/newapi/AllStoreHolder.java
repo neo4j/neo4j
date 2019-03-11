@@ -26,8 +26,8 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
+import org.neo4j.collection.Dependencies;
 import org.neo4j.collection.RawIterator;
-import org.neo4j.common.Dependencies;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.internal.index.label.LabelScanReader;

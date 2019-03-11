@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.storemigration;
 
 import java.io.IOException;
 
-import org.neo4j.common.Dependencies;
+import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;

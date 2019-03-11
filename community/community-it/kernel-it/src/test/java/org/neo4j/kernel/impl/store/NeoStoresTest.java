@@ -34,7 +34,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.LongSupplier;
 
-import org.neo4j.common.Dependencies;
+import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.GraphDatabaseService;

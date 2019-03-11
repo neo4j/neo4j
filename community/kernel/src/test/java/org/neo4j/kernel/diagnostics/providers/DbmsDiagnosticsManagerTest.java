@@ -25,7 +25,7 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.util.Collections;
 
-import org.neo4j.common.Dependencies;
+import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseManager;

@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.extension;
 
-import org.neo4j.common.Dependencies;
+import org.neo4j.collection.Dependencies;
 import org.neo4j.kernel.extension.context.GlobalExtensionContext;
 
 public class GlobalExtensions extends AbstractExtensions

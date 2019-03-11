@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.common;
+package org.neo4j.collection;
 
 import org.eclipse.collections.api.RichIterable;
 import org.eclipse.collections.api.multimap.set.MutableSetMultimap;
@@ -29,6 +29,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.Supplier;
 
+import org.neo4j.common.DependencyResolver;
+import org.neo4j.common.DependencySatisfier;
 import org.neo4j.exceptions.UnsatisfiedDependencyException;
 
 import static org.apache.commons.lang3.ClassUtils.getAllInterfaces;

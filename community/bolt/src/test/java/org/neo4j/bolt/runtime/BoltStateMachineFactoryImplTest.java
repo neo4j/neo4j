@@ -33,7 +33,7 @@ import org.neo4j.bolt.v1.BoltProtocolV1;
 import org.neo4j.bolt.v1.runtime.BoltStateMachineV1;
 import org.neo4j.bolt.v2.BoltProtocolV2;
 import org.neo4j.bolt.v3.BoltStateMachineV3;
-import org.neo4j.common.Dependencies;
+import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.database.DatabaseContext;

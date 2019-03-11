@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.javacompat;
 
 import org.neo4j.annotations.service.ServiceProvider;
-import org.neo4j.common.Dependencies;
+import org.neo4j.collection.Dependencies;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;

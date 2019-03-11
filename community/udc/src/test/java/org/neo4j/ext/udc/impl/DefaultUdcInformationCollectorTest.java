@@ -30,7 +30,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.LongSupplier;
 
-import org.neo4j.common.Dependencies;
+import org.neo4j.collection.Dependencies;
 import org.neo4j.common.Edition;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;

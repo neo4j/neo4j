@@ -31,8 +31,8 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
+import org.neo4j.collection.Dependencies;
 import org.neo4j.collection.pool.Pool;
-import org.neo4j.common.Dependencies;
 import org.neo4j.configuration.Config;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.NotInTransactionException;

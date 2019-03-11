@@ -21,8 +21,8 @@ package org.neo4j.kernel.api;
 
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.neo4j.collection.Dependencies;
 import org.neo4j.collection.pool.Pool;
-import org.neo4j.common.Dependencies;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.internal.index.label.LabelScanStore;

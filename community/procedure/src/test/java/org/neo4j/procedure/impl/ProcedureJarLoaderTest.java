@@ -35,7 +35,7 @@ import java.util.Random;
 import java.util.stream.Stream;
 import java.util.zip.ZipException;
 
-import org.neo4j.common.Dependencies;
+import org.neo4j.collection.Dependencies;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;

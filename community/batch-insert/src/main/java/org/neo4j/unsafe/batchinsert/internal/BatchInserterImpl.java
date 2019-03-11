@@ -35,8 +35,8 @@ import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.function.LongFunction;
 
+import org.neo4j.collection.Dependencies;
 import org.neo4j.collection.PrimitiveLongCollections;
-import org.neo4j.common.Dependencies;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.exceptions.KernelException;

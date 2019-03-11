@@ -21,7 +21,7 @@ package org.neo4j.test.rule;
 
 import java.util.function.Function;
 
-import org.neo4j.common.Dependencies;
+import org.neo4j.collection.Dependencies;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;

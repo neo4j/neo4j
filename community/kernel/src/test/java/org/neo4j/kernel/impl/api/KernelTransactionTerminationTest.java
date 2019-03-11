@@ -29,8 +29,8 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
+import org.neo4j.collection.Dependencies;
 import org.neo4j.collection.pool.Pool;
-import org.neo4j.common.Dependencies;
 import org.neo4j.configuration.Config;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.internal.index.label.LabelScanStore;

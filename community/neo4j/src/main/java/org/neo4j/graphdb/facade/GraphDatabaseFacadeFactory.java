@@ -24,7 +24,7 @@ import java.util.Map;
 import java.util.function.Function;
 
 import org.neo4j.bolt.BoltServer;
-import org.neo4j.common.Dependencies;
+import org.neo4j.collection.Dependencies;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
