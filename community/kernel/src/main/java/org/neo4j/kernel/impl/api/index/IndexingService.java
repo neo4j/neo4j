@@ -441,13 +441,14 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
             case ONLINE:
                 return;
             case FAILED:
+                String message =
+                        String.format( "Index %s entered %s state while recovery waited for it to be fully populated.", proxy.getDescriptor(), FAILED );
                 IndexPopulationFailure populationFailure = proxy.getPopulationFailure();
                 String causeOfFailure = populationFailure.asString();
                 // Log as INFO because at this point we don't know if the constraint index was ever bound to a constraint or not.
                 // If it was really bound to a constraint, then we actually ought to log as WARN or ERROR, I suppose.
                 // But by far the most likely scenario is that the constraint itself was never created.
-                internalLog.info( IndexPopulationFailure.appendCauseOfFailure(
-                        "Index entered FAILED state while recovery waited for it to be fully populated.", causeOfFailure ) );
+                internalLog.info( IndexPopulationFailure.appendCauseOfFailure( message, causeOfFailure ) );
                 return;
             case POPULATING:
                 // Sleep a short while and look at state again the next loop iteration

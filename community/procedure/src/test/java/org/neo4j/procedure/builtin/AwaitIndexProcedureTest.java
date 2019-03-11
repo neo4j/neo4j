@@ -140,6 +140,7 @@ class AwaitIndexProcedureTest
         ProcedureException exception = assertThrows( ProcedureException.class, () -> procedure.awaitIndexByPattern( ":Person(name)", TIMEOUT, TIME_UNIT ) );
         assertThat( exception.status(), is( Status.Schema.IndexCreationFailed ) );
         assertThat( exception.getMessage(), containsString( "Kilroy was here" ) );
+        assertThat( exception.getMessage(), containsString( ":Person(name)" ) );
     }
 
     @Test
