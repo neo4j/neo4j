@@ -33,13 +33,8 @@ object PlanFingerprint {
   def apply(creationTimeMillis: Long, txId: Long, snapshot: GraphStatisticsSnapshot): PlanFingerprint =
     PlanFingerprint(creationTimeMillis, creationTimeMillis, txId, snapshot)
 
-  def take(clock: Clock, txIdProvider: () => Long, graphStatistics: GraphStatistics): Option[PlanFingerprint] =
-    graphStatistics match {
-      case igs: InstrumentedGraphStatistics =>
-        Some(PlanFingerprint(clock.millis(), txIdProvider(), igs.snapshot.freeze))
-      case _ =>
-        None
-    }
+  def take(clock: Clock, txIdProvider: () => Long, graphStatistics: InstrumentedGraphStatistics): PlanFingerprint =
+    PlanFingerprint(clock.millis(), txIdProvider(), graphStatistics.snapshot.freeze)
 }
 
-class PlanFingerprintReference(var fingerprint: Option[PlanFingerprint])
+class PlanFingerprintReference(var fingerprint: PlanFingerprint)

@@ -64,7 +64,7 @@ trait PlanContext extends TokenContext with ProcedureSignatureResolver {
 
   def txIdProvider: () => Long
 
-  def statistics: GraphStatistics
+  def statistics: InstrumentedGraphStatistics
 
   def notificationLogger(): InternalNotificationLogger
 }

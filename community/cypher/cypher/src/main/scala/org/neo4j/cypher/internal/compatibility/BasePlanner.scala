@@ -84,9 +84,9 @@ abstract class BasePlanner[STATEMENT <: AnyRef, PARSED_STATE <: AnyRef](
       .isDefinedAt(logicalPlanState.maybeLogicalPlan.get))
       FineToReuse
     else {
-      val fp = PlanFingerprint.take(clock, planContext.txIdProvider, planContext.statistics)
-      val fingerprint = new PlanFingerprintReference(fp)
-      MaybeReusable(fingerprint)
+      val fingerprint = PlanFingerprint.take(clock, planContext.txIdProvider, planContext.statistics)
+      val fingerprintReference = new PlanFingerprintReference(fingerprint)
+      MaybeReusable(fingerprintReference)
     }
   }
 }
