@@ -64,7 +64,7 @@ final class TokensSection
         }
     }
 
-    static void putTokenCounts( Map<String,Object> metaData, Kernel kernel )
+    static void putTokenCounts( Map<String,Object> metaData, Kernel kernel ) throws TransactionFailureException
     {
         try ( Transaction tx = kernel.beginTransaction( Transaction.Type.explicit, LoginContext.AUTH_DISABLED ) )
         {
@@ -73,10 +73,6 @@ final class TokensSection
             metaData.put( "relationshipTypeCount", tokens.relationshipTypeCount() );
             metaData.put( "propertyKeyCount", tokens.propertyKeyCount() );
             tx.success();
-        }
-        catch ( TransactionFailureException e )
-        {
-            throw new UnsupportedOperationException( "How to handle errors?" );
         }
     }
 }

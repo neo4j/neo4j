@@ -62,6 +62,9 @@ public class DataCollectorProcedures
         case Sections.TOKENS:
             return TokensSection.retrieve( dataCollector.getKernel() );
 
+        case Sections.META:
+            return MetaSection.retrieve( null, dataCollector.getKernel() );
+
         case Sections.QUERIES:
             return QueriesSection.retrieve( dataCollector.getQueryCollector().doGetData(),
                                             new PlainText( dataCollector.getValueMapper() ),
@@ -79,13 +82,12 @@ public class DataCollectorProcedures
                                                          @Name( value = "config", defaultValue = "" ) Map<String, Object> config )
             throws IndexNotFoundKernelException, TransactionFailureException, InvalidArgumentsException
     {
-        Map<String, Object> metaData = new HashMap<>();
-        metaData.put( "graphToken", graphToken );
-        metaData.put( "retrieveTime", ZonedDateTime.now() );
-        TokensSection.putTokenCounts( metaData, dataCollector.getKernel() );
-        Stream<RetrieveResult> meta = Stream.of( new RetrieveResult( "META", metaData ) );
+        if ( graphToken == null || graphToken.equals( "" ) )
+        {
+            throw new InvalidArgumentsException( "Graph token must be a non-empty string" );
+        }
 
-        return Stream.of( meta,
+        return Stream.of( MetaSection.retrieve( graphToken, dataCollector.getKernel() ),
                           GraphCountsSection.retrieve( dataCollector.getKernel(), Anonymizer.IDS ),
                           QueriesSection.retrieve( dataCollector.getQueryCollector().doGetData(),
                                                    new IdAnonymizer( transaction.tokenRead() ),

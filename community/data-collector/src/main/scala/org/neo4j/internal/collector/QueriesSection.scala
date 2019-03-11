@@ -40,7 +40,8 @@ object QueriesSection {
   sealed trait InvocationData
   case class SingleInvocation(queryParameters: MapValue,
                               elapsedTimeMicros: Long,
-                              compilationTimeMicros: Long) extends InvocationData
+                              compilationTimeMicros: Long,
+                              startTimestampMillis: Long) extends InvocationData
 
   case class ProfileData(dbHits: util.ArrayList[Long], rows: util.ArrayList[Long], params: util.Map[String, AnyRef])
 
@@ -62,7 +63,8 @@ object QueriesSection {
         val snapshotList = queries.getOrElseUpdate(QueryKey(queryString, snapshot.queryPlan()), new QueryData())
         snapshotList.invocations += SingleInvocation(snapshot.queryParameters(),
                                                      snapshot.elapsedTimeMicros(),
-                                                     snapshot.compilationTimeMicros())
+                                                     snapshot.compilationTimeMicros(),
+                                                     snapshot.startTimestampMillis())
       }
     }
 
@@ -104,7 +106,7 @@ object QueriesSection {
                           anonymizer: QueryAnonymizer
                          ): util.ArrayList[util.Map[String, AnyRef]] = {
     val result = new util.ArrayList[util.Map[String, AnyRef]]()
-    for (SingleInvocation(queryParameters, elapsedTimeMicros, compilationTimeMicros) <- invocations) {
+    for (SingleInvocation(queryParameters, elapsedTimeMicros, compilationTimeMicros, startTimestampMillis) <- invocations) {
       val data = new util.HashMap[String, AnyRef]()
       if (queryParameters.size() > 0)
         data.put("params", anonymizer.queryParams(queryParameters))
@@ -116,6 +118,7 @@ object QueriesSection {
         data.put("elapsedExecutionTimeInUs", Long.box(elapsed - compileTime))
       } else
         data.put("elapsedExecutionTimeInUs", Long.box(elapsed))
+      data.put("startTimestampMillis", Long.box(startTimestampMillis))
       result.add(data)
     }
 
