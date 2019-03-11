@@ -21,6 +21,8 @@ package org.neo4j.index.internal.gbptree;
 
 import java.util.function.Supplier;
 
+import org.neo4j.util.FeatureToggles;
+
 /**
  * This class counts the number of round trips we take from the same node back to
  * root in a row and throw {@link TreeInconsistencyException} if it becomes to many.
@@ -43,14 +45,17 @@ import java.util.function.Supplier;
  */
 public class TripCountingRootCatchup implements RootCatchup
 {
-    static final int MAX_TRIP_COUNT = 10;
+    static final String MAX_TRIP_COUNT_NAME = "max_trip_count";
+    static final int MAX_TRIP_COUNT_DEFAULT = 10;
     private final Supplier<Root> rootSupplier;
+    private final int maxTripCount;
     private long lastFromId = TreeNode.NO_NODE_FLAG;
     private int tripCount;
 
     TripCountingRootCatchup( Supplier<Root> rootSupplier )
     {
         this.rootSupplier = rootSupplier;
+        this.maxTripCount = FeatureToggles.getInteger( TripCountingRootCatchup.class, MAX_TRIP_COUNT_NAME, MAX_TRIP_COUNT_DEFAULT );
     }
 
     @Override
@@ -76,7 +81,7 @@ public class TripCountingRootCatchup implements RootCatchup
 
     private void assertTripCount()
     {
-        if ( tripCount >= MAX_TRIP_COUNT )
+        if ( tripCount >= maxTripCount )
         {
             throw new TreeInconsistencyException(
                     "Index traversal aborted due to being stuck in infinite loop. This is most likely caused by an inconsistency in the index. " +
