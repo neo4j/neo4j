@@ -45,8 +45,8 @@ import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.UnderlyingStorageException;
-import org.neo4j.test.rule.ConfigurablePageCacheRule;
 import org.neo4j.test.rule.PageCacheConfig;
+import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static org.junit.Assert.assertTrue;
@@ -66,10 +66,8 @@ public class CommonAbstractStoreBehaviourTest
      * Note that tests MUST use the non-modifying methods, to make alternate copies
      * of this settings class.
      */
-    private static final Config CONFIG = Config.defaults( GraphDatabaseSettings.pagecache_memory, "8M" );
-
     private final EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
-    private final ConfigurablePageCacheRule pageCacheRule = new ConfigurablePageCacheRule();
+    private final PageCacheRule pageCacheRule = new PageCacheRule();
 
     @Rule
     public final TestRule rules = RuleChain.outerRule( fs ).around( pageCacheRule );
@@ -80,7 +78,7 @@ public class CommonAbstractStoreBehaviourTest
     private int intsPerRecord = 1;
 
     private MyStore store;
-    private Config config = CONFIG;
+    private Config config = Config.defaults();
 
     @After
     public void tearDown()
@@ -146,7 +144,7 @@ public class CommonAbstractStoreBehaviourTest
 
     private void createStore()
     {
-        store = new MyStore( config, pageCacheRule.getPageCache( fs.get(), config ), 8 );
+        store = new MyStore( config, pageCacheRule.getPageCache( fs.get() ), 8 );
         store.initialise( true );
     }
 
@@ -155,7 +153,7 @@ public class CommonAbstractStoreBehaviourTest
     {
         // 16-byte header will overflow an 8-byte page size
         PageCacheConfig pageCacheConfig = PageCacheConfig.config();
-        PageCache pageCache = pageCacheRule.getPageCache( fs.get(), pageCacheConfig, config );
+        PageCache pageCache = pageCacheRule.getPageCache( fs.get(), pageCacheConfig );
         MyStore store = new MyStore( config, pageCache, PAGE_SIZE + 1 );
         assertThrowsUnderlyingStorageException( () -> store.initialise( true ) );
     }
@@ -163,12 +161,12 @@ public class CommonAbstractStoreBehaviourTest
     @Test
     public void extractHeaderRecordDuringLoadStorageMustThrowOnPageOverflow() throws Exception
     {
-        MyStore first = new MyStore( config, pageCacheRule.getPageCache( fs.get(), config ), 8 );
+        MyStore first = new MyStore( config, pageCacheRule.getPageCache( fs.get() ), 8 );
         first.initialise( true );
         first.close();
 
         PageCacheConfig pageCacheConfig = PageCacheConfig.config();
-        PageCache pageCache = pageCacheRule.getPageCache( fs.get(), pageCacheConfig, config );
+        PageCache pageCache = pageCacheRule.getPageCache( fs.get(), pageCacheConfig );
         MyStore second = new MyStore( config, pageCache, PAGE_SIZE + 1 );
         assertThrowsUnderlyingStorageException( () -> second.initialise( false ) );
     }

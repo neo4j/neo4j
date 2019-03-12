@@ -53,6 +53,7 @@ import org.neo4j.storageengine.api.IndexUpdateListener;
 import org.neo4j.storageengine.api.NodeLabelUpdateListener;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.token.TokenHolders;
+import org.neo4j.token.api.TokenHolder;
 
 import static org.mockito.Mockito.mock;
 
@@ -62,8 +63,7 @@ import static org.mockito.Mockito.mock;
  * when {@link #getWith(FileSystemAbstraction, PageCache, DatabaseLayout) getting (constructing)} the engine. Further
  * dependencies can be overridden in that returned builder as well.
  * <p>
- * Keep in mind that this rule must be created BEFORE {@link ConfigurablePageCacheRule} and any file system rule so that
- * shutdown order gets correct.
+ * Keep in mind that this rule must be created BEFORE page cache rule and any file system rule so that shutdown order gets correct.
  */
 public class RecordStorageEngineRule extends ExternalResource
 {
@@ -117,7 +117,7 @@ public class RecordStorageEngineRule extends ExternalResource
         private IndexUpdateListener indexUpdateListener = new IndexUpdateListener.Adapter();
         private NodeLabelUpdateListener nodeLabelUpdateListener = new NodeLabelUpdateListener.Adapter();
         private LockService lockService = new ReentrantLockService();
-        private TokenHolders tokenHolders = DatabaseRule.mockedTokenHolders();
+        private TokenHolders tokenHolders = new TokenHolders( mock( TokenHolder.class ), mock( TokenHolder.class ), mock( TokenHolder.class ) );
         private Config config = Config.defaults();
         private ConstraintRuleAccessor constraintSemantics = new ConstraintRuleAccessor()
         {

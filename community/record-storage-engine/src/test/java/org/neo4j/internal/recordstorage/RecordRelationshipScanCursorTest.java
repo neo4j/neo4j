@@ -45,7 +45,7 @@ import org.neo4j.test.rule.TestDirectory;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.internal.kernel.api.TokenRead.ANY_RELATIONSHIP_TYPE;
+import static org.neo4j.token.api.TokenConstants.ANY_RELATIONSHIP_TYPE;
 
 @PageCacheExtension
 @ExtendWith( RandomExtension.class )

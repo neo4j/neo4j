@@ -32,13 +32,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.test.rule.ConfigurablePageCacheRule;
-import org.neo4j.test.rule.PageCacheConfig;
+import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
@@ -54,7 +51,7 @@ public class KeyValueDatabaseStoreFormatTest
     @Rule
     public final EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
     @Rule
-    public final ConfigurablePageCacheRule pages = new ConfigurablePageCacheRule();
+    public final PageCacheRule pages = new PageCacheRule();
     @Rule
     public final TestDirectory directory = TestDirectory.testDirectory( fs );
 
@@ -181,8 +178,6 @@ public class KeyValueDatabaseStoreFormatTest
         Map<String,byte[]> headers = new HashMap<>();
         headers.put( "one", new byte[]{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,} );
         headers.put( "two", new byte[]{2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,} );
-        Map<String,String> config = new HashMap<>();
-        config.put( GraphDatabaseSettings.pagecache_memory.name(), "8M" );
         Data data = data(
                 // page 0
                 entry( bytes( 17 ), bytes( 'v', 'a', 'l', 1 ) ),
@@ -203,7 +198,7 @@ public class KeyValueDatabaseStoreFormatTest
                 entry( bytes( 2000 ), bytes( 'v', 'a', 'l', 14 ) ) );
 
         // when
-        try ( KeyValueStoreFile file = format.create( config, headers, data ) )
+        try ( KeyValueStoreFile file = format.create( headers, data ) )
         // then
         {
             assertFind( file, 17, 17, true, new Bytes( 'v', 'a', 'l', 1 ) );
@@ -232,8 +227,6 @@ public class KeyValueDatabaseStoreFormatTest
         // given
         Format format = new Format();
         Map<String,byte[]> metadata = new HashMap<>();
-        Map<String,String> config = new HashMap<>();
-        config.put( GraphDatabaseSettings.pagecache_memory.name(), "8M" );
         Data data = data( // two full pages (and nothing more)
                 // page 0
                 entry( bytes( 12 ), bytes( 'v', 'a', 'l', 1 ) ),
@@ -245,7 +238,7 @@ public class KeyValueDatabaseStoreFormatTest
                 entry( bytes( 18 ), bytes( 'v', 'a', 'l', 6 ) ) );
 
         // when
-        try ( KeyValueStoreFile file = format.create( config, metadata, data ) )
+        try ( KeyValueStoreFile file = format.create( metadata, data ) )
         // then
         {
             assertFind( file, 14, 15, false, new Bytes( 'v', 'a', 'l', 3 ) ); // after the first page
@@ -257,9 +250,6 @@ public class KeyValueDatabaseStoreFormatTest
     @Test
     public void shouldTruncateTheFile() throws Exception
     {
-        Map<String,String> config = new HashMap<>();
-        config.put( GraphDatabaseSettings.pagecache_memory.name(), "8M" );
-
         // given a well written file
         {
             Format format = new Format( "one", "two" );
@@ -277,7 +267,7 @@ public class KeyValueDatabaseStoreFormatTest
                     entry( bytes( 17 ), bytes( 'v', 'a', 'l', 5 ) ),
                     entry( bytes( 18 ), bytes( 'v', 'a', 'l', 6 ) ) );
 
-            try ( KeyValueStoreFile ignored = format.create( config, headers, data ) )
+            try ( KeyValueStoreFile ignored = format.create( headers, data ) )
             {
             }
         }
@@ -303,7 +293,7 @@ public class KeyValueDatabaseStoreFormatTest
                 }
             };
 
-            try ( KeyValueStoreFile ignored = format.create( config, headers, data ) )
+            try ( KeyValueStoreFile ignored = format.create( headers, data ) )
             {
             }
             catch ( IOException io )
@@ -522,22 +512,10 @@ public class KeyValueDatabaseStoreFormatTest
             createEmptyStore( fs.get(), getStoreFile(), 16, 16, headers( headers ) );
         }
 
-        KeyValueStoreFile create( Map<String,byte[]> headers, DataProvider data )
-                throws IOException
+        KeyValueStoreFile create( Map<String,byte[]> headers, DataProvider data ) throws IOException
         {
-            return createStore( fs.get(), pages.getPageCache( fs.get() ), getStoreFile(), 16, 16, headers( headers ),
-                    data );
-        }
-
-        KeyValueStoreFile create( Map<String,String> config, Map<String,byte[]> headers,
-                DataProvider data )
-                throws IOException
-        {
-            PageCacheConfig pageCacheConfig = PageCacheConfig.config();
-            PageCache pageCache = pages.getPageCache( fs.get(), pageCacheConfig, Config.defaults( config ) );
-            return createStore( fs.get(),
-                    pageCache, getStoreFile(), 16, 16,
-                    headers( headers ), data );
+            PageCache pageCache = pages.getPageCache( fs.get() );
+            return createStore( fs.get(), pageCache, getStoreFile(), 16, 16, headers( headers ), data );
         }
 
         private Headers headers( Map<String,byte[]> headers )

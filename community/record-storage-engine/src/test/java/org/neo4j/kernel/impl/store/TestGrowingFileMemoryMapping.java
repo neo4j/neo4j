@@ -32,7 +32,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.format.standard.NodeRecordFormat;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.test.rule.ConfigurablePageCacheRule;
+import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
@@ -40,13 +40,12 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
-import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
+import static org.neo4j.test.rule.PageCacheConfig.config;
 
 public class TestGrowingFileMemoryMapping
 {
-
-    private final ConfigurablePageCacheRule pageCacheRule = new ConfigurablePageCacheRule();
+    private final PageCacheRule pageCacheRule = new PageCacheRule();
     private final TestDirectory testDirectory = TestDirectory.testDirectory();
     private final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
 
@@ -62,10 +61,11 @@ public class TestGrowingFileMemoryMapping
         // given
         final int NUMBER_OF_RECORDS = 1000000;
 
-        Config config = Config.defaults( pagecache_memory, mmapSize( NUMBER_OF_RECORDS, NodeRecordFormat.RECORD_SIZE ) );
+        Config config = Config.defaults();
         FileSystemAbstraction fileSystemAbstraction = fileSystemRule.get();
         DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fileSystemAbstraction );
-        PageCache pageCache = pageCacheRule.getPageCache( fileSystemAbstraction, config );
+        PageCache pageCache = pageCacheRule.getPageCache( fileSystemAbstraction,
+                config().withMemory( mmapSize( NUMBER_OF_RECORDS, NodeRecordFormat.RECORD_SIZE ) ) );
         StoreFactory storeFactory = new StoreFactory( testDirectory.databaseLayout(), config, idGeneratorFactory, pageCache,
                 fileSystemAbstraction, NullLogProvider.getInstance() );
 

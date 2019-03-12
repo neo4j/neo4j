@@ -31,7 +31,7 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.internal.kernel.api.TokenRead.ANY_LABEL;
+import static org.neo4j.token.api.TokenConstants.ANY_LABEL;
 
 public class CountsStoreTransactionApplierTest
 {
