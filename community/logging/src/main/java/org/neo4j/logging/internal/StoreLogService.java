@@ -235,7 +235,7 @@ public class StoreLogService extends AbstractLogService implements Lifecycle
     }
 
     @Override
-    public void shutdown() throws Throwable
+    public void shutdown() throws Exception
     {
         closeable.close();
     }

@@ -324,7 +324,7 @@ public class GlobalProceduresRegistry extends LifecycleAdapter implements Global
     }
 
     @Override
-    public void start() throws Throwable
+    public void start() throws Exception
     {
         ProcedureJarLoader loader = new ProcedureJarLoader( compiler, log );
         ProcedureJarLoader.Callables callables = loader.loadProceduresFromDir( proceduresDirectory );

@@ -332,13 +332,13 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     }
 
     @Override
-    public void init() throws Throwable
+    public void init() throws Exception
     {
         countsStore.init();
     }
 
     @Override
-    public void start() throws Throwable
+    public void start() throws Exception
     {
         neoStores.makeStoreOk();
         countsStore.start();
@@ -352,14 +352,14 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     }
 
     @Override
-    public void stop() throws Throwable
+    public void stop() throws Exception
     {
         idController.stop();
         countsStore.stop();
     }
 
     @Override
-    public void shutdown() throws Throwable
+    public void shutdown() throws Exception
     {
         countsStore.shutdown();
         neoStores.close();

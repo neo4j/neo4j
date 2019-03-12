@@ -107,7 +107,7 @@ public abstract class SafeLifecycle implements Lifecycle
      * @param force Causes the state to be updated regardless of if the operation throws.
      * @throws Throwable Issues.
      */
-    private void transition( State expected, State to, Operation op, boolean force ) throws Throwable
+    private void transition( State expected, State to, Operation op, boolean force ) throws Exception
     {
         if ( state != expected )
         {
@@ -127,19 +127,19 @@ public abstract class SafeLifecycle implements Lifecycle
     }
 
     @Override
-    public final synchronized void init() throws Throwable
+    public final synchronized void init() throws Exception
     {
         transition( PRE, IDLE, this::init0, false );
     }
 
     @Override
-    public final synchronized void start() throws Throwable
+    public final synchronized void start() throws Exception
     {
         transition( IDLE, RUN, this::start0, false );
     }
 
     @Override
-    public final synchronized void stop() throws Throwable
+    public final synchronized void stop() throws Exception
     {
         if ( state == IDLE )
         {
@@ -149,7 +149,7 @@ public abstract class SafeLifecycle implements Lifecycle
     }
 
     @Override
-    public final synchronized void shutdown() throws Throwable
+    public final synchronized void shutdown() throws Exception
     {
         if ( state == PRE )
         {
@@ -159,19 +159,19 @@ public abstract class SafeLifecycle implements Lifecycle
         transition( IDLE, HALT, this::shutdown0, true );
     }
 
-    public void init0() throws Throwable
+    public void init0() throws Exception
     {
     }
 
-    public void start0() throws Throwable
+    public void start0() throws Exception
     {
     }
 
-    public void stop0() throws Throwable
+    public void stop0() throws Exception
     {
     }
 
-    public void shutdown0() throws Throwable
+    public void shutdown0() throws Exception
     {
     }
 
@@ -190,6 +190,6 @@ public abstract class SafeLifecycle implements Lifecycle
 
     interface Operation
     {
-        void run() throws Throwable;
+        void run() throws Exception;
     }
 }

@@ -37,12 +37,12 @@ package org.neo4j.kernel.lifecycle;
  */
 public interface Lifecycle
 {
-    void init() throws Throwable;
+    void init() throws Exception;
 
-    void start() throws Throwable;
+    void start() throws Exception;
 
-    void stop() throws Throwable;
+    void stop() throws Exception;
 
-    void shutdown() throws Throwable;
+    void shutdown() throws Exception;
 
 }

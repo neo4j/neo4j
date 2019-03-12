@@ -225,13 +225,13 @@ public class DatabaseConfig extends Config implements Lifecycle
     }
 
     @Override
-    public void start() throws Throwable
+    public void start()
     {
 
     }
 
     @Override
-    public void stop() throws Throwable
+    public void stop() throws Exception
     {
         for ( Map.Entry<Setting,Collection<SettingChangeListener>> settingListeners : registeredListeners.entrySet() )
         {

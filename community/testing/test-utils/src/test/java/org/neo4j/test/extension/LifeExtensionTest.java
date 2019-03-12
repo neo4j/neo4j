@@ -86,7 +86,7 @@ class LifeExtensionTest
         private boolean started;
 
         @Override
-        public void start() throws Throwable
+        public void start() throws Exception
         {
             super.start();
             started = true;

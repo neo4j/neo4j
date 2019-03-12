@@ -588,66 +588,66 @@ class LifeSupportTest
     static class LifecycleMock implements Lifecycle
     {
 
-        Throwable initThrowable;
-        Throwable startThrowable;
-        Throwable stopThrowable;
-        Throwable shutdownThrowable;
+        Exception initException;
+        Exception startException;
+        Exception stopException;
+        Exception shutdownException;
 
         List<LifecycleStatus> transitions;
 
-        LifecycleMock( Throwable initThrowable, Throwable startThrowable, Throwable stopThrowable,
-                Throwable shutdownThrowable )
+        LifecycleMock( Exception initException, Exception startException, Exception stopException,
+                Exception shutdownExeption )
         {
-            this.initThrowable = initThrowable;
-            this.startThrowable = startThrowable;
-            this.stopThrowable = stopThrowable;
-            this.shutdownThrowable = shutdownThrowable;
+            this.initException = initException;
+            this.startException = startException;
+            this.stopException = stopException;
+            this.shutdownException = shutdownExeption;
 
             transitions = new ArrayList<>();
             transitions.add( LifecycleStatus.NONE );
         }
 
         @Override
-        public void init() throws Throwable
+        public void init() throws Exception
         {
-            if ( initThrowable != null )
+            if ( initException != null )
             {
-                throw initThrowable;
+                throw initException;
             }
 
             transitions.add( LifecycleStatus.STOPPED );
         }
 
         @Override
-        public void start() throws Throwable
+        public void start() throws Exception
         {
-            if ( startThrowable != null )
+            if ( startException != null )
             {
-                throw startThrowable;
+                throw startException;
             }
 
             transitions.add( LifecycleStatus.STARTED );
         }
 
         @Override
-        public void stop() throws Throwable
+        public void stop() throws Exception
         {
             transitions.add( LifecycleStatus.STOPPED );
 
-            if ( stopThrowable != null )
+            if ( stopException != null )
             {
-                throw stopThrowable;
+                throw stopException;
             }
         }
 
         @Override
-        public void shutdown() throws Throwable
+        public void shutdown() throws Exception
         {
             transitions.add( LifecycleStatus.SHUTDOWN );
 
-            if ( shutdownThrowable != null )
+            if ( shutdownException != null )
             {
-                throw shutdownThrowable;
+                throw shutdownException;
             }
         }
 

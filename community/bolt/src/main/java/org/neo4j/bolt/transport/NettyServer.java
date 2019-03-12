@@ -87,7 +87,7 @@ public class NettyServer extends LifecycleAdapter
     }
 
     @Override
-    public void start() throws Throwable
+    public void start() throws Exception
     {
         boolean useEpoll = USE_EPOLL && Epoll.isAvailable();
         ServerConfigurationProvider configurationProvider = useEpoll ? EpollConfigurationProvider.INSTANCE :

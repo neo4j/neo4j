@@ -37,7 +37,7 @@ public class StoreLockerLifecycleAdapter extends LifecycleAdapter
     }
 
     @Override
-    public synchronized void stop() throws Throwable
+    public synchronized void stop() throws Exception
     {
         storeLocker.close();
     }

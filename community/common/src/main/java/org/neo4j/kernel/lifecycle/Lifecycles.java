@@ -47,7 +47,7 @@ public class Lifecycles
         }
 
         @Override
-        public void init() throws Throwable
+        public void init() throws Exception
         {
             for ( Lifecycle lifecycle : lifecycles )
             {
@@ -56,7 +56,7 @@ public class Lifecycles
         }
 
         @Override
-        public void start() throws Throwable
+        public void start() throws Exception
         {
             for ( Lifecycle lifecycle : lifecycles )
             {
@@ -65,7 +65,7 @@ public class Lifecycles
         }
 
         @Override
-        public void stop() throws Throwable
+        public void stop() throws Exception
         {
             for ( Lifecycle lifecycle : lifecycles )
             {
@@ -74,7 +74,7 @@ public class Lifecycles
         }
 
         @Override
-        public void shutdown() throws Throwable
+        public void shutdown() throws Exception
         {
             for ( Lifecycle lifecycle : lifecycles )
             {

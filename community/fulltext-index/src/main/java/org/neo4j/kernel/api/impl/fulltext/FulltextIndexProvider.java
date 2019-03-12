@@ -117,7 +117,7 @@ class FulltextIndexProvider extends IndexProvider implements FulltextAdapter
     }
 
     @Override
-    public void shutdown() throws Throwable
+    public void shutdown() throws Exception
     {
         // Closing the index storage factory also closes all Lucene Directory instances.
         // This has to be done at shutdown, which happens after all of the index accessors have been closed, and thus committed any pent up changes.

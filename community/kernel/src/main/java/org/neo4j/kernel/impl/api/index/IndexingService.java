@@ -471,7 +471,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
     // while indexes will be closed on shutdown we need to stop ongoing jobs before we will start shutdown to prevent
     // races between checkpoint flush and index jobs
     @Override
-    public void stop() throws Throwable
+    public void stop() throws Exception
     {
         samplingController.stop();
         populationJobController.stop();

@@ -40,7 +40,7 @@ public class CheckpointerLifecycle extends LifecycleAdapter
     }
 
     @Override
-    public void shutdown() throws Throwable
+    public void shutdown() throws Exception
     {
         // Write new checkpoint in the log only if the database is healthy.
         // We cannot throw here since we need to shutdown without exceptions.

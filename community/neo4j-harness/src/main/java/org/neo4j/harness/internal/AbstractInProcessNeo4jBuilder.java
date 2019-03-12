@@ -358,7 +358,7 @@ public abstract class AbstractInProcessNeo4jBuilder implements Neo4jBuilder
             return new LifecycleAdapter()
             {
                 @Override
-                public void start() throws Throwable
+                public void start() throws Exception
                 {
                     userProcs.applyTo( dependencies.procedures() );
                 }

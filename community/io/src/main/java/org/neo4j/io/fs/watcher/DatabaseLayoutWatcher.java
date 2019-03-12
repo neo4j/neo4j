@@ -59,7 +59,7 @@ public class DatabaseLayoutWatcher extends LifecycleAdapter
     }
 
     @Override
-    public void start() throws Throwable
+    public void start() throws Exception
     {
         watchDirectories();
         eventListener = listenerFactory.createListener( watchedResources );
@@ -67,7 +67,7 @@ public class DatabaseLayoutWatcher extends LifecycleAdapter
     }
 
     @Override
-    public void stop() throws Throwable
+    public void stop() throws Exception
     {
         stopWatching();
         fileWatcher.removeFileWatchEventListener( eventListener );

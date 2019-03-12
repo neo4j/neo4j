@@ -175,19 +175,19 @@ public class TransactionLogsRecovery extends LifecycleAdapter
     }
 
     @Override
-    public void start() throws Throwable
+    public void start() throws Exception
     {
         schemaLife.start();
     }
 
     @Override
-    public void stop() throws Throwable
+    public void stop() throws Exception
     {
         schemaLife.stop();
     }
 
     @Override
-    public void shutdown() throws Throwable
+    public void shutdown() throws Exception
     {
         schemaLife.shutdown();
     }

@@ -50,13 +50,13 @@ public abstract class SecurityModule extends Service implements Lifecycle, Secur
     }
 
     @Override
-    public void start() throws Throwable
+    public void start() throws Exception
     {
         life.start();
     }
 
     @Override
-    public void stop() throws Throwable
+    public void stop() throws Exception
     {
         life.stop();
     }

@@ -99,7 +99,7 @@ public class BoltServer extends LifecycleAdapter
     }
 
     @Override
-    public void start() throws Throwable
+    public void start() throws Exception
     {
         Log log = logService.getInternalLog( BoltServer.class );
         Log userLog = logService.getUserLog( BoltServer.class );
@@ -130,7 +130,7 @@ public class BoltServer extends LifecycleAdapter
     }
 
     @Override
-    public void stop() throws Throwable
+    public void stop() throws Exception
     {
         life.shutdown(); // stop and shutdown the nested lifecycle
     }

@@ -514,7 +514,7 @@ public abstract class AbstractNeoServer implements NeoServer
     private class ServerComponentsLifecycleAdapter extends LifecycleAdapter
     {
         @Override
-        public void start() throws Throwable
+        public void start() throws Exception
         {
             LogService logService = resolveDependency( LogService.class );
             Log serverLog = logService.getInternalLog( ServerComponentsLifecycleAdapter.class );

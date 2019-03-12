@@ -50,7 +50,7 @@ public class ReadableRecordStorageEngine extends LifecycleAdapter implements Rea
     }
 
     @Override
-    public void start() throws Throwable
+    public void start() throws Exception
     {
         neoStores.verifyStoreOk();
     }

@@ -107,25 +107,25 @@ public class CountingJobScheduler implements JobScheduler
     }
 
     @Override
-    public void init() throws Throwable
+    public void init() throws Exception
     {
         delegate.init();
     }
 
     @Override
-    public void start() throws Throwable
+    public void start() throws Exception
     {
         delegate.start();
     }
 
     @Override
-    public void stop() throws Throwable
+    public void stop() throws Exception
     {
         delegate.stop();
     }
 
     @Override
-    public void shutdown() throws Throwable
+    public void shutdown() throws Exception
     {
         delegate.shutdown();
     }

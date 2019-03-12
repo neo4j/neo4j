@@ -57,7 +57,7 @@ public class FileUserRepository extends AbstractUserRepository implements FileRe
     }
 
     @Override
-    public void start() throws Throwable
+    public void start() throws Exception
     {
         clear();
 

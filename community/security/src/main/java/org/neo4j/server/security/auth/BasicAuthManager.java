@@ -74,14 +74,14 @@ public class BasicAuthManager implements AuthManager, UserManager, UserManagerSu
     }
 
     @Override
-    public void init() throws Throwable
+    public void init() throws Exception
     {
         userRepository.init();
         initialUserRepository.init();
     }
 
     @Override
-    public void start() throws Throwable
+    public void start() throws Exception
     {
         userRepository.start();
         initialUserRepository.start();
@@ -101,14 +101,14 @@ public class BasicAuthManager implements AuthManager, UserManager, UserManagerSu
     }
 
     @Override
-    public void stop() throws Throwable
+    public void stop() throws Exception
     {
         userRepository.stop();
         initialUserRepository.stop();
     }
 
     @Override
-    public void shutdown() throws Throwable
+    public void shutdown() throws Exception
     {
         userRepository.shutdown();
         initialUserRepository.shutdown();

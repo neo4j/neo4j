@@ -76,7 +76,7 @@ public class CompositeDatabaseAvailabilityGuard extends LifecycleAdapter impleme
     }
 
     @Override
-    public void stop() throws Throwable
+    public void stop()
     {
         started = false;
     }

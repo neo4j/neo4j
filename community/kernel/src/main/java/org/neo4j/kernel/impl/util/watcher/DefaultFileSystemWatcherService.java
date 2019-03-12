@@ -60,7 +60,7 @@ public class DefaultFileSystemWatcherService implements FileSystemWatcherService
     }
 
     @Override
-    public synchronized void stop() throws Throwable
+    public synchronized void stop() throws Exception
     {
         eventWatcher.stopWatching();
         if ( watcher != null )
@@ -72,7 +72,7 @@ public class DefaultFileSystemWatcherService implements FileSystemWatcherService
     }
 
     @Override
-    public void shutdown() throws Throwable
+    public void shutdown() throws Exception
     {
         fileWatcher.close();
     }
