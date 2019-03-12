@@ -23,7 +23,6 @@
   </properties>
 
   <modules>
-    <module>annotation-processors</module>
     <module>import-util</module>
     <module>record-storage-engine</module>
     <module>common</module>

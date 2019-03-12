@@ -13,7 +13,7 @@
     <artifactId>annotations</artifactId>
     <packaging>jar</packaging>
 
-    <name>Neo4j - Annotations processors</name>
+    <name>Neo4j - Annotation processors</name>
     <description>Annotations and annotation processors used to build Neo4j project.</description>
     <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 

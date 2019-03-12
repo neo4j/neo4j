@@ -24,6 +24,8 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+import org.neo4j.annotations.DocumentationProcessor;
+
 /**
  * Defines documentation for a class, interface, field or method.
  *
