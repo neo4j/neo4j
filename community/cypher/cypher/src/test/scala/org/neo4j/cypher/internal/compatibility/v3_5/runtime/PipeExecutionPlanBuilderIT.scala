@@ -23,7 +23,6 @@ import org.mockito.Mockito.{atLeastOnce, verify, when}
 import org.neo4j.cypher.internal.compiler.v3_5.planner._
 import org.neo4j.cypher.internal.ir.v3_5._
 import org.neo4j.cypher.internal.planner.v3_5.spi.{PlanContext, TokenContext}
-import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Literal
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.True
@@ -31,9 +30,9 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.values.KeyToken.Re
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.TokenType
 import org.neo4j.cypher.internal.runtime.interpreted.commands.{expressions => legacy}
 import org.neo4j.cypher.internal.runtime.interpreted.pipes._
-import org.neo4j.cypher.internal.v3_5.logical.plans._
 import org.neo4j.cypher.internal.v3_5.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.v3_5.expressions._
+import org.neo4j.cypher.internal.v3_5.logical.plans._
 import org.neo4j.cypher.internal.v3_5.util.RelTypeId
 import org.neo4j.cypher.internal.v3_5.util.test_helpers.CypherFunSuite
 
@@ -41,8 +40,8 @@ import scala.collection.mutable
 
 class PipeExecutionPlanBuilderIT extends CypherFunSuite with LogicalPlanningTestSupport {
 
-  val pipeBuildContext = pipeExecutionPlanBuilderContext
-  val planContext: PlanContext = newMockedPlanContext
+  val pipeBuildContext: PipeExecutionBuilderContext = pipeExecutionPlanBuilderContext
+  val planContext: PlanContext = newMockedPlanContext()
 
   val patternRel = PatternRelationship("r", ("a", "b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
   val converters = new ExpressionConverters(CommunityExpressionConverter(TokenContext.EMPTY))

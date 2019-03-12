@@ -22,16 +22,11 @@ package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps
 import org.neo4j.cypher.internal.compiler.v3_5.planner._
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.{LogicalPlanningContext, PlanMatchHelp}
 import org.neo4j.cypher.internal.ir.v3_5._
-import org.neo4j.cypher.internal.v3_5.logical.plans.Ascending
-import org.neo4j.cypher.internal.v3_5.logical.plans.ColumnOrder
-import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.v3_5.logical.plans.Projection
 import org.neo4j.cypher.internal.v3_5.ast
-import org.neo4j.cypher.internal.v3_5.ast.semantics.ExpressionTypeInfo
-import org.neo4j.cypher.internal.v3_5.ast.semantics.SemanticTable
-import org.neo4j.cypher.internal.v3_5.ast.ASTAnnotationMap
-import org.neo4j.cypher.internal.v3_5.ast.AscSortItem
+import org.neo4j.cypher.internal.v3_5.ast.{ASTAnnotationMap, AscSortItem}
+import org.neo4j.cypher.internal.v3_5.ast.semantics.{ExpressionTypeInfo, SemanticTable}
 import org.neo4j.cypher.internal.v3_5.expressions._
+import org.neo4j.cypher.internal.v3_5.logical.plans.{Ascending, ColumnOrder, LogicalPlan, Projection}
 import org.neo4j.cypher.internal.v3_5.util.test_helpers.CypherFunSuite
 
 class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport with PlanMatchHelp {
@@ -116,7 +111,7 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport with
                              projectionsMap: Map[String, Expression] = Map("n" -> Variable("n")(pos)),
                              availablePropertiesFromIndexes: Map[Property, String] = Map.empty):
   (LogicalPlanningContext, LogicalPlan) = {
-    val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext, semanticTable = new SemanticTable(types = mock[ASTAnnotationMap[Expression, ExpressionTypeInfo]]))
+    val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext(), semanticTable = new SemanticTable(types = mock[ASTAnnotationMap[Expression, ExpressionTypeInfo]]))
 
     val ids = projectionsMap.keySet
 

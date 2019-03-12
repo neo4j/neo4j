@@ -197,9 +197,6 @@ final class GraphCountsSection
                 data.put( "relationshipType", anonymizer.relationshipType( tokenLookup.relationshipTypeGetName( entityTokenId ), entityTokenId ) );
                 constraints.add( data );
                 break;
-            case GRAPH:
-                // Ignore
-                break;
             default:
             }
         }

@@ -33,16 +33,16 @@ import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps.{LogicalPla
 import org.neo4j.cypher.internal.compiler.v3_5.test_helpers.ContextHelper
 import org.neo4j.cypher.internal.ir.v3_5._
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Cardinalities, ProvidedOrders, Solveds}
-import org.neo4j.cypher.internal.planner.v3_5.spi.{CostBasedPlannerName, GraphStatistics, PlanContext, PlanningAttributes}
-import org.neo4j.cypher.internal.v3_5.logical.plans._
+import org.neo4j.cypher.internal.planner.v3_5.spi.{CostBasedPlannerName, GraphStatistics, InstrumentedGraphStatistics, PlanContext, PlanningAttributes}
 import org.neo4j.cypher.internal.v3_5.ast._
 import org.neo4j.cypher.internal.v3_5.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.v3_5.expressions._
 import org.neo4j.cypher.internal.v3_5.frontend.phases._
+import org.neo4j.cypher.internal.v3_5.logical.plans._
 import org.neo4j.cypher.internal.v3_5.parser.CypherParser
-import org.neo4j.cypher.internal.v3_5.rewriting.{Deprecations, RewriterStepSequencer}
 import org.neo4j.cypher.internal.v3_5.rewriting.RewriterStepSequencer.newPlain
 import org.neo4j.cypher.internal.v3_5.rewriting.rewriters._
+import org.neo4j.cypher.internal.v3_5.rewriting.{Deprecations, RewriterStepSequencer}
 import org.neo4j.cypher.internal.v3_5.util._
 import org.neo4j.cypher.internal.v3_5.util.attribution.IdGen
 import org.neo4j.cypher.internal.v3_5.util.symbols._
@@ -160,10 +160,10 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
       planningAttributes = planningAttributes)
   }
 
-  def newMockedStatistics = mock[GraphStatistics]
-  def hardcodedStatistics = HardcodedGraphStatistics
+  def newMockedStatistics: InstrumentedGraphStatistics = mock[InstrumentedGraphStatistics]
+  def hardcodedStatistics: GraphStatistics = HardcodedGraphStatistics
 
-  def newMockedPlanContext(implicit statistics: GraphStatistics = newMockedStatistics) = {
+  def newMockedPlanContext(statistics: InstrumentedGraphStatistics = newMockedStatistics): PlanContext = {
     val context = mock[PlanContext]
     doReturn(statistics, Nil: _*).when(context).statistics
     context

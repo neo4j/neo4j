@@ -26,19 +26,17 @@ import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.Metrics.QueryGrap
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps.idSeekLeafPlanner
 import org.neo4j.cypher.internal.ir.v3_5._
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.Cardinalities
-import org.neo4j.cypher.internal.v3_5.logical.plans._
 import org.neo4j.cypher.internal.v3_5.ast._
 import org.neo4j.cypher.internal.v3_5.ast.semantics.{ExpressionTypeInfo, SemanticTable}
 import org.neo4j.cypher.internal.v3_5.expressions._
+import org.neo4j.cypher.internal.v3_5.logical.plans._
 import org.neo4j.cypher.internal.v3_5.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.v3_5.util.{Cost, RelTypeId, symbols}
 
 class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupport {
 
   private val statistics = hardcodedStatistics
-  private implicit val subQueryLookupTable = Map.empty[PatternExpression, QueryGraph]
-
-  // NOTE: the ronja rewriters make sure that all EQUALS will be rewritten to IN so here only the latter should be tested
+  // NOTE: rewriters make sure that all EQUALS will be rewritten to IN so here only the latter should be tested
 
   private val evaluator = mock[ExpressionEvaluator]
   test("simple node by id seek with a collection of node ids") {
@@ -60,7 +58,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
       case _: NodeByIdSeek => Cost(1)
       case _               => Cost(Double.MaxValue)
     })
-    val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext, metrics = factory.newMetrics(statistics, evaluator, config))
+    val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext(), metrics = factory.newMetrics(statistics, evaluator, config))
     when(context.semanticTable.isNode(variable)).thenReturn(true)
 
     // when
@@ -92,7 +90,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
       case _: NodeByIdSeek => Cost(1)
       case _               => Cost(Double.MaxValue)
     })
-    val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext, metrics = factory.newMetrics(statistics, evaluator, config))
+    val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext(), metrics = factory.newMetrics(statistics, evaluator, config))
     when(context.semanticTable.isNode(variable)).thenReturn(true)
 
     // when
@@ -122,7 +120,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
       case _: NodeByIdSeek => Cost(1)
       case _               => Cost(Double.MaxValue)
     })
-    val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext, metrics = factory.newMetrics(statistics, evaluator, config))
+    val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext(), metrics = factory.newMetrics(statistics, evaluator, config))
     when(context.semanticTable.isNode(variable)).thenReturn(true)
 
     // when
@@ -150,7 +148,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
       case _: NodeByIdSeek => Cost(1)
       case _               => Cost(Double.MaxValue)
     })
-    val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext, metrics = factory.newMetrics(statistics, evaluator, config))
+    val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext(), metrics = factory.newMetrics(statistics, evaluator, config))
     when(context.semanticTable.isNode(variable)).thenReturn(true)
 
     // when
@@ -183,7 +181,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
       case _: DirectedRelationshipByIdSeek => Cost(1)
       case _                               => Cost(Double.MaxValue)
     })
-    val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext, metrics = factory.newMetrics(statistics, evaluator, config))
+    val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext(), metrics = factory.newMetrics(statistics, evaluator, config))
     when(context.semanticTable.isRelationship(rIdent)).thenReturn(true)
 
     // when
@@ -217,7 +215,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
       case _: UndirectedRelationshipByIdSeek => Cost(2)
       case _                                 => Cost(Double.MaxValue)
     })
-    val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext, metrics = factory.newMetrics(statistics, evaluator, config))
+    val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext(), metrics = factory.newMetrics(statistics, evaluator, config))
     when(context.semanticTable.isRelationship(rIdent)).thenReturn(true)
 
     // when
@@ -261,7 +259,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
       case _: UndirectedRelationshipByIdSeek => Cost(2)
       case _                                 => Cost(Double.MaxValue)
     })
-    val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext, metrics = factory.newMetrics(statistics, evaluator, config), semanticTable = semanticTable)
+    val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext(), metrics = factory.newMetrics(statistics, evaluator, config), semanticTable = semanticTable)
 
     // when
     val resultPlans = idSeekLeafPlanner(qg, InterestingOrder.empty, context)
@@ -309,7 +307,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
       case _: UndirectedRelationshipByIdSeek => Cost(2)
       case _                                 => Cost(Double.MaxValue)
     })
-    val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext, metrics = factory.newMetrics(statistics, evaluator, config), semanticTable = semanticTable)
+    val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext(), metrics = factory.newMetrics(statistics, evaluator, config), semanticTable = semanticTable)
 
     // when
     val resultPlans = idSeekLeafPlanner(qg, InterestingOrder.empty, context)

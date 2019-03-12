@@ -25,9 +25,9 @@ import org.neo4j.cypher.internal.ir.v3_5.PlannerQuery
 import org.neo4j.cypher.internal.planner.v3_5.spi.TokenContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
 import org.neo4j.cypher.internal.runtime.interpreted.pipes._
+import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.v3_5.util.attribution.{Id, SameId}
 import org.neo4j.cypher.internal.v3_5.util.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
 
 class PipeExecutionPlanBuilderTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
@@ -86,7 +86,7 @@ class PipeExecutionPlanBuilderTest extends CypherFunSuite with LogicalPlanningTe
     val converters = new ExpressionConverters(CommunityExpressionConverter(TokenContext.EMPTY))
     new PipeExecutionPlanBuilder(factory, expressionConverters = converters)
   }
-  private val tokenContext: TokenContext = newMockedPlanContext
+  private val tokenContext: TokenContext = newMockedPlanContext()
   private val pipeContext = mock[PipeExecutionBuilderContext]
   when(pipeContext.readOnly).thenReturn(true)
 

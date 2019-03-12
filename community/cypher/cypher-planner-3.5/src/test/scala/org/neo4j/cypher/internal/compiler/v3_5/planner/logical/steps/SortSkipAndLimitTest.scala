@@ -22,10 +22,10 @@ package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps
 import org.neo4j.cypher.internal.compiler.v3_5.planner._
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.ir.v3_5._
-import org.neo4j.cypher.internal.v3_5.logical.plans._
 import org.neo4j.cypher.internal.v3_5.ast
 import org.neo4j.cypher.internal.v3_5.ast.{AscSortItem, SortItem}
 import org.neo4j.cypher.internal.v3_5.expressions._
+import org.neo4j.cypher.internal.v3_5.logical.plans._
 import org.neo4j.cypher.internal.v3_5.util.test_helpers.CypherFunSuite
 
 class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSupport {
@@ -374,7 +374,7 @@ class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSuppor
                              patternNodesInQG: Set[String],
                              solved: PlannerQuery):
   (RegularPlannerQuery, LogicalPlanningContext, LogicalPlan) = {
-    val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext)
+    val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext())
 
     val qg = QueryGraph(patternNodes = patternNodesInQG)
     val query = RegularPlannerQuery(queryGraph = qg, horizon = projection)

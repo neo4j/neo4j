@@ -26,17 +26,15 @@ import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.Metrics.QueryGrap
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps.labelScanLeafPlanner
 import org.neo4j.cypher.internal.ir.v3_5._
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.Cardinalities
-import org.neo4j.cypher.internal.v3_5.logical.plans.{LogicalPlan, NodeByLabelScan}
 import org.neo4j.cypher.internal.v3_5.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.v3_5.expressions._
+import org.neo4j.cypher.internal.v3_5.logical.plans.{LogicalPlan, NodeByLabelScan}
 import org.neo4j.cypher.internal.v3_5.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.v3_5.util.{Cost, LabelId}
 
 class LabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
-  val statistics: HardcodedGraphStatistics.type = hardcodedStatistics
-
-  private implicit val subQueryLookupTable = Map.empty[PatternExpression, QueryGraph]
+  private val statistics = hardcodedStatistics
 
   test("simple label scan without compile-time label id") {
     // given
@@ -54,7 +52,7 @@ class LabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
 
     val semanticTable = new SemanticTable()
 
-    val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext, metrics = factory.newMetrics(statistics, mock[ExpressionEvaluator], config), semanticTable = semanticTable)
+    val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext(), metrics = factory.newMetrics(statistics, mock[ExpressionEvaluator], config), semanticTable = semanticTable)
 
     // when
     val resultPlans = labelScanLeafPlanner(qg, InterestingOrder.empty, context)
@@ -81,10 +79,10 @@ class LabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
       case _                  => Cost(Double.MaxValue)
     })
 
-    implicit val semanticTable = newMockedSemanticTable
+    val semanticTable = newMockedSemanticTable
     when(semanticTable.id(labelName)).thenReturn(Some(labelId))
 
-    val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext, metrics = factory.newMetrics(statistics, mock[ExpressionEvaluator], config), semanticTable = semanticTable)
+    val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext(), metrics = factory.newMetrics(statistics, mock[ExpressionEvaluator], config), semanticTable = semanticTable)
 
     // when
     val resultPlans = labelScanLeafPlanner(qg, InterestingOrder.empty, context)
