@@ -126,6 +126,7 @@ abstract class TokenStoreTestTemplate<R extends TokenRecord>
         storeToken( tokenRecord );
 
         R readBack = store.getRecord( tokenRecord.getId(), store.newRecord(), NORMAL );
+        store.ensureHeavy( readBack );
         assertThat( readBack, is( equalTo( tokenRecord ) ) );
         assertThat( tokenRecord.isInternal(), is( false ) );
         assertThat( readBack.isInternal(), is( false ) );
@@ -139,9 +140,15 @@ abstract class TokenStoreTestTemplate<R extends TokenRecord>
         storeToken( tokenRecord );
 
         R readBack = store.getRecord( tokenRecord.getId(), store.newRecord(), NORMAL );
+        store.ensureHeavy( readBack );
         assertThat( readBack, is( equalTo( tokenRecord ) ) );
         assertThat( tokenRecord.isInternal(), is( true ) );
         assertThat( readBack.isInternal(), is( true ) );
+
+        NamedToken token = store.getToken( Math.toIntExact( tokenRecord.getId() ) );
+        assertThat( token.name(), is( "MyInternalToken" ) );
+        assertThat( token.id(), is( Math.toIntExact( tokenRecord.getId() ) ) );
+        assertTrue( token.isInternal() );
     }
 
     @Test
@@ -162,6 +169,10 @@ abstract class TokenStoreTestTemplate<R extends TokenRecord>
         R readB = store.getRecord( tokenB.getId(), store.newRecord(), NORMAL );
         R readC = store.getRecord( tokenC.getId(), store.newRecord(), NORMAL );
         R readD = store.getRecord( tokenD.getId(), store.newRecord(), NORMAL );
+        store.ensureHeavy( readA );
+        store.ensureHeavy( readB );
+        store.ensureHeavy( readC );
+        store.ensureHeavy( readD );
 
         assertThat( readA, is( equalTo( tokenA ) ) );
         assertThat( readA.isInternal(), is( tokenA.isInternal() ) );

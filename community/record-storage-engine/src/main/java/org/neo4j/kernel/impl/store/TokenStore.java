@@ -129,7 +129,7 @@ public abstract class TokenStore<RECORD extends TokenRecord>
     public NamedToken getToken( int id )
     {
         RECORD record = getRecord( id, newRecord(), NORMAL );
-        return new NamedToken( getStringFor( record ), record.getIntId() );
+        return new NamedToken( getStringFor( record ), record.getIntId(), record.isInternal() );
     }
 
     public Collection<DynamicRecord> allocateNameRecords( byte[] chars )
