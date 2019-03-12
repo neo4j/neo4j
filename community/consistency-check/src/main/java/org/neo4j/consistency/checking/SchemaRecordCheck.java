@@ -32,12 +32,12 @@ import org.neo4j.internal.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaProcessor;
 import org.neo4j.internal.schema.SchemaRule;
-import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.storageengine.api.ConstraintRule;
+import org.neo4j.storageengine.api.StorageIndexReference;
 
 /**
  * Note that this class builds up an in-memory representation of the complete schema store by being used in
@@ -108,9 +108,9 @@ public class SchemaRecordCheck implements RecordCheck<SchemaRecord, ConsistencyR
                 return;
             }
 
-            if ( rule instanceof StoreIndexDescriptor )
+            if ( rule instanceof StorageIndexReference )
             {
-                strategy.checkIndexRule( (StoreIndexDescriptor)rule, record, records, engine );
+                strategy.checkIndexRule( (StorageIndexReference)rule, record, records, engine );
             }
             else if ( rule instanceof ConstraintRule )
             {
@@ -125,7 +125,7 @@ public class SchemaRecordCheck implements RecordCheck<SchemaRecord, ConsistencyR
 
     private interface CheckStrategy
     {
-        void checkIndexRule( StoreIndexDescriptor rule, SchemaRecord record, RecordAccess records,
+        void checkIndexRule( StorageIndexReference rule, SchemaRecord record, RecordAccess records,
                              CheckerEngine<SchemaRecord,ConsistencyReport.SchemaConsistencyReport> engine );
 
         void checkConstraintRule( ConstraintRule rule, SchemaRecord record,
@@ -141,7 +141,7 @@ public class SchemaRecordCheck implements RecordCheck<SchemaRecord, ConsistencyR
     private class RulesCheckStrategy implements CheckStrategy
     {
         @Override
-        public void checkIndexRule( StoreIndexDescriptor rule, SchemaRecord record, RecordAccess records,
+        public void checkIndexRule( StorageIndexReference rule, SchemaRecord record, RecordAccess records,
                                     CheckerEngine<SchemaRecord,ConsistencyReport.SchemaConsistencyReport> engine )
         {
             checkSchema( rule, record, records, engine );
@@ -185,7 +185,7 @@ public class SchemaRecordCheck implements RecordCheck<SchemaRecord, ConsistencyR
     private class ObligationsCheckStrategy implements CheckStrategy
     {
         @Override
-        public void checkIndexRule( StoreIndexDescriptor rule, SchemaRecord record, RecordAccess records,
+        public void checkIndexRule( StorageIndexReference rule, SchemaRecord record, RecordAccess records,
                                     CheckerEngine<SchemaRecord,ConsistencyReport.SchemaConsistencyReport> engine )
         {
             if ( rule.isUnique() )
