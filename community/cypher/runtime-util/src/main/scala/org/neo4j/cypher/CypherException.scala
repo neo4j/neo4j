@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.exceptions.KernelException
 import org.neo4j.kernel.api.exceptions.Status
+import org.neo4j.kernel.api.exceptions.Status.HasStatus
 
 import scala.compat.Platform.EOL
 
@@ -30,9 +30,8 @@ with Status.HasStatus {
 }
 
 class CypherExecutionException(message: String, cause: Throwable) extends CypherException(message, cause) {
-  def status = cause match {
-    // These are always caused by KernelException's, so just map to the status code from the kernel exception.
-    case e: KernelException if e != null => e.status()
+  def status: Status = cause match {
+    case e: HasStatus => e.status()
     case _ => Status.Statement.ExecutionFailed
   }
 }

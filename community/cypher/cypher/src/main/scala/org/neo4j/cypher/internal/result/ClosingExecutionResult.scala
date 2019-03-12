@@ -23,7 +23,6 @@ import java.io.PrintWriter
 import java.util
 import java.util.NoSuchElementException
 
-import org.neo4j.cypher.CypherException
 import org.neo4j.cypher.exceptionHandler.RunSafely
 import org.neo4j.cypher.internal.plandescription.InternalPlanDescription
 import org.neo4j.cypher.internal.runtime._
@@ -180,7 +179,7 @@ class ClosingExecutionResult private(val query: ExecutingQuery,
       close(Success)
     }
 
-  private def closeAndRethrowOnError[T](t: CypherException): T = {
+  private def closeAndRethrowOnError[T](t: Throwable): T = {
     try {
       close(Error(t))
     } catch {
@@ -190,7 +189,7 @@ class ClosingExecutionResult private(val query: ExecutingQuery,
     throw t
   }
 
-  private def closeAndCallOnError(t: CypherException): Unit = {
+  private def closeAndCallOnError(t: Throwable): Unit = {
     try {
       close(Error(t))
       subscriber.onError(t)

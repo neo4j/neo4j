@@ -30,6 +30,7 @@ import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.runtime.BoltResult;
 import org.neo4j.bolt.runtime.BoltResultHandle;
 import org.neo4j.bolt.runtime.TransactionStateMachineSPI;
+import org.neo4j.cypher.CypherExecutionException;
 import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.function.ThrowingConsumer;
@@ -39,6 +40,7 @@ import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.txtracking.TransactionIdTracker;
 import org.neo4j.kernel.availability.AvailabilityGuard;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
@@ -207,8 +209,8 @@ public class TransactionStateMachineV1SPI implements TransactionStateMachineSPI
                 BoltAdapterSubscriber subscriber = new BoltAdapterSubscriber();
                 QueryExecution result = queryExecutionEngine.executeQuery( statement, params, transactionalContext, true,
                         subscriber );
+                subscriber.assertSucceeded();
                 return newBoltResult( result, subscriber, clock );
-
             }
             catch ( KernelException e )
             {
@@ -294,11 +296,22 @@ public class TransactionStateMachineV1SPI implements TransactionStateMachineSPI
             this.recordConsumer = recordConsumer;
         }
 
-        void assertSucceeded() throws Throwable
+        void assertSucceeded() throws KernelException
         {
             if ( error != null )
             {
-                throw error;
+                if ( error instanceof KernelException )
+                {
+                    throw (KernelException) error;
+                }
+                else if ( error instanceof Status.HasStatus )
+                {
+                    throw new QueryExecutionKernelException( (Throwable & Status.HasStatus) error );
+                }
+                else
+                {
+                    throw new QueryExecutionKernelException( new CypherExecutionException( error.getMessage(), error ) );
+                }
             }
         }
     }

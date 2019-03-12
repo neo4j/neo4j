@@ -21,6 +21,7 @@ package org.neo4j.bolt.v1.messaging;
 
 import org.junit.jupiter.api.Test;
 
+import java.io.IOException;
 import java.util.List;
 
 import org.neo4j.bolt.messaging.ResponseMessage;
@@ -96,7 +97,7 @@ class ResultHandlerTest
         }
 
         @Override
-        public boolean handleRecords( RecordConsumer recordConsumer, long size ) throws Throwable
+        public boolean handleRecords( RecordConsumer recordConsumer, long size ) throws IOException
         {
             if ( records.isEmpty() )
             {

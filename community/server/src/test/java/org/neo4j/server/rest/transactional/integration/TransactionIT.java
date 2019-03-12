@@ -571,7 +571,7 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
         interruptFuture.get();
         lockerFuture.get();
         Response execute = executeFuture.get();
-        assertThat( execute, hasErrors( Status.Statement.ExecutionFailed ) );
+        assertThat( execute, hasErrors( Status.Statement.Transaction.Terminated ) );
 
         Response execute2 =
                 http.POST( executeResource, quotedJson( "{ 'statements': [ { 'statement': 'CREATE (n)' } ] }" ) );

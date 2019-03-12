@@ -48,7 +48,7 @@ class ClosingExecutionResultTest extends CypherFunSuite {
     inner.close()
 
     // when
-    val x = ClosingExecutionResult.wrapAndInitiate(query, inner, testRunSafely, monitor)
+    ClosingExecutionResult.wrapAndInitiate(query, inner, testRunSafely, monitor)
 
     // then
     monitor.assertSuccess(query)
@@ -114,7 +114,7 @@ class ClosingExecutionResultTest extends CypherFunSuite {
 
     // then
     inner.isClosed should equal(true)
-    monitor.assertError(query, TestInnerException("initiate"))
+    monitor.assertError(query, TestOuterException("initiate"))
   }
 
   test("should close on exploding fieldNames") {
@@ -201,7 +201,7 @@ class ClosingExecutionResultTest extends CypherFunSuite {
     intercept[TestOuterException] { f(x) }
 
     // then
-    val expectedException = TestInnerException(errorMsg)
+    val expectedException = TestOuterException(errorMsg)
     inner.closeReason should equal(Error(expectedException))
     monitor.assertError(query, expectedException)
   }
@@ -215,10 +215,10 @@ class ClosingExecutionResultTest extends CypherFunSuite {
     val x = ClosingExecutionResult.wrapAndInitiate(query, inner, testRunSafely, monitor)
 
     // when
-    intercept[TestOuterException] { x.close() }
+    x.close()
 
     // then
-    monitor.assertError(query, TestInnerException("close"))
+    monitor.assertError(query, TestOuterException("close"))
   }
 
   test("should suppress explosion on close if already exploded") {
@@ -232,11 +232,12 @@ class ClosingExecutionResultTest extends CypherFunSuite {
 
     // then
     val initialException = TestInnerException("accept")
-    monitor.assertError(query, initialException)
+    val expected = TestOuterException(initialException.msg)
+    monitor.assertError(query, expected)
     inner.closeReason match {
       case Error(t) =>
-        t should equal(initialException)
-        t.getSuppressed should contain(TestInnerException("close"))
+        t should equal(expected)
+        t.getSuppressed should contain(TestOuterException("close"))
 
       case wrongReason =>
         wrongReason should equal(initialException)
@@ -349,8 +350,6 @@ class ClosingExecutionResultTest extends CypherFunSuite {
 
       if (iteratorMode == DIRECT_EXPLODE) throw TestInnerException(iteratorMode.toString)
 
-      private var i = 0
-
       override def close(): Unit = self.close(Success)
 
       override def hasNext: Boolean =
@@ -369,7 +368,7 @@ class ClosingExecutionResultTest extends CypherFunSuite {
   case object NEXT_EXPLODE extends IteratorMode
 
   private val testRunSafely = new RunSafely {
-    override def apply[T](body: => T)(implicit f: CypherException => T): T = {
+    override def apply[T](body: => T)(implicit f: Throwable => T): T = {
       try {
         body
       } catch {

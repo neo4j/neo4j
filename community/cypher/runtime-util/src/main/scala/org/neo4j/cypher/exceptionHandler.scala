@@ -86,7 +86,7 @@ object exceptionHandler extends MapToPublicExceptions[CypherException] {
   override def failedIndexException(indexName: String, failureMessage: String, cause: Throwable): CypherException = new FailedIndexException(indexName, failureMessage, cause)
 
   object runSafely extends RunSafely {
-    override def apply[T](body: => T)(implicit onError: CypherException => T = e => throw e): T = {
+    override def apply[T](body: => T)(implicit onError: Throwable => T = e => throw e): T = {
       try {
         body
       }
@@ -102,15 +102,13 @@ object exceptionHandler extends MapToPublicExceptions[CypherException] {
         //  which is not optimal but hopefully rare)
         case e: java.lang.ArithmeticException =>
           onError(exceptionHandler.arithmeticException(e.getMessage, e))
-
-        case e: Throwable =>
-          onError(new CypherExecutionException(e.getMessage, e))
+        case e: Throwable => onError(e)
       }
     }
   }
 
   trait RunSafely {
-    def apply[T](body: => T)(implicit onError: CypherException => T = (e:CypherException) => throw e): T
+    def apply[T](body: => T)(implicit onError: Throwable => T = (e :Throwable) => throw e): T
   }
 
   def mapToCypher(exception: ValuesException): CypherException = {
