@@ -22,22 +22,43 @@ package org.neo4j.test.extension;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.extension.ExtensionConfigurationException;
+import org.junit.platform.testkit.engine.EngineTestKit;
+import org.junit.platform.testkit.engine.Events;
 
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.engine.descriptor.JupiterEngineDescriptor.ENGINE_ID;
+import static org.junit.platform.engine.discovery.DiscoverySelectors.selectClass;
+import static org.junit.platform.testkit.engine.EventConditions.event;
+import static org.junit.platform.testkit.engine.EventConditions.finishedWithFailure;
+import static org.junit.platform.testkit.engine.TestExecutionResultConditions.instanceOf;
+import static org.junit.platform.testkit.engine.TestExecutionResultConditions.message;
 
 @ExtendWith( DefaultFileSystemExtension.class )
 class DefaultFileSystemExtensionTest
 {
     @Inject
-    DefaultFileSystemAbstraction rootFileSystem;
+    private DefaultFileSystemAbstraction rootFileSystem;
 
     @Test
     void fileSystemInjectionCreateFileSystem()
     {
         assertNotNull( rootFileSystem );
+    }
+
+    @Test
+    void incorrectFileSystemExtensionUsage()
+    {
+        Events testEvents = EngineTestKit.engine( ENGINE_ID )
+                .selectors( selectClass( IncorrectFileSystemUsage.class ) ).execute()
+                .tests();
+
+        testEvents.assertThatEvents().haveExactly( 1,
+                event( finishedWithFailure( instanceOf( ExtensionConfigurationException.class ),
+                        message( message -> message.contains( "Field fileSystem that is marked for injection" ) ) ) ) );
     }
 
     @Nested

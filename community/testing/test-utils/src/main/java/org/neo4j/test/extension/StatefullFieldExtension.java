@@ -20,6 +20,7 @@
 package org.neo4j.test.extension;
 
 import org.junit.jupiter.api.extension.AfterAllCallback;
+import org.junit.jupiter.api.extension.ExtensionConfigurationException;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.ExtensionContext.Namespace;
 import org.junit.jupiter.api.extension.ExtensionContext.Store;
@@ -29,6 +30,8 @@ import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+
+import static java.lang.String.format;
 
 public abstract class StatefullFieldExtension<T> implements TestInstancePostProcessor, AfterAllCallback
 {
@@ -57,6 +60,12 @@ public abstract class StatefullFieldExtension<T> implements TestInstancePostProc
             if ( declaredField.isAnnotationPresent( Inject.class ) && declaredField.getType().isAssignableFrom( getFieldType() ) )
             {
                 declaredField.setAccessible( true );
+                if ( declaredField.get( testInstance ) != null )
+                {
+                    throw new ExtensionConfigurationException(
+                            format( "Field %s that is marked for injection in class %s is managed by extension container " +
+                                            "and should not have any manually assigned value.", declaredField.getName(), clazz.getName() ) );
+                }
                 declaredField.set( testInstance, instance );
             }
         }

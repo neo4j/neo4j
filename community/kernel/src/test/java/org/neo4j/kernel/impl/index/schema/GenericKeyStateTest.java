@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.index.schema;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -68,6 +69,7 @@ import org.neo4j.values.storable.Values;
 import static java.util.Arrays.asList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.TestInstance.Lifecycle.PER_CLASS;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexKey.Inclusion.NEUTRAL;
 import static org.neo4j.values.storable.Values.COMPARATOR;
 import static org.neo4j.values.storable.Values.booleanArray;
@@ -89,6 +91,7 @@ import static org.neo4j.values.storable.Values.shortArray;
 import static org.neo4j.values.storable.Values.timeArray;
 
 @ExtendWith( RandomExtension.class )
+@TestInstance( PER_CLASS )
 class GenericKeyStateTest
 {
     private final IndexSpecificSpaceFillingCurveSettingsCache noSpecificIndexSettings =
