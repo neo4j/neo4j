@@ -24,8 +24,8 @@ import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.util.Objects;
 
+import org.neo4j.internal.unsafe.UnsafeUtil;
 import org.neo4j.memory.MemoryAllocationTracker;
-import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
 
 import static org.neo4j.io.ByteUnit.kibiBytes;
 import static org.neo4j.util.FeatureToggles.getInteger;

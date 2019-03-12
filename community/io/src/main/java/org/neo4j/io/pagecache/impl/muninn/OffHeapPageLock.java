@@ -19,7 +19,7 @@
  */
 package org.neo4j.io.pagecache.impl.muninn;
 
-import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
+import org.neo4j.internal.unsafe.UnsafeUtil;
 
 /**
  * OffHeapPageLock is a sequence-based lock like StampedLock, but entirely non-blocking, and with special lock modes

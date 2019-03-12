@@ -22,7 +22,7 @@ package org.neo4j.index.internal.gbptree;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
 
-import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
+import org.neo4j.internal.unsafe.UnsafeUtil;
 
 class GBPTreeLock
 {

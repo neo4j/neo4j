@@ -21,7 +21,7 @@ package org.neo4j.util.concurrent;
 
 import java.util.concurrent.locks.LockSupport;
 
-import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
+import org.neo4j.internal.unsafe.UnsafeUtil;
 
 /**
  * This class is similar in many ways to a CountDownLatch(1).

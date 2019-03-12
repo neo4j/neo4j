@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.graphdb.config.Configuration;
+import org.neo4j.internal.unsafe.UnsafeUtil;
 import org.neo4j.io.fs.FileSystemAbstraction;
 
 /**
@@ -52,7 +53,7 @@ public interface PageSwapperFactory
 
     /**
      * Get the unit of alignment that the swappers require of the memory buffers. For instance, if page alignment is
-     * required for doing direct IO, then {@link org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil#pageSize()} can be
+     * required for doing direct IO, then {@link UnsafeUtil#pageSize()} can be
      * returned.
      *
      * @return The required buffer alignment byte multiple.

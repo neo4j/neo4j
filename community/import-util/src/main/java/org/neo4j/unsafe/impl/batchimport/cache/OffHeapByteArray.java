@@ -19,8 +19,8 @@
  */
 package org.neo4j.unsafe.impl.batchimport.cache;
 
+import org.neo4j.internal.unsafe.UnsafeUtil;
 import org.neo4j.memory.MemoryAllocationTracker;
-import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
 
 public class OffHeapByteArray extends OffHeapNumberArray<ByteArray> implements ByteArray
 {

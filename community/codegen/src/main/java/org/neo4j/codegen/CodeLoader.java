@@ -22,7 +22,7 @@ package org.neo4j.codegen;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
+import org.neo4j.internal.unsafe.UnsafeUtil;
 
 class CodeLoader extends ClassLoader
 {

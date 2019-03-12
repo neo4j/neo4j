@@ -23,15 +23,15 @@ import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.StampedLock;
 
+import org.neo4j.internal.unsafe.UnsafeUtil;
 import org.neo4j.unsafe.impl.batchimport.Configuration;
 import org.neo4j.unsafe.impl.batchimport.stats.StatsProvider;
-import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
 
 import static java.lang.Integer.max;
 import static java.lang.Integer.min;
 import static java.lang.String.format;
 import static java.lang.System.nanoTime;
-import static org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.getFieldOffset;
+import static org.neo4j.internal.unsafe.UnsafeUtil.getFieldOffset;
 
 /**
  * Executes batches by multiple threads. Each threads only processes its own part, e.g. based on node id,

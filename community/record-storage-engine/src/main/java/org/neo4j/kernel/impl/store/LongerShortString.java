@@ -22,8 +22,8 @@ package org.neo4j.kernel.impl.store;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
+import org.neo4j.internal.unsafe.UnsafeUtil;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
-import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
 import org.neo4j.util.Bits;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Values;

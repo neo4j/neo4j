@@ -23,9 +23,9 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.neo4j.internal.unsafe.NativeMemoryAllocationRefusedError;
+import org.neo4j.internal.unsafe.UnsafeUtil;
 import org.neo4j.memory.MemoryAllocationTracker;
-import org.neo4j.unsafe.impl.internal.dragons.NativeMemoryAllocationRefusedError;
-import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
 import org.neo4j.util.Preconditions;
 
 /**
