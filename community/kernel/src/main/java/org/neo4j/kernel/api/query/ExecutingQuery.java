@@ -22,8 +22,10 @@ package org.neo4j.kernel.api.query;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
@@ -104,8 +106,10 @@ public class ExecutingQuery
         this.clientConnection = clientConnection;
         this.pageCursorCounters = pageCursorCounters;
         this.username = username;
-        this.queryText = queryText;
-        this.queryParameters = queryParameters;
+
+        Set<String> passwordParams = new HashSet<>();
+        this.queryText = QueryObfuscation.obfuscateText( queryText, passwordParams );
+        this.queryParameters = QueryObfuscation.obfuscateParams( queryParameters, passwordParams );
         this.transactionAnnotationData = transactionAnnotationData;
         this.activeLockCount = activeLockCount;
         this.initialActiveLocks = activeLockCount.getAsLong();

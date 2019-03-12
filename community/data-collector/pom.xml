@@ -91,6 +91,11 @@ the relevant Commercial Agreement.
             <artifactId>neo4j-rewriting-3.5</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>org.neo4j</groupId>
+            <artifactId>neo4j-cypher</artifactId>
+            <version>${project.version}</version>
+        </dependency>
 
         <!-- Test are located with other IT tests to solve problems with depending of TestGraphDatabaseFactory et.c. -->
 

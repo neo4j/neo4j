@@ -19,6 +19,8 @@
  */
 package org.neo4j.internal.collector
 
+import org.neo4j.cypher.{CypherExpressionEngineOption, CypherPlannerOption, CypherRuntimeOption, CypherVersion}
+import org.neo4j.cypher.internal.PreParser
 import org.neo4j.cypher.internal.v3_5.ast.Statement
 import org.neo4j.cypher.internal.v3_5.ast.prettifier.{ExpressionStringifier, Prettifier}
 import org.neo4j.cypher.internal.v3_5.expressions.Expression
@@ -40,16 +42,21 @@ case class PlainText(valueMapper: ValueMapper.JavaMapper) extends QueryAnonymize
   def queryParams(params: MapValue): Object = params.map(valueMapper)
 }
 
+object IdAnonymizer {
+  private val preParser = new PreParser(CypherVersion.default, CypherPlannerOption.default, CypherRuntimeOption.default, CypherExpressionEngineOption.default, 0)
+}
+
 case class IdAnonymizer(tokens: TokenRead) extends QueryAnonymizer {
 
   private val parser = new CypherParser()
   private val prettifier = Prettifier(ExpressionStringifier(_.asCanonicalStringVal))
 
   override def queryText(queryText: String): String = {
-    val originalAst = parser.parse(queryText, None)
+    val preParsedQuery = IdAnonymizer.preParser.preParseQuery(queryText, false)
+    val originalAst = parser.parse(preParsedQuery.statement, None)
     val anonymizer = anonymizeQuery(new IdAnonymizerState(tokens, prettifier))
     val rewrittenAst = anonymizer(originalAst).asInstanceOf[Statement]
-    prettifier.asString(rewrittenAst)
+    preParsedQuery.rawPreparserOptions ++ prettifier.asString(rewrittenAst)
   }
 
   override def queryParams(params: MapValue): AnyRef = {
