@@ -84,12 +84,12 @@ public class FailingGenericNativeIndexProviderFactory extends ExtensionFactory<G
 
     public FailingGenericNativeIndexProviderFactory( FailureType... failureTypes )
     {
-        this( new GenericNativeIndexProviderFactory(), 10_000, failureTypes );
+        this( new GenericNativeIndexProviderFactory(), failureTypes );
     }
 
-    private FailingGenericNativeIndexProviderFactory( GenericNativeIndexProviderFactory actual, int priority, FailureType... failureTypes )
+    private FailingGenericNativeIndexProviderFactory( GenericNativeIndexProviderFactory actual, FailureType... failureTypes )
     {
-        super( ExtensionType.DATABASE, GenericNativeIndexProvider.KEY );
+        super( ExtensionType.DATABASE, actual.getName() );
         if ( failureTypes.length == 0 )
         {
             throw new IllegalArgumentException( "At least one failure type, otherwise there's no point in this provider" );

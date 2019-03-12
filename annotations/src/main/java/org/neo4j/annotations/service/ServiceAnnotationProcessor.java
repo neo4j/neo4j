@@ -107,7 +107,7 @@ public class ServiceAnnotationProcessor extends AbstractProcessor
     private void scan( RoundEnvironment roundEnv )
     {
         final Set<TypeElement> elements = roundEnv.getElementsAnnotatedWith( ServiceProvider.class ).stream().map( TypeElement.class::cast ).collect( toSet() );
-        info( "Processing service providers: " + elements );
+        info( "Processing service providers: " + elements.stream().map( Object::toString ).sorted( ).collect( toList() ) );
         for ( TypeElement serviceProvider : elements )
         {
             getImplementedService( serviceProvider ).ifPresent( service ->
