@@ -500,6 +500,12 @@ public abstract class Command implements StorageCommand
         }
 
         @Override
+        public boolean isInternal()
+        {
+            return getAfter().isInternal();
+        }
+
+        @Override
         public String toString()
         {
             return beforeAndAfterToString( before, after );

@@ -52,5 +52,10 @@ public interface StorageCommand
          * @return the token id in this command.
          */
         int tokenId();
+
+        /**
+         * @return {@code true} if the token is internal, {@code false} if this is a public token.
+         */
+        boolean isInternal();
     }
 }
