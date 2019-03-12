@@ -25,8 +25,10 @@ package org.neo4j.annotations.service;
 import org.eclipse.collections.api.multimap.MutableMultimap;
 import org.eclipse.collections.impl.factory.Multimaps;
 
+import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.io.Writer;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -157,7 +159,7 @@ public class ServiceAnnotationProcessor extends AbstractProcessor
             final String path = "META-INF/services/" + elementUtils.getBinaryName( service ).toString();
             info( "Generating service config file: " + path );
             final FileObject file = processingEnv.getFiler().createResource( CLASS_OUTPUT, "", path );
-            try ( PrintWriter out = new PrintWriter( file.openWriter() ) )
+            try ( Writer writer = file.openWriter(); PrintWriter out = new PrintWriter( new BufferedWriter( writer ) ) )
             {
                 serviceProviders.get( service ).stream()
                         .sorted( comparing( typeElement -> typeElement.getQualifiedName().toString() ) )
