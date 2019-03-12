@@ -120,9 +120,8 @@ public class ServiceAnnotationProcessor extends AbstractProcessor
 
     private Optional<TypeElement> getImplementedService( TypeElement serviceProvider )
     {
-        final Set<TypeMirror> supertypes = getAllSupertypes( serviceProvider.asType() );
-        supertypes.add( serviceProvider.asType() );
-        final List<TypeMirror> services = supertypes.stream().filter( this::isService ).collect( toList() );
+        final Set<TypeMirror> types = getTypeWithSupertypes( serviceProvider.asType() );
+        final List<TypeMirror> services = types.stream().filter( this::isService ).collect( toList() );
 
         if ( services.isEmpty() )
         {
@@ -144,12 +143,13 @@ public class ServiceAnnotationProcessor extends AbstractProcessor
         return typeUtils.asElement( type ).getAnnotation( Service.class ) != null;
     }
 
-    private Set<TypeMirror> getAllSupertypes( TypeMirror type )
+    private Set<TypeMirror> getTypeWithSupertypes( TypeMirror type )
     {
+        final Set<TypeMirror> allTypes = new HashSet<>();
+        allTypes.add( type );
         final List<? extends TypeMirror> directSupertypes = typeUtils.directSupertypes( type );
-        final Set<TypeMirror> allSupertypes = new HashSet<>( directSupertypes );
-        directSupertypes.forEach( directSupertype -> allSupertypes.addAll( getAllSupertypes( directSupertype ) ) );
-        return allSupertypes;
+        directSupertypes.forEach( directSupertype -> allTypes.addAll( getTypeWithSupertypes( directSupertype ) ) );
+        return allTypes;
     }
 
     private void generateConfigs() throws IOException
