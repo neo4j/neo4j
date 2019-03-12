@@ -25,15 +25,3 @@ Full license texts are found in LICENSES.txt.
 Third-party licenses
 --------------------
 
-Apache Software License, Version 2.0
-  error-prone annotations
-  FindBugs-jsr305
-  Guava InternalFutureFailureAccess and InternalFutures
-  Guava ListenableFuture only
-  Guava: Google Core Libraries for Java
-  J2ObjC Annotations
-
-MIT License
-  Animal Sniffer Annotations
-  Checker Qual
-

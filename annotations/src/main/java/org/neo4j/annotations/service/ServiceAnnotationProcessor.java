@@ -22,9 +22,8 @@
  */
 package org.neo4j.annotations.service;
 
-import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Multimap;
+import org.eclipse.collections.api.multimap.MutableMultimap;
+import org.eclipse.collections.impl.factory.Multimaps;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -43,7 +42,6 @@ import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
 import javax.tools.FileObject;
 
-import static com.google.common.base.Throwables.getStackTraceAsString;
 import static java.lang.String.format;
 import static java.util.Comparator.comparing;
 import static java.util.stream.Collectors.toList;
@@ -51,10 +49,12 @@ import static java.util.stream.Collectors.toSet;
 import static javax.tools.Diagnostic.Kind.ERROR;
 import static javax.tools.Diagnostic.Kind.NOTE;
 import static javax.tools.StandardLocation.CLASS_OUTPUT;
+import static org.apache.commons.lang3.exception.ExceptionUtils.getStackTrace;
+import static org.eclipse.collections.impl.set.mutable.UnifiedSet.newSetWith;
 
 public class ServiceAnnotationProcessor extends AbstractProcessor
 {
-    private final Multimap<TypeElement, TypeElement> serviceProviders = ArrayListMultimap.create();
+    private final MutableMultimap<TypeElement, TypeElement> serviceProviders = Multimaps.mutable.list.empty();
     private Types typeUtils;
     private Elements elementUtils;
 
@@ -69,7 +69,7 @@ public class ServiceAnnotationProcessor extends AbstractProcessor
     @Override
     public Set<String> getSupportedAnnotationTypes()
     {
-        return ImmutableSet.of( ServiceProvider.class.getName() );
+        return newSetWith( ServiceProvider.class.getName() );
     }
 
     @Override
@@ -178,7 +178,7 @@ public class ServiceAnnotationProcessor extends AbstractProcessor
 
     private void error( String msg, Exception e )
     {
-        processingEnv.getMessager().printMessage( ERROR, msg + ":\n" + getStackTraceAsString( e ) );
+        processingEnv.getMessager().printMessage( ERROR, msg + ": " + getStackTrace( e ) );
     }
 
     private void error( String msg, Element element )
