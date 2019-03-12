@@ -43,12 +43,7 @@ public final class MessageMetadataParser
         }
         else if ( anyValue instanceof StringValue )
         {
-            String name = ((StringValue) anyValue).stringValue();
-            if ( name.equals( ABSENT_DB_NAME ) )
-            {
-                return ABSENT_DB_NAME;
-            }
-            return name;
+            return ((StringValue) anyValue).stringValue();
         }
         else
         {

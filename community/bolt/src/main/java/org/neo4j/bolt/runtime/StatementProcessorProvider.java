@@ -24,7 +24,7 @@ import java.time.Clock;
 import org.neo4j.bolt.messaging.BoltIOException;
 import org.neo4j.bolt.security.auth.AuthenticationResult;
 import org.neo4j.bolt.v1.runtime.TransactionStateMachine;
-import org.neo4j.bolt.v1.runtime.TransactionStateMachine.StatementProcessorReleaseManager;
+import org.neo4j.bolt.v1.runtime.StatementProcessorReleaseManager;
 
 public class StatementProcessorProvider
 {

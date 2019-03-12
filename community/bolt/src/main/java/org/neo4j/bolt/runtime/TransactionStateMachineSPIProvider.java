@@ -19,104 +19,11 @@
  */
 package org.neo4j.bolt.runtime;
 
-import java.time.Clock;
-import java.time.Duration;
-import java.util.Objects;
-import java.util.Optional;
-
-import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.messaging.BoltIOException;
-import org.neo4j.bolt.v1.runtime.TransactionStateMachine.StatementProcessorReleaseManager;
-import org.neo4j.bolt.v1.runtime.TransactionStateMachineV1SPI;
-import org.neo4j.bolt.v3.runtime.TransactionStateMachineV3SPI;
-import org.neo4j.dbms.database.DatabaseContext;
-import org.neo4j.dbms.database.DatabaseManager;
-import org.neo4j.kernel.api.exceptions.Status;
-
-import static java.lang.String.format;
-import static org.neo4j.bolt.v4.messaging.MessageMetadataParser.ABSENT_DB_NAME;
+import org.neo4j.bolt.v1.runtime.StatementProcessorReleaseManager;
 
 public interface TransactionStateMachineSPIProvider
 {
     TransactionStateMachineSPI getTransactionStateMachineSPI( String databaseName, StatementProcessorReleaseManager resourceReleaseManger )
             throws BoltProtocolBreachFatality, BoltIOException;
-
-    abstract class DefaultDatabaseTransactionStatementSPIProvider implements TransactionStateMachineSPIProvider
-    {
-        final Duration txAwaitDuration;
-        final Clock clock;
-        final BoltChannel boltChannel;
-        private final String defaultDatabaseName;
-        private final DatabaseManager databaseManager;
-
-        public DefaultDatabaseTransactionStatementSPIProvider( DatabaseManager databaseManager, String defaultDatabaseName, BoltChannel boltChannel,
-                Duration awaitDuration, Clock clock )
-        {
-            this.databaseManager = databaseManager;
-            this.defaultDatabaseName = defaultDatabaseName;
-            this.txAwaitDuration = awaitDuration;
-            this.clock = clock;
-            this.boltChannel = boltChannel;
-        }
-
-        @Override
-        public TransactionStateMachineSPI getTransactionStateMachineSPI( String databaseName, StatementProcessorReleaseManager resourceReleaseManger )
-                throws BoltProtocolBreachFatality, BoltIOException
-        {
-            if ( !Objects.equals( databaseName, ABSENT_DB_NAME ) )
-            {
-                // This bolt version shall NOT provide us a db name.
-                throw new BoltProtocolBreachFatality( format( "Database selection by name not supported by Bolt protocol version lower than BoltV4. " +
-                        "Please contact your Bolt client author to report this bug in the client code. Requested database name: '%s'.", databaseName ) );
-            }
-            return newTransactionStateMachineSPI( getDefaultDatabase(), resourceReleaseManger );
-        }
-
-        protected abstract TransactionStateMachineSPI newTransactionStateMachineSPI( DatabaseContext activeDatabase,
-                StatementProcessorReleaseManager resourceReleaseManger );
-
-        private DatabaseContext getDefaultDatabase() throws BoltIOException
-        {
-            Optional<DatabaseContext> databaseContext = databaseManager.getDatabaseContext( defaultDatabaseName );
-            if ( !databaseContext.isPresent() )
-            {
-                throw new BoltIOException( Status.Request.Invalid,
-                        format( "Default database does not exists. Default database name: '%s'", defaultDatabaseName ) );
-            }
-            return databaseContext.get();
-        }
-    }
-
-    class TransactionStateMachineSPIProviderV1 extends DefaultDatabaseTransactionStatementSPIProvider
-    {
-        TransactionStateMachineSPIProviderV1( DatabaseManager databaseManager, String activeDatabaseName, BoltChannel boltChannel, Duration awaitDuration,
-                Clock clock )
-        {
-            super( databaseManager, activeDatabaseName, boltChannel, awaitDuration, clock );
-        }
-
-        @Override
-        protected TransactionStateMachineSPI newTransactionStateMachineSPI( DatabaseContext databaseContext,
-                StatementProcessorReleaseManager resourceReleaseManger )
-        {
-            return new TransactionStateMachineV1SPI( databaseContext, boltChannel, txAwaitDuration, clock, resourceReleaseManger );
-        }
-    }
-
-    class TransactionStateMachineSPIProviderV3 extends DefaultDatabaseTransactionStatementSPIProvider
-    {
-
-        TransactionStateMachineSPIProviderV3( DatabaseManager databaseManager, String defaultDatabaseName, BoltChannel boltChannel,
-                Duration awaitDuration, Clock clock )
-        {
-            super( databaseManager, defaultDatabaseName, boltChannel, awaitDuration, clock );
-        }
-
-        @Override
-        protected TransactionStateMachineSPI newTransactionStateMachineSPI( DatabaseContext databaseContext,
-                StatementProcessorReleaseManager resourceReleaseManger )
-        {
-            return new TransactionStateMachineV3SPI( databaseContext, boltChannel, txAwaitDuration, clock, resourceReleaseManger );
-        }
-    }
 }

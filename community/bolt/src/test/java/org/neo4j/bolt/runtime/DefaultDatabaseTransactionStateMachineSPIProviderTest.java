@@ -26,7 +26,7 @@ import java.time.Duration;
 import java.util.Optional;
 
 import org.neo4j.bolt.BoltChannel;
-import org.neo4j.bolt.v1.runtime.TransactionStateMachine.StatementProcessorReleaseManager;
+import org.neo4j.bolt.v1.runtime.StatementProcessorReleaseManager;
 import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseManager;
 
@@ -70,7 +70,7 @@ class DefaultDatabaseTransactionStateMachineSPIProviderTest
 
     private TransactionStateMachineSPIProvider newSpiProvider( DatabaseManager databaseManager )
     {
-        return new TransactionStateMachineSPIProvider.DefaultDatabaseTransactionStatementSPIProvider( databaseManager, "neo4j", mock( BoltChannel.class ),
+        return new DefaultDatabaseTransactionStatementSPIProvider( databaseManager, "neo4j", mock( BoltChannel.class ),
                 Duration.ZERO, mock( Clock.class ) )
         {
             @Override

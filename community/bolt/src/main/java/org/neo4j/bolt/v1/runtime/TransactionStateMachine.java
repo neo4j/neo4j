@@ -326,7 +326,7 @@ public class TransactionStateMachine implements StatementProcessor
                         catch ( Throwable e )
                         {
                             // If we failed to begin a transaction for some reason such as the database is stopped, we need to release ourselves
-                            spi.release();
+                            spi.transactionClosed();
                             throw e;
                         }
                     }
@@ -512,7 +512,7 @@ public class TransactionStateMachine implements StatementProcessor
                 {
                     ctx.currentTransaction = null;
                     ctx.statementCounter = 0;
-                    spi.release(); // we need to release ourselves, after this point we are in the hand of GC
+                    spi.transactionClosed(); // we need to release ourselves, after this point we are in the hand of GC
                 }
             }
         }
@@ -702,11 +702,6 @@ public class TransactionStateMachine implements StatementProcessor
             this.resultHandle = resultHandle;
             this.result = result;
         }
-    }
-
-    public interface StatementProcessorReleaseManager
-    {
-        void releaseStatementProcessor();
     }
 
     @Override

@@ -23,20 +23,28 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+
+import java.util.List;
 
 import org.neo4j.bolt.v1.transport.integration.Neo4jWithSocket;
 import org.neo4j.bolt.v1.transport.integration.TransportTestUtil;
+import org.neo4j.bolt.v1.transport.socket.client.SecureSocketConnection;
+import org.neo4j.bolt.v1.transport.socket.client.SecureWebSocketConnection;
 import org.neo4j.bolt.v1.transport.socket.client.SocketConnection;
 import org.neo4j.bolt.v1.transport.socket.client.TransportConnection;
+import org.neo4j.bolt.v1.transport.socket.client.WebSocketConnection;
 import org.neo4j.bolt.v3.messaging.request.CommitMessage;
 import org.neo4j.bolt.v3.messaging.request.HelloMessage;
 import org.neo4j.bolt.v3.messaging.request.RollbackMessage;
-import org.neo4j.bolt.v3.messaging.request.RunMessage;
 import org.neo4j.bolt.v4.messaging.BeginMessage;
 import org.neo4j.bolt.v4.messaging.PullNMessage;
+import org.neo4j.bolt.v4.messaging.RunMessage;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.values.virtual.VirtualValues;
 
+import static java.util.Arrays.asList;
 import static java.util.Collections.singletonMap;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -56,6 +64,7 @@ import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.kernel.impl.util.ValueUtils.asMapValue;
 import static org.neo4j.values.storable.Values.longValue;
 
+@RunWith( Parameterized.class )
 public class BoltV4TransportIT
 {
     private static final String USER_AGENT = "TestClient/4.0";
@@ -67,11 +76,20 @@ public class BoltV4TransportIT
     private TransportConnection connection;
     private TransportTestUtil util;
 
+    @Parameterized.Parameter
+    public Class<? extends TransportConnection> connectionClass;
+
+    @Parameterized.Parameters( name = "{0}" )
+    public static List<Class<? extends TransportConnection>> transports()
+    {
+        return asList( SocketConnection.class, WebSocketConnection.class, SecureSocketConnection.class, SecureWebSocketConnection.class );
+    }
+
     @Before
-    public void setUp()
+    public void setUp() throws Exception
     {
         address = server.lookupDefaultConnector();
-        connection = new SocketConnection();
+        connection = connectionClass.newInstance();
         util = new TransportTestUtil( newNeo4jPack(), newMessageEncoder() );
     }
 

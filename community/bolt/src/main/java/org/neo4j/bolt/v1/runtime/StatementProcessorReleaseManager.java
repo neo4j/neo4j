@@ -17,28 +17,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.bolt.v3.messaging.request;
+package org.neo4j.bolt.v1.runtime;
 
-import org.neo4j.bolt.messaging.BoltIOException;
-import org.neo4j.values.virtual.MapValue;
-
-public class BeginMessage extends TransactionInitiatingMessage
+public interface StatementProcessorReleaseManager
 {
-    public static final byte SIGNATURE = 0x11;
-
-    public BeginMessage() throws BoltIOException
-    {
-        super();
-    }
-
-    public BeginMessage( MapValue meta ) throws BoltIOException
-    {
-        super( meta );
-    }
-
-    @Override
-    public String toString()
-    {
-        return "BEGIN " + meta();
-    }
+    void releaseStatementProcessor();
 }

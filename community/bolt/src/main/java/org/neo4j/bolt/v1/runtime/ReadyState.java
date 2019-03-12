@@ -70,11 +70,11 @@ public class ReadyState implements BoltStateMachineState
         }
         if ( message instanceof PullAllMessage )
         {
-            return processStreamingMessageAfterRunBeginCommitRollback( message, context, true );
+            return processStreamingMessageAfterRunBeginCommitRollback( context, true );
         }
         else if ( message instanceof DiscardAllMessage )
         {
-            return processStreamingMessageAfterRunBeginCommitRollback( message, context, false );
+            return processStreamingMessageAfterRunBeginCommitRollback( context, false );
         }
         if ( message instanceof ResetMessage )
         {
@@ -161,7 +161,7 @@ public class ReadyState implements BoltStateMachineState
         return nextState;
     }
 
-    private BoltStateMachineState processStreamingMessageAfterRunBeginCommitRollback( RequestMessage message, StateMachineContext context, boolean pull )
+    private BoltStateMachineState processStreamingMessageAfterRunBeginCommitRollback( StateMachineContext context, boolean pull )
             throws BoltConnectionFatality
     {
         try

@@ -276,6 +276,7 @@ BSD License
   asm-analysis
   asm-tree
   asm-util
+  Hamcrest
   Scala Compiler
 ------------------------------------------------------------------------------
 
@@ -442,9 +443,13 @@ This Agreement is governed by the laws of the State of New York and the intellec
 
 ------------------------------------------------------------------------------
 Eclipse Public License v2.0
+  JUnit Jupiter (Aggregator)
+  JUnit Jupiter API
+  JUnit Jupiter Params
   JUnit Platform Commons
   JUnit Platform Engine API
   JUnit Platform Launcher
+  JUnit Vintage Engine
 ------------------------------------------------------------------------------
 
 Eclipse Public License - v 2.0

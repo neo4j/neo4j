@@ -27,7 +27,7 @@ import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.messaging.BoltIOException;
 import org.neo4j.bolt.testing.BoltTestUtil;
 import org.neo4j.bolt.v3.messaging.request.HelloMessage;
-import org.neo4j.bolt.v3.runtime.integration.SessionExtension;
+import org.neo4j.bolt.v1.runtime.integration.SessionExtension;
 import org.neo4j.bolt.v4.BoltProtocolV4;
 import org.neo4j.bolt.v4.BoltStateMachineV4;
 import org.neo4j.bolt.v4.messaging.DiscardNMessage;

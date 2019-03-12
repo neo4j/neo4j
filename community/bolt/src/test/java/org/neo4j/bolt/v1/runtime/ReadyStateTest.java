@@ -251,7 +251,7 @@ class ReadyStateTest
     }
 
     @ParameterizedTest
-    @MethodSource( "createWordsWithLength" )
+    @MethodSource( "testPullAllDiscardAllParameters" )
     void shouldHandlePullAllDiscardAll( String runStatement, RequestMessage message, Class<BoltResult> resultClass ) throws Throwable
     {
         BoltStateMachineState newState = state.process( new RunMessage( runStatement ), context );
@@ -272,7 +272,7 @@ class ReadyStateTest
         }
     }
 
-    private static Stream<Arguments> createWordsWithLength()
+    private static Stream<Arguments> testPullAllDiscardAllParameters()
     {
         return Stream.of( Arguments.of( "BEGIN", PullAllMessage.INSTANCE, BoltResult.EMPTY.getClass() ),
                 Arguments.of( "BEGIN", DiscardAllMessage.INSTANCE, BoltResult.EMPTY.getClass() ),

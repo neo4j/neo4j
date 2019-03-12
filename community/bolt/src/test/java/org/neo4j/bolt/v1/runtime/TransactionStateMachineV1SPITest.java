@@ -30,7 +30,6 @@ import java.util.concurrent.Future;
 import java.util.function.Supplier;
 
 import org.neo4j.bolt.BoltChannel;
-import org.neo4j.bolt.v1.runtime.TransactionStateMachine.StatementProcessorReleaseManager;
 import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.GraphDatabaseQueryService;

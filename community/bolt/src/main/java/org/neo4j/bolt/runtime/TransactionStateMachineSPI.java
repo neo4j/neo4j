@@ -46,5 +46,5 @@ public interface TransactionStateMachineSPI
 
     boolean supportsNestedStatementsInTransaction();
 
-    void release();
+    void transactionClosed();
 }

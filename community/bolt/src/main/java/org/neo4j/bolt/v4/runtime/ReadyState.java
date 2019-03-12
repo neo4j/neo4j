@@ -25,7 +25,7 @@ import org.neo4j.bolt.runtime.BoltProtocolBreachFatality;
 import org.neo4j.bolt.runtime.BoltStateMachineState;
 import org.neo4j.bolt.runtime.StateMachineContext;
 import org.neo4j.bolt.runtime.StatementProcessor;
-import org.neo4j.bolt.v3.messaging.request.TransactionInitiallingMessage;
+import org.neo4j.bolt.v3.messaging.request.TransactionInitiatingMessage;
 import org.neo4j.bolt.v4.messaging.BeginMessage;
 import org.neo4j.bolt.v4.messaging.RunMessage;
 
@@ -49,7 +49,7 @@ public class ReadyState extends org.neo4j.bolt.v3.runtime.ReadyState
         return null;
     }
 
-    protected StatementProcessor getStatementProcessor( TransactionInitiallingMessage message, StateMachineContext context )
+    protected StatementProcessor getStatementProcessor( TransactionInitiatingMessage message, StateMachineContext context )
             throws BoltProtocolBreachFatality, BoltIOException
     {
         String databaseName = null;
@@ -63,7 +63,7 @@ public class ReadyState extends org.neo4j.bolt.v3.runtime.ReadyState
         }
         else
         {
-            throw new IllegalStateException( "Expected either a BoltV4 RUM message or BEGIN message, but got: " + message.getClass() );
+            throw new IllegalStateException( "Expected either a BoltV4 RUN message or BEGIN message, but got: " + message.getClass() );
         }
 
         return context.setCurrentStatementProcessorForDatabase( databaseName );

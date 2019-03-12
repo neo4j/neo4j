@@ -33,7 +33,6 @@ import org.neo4j.bolt.testing.BoltTestUtil;
 import org.neo4j.bolt.v1.messaging.request.DiscardAllMessage;
 import org.neo4j.bolt.v1.messaging.request.InitMessage;
 import org.neo4j.bolt.v1.messaging.request.RunMessage;
-import org.neo4j.bolt.v1.runtime.TransactionStateMachine.StatementProcessorReleaseManager;
 import org.neo4j.kernel.api.security.AuthToken;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.VirtualValues;

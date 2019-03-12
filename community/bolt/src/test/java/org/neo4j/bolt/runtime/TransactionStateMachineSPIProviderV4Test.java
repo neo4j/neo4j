@@ -27,7 +27,7 @@ import java.util.Optional;
 
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.messaging.BoltIOException;
-import org.neo4j.bolt.v1.runtime.TransactionStateMachine.StatementProcessorReleaseManager;
+import org.neo4j.bolt.v1.runtime.StatementProcessorReleaseManager;
 import org.neo4j.bolt.v4.runtime.TransactionStateMachineV4SPI;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.dbms.database.DatabaseContext;

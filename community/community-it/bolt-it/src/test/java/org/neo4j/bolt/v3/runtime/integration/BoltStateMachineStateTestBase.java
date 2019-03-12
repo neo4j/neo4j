@@ -23,6 +23,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.testing.BoltTestUtil;
+import org.neo4j.bolt.v1.runtime.integration.SessionExtension;
 import org.neo4j.bolt.v3.BoltProtocolV3;
 import org.neo4j.bolt.v3.BoltStateMachineV3;
 import org.neo4j.bolt.v3.messaging.request.HelloMessage;

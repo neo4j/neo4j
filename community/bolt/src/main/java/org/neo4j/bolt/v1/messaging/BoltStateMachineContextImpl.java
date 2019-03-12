@@ -33,13 +33,13 @@ import org.neo4j.bolt.runtime.StatementProcessor;
 import org.neo4j.bolt.runtime.StatementProcessorProvider;
 import org.neo4j.bolt.runtime.TransactionStateMachineSPIProvider;
 import org.neo4j.bolt.security.auth.AuthenticationResult;
+import org.neo4j.bolt.v1.runtime.StatementProcessorReleaseManager;
 import org.neo4j.bolt.v1.runtime.TransactionStateMachine;
 
 import static java.lang.String.format;
 import static org.neo4j.bolt.runtime.StatementProcessor.EMPTY;
-import static org.neo4j.bolt.v1.runtime.TransactionStateMachine.StatementProcessorReleaseManager;
 
-public class BoltStateMachineContextImp implements StateMachineContext, StatementProcessorReleaseManager
+public class BoltStateMachineContextImpl implements StateMachineContext, StatementProcessorReleaseManager
 {
     private final BoltStateMachine machine;
     private final BoltChannel boltChannel;
@@ -48,7 +48,7 @@ public class BoltStateMachineContextImp implements StateMachineContext, Statemen
     private final Clock clock;
     private StatementProcessorProvider statementProcessorProvider;
 
-    public BoltStateMachineContextImp( BoltStateMachine machine, BoltChannel boltChannel, BoltStateMachineSPI spi, MutableConnectionState connectionState,
+    public BoltStateMachineContextImpl( BoltStateMachine machine, BoltChannel boltChannel, BoltStateMachineSPI spi, MutableConnectionState connectionState,
             Clock clock )
     {
         this.machine = machine;
@@ -104,7 +104,7 @@ public class BoltStateMachineContextImp implements StateMachineContext, Statemen
     public void initStatementProcessorProvider( AuthenticationResult authResult )
     {
         TransactionStateMachineSPIProvider transactionSpiProvider = spi.transactionStateMachineSPIProvider();
-        statementProcessorProvider( new StatementProcessorProvider( authResult, transactionSpiProvider, clock, this ) );
+        setStatementProcessorProvider( new StatementProcessorProvider( authResult, transactionSpiProvider, clock, this ) );
     }
 
     /**
@@ -156,7 +156,7 @@ public class BoltStateMachineContextImp implements StateMachineContext, Statemen
         return true;
     }
 
-    void statementProcessorProvider( StatementProcessorProvider statementProcessorProvider )
+    void setStatementProcessorProvider( StatementProcessorProvider statementProcessorProvider )
     {
         this.statementProcessorProvider = statementProcessorProvider;
     }

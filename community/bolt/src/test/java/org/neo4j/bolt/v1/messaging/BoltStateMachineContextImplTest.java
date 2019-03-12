@@ -43,13 +43,13 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.bolt.runtime.StatementProcessor.EMPTY;
 
-class BoltStateMachineContextImpTest
+class BoltStateMachineContextImplTest
 {
     @Test
     void shouldHandleFailure() throws BoltConnectionFatality
     {
         BoltStateMachine machine = mock( BoltStateMachine.class );
-        BoltStateMachineContextImp context = newContext( machine, mock( BoltStateMachineSPI.class ) );
+        BoltStateMachineContextImpl context = newContext( machine, mock( BoltStateMachineSPI.class ) );
 
         RuntimeException cause = new RuntimeException();
         context.handleFailure( cause, true );
@@ -61,7 +61,7 @@ class BoltStateMachineContextImpTest
     void shouldResetMachine() throws BoltConnectionFatality
     {
         BoltStateMachine machine = mock( BoltStateMachine.class );
-        BoltStateMachineContextImp context = newContext( machine, mock( BoltStateMachineSPI.class ) );
+        BoltStateMachineContextImpl context = newContext( machine, mock( BoltStateMachineSPI.class ) );
 
         context.resetMachine();
 
@@ -82,7 +82,7 @@ class BoltStateMachineContextImpTest
     {
         // Given a context that has a active tx state machine set.
         StatementProcessor txStateMachine = mock( StatementProcessor.class );
-        BoltStateMachineContextImp context = boltStateMachineContextWithStatementProcessor( txStateMachine, "Molly" );
+        BoltStateMachineContextImpl context = boltStateMachineContextWithStatementProcessor( txStateMachine, "Molly" );
 
         // When & Then
         BoltProtocolBreachFatality error = assertThrows( BoltProtocolBreachFatality.class, () -> context.setCurrentStatementProcessorForDatabase( "Bossi" ) );
@@ -95,7 +95,7 @@ class BoltStateMachineContextImpTest
     {
         // Given a context that has a active tx state machine set.
         StatementProcessor txStateMachine = mock( StatementProcessor.class );
-        BoltStateMachineContextImp context = boltStateMachineContextWithStatementProcessor( txStateMachine, "Molly" );
+        BoltStateMachineContextImpl context = boltStateMachineContextWithStatementProcessor( txStateMachine, "Molly" );
         StatementProcessor molly = context.connectionState().getStatementProcessor();
 
         // When & Then
@@ -108,7 +108,7 @@ class BoltStateMachineContextImpTest
     {
         // Given a context that has a active tx state machine set.
         StatementProcessor txStateMachine = mock( StatementProcessor.class );
-        BoltStateMachineContextImp context = boltStateMachineContextWithStatementProcessor( txStateMachine, "Molly" );
+        BoltStateMachineContextImpl context = boltStateMachineContextWithStatementProcessor( txStateMachine, "Molly" );
 
         // When
         context.releaseStatementProcessor();
@@ -117,15 +117,15 @@ class BoltStateMachineContextImpTest
         assertThat( context.connectionState().getStatementProcessor(), equalTo( EMPTY ) );
     }
 
-    private static BoltStateMachineContextImp boltStateMachineContextWithStatementProcessor( StatementProcessor txStateMachine, String databaseName )
+    private static BoltStateMachineContextImpl boltStateMachineContextWithStatementProcessor( StatementProcessor txStateMachine, String databaseName )
             throws BoltProtocolBreachFatality, BoltIOException
     {
         StatementProcessorProvider provider = mock( StatementProcessorProvider.class );
         when( provider.getStatementProcessor( databaseName ) ).thenReturn( txStateMachine );
         when( txStateMachine.databaseName() ).thenReturn( databaseName );
 
-        BoltStateMachineContextImp context = newContext( mock( BoltStateMachine.class ), mock( BoltStateMachineSPI.class ) );
-        context.statementProcessorProvider( provider );
+        BoltStateMachineContextImpl context = newContext( mock( BoltStateMachine.class ), mock( BoltStateMachineSPI.class ) );
+        context.setStatementProcessorProvider( provider );
         assertThat( context.connectionState().getStatementProcessor(), equalTo( EMPTY ) );
 
         StatementProcessor processor = context.setCurrentStatementProcessorForDatabase( databaseName );
@@ -135,9 +135,9 @@ class BoltStateMachineContextImpTest
         return context;
     }
 
-    private static BoltStateMachineContextImp newContext( BoltStateMachine machine, BoltStateMachineSPI boltSPI )
+    private static BoltStateMachineContextImpl newContext( BoltStateMachine machine, BoltStateMachineSPI boltSPI )
     {
         BoltChannel boltChannel = new BoltChannel( "bolt-1", "bolt", mock( Channel.class ) );
-        return new BoltStateMachineContextImp( machine, boltChannel, boltSPI, new MutableConnectionState(), Clock.systemUTC() );
+        return new BoltStateMachineContextImpl( machine, boltChannel, boltSPI, new MutableConnectionState(), Clock.systemUTC() );
     }
 }

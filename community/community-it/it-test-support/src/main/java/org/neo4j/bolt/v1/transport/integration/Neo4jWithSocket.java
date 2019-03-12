@@ -31,8 +31,10 @@ import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
+import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
+import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.helpers.HostnamePort;
@@ -47,10 +49,10 @@ public class Neo4jWithSocket extends ExternalResource
 {
     public static final String DEFAULT_CONNECTOR_KEY = "bolt";
 
-    private Supplier<FileSystemAbstraction> fileSystemProvider;
+    private final Supplier<FileSystemAbstraction> fileSystemProvider;
     private final Consumer<Map<String,String>> configure;
     private final TestDirectory testDirectory;
-    private TestGraphDatabaseFactory graphDatabaseFactory;
+    private final TestGraphDatabaseFactory graphDatabaseFactory;
     private GraphDatabaseService gdb;
     private File workingDirectory;
     private ConnectorPortRegister connectorRegister;
@@ -91,6 +93,12 @@ public class Neo4jWithSocket extends ExternalResource
     public File getWorkingDirectory()
     {
         return workingDirectory;
+    }
+
+    public DatabaseManager getDatabaseManager()
+    {
+        DependencyResolver resolver = ((GraphDatabaseAPI) gdb).getDependencyResolver();
+        return resolver.resolveDependency( DatabaseManager.class );
     }
 
     @Override

@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.bolt.v3.runtime.integration;
+package org.neo4j.bolt.v1.runtime.integration;
 
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
@@ -49,25 +49,43 @@ import org.neo4j.udc.UsageData;
 
 public class SessionExtension implements BeforeEachCallback, AfterEachCallback
 {
+    private final TestGraphDatabaseFactory graphDatabaseFactory;
     private GraphDatabaseAPI gdb;
     private BoltStateMachineFactoryImpl boltFactory;
     private List<BoltStateMachine> runningMachines = new ArrayList<>();
     private boolean authEnabled;
 
-    private Authentication authentication( AuthManager authManager, UserManagerSupplier userManagerSupplier )
+    public SessionExtension()
     {
-        return new BasicAuthentication( authManager, userManagerSupplier );
+        this( new TestGraphDatabaseFactory() );
+    }
+
+    public SessionExtension( TestGraphDatabaseFactory graphDatabaseFactory )
+    {
+        this.graphDatabaseFactory = graphDatabaseFactory;
     }
 
     public BoltStateMachine newMachine( long version, BoltChannel boltChannel )
     {
-        if ( boltFactory == null )
-        {
-            throw new IllegalStateException( "Cannot access test environment before test is running." );
-        }
+        assertTestStarted();
         BoltStateMachine machine = boltFactory.newStateMachine( version, boltChannel );
         runningMachines.add( machine );
         return machine;
+    }
+
+    public DatabaseManager databaseManager()
+    {
+        assertTestStarted();
+        DependencyResolver resolver = gdb.getDependencyResolver();
+        return resolver.resolveDependency( DatabaseManager.class );
+    }
+
+    public String defaultDatabaseName()
+    {
+        assertTestStarted();
+        DependencyResolver resolver = gdb.getDependencyResolver();
+        Config config = resolver.resolveDependency( Config.class );
+        return config.get( GraphDatabaseSettings.default_database );
     }
 
     @Override
@@ -75,7 +93,7 @@ public class SessionExtension implements BeforeEachCallback, AfterEachCallback
     {
         Map<Setting<?>,String> configMap = new HashMap<>();
         configMap.put( GraphDatabaseSettings.auth_enabled, Boolean.toString( authEnabled ) );
-        gdb = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabase( configMap );
+        gdb = (GraphDatabaseAPI) graphDatabaseFactory.newImpermanentDatabase( configMap );
         DependencyResolver resolver = gdb.getDependencyResolver();
         Authentication authentication = authentication( resolver.resolveDependency( AuthManager.class ),
                 resolver.resolveDependency( UserManagerSupplier.class ) );
@@ -106,5 +124,18 @@ public class SessionExtension implements BeforeEachCallback, AfterEachCallback
         }
 
         gdb.shutdown();
+    }
+
+    private void assertTestStarted()
+    {
+        if ( boltFactory == null || gdb == null )
+        {
+            throw new IllegalStateException( "Cannot access test environment before test is running." );
+        }
+    }
+
+    private Authentication authentication( AuthManager authManager, UserManagerSupplier userManagerSupplier )
+    {
+        return new BasicAuthentication( authManager, userManagerSupplier );
     }
 }

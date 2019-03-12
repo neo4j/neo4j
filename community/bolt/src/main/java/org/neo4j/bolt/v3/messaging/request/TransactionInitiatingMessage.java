@@ -33,19 +33,19 @@ import static java.util.Objects.requireNonNull;
 import static org.neo4j.bolt.v3.messaging.request.MessageMetadataParser.parseTransactionMetadata;
 import static org.neo4j.bolt.v3.messaging.request.MessageMetadataParser.parseTransactionTimeout;
 
-public abstract class TransactionInitiallingMessage implements RequestMessage
+public abstract class TransactionInitiatingMessage implements RequestMessage
 {
     private final MapValue meta;
     private final Bookmark bookmark;
     private final Duration txTimeout;
     private final Map<String,Object> txMetadata;
 
-    public TransactionInitiallingMessage() throws BoltIOException
+    public TransactionInitiatingMessage() throws BoltIOException
     {
         this( VirtualValues.EMPTY_MAP );
     }
 
-    public TransactionInitiallingMessage( MapValue meta ) throws BoltIOException
+    public TransactionInitiatingMessage( MapValue meta ) throws BoltIOException
     {
         this.meta = requireNonNull( meta );
         this.bookmark = Bookmark.fromParamsOrNull( meta );
@@ -90,7 +90,7 @@ public abstract class TransactionInitiallingMessage implements RequestMessage
         {
             return false;
         }
-        TransactionInitiallingMessage that = (TransactionInitiallingMessage) o;
+        TransactionInitiatingMessage that = (TransactionInitiatingMessage) o;
         return Objects.equals( meta, that.meta );
     }
 

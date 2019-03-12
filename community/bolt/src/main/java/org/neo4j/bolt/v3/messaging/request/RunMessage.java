@@ -27,7 +27,7 @@ import org.neo4j.values.virtual.VirtualValues;
 
 import static java.util.Objects.requireNonNull;
 
-public class RunMessage extends TransactionInitiallingMessage
+public class RunMessage extends TransactionInitiatingMessage
 {
     public static final byte SIGNATURE = 0x10;
 

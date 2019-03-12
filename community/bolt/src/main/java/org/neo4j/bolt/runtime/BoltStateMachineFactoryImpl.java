@@ -23,8 +23,6 @@ import java.time.Clock;
 import java.time.Duration;
 
 import org.neo4j.bolt.BoltChannel;
-import org.neo4j.bolt.runtime.TransactionStateMachineSPIProvider.TransactionStateMachineSPIProviderV1;
-import org.neo4j.bolt.runtime.TransactionStateMachineSPIProvider.TransactionStateMachineSPIProviderV3;
 import org.neo4j.bolt.security.auth.Authentication;
 import org.neo4j.bolt.v1.BoltProtocolV1;
 import org.neo4j.bolt.v1.runtime.BoltStateMachineV1;

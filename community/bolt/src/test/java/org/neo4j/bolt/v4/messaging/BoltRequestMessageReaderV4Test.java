@@ -36,7 +36,7 @@ import org.neo4j.bolt.v1.messaging.request.InitMessage;
 import org.neo4j.bolt.v1.messaging.request.PullAllMessage;
 import org.neo4j.bolt.v1.messaging.request.ResetMessage;
 import org.neo4j.bolt.v1.packstream.PackedInputArray;
-import org.neo4j.bolt.v3.messaging.request.TransactionInitiallingMessage;
+import org.neo4j.bolt.v3.messaging.request.TransactionInitiatingMessage;
 
 import static java.util.Collections.singletonMap;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -85,8 +85,8 @@ class BoltRequestMessageReaderV4Test
         verifyBoltV3MessageIsReadAsBoltV4Message( beginMessageV3, beginMessageV4 );
     }
 
-    private static <T extends TransactionInitiallingMessage, U extends TransactionInitiallingMessage>
-    void verifyBoltV3MessageIsReadAsBoltV4Message( T messageV3, U messageV4 ) throws Exception
+    private static void verifyBoltV3MessageIsReadAsBoltV4Message( TransactionInitiatingMessage messageV3, TransactionInitiatingMessage messageV4 )
+            throws Exception
     {
         Neo4jPack neo4jPack = newNeo4jPack();
 

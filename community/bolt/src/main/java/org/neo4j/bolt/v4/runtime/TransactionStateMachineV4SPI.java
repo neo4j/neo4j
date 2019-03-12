@@ -25,7 +25,7 @@ import java.time.Duration;
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.runtime.BoltResult;
 import org.neo4j.bolt.runtime.BoltResultHandle;
-import org.neo4j.bolt.v1.runtime.TransactionStateMachine.StatementProcessorReleaseManager;
+import org.neo4j.bolt.v1.runtime.StatementProcessorReleaseManager;
 import org.neo4j.bolt.v1.runtime.TransactionStateMachineV1SPI;
 import org.neo4j.bolt.v3.runtime.CypherAdapterStreamV3;
 import org.neo4j.dbms.database.DatabaseContext;

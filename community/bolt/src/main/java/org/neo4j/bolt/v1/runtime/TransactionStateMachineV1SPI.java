@@ -30,7 +30,6 @@ import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.runtime.BoltResult;
 import org.neo4j.bolt.runtime.BoltResultHandle;
 import org.neo4j.bolt.runtime.TransactionStateMachineSPI;
-import org.neo4j.bolt.v1.runtime.TransactionStateMachine.StatementProcessorReleaseManager;
 import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.function.ThrowingConsumer;
@@ -139,7 +138,7 @@ public class TransactionStateMachineV1SPI implements TransactionStateMachineSPI
     }
 
     @Override
-    public void release()
+    public void transactionClosed()
     {
         resourceReleaseManager.releaseStatementProcessor();
     }
