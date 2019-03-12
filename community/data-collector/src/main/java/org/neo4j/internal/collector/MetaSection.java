@@ -69,9 +69,9 @@ final class MetaSection
         CompilationMXBean compiler = ManagementFactory.getCompilationMXBean();
         systemData.put( "jvmJITCompiler", compiler == null ? "unknown" : compiler.getName() );
 
-        systemData.put( "userLanguage", System.getProperty( "user.language" ) );
-        systemData.put( "userCountry", System.getProperty( "user.country" ) );
-        systemData.put( "userTimezone", System.getProperty( "user.timezone" ) );
+        systemData.put( "userLanguage", System.getProperty( "user.language", "" ) );
+        systemData.put( "userCountry", System.getProperty( "user.country", "" ) );
+        systemData.put( "userTimezone", System.getProperty( "user.timezone", "" ) );
         systemData.put( "fileEncoding",  System.getProperty( "file.encoding" ) );
 
         Map<String, Object> metaData = new HashMap<>();
