@@ -1687,6 +1687,13 @@
                 <version>1.1.1</version>
             </dependency>
 
+            <dependency>
+                <groupId>org.neo4j</groupId>
+                <artifactId>annotations</artifactId>
+                <version>${project.version}</version>
+                <optional>true</optional>
+                <scope>provided</scope>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 </project>
