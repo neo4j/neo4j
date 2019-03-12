@@ -82,16 +82,16 @@ public class DelegatingTokenHolder extends AbstractTokenHolderBase
     @Override
     public void getOrCreateIds( String[] names, int[] ids )
     {
-        innerGetOrCreate( names, ids, false );
+        innerBatchGetOrCreate( names, ids, false );
     }
 
     @Override
     public void getOrCreateInternalIds( String[] names, int[] ids )
     {
-        innerGetOrCreate( names, ids, true );
+        innerBatchGetOrCreate( names, ids, true );
     }
 
-    private void innerGetOrCreate( String[] names, int[] ids, boolean internal )
+    private void innerBatchGetOrCreate( String[] names, int[] ids, boolean internal )
     {
         assertSameArrayLength( names, ids );
         // Assume all tokens exist and try to resolve them. Break out on the first missing token.

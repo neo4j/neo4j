@@ -43,6 +43,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
+import org.neo4j.kernel.impl.store.record.TokenRecord;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion;
 import org.neo4j.storageengine.api.SchemaRule;
 import org.neo4j.string.UTF8;
@@ -217,9 +218,11 @@ public class PhysicalLogCommandReaderV4_0 extends BaseCommandReader
         // in_use(byte)+type_blockId(int)+nr_type_records(int)
         byte inUseFlag = channel.get();
         boolean inUse = false;
+        boolean internal = false;
         if ( (inUseFlag & Record.IN_USE.byteValue()) == Record.IN_USE.byteValue() )
         {
             inUse = true;
+            internal = (inUseFlag & Record.INTERNAL_TOKEN) == Record.INTERNAL_TOKEN;
         }
         else if ( inUseFlag != Record.NOT_IN_USE.byteValue() )
         {
@@ -228,6 +231,7 @@ public class PhysicalLogCommandReaderV4_0 extends BaseCommandReader
         RelationshipTypeTokenRecord record = new RelationshipTypeTokenRecord( id );
         record.setInUse( inUse );
         record.setNameId( channel.getInt() );
+        record.setInternal( internal );
         int nrTypeRecords = channel.getInt();
         for ( int i = 0; i < nrTypeRecords; i++ )
         {
@@ -264,9 +268,11 @@ public class PhysicalLogCommandReaderV4_0 extends BaseCommandReader
         // in_use(byte)+type_blockId(int)+nr_type_records(int)
         byte inUseFlag = channel.get();
         boolean inUse = false;
+        boolean internal = false;
         if ( (inUseFlag & Record.IN_USE.byteValue()) == Record.IN_USE.byteValue() )
         {
             inUse = true;
+            internal = (inUseFlag & Record.INTERNAL_TOKEN) == Record.INTERNAL_TOKEN;
         }
         else if ( inUseFlag != Record.NOT_IN_USE.byteValue() )
         {
@@ -275,6 +281,7 @@ public class PhysicalLogCommandReaderV4_0 extends BaseCommandReader
         LabelTokenRecord record = new LabelTokenRecord( id );
         record.setInUse( inUse );
         record.setNameId( channel.getInt() );
+        record.setInternal( internal );
         int nrTypeRecords = channel.getInt();
         for ( int i = 0; i < nrTypeRecords; i++ )
         {
@@ -311,9 +318,11 @@ public class PhysicalLogCommandReaderV4_0 extends BaseCommandReader
         // in_use(byte)+count(int)+key_blockId(int)
         byte inUseFlag = channel.get();
         boolean inUse = false;
+        boolean internal = false;
         if ( (inUseFlag & Record.IN_USE.byteValue()) == Record.IN_USE.byteValue() )
         {
             inUse = true;
+            internal = (inUseFlag & Record.INTERNAL_TOKEN) == Record.INTERNAL_TOKEN;
         }
         else if ( inUseFlag != Record.NOT_IN_USE.byteValue() )
         {
@@ -323,6 +332,7 @@ public class PhysicalLogCommandReaderV4_0 extends BaseCommandReader
         record.setInUse( inUse );
         record.setPropertyCount( channel.getInt() );
         record.setNameId( channel.getInt() );
+        record.setInternal( internal );
         if ( readDynamicRecords( channel, record, PROPERTY_INDEX_DYNAMIC_RECORD_ADDER ) == -1 )
         {
             return null;

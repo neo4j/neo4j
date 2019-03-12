@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.store.record;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 
 public abstract class TokenRecord extends AbstractBaseRecord
 {
@@ -92,6 +93,31 @@ public abstract class TokenRecord extends AbstractBaseRecord
     public void setInternal( boolean internal )
     {
         this.internal = internal;
+    }
+
+    @Override
+    public boolean equals( Object o )
+    {
+        if ( this == o )
+        {
+            return true;
+        }
+        if ( getClass() != o.getClass() )
+        {
+            return false;
+        }
+        if ( !super.equals( o ) )
+        {
+            return false;
+        }
+        TokenRecord that = (TokenRecord) o;
+        return getNameId() == that.getNameId() && isInternal() == that.isInternal() && Objects.equals( getNameRecords(), that.getNameRecords() );
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return Objects.hash( super.hashCode(), getNameId(), getNameRecords(), isInternal() );
     }
 
     @Override

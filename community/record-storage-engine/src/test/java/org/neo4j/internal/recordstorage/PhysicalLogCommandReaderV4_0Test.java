@@ -29,11 +29,14 @@ import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.impl.index.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.store.PropertyType;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
+import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.NeoStoreRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
+import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
+import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
 import org.neo4j.storageengine.api.CommandReader;
@@ -46,6 +49,147 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class PhysicalLogCommandReaderV4_0Test
 {
+    @Test
+    void shouldReadPropertyKeyCommand() throws Exception
+    {
+        // Given
+        InMemoryClosableChannel channel = new InMemoryClosableChannel();
+        PropertyKeyTokenRecord before = new PropertyKeyTokenRecord( 42 );
+        PropertyKeyTokenRecord after = before.clone();
+        after.initialize( true, 13 );
+        after.setCreated();
+        new Command.PropertyKeyTokenCommand( before, after ).serialize( channel );
+
+        // When
+        BaseCommandReader reader = createReader();
+        Command command = reader.read( channel );
+        assertTrue( command instanceof Command.PropertyKeyTokenCommand );
+
+        Command.PropertyKeyTokenCommand propertyKeyTokenCommand = (Command.PropertyKeyTokenCommand) command;
+
+        // Then
+        assertEquals( before, propertyKeyTokenCommand.getBefore() );
+        assertEquals( after, propertyKeyTokenCommand.getAfter() );
+    }
+
+    @Test
+    void shouldReadInternalPropertyKeyCommand() throws Exception
+    {
+        // Given
+        InMemoryClosableChannel channel = new InMemoryClosableChannel();
+        PropertyKeyTokenRecord before = new PropertyKeyTokenRecord( 42 );
+        PropertyKeyTokenRecord after = before.clone();
+        after.initialize( true, 13 );
+        after.setCreated();
+        after.setInternal( true );
+        new Command.PropertyKeyTokenCommand( before, after ).serialize( channel );
+
+        // When
+        BaseCommandReader reader = createReader();
+        Command command = reader.read( channel );
+        assertTrue( command instanceof Command.PropertyKeyTokenCommand );
+
+        Command.PropertyKeyTokenCommand propertyKeyTokenCommand = (Command.PropertyKeyTokenCommand) command;
+
+        // Then
+        assertEquals( before, propertyKeyTokenCommand.getBefore() );
+        assertEquals( after, propertyKeyTokenCommand.getAfter() );
+    }
+
+    @Test
+    void shouldReadLabelCommand() throws Exception
+    {
+        // Given
+        InMemoryClosableChannel channel = new InMemoryClosableChannel();
+        LabelTokenRecord before = new LabelTokenRecord( 42 );
+        LabelTokenRecord after = before.clone();
+        after.initialize( true, 13 );
+        after.setCreated();
+        new Command.LabelTokenCommand( before, after ).serialize( channel );
+
+        // When
+        BaseCommandReader reader = createReader();
+        Command command = reader.read( channel );
+        assertTrue( command instanceof Command.LabelTokenCommand );
+
+        Command.LabelTokenCommand labelTokenCommand = (Command.LabelTokenCommand) command;
+
+        // Then
+        assertEquals( before, labelTokenCommand.getBefore() );
+        assertEquals( after, labelTokenCommand.getAfter() );
+    }
+
+    @Test
+    void shouldReadInternalLabelCommand() throws Exception
+    {
+        // Given
+        InMemoryClosableChannel channel = new InMemoryClosableChannel();
+        LabelTokenRecord before = new LabelTokenRecord( 42 );
+        LabelTokenRecord after = before.clone();
+        after.initialize( true, 13 );
+        after.setCreated();
+        after.setInternal( true );
+        new Command.LabelTokenCommand( before, after ).serialize( channel );
+
+        // When
+        BaseCommandReader reader = createReader();
+        Command command = reader.read( channel );
+        assertTrue( command instanceof Command.LabelTokenCommand );
+
+        Command.LabelTokenCommand labelTokenCommand = (Command.LabelTokenCommand) command;
+
+        // Then
+        assertEquals( before, labelTokenCommand.getBefore() );
+        assertEquals( after, labelTokenCommand.getAfter() );
+    }
+
+    @Test
+    void shouldReadRelationshipTypeCommand() throws Exception
+    {
+        // Given
+        InMemoryClosableChannel channel = new InMemoryClosableChannel();
+        RelationshipTypeTokenRecord before = new RelationshipTypeTokenRecord( 42 );
+        RelationshipTypeTokenRecord after = before.clone();
+        after.initialize( true, 13 );
+        after.setCreated();
+        new Command.RelationshipTypeTokenCommand( before, after ).serialize( channel );
+
+        // When
+        BaseCommandReader reader = createReader();
+        Command command = reader.read( channel );
+        assertTrue( command instanceof Command.RelationshipTypeTokenCommand );
+
+        Command.RelationshipTypeTokenCommand relationshipTypeTokenCommand = (Command.RelationshipTypeTokenCommand) command;
+
+        // Then
+        assertEquals( before, relationshipTypeTokenCommand.getBefore() );
+        assertEquals( after, relationshipTypeTokenCommand.getAfter() );
+    }
+
+    @Test
+    void shouldReadInternalRelationshipTypeLabelCommand() throws Exception
+    {
+        // Given
+        InMemoryClosableChannel channel = new InMemoryClosableChannel();
+        RelationshipTypeTokenRecord before = new RelationshipTypeTokenRecord( 42 );
+        RelationshipTypeTokenRecord after = before.clone();
+        after.initialize( true, 13 );
+        after.setCreated();
+        after.setInternal( true );
+        new Command.RelationshipTypeTokenCommand( before, after ).serialize( channel );
+
+        // When
+        BaseCommandReader reader = createReader();
+        Command command = reader.read( channel );
+        assertTrue( command instanceof Command.RelationshipTypeTokenCommand );
+
+        Command.RelationshipTypeTokenCommand relationshipTypeTokenCommand = (Command.RelationshipTypeTokenCommand) command;
+
+        // Then
+        assertEquals( before, relationshipTypeTokenCommand.getBefore() );
+        assertEquals( after, relationshipTypeTokenCommand.getAfter() );
+    }
+
     @Test
     void shouldReadRelationshipCommand() throws Throwable
     {

@@ -110,18 +110,12 @@ public interface TokenHolder
      * <p>
      * This method does not take public tokens into consideration.
      */
-    default void getOrCreateInternalIds( String[] names, int[] ids )
-    {
-        getOrCreateIds( names, ids );
-    }
+    void getOrCreateInternalIds( String[] names, int[] ids );
 
     /**
      * This is the same as {@link #getTokenById(int)}, but for internal tokens.
      * <p>
      * The {@link TokenNotFoundException} exception will be thrown even if a public token exists with that id.
      */
-    default NamedToken getInternalTokenById( int id ) throws TokenNotFoundException
-    {
-        return getTokenById( id );
-    }
+    NamedToken getInternalTokenById( int id ) throws TokenNotFoundException;
 }

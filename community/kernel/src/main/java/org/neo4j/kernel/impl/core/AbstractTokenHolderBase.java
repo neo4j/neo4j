@@ -54,7 +54,12 @@ public abstract class AbstractTokenHolderBase implements TokenHolder
     @Override
     public int getOrCreateId( String name )
     {
-        Integer id = tokenRegistry.getId( name );
+        return innerGetOrCreateId( name, false );
+    }
+
+    protected int innerGetOrCreateId( String name, boolean internal )
+    {
+        Integer id = innerGetId( name, internal );
         if ( id != null )
         {
             return id;
@@ -63,7 +68,7 @@ public abstract class AbstractTokenHolderBase implements TokenHolder
         // Let's create it
         try
         {
-            return createToken( name, false );
+            return createToken( name, internal );
         }
         catch ( ReadOnlyDbException e )
         {
@@ -133,7 +138,7 @@ public abstract class AbstractTokenHolderBase implements TokenHolder
         boolean foundUnresolvable = false;
         for ( int i = 0; i < ids.length; i++ )
         {
-            Integer id = internal ? tokenRegistry.getIdInternal( names[i] ) : tokenRegistry.getId( names[i] );
+            Integer id = innerGetId( names[i], internal );
             if ( id != null )
             {
                 ids[i] = id;
@@ -149,5 +154,10 @@ public abstract class AbstractTokenHolderBase implements TokenHolder
             }
         }
         return foundUnresolvable;
+    }
+
+    private Integer innerGetId( String name, boolean internal )
+    {
+        return internal ? tokenRegistry.getIdInternal( name ) : tokenRegistry.getId( name );
     }
 }

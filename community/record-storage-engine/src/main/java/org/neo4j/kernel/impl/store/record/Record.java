@@ -48,6 +48,7 @@ public enum Record
     public static final byte REQUIRE_SECONDARY_UNIT = 4;
     public static final byte HAS_SECONDARY_UNIT = 8;
     public static final byte USES_FIXED_REFERENCE_FORMAT = 16;
+    public static final byte INTERNAL_TOKEN = 32;
 
     private final byte byteValue;
     private final int intValue;
