@@ -39,6 +39,7 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemLifecycleAdapter;
 import org.neo4j.io.fs.watcher.FileWatcher;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.StoreLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
@@ -215,7 +216,29 @@ public class GlobalModule
         storageEngineFactory = StorageEngineFactory.selectStorageEngine( Service.loadAll( StorageEngineFactory.class ) );
         globalDependencies.satisfyDependency( storageEngineFactory );
 
+        checkLegacyDefaultDatabase();
+
         publishPlatformInfo( globalDependencies.resolveDependency( UsageData.class ) );
+    }
+
+    private void checkLegacyDefaultDatabase()
+    {
+        //TODO: because our factories atm still starting on a particular database directory and set default_database and root during setup
+        // we can't simply check if setting was configured and for now we will use default value and a signal to do a check for old database
+        // as soon as database factories will be updated this should be updated to check if setting was configured instead.
+        if ( GraphDatabaseSettings.DEFAULT_DATABASE_NAME.equals( globalConfig.get( GraphDatabaseSettings.default_database ) ) )
+        {
+            String legacyDatabaseName = "graph.db";
+            DatabaseLayout legacyDatabaseLayout = storeLayout.databaseLayout( legacyDatabaseName );
+            if ( storageEngineFactory.storageExists( fileSystem, pageCache, legacyDatabaseLayout ) )
+            {
+                Log internalLog = logService.getInternalLog( getClass() );
+                globalConfig.augment( GraphDatabaseSettings.default_database, legacyDatabaseName );
+                internalLog.warn(
+                        "Legacy `%s` database was found and default database was set to point to into it. Please consider setting default database explicitly.",
+                        legacyDatabaseName );
+            }
+        }
     }
 
     private void startDeferredExecutors( JobScheduler jobScheduler, Iterable<Pair<DeferredExecutor,Group>> deferredExecutors )
