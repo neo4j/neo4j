@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -32,43 +32,75 @@ import org.neo4j.internal.kernel.api.NamedToken;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.isOneOf;
+import static org.hamcrest.Matchers.oneOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
-public class DelegatingTokenHolderTest
+class DelegatingTokenHolderTest
 {
     private TokenCreator creator;
     private TokenHolder holder;
 
-    @Before
-    public void setUp() throws Exception
+    @BeforeEach
+    void setUp()
     {
         creator = mock( TokenCreator.class );
         holder = new DelegatingTokenHolder( creator, "Dummy" );
     }
 
     @Test
-    public void mustCreateAndCacheNewTokens() throws Exception
+    void mustCreateAndCacheNewTokens() throws Exception
     {
-        when( creator.createToken( "token" ) ).thenReturn( 42 );
+        when( creator.createToken( "token", false ) ).thenReturn( 42 );
         assertThat( holder.getOrCreateId( "token" ), is( 42 ) );
         assertThat( holder.getOrCreateId( "token" ), is( 42 ) );
         // Verify implies that the call only happens once.
-        verify( creator ).createToken( "token" );
+        verify( creator ).createToken( "token", false );
         verifyNoMoreInteractions( creator );
     }
 
     @Test
-    public void batchTokenGetMustReturnWhetherThereWereUnresolvedTokens()
+    void mustBatchCreateAndCacheNewTokens() throws Exception
+    {
+        mockAssignNewTokenIdsInBatch( new AtomicInteger( 42 ) );
+        String[] names = {"token"};
+        int[] ids = new int[1];
+        holder.getOrCreateIds( names, ids );
+        assertThat( ids[0], is( 42 ) );
+        holder.getOrCreateIds( names, ids );
+        assertThat( ids[0], is( 42 ) );
+        // Verify implies that the call only happens once.
+        verify( creator ).createTokens( any( String[].class ), any( int[].class ), eq( false ), any( IntPredicate.class ) );
+        verifyNoMoreInteractions( creator );
+    }
+
+    @Test
+    void mustBatchCreateAndCacheNewInternalTokens() throws Exception
+    {
+        mockAssignNewTokenIdsInBatch( new AtomicInteger( 42 ) );
+        String[] names = {"token"};
+        int[] ids = new int[1];
+        holder.getOrCreateInternalIds( names, ids );
+        assertThat( ids[0], is( 42 ) );
+        holder.getOrCreateInternalIds( names, ids );
+        assertThat( ids[0], is( 42 ) );
+        // Verify implies that the call only happens once.
+        verify( creator ).createTokens( any( String[].class ), any( int[].class ), eq( true ), any( IntPredicate.class ) );
+        verifyNoMoreInteractions( creator );
+    }
+
+    @Test
+    void batchTokenGetMustReturnWhetherThereWereUnresolvedTokens()
     {
         holder.setInitialTokens( asList(
                 token( "a", 1 ),
@@ -91,7 +123,7 @@ public class DelegatingTokenHolderTest
     }
 
     @Test
-    public void batchTokenCreateMustIgnoreExistingTokens() throws Exception
+    void batchTokenCreateMustIgnoreExistingTokens() throws Exception
     {
         initialTokensABC();
 
@@ -103,9 +135,9 @@ public class DelegatingTokenHolderTest
         holder.getOrCreateIds( names, ids );
         assertThat( ids.length, is( 5 ) );
         assertThat( ids[0], is( 2 ) );
-        assertThat( ids[1], isOneOf( 42, 43 ) );
+        assertThat( ids[1], is( oneOf( 42, 43 ) ) );
         assertThat( ids[2], is( 1 ) );
-        assertThat( ids[3], isOneOf( 42, 43 ) );
+        assertThat( ids[3], is( oneOf( 42, 43 ) ) );
         assertThat( ids[4], is( 3 ) );
         assertThat( nextId.get(), is( 44 ) );
 
@@ -114,12 +146,59 @@ public class DelegatingTokenHolderTest
         holder.getTokenById( 43 );
     }
 
+    @Test
+    void batchTokenCreateInternalMustIgnoreExistingTokens() throws Exception
+    {
+        initialInternalTokensABC();
+
+        AtomicInteger nextId = new AtomicInteger( 42 );
+        mockAssignNewTokenIdsInBatch( nextId );
+
+        String[] names = new String[]{"b", "X", "a", "Y", "c"};
+        int[] ids = new int[names.length];
+        holder.getOrCreateInternalIds( names, ids );
+        assertThat( ids.length, is( 5 ) );
+        assertThat( ids[0], is( 2 ) );
+        assertThat( ids[1], is( oneOf( 42, 43 ) ) );
+        assertThat( ids[2], is( 1 ) );
+        assertThat( ids[3], is( oneOf( 42, 43 ) ) );
+        assertThat( ids[4], is( 3 ) );
+        assertThat( nextId.get(), is( 44 ) );
+
+        // And these should not throw.
+        holder.getInternalTokenById( 42 );
+        holder.getInternalTokenById( 43 );
+    }
+
+    @Test
+    void batchTokenCreateMustNotConfusePublicAndInternalTokens() throws KernelException
+    {
+        mockAssignNewTokenIdsInBatch( new AtomicInteger( 10 ) );
+
+        int[] ids = new int[2];
+        holder.getOrCreateIds( new String[] {"a", "b"}, ids );
+        assertThat( ids[0], is( 10 ) );
+        assertThat( ids[1], is( 11 ) );
+
+        holder.getOrCreateInternalIds( new String[] {"b", "c"}, ids );
+        assertThat( ids[0], is( 12 ) );
+        assertThat( ids[1], is( 13 ) );
+
+        holder.getOrCreateIds( new String[] {"b", "c"}, ids );
+        assertThat( ids[0], is( 11 ) );
+        assertThat( ids[1], is( 14 ) );
+
+        holder.getOrCreateInternalIds( new String[] {"c", "d"}, ids );
+        assertThat( ids[0], is( 13 ) );
+        assertThat( ids[1], is( 15 ) );
+    }
+
     private void mockAssignNewTokenIdsInBatch( AtomicInteger nextId ) throws KernelException
     {
         doAnswer( inv ->
         {
             int[] ids = inv.getArgument( 1 );
-            IntPredicate filter = inv.getArgument( 2 );
+            IntPredicate filter = inv.getArgument( 3 );
             for ( int i = 0; i < ids.length; i++ )
             {
                 if ( filter.test( i ) )
@@ -128,7 +207,7 @@ public class DelegatingTokenHolderTest
                 }
             }
             return null;
-        } ).when( creator ).createTokens( any( String[].class ), any( int[].class ), any( IntPredicate.class ) );
+        } ).when( creator ).createTokens( any( String[].class ), any( int[].class ), any( boolean.class ), any( IntPredicate.class ) );
     }
 
     private void initialTokensABC() throws KernelException
@@ -137,12 +216,20 @@ public class DelegatingTokenHolderTest
                 token( "a", 1 ),
                 token( "b", 2 ) ) );
 
-        when( creator.createToken( "c" ) ).thenReturn( 3 );
+        when( creator.createToken( "c", false ) ).thenReturn( 3 );
         assertThat( holder.getOrCreateId( "c" ), is( 3 ) );
     }
 
+    private void initialInternalTokensABC()
+    {
+        holder.setInitialTokens( asList(
+                token( "a", 1, true ),
+                token( "b", 2, true ),
+                token( "c", 3, true ) ) );
+    }
+
     @Test
-    public void batchTokenCreateMustDeduplicateTokenCreates() throws Exception
+    void batchTokenCreateMustDeduplicateTokenCreates() throws Exception
     {
         initialTokensABC();
 
@@ -167,14 +254,14 @@ public class DelegatingTokenHolderTest
         holder.getTokenById( 42 );
     }
 
-    @Test( expected = IllegalArgumentException.class )
-    public void batchTokenCreateMustThrowOnArraysOfDifferentLengths()
+    @Test
+    void batchTokenCreateMustThrowOnArraysOfDifferentLengths()
     {
-        holder.getOrCreateIds( new String[3], new int[2] );
+        assertThrows( IllegalArgumentException.class, () -> holder.getOrCreateIds( new String[3], new int[2] ) );
     }
 
     @Test
-    public void shouldClearTokensAsPartOfInitialTokenLoading()
+    void shouldClearTokensAsPartOfInitialTokenLoading()
     {
         // GIVEN
         holder.setInitialTokens( asList(
@@ -214,6 +301,11 @@ public class DelegatingTokenHolderTest
 
     private NamedToken token( String name, int id )
     {
-        return new NamedToken( name, id );
+        return token( name, id, false );
+    }
+
+    private NamedToken token( String name, int id, boolean internal )
+    {
+        return new NamedToken( name, id, internal );
     }
 }

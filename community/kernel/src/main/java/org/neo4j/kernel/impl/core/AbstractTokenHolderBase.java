@@ -63,7 +63,7 @@ public abstract class AbstractTokenHolderBase implements TokenHolder
         // Let's create it
         try
         {
-            return createToken( name );
+            return createToken( name, false );
         }
         catch ( ReadOnlyDbException e )
         {
@@ -100,7 +100,7 @@ public abstract class AbstractTokenHolderBase implements TokenHolder
     @Override
     public boolean getIdsByNames( String[] names, int[] ids )
     {
-        return resolveIds( names, ids, ALWAYS_FALSE_INT );
+        return resolveIds( names, ids, false, ALWAYS_FALSE_INT );
     }
 
     @Override
@@ -115,14 +115,25 @@ public abstract class AbstractTokenHolderBase implements TokenHolder
         return tokenRegistry.size();
     }
 
-    protected abstract int createToken( String tokenName ) throws KernelException;
+    @Override
+    public NamedToken getInternalTokenById( int id ) throws TokenNotFoundException
+    {
+        NamedToken result = tokenRegistry.getTokenInternal( id );
+        if ( result == null )
+        {
+            throw new TokenNotFoundException( "Token for id " + id );
+        }
+        return result;
+    }
 
-    boolean resolveIds( String[] names, int[] ids, IntPredicate unresolvedIndexCheck )
+    protected abstract int createToken( String tokenName, boolean internal ) throws KernelException;
+
+    boolean resolveIds( String[] names, int[] ids, boolean internal, IntPredicate unresolvedIndexCheck )
     {
         boolean foundUnresolvable = false;
         for ( int i = 0; i < ids.length; i++ )
         {
-            Integer id = tokenRegistry.getId( names[i] );
+            Integer id = internal ? tokenRegistry.getIdInternal( names[i] ) : tokenRegistry.getId( names[i] );
             if ( id != null )
             {
                 ids[i] = id;

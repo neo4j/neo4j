@@ -69,11 +69,11 @@ public interface TransactionState extends ReadableTransactionState
 
     // TOKEN RELATED
 
-    void labelDoCreateForName( String labelName, long id );
+    void labelDoCreateForName( String labelName, boolean internal, long id );
 
-    void propertyKeyDoCreateForName( String propertyKeyName, int id );
+    void propertyKeyDoCreateForName( String propertyKeyName, boolean internal, int id );
 
-    void relationshipTypeDoCreateForName( String relationshipTypeName, int id );
+    void relationshipTypeDoCreateForName( String relationshipTypeName, boolean internal, int id );
 
     // SCHEMA RELATED
 

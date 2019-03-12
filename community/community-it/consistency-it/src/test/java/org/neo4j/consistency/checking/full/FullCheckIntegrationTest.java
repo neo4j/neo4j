@@ -145,6 +145,7 @@ import static org.neo4j.kernel.impl.store.PropertyType.ARRAY;
 import static org.neo4j.kernel.impl.store.record.Record.NO_LABELS_FIELD;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
+import static org.neo4j.kernel.impl.store.record.Record.NO_PREVIOUS_PROPERTY;
 import static org.neo4j.kernel.impl.store.record.Record.NO_PREV_RELATIONSHIP;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 import static org.neo4j.storageengine.api.NodeLabelUpdate.labelChanges;
@@ -771,7 +772,7 @@ public class FullCheckIntegrationTest
                             GraphStoreFixture.IdGenerator next )
                     {
                         Integer label = next.label();
-                        tx.nodeLabel( (int) (labels[offset] = label), "label:" + offset );
+                        tx.nodeLabel( (int) (labels[offset] = label), "label:" + offset, false );
                         createdLabels.add( label );
                     }
                 } );
@@ -852,7 +853,7 @@ public class FullCheckIntegrationTest
             protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
                                             GraphStoreFixture.IdGenerator next )
             {
-                tx.nodeLabel( 42, "Label" );
+                tx.nodeLabel( 42, "Label", false );
 
                 NodeRecord nodeRecord = new NodeRecord( next.node(), false, -1, -1 );
                 DynamicRecord record = inUse( new DynamicRecord( next.nodeLabel() ) );
@@ -1047,8 +1048,8 @@ public class FullCheckIntegrationTest
                 serializeRule( rule1, after1, tx, next );
                 serializeRule( rule2, after2, tx, next );
 
-                tx.nodeLabel( labelId, "label" );
-                tx.propertyKey( propertyKeyId, "property" );
+                tx.nodeLabel( labelId, "label", false );
+                tx.propertyKey( propertyKeyId, "property", false );
 
                 tx.createSchema( before1, after1, rule1 );
                 tx.createSchema( before2, after2, rule2 );
@@ -1088,8 +1089,8 @@ public class FullCheckIntegrationTest
                 serializeRule( rule1, after1, tx, next );
                 serializeRule( rule2, after2, tx, next );
 
-                tx.nodeLabel( labelId, "label" );
-                tx.propertyKey( propertyKeyId, "property" );
+                tx.nodeLabel( labelId, "label", false );
+                tx.propertyKey( propertyKeyId, "property", false );
 
                 tx.createSchema( before1, after1, rule1 );
                 tx.createSchema( before2, after2, rule2 );
@@ -1151,7 +1152,7 @@ public class FullCheckIntegrationTest
                                             GraphStoreFixture.IdGenerator next )
             {
                 inconsistentName.set( next.relationshipType() );
-                tx.relationshipType( inconsistentName.get(), "FOO" );
+                tx.relationshipType( inconsistentName.get(), "FOO", false );
             }
         } );
         StoreAccess access = fixture.directStoreAccess().nativeStores();
@@ -1180,7 +1181,7 @@ public class FullCheckIntegrationTest
                                             GraphStoreFixture.IdGenerator next )
             {
                 inconsistentName.set( next.propertyKey() );
-                tx.propertyKey( inconsistentName.get(), "FOO" );
+                tx.propertyKey( inconsistentName.get(), "FOO", false );
             }
         } );
         StoreAccess access = fixture.directStoreAccess().nativeStores();
@@ -1249,7 +1250,7 @@ public class FullCheckIntegrationTest
                                             GraphStoreFixture.IdGenerator next )
             {
                 inconsistentKey.set( next.propertyKey() );
-                tx.propertyKey( inconsistentKey.get(), "FOO" );
+                tx.propertyKey( inconsistentKey.get(), "FOO", false );
             }
         } );
         StoreAccess access = fixture.directStoreAccess().nativeStores();
@@ -1264,6 +1265,36 @@ public class FullCheckIntegrationTest
         // then
         on( stats ).verify( RecordType.PROPERTY_KEY, 1 )
                    .andThatsAllFolks();
+    }
+
+    @Test
+    public void shouldNotBeConfusedByInternalPropertyKeyTokens() throws Exception
+    {
+        // given
+        fixture.apply( new GraphStoreFixture.Transaction()
+        {
+            @Override
+            protected void transactionData( GraphStoreFixture.TransactionDataBuilder tx,
+                                            GraphStoreFixture.IdGenerator next )
+            {
+                int propertyKey = next.propertyKey();
+                tx.propertyKey( propertyKey, "FOO", true );
+                long nextProp = next.property();
+                PropertyRecord property = new PropertyRecord( nextProp ).initialize( true, NO_PREVIOUS_PROPERTY.longValue(), NO_NEXT_PROPERTY.longValue() );
+                PropertyBlock block = new PropertyBlock();
+                block.setSingleBlock( propertyKey | (((long) PropertyType.INT.intValue()) << 24) | (666L << 28) );
+                property.addPropertyBlock( block );
+                tx.create( property );
+                tx.create( new NodeRecord( next.node() ).initialize( true, nextProp, false, NO_NEXT_RELATIONSHIP.longValue(), NO_LABELS_FIELD.longValue() ) );
+            }
+        } );
+
+        // when
+        ConsistencySummaryStatistics stats = check();
+
+        // then
+        assertTrue( stats.isConsistent() );
+        on( stats ).andThatsAllFolks();
     }
 
     @Test
@@ -2238,7 +2269,7 @@ public class FullCheckIntegrationTest
                     GraphStoreFixture.IdGenerator next )
             {
                 int labelId = next.label();
-                tx.nodeLabel( labelId, "label" );
+                tx.nodeLabel( labelId, "label", false );
                 id.setValue( labelId );
             }
         } );
@@ -2262,7 +2293,7 @@ public class FullCheckIntegrationTest
                     GraphStoreFixture.IdGenerator next )
             {
                 int propertyKeyId = next.propertyKey();
-                tx.propertyKey( propertyKeyId, propertyKey );
+                tx.propertyKey( propertyKeyId, propertyKey, false );
                 id.setValue( propertyKeyId );
             }
         } );
@@ -2281,7 +2312,7 @@ public class FullCheckIntegrationTest
                     GraphStoreFixture.IdGenerator next )
             {
                 int relTypeId = next.relationshipType();
-                tx.relationshipType( relTypeId, "relType" );
+                tx.relationshipType( relTypeId, "relType", false );
                 id.setValue( relTypeId );
             }
         } );

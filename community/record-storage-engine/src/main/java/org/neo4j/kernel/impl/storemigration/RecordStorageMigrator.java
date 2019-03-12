@@ -675,7 +675,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
                 SchemaStorage35 srcAccess = new SchemaStorage35( srcSchema );
 
                 SchemaStore dstSchema = dstStore.getSchemaStore();
-                TokenCreator propertyKeyTokenCreator = name ->
+                TokenCreator propertyKeyTokenCreator = ( name, internal ) ->
                 {
                     PropertyKeyTokenStore keyTokenStore = dstStore.getPropertyKeyTokenStore();
                     DynamicStringStore nameStore = keyTokenStore.getNameStore();
@@ -690,6 +690,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant
                     long tokenId = keyTokenStore.nextId();
                     keyTokenRecord.setId( tokenId );
                     keyTokenRecord.initialize( true, nameId );
+                    keyTokenRecord.setInternal( internal );
                     keyTokenStore.prepareForCommit( keyTokenRecord );
                     keyTokenStore.updateRecord( keyTokenRecord );
                     keyTokenStore.setHighestPossibleIdInUse( keyTokenRecord.getId() );

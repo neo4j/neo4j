@@ -33,8 +33,8 @@ public class DefaultRelationshipTypeCreator extends IsolatedTransactionTokenCrea
     }
 
     @Override
-    protected int createKey( Transaction transaction, String name ) throws IllegalTokenNameException
+    protected int createKey( Transaction transaction, String name, boolean internal ) throws IllegalTokenNameException
     {
-        return transaction.tokenWrite().relationshipTypeCreateForName( name );
+        return transaction.tokenWrite().relationshipTypeCreateForName( name, internal );
     }
 }

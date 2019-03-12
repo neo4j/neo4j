@@ -853,7 +853,7 @@ public class TransactionRecordStateTest
         tx.nodeCreate( nodeId );
 
         int typeA = (int) neoStores.getRelationshipTypeTokenStore().nextId();
-        tx.createRelationshipTypeToken( "A", typeA );
+        tx.createRelationshipTypeToken( "A", typeA, false );
         createRelationships( neoStores, tx, nodeId, typeA, INCOMING, 20 );
 
         BatchTransactionApplier applier = buildApplier( neoStores, LockService.NO_LOCK_SERVICE );
@@ -862,7 +862,7 @@ public class TransactionRecordStateTest
         tx = newTransactionRecordState( neoStores );
 
         int typeB = 1;
-        tx.createRelationshipTypeToken( "B", typeB );
+        tx.createRelationshipTypeToken( "B", typeB, false );
 
         // WHEN
         // i remove enough relationships to become dense and remove enough to become not dense
@@ -913,15 +913,15 @@ public class TransactionRecordStateTest
         int typeB = 1;
         int typeC = 2;
         tx.nodeCreate( nodeId );
-        tx.createRelationshipTypeToken( "A", typeA );
+        tx.createRelationshipTypeToken( "A", typeA, false );
         createRelationships( neoStores, tx, nodeId, typeA, OUTGOING, 6 );
         createRelationships( neoStores, tx, nodeId, typeA, INCOMING, 7 );
 
-        tx.createRelationshipTypeToken( "B", typeB );
+        tx.createRelationshipTypeToken( "B", typeB, false );
         createRelationships( neoStores, tx, nodeId, typeB, OUTGOING, 8 );
         createRelationships( neoStores, tx, nodeId, typeB, INCOMING, 9 );
 
-        tx.createRelationshipTypeToken( "C", typeC );
+        tx.createRelationshipTypeToken( "C", typeC, false );
         createRelationships( neoStores, tx, nodeId, typeC, OUTGOING, 10 );
         createRelationships( neoStores, tx, nodeId, typeC, INCOMING, 10 );
         // here we're at the edge
@@ -946,7 +946,7 @@ public class TransactionRecordStateTest
         long nodeId = neoStores.getNodeStore().nextId();
         int typeA = 0;
         tx.nodeCreate( nodeId );
-        tx.createRelationshipTypeToken( "A", typeA );
+        tx.createRelationshipTypeToken( "A", typeA, false );
         createRelationships( neoStores, tx, nodeId, typeA, OUTGOING, 24 );
         createRelationships( neoStores, tx, nodeId, typeA, INCOMING, 25 );
 
@@ -970,7 +970,7 @@ public class TransactionRecordStateTest
         long nodeId = neoStores.getNodeStore().nextId();
         int typeA = 0;
         tx.nodeCreate( nodeId );
-        tx.createRelationshipTypeToken( "A", typeA );
+        tx.createRelationshipTypeToken( "A", typeA, false );
         createRelationships( neoStores, tx, nodeId, typeA, OUTGOING, 8 );
 
         // here we're at the edge
@@ -993,7 +993,7 @@ public class TransactionRecordStateTest
         int nodeId = (int) neoStores.getNodeStore().nextId();
         int typeA = 0;
         tx.nodeCreate( nodeId );
-        tx.createRelationshipTypeToken( "A", typeA );
+        tx.createRelationshipTypeToken( "A", typeA, false );
         long[] relationshipsCreated = createRelationships( neoStores, tx, nodeId, typeA, INCOMING, 15 );
 
         //WHEN
@@ -1014,15 +1014,15 @@ public class TransactionRecordStateTest
         int typeB = 12;
         int typeC = 600;
         tx.nodeCreate( nodeId );
-        tx.createRelationshipTypeToken( "A", typeA );
+        tx.createRelationshipTypeToken( "A", typeA, false );
         long[] relationshipsCreatedAIncoming = createRelationships( neoStores, tx, nodeId, typeA, INCOMING, 1 );
         long[] relationshipsCreatedAOutgoing = createRelationships( neoStores, tx, nodeId, typeA, OUTGOING, 1 );
 
-        tx.createRelationshipTypeToken( "B", typeB );
+        tx.createRelationshipTypeToken( "B", typeB, false );
         long[] relationshipsCreatedBIncoming = createRelationships( neoStores, tx, nodeId, typeB, INCOMING, 1 );
         long[] relationshipsCreatedBOutgoing = createRelationships( neoStores, tx, nodeId, typeB, OUTGOING, 1 );
 
-        tx.createRelationshipTypeToken( "C", typeC );
+        tx.createRelationshipTypeToken( "C", typeC, false );
         long[] relationshipsCreatedCIncoming = createRelationships( neoStores, tx, nodeId, typeC, INCOMING, 1 );
         long[] relationshipsCreatedCOutgoing = createRelationships( neoStores, tx, nodeId, typeC, OUTGOING, 1 );
 
@@ -1087,9 +1087,9 @@ public class TransactionRecordStateTest
             TransactionRecordState recordState = newTransactionRecordState( neoStores );
             neoStores.getRelationshipTypeTokenStore().setHighId( 16 );
 
-            recordState.createRelationshipTypeToken( "5", type5 );
-            recordState.createRelationshipTypeToken( "10", type10 );
-            recordState.createRelationshipTypeToken( "15", type15 );
+            recordState.createRelationshipTypeToken( "5", type5, false );
+            recordState.createRelationshipTypeToken( "10", type10, false );
+            recordState.createRelationshipTypeToken( "15", type15, false );
             apply( neoStores, transaction( recordState ) );
         }
 
@@ -1491,7 +1491,7 @@ public class TransactionRecordStateTest
         for ( int i = 0; i < labelIds.length; i++ )
         {
             int labelId = (int) store.getLabelTokenStore().nextId();
-            recordState.createLabelToken( "Label" + i, labelId );
+            recordState.createLabelToken( "Label" + i, labelId, false );
             labelIds[i] = labelId;
         }
         recordState.nodeCreate( nodeId.get() );

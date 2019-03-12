@@ -28,7 +28,7 @@ class SimpleTokenCreator implements TokenCreator
     private final AtomicInteger highId = new AtomicInteger( 1 );
 
     @Override
-    public int createToken( String name )
+    public int createToken( String name, boolean internal )
     {
         return highId.incrementAndGet();
     }

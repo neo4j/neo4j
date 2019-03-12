@@ -48,24 +48,27 @@ public interface TokenWrite
      * Creates a label with the given name.
      *
      * @param labelName the name of the label.
+     * @param internal {@code true} if the token is internal and must not be visible on the product surface, otherwise {@code false} if the token is public.
      * @return id of the created label.
      */
-    int labelCreateForName( String labelName ) throws IllegalTokenNameException, TooManyLabelsException;
+    int labelCreateForName( String labelName, boolean internal ) throws IllegalTokenNameException, TooManyLabelsException;
 
     /**
      * Creates a property token with the given name.
      *
      * @param propertyKeyName the name of the property.
+     * @param internal {@code true} if the token is internal and must not be visible on the product surface, otherwise {@code false} if the token is public.
      * @return id of the created property key.
      */
-    int propertyKeyCreateForName( String propertyKeyName ) throws IllegalTokenNameException;
+    int propertyKeyCreateForName( String propertyKeyName, boolean internal ) throws IllegalTokenNameException;
 
     /**
      * Creates a relationship type with the given name.
      * @param relationshipTypeName the name of the relationship.
+     * @param internal {@code true} if the token is internal and must not be visible on the product surface, otherwise {@code false} if the token is public.
      * @return id of the created relationship type.
      */
-    int relationshipTypeCreateForName( String relationshipTypeName ) throws IllegalTokenNameException;
+    int relationshipTypeCreateForName( String relationshipTypeName, boolean internal ) throws IllegalTokenNameException;
 
     /**
      * Returns a property key id for a property key. If the key doesn't exist prior to

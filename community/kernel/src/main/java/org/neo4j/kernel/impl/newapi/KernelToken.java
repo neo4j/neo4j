@@ -96,29 +96,29 @@ public class KernelToken implements Token
     }
 
     @Override
-    public int labelCreateForName( String labelName ) throws IllegalTokenNameException, TooManyLabelsException
+    public int labelCreateForName( String labelName, boolean internal ) throws IllegalTokenNameException, TooManyLabelsException
     {
         ktx.assertOpen();
         int id = commandCreationContext.reserveLabelTokenId();
-        ktx.txState().labelDoCreateForName( labelName, id );
+        ktx.txState().labelDoCreateForName( labelName, internal, id );
         return id;
     }
 
     @Override
-    public int relationshipTypeCreateForName( String relationshipTypeName ) throws IllegalTokenNameException
+    public int relationshipTypeCreateForName( String relationshipTypeName, boolean internal ) throws IllegalTokenNameException
     {
         ktx.assertOpen();
         int id = commandCreationContext.reserveRelationshipTypeTokenId();
-        ktx.txState().relationshipTypeDoCreateForName( relationshipTypeName, id );
+        ktx.txState().relationshipTypeDoCreateForName( relationshipTypeName, internal, id );
         return id;
     }
 
     @Override
-    public int propertyKeyCreateForName( String propertyKeyName ) throws IllegalTokenNameException
+    public int propertyKeyCreateForName( String propertyKeyName, boolean internal ) throws IllegalTokenNameException
     {
         ktx.assertOpen();
         int id = commandCreationContext.reservePropertyKeyTokenId();
-        ktx.txState().propertyKeyDoCreateForName( propertyKeyName, id );
+        ktx.txState().propertyKeyDoCreateForName( propertyKeyName, internal, id );
         return id;
     }
 
@@ -141,8 +141,7 @@ public class KernelToken implements Token
     }
 
     @Override
-    public void relationshipTypeGetOrCreateForNames( String[] relationshipTypes, int[] ids )
-            throws IllegalTokenNameException
+    public void relationshipTypeGetOrCreateForNames( String[] relationshipTypes, int[] ids ) throws IllegalTokenNameException
     {
         getOrCreateForNames( tokenHolders.relationshipTypeTokens(), relationshipTypes, ids );
     }

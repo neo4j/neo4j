@@ -1016,27 +1016,28 @@ public class BatchInserterImpl implements BatchInserter
         return map;
     }
 
-    private int createNewPropertyKeyId( String stringKey )
+    private int createNewPropertyKeyId( String stringKey, boolean internal )
     {
-        return createNewToken( propertyKeyTokenStore, stringKey );
+        return createNewToken( propertyKeyTokenStore, stringKey, internal );
     }
 
-    private int createNewLabelId( String stringKey )
+    private int createNewLabelId( String stringKey, boolean internal )
     {
-        return createNewToken( labelTokenStore, stringKey );
+        return createNewToken( labelTokenStore, stringKey, internal );
     }
 
-    private int createNewRelationshipType( String name )
+    private int createNewRelationshipType( String name, boolean internal )
     {
-        return createNewToken( relationshipTypeTokenStore, name );
+        return createNewToken( relationshipTypeTokenStore, name, internal );
     }
 
-    private <R extends TokenRecord> int createNewToken( TokenStore<R> store, String name )
+    private <R extends TokenRecord> int createNewToken( TokenStore<R> store, String name, boolean internal )
     {
         int keyId = (int) store.nextId();
         R record = store.newRecord();
         record.setId( keyId );
         record.setInUse( true );
+        record.setInternal( internal );
         record.setCreated();
         Collection<DynamicRecord> keyRecords = store.allocateNameRecords( encodeString( name ) );
         record.setNameId( (int) Iterables.first( keyRecords ).getId() );

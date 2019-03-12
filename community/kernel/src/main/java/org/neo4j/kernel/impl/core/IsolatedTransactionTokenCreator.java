@@ -46,19 +46,19 @@ abstract class IsolatedTransactionTokenCreator implements TokenCreator
     }
 
     @Override
-    public synchronized int createToken( String name ) throws KernelException
+    public synchronized int createToken( String name, boolean internal ) throws KernelException
     {
         Kernel kernel = kernelSupplier.get();
         try ( Transaction tx = kernel.beginTransaction( Type.implicit, AUTH_DISABLED ) )
         {
-            int id = createKey( tx, name );
+            int id = createKey( tx, name, internal );
             tx.success();
             return id;
         }
     }
 
     @Override
-    public synchronized void createTokens( String[] names, int[] ids, IntPredicate filter ) throws KernelException
+    public synchronized void createTokens( String[] names, int[] ids, boolean internal, IntPredicate filter ) throws KernelException
     {
         Kernel kernel = kernelSupplier.get();
         try ( Transaction tx = kernel.beginTransaction( Type.implicit, AUTH_DISABLED ) )
@@ -67,12 +67,12 @@ abstract class IsolatedTransactionTokenCreator implements TokenCreator
             {
                 if ( filter.test( i ) )
                 {
-                    ids[i] = createKey( tx, names[i] );
+                    ids[i] = createKey( tx, names[i], internal );
                 }
             }
             tx.success();
         }
     }
 
-    abstract int createKey( Transaction transaction, String name ) throws IllegalTokenNameException, TooManyLabelsException;
+    abstract int createKey( Transaction transaction, String name, boolean internal ) throws IllegalTokenNameException, TooManyLabelsException;
 }

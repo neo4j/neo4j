@@ -68,24 +68,27 @@ public class TransactionWriter
         return representation;
     }
 
-    public void propertyKey( int id, String key, int... dynamicIds )
+    public void propertyKey( int id, String key, boolean internal, int... dynamicIds )
     {
         PropertyKeyTokenRecord before = new PropertyKeyTokenRecord( id );
         PropertyKeyTokenRecord after = withName( new PropertyKeyTokenRecord( id ), dynamicIds, key );
+        after.setInternal( internal );
         otherCommands.add( new Command.PropertyKeyTokenCommand( before, after ) );
     }
 
-    public void label( int id, String name, int... dynamicIds )
+    public void label( int id, String name, boolean internal, int... dynamicIds )
     {
         LabelTokenRecord before = new LabelTokenRecord( id );
         LabelTokenRecord after = withName( new LabelTokenRecord( id ), dynamicIds, name );
+        after.setInternal( internal );
         otherCommands.add( new Command.LabelTokenCommand( before, after ) );
     }
 
-    public void relationshipType( int id, String label, int... dynamicIds )
+    public void relationshipType( int id, String relType, boolean internal, int... dynamicIds )
     {
         RelationshipTypeTokenRecord before = new RelationshipTypeTokenRecord( id );
-        RelationshipTypeTokenRecord after = withName( new RelationshipTypeTokenRecord( id ), dynamicIds, label );
+        RelationshipTypeTokenRecord after = withName( new RelationshipTypeTokenRecord( id ), dynamicIds, relType );
+        after.setInternal( internal );
         otherCommands.add( new Command.RelationshipTypeTokenCommand( before, after ) );
     }
 

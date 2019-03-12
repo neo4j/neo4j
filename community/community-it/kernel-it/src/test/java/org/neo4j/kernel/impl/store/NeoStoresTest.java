@@ -148,7 +148,7 @@ public class NeoStoresTest
         propertyKeyTokenHolder = new DelegatingTokenHolder( this::createPropertyKeyToken, TokenHolder.TYPE_PROPERTY_KEY );
     }
 
-    private int createPropertyKeyToken( String name )
+    private int createPropertyKeyToken( String name, boolean internal )
     {
         return (int) nextId( PropertyKeyTokenRecord.class );
     }
@@ -220,10 +220,10 @@ public class NeoStoresTest
 
         int relType1 = (int) nextId( RelationshipType.class );
         String typeName1 = "relationshiptype1";
-        transaction.relationshipTypeDoCreateForName( typeName1, relType1 );
+        transaction.relationshipTypeDoCreateForName( typeName1, false, relType1 );
         int relType2 = (int) nextId( RelationshipType.class );
         String typeName2 = "relationshiptype2";
-        transaction.relationshipTypeDoCreateForName( typeName2, relType2 );
+        transaction.relationshipTypeDoCreateForName( typeName2, false, relType2 );
         long rel1 = nextId( Relationship.class );
         transaction.relationshipDoCreate( rel1, relType1, node1, node2 );
         long rel2 = nextId( Relationship.class );
@@ -363,7 +363,7 @@ public class NeoStoresTest
         startTx();
         int relType1 = (int) nextId( RelationshipType.class );
         String typeName = "relationshiptype1";
-        transaction.relationshipTypeDoCreateForName( typeName, relType1 );
+        transaction.relationshipTypeDoCreateForName( typeName, false, relType1 );
         long[] nodeIds = new long[3];
         for ( int i = 0; i < 3; i++ )
         {
@@ -412,7 +412,7 @@ public class NeoStoresTest
         startTx();
         int relType1 = (int) nextId( RelationshipType.class );
         String typeName = "relationshiptype1";
-        transaction.relationshipTypeDoCreateForName( typeName, relType1 );
+        transaction.relationshipTypeDoCreateForName( typeName, false, relType1 );
         long[] nodeIds = new long[3];
         for ( int i = 0; i < 3; i++ )
         {
@@ -445,7 +445,7 @@ public class NeoStoresTest
         initializeStores( databaseLayout, stringMap() );
         startTx();
         int relType1 = (int) nextId( RelationshipType.class );
-        transaction.relationshipTypeDoCreateForName( "relationshiptype1", relType1 );
+        transaction.relationshipTypeDoCreateForName( "relationshiptype1", false, relType1 );
         long[] nodeIds = new long[8];
         for ( int i = 0; i < nodeIds.length; i++ )
         {

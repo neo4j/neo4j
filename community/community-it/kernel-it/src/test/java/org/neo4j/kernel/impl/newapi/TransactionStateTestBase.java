@@ -70,7 +70,7 @@ public abstract class TransactionStateTestBase<G extends KernelAPIWriteTestSuppo
         try ( Transaction tx = beginTransaction() )
         {
             node = tx.dataWrite().nodeCreate();
-            relType = tx.tokenWrite().relationshipTypeCreateForName( "REL_TYPE" );
+            relType = tx.tokenWrite().relationshipTypeCreateForName( "REL_TYPE", false );
             deletedInTx = tx.dataWrite().relationshipCreate(node, relType, node);
             unaffected = tx.dataWrite().relationshipCreate(node, relType, node);
             tx.success();
@@ -101,11 +101,11 @@ public abstract class TransactionStateTestBase<G extends KernelAPIWriteTestSuppo
         try ( Transaction tx = beginTransaction() )
         {
             node = tx.dataWrite().nodeCreate();
-            p1 = tx.tokenWrite().propertyKeyCreateForName( "p1" );
-            p2 = tx.tokenWrite().propertyKeyCreateForName( "p2" );
-            p3 = tx.tokenWrite().propertyKeyCreateForName( "p3" );
-            p4 = tx.tokenWrite().propertyKeyCreateForName( "p4" );
-            p5 = tx.tokenWrite().propertyKeyCreateForName( "p5" );
+            p1 = tx.tokenWrite().propertyKeyCreateForName( "p1", false );
+            p2 = tx.tokenWrite().propertyKeyCreateForName( "p2", false );
+            p3 = tx.tokenWrite().propertyKeyCreateForName( "p3", false );
+            p4 = tx.tokenWrite().propertyKeyCreateForName( "p4", false );
+            p5 = tx.tokenWrite().propertyKeyCreateForName( "p5", false );
             tx.dataWrite().nodeSetProperty( node, p1, Values.of( 1 ) );
             tx.dataWrite().nodeSetProperty( node, p3, Values.of( 3 ) );
             tx.dataWrite().nodeSetProperty( node, p4, Values.of( 4 ) );

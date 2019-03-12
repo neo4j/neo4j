@@ -17,26 +17,44 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.core;
+package org.neo4j.kernel.impl.api.state;
 
-import java.util.function.IntPredicate;
-
-import org.neo4j.kernel.api.exceptions.ReadOnlyDbException;
+import java.util.Objects;
 
 /**
- * When the database is marked as read-only, then no tokens can be created.
+ * The transaction state of a token that we want to create.
+ *
+ * We track the name, and whether or not the token is internal or public.
  */
-public class ReadOnlyTokenCreator implements TokenCreator
+class TokenState
 {
-    @Override
-    public int createToken( String name, boolean internal ) throws ReadOnlyDbException
+    public final String name;
+    public final boolean internal;
+
+    TokenState( String name, boolean internal )
     {
-        throw new ReadOnlyDbException();
+        this.name = name;
+        this.internal = internal;
     }
 
     @Override
-    public void createTokens( String[] names, int[] ids, boolean internal, IntPredicate filter ) throws ReadOnlyDbException
+    public boolean equals( Object o )
     {
-        throw new ReadOnlyDbException();
+        if ( this == o )
+        {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() )
+        {
+            return false;
+        }
+        TokenState that = (TokenState) o;
+        return internal == that.internal && name.equals( that.name );
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return Objects.hash( name, internal );
     }
 }

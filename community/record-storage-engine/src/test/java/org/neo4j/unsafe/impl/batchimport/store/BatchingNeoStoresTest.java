@@ -325,25 +325,25 @@ class BatchingNeoStoresTest
             DeferredInitializedTokenCreator propertyKeyTokenCreator = new DeferredInitializedTokenCreator()
             {
                 @Override
-                void create( String name, int id )
+                void create( String name, boolean internal, int id )
                 {
-                    txState.propertyKeyDoCreateForName( name, id );
+                    txState.propertyKeyDoCreateForName( name, internal, id );
                 }
             };
             DeferredInitializedTokenCreator labelTokenCreator = new DeferredInitializedTokenCreator()
             {
                 @Override
-                void create( String name, int id )
+                void create( String name, boolean internal, int id )
                 {
-                    txState.labelDoCreateForName( name, id );
+                    txState.labelDoCreateForName( name, internal, id );
                 }
             };
             DeferredInitializedTokenCreator relationshipTypeTokenCreator = new DeferredInitializedTokenCreator()
             {
                 @Override
-                void create( String name, int id )
+                void create( String name, boolean internal, int id )
                 {
-                    txState.relationshipTypeDoCreateForName( name, id );
+                    txState.relationshipTypeDoCreateForName( name, internal, id );
                 }
             };
             TokenHolders tokenHolders = new TokenHolders(
@@ -399,13 +399,13 @@ class BatchingNeoStoresTest
         }
 
         @Override
-        public int createToken( String name )
+        public int createToken( String name, boolean internal )
         {
             int id = (int) store.nextId();
-            create( name, id );
+            create( name, internal, id );
             return id;
         }
 
-        abstract void create( String name, int id );
+        abstract void create( String name, boolean internal, int id );
     }
 }

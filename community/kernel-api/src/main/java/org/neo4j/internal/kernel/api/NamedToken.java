@@ -81,7 +81,7 @@ public final class NamedToken
     public int hashCode()
     {
         int result = id;
-        result = 31 * result + name.hashCode() + (internal ? 333_333_313 : 777_777_773 );
+        result = 31 * result + name.hashCode() + ( internal ? 333_333_313 : 777_777_773 );
         return result;
     }
 

@@ -49,7 +49,8 @@ public class StubStorageCursors implements StorageReader
 
     private final AtomicLong nextPropertyId = new AtomicLong();
     private final AtomicLong nextTokenId = new AtomicLong();
-    private final TokenHolder propertyKeyTokenHolder = new DelegatingTokenHolder( name -> toIntExact( nextTokenId.getAndIncrement() ), TYPE_PROPERTY_KEY );
+    private final TokenHolder propertyKeyTokenHolder = new DelegatingTokenHolder(
+            ( name, internal ) -> toIntExact( nextTokenId.getAndIncrement() ), TYPE_PROPERTY_KEY );
 
     private final Map<Long,NodeData> nodeData = new HashMap<>();
     private final Map<String,Long> labelByName = new HashMap<>();

@@ -951,15 +951,15 @@ public class TxStateTest
         assertThat( state.getDataRevision(), is( 0L ) );
         assertFalse( state.hasDataChanges() );
 
-        state.labelDoCreateForName( "Label", 0 );
+        state.labelDoCreateForName( "Label", false, 0 );
         assertThat( state.getDataRevision(), is( 0L ) );
         assertFalse( state.hasDataChanges() );
 
-        state.relationshipTypeDoCreateForName( "REL", 0 );
+        state.relationshipTypeDoCreateForName( "REL", false, 0 );
         assertThat( state.getDataRevision(), is( 0L ) );
         assertFalse( state.hasDataChanges() );
 
-        state.propertyKeyDoCreateForName( "prop", 0 );
+        state.propertyKeyDoCreateForName( "prop", false, 0 );
         assertThat( state.getDataRevision(), is( 0L ) );
         assertFalse( state.hasDataChanges() );
 

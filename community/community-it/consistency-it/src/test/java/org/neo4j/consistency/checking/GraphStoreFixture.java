@@ -280,27 +280,27 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
 
     interface TokenChange
     {
-        int createToken( String name, TransactionDataBuilder tx, IdGenerator next );
+        int createToken( String name, boolean internal, TransactionDataBuilder tx, IdGenerator next );
     }
 
     public TokenHolders writableTokenHolders()
     {
-        TokenHolder propertyKeyTokens = new DelegatingTokenHolder( buildTokenCreator( ( name, tx, next ) ->
+        TokenHolder propertyKeyTokens = new DelegatingTokenHolder( buildTokenCreator( ( name, internal, tx, next ) ->
         {
             int id = next.propertyKey();
-            tx.propertyKey( id, name );
+            tx.propertyKey( id, name, internal );
             return id;
         } ), TokenHolder.TYPE_PROPERTY_KEY );
-        TokenHolder labelTokens = new DelegatingTokenHolder( buildTokenCreator( ( name, tx, next ) ->
+        TokenHolder labelTokens = new DelegatingTokenHolder( buildTokenCreator( ( name, internal, tx, next ) ->
         {
             int id = next.label();
-            tx.nodeLabel( id, name );
+            tx.nodeLabel( id, name, internal );
             return id;
         } ), TokenHolder.TYPE_LABEL );
-        TokenHolder relationshipTypeTokens = new DelegatingTokenHolder( buildTokenCreator( ( name, tx, next ) ->
+        TokenHolder relationshipTypeTokens = new DelegatingTokenHolder( buildTokenCreator( ( name, internal, tx, next ) ->
         {
             int id = next.relationshipType();
-            tx.relationshipType( id, name );
+            tx.relationshipType( id, name, internal );
             return id;
         } ), TokenHolder.TYPE_RELATIONSHIP_TYPE );
         TokenHolders tokenHolders = new TokenHolders( propertyKeyTokens, labelTokens, relationshipTypeTokens );
@@ -310,7 +310,7 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
 
     private TokenCreator buildTokenCreator( TokenChange propChange )
     {
-        return name ->
+        return ( name, internal ) ->
         {
             MutableInt keyId = new MutableInt();
             applyTransaction( new Transaction()
@@ -318,7 +318,7 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
                 @Override
                 protected void transactionData( TransactionDataBuilder tx, IdGenerator next )
                 {
-                    keyId.setValue( propChange.createToken( name, tx, next ) );
+                    keyId.setValue( propChange.createToken( name, internal, tx, next ) );
                 }
             } );
             return keyId.intValue();
@@ -426,24 +426,24 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
             this.writer = writer;
             this.nodes = neoStores.getNodeStore();
 
-            TokenHolder propTokens = new DelegatingTokenHolder( name ->
+            TokenHolder propTokens = new DelegatingTokenHolder( ( name, internal ) ->
             {
                 int id = next.propertyKey();
-                writer.propertyKey( id, name, dynIds( 0, propKeyDynIds, name ) );
+                writer.propertyKey( id, name, internal, dynIds( 0, propKeyDynIds, name ) );
                 return id;
             }, TokenHolder.TYPE_PROPERTY_KEY );
 
-            TokenHolder labelTokens = new DelegatingTokenHolder( name ->
+            TokenHolder labelTokens = new DelegatingTokenHolder( ( name, internal ) ->
             {
                 int id = next.label();
-                writer.label( id, name, dynIds( 0, labelDynIds, name ) );
+                writer.label( id, name, internal, dynIds( 0, labelDynIds, name ) );
                 return id;
             }, TokenHolder.TYPE_LABEL );
 
-            TokenHolder relTypeTokens = new DelegatingTokenHolder( name ->
+            TokenHolder relTypeTokens = new DelegatingTokenHolder( ( name, internal ) ->
             {
                 int id = next.relationshipType();
-                writer.relationshipType( id, name, dynIds( 0, relTypeDynIds, name ) );
+                writer.relationshipType( id, name, internal, dynIds( 0, relTypeDynIds, name ) );
                 return id;
             }, TokenHolder.TYPE_RELATIONSHIP_TYPE );
 
@@ -481,21 +481,21 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
             writer.createSchema( before, after, rule );
         }
 
-        public void propertyKey( int id, String key )
+        public void propertyKey( int id, String key, boolean internal )
         {
-            writer.propertyKey( id, key, dynIds( id, propKeyDynIds, key ) );
+            writer.propertyKey( id, key, internal, dynIds( id, propKeyDynIds, key ) );
             tokenHolders.propertyKeyTokens().addToken( new NamedToken( key, id ) );
         }
 
-        public void nodeLabel( int id, String name )
+        public void nodeLabel( int id, String name, boolean internal )
         {
-            writer.label( id, name, dynIds( id, labelDynIds, name ) );
+            writer.label( id, name, internal, dynIds( id, labelDynIds, name ) );
             tokenHolders.labelTokens().addToken( new NamedToken( name, id ) );
         }
 
-        public void relationshipType( int id, String relationshipType )
+        public void relationshipType( int id, String relationshipType, boolean internal )
         {
-            writer.relationshipType( id, relationshipType, dynIds( id, relTypeDynIds, relationshipType ) );
+            writer.relationshipType( id, relationshipType, internal, dynIds( id, relTypeDynIds, relationshipType ) );
             tokenHolders.relationshipTypeTokens().addToken( new NamedToken( relationshipType, id ) );
         }
 

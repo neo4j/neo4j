@@ -64,11 +64,11 @@ public interface TxStateVisitor extends AutoCloseable
 
     void visitRemovedConstraint( ConstraintDescriptor element );
 
-    void visitCreatedLabelToken( long id, String name );
+    void visitCreatedLabelToken( long id, String name, boolean internal );
 
-    void visitCreatedPropertyKeyToken( long id, String name );
+    void visitCreatedPropertyKeyToken( long id, String name, boolean internal );
 
-    void visitCreatedRelationshipTypeToken( long id, String name );
+    void visitCreatedRelationshipTypeToken( long id, String name, boolean internal );
 
     @Override
     void close();
@@ -139,17 +139,17 @@ public interface TxStateVisitor extends AutoCloseable
         }
 
         @Override
-        public void visitCreatedLabelToken( long id, String name )
+        public void visitCreatedLabelToken( long id, String name, boolean internal )
         {
         }
 
         @Override
-        public void visitCreatedPropertyKeyToken( long id, String name )
+        public void visitCreatedPropertyKeyToken( long id, String name, boolean internal )
         {
         }
 
         @Override
-        public void visitCreatedRelationshipTypeToken( long id, String name )
+        public void visitCreatedRelationshipTypeToken( long id, String name, boolean internal )
         {
         }
 
@@ -250,21 +250,21 @@ public interface TxStateVisitor extends AutoCloseable
         }
 
         @Override
-        public void visitCreatedLabelToken( long id, String name )
+        public void visitCreatedLabelToken( long id, String name, boolean internal )
         {
-            actual.visitCreatedLabelToken( id, name );
+            actual.visitCreatedLabelToken( id, name, internal );
         }
 
         @Override
-        public void visitCreatedPropertyKeyToken( long id, String name )
+        public void visitCreatedPropertyKeyToken( long id, String name, boolean internal )
         {
-            actual.visitCreatedPropertyKeyToken( id, name );
+            actual.visitCreatedPropertyKeyToken( id, name, internal );
         }
 
         @Override
-        public void visitCreatedRelationshipTypeToken( long id, String name )
+        public void visitCreatedRelationshipTypeToken( long id, String name, boolean internal )
         {
-            actual.visitCreatedRelationshipTypeToken( id, name );
+            actual.visitCreatedRelationshipTypeToken( id, name, internal );
         }
 
         @Override

@@ -31,10 +31,11 @@ public interface TokenCreator
      * It is assumed that the token name is not already being used.
      *
      * @param name The token name to allocate.
+     * @param internal {@code true} if we want to create an internal (not public) token, otherwise {@code false} for public tokens.
      * @return The id of the allocated token name.
      * @throws KernelException If the inner transaction used to allocate the token encountered a problem.
      */
-    int createToken( String name ) throws KernelException;
+    int createToken( String name, boolean internal ) throws KernelException;
 
     /**
      * Create the tokens by the given names, and store their ids in the corresponding entry in the {@code ids} array,
@@ -42,16 +43,17 @@ public interface TokenCreator
      *
      * @param names The array of token names we potentially want to create new ids for.
      * @param ids The array into which we still store the id we create for the various token names.
+     * @param internal  {@code true} if we want to create internal (not public) tokens, otherwise {@code false} for public tokens.
      * @param indexFilter A filter for the array indexes for which a token needs an id.
      * @throws KernelException If the inner transaction used to allocate the tokens encountered a problem.
      */
-    default void createTokens( String[] names, int[] ids, IntPredicate indexFilter ) throws KernelException
+    default void createTokens( String[] names, int[] ids, boolean internal, IntPredicate indexFilter ) throws KernelException
     {
         for ( int i = 0; i < ids.length; i++ )
         {
             if ( indexFilter.test( i ) )
             {
-                ids[i] = createToken( names[i] );
+                ids[i] = createToken( names[i], internal );
             }
         }
     }

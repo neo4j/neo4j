@@ -63,7 +63,7 @@ public class KernelAPIParallelTraversalStressIT
         long[] nodes = new long[N_NODES];
         Transaction setup = kernel.beginTransaction( explicit, LoginContext.AUTH_DISABLED );
 
-        int relationshipType = setup.token().relationshipTypeCreateForName( "R" );
+        int relationshipType = setup.token().relationshipTypeCreateForName( "R", false );
         for ( int i = 0; i < N_NODES; i++ )
         {
             nodes[i] = setup.dataWrite().nodeCreate();

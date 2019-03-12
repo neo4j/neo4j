@@ -26,7 +26,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Paths;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.common.ProgressReporter;
 import org.neo4j.configuration.Config;
@@ -43,7 +42,6 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.labelscan.LabelScanReader;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
 import org.neo4j.kernel.impl.api.scan.FullStoreChangeStream;
-import org.neo4j.kernel.impl.core.TokenCreator;
 import org.neo4j.kernel.impl.index.labelscan.NativeLabelScanStore;
 import org.neo4j.kernel.impl.store.InvalidIdGeneratorException;
 import org.neo4j.kernel.impl.store.MetaDataStore;
@@ -291,17 +289,6 @@ class NativeLabelScanStoreMigratorTest
         try ( StoreChannel storeChannel = fileSystem.create( file ) )
         {
             storeChannel.writeAll( sourceBuffer );
-        }
-    }
-
-    private class SimpleTokenCreator implements TokenCreator
-    {
-        private final AtomicInteger next = new AtomicInteger();
-
-        @Override
-        public int createToken( String name )
-        {
-            return next.incrementAndGet();
         }
     }
 }

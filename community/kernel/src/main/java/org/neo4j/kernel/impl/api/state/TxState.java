@@ -86,9 +86,9 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     private MutableLongObjectMap<NodeStateImpl> nodeStatesMap;
     private MutableLongObjectMap<RelationshipStateImpl> relationshipStatesMap;
 
-    private MutableLongObjectMap<String> createdLabelTokens;
-    private MutableLongObjectMap<String> createdPropertyKeyTokens;
-    private MutableLongObjectMap<String> createdRelationshipTypeTokens;
+    private MutableLongObjectMap<TokenState> createdLabelTokens;
+    private MutableLongObjectMap<TokenState> createdPropertyKeyTokens;
+    private MutableLongObjectMap<TokenState> createdRelationshipTypeTokens;
 
     private GraphStateImpl graphState;
     private MutableDiffSets<IndexDescriptor> indexChanges;
@@ -182,17 +182,17 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
 
         if ( createdLabelTokens != null )
         {
-            createdLabelTokens.forEachKeyValue( visitor::visitCreatedLabelToken );
+            createdLabelTokens.forEachKeyValue( ( id, token ) -> visitor.visitCreatedLabelToken( id, token.name, token.internal ) );
         }
 
         if ( createdPropertyKeyTokens != null )
         {
-            createdPropertyKeyTokens.forEachKeyValue( visitor::visitCreatedPropertyKeyToken );
+            createdPropertyKeyTokens.forEachKeyValue( ( id, token ) -> visitor.visitCreatedPropertyKeyToken( id, token.name, token.internal ) );
         }
 
         if ( createdRelationshipTypeTokens != null )
         {
-            createdRelationshipTypeTokens.forEachKeyValue( visitor::visitCreatedRelationshipTypeToken );
+            createdRelationshipTypeTokens.forEachKeyValue( ( id, token ) -> visitor.visitCreatedRelationshipTypeToken( id, token.name, token.internal ) );
         }
     }
 
@@ -441,35 +441,35 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     }
 
     @Override
-    public void labelDoCreateForName( String labelName, long id )
+    public void labelDoCreateForName( String labelName, boolean internal, long id )
     {
         if ( createdLabelTokens == null )
         {
             createdLabelTokens = new LongObjectHashMap<>();
         }
-        createdLabelTokens.put( id, labelName );
+        createdLabelTokens.put( id, new TokenState( labelName, internal ) );
         changed();
     }
 
     @Override
-    public void propertyKeyDoCreateForName( String propertyKeyName, int id )
+    public void propertyKeyDoCreateForName( String propertyKeyName, boolean internal, int id )
     {
         if ( createdPropertyKeyTokens == null )
         {
             createdPropertyKeyTokens = new LongObjectHashMap<>();
         }
-        createdPropertyKeyTokens.put( id, propertyKeyName );
+        createdPropertyKeyTokens.put( id, new TokenState( propertyKeyName, internal ) );
         changed();
     }
 
     @Override
-    public void relationshipTypeDoCreateForName( String labelName, int id )
+    public void relationshipTypeDoCreateForName( String labelName, boolean internal, int id )
     {
         if ( createdRelationshipTypeTokens == null )
         {
             createdRelationshipTypeTokens = new LongObjectHashMap<>();
         }
-        createdRelationshipTypeTokens.put( id, labelName );
+        createdRelationshipTypeTokens.put( id, new TokenState( labelName, internal ) );
         changed();
     }
 

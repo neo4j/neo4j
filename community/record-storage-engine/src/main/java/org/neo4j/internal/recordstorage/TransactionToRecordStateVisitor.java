@@ -291,20 +291,20 @@ class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
     }
 
     @Override
-    public void visitCreatedLabelToken( long id, String name )
+    public void visitCreatedLabelToken( long id, String name, boolean internal )
     {
-        recordState.createLabelToken( name, id );
+        recordState.createLabelToken( name, id, internal );
     }
 
     @Override
-    public void visitCreatedPropertyKeyToken( long id, String name )
+    public void visitCreatedPropertyKeyToken( long id, String name, boolean internal )
     {
-        recordState.createPropertyKeyToken( name, id );
+        recordState.createPropertyKeyToken( name, id, internal );
     }
 
     @Override
-    public void visitCreatedRelationshipTypeToken( long id, String name )
+    public void visitCreatedRelationshipTypeToken( long id, String name, boolean internal )
     {
-        recordState.createRelationshipTypeToken( name, id );
+        recordState.createRelationshipTypeToken( name, id, internal );
     }
 }

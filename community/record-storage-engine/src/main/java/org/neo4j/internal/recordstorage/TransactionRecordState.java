@@ -460,9 +460,9 @@ public class TransactionRecordState implements RecordState
      * @param key The key of the property index, as a string.
      * @param id The property index record id.
      */
-    void createPropertyKeyToken( String key, long id )
+    void createPropertyKeyToken( String key, long id, boolean internal )
     {
-        createToken( neoStores.getPropertyKeyTokenStore(), key, id, recordChangeSet.getPropertyKeyTokenChanges() );
+        createToken( neoStores.getPropertyKeyTokenStore(), key, id, internal, recordChangeSet.getPropertyKeyTokenChanges() );
     }
 
     /**
@@ -471,9 +471,9 @@ public class TransactionRecordState implements RecordState
      * @param name The key of the property index, as a string.
      * @param id The property index record id.
      */
-    void createLabelToken( String name, long id )
+    void createLabelToken( String name, long id, boolean internal )
     {
-        createToken( neoStores.getLabelTokenStore(), name, id, recordChangeSet.getLabelTokenChanges() );
+        createToken( neoStores.getLabelTokenStore(), name, id, internal, recordChangeSet.getLabelTokenChanges() );
     }
 
     /**
@@ -483,15 +483,16 @@ public class TransactionRecordState implements RecordState
      * @param name The name of the relationship type.
      * @param id The id of the new relationship type record.
      */
-    void createRelationshipTypeToken( String name, long id )
+    void createRelationshipTypeToken( String name, long id, boolean internal )
     {
-        createToken( neoStores.getRelationshipTypeTokenStore(), name, id, recordChangeSet.getRelationshipTypeTokenChanges() );
+        createToken( neoStores.getRelationshipTypeTokenStore(), name, id, internal, recordChangeSet.getRelationshipTypeTokenChanges() );
     }
 
-    private static <R extends TokenRecord> void createToken( TokenStore<R> store, String name, long id, RecordAccess<R, Void> recordAccess )
+    private static <R extends TokenRecord> void createToken( TokenStore<R> store, String name, long id, boolean internal, RecordAccess<R, Void> recordAccess )
     {
         R record = recordAccess.create( id, null ).forChangingData();
         record.setInUse( true );
+        record.setInternal( internal );
         record.setCreated();
         Collection<DynamicRecord> nameRecords = store.allocateNameRecords( encodeString( name ) );
         record.setNameId( (int) Iterables.first( nameRecords ).getId() );

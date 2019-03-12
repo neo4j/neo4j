@@ -33,8 +33,8 @@ public class DefaultPropertyTokenCreator extends IsolatedTransactionTokenCreator
     }
 
     @Override
-    protected int createKey( Transaction transaction, String name ) throws IllegalTokenNameException
+    protected int createKey( Transaction transaction, String name, boolean internal ) throws IllegalTokenNameException
     {
-        return transaction.tokenWrite().propertyKeyCreateForName( name );
+        return transaction.tokenWrite().propertyKeyCreateForName( name, internal );
     }
 }

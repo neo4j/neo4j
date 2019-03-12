@@ -71,7 +71,7 @@ public class KernelAPIParallelLabelScanStressIT
 
     private int createLabeledNodes( Transaction tx, int nNodes, String labelName ) throws KernelException
     {
-        int label = tx.tokenWrite().labelCreateForName( labelName );
+        int label = tx.tokenWrite().labelCreateForName( labelName, false );
         for ( int i = 0; i < nNodes; i++ )
         {
             long n = tx.dataWrite().nodeCreate();
