@@ -34,6 +34,7 @@ import org.neo4j.storageengine.api.lock.WaitStrategy;
 import org.neo4j.test.FakeCpuClock;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
+import org.neo4j.values.virtual.VirtualValues;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
@@ -96,8 +97,11 @@ class ExecutingQueryStatusTest
                 new WaitingOnQuery(
                         new ExecutingQuery(
                                 12,
-                                null, DEFAULT_DATABASE_NAME, null, null,
                                 null,
+                                DEFAULT_DATABASE_NAME,
+                                null,
+                                "",
+                                VirtualValues.emptyMap(),
                                 null,
                                 ( /*activeLockCount:*/ ) -> 0,
                                 PageCursorTracer.NULL,

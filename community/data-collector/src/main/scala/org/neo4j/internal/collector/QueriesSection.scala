@@ -52,6 +52,8 @@ object QueriesSection {
     val profiles = new ArrayBuffer[ProfileData]
   }
 
+  val QUERY_FILTER = "(?:(?i)call)\\s+(?:dbms\\.|db\\.stats\\.)".r
+
   def retrieve(querySnapshots: java.util.Iterator[QuerySnapshot],
                anonymizer: QueryAnonymizer,
                maxInvocations: Int): Stream[RetrieveResult] = {
@@ -59,7 +61,7 @@ object QueriesSection {
     while (querySnapshots.hasNext) {
       val snapshot = querySnapshots.next()
       val queryString = snapshot.queryText()
-      if (!queryString.contains("CALL db.stats.")) {
+      if (QUERY_FILTER.findFirstMatchIn(queryString).isEmpty) {
         val snapshotList = queries.getOrElseUpdate(QueryKey(queryString, snapshot.queryPlan()), new QueryData())
         snapshotList.invocations += SingleInvocation(snapshot.queryParameters(),
                                                      snapshot.elapsedTimeMicros(),

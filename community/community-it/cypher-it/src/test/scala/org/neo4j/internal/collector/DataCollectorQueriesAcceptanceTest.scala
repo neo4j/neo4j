@@ -304,6 +304,24 @@ class DataCollectorQueriesAcceptanceTest extends ExecutionEngineFunSuite {
     )
   }
 
+  test("[retrieveAllAnonymized] should handle pre-parser options") {
+    // given
+    execute("CREATE (:User {age: 99})-[:KNOWS]->(:Buddy {p: 42})-[:WANTS]->(:Raccoon)") // create tokens
+    execute("CALL db.stats.collect('QUERIES')").single
+    execute("EXPLAIN MATCH (:User)-[:KNOWS]->(:Buddy)-[:WANTS]->(:Raccoon) RETURN 1")
+    execute("CYPHER 3.5 runtime=interpreted PROFILE CREATE ()")
+    execute("CALL db.stats.stop('QUERIES')").single
+
+    // when
+    val res = execute("CALL db.stats.retrieveAllAnonymized('myToken')")
+
+    // then
+    res.toList should beListWithoutOrder(
+      querySection("EXPLAIN MATCH (:L0)-[:R0]->(:L1)-[:R1]->(:L2) RETURN 1"),
+      querySection("CYPHER 3.5 runtime=interpreted PROFILE CREATE ()")
+    )
+  }
+
   test("[retrieveAllAnonymized] should anonymize unknown tokens inside queries") {
     // given
     execute("CALL db.stats.collect('QUERIES')").single

@@ -22,9 +22,9 @@ import org.neo4j.cypher.internal.v4_0.parser.CypherParser
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.{CypherFunSuite, WindowsStringSafe}
 
 class PrettifierIT extends CypherFunSuite {
-  implicit val windowsSafe = WindowsStringSafe
+  private implicit val windowsSafe: WindowsStringSafe.type = WindowsStringSafe
 
-  val stringifier: Prettifier = Prettifier(ExpressionStringifier())
+  val prettifier: Prettifier = Prettifier(ExpressionStringifier())
 
   val parser = new CypherParser
   val tests: Seq[(String, String)] =
@@ -137,14 +137,99 @@ class PrettifierIT extends CypherFunSuite {
         "MERGE (n)--(m)",
 
       "merge (n:Label {prop:1})--(m)" ->
-        "MERGE (n:Label {prop: 1})--(m)"
+        "MERGE (n:Label {prop: 1})--(m)",
+
+      "create INDEX ON :A(p)" ->
+        "CREATE INDEX ON :A(p)",
+
+      "create INDEX ON :A(p1, p2, p3)" ->
+        "CREATE INDEX ON :A(p1, p2, p3)",
+
+      "drop INDEX ON :A(p)" ->
+        "DROP INDEX ON :A(p)",
+
+      "drop INDEX ON :A(p1, p2, p3)" ->
+        "DROP INDEX ON :A(p1, p2, p3)",
+
+      "create CONSTRAINT ON (n:A) ASSERT (n.p) IS NODE KEY" ->
+        "CREATE CONSTRAINT ON (n:A) ASSERT (n.p) IS NODE KEY",
+
+      "create CONSTRAINT ON (n:A) ASSERT (n.p1, n.p2) IS NODE KEY" ->
+        "CREATE CONSTRAINT ON (n:A) ASSERT (n.p1, n.p2) IS NODE KEY",
+
+      "drop CONSTRAINT ON (n:A) ASSERT (n.p) IS NODE KEY" ->
+        "DROP CONSTRAINT ON (n:A) ASSERT (n.p) IS NODE KEY",
+
+      "drop CONSTRAINT ON (n:A) ASSERT (n.p1, n.p2) IS NODE KEY" ->
+        "DROP CONSTRAINT ON (n:A) ASSERT (n.p1, n.p2) IS NODE KEY",
+
+      "create CONSTRAINT ON (n:A) ASSERT (n.p) IS UNIQUE" ->
+        "CREATE CONSTRAINT ON (n:A) ASSERT (n.p) IS UNIQUE",
+
+      "create CONSTRAINT ON (n:A) ASSERT (n.p1, n.p2) IS UNIQUE" ->
+        "CREATE CONSTRAINT ON (n:A) ASSERT (n.p1, n.p2) IS UNIQUE",
+
+      "drop CONSTRAINT ON (n:A) ASSERT (n.p) IS UNIQUE" ->
+        "DROP CONSTRAINT ON (n:A) ASSERT (n.p) IS UNIQUE",
+
+      "drop CONSTRAINT ON (n:A) ASSERT (n.p1, n.p2) IS UNIQUE" ->
+        "DROP CONSTRAINT ON (n:A) ASSERT (n.p1, n.p2) IS UNIQUE",
+
+      "create CONSTRAINT ON (a:A) ASSERT exists(a.p)" ->
+        "CREATE CONSTRAINT ON (a:A) ASSERT exists(a.p)",
+
+      "drop CONSTRAINT ON (a:A) ASSERT exists(a.p)" ->
+        "DROP CONSTRAINT ON (a:A) ASSERT exists(a.p)",
+
+      "create CONSTRAINT ON ()-[r:R]-() ASSERT exists(r.p)" ->
+        "CREATE CONSTRAINT ON ()-[r:R]-() ASSERT exists(r.p)",
+
+      "drop CONSTRAINT ON ()-[r:R]-() ASSERT exists(r.p)" ->
+        "DROP CONSTRAINT ON ()-[r:R]-() ASSERT exists(r.p)",
+
+      "match (n) UNION match (n)" ->
+        """MATCH (n)
+          |UNION
+          |MATCH (n)""".stripMargin,
+
+      "match (n) UNION ALL match (n)" ->
+        """MATCH (n)
+          |UNION ALL
+          |MATCH (n)""".stripMargin,
+
+      "match (n) UNION match (n) UNION ALL RETURN $node AS n" ->
+        """MATCH (n)
+          |UNION
+          |MATCH (n)
+          |UNION ALL
+          |RETURN $node AS n""".stripMargin,
+
+      "catalog create graph com.neo4j.Users { MATCH (n) RETURN n }" ->
+        """CATALOG CREATE GRAPH com.neo4j.Users {
+          |MATCH (n)
+          |RETURN n
+          |}""".stripMargin,
+
+      "catalog DROP graph com.neo4j.Users" ->
+        "CATALOG DROP GRAPH com.neo4j.Users",
+
+      "catalog create VIEW com.neo4j.Users($p, $k) { MATCH (n) WHERE n.p=$p RETURN n LIMIT $k }" ->
+        """CATALOG CREATE VIEW com.neo4j.Users($p, $k) {
+          |MATCH (n)
+          |  WHERE n.p = $p
+          |RETURN n
+          |  LIMIT $k
+          |}""".stripMargin,
+
+      "catalog DROP VIEW com.neo4j.Users" ->
+        "CATALOG DROP VIEW com.neo4j.Users"
     )
 
   tests foreach {
     case (inputString, expected) =>
       test(inputString) {
         val parsingResults: Statement = parser.parse(inputString)
-        val str = stringifier.asString(parsingResults)
+        val str = prettifier.asString(parsingResults)
         str should equal(expected)
       }
   }
