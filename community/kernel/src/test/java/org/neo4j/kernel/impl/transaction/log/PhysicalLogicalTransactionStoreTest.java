@@ -232,7 +232,7 @@ class PhysicalLogicalTransactionStoreTest
 
             @Override
             public void transactionsRecovered( CommittedTransactionRepresentation lastRecoveredTransaction,
-                    LogPosition positionAfterLastRecoveredTransaction )
+                    LogPosition positionAfterLastRecoveredTransaction, boolean missingLogs )
             {
             }
         }, logPruner, new LifecycleAdapter(), mock( RecoveryMonitor.class ), ProgressReporter.SILENT, false ) );

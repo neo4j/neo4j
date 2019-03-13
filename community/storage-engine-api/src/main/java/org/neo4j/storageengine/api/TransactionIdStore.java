@@ -156,6 +156,16 @@ public interface TransactionIdStore
     void transactionClosed( long transactionId, long logVersion, long byteOffset );
 
     /**
+     * Unconditionally set last closed transaction info. Should be used for cases where last closed transaction info should be
+     * set or overwritten.
+     *
+     * @param transactionId new last closed transaction id.
+     * @param logVersion new last closed transaction log version
+     * @param byteOffset new last closed transaction offset
+     */
+    void setLastClosedTransaction( long transactionId, long logVersion, long byteOffset );
+
+    /**
      * Forces the transaction id counters to persistent storage.
      */
     void flush();

@@ -30,12 +30,14 @@ import org.neo4j.storageengine.api.UnderlyingStorageException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.recovery.LogTailScanner.NO_TRANSACTION_ID;
+import static org.neo4j.kernel.recovery.RecoveryStartInformation.MISSING_LOGS;
 import static org.neo4j.storageengine.api.LogVersionRepository.INITIAL_LOG_VERSION;
 
 class RecoveryStartInformationProviderTest
@@ -96,6 +98,17 @@ class RecoveryStartInformationProviderTest
         assertEquals( LogPosition.start( INITIAL_LOG_VERSION ), recoveryStartInformation.getRecoveryPosition() );
         assertEquals( 10L, recoveryStartInformation.getFirstTxIdAfterLastCheckPoint() );
         assertTrue( recoveryStartInformation.isRecoveryRequired() );
+    }
+
+    @Test
+    void  detectMissingTransactionLogsInformation()
+    {
+        when( tailScanner.getTailInformation() ).thenReturn( new LogTailInformation( false, -1, -1,
+                -1, LogEntryVersion.CURRENT ) );
+
+        RecoveryStartInformation recoveryStartInformation = new RecoveryStartInformationProvider( tailScanner, monitor ).get();
+
+        assertSame( MISSING_LOGS, recoveryStartInformation );
     }
 
     @Test

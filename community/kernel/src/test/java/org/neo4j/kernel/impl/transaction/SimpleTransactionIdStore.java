@@ -135,6 +135,12 @@ public class SimpleTransactionIdStore implements TransactionIdStore
     }
 
     @Override
+    public void setLastClosedTransaction( long transactionId, long byteOffset, long logVersion )
+    {
+        closedTransactionId.set( transactionId, new long[]{logVersion, byteOffset} );
+    }
+
+    @Override
     public void flush()
     {
     }

@@ -17,20 +17,36 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction.log;
+package org.neo4j.cursor;
 
-import org.neo4j.cursor.IOCursor;
-import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
-
-/**
- * {@link IOCursor} over {@link CommittedTransactionRepresentation} i.e. already committed transactions.
- */
-public interface TransactionCursor extends IOCursor<CommittedTransactionRepresentation>
+public class EmptyIOCursor<M> implements IOCursor<M>
 {
+    public static IOCursor INSTANCE = new org.neo4j.cursor.EmptyIOCursor<>();
 
-    /**
-     * @return {@link LogPosition} representing position after most recent transaction, i.e. after
-     * transaction read from most recent {@link #next()} (which returned true) call.
-     */
-    LogPosition position();
+    @SuppressWarnings( "unchecked" )
+    public static <M> IOCursor<M> empty()
+    {
+        return (IOCursor<M>) INSTANCE;
+    }
+
+    EmptyIOCursor()
+    {
+    }
+
+    @Override
+    public boolean next()
+    {
+        return false;
+    }
+
+    @Override
+    public void close()
+    {
+    }
+
+    @Override
+    public M get()
+    {
+        return null;
+    }
 }

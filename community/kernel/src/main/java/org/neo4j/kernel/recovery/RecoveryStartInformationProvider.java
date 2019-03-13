@@ -26,6 +26,8 @@ import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.entry.CheckPoint;
 import org.neo4j.storageengine.api.UnderlyingStorageException;
 
+import static org.neo4j.kernel.recovery.RecoveryStartInformation.MISSING_LOGS;
+import static org.neo4j.kernel.recovery.RecoveryStartInformation.NO_RECOVERY_REQUIRED;
 import static org.neo4j.storageengine.api.LogVersionRepository.INITIAL_LOG_VERSION;
 
 /**
@@ -89,28 +91,36 @@ public class RecoveryStartInformationProvider implements ThrowingSupplier<Recove
         LogTailScanner.LogTailInformation logTailInformation = logTailScanner.getTailInformation();
         CheckPoint lastCheckPoint = logTailInformation.lastCheckPoint;
         long txIdAfterLastCheckPoint = logTailInformation.firstTxIdAfterLastCheckPoint;
-        if ( !logTailInformation.commitsAfterLastCheckpoint() )
+
+        if ( !logTailInformation.isRecoveryRequired() )
         {
             monitor.noCommitsAfterLastCheckPoint( lastCheckPoint != null ? lastCheckPoint.getLogPosition() : null );
-            return createRecoveryInformation( LogPosition.UNSPECIFIED, txIdAfterLastCheckPoint );
+            return NO_RECOVERY_REQUIRED;
         }
-
-        if ( lastCheckPoint != null )
+        if ( logTailInformation.logsMissing() )
         {
-            monitor.commitsAfterLastCheckPoint( lastCheckPoint.getLogPosition(), txIdAfterLastCheckPoint );
+            return MISSING_LOGS;
+        }
+        if ( logTailInformation.commitsAfterLastCheckpoint() )
+        {
+            if ( lastCheckPoint == null )
+            {
+                if ( logTailInformation.oldestLogVersionFound != INITIAL_LOG_VERSION )
+                {
+                    long fromLogVersion = Math.max( INITIAL_LOG_VERSION, logTailInformation.oldestLogVersionFound );
+                    throw new UnderlyingStorageException(
+                            "No check point found in any log file from version " + fromLogVersion + " to " + logTailInformation.currentLogVersion );
+                }
+                monitor.noCheckPointFound();
+                return createRecoveryInformation( LogPosition.start( 0 ), txIdAfterLastCheckPoint );
+            }
+            LogPosition checkpointLogPosition = lastCheckPoint.getLogPosition();
+            monitor.commitsAfterLastCheckPoint( checkpointLogPosition, txIdAfterLastCheckPoint );
             return createRecoveryInformation( lastCheckPoint.getLogPosition(), txIdAfterLastCheckPoint );
         }
         else
         {
-            if ( logTailInformation.oldestLogVersionFound != INITIAL_LOG_VERSION )
-            {
-                long fromLogVersion = Math.max( INITIAL_LOG_VERSION, logTailInformation.oldestLogVersionFound );
-                throw new UnderlyingStorageException(
-                        "No check point found in any log file from version " + fromLogVersion + " to " +
-                                logTailInformation.currentLogVersion );
-            }
-            monitor.noCheckPointFound();
-            return createRecoveryInformation( LogPosition.start( 0 ), txIdAfterLastCheckPoint );
+            throw new UnderlyingStorageException( "Fail to determine recovery information Log tail info: " + logTailInformation );
         }
     }
 

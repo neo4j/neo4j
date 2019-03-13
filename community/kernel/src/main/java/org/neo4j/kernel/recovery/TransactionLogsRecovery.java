@@ -79,76 +79,79 @@ public class TransactionLogsRecovery extends LifecycleAdapter
         LogPosition recoveryToPosition = recoveryPosition;
         CommittedTransactionRepresentation lastTransaction = null;
         CommittedTransactionRepresentation lastReversedTransaction = null;
-        try
+        if ( !recoveryStartInformation.isMissingLogs() )
         {
-            long lowestRecoveredTxId = TransactionIdStore.BASE_TX_ID;
-            try ( TransactionCursor transactionsToRecover = recoveryService.getTransactionsInReverseOrder( recoveryPosition );
-                    RecoveryApplier recoveryVisitor = recoveryService.getRecoveryApplier( REVERSE_RECOVERY ) )
+            try
             {
-                while ( transactionsToRecover.next() )
+                long lowestRecoveredTxId = TransactionIdStore.BASE_TX_ID;
+                try ( TransactionCursor transactionsToRecover = recoveryService.getTransactionsInReverseOrder( recoveryPosition );
+                        RecoveryApplier recoveryVisitor = recoveryService.getRecoveryApplier( REVERSE_RECOVERY ) )
                 {
-                    CommittedTransactionRepresentation transaction = transactionsToRecover.get();
-                    if ( lastReversedTransaction == null )
+                    while ( transactionsToRecover.next() )
                     {
-                        lastReversedTransaction = transaction;
-                        initProgressReporter( recoveryStartInformation, lastReversedTransaction );
+                        CommittedTransactionRepresentation transaction = transactionsToRecover.get();
+                        if ( lastReversedTransaction == null )
+                        {
+                            lastReversedTransaction = transaction;
+                            initProgressReporter( recoveryStartInformation, lastReversedTransaction );
+                        }
+                        recoveryVisitor.visit( transaction );
+                        lowestRecoveredTxId = transaction.getCommitEntry().getTxId();
+                        reportProgress();
                     }
-                    recoveryVisitor.visit( transaction );
-                    lowestRecoveredTxId = transaction.getCommitEntry().getTxId();
-                    reportProgress();
                 }
-            }
 
-            monitor.reverseStoreRecoveryCompleted( lowestRecoveredTxId );
+                monitor.reverseStoreRecoveryCompleted( lowestRecoveredTxId );
 
-            // We cannot initialise the schema (tokens, schema cache, indexing service, etc.) until we have returned the store to a consistent state.
-            // We need to be able to read the store before we can even figure out what indexes, tokens, etc. we have. Hence we defer the initialisation
-            // of the schema life until after we've done the reverse recovery.
-            schemaLife.init();
+                // We cannot initialise the schema (tokens, schema cache, indexing service, etc.) until we have returned the store to a consistent state.
+                // We need to be able to read the store before we can even figure out what indexes, tokens, etc. we have. Hence we defer the initialisation
+                // of the schema life until after we've done the reverse recovery.
+                schemaLife.init();
 
-            try ( TransactionCursor transactionsToRecover = recoveryService.getTransactions( recoveryPosition );
-                    RecoveryApplier recoveryVisitor = recoveryService.getRecoveryApplier( RECOVERY ) )
-            {
-                while ( transactionsToRecover.next() )
+                try ( TransactionCursor transactionsToRecover = recoveryService.getTransactions( recoveryPosition );
+                        RecoveryApplier recoveryVisitor = recoveryService.getRecoveryApplier( RECOVERY ) )
                 {
-                    lastTransaction = transactionsToRecover.get();
-                    long txId = lastTransaction.getCommitEntry().getTxId();
-                    recoveryVisitor.visit( lastTransaction );
-                    monitor.transactionRecovered( txId );
-                    numberOfRecoveredTransactions++;
+                    while ( transactionsToRecover.next() )
+                    {
+                        lastTransaction = transactionsToRecover.get();
+                        long txId = lastTransaction.getCommitEntry().getTxId();
+                        recoveryVisitor.visit( lastTransaction );
+                        monitor.transactionRecovered( txId );
+                        numberOfRecoveredTransactions++;
+                        recoveryToPosition = transactionsToRecover.position();
+                        reportProgress();
+                    }
                     recoveryToPosition = transactionsToRecover.position();
-                    reportProgress();
                 }
-                recoveryToPosition = transactionsToRecover.position();
             }
-        }
-        catch ( Error | ClosedByInterruptException e )
-        {
-            // We do not want to truncate logs based on these exceptions. Since users can influence them with config changes
-            // the users are able to workaround this if truncations is really needed.
-            throw e;
-        }
-        catch ( Throwable t )
-        {
-            if ( failOnCorruptedLogFiles )
+            catch ( Error | ClosedByInterruptException e )
             {
-                throwUnableToCleanRecover( t );
+                // We do not want to truncate logs based on these exceptions. Since users can influence them with config changes
+                // the users are able to workaround this if truncations is really needed.
+                throw e;
             }
-            if ( lastTransaction != null )
+            catch ( Throwable t )
             {
-                LogEntryCommit commitEntry = lastTransaction.getCommitEntry();
-                monitor.failToRecoverTransactionsAfterCommit( t, commitEntry, recoveryToPosition );
+                if ( failOnCorruptedLogFiles )
+                {
+                    throwUnableToCleanRecover( t );
+                }
+                if ( lastTransaction != null )
+                {
+                    LogEntryCommit commitEntry = lastTransaction.getCommitEntry();
+                    monitor.failToRecoverTransactionsAfterCommit( t, commitEntry, recoveryToPosition );
+                }
+                else
+                {
+                    monitor.failToRecoverTransactionsAfterPosition( t, recoveryPosition );
+                    recoveryToPosition = recoveryPosition;
+                }
             }
-            else
-            {
-                monitor.failToRecoverTransactionsAfterPosition( t, recoveryPosition );
-                recoveryToPosition = recoveryPosition;
-            }
+            progressReporter.completed();
+            logsTruncator.truncate( recoveryToPosition );
         }
-        progressReporter.completed();
-        logsTruncator.truncate( recoveryToPosition );
 
-        recoveryService.transactionsRecovered( lastTransaction, recoveryToPosition );
+        recoveryService.transactionsRecovered( lastTransaction, recoveryToPosition, recoveryStartInformation.isMissingLogs() );
         monitor.recoveryCompleted( numberOfRecoveredTransactions );
     }
 

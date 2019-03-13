@@ -63,11 +63,8 @@ public class RecoveryRequiredChecker
     {
         if ( !storageEngineFactory.storageExists( fs, pageCache, databaseLayout ) )
         {
-            // There was no store
             return false;
         }
-
-        // We need config to determine where the logical log files are
         return new RecoveryStartInformationProvider( tailScanner, NO_MONITOR ).get().isRecoveryRequired();
     }
 

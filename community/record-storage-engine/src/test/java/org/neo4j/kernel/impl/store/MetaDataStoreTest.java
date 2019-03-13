@@ -63,6 +63,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -240,6 +241,24 @@ class MetaDataStoreTest
         MetaDataStore metaDataStore = newMetaDataStore();
         metaDataStore.close();
         assertThrows( StoreFileClosedException.class, () -> metaDataStore.setLastCommittedAndClosedTransactionId( 1, 2, BASE_TX_COMMIT_TIMESTAMP, 3, 4 ) );
+    }
+
+    @Test
+    void setLastClosedTransactionFailWhenStoreIsClosed()
+    {
+        MetaDataStore metaDataStore = newMetaDataStore();
+        metaDataStore.close();
+        assertThrows( StoreFileClosedException.class, () -> metaDataStore.setLastClosedTransaction( 1, 2, 3 ) );
+    }
+
+    @Test
+    void setLastClosedTransactionOverridesLastClosedTransactionInformation()
+    {
+        MetaDataStore metaDataStore = newMetaDataStore();
+        metaDataStore.setLastClosedTransaction( 3, 4, 5 );
+
+        assertEquals( 3L, metaDataStore.getLastClosedTransactionId() );
+        assertArrayEquals( new long[]{3, 4, 5}, metaDataStore.getLastClosedTransaction() );
     }
 
     @Test

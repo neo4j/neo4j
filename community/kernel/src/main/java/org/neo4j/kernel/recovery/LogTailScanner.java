@@ -348,5 +348,24 @@ public class LogTailScanner
         {
             return recordAfterCheckpoint;
         }
+
+        boolean logsMissing()
+        {
+            return lastCheckPoint == null && oldestLogVersionFound == -1;
+        }
+
+        public boolean isRecoveryRequired()
+        {
+            return recordAfterCheckpoint || logsMissing();
+        }
+
+        @Override
+        public String toString()
+        {
+            return "LogTailInformation{" + "lastCheckPoint=" + lastCheckPoint + ", firstTxIdAfterLastCheckPoint=" + firstTxIdAfterLastCheckPoint +
+                    ", oldestLogVersionFound=" + oldestLogVersionFound + ", currentLogVersion=" + currentLogVersion + ", latestLogEntryVersion=" +
+                    latestLogEntryVersion + ", recordAfterCheckpoint=" + recordAfterCheckpoint + '}';
+        }
+
     }
 }

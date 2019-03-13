@@ -60,6 +60,8 @@ import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.kernel.impl.transaction.log.TestLogEntryReader.logEntryReader;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.neo4j.kernel.recovery.LogTailScanner.NO_TRANSACTION_ID;
 
 @RunWith( Parameterized.class )
@@ -111,6 +113,14 @@ public class LogTailScannerTest
     }
 
     @Test
+    public void detectMissingLogFiles()
+    {
+        LogTailInformation tailInformation = tailScanner.getTailInformation();
+        assertTrue( tailInformation.logsMissing() );
+        assertTrue( tailInformation.isRecoveryRequired() );
+    }
+
+    @Test
     public void noLogFilesFound()
     {
         // given no files
@@ -134,6 +144,7 @@ public class LogTailScannerTest
 
         // then
         assertLatestCheckPoint( false, true, NO_TRANSACTION_ID, endLogVersion, logTailInformation );
+        assertFalse( logTailInformation.logsMissing() );
     }
 
     @Test

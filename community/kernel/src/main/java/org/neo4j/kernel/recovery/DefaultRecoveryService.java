@@ -29,6 +29,7 @@ import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionCursor;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
+import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.storageengine.api.LogVersionRepository;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
@@ -92,8 +93,18 @@ public class DefaultRecoveryService implements RecoveryService
 
     @Override
     public void transactionsRecovered( CommittedTransactionRepresentation lastRecoveredTransaction,
-            LogPosition positionAfterLastRecoveredTransaction )
+            LogPosition positionAfterLastRecoveredTransaction, boolean missingLogs )
     {
+        if ( missingLogs )
+        {
+            // in case if logs are missing we need to reset position of last committed transaction since
+            // this information influencing checkpoint that will be created and if we will not gonna do that
+            // it will still reference old offset from logs that are gone and as result log position in checkpoint record will be incorrect
+            // and that can cause partial next recovery.
+            long[] lastClosedTransaction = transactionIdStore.getLastClosedTransaction();
+            transactionIdStore.setLastClosedTransaction( lastClosedTransaction[0], lastClosedTransaction[1], LogHeader.LOG_HEADER_SIZE );
+            return;
+        }
         long recoveredTransactionLogVersion = positionAfterLastRecoveredTransaction.getLogVersion();
         long recoveredTransactionOffset = positionAfterLastRecoveredTransaction.getByteOffset();
         if ( lastRecoveredTransaction != null )

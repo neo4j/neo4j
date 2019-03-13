@@ -39,5 +39,5 @@ public interface RecoveryService
     RecoveryApplier getRecoveryApplier( TransactionApplicationMode mode ) throws Exception;
 
     void transactionsRecovered( CommittedTransactionRepresentation lastRecoveredTransaction,
-            LogPosition positionAfterLastRecoveredTransaction );
+            LogPosition positionAfterLastRecoveredTransaction, boolean missingLogs );
 }

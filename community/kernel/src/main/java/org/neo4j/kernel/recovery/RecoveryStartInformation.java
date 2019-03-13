@@ -23,13 +23,23 @@ import org.neo4j.kernel.impl.transaction.log.LogPosition;
 
 public class RecoveryStartInformation
 {
+    static RecoveryStartInformation NO_RECOVERY_REQUIRED = new RecoveryStartInformation( LogPosition.UNSPECIFIED, -1 );
+    static RecoveryStartInformation MISSING_LOGS = new RecoveryStartInformation( null, -1, true );
+
     private final long firstTxIdAfterLastCheckPoint;
     private final LogPosition recoveryPosition;
+    private final boolean missingLogs;
 
     public RecoveryStartInformation( LogPosition recoveryPosition, long firstTxIdAfterLastCheckPoint )
     {
+        this( recoveryPosition, firstTxIdAfterLastCheckPoint, false );
+    }
+
+    private RecoveryStartInformation( LogPosition recoveryPosition, long firstTxIdAfterLastCheckPoint, boolean missingLogs )
+    {
         this.firstTxIdAfterLastCheckPoint = firstTxIdAfterLastCheckPoint;
         this.recoveryPosition = recoveryPosition;
+        this.missingLogs = missingLogs;
     }
 
     public boolean isRecoveryRequired()
@@ -37,13 +47,18 @@ public class RecoveryStartInformation
         return recoveryPosition != LogPosition.UNSPECIFIED;
     }
 
-    public long getFirstTxIdAfterLastCheckPoint()
+    long getFirstTxIdAfterLastCheckPoint()
     {
         return firstTxIdAfterLastCheckPoint;
     }
 
-    public LogPosition getRecoveryPosition()
+    LogPosition getRecoveryPosition()
     {
         return recoveryPosition;
+    }
+
+    boolean isMissingLogs()
+    {
+        return missingLogs;
     }
 }

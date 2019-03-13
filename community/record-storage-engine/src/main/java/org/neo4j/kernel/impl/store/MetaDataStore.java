@@ -210,6 +210,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
         lastClosedTx.set( transactionId, new long[]{logVersion, byteOffset} );
         highestCommittedTransaction.set( transactionId, checksum, commitTimestamp );
     }
+
     /**
      * Writes a record in a neostore file.
      * This method only works for neostore files of the current version.
@@ -846,6 +847,16 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
                 }
             }
         }
+    }
+
+    @Override
+    public void setLastClosedTransaction( long transactionId, long logVersion, long byteOffset )
+    {
+        assertNotClosed();
+        setRecord( Position.LAST_TRANSACTION_ID, transactionId );
+        setRecord( Position.LAST_CLOSED_TRANSACTION_LOG_VERSION, logVersion );
+        setRecord( Position.LAST_CLOSED_TRANSACTION_LOG_BYTE_OFFSET, byteOffset );
+        lastClosedTx.set( transactionId, new long[]{logVersion, byteOffset} );
     }
 
     public void logRecords( final Logger log )
