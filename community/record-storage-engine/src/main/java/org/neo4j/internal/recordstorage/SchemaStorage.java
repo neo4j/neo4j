@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.function.Predicate;
 import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
@@ -45,6 +46,7 @@ import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.storageengine.api.SchemaRule;
 import org.neo4j.storageengine.api.schema.ConstraintDescriptor;
+import org.neo4j.storageengine.api.schema.IndexDescriptor;
 import org.neo4j.storageengine.api.schema.SchemaDescriptor;
 import org.neo4j.storageengine.api.schema.SchemaDescriptorSupplier;
 import org.neo4j.util.VisibleForTesting;
@@ -94,6 +96,15 @@ public class SchemaStorage implements SchemaRuleAccess
         SchemaDescriptor schema = supplier.schema();
         return indexRules( streamAllSchemaRules( false ) )
                 .filter( rule -> rule.schema().equals( schema ) )
+                .toArray( StoreIndexDescriptor[]::new );
+    }
+
+    @Override
+    public StoreIndexDescriptor[] indexGetForSchema( IndexDescriptor descriptor, boolean filterOnType )
+    {
+        SchemaDescriptor schema = descriptor.schema();
+        return indexRules( streamAllSchemaRules( false ) )
+                .filter( filterOnType ? descriptor::equals : index -> index.schema().equals( schema ) )
                 .toArray( StoreIndexDescriptor[]::new );
     }
 

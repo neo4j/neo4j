@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api.index;
 
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.scheduler.Group;
@@ -48,7 +49,7 @@ class IndexPopulationJobController
         {
             try
             {
-                job.awaitCompletion();
+                job.awaitCompletion( 0, TimeUnit.SECONDS );
             }
             catch ( InterruptedException e )
             {

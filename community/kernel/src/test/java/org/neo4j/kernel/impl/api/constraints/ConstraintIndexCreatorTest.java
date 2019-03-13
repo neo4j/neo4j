@@ -113,7 +113,7 @@ class ConstraintIndexCreatorTest
         verify( schemaRead ).indexGetCommittedId( indexReference );
         verify( schemaRead ).index( descriptor );
         verifyNoMoreInteractions( schemaRead );
-        verify( indexProxy ).awaitStoreScanCompleted();
+        verify( indexProxy ).awaitStoreScanCompleted( anyLong(), any() );
     }
 
     @Test
@@ -131,7 +131,7 @@ class ConstraintIndexCreatorTest
 
         IndexEntryConflictException cause = new IndexEntryConflictException( 2, 1, Values.of( "a" ) );
         doThrow( new IndexPopulationFailedKernelException( "some index", cause ) )
-                .when( indexProxy ).awaitStoreScanCompleted();
+                .when( indexProxy ).awaitStoreScanCompleted( anyLong(), any() );
         when( schemaRead.index( any( SchemaDescriptor.class ) ) )
                 .thenReturn(
                         IndexReference.NO_INDEX )   // first claim it doesn't exist, because it doesn't... so
@@ -231,7 +231,7 @@ class ConstraintIndexCreatorTest
         verify( schemaRead ).index( descriptor );
         verify( schemaRead ).indexGetOwningUniquenessConstraintId( indexReference );
         verifyNoMoreInteractions( schemaRead );
-        verify( indexProxy ).awaitStoreScanCompleted();
+        verify( indexProxy ).awaitStoreScanCompleted( anyLong(), any() );
     }
 
     @Test

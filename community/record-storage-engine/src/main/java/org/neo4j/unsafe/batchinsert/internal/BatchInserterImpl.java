@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 import java.util.function.LongFunction;
 
 import org.neo4j.collection.PrimitiveLongCollections;
@@ -535,7 +536,7 @@ public class BatchInserterImpl implements BatchInserter
                 IndexProxy indexProxy = getIndexProxy( indexingService, descriptor );
                 try
                 {
-                    indexProxy.awaitStoreScanCompleted();
+                    indexProxy.awaitStoreScanCompleted( 0, TimeUnit.MILLISECONDS );
                 }
                 catch ( IndexPopulationFailedKernelException e )
                 {

@@ -180,6 +180,12 @@ public interface KernelTransaction extends Transaction, AssertOpen
      */
     AvailabilityGuard getAvailabilityGuard();
 
+    /**
+     * @return whether or not this transaction is a schema transaction. Type of transaction is decided
+     * on first write operation, be it data or schema operation.
+     */
+    boolean isSchemaTransaction();
+
     @FunctionalInterface
     interface Revertable extends AutoCloseable
     {

@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api.index;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.concurrent.TimeUnit;
 
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.kernel.api.InternalIndexState;
@@ -158,7 +159,7 @@ public class OnlineIndexProxy implements IndexProxy
     }
 
     @Override
-    public boolean awaitStoreScanCompleted()
+    public boolean awaitStoreScanCompleted( long time, TimeUnit unit )
     {
         return false; // the store scan is already completed
     }

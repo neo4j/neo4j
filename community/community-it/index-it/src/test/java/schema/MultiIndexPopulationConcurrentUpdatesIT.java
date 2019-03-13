@@ -32,6 +32,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.function.IntPredicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -378,7 +379,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
             IndexActivationFailedKernelException
     {
         IndexProxy indexProxy = indexService.getIndexProxy( SchemaDescriptorFactory.forLabel( labelId, propertyId ) );
-        indexProxy.awaitStoreScanCompleted();
+        indexProxy.awaitStoreScanCompleted( 0, TimeUnit.MILLISECONDS );
         while ( indexProxy.getState() != InternalIndexState.ONLINE )
         {
             Thread.sleep( 10 );

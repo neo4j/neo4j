@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api.index;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.concurrent.TimeUnit;
 
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.kernel.api.InternalIndexState;
@@ -95,9 +96,11 @@ public interface IndexProxy
     IndexReader newReader() throws IndexNotFoundKernelException;
 
     /**
+     * @param time time to wait maximum. A value of 0 means indefinite wait.
+     * @param unit unit of time to wait.
      * @return {@code true} if the call waited, {@code false} if the condition was already reached.
      */
-    boolean awaitStoreScanCompleted() throws IndexPopulationFailedKernelException, InterruptedException;
+    boolean awaitStoreScanCompleted( long time, TimeUnit unit ) throws IndexPopulationFailedKernelException, InterruptedException;
 
     void activate() throws IndexActivationFailedKernelException;
 

@@ -26,6 +26,7 @@ import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.store.record.ConstraintRule;
 import org.neo4j.storageengine.api.SchemaRule;
 import org.neo4j.storageengine.api.schema.ConstraintDescriptor;
+import org.neo4j.storageengine.api.schema.IndexDescriptor;
 import org.neo4j.storageengine.api.schema.SchemaDescriptorSupplier;
 
 public class StubSchemaRuleAccess implements SchemaRuleAccess
@@ -56,6 +57,12 @@ public class StubSchemaRuleAccess implements SchemaRuleAccess
 
     @Override
     public StoreIndexDescriptor[] indexGetForSchema( SchemaDescriptorSupplier supplier )
+    {
+        return new StoreIndexDescriptor[0];
+    }
+
+    @Override
+    public StoreIndexDescriptor[] indexGetForSchema( IndexDescriptor descriptor, boolean filterOnType )
     {
         return new StoreIndexDescriptor[0];
     }

@@ -20,8 +20,10 @@
 package org.neo4j.kernel.impl.api.state;
 
 import java.io.IOException;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
+import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.internal.kernel.api.SchemaRead;
@@ -40,7 +42,6 @@ import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelExceptio
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyIndexedException;
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
-import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.kernel.api.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema.constraints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
@@ -50,6 +51,7 @@ import org.neo4j.kernel.impl.locking.Locks.Client;
 import org.neo4j.kernel.impl.transaction.state.storeview.DefaultNodePropertyAccessor;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.storageengine.api.schema.SchemaDescriptor;
 
 import static org.neo4j.internal.kernel.api.Transaction.Type.implicit;
@@ -125,7 +127,7 @@ public class ConstraintIndexCreator
             // has been created. Now it's just the population left, which can take a long time
             locks.releaseExclusive( descriptor.keyType(), descriptor.keyId() );
 
-            awaitConstraintIndexPopulation( constraint, proxy );
+            awaitConstraintIndexPopulation( constraint, proxy, transaction );
             log.info( "Constraint %s populated, starting verification.", constraint.ownedIndexDescriptor() );
 
             // Index population was successful, but at this point we don't know if the uniqueness constraint holds.
@@ -198,12 +200,21 @@ public class ConstraintIndexCreator
         }
     }
 
-    private void awaitConstraintIndexPopulation( UniquenessConstraintDescriptor constraint, IndexProxy proxy )
+    private void awaitConstraintIndexPopulation( UniquenessConstraintDescriptor constraint, IndexProxy proxy, KernelTransactionImplementation transaction )
             throws InterruptedException, UniquePropertyValueValidationException
     {
         try
         {
-            proxy.awaitStoreScanCompleted();
+            boolean stillGoing;
+            do
+            {
+                stillGoing = proxy.awaitStoreScanCompleted( 1, TimeUnit.SECONDS );
+                if ( transaction.isTerminated() )
+                {
+                    throw new TransactionTerminatedException( transaction.getReasonIfTerminated().get() );
+                }
+            }
+            while ( stillGoing );
         }
         catch ( IndexPopulationFailedKernelException e )
         {

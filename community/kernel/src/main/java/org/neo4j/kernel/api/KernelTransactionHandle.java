@@ -154,4 +154,10 @@ public interface KernelTransactionHandle
      * @return transaction originator details
      */
     ClientConnectionInfo clientInfo();
+
+    /**
+     * @return whether or not this transaction is a schema transaction. Type of transaction is decided
+     * on first write operation, be it data or schema operation.
+     */
+    boolean isSchemaTransaction();
 }

@@ -31,6 +31,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.function.IntPredicate;
 
 import org.neo4j.common.EntityType;
@@ -387,7 +388,7 @@ public class IndexPopulationJobTest
 
         storeScan.latch.waitForAllToStart();
         job.cancel();
-        job.awaitCompletion();
+        job.awaitCompletion( 0, TimeUnit.SECONDS );
         storeScan.latch.waitForAllToFinish();
 
         // WHEN

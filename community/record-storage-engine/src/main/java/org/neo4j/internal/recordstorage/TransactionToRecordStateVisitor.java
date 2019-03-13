@@ -41,8 +41,6 @@ import org.neo4j.storageengine.api.schema.ConstraintDescriptor;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 
-import static org.neo4j.helpers.ArrayUtil.single;
-
 class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
 {
     private boolean clearSchemaState;
@@ -186,7 +184,15 @@ class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
         else
         {
             // TODO we'll need to rethink this whole thing once multiple identical schemas are allowed.
-            StoreIndexDescriptor[] rules = schemaStorage.indexGetForSchema( index );
+            StoreIndexDescriptor[] rules = schemaStorage.indexGetForSchema( index, true );
+            if ( rules.length == 0 )
+            {
+                // Loosen the filtering a bit. The reason we do this during drop is this scenario where a uniqueness constraint creation
+                // crashed or similar, where the UNIQUE index exists, but not its constraint and so the only way to drop it
+                // (if you don't want to go the route of first creating a constraint and then drop that, where the index would be dropped along with it),
+                // is to do "DROP INDEX ON :Label(name) which has the type as GENERAL and would miss it.
+                rules = schemaStorage.indexGetForSchema( index, false );
+            }
             if ( rules.length > 1 )
             {
                 throw new IllegalStateException( "More than one index matched schema '" + index +
@@ -301,5 +307,4 @@ class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
     {
         recordState.createRelationshipTypeToken( name, id );
     }
-
 }

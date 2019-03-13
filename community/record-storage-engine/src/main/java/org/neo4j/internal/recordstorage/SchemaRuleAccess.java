@@ -31,6 +31,8 @@ import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.record.ConstraintRule;
 import org.neo4j.storageengine.api.SchemaRule;
 import org.neo4j.storageengine.api.schema.ConstraintDescriptor;
+import org.neo4j.storageengine.api.schema.IndexDescriptor;
+import org.neo4j.storageengine.api.schema.SchemaDescriptor;
 import org.neo4j.storageengine.api.schema.SchemaDescriptorSupplier;
 import org.neo4j.util.VisibleForTesting;
 
@@ -52,10 +54,20 @@ public interface SchemaRuleAccess
     /**
      * Find the IndexRule that matches the given {@link SchemaDescriptorSupplier}.
      *
-     * @return an array of all the matching index rules.
+     * @return an array of all the matching index rules. Empty array if none found.
      * @param index the target {@link IndexReference}
      */
     StoreIndexDescriptor[] indexGetForSchema( SchemaDescriptorSupplier index );
+
+    /**
+     * Find the IndexRule that matches the given IndexDescriptor.
+     *
+     * @return an array of all the matching index rules. Empty array if none found.
+     * @throws IllegalStateException if more than one matching rule.
+     * @param descriptor the target IndexDescriptor
+     * @param filterOnType whether or not to filter on index type. If {@code false} then only {@link SchemaDescriptor} will be compared.
+     */
+    StoreIndexDescriptor[] indexGetForSchema( IndexDescriptor descriptor, boolean filterOnType );
 
     /**
      * Find the IndexRule that has the given user supplied name.

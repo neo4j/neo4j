@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api.index;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.concurrent.TimeUnit;
 
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.kernel.api.InternalIndexState;
@@ -96,9 +97,9 @@ public abstract class AbstractDelegatingIndexProxy implements IndexProxy
     }
 
     @Override
-    public boolean awaitStoreScanCompleted() throws IndexPopulationFailedKernelException, InterruptedException
+    public boolean awaitStoreScanCompleted( long time, TimeUnit unit ) throws IndexPopulationFailedKernelException, InterruptedException
     {
-        return getDelegate().awaitStoreScanCompleted();
+        return getDelegate().awaitStoreScanCompleted( time, unit );
     }
 
     @Override

@@ -73,6 +73,7 @@ import org.neo4j.values.storable.Values;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.collection.IsIterableContainingInAnyOrder.containsInAnyOrder;
@@ -313,7 +314,7 @@ class OnlineIndexUpdatesTest
         indexingService.createIndexes( indexDescriptors );
         for ( StoreIndexDescriptor indexDescriptor : indexDescriptors )
         {
-            indexingService.getIndexProxy( indexDescriptor.schema() ).awaitStoreScanCompleted();
+            indexingService.getIndexProxy( indexDescriptor.schema() ).awaitStoreScanCompleted( 0, MILLISECONDS );
             schemaCache.addSchemaRule( indexDescriptor );
         }
     }
