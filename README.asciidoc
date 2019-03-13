@@ -12,8 +12,6 @@ Neo4j is available both as a standalone server, or an embeddable component. You 
 
 We encourage experimentation with Neo4j. You can build extensions to Neo4j, develop library or drivers atop the product, or make contributions directly to the product core. You'll need to sign a Contributor License Agreement in order for us to accept your patches.
 
-NOTE: This GitHub repository contains mixed GPL and AGPL code. Our Community edition (in the link:community/[community/] directory) is GPLv3. Our Enterprise edition (link:enterprise/[enterprise/]) is differently licensed under the AGPLv3.
-
 == Dependencies ==
 
 Neo4j is built using http://maven.apache.org/[Apache Maven] version 3.3 and a recent version of supported VM. Bash and Make are also required. Note that maven needs more memory than the standard configuration, this can be achieved with `export MAVEN_OPTS="-Xmx512m"`.
@@ -71,8 +69,4 @@ to start Neo4j.
 
 Neo4j Community Edition is an open source product licensed under GPLv3.
 
-Neo4j Enterprise Edition expands the functionality of Community Edition with Enterprise-grade features.
-
-Neo4j Enterprise consists of modules from Neo4j Community Edition and modules licensed under AGPLv3 with the Commons Clause in this repository, and other closed source components not present in this repository.
-
-When packaged as a binary, Enterprise Edition includes additional closed-source components _not available in this repository_ and requires a commercial license from Neo4j Sweden AB or one of its affiliates.
+Neo4j Enterprise Edition includes additional closed-source components _not available in this repository_ and requires a commercial license from Neo4j or one of its affiliates.
