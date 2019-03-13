@@ -30,7 +30,6 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.internal.helpers.ArrayUtil;
 import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.internal.helpers.collection.FilteringIterator;
 import org.neo4j.internal.helpers.collection.IteratorWrapper;
@@ -46,14 +45,15 @@ import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
+import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.Logger;
 import org.neo4j.storageengine.api.format.CapabilityType;
 
+import static org.apache.commons.lang3.ArrayUtils.contains;
 import static org.neo4j.internal.helpers.collection.Iterators.iterator;
 import static org.neo4j.internal.helpers.collection.Iterators.loop;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.STORE_VERSION;
-import static org.neo4j.kernel.impl.store.MetaDataStore.getRecord;
 import static org.neo4j.kernel.impl.store.MetaDataStore.versionLongToString;
 
 /**
@@ -99,7 +99,6 @@ public class NeoStores implements AutoCloseable
     private final PageCache pageCache;
     private final LogProvider logProvider;
     private final boolean createIfNotExist;
-    private final File metadataStore;
     private final StoreType[] initializedStores;
     private final RecordFormats recordFormats;
     // All stores, as Object due to CountsTracker being different that all other stores.
@@ -118,7 +117,6 @@ public class NeoStores implements AutoCloseable
             OpenOption[] openOptions )
     {
         this.layout = layout;
-        this.metadataStore = layout.metadataStore();
         this.config = config;
         this.idGeneratorFactory = idGeneratorFactory;
         this.pageCache = pageCache;
@@ -127,13 +125,14 @@ public class NeoStores implements AutoCloseable
         this.createIfNotExist = createIfNotExist;
         this.openOptions = openOptions;
 
-        verifyRecordFormat();
         stores = new CommonAbstractStore[StoreType.values().length];
+        // First open the meta data store so that we can verify the record format. We know that this store is of the type MetaDataStore
+        verifyRecordFormat( storeTypes );
         try
         {
             for ( StoreType type : storeTypes )
             {
-                getOrCreateStore( type );
+                getOrOpenStore( type );
             }
         }
         catch ( RuntimeException initException )
@@ -176,31 +175,46 @@ public class NeoStores implements AutoCloseable
         }
     }
 
-    private void verifyRecordFormat()
+    private void verifyRecordFormat( StoreType[] storeTypes )
     {
-        try
+        String expectedStoreVersion = recordFormats.storeVersion();
+        long existingFormat;
+        if ( contains( storeTypes, StoreType.META_DATA ) )
         {
-            String expectedStoreVersion = recordFormats.storeVersion();
-            long record = getRecord( pageCache, metadataStore, STORE_VERSION );
-            if ( record != MetaDataRecordFormat.FIELD_NOT_PRESENT )
+            // We're going to open this store anyway so might as well do it here, like we open the others
+            MetaDataStore metaDataStore = (MetaDataStore) getOrOpenStore( StoreType.META_DATA );
+            existingFormat = metaDataStore.getRecord( STORE_VERSION.id(), metaDataStore.newRecord(), RecordLoad.CHECK ).getValue();
+        }
+        else
+        {
+            // We're not quite expected to open this store among the other stores, so instead just read the single version record
+            // from the meta data store and be done with it. This will avoid the unwanted side-effect of creating the meta data store
+            // if we have createIfNotExists set, but don't have the meta data store in the list of stores to open
+            try
             {
-                String actualStoreVersion = versionLongToString( record );
-                RecordFormats actualStoreFormat = RecordFormatSelector.selectForVersion( actualStoreVersion );
-                if ( !isCompatibleFormats( actualStoreFormat ) )
-                {
-                    throw new UnexpectedStoreVersionException( actualStoreVersion, expectedStoreVersion );
-                }
+                existingFormat = MetaDataStore.getRecord( pageCache, layout.metadataStore(), STORE_VERSION );
+            }
+            catch ( NoSuchFileException e )
+            {
+                // Occurs when there is no file, which is obviously when creating a store.
+                // Caught as an exception because we want to leave as much interaction with files as possible
+                // to the page cache.
+                return;
+            }
+            catch ( IOException e )
+            {
+                throw new UnderlyingStorageException( e );
             }
         }
-        catch ( NoSuchFileException e )
+
+        if ( existingFormat != MetaDataRecordFormat.FIELD_NOT_PRESENT )
         {
-            // Occurs when there is no file, which is obviously when creating a store.
-            // Caught as an exception because we want to leave as much interaction with files as possible
-            // to the page cache.
-        }
-        catch ( IOException e )
-        {
-            throw new UnderlyingStorageException( e );
+            String actualStoreVersion = versionLongToString( existingFormat );
+            RecordFormats actualStoreFormat = RecordFormatSelector.selectForVersion( actualStoreVersion );
+            if ( !isCompatibleFormats( actualStoreFormat ) )
+            {
+                throw new UnexpectedStoreVersionException( actualStoreVersion, expectedStoreVersion );
+            }
         }
     }
 
@@ -250,7 +264,7 @@ public class NeoStores implements AutoCloseable
      * Returns specified store by type from already opened store array. If store is not opened exception will be
      * thrown.
      *
-     * @see #getOrCreateStore
+     * @see #getOrOpenStore
      * @param storeType store type to retrieve
      * @return store of requested type
      * @throws IllegalStateException if opened store not found
@@ -260,7 +274,7 @@ public class NeoStores implements AutoCloseable
         CommonAbstractStore store = stores[storeType.ordinal()];
         if ( store == null )
         {
-            String message = ArrayUtil.contains( initializedStores, storeType ) ? STORE_ALREADY_CLOSED_MESSAGE :
+            String message = contains( initializedStores, storeType ) ? STORE_ALREADY_CLOSED_MESSAGE :
                              String.format( STORE_NOT_INITIALIZED_TEMPLATE, storeType.name() );
             throw new IllegalStateException( message );
         }
@@ -275,7 +289,7 @@ public class NeoStores implements AutoCloseable
      * @param storeType store type to get or create
      * @return store of requested type
      */
-    private CommonAbstractStore getOrCreateStore( StoreType storeType )
+    private CommonAbstractStore getOrOpenStore( StoreType storeType )
     {
         CommonAbstractStore store = stores[storeType.ordinal()];
         if ( store == null )
@@ -446,7 +460,7 @@ public class NeoStores implements AutoCloseable
     {
         return initialize(
                 new NodeStore( layout.nodeStore(), layout.idNodeStore(), config, idGeneratorFactory, pageCache, logProvider,
-                        (DynamicArrayStore) getOrCreateStore( StoreType.NODE_LABEL ), recordFormats, openOptions ) );
+                        (DynamicArrayStore) getOrOpenStore( StoreType.NODE_LABEL ), recordFormats, openOptions ) );
     }
 
     CommonAbstractStore createNodeLabelStore()
@@ -458,7 +472,7 @@ public class NeoStores implements AutoCloseable
     CommonAbstractStore createPropertyKeyTokenStore()
     {
         return initialize( new PropertyKeyTokenStore( layout.propertyKeyTokenStore(), layout.idPropertyKeyTokenStore(), config,
-                idGeneratorFactory, pageCache, logProvider, (DynamicStringStore) getOrCreateStore( StoreType.PROPERTY_KEY_TOKEN_NAME ), recordFormats,
+                idGeneratorFactory, pageCache, logProvider, (DynamicStringStore) getOrOpenStore( StoreType.PROPERTY_KEY_TOKEN_NAME ), recordFormats,
                 openOptions ) );
     }
 
@@ -471,8 +485,8 @@ public class NeoStores implements AutoCloseable
     CommonAbstractStore createPropertyStore()
     {
         return initialize( new PropertyStore( layout.propertyStore(), layout.idPropertyStore(), config, idGeneratorFactory, pageCache,
-                logProvider, (DynamicStringStore) getOrCreateStore( StoreType.PROPERTY_STRING ),
-                (PropertyKeyTokenStore) getOrCreateStore( StoreType.PROPERTY_KEY_TOKEN ), (DynamicArrayStore) getOrCreateStore( StoreType.PROPERTY_ARRAY ),
+                logProvider, (DynamicStringStore) getOrOpenStore( StoreType.PROPERTY_STRING ),
+                (PropertyKeyTokenStore) getOrOpenStore( StoreType.PROPERTY_KEY_TOKEN ), (DynamicArrayStore) getOrOpenStore( StoreType.PROPERTY_ARRAY ),
                 recordFormats, openOptions ) );
     }
 
@@ -498,7 +512,7 @@ public class NeoStores implements AutoCloseable
     {
         return initialize(
                 new RelationshipTypeTokenStore( layout.relationshipTypeTokenStore(), layout.idRelationshipTypeTokenStore(), config,
-                        idGeneratorFactory, pageCache, logProvider, (DynamicStringStore) getOrCreateStore( StoreType.RELATIONSHIP_TYPE_TOKEN_NAME ),
+                        idGeneratorFactory, pageCache, logProvider, (DynamicStringStore) getOrOpenStore( StoreType.RELATIONSHIP_TYPE_TOKEN_NAME ),
                         recordFormats, openOptions ) );
     }
 
@@ -512,13 +526,13 @@ public class NeoStores implements AutoCloseable
     {
         return initialize(
                 new LabelTokenStore( layout.labelTokenStore(), layout.idLabelTokenStore(), config, idGeneratorFactory, pageCache,
-                        logProvider, (DynamicStringStore) getOrCreateStore( StoreType.LABEL_TOKEN_NAME ), recordFormats, openOptions ) );
+                        logProvider, (DynamicStringStore) getOrOpenStore( StoreType.LABEL_TOKEN_NAME ), recordFormats, openOptions ) );
     }
 
     CommonAbstractStore createSchemaStore()
     {
         return initialize( new SchemaStore( layout.schemaStore(), layout.idSchemaStore(), config, IdType.SCHEMA, idGeneratorFactory, pageCache, logProvider,
-                (PropertyStore) getOrCreateStore( StoreType.PROPERTY ),
+                (PropertyStore) getOrOpenStore( StoreType.PROPERTY ),
                 recordFormats, openOptions ) );
     }
 
@@ -537,7 +551,7 @@ public class NeoStores implements AutoCloseable
     CommonAbstractStore createMetadataStore()
     {
         return initialize(
-                new MetaDataStore( metadataStore, layout.idMetadataStore(), config, idGeneratorFactory, pageCache, logProvider,
+                new MetaDataStore( layout.metadataStore(), layout.idMetadataStore(), config, idGeneratorFactory, pageCache, logProvider,
                         recordFormats.metaData(), recordFormats.storeVersion(), openOptions ) );
     }
 
