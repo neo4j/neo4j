@@ -144,8 +144,12 @@ class StandardInternalExecutionResult(context: QueryContext,
     def next(): util.Map[String, AnyRef] = {
       val values = inner.next()
       val map = new util.HashMap[String, AnyRef]()
-      for (i <- columns.indices) {
+
+      val length = columns.length
+      var i = 0
+      while (i < length) {
         map.put(columns(i), context.asObject(values(i)))
+        i += 1
       }
       map
     }
@@ -174,8 +178,12 @@ class StandardInternalExecutionResult(context: QueryContext,
       override def visit(record: QueryResult.Record): Boolean = {
         val fields = record.fields()
         val mapData = new mutable.AnyRefMap[String, Any](names.length)
-        for (i <- names.indices) {
+
+        val length = names.length
+        var i = 0
+        while (i < length) {
           mapData.put(names(i), context.asObject(fields(i)))
+          i += 1
         }
         visitor.visit(new MapBasedRow(mapData))
       }
