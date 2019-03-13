@@ -283,7 +283,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
 
     // Recovery semantics: This is to be called after init, and after the database has run recovery.
     @Override
-    public void start() throws Throwable
+    public void start() throws Exception
     {
         state = State.STARTING;
 
