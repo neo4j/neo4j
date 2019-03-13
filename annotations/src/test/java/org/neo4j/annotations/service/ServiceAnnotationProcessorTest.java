@@ -34,17 +34,17 @@ class ServiceAnnotationProcessorTest
     void providersWithDistinctServiceKeys()
     {
         assertThat(
-                forResource( "test/service/FooService.java" ),
-                forResource( "test/service/AbstractFooService.java" ),
-                forResource( "test/service/FooServiceImplA.java" ),
-                forResource( "test/service/FooServiceImplB.java" ) )
+                forResource( "org/neo4j/annotations/service/FooService.java" ),
+                forResource( "org/neo4j/annotations/service/AbstractFooService.java" ),
+                forResource( "org/neo4j/annotations/service/FooServiceImplA.java" ),
+                forResource( "org/neo4j/annotations/service/FooServiceImplB.java" ) )
                 .processedWith( new ServiceAnnotationProcessor() )
                 .compilesWithoutError()
                 .and()
-                .generatesFileNamed( CLASS_OUTPUT, "", "META-INF/services/test.service.FooService" )
+                .generatesFileNamed( CLASS_OUTPUT, "", "META-INF/services/org.neo4j.annotations.service.FooService" )
                 .and()
                 .generatesFiles(
-                        forResource( "META-INF/services/test.service.FooService" )
+                        forResource( "META-INF/services/org.neo4j.annotations.service.FooService" )
                 );
     }
 
@@ -52,14 +52,14 @@ class ServiceAnnotationProcessorTest
     void classIsBothServiceAndProvider()
     {
         assertThat(
-                forResource( "test/service/ClassIsServiceAndProvider.java" ) )
+                forResource( "org/neo4j/annotations/service/ClassIsServiceAndProvider.java" ) )
                 .processedWith( new ServiceAnnotationProcessor() )
                 .compilesWithoutError()
                 .and()
-                .generatesFileNamed( CLASS_OUTPUT, "", "META-INF/services/test.service.ClassIsServiceAndProvider" )
+                .generatesFileNamed( CLASS_OUTPUT, "", "META-INF/services/org.neo4j.annotations.service.ClassIsServiceAndProvider" )
                 .and()
                 .generatesFiles(
-                        forResource( "META-INF/services/test.service.ClassIsServiceAndProvider" )
+                        forResource( "META-INF/services/org.neo4j.annotations.service.ClassIsServiceAndProvider" )
                 );
     }
 
@@ -67,14 +67,14 @@ class ServiceAnnotationProcessorTest
     void nestedTypes()
     {
         assertThat(
-                forResource( "test/service/Nested.java" ) )
+                forResource( "org/neo4j/annotations/service/Nested.java" ) )
                 .processedWith( new ServiceAnnotationProcessor() )
                 .compilesWithoutError()
                 .and()
-                .generatesFileNamed( CLASS_OUTPUT, "", "META-INF/services/test.service.Nested$NestedService" )
+                .generatesFileNamed( CLASS_OUTPUT, "", "META-INF/services/org.neo4j.annotations.service.Nested$NestedService" )
                 .and()
                 .generatesFiles(
-                        forResource( "META-INF/services/test.service.Nested$NestedService" )
+                        forResource( "META-INF/services/org.neo4j.annotations.service.Nested$NestedService" )
                 );
     }
 
@@ -82,7 +82,7 @@ class ServiceAnnotationProcessorTest
     void failMultipleServiceAscendants()
     {
         assertThat(
-                forResource( "test/service/FailMultipleServices.java" ) )
+                forResource( "org/neo4j/annotations/service/FailMultipleServices.java" ) )
                 .processedWith( new ServiceAnnotationProcessor() )
                 .failsToCompile()
                 .withErrorContaining( "multiple ascendants annotated with @Service" );
@@ -92,7 +92,7 @@ class ServiceAnnotationProcessorTest
     void failProviderDoesntImplementService()
     {
         assertThat(
-                forResource( "test/service/FailNotService.java" ) )
+                forResource( "org/neo4j/annotations/service/FailNotService.java" ) )
                 .processedWith( new ServiceAnnotationProcessor() )
                 .failsToCompile()
                 .withErrorContaining( "neither has ascendants nor itself annotated with @Service" );

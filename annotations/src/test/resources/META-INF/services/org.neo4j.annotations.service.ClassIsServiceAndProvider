@@ -1,0 +1,2 @@
+org.neo4j.annotations.service.ClassIsServiceAndProvider
+org.neo4j.annotations.service.ClassIsServiceAndProvider$AnotherImpl
