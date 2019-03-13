@@ -19,13 +19,13 @@
  */
 package org.neo4j.cypher.internal.runtime
 
-import org.neo4j.cypher.internal.ir.v4_0.VarPatternLength
+import org.neo4j.cypher.internal.ir.VarPatternLength
 import org.neo4j.cypher.internal.runtime.ast.ExpressionVariable
 import org.neo4j.cypher.internal.runtime.expressionVariableAllocation.Result
 import org.neo4j.cypher.internal.v4_0.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.v4_0.expressions.{Expression, _}
-import org.neo4j.cypher.internal.v4_0.logical.plans._
+import org.neo4j.cypher.internal.logical.plans._
 import org.neo4j.cypher.internal.v4_0.parser.Expressions
 import org.neo4j.cypher.internal.v4_0.util.attribution.{IdGen, SequentialIdGen}
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
