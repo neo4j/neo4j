@@ -65,6 +65,7 @@
         <version>2.22.1</version>
         <configuration>
           <forkCount>${forkCounts}</forkCount>
+          <trimStackTrace>false</trimStackTrace>
           <reuseForks>true</reuseForks>
           <argLine>${test.runner.jvm.settings}</argLine>
           <runOrder>random</runOrder>
@@ -80,6 +81,7 @@
         <configuration>
           <argLine>${test.runner.jvm.settings}</argLine>
           <forkCount>${forkCounts}</forkCount>
+          <trimStackTrace>false</trimStackTrace>
           <reuseForks>true</reuseForks>
           <runOrder>random</runOrder>
           <systemPropertyVariables>
