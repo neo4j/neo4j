@@ -20,6 +20,9 @@
 
 package org.neo4j.service;
 
+/**
+ * Helper interface to be implemented by services if there's a need to load a particular service provider by name.
+ */
 public interface NamedService
 {
     String getName();

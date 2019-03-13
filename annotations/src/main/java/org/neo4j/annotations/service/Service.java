@@ -28,6 +28,13 @@ import java.lang.annotation.Target;
 
 import static java.lang.annotation.ElementType.TYPE;
 
+/**
+ * Used to mark a type as a service as defined in {@link java.util.ServiceLoader}.
+ * Subtypes of such service type, which are service providers loaded via service loading mechanism,
+ * should be annotated with {@link ServiceProvider}.
+ * <p/>
+ * Processed by {@link ServiceAnnotationProcessor}.
+ */
 @Target( TYPE )
 @Retention( RetentionPolicy.CLASS )
 public @interface Service

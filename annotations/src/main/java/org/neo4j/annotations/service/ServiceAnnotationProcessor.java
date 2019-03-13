@@ -54,6 +54,10 @@ import static javax.tools.StandardLocation.CLASS_OUTPUT;
 import static org.apache.commons.lang3.exception.ExceptionUtils.getStackTrace;
 import static org.eclipse.collections.impl.set.mutable.UnifiedSet.newSetWith;
 
+/**
+ * Handles {@link Service} and {@link ServiceProvider} annotations. For each service type it collects associated service providers and creates
+ * corresponding configuration file in {@code /META-INF/services/}.
+ */
 public class ServiceAnnotationProcessor extends AbstractProcessor
 {
     private final MutableMultimap<TypeElement, TypeElement> serviceProviders = Multimaps.mutable.list.empty();

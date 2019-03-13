@@ -28,6 +28,13 @@ import java.lang.annotation.Target;
 
 import static java.lang.annotation.ElementType.TYPE;
 
+/**
+ * Used to mark a type as a service provider as defined in {@link java.util.ServiceLoader}.
+ * Service provider must have in its hierarchy exactly one supertype annotated with {@link Service} or be annotated itself,
+ * otherwise a compilation error will occur.
+ * <p/>
+ * Processed by {@link ServiceAnnotationProcessor}.
+ */
 @Target( TYPE )
 @Retention( RetentionPolicy.SOURCE )
 public @interface ServiceProvider

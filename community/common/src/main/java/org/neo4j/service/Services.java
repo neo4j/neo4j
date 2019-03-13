@@ -39,6 +39,9 @@ import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.neo4j.util.FeatureToggles.flag;
 import static org.neo4j.util.Preconditions.checkArgument;
 
+/**
+ * Utilities to load services via {@link ServiceLoader}.
+ */
 public final class Services
 {
     private static final boolean printServiceLoaderStackTraces = flag( Services.class, "printServiceLoaderStackTraces", false );
