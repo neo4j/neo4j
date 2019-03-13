@@ -203,7 +203,7 @@ public class IndexingServiceTest
     }
 
     @Test
-    public void noMessagesWhenThereIsNoIndexes()
+    public void noMessagesWhenThereIsNoIndexes() throws Throwable
     {
         IndexMapReference indexMapReference = new IndexMapReference();
         IndexingService indexingService = createIndexServiceWithCustomIndexMap( indexMapReference );
@@ -434,7 +434,7 @@ public class IndexingServiceTest
     }
 
     @Test
-    public void shouldLogIndexStateOnStart() throws Exception
+    public void shouldLogIndexStateOnStart() throws Throwable
     {
         // given
         IndexProvider provider = mockIndexProviderWithAccessor( PROVIDER_DESCRIPTOR );
@@ -516,7 +516,7 @@ public class IndexingServiceTest
     }
 
     @Test
-    public void shouldNotLogWhenNoDeprecatedIndexesOnStart() throws IOException
+    public void shouldNotLogWhenNoDeprecatedIndexesOnStart() throws Throwable
     {
         // given
         StoreIndexDescriptor nativeBtree10Index  = storeIndex( 5, 1, 5, nativeBtree10Descriptor );
@@ -555,7 +555,7 @@ public class IndexingServiceTest
     }
 
     @Test
-    public void shouldLogDeprecatedIndexesOnStart() throws IOException
+    public void shouldLogDeprecatedIndexesOnStart() throws Throwable
     {
         // given
         StoreIndexDescriptor lucene10Index       = storeIndex( 1, 1, 1, lucene10Descriptor );
@@ -1164,7 +1164,7 @@ public class IndexingServiceTest
     }
 
     @Test
-    public void shouldLogIndexStateOutliersOnStart() throws Exception
+    public void shouldLogIndexStateOutliersOnStart() throws Throwable
     {
         // given
         IndexProvider provider = mockIndexProviderWithAccessor( PROVIDER_DESCRIPTOR );

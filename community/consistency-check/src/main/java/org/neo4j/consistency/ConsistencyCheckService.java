@@ -25,7 +25,6 @@ import java.io.PrintWriter;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
-import org.neo4j.common.Service;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
@@ -39,7 +38,6 @@ import org.neo4j.consistency.statistics.Statistics;
 import org.neo4j.consistency.statistics.VerboseStatistics;
 import org.neo4j.consistency.store.DirectStoreAccess;
 import org.neo4j.function.Suppliers;
-import org.neo4j.helpers.Strings;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
@@ -72,12 +70,12 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.internal.SimpleLogService;
 import org.neo4j.scheduler.JobScheduler;
-import org.neo4j.storageengine.api.StorageEngineFactory;
 
 import static java.lang.String.format;
 import static org.neo4j.configuration.Settings.FALSE;
 import static org.neo4j.configuration.Settings.TRUE;
 import static org.neo4j.consistency.internal.SchemaIndexExtensionLoader.instantiateExtensions;
+import static org.neo4j.helpers.Strings.joinAsLines;
 import static org.neo4j.io.fs.FileSystemUtils.createOrOpenAsOutputStream;
 import static org.neo4j.kernel.impl.factory.DatabaseInfo.TOOL;
 import static org.neo4j.kernel.recovery.Recovery.isRecoveryRequired;
@@ -186,8 +184,7 @@ public class ConsistencyCheckService
             ProgressMonitorFactory progressFactory, final LogProvider logProvider, final FileSystemAbstraction fileSystem, final PageCache pageCache,
             final boolean verbose, File reportDir, ConsistencyFlags consistencyFlags ) throws ConsistencyCheckIncompleteException
     {
-        StorageEngineFactory storageEngineFactory = StorageEngineFactory.selectStorageEngine( Service.loadAll( StorageEngineFactory.class ) );
-        assertRecovered( databaseLayout, config, fileSystem, storageEngineFactory );
+        assertRecovered( databaseLayout, config, fileSystem );
         Log log = logProvider.getLog( getClass() );
         config.augment( GraphDatabaseSettings.read_only, TRUE );
         config.augment( GraphDatabaseSettings.pagecache_warmup_enabled, FALSE );
@@ -267,15 +264,15 @@ public class ConsistencyCheckService
         return Result.success( reportFile );
     }
 
-    private void assertRecovered( DatabaseLayout databaseLayout, Config config, FileSystemAbstraction fileSystem, StorageEngineFactory storageEngineFactory )
+    private void assertRecovered( DatabaseLayout databaseLayout, Config config, FileSystemAbstraction fileSystem )
             throws ConsistencyCheckIncompleteException
     {
         try
         {
-            if ( isRecoveryRequired( fileSystem, databaseLayout, config, storageEngineFactory ) )
+            if ( isRecoveryRequired( fileSystem, databaseLayout, config ) )
             {
                 throw new IllegalStateException(
-                        Strings.joinAsLines( "Active logical log detected, this might be a source of inconsistencies.", "Please recover database.",
+                        joinAsLines( "Active logical log detected, this might be a source of inconsistencies.", "Please recover database.",
                                 "To perform recovery please start database in single mode and perform clean shutdown." ) );
             }
         }

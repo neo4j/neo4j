@@ -23,7 +23,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import org.neo4j.common.Service;
 import org.neo4j.configuration.Config;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
@@ -31,7 +30,6 @@ import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.monitoring.Monitors;
-import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.extension.EphemeralFileSystemExtension;
 import org.neo4j.test.extension.Inject;
@@ -84,7 +82,6 @@ class TestStoreAccess
 
     private boolean isUnclean( FileSystemAbstraction fileSystem ) throws Exception
     {
-        return isRecoveryRequired( fileSystem, testDirectory.databaseLayout(), defaults(),
-                StorageEngineFactory.selectStorageEngine( Service.loadAll( StorageEngineFactory.class ) ) );
+        return isRecoveryRequired( fileSystem, testDirectory.databaseLayout(), defaults() );
     }
 }

@@ -223,7 +223,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
     }
 
     @Test
-    public void applyConcurrentChangesToPopulatedIndex() throws Exception
+    public void applyConcurrentChangesToPopulatedIndex() throws Throwable
     {
         List<EntityUpdates> updates = new ArrayList<>( 2 );
         updates.add( EntityUpdates.forEntity( color2.getId() ).withTokens( id( COLOR_LABEL ) )
@@ -258,7 +258,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
     }
 
     @Test
-    public void dropOneOfTheIndexesWhilePopulationIsOngoingDoesInfluenceOtherPopulators() throws Exception
+    public void dropOneOfTheIndexesWhilePopulationIsOngoingDoesInfluenceOtherPopulators() throws Throwable
     {
         launchCustomIndexPopulation( labelsNameIdMap, propertyId,
                 new IndexDropAction( labelsNameIdMap.get( COLOR_LABEL ) ) );
@@ -270,7 +270,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
     }
 
     @Test
-    public void indexDroppedDuringPopulationDoesNotExist() throws Exception
+    public void indexDroppedDuringPopulationDoesNotExist() throws Throwable
     {
         Integer labelToDropId = labelsNameIdMap.get( COLOR_LABEL );
         launchCustomIndexPopulation( labelsNameIdMap, propertyId,
@@ -306,7 +306,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
     }
 
     private void launchCustomIndexPopulation( Map<String,Integer> labelNameIdMap, int propertyId,
-            Runnable customAction ) throws Exception
+            Runnable customAction ) throws Throwable
     {
         RecordStorageEngine storageEngine = getStorageEngine();
         LabelScanStore labelScanStore = getLabelScanStore();

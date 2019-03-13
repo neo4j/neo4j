@@ -19,7 +19,6 @@
  */
 package org.neo4j.test.rule;
 
-import java.util.Collections;
 import java.util.function.Function;
 
 import org.neo4j.common.DependencyResolver;
@@ -36,7 +35,6 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
-import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.availability.CompositeDatabaseAvailabilityGuard;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
@@ -44,6 +42,8 @@ import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.database.DatabaseCreationContext;
 import org.neo4j.kernel.diagnostics.providers.DbmsDiagnosticsManager;
 import org.neo4j.kernel.extension.ExtensionFactory;
+import org.neo4j.kernel.extension.ExtensionType;
+import org.neo4j.kernel.extension.context.ExtensionContext;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
@@ -79,8 +79,10 @@ import org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier;
 import org.neo4j.kernel.internal.DatabaseEventHandlers;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.internal.TransactionEventHandlers;
+import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.kernel.monitoring.tracing.Tracers;
+import org.neo4j.kernel.recovery.RecoveryExtension;
 import org.neo4j.logging.NullLog;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.internal.LogService;
@@ -151,7 +153,6 @@ public class DatabaseRule extends ExternalResource
         DatabaseTransactionStats transactionStats = dependency( mutableDependencies, DatabaseTransactionStats.class,
                 deps -> new DatabaseTransactionStats() );
         dependency( mutableDependencies, DbmsDiagnosticsManager.class, deps -> mock( DbmsDiagnosticsManager.class ) );
-        dependency( mutableDependencies, IndexProvider.class, deps -> EMPTY );
         StorageEngineFactory storageEngineFactory = dependency( mutableDependencies, StorageEngineFactory.class,
                 deps -> StorageEngineFactory.selectStorageEngine( Service.loadAll( StorageEngineFactory.class ) ) );
 
@@ -163,7 +164,8 @@ public class DatabaseRule extends ExternalResource
                 new Tracers( "null", NullLog.getInstance(), monitors, jobScheduler, clock ),
                 mock( GlobalProcedures.class ), IOLimiter.UNLIMITED, clock, new CanWrite(), new StoreCopyCheckPointMutex(),
                 new BufferedIdController( new BufferingIdGeneratorFactory( idGeneratorFactory, IdReuseEligibility.ALWAYS, idConfigurationProvider ),
-                        jobScheduler ), DatabaseInfo.COMMUNITY, new TransactionVersionContextSupplier(), ON_HEAP, Collections.emptyList(),
+                        jobScheduler ), DatabaseInfo.COMMUNITY, new TransactionVersionContextSupplier(), ON_HEAP,
+                Iterables.iterable( new EmptyIndexExtensionFactory() ),
                 file -> mock( DatabaseLayoutWatcher.class ), new GraphDatabaseFacade(), Iterables.empty(),
                 mockedDatabaseMigratorFactory(), storageEngineFactory ) );
         return database;
@@ -547,5 +549,24 @@ public class DatabaseRule extends ExternalResource
                 mock( TokenHolder.class ),
                 mock( TokenHolder.class ),
                 mock( TokenHolder.class ) );
+    }
+
+    @RecoveryExtension
+    private static class EmptyIndexExtensionFactory extends ExtensionFactory<EmptyIndexExtensionFactory.Dependencies>
+    {
+        interface Dependencies
+        {
+        }
+
+        EmptyIndexExtensionFactory()
+        {
+            super( ExtensionType.DATABASE, "customExtension" );
+        }
+
+        @Override
+        public Lifecycle newInstance( ExtensionContext context, Dependencies dependencies )
+        {
+            return EMPTY;
+        }
     }
 }

@@ -43,11 +43,6 @@ public class Util
     {
     }
 
-    public static Path canonicalPath( Path path ) throws IllegalArgumentException
-    {
-        return canonicalPath( path.toFile() );
-    }
-
     public static Path canonicalPath( String path ) throws IllegalArgumentException
     {
         return canonicalPath( new File( path ) );

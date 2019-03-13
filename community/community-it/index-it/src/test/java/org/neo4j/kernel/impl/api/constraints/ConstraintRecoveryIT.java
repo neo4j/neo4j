@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.impl.api.constraints;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.util.concurrent.TimeUnit;
@@ -37,32 +37,36 @@ import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
+import org.neo4j.test.extension.EphemeralFileSystemExtension;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.TestDirectoryExtension;
+import org.neo4j.test.rule.TestDirectory;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.SchemaIndex.NATIVE20;
 import static org.neo4j.configuration.GraphDatabaseSettings.default_schema_provider;
 import static org.neo4j.helpers.collection.Iterables.single;
 
-public class ConstraintRecoveryIT
+@ExtendWith( {EphemeralFileSystemExtension.class, TestDirectoryExtension.class} )
+class ConstraintRecoveryIT
 {
     private static final String KEY = "prop";
     private static final Label LABEL = Label.label( "label1" );
 
-    @Rule
-    public EphemeralFileSystemRule fileSystemRule = new EphemeralFileSystemRule();
+    @Inject
+    private EphemeralFileSystemAbstraction fs;
+    @Inject
+    private TestDirectory testDirectory;
 
     private GraphDatabaseAPI db;
 
     @Test
-    public void shouldHaveAvailableOrphanedConstraintIndexIfUniqueConstraintCreationFails()
+    void shouldHaveAvailableOrphanedConstraintIndexIfUniqueConstraintCreationFails()
     {
         // given
-        final EphemeralFileSystemAbstraction fs = fileSystemRule.get();
-        fs.mkdir( new File( "/tmp" ) );
-        File pathToDb = new File( "/tmp/bar2" );
+        File pathToDb = testDirectory.databaseDir();
 
         TestGraphDatabaseFactory dbFactory = new TestGraphDatabaseFactory();
         dbFactory.setFileSystem( fs );
@@ -100,16 +104,13 @@ public class ConstraintRecoveryIT
             tx.success();
         }
 
-        try ( Transaction tx = db.beginTx() )
+        assertThrows( ConstraintViolationException.class, () ->
         {
-            db.schema().constraintFor( LABEL ).assertPropertyIsUnique( KEY ).create();
-            fail( "Should have failed with ConstraintViolationException" );
-            tx.success();
-        }
-        catch ( ConstraintViolationException ignored )
-        {
-        }
-
+            try ( Transaction ignored = db.beginTx() )
+            {
+                db.schema().constraintFor( LABEL ).assertPropertyIsUnique( KEY ).create();
+            }
+        } );
         db.shutdown();
 
         assertTrue( monitorCalled.get() );

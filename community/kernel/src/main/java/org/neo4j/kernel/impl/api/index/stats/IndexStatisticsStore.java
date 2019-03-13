@@ -36,7 +36,7 @@ import org.neo4j.index.internal.gbptree.Writer;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.register.Register.DoubleLongRegister;
 
 /**
@@ -46,7 +46,7 @@ import org.neo4j.register.Register.DoubleLongRegister;
  *
  * The store is accessible after {@link #init()} has been called.
  */
-public class IndexStatisticsStore implements Lifecycle, IndexStatisticsVisitor.Visitable
+public class IndexStatisticsStore extends LifecycleAdapter implements IndexStatisticsVisitor.Visitable
 {
     // Used in GBPTree.seek. Please don't use for writes
     private static final IndexStatisticsKey LOWEST_KEY = new IndexStatisticsKey( Byte.MIN_VALUE, Long.MIN_VALUE, Long.MIN_VALUE );
@@ -83,11 +83,6 @@ public class IndexStatisticsStore implements Lifecycle, IndexStatisticsVisitor.V
         tree = new GBPTree<>( pageCache, file, layout, 0, GBPTree.NO_MONITOR, GBPTree.NO_HEADER_READER, GBPTree.NO_HEADER_WRITER,
                 recoveryCleanupWorkCollector );
         scanTree( cache::put );
-    }
-
-    @Override
-    public void start()
-    {
     }
 
     /**
@@ -258,11 +253,6 @@ public class IndexStatisticsStore implements Lifecycle, IndexStatisticsVisitor.V
     public File storeFile()
     {
         return file;
-    }
-
-    @Override
-    public void stop()
-    {
     }
 
     @Override

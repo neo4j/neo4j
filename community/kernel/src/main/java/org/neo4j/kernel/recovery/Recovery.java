@@ -140,17 +140,16 @@ public final class Recovery
      * Custom root location for transaction logs can be provided using {@link GraphDatabaseSettings#transaction_logs_root_path} config setting value.
      * @param databaseLayout layout of database to check for recovery
      * @param config custom configuration
-     * @param storageEngineFactory {@link StorageEngineFactory} for the storage to recover.
      * @return true if recovery is required, false otherwise.
      * @throws Exception
      */
-    public static boolean isRecoveryRequired( DatabaseLayout databaseLayout, Config config, StorageEngineFactory storageEngineFactory ) throws Exception
+    public static boolean isRecoveryRequired( DatabaseLayout databaseLayout, Config config ) throws Exception
     {
         requireNonNull( databaseLayout );
         requireNonNull( config );
         try ( DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction() )
         {
-            return isRecoveryRequired( fs, databaseLayout, config, storageEngineFactory );
+            return isRecoveryRequired( fs, databaseLayout, config );
         }
     }
 
@@ -161,18 +160,18 @@ public final class Recovery
      * @param fs database filesystem
      * @param databaseLayout layout of database to check for recovery
      * @param config custom configuration
-     * @param storageEngineFactory {@link StorageEngineFactory} for the storage to recover.
      * @return true if recovery is required, false otherwise.
      * @throws Exception
      */
-    public static boolean isRecoveryRequired( FileSystemAbstraction fs, DatabaseLayout databaseLayout, Config config,
-            StorageEngineFactory storageEngineFactory ) throws Exception
+    public static boolean isRecoveryRequired( FileSystemAbstraction fs, DatabaseLayout databaseLayout, Config config ) throws Exception
     {
         requireNonNull( databaseLayout );
         requireNonNull( config );
         requireNonNull( fs );
-        try ( JobScheduler jobScheduler = JobSchedulerFactory.createInitialisedScheduler(); PageCache pageCache = getPageCache( config, fs, jobScheduler ) )
+        try ( JobScheduler jobScheduler = JobSchedulerFactory.createInitialisedScheduler();
+                PageCache pageCache = getPageCache( config, fs, jobScheduler ) )
         {
+            StorageEngineFactory storageEngineFactory = selectStorageEngine();
             return isRecoveryRequired( fs, pageCache, databaseLayout, storageEngineFactory, config, Optional.empty() );
         }
     }
@@ -182,10 +181,9 @@ public final class Recovery
      * Transaction logs should be located in their default location.
      * If recovery is not required nothing will be done to the the database or logs.
      * @param databaseLayout database to recover layout.
-     * @param storageEngineFactory {@link StorageEngineFactory} for the storage to recover.
      * @throws Exception
      */
-    public static void performRecovery( DatabaseLayout databaseLayout, StorageEngineFactory storageEngineFactory ) throws Exception
+    public static void performRecovery( DatabaseLayout databaseLayout ) throws Exception
     {
         requireNonNull( databaseLayout );
         Config config = defaults();
@@ -193,7 +191,7 @@ public final class Recovery
                 JobScheduler jobScheduler = JobSchedulerFactory.createInitialisedScheduler();
                 PageCache pageCache = getPageCache( config, fs, jobScheduler ) )
         {
-            performRecovery( fs, pageCache, config, databaseLayout, storageEngineFactory );
+            performRecovery( fs, pageCache, config, databaseLayout );
         }
     }
 
@@ -206,7 +204,23 @@ public final class Recovery
      * @param pageCache page cache used to perform database recovery.
      * @param config custom configuration
      * @param databaseLayout database to recover layout.
-     * @param storageEngineFactory {@link StorageEngineFactory} for the storage to recover.
+     * @throws Exception
+     */
+    public static void performRecovery( FileSystemAbstraction fs, PageCache pageCache, Config config, DatabaseLayout databaseLayout ) throws IOException
+    {
+        performRecovery( fs, pageCache, config, databaseLayout, selectStorageEngine() );
+    }
+
+    /**
+     * Performs recovery of database described by provided layout.
+     * <b>Transaction logs should be located in their default location and any provided custom location is ignored.</b>
+     * If recovery is not required nothing will be done to the the database or logs.
+     *
+     * @param fs database filesystem
+     * @param pageCache page cache used to perform database recovery.
+     * @param config custom configuration
+     * @param databaseLayout database to recover layout.
+     * @param storageEngineFactory storage engine factory
      * @throws Exception
      */
     public static void performRecovery( FileSystemAbstraction fs, PageCache pageCache, Config config, DatabaseLayout databaseLayout,
@@ -216,11 +230,12 @@ public final class Recovery
         requireNonNull( pageCache );
         requireNonNull( config );
         requireNonNull( databaseLayout );
+        requireNonNull( storageEngineFactory );
         Map<String,String> configRaw = config.getRaw();
         //remove any custom logical logs location
         configRaw.remove( GraphDatabaseSettings.transaction_logs_root_path.name() );
         Config recoveryConfig = defaults( configRaw );
-        performRecovery( fs, pageCache, recoveryConfig, databaseLayout, storageEngineFactory, NullLogProvider.getInstance(), new Monitors(), loadExtensions(),
+        performRecovery( fs, pageCache, recoveryConfig, databaseLayout, selectStorageEngine(), NullLogProvider.getInstance(), new Monitors(), loadExtensions(),
                 Optional.empty() );
     }
 
@@ -326,8 +341,8 @@ public final class Recovery
         recoveryLife.add( indexProviderMap );
         recoveryLife.add( storageEngine );
         recoveryLife.add( labelScanStore );
-        recoveryLife.add( transactionLogsRecovery );
         recoveryLife.add( logFiles );
+        recoveryLife.add( transactionLogsRecovery );
         recoveryLife.add( transactionAppender );
         recoveryLife.add( checkPointer );
         recoveryLife.start();
@@ -362,8 +377,8 @@ public final class Recovery
             Iterable<ExtensionFactory<?>> extensionFactories )
     {
         List<ExtensionFactory<?>> recoveryExtensions = stream( extensionFactories )
-                        .filter( extension -> extension.getClass().isAnnotationPresent( RecoveryExtension.class ) )
-                        .collect( toList() );
+                .filter( extension -> extension.getClass().isAnnotationPresent( RecoveryExtension.class ) )
+                .collect( toList() );
 
         Dependencies deps = new Dependencies();
         NonListenableMonitors nonListenableMonitors = new NonListenableMonitors( monitors );
@@ -412,5 +427,10 @@ public final class Recovery
         public void addMonitorListener( Object monitorListener, String... tags )
         {
         }
+    }
+
+    private static StorageEngineFactory selectStorageEngine()
+    {
+        return StorageEngineFactory.selectStorageEngine( Service.loadAll( StorageEngineFactory.class ) );
     }
 }
