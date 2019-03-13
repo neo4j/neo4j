@@ -18,7 +18,7 @@ package org.neo4j.cypher.internal.v4_0.parser
 
 import org.neo4j.cypher.internal.v4_0.expressions._
 import org.neo4j.cypher.internal.v4_0.util.InputPosition
-import org.neo4j.cypher.internal.v4_0.{expressions, expressions => ast}
+import org.neo4j.cypher.internal.v4_0.{expressions => ast}
 import org.parboiled.scala._
 
 import scala.collection.mutable.ListBuffer
@@ -40,7 +40,7 @@ trait Expressions extends Parser
 
   private def Expression11: Rule1[org.neo4j.cypher.internal.v4_0.expressions.Expression] = rule("an expression") {
     Expression10 ~ zeroOrMore(WS ~ (
-        group(keyword("XOR") ~~ Expression10) ~~>> (expressions.Xor(_: org.neo4j.cypher.internal.v4_0.expressions.Expression, _))
+        group(keyword("XOR") ~~ Expression10) ~~>> (ast.Xor(_: org.neo4j.cypher.internal.v4_0.expressions.Expression, _))
     ): ReductionRule1[org.neo4j.cypher.internal.v4_0.expressions.Expression, org.neo4j.cypher.internal.v4_0.expressions.Expression])
   }
 
@@ -51,7 +51,7 @@ trait Expressions extends Parser
   }
 
   private def Expression9: Rule1[org.neo4j.cypher.internal.v4_0.expressions.Expression] = rule("an expression") (
-      group(keyword("NOT") ~~ Expression9) ~~>> (expressions.Not(_))
+      group(keyword("NOT") ~~ Expression9) ~~>> (ast.Not(_))
     | Expression8
   )
 
@@ -75,14 +75,14 @@ trait Expressions extends Parser
     | group(operator("<=") ~~ Expression7) ~~>> { expr: org.neo4j.cypher.internal.v4_0.expressions.Expression => pos: InputPosition => PartialComparison(lte, expr, pos) }
     | group(operator(">=") ~~ Expression7) ~~>> { expr: org.neo4j.cypher.internal.v4_0.expressions.Expression => pos: InputPosition => PartialComparison(gte, expr, pos) } )
 
-  private def eq(lhs:org.neo4j.cypher.internal.v4_0.expressions.Expression, rhs:org.neo4j.cypher.internal.v4_0.expressions.Expression): InputPosition => org.neo4j.cypher.internal.v4_0.expressions.Expression = expressions.Equals(lhs, rhs)
+  private def eq(lhs:org.neo4j.cypher.internal.v4_0.expressions.Expression, rhs:org.neo4j.cypher.internal.v4_0.expressions.Expression): InputPosition => org.neo4j.cypher.internal.v4_0.expressions.Expression = ast.Equals(lhs, rhs)
   private def eqv(lhs:ast.Expression, rhs:ast.Expression): InputPosition => ast.Expression = ast.Equivalent(lhs, rhs)
-  private def ne(lhs:org.neo4j.cypher.internal.v4_0.expressions.Expression, rhs:org.neo4j.cypher.internal.v4_0.expressions.Expression): InputPosition => org.neo4j.cypher.internal.v4_0.expressions.Expression = expressions.NotEquals(lhs, rhs)
-  private def bne(lhs:org.neo4j.cypher.internal.v4_0.expressions.Expression, rhs:org.neo4j.cypher.internal.v4_0.expressions.Expression): InputPosition => org.neo4j.cypher.internal.v4_0.expressions.Expression = expressions.InvalidNotEquals(lhs, rhs)
-  private def lt(lhs:org.neo4j.cypher.internal.v4_0.expressions.Expression, rhs:org.neo4j.cypher.internal.v4_0.expressions.Expression): InputPosition => org.neo4j.cypher.internal.v4_0.expressions.Expression = expressions.LessThan(lhs, rhs)
-  private def gt(lhs:org.neo4j.cypher.internal.v4_0.expressions.Expression, rhs:org.neo4j.cypher.internal.v4_0.expressions.Expression): InputPosition => org.neo4j.cypher.internal.v4_0.expressions.Expression = expressions.GreaterThan(lhs, rhs)
-  private def lte(lhs:org.neo4j.cypher.internal.v4_0.expressions.Expression, rhs:org.neo4j.cypher.internal.v4_0.expressions.Expression): InputPosition => org.neo4j.cypher.internal.v4_0.expressions.Expression = expressions.LessThanOrEqual(lhs, rhs)
-  private def gte(lhs:org.neo4j.cypher.internal.v4_0.expressions.Expression, rhs:org.neo4j.cypher.internal.v4_0.expressions.Expression): InputPosition => org.neo4j.cypher.internal.v4_0.expressions.Expression = expressions.GreaterThanOrEqual(lhs, rhs)
+  private def ne(lhs:org.neo4j.cypher.internal.v4_0.expressions.Expression, rhs:org.neo4j.cypher.internal.v4_0.expressions.Expression): InputPosition => org.neo4j.cypher.internal.v4_0.expressions.Expression = ast.NotEquals(lhs, rhs)
+  private def bne(lhs:org.neo4j.cypher.internal.v4_0.expressions.Expression, rhs:org.neo4j.cypher.internal.v4_0.expressions.Expression): InputPosition => org.neo4j.cypher.internal.v4_0.expressions.Expression = ast.InvalidNotEquals(lhs, rhs)
+  private def lt(lhs:org.neo4j.cypher.internal.v4_0.expressions.Expression, rhs:org.neo4j.cypher.internal.v4_0.expressions.Expression): InputPosition => org.neo4j.cypher.internal.v4_0.expressions.Expression = ast.LessThan(lhs, rhs)
+  private def gt(lhs:org.neo4j.cypher.internal.v4_0.expressions.Expression, rhs:org.neo4j.cypher.internal.v4_0.expressions.Expression): InputPosition => org.neo4j.cypher.internal.v4_0.expressions.Expression = ast.GreaterThan(lhs, rhs)
+  private def lte(lhs:org.neo4j.cypher.internal.v4_0.expressions.Expression, rhs:org.neo4j.cypher.internal.v4_0.expressions.Expression): InputPosition => org.neo4j.cypher.internal.v4_0.expressions.Expression = ast.LessThanOrEqual(lhs, rhs)
+  private def gte(lhs:org.neo4j.cypher.internal.v4_0.expressions.Expression, rhs:org.neo4j.cypher.internal.v4_0.expressions.Expression): InputPosition => org.neo4j.cypher.internal.v4_0.expressions.Expression = ast.GreaterThanOrEqual(lhs, rhs)
 
   private def comparisons(first: org.neo4j.cypher.internal.v4_0.expressions.Expression, rest: List[PartialComparison]): InputPosition => org.neo4j.cypher.internal.v4_0.expressions.Expression = {
     rest match {
@@ -128,13 +128,13 @@ trait Expressions extends Parser
 
   private def Expression3: Rule1[org.neo4j.cypher.internal.v4_0.expressions.Expression] = rule("an expression") {
     Expression2 ~ zeroOrMore(WS ~ (
-      group(operator("=~") ~~ Expression2) ~~>> (expressions.RegexMatch(_: org.neo4j.cypher.internal.v4_0.expressions.Expression, _))
-      | group(keyword("IN") ~~ Expression2) ~~>> (expressions.In(_: org.neo4j.cypher.internal.v4_0.expressions.Expression, _))
-      | group(keyword("STARTS WITH") ~~ Expression2) ~~>> (expressions.StartsWith(_: org.neo4j.cypher.internal.v4_0.expressions.Expression, _))
-      | group(keyword("ENDS WITH") ~~ Expression2) ~~>> (expressions.EndsWith(_: org.neo4j.cypher.internal.v4_0.expressions.Expression, _))
-      | group(keyword("CONTAINS") ~~ Expression2) ~~>> (expressions.Contains(_: org.neo4j.cypher.internal.v4_0.expressions.Expression, _))
-      | keyword("IS NULL") ~~>> (expressions.IsNull(_: org.neo4j.cypher.internal.v4_0.expressions.Expression))
-      | keyword("IS NOT NULL") ~~>> (expressions.IsNotNull(_: org.neo4j.cypher.internal.v4_0.expressions.Expression))
+      group(operator("=~") ~~ Expression2) ~~>> (ast.RegexMatch(_: org.neo4j.cypher.internal.v4_0.expressions.Expression, _))
+      | group(keyword("IN") ~~ Expression2) ~~>> (ast.In(_: org.neo4j.cypher.internal.v4_0.expressions.Expression, _))
+      | group(keyword("STARTS WITH") ~~ Expression2) ~~>> (ast.StartsWith(_: org.neo4j.cypher.internal.v4_0.expressions.Expression, _))
+      | group(keyword("ENDS WITH") ~~ Expression2) ~~>> (ast.EndsWith(_: org.neo4j.cypher.internal.v4_0.expressions.Expression, _))
+      | group(keyword("CONTAINS") ~~ Expression2) ~~>> (ast.Contains(_: org.neo4j.cypher.internal.v4_0.expressions.Expression, _))
+      | keyword("IS NULL") ~~>> (ast.IsNull(_: org.neo4j.cypher.internal.v4_0.expressions.Expression))
+      | keyword("IS NOT NULL") ~~>> (ast.IsNotNull(_: org.neo4j.cypher.internal.v4_0.expressions.Expression))
     ): ReductionRule1[org.neo4j.cypher.internal.v4_0.expressions.Expression, org.neo4j.cypher.internal.v4_0.expressions.Expression])
   }
 
@@ -169,7 +169,7 @@ trait Expressions extends Parser
     | group(keyword("NONE") ~~ "(" ~~ FilterExpression ~~ ")") ~~>> (ast.NoneIterablePredicate(_, _, _))
     | group(keyword("SINGLE") ~~ "(" ~~ FilterExpression ~~ ")") ~~>> (ast.SingleIterablePredicate(_, _, _))
     | group(keyword("EXISTS") ~~ "{" ~~ ExistsSubClauseExpression ~~ "}") ~~>> (ast.ExistsSubClause(_, _))  //TODO: This should NOT be a mere expression!
-    | ShortestPathPattern ~~> expressions.ShortestPathExpression
+    | ShortestPathPattern ~~> ast.ShortestPathExpression
     | RelationshipsPattern ~~> PatternExpression
     | parenthesizedExpression
     | FunctionInvocation
