@@ -106,7 +106,7 @@ case class PruningVarExpand(source: LogicalPlan,
                             minLength: Int,
                             maxLength: Int,
                             nodePredicate: Option[VariablePredicate] = None,
-                            edgePredicate: Option[VariablePredicate] = None)
+                            relationshipPredicate: Option[VariablePredicate] = None)
                            (implicit idGen: IdGen)
   extends LogicalPlan(idGen) with LazyLogicalPlan {
 

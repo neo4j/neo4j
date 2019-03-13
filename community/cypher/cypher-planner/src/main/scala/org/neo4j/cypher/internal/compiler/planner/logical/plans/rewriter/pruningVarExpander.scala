@@ -108,7 +108,7 @@ case object pruningVarExpander extends Rewriter {
                                 length,
                                 ExpandAll,
                                 nodePredicate,
-                                edgePredicate) if distinctSet(expand) =>
+                                relationshipPredicate) if distinctSet(expand) =>
             if (length.max.get > 1)
               PruningVarExpand(lhs,
                                fromId,
@@ -118,7 +118,7 @@ case object pruningVarExpander extends Rewriter {
                                length.min,
                                length.max.get,
                                nodePredicate,
-                               edgePredicate)(SameId(expand.id))
+                               relationshipPredicate)(SameId(expand.id))
             else expand
         })
         plan.endoRewrite(innerRewriter)

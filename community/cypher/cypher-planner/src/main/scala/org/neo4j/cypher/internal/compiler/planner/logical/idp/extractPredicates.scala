@@ -26,7 +26,7 @@ object extractPredicates {
 
   // Using type predicates to make this more readable.
   type NodePredicates = List[Expression]
-  type EdgePredicates = List[Expression]
+  type RelationshipPredicates = List[Expression]
   type SolvedPredicates = List[Expression] // for marking predicates as solved
 
   def apply(availablePredicates: Seq[Expression],
@@ -34,7 +34,7 @@ object extractPredicates {
             tempRelationship: String,
             tempNode: String,
             originalNodeName: String)
-    : (NodePredicates, EdgePredicates, SolvedPredicates) = {
+    : (NodePredicates, RelationshipPredicates, SolvedPredicates) = {
 
     /*
     We extract predicates that we can evaluate eagerly during the traversal, which allows us to abort traversing
@@ -43,7 +43,7 @@ object extractPredicates {
 
     During the folding, we also accumulate the original predicate, which we can mark as solved by this plan.
      */
-    val seed: (NodePredicates, EdgePredicates, SolvedPredicates) =
+    val seed: (NodePredicates, RelationshipPredicates, SolvedPredicates) =
       (List.empty, List.empty, List.empty)
 
     /**

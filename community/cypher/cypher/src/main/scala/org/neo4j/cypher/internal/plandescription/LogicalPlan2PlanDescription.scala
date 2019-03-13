@@ -276,10 +276,10 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
         val name = if (directed) "ProjectEndpoints" else "ProjectEndpoints(BOTH)"
         PlanDescriptionImpl(id, name, children, Seq(KeyNames(Seq(relName, start, end))), variables)
 
-      case PruningVarExpand(_, fromName, dir, types, toName, min, max, maybeNodePredicate, maybeEdgePredicate) =>
+      case PruningVarExpand(_, fromName, dir, types, toName, min, max, maybeNodePredicate, maybeRelationshipPredicate) =>
         val expandSpec = ExpandExpression(fromName, "", types.map(_.name), toName, dir, minLength = min,
                                           maxLength = Some(max))
-        val predicatesDescription = buildPredicatesDescription(maybeNodePredicate, maybeEdgePredicate)
+        val predicatesDescription = buildPredicatesDescription(maybeNodePredicate, maybeRelationshipPredicate)
         PlanDescriptionImpl(id, s"VarLengthExpand(Pruning)", children, Seq(expandSpec) ++ predicatesDescription, variables)
 
       case _: RemoveLabels =>
@@ -314,10 +314,10 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
       case UnwindCollection(_, _, expression) =>
         PlanDescriptionImpl(id, "Unwind", children, Seq(Expression(expression)), variables)
 
-      case VarExpand(_, fromName, dir, _, types, toName, relName, length, mode, maybeNodePredicate, maybeEdgePredicate) =>
+      case VarExpand(_, fromName, dir, _, types, toName, relName, length, mode, maybeNodePredicate, maybeRelationshipPredicate) =>
         val expandDescription = ExpandExpression(fromName, relName, types.map(_.name), toName, dir,
                                                  minLength = length.min, maxLength = length.max)
-        val predicatesDescription = buildPredicatesDescription(maybeNodePredicate, maybeEdgePredicate)
+        val predicatesDescription = buildPredicatesDescription(maybeNodePredicate, maybeRelationshipPredicate)
         val modeDescr = mode match {
           case ExpandAll => "All"
           case ExpandInto => "Into"
@@ -432,10 +432,10 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
   }
 
   private def buildPredicatesDescription(maybeNodePredicate: Option[VariablePredicate],
-                                         maybeEdgePredicate: Option[VariablePredicate]): Option[Expressions] = {
+                                         maybeRelationshipPredicate: Option[VariablePredicate]): Option[Expressions] = {
     val predicatesMap =
       (maybeNodePredicate.map(variablePredicate => "node" -> variablePredicate.predicate) ++
-        maybeEdgePredicate.map(variablePredicate => "relationship" -> variablePredicate.predicate)).toMap
+        maybeRelationshipPredicate.map(variablePredicate => "relationship" -> variablePredicate.predicate)).toMap
 
     if (predicatesMap.isEmpty)
       None

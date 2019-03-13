@@ -157,8 +157,8 @@ case class InterpretedPipeMapper(readOnly: Boolean,
                      VarPatternLength(min, max),
                      expansionMode,
                      nodePredicate,
-                     edgePredicate) =>
-        val predicate = varLengthPredicate(id, nodePredicate, edgePredicate)
+                     relationshipPredicate) =>
+        val predicate = varLengthPredicate(id, nodePredicate, relationshipPredicate)
 
         val nodeInScope = expansionMode match {
           case ExpandAll => false
@@ -179,8 +179,8 @@ case class InterpretedPipeMapper(readOnly: Boolean,
                             minLength,
                             maxLength,
                             nodePredicate,
-                            edgePredicate) =>
-        val predicate = varLengthPredicate(id, nodePredicate, edgePredicate)
+                            relationshipPredicate) =>
+        val predicate = varLengthPredicate(id, nodePredicate, relationshipPredicate)
         PruningVarLengthExpandPipe(source, from, toName, LazyTypes(types.toArray), dir, minLength, maxLength, predicate)(id = id)
 
       case Sort(_, sortItems) =>
@@ -372,7 +372,7 @@ case class InterpretedPipeMapper(readOnly: Boolean,
 
   private def varLengthPredicate(id: Id,
                                  nodePredicate: Option[VariablePredicate],
-                                 edgePredicate: Option[VariablePredicate]): VarLengthPredicate  = {
+                                 relationshipPredicate: Option[VariablePredicate]): VarLengthPredicate  = {
 
     //Creates commands out of the predicates
     def asCommand(maybeVariablePredicate: Option[VariablePredicate]) =
@@ -388,7 +388,7 @@ case class InterpretedPipeMapper(readOnly: Boolean,
      }
 
     val nodeCommand = asCommand(nodePredicate)
-    val relCommand = asCommand(edgePredicate)
+    val relCommand = asCommand(relationshipPredicate)
 
     new VarLengthPredicate {
       override def filterNode(row: ExecutionContext, state: QueryState)(node: NodeValue): Boolean = nodeCommand(row, state, node)

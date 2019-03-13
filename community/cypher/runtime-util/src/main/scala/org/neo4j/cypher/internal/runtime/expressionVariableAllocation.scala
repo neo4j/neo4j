@@ -79,7 +79,7 @@ object expressionVariableAllocation {
 
       case x: PruningVarExpand =>
         outerVars =>
-          val innerVars = allocateVariables(outerVars, (x.nodePredicate ++ x.edgePredicate).map(_.variable))
+          val innerVars = allocateVariables(outerVars, (x.nodePredicate ++ x.relationshipPredicate).map(_.variable))
           (innerVars, Some(_ => outerVars))
 
       case x: NestedPlanExpression =>
