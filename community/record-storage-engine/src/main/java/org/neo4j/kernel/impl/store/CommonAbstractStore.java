@@ -58,6 +58,7 @@ import org.neo4j.logging.Logger;
 import static java.lang.Math.max;
 import static java.lang.String.format;
 import static java.nio.file.StandardOpenOption.DELETE_ON_CLOSE;
+import static org.neo4j.internal.helpers.ArrayUtil.concat;
 import static org.neo4j.internal.helpers.ArrayUtil.contains;
 import static org.neo4j.internal.helpers.Exceptions.throwIfUnchecked;
 import static org.neo4j.io.pagecache.PageCacheOpenOptions.ANY_PAGE_SIZE;
@@ -87,6 +88,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
     private final String typeDescriptor;
     protected PagedFile pagedFile;
     protected int recordSize;
+    private int filePageSize;
     private IdGenerator idGenerator;
     private boolean storeOk = true;
     private RuntimeException causeOfStoreNotOk;
@@ -171,6 +173,11 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
         return typeDescriptor;
     }
 
+    static int filePageSize( int pageSize, int recordSize )
+    {
+        return pageSize - pageSize % recordSize;
+    }
+
     /**
      * This method is called by constructors. Checks the header record and loads the store.
      * <p>
@@ -182,12 +189,35 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
      */
     protected void checkAndLoadStorage( boolean createIfNotExists )
     {
-        int pageSize = pageCache.pageSize();
-        int filePageSize;
-        try ( PagedFile pagedFile = pageCache.map( storageFile, pageSize, ANY_PAGE_SIZE ) )
+        mapStoreFile( createIfNotExists );
+        loadIdGenerator();
+    }
+
+    private void mapStoreFile( boolean createIfNotExists )
+    {
+        try
         {
-            extractHeaderRecord( pagedFile );
-            filePageSize = pageCache.pageSize() - pageCache.pageSize() % getRecordSize();
+            determineRecordSize( storeHeaderFormat.generateHeader() );
+            if ( getNumberOfReservedLowIds() > 0 )
+            {
+                // This store has a store-specific header so we have read it before we can be sure that we can map it with correct page size.
+                // Try to open the store file (w/o creating if it doesn't exist), with page size for the configured header value.
+                HEADER defaultHeader = storeHeaderFormat.generateHeader();
+                pagedFile = pageCache.map( storageFile, filePageSize, concat( ANY_PAGE_SIZE, openOptions ) );
+                HEADER readHeader = readStoreHeaderAndDetermineRecordSize( pagedFile );
+                if ( !defaultHeader.equals( readHeader ) )
+                {
+                    // The header that we read was different from the default one so unmap
+                    pagedFile.close();
+                    pagedFile = null;
+                }
+            }
+
+            if ( pagedFile == null )
+            {
+                // Map the file with the correct page size
+                pagedFile = pageCache.map( storageFile, filePageSize, openOptions );
+            }
         }
         catch ( NoSuchFileException | StoreNotFoundException e )
         {
@@ -195,8 +225,13 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
             {
                 try
                 {
-                    createStore( pageSize );
-                    return;
+                    // Generate the header and determine correct page size
+                    determineRecordSize( storeHeaderFormat.generateHeader() );
+
+                    // Map the file (w/ the CREATE flag) and initialize the header
+                    pagedFile = pageCache.map( storageFile, filePageSize, concat( StandardOpenOption.CREATE, openOptions ) );
+                    initialiseNewStoreFile( pagedFile );
+                    return; // <-- successfully created and initialized
                 }
                 catch ( IOException e1 )
                 {
@@ -213,41 +248,20 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
         {
             throw new UnderlyingStorageException( "Unable to open store file: " + storageFile, e );
         }
-        loadStorage( filePageSize );
-    }
-
-    private void createStore( int pageSize ) throws IOException
-    {
-        try ( PagedFile file = pageCache.map( storageFile, pageSize, StandardOpenOption.CREATE ) )
-        {
-            initialiseNewStoreFile( file );
-        }
-        checkAndLoadStorage( false );
-    }
-
-    private void loadStorage( int filePageSize )
-    {
-        try
-        {
-            pagedFile = pageCache.map( storageFile, filePageSize, openOptions );
-            loadIdGenerator();
-        }
-        catch ( IOException e )
-        {
-            throw new UnderlyingStorageException( "Unable to open store file: " + storageFile, e );
-        }
     }
 
     protected void initialiseNewStoreFile( PagedFile file ) throws IOException
     {
         if ( getNumberOfReservedLowIds() > 0 )
         {
+            boolean headerWritten = false;
             try ( PageCursor pageCursor = file.io( 0, PF_SHARED_WRITE_LOCK ) )
             {
                 if ( pageCursor.next() )
                 {
                     pageCursor.setOffset( 0 );
-                    createHeaderRecord( pageCursor );
+                    storeHeaderFormat.writeHeader( pageCursor );
+                    headerWritten = true;
                     if ( pageCursor.checkAndClearBoundsFlag() )
                     {
                         throw new UnderlyingStorageException(
@@ -256,56 +270,43 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
                     }
                 }
             }
+
+            if ( headerWritten )
+            {
+                // Flush and force this header. The drastically minimizes the chance of a crash right after create
+                // ending up with an empty file, resulting in problems reading the header on next open attempt.
+                file.flushAndForce();
+            }
         }
-
-        // Determine record size right after writing the header since some stores
-        // use it when initializing their stores to write some records.
-        recordSize = determineRecordSize();
-
         idGeneratorFactory.create( idFile, getNumberOfReservedLowIds(), false );
     }
 
-    private void createHeaderRecord( PageCursor cursor )
+    private HEADER readStoreHeaderAndDetermineRecordSize( PagedFile pagedFile ) throws IOException
     {
-        int offset = cursor.getOffset();
-        storeHeaderFormat.writeHeader( cursor );
-        cursor.setOffset( offset );
-        readHeaderAndInitializeRecordFormat( cursor );
-    }
-
-    private void extractHeaderRecord( PagedFile pagedFile ) throws IOException
-    {
-        if ( getNumberOfReservedLowIds() > 0 )
+        try ( PageCursor pageCursor = pagedFile.io( 0, PF_SHARED_READ_LOCK ) )
         {
-            try ( PageCursor pageCursor = pagedFile.io( 0, PF_SHARED_READ_LOCK ) )
+            HEADER readHeader;
+            if ( pageCursor.next() )
             {
-
-                if ( pageCursor.next() )
+                do
                 {
-                    do
-                    {
-                        pageCursor.setOffset( 0 );
-                        readHeaderAndInitializeRecordFormat( pageCursor );
-                    }
-                    while ( pageCursor.shouldRetry() );
-                    if ( pageCursor.checkAndClearBoundsFlag() )
-                    {
-                        throw new UnderlyingStorageException(
-                                "Out of page bounds when reading header; page size too small: " +
-                                pageCache.pageSize() + " bytes." );
-                    }
+                    pageCursor.setOffset( 0 );
+                    readHeader = readStoreHeaderAndDetermineRecordSize( pageCursor );
                 }
-                else
+                while ( pageCursor.shouldRetry() );
+                if ( pageCursor.checkAndClearBoundsFlag() )
                 {
-                    throw new StoreNotFoundException( "Fail to read header record of store file: " + storageFile );
+                    throw new UnderlyingStorageException(
+                            "Out of page bounds when reading header; page size too small: " +
+                            pageCache.pageSize() + " bytes." );
                 }
+                return readHeader;
+            }
+            else
+            {
+                throw new StoreNotFoundException( "Fail to read header record of store file: " + storageFile );
             }
         }
-        else
-        {
-            readHeaderAndInitializeRecordFormat( null );
-        }
-        recordSize = determineRecordSize();
     }
 
     protected long pageIdForRecord( long id )
@@ -357,9 +358,18 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
      * of the record format still happens in here.
      * @throws IOException if there were problems reading header information.
      */
-    private void readHeaderAndInitializeRecordFormat( PageCursor cursor )
+    private HEADER readStoreHeaderAndDetermineRecordSize( PageCursor cursor )
     {
-        storeHeader = storeHeaderFormat.readHeader( cursor );
+        HEADER header = storeHeaderFormat.readHeader( cursor );
+        determineRecordSize( header );
+        return header;
+    }
+
+    private void determineRecordSize( HEADER header )
+    {
+        storeHeader = header;
+        recordSize = determineRecordSize();
+        filePageSize = filePageSize( pageCache.pageSize(), recordSize );
     }
 
     private void loadIdGenerator()

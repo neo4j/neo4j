@@ -48,4 +48,10 @@ public class NoStoreHeaderFormat implements StoreHeaderFormat<NoStoreHeader>
     {
         return NO_STORE_HEADER;
     }
+
+    @Override
+    public NoStoreHeader generateHeader()
+    {
+        return NO_STORE_HEADER;
+    }
 }

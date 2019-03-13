@@ -35,4 +35,16 @@ public class IntStoreHeader implements StoreHeader
     {
         return this.value;
     }
+
+    @Override
+    public boolean equals( Object o )
+    {
+        return o != null && o.getClass().equals( getClass() ) && ((IntStoreHeader) o).value == value;
+    }
+
+    @Override
+    public int hashCode()
+    {
+        return value;
+    }
 }

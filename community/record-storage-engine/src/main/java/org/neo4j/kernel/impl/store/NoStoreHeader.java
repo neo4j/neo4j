@@ -29,4 +29,6 @@ public class NoStoreHeader implements StoreHeader
     private NoStoreHeader()
     {
     }
+
+    // equals/hashCode doesn't need to be implemented because there can be only a single instance of these
 }

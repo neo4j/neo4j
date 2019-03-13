@@ -47,4 +47,10 @@ public class IntStoreHeaderFormat implements StoreHeaderFormat<IntStoreHeader>
     {
         return new IntStoreHeader( cursor.getInt() );
     }
+
+    @Override
+    public IntStoreHeader generateHeader()
+    {
+        return new IntStoreHeader( header );
+    }
 }

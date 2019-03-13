@@ -27,7 +27,7 @@ import org.neo4j.io.pagecache.PageCursor;
  */
 public class ConstantIntStoreHeaderFormat extends IntStoreHeaderFormat
 {
-    public ConstantIntStoreHeaderFormat( int header )
+    ConstantIntStoreHeaderFormat( int header )
     {
         super( header );
     }

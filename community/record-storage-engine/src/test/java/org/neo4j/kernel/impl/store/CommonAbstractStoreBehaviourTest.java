@@ -365,6 +365,12 @@ public class CommonAbstractStoreBehaviourTest
         }
 
         @Override
+        public LongLongHeader generateHeader()
+        {
+            return new LongLongHeader();
+        }
+
+        @Override
         public void writeHeader( PageCursor cursor )
         {
             for ( int i = 0; i < getRecordHeaderSize(); i++ )

@@ -28,4 +28,6 @@ public interface StoreHeaderFormat<HEADER extends StoreHeader>
     void writeHeader( PageCursor cursor );
 
     HEADER readHeader( PageCursor cursor );
+
+    HEADER generateHeader();
 }

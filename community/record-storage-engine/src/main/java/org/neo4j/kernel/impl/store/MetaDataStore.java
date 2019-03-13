@@ -184,7 +184,6 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
         setLatestConstraintIntroducingTx( 0 );
 
         flush();
-        pagedFile = null;
     }
 
     @Override
@@ -324,7 +323,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
 
     static int getPageSize( PageCache pageCache )
     {
-        return pageCache.pageSize() - pageCache.pageSize() % RECORD_SIZE;
+        return filePageSize( pageCache.pageSize(), RECORD_SIZE );
     }
 
     public StoreId getStoreId()
