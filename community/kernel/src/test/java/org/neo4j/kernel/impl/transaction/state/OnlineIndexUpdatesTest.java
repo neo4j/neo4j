@@ -70,6 +70,7 @@ import org.neo4j.values.storable.Values;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.collection.IsIterableContainingInAnyOrder.containsInAnyOrder;
 import static org.junit.Assert.assertEquals;
@@ -163,7 +164,7 @@ public class OnlineIndexUpdatesTest
 
         StoreIndexDescriptor indexDescriptor = forSchema( multiToken( ENTITY_TOKENS, NODE, 1, 4, 6 ), EMPTY.getProviderDescriptor() ).withId( 0 );
         indexingService.createIndexes( indexDescriptor );
-        indexingService.getIndexProxy( indexDescriptor.schema() ).awaitStoreScanCompleted();
+        indexingService.getIndexProxy( indexDescriptor.schema() ).awaitStoreScanCompleted( 0, MILLISECONDS );
 
         onlineIndexUpdates.feed( LongObjectMaps.immutable.of( nodeId, singletonList( propertyCommand ) ), LongObjectMaps.immutable.empty(),
                 LongObjectMaps.immutable.of( nodeId, nodeCommand ), LongObjectMaps.immutable.empty() );
@@ -192,7 +193,7 @@ public class OnlineIndexUpdatesTest
 
         StoreIndexDescriptor indexDescriptor = forSchema( multiToken( ENTITY_TOKENS, RELATIONSHIP, 1, 4, 6 ), EMPTY.getProviderDescriptor() ).withId( 0 );
         indexingService.createIndexes( indexDescriptor );
-        indexingService.getIndexProxy( indexDescriptor.schema() ).awaitStoreScanCompleted();
+        indexingService.getIndexProxy( indexDescriptor.schema() ).awaitStoreScanCompleted( 0, MILLISECONDS );
 
         onlineIndexUpdates.feed( LongObjectMaps.immutable.empty(), LongObjectMaps.immutable.of( relId, singletonList( propertyCommand ) ),
                 LongObjectMaps.immutable.empty(), LongObjectMaps.immutable.of( relId, relationshipCommand ) );
@@ -222,7 +223,7 @@ public class OnlineIndexUpdatesTest
 
         StoreIndexDescriptor nodeIndexDescriptor = forSchema( multiToken( ENTITY_TOKENS, NODE, 1, 4, 6 ), EMPTY.getProviderDescriptor() ).withId( 0 );
         indexingService.createIndexes( nodeIndexDescriptor );
-        indexingService.getIndexProxy( nodeIndexDescriptor.schema() ).awaitStoreScanCompleted();
+        indexingService.getIndexProxy( nodeIndexDescriptor.schema() ).awaitStoreScanCompleted( 0, MILLISECONDS );
 
         long relId = 0;
         RelationshipRecord inUse = getRelationship( relId, true, ENTITY_TOKEN );
@@ -240,7 +241,7 @@ public class OnlineIndexUpdatesTest
         StoreIndexDescriptor relationshipIndexDescriptor =
                 forSchema( multiToken( ENTITY_TOKENS, RELATIONSHIP, 1, 4, 6 ), EMPTY.getProviderDescriptor() ).withId( 1 );
         indexingService.createIndexes( relationshipIndexDescriptor );
-        indexingService.getIndexProxy( relationshipIndexDescriptor.schema() ).awaitStoreScanCompleted();
+        indexingService.getIndexProxy( relationshipIndexDescriptor.schema() ).awaitStoreScanCompleted( 0, MILLISECONDS );
 
         onlineIndexUpdates.feed( LongObjectMaps.immutable.of( nodeId, singletonList( nodePropertyCommand ) ),
                 LongObjectMaps.immutable.of( relId, singletonList( relationshipPropertyCommand ) ), LongObjectMaps.immutable.of( nodeId, nodeCommand ),
@@ -281,9 +282,9 @@ public class OnlineIndexUpdatesTest
         StoreIndexDescriptor indexDescriptor3 =
                 forSchema( multiToken( new int[]{OTHER_ENTITY_TOKEN}, RELATIONSHIP, 1 ), EMPTY.getProviderDescriptor() ).withId( 3 );
         indexingService.createIndexes( indexDescriptor0, indexDescriptor1, indexDescriptor2 );
-        indexingService.getIndexProxy( indexDescriptor0.schema() ).awaitStoreScanCompleted();
-        indexingService.getIndexProxy( indexDescriptor1.schema() ).awaitStoreScanCompleted();
-        indexingService.getIndexProxy( indexDescriptor2.schema() ).awaitStoreScanCompleted();
+        indexingService.getIndexProxy( indexDescriptor0.schema() ).awaitStoreScanCompleted( 0, MILLISECONDS );
+        indexingService.getIndexProxy( indexDescriptor1.schema() ).awaitStoreScanCompleted( 0, MILLISECONDS );
+        indexingService.getIndexProxy( indexDescriptor2.schema() ).awaitStoreScanCompleted( 0, MILLISECONDS );
 
         onlineIndexUpdates.feed( LongObjectMaps.immutable.empty(), LongObjectMaps.immutable.of( relId, asList( propertyCommand, propertyCommand2 ) ),
                 LongObjectMaps.immutable.empty(), LongObjectMaps.immutable.of( relId, relationshipCommand ) );

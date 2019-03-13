@@ -44,7 +44,6 @@ import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
-import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.api.txstate.TransactionState;
@@ -58,6 +57,7 @@ import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.locking.SimpleStatementLocks;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.logging.AssertableLogProvider;
+import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
@@ -113,7 +113,7 @@ public class ConstraintIndexCreatorTest
         verify( schemaRead ).indexGetCommittedId( indexReference );
         verify( schemaRead ).index( descriptor );
         verifyNoMoreInteractions( schemaRead );
-        verify( indexProxy ).awaitStoreScanCompleted();
+        verify( indexProxy ).awaitStoreScanCompleted( anyLong(), any() );
     }
 
     @Test
@@ -131,7 +131,7 @@ public class ConstraintIndexCreatorTest
 
         IndexEntryConflictException cause = new IndexEntryConflictException( 2, 1, Values.of( "a" ) );
         doThrow( new IndexPopulationFailedKernelException( "some index", cause ) )
-                .when( indexProxy ).awaitStoreScanCompleted();
+                .when( indexProxy ).awaitStoreScanCompleted( anyLong(), any() );
         NodePropertyAccessor nodePropertyAccessor = mock( NodePropertyAccessor.class );
         when( schemaRead.index( any( SchemaDescriptor.class ) ) )
                 .thenReturn(
@@ -248,7 +248,7 @@ public class ConstraintIndexCreatorTest
         verify( schemaRead ).index( descriptor );
         verify( schemaRead ).indexGetOwningUniquenessConstraintId( indexReference );
         verifyNoMoreInteractions( schemaRead );
-        verify( indexProxy ).awaitStoreScanCompleted();
+        verify( indexProxy ).awaitStoreScanCompleted( anyLong(), any() );
     }
 
     @Test

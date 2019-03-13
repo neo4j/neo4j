@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api.index;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 import org.neo4j.function.Suppliers;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
@@ -179,8 +180,22 @@ public class IndexPopulationJob implements Runnable
         return getClass().getSimpleName() + "[populator:" + multiPopulator + "]";
     }
 
-    public void awaitCompletion() throws InterruptedException
+    /**
+     * Awaits completion of this population job, but waits maximum the given time.
+     *
+     * @param time time to wait at the most for completion. A value of 0 means indefinite wait.
+     * @param unit {@link TimeUnit unit} of the {@code time}.
+     * @return {@code true} if the job is still running when leaving this method, otherwise {@code false} meaning that the job is completed.
+     * @throws InterruptedException if the wait got interrupted.
+     */
+    public boolean awaitCompletion( long time, TimeUnit unit ) throws InterruptedException
     {
-        doneSignal.await();
+        if ( time == 0 )
+        {
+            doneSignal.await();
+            return false;
+        }
+        boolean completed = doneSignal.await( time, unit );
+        return !completed;
     }
 }

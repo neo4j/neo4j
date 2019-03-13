@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.api.index;
 
 import java.io.File;
+import java.util.concurrent.TimeUnit;
 
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.kernel.api.InternalIndexState;
@@ -70,7 +71,7 @@ public class FailedIndexProxy extends AbstractSwallowingIndexProxy
     }
 
     @Override
-    public boolean awaitStoreScanCompleted() throws IndexPopulationFailedKernelException
+    public boolean awaitStoreScanCompleted( long time, TimeUnit unit ) throws IndexPopulationFailedKernelException
     {
         throw failureCause();
     }

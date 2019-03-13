@@ -810,5 +810,11 @@ public class QueryExecutionLocksIT
         {
             internal.assertOpen();
         }
+
+        @Override
+        public boolean isSchemaTransaction()
+        {
+            return internal.isSchemaTransaction();
+        }
     }
 }

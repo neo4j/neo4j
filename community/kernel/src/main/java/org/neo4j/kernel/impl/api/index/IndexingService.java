@@ -41,6 +41,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.StringJoiner;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -650,7 +651,7 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
             if ( state == State.RUNNING ) // don't do this during recovery.
             {
                 IndexProxy index = getIndexProxy( indexId );
-                index.awaitStoreScanCompleted();
+                index.awaitStoreScanCompleted( 0, TimeUnit.MILLISECONDS );
                 index.activate();
                 internalLog.info( "Constraint %s is %s.", index.getDescriptor(), ONLINE.name() );
             }

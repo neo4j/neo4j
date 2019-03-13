@@ -156,7 +156,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     // whereas others, such as timestamp or txId when transaction starts, even locks, needs to be set in #initialize().
     private TxState txState;
     private AuxiliaryTransactionStateHolder auxTxStateHolder;
-    private TransactionWriteState writeState;
+    private volatile TransactionWriteState writeState;
     private TransactionHooks.TransactionHooksState hooksState;
     private final KernelStatement currentStatement;
     private final List<CloseListener> closeListeners = new ArrayList<>( 2 );
@@ -350,6 +350,12 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         {
             terminationReleaseLock.unlock();
         }
+    }
+
+    @Override
+    public boolean isSchemaTransaction()
+    {
+        return writeState == TransactionWriteState.SCHEMA;
     }
 
     private boolean markForTerminationIfPossible( Status reason )
