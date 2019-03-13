@@ -431,6 +431,6 @@ public final class Recovery
 
     private static StorageEngineFactory selectStorageEngine()
     {
-        return StorageEngineFactory.selectStorageEngine( Service.loadAll( StorageEngineFactory.class ) );
+        return StorageEngineFactory.selectStorageEngine( Services.loadAll( StorageEngineFactory.class ) );
     }
 }
