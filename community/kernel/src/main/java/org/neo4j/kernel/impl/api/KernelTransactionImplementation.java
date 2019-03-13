@@ -787,7 +787,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     @Override
     public Read dataRead()
     {
-        assertAllows( AccessMode::allowsReads, "Read" );
+        assertAllowsReads();
         return operations.dataRead();
     }
 
@@ -795,7 +795,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     public Write dataWrite() throws InvalidTransactionTypeKernelException
     {
         accessCapability.assertCanWrite();
-        assertAllows( AccessMode::allowsWrites, "Write" );
+        assertAllowsWrites();
         upgradeToDataWrites();
         return operations;
     }
@@ -817,14 +817,14 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     @Override
     public TokenRead tokenRead()
     {
-        assertAllows( AccessMode::allowsReads, "Read" );
+        assertAllowsReads();
         return operations.token();
     }
 
     @Override
     public SchemaRead schemaRead()
     {
-        assertAllows( AccessMode::allowsReads, "Read" );
+        assertAllowsReads();
         return operations.schemaRead();
     }
 
@@ -832,7 +832,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     public SchemaWrite schemaWrite() throws InvalidTransactionTypeKernelException
     {
         accessCapability.assertCanWrite();
-        assertAllows( AccessMode::allowsSchemaWrites, "Schema" );
+        assertAllowsSchemaWrites();
 
         upgradeToSchemaWrites();
         return operations;
@@ -873,14 +873,39 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         return currentStatement.lockTracer();
     }
 
-    public void assertAllows( Function<AccessMode,Boolean> allows, String mode )
+    private void assertAllowsReads()
     {
         AccessMode accessMode = securityContext().mode();
-        if ( !allows.apply( accessMode ) )
+        if ( !accessMode.allowsReads() )
         {
-            throw accessMode.onViolation(
-                    format( "%s operations are not allowed for %s.", mode,
-                           securityContext().description() ) );
+            throw accessMode.onViolation( format( "Read operations are not allowed for %s.", securityContext().description() ) );
+        }
+    }
+
+    private void assertAllowsWrites()
+    {
+        AccessMode accessMode = securityContext().mode();
+        if ( !accessMode.allowsWrites() )
+        {
+            throw accessMode.onViolation( format( "Write operations are not allowed for %s.", securityContext().description() ) );
+        }
+    }
+
+    private void assertAllowsSchemaWrites()
+    {
+        AccessMode accessMode = securityContext().mode();
+        if ( !accessMode.allowsSchemaWrites() )
+        {
+            throw accessMode.onViolation( format( "Schema operations are not allowed for %s.", securityContext().description() ) );
+        }
+    }
+
+    public final void assertAllowsTokenCreates()
+    {
+        AccessMode accessMode = securityContext().mode();
+        if ( !accessMode.allowsTokenCreates() )
+        {
+            throw accessMode.onViolation( format( "Token create operations are not allowed for %s.", securityContext().description() ) );
         }
     }
 
