@@ -41,9 +41,8 @@ public class TestInstanceValidationExtension implements BeforeTestExecutionCallb
     public void beforeTestExecution( ExtensionContext context )
     {
         Optional<Object> testInstance = context.getTestInstance();
-        if ( testInstance.isPresent() )
+        testInstance.ifPresent( instance ->
         {
-            Object instance = testInstance.get();
             Class<?> instanceClass = instance.getClass();
             List<Field> annotatedFields = findAnnotatedFields( instanceClass, Inject.class );
             for ( Field annotatedField : annotatedFields )
@@ -56,7 +55,7 @@ public class TestInstanceValidationExtension implements BeforeTestExecutionCallb
                             annotatedField.getName(), instanceClass.getName() ) );
                 }
             }
-        }
+        } );
     }
 }
 
