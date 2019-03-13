@@ -131,7 +131,9 @@ class NonUniqueIndexTest
                     @Override
                     protected CentralJobScheduler createJobScheduler()
                     {
-                        return newSlowJobScheduler();
+                        CentralJobScheduler scheduler = newSlowJobScheduler();
+                        scheduler.init();
+                        return scheduler;
                     }
 
                     @Override
