@@ -239,7 +239,13 @@ class PrettifierIT extends CypherFunSuite {
       "USING periodic commit 30 load csv from '/import/data.csv' AS row create ({key: row[0]})" ->
         """USING PERIODIC COMMIT 30
           |LOAD CSV FROM "/import/data.csv" AS row
-          |CREATE ({key: row[0]})""".stripMargin
+          |CREATE ({key: row[0]})""".stripMargin,
+
+      "FOREACH ( n IN [1,2,3] | create ({key: n}) CREATE ({foreignKey: n}) )" ->
+        """FOREACH ( n IN [1, 2, 3] |
+          |  CREATE ({key: n})
+          |  CREATE ({foreignKey: n})
+          |)""".stripMargin
     )
 
   tests foreach {

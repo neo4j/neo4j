@@ -108,6 +108,7 @@ case class Prettifier(mkStringOf: ExpressionStringifier) {
     case d: Delete => asString(d)
     case m: Merge => asString(m)
     case l: LoadCSV => asString(l)
+    case f: Foreach => asString(f)
     case _ => clause.asCanonicalStringVal // TODO
   }
 
@@ -209,6 +210,13 @@ case class Prettifier(mkStringOf: ExpressionStringifier) {
 
   private def asString(delete: Delete): String = {
     s"DELETE ${delete.expressions.map(mkStringOf(_)).mkString(", ")}"
+  }
+
+  private def asString(foreach: Foreach): String = {
+    val varName = foreach.variable.name
+    val list = mkStringOf(foreach.expression)
+    val updates = foreach.updates.map(dispatch).mkString(s"$NL  ", s"$NL  ", NL)
+    s"FOREACH ( $varName IN $list |$updates)"
   }
 
   private def asString(properties: Seq[Property]): String =
