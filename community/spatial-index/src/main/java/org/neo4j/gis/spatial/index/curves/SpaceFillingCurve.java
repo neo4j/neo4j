@@ -397,7 +397,7 @@ public abstract class SpaceFillingCurve
             else
             {
                 normalizedCoord[dim] = (long) ((value - range.getMin(dim)) * scalingFactor[dim]);
-                // Since we calculated this with an origin at the min extreme, we can get numerical rouding errors, which can be corrected by recalculating using a closer origin
+                // Calculating with an origin at the min can lead to numerical rouding errors, which can be corrected by recalculating using a closer origin
                 double tileCenter = ((double) normalizedCoord[dim]) / scalingFactor[dim] + range.getMin(dim) + getTileWidth(dim, maxLevel) / 2.0;
                 // The 1E-16 is to create the behavior of the [min,max) bounds without an expensive if...else if...else check
                 long normalizedOffset = (long) ((value - tileCenter) * scalingFactor[dim] - 0.5 + 1E-16);
