@@ -24,9 +24,9 @@ import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values.NO_VALUE
 import org.neo4j.values.virtual.MapValue
 
-object createParameterArray extends ((MapValue, Map[String,Int]) => Array[AnyValue]) {
+object createParameterArray {
 
-  override def apply(params: MapValue,
+  def apply(params: MapValue,
                      parameterMapping: Map[String, Int]): Array[AnyValue] = {
     val parameterArray = new Array[AnyValue](parameterMapping.size)
     parameterMapping.foreach {
