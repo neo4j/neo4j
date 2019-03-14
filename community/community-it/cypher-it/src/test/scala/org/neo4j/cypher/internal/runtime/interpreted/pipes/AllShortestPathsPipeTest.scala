@@ -27,7 +27,6 @@ import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
 import org.neo4j.graphdb.Node
 import org.neo4j.kernel.impl.util.ValueUtils.fromNodeProxy
 import org.neo4j.values.virtual.PathValue
-import org.neo4j.values.virtual.VirtualValues.EMPTY_MAP
 
 import scala.collection.mutable
 
@@ -40,7 +39,7 @@ class AllShortestPathsPipeTest extends GraphDatabaseFunSuite {
                                                                SemanticDirection.BOTH, allowZeroLength = false, Some(15),
                                                                single = false, relIterator = None)))()
     graph.withTx { tx =>
-      withQueryState(graph, tx, EMPTY_MAP, { queryState =>
+      withQueryState(graph, tx, Array.empty, { queryState =>
         pipe.createResults(queryState).toList.map(m => m.getByName("p").asInstanceOf[PathValue])
       })
     }
