@@ -22,16 +22,14 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.PathValueBuilder
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.{InCheckContainer, SingleThreadedLRUCache}
 import org.neo4j.cypher.internal.runtime.{MutableMaps, _}
-import org.neo4j.cypher.internal.v4_0.util.ParameterNotFoundException
 import org.neo4j.internal.kernel.api.IndexReadSession
 import org.neo4j.values.AnyValue
-import org.neo4j.values.virtual.MapValue
 
 import scala.collection.mutable
 
 class QueryState(val query: QueryContext,
                  val resources: ExternalCSVResource,
-                 val params: MapValue,
+                 val params: Array[AnyValue],
                  val cursors: ExpressionCursors,
                  val queryIndexes: Array[IndexReadSession],
                  val expressionVariables: Array[AnyValue],
@@ -57,11 +55,6 @@ class QueryState(val query: QueryContext,
       _pathValueBuilder = new PathValueBuilder()
     }
     _pathValueBuilder.clear()
-  }
-
-  def getParam(key: String): AnyValue = {
-    if (!params.containsKey(key)) throw new ParameterNotFoundException("Expected a parameter named " + key)
-    params.get(key)
   }
 
   def getStatistics: QueryStatistics = query.getOptStatistics.getOrElse(QueryState.defaultStatistics)
