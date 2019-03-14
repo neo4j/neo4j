@@ -222,7 +222,24 @@ class PrettifierIT extends CypherFunSuite {
           |}""".stripMargin,
 
       "catalog DROP VIEW com.neo4j.Users" ->
-        "CATALOG DROP VIEW com.neo4j.Users"
+        "CATALOG DROP VIEW com.neo4j.Users",
+
+      "load csv from '/import/data.csv' AS row create ({key: row[0]})" ->
+        """LOAD CSV FROM "/import/data.csv" AS row
+          |CREATE ({key: row[0]})""".stripMargin,
+
+      "load csv WITH headers from '/import/data.csv' AS row create ({key: row[0]})" ->
+        """LOAD CSV WITH HEADERS FROM "/import/data.csv" AS row
+          |CREATE ({key: row[0]})""".stripMargin,
+
+      "load csv from '/import/data.csv' AS row FIELDTERMINATOR '-' create ({key: row[0]})" ->
+        """LOAD CSV FROM "/import/data.csv" AS row FIELDTERMINATOR "-"
+          |CREATE ({key: row[0]})""".stripMargin,
+
+      "USING periodic commit 30 load csv from '/import/data.csv' AS row create ({key: row[0]})" ->
+        """USING PERIODIC COMMIT 30
+          |LOAD CSV FROM "/import/data.csv" AS row
+          |CREATE ({key: row[0]})""".stripMargin
     )
 
   tests foreach {

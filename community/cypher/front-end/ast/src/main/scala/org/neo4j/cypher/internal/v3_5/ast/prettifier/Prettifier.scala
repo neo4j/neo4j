@@ -22,7 +22,20 @@ import org.neo4j.cypher.internal.v3_5.expressions.{NodePattern, PatternElement, 
 case class Prettifier(mkStringOf: ExpressionStringifier) {
 
   def asString(statement: Statement): String = statement match {
-    case Query(_, part) => queryPart(part)
+    case Query(maybePeriodicCommit, part) =>
+      maybePeriodicCommit match {
+        case None => queryPart(part)
+        case Some(periodicCommit) =>
+          val sb = new StringBuilder
+          sb ++= "USING PERIODIC COMMIT"
+          for (x <- periodicCommit.size) {
+            sb += ' '
+            sb ++= x.value.toString
+          }
+          sb ++= NL
+          sb ++= queryPart(part)
+          sb.result()
+      }
 
     case CreateIndex(LabelName(label), properties) =>
       s"CREATE INDEX ON :$label${properties.map(_.name).mkString("(", ", ", ")")}"
@@ -94,6 +107,7 @@ case class Prettifier(mkStringOf: ExpressionStringifier) {
     case s: SetClause => asString(s)
     case d: Delete => asString(d)
     case m: Merge => asString(m)
+    case l: LoadCSV => asString(l)
     case _ => clause.asCanonicalStringVal // TODO
   }
 
@@ -183,6 +197,14 @@ case class Prettifier(mkStringOf: ExpressionStringifier) {
       case _ => s.asCanonicalStringVal
     }
     s"SET ${items.mkString(", ")}"
+  }
+
+  private def asString(v: LoadCSV): String = {
+    val withHeaders = if (v.withHeaders) " WITH HEADERS" else ""
+    val url = mkStringOf(v.urlString)
+    val varName = v.variable.name
+    val fieldTerminator = v.fieldTerminator.map(x => " FIELDTERMINATOR "+mkStringOf(x)).getOrElse("")
+    s"LOAD CSV$withHeaders FROM $url AS $varName$fieldTerminator"
   }
 
   private def asString(delete: Delete): String = {
