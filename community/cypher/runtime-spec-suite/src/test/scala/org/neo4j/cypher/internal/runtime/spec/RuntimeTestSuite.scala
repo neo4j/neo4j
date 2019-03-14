@@ -192,7 +192,7 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
 
   // GRAPHS
 
-  def bipartiteGraph(nNodes: Int, aLabel: String, bLabel: String, relType: String): Unit = {
+  def bipartiteGraph(nNodes: Int, aLabel: String, bLabel: String, relType: String): (Seq[Node], Seq[Node]) = {
     val aNodes = nodeGraph(nNodes, aLabel)
     val bNodes = nodeGraph(nNodes, bLabel)
     inTx {
@@ -201,6 +201,7 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
         a.createRelationshipTo(b, relationshipType)
       }
     }
+    (aNodes, bNodes)
   }
 
   def nodeGraph(nNodes: Int, labels: String*): Seq[Node] = {

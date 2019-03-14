@@ -98,6 +98,11 @@ class LogicalQueryBuilder(tokenResolver: TokenResolver) extends AstConstructionT
     this
   }
 
+  def limit(count: Int): LogicalQueryBuilder = {
+    appendAtCurrentIndent(UnaryOperator(lp => Limit(lp, literal(count), DoNotIncludeTies)))
+    this
+  }
+
   def expand(pattern: String): LogicalQueryBuilder = {
     val p = PatternParser.parse(pattern)
     p.length match {
