@@ -23,11 +23,11 @@ import org.mockito.ArgumentMatchers.{any, anyInt}
 import org.mockito.Mockito.when
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
+import org.neo4j.cypher.internal.logical.plans._
 import org.neo4j.cypher.internal.planner.spi.TokenContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
 import org.neo4j.cypher.internal.runtime.{NoInput, QueryContext, QueryTransactionalContext, ResourceManager}
 import org.neo4j.cypher.internal.v4_0.expressions._
-import org.neo4j.cypher.internal.logical.plans._
 import org.neo4j.cypher.internal.v4_0.util.DummyPosition
 import org.neo4j.cypher.internal.v4_0.util.attribution.SequentialIdGen
 import org.neo4j.cypher.internal.v4_0.util.symbols._
@@ -49,7 +49,7 @@ class ProcedureCallExecutionPlanTest extends CypherFunSuite {
   test("should be able to call procedure with single argument") {
     // Given
     val proc = ProcedureCallExecutionPlan(readSignature, Seq(add(int(42), int(42))), Seq("b" -> CTInteger), Seq(0 -> "b"),
-                                          converters, idGen.id())
+                                          converters, Map.empty, idGen.id())
 
     // When
     val res = proc.run(ctx, doProfile = false, EMPTY_MAP, prePopulateResults = false, NoInput, NOT_A_SUBSCRIBER )
@@ -62,7 +62,7 @@ class ProcedureCallExecutionPlanTest extends CypherFunSuite {
     // Given
     val proc = ProcedureCallExecutionPlan(writeSignature,
                                           Seq(add(int(42), int(42))), Seq("b" -> CTInteger), Seq(0 -> "b"),
-                                          converters, idGen.id())
+                                          converters, Map.empty, idGen.id())
 
     // When
     proc.run(ctx, doProfile = false, EMPTY_MAP, prePopulateResults = false, NoInput, NOT_A_SUBSCRIBER )
@@ -75,7 +75,7 @@ class ProcedureCallExecutionPlanTest extends CypherFunSuite {
     // Given
     val proc = ProcedureCallExecutionPlan(readSignature,
                                           Seq(add(int(42), int(42))), Seq("b" -> CTInteger), Seq(0 -> "b"),
-                                          converters, idGen.id())
+                                          converters, Map.empty, idGen.id())
 
     // When
     proc.run(ctx, doProfile = false, EMPTY_MAP, prePopulateResults = false, NoInput, NOT_A_SUBSCRIBER )

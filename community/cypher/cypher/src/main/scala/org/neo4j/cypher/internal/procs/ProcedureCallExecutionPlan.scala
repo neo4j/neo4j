@@ -19,13 +19,13 @@
  */
 package org.neo4j.cypher.internal.procs
 
+import org.neo4j.cypher.internal.logical.plans.ProcedureSignature
 import org.neo4j.cypher.internal.plandescription.Argument
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.ExpressionConverters
-import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{Literal, ParameterExpression, Expression => CommandExpression}
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{Expression => CommandExpression}
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{ExternalCSVResource, QueryState}
 import org.neo4j.cypher.internal.runtime.{ExecutionContext, _}
 import org.neo4j.cypher.internal.v4_0.expressions.Expression
-import org.neo4j.cypher.internal.logical.plans.ProcedureSignature
 import org.neo4j.cypher.internal.v4_0.util.attribution.Id
 import org.neo4j.cypher.internal.v4_0.util.symbols.CypherType
 import org.neo4j.cypher.internal.v4_0.util.{InternalNotification, InvalidArgumentException}
@@ -34,6 +34,7 @@ import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.internal.kernel.api.IndexReadSession
 import org.neo4j.internal.kernel.api.procs.QualifiedName
 import org.neo4j.kernel.impl.query.QuerySubscriber
+import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.values.AnyValue
 import org.neo4j.values.virtual.MapValue
 
@@ -52,6 +53,7 @@ case class ProcedureCallExecutionPlan(signature: ProcedureSignature,
                                       resultSymbols: Seq[(String, CypherType)],
                                       resultIndices: Seq[(Int, String)],
                                       converter: ExpressionConverters,
+                                      parameterMapping: Map[String, Int],
                                       id: Id)
   extends ExecutionPlan {
 
@@ -63,8 +65,8 @@ case class ProcedureCallExecutionPlan(signature: ProcedureSignature,
   })
 
   private val actualArgs: Seq[CommandExpression] =  argExprs.map(converter.toCommandExpression(id, _)) // This list can be shorter than signature.inputSignature.length
-  private val parameterArgs: Seq[ParameterExpression] =  signature.inputSignature.map(s => ParameterExpression(s.name))
-  private val maybeDefaultArgs: Seq[Option[CommandExpression]] =  signature.inputSignature.map(_.default).map(option => option.map( df => Literal(df.value)))
+  private val parameterArgs: Seq[String] = signature.inputSignature.map(_.name)
+  private val maybeDefaultArgs: Seq[Option[AnyValue]] =  signature.inputSignature.map(_.default).map(option => option.map( df => ValueUtils.of(df.value)))
   private val zippedArgCandidates = actualArgs.map(Some(_)).zipAll(parameterArgs.zip(maybeDefaultArgs), None, null).map { case (a, (b, c)) => (a, b, c)}
 
   override def run(ctx: QueryContext,
@@ -84,25 +86,24 @@ case class ProcedureCallExecutionPlan(signature: ProcedureSignature,
   private def evaluateArguments(ctx: QueryContext, params: MapValue): Seq[AnyValue] = {
     val state = new QueryState(ctx,
                                ExternalCSVResource.empty,
-                               params,
+                               createParameterArray(params, parameterMapping),
                                new ExpressionCursors(ctx.transactionalContext.cursors),
                                Array.empty[IndexReadSession],
                                Array.empty[AnyValue])
 
     val args = zippedArgCandidates.map {
       // an actual argument (or even a parameter that ResolvedCall puts there instead if there is no default value)
-      case (Some(actualArg), _, _) => actualArg
+      case (Some(actualArg), _, _) => actualArg.apply(ExecutionContext.empty, state)
       // There is a default value, but also a parameter that should be preferred
-      case (_, paramArg@ParameterExpression(name), _) if params.containsKey(name) => paramArg
+      case (_, name, _) if params.containsKey(name) => params.get(name)
       // There is a default value
       case (_, _, Some(defaultArg)) => defaultArg
       // There is nothing we can use
-      case (_, ParameterExpression(name), _) => throw new InvalidArgumentException(s"Invalid procedure call. Parameter for $name not specified.")
+      case (_, name, _) => throw new InvalidArgumentException(s"Invalid procedure call. Parameter for $name not specified.")
     }
 
-    val evaluated = args.map(expr => expr.apply(ExecutionContext.empty, state))
     state.close()
-    evaluated
+    args
   }
 
   override def runtimeName: RuntimeName = ProcedureRuntimeName
