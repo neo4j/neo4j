@@ -228,7 +228,7 @@ class ReadyStateTest
 
     @ParameterizedTest
     @ValueSource( strings = {"commit", "COMMIT", "   commit   ", "   CoMmIt ;   "} )
-    void shouldCommitTransaction( String statement ) throws Exception
+    void shouldCommitTransaction( String statement ) throws Throwable
     {
         BoltStateMachineState newState = state.process( new RunMessage( statement ), context );
         assertEquals( state, newState );
