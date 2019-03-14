@@ -318,7 +318,7 @@ class PruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
     var tx = graph.beginTransaction(Type.`implicit`, LoginContext.AUTH_DISABLED)
     var count = 0
 
-    def checkAndSwitch() = {
+    def checkAndSwitch(): Unit = {
       count += 1
       if (count == 1000) {
         tx.success()
@@ -349,14 +349,14 @@ class PruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
     nodes
   }
 
-  private def testNode(startNode: Node, r: Random) = {
+  private def testNode(startNode: Node, r: Random): Unit = {
     val min = r.nextInt(3)
     val max = min + 1 + r.nextInt(3)
     val sourcePipe = new FakePipe(Iterator(Map("from" -> startNode)))
     val sourcePipe2 = new FakePipe(Iterator(Map("from" -> startNode)))
     val pipeUnderTest = createPipe(sourcePipe, min, max, SemanticDirection.BOTH)
     val pipe = VarLengthExpandPipe(sourcePipe2, "from", "r", "to", SemanticDirection.BOTH, SemanticDirection.BOTH, types, min, Some(max), nodeInScope = false)()
-    val comparison = DistinctPipe(pipe, Map("from" -> Variable("from"), "to" -> Variable("to")))()
+    val comparison = DistinctPipe(pipe, Array(DistinctPipe.GroupingCol("from", Variable("from")), DistinctPipe.GroupingCol("to", Variable("to"))))()
 
     val distinctExpand = graph.withTx { tx =>
       withQueryState(graph, tx, Array.empty, { queryState =>

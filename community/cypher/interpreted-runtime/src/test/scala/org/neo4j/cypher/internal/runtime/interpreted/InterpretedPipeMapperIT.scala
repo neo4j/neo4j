@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.runtime.interpreted
 import org.mockito.Mockito.{atLeastOnce, verify, when}
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.ir.{PatternRelationship, SimplePatternLength}
+import org.neo4j.cypher.internal.logical.plans._
 import org.neo4j.cypher.internal.planner.spi.{PlanContext, TokenContext}
 import org.neo4j.cypher.internal.runtime.QueryIndexes
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
@@ -31,7 +32,6 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.{expressions => le
 import org.neo4j.cypher.internal.runtime.interpreted.pipes._
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
-import org.neo4j.cypher.internal.logical.plans._
 import org.neo4j.cypher.internal.v4_0.util.RelTypeId
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 
@@ -173,14 +173,13 @@ class InterpretedPipeMapperIT extends CypherFunSuite with LogicalPlanningTestSup
     )())
   }
 
-  test("Aggregation on top of Projection => DistinctPipe with resolved expressions") {
+  test("Aggregation with no aggregating columns => DistinctPipe with resolved expressions") {
     // GIVEN
     val token = 42
     when(planContext.getOptPropertyKeyId("prop")).thenReturn(Some(token))
     val allNodesScan = AllNodesScan("n", Set.empty)
     val expressions = Map("n.prop" -> prop("n", "prop"))
-    val projection = Projection(allNodesScan, expressions)
-    val aggregation = Aggregation(projection, expressions, Map.empty)
+    val aggregation = Aggregation(allNodesScan, expressions, Map.empty)
 
     // WHEN
     val pipe = build(aggregation)
@@ -190,7 +189,7 @@ class InterpretedPipeMapperIT extends CypherFunSuite with LogicalPlanningTestSup
     pipe should equal(
       DistinctPipe(
         AllNodesScanPipe("n")(),
-        Map("n.prop" -> legacy.Property(legacy.Variable("n"),
-          Resolved("prop", token, TokenType.PropertyKey))))())
+        Array(DistinctPipe.GroupingCol("n.prop", legacy.Property(legacy.Variable("n"),
+          Resolved("prop", token, TokenType.PropertyKey)))))())
   }
 }

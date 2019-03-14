@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.runtime.ExecutionContext
-import org.neo4j.cypher.internal.v4_0.util.Unchangeable
 import org.neo4j.cypher.internal.v4_0.util.attribution.Id
 
 /**
@@ -36,8 +35,6 @@ import org.neo4j.cypher.internal.v4_0.util.attribution.Id
   */
 trait Pipe {
   self: Pipe =>
-
-  val readTransactionLayer: Unchangeable[Int] = new Unchangeable[Int]
 
   def createResults(state: QueryState) : Iterator[ExecutionContext] = {
     val decoratedState = state.decorator.decorate(self, state)

@@ -20,6 +20,8 @@
 package org.neo4j.cypher.internal.runtime.interpreted
 
 import org.neo4j.cypher.internal.ir.VarPatternLength
+import org.neo4j.cypher.internal.logical.plans
+import org.neo4j.cypher.internal.logical.plans.{Limit => LimitPlan, LoadCSV => LoadCSVPlan, Skip => SkipPlan, _}
 import org.neo4j.cypher.internal.planner.spi.TokenContext
 import org.neo4j.cypher.internal.runtime.ast.ExpressionVariable
 import org.neo4j.cypher.internal.runtime.interpreted.commands.KeyTokenResolver
@@ -31,8 +33,6 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes._
 import org.neo4j.cypher.internal.runtime.{ExecutionContext, ProcedureCallMode, QueryIndexes}
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.v4_0.expressions.{Equals => ASTEquals, Expression => ASTExpression, _}
-import org.neo4j.cypher.internal.logical.plans
-import org.neo4j.cypher.internal.logical.plans.{Limit => LimitPlan, LoadCSV => LoadCSVPlan, Skip => SkipPlan, _}
 import org.neo4j.cypher.internal.v4_0.util.attribution.Id
 import org.neo4j.cypher.internal.v4_0.util.{Eagerly, InternalException}
 import org.neo4j.values.AnyValue
@@ -225,22 +225,25 @@ case class InterpretedPipeMapper(readOnly: Boolean,
         }
 
       case Aggregation(_, groupingExpressions, aggregatingExpressions) if aggregatingExpressions.isEmpty =>
-        val commandExpressions = Eagerly.immutableMapValues(groupingExpressions, buildExpression)
-        val projection = InterpretedCommandProjection(commandExpressions)
-        source match {
-          case ProjectionPipe(inner, p) if p == projection =>
-            DistinctPipe(inner, commandExpressions)(id = id)
-          case _ =>
-            DistinctPipe(source, commandExpressions)(id = id)
-        }
+        val projection = groupingExpressions.map {
+          case (key, value) => DistinctPipe.GroupingCol(key, buildExpression(value))
+        }.toArray
+        DistinctPipe(source, projection)(id = id)
 
       case Distinct(_, groupingExpressions) =>
-        val commandExpressions = Eagerly.immutableMapValues(groupingExpressions, buildExpression)
-        source match {
-          case ProjectionPipe(inner, es) if es == commandExpressions =>
-            DistinctPipe(inner, commandExpressions)(id = id)
-          case _ =>
-            DistinctPipe(source, commandExpressions)(id = id)
+        val projection = groupingExpressions.map {
+          case (key, value) => DistinctPipe.GroupingCol(key, buildExpression(value))
+        }.toArray
+        DistinctPipe(source, projection)(id = id)
+
+      case OrderedDistinct(_, groupingExpressions, orderToLeverage) =>
+        val projection = groupingExpressions.map {
+          case (key, value) => DistinctPipe.GroupingCol(key, buildExpression(value), orderToLeverage.contains(value))
+        }.toArray
+        if (projection.forall(_.ordered)) {
+          AllOrderedDistinctPipe(source, projection)(id = id)
+        } else {
+          OrderedDistinctPipe(source, projection)(id = id)
         }
 
       case Aggregation(_, groupingExpressions, aggregatingExpressions) =>
