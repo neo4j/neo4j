@@ -21,15 +21,16 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
 import org.neo4j.cypher.internal.runtime.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
+import org.neo4j.values.AnyValue
 
 case class ParameterExpression(parameterName: String) extends Expression {
-  def apply(ctx: ExecutionContext, state: QueryState) = state.getParam(parameterName)
+  def apply(ctx: ExecutionContext, state: QueryState): AnyValue = state.getParam(parameterName)
 
-  override def toString(): String = "{" + parameterName + "}"
+  override def toString: String = "$" + parameterName
 
-  def rewrite(f: (Expression) => Expression) = f(this)
+  def rewrite(f: Expression => Expression): Expression = f(this)
 
-  def arguments = Seq.empty
+  def arguments: Seq[Nothing] = Seq.empty
 
-  def symbolTableDependencies = Set()
+  def symbolTableDependencies: Set[String] = Set()
 }
