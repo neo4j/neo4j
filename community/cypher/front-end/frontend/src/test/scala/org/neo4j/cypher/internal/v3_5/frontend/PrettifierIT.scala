@@ -245,8 +245,51 @@ class PrettifierIT extends CypherFunSuite {
         """FOREACH ( n IN [1, 2, 3] |
           |  CREATE ({key: n})
           |  CREATE ({foreignKey: n})
-          |)""".stripMargin
+          |)""".stripMargin,
+
+      "create unique (a)--(b) RETURN a" ->
+        """CREATE UNIQUE (a)--(b)
+          |RETURN a""".stripMargin
+    ) ++ startTests("node") ++ startTests("relationship")
+
+  def startTests(entityType: String): Seq[(String, String)] = {
+    val ENTITYTYPE = entityType.toUpperCase
+    Seq(
+      s"START x=$entityType(*) RETURN x" ->
+        s"""START x = $ENTITYTYPE( * )
+           |RETURN x""".stripMargin,
+
+      s"START x=$entityType(42) RETURN x" ->
+        s"""START x = $ENTITYTYPE( 42 )
+           |RETURN x""".stripMargin,
+
+      s"START x=$entityType(42,101) RETURN x" ->
+        s"""START x = $ENTITYTYPE( 42, 101 )
+           |RETURN x""".stripMargin,
+
+      s"START x=$entityType($$param) RETURN x" ->
+        s"""START x = $ENTITYTYPE( $$param )
+           |RETURN x""".stripMargin,
+
+      s"START x=$entityType($$param), y=$entityType(42,101) RETURN x, y" ->
+        s"""START x = $ENTITYTYPE( $$param ),
+           |      y = $ENTITYTYPE( 42, 101 )
+           |RETURN x, y""".stripMargin,
+
+      s"""START x=$entityType:index("key:value") RETURN x""" ->
+        s"""START x = $ENTITYTYPE:index( "key:value" )
+           |RETURN x""".stripMargin,
+
+      s"""START x=$entityType:myIndex(key = 'value') RETURN x""" ->
+        s"""START x = $ENTITYTYPE:myIndex( key = "value" )
+           |RETURN x""".stripMargin,
+
+      s"""START x=$entityType:index("key:value") WHERE n.prop = 42 RETURN x""" ->
+        s"""START x = $ENTITYTYPE:index( "key:value" )
+           |  WHERE n.prop = 42
+           |RETURN x""".stripMargin
     )
+  }
 
   tests foreach {
     case (inputString, expected) =>

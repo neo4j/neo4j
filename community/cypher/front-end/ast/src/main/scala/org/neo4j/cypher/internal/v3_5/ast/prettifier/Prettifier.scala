@@ -109,6 +109,8 @@ case class Prettifier(mkStringOf: ExpressionStringifier) {
     case m: Merge => asString(m)
     case l: LoadCSV => asString(l)
     case f: Foreach => asString(f)
+    case s: Start => asString(s)
+    case c: CreateUnique => asString(c)
     case _ => clause.asCanonicalStringVal // TODO
   }
 
@@ -217,6 +219,32 @@ case class Prettifier(mkStringOf: ExpressionStringifier) {
     val list = mkStringOf(foreach.expression)
     val updates = foreach.updates.map(dispatch).mkString(s"$NL  ", s"$NL  ", NL)
     s"FOREACH ( $varName IN $list |$updates)"
+  }
+
+  private def asString(start: Start): String = {
+
+
+    val startItems =
+      start.items.map {
+        case AllNodes(v) => s"${v.name} = NODE( * )"
+        case NodeByIds(v, ids) => s"${v.name} = NODE( ${ids.map(_.value.toString).mkString(", ")} )"
+        case NodeByParameter(v, param) => s"${v.name} = NODE( $$${param.name} )"
+        case NodeByIdentifiedIndex(v, index, key, value) => s"${v.name} = NODE:$index( $key = ${mkStringOf(value)} )"
+        case NodeByIndexQuery(v, index, query) => s"${v.name} = NODE:$index( ${mkStringOf(query)} )"
+        case AllRelationships(v) => s"${v.name} = RELATIONSHIP( * )"
+        case RelationshipByIds(v, ids) => s"${v.name} = RELATIONSHIP( ${ids.map(_.value.toString).mkString(", ")} )"
+        case RelationshipByParameter(v, param) => s"${v.name} = RELATIONSHIP( $$${param.name} )"
+        case RelationshipByIdentifiedIndex(v, index, key, value) => s"${v.name} = RELATIONSHIP:$index( $key = ${mkStringOf(value)} )"
+        case RelationshipByIndexQuery(v, index, query) => s"${v.name} = RELATIONSHIP:$index( ${mkStringOf(query)} )"
+      }
+
+    val where = start.where.map(w => NL + "  WHERE " + mkStringOf(w.expression)).getOrElse("")
+    s"START ${startItems.mkString(s",$NL      ")}$where"
+  }
+
+  private def asString(c: CreateUnique): String = {
+    val p = c.pattern.patternParts.map(p => asString(p)).mkString(", ")
+    s"CREATE UNIQUE $p"
   }
 
   private def asString(properties: Seq[Property]): String =
