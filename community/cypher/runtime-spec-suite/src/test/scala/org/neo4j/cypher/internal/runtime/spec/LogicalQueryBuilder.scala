@@ -21,11 +21,11 @@ package org.neo4j.cypher.internal.runtime.spec
 
 import org.neo4j.cypher.internal.LogicalQuery
 import org.neo4j.cypher.internal.ir.SimplePatternLength
+import org.neo4j.cypher.internal.logical.plans._
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.v4_0.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.v4_0.expressions.Expression
-import org.neo4j.cypher.internal.logical.plans._
 import org.neo4j.cypher.internal.v4_0.util.attribution.{IdGen, SequentialIdGen}
 
 import scala.collection.mutable.ArrayBuffer
@@ -197,6 +197,12 @@ class LogicalQueryBuilder(tokenResolver: TokenResolver) extends AstConstructionT
     this
   }
 
+  def orderedDistinct(orderToLeverage: Seq[Expression], projectionStrings: String*): LogicalQueryBuilder = {
+    val projections = ExpressionParser.parseProjections(projectionStrings: _*)
+    appendAtCurrentIndent(UnaryOperator(lp => OrderedDistinct(lp, projections, orderToLeverage)))
+    this
+  }
+
   def allNodeScan(node: String, args: String*): LogicalQueryBuilder = {
     semanticTable = semanticTable.addNode(varFor(node))
     appendAtCurrentIndent(LeafOperator(AllNodesScan(node, args.toSet)))
@@ -246,13 +252,13 @@ class LogicalQueryBuilder(tokenResolver: TokenResolver) extends AstConstructionT
   def argument(): LogicalQueryBuilder =
     appendAtCurrentIndent(LeafOperator(Argument()))
 
-  def input(nodes: Seq[String] = Seq.empty, variables: Seq[String] = Seq.empty): LogicalQueryBuilder = {
+  def input(nodes: Seq[String] = Seq.empty, variables: Seq[String] = Seq.empty, nullable: Boolean = true): LogicalQueryBuilder = {
     if (indent != 0)
       throw new IllegalStateException("The input operator has to be the left-most leaf of the plan")
     if (nodes.toSet.size < nodes.size || variables.toSet.size < variables.size)
       throw new IllegalArgumentException("Input must create unique variables")
     nodes.foreach(node => semanticTable = semanticTable.addNode(varFor(node)))
-    appendAtCurrentIndent(LeafOperator(Input(nodes.toArray, variables.toArray)))
+    appendAtCurrentIndent(LeafOperator(Input(nodes.toArray, variables.toArray, nullable)))
   }
 
   def filter(predicates: Seq[Expression]): LogicalQueryBuilder = {

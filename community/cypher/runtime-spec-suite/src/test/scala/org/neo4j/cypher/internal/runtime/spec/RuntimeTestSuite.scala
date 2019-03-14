@@ -140,14 +140,12 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
   def inputValues(rows: Array[Any]*): InputValues =
     new InputValues().and(rows: _*)
 
-  def inputSingleColumn(nBatches: Int, batchSize: Int, valueFunction: Int => Any): InputValues = {
+  //noinspection ScalaUnnecessaryParentheses
+  def inputColumns(nBatches: Int, batchSize: Int, valueFunctions: (Int => Any)*): InputValues = {
     val input = new InputValues()
     for (batch <- 0 until nBatches) {
-      val rows =
-        for (row <- 0 until batchSize)
-          yield Array(valueFunction(batch * batchSize + row))
+      val rows = for (row <- 0 until batchSize) yield valueFunctions.map(_(batch * batchSize + row)).toArray
       input.and(rows: _*)
-
     }
     input
   }

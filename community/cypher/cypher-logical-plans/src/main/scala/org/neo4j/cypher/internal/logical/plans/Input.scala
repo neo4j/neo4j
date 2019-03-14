@@ -21,11 +21,13 @@ package org.neo4j.cypher.internal.logical.plans
 
 import org.neo4j.cypher.internal.v4_0.util.attribution.IdGen
 
-/*
+/**
  * Produce rows from a query state input stream. Only one input operator can
  * exist per logical plan tree, and it has to be the left-most leaf.
+ *
+ * @param nullable if there can be null values among the nodes or variables
  */
-case class Input(nodes: Array[String], variables: Array[String])(implicit idGen: IdGen) extends LogicalLeafPlan(idGen) {
+case class Input(nodes: Array[String], variables: Array[String], nullable: Boolean)(implicit idGen: IdGen) extends LogicalLeafPlan(idGen) {
   val availableSymbols: Set[String] = nodes.toSet ++ variables.toSet
   override def argumentIds: Set[String] = Set.empty
 }
