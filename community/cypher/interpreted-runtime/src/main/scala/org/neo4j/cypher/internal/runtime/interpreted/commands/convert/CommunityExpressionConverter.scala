@@ -47,6 +47,7 @@ case class CommunityExpressionConverter(tokenContext: TokenContext) extends Expr
 
   override def toGroupingExpression(id: Id,
                                     groupings: Map[String, Expression],
+                                    orderToLeverage: Seq[Expression],
                                     self: ExpressionConverters): Option[GroupingExpression] = {
     throw new IllegalStateException("CommunityExpressionConverter cannot create grouping expressions")
   }

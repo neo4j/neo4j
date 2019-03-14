@@ -26,7 +26,7 @@ import org.neo4j.values.AnyValue
 /**
   * Abstraction for grouping expressions used for aggregation and distinct.
   */
-trait GroupingExpression{
+trait GroupingExpression {
   type KeyType <: AnyValue
 
   /**
@@ -42,6 +42,14 @@ trait GroupingExpression{
     * @return the grouping key
     */
   def computeGroupingKey(context: ExecutionContext, state: QueryState): KeyType
+
+  /**
+    * Compute the grouping key for all columns that have a defined order.
+    *
+    * @param groupingKey the whole grouping key, as obtained by [[computeGroupingKey()]]
+    * @return the grouping key
+    */
+  def computeOrderedGroupingKey(groupingKey: KeyType): AnyValue
 
   /**
     * Retrieves an already computed and projected key. Can be called after a call to project grouping key.

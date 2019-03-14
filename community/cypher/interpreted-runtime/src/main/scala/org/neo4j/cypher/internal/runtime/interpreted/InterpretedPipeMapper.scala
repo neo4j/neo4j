@@ -103,7 +103,7 @@ case class InterpretedPipeMapper(readOnly: Boolean,
         NodeIndexEndsWithScanPipe(ident, label, property, queryIndexes.registerQueryIndex(label, property),
                                   buildExpression(valueExpr), indexOrder)(id = id)
 
-      case Input(nodes, variables) =>
+      case Input(nodes, variables, _) =>
         InputPipe(nodes ++ variables)(id = id)
     }
   }
