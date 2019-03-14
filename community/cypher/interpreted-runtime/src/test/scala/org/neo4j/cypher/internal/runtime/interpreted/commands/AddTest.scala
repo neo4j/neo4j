@@ -23,12 +23,11 @@ import java.nio.charset.StandardCharsets
 
 import org.neo4j.cypher.internal.runtime.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
-import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{Add, Literal, ParameterExpression}
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{Add, Literal, ParameterFromSlot}
 import org.neo4j.cypher.internal.v4_0.util.CypherTypeException
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.values.storable.Values.{longValue, stringValue, utf8Value}
 import org.neo4j.values.storable.{UTF8StringValue, Values}
-import org.neo4j.values.virtual.VirtualValues
 
 class AddTest extends CypherFunSuite {
 
@@ -72,10 +71,10 @@ class AddTest extends CypherFunSuite {
     // Given
     val hello = "hello".getBytes(StandardCharsets.UTF_8)
     val world = "world".getBytes(StandardCharsets.UTF_8)
-    val state = QueryStateHelper.emptyWith(params = VirtualValues.map(Array("p1", "p2"), Array( utf8Value(hello), utf8Value(world))))
+    val state = QueryStateHelper.emptyWith(params = Array( utf8Value(hello), utf8Value(world)))
 
     // When
-    val result = Add(ParameterExpression("p1"), ParameterExpression("p2"))(m,state)
+    val result = Add(ParameterFromSlot(0, "p1"), ParameterFromSlot(1, "p2"))(m, state)
 
     // Then
     result shouldBe a[UTF8StringValue]

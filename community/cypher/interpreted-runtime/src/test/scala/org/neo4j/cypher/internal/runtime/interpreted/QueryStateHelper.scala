@@ -35,7 +35,6 @@ import org.neo4j.kernel.impl.util.BaseToObjectValueWriter
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.CoordinateReferenceSystem
-import org.neo4j.values.virtual.MapValue
 import org.neo4j.values.virtual.VirtualValues.EMPTY_MAP
 import org.scalatest.mock.MockitoSugar
 
@@ -45,7 +44,7 @@ object QueryStateHelper extends MockitoSugar {
   def emptyWith(db: GraphDatabaseQueryService = null,
                 query: QueryContext = null,
                 resources: ExternalCSVResource = null,
-                params: MapValue = EMPTY_MAP,
+                params: Array[AnyValue] = Array.empty,
                 expressionCursors: ExpressionCursors = new ExpressionCursors(mock[CursorFactory]),
                 queryIndexes: Array[IndexReadSession] = Array(mock[IndexReadSession]),
                 expressionVariables: Array[AnyValue] = Array.empty,
@@ -56,7 +55,7 @@ object QueryStateHelper extends MockitoSugar {
 
   def queryStateFrom(db: GraphDatabaseQueryService,
                      tx: InternalTransaction,
-                     params: MapValue = EMPTY_MAP
+                     params: Array[AnyValue] = Array.empty
                     ): QueryState = {
     val searchMonitor = new KernelMonitors().newMonitor(classOf[IndexSearchMonitor])
     val contextFactory = Neo4jTransactionalContextFactory.create(db)
@@ -68,7 +67,8 @@ object QueryStateHelper extends MockitoSugar {
               expressionCursors = new ExpressionCursors(transactionalContext.cursors))
   }
 
-  def withQueryState[T](db: GraphDatabaseQueryService, tx: InternalTransaction, params: MapValue = EMPTY_MAP, f: (QueryState) => T)  = {
+  def withQueryState[T](db: GraphDatabaseQueryService, tx: InternalTransaction, params: Array[AnyValue] = Array.empty,
+                        f: QueryState => T): T = {
     val queryState = queryStateFrom(db, tx, params)
     try {
       f(queryState)
@@ -78,7 +78,7 @@ object QueryStateHelper extends MockitoSugar {
 
   }
 
-  def countStats(q: QueryState) = q.withQueryContext(query = new UpdateCountingQueryContext(q.query))
+  def countStats(q: QueryState): QueryState = q.withQueryContext(query = new UpdateCountingQueryContext(q.query))
 
   def emptyWithValueSerialization: QueryState = emptyWith(query = context)
 

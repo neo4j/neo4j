@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted
 
+import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.runtime.interpreted.load_csv.LoadCsvPeriodicCommitObserver
 import org.neo4j.cypher.internal.runtime.interpreted.pipes._
 import org.neo4j.cypher.internal.runtime.{ExecutionContext, _}
-import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.result.{QueryProfile, RuntimeResult}
 import org.neo4j.kernel.impl.query.QuerySubscriber
 import org.neo4j.values.AnyValue
@@ -71,6 +71,7 @@ abstract class BaseExecutionResultBuilderFactory(pipe: Pipe,
 case class InterpretedExecutionResultBuilderFactory(pipe: Pipe,
                                                     queryIndexes: QueryIndexes,
                                                     nExpressionSlots: Int,
+                                                    parameterMapping: Map[String, Int],
                                                     readOnly: Boolean,
                                                     columns: Seq[String],
                                                     logicalPlan: LogicalPlan,
@@ -86,7 +87,7 @@ case class InterpretedExecutionResultBuilderFactory(pipe: Pipe,
 
       new QueryState(queryContext,
                      externalResource,
-                     params,
+                     createParameterArray(params, parameterMapping),
                      cursors,
                      queryIndexes.indexes.map(index => queryContext.transactionalContext.dataRead.indexReadSession(index)),
                      new Array[AnyValue](nExpressionSlots),

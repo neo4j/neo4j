@@ -29,7 +29,6 @@ import org.neo4j.cypher.internal.v4_0.expressions.Expression
 import org.neo4j.cypher.internal.v4_0.util.attribution.Id
 import org.neo4j.cypher.internal.v4_0.util.{CypherException => InternalCypherException}
 import org.neo4j.internal.kernel.api.IndexReadSession
-import org.neo4j.values.virtual.VirtualValues
 
 case object simpleExpressionEvaluator extends ExpressionEvaluator {
 
@@ -41,7 +40,7 @@ case object simpleExpressionEvaluator extends ExpressionEvaluator {
 
     val emptyQueryState = new QueryState(null,
                                          null,
-                                         VirtualValues.EMPTY_MAP,
+                                         Array.empty,
                                          null,
                                          Array.empty[IndexReadSession],
                                          new Array(nExpressionSlots))
