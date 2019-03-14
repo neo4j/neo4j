@@ -22,14 +22,10 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.{CostModel, QueryGraphSolverInput}
 import org.neo4j.cypher.internal.ir.LazyMode
-import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.logical.plans._
-import org.neo4j.cypher.internal.v4_0.expressions.HasLabels
-import org.neo4j.cypher.internal.v4_0.expressions.Property
-import org.neo4j.cypher.internal.v4_0.util.Cardinality
-import org.neo4j.cypher.internal.v4_0.util.Cost
-import org.neo4j.cypher.internal.v4_0.util.CostPerRow
-import org.neo4j.cypher.internal.v4_0.util.Multiplier
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
+import org.neo4j.cypher.internal.v4_0.expressions.{HasLabels, Property}
+import org.neo4j.cypher.internal.v4_0.util.{Cardinality, Cost, CostPerRow, Multiplier}
 
 case class CardinalityCostModel(config: CypherPlannerConfiguration) extends CostModel {
 
@@ -79,7 +75,7 @@ case class CardinalityCostModel(config: CypherPlannerConfiguration) extends Cost
     => 6.2
 
     case _: NodeHashJoin |
-         _: Aggregation |
+         _: AggregatingPlan |
          _: AbstractLetSemiApply |
          _: Limit |
          _: Optional |

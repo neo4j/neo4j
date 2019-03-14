@@ -21,9 +21,9 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.compiler.planner.{LogicalPlanningTestSupport2, ProcedureCallProjection}
 import org.neo4j.cypher.internal.ir._
+import org.neo4j.cypher.internal.logical.plans._
 import org.neo4j.cypher.internal.v4_0.ast.ProcedureResultItem
 import org.neo4j.cypher.internal.v4_0.expressions.{Namespace, ProcedureName}
-import org.neo4j.cypher.internal.logical.plans._
 import org.neo4j.cypher.internal.v4_0.util.symbols._
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 
@@ -134,7 +134,7 @@ class PlanEventHorizonTest extends CypherFunSuite with LogicalPlanningTestSuppor
       "notSortColumn" -> literalUnsignedInt(5))
     new given().withLogicalPlanningContext { (_, context) =>
       val interestingOrder = InterestingOrder.required(RequiredOrderCandidate.asc(varFor("m")))
-      val horizon = DistinctQueryProjection(groupingKeys = projectionsMap)
+      val horizon = DistinctQueryProjection(groupingExpressions = projectionsMap)
       val pq = RegularPlannerQuery(interestingOrder = interestingOrder, horizon = horizon)
       val inputPlan = fakeLogicalPlanFor(context.planningAttributes, "m", "n")
 

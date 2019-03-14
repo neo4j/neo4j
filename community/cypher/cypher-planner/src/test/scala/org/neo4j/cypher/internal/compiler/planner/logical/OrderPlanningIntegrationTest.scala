@@ -294,6 +294,47 @@ class OrderPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
     plan should equal(sort)
   }
 
+  test("should use ordered distinct if there is one grouping column, ordered") {
+    val plan = new given().getLogicalPlanFor("MATCH (a:A) WITH a ORDER BY a.foo RETURN DISTINCT a.foo")._2
+
+    val labelScan = NodeByLabelScan("a", labelName("A"), Set.empty)
+    val fooProperty = prop("a", "foo")
+
+    val projection = Projection(labelScan, Map("a.foo" -> fooProperty))
+    val sort = Sort(projection, Seq(Ascending("a.foo")))
+    val distinct = OrderedDistinct(sort, Map("a.foo" -> fooProperty), Seq(fooProperty))
+
+    plan should equal(distinct)
+  }
+
+  test("should use ordered distinct if there are two grouping columns, one ordered") {
+    val plan = new given().getLogicalPlanFor("MATCH (a:A) WITH a ORDER BY a.foo RETURN DISTINCT a.foo, a.bar")._2
+
+    val labelScan = NodeByLabelScan("a", labelName("A"), Set.empty)
+    val fooProperty = prop("a", "foo")
+    val barProperty = prop("a", "bar")
+
+    val projection = Projection(labelScan, Map("a.foo" -> fooProperty))
+    val sort = Sort(projection, Seq(Ascending("a.foo")))
+    val distinct = OrderedDistinct(sort, Map("a.foo" -> fooProperty, "a.bar" -> barProperty), Seq(fooProperty))
+
+    plan should equal(distinct)
+  }
+
+  test("should use ordered distinct if there are two grouping columns, both ordered") {
+    val plan = new given().getLogicalPlanFor("MATCH (a:A) WITH a ORDER BY a.foo, a.bar RETURN DISTINCT a.foo, a.bar")._2
+
+    val labelScan = NodeByLabelScan("a", labelName("A"), Set.empty)
+    val fooProperty = prop("a", "foo")
+    val barProperty = prop("a", "bar")
+
+    val projection = Projection(labelScan, Map("a.foo" -> fooProperty, "a.bar" -> barProperty))
+    val sort = Sort(projection, Seq(Ascending("a.foo"), Ascending("a.bar")))
+    val distinct = OrderedDistinct(sort, Map("a.foo" -> fooProperty, "a.bar" -> barProperty), Seq(fooProperty, barProperty))
+
+    plan should equal(distinct)
+  }
+
   private val idpGiven = new given {
     cardinality = mapCardinality {
       case RegularPlannerQuery(queryGraph, _, _, _) if queryGraph.patternNodes == Set("u") => 2.0

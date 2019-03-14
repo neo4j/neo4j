@@ -20,13 +20,13 @@
 package org.neo4j.cypher.internal.plandescription
 
 import org.neo4j.cypher.CypherVersion
+import org.neo4j.cypher.internal.logical.plans
+import org.neo4j.cypher.internal.logical.plans._
 import org.neo4j.cypher.internal.plandescription.Arguments._
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.{Cardinalities, ProvidedOrders}
 import org.neo4j.cypher.internal.v4_0.expressions.functions.Point
 import org.neo4j.cypher.internal.v4_0.expressions.{FunctionInvocation, FunctionName, LabelToken, MapExpression, Namespace, PropertyKeyToken, Expression => ASTExpression}
 import org.neo4j.cypher.internal.v4_0.frontend.PlannerName
-import org.neo4j.cypher.internal.logical.plans
-import org.neo4j.cypher.internal.logical.plans._
 import org.neo4j.cypher.internal.v4_0.util.InternalException
 
 object LogicalPlan2PlanDescription {
@@ -173,6 +173,9 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
 
       case Distinct(_, groupingExpressions) =>
         PlanDescriptionImpl(id, "Distinct", children, Seq(KeyNames(groupingExpressions.keySet.toIndexedSeq)), variables)
+
+      case OrderedDistinct(_, groupingExpressions, _) =>
+        PlanDescriptionImpl(id, "OrderedDistinct", children, Seq(KeyNames(groupingExpressions.keySet.toIndexedSeq)), variables)
 
       case Aggregation(_, groupingExpressions, _) =>
         PlanDescriptionImpl(id, "EagerAggregation", children, Seq(KeyNames(groupingExpressions.keySet.toIndexedSeq)),

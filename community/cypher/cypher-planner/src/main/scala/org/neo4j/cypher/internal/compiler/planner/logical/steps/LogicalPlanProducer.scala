@@ -25,11 +25,11 @@ import org.neo4j.cypher.internal.compiler.planner._
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.CardinalityModel
 import org.neo4j.cypher.internal.ir._
+import org.neo4j.cypher.internal.logical.plans
+import org.neo4j.cypher.internal.logical.plans.{Union, UnwindCollection, ValueHashJoin, DeleteExpression => DeleteExpressionPlan, Limit => LimitPlan, LoadCSV => LoadCSVPlan, Skip => SkipPlan, _}
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes
 import org.neo4j.cypher.internal.v4_0.ast._
 import org.neo4j.cypher.internal.v4_0.expressions._
-import org.neo4j.cypher.internal.logical.plans
-import org.neo4j.cypher.internal.logical.plans.{Union, UnwindCollection, ValueHashJoin, DeleteExpression => DeleteExpressionPlan, Limit => LimitPlan, LoadCSV => LoadCSVPlan, Skip => SkipPlan, _}
 import org.neo4j.cypher.internal.v4_0.util.AssertionRunner.Thunk
 import org.neo4j.cypher.internal.v4_0.util.Foldable.FoldableAny
 import org.neo4j.cypher.internal.v4_0.util.attribution.{Attributes, IdGen}
@@ -422,12 +422,6 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     planRegularProjectionHelper(inner, expressions, context, solved)
   }
 
-  private def planRegularProjectionHelper(inner: LogicalPlan, expressions: Map[String, Expression], context: LogicalPlanningContext, solved: PlannerQuery) = {
-    val columnsWithRenames = renameProvidedOrderColumns(providedOrders.get(inner.id).columns, expressions)
-    val providedOrder = ProvidedOrder(columnsWithRenames)
-    annotate(Projection(inner, expressions), solved, providedOrder, context)
-  }
-
   def planAggregation(left: LogicalPlan,
                       grouping: Map[String, Expression],
                       aggregation: Map[String, Expression],
@@ -438,21 +432,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
       AggregatingQueryProjection(groupingExpressions = reportedGrouping, aggregationExpressions = reportedAggregation)
     ))
 
-    // Trim provided order for each sort column, if it is a non-grouping column
-    val trimmed = providedOrders.get(left.id).columns.takeWhile {
-      case ProvidedOrder.Column(Property(Variable(varName), PropertyKeyName(propName))) =>
-        grouping.values.exists {
-          case CachedNodeProperty(`varName`, PropertyKeyName(`propName`)) => true
-          case Property(Variable(`varName`), PropertyKeyName(`propName`)) => true
-          case _ => false
-        }
-      case ProvidedOrder.Column(expression) =>
-        grouping.values.exists {
-          case `expression` => true
-          case _ => false
-        }
-    }
-    val trimmedAndRenamed = renameProvidedOrderColumns(trimmed, grouping)
+    val trimmedAndRenamed = trimAndRenameProvidedOrder(providedOrders.get(left.id), grouping)
 
     annotate(Aggregation(left, grouping, aggregation), solved, ProvidedOrder(trimmedAndRenamed), context)
   }
@@ -583,6 +563,17 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     val columnsWithRenames = renameProvidedOrderColumns(providedOrders.get(left.id).columns, expressions)
     val providedOrder =  ProvidedOrder(columnsWithRenames)
     annotate(Distinct(left, expressions), solved, providedOrder, context)
+  }
+
+  def planOrderedDistinct(left: LogicalPlan,
+                          expressions: Map[String, Expression],
+                          orderToLeverage: Seq[Expression],
+                          reported: Map[String, Expression],
+                          context: LogicalPlanningContext): LogicalPlan = {
+    val solved: PlannerQuery = solveds.get(left.id).updateTailOrSelf(_.updateQueryProjection(_ => DistinctQueryProjection(reported)))
+    val columnsWithRenames = renameProvidedOrderColumns(providedOrders.get(left.id).columns, expressions)
+    val providedOrder =  ProvidedOrder(columnsWithRenames)
+    annotate(OrderedDistinct(left, expressions, orderToLeverage), solved, providedOrder, context)
   }
 
   def updateSolvedForOr(orPlan: LogicalPlan, orPredicate: Ors, predicates: Set[Expression], context: LogicalPlanningContext): LogicalPlan = {
@@ -804,6 +795,12 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
       pattern.dir
   }
 
+  private def planRegularProjectionHelper(inner: LogicalPlan, expressions: Map[String, Expression], context: LogicalPlanningContext, solved: PlannerQuery) = {
+    val columnsWithRenames = renameProvidedOrderColumns(providedOrders.get(inner.id).columns, expressions)
+    val providedOrder = ProvidedOrder(columnsWithRenames)
+    annotate(Projection(inner, expressions), solved, providedOrder, context)
+  }
+
   /**
     * The provided order is used to describe the current ordering of the LogicalPlan within a complete plan tree. For
     * index leaf operators this can be planned as an IndexOrder for the index to provide. In that case it only works
@@ -833,5 +830,23 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
           case (newName, `expression`) => ProvidedOrder.Column(Variable(newName)(expression.position), columnOrder.isAscending)
         }.getOrElse(columnOrder)
     }
+  }
+
+  private def trimAndRenameProvidedOrder(providedOrder: ProvidedOrder, grouping: Map[String, Expression]): Seq[ProvidedOrder.Column] = {
+    // Trim provided order for each sort column, if it is a non-grouping column
+    val trimmed = providedOrder.columns.takeWhile {
+      case ProvidedOrder.Column(Property(Variable(varName), PropertyKeyName(propName))) =>
+        grouping.values.exists {
+          case CachedNodeProperty(`varName`, PropertyKeyName(`propName`)) => true
+          case Property(Variable(`varName`), PropertyKeyName(`propName`)) => true
+          case _ => false
+        }
+      case ProvidedOrder.Column(expression) =>
+        grouping.values.exists {
+          case `expression` => true
+          case _ => false
+        }
+    }
+    renameProvidedOrderColumns(trimmed, grouping)
   }
 }

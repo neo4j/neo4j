@@ -80,7 +80,7 @@ object ClauseConverters {
     if (aggregationsMap.nonEmpty)
       AggregatingQueryProjection(groupingExpressions = projectionMap, aggregationExpressions = aggregationsMap)
     else if (distinct)
-      DistinctQueryProjection(groupingKeys = projectionMap)
+      DistinctQueryProjection(groupingExpressions = projectionMap)
     else
       RegularQueryProjection(projections = projectionMap)
   }

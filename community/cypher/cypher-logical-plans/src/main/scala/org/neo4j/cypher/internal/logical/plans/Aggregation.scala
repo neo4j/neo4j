@@ -34,11 +34,11 @@ case class Aggregation(source: LogicalPlan,
                        groupingExpressions: Map[String, Expression],
                        aggregationExpression: Map[String, Expression])
                       (implicit idGen: IdGen)
-  extends LogicalPlan(idGen) with EagerLogicalPlan {
+  extends LogicalPlan(idGen) with EagerLogicalPlan with AggregatingPlan {
 
-  val lhs = Some(source)
+  val lhs: Option[LogicalPlan] = Some(source)
 
-  def rhs = None
+  val rhs: Option[LogicalPlan] = None
 
   val groupingKeys: Set[String] = groupingExpressions.keySet
 

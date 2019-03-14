@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.internal.ir
 
+import org.neo4j.cypher.internal.ir.helpers.ExpressionConverters._
 import org.neo4j.cypher.internal.v4_0.ast.AliasedReturnItem
 import org.neo4j.cypher.internal.v4_0.expressions.{Expression, StringLiteral, Variable}
 import org.neo4j.cypher.internal.v4_0.util.InternalException
-import org.neo4j.cypher.internal.ir.helpers.ExpressionConverters._
 
 trait QueryHorizon {
 
@@ -152,21 +152,21 @@ final case class AggregatingQueryProjection(groupingExpressions: Map[String, Exp
   override def withSelection(selections: Selections): QueryProjection = copy(selections = selections)
 }
 
-final case class DistinctQueryProjection(groupingKeys: Map[String, Expression] = Map.empty,
+final case class DistinctQueryProjection(groupingExpressions: Map[String, Expression] = Map.empty,
                                          queryPagination: QueryPagination = QueryPagination.empty,
                                          selections: Selections = Selections()) extends QueryProjection {
 
-  def projections: Map[String, Expression] = groupingKeys
+  def projections: Map[String, Expression] = groupingExpressions
 
-  def keySet: Set[String] = groupingKeys.keySet
+  def keySet: Set[String] = groupingExpressions.keySet
 
   override def withAddedProjections(groupingKeys: Map[String, Expression]): DistinctQueryProjection =
-    copy(groupingKeys = this.groupingKeys ++ groupingKeys)
+    copy(groupingExpressions = this.groupingExpressions ++ groupingKeys)
 
   override def withPagination(queryPagination: QueryPagination): DistinctQueryProjection =
     copy(queryPagination = queryPagination)
 
-  override def exposedSymbols(coveredIds: Set[String]): Set[String] = groupingKeys.keySet
+  override def exposedSymbols(coveredIds: Set[String]): Set[String] = groupingExpressions.keySet
 
   override def withSelection(selections: Selections): QueryProjection = copy(selections = selections)
 }

@@ -17,20 +17,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.logical.plans
+package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
+import org.neo4j.cypher.internal.ir.ProvidedOrder
 import org.neo4j.cypher.internal.v4_0.expressions.Expression
-import org.neo4j.cypher.internal.v4_0.util.attribution.IdGen
 
-/**
-  * Distinct produces source rows without changing them, but omitting rows
-  * which have been produced before. That is, the order of rows is unchanged, but each
-  * unique combination of values is only produced once.
-  */
-case class Distinct(source: LogicalPlan,
-                    groupingExpressions: Map[String, Expression])
-                   (implicit idGen: IdGen) extends LogicalPlan(idGen) with EagerLogicalPlan with ProjectingPlan with AggregatingPlan {
+object leverageOrder {
 
-  override val projectExpressions: Map[String, Expression] = groupingExpressions
-  override val availableSymbols: Set[String] = groupingExpressions.keySet
+  /**
+    * Given the order of a plan, and some grouping expressions, return the prefix
+    * of the provided order that is part of the grouping expressions.
+    */
+  def apply(inputProvidedOrder: ProvidedOrder, groupingExpressions: Map[String, Expression]): Seq[Expression] = {
+    val groupingValues = groupingExpressions.values.toSet
+    inputProvidedOrder.columns.map(_.expression).takeWhile { exp =>
+      groupingValues.contains(exp)
+    }
+  }
 }

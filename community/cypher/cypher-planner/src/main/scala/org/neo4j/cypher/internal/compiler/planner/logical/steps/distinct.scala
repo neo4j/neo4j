@@ -27,12 +27,25 @@ object distinct {
   def apply(plan: LogicalPlan, distinctQueryProjection: DistinctQueryProjection, interestingOrder: InterestingOrder, context: LogicalPlanningContext): LogicalPlan = {
 
     val expressionSolver = PatternExpressionSolver()
-    val (rewrittenPlan, groupingKeys) = expressionSolver(plan, distinctQueryProjection.groupingKeys, interestingOrder, context)
+    val (rewrittenPlan, groupingExpressions) = expressionSolver(plan, distinctQueryProjection.groupingExpressions, interestingOrder, context)
 
-    context.logicalPlanProducer.planDistinct(
-      rewrittenPlan,
-      groupingKeys,
-      distinctQueryProjection.groupingKeys,
-      context)
+
+    val inputProvidedOrder = context.planningAttributes.providedOrders(plan.id)
+    val orderToLeverage = leverageOrder(inputProvidedOrder, groupingExpressions)
+
+    if (orderToLeverage.isEmpty) {
+      context.logicalPlanProducer.planDistinct(
+        rewrittenPlan,
+        groupingExpressions,
+        distinctQueryProjection.groupingExpressions,
+        context)
+    } else {
+      context.logicalPlanProducer.planOrderedDistinct(
+        rewrittenPlan,
+        groupingExpressions,
+        orderToLeverage,
+        distinctQueryProjection.groupingExpressions,
+        context)
+    }
   }
 }

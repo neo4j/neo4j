@@ -19,16 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.ast.convert.plannerQuery
 
-import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
-import org.neo4j.cypher.internal.compiler.planner.ProcedureCallProjection
+import org.neo4j.cypher.internal.compiler.planner.{LogicalPlanningTestSupport, ProcedureCallProjection}
 import org.neo4j.cypher.internal.ir._
 import org.neo4j.cypher.internal.logical.plans.{FieldSignature, ProcedureReadOnlyAccess, ProcedureSignature, QualifiedName}
-
-import org.neo4j.cypher.internal.v4_0.ast.Hint
-import org.neo4j.cypher.internal.v4_0.ast.UsingIndexHint
-import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection.BOTH
-import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection.INCOMING
-import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection.OUTGOING
+import org.neo4j.cypher.internal.v4_0.ast.{Hint, UsingIndexHint}
+import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection.{BOTH, INCOMING, OUTGOING}
 import org.neo4j.cypher.internal.v4_0.expressions._
 import org.neo4j.cypher.internal.v4_0.util.helpers.StringHelper._
 import org.neo4j.cypher.internal.v4_0.util.symbols._
@@ -729,7 +724,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
   test("match (n) return distinct n") {
     val query = buildPlannerQuery("match (n) return distinct n")
     query.horizon should equal(DistinctQueryProjection(
-      groupingKeys = Map("n" -> varFor("n"))
+      groupingExpressions = Map("n" -> varFor("n"))
     ))
 
     query.queryGraph.patternNodes should equal(Set("n"))
@@ -738,7 +733,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
   test("match (n) with distinct n.prop as x return x") {
     val query = buildPlannerQuery("match (n) with distinct n.prop as x return x")
     query.horizon should equal(DistinctQueryProjection(
-      groupingKeys = Map("x" -> nProp)
+      groupingExpressions = Map("x" -> nProp)
     ))
 
     query.queryGraph.patternNodes should equal(Set("n"))
@@ -747,7 +742,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
   test("match (n) with distinct * return n") {
     val query = buildPlannerQuery("match (n) with distinct * return n")
     query.horizon should equal(DistinctQueryProjection(
-      groupingKeys = Map("n" -> varFor("n"))
+      groupingExpressions = Map("n" -> varFor("n"))
     ))
 
     query.queryGraph.patternNodes should equal(Set("n"))
@@ -757,7 +752,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     val query = buildPlannerQuery("WITH DISTINCT 1 as b RETURN b")
 
     query.horizon should equal(DistinctQueryProjection(
-      groupingKeys = Map("b" -> literalInt(1))
+      groupingExpressions = Map("b" -> literalInt(1))
     ))
 
     query.tail should not be empty

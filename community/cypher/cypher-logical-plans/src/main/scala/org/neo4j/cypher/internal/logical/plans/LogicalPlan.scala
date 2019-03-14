@@ -24,9 +24,9 @@ import java.lang.reflect.Method
 import org.neo4j.cypher.internal.ir.{PlannerQuery, Strictness}
 import org.neo4j.cypher.internal.v4_0.expressions._
 import org.neo4j.cypher.internal.v4_0.util.Foldable._
-import org.neo4j.cypher.internal.v4_0.util.{Foldable, InternalException, Rewritable}
 import org.neo4j.cypher.internal.v4_0.util.Rewritable._
 import org.neo4j.cypher.internal.v4_0.util.attribution.{Id, IdGen, SameId}
+import org.neo4j.cypher.internal.v4_0.util.{Foldable, InternalException, Rewritable}
 
 import scala.collection.mutable
 import scala.util.hashing.MurmurHash3
@@ -191,6 +191,9 @@ abstract class LogicalPlan(idGen: IdGen)
       }
   }
 }
+
+// Marker interface for all plans that aggregate inputs.
+trait AggregatingPlan extends LogicalPlan
 
 abstract class LogicalLeafPlan(idGen: IdGen) extends LogicalPlan(idGen) with LazyLogicalPlan {
   final val lhs = None
