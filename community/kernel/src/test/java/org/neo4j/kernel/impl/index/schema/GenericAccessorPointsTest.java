@@ -189,8 +189,13 @@ public class GenericAccessorPointsTest
         exactMatchOnAllValues( pointArrays );
     }
 
+    /**
+     * The test mustHandlePointArraysWithinSameTile was flaky on random numbers that placed points just
+     * within the tile upper bound, and allocated points to adjacent tiles due to rounding errors.
+     * This test uses a specific point that triggers that exact failure in a non-flaky way.
+     */
     @Test
-    public void exactTest()
+    public void shouldNotGetRoundingErrorsWithPointsJustWithinTheTileUpperBound()
     {
         PointValue origin = Values.pointValue( WGS84, 0.0, 0.0 );
         long derivedValueForCenterPoint = curve.derivedValueFor( origin.coordinate() );
