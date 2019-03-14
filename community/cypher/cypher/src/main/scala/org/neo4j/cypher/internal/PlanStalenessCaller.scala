@@ -43,7 +43,7 @@ class PlanStalenessCaller[EXECUTABLE_QUERY](clock: Clock,
                 cachedExecutableQuery: EXECUTABLE_QUERY): Staleness = {
     val reusability = reusabilityInfo(cachedExecutableQuery, transactionalContext)
     reusability match {
-      case MaybeReusable(ref) if ref.fingerprint.nonEmpty =>
+      case MaybeReusable(ref) =>
         val ktx = transactionalContext.kernelTransaction()
         staleness(ref, TransactionBoundGraphStatistics(ktx.dataRead, ktx.schemaRead))
 
@@ -53,7 +53,7 @@ class PlanStalenessCaller[EXECUTABLE_QUERY](clock: Clock,
   }
 
   def staleness(ref: PlanFingerprintReference, statistics: => GraphStatistics): Staleness = {
-    val f = ref.fingerprint.get
+    val f = ref.fingerprint
     lazy val currentTimeMillis = clock.millis()
     // TODO: remove this tx-id stuff.
     // Cannot understand why that would work? The last committed id cannot be this tx,
@@ -63,11 +63,11 @@ class PlanStalenessCaller[EXECUTABLE_QUERY](clock: Clock,
     val stale = divergence.shouldCheck(currentTimeMillis, f.lastCheckTimeMillis) &&
       check(currentTxId != f.txId,
             () => {
-              ref.fingerprint = Some(f.copy(lastCheckTimeMillis = currentTimeMillis))
+              ref.fingerprint = f.copy(lastCheckTimeMillis = currentTimeMillis)
             }) &&
       check(f.snapshot.diverges(f.snapshot.recompute(statistics), divergence.decay(currentTimeMillis - f.creationTimeMillis)),
             () => {
-              ref.fingerprint = Some(f.copy(lastCheckTimeMillis = currentTimeMillis, txId = currentTxId))
+              ref.fingerprint = f.copy(lastCheckTimeMillis = currentTimeMillis, txId = currentTxId)
             })
 
     if(stale) {

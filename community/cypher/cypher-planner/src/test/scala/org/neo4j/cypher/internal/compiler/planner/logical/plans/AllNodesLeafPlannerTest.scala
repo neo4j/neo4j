@@ -29,13 +29,11 @@ import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 
 class AllNodesLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
-  private implicit val subQueryLookupTable = Map.empty[PatternExpression, QueryGraph]
-
   test("simple all nodes scan") {
     // given
     val queryGraph = QueryGraph(patternNodes = Set("n"))
 
-    implicit val planContext = newMockedPlanContext
+    val planContext = newMockedPlanContext()
     val context = newMockedLogicalPlanningContext(planContext = planContext, metrics = newMockedMetricsFactory.newMetrics(hardcodedStatistics, mock[ExpressionEvaluator], config))
 
     // when

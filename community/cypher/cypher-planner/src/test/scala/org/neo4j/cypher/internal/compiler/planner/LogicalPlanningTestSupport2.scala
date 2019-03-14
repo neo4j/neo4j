@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.planner
 import org.neo4j.csv.reader.Configuration
 import org.neo4j.cypher.internal.compiler.{CypherPlannerConfiguration, NotImplementedPlanContext, StatsDivergenceCalculator, SyntaxExceptionCreator}
 import org.neo4j.cypher.internal.compiler.phases._
-import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.{QueryGraphCardinalityModel, QueryGraphSolverInput}
+import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.{CardinalityModel, QueryGraphCardinalityModel, QueryGraphSolverInput}
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.QueryGraphCardinalityModel
 import org.neo4j.cypher.internal.compiler.planner.logical.idp._
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.unnestApply
@@ -42,7 +42,7 @@ import org.neo4j.cypher.internal.v4_0.ast.semantics.{SemanticFeature, SemanticTa
 import org.neo4j.cypher.internal.v4_0.expressions.PatternExpression
 import org.neo4j.cypher.internal.v4_0.frontend.phases._
 import org.neo4j.cypher.internal.v4_0.parser.CypherParser
-import org.neo4j.cypher.internal.v4_0.rewriting.{Deprecations, RewriterStepSequencer}
+import org.neo4j.cypher.internal.v4_0.rewriting.{Deprecations, RewriterStepSequencer, ValidatingRewriterStepSequencer}
 import org.neo4j.cypher.internal.v4_0.rewriting.RewriterStepSequencer.newPlain
 import org.neo4j.cypher.internal.v4_0.rewriting.rewriters._
 import org.neo4j.cypher.internal.v4_0.util.attribution.Attribute
@@ -50,8 +50,7 @@ import org.neo4j.cypher.internal.v4_0.util.attribution.Attributes
 import org.neo4j.cypher.internal.v4_0.util.helpers.fixedPoint
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherTestSupport
-import org.neo4j.cypher.internal.v4_0.util.Cardinality
-import org.neo4j.cypher.internal.v4_0.util.PropertyKeyId
+import org.neo4j.cypher.internal.v4_0.util.{Cardinality, Cost, PropertyKeyId}
 import org.scalatest.matchers.BeMatcher
 import org.scalatest.matchers.MatchResult
 
@@ -62,10 +61,10 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
   self: CypherFunSuite =>
 
   var parser = new CypherParser
-  val rewriterSequencer = RewriterStepSequencer.newValidating _
+  val rewriterSequencer: String => ValidatingRewriterStepSequencer = RewriterStepSequencer.newValidating
   val innerVariableNamer = new GeneratingNamer
   var astRewriter = new ASTRewriter(rewriterSequencer, literalExtraction = Never, getDegreeRewriting = true, innerVariableNamer = innerVariableNamer)
-  final var planner = new QueryPlanner()
+  final var planner = QueryPlanner()
   var queryGraphSolver: QueryGraphSolver = new IDPQueryGraphSolver(SingleComponentPlanner(mock[IDPQueryGraphSolverMonitor]), cartesianProductsOrValueJoins, mock[IDPQueryGraphSolverMonitor])
   val cypherCompilerConfig = CypherPlannerConfiguration(
     queryCacheSize = 100,
@@ -80,26 +79,27 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
     nonIndexedLabelWarningThreshold = 10000,
     planWithMinimumCardinalityEstimates = true
   )
-  val realConfig = new RealLogicalPlanningConfiguration(cypherCompilerConfig)
+  val realConfig = RealLogicalPlanningConfiguration(cypherCompilerConfig)
 
   implicit class LogicalPlanningEnvironment[C <: LogicalPlanningConfiguration](config: C) {
-    lazy val semanticTable = config.updateSemanticTableWithTokens(SemanticTable())
+    lazy val semanticTable: SemanticTable = config.updateSemanticTableWithTokens(SemanticTable())
 
-    def metricsFactory = new MetricsFactory {
-      def newCostModel(ignore: CypherPlannerConfiguration) =
+    def metricsFactory: MetricsFactory = new MetricsFactory {
+      def newCostModel(ignore: CypherPlannerConfiguration): (LogicalPlan, QueryGraphSolverInput, Cardinalities) => Cost =
         (plan: LogicalPlan, input: QueryGraphSolverInput, cardinalities: Cardinalities) => config.costModel()((plan, input, cardinalities))
 
-      def newCardinalityEstimator(queryGraphCardinalityModel: QueryGraphCardinalityModel, evaluator: ExpressionEvaluator) =
+      def newCardinalityEstimator(queryGraphCardinalityModel: QueryGraphCardinalityModel, evaluator: ExpressionEvaluator): CardinalityModel =
         config.cardinalityModel(queryGraphCardinalityModel, mock[ExpressionEvaluator])
 
-      def newQueryGraphCardinalityModel(statistics: GraphStatistics) = QueryGraphCardinalityModel.default(statistics)
+      def newQueryGraphCardinalityModel(statistics: GraphStatistics): QueryGraphCardinalityModel = QueryGraphCardinalityModel.default(statistics)
     }
 
     def table = Map.empty[PatternExpression, QueryGraph]
 
-    def planContext = new NotImplementedPlanContext {
-      override def statistics: GraphStatistics =
-        config.graphStatistics
+    def planContext: NotImplementedPlanContext = new NotImplementedPlanContext {
+      override def statistics: InstrumentedGraphStatistics = InstrumentedGraphStatistics(
+        config.graphStatistics,
+        new MutableGraphStatisticsSnapshot())
 
       override def indexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] = {
         val label = config.labelsById(labelId)
@@ -198,7 +198,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
       (output.periodicCommit, logicalPlan, output.semanticTable(), output.planningAttributes.solveds, output.planningAttributes.cardinalities)
     }
 
-    def estimate(qg: QueryGraph, input: QueryGraphSolverInput = QueryGraphSolverInput.empty) =
+    def estimate(qg: QueryGraph, input: QueryGraphSolverInput = QueryGraphSolverInput.empty): Cardinality =
       metricsFactory.
         newMetrics(config.graphStatistics, mock[ExpressionEvaluator], cypherCompilerConfig).
         queryGraphCardinalityModel(qg, input, semanticTable)

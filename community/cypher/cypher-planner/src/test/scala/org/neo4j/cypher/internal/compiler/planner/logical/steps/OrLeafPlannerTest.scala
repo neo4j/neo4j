@@ -31,7 +31,7 @@ import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 class OrLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
   test("two predicates on the same variable can be used") {
-    val context = newMockedLogicalPlanningContext(newMockedPlanContext)
+    val context = newMockedLogicalPlanningContext(newMockedPlanContext())
 
     val inner1 = mock[LeafPlanFromExpressions]
     val p1 = newMockedLogicalPlan(context.planningAttributes, "x")
@@ -50,7 +50,7 @@ class OrLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
   }
 
   test("two predicates on different variables are not used") {
-    val context = newMockedLogicalPlanningContext(newMockedPlanContext)
+    val context = newMockedLogicalPlanningContext(newMockedPlanContext())
 
     val inner = mock[LeafPlanFromExpressions]
     val p1 = newMockedLogicalPlan(context.planningAttributes, "x")
@@ -67,7 +67,7 @@ class OrLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
   }
 
   test("two predicates, where one cannot be leaf-plan-solved, is not used") {
-    val context = newMockedLogicalPlanningContext(newMockedPlanContext)
+    val context = newMockedLogicalPlanningContext(newMockedPlanContext())
 
     val inner = mock[LeafPlanFromExpressions]
     val p1 = newMockedLogicalPlan(context.planningAttributes, "x")
@@ -83,7 +83,7 @@ class OrLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
   }
 
   test("two predicates that produce two plans each") {
-    val context = newMockedLogicalPlanningContext(newMockedPlanContext)
+    val context = newMockedLogicalPlanningContext(newMockedPlanContext())
 
     val inner1 = mock[LeafPlanFromExpressions]
     val inner2 = mock[LeafPlanFromExpressions]
@@ -111,7 +111,7 @@ class OrLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
   }
 
   test("two predicates that produce two plans each mk 2") {
-    val context = newMockedLogicalPlanningContext(newMockedPlanContext)
+    val context = newMockedLogicalPlanningContext(newMockedPlanContext())
 
     val inner1 = mock[LeafPlanFromExpressions]
     val inner2 = mock[LeafPlanFromExpressions]

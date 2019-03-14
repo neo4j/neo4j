@@ -148,7 +148,7 @@ class PatternExpressionSolverTest extends CypherFunSuite with LogicalPlanningTes
 
 
   private def logicalPlanningContext(strategy: QueryGraphSolver): LogicalPlanningContext =
-    newMockedLogicalPlanningContext(newMockedPlanContext, semanticTable = new SemanticTable(), strategy = strategy)
+    newMockedLogicalPlanningContext(newMockedPlanContext(), semanticTable = new SemanticTable(), strategy = strategy)
 
   private def createPatternExpressionBuilder(pathSteps: Map[PatternExpression, PathStep]) =
     PatternExpressionSolver(pathSteps.map {

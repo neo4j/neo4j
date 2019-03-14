@@ -62,7 +62,7 @@ class LeftOuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSuppo
     val innerPlan = newMockedLogicalPlan("b")
 
     val context = newMockedLogicalPlanningContext(
-      planContext = newMockedPlanContext,
+      planContext = newMockedPlanContext(),
       metrics = factory.newMetrics(hardcodedStatistics, mock[ExpressionEvaluator], config),
       strategy = newMockedStrategy(innerPlan))
     val left = newMockedLogicalPlanWithPatterns(context.planningAttributes, idNames = Set(aNode))
@@ -90,7 +90,7 @@ class LeftOuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSuppo
     val innerPlan = newMockedLogicalPlan("b")
 
     val context = newMockedLogicalPlanningContext(
-      planContext = newMockedPlanContext,
+      planContext = newMockedPlanContext(),
       metrics = factory.newMetrics(hardcodedStatistics, mock[ExpressionEvaluator], config),
       strategy = newMockedStrategy(innerPlan))
     val left = newMockedLogicalPlanWithPatterns(context.planningAttributes, Set(aNode))

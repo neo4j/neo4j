@@ -107,7 +107,7 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport{
                              projectionsMap: Map[String, Expression],
                              availablePropertiesFromIndexes: Map[Property, String] = Map.empty):
   (LogicalPlanningContext, LogicalPlan) = {
-    val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext, semanticTable = new SemanticTable(types = mock[ASTAnnotationMap[Expression, ExpressionTypeInfo]]))
+    val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext(), semanticTable = new SemanticTable(types = mock[ASTAnnotationMap[Expression, ExpressionTypeInfo]]))
 
     val ids = projectionsMap.keySet
 

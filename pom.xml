@@ -1331,6 +1331,12 @@
                 <scope>test</scope>
             </dependency>
             <dependency>
+                <groupId>org.json4s</groupId>
+                <artifactId>json4s-native_2.12</artifactId>
+                <version>3.6.1</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
                 <groupId>com.github.salat</groupId>
                 <artifactId>salat-core_${scala.binary.version}</artifactId>
                 <version>1.11.2</version>

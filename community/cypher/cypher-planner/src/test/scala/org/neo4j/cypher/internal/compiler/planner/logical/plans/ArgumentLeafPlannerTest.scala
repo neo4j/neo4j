@@ -28,10 +28,8 @@ import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 
 class ArgumentLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
-  private implicit val subQueryLookupTable = Map.empty[PatternExpression, QueryGraph]
-
   test("should return an empty candidate list argument ids is empty") {
-    val context = newMockedLogicalPlanningContext(newMockedPlanContext)
+    val context = newMockedLogicalPlanningContext(newMockedPlanContext())
 
     val qg = QueryGraph(
       argumentIds = Set(),
@@ -42,7 +40,7 @@ class ArgumentLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSup
   }
 
   test("should return an empty candidate list pattern nodes is empty") {
-    val context = newMockedLogicalPlanningContext(newMockedPlanContext)
+    val context = newMockedLogicalPlanningContext(newMockedPlanContext())
 
     val qg = QueryGraph(
       argumentIds = Set("a", "b"),
@@ -53,7 +51,7 @@ class ArgumentLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSup
   }
 
   test("should return a plan containing all the id in argument ids and in pattern nodes") {
-    val context = newMockedLogicalPlanningContext(newMockedPlanContext)
+    val context = newMockedLogicalPlanningContext(newMockedPlanContext())
 
     val qg = QueryGraph(
       argumentIds = Set("a", "b", "c"),

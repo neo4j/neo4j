@@ -29,6 +29,7 @@ import java.util.function.IntFunction;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.neo4j.common.EntityType;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.Kernel;
@@ -178,16 +179,26 @@ final class GraphCountsSection
         while ( iterator.hasNext() )
         {
             ConstraintDescriptor constraint = iterator.next();
-
+            EntityType entityType = constraint.schema().entityType();
             Map<String,Object> data = new HashMap<>();
 
-            int labelId = constraint.schema().getEntityTokenIds()[0];
-            data.put( "label", anonymizer.label( tokenLookup.labelGetName( labelId ), labelId ) );
             data.put( "properties", map( constraint.schema().getPropertyIds(),
-                                         id -> anonymizer.propertyKey( tokenLookup.propertyKeyGetName( id ), id ) ) );
+                    id -> anonymizer.propertyKey( tokenLookup.propertyKeyGetName( id ), id ) ) );
             data.put( "type", constraintType( constraint ) );
+            int entityTokenId = constraint.schema().getEntityTokenIds()[0];
 
-            constraints.add( data );
+            switch ( entityType )
+            {
+            case NODE:
+                data.put( "label", anonymizer.label( tokenLookup.labelGetName( entityTokenId ), entityTokenId ) );
+                constraints.add( data );
+                break;
+            case RELATIONSHIP:
+                data.put( "relationshipType", anonymizer.relationshipType( tokenLookup.relationshipTypeGetName( entityTokenId ), entityTokenId ) );
+                constraints.add( data );
+                break;
+            default:
+            }
         }
 
         return constraints;

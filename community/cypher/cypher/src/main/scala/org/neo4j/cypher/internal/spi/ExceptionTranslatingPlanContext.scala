@@ -20,9 +20,9 @@
 package org.neo4j.cypher.internal.spi
 
 import org.neo4j.cypher.internal.compatibility.v4_0.ExceptionTranslationSupport
-import org.neo4j.cypher.internal.planner.spi.{GraphStatistics, IndexDescriptor, PlanContext}
-import org.neo4j.cypher.internal.v4_0.frontend.phases.InternalNotificationLogger
 import org.neo4j.cypher.internal.logical.plans.{ProcedureSignature, QualifiedName, UserFunctionSignature}
+import org.neo4j.cypher.internal.planner.spi.{IndexDescriptor, InstrumentedGraphStatistics, PlanContext}
+import org.neo4j.cypher.internal.v4_0.frontend.phases.InternalNotificationLogger
 
 class ExceptionTranslatingPlanContext(inner: PlanContext) extends PlanContext with ExceptionTranslationSupport {
 
@@ -38,7 +38,7 @@ class ExceptionTranslatingPlanContext(inner: PlanContext) extends PlanContext wi
   override def uniqueIndexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] =
     translateException(inner.uniqueIndexesGetForLabel(labelId))
 
-  override def statistics: GraphStatistics =
+  override def statistics: InstrumentedGraphStatistics =
     translateException(inner.statistics)
 
   override def txIdProvider: () => Long = {

@@ -37,7 +37,7 @@ class patternExpressionRewriterTest extends CypherFunSuite with LogicalPlanningT
     // given
     val expr = and(patExpr1, patExpr2)
     val strategy = createStrategy
-    val context = newMockedLogicalPlanningContext(newMockedPlanContext, strategy = strategy)
+    val context = newMockedLogicalPlanningContext(newMockedPlanContext(), strategy = strategy)
     val rewriter = patternExpressionRewriter(Set.empty, InterestingOrder.empty, context)
 
     // when
@@ -53,7 +53,7 @@ class patternExpressionRewriterTest extends CypherFunSuite with LogicalPlanningT
     // given
     val expr = or(and(patExpr1, NestedPlanExpression(dummyPlan, patExpr2)_), patExpr3)
     val strategy = createStrategy
-    val context = newMockedLogicalPlanningContext(newMockedPlanContext, strategy = strategy)
+    val context = newMockedLogicalPlanningContext(newMockedPlanContext(), strategy = strategy)
     val rewriter = patternExpressionRewriter(Set.empty, InterestingOrder.empty, context)
 
     // when
@@ -70,7 +70,7 @@ class patternExpressionRewriterTest extends CypherFunSuite with LogicalPlanningT
     val plan = Selection(Seq(patExpr3), dummyPlan)
     val expr = or(and(patExpr1, NestedPlanExpression(plan, patExpr2)_), patExpr4)
     val strategy = createStrategy
-    val context = newMockedLogicalPlanningContext(newMockedPlanContext, strategy = strategy)
+    val context = newMockedLogicalPlanningContext(newMockedPlanContext(), strategy = strategy)
     val rewriter = patternExpressionRewriter(Set.empty, InterestingOrder.empty, context)
 
     // when

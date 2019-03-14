@@ -34,9 +34,7 @@ import org.neo4j.cypher.internal.v4_0.util.{Cost, LabelId}
 
 class LabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
-  val statistics: HardcodedGraphStatistics.type = hardcodedStatistics
-
-  private implicit val subQueryLookupTable: Map[PatternExpression, QueryGraph] = Map.empty
+  private val statistics = hardcodedStatistics
 
   test("simple label scan without compile-time label id") {
     // given
@@ -53,7 +51,7 @@ class LabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
 
     val semanticTable = new SemanticTable()
 
-    val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext, metrics = factory.newMetrics(statistics, mock[ExpressionEvaluator], config), semanticTable = semanticTable)
+    val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext(), metrics = factory.newMetrics(statistics, mock[ExpressionEvaluator], config), semanticTable = semanticTable)
 
     // when
     val resultPlans = labelScanLeafPlanner(qg, InterestingOrder.empty, context)
@@ -78,10 +76,10 @@ class LabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
       case _                  => Cost(Double.MaxValue)
     })
 
-    implicit val semanticTable: SemanticTable = newMockedSemanticTable
+    val semanticTable: SemanticTable = newMockedSemanticTable
     when(semanticTable.id(labelName("Awesome"))).thenReturn(Some(labelId))
 
-    val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext, metrics = factory.newMetrics(statistics, mock[ExpressionEvaluator], config), semanticTable = semanticTable)
+    val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext(), metrics = factory.newMetrics(statistics, mock[ExpressionEvaluator], config), semanticTable = semanticTable)
 
     // when
     val resultPlans = labelScanLeafPlanner(qg, InterestingOrder.empty, context)

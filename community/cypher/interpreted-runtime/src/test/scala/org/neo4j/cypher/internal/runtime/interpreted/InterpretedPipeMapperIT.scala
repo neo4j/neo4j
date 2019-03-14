@@ -39,7 +39,7 @@ import scala.collection.mutable
 
 class InterpretedPipeMapperIT extends CypherFunSuite with LogicalPlanningTestSupport {
 
-  val planContext: PlanContext = newMockedPlanContext
+  val planContext: PlanContext = newMockedPlanContext()
   val semanticTable = new SemanticTable(resolvedRelTypeNames =
     mutable.Map("existing1" -> RelTypeId(1),
       "existing2" -> RelTypeId(2),

@@ -24,21 +24,21 @@ import org.mockito.Mockito._
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
 import org.neo4j.csv.reader.Configuration
-import org.neo4j.cypher.internal.compiler.{CypherPlannerConfiguration, StatsDivergenceCalculator, SyntaxExceptionCreator, TestSignatureResolvingPlanContext}
 import org.neo4j.cypher.internal.compiler.phases.{CreatePlannerQuery, LogicalPlanState, PlannerContext, RewriteProcedureCalls}
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.{QueryGraphCardinalityModel, QueryGraphSolverInput}
 import org.neo4j.cypher.internal.compiler.planner.logical._
 import org.neo4j.cypher.internal.compiler.planner.logical.idp._
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.{LogicalPlanProducer, devNullListener}
 import org.neo4j.cypher.internal.compiler.test_helpers.ContextHelper
+import org.neo4j.cypher.internal.compiler.{CypherPlannerConfiguration, StatsDivergenceCalculator, SyntaxExceptionCreator, TestSignatureResolvingPlanContext}
 import org.neo4j.cypher.internal.ir._
+import org.neo4j.cypher.internal.logical.plans._
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.{Cardinalities, ProvidedOrders, Solveds}
-import org.neo4j.cypher.internal.planner.spi.{CostBasedPlannerName, GraphStatistics, PlanContext, PlanningAttributes}
+import org.neo4j.cypher.internal.planner.spi.{CostBasedPlannerName, GraphStatistics, InstrumentedGraphStatistics, PlanContext, PlanningAttributes}
 import org.neo4j.cypher.internal.v4_0.ast._
 import org.neo4j.cypher.internal.v4_0.ast.semantics.{SemanticFeature, SemanticTable}
 import org.neo4j.cypher.internal.v4_0.expressions._
 import org.neo4j.cypher.internal.v4_0.frontend.phases._
-import org.neo4j.cypher.internal.logical.plans._
 import org.neo4j.cypher.internal.v4_0.parser.CypherParser
 import org.neo4j.cypher.internal.v4_0.rewriting.RewriterStepSequencer.newPlain
 import org.neo4j.cypher.internal.v4_0.rewriting.rewriters._
@@ -163,10 +163,10 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
       innerVariableNamer = innerVariableNamer)
   }
 
-  def newMockedStatistics = mock[GraphStatistics]
-  def hardcodedStatistics = HardcodedGraphStatistics
+  def newMockedStatistics: InstrumentedGraphStatistics = mock[InstrumentedGraphStatistics]
+  def hardcodedStatistics: GraphStatistics = HardcodedGraphStatistics
 
-  def newMockedPlanContext(implicit statistics: GraphStatistics = newMockedStatistics) = {
+  def newMockedPlanContext(statistics: InstrumentedGraphStatistics = newMockedStatistics): PlanContext = {
     val context = mock[PlanContext]
     doReturn(statistics, Nil: _*).when(context).statistics
     context

@@ -48,7 +48,7 @@ object TransactionBoundPlanContext {
       new MutableGraphStatisticsSnapshot()))
 }
 
-class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: InternalNotificationLogger, graphStatistics: GraphStatistics)
+class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: InternalNotificationLogger, graphStatistics: InstrumentedGraphStatistics)
   extends TransactionBoundTokenContext(tc.kernelTransaction) with PlanContext with IndexDescriptorCompatibility {
 
   override def indexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] = {
@@ -170,7 +170,7 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
     }
   }
 
-  override val statistics: GraphStatistics = graphStatistics
+  override val statistics: InstrumentedGraphStatistics = graphStatistics
 
   override val txIdProvider = LastCommittedTxIdProvider(tc.graph)
 

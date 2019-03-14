@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 
 class AddAggregatedPropertiesToContextTest extends CypherFunSuite with LogicalPlanningTestSupport {
-  val context: LogicalPlanningContext = newMockedLogicalPlanningContext(newMockedPlanContext)
+  val context: LogicalPlanningContext = newMockedLogicalPlanningContext(newMockedPlanContext())
   val planSingeQuery: PlanSingleQuery = new PlanSingleQuery
 
   test("should return input context if no aggregation in horizion") {

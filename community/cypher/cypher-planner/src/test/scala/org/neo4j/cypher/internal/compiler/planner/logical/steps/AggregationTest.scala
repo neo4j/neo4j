@@ -35,7 +35,7 @@ class AggregationTest extends CypherFunSuite with LogicalPlanningTestSupport {
     )
 
     val context = newMockedLogicalPlanningContextWithFakeAttributes(
-      planContext = newMockedPlanContext
+      planContext = newMockedPlanContext()
     )
     val startPlan = newMockedLogicalPlan()
 
@@ -55,7 +55,7 @@ class AggregationTest extends CypherFunSuite with LogicalPlanningTestSupport {
     )
 
     val context = newMockedLogicalPlanningContextWithFakeAttributes(
-      planContext = newMockedPlanContext
+      planContext = newMockedPlanContext()
     )
 
     val startPlan = newMockedLogicalPlan()
@@ -77,7 +77,7 @@ class AggregationTest extends CypherFunSuite with LogicalPlanningTestSupport {
     )
 
     val context = newMockedLogicalPlanningContextWithFakeAttributes(
-      planContext = newMockedPlanContext
+      planContext = newMockedPlanContext()
     )
 
     val startPlan = newMockedLogicalPlan()

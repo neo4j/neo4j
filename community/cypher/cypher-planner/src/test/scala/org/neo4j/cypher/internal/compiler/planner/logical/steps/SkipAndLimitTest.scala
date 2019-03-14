@@ -93,7 +93,7 @@ class SkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSupport {
                              projection: QueryProjection = regularProjection(),
                              interestingOrder: InterestingOrder = InterestingOrder.empty):
   (RegularPlannerQuery, LogicalPlanningContext, LogicalPlan) = {
-    val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext)
+    val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext())
 
     val qg = QueryGraph(patternNodes = patternNodesInQG)
     val query = RegularPlannerQuery(queryGraph = qg, horizon = projection, interestingOrder = interestingOrder)

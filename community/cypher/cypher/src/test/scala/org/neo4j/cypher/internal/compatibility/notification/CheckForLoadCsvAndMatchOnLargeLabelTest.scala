@@ -26,7 +26,7 @@ import org.mockito.stubbing.Answer
 import org.neo4j.cypher.internal.compiler.LargeLabelWithLoadCsvNotification
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.ir.HasHeaders
-import org.neo4j.cypher.internal.planner.spi.{GraphStatistics, PlanContext}
+import org.neo4j.cypher.internal.planner.spi.{GraphStatistics, InstrumentedGraphStatistics, PlanContext}
 import org.neo4j.cypher.internal.runtime.interpreted.CSVResources
 import org.neo4j.cypher.internal.logical.plans.{Argument, CartesianProduct, LoadCSV, NodeByLabelScan}
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
@@ -49,7 +49,7 @@ class CheckForLoadCsvAndMatchOnLargeLabelTest
       indexFor.get(label)
     }
   })
-  private val statistics = mock[GraphStatistics]
+  private val statistics = mock[InstrumentedGraphStatistics]
   when(statistics.nodesWithLabelCardinality(Some(LabelId(1)))).thenReturn(Cardinality(101))
   when(statistics.nodesWithLabelCardinality(Some(LabelId(2)))).thenReturn(Cardinality(99))
   when(planContext.statistics).thenReturn(statistics)

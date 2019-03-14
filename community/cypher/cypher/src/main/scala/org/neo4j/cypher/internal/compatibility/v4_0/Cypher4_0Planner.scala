@@ -37,6 +37,7 @@ import org.neo4j.cypher.internal.v4_0.expressions.Parameter
 import org.neo4j.cypher.internal.v4_0.frontend.PlannerName
 import org.neo4j.cypher.internal.v4_0.frontend.phases._
 import org.neo4j.cypher.internal.logical.plans.{LoadCSV, LogicalPlan}
+import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.v4_0.rewriting.rewriters.{GeneratingNamer, InnerVariableNamer}
 import org.neo4j.cypher.internal.v4_0.util.InputPosition
 import org.neo4j.cypher.internal.v4_0.util.attribution.SequentialIdGen
@@ -46,6 +47,14 @@ import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.logging.Log
 import org.neo4j.values.AnyValue
 import org.neo4j.values.virtual.MapValue
+
+object Cypher4_0Planner {
+  /**
+    * This back-door is intended for quick handling of bugs and support cases
+    * where we need to inject some specific indexes and statistics.
+    */
+  var customPlanContextCreator: Option[(TransactionalContextWrapper, InternalNotificationLogger) => PlanContext] = None
+}
 
 case class Cypher4_0Planner(config: CypherPlannerConfiguration,
                             clock: Clock,
@@ -72,8 +81,11 @@ case class Cypher4_0Planner(config: CypherPlannerConfiguration,
 
       val transactionalContextWrapper = TransactionalContextWrapper(transactionalContext)
       // Context used for db communication during planning
-      val planContext = new ExceptionTranslatingPlanContext(TransactionBoundPlanContext(
-        transactionalContextWrapper, notificationLogger))
+      val createPlanContext = Cypher4_0Planner.customPlanContextCreator.getOrElse(TransactionBoundPlanContext.apply _)
+      val planContext =
+        new ExceptionTranslatingPlanContext(
+          createPlanContext(transactionalContextWrapper, notificationLogger)
+        )
 
       // Context used to create logical plans
       val logicalPlanIdGen = new SequentialIdGen()
