@@ -22,10 +22,8 @@ package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps
 import org.neo4j.cypher.internal.compiler.v3_5.planner._
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.PlanMatchHelp
 import org.neo4j.cypher.internal.ir.v3_5.{AggregatingQueryProjection, InterestingOrder}
-import org.neo4j.cypher.internal.v3_5.logical.plans.{Aggregation, LogicalPlan, Projection}
-import org.neo4j.cypher.internal.v3_5.ast.ASTAnnotationMap
-import org.neo4j.cypher.internal.v3_5.ast.semantics.{ExpressionTypeInfo, SemanticTable}
 import org.neo4j.cypher.internal.v3_5.expressions._
+import org.neo4j.cypher.internal.v3_5.logical.plans.{Aggregation, LogicalPlan, Projection}
 import org.neo4j.cypher.internal.v3_5.util.test_helpers.CypherFunSuite
 
 class AggregationTest extends CypherFunSuite with LogicalPlanningTestSupport with PlanMatchHelp {
@@ -45,7 +43,7 @@ class AggregationTest extends CypherFunSuite with LogicalPlanningTestSupport wit
     )
 
     val context = newMockedLogicalPlanningContextWithFakeAttributes(
-      planContext = newMockedPlanContext
+      planContext = newMockedPlanContext()
     )
     val startPlan = newMockedLogicalPlan()
 
@@ -63,7 +61,7 @@ class AggregationTest extends CypherFunSuite with LogicalPlanningTestSupport wit
     )
 
     val context = newMockedLogicalPlanningContextWithFakeAttributes(
-      planContext = newMockedPlanContext
+      planContext = newMockedPlanContext()
     )
 
     val startPlan = newMockedLogicalPlan()
@@ -85,7 +83,7 @@ class AggregationTest extends CypherFunSuite with LogicalPlanningTestSupport wit
     )
 
     val context = newMockedLogicalPlanningContextWithFakeAttributes(
-      planContext = newMockedPlanContext
+      planContext = newMockedPlanContext()
     )
 
     val startPlan = newMockedLogicalPlan()

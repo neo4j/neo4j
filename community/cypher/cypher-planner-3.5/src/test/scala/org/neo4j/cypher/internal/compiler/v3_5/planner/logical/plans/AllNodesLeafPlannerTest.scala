@@ -22,9 +22,9 @@ package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.plans
 import org.neo4j.cypher.internal.compiler.v3_5.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.ExpressionEvaluator
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps.allNodesLeafPlanner
-import org.neo4j.cypher.internal.ir.v3_5.{QueryGraph, InterestingOrder}
-import org.neo4j.cypher.internal.v3_5.logical.plans.AllNodesScan
+import org.neo4j.cypher.internal.ir.v3_5.{InterestingOrder, QueryGraph}
 import org.neo4j.cypher.internal.v3_5.expressions.PatternExpression
+import org.neo4j.cypher.internal.v3_5.logical.plans.AllNodesScan
 import org.neo4j.cypher.internal.v3_5.util.test_helpers.CypherFunSuite
 
 class AllNodesLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
@@ -35,7 +35,7 @@ class AllNodesLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSup
     // given
     val queryGraph = QueryGraph(patternNodes = Set("n"))
 
-    implicit val planContext = newMockedPlanContext
+    val planContext = newMockedPlanContext()
     val context = newMockedLogicalPlanningContext(planContext = planContext, metrics = newMockedMetricsFactory.newMetrics(hardcodedStatistics, mock[ExpressionEvaluator], config))
 
     // when

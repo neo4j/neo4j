@@ -26,10 +26,10 @@ import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.LogicalPlanningCo
 import org.neo4j.cypher.internal.compiler.v3_5.{IndexHintUnfulfillableNotification, JoinHintUnfulfillableNotification}
 import org.neo4j.cypher.internal.ir.v3_5.{PatternRelationship, VarPatternLength, _}
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanContext
-import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.v3_5.ast._
 import org.neo4j.cypher.internal.v3_5.expressions.{LabelName, PatternExpression, PropertyKeyName, SemanticDirection}
 import org.neo4j.cypher.internal.v3_5.frontend.phases.RecordingNotificationLogger
+import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.v3_5.util._
 import org.neo4j.cypher.internal.v3_5.util.test_helpers.CypherFunSuite
 
@@ -52,7 +52,7 @@ class ExtractBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport
     ).addHints(Set(newJoinHint())))
 
   private def getPlanContext(hasIndex: Boolean): PlanContext = {
-    val planContext = newMockedPlanContext
+    val planContext = newMockedPlanContext()
     when(planContext.indexExistsForLabelAndProperties(anyString(), any())).thenReturn(hasIndex)
     planContext
   }
@@ -67,7 +67,7 @@ class ExtractBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport
         patternNodes = Set("a", "b")
       )
     )
-    val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext)
+    val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext())
     val plan = newMockedLogicalPlan(context.planningAttributes, "b")
 
     a [InternalException] should be thrownBy {
@@ -83,7 +83,7 @@ class ExtractBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport
         patternRelationships = Set(patternRel)
       )
     )
-    val context = newMockedLogicalPlanningContext(planContext= newMockedPlanContext)
+    val context = newMockedLogicalPlanningContext(planContext= newMockedPlanContext())
 
     a [InternalException] should be thrownBy {
       verifyBestPlan(getSimpleLogicalPlanWithAandB(context), query, context)
@@ -96,7 +96,7 @@ class ExtractBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport
         patternNodes = Set("a", "b")
       )
     )
-    val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext)
+    val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext())
 
     verifyBestPlan(getSimpleLogicalPlanWithAandB(context), query, context).availableSymbols should equal(Set("a", "b"))
   }

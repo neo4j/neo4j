@@ -24,9 +24,9 @@ import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compiler.v3_5.planner._
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.Metrics.{CardinalityModel, QueryGraphSolverInput}
 import org.neo4j.cypher.internal.ir.v3_5._
-import org.neo4j.cypher.internal.v3_5.logical.plans._
 import org.neo4j.cypher.internal.v3_5.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.v3_5.expressions._
+import org.neo4j.cypher.internal.v3_5.logical.plans._
 import org.neo4j.cypher.internal.v3_5.util.Cardinality
 import org.neo4j.cypher.internal.v3_5.util.test_helpers.CypherFunSuite
 
@@ -70,9 +70,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
       selections = selections
     )
 
-    implicit val subQueryLookupTable = Map(patternExp -> patternQG)
-
-    val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext)
+    val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext())
 
     val aPlan = newMockedLogicalPlan(context.planningAttributes, "a")
     val inner = Expand(Argument(Set("a")), "a", dir, types, nodeName, patternRel.name, ExpandAll)
@@ -100,9 +98,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
       selections = selections
     )
 
-    implicit val subQueryLookupTable = Map(patternExp -> patternQG)
-
-    val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext)
+    val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext())
 
     val aPlan = newMockedLogicalPlan(context.planningAttributes, "a")
     val inner = Expand(Argument(Set("a")), "a", dir, types, nodeName, patternRel.name, ExpandAll)
@@ -130,9 +126,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
       selections = selections
     )
 
-    implicit val subQueryLookupTable = Map(patternExp -> patternQG)
-
-    val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext)
+    val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext())
 
     val bPlan = newMockedLogicalPlan(context.planningAttributes, "b")
     // When
@@ -162,9 +156,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
       selections = selections
     )
 
-    implicit val subQueryLookupTable = Map(patternExp -> patternQG)
-
-    val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext)
+    val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext())
 
     val aPlan = newMockedLogicalPlan(context.planningAttributes, "a")
     val argument = Argument(Set("a"))
@@ -197,9 +189,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
       selections = selections
     )
 
-    implicit val subQueryLookupTable = Map(patternExp -> patternQG)
-
-    val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext)
+    val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext())
 
     val aPlan = newMockedLogicalPlan(context.planningAttributes, "a")
     val inner = Expand(Argument(Set("a")), "a", dir, types, nodeName, patternRel.name, ExpandAll)
@@ -241,9 +231,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
       selections = selections
     )
 
-    implicit val subQueryLookupTable = Map(patternExp -> patternQG, patternExp2 -> patternQG2)
-
-    val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext)
+    val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext())
 
     val aPlan = newMockedLogicalPlan(context.planningAttributes, "a")
     val inner = Expand(Argument(Set("a")), "a", dir, types, nodeName, patternRel.name, ExpandAll)
@@ -285,9 +273,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
       selections = selections
     )
 
-    implicit val subQueryLookupTable = Map(patternExp -> patternQG, patternExp2 -> patternQG2)
-
-    val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext)
+    val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext())
 
     val aPlan = newMockedLogicalPlan(context.planningAttributes, "a")
     val inner = Expand(Argument(Set("a")), "a", dir, types, nodeName, patternRel.name, ExpandAll)
@@ -329,9 +315,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
       selections = selections
     )
 
-    implicit val subQueryLookupTable = Map(patternExp -> patternQG, patternExp2 -> patternQG2)
-
-    val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext)
+    val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext())
 
     val aPlan = newMockedLogicalPlan(context.planningAttributes, "a")
     val inner = Expand(Argument(Set("a")), "a", dir, types, nodeName, patternRel.name, ExpandAll)
@@ -378,9 +362,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
       selections = selections
     )
 
-    implicit val subQueryLookupTable = Map(patternExp -> patternQG, patternExp2 -> patternQG2)
-
-    val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext)
+    val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext())
 
     val aPlan = newMockedLogicalPlan(context.planningAttributes, "a")
     val inner = Expand(Argument(Set("a")), "a", dir, types, nodeName, patternRel.name, ExpandAll)
@@ -427,9 +409,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
       selections = selections
     )
 
-    implicit val subQueryLookupTable = Map(patternExp -> patternQG, patternExp2 -> patternQG2)
-
-    val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext)
+    val context = newMockedLogicalPlanningContext(planContext = newMockedPlanContext())
 
     val aPlan = newMockedLogicalPlan(context.planningAttributes, "a")
     val inner = Expand(Argument(Set("a")), "a", dir, types, nodeName, patternRel.name, ExpandAll)

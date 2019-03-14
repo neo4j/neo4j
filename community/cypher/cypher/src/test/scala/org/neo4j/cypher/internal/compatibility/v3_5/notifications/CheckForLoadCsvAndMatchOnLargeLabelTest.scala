@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.compatibility.v3_5.notification.checkForLoadCsv
 import org.neo4j.cypher.internal.compiler.v3_5.LargeLabelWithLoadCsvNotification
 import org.neo4j.cypher.internal.compiler.v3_5.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.ir.v3_5.HasHeaders
-import org.neo4j.cypher.internal.planner.v3_5.spi.{GraphStatistics, PlanContext}
+import org.neo4j.cypher.internal.planner.v3_5.spi.{GraphStatistics, InstrumentedGraphStatistics, PlanContext}
 import org.neo4j.cypher.internal.runtime.interpreted.CSVResources
 import org.neo4j.cypher.internal.v3_5.logical.plans._
 import org.neo4j.cypher.internal.v3_5.expressions.{LabelName, StringLiteral}
@@ -51,7 +51,7 @@ class CheckForLoadCsvAndMatchOnLargeLabelTest
       indexFor.get(label)
     }
   })
-  private val statistics = mock[GraphStatistics]
+  private val statistics = mock[InstrumentedGraphStatistics]
   when(statistics.nodesWithLabelCardinality(Some(LabelId(1)))).thenReturn(Cardinality(101))
   when(statistics.nodesWithLabelCardinality(Some(LabelId(2)))).thenReturn(Cardinality(99))
   when(planContext.statistics).thenReturn(statistics)

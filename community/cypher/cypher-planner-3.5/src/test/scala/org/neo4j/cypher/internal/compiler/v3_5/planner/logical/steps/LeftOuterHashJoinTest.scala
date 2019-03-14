@@ -25,15 +25,13 @@ import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.ExpressionEvaluat
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.Metrics.QueryGraphSolverInput
 import org.neo4j.cypher.internal.ir.v3_5._
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.Cardinalities
-import org.neo4j.cypher.internal.v3_5.logical.plans.{AllNodesScan, CachedNodeProperty, LeftOuterHashJoin, LogicalPlan}
 import org.neo4j.cypher.internal.v3_5.ast.{Hint, UsingJoinHint}
-import org.neo4j.cypher.internal.v3_5.expressions.{PatternExpression, PropertyKeyName, SemanticDirection, Variable}
+import org.neo4j.cypher.internal.v3_5.expressions.{PropertyKeyName, SemanticDirection, Variable}
+import org.neo4j.cypher.internal.v3_5.logical.plans.{AllNodesScan, CachedNodeProperty, LeftOuterHashJoin, LogicalPlan}
 import org.neo4j.cypher.internal.v3_5.util.Cost
 import org.neo4j.cypher.internal.v3_5.util.test_helpers.CypherFunSuite
 
 class LeftOuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSupport {
-
-  private implicit val subQueryLookupTable = Map.empty[PatternExpression, QueryGraph]
 
   val aNode = "a"
   val bNode = "b"
@@ -64,7 +62,7 @@ class LeftOuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSuppo
     val innerPlan = newMockedLogicalPlan("b")
 
     val context = newMockedLogicalPlanningContext(
-      planContext = newMockedPlanContext,
+      planContext = newMockedPlanContext(),
       metrics = factory.newMetrics(hardcodedStatistics, mock[ExpressionEvaluator], config),
       strategy = newMockedStrategy(innerPlan))
     val left = newMockedLogicalPlanWithPatterns(context.planningAttributes, idNames = Set(aNode))
@@ -92,7 +90,7 @@ class LeftOuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSuppo
     val innerPlan = newMockedLogicalPlan("b")
 
     val context = newMockedLogicalPlanningContext(
-      planContext = newMockedPlanContext,
+      planContext = newMockedPlanContext(),
       metrics = factory.newMetrics(hardcodedStatistics, mock[ExpressionEvaluator], config),
       strategy = newMockedStrategy(innerPlan))
     val left = newMockedLogicalPlanWithPatterns(context.planningAttributes, Set(aNode))

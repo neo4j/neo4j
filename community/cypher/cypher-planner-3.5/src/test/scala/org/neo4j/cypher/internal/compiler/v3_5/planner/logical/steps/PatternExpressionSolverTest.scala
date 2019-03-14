@@ -26,9 +26,9 @@ import org.mockito.stubbing.Answer
 import org.neo4j.cypher.internal.compiler.v3_5.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.{LogicalPlanningContext, QueryGraphSolver}
 import org.neo4j.cypher.internal.ir.v3_5.InterestingOrder
-import org.neo4j.cypher.internal.v3_5.logical.plans.{LogicalPlan, Projection, RollUpApply}
 import org.neo4j.cypher.internal.v3_5.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.v3_5.expressions._
+import org.neo4j.cypher.internal.v3_5.logical.plans.{LogicalPlan, Projection, RollUpApply}
 import org.neo4j.cypher.internal.v3_5.util.DummyPosition
 import org.neo4j.cypher.internal.v3_5.util.test_helpers.CypherFunSuite
 
@@ -148,7 +148,7 @@ class PatternExpressionSolverTest extends CypherFunSuite with LogicalPlanningTes
 
 
   private def logicalPlanningContext(strategy: QueryGraphSolver): LogicalPlanningContext =
-    newMockedLogicalPlanningContext(newMockedPlanContext, semanticTable = new SemanticTable(), strategy = strategy)
+    newMockedLogicalPlanningContext(newMockedPlanContext(), semanticTable = new SemanticTable(), strategy = strategy)
 
   private def createPatternExpressionBuilder(pathSteps: Map[PatternExpression, PathStep]) =
     PatternExpressionSolver(pathSteps.map {
@@ -165,8 +165,8 @@ class PatternExpressionSolverTest extends CypherFunSuite with LogicalPlanningTes
   private def newPatExpr(left: String, position: Int, rightE: Either[Int, String], relNameE: Either[Int, String], dir: SemanticDirection): PatternExpression = {
 
     def getNameAndPosition(rightE: Either[Int, String]) = rightE match {
-      case (Left(i)) => (None, DummyPosition(i))
-      case (Right(name)) => (Some(Variable(name)(pos)), pos)
+      case Left(i) => (None, DummyPosition(i))
+      case Right(name) => (Some(Variable(name)(pos)), pos)
     }
 
     val (right, rightPos) = getNameAndPosition(rightE)
