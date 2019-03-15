@@ -199,7 +199,7 @@ class ClosingExecutionResult private(val query: ExecutingQuery,
     }
   }
 
-  private def handleErrorOnClose(closeReason: CloseReason)(thrownDuringClose: Throwable): Unit =
+  private def handleErrorOnClose(closeReason: CloseReason)(thrownDuringClose: Throwable): Unit = {
     closeReason match {
       case Error(thrownBeforeClose) =>
         try {
@@ -212,6 +212,8 @@ class ClosingExecutionResult private(val query: ExecutingQuery,
       case _ =>
         monitor.endFailure(query, thrownDuringClose)
     }
+    throw thrownDuringClose
+  }
 
   override def isClosed: Boolean = inner.isClosed
 

@@ -345,7 +345,11 @@ public class TransactionHandle implements TransactionTerminationHandle
                 catch ( Exception e )
                 {
                     Throwable cause = e.getCause();
-                    if ( cause instanceof Status.HasStatus )
+                    if ( e instanceof Status.HasStatus )
+                    {
+                        errors.add( new Neo4jError( ((Status.HasStatus) e).status(), e ) );
+                    }
+                    else if ( cause instanceof Status.HasStatus )
                     {
                         errors.add( new Neo4jError( ((Status.HasStatus) cause).status(), cause ) );
                     }

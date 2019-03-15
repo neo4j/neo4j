@@ -215,7 +215,7 @@ class ClosingExecutionResultTest extends CypherFunSuite {
     val x = ClosingExecutionResult.wrapAndInitiate(query, inner, testRunSafely, monitor)
 
     // when
-    x.close()
+    intercept[TestOuterException] { x.close() }
 
     // then
     monitor.assertError(query, TestOuterException("close"))
