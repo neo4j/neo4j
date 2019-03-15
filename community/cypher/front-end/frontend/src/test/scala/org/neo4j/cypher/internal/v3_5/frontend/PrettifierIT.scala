@@ -222,8 +222,74 @@ class PrettifierIT extends CypherFunSuite {
           |}""".stripMargin,
 
       "catalog DROP VIEW com.neo4j.Users" ->
-        "CATALOG DROP VIEW com.neo4j.Users"
+        "CATALOG DROP VIEW com.neo4j.Users",
+
+      "load csv from '/import/data.csv' AS row create ({key: row[0]})" ->
+        """LOAD CSV FROM "/import/data.csv" AS row
+          |CREATE ({key: row[0]})""".stripMargin,
+
+      "load csv WITH headers from '/import/data.csv' AS row create ({key: row[0]})" ->
+        """LOAD CSV WITH HEADERS FROM "/import/data.csv" AS row
+          |CREATE ({key: row[0]})""".stripMargin,
+
+      "load csv from '/import/data.csv' AS row FIELDTERMINATOR '-' create ({key: row[0]})" ->
+        """LOAD CSV FROM "/import/data.csv" AS row FIELDTERMINATOR "-"
+          |CREATE ({key: row[0]})""".stripMargin,
+
+      "USING periodic commit 30 load csv from '/import/data.csv' AS row create ({key: row[0]})" ->
+        """USING PERIODIC COMMIT 30
+          |LOAD CSV FROM "/import/data.csv" AS row
+          |CREATE ({key: row[0]})""".stripMargin,
+
+      "FOREACH ( n IN [1,2,3] | create ({key: n}) CREATE ({foreignKey: n}) )" ->
+        """FOREACH ( n IN [1, 2, 3] |
+          |  CREATE ({key: n})
+          |  CREATE ({foreignKey: n})
+          |)""".stripMargin,
+
+      "create unique (a)--(b) RETURN a" ->
+        """CREATE UNIQUE (a)--(b)
+          |RETURN a""".stripMargin
+    ) ++ startTests("node") ++ startTests("relationship")
+
+  def startTests(entityType: String): Seq[(String, String)] = {
+    val ENTITYTYPE = entityType.toUpperCase
+    Seq(
+      s"START x=$entityType(*) RETURN x" ->
+        s"""START x = $ENTITYTYPE( * )
+           |RETURN x""".stripMargin,
+
+      s"START x=$entityType(42) RETURN x" ->
+        s"""START x = $ENTITYTYPE( 42 )
+           |RETURN x""".stripMargin,
+
+      s"START x=$entityType(42,101) RETURN x" ->
+        s"""START x = $ENTITYTYPE( 42, 101 )
+           |RETURN x""".stripMargin,
+
+      s"START x=$entityType($$param) RETURN x" ->
+        s"""START x = $ENTITYTYPE( $$param )
+           |RETURN x""".stripMargin,
+
+      s"START x=$entityType($$param), y=$entityType(42,101) RETURN x, y" ->
+        s"""START x = $ENTITYTYPE( $$param ),
+           |      y = $ENTITYTYPE( 42, 101 )
+           |RETURN x, y""".stripMargin,
+
+      s"""START x=$entityType:index("key:value") RETURN x""" ->
+        s"""START x = $ENTITYTYPE:index( "key:value" )
+           |RETURN x""".stripMargin,
+
+      s"""START x=$entityType:myIndex(key = 'value') RETURN x""" ->
+        s"""START x = $ENTITYTYPE:myIndex( key = "value" )
+           |RETURN x""".stripMargin,
+
+      s"""START x=$entityType:index("key:value") WHERE n.prop = 42 RETURN x""" ->
+        s"""START x = $ENTITYTYPE:index( "key:value" )
+           |  WHERE n.prop = 42
+           |RETURN x""".stripMargin
     )
+  }
 
   tests foreach {
     case (inputString, expected) =>
