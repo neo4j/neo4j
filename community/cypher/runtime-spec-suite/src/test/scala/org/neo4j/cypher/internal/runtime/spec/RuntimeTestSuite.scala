@@ -108,6 +108,12 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
     runtimeTestSupport.run(logicalQuery, runtime, input.stream(), (_, result) => result)
 
   def execute(logicalQuery: LogicalQuery,
+              runtime: CypherRuntime[CONTEXT],
+              inputStream: InputDataStream
+             ): RuntimeResult =
+    runtimeTestSupport.run(logicalQuery, runtime, inputStream, (_, result) => result)
+
+  def execute(logicalQuery: LogicalQuery,
               runtime: CypherRuntime[CONTEXT]
              ): RuntimeResult =
     runtimeTestSupport.run(logicalQuery, runtime, NoInput, (_, result) => result)
@@ -161,7 +167,7 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
     def flatten: IndexedSeq[Array[Any]] =
       batches.flatten
 
-    def stream(): InputDataStream = new BufferInputStream(batches.map(_.map(row => row.map(ValueUtils.of))))
+    def stream(): BufferInputStream = new BufferInputStream(batches.map(_.map(row => row.map(ValueUtils.of))))
   }
 
   class BufferInputStream(data: ArrayBuffer[IndexedSeq[Array[AnyValue]]]) extends InputDataStream {
@@ -174,6 +180,8 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
       else
         null
     }
+
+    def hasMore: Boolean = batchIndex.get() < data.size
   }
 
   class BufferInputCursor(data: IndexedSeq[Array[AnyValue]]) extends InputCursor {
