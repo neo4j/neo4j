@@ -216,17 +216,17 @@ public class PhysicalLogCommandReaderV4_0 extends BaseCommandReader
             throws IOException
     {
         // in_use(byte)+type_blockId(int)+nr_type_records(int)
-        byte inUseFlag = channel.get();
+        byte headerByte = channel.get();
         boolean inUse = false;
         boolean internal = false;
-        if ( (inUseFlag & Record.IN_USE.byteValue()) == Record.IN_USE.byteValue() )
+        if ( (headerByte & Record.IN_USE.byteValue()) == Record.IN_USE.byteValue() )
         {
             inUse = true;
-            internal = (inUseFlag & Record.INTERNAL_TOKEN) == Record.INTERNAL_TOKEN;
+            internal = (headerByte & Record.INTERNAL_TOKEN) == Record.INTERNAL_TOKEN;
         }
-        else if ( inUseFlag != Record.NOT_IN_USE.byteValue() )
+        else if ( headerByte != Record.NOT_IN_USE.byteValue() )
         {
-            throw new IOException( "Illegal in use flag: " + inUseFlag );
+            throw new IOException( "Illegal in use flag: " + headerByte );
         }
         RelationshipTypeTokenRecord record = new RelationshipTypeTokenRecord( id );
         record.setInUse( inUse );
@@ -266,17 +266,17 @@ public class PhysicalLogCommandReaderV4_0 extends BaseCommandReader
     private LabelTokenRecord readLabelTokenRecord( int id, ReadableChannel channel ) throws IOException
     {
         // in_use(byte)+type_blockId(int)+nr_type_records(int)
-        byte inUseFlag = channel.get();
+        byte headerByte = channel.get();
         boolean inUse = false;
         boolean internal = false;
-        if ( (inUseFlag & Record.IN_USE.byteValue()) == Record.IN_USE.byteValue() )
+        if ( (headerByte & Record.IN_USE.byteValue()) == Record.IN_USE.byteValue() )
         {
             inUse = true;
-            internal = (inUseFlag & Record.INTERNAL_TOKEN) == Record.INTERNAL_TOKEN;
+            internal = (headerByte & Record.INTERNAL_TOKEN) == Record.INTERNAL_TOKEN;
         }
-        else if ( inUseFlag != Record.NOT_IN_USE.byteValue() )
+        else if ( headerByte != Record.NOT_IN_USE.byteValue() )
         {
-            throw new IOException( "Illegal in use flag: " + inUseFlag );
+            throw new IOException( "Illegal in use flag: " + headerByte );
         }
         LabelTokenRecord record = new LabelTokenRecord( id );
         record.setInUse( inUse );
@@ -316,17 +316,17 @@ public class PhysicalLogCommandReaderV4_0 extends BaseCommandReader
     private PropertyKeyTokenRecord readPropertyKeyTokenRecord( int id, ReadableChannel channel ) throws IOException
     {
         // in_use(byte)+count(int)+key_blockId(int)
-        byte inUseFlag = channel.get();
+        byte headerByte = channel.get();
         boolean inUse = false;
         boolean internal = false;
-        if ( (inUseFlag & Record.IN_USE.byteValue()) == Record.IN_USE.byteValue() )
+        if ( (headerByte & Record.IN_USE.byteValue()) == Record.IN_USE.byteValue() )
         {
             inUse = true;
-            internal = (inUseFlag & Record.INTERNAL_TOKEN) == Record.INTERNAL_TOKEN;
+            internal = (headerByte & Record.INTERNAL_TOKEN) == Record.INTERNAL_TOKEN;
         }
-        else if ( inUseFlag != Record.NOT_IN_USE.byteValue() )
+        else if ( headerByte != Record.NOT_IN_USE.byteValue() )
         {
-            throw new IOException( "Illegal in use flag: " + inUseFlag );
+            throw new IOException( "Illegal in use flag: " + headerByte );
         }
         PropertyKeyTokenRecord record = new PropertyKeyTokenRecord( id );
         record.setInUse( inUse );

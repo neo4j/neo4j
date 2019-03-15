@@ -538,9 +538,9 @@ public abstract class Command implements StorageCommand
                 throws IOException
         {
             // id+in_use(byte)+count(int)+key_blockId(int)+nr_key_records(int)
-            byte inUse = record.inUse() ? Record.IN_USE.byteValue() : Record.NOT_IN_USE.byteValue();
-            inUse += record.isInternal() ? Record.INTERNAL_TOKEN : 0;
-            channel.put( inUse );
+            byte headerByte = record.inUse() ? Record.IN_USE.byteValue() : Record.NOT_IN_USE.byteValue();
+            headerByte += record.isInternal() ? Record.INTERNAL_TOKEN : 0;
+            channel.put( headerByte );
             channel.putInt( record.getPropertyCount() ).putInt( record.getNameId() );
             if ( record.isLight() )
             {
@@ -580,9 +580,9 @@ public abstract class Command implements StorageCommand
                 throws IOException
         {
             // id+in_use(byte)+count(int)+key_blockId(int)+nr_key_records(int)
-            byte inUse = record.inUse() ? Record.IN_USE.byteValue() : Record.NOT_IN_USE.byteValue();
-            inUse += record.isInternal() ? Record.INTERNAL_TOKEN : 0;
-            channel.put( inUse );
+            byte headerByte = record.inUse() ? Record.IN_USE.byteValue() : Record.NOT_IN_USE.byteValue();
+            headerByte += record.isInternal() ? Record.INTERNAL_TOKEN : 0;
+            channel.put( headerByte );
             channel.putInt( record.getNameId() );
             if ( record.isLight() )
             {
@@ -620,9 +620,9 @@ public abstract class Command implements StorageCommand
         private void writeLabelTokenRecord( WritableChannel channel, LabelTokenRecord record ) throws IOException
         {
             // id+in_use(byte)+type_blockId(int)+nr_type_records(int)
-            byte inUse = record.inUse() ? Record.IN_USE.byteValue() : Record.NOT_IN_USE.byteValue();
-            inUse += record.isInternal() ? Record.INTERNAL_TOKEN : 0;
-            channel.put( inUse ).putInt( record.getNameId() );
+            byte headerByte = record.inUse() ? Record.IN_USE.byteValue() : Record.NOT_IN_USE.byteValue();
+            headerByte += record.isInternal() ? Record.INTERNAL_TOKEN : 0;
+            channel.put( headerByte ).putInt( record.getNameId() );
             writeDynamicRecords( channel, record.getNameRecords() );
         }
     }
