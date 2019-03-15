@@ -111,8 +111,7 @@ public class ConsistencyCheckService
         FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
         try
         {
-            return runFullConsistencyCheck( databaseLayout, config, progressFactory, logProvider,
-                    fileSystem, verbose, consistencyFlags );
+            return runFullConsistencyCheck( databaseLayout, config, progressFactory, logProvider, fileSystem, verbose, consistencyFlags );
         }
         finally
         {

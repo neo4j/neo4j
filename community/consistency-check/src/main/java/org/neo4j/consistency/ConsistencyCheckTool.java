@@ -104,11 +104,11 @@ public class ConsistencyCheckTool
     {
         Args arguments = Args.withFlags( VERBOSE ).parse( args );
 
-        File storeDir = determineStoreDirectory( arguments );
-        Config tuningConfiguration = readConfiguration( arguments, storeDir );
+        File databaseDirectory = determineDatabaseDirectory( arguments );
+        Config tuningConfiguration = readConfiguration( arguments );
         boolean verbose = isVerbose( arguments );
 
-        DatabaseLayout databaseLayout = DatabaseLayout.of( storeDir, LayoutConfig.of( tuningConfiguration ) );
+        DatabaseLayout databaseLayout = DatabaseLayout.of( databaseDirectory, LayoutConfig.of( tuningConfiguration ) );
         checkDbState( databaseLayout, tuningConfiguration );
 
         ZoneId logTimeZone = tuningConfiguration.get( GraphDatabaseSettings.db_timezone ).getZoneId();
@@ -154,22 +154,22 @@ public class ConsistencyCheckTool
         }
     }
 
-    private File determineStoreDirectory( Args arguments ) throws ToolFailureException
+    private File determineDatabaseDirectory( Args arguments ) throws ToolFailureException
     {
         List<String> unprefixedArguments = arguments.orphans();
         if ( unprefixedArguments.size() != 1 )
         {
             throw new ToolFailureException( usage() );
         }
-        File storeDir = new File( unprefixedArguments.get( 0 ) );
-        if ( !storeDir.isDirectory() )
+        File databaseDirectory = new File( unprefixedArguments.get( 0 ) );
+        if ( !databaseDirectory.isDirectory() )
         {
-            throw new ToolFailureException( format( "'%s' is not a directory", storeDir ) + usage() );
+            throw new ToolFailureException( format( "'%s' is not a directory", databaseDirectory ) + usage() );
         }
-        return storeDir;
+        return databaseDirectory;
     }
 
-    private static Config readConfiguration( Args arguments, File databasePath ) throws ToolFailureException
+    private static Config readConfiguration( Args arguments ) throws ToolFailureException
     {
         String configFilePath = arguments.get( CONFIG, null );
         if ( configFilePath != null )

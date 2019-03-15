@@ -71,8 +71,8 @@ public class DumpCommand implements AdminCommand
         Path archive = calculateArchive( database, arguments.getMandatoryPath( "to" ) );
 
         Config config = buildConfig();
-        Path storedirectory = getDatabaseDirectory( config );
-        DatabaseLayout databaseLayout = DatabaseLayout.of( storedirectory.toFile(), of( config ), database );
+        Path storeDirectory = getDatabaseDirectory( config );
+        DatabaseLayout databaseLayout = DatabaseLayout.of( storeDirectory.toFile(), of( config ), database );
 
         try
         {

@@ -186,7 +186,7 @@ class RecoveryCorruptedTransactionLogIT
         database.shutdown();
 
         logProvider.assertContainsMessageContaining( "Fail to read transaction log version 0." );
-        logProvider.assertContainsMessageContaining( "Fail to read transaction log version 0. Last valid transaction start offset is: 5668." );
+        logProvider.assertContainsMessageContaining( "Fail to read transaction log version 0. Last valid transaction start offset is: 5686." );
         assertEquals( numberOfClosedTransactions, recoveryMonitor.getNumberOfRecoveredTransactions() );
     }
 
@@ -254,11 +254,13 @@ class RecoveryCorruptedTransactionLogIT
                 "Recovery required from position LogPosition{logVersion=0, byteOffset=16}" );
         logProvider.assertContainsMessageContaining( "Fail to recover all transactions." );
         logProvider.assertContainsMessageContaining(
-                "Any later transaction after LogPosition{logVersion=0, byteOffset=6245} are unreadable and will be truncated." );
+                "Any later transaction after LogPosition{logVersion=0, byteOffset=6263} are unreadable and will be truncated." );
 
         assertEquals( 0, logFiles.getHighestLogVersion() );
         ObjectLongMap<Class> logEntriesDistribution = getLogEntriesDistribution( logFiles );
-        assertEquals( 2, logEntriesDistribution.get( CheckPoint.class ) );
+        // 2 shutdowns will create a checkpoint and recovery that will be triggered by removing tx logs for default db
+        // during the setup and starting db as part of the test
+        assertEquals( 3, logEntriesDistribution.get( CheckPoint.class ) );
         assertEquals( numberOfTransactions, recoveryMonitor.getNumberOfRecoveredTransactions() );
         assertEquals( originalFileLength + CHECKPOINT_COMMAND_SIZE, highestLogFile.length() );
     }
@@ -299,7 +301,9 @@ class RecoveryCorruptedTransactionLogIT
 
         assertEquals( 3, logFiles.getHighestLogVersion() );
         ObjectLongMap<Class> logEntriesDistribution = getLogEntriesDistribution( logFiles );
-        assertEquals( 2, logEntriesDistribution.get( CheckPoint.class ) );
+        // 2 shutdowns will create a checkpoint and recovery that will be triggered by removing tx logs for default db
+        // during the setup and starting db as part of the test
+        assertEquals( 3, logEntriesDistribution.get( CheckPoint.class ) );
         assertEquals( numberOfTransactions, recoveryMonitor.getNumberOfRecoveredTransactions() );
         assertEquals( originalFileLength + CHECKPOINT_COMMAND_SIZE, highestLogFile.length() );
     }
@@ -337,7 +341,7 @@ class RecoveryCorruptedTransactionLogIT
 
         assertEquals( 3, logFiles.getHighestLogVersion() );
         ObjectLongMap<Class> logEntriesDistribution = getLogEntriesDistribution( logFiles );
-        assertEquals( 5, logEntriesDistribution.get( CheckPoint.class ) );
+        assertEquals( 6, logEntriesDistribution.get( CheckPoint.class ) );
         assertEquals( transactionsToRecover, recoveryMonitor.getNumberOfRecoveredTransactions() );
         assertEquals( originalFileLength + CHECKPOINT_COMMAND_SIZE, highestLogFile.length() );
     }
@@ -369,7 +373,9 @@ class RecoveryCorruptedTransactionLogIT
 
         assertEquals( 5, logFiles.getHighestLogVersion() );
         ObjectLongMap<Class> logEntriesDistribution = getLogEntriesDistribution( logFiles );
-        assertEquals( 2, logEntriesDistribution.get( CheckPoint.class ) );
+        // 2 shutdowns will create a checkpoint and recovery that will be triggered by removing tx logs for default db
+        // during the setup and starting db as part of the test
+        assertEquals( 3, logEntriesDistribution.get( CheckPoint.class ) );
         assertEquals( originalFileLength + CHECKPOINT_COMMAND_SIZE, highestLogFile.length() );
     }
 

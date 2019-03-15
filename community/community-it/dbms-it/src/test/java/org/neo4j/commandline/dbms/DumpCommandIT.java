@@ -36,6 +36,8 @@ import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.attribute.PosixFilePermission;
+import java.util.Set;
 import java.util.function.Predicate;
 
 import org.neo4j.commandline.admin.CommandFailed;
@@ -46,6 +48,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.LayoutConfig;
 import org.neo4j.dbms.archive.Dumper;
 import org.neo4j.graphdb.config.Setting;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -76,10 +79,9 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_TX_LOGS_ROOT_DIR_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.data_directory;
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_logs_root_path;
-import static org.neo4j.dbms.archive.TestUtils.withPermissions;
 
 @ExtendWith( TestDirectoryExtension.class )
-class DumpCommandTest
+class DumpCommandIT
 {
     @Inject
     private TestDirectory testDirectory;
@@ -97,8 +99,15 @@ class DumpCommandTest
         configDir = testDirectory.directory( "config-dir" ).toPath();
         archive = testDirectory.file( "some-archive.dump" ).toPath();
         dumper = mock( Dumper.class );
-        putStoreInDirectory( homeDir.resolve( "data/databases/foo" ) );
+        putStoreInDirectory( buildConfig(), homeDir.resolve( "data/databases/foo" ) );
         databaseDirectory = homeDir.resolve( "data/databases/foo" );
+    }
+
+    private Config buildConfig()
+    {
+        return Config.fromFile( configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ) )
+                .withHome( homeDir )
+                .withConnectorsDisabled().withNoThrowOnFileLoadFailure().build();
     }
 
     @Test
@@ -115,8 +124,8 @@ class DumpCommandTest
         Path dataDir = testDirectory.directory( "some-other-path" ).toPath();
         Path txLogsDir = dataDir.resolve( DEFAULT_TX_LOGS_ROOT_DIR_NAME + "/foo" );
         Path databaseDir = dataDir.resolve( "databases/foo" );
-        putStoreInDirectory( databaseDir );
         Files.write( configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ), singletonList( formatProperty( data_directory, dataDir ) ) );
+        putStoreInDirectory( buildConfig(), databaseDir );
 
         execute( "foo" );
         verify( dumper ).dump( eq( databaseDir ), eq( txLogsDir ), any(), any() );
@@ -128,10 +137,10 @@ class DumpCommandTest
         Path dataDir = testDirectory.directory( "some-other-path" ).toPath();
         Path txlogsRoot = testDirectory.directory( "txLogsPath" ).toPath();
         Path databaseDir = dataDir.resolve( "databases/foo" );
-        putStoreInDirectory( databaseDir );
         Files.write( configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ),
                 asList( formatProperty( data_directory, dataDir ),
                         formatProperty( transaction_logs_root_path, txlogsRoot ) ) );
+        putStoreInDirectory( buildConfig(), databaseDir );
 
         execute( "foo" );
         verify( dumper ).dump( eq( databaseDir ), eq( txlogsRoot.resolve( "foo" ) ), any(), any() );
@@ -148,12 +157,12 @@ class DumpCommandTest
         Path databaseDir = dataDir.resolve( "databases/foo" );
         Path txLogsDir = dataDir.resolve( DEFAULT_TX_LOGS_ROOT_DIR_NAME + "/foo" );
 
-        putStoreInDirectory( realDatabaseDir );
         Files.createDirectories( dataDir.resolve( "databases" ) );
 
         Files.createSymbolicLink( databaseDir, realDatabaseDir );
         Files.write( configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ),
                 singletonList( format( "%s=%s", data_directory.name(), dataDir.toString().replace( '\\', '/' ) ) ) );
+        putStoreInDirectory( buildConfig(), realDatabaseDir );
 
         execute( "foo" );
         verify( dumper ).dump( eq( realDatabaseDir ), eq( txLogsDir ), any(), any() );
@@ -286,8 +295,8 @@ class DumpCommandTest
         Path dataDir = testDirectory.directory( "some-other-path" ).toPath();
         Path txLogsDir = dataDir.resolve( DEFAULT_TX_LOGS_ROOT_DIR_NAME + "/" + DEFAULT_DATABASE_NAME );
         Path databaseDir = dataDir.resolve( "databases/" + DEFAULT_DATABASE_NAME );
-        putStoreInDirectory( databaseDir );
         Files.write( configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ), singletonList( formatProperty( data_directory, dataDir ) ) );
+        putStoreInDirectory( buildConfig(), databaseDir );
 
         new DumpCommand( homeDir, configDir, dumper ).execute( new String[]{"--to=" + archive} );
         verify( dumper ).dump( eq( databaseDir ), eq( txLogsDir ), any(), any() );
@@ -380,11 +389,20 @@ class DumpCommandTest
         }
     }
 
-    private static void putStoreInDirectory( Path databaseDirectory ) throws IOException
+    private void putStoreInDirectory( Config config, Path databaseDirectory )
     {
-        Files.createDirectories( databaseDirectory );
-        Path storeFile = DatabaseLayout.of( databaseDirectory.toFile() ).metadataStore().toPath();
-        Files.createFile( storeFile );
+        new GraphDatabaseFactory()
+                .newEmbeddedDatabaseBuilder( databaseDirectory.toFile() )
+                .setConfig( config.getRaw() )
+                .newGraphDatabase()
+                .shutdown();
+    }
+
+    private static Closeable withPermissions( Path file, Set<PosixFilePermission> permissions ) throws IOException
+    {
+        Set<PosixFilePermission> originalPermissions = Files.getPosixFilePermissions( file );
+        Files.setPosixFilePermissions( file, permissions );
+        return () -> Files.setPosixFilePermissions( file, originalPermissions );
     }
 
     private static String formatProperty( Setting setting, Path path )
