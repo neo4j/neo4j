@@ -30,7 +30,7 @@ trait PatternGraphBuilder {
   def buildPatternGraph(symbols: SymbolTable, patterns: Seq[Pattern]): PatternGraph = {
 
     if(patterns.isEmpty)
-      return new PatternGraph(Map.empty, Map.empty, Seq.empty, Seq.empty)
+      return PatternGraph(Map.empty, Map.empty, Seq.empty, Seq.empty)
 
     val patternNodeMap: mutable.Map[String, PatternNode] = scala.collection.mutable.Map()
     val patternRelMap: mutable.Map[String, Seq[PatternRelationship]] = scala.collection.mutable.Map()
@@ -100,6 +100,6 @@ trait PatternGraphBuilder {
 
     val patternsDone = (patterns.toSet -- patternsLeft).toIndexedSeq
 
-    new PatternGraph(patternNodeMap.toMap, patternRelMap.toMap, symbols.keys, patternsDone)
+    PatternGraph(patternNodeMap.toMap, patternRelMap.toMap, symbols.keys, patternsDone)
   }
 }

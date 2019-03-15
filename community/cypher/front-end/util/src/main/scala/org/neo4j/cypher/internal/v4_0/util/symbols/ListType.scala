@@ -17,10 +17,10 @@
 package org.neo4j.cypher.internal.v4_0.util.symbols
 
 object ListType {
-  private val anyCollectionTypeInstance = new ListTypeImpl(CTAny)
+  private val anyCollectionTypeInstance = ListTypeImpl(CTAny)
 
   def apply(iteratedType: CypherType) =
-    if (iteratedType == CTAny) anyCollectionTypeInstance else new ListTypeImpl(iteratedType)
+    if (iteratedType == CTAny) anyCollectionTypeInstance else ListTypeImpl(iteratedType)
 
   final case class ListTypeImpl(innerType: CypherType) extends ListType {
     val parentType = CTAny

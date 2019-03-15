@@ -72,7 +72,7 @@ class LazyGroupingIteratorTest extends CypherFunSuite {
 
   test("should let null through, but not include it in the state") {
     // given
-    val iterator = new LazyGroupingRowIterator(new Row("a", 1), new Row("a", None), new Row("a", 2))
+    val iterator = new LazyGroupingRowIterator(new Row("a", 1), Row("a", None), new Row("a", 2))
 
     iterator.next() should equal(new Row("a", 1))
     val state = iterator.state

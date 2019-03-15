@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.v4_0.util.attribution.Attributes
 import org.neo4j.cypher.internal.logical.plans.{AllNodesScan, NodeHashJoin}
 
 class removeIdenticalPlansTest extends CypherFunSuite with LogicalPlanningTestSupport {
-  val noAttributes = new Attributes(idGen)
+  val noAttributes = Attributes(idGen)
 
   test("should not contain copies") {
     val scan = AllNodesScan("a", Set.empty)

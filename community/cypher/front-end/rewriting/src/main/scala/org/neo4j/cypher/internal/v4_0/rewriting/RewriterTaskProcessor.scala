@@ -33,7 +33,7 @@ case class RunConditionRewriter(sequenceName: String, name: Option[String], cond
     if (failures.isEmpty) {
       input
     } else {
-      throw new RewritingConditionViolationException(name, failures)
+      throw RewritingConditionViolationException(name, failures)
     }
   }
 

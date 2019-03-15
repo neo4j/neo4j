@@ -230,7 +230,7 @@ case class ShortestPath(pathName: String,
   lazy val possibleStartPoints: Seq[(String, NodeType)] = left.possibleStartPoints ++ right.possibleStartPoints
 
   def rewrite(f: Expression => Expression) =
-    new ShortestPath(pathName, left.rewrite(f), right.rewrite(f), relTypes, dir, allowZeroLength, maxDepth, single, relIterator)
+    ShortestPath(pathName, left.rewrite(f), right.rewrite(f), relTypes, dir, allowZeroLength, maxDepth, single, relIterator)
 
   def rels = Seq()
 

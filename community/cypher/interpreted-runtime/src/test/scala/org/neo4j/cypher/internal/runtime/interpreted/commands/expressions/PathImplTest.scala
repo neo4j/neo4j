@@ -31,7 +31,7 @@ class PathImplTest extends CypherFunSuite with FakeEntityTestSupport {
 
   test("singleNodeTests") {
     val node = new FakeNode
-    val path = new PathImpl(node)
+    val path = PathImpl(node)
 
     path.length() should equal(0)
     path.startNode() should equal(node)
@@ -45,7 +45,7 @@ class PathImplTest extends CypherFunSuite with FakeEntityTestSupport {
     val nodA = new FakeNode
     val nodB = new FakeNode
     val rel = new FakeRel(nodA, nodB, typ)
-    val path = new PathImpl(nodA, rel, nodB)
+    val path = PathImpl(nodA, rel, nodB)
 
     path.length() should equal(1)
     path.startNode() should equal(nodA)
@@ -67,7 +67,7 @@ class PathImplTest extends CypherFunSuite with FakeEntityTestSupport {
       Seq(rel1)
     )
 
-    badPaths.foreach(p => intercept[IllegalArgumentException](new PathImpl(p:_*)))
+    badPaths.foreach(p => intercept[IllegalArgumentException](PathImpl(p: _*)))
   }
 
   test("retrieveLastRelationshipOnLongPath") {
@@ -76,7 +76,7 @@ class PathImplTest extends CypherFunSuite with FakeEntityTestSupport {
     val nodC = new FakeNode
     val rel1 = new FakeRel(nodA, nodB, typ)
     val rel2 = new FakeRel(nodB, nodC, typ)
-    val path = new PathImpl(nodA, rel1, nodB, rel2, nodC)
+    val path = PathImpl(nodA, rel1, nodB, rel2, nodC)
 
     path.lastRelationship() should equal(rel2)
   }

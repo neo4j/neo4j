@@ -59,7 +59,7 @@ class SizeFunctionTest extends CypherFunSuite {
 
   test("size cannot be used on paths") {
     //given
-    val p = new PathImpl(mock[Node], mock[Relationship], mock[Node])
+    val p = PathImpl(mock[Node], mock[Relationship], mock[Node])
     val m = ExecutionContext.from("p" -> p)
     val sizeFunction = SizeFunction(Variable("p"))
 
