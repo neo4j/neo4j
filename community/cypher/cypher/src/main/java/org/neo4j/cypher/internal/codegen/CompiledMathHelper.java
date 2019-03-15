@@ -28,7 +28,6 @@ import java.util.List;
 
 import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.values.AnyValue;
-import org.neo4j.values.AnyValues;
 import org.neo4j.values.storable.ArrayValue;
 import org.neo4j.values.storable.DurationValue;
 import org.neo4j.values.storable.IntegralValue;

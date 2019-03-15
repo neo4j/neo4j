@@ -125,8 +125,6 @@ case object isolateAggregation extends StatementRewriter {
     expressionsToGoToWith
   }
 
-  private val instance = bottomUp(rewriter, _.isInstanceOf[Expression])
-
   private def clauseNeedingWork(c: Clause): Boolean = c.treeExists {
     case e: Expression => hasAggregateButIsNotAggregate(e)
   }

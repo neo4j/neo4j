@@ -132,7 +132,6 @@ class ProcedureCallExecutionPlanTest extends CypherFunSuite {
     }
   }
 
-  private val procs = mock[Procedures]
   private val transactionalContext: QueryTransactionalContext = mock[QueryTransactionalContext]
   when(ctx.transactionalContext).thenReturn(transactionalContext)
   when(transactionalContext.cursors).thenReturn(mock[CursorFactory])

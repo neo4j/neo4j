@@ -29,7 +29,6 @@ class CypherTypeTest extends CypherFunSuite {
 
   test("foo") {
     val covariant = CTGraphRef.covariant
-    val s = covariant.toString
     covariant should not be empty
   }
 

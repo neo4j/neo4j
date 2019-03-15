@@ -45,8 +45,6 @@ class MakeValuesNeoSafeTest extends CypherFunSuite {
   }
 
   test("string arrays work") {
-    val array = Array[String]()
-
     makeValueNeoSafe(stringArray()) should equal(stringArray())
   }
 

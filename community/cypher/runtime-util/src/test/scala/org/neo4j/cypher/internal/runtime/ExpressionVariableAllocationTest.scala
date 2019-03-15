@@ -41,8 +41,6 @@ class ExpressionVariableAllocationTest extends CypherFunSuite with AstConstructi
 
   val exprParser = new ExpressionParser
 
-  private val semanticTable = SemanticTable()
-
   test("should noop for regular variable") {
     // given
     val plan = Selection(List(varFor("x")), Argument())

@@ -30,7 +30,6 @@ sealed trait PathStep extends Product with Foldable with Rewritable {
       this
     else {
       val constructor = Rewritable.copyConstructor(this)
-      val params = constructor.getParameterTypes
       val args = children.toVector
       val ctorArgs = args
       val duped = constructor.invoke(this, ctorArgs: _*)

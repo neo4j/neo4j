@@ -928,12 +928,6 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     cursor
   }
 
-  private def allocateAndTracePropertyCursor() = {
-    val cursor = transactionalContext.cursors.allocatePropertyCursor()
-    resources.trace(cursor)
-    cursor
-  }
-
   private def asKernelIndexOrder(indexOrder: IndexOrder): api.IndexOrder = indexOrder match {
     case IndexOrderAscending => KernelIndexOrder.ASCENDING
     case IndexOrderDescending => KernelIndexOrder.DESCENDING

@@ -439,29 +439,5 @@ public final class CompiledEquivalenceUtils
             return len * (31 * hashCode( array[0] ) + hashCode( array[len / 2] ) * 31 + hashCode( array[len - 1] ));
         }
     }
-
-    private static Boolean compareArrayAndList( Object array, List<?> list )
-    {
-        int length = Array.getLength( array );
-        if ( length != list.size() )
-        {
-            return false;
-        }
-
-        int i = 0;
-        for ( Object o : list )
-        {
-            if ( !equals( o, Array.get( array, i++ ) ) )
-            {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    private static boolean mixedFloatEquality( Float a, Double b )
-    {
-        return a.doubleValue() == b;
-    }
 }
 

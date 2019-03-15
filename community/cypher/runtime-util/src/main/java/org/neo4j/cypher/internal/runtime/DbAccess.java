@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.runtime;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
-import org.neo4j.internal.kernel.api.procs.QualifiedName;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.virtual.ListValue;

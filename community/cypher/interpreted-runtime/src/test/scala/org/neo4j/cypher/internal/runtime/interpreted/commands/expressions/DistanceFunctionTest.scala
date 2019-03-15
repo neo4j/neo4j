@@ -325,15 +325,6 @@ class DistanceFunctionTest extends CypherFunSuite {
       (long < trLong || doubleEquality.areEquivalent(long, trLong))
   }
 
-  private def beInsideBoundingBox(bottomLeft: PointValue, topRight: PointValue, tolerant: Boolean = false): Matcher[PointValue] = new Matcher[PointValue] {
-    override def apply(point: PointValue): MatchResult = {
-      MatchResult(
-        matches = insideBoundingBox(point, bottomLeft, topRight, tolerant),
-        rawFailureMessage = s"$point should be inside $bottomLeft -> $topRight, but was not.",
-        rawNegatedFailureMessage = s"$point should not be inside $bottomLeft -> $topRight, but was.")
-    }
-  }
-
   private def beInsideOneBoundingBox(boxes: Seq[(PointValue, PointValue)], tolerant: Boolean = false): Matcher[PointValue] = new Matcher[PointValue] {
     override def apply(point: PointValue): MatchResult = {
       MatchResult(

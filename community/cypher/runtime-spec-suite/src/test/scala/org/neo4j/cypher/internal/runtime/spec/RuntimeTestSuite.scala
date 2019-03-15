@@ -391,13 +391,6 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
     CustomRowsMatcher(matchPattern(func))
   }
 
-  private def pretty(diff: IndexedSeq[DiffItem]): String = {
-    val sb = new StringBuilder
-    for (diffItem <- diff)
-      sb ++= diffItem.missingRow.asArray().map(value => value.toString).mkString(if (diffItem.fromA) "- " else "+ ", ", ", "\n")
-    sb.result()
-  }
-
   def groupedBy(columns: String*): RowOrderMatcher = new GroupBy(columns: _*)
 
   def sortedAsc(column: String): RowOrderMatcher = new Ascending(column)
@@ -405,40 +398,6 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
   def sortedDesc(column: String): RowOrderMatcher = new Descending(column)
 
   case class DiffItem(missingRow: ListValue, fromA: Boolean)
-
-  private def diffOf(sortedA: IndexedSeq[ListValue], sortedB: IndexedSeq[ListValue]): IndexedSeq[DiffItem] = {
-    var aIndex = 0
-    var bIndex = 0
-    var diff = new ArrayBuffer[DiffItem]()
-    while (aIndex < sortedA.size && bIndex < sortedB.size) {
-      val rowA = sortedA(aIndex)
-      val rowB = sortedB(bIndex)
-
-      ANY_VALUE_ORDERING.compare(rowA, rowB) match {
-        case i if i > 0 =>
-          diff += DiffItem(rowB, fromA = false)
-          bIndex += 1
-        case i if i < 0 =>
-          diff += DiffItem(rowA, fromA = true)
-          aIndex += 1
-        case 0 =>
-          aIndex += 1
-          bIndex += 1
-      }
-    }
-    while (aIndex < sortedA.size) {
-      val rowA = sortedA(aIndex)
-      diff += DiffItem(rowA, fromA = true)
-      aIndex += 1
-    }
-    while (bIndex < sortedB.size) {
-      val rowB = sortedB(bIndex)
-      diff += DiffItem(rowB, fromA = false)
-      bIndex += 1
-    }
-
-    diff
-  }
 
 }
 

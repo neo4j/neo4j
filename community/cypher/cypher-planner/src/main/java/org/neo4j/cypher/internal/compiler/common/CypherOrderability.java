@@ -160,11 +160,6 @@ public class CypherOrderability
             this.comparator = comparator;
         }
 
-        public boolean isSuperTypeOf( Object value )
-        {
-            return this == ofValue( value );
-        }
-
         public static SuperType ofValue( Object value )
         {
             if ( value instanceof String || value instanceof Character )

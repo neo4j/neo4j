@@ -57,14 +57,6 @@ trait StartPoints extends Parser
     ) ~~ ")"
   }
 
-  private def IdentifiedIndexLookup: Rule3[String, String, org.neo4j.cypher.internal.v4_0.expressions.Expression] = rule {
-    ":" ~~ SymbolicNameString ~~ "(" ~~ SymbolicNameString ~~ operator("=") ~~ (StringLiteral | Parameter) ~~ ")"
-  }
-
-  private def IndexQuery: Rule2[String, org.neo4j.cypher.internal.v4_0.expressions.Expression] = rule {
-    ":" ~~ SymbolicNameString ~~ "(" ~~ (StringLiteral | Parameter) ~~ ")"
-  }
-
   private def LiteralIds: Rule1[Seq[org.neo4j.cypher.internal.v4_0.expressions.UnsignedIntegerLiteral]] = rule("an unsigned integer") {
     oneOrMore(UnsignedIntegerLiteral, separator = CommaSep)
   }

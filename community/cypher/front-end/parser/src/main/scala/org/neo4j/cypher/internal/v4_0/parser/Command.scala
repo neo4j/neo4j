@@ -95,12 +95,6 @@ trait Command extends Parser
     group(keyword("DROP") ~~ RelationshipPropertyExistenceConstraintSyntax) ~~>> (ast.DropRelationshipPropertyExistenceConstraint(_, _, _))
   }
 
-  private def ProcedureArguments: Rule1[Option[Seq[org.neo4j.cypher.internal.v4_0.expressions.Expression]]] = rule("arguments to a procedure") {
-    optional(group("(" ~~
-      zeroOrMore(Expression, separator = CommaSep) ~~ ")"
-    ) ~~> (_.toIndexedSeq))
-  }
-
   private def NodeKeyConstraintSyntax: Rule3[Variable, LabelName, Seq[org.neo4j.cypher.internal.v4_0.expressions.Property]] = keyword("CONSTRAINT ON") ~~ "(" ~~ Variable ~~ NodeLabel ~~ ")" ~~
     keyword("ASSERT") ~~ "(" ~~ PropertyExpressions ~~ ")" ~~ keyword("IS NODE KEY")
 

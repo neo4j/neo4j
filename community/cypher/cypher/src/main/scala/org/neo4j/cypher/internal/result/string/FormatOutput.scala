@@ -40,8 +40,6 @@ object FormatOutput {
       } else str
     }
 
-    def repeat(x: String, size: Int): String = (1 to size).map(i => x).mkString
-
     def createLine(columnSizes: Array[Int], row: Array[String]): String = {
       columnSizes.indices.map(i => {
         val length = columnSizes(i)
@@ -57,7 +55,6 @@ object FormatOutput {
         row <- result
         i <- columns.indices
       } {
-        val column = columns(i)
         val valueLength = row(i).length
         if (columnSizes(i) < valueLength)
           columnSizes(i) = valueLength
