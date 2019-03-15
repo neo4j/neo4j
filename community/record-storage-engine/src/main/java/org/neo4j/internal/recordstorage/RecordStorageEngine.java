@@ -25,7 +25,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-import org.neo4j.common.DependencySatisfier;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.internal.diagnostics.DiagnosticsManager;
@@ -323,12 +322,6 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     private LockService lockService( TransactionApplicationMode mode )
     {
         return mode == RECOVERY || mode == REVERSE_RECOVERY ? NO_LOCK_SERVICE : lockService;
-    }
-
-    public void satisfyDependencies( DependencySatisfier satisfier )
-    {
-        satisfier.satisfyDependency( cacheAccess );
-        satisfier.satisfyDependency( integrityValidator );
     }
 
     @Override

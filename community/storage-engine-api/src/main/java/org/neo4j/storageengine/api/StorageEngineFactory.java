@@ -25,7 +25,6 @@ import java.util.List;
 import java.util.stream.Stream;
 
 import org.neo4j.common.DependencyResolver;
-import org.neo4j.common.DependencySatisfier;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -59,11 +58,10 @@ public interface StorageEngineFactory
      * Instantiates a {@link StorageEngine} where all dependencies can be retrieved from the supplied {@code dependencyResolver}.
      *
      * @param dependencyResolver {@link DependencyResolver} used to get all required dependencies to instantiate the {@link StorageEngine}.
-     * @param dependencySatisfier {@link DependencySatisfier} providing ways to let the storage engine provide dependencies
      * back to the instantiator. This is a hack with the goal to be removed completely when graph storage abstraction in kernel is properly in place.
      * @return the instantiated {@link StorageEngine}.
      */
-    StorageEngine instantiate( DependencyResolver dependencyResolver, DependencySatisfier dependencySatisfier );
+    StorageEngine instantiate( DependencyResolver dependencyResolver );
 
     /**
      * Lists files of a specific storage location.
