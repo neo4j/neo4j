@@ -24,7 +24,6 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expres
 import org.neo4j.cypher.internal.runtime.{ExecutionContext, LenientCreateRelationship, Operations, QueryContext}
 import org.neo4j.cypher.internal.v4_0.util.attribution.Id
 import org.neo4j.cypher.internal.v4_0.util.{CypherTypeException, InternalException, InvalidSemanticsException}
-import org.neo4j.function.ThrowingBiConsumer
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.{NodeValue, RelationshipValue}
@@ -41,18 +40,18 @@ abstract class BaseCreatePipe(src: Pipe) extends PipeWithSource(src) {
                               state: QueryState,
                               entityId: Long,
                               properties: Expression,
-                              ops: Operations[_, _]): Unit =
-    properties(context, state) match {
+                              ops: Operations[_, _]): Unit = {
+    val value = properties(context, state)
+    value match {
       case _: NodeValue | _: RelationshipValue =>
-        throw new CypherTypeException("Parameter provided for node creation is not a Map")
+        throw new CypherTypeException(s"Parameter provided for node creation is not a Map, instead got a ${value.getTypeName}")
       case IsMap(map) =>
-        map(state).foreach(new ThrowingBiConsumer[String, AnyValue, RuntimeException] {
-          override def accept(k: String, v: AnyValue): Unit = setProperty(entityId, k, v, state.query, ops)
-        })
+        map(state).foreach((k: String, v: AnyValue) => setProperty(entityId, k, v, state.query, ops))
 
       case _ =>
-        throw new CypherTypeException("Parameter provided for node creation is not a Map")
+        throw new CypherTypeException(s"Parameter provided for node creation is not a Map, instead got a ${value.getTypeName}")
     }
+  }
 
   /**
     * Set property on node, or call `handleNoValue` if value is `NO_VALUE`.
