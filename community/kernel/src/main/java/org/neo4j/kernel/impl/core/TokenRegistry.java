@@ -90,7 +90,16 @@ public class TokenRegistry
             {
                 throw new NonUniqueTokenException( tokenType, token.name(), token.id(), token.id() );
             }
-            insertChecked( token.isInternal() ? internalNameToId : publicNameToId, token );
+            if ( token.isInternal() )
+            {
+                checkNameUniqueness( internalNameToId, token );
+                internalNameToId.put( token.name(), token.id() );
+            }
+            else
+            {
+                checkNameUniqueness( publicNameToId, token );
+                publicNameToId.put( token.name(), token.id() );
+            }
             idToToken.put( token.id(), token );
         }
         finally
@@ -228,7 +237,18 @@ public class TokenRegistry
 
         for ( NamedToken token : tokens )
         {
-            insertChecked( token.isInternal() ? uniqueInternalNames : uniquePublicNames, token );
+            if ( token.isInternal() )
+            {
+                checkNameUniqueness( uniqueInternalNames, token );
+                checkNameUniqueness( internalNameToId, token );
+                uniqueInternalNames.put( token.name(), token.id() );
+            }
+            else
+            {
+                checkNameUniqueness( uniquePublicNames, token );
+                checkNameUniqueness( publicNameToId, token );
+                uniquePublicNames.put( token.name(), token.id() );
+            }
             if ( !uniqueIds.add( token.id() ) || idToToken.containsKey( token.id() ) )
             {
                 throw new NonUniqueTokenException( tokenType, token.name(), token.id(), token.id() );
@@ -239,17 +259,6 @@ public class TokenRegistry
         {
             insertUnchecked( token );
         }
-    }
-
-    private void insertChecked( MutableObjectIntMap<String> namesToId, NamedToken token )
-    {
-        checkNameUniqueness( namesToId, token );
-        MutableObjectIntMap<String> additionalCheck;
-        if ( namesToId != ( additionalCheck = token.isInternal() ? internalNameToId : publicNameToId ) )
-        {
-            checkNameUniqueness( additionalCheck, token );
-        }
-        namesToId.put( token.name(), token.id() );
     }
 
     private void checkNameUniqueness( MutableObjectIntMap<String> namesToId, NamedToken token )
