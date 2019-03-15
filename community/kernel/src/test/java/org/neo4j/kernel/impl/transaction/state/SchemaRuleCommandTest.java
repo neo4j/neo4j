@@ -32,7 +32,6 @@ import org.neo4j.kernel.impl.api.BatchTransactionApplier;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.IndexingUpdateService;
-import org.neo4j.kernel.impl.api.index.PropertyPhysicalToLogicalConverter;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.MetaDataStore;
@@ -90,7 +89,7 @@ public class SchemaRuleCommandTest
     private final PropertyStore propertyStore = mock( PropertyStore.class );
     private final IndexBatchTransactionApplier indexApplier =
             new IndexBatchTransactionApplier( indexes, labelScanStoreSynchronizer, indexUpdatesSync, mock( NodeStore.class ), neoStores.getRelationshipStore(),
-                    new PropertyPhysicalToLogicalConverter( propertyStore ), new IndexActivator( indexes ) );
+                    propertyStore, new IndexActivator( indexes ) );
     private final BaseCommandReader reader = new PhysicalLogCommandReaderV3_0_2();
     private final StoreIndexDescriptor rule = TestIndexDescriptorFactory.forLabel( labelId, propertyKey ).withId( id );
 

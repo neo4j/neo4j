@@ -380,6 +380,11 @@ public abstract class Command implements StorageCommand
             return handler.visitPropertyCommand( this );
         }
 
+        public long getEntityId()
+        {
+            return after.isNodeSet() ? after.getNodeId() : after.getRelId();
+        }
+
         public long getNodeId()
         {
             return after.getNodeId();
