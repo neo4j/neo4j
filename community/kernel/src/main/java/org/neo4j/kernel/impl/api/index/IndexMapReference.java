@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import org.eclipse.collections.api.set.primitive.IntSet;
-
 import java.util.Set;
 import java.util.function.Function;
 
@@ -105,10 +103,10 @@ public class IndexMapReference implements IndexMapSnapshotProvider
         return indexMap.getAllIndexProxies();
     }
 
-    public Set<SchemaDescriptor> getRelatedIndexes( long[] changedEntityTokens, long[] unchangedEntityTokens, IntSet properties,
+    public Set<SchemaDescriptor> getRelatedIndexes( long[] changedEntityTokens, long[] unchangedEntityTokens, int[] sortedProperties, boolean mode,
             EntityType entityType )
     {
-        return indexMap.getRelatedIndexes( changedEntityTokens, unchangedEntityTokens, properties, entityType );
+        return indexMap.getRelatedIndexes( changedEntityTokens, unchangedEntityTokens, sortedProperties, mode, entityType );
     }
 
     public IndexUpdaterMap createIndexUpdaterMap( IndexUpdateMode mode )

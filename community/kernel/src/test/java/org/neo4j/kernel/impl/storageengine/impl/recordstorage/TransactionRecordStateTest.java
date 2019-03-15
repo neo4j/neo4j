@@ -330,7 +330,7 @@ public class TransactionRecordStateTest
         Iterable<EntityUpdates> indexUpdates = indexUpdatesOf( neoStores, recordState );
 
         // THEN
-        EntityUpdates expected = EntityUpdates.forEntity( nodeId ).withTokens( noLabels ).withTokensAfter( oneLabelId ).build();
+        EntityUpdates expected = EntityUpdates.forEntity( nodeId, false ).withTokens( noLabels ).withTokensAfter( oneLabelId ).build();
         assertEquals( expected, Iterables.single( indexUpdates ) );
     }
 
@@ -354,7 +354,7 @@ public class TransactionRecordStateTest
 
         // THEN
         EntityUpdates expected =
-                EntityUpdates.forEntity( nodeId ).withTokens( oneLabelId ).withTokensAfter( bothLabelIds )
+                EntityUpdates.forEntity( nodeId, false ).withTokens( oneLabelId ).withTokensAfter( bothLabelIds )
                         .added( propertyId2, value2 )
                         .build();
         assertEquals( expected, Iterables.single( indexUpdates ) );
@@ -379,7 +379,7 @@ public class TransactionRecordStateTest
         Iterable<EntityUpdates> indexUpdates = indexUpdatesOf( neoStores, recordState );
 
         // THEN
-        EntityUpdates expected = EntityUpdates.forEntity( nodeId ).withTokens( oneLabelId ).withTokensAfter( noLabels ).build();
+        EntityUpdates expected = EntityUpdates.forEntity( nodeId, false ).withTokens( oneLabelId ).withTokensAfter( noLabels ).build();
         assertEquals( expected, Iterables.single( indexUpdates ) );
     }
 
@@ -403,7 +403,7 @@ public class TransactionRecordStateTest
 
         // THEN
         EntityUpdates expected =
-                EntityUpdates.forEntity( nodeId ).withTokens( bothLabelIds ).withTokensAfter( oneLabelId )
+                EntityUpdates.forEntity( nodeId, false ).withTokens( bothLabelIds ).withTokensAfter( oneLabelId )
                         .removed( propertyId1, value1 )
                         .build();
         assertEquals( expected, Iterables.single( indexUpdates ) );
@@ -429,7 +429,7 @@ public class TransactionRecordStateTest
 
         // THEN
         EntityUpdates expected =
-                EntityUpdates.forEntity( nodeId ).withTokens( bothLabelIds ).withTokensAfter( oneLabelId )
+                EntityUpdates.forEntity( nodeId, false ).withTokens( bothLabelIds ).withTokensAfter( oneLabelId )
                         .added( propertyId2, value2 )
                         .build();
         assertEquals( expected, Iterables.single( indexUpdates ) );
@@ -457,7 +457,7 @@ public class TransactionRecordStateTest
 
         // THEN
         EntityUpdates expected =
-                EntityUpdates.forEntity( nodeId )
+                EntityUpdates.forEntity( nodeId, false )
                         .changed( propertyId1, value1, newValue1 )
                         .changed( propertyId2, value2, newValue2 )
                         .build();
@@ -485,7 +485,7 @@ public class TransactionRecordStateTest
 
         // THEN
         EntityUpdates expected =
-                EntityUpdates.forEntity( (long) nodeId ).withTokens( oneLabelId )
+                EntityUpdates.forEntity( (long) nodeId, false ).withTokens( oneLabelId )
                         .removed( propertyId1, value1 )
                         .removed( propertyId2, value2 )
                         .build();
@@ -757,7 +757,7 @@ public class TransactionRecordStateTest
 
         // THEN
         EntityUpdates expected =
-                EntityUpdates.forEntity( nodeId ).withTokens( noLabels ).withTokensAfter( oneLabelId )
+                EntityUpdates.forEntity( nodeId, false ).withTokens( noLabels ).withTokensAfter( oneLabelId )
                         .added( propertyId1, value1 )
                         .added( propertyId2, value2 ).build();
         assertEquals( expected, Iterables.single( updates ) );

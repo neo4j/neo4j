@@ -159,9 +159,9 @@ public class MultiIndexPopulationConcurrentUpdatesIT
     public void applyConcurrentDeletesToPopulatedIndex() throws Throwable
     {
         List<EntityUpdates> updates = new ArrayList<>( 2 );
-        updates.add( EntityUpdates.forEntity( country1.getId() ).withTokens( id( COUNTRY_LABEL ) )
+        updates.add( EntityUpdates.forEntity( country1.getId(), false ).withTokens( id( COUNTRY_LABEL ) )
                 .removed( propertyId, Values.of( "Sweden" ) ).build() );
-        updates.add( EntityUpdates.forEntity( color2.getId() ).withTokens( id( COLOR_LABEL ) )
+        updates.add( EntityUpdates.forEntity( color2.getId(), false ).withTokens( id( COLOR_LABEL ) )
                 .removed( propertyId, Values.of( "green" ) ).build() );
 
         launchCustomIndexPopulation( labelsNameIdMap, propertyId, new UpdateGenerator( updates ) );
@@ -189,9 +189,9 @@ public class MultiIndexPopulationConcurrentUpdatesIT
     public void applyConcurrentAddsToPopulatedIndex() throws Throwable
     {
         List<EntityUpdates> updates = new ArrayList<>( 2 );
-        updates.add( EntityUpdates.forEntity( otherNodes[0].getId() ).withTokens( id( COUNTRY_LABEL ) )
+        updates.add( EntityUpdates.forEntity( otherNodes[0].getId(), false ).withTokens( id( COUNTRY_LABEL ) )
                 .added( propertyId, Values.of( "Denmark" ) ).build() );
-        updates.add( EntityUpdates.forEntity( otherNodes[1].getId() ).withTokens( id( CAR_LABEL ) )
+        updates.add( EntityUpdates.forEntity( otherNodes[1].getId(), false ).withTokens( id( CAR_LABEL ) )
                 .added( propertyId, Values.of( "BMW" ) ).build() );
 
         launchCustomIndexPopulation( labelsNameIdMap, propertyId, new UpdateGenerator( updates ) );
@@ -219,9 +219,9 @@ public class MultiIndexPopulationConcurrentUpdatesIT
     public void applyConcurrentChangesToPopulatedIndex() throws Exception
     {
         List<EntityUpdates> updates = new ArrayList<>( 2 );
-        updates.add( EntityUpdates.forEntity( color2.getId() ).withTokens( id( COLOR_LABEL ) )
+        updates.add( EntityUpdates.forEntity( color2.getId(), false ).withTokens( id( COLOR_LABEL ) )
                 .changed( propertyId, Values.of( "green" ), Values.of( "pink" ) ).build() );
-        updates.add( EntityUpdates.forEntity( car2.getId() ).withTokens( id( CAR_LABEL ) )
+        updates.add( EntityUpdates.forEntity( car2.getId(), false ).withTokens( id( CAR_LABEL ) )
                 .changed( propertyId, Values.of( "Ford" ), Values.of( "SAAB" ) ).build() );
 
         launchCustomIndexPopulation( labelsNameIdMap, propertyId, new UpdateGenerator( updates ) );

@@ -34,12 +34,15 @@ import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
+import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.PropertyCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.RelationshipCommand;
 import org.neo4j.storageengine.api.EntityType;
 
 import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
+import static org.neo4j.kernel.impl.transaction.command.Command.Mode.CREATE;
+import static org.neo4j.kernel.impl.transaction.command.Command.Mode.DELETE;
 
 /**
  * Derives logical index updates from physical records, provided by {@link NodeCommand node commands},
@@ -155,11 +158,18 @@ public class OnlineIndexUpdates implements IndexUpdates
         }
 
         // First get possible Label changes
-        EntityUpdates.Builder nodePropertyUpdates = EntityUpdates.forEntity( nodeId ).withTokens( nodeLabelsBefore ).withTokensAfter( nodeLabelsAfter );
+        boolean complete = providesCompleteListOfProperties( nodeChanges );
+        EntityUpdates.Builder nodePropertyUpdates =
+                EntityUpdates.forEntity( nodeId, complete ).withTokens( nodeLabelsBefore ).withTokensAfter( nodeLabelsAfter );
 
         // Then look for property changes
         converter.convertPropertyRecord( propertyCommandsForNode, nodePropertyUpdates );
         return nodePropertyUpdates;
+    }
+
+    private static boolean providesCompleteListOfProperties( Command entityCommand )
+    {
+        return entityCommand != null && (entityCommand.getMode() == CREATE || entityCommand.getMode() == DELETE);
     }
 
     private EntityUpdates.Builder gatherUpdatesFromCommandsForRelationship( long relationshipId, RelationshipCommand relationshipCommand,
@@ -177,8 +187,9 @@ public class OnlineIndexUpdates implements IndexUpdates
             RelationshipRecord relationshipRecord = loadRelationship( relationshipId );
             reltypeBefore = reltypeAfter = relationshipRecord.getType();
         }
+        boolean complete = providesCompleteListOfProperties( relationshipCommand );
         EntityUpdates.Builder relationshipPropertyUpdates =
-                EntityUpdates.forEntity( relationshipId ).withTokens( reltypeBefore ).withTokensAfter( reltypeAfter );
+                EntityUpdates.forEntity( relationshipId, complete ).withTokens( reltypeBefore ).withTokensAfter( reltypeAfter );
         converter.convertPropertyRecord( propertyCommands, relationshipPropertyUpdates );
         return relationshipPropertyUpdates;
     }

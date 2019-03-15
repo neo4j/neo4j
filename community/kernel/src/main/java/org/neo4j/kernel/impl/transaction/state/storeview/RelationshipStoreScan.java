@@ -55,7 +55,7 @@ public class RelationshipStoreScan<FAILURE extends Exception> extends PropertyAw
         if ( propertyUpdatesVisitor != null && containsAnyEntityToken( relationshipTypeIds, reltype ) )
         {
             // Notify the property update visitor
-            EntityUpdates.Builder updates = EntityUpdates.forEntity( cursor.entityReference() ).withTokens( reltype );
+            EntityUpdates.Builder updates = EntityUpdates.forEntity( cursor.entityReference(), true ).withTokens( reltype );
 
             if ( hasRelevantProperty( cursor, updates ) )
             {
