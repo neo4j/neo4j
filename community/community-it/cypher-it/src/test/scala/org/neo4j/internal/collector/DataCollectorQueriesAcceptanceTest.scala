@@ -19,6 +19,8 @@
  */
 package org.neo4j.internal.collector
 
+import java.nio.file.Files
+
 import org.neo4j.cypher._
 import org.scalatest.matchers.{MatchResult, Matcher}
 
@@ -319,6 +321,26 @@ class DataCollectorQueriesAcceptanceTest extends ExecutionEngineFunSuite {
     res.toList should beListWithoutOrder(
       querySection("EXPLAIN MATCH (:L0)-[:R0]->(:L1)-[:R1]->(:L2) RETURN 1"),
       querySection("CYPHER 3.5 runtime=interpreted PROFILE CREATE ()")
+    )
+  }
+
+  test("[retrieveAllAnonymized] should handle load csv") {
+    // given
+    val path = Files.createTempFile("data", ".csv")
+    val url = s"file://$path"
+    execute("CALL db.stats.collect('QUERIES')").single
+    execute(s"LOAD CSV FROM '$url' AS row CREATE ({key: row[0]})")
+    execute(s"USING PERIODIC COMMIT 30 LOAD CSV FROM '$url' AS row CREATE ({key: row[0]})")
+    execute("CALL db.stats.stop('QUERIES')").single
+
+    // when
+    val res = execute("CALL db.stats.retrieveAllAnonymized('myToken')")
+
+    // then
+    val urlLength = url.length
+    res.toList should beListWithoutOrder(
+      querySection(s"LOAD CSV FROM 'string[$urlLength]' AS var0 CREATE ({UNKNOWN0: var0[0]})"),
+      querySection(s"USING PERIODIC COMMIT 30 LOAD CSV FROM 'string[$urlLength]' AS var0 CREATE ({UNKNOWN0: var0[0]})")
     )
   }
 

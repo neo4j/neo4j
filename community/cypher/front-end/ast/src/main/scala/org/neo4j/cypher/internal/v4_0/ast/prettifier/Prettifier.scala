@@ -22,7 +22,20 @@ import org.neo4j.cypher.internal.v4_0.expressions.{NodePattern, PatternElement, 
 case class Prettifier(mkStringOf: ExpressionStringifier) {
 
   def asString(statement: Statement): String = statement match {
-    case Query(_, part) => queryPart(part)
+    case Query(maybePeriodicCommit, part) =>
+      maybePeriodicCommit match {
+        case None => queryPart(part)
+        case Some(periodicCommit) =>
+          val sb = new StringBuilder
+          sb ++= "USING PERIODIC COMMIT"
+          for (x <- periodicCommit.size) {
+            sb += ' '
+            sb ++= x.value.toString
+          }
+          sb ++= NL
+          sb ++= queryPart(part)
+          sb.result()
+      }
 
     case CreateIndex(LabelName(label), properties) =>
       s"CREATE INDEX ON :$label${properties.map(_.name).mkString("(", ", ", ")")}"
@@ -94,6 +107,10 @@ case class Prettifier(mkStringOf: ExpressionStringifier) {
     case s: SetClause => asString(s)
     case d: Delete => asString(d)
     case m: Merge => asString(m)
+    case l: LoadCSV => asString(l)
+    case f: Foreach => asString(f)
+    case s: Start => asString(s)
+    case c: CreateUnique => asString(c)
     case _ => clause.asCanonicalStringVal // TODO
   }
 
@@ -185,8 +202,45 @@ case class Prettifier(mkStringOf: ExpressionStringifier) {
     s"SET ${items.mkString(", ")}"
   }
 
+  private def asString(v: LoadCSV): String = {
+    val withHeaders = if (v.withHeaders) " WITH HEADERS" else ""
+    val url = mkStringOf(v.urlString)
+    val varName = v.variable.name
+    val fieldTerminator = v.fieldTerminator.map(x => " FIELDTERMINATOR "+mkStringOf(x)).getOrElse("")
+    s"LOAD CSV$withHeaders FROM $url AS $varName$fieldTerminator"
+  }
+
   private def asString(delete: Delete): String = {
     s"DELETE ${delete.expressions.map(mkStringOf(_)).mkString(", ")}"
+  }
+
+  private def asString(foreach: Foreach): String = {
+    val varName = foreach.variable.name
+    val list = mkStringOf(foreach.expression)
+    val updates = foreach.updates.map(dispatch).mkString(s"$NL  ", s"$NL  ", NL)
+    s"FOREACH ( $varName IN $list |$updates)"
+  }
+
+  private def asString(start: Start): String = {
+
+
+    val startItems =
+      start.items.map {
+        case AllNodes(v) => s"${v.name} = NODE( * )"
+        case NodeByIds(v, ids) => s"${v.name} = NODE( ${ids.map(_.value.toString).mkString(", ")} )"
+        case NodeByParameter(v, param) => s"${v.name} = NODE( $$${param.name} )"
+        case AllRelationships(v) => s"${v.name} = RELATIONSHIP( * )"
+        case RelationshipByIds(v, ids) => s"${v.name} = RELATIONSHIP( ${ids.map(_.value.toString).mkString(", ")} )"
+        case RelationshipByParameter(v, param) => s"${v.name} = RELATIONSHIP( $$${param.name} )"
+      }
+
+    val where = start.where.map(w => NL + "  WHERE " + mkStringOf(w.expression)).getOrElse("")
+    s"START ${startItems.mkString(s",$NL      ")}$where"
+  }
+
+  private def asString(c: CreateUnique): String = {
+    val p = c.pattern.patternParts.map(p => asString(p)).mkString(", ")
+    s"CREATE UNIQUE $p"
   }
 
   private def asString(properties: Seq[Property]): String =
