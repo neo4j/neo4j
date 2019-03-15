@@ -288,7 +288,7 @@ public final class Recovery
                 LockService.NO_LOCK_SERVICE, databaseHealth, new DefaultIdGeneratorFactory( fs ), new DefaultIdController(),
                 EmptyVersionContextSupplier.EMPTY, logService );
 
-        StorageEngine storageEngine = storageEngineFactory.instantiate( storageEngineDependencies );
+        StorageEngine storageEngine = storageEngineFactory.instantiate( storageEngineDependencies, storageEngineDependencies );
 
         // Label index
         NeoStoreIndexStoreView neoStoreIndexStoreView = new NeoStoreIndexStoreView( LockService.NO_LOCK_SERVICE, storageEngine::newReader );

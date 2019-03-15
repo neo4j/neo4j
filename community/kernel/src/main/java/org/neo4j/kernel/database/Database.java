@@ -63,6 +63,7 @@ import org.neo4j.kernel.impl.api.DatabaseSchemaState;
 import org.neo4j.kernel.impl.api.KernelImpl;
 import org.neo4j.kernel.impl.api.KernelTransactions;
 import org.neo4j.kernel.impl.api.KernelTransactionsSnapshot;
+import org.neo4j.kernel.impl.api.SchemaState;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.api.StackingQueryRegistrationOperations;
 import org.neo4j.kernel.impl.api.StatementOperationParts;
@@ -315,7 +316,6 @@ public class Database extends LifecycleAdapter
             databaseDependencies.satisfyDependency( new IdBasedStoreEntityCounters( this.idGeneratorFactory ) );
             databaseDependencies.satisfyDependency( lockService );
             databaseDependencies.satisfyDependency( new DefaultValueMapper( facade ) );
-            databaseDependencies.satisfyDependency( versionContextSupplier );
 
             DefaultLogRotationMonitor logRotationMonitor = new DefaultLogRotationMonitor();
             DefaultCheckPointMonitor checkPointMonitor = new DefaultCheckPointMonitor();
@@ -363,9 +363,7 @@ public class Database extends LifecycleAdapter
             Supplier<KernelTransactionsSnapshot> transactionsSnapshotSupplier = () -> kernelModule.kernelTransactions().get();
             idController.initialize( transactionsSnapshotSupplier );
 
-            storageEngine = storageEngineFactory.instantiate( databaseDependencies );
-            life.add( storageEngine );
-            life.add( storageEngine.schemaAndTokensLifecycle() );
+            storageEngine = buildStorageEngine( databasePageCache, databaseSchemaState, versionContextSupplier, storageEngineFactory );
             life.add( logFiles );
 
             // Label index
@@ -491,6 +489,19 @@ public class Database extends LifecycleAdapter
     private void upgradeStore() throws IOException
     {
         databaseMigratorFactory.createDatabaseMigrator( databaseLayout, databaseDependencies ).migrate();
+    }
+
+    private StorageEngine buildStorageEngine( PageCache pageCache, SchemaState schemaState, VersionContextSupplier versionContextSupplier,
+            StorageEngineFactory storageEngineFactory )
+    {
+        Dependencies storageEngineDependencies = new Dependencies();
+        storageEngineDependencies.satisfyDependencies( databaseLayout, config, pageCache, fs, logService, tokenHolders, schemaState, constraintSemantics,
+                lockService, databaseHealth, idGeneratorFactory, idController, versionContextSupplier );
+
+        StorageEngine storageEngine = storageEngineFactory.instantiate( storageEngineDependencies, databaseDependencies );
+        life.add( storageEngine );
+        life.add( storageEngine.schemaAndTokensLifecycle() );
+        return storageEngine;
     }
 
     /**

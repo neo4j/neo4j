@@ -26,6 +26,7 @@ import java.util.List;
 
 import org.neo4j.annotations.service.ServiceProvider;
 import org.neo4j.common.DependencyResolver;
+import org.neo4j.common.DependencySatisfier;
 import org.neo4j.configuration.Config;
 import org.neo4j.exceptions.UnsatisfiedDependencyException;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -104,7 +105,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
     }
 
     @Override
-    public StorageEngine instantiate( DependencyResolver dependencyResolver )
+    public StorageEngine instantiate( DependencyResolver dependencyResolver, DependencySatisfier dependencySatisfier )
     {
         RecordStorageEngine storageEngine = new RecordStorageEngine(
                 dependencyResolver.resolveDependency( DatabaseLayout.class ),
@@ -120,6 +121,11 @@ public class RecordStorageEngineFactory implements StorageEngineFactory
                 dependencyResolver.resolveDependency( IdGeneratorFactory.class ),
                 dependencyResolver.resolveDependency( IdController.class ),
                 dependencyResolver.resolveDependency( VersionContextSupplier.class ) );
+
+        // We pretend that the storage engine abstract hides all details within it. Whereas that's mostly
+        // true it's not entirely true for the time being. As long as we need this call below, which
+        // makes available one or more internal things to the outside world, there are leaks to plug.
+        storageEngine.satisfyDependencies( dependencySatisfier );
 
         return storageEngine;
     }
