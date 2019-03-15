@@ -70,7 +70,7 @@ class LazyPropertyKeyTest extends CypherFunSuite {
 
     // WHEN
     val lazyPropertyKey = LazyPropertyKey(PROPERTY_KEY_NAME)
-    for (i <- 1 to 100) lazyPropertyKey.id(context)
+    for (_ <- 1 to 100) lazyPropertyKey.id(context)
 
     // THEN
     verify(context).getOptPropertyKeyId("foo")

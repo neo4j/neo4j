@@ -40,7 +40,7 @@ case object selectPatternPredicates extends CandidateGenerator[LogicalPlan] {
           case p@Not(patternExpression: PatternExpression) =>
             val rhs = rhsPlan(lhs, patternExpression, interestingOrder, context)
             context.logicalPlanProducer.planAntiSemiApply(lhs, rhs, p, context)
-          case p@Ors(exprs) =>
+          case Ors(exprs) =>
             val (patternExpressions, expressions) = exprs.partition {
               case _: PatternExpression => true
               case Not(_: PatternExpression) => true

@@ -88,7 +88,7 @@ object alignGetValueFromIndexBehavior {
 
   private def collectPropertiesAndVariables(expression: FoldableAny): Set[Expression] =
     expression.treeFold(Set.empty[Expression]) {
-      case prop@Property(v: Variable, _) => acc => (acc + prop, None)
+      case prop@Property(_: Variable, _) => acc => (acc + prop, None)
       case v: Variable => acc => (acc + v, None)
     }
 
@@ -127,7 +127,7 @@ object alignGetValueFromIndexBehavior {
       case Variable(newVarName) =>
         projectExpressions.collectFirst {
           case (`newVarName`, oldVar:Variable) => oldVar
-          case (`newVarName`, oldProp@Property(v: Variable, _)) => oldProp
+          case (`newVarName`, oldProp@Property(_: Variable, _)) => oldProp
         }
     }
   }

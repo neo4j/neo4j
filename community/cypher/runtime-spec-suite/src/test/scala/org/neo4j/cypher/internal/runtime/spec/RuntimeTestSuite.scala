@@ -215,7 +215,7 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
 
   def circleGraph(nNodes: Int, labels: String*): (Seq[Node], Seq[Relationship]) = {
     val nodes = inTx {
-      for (i <- 0 until nNodes) yield {
+      for (_ <- 0 until nNodes) yield {
         graphDb.createNode(labels.map(Label.label): _*)
       }
     }

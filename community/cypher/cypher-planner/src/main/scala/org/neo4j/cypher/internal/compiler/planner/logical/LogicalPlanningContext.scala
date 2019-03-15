@@ -93,14 +93,14 @@ case class LogicalPlanningContext(planContext: PlanContext,
 
 object NodeIdName {
   def unapply(v: Any, context: LogicalPlanningContext): Option[String] = v match {
-    case variable@Variable(name) if context.semanticTable.isNode(variable) => Some(variable.name)
+    case variable@Variable(_) if context.semanticTable.isNode(variable) => Some(variable.name)
     case _ => None
   }
 }
 
 object RelationshipIdName {
   def unapply(v: Any, context: LogicalPlanningContext): Option[String] = v match {
-    case variable@Variable(name) if context.semanticTable.isRelationship(variable) => Some(variable.name)
+    case variable@Variable(_) if context.semanticTable.isRelationship(variable) => Some(variable.name)
     case _ => None
   }
 }

@@ -28,7 +28,7 @@ class LogicalPlanAssignedIdTest extends CypherFunSuite with LogicalPlanningTestS
   test("ids are different between plans") {
     val sr1 = Argument()
     val sr2 = Argument()
-    val apply = Apply(sr1, sr2)
+    Apply(sr1, sr2)
 
     sr1.id shouldNot equal(sr2.id)
   }

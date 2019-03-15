@@ -51,7 +51,7 @@ object PatternExpressionPatternElementNamer {
       case patternElement: PatternElement =>
         acc => (acc :+ patternElement, Some(identity))
 
-      case patternExpr: PatternExpression =>
+      case _: PatternExpression =>
         acc => (acc, None)
     }
   }

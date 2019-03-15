@@ -114,7 +114,7 @@ class TopNPipeTest extends CypherFunSuite {
 
     val r = new Random(1337)
 
-    val in = (0 until count).map(i => Map("a" -> i)).sortBy( x => 50 - r.nextInt(100))
+    val in = (0 until count).map(i => Map("a" -> i)).sortBy( _ => 50 - r.nextInt(100))
     new FakePipe(in)
   }
 }

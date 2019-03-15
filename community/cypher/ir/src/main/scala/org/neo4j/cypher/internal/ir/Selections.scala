@@ -90,10 +90,10 @@ case class Selections(predicates: Set[Predicate] = Set.empty) {
   def ++(other: Selections): Selections = {
     val otherPredicates = other.predicates
     val keptPredicates  = predicates.filter {
-      case pred@Predicate(_, expr: PartialPredicate[_]) =>
+      case Predicate(_, expr: PartialPredicate[_]) =>
         !expr.coveringPredicate.asPredicates.forall(expr => otherPredicates.contains(expr) || predicates.contains(expr))
 
-      case pred =>
+      case _ =>
         true
     }
 

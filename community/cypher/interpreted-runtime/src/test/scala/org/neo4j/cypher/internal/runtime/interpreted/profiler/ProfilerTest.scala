@@ -288,8 +288,8 @@ case class ProfilerTestPipe(source: Pipe, name: String, rows: Int, dbAccess: Int
       statisticProvider.hits = hits
       statisticProvider.misses = misses
     }
-    (0 until dbAccess).foreach(x => state.query.createNode(Array.empty))
-    (0 until rows).map(x => ExecutionContext.empty).toIterator
+    (0 until dbAccess).foreach(_ => state.query.createNode(Array.empty))
+    (0 until rows).map(_ => ExecutionContext.empty).toIterator
   }
 }
 

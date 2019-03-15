@@ -361,10 +361,10 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
       case x:VariableSelector =>
         check(ctx, x.id)
 
-      case x:PropertySelector =>
+      case _:PropertySelector =>
         SemanticCheckResult.success
 
-      case x:AllPropertiesSelector =>
+      case _:AllPropertiesSelector =>
         SemanticCheckResult.success
 
       case x:DesugaredMapProjection =>

@@ -29,7 +29,7 @@ object labelScanLeafPlanner extends LeafPlanner with LeafPlanFromExpression {
 
   override def producePlanFor(e: Expression, qg: QueryGraph, interestingOrder: InterestingOrder, context: LogicalPlanningContext): Option[LeafPlansForVariable] = {
     e match {
-      case labelPredicate@HasLabels(v@Variable(varName), labels) =>
+      case labelPredicate@HasLabels(Variable(varName), labels) =>
         val id = varName
         if (qg.patternNodes(id) && !qg.argumentIds(id)) {
           val labelName = labels.head

@@ -109,7 +109,7 @@ object triadicSelectionFinder extends CandidateGenerator[LogicalPlan] {
   private def matchingRelationshipPattern(pattern: PatternExpression, from: String, to: String,
                                           types: Seq[RelTypeName], dir: SemanticDirection): Boolean = pattern match {
     // (a)-[:X]->(c)
-    case p@PatternExpression(
+    case PatternExpression(
       RelationshipsPattern(
         RelationshipChain(
           NodePattern(Some(Variable(predicateFrom)), List(), None, _),

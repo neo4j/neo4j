@@ -45,7 +45,7 @@ case class cleanUpEager(solveds: Solveds, attributes: Attributes) extends Rewrit
       res
 
     // LIMIT E => E LIMIT
-    case limit@Limit(eager@Eager(source), _, _8) =>
+    case limit@Limit(eager@Eager(source), _, _) =>
       val res = eager.copy(source = limit.copy(source = source)(SameId(limit.id)))(attributes.copy(eager.id))
       solveds.copy(limit.id, res.id)
       res

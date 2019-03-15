@@ -37,7 +37,7 @@ case object collapseMultipleInPredicates extends Rewriter {
     case predicate@Ors(exprs) =>
       // Find all the expressions we want to rewrite
       val (const: Seq[Expression], nonRewritable: Seq[Expression]) = exprs.toList.partition {
-        case in@In(_, rhs: ListLiteral) => true
+        case In(_, rhs: ListLiteral) => true
         case _ => false
       }
 

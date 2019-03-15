@@ -49,7 +49,7 @@ case object simpleExpressionEvaluator extends ExpressionEvaluator {
       Some(commandExpr(ExecutionContext.empty, emptyQueryState))
     }
     catch {
-      case e: InternalCypherException => None // Silently disregard expressions that cannot be evaluated in an empty context
+      case _: InternalCypherException => None // Silently disregard expressions that cannot be evaluated in an empty context
     }
   }
 }

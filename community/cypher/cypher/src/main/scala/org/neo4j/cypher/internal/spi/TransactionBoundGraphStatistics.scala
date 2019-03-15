@@ -69,7 +69,7 @@ object TransactionBoundGraphStatistics {
         }
       }
       catch {
-        case e: IndexNotFoundKernelException => None
+        case _: IndexNotFoundKernelException => None
       }
 
     override def nodesWithLabelCardinality(labelId: Option[LabelId]): Cardinality =

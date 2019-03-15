@@ -720,10 +720,10 @@ sealed trait ProjectionClause extends HorizonClause {
 
   // use an empty state when checking skip & limit, as these have entirely isolated context
   private def checkSkip: SemanticState => Seq[SemanticErrorDef] =
-    s => skip.semanticCheck(SemanticState.clean).errors
+    _ => skip.semanticCheck(SemanticState.clean).errors
 
   private def checkLimit: SemanticState => Seq[SemanticErrorDef] =
-    s => limit.semanticCheck(SemanticState.clean).errors
+    _ => limit.semanticCheck(SemanticState.clean).errors
 
   private def ignoreErrors(inner: SemanticCheck): SemanticCheck =
     s => {

@@ -64,7 +64,7 @@ class IndexedInclusiveLongRangeTest extends CypherFunSuite {
 
   test("stress test") {
     val random = new Random
-    for (i <- 1 to 100;
+    for (_ <- 1 to 100;
          a = random.nextInt(Int.MaxValue);
          b = random.nextInt(Int.MaxValue);
          c = random.nextInt(Int.MaxValue)

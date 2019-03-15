@@ -59,7 +59,7 @@ case object countStorePlanner {
         trySolveNodeAggregation(query, columnName, None, patternRelationships, patternNodes, argumentIds, selections, context)
 
       case // COUNT(n.prop)
-        func@FunctionInvocation(_, _, false, Vector(Property(Variable(variableName), PropertyKeyName(propKeyName))))
+        func@FunctionInvocation(_, _, false, Vector(Property(Variable(_), PropertyKeyName(propKeyName))))
         if func.function == functions.Count =>
         val labelCheck: Option[LabelName] => Option[LogicalPlan] => Option[LogicalPlan] = {
             case None => _ => None

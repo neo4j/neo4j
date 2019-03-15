@@ -202,7 +202,7 @@ class ResultStringBuilder private(columns: Array[String],
       try {
         propertiesAsTextValue(e.getAllProperties)
       } catch {
-        case e: NotFoundException => "{}"
+        case _: NotFoundException => "{}"
       }
     }
   }

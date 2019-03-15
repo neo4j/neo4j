@@ -31,8 +31,8 @@ class RewriterStepSequencerTest extends CypherFunSuite {
   }
 
   test("Should enable conditions between rewriters and collect the post conditions at the end") {
-    val dummyCond1 = RewriterCondition("a", (x: Any) => Seq("1"))
-    val dummyCond2 = RewriterCondition("b", (x: Any) => Seq("2"))
+    val dummyCond1 = RewriterCondition("a", (_: Any) => Seq("1"))
+    val dummyCond2 = RewriterCondition("b", (_: Any) => Seq("2"))
     val dummyRewriter1 = Rewriter.noop
     val dummyRewriter2 = Rewriter.lift { case x: AnyRef => x }
 
@@ -53,8 +53,8 @@ class RewriterStepSequencerTest extends CypherFunSuite {
   }
 
   test("Should enable/disable conditions between rewriters and collect the post conditions at the end") {
-    val dummyCond1 = RewriterCondition("a", (x: Any) => Seq("1"))
-    val dummyCond2 = RewriterCondition("b", (x: Any) => Seq("2"))
+    val dummyCond1 = RewriterCondition("a", (_: Any) => Seq("1"))
+    val dummyCond2 = RewriterCondition("b", (_: Any) => Seq("2"))
     val dummyRewriter1 = Rewriter.noop
     val dummyRewriter2 = Rewriter.lift { case x: AnyRef => x}
     val dummyRewriter3 = Rewriter.noop

@@ -46,8 +46,8 @@ object coerce {
           case _ => throw cantCoerce(value, typ)
         }
         case t: ListType => value match {
-          case p: PathValue if t.innerType == CTNode => throw cantCoerce(value, typ)
-          case p: PathValue if t.innerType == CTRelationship => throw cantCoerce(value, typ)
+          case _: PathValue if t.innerType == CTNode => throw cantCoerce(value, typ)
+          case _: PathValue if t.innerType == CTRelationship => throw cantCoerce(value, typ)
           case p: PathValue => p.asList
           case IsList(coll) if t.innerType == CTAny => coll
           case IsList(coll) => VirtualValues.list(coll.iterator().asScala.map(coerce(_, state, t.innerType)).toArray:_*)

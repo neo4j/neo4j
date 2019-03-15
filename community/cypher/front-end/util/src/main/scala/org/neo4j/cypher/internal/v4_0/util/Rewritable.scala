@@ -63,7 +63,7 @@ object Rewritable {
       try {
         productClass.getMethods.find(_.getName == "copy").get
       } catch {
-        case e: NoSuchElementException =>
+        case _: NoSuchElementException =>
           throw new InternalException(
             s"Failed trying to rewrite $productClass - this class does not have a `copy` method"
           )

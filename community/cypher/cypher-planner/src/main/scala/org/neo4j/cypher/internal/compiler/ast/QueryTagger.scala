@@ -212,42 +212,42 @@ object QueryTagger extends QueryTagger[String] {
         val containsSingleNode = x.pattern.patternParts.exists(_.element.isSingleNode)
         if (containsSingleNode) tags + SingleNodePatternTag else tags
 
-      case x: Where =>
+      case _: Where =>
         Set(WhereTag)
 
-      case x: With =>
+      case _: With =>
         Set(WithTag)
 
-      case x: Return =>
+      case _: Return =>
         Set(ReturnTag)
 
-      case x: Start =>
+      case _: Start =>
         Set(StartTag)
 
-      case x: Union =>
+      case _: Union =>
         Set(UnionTag)
 
-      case x: Unwind =>
+      case _: Unwind =>
         Set(UnwindTag)
 
-      case x: LoadCSV =>
+      case _: LoadCSV =>
         Set(LoadCSVTag, UpdatesTag)
 
-      case x: CallClause =>
+      case _: CallClause =>
         Set(CallProcedureTag)
 
       case x: UpdateClause =>
         val specificTag = x match {
-          case u: Create => Set(CreateTag)
+          case _: Create => Set(CreateTag)
           case Delete(_, forced) => if (forced) Set(DetachDeleteTag) else Set(DeleteTag)
-          case u: SetClause => Set(SetTag)
-          case u: Remove => Set(RemoveTag)
+          case _: SetClause => Set(SetTag)
+          case _: Remove => Set(RemoveTag)
           case u: Merge => Set(MergeTag) ++ u.actions.map {
             case _: OnCreate => OnCreateTag
             case _: OnMatch => OnMatchTag
           }
-          case u: CreateUnique => Set(CreateUniqueTag)
-          case u: Foreach => Set(ForeachTag)
+          case _: CreateUnique => Set(CreateUniqueTag)
+          case _: Foreach => Set(ForeachTag)
           case _ => Set.empty[QueryTag]
         }
         specificTag ++ Set(UpdatesTag)
@@ -255,8 +255,8 @@ object QueryTagger extends QueryTagger[String] {
 
     // Pattern features
     lift[ASTNode] {
-      case x: ShortestPaths => Set(ShortestPathTag)
-      case x: NamedPatternPart => Set(NamedPathTag)
+      case _: ShortestPaths => Set(ShortestPathTag)
+      case _: NamedPatternPart => Set(NamedPathTag)
       case x: RelationshipPattern =>
         Set(
           RelPatternTag,
@@ -267,38 +267,38 @@ object QueryTagger extends QueryTagger[String] {
 
     // <expr> unless variable or literal
     lift[ASTNode] {
-      case x: Variable => Set.empty
-      case x: Literal => Set.empty
-      case x: Expression => Set(ComplexExpressionTag)
+      case _: Variable => Set.empty
+      case _: Literal => Set.empty
+      case _: Expression => Set(ComplexExpressionTag)
     } ++
 
     // subtype of <expr>
     lift[ASTNode] {
-      case x: Variable => Set(VariableExpressionTag)
-      case x: Literal => Set(LiteralExpressionTag)
-      case x: Parameter => Set(ParameterExpressionTag)
-      case x: FilteringExpression => Set(FilteringExpressionTag)
-      case x: CaseExpression => Set(CaseTag)
+      case _: Variable => Set(VariableExpressionTag)
+      case _: Literal => Set(LiteralExpressionTag)
+      case _: Parameter => Set(ParameterExpressionTag)
+      case _: FilteringExpression => Set(FilteringExpressionTag)
+      case _: CaseExpression => Set(CaseTag)
     } ++
 
     // return clause extras
     lift[ASTNode] {
-      case x: Limit => Set(LimitTag)
-      case x: Skip => Set(SkipTag)
-      case x: OrderBy => Set(OrderByTag)
+      case _: Limit => Set(LimitTag)
+      case _: Skip => Set(SkipTag)
+      case _: OrderBy => Set(OrderByTag)
     } ++
 
     // commands
     lift[ASTNode] {
-      case x: CreateIndex => Set(CreateIndexTag)
-      case x: DropIndex => Set(DropIndexTag)
-      case x: CreateNodeKeyConstraint => Set(CreateConstraintTag)
-      case x: CreateUniquePropertyConstraint => Set(CreateConstraintTag)
-      case x: CreateNodePropertyExistenceConstraint => Set(CreateConstraintTag)
-      case x: CreateRelationshipPropertyExistenceConstraint => Set(CreateConstraintTag)
-      case x: DropUniquePropertyConstraint => Set(DropConstraintTag)
-      case x: DropNodePropertyExistenceConstraint => Set(DropConstraintTag)
-      case x: DropRelationshipPropertyExistenceConstraint => Set(DropConstraintTag)
+      case _: CreateIndex => Set(CreateIndexTag)
+      case _: DropIndex => Set(DropIndexTag)
+      case _: CreateNodeKeyConstraint => Set(CreateConstraintTag)
+      case _: CreateUniquePropertyConstraint => Set(CreateConstraintTag)
+      case _: CreateNodePropertyExistenceConstraint => Set(CreateConstraintTag)
+      case _: CreateRelationshipPropertyExistenceConstraint => Set(CreateConstraintTag)
+      case _: DropUniquePropertyConstraint => Set(DropConstraintTag)
+      case _: DropNodePropertyExistenceConstraint => Set(DropConstraintTag)
+      case _: DropRelationshipPropertyExistenceConstraint => Set(DropConstraintTag)
     } ++
 
     // functions
@@ -310,7 +310,7 @@ object QueryTagger extends QueryTagger[String] {
   ))
 
   private def isAggregation(function: Function) = function match {
-    case x: AggregatingFunction => true
+    case _: AggregatingFunction => true
     case _ => false
   }
 

@@ -26,7 +26,7 @@ class SemanticCheckableTest extends CypherFunSuite with SemanticAnalysisTooling 
   test("shouldChainSemanticCheckableFunctions") {
     val state1 = SemanticState.clean
     val error1 = SemanticError("an error", DummyPosition(0))
-    val func1: SemanticCheck = s => SemanticCheckResult(state1, Seq(error1))
+    val func1: SemanticCheck = _ => SemanticCheckResult(state1, Seq(error1))
 
     val state2 = SemanticState.clean
     val error2 = SemanticError("another error", DummyPosition(0))
@@ -44,10 +44,10 @@ class SemanticCheckableTest extends CypherFunSuite with SemanticAnalysisTooling 
   test("shouldChainSemanticFunctionReturningRightOfEither") {
     val state1 = SemanticState.clean
     val error1 = SemanticError("an error", DummyPosition(0))
-    val func1: SemanticCheck = s => SemanticCheckResult(state1, Seq(error1))
+    val func1: SemanticCheck = _ => SemanticCheckResult(state1, Seq(error1))
 
     val state2 = SemanticState.clean
-    val func2: SemanticState => Either[SemanticError, SemanticState] = s => Right(state2)
+    val func2: SemanticState => Either[SemanticError, SemanticState] = _ => Right(state2)
 
     val chain: SemanticCheck = func1 chain func2
     val result = chain(SemanticState.clean)
@@ -68,10 +68,10 @@ class SemanticCheckableTest extends CypherFunSuite with SemanticAnalysisTooling 
   test("shouldChainSemanticFunctionReturningLeftOfEither") {
     val state1 = SemanticState.clean
     val error1 = SemanticError("an error", DummyPosition(0))
-    val func1: SemanticCheck = s => SemanticCheckResult(state1, Seq(error1))
+    val func1: SemanticCheck = _ => SemanticCheckResult(state1, Seq(error1))
 
     val error2 = SemanticError("another error", DummyPosition(0))
-    val func2: SemanticState => Either[SemanticError, SemanticState] = s => Left(error2)
+    val func2: SemanticState => Either[SemanticError, SemanticState] = _ => Left(error2)
 
     val chain1: SemanticCheck = func1 chain func2
     val result = chain1(SemanticState.clean)
@@ -93,9 +93,9 @@ class SemanticCheckableTest extends CypherFunSuite with SemanticAnalysisTooling 
   test("shouldChainSemanticFunctionReturningNone") {
     val state1 = SemanticState.clean
     val error1 = SemanticError("an error", DummyPosition(0))
-    val func1: SemanticCheck = s => SemanticCheckResult(state1, Seq(error1))
+    val func1: SemanticCheck = _ => SemanticCheckResult(state1, Seq(error1))
 
-    val func2: SemanticState => Option[SemanticError] = s => None
+    val func2: SemanticState => Option[SemanticError] = _ => None
 
     val chain1: SemanticCheck = func1 chain func2
     val result = chain1(SemanticState.clean)
@@ -117,10 +117,10 @@ class SemanticCheckableTest extends CypherFunSuite with SemanticAnalysisTooling 
   test("shouldChainSemanticFunctionReturningSomeError") {
     val state1 = SemanticState.clean
     val error1 = SemanticError("an error", DummyPosition(0))
-    val func1: SemanticCheck = s => SemanticCheckResult(state1, Seq(error1))
+    val func1: SemanticCheck = _ => SemanticCheckResult(state1, Seq(error1))
 
     val error2 = SemanticError("another error", DummyPosition(0))
-    val func2: SemanticState => Option[SemanticError] = s => Some(error2)
+    val func2: SemanticState => Option[SemanticError] = _ => Some(error2)
 
     val chain1: SemanticCheck = func1 chain func2
     val result = chain1(SemanticState.clean)
@@ -141,10 +141,10 @@ class SemanticCheckableTest extends CypherFunSuite with SemanticAnalysisTooling 
 
   test("shouldChainSemanticCheckAfterNoErrorWithIfOkThen") {
     val state1 = SemanticState.clean
-    val func1: SemanticCheck = s => SemanticCheckResult(state1, Seq())
+    val func1: SemanticCheck = _ => SemanticCheckResult(state1, Seq())
 
     val error2 = SemanticError("an error", DummyPosition(0))
-    val func2: SemanticState => Option[SemanticError] = s => Some(error2)
+    val func2: SemanticState => Option[SemanticError] = _ => Some(error2)
 
     val chain: SemanticCheck = func1 chain func2
     val result = chain(SemanticState.clean)
@@ -155,8 +155,8 @@ class SemanticCheckableTest extends CypherFunSuite with SemanticAnalysisTooling 
   test("shouldNotChainSemanticFunctionAfterAnErrorWithIfOkThen") {
     val state1 = SemanticState.clean
     val error1 = SemanticError("an error", DummyPosition(0))
-    val func1 = (s: SemanticState) => SemanticCheckResult(state1, Seq(error1))
-    val func2: SemanticCheck = s => fail("Second check was incorrectly run")
+    val func1 = (_: SemanticState) => SemanticCheckResult(state1, Seq(error1))
+    val func2: SemanticCheck = _ => fail("Second check was incorrectly run")
 
     val chain: SemanticCheck = func1 ifOkChain func2
     val result = chain(SemanticState.clean)
@@ -167,10 +167,10 @@ class SemanticCheckableTest extends CypherFunSuite with SemanticAnalysisTooling 
   test("shouldEvaluateInnerCheckForTrueWhen") {
     val state1 = SemanticState.clean
     val error1 = SemanticError("an error", DummyPosition(0))
-    val func1: SemanticCheck = s => SemanticCheckResult(state1, Seq(error1))
+    val func1: SemanticCheck = _ => SemanticCheckResult(state1, Seq(error1))
 
     val error2 = SemanticError("another error", DummyPosition(0))
-    val func2: SemanticState => Option[SemanticError] = s => Some(error2)
+    val func2: SemanticState => Option[SemanticError] = _ => Some(error2)
 
     val chain: SemanticCheck = func1 chain when(condition = true) { func2 }
     val result = chain(SemanticState.clean)
@@ -181,8 +181,8 @@ class SemanticCheckableTest extends CypherFunSuite with SemanticAnalysisTooling 
   test("shouldNotEvaluateInnerCheckForFalseWhen") {
     val state1 = SemanticState.clean
     val error = SemanticError("an error", DummyPosition(0))
-    val func1: SemanticCheck = s => SemanticCheckResult(state1, Seq(error))
-    val func2: SemanticCheck = s => fail("Second check was incorrectly run")
+    val func1: SemanticCheck = _ => SemanticCheckResult(state1, Seq(error))
+    val func2: SemanticCheck = _ => fail("Second check was incorrectly run")
 
     val chain: SemanticCheck = func1 chain when(condition = false) { func2 }
     val result = chain(SemanticState.clean)

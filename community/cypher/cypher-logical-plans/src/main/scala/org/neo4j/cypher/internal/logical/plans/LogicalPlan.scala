@@ -157,7 +157,7 @@ abstract class LogicalPlan(idGen: IdGen)
           (plan.lhs, plan.rhs) match {
             case (None, None) =>
               sb.append("}")
-            case (Some(l), None) =>
+            case (Some(_), None) =>
               childrenHeap.push((System.lineSeparator() + "  " * level + "}", level + 1, None))
               childrenHeap.push(("LHS -> ", level + 1, plan.lhs))
             case _ =>

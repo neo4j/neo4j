@@ -98,8 +98,8 @@ object simplifyPredicates extends Rewriter {
 
   private val step: Rewriter = Rewriter.lift {
     case Not(Not(exp))                    => exp
-    case p@Ands(exps) if exps.isEmpty     =>  throw new IllegalStateException("we should never get here")
-    case p@Ors(exps) if exps.isEmpty      =>  throw new IllegalStateException("we should never get here")
+    case Ands(exps) if exps.isEmpty     =>  throw new IllegalStateException("we should never get here")
+    case Ors(exps) if exps.isEmpty      =>  throw new IllegalStateException("we should never get here")
     case p@Ands(exps) if exps.contains(T) =>
       val nonTrue = exps.filterNot(T == _)
       if (nonTrue.isEmpty) True()(p.position) else Ands(nonTrue)(p.position)

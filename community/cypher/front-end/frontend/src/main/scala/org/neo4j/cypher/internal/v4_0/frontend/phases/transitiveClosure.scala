@@ -73,7 +73,7 @@ case object transitiveClosure extends StatementRewriter {
 
     private def andRewriter(closures: Closures): Rewriter = {
       val stopOnNotEquals: AnyRef => Boolean = {
-        case not@Not(Equals(_, _)) => true
+        case Not(Equals(_, _)) => true
         case _ => false
       }
 

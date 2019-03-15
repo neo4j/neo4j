@@ -37,7 +37,7 @@ class SkipPipeTest extends CypherFunSuite {
     val limitPipe = SkipPipe(src, Literal(0))()
 
     // When
-    val result = limitPipe.createResults(QueryStateHelper.empty)
+    limitPipe.createResults(QueryStateHelper.empty)
 
     // Then
     verify(inputIterator, never()).next()

@@ -89,7 +89,7 @@ final case class ReturnItems(
 
   private def ensureProjectedToUniqueIds: SemanticCheck = {
     items.groupBy(_.name).foldLeft(success) {
-       case (acc, (k, groupedItems)) if groupedItems.size > 1 =>
+       case (acc, (_, groupedItems)) if groupedItems.size > 1 =>
         acc chain SemanticError("Multiple result columns with the same name are not supported", groupedItems.head.position)
        case (acc, _) =>
          acc
