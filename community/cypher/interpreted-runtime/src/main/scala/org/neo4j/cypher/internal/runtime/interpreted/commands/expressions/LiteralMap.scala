@@ -37,7 +37,7 @@ case class LiteralMap(data: Map[String, Expression]) extends Expression with Gra
     builder.build()
   }
 
-  def rewrite(f: (Expression) => Expression) = f(LiteralMap(data.rewrite(f)))
+  def rewrite(f: Expression => Expression) = f(LiteralMap(data.rewrite(f)))
 
   def arguments = data.values.toIndexedSeq
 

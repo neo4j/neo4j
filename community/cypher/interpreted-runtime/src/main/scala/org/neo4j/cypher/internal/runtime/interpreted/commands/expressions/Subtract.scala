@@ -32,7 +32,7 @@ case class Subtract(a: Expression, b: Expression) extends Expression {
     case (x, y) => CypherMath.subtract(x, y)
   }
 
-  def rewrite(f: (Expression) => Expression) = f(Subtract(a.rewrite(f), b.rewrite(f)))
+  def rewrite(f: Expression => Expression) = f(Subtract(a.rewrite(f), b.rewrite(f)))
 
   def arguments = Seq(a, b)
 

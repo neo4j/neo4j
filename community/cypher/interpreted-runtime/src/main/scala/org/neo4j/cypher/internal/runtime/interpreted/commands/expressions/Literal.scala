@@ -29,7 +29,7 @@ case class Literal(v: Any) extends Expression {
   //TODO this could have been figured out earlier
   def apply(ctx: ExecutionContext, state: QueryState): AnyValue = anyVal
 
-  def rewrite(f: (Expression) => Expression) = f(this)
+  def rewrite(f: Expression => Expression) = f(this)
 
   def arguments = Nil
 

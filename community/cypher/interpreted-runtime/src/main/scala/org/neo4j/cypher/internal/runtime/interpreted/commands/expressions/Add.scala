@@ -32,7 +32,7 @@ case class Add(a: Expression, b: Expression) extends Expression {
     case (x, y) => CypherMath.add(x, y)
   }
 
-  def rewrite(f: (Expression) => Expression) = f(Add(a.rewrite(f), b.rewrite(f)))
+  def rewrite(f: Expression => Expression) = f(Add(a.rewrite(f), b.rewrite(f)))
 
   def arguments = Seq(a, b)
 

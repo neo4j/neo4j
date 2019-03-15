@@ -218,7 +218,7 @@ class CoerceToTest extends CypherFunSuite {
 
       case class TestExpression(in: AnyValue) extends Expression {
 
-        override def rewrite(f: (Expression) => Expression): Expression = this
+        override def rewrite(f: Expression => Expression): Expression = this
 
         override def arguments: Seq[Expression] = Seq.empty
 

@@ -30,7 +30,7 @@ case class ProjectEndpointsPipe(source: Pipe, relName: String,
                                 relTypes: Option[LazyTypes], directed: Boolean, simpleLength: Boolean)
                                (val id: Id = Id.INVALID_ID) extends PipeWithSource(source)
   with ListSupport  {
-  type Projector = (ExecutionContext) => Iterator[ExecutionContext]
+  type Projector = ExecutionContext => Iterator[ExecutionContext]
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState) =
     input.flatMap(projector(state.query))

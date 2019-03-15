@@ -58,21 +58,21 @@ case class ToStringFunction(argument: Expression) extends StringFunction(argumen
   override def compute(value: AnyValue, m: ExecutionContext, state: QueryState): AnyValue =
     CypherFunctions.toString(argument(m, state))
 
-  override def rewrite(f: (Expression) => Expression): Expression = f(ToStringFunction(argument.rewrite(f)))
+  override def rewrite(f: Expression => Expression): Expression = f(ToStringFunction(argument.rewrite(f)))
 }
 
 case class ToLowerFunction(argument: Expression) extends StringFunction(argument) {
 
   override def compute(value: AnyValue, m: ExecutionContext, state: QueryState): AnyValue = CypherFunctions.toLower(value)
 
-  override def rewrite(f: (Expression) => Expression) = f(ToLowerFunction(argument.rewrite(f)))
+  override def rewrite(f: Expression => Expression) = f(ToLowerFunction(argument.rewrite(f)))
 }
 
 case class ToUpperFunction(argument: Expression) extends StringFunction(argument) {
 
   override def compute(value: AnyValue, m: ExecutionContext, state: QueryState): AnyValue = CypherFunctions.toUpper(value)
 
-  override def rewrite(f: (Expression) => Expression) = f(ToUpperFunction(argument.rewrite(f)))
+  override def rewrite(f: Expression => Expression) = f(ToUpperFunction(argument.rewrite(f)))
 }
 
 case class LTrimFunction(argument: Expression) extends StringFunction(argument) {
@@ -80,7 +80,7 @@ case class LTrimFunction(argument: Expression) extends StringFunction(argument) 
   override def compute(value: AnyValue, m: ExecutionContext, state: QueryState): AnyValue =
     CypherFunctions.ltrim(value)
 
-  override def rewrite(f: (Expression) => Expression) = f(LTrimFunction(argument.rewrite(f)))
+  override def rewrite(f: Expression => Expression) = f(LTrimFunction(argument.rewrite(f)))
 }
 
 case class RTrimFunction(argument: Expression) extends StringFunction(argument) {
@@ -88,7 +88,7 @@ case class RTrimFunction(argument: Expression) extends StringFunction(argument) 
   override def compute(value: AnyValue, m: ExecutionContext, state: QueryState): AnyValue =
     CypherFunctions.rtrim(value)
 
-  override def rewrite(f: (Expression) => Expression) = f(RTrimFunction(argument.rewrite(f)))
+  override def rewrite(f: Expression => Expression) = f(RTrimFunction(argument.rewrite(f)))
 }
 
 case class TrimFunction(argument: Expression) extends StringFunction(argument) {
@@ -96,7 +96,7 @@ case class TrimFunction(argument: Expression) extends StringFunction(argument) {
   override def compute(value: AnyValue, m: ExecutionContext, state: QueryState): AnyValue =
     CypherFunctions.trim(value)
 
-  override def rewrite(f: (Expression) => Expression) = f(TrimFunction(argument.rewrite(f)))
+  override def rewrite(f: Expression => Expression) = f(TrimFunction(argument.rewrite(f)))
 }
 
 case class SubstringFunction(orig: Expression, start: Expression, length: Option[Expression])
@@ -109,7 +109,7 @@ case class SubstringFunction(orig: Expression, start: Expression, length: Option
 
   override def arguments = Seq(orig, start) ++ length
 
-  override def rewrite(f: (Expression) => Expression) = f(
+  override def rewrite(f: Expression => Expression) = f(
     SubstringFunction(orig.rewrite(f), start.rewrite(f), length.map(_.rewrite(f))))
 
   override def symbolTableDependencies = {
@@ -134,7 +134,7 @@ case class ReplaceFunction(orig: Expression, search: Expression, replaceWith: Ex
 
   override def arguments = Seq(orig, search, replaceWith)
 
-  override def rewrite(f: (Expression) => Expression) = f(
+  override def rewrite(f: Expression => Expression) = f(
     ReplaceFunction(orig.rewrite(f), search.rewrite(f), replaceWith.rewrite(f)))
 
   override def symbolTableDependencies = orig.symbolTableDependencies ++
@@ -152,7 +152,7 @@ case class SplitFunction(orig: Expression, separator: Expression)
 
   override def arguments = Seq(orig, separator)
 
-  override def rewrite(f: (Expression) => Expression) = f(SplitFunction(orig.rewrite(f), separator.rewrite(f)))
+  override def rewrite(f: Expression => Expression) = f(SplitFunction(orig.rewrite(f), separator.rewrite(f)))
 
   override def symbolTableDependencies = orig.symbolTableDependencies ++ separator.symbolTableDependencies
 }
@@ -165,7 +165,7 @@ case class LeftFunction(orig: Expression, length: Expression)
 
   override def arguments = Seq(orig, length)
 
-  override def rewrite(f: (Expression) => Expression) = f(LeftFunction(orig.rewrite(f), length.rewrite(f)))
+  override def rewrite(f: Expression => Expression) = f(LeftFunction(orig.rewrite(f), length.rewrite(f)))
 
   override def symbolTableDependencies = orig.symbolTableDependencies ++
     length.symbolTableDependencies
@@ -179,7 +179,7 @@ case class RightFunction(orig: Expression, length: Expression)
 
   override def arguments = Seq(orig, length)
 
-  override def rewrite(f: (Expression) => Expression) = f(RightFunction(orig.rewrite(f), length.rewrite(f)))
+  override def rewrite(f: Expression => Expression) = f(RightFunction(orig.rewrite(f), length.rewrite(f)))
 
   override def symbolTableDependencies = orig.symbolTableDependencies ++
     length.symbolTableDependencies

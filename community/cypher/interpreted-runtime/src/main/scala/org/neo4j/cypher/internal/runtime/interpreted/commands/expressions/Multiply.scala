@@ -32,7 +32,7 @@ case class Multiply(a: Expression, b: Expression) extends Expression  {
     case (x,y) => CypherMath.multiply(x, y)
   }
 
-  override def rewrite(f: (Expression) => Expression): Expression = f(Multiply(a.rewrite(f), b.rewrite(f)))
+  override def rewrite(f: Expression => Expression): Expression = f(Multiply(a.rewrite(f), b.rewrite(f)))
 
   override def arguments: Seq[Expression] = Seq(a, b)
 

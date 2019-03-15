@@ -113,7 +113,7 @@ case class ShortestPathExpression(shortestPathPattern: ShortestPath,
 
   def arguments = Seq.empty
 
-  def rewrite(f: (Expression) => Expression): Expression = f(ShortestPathExpression(shortestPathPattern.rewrite(f)))
+  def rewrite(f: Expression => Expression): Expression = f(ShortestPathExpression(shortestPathPattern.rewrite(f)))
 
   def symbolTableDependencies = shortestPathPattern.symbolTableDependencies + shortestPathPattern.left
     .name + shortestPathPattern.right.name

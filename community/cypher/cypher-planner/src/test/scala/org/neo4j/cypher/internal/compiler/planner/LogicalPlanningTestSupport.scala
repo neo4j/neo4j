@@ -281,8 +281,8 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
       id = 42
     )
     val mkException = new SyntaxExceptionCreator(query, Some(pos))
-    val procs: (QualifiedName) => ProcedureSignature = procLookup.getOrElse(_ => signature)
-    val funcs: (QualifiedName) => Option[UserFunctionSignature] = fcnLookup.getOrElse(_ => None)
+    val procs: QualifiedName => ProcedureSignature = procLookup.getOrElse(_ => signature)
+    val funcs: QualifiedName => Option[UserFunctionSignature] = fcnLookup.getOrElse(_ => None)
     val planContext = new TestSignatureResolvingPlanContext(procs, funcs)
     val state = LogicalPlanState(query, None, CostBasedPlannerName.default, PlanningAttributes(new Solveds, new Cardinalities, new ProvidedOrders))
     val context = ContextHelper.create(exceptionCreator = mkException, planContext = planContext, logicalPlanIdGen = idGen)

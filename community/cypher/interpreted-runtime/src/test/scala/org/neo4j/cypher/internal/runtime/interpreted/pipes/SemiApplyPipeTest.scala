@@ -95,7 +95,7 @@ class SemiApplyPipeTest extends CypherFunSuite with PipeTestSupport {
   }
 
   test("if lhs is empty, rhs should not be touched regardless if it is negated or not") {
-    val rhs = pipeWithResults((_) => fail("should not use this"))
+    val rhs = pipeWithResults(_ => fail("should not use this"))
 
     val lhs = new FakePipe(Iterator.empty)
 

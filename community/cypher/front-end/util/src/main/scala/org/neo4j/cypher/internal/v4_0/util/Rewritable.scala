@@ -191,7 +191,7 @@ object topDown {
     }
   }
 
-  def apply(rewriter: Rewriter, stopper: (AnyRef) => Boolean = _ => false): Rewriter =
+  def apply(rewriter: Rewriter, stopper: AnyRef => Boolean = _ => false): Rewriter =
     new TopDownRewriter(rewriter, stopper)
 }
 
@@ -233,7 +233,7 @@ object bottomUp {
     }
   }
 
-  def apply(rewriter: Rewriter, stopper: (AnyRef) => Boolean = _ => false): Rewriter =
+  def apply(rewriter: Rewriter, stopper: AnyRef => Boolean = _ => false): Rewriter =
     new BottomUpRewriter(rewriter, stopper)
 }
 
@@ -275,6 +275,6 @@ object bottomUpWithArgs {
     }
   }
 
-  def apply(rewriter: RewriterWithArgs, stopper: (AnyRef) => Boolean = _ => false): RewriterWithArgs =
+  def apply(rewriter: RewriterWithArgs, stopper: AnyRef => Boolean = _ => false): RewriterWithArgs =
     new BottomUpWithArgsRewriter(rewriter, stopper)
 }

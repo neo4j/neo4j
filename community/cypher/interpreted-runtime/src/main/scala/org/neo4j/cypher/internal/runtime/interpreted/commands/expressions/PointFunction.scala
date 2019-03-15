@@ -29,7 +29,7 @@ case class PointFunction(data: Expression) extends NullInNullOutExpression(data)
   override def compute(value: AnyValue, ctx: ExecutionContext, state: QueryState): AnyValue =
     CypherFunctions.point(value, state.query, state.cursors)
 
-  override def rewrite(f: (Expression) => Expression) = f(PointFunction(data.rewrite(f)))
+  override def rewrite(f: Expression => Expression) = f(PointFunction(data.rewrite(f)))
 
   override def arguments = data.arguments
 

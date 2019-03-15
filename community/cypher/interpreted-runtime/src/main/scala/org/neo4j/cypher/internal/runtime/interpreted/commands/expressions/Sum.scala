@@ -27,5 +27,5 @@ case class Sum(anInner: Expression) extends AggregationWithInnerExpression(anInn
 
   def expectedInnerType = CTNumber
 
-  def rewrite(f: (Expression) => Expression) = f(Sum(anInner.rewrite(f)))
+  def rewrite(f: Expression => Expression) = f(Sum(anInner.rewrite(f)))
 }

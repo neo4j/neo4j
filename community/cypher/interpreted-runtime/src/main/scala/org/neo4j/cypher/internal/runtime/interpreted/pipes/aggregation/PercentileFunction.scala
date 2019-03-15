@@ -35,7 +35,7 @@ abstract class PercentileFunction(val value: Expression, val percentile: Express
   protected var perc: Double = 0
 
   override def apply(data: ExecutionContext, state: QueryState) {
-    actOnNumber(value(data, state), (number) => {
+    actOnNumber(value(data, state), number => {
       if (count < 1) {
         perc = asDouble(percentile(data, state)).doubleValue()
         if (perc < 0 || perc > 1.0)

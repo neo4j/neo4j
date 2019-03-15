@@ -83,7 +83,7 @@ case class ProjectedPath(symbolTableDependencies: Set[String], projector: Projec
 
   def arguments = Seq.empty
 
-  def rewrite(f: (Expression) => Expression): Expression = f(this)
+  def rewrite(f: Expression => Expression): Expression = f(this)
 }
 
 

@@ -27,5 +27,5 @@ case class Avg(anInner: Expression) extends AggregationWithInnerExpression(anInn
 
   val expectedInnerType = CTNumber
 
-  def rewrite(f: (Expression) => Expression) = f(Avg(anInner.rewrite(f)))
+  def rewrite(f: Expression => Expression) = f(Avg(anInner.rewrite(f)))
 }

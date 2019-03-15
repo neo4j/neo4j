@@ -46,7 +46,7 @@ object Pattern {
     def apply(pattern: Pattern): Set[Seq[LogicalVariable]] = {
       val (seen, duplicates) = pattern.fold((Set.empty[LogicalVariable], Seq.empty[LogicalVariable])) {
         case RelationshipChain(_, RelationshipPattern(Some(rel), _, None, _, _, _,_), _) =>
-          (acc) =>
+          acc =>
             val (seen, duplicates) = acc
 
             val newDuplicates = if (seen.contains(rel)) duplicates :+ rel else duplicates

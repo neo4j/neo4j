@@ -27,7 +27,7 @@ case class Stdev(anInner: Expression) extends AggregationWithInnerExpression(anI
 
   def expectedInnerType = CTNumber
 
-  def rewrite(f: (Expression) => Expression) = f(Stdev(anInner.rewrite(f)))
+  def rewrite(f: Expression => Expression) = f(Stdev(anInner.rewrite(f)))
 }
 
 case class StdevP(anInner: Expression) extends AggregationWithInnerExpression(anInner) {
@@ -35,6 +35,6 @@ case class StdevP(anInner: Expression) extends AggregationWithInnerExpression(an
 
   def expectedInnerType = CTNumber
 
-  def rewrite(f: (Expression) => Expression) = f(StdevP(anInner.rewrite(f)))
+  def rewrite(f: Expression => Expression) = f(StdevP(anInner.rewrite(f)))
 }
 

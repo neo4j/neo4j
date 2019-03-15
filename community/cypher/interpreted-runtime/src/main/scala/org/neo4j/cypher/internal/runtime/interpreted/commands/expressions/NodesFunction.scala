@@ -29,7 +29,7 @@ case class NodesFunction(path: Expression) extends NullInNullOutExpression(path)
   override def compute(value: AnyValue, m: ExecutionContext, state: QueryState) =
     CypherFunctions.nodes(value)
 
-  def rewrite(f: (Expression) => Expression) = f(NodesFunction(path.rewrite(f)))
+  def rewrite(f: Expression => Expression) = f(NodesFunction(path.rewrite(f)))
 
   def arguments = Seq(path)
 

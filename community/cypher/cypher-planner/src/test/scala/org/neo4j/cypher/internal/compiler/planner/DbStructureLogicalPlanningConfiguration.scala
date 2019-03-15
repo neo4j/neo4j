@@ -63,7 +63,7 @@ case class DbStructureLogicalPlanningConfiguration(cypherCompilerConfig: CypherP
       override val indexesWithOrdering: Map[(String, Seq[String]), IndexOrderCapability] = Map.empty
       override def procedureSignatures: Set[ProcedureSignature] = Set.empty
       override val knownLabels: Set[String] = resolvedLabels.keys.toSet
-      override val labelsById: Map[Int, String] = resolvedLabels.map(pair => (pair._2.id -> pair._1)).toMap
+      override val labelsById: Map[Int, String] = resolvedLabels.map(pair => pair._2.id -> pair._1).toMap
       override val uniqueIndexes: Set[(String, Seq[String])] = indexSet(lookup.knownUniqueIndices())
     }
   }

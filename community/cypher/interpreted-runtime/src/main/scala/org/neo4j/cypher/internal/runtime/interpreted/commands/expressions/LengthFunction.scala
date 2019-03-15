@@ -29,7 +29,7 @@ case class LengthFunction(inner: Expression) extends NullInNullOutExpression(inn
   override def compute(value: AnyValue, m: ExecutionContext, state: QueryState): AnyValue =
     CypherFunctions.length(value)
 
-  def rewrite(f: (Expression) => Expression) = f(LengthFunction(inner.rewrite(f)))
+  def rewrite(f: Expression => Expression) = f(LengthFunction(inner.rewrite(f)))
 
   def arguments = Seq(inner)
 

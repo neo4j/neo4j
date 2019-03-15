@@ -29,7 +29,7 @@ case class LabelsFunction(nodeExpr: Expression) extends NullInNullOutExpression(
   override def compute(value: AnyValue, m: ExecutionContext, state: QueryState): AnyValue =
     CypherFunctions.labels(value, state.query, state.cursors.nodeCursor)
 
-  override def rewrite(f: (Expression) => Expression) = f(LabelsFunction(nodeExpr.rewrite(f)))
+  override def rewrite(f: Expression => Expression) = f(LabelsFunction(nodeExpr.rewrite(f)))
 
   override def arguments = Seq(nodeExpr)
 

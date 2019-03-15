@@ -31,5 +31,5 @@ case class Predicate(dependencies: Set[String], expr: Expression) {
 }
 
 object Predicate {
-  implicit val byPosition = Ordering.by { (predicate: Predicate) => predicate.expr.position }
+  implicit val byPosition = Ordering.by { predicate: Predicate => predicate.expr.position }
 }

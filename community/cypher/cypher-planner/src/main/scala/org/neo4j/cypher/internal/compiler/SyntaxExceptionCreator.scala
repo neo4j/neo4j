@@ -30,6 +30,6 @@ class SyntaxExceptionCreator(queryText: String, preParserOffset: Option[InputPos
 }
 
 object SyntaxExceptionCreator {
-  def throwOnError(mkException: SyntaxExceptionCreator): (Seq[SemanticErrorDef]) => Unit =
+  def throwOnError(mkException: SyntaxExceptionCreator): Seq[SemanticErrorDef] => Unit =
     (errors: Seq[SemanticErrorDef]) => errors.foreach(e => throw mkException(e.msg, e.position))
 }

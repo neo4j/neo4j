@@ -27,7 +27,7 @@ case class LetSemiApplyPipe(source: Pipe, inner: Pipe, letVarName: String, negat
                            (val id: Id = Id.INVALID_ID) extends PipeWithSource(source) {
   def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
     input.map {
-      (outerContext) =>
+      outerContext =>
         val innerState = state.withInitialContext(outerContext)
         val innerResults = inner.createResults(innerState)
         val holds = if (negated) innerResults.isEmpty else innerResults.nonEmpty

@@ -289,7 +289,7 @@ class TypeSpecTest extends CypherFunSuite {
     CTNumber | CTInteger | CTFloat should equal(CTNumber.covariant)
 
     CTNumber.covariant | CTInteger.covariant should equal(CTNumber.covariant)
-    CTNumber.covariant | CTString.covariant should not equal(CTNumber.covariant)
+    CTNumber.covariant | CTString.covariant should not equal CTNumber.covariant
 
     TypeSpec.all should equal(TypeSpec.all)
     CTAny.covariant should equal(TypeSpec.all)
@@ -301,14 +301,14 @@ class TypeSpecTest extends CypherFunSuite {
   }
 
   test("different TypeSpecs should not equal") {
-    TypeSpec.all should not equal(CTNumber.covariant)
-    CTNumber.covariant should not equal(TypeSpec.all)
+    TypeSpec.all should not equal CTNumber.covariant
+    CTNumber.covariant should not equal TypeSpec.all
 
-    CTList(CTAny).covariant should not equal(CTNumber.covariant)
-    CTNumber.covariant should not equal(CTList(CTAny).covariant)
+    CTList(CTAny).covariant should not equal CTNumber.covariant
+    CTNumber.covariant should not equal CTList(CTAny).covariant
 
-    CTNumber.invariant should not equal(TypeSpec.all)
-    TypeSpec.all should not equal(CTNumber.invariant)
+    CTNumber.invariant should not equal TypeSpec.all
+    TypeSpec.all should not equal CTNumber.invariant
   }
 
   test("should have indefinite size when allowing unconstrained any at any depth") {

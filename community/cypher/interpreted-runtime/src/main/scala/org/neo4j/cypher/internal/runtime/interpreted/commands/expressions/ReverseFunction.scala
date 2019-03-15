@@ -28,7 +28,7 @@ case class ReverseFunction(argument: Expression) extends NullInNullOutExpression
   override def compute(value: AnyValue, m: ExecutionContext, state: QueryState): AnyValue =
     CypherFunctions.reverse(value)
 
-  override def rewrite(f: (Expression) => Expression) = f(ReverseFunction(argument.rewrite(f)))
+  override def rewrite(f: Expression => Expression) = f(ReverseFunction(argument.rewrite(f)))
 
   def arguments = Seq(argument)
 

@@ -25,5 +25,5 @@ import org.neo4j.values.AnyValue
 case class Pow(a: Expression, b: Expression) extends Arithmetics(a, b) {
   def calc(a: AnyValue, b: AnyValue): AnyValue = CypherMath.pow(a, b)
 
-  def rewrite(f: (Expression) => Expression) = f(Pow(a.rewrite(f), b.rewrite(f)))
+  def rewrite(f: Expression => Expression) = f(Pow(a.rewrite(f), b.rewrite(f)))
 }

@@ -49,11 +49,11 @@ case object transitiveClosure extends StatementRewriter {
 
     //Collects property equalities, e.g `a.prop = 42`
     private def collect(e: Expression): Closures = e.treeFold(Closures.empty) {
-      case _: Or => (acc) => (acc, None)
-      case _: And => (acc) => (acc, Some(identity))
-      case Equals(p1: Property, p2: Property) => (acc) => (acc.withEquivalence(p1 -> p2), None)
-      case Equals(p: Property, other) => (acc) => (acc.withMapping(p -> other), None)
-      case Not(Equals(_,_)) => (acc) => (acc, None)
+      case _: Or => acc => (acc, None)
+      case _: And => acc => (acc, Some(identity))
+      case Equals(p1: Property, p2: Property) => acc => (acc.withEquivalence(p1 -> p2), None)
+      case Equals(p: Property, other) => acc => (acc.withMapping(p -> other), None)
+      case Not(Equals(_,_)) => acc => (acc, None)
     }
 
     //NOTE that this might introduce duplicate predicates, however at a later rewrite

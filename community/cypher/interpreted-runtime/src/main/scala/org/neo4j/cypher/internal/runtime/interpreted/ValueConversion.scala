@@ -60,7 +60,7 @@ object ValueConversion {
       case CTDuration => o => Values.durationValue(o.asInstanceOf[TemporalAmount])
     }
 
-    (v) => if (v == null) Values.NO_VALUE else converter(v)
+    v => if (v == null) Values.NO_VALUE else converter(v)
   }
 
   def asValues(params: Map[String, Any]): MapValue = {

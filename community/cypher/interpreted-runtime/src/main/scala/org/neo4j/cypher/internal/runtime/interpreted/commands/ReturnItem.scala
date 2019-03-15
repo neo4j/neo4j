@@ -44,7 +44,7 @@ case class ReturnItem(expression: Expression, name: String)
   def expressions(symbols: SymbolTable) = Map(name -> expression)
 
   override def toString =
-    s"${expression.toString} AS ${name}"
+    s"${expression.toString} AS $name"
 
   def rename(newName: String) = ReturnItem(expression, newName)
 

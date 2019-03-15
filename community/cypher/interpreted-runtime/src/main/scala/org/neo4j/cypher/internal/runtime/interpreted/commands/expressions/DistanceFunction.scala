@@ -28,7 +28,7 @@ case class DistanceFunction(p1: Expression, p2: Expression) extends Expression {
 
   override def apply(ctx: ExecutionContext, state: QueryState): AnyValue = distance(p1(ctx, state), p2(ctx, state))
 
-  override def rewrite(f: (Expression) => Expression) = f(DistanceFunction(p1.rewrite(f), p2.rewrite(f)))
+  override def rewrite(f: Expression => Expression) = f(DistanceFunction(p1.rewrite(f), p2.rewrite(f)))
 
   override def arguments: Seq[Expression] = p1.arguments ++ p2.arguments
 

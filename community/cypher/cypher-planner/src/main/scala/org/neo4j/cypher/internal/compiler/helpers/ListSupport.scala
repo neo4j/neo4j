@@ -76,7 +76,7 @@ trait ListSupport {
   }
 
   def asListOf[T](test: PartialFunction[Any, T])(input: Iterable[Any]): Option[Iterable[T]] =
-    Some(input map { (elem: Any) => if (test.isDefinedAt(elem)) test(elem) else return None })
+    Some(input map { elem: Any => if (test.isDefinedAt(elem)) test(elem) else return None })
 
   def makeTraversable(z: Any): Iterable[Any] = if (isList(z)) {
     castToIterable(z)

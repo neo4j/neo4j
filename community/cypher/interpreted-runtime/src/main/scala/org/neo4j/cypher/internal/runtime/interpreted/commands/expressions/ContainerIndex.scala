@@ -44,7 +44,7 @@ with ListSupport {
                                           state.cursors.propertyCursor)
   }
 
-  def rewrite(f: (Expression) => Expression): Expression = f(ContainerIndex(expression.rewrite(f), index.rewrite(f)))
+  def rewrite(f: Expression => Expression): Expression = f(ContainerIndex(expression.rewrite(f), index.rewrite(f)))
 
   def symbolTableDependencies: Set[String] = expression.symbolTableDependencies ++ index.symbolTableDependencies
 }

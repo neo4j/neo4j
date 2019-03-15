@@ -79,7 +79,7 @@ case class AbsFunction(argument: Expression) extends MathFunction(argument) {
     if (value == NO_VALUE) NO_VALUE else CypherFunctions.abs(value)
   }
 
-  override def rewrite(f: (Expression) => Expression) = f(AbsFunction(argument.rewrite(f)))
+  override def rewrite(f: Expression => Expression) = f(AbsFunction(argument.rewrite(f)))
 }
 
 case class AcosFunction(argument: Expression) extends MathFunction(argument) {
@@ -90,7 +90,7 @@ case class AcosFunction(argument: Expression) extends MathFunction(argument) {
     case v => CypherFunctions.acos(v)
   }
 
-  override def rewrite(f: (Expression) => Expression) = f(AcosFunction(argument.rewrite(f)))
+  override def rewrite(f: Expression => Expression) = f(AcosFunction(argument.rewrite(f)))
 }
 
 case class AsinFunction(argument: Expression) extends MathFunction(argument) {
@@ -101,7 +101,7 @@ case class AsinFunction(argument: Expression) extends MathFunction(argument) {
     case v => CypherFunctions.asin(v)
   }
 
-  override def rewrite(f: (Expression) => Expression) = f(AsinFunction(argument.rewrite(f)))
+  override def rewrite(f: Expression => Expression) = f(AsinFunction(argument.rewrite(f)))
 }
 
 case class AtanFunction(argument: Expression) extends MathFunction(argument) {
@@ -112,7 +112,7 @@ case class AtanFunction(argument: Expression) extends MathFunction(argument) {
     case v => CypherFunctions.atan(v)
   }
 
-  override def rewrite(f: (Expression) => Expression) = f(AtanFunction(argument.rewrite(f)))
+  override def rewrite(f: Expression => Expression) = f(AtanFunction(argument.rewrite(f)))
 }
 
 case class Atan2Function(y: Expression, x: Expression) extends Expression with NumericHelper {
@@ -128,7 +128,7 @@ case class Atan2Function(y: Expression, x: Expression) extends Expression with N
 
   override def arguments = Seq(x, y)
 
-  override def rewrite(f: (Expression) => Expression) = f(Atan2Function(y.rewrite(f), x.rewrite(f)))
+  override def rewrite(f: Expression => Expression) = f(Atan2Function(y.rewrite(f), x.rewrite(f)))
 
   override def symbolTableDependencies = x.symbolTableDependencies ++ y.symbolTableDependencies
 }
@@ -141,7 +141,7 @@ case class CeilFunction(argument: Expression) extends MathFunction(argument) {
     case v => CypherFunctions.ceil(v)
   }
 
-  override def rewrite(f: (Expression) => Expression) = f(CeilFunction(argument.rewrite(f)))
+  override def rewrite(f: Expression => Expression) = f(CeilFunction(argument.rewrite(f)))
 }
 
 case class CosFunction(argument: Expression) extends MathFunction(argument) {
@@ -152,7 +152,7 @@ case class CosFunction(argument: Expression) extends MathFunction(argument) {
     case v => CypherFunctions.cos(v)
   }
 
-  override def rewrite(f: (Expression) => Expression) = f(CosFunction(argument.rewrite(f)))
+  override def rewrite(f: Expression => Expression) = f(CosFunction(argument.rewrite(f)))
 }
 
 case class CotFunction(argument: Expression) extends MathFunction(argument) {
@@ -163,7 +163,7 @@ case class CotFunction(argument: Expression) extends MathFunction(argument) {
     case v => CypherFunctions.cot(v)
   }
 
-  override def rewrite(f: (Expression) => Expression) = f(CotFunction(argument.rewrite(f)))
+  override def rewrite(f: Expression => Expression) = f(CotFunction(argument.rewrite(f)))
 }
 
 case class DegreesFunction(argument: Expression) extends MathFunction(argument) {
@@ -174,7 +174,7 @@ case class DegreesFunction(argument: Expression) extends MathFunction(argument) 
     case v => CypherFunctions.toDegrees(v)
   }
 
-  override def rewrite(f: (Expression) => Expression) = f(DegreesFunction(argument.rewrite(f)))
+  override def rewrite(f: Expression => Expression) = f(DegreesFunction(argument.rewrite(f)))
 }
 
 case class EFunction() extends Expression() {
@@ -185,7 +185,7 @@ case class EFunction() extends Expression() {
 
   override def symbolTableDependencies = Set[String]()
 
-  override def rewrite(f: (Expression) => Expression) = f(EFunction())
+  override def rewrite(f: Expression => Expression) = f(EFunction())
 }
 
 case class ExpFunction(argument: Expression) extends MathFunction(argument) {
@@ -196,7 +196,7 @@ case class ExpFunction(argument: Expression) extends MathFunction(argument) {
     case v => CypherFunctions.exp(v)
   }
 
-  override def rewrite(f: (Expression) => Expression) = f(ExpFunction(argument.rewrite(f)))
+  override def rewrite(f: Expression => Expression) = f(ExpFunction(argument.rewrite(f)))
 }
 
 case class FloorFunction(argument: Expression) extends MathFunction(argument) {
@@ -207,7 +207,7 @@ case class FloorFunction(argument: Expression) extends MathFunction(argument) {
     case v => CypherFunctions.floor(v)
   }
 
-  override def rewrite(f: (Expression) => Expression) = f(FloorFunction(argument.rewrite(f)))
+  override def rewrite(f: Expression => Expression) = f(FloorFunction(argument.rewrite(f)))
 }
 
 case class LogFunction(argument: Expression) extends MathFunction(argument) {
@@ -218,7 +218,7 @@ case class LogFunction(argument: Expression) extends MathFunction(argument) {
     case v => CypherFunctions.log(v)
   }
 
-  override def rewrite(f: (Expression) => Expression) = f(LogFunction(argument.rewrite(f)))
+  override def rewrite(f: Expression => Expression) = f(LogFunction(argument.rewrite(f)))
 }
 
 case class Log10Function(argument: Expression) extends MathFunction(argument) {
@@ -229,7 +229,7 @@ case class Log10Function(argument: Expression) extends MathFunction(argument) {
     case v => CypherFunctions.log10(v)
   }
 
-  override def rewrite(f: (Expression) => Expression) = f(Log10Function(argument.rewrite(f)))
+  override def rewrite(f: Expression => Expression) = f(Log10Function(argument.rewrite(f)))
 }
 
 case class PiFunction() extends Expression {
@@ -240,7 +240,7 @@ case class PiFunction() extends Expression {
 
   override def symbolTableDependencies = Set()
 
-  override def rewrite(f: (Expression) => Expression) = f(PiFunction())
+  override def rewrite(f: Expression => Expression) = f(PiFunction())
 }
 
 case class RadiansFunction(argument: Expression) extends MathFunction(argument) {
@@ -251,7 +251,7 @@ case class RadiansFunction(argument: Expression) extends MathFunction(argument) 
     case v => CypherFunctions.toRadians(v)
   }
 
-  override def rewrite(f: (Expression) => Expression) = f(RadiansFunction(argument.rewrite(f)))
+  override def rewrite(f: Expression => Expression) = f(RadiansFunction(argument.rewrite(f)))
 }
 
 case class SinFunction(argument: Expression) extends MathFunction(argument) {
@@ -262,7 +262,7 @@ case class SinFunction(argument: Expression) extends MathFunction(argument) {
     case v => CypherFunctions.sin(v)
   }
 
-  override def rewrite(f: (Expression) => Expression) = f(SinFunction(argument.rewrite(f)))
+  override def rewrite(f: Expression => Expression) = f(SinFunction(argument.rewrite(f)))
 }
 
 case class HaversinFunction(argument: Expression) extends MathFunction(argument) {
@@ -273,7 +273,7 @@ case class HaversinFunction(argument: Expression) extends MathFunction(argument)
     case v => CypherFunctions.haversin(v)
   }
 
-  override def rewrite(f: (Expression) => Expression) = f(HaversinFunction(argument.rewrite(f)))
+  override def rewrite(f: Expression => Expression) = f(HaversinFunction(argument.rewrite(f)))
 }
 
 case class TanFunction(argument: Expression) extends MathFunction(argument) {
@@ -284,7 +284,7 @@ case class TanFunction(argument: Expression) extends MathFunction(argument) {
     case v => CypherFunctions.tan(v)
   }
 
-  override def rewrite(f: (Expression) => Expression) = f(TanFunction(argument.rewrite(f)))
+  override def rewrite(f: Expression => Expression) = f(TanFunction(argument.rewrite(f)))
 }
 
 case class RandFunction() extends Expression {
@@ -295,7 +295,7 @@ case class RandFunction() extends Expression {
 
   override def symbolTableDependencies = Set[String]()
 
-  override def rewrite(f: (Expression) => Expression) = f(RandFunction())
+  override def rewrite(f: Expression => Expression) = f(RandFunction())
 }
 
 case class RangeFunction(start: Expression, end: Expression, step: Expression) extends Expression with NumericHelper {
@@ -305,7 +305,7 @@ case class RangeFunction(start: Expression, end: Expression, step: Expression) e
 
   override def arguments = Seq(start, end, step)
 
-  override def rewrite(f: (Expression) => Expression) =
+  override def rewrite(f: Expression => Expression) =
     f(RangeFunction(start.rewrite(f), end.rewrite(f), step.rewrite(f)))
 
   override def symbolTableDependencies = start.symbolTableDependencies ++
@@ -323,7 +323,7 @@ case class SignFunction(argument: Expression) extends MathFunction(argument) {
     }
   }
 
-  override def rewrite(f: (Expression) => Expression) = f(SignFunction(argument.rewrite(f)))
+  override def rewrite(f: Expression => Expression) = f(SignFunction(argument.rewrite(f)))
 }
 
 case class RoundFunction(expression: Expression) extends MathFunction(expression) {
@@ -334,7 +334,7 @@ case class RoundFunction(expression: Expression) extends MathFunction(expression
     case v => CypherFunctions.round(v)
   }
 
-  override def rewrite(f: (Expression) => Expression) = f(RoundFunction(expression.rewrite(f)))
+  override def rewrite(f: Expression => Expression) = f(RoundFunction(expression.rewrite(f)))
 }
 
 case class SqrtFunction(argument: Expression) extends MathFunction(argument) {
@@ -345,5 +345,5 @@ case class SqrtFunction(argument: Expression) extends MathFunction(argument) {
     case v => CypherFunctions.sqrt(v)
   }
 
-  override def rewrite(f: (Expression) => Expression) = f(SqrtFunction(argument.rewrite(f)))
+  override def rewrite(f: Expression => Expression) = f(SqrtFunction(argument.rewrite(f)))
 }

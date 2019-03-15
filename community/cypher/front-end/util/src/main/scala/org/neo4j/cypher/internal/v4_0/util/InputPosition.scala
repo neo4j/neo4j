@@ -46,7 +46,7 @@ case class InputPosition(offset: Int, line: Int, column: Int) {
 
 object InputPosition {
   implicit val byOffset =
-    Ordering.by { (pos: InputPosition) =>
+    Ordering.by { pos: InputPosition =>
       pos.offset
     }
 

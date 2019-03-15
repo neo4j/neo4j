@@ -28,7 +28,7 @@ case class RelationshipTypeFunction(relationship: Expression) extends NullInNull
 
   override def compute(value: AnyValue, m: ExecutionContext, state: QueryState): AnyValue = CypherFunctions.`type`(value)
 
-  override def rewrite(f: (Expression) => Expression) = f(RelationshipTypeFunction(relationship.rewrite(f)))
+  override def rewrite(f: Expression => Expression) = f(RelationshipTypeFunction(relationship.rewrite(f)))
 
   override def arguments = Seq(relationship)
 

@@ -29,28 +29,25 @@ case class LazyLabel(name: String) {
   private var id: Option[LabelId] = None
 
   def getOptId(context: TokenContext): Option[LabelId] = id match {
-    case None => {
+    case None =>
       id = context.getOptLabelId(name).map(LabelId)
       id
-    }
     case x => x
   }
 
   def getOrCreateId(context: QueryContext): LabelId = id match {
-    case None => {
+    case None =>
       val labelId = LabelId(context.getOrCreateLabelId(name))
       id = Some(labelId)
       labelId
-    }
     case Some(x) => x
   }
 
   // yuck! this is only used by tests...
   def id(table: SemanticTable): Option[LabelId] = id match {
-    case None => {
+    case None =>
       id = table.resolvedLabelNames.get(name)
       id
-    }
     case x => x
   }
 }

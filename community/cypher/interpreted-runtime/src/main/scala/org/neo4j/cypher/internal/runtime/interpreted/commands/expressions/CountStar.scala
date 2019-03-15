@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation.CountStarFunction
 
 case class CountStar() extends AggregationExpression {
-  def rewrite(f: (Expression) => Expression) = f(CountStar())
+  def rewrite(f: Expression => Expression) = f(CountStar())
 
   def createAggregationFunction = new CountStarFunction
 

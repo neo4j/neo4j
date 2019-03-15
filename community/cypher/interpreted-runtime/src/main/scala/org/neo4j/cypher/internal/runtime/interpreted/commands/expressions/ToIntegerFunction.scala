@@ -30,7 +30,7 @@ case class ToIntegerFunction(a: Expression) extends NullInNullOutExpression(a) {
 
   def arguments: Seq[Expression] = Seq(a)
 
-  def rewrite(f: (Expression) => Expression): Expression = f(ToIntegerFunction(a.rewrite(f)))
+  def rewrite(f: Expression => Expression): Expression = f(ToIntegerFunction(a.rewrite(f)))
 
   override def compute(value: AnyValue, m: ExecutionContext, state: QueryState): AnyValue = CypherFunctions.toInteger(value)
 }

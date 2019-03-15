@@ -17,6 +17,6 @@
 package org.neo4j.cypher.internal.v4_0
 
 package object util {
-  type Rewriter = (AnyRef => AnyRef)
-  type RewriterWithArgs = (((AnyRef, Seq[AnyRef])) => AnyRef)
+  type Rewriter = AnyRef => AnyRef
+  type RewriterWithArgs = ((AnyRef, Seq[AnyRef])) => AnyRef
 }

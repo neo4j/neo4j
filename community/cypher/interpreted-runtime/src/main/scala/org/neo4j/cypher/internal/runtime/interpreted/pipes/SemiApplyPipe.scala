@@ -27,7 +27,7 @@ case class SemiApplyPipe(source: Pipe, inner: Pipe, negated: Boolean)
   extends PipeWithSource(source) {
   def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
     input.filter {
-      (outerContext) =>
+      outerContext =>
         val innerState = state.withInitialContext(outerContext)
         val innerResults = inner.createResults(innerState)
         if (negated) innerResults.isEmpty else innerResults.nonEmpty

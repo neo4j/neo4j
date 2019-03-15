@@ -135,7 +135,7 @@ Expected: %s""".format(a, b, result, expected))
 class TestExpression extends Expression {
   def arguments = Nil
 
-  def rewrite(f: (Expression) => Expression): Expression = null
+  def rewrite(f: Expression => Expression): Expression = null
 
   def symbolTableDependencies = Set()
 

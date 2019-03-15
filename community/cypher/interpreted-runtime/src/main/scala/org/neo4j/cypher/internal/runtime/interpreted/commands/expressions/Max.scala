@@ -27,5 +27,5 @@ case class Max(anInner: Expression) extends AggregationWithInnerExpression(anInn
 
   val expectedInnerType = CTNumber
 
-  def rewrite(f: (Expression) => Expression) = f(Max(anInner.rewrite(f)))
+  def rewrite(f: Expression => Expression) = f(Max(anInner.rewrite(f)))
 }

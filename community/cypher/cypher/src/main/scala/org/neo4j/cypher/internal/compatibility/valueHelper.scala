@@ -34,13 +34,12 @@ object valueHelper {
     case d: FloatingPointValue => d.doubleValue()
     case d: IntegralValue => d.longValue()
 
-    case m: MapValue => {
+    case m: MapValue =>
       val map: mutable.Map[String, Any] = mutable.Map[String, Any]()
       m.foreach(new ThrowingBiConsumer[String, AnyValue, RuntimeException] {
         override def accept(t: String, u: AnyValue): Unit = map.put(t, fromValue(u))
       })
       map.toMap
-    }
     case n: NodeProxyWrappingNodeValue => n.nodeProxy()
     case r: RelationshipProxyWrappingValue => r.relationshipProxy()
     case p: PathWrappingPathValue => p.path()

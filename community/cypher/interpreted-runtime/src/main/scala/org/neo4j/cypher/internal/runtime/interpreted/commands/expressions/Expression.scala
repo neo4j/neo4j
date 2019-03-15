@@ -80,7 +80,7 @@ abstract class Expression extends TypeSafe with AstNode[Expression] {
 case class CachedExpression(key:String, typ:CypherType) extends Expression {
   def apply(ctx: ExecutionContext, state: QueryState): AnyValue = ctx.getByName(key)
 
-  def rewrite(f: (Expression) => Expression) = f(this)
+  def rewrite(f: Expression => Expression) = f(this)
 
   def arguments = Seq()
 

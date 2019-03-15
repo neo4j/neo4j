@@ -32,7 +32,7 @@ case class ForeachPipe(source: Pipe, inner: Pipe, variable: String, expression: 
 
   override protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] =
     input.map {
-      (outerContext) =>
+      outerContext =>
         val values = makeTraversable(expression(outerContext, state))
         values.iterator().asScala.foreach { v =>
           val innerState = state.withInitialContext(executionContextFactory.copyWith(outerContext, variable, v))

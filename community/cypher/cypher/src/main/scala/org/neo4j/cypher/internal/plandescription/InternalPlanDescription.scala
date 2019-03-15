@@ -288,7 +288,7 @@ final case class ArgumentPlanDescription(id: Id,
 
   def addArgument(arg: Argument): InternalPlanDescription = copy(arguments = arguments :+ arg)
 
-  def map(f: (InternalPlanDescription) => InternalPlanDescription): InternalPlanDescription = f(this)
+  def map(f: InternalPlanDescription => InternalPlanDescription): InternalPlanDescription = f(this)
 
   def toIndexedSeq: Seq[InternalPlanDescription] = Seq(this)
 }

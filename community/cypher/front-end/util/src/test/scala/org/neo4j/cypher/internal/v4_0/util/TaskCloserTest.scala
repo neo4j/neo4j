@@ -75,7 +75,7 @@ class TaskCloserTest extends CypherFunSuite with BeforeAndAfter {
     taskCloser.close(success = true)
 
     // If we close the closer twice, it should only run this once
-    ran should not equal(true)
+    ran should not equal true
   }
 
   test("cleanup without any cleanups does not fail") {

@@ -61,7 +61,7 @@ trait Expressions extends Parser
     Expression7 ~ zeroOrMore(WS ~ PartialComparisonExpression) ~~>> produceComparisons
   }
 
-  private case class PartialComparison(op: (org.neo4j.cypher.internal.v4_0.expressions.Expression, org.neo4j.cypher.internal.v4_0.expressions.Expression) => (InputPosition) => org.neo4j.cypher.internal.v4_0.expressions.Expression,
+  private case class PartialComparison(op: (org.neo4j.cypher.internal.v4_0.expressions.Expression, org.neo4j.cypher.internal.v4_0.expressions.Expression) => InputPosition => org.neo4j.cypher.internal.v4_0.expressions.Expression,
                                        expr: org.neo4j.cypher.internal.v4_0.expressions.Expression, pos: InputPosition) {
     def apply(lhs: org.neo4j.cypher.internal.v4_0.expressions.Expression) = op(lhs, expr)(pos)
   }

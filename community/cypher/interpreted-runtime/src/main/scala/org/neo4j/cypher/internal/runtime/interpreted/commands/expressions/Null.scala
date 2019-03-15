@@ -26,7 +26,7 @@ import org.neo4j.values.storable.Values
 case class Null() extends Expression {
   def apply(v1: ExecutionContext, state: QueryState) = Values.NO_VALUE
 
-  def rewrite(f: (Expression) => Expression): Expression = f(this)
+  def rewrite(f: Expression => Expression): Expression = f(this)
 
   def arguments = Seq()
 

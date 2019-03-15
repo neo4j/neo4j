@@ -56,7 +56,7 @@ class StdevFunction(val value: Expression, val population:Boolean)
   }
 
   override def apply(data: ExecutionContext, state: QueryState) {
-    actOnNumber(value(data, state), (number) => {
+    actOnNumber(value(data, state), number => {
       count += 1
       total += number.doubleValue()
       temp = temp :+ number.doubleValue()

@@ -29,7 +29,7 @@ case class ToBooleanFunction(a: Expression) extends NullInNullOutExpression(a) {
 
   def arguments: Seq[Expression] = Seq(a)
 
-  def rewrite(f: (Expression) => Expression): Expression = f(ToBooleanFunction(a.rewrite(f)))
+  def rewrite(f: Expression => Expression): Expression = f(ToBooleanFunction(a.rewrite(f)))
 
   override def compute(value: AnyValue, m: ExecutionContext, state: QueryState): AnyValue = CypherFunctions.toBoolean(value)
 }

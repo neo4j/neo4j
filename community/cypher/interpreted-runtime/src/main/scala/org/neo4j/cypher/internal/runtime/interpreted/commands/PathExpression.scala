@@ -69,7 +69,7 @@ case class PathExpression(pathPattern: Seq[Pattern], predicate: Predicate,
 
   override def arguments = Seq.empty
 
-  override def rewrite(f: (Expression) => Expression) =
+  override def rewrite(f: Expression => Expression) =
     f(PathExpression(pathPattern.map(_.rewrite(f)), predicate.rewriteAsPredicate(f), projection, allowIntroducingNewIdentifiers))
 
   override def symbolTableDependencies = {

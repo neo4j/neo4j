@@ -20,13 +20,13 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes.matching
 
 abstract class PatternElement(val key: String) {
-  def traverse[T](shouldFollow: (PatternElement) => Boolean,
+  def traverse[T](shouldFollow: PatternElement => Boolean,
                   visitNode: (PatternNode, T) => T,
                   visitRelationship: (PatternRelationship, T) => T,
                   data: T,
                   path: Seq[PatternElement])
 
-  def traverse[T](shouldFollow: (PatternElement) => Boolean,
+  def traverse[T](shouldFollow: PatternElement => Boolean,
                   visit: (PatternElement, T) => T,
                   data: T,
                   path: Seq[PatternElement]) {

@@ -151,7 +151,7 @@ class QueryCacheTest extends CypherFunSuite {
     }
 
     private val RECOMPILE_LIMIT = 2
-    def recompile(key: Key): (Int) => Option[MyValue] = (count: Int) => {
+    def recompile(key: Key): Int => Option[MyValue] = (count: Int) => {
       if (count > RECOMPILE_LIMIT) Some(MyValue(key.first())(recompiled = true))
       else None
     }

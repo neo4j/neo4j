@@ -86,13 +86,11 @@ class AddedHistory(val parent: History, val pair: MatchingPair, exFactory: Execu
       case MatchingPair(pe: VariableLengthPatternRelationship, null) => Seq(pe.key -> Values.NO_VALUE) ++ pe.relIterable
         .map(_ -> Values.NO_VALUE)
       case MatchingPair(pe: PatternRelationship, null) => Seq(pe.key -> Values.NO_VALUE)
-      case MatchingPair(pe: VariableLengthPatternRelationship, entity: VariableLengthGraphRelationship) => {
+      case MatchingPair(pe: VariableLengthPatternRelationship, entity: VariableLengthGraphRelationship) =>
         relationshipIterable(pe, entity) match {
           case Some((key, rels)) => Seq(pe.key -> entity.path, (key, rels))
           case None => Seq(pe.key -> entity.path)
         }
-
-      }
     }
   }
 

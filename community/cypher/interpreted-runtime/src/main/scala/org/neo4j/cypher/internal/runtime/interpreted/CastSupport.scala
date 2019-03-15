@@ -158,7 +158,7 @@ object CastSupport {
     writer.array
   }
 
-  private class ArrayConverterWriter(typ: Class[_], transformer: (AnyRef) => ArrayValue)
+  private class ArrayConverterWriter(typ: Class[_], transformer: AnyRef => ArrayValue)
     extends AnyValueWriter[RuntimeException] {
 
     private var _array: AnyRef = null

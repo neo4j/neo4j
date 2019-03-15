@@ -31,7 +31,7 @@ case class SelectOrSemiApplyPipe(source: Pipe, inner: Pipe, predicate: Predicate
 
   def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
     input.filter {
-      (outerContext) =>
+      outerContext =>
         predicate.isTrue(outerContext, state) || {
           val innerState = state.withInitialContext(outerContext)
           val innerResults = inner.createResults(innerState)

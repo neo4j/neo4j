@@ -114,7 +114,7 @@ final case class Clone(items: List[ReturnItem])
       items.semanticCheck chain
       declareVariables
 
-  private def declareVariables: SemanticCheck = (state) => {
+  private def declareVariables: SemanticCheck = state => {
     items.foldSemanticCheck {
       case AliasedReturnItem(expression, alias) => declareVariable(alias, state.typeTable(expression).actual)
       case _ => success
@@ -139,7 +139,7 @@ case class CreateInConstruct(pattern: Pattern)
     *
     * @return
     */
-  private def checkNewRelTypes: SemanticCheck = (state) => {
+  private def checkNewRelTypes: SemanticCheck = state => {
     pattern.patternParts.foldLeft(success) {
       case (acc, EveryPath(relChain: RelationshipChain)) => acc chain checkNewRelTypes(relChain, state)
       case (acc, _) => acc
@@ -148,7 +148,7 @@ case class CreateInConstruct(pattern: Pattern)
 
   private def checkNewRelTypes(patternElement: PatternElement, state: SemanticState): SemanticCheck = {
     patternElement match {
-      case (RelationshipChain(element, rel, _)) =>
+      case RelationshipChain(element, rel, _) =>
         checkNewRelTypes(rel, state) chain checkNewRelTypes(element, state)
       case _ => success
     }
@@ -212,7 +212,7 @@ final case class ConstructGraph(
       news.semanticCheck chain
       sets.semanticCheck
 
-  private def checkDuplicatedRelationships: SemanticCheck = (state) => {
+  private def checkDuplicatedRelationships: SemanticCheck = state => {
     val relationshipVars = news.flatMap(_.pattern.patternParts).collect {
       case EveryPath(element) => collectRelationshipVars(element)
     }.flatten
@@ -233,7 +233,7 @@ final case class ConstructGraph(
     }
   }
 
-  private def checkModificationOfClonedEntities(element: PatternElement): SemanticCheck = (state) => {
+  private def checkModificationOfClonedEntities(element: PatternElement): SemanticCheck = state => {
     element match {
       case NodePattern(Some(v), labels, properties, _) if state.symbol(v.name).isDefined && (labels.nonEmpty || properties.isDefined) =>
         error("Modification of a cloned node is not allowed. Use COPY OF to manipulate the node", element.position)(state)
@@ -342,7 +342,7 @@ case class Match(
         SemanticError("Multiple hints for same variable are not supported", variables.head.position, identHints.map(_.position): _*)
     }.toVector
 
-    (state: SemanticState) => semantics.SemanticCheckResult(state, errors)
+    state: SemanticState => semantics.SemanticCheckResult(state, errors)
   }
 
   private def checkForCartesianProducts: SemanticCheck = (state: SemanticState) => {

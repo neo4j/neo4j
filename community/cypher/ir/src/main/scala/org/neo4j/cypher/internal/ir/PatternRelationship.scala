@@ -41,7 +41,7 @@ final case class PatternRelationship(name: String, nodes: (String, String), dir:
 }
 
 object PatternRelationship {
-  implicit val byName = Ordering.by { (patternRel: PatternRelationship) => patternRel.name }
+  implicit val byName = Ordering.by { patternRel: PatternRelationship => patternRel.name }
 }
 
 trait PatternLength {

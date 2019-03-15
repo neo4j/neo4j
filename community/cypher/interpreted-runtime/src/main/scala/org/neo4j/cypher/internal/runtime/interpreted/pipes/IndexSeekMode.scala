@@ -34,7 +34,7 @@ case class IndexSeekModeFactory(unique: Boolean, readOnly: Boolean) {
 }
 
 object IndexSeekMode {
-  type MultipleValueQuery = (QueryState) => (Seq[Any]) => Iterator[NodeValue]
+  type MultipleValueQuery = QueryState => Seq[Any] => Iterator[NodeValue]
 
   def assertSingleValue(values: Seq[Any]): Any = {
     if(values.size != 1)

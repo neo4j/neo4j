@@ -59,7 +59,7 @@ case class TracingRewriterTaskProcessor(sequenceName: String, onlyWhenChanged: B
   override def apply(task: RewriterTask) = task match {
     case RunRewriter(name, _) =>
       val innerRewriter = super.apply(task)
-      (in) =>
+      in =>
         val result = innerRewriter(in)
         if (!onlyWhenChanged || in != result) {
 //          val resultDoc = pprintToDoc[AnyRef, Any](Result(result))(ResultHandler.docGen)

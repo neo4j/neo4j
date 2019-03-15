@@ -29,7 +29,7 @@ case class ToFloatFunction(a: Expression) extends NullInNullOutExpression(a) {
 
   def arguments: Seq[Expression] = Seq(a)
 
-  def rewrite(f: (Expression) => Expression): Expression = f(ToFloatFunction(a.rewrite(f)))
+  def rewrite(f: Expression => Expression): Expression = f(ToFloatFunction(a.rewrite(f)))
 
   override def compute(value: AnyValue, m: ExecutionContext, state: QueryState): AnyValue =
     CypherFunctions.toFloat(value)

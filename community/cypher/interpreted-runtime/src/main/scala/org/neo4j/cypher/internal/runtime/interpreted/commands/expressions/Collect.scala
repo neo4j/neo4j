@@ -27,5 +27,5 @@ case class Collect(anInner: Expression) extends AggregationWithInnerExpression(a
 
   val expectedInnerType = CTAny
 
-  def rewrite(f: (Expression) => Expression) = f(Collect(anInner.rewrite(f)))
+  def rewrite(f: Expression => Expression) = f(Collect(anInner.rewrite(f)))
 }

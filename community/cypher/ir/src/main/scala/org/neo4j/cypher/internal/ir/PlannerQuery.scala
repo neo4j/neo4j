@@ -66,7 +66,7 @@ trait PlannerQuery {
   }
 
   def withoutHints(hintsToIgnore: GenSeq[Hint]): PlannerQuery = {
-    copy(queryGraph = queryGraph.withoutHints(hintsToIgnore), tail = tail.map((x) => x.withoutHints(hintsToIgnore)))
+    copy(queryGraph = queryGraph.withoutHints(hintsToIgnore), tail = tail.map(x => x.withoutHints(hintsToIgnore)))
   }
 
   def withHorizon(horizon: QueryHorizon): PlannerQuery = copy(horizon = horizon)

@@ -81,7 +81,7 @@ class ProcedureSignatureParser extends Parser with Base with Expressions with Li
     group("RELATIONSHIP?" ~ push(CTRelationship)) |
     group("POINT?" ~ push(CTPoint)) |
     group("PATH?" ~ push(CTPath)) |
-    group("LIST?" ~~ "OF" ~~ ProcedureFieldType ~~> { (tpe: CypherType) => CTList(tpe) }) |
+    group("LIST?" ~~ "OF" ~~ ProcedureFieldType ~~> { tpe: CypherType => CTList(tpe) }) |
     group("STRING?" ~ push(CTString)) |
     group("BOOLEAN?" ~ push(CTBoolean)) |
     group("NUMBER?" ~ push(CTNumber)) |

@@ -163,9 +163,9 @@ trait Base extends Parser {
     def ~~[A, B, C](other: ReductionRule2[A, B, C]): ReductionRule2[A, B, C] = r ~ WS ~ other
 
     def ~>>>[R](f: String => InputPosition => R): Rule1[R] = r ~> withContext((s: String, ctx) => f(s)(ContextPosition(ctx)))
-    def ~~>>[Z, R](f: (Z) => (InputPosition => R)): ReductionRule1[Z, R] =
+    def ~~>>[Z, R](f: Z => InputPosition => R): ReductionRule1[Z, R] =
       r ~~> withContext((z: Z, ctx) => f(z)(ContextPosition(ctx)))
-    def ~~>>[Y, Z, R](f: (Y, Z) => (InputPosition => R)): ReductionRule2[Y, Z, R] =
+    def ~~>>[Y, Z, R](f: (Y, Z) => InputPosition => R): ReductionRule2[Y, Z, R] =
       r ~~> withContext((y: Y, z: Z, ctx) => f(y, z)(ContextPosition(ctx)))
     def ~~~>[R](f: InputPosition => R): Rule1[R] = r ~> withContext((_, ctx) => f(ContextPosition(ctx)))
   }
@@ -196,11 +196,11 @@ trait Base extends Parser {
 
     def ~~[B](other: ReductionRule1[A, B]): Rule1[B] = r ~ WS ~ other
 
-    def ~~>>[R](f: (A) => (InputPosition => R)): Rule1[R] =
+    def ~~>>[R](f: A => InputPosition => R): Rule1[R] =
       r ~~> withContext((a: A, ctx) => f(a)(ContextPosition(ctx)))
-    def ~~>>[Z, R](f: (Z, A) => (InputPosition => R)): ReductionRule1[Z, R] =
+    def ~~>>[Z, R](f: (Z, A) => InputPosition => R): ReductionRule1[Z, R] =
       r ~~> withContext((z: Z, a: A, ctx) => f(z, a)(ContextPosition(ctx)))
-    def ~~>>[Y, Z, R](f: (Y, Z, A) => (InputPosition => R)): ReductionRule2[Y, Z, R] =
+    def ~~>>[Y, Z, R](f: (Y, Z, A) => InputPosition => R): ReductionRule2[Y, Z, R] =
       r ~~> withContext((y: Y, z: Z, a: A, ctx) => f(y, z, a)(ContextPosition(ctx)))
   }
 
@@ -249,7 +249,7 @@ trait Base extends Parser {
     def ~~[F](other: Rule1[F]): Rule6[A, B, C, D, E, F] = r ~ WS ~ other
     def ~~[F, G](other: Rule2[F, G]): Rule7[A, B, C, D, E, F, G] = r ~ WS ~ other
 
-    def ~~>>[R](f: (A, B, C, D, E) => (InputPosition => R)): Rule1[R] =
+    def ~~>>[R](f: (A, B, C, D, E) => InputPosition => R): Rule1[R] =
       r ~~> withContext((a: A, b: B, c: C, d: D, e: E, ctx) => f(a, b, c, d, e)(ContextPosition(ctx)))
   }
 
@@ -257,7 +257,7 @@ trait Base extends Parser {
     def ~~(other: Rule0): Rule6[A, B, C, D, E, F] = r ~ WS ~ other
     def ~~[G](other: Rule1[G]): Rule7[A, B, C, D, E, F, G] = r ~ WS ~ other
 
-    def ~~>>[R](func: (A, B, C, D, E, F) => (InputPosition => R)): Rule1[R] =
+    def ~~>>[R](func: (A, B, C, D, E, F) => InputPosition => R): Rule1[R] =
       r ~~> withContext((a: A, b: B, c: C, d: D, e: E, f: F, ctx) => func(a, b, c, d, e, f)(ContextPosition(ctx)))
   }
 

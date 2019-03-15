@@ -35,5 +35,5 @@ case class Divide(a: Expression, b: Expression) extends Arithmetics(a, b) {
 
   def calc(a: AnyValue, b: AnyValue): AnyValue = CypherMath.divide(a, b)
 
-  def rewrite(f: (Expression) => Expression) = f(Divide(a.rewrite(f), b.rewrite(f)))
+  def rewrite(f: Expression => Expression) = f(Divide(a.rewrite(f), b.rewrite(f)))
 }

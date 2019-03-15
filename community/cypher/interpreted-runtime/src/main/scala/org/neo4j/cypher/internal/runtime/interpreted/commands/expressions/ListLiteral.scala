@@ -36,7 +36,7 @@ case class ListLiteral(arguments: Expression*) extends Expression {
     VirtualValues.list(argumentValues: _*)
   }
 
-  def rewrite(f: (Expression) => Expression): Expression = f(ListLiteral(arguments.map(f): _*))
+  def rewrite(f: Expression => Expression): Expression = f(ListLiteral(arguments.map(f): _*))
 
   def symbolTableDependencies = arguments.flatMap(_.symbolTableDependencies).toSet
 }

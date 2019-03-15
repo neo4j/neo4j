@@ -162,7 +162,7 @@ class CompiledConversionUtilsTest extends CypherFunSuite {
     case ((v1, v2), expected) =>
       val av1 = ValueUtils.of(v1)
       val av2 = ValueUtils.of(v2)
-      test(s"${av1} == ${av2}") {
+      test(s"$av1 == $av2") {
         CompiledConversionUtils.equals _ tupled (av1 -> av2) should equal(expected)
       }
   }
@@ -170,7 +170,7 @@ class CompiledConversionUtilsTest extends CypherFunSuite {
   testEquality.foreach {
     case ((v1, v2), expected) =>
       val av1 = ValueUtils.of(v1)
-      test(s"${av1} == ${v2}") {
+      test(s"$av1 == $v2") {
         CompiledConversionUtils.equals _ tupled (av1 -> v2) should equal(expected)
       }
   }
@@ -178,7 +178,7 @@ class CompiledConversionUtilsTest extends CypherFunSuite {
   testEquality.foreach {
     case ((v1, v2), expected) =>
       val av2 = ValueUtils.of(v2)
-      test(s"${v1} == ${av2}") {
+      test(s"$v1 == $av2") {
         CompiledConversionUtils.equals _ tupled (v1 -> av2) should equal(expected)
       }
   }

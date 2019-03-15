@@ -35,7 +35,7 @@ class PeriodicCommitHintTest extends CypherFunSuite with Positional {
 
     // Then
     assert(result.errors.size === 1)
-    assert(result.errors.head.msg === s"Commit size error - expected positive value larger than zero, got ${input}")
+    assert(result.errors.head.msg === s"Commit size error - expected positive value larger than zero, got $input")
     assert(result.errors.head.position === sizePosition)
   }
 

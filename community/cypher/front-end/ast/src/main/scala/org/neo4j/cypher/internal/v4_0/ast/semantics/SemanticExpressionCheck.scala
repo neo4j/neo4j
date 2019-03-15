@@ -537,7 +537,7 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
         TypeSpec.none
 
     val durationTypes =
-      if (lhsTypes containsAny (CTDuration.covariant))
+      if (lhsTypes containsAny CTDuration.covariant)
         CTDate.covariant | CTTime.covariant | CTLocalTime.covariant |
           CTDateTime.covariant | CTLocalDateTime.covariant | CTDuration.covariant
       else

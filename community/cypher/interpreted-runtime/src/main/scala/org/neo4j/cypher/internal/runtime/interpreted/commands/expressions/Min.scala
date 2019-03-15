@@ -27,5 +27,5 @@ case class Min(anInner: Expression) extends AggregationWithInnerExpression(anInn
 
   val expectedInnerType = CTNumber
 
-  def rewrite(f: (Expression) => Expression) = f(Min(anInner.rewrite(f)))
+  def rewrite(f: Expression => Expression) = f(Min(anInner.rewrite(f)))
 }

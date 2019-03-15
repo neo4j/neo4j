@@ -138,7 +138,7 @@ class ExpandAllPipeTest extends CypherFunSuite {
     val result = ExpandAllPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, LazyTypes.empty)().createResults(queryState).toList
 
     // then
-    val (first :: second :: Nil) = result
+    val first :: second :: Nil = result
     first.toMap should equal(Map("a" -> fromNodeProxy(startNode), "r" -> fromRelationshipProxy(relationship1), "b" -> fromNodeProxy(endNode1)))
     second.toMap should equal(Map("a" -> fromNodeProxy(startNode), "r" -> fromRelationshipProxy(selfRelationship), "b" -> fromNodeProxy(startNode)))
   }
@@ -171,7 +171,7 @@ class ExpandAllPipeTest extends CypherFunSuite {
     val result = ExpandAllPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, LazyTypes.empty)().createResults(queryState).toList
 
     // then
-    val (single :: Nil) = result
+    val single :: Nil = result
     single.toMap should equal(Map("a" -> fromNodeProxy(startNode), "r" -> fromRelationshipProxy(relationship1), "b" -> fromNodeProxy(endNode1)))
   }
 

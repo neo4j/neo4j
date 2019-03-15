@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.values.KeyToken
 object KeyTokenResolver {
   /*this is what you should use!*/
   def resolveExpressions(expr: Expression, ctx: TokenContext): Expression = expr match {
-    case (keyToken: KeyToken) => keyToken.resolve(ctx)
+    case keyToken: KeyToken => keyToken.resolve(ctx)
     case _                    => expr
   }
 }

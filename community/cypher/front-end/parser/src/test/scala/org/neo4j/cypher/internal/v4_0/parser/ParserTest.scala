@@ -36,7 +36,7 @@ trait ParserTest[T, J] extends CypherFunSuite {
       }
     }
 
-    def shouldGive(expected: ((InputPosition) => J)) {
+    def shouldGive(expected: InputPosition => J) {
       shouldGive(expected(InputPosition(0,0,0)))
     }
 

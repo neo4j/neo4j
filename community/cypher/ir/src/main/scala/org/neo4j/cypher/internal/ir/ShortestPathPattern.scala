@@ -30,5 +30,5 @@ final case class ShortestPathPattern(name: Option[String], rel: PatternRelations
 }
 
 object ShortestPathPattern {
-  implicit val byRelName = Ordering.by { (sp: ShortestPathPattern) => sp.rel }
+  implicit val byRelName = Ordering.by { sp: ShortestPathPattern => sp.rel }
 }

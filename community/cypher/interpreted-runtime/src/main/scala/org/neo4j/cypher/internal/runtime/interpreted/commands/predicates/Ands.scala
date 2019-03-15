@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 case class Ands(predicates: NonEmptyList[Predicate]) extends CompositeBooleanPredicate {
   override def shouldExitWhen = false
   override def andWith(other: Predicate): Predicate = Ands(predicates :+ other)
-  override def rewrite(f: (Expression) => Expression): Expression = f(Ands(predicates.map(_.rewriteAsPredicate(f))))
+  override def rewrite(f: Expression => Expression): Expression = f(Ands(predicates.map(_.rewriteAsPredicate(f))))
   override def toString = {
     predicates.foldLeft("") {
       case (acc, next) if acc.isEmpty => next.toString
@@ -51,7 +51,7 @@ class And(val a: Predicate, val b: Predicate) extends Predicate {
   override def atoms: Seq[Predicate] = a.atoms ++ b.atoms
   override def toString: String = s"($a AND $b)"
   def containsIsNull = a.containsIsNull || b.containsIsNull
-  def rewrite(f: (Expression) => Expression) = f(And(a.rewriteAsPredicate(f), b.rewriteAsPredicate(f)))
+  def rewrite(f: Expression => Expression) = f(And(a.rewriteAsPredicate(f), b.rewriteAsPredicate(f)))
 
   def arguments = Seq(a, b)
 
@@ -80,13 +80,13 @@ case class AndedPropertyComparablePredicates(ident: VariableCommand, prop: Prope
   extends CompositeBooleanPredicate {
 
   // some rewriters change the type of this, and we can't allow that
-  private def rewriteVariableIfNotTypeChanged(f: (Expression) => Expression) =
+  private def rewriteVariableIfNotTypeChanged(f: Expression => Expression) =
     ident.rewrite(f) match {
       case i: Variable => i
       case _ => ident
     }
 
-  def rewrite(f: (Expression) => Expression): Expression =
+  def rewrite(f: Expression => Expression): Expression =
     f(AndedPropertyComparablePredicates(rewriteVariableIfNotTypeChanged(f),
       prop.rewrite(f).asInstanceOf[Property],
       predicates.map(_.rewriteAsPredicate(f).asInstanceOf[ComparablePredicate])))

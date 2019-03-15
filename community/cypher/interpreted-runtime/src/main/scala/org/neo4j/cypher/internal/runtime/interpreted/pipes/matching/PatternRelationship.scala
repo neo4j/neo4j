@@ -74,7 +74,7 @@ class PatternRelationship(key: String,
 
   override def toString = key
 
-  def traverse[T](shouldFollow: (PatternElement) => Boolean,
+  def traverse[T](shouldFollow: PatternElement => Boolean,
                   visitNode: (PatternNode, T) => T,
                   visitRelationship: (PatternRelationship, T) => T,
                   data: T,
@@ -91,7 +91,7 @@ class PatternRelationship(key: String,
     }
   }
 
-  def traverse[T](shouldFollow: (PatternElement) => Boolean,
+  def traverse[T](shouldFollow: PatternElement => Boolean,
                   visitNode: (PatternNode, T) => T,
                   visitRelationship: (PatternRelationship, T) => T,
                   data: T,

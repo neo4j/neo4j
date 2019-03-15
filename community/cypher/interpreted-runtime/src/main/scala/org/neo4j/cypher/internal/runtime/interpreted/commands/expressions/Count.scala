@@ -27,5 +27,5 @@ case class Count(anInner: Expression) extends AggregationWithInnerExpression(anI
 
   def expectedInnerType = CTAny
 
-  def rewrite(f: (Expression) => Expression) = f(Count(anInner.rewrite(f)))
+  def rewrite(f: Expression => Expression) = f(Count(anInner.rewrite(f)))
 }

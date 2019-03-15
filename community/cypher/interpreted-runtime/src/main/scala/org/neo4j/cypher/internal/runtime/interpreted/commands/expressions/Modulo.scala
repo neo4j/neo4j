@@ -25,5 +25,5 @@ import org.neo4j.values._
 case class Modulo(a: Expression, b: Expression) extends Arithmetics(a, b) {
   def calc(a: AnyValue, b: AnyValue): AnyValue = CypherMath.modulo(a, b)
 
-  def rewrite(f: (Expression) => Expression) = f(Modulo(a.rewrite(f), b.rewrite(f)))
+  def rewrite(f: Expression => Expression) = f(Modulo(a.rewrite(f), b.rewrite(f)))
 }

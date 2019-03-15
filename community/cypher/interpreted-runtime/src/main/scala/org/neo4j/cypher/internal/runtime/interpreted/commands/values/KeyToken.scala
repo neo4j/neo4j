@@ -41,7 +41,7 @@ sealed abstract class KeyToken(typ: TokenType) extends Expression {
 
   def arguments = Seq.empty
 
-  def rewrite(f: (Expression) => Expression): KeyToken = f(this).asInstanceOf[KeyToken]
+  def rewrite(f: Expression => Expression): KeyToken = f(this).asInstanceOf[KeyToken]
 
   def symbolTableDependencies = Set.empty
 

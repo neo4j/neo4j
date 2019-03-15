@@ -40,7 +40,7 @@ object groupInequalityPredicates extends (NonEmptyList[Predicate] => NonEmptyLis
   def apply(inputPredicates: NonEmptyList[Predicate]): NonEmptyList[Predicate] = {
 
     // categorize predicates according to whether they contain an inequality or not
-    val partitions = inputPredicates.partition { (predicate: Predicate) =>
+    val partitions = inputPredicates.partition { predicate: Predicate =>
       predicate.expr match {
         case inequality: InequalityExpression => Left(predicate -> inequality)
         case _ => Right(predicate)
@@ -79,7 +79,7 @@ object groupInequalityPredicates extends (NonEmptyList[Predicate] => NonEmptyLis
   }
 
   private def groupedInequalities(inequalities: NonEmptyList[(Predicate, InequalityExpression)]) = {
-    inequalities.groupBy { (input: (Predicate, InequalityExpression)) =>
+    inequalities.groupBy { input: (Predicate, InequalityExpression) =>
       val (_, inequality) = input
       inequality.lhs match {
         case prop@Property(ident: Variable, _) => Some(ident -> prop)

@@ -471,7 +471,7 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
       createResults(queryState).toList
 
     // then
-    val (first :: Nil) = result
+    val first :: Nil = result
     first.getByName("a") should beEquivalentTo(startNode)
     first.getByName("r") should beEquivalentTo(List(leftRelationship3))
     first.getByName("b") should beEquivalentTo(endNode)
@@ -1092,7 +1092,7 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
   private def replyWithMap(query: QueryContext, mapping: Map[(Long, _ <: SemanticDirection), Seq[RelationshipValue]]) {
     when(query.getRelationshipsForIds(any(), any(), any())).thenAnswer(new Answer[Iterator[RelationshipValue]] {
       def answer(invocation: InvocationOnMock): Iterator[RelationshipValue] = {
-        val (startNode :: dir :: _ :: Nil) = invocation.getArguments.toList
+        val startNode :: dir :: _ :: Nil = invocation.getArguments.toList
         mapping(startNode.asInstanceOf[Long] -> dir.asInstanceOf[SemanticDirection]).iterator
       }
     })

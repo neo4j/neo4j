@@ -42,7 +42,7 @@ case object mergeInPredicates extends Rewriter {
 
   private val inner: Rewriter = bottomUp(Rewriter.lift {
 
-    case and@And(lhs, rhs) if noOrs(lhs) && noOrs(rhs) => {
+    case and@And(lhs, rhs) if noOrs(lhs) && noOrs(rhs) =>
       if (noNots(lhs) && noNots(rhs))
       //Look for a `IN [...] AND a IN [...]` and compute the intersection of lists
         rewriteBinaryOperator(and, (a, b) => a intersect b, (l, r) => and.copy(l, r)(and.position))
@@ -52,9 +52,8 @@ case object mergeInPredicates extends Rewriter {
       else
       // In case only one of lhs and rhs includes a NOT we cannot rewrite
         and
-    }
 
-    case or@Or(lhs, rhs) if noAnds(lhs) && noAnds(rhs) => {
+    case or@Or(lhs, rhs) if noAnds(lhs) && noAnds(rhs) =>
       if (noNots(lhs) && noNots(rhs))
       //Look for `a IN [...] OR a IN [...]` and compute union of lists
         rewriteBinaryOperator(or, (a, b) => a union b, (l, r) => or.copy(l, r)(or.position))
@@ -64,7 +63,6 @@ case object mergeInPredicates extends Rewriter {
       else
       // In case only one of lhs and rhs includes a NOT we cannot rewrite
         or
-    }
   })
 
   private def noOrs(expression: Expression):Boolean = !expression.treeExists {
@@ -109,7 +107,7 @@ case object mergeInPredicates extends Rewriter {
   private def collectInPredicates(merge: (Seq[Expression], Seq[Expression]) => Seq[Expression])
                                  (expressions: Expression*): Map[Expression, Seq[Expression]] = {
     val maps = expressions.map(_.treeFold(Map.empty[Expression, Seq[Expression]]) {
-      case In(a, ListLiteral(exprs)) => (map) => {
+      case In(a, ListLiteral(exprs)) => map => {
         //if there is already a list associated with `a`, do map(a) ++ exprs otherwise exprs
         val values = map.get(a).map(current => merge(current, exprs)).getOrElse(exprs).distinct
         (map + (a -> values), None)

@@ -33,7 +33,7 @@ object Materialized {
   def mapValues[A, B, C](m: collection.Map[A, B], f: B => C): Map[A, C] = {
     val builder: mutable.Builder[(A, C), Map[A, C]] = mapBuilder(m)
 
-    for ( ((k, v)) <- m )
+    for ( (k, v) <- m )
       builder += k -> f(v)
     builder.result()
   }

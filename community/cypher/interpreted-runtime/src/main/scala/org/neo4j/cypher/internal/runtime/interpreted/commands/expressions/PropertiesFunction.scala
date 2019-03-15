@@ -37,5 +37,5 @@ case class PropertiesFunction(a: Expression) extends NullInNullOutExpression(a) 
 
   override def arguments = Seq(a)
 
-  override def rewrite(f: (Expression) => Expression) = f(PropertiesFunction(a.rewrite(f)))
+  override def rewrite(f: Expression => Expression) = f(PropertiesFunction(a.rewrite(f)))
 }

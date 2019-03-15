@@ -33,7 +33,7 @@ case class IdFunction(inner: Expression) extends Expression {
     case value => CypherFunctions.id(value)
   }
 
-  def rewrite(f: (Expression) => Expression) = f(IdFunction(inner.rewrite(f)))
+  def rewrite(f: Expression => Expression) = f(IdFunction(inner.rewrite(f)))
 
   def arguments = Seq(inner)
 

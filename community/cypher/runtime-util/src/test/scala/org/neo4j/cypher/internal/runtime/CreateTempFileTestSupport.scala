@@ -55,16 +55,16 @@ trait CreateTempFileTestSupport extends CypherTestSupport {
   def createGzipCSVTempFileURL(f: PrintWriter => Unit)(implicit writer: File => PrintWriter): String =
     createGzipCSVTempFileURL()(f)
 
-  def createGzipCSVTempFileURL(filename: String = "cypher", dir: String = null)(f: PrintWriter => Unit)(implicit writer: (File => PrintWriter)): String =
+  def createGzipCSVTempFileURL(filename: String = "cypher", dir: String = null)(f: PrintWriter => Unit)(implicit writer: File => PrintWriter): String =
     createTempFileURL(filename, ".csv.gz")(f)(gzipWriter)
 
   def createZipCSVTempFileURL(f: PrintWriter => Unit)(implicit writer: File => PrintWriter): String =
     createZipCSVTempFileURL()(f)
 
-  def createZipCSVTempFileURL(filename: String = "cypher", dir: String = null)(f: PrintWriter => Unit)(implicit writer: (File => PrintWriter)): String =
+  def createZipCSVTempFileURL(filename: String = "cypher", dir: String = null)(f: PrintWriter => Unit)(implicit writer: File => PrintWriter): String =
     createTempFileURL(filename, ".csv.zip")(f)(zipWriter)
 
-  def createTempFile(name: String, ext: String, f: PrintWriter => Unit)(implicit writer: (File => PrintWriter)): String = synchronized {
+  def createTempFile(name: String, ext: String, f: PrintWriter => Unit)(implicit writer: File => PrintWriter): String = synchronized {
     withTempFileWriter(name, ext)(f).toAbsolute.path
   }
 

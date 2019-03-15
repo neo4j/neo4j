@@ -214,6 +214,6 @@ class RewritableTest extends CypherFunSuite {
       case NotUsed => NotUsed
     }))
 
-    rewritten should be theSameInstanceAs(thing)
+    rewritten should be theSameInstanceAs thing
   }
 }

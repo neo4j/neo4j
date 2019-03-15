@@ -217,7 +217,7 @@ object SemanticFunctionCheck extends SemanticAnalysisTooling {
         SemanticCheckResult.success
 
       case map: MapExpression => error(
-        s"A map with keys ${map.items.map((a) => s"'${a._1.name}'").mkString(", ")} is not describing a valid point, " +
+        s"A map with keys ${map.items.map(a => s"'${a._1.name}'").mkString(", ")} is not describing a valid point, " +
           s"a point is described either by using cartesian coordinates e.g. {x: 2.3, y: 4.5, crs: 'cartesian'} or using " +
           s"geographic coordinates e.g. {latitude: 12.78, longitude: 56.7, crs: 'WGS-84'}.", map.position)
 

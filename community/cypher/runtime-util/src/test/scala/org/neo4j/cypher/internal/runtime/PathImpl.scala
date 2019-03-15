@@ -77,7 +77,7 @@ case class PathImpl(pathEntities: PropertyContainer*)
 
   def iterator(): JavaIterator[PropertyContainer] = pathEntities.asJava.iterator()
 
-  def foreach[U](f: (PropertyContainer) => U) {
+  def foreach[U](f: PropertyContainer => U) {
     pathEntities.foreach(f)
   }
 

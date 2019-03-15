@@ -35,7 +35,7 @@ trait RelationshipHint {
 
 object Hint {
   implicit val byVariable: Ordering[Hint] =
-    Ordering.by { (hint: Hint) => hint.variables.head }(Variable.byName)
+    Ordering.by { hint: Hint => hint.variables.head }(Variable.byName)
 }
 // allowed on match
 

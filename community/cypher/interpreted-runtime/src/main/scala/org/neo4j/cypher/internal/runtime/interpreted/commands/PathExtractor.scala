@@ -70,7 +70,7 @@ case class PathExtractorExpression(pathPattern: Seq[Pattern]) extends Expression
       case path: PathPattern => path.left.name
     }
 
-  override def rewrite(f: (Expression) => Expression) = f(this)
+  override def rewrite(f: Expression => Expression) = f(this)
 
   override def arguments = Seq.empty
 

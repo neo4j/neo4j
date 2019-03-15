@@ -28,7 +28,7 @@ case class RelationshipFunction(path: Expression) extends NullInNullOutExpressio
   override def compute(value: AnyValue, m: ExecutionContext, state: QueryState) =
     CypherFunctions.relationships(value)
 
-  def rewrite(f: (Expression) => Expression) = f(RelationshipFunction(path.rewrite(f)))
+  def rewrite(f: Expression => Expression) = f(RelationshipFunction(path.rewrite(f)))
 
   def arguments = Seq(path)
 

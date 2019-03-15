@@ -27,7 +27,7 @@ trait GraphElementPropertyFunctions extends ListSupport {
 
   implicit class RichMap(m: Map[String, Expression]) {
 
-    def rewrite(f: (Expression) => Expression): Map[String, Expression] = m.map {
+    def rewrite(f: Expression => Expression): Map[String, Expression] = m.map {
       case (k, v) => k -> v.rewrite(f)
     }
 

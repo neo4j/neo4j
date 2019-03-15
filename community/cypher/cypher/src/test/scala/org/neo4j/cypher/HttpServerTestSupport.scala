@@ -35,9 +35,9 @@ trait HttpServerTestSupport {
 
 class HttpServerTestSupportBuilder {
   private var allowedMethods: Set[String] = Set()
-  private val mapping = new mutable.HashMap[String, (HttpExchange => Unit)]()
-  private val filters = new mutable.HashMap[String, (HttpExchange => Boolean)]()
-  private val transformations = new mutable.HashMap[String, (HttpExchange => HttpExchange)]()
+  private val mapping = new mutable.HashMap[String, HttpExchange => Unit]()
+  private val filters = new mutable.HashMap[String, HttpExchange => Boolean]()
+  private val transformations = new mutable.HashMap[String, HttpExchange => HttpExchange]()
 
   def onPathReplyWithData(path: String, data: Array[Byte]) {
     assert(path != null && !path.isEmpty)
@@ -71,9 +71,9 @@ class HttpServerTestSupportBuilder {
   }
 
   private class HttpServerTestSupportImpl(port: Int, allowedMethods: Set[String],
-                                  mapping: Map[String, (HttpExchange => Unit)],
-                                  filters: Map[String, (HttpExchange => Boolean)],
-                                  transformations: Map[String, (HttpExchange => HttpExchange)])
+                                          mapping: Map[String, HttpExchange => Unit],
+                                          filters: Map[String, HttpExchange => Boolean],
+                                          transformations: Map[String, HttpExchange => HttpExchange])
     extends HttpServerTestSupport {
 
     private var optServer: Option[HttpServer] = None
@@ -83,7 +83,7 @@ class HttpServerTestSupportBuilder {
         val address = new InetSocketAddress(InetAddress.getLoopbackAddress, port)
         HttpServer.create(address, 0)
       } catch {
-        case (ex: IOException) =>
+        case ex: IOException =>
           throw new IllegalStateException("Error in creating and/or binding the server.", ex)
       }
     }

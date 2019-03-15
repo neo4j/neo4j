@@ -79,7 +79,7 @@ class PatternNode(key: String, val labels: Seq[KeyToken] = Seq.empty, val proper
 
   override def toString = String.format("PatternNode[key=%s]", key)
 
-  def traverse[T](shouldFollow: (PatternElement) => Boolean,
+  def traverse[T](shouldFollow: PatternElement => Boolean,
                   visitNode: (PatternNode, T) => T,
                   visitRelationship: (PatternRelationship, T) => T,
                   data: T,
