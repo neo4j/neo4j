@@ -23,7 +23,6 @@ import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
-import java.util.concurrent.TimeUnit;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -56,20 +55,6 @@ class ProfilerTest
         otherIntenseWork();
         String output = getProfilerOutput( profiler );
         assertThat( output, not( containsString( "otherIntensiveWork" ) ) );
-    }
-
-    @Test
-    void profilerMustWaitUntilAfterAnInitialDelay() throws Exception
-    {
-        Profiler profiler = Profiler.profiler();
-        long initialDelayNanos = TimeUnit.MILLISECONDS.toNanos( COMPUTE_WORK_MILLIS * 3 );
-        try ( Profiler.ProfiledInterval ignored = profiler.profile( Thread.currentThread(), initialDelayNanos ) )
-        {
-            expensiveComputation();
-        }
-        String output = getProfilerOutput( profiler );
-        // The initial delay is far longer than the profiled interval, so we should not get any samples.
-        assertThat( output, not( containsString( "expensiveComputation" ) ) );
     }
 
     private String getProfilerOutput( Profiler profiler ) throws InterruptedException
