@@ -19,6 +19,8 @@
  */
 package org.neo4j.internal.kernel.api;
 
+import java.util.Objects;
+
 /**
  * A token with its associated name.
  */
@@ -80,9 +82,7 @@ public final class NamedToken
     @Override
     public int hashCode()
     {
-        int result = id;
-        result = 31 * result + name.hashCode() + ( internal ? 333_333_313 : 777_777_773 );
-        return result;
+        return Objects.hash( id, name, internal );
     }
 
     @Override
