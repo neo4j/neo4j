@@ -26,6 +26,7 @@ import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
 import java.util.Iterator;
 
 import org.neo4j.function.ThrowingBiConsumer;
+import org.neo4j.internal.kernel.api.LabelSet;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
@@ -68,12 +69,21 @@ public class NodeSchemaMatcher
     ) throws EXCEPTION
     {
         MutableIntSet nodePropertyIds = null;
+        LabelSet labels = null;
         while ( schemaSuppliers.hasNext() )
         {
             SUPPLIER schemaSupplier = schemaSuppliers.next();
             SchemaDescriptor schema = schemaSupplier.schema();
+
+            // Only get the node label set the first time it's needed
+            if ( labels == null )
+            {
+                labels = node.labels();
+            }
+
             if ( schema.isAffected( node.labels().all() ) )
             {
+                // Get the property key set the first time it's needed
                 if ( nodePropertyIds == null )
                 {
                     nodePropertyIds = new IntHashSet();
