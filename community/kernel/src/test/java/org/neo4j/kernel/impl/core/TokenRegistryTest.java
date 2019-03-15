@@ -78,13 +78,10 @@ class TokenRegistryTest
         registry.put( new NamedToken( INBOUND1_TYPE, 1 ) );
         registry.put( new NamedToken( INBOUND2_TYPE, 2 ) );
 
-        try
+        assertThrows( NonUniqueTokenException.class, () ->
         {
             registry.put( new NamedToken( INBOUND1_TYPE, 3 ) );
-        }
-        catch ( NonUniqueTokenException ignored )
-        {
-        }
+        } );
 
         assertEquals( 1, registry.getId( INBOUND1_TYPE ).intValue() );
         assertEquals( 2, registry.getId( INBOUND2_TYPE ).intValue() );
@@ -98,13 +95,10 @@ class TokenRegistryTest
         registry.put( new NamedToken( INBOUND1_TYPE, 1, true ) );
         registry.put( new NamedToken( INBOUND2_TYPE, 2, true ) );
 
-        try
+        assertThrows( NonUniqueTokenException.class, () ->
         {
             registry.put( new NamedToken( INBOUND1_TYPE, 3, true ) );
-        }
-        catch ( NonUniqueTokenException ignored )
-        {
-        }
+        } );
 
         assertEquals( 1, registry.getIdInternal( INBOUND1_TYPE ).intValue() );
         assertEquals( 2, registry.getIdInternal( INBOUND2_TYPE ).intValue() );
