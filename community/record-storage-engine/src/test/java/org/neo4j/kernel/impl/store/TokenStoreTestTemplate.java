@@ -54,7 +54,7 @@ import org.neo4j.test.rule.TestDirectory;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
@@ -108,7 +108,7 @@ abstract class TokenStoreTestTemplate<R extends TokenRecord>
     {
         createEmptyPageZero();
         R record = store.getRecord( 7, store.newRecord(), FORCE );
-        assertFalse( "Record should not be in use", record.inUse() );
+        assertFalse( record.inUse(), "Record should not be in use" );
     }
 
     @Test
