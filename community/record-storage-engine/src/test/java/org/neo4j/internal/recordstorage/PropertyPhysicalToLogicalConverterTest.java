@@ -92,7 +92,7 @@ class PropertyPhysicalToLogicalConverterTest
         // WHEN
         MatcherAssert.assertThat(
                 convert( none, none, change( before, after ) ),
-                equalTo( EntityUpdates.forEntity( 0 ).added( key, value ).build() ) );
+                equalTo( EntityUpdates.forEntity( 0, false ).added( key, value ).build() ) );
     }
 
     @Test
@@ -109,7 +109,7 @@ class PropertyPhysicalToLogicalConverterTest
         EntityUpdates update = convert( none, none, change( before, after ) );
 
         // THEN
-        EntityUpdates expected = EntityUpdates.forEntity( 0 ).changed( key, valueBefore, valueAfter ).build();
+        EntityUpdates expected = EntityUpdates.forEntity( 0, false ).changed( key, valueBefore, valueAfter ).build();
         assertEquals( expected, update );
     }
 
@@ -123,7 +123,7 @@ class PropertyPhysicalToLogicalConverterTest
         PropertyRecord after = propertyRecord( property( key, value ) );
 
         // WHEN
-        assertThat( convert( none, none, change( before, after ) ), equalTo( EntityUpdates.forEntity( 0 ).build() ) );
+        assertThat( convert( none, none, change( before, after ) ), equalTo( EntityUpdates.forEntity( 0, false ).build() ) );
     }
 
     @Test
@@ -139,7 +139,7 @@ class PropertyPhysicalToLogicalConverterTest
         EntityUpdates update = convert( none, none, change( before, after ) );
 
         // THEN
-        EntityUpdates expected = EntityUpdates.forEntity( 0 ).removed( key, value ).build();
+        EntityUpdates expected = EntityUpdates.forEntity( 0, false ).removed( key, value ).build();
         assertEquals( expected, update );
     }
 
@@ -152,7 +152,7 @@ class PropertyPhysicalToLogicalConverterTest
         PropertyRecord after = propertyRecord( property( key, longString ) );
 
         // THEN
-        assertThat( convert( none, none, change( before, after ) ), equalTo( EntityUpdates.forEntity( 0 ).added( key, longString ).build() ) );
+        assertThat( convert( none, none, change( before, after ) ), equalTo( EntityUpdates.forEntity( 0, false ).added( key, longString ).build() ) );
     }
 
     @Test
@@ -167,7 +167,7 @@ class PropertyPhysicalToLogicalConverterTest
         EntityUpdates update = convert( none, none, change( before, after ) );
 
         // THEN
-        EntityUpdates expected = EntityUpdates.forEntity( 0 ).changed( key, longString, longerString ).build();
+        EntityUpdates expected = EntityUpdates.forEntity( 0, false ).changed( key, longString, longerString ).build();
         assertEquals( expected, update );
     }
 
@@ -183,7 +183,7 @@ class PropertyPhysicalToLogicalConverterTest
         EntityUpdates update = convert( none, none, change( before, after ) );
 
         // THEN
-        EntityUpdates expected = EntityUpdates.forEntity( 0 ).removed( key, longString ).build();
+        EntityUpdates expected = EntityUpdates.forEntity( 0, false ).removed( key, longString ).build();
         assertEquals( expected, update );
     }
 
@@ -201,7 +201,7 @@ class PropertyPhysicalToLogicalConverterTest
         EntityUpdates update = convert( none, none, movedFrom, movedTo );
 
         // THEN
-        EntityUpdates expected = EntityUpdates.forEntity( 0 ).changed( key, oldValue, newValue ).build();
+        EntityUpdates expected = EntityUpdates.forEntity( 0, false ).changed( key, oldValue, newValue ).build();
         assertEquals( expected, update );
     }
 
@@ -231,7 +231,7 @@ class PropertyPhysicalToLogicalConverterTest
             long[] labelsAfter, Command.PropertyCommand... changes )
     {
         long nodeId = 0;
-        EntityUpdates.Builder updates = EntityUpdates.forEntity( (long) 0 ).withTokens( labelsBefore ).withTokensAfter( labelsAfter );
+        EntityUpdates.Builder updates = EntityUpdates.forEntity( (long) 0, false ).withTokens( labelsBefore ).withTokensAfter( labelsAfter );
         EntityCommandGrouper grouper = new EntityCommandGrouper<>( Command.NodeCommand.class, 8 );
         grouper.add( new Command.NodeCommand( new NodeRecord( nodeId ), new NodeRecord( nodeId ) ) );
         for ( Command.PropertyCommand change : changes )

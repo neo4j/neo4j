@@ -20,10 +20,7 @@
 package org.neo4j.kernel.impl.api.index;
 
 import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
-import org.eclipse.collections.api.set.primitive.IntSet;
-import org.eclipse.collections.impl.factory.primitive.IntSets;
 import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap;
-import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -32,10 +29,7 @@ import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.impl.index.schema.CapableIndexDescriptor;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.emptyIterableOf;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.common.EntityType.NODE;
 import static org.neo4j.common.EntityType.RELATIONSHIP;
 import static org.neo4j.kernel.impl.index.schema.IndexDescriptorFactory.forSchema;
@@ -64,110 +58,20 @@ class IndexMapTest
     }
 
     @Test
-    void shouldGetRelatedIndexForLabel()
+    void shouldGetById()
     {
-        assertThat( indexMap.getRelatedIndexes( entityTokens( 3 ), noEntityToken, IntSets.immutable.empty(), NODE ),
-                containsInAnyOrder( schema3_4, node35_8 ) );
+        assertEquals( schema3_4, indexMap.getIndexProxy( 1L ).getDescriptor().schema() );
+        assertEquals( schema5_6_7, indexMap.getIndexProxy( 2L ).getDescriptor().schema() );
     }
 
     @Test
-    void shouldGetRelatedIndexForProperty()
+    void shouldGetByDescriptor()
     {
-        assertThat(
-                indexMap.getRelatedIndexes( noEntityToken, entityTokens( 3, 4, 5 ), properties( 4 ), NODE ),
-                containsInAnyOrder( schema3_4 ) );
-    }
-
-    @Test
-    void shouldGetRelatedIndexesForLabel()
-    {
-        assertThat( indexMap.getRelatedIndexes( entityTokens( 5 ), entityTokens( 3, 4 ), IntSets.immutable.empty(), NODE ),
-                containsInAnyOrder( schema5_6_7, schema5_8, node35_8 ) );
-    }
-
-    @Test
-    void shouldGetRelatedIndexes()
-    {
-        assertThat(
-                indexMap.getRelatedIndexes( entityTokens( 3 ), entityTokens( 4, 5 ), properties( 7 ), NODE ),
-                containsInAnyOrder( schema3_4, schema5_6_7, node35_8 ) );
-    }
-
-    @Test
-    void shouldGetRelatedIndexOnce()
-    {
-        assertThat(
-                indexMap.getRelatedIndexes( entityTokens( 3 ), noEntityToken, properties( 4 ), NODE ),
-                containsInAnyOrder( schema3_4, node35_8 ) );
-
-        assertThat(
-                indexMap.getRelatedIndexes( noEntityToken, entityTokens( 5 ), properties( 6, 7 ), NODE ),
-                containsInAnyOrder( schema5_6_7 ) );
-    }
-
-    @Test
-    void shouldHandleUnrelated()
-    {
-        assertThat( indexMap.getRelatedIndexes( noEntityToken, noEntityToken, IntSets.immutable.empty(), NODE ),
-                emptyIterableOf( SchemaDescriptor.class ) );
-
-        assertTrue( indexMap.getRelatedIndexes( entityTokens( 2 ), noEntityToken, IntSets.immutable.empty(), NODE ).isEmpty() );
-
-        assertThat(
-                indexMap.getRelatedIndexes( noEntityToken, entityTokens( 2 ), properties( 1 ), NODE ),
-                emptyIterableOf( SchemaDescriptor.class ) );
-
-        assertTrue( indexMap.getRelatedIndexes( entityTokens( 2 ), entityTokens( 2 ), properties( 1 ), NODE ).isEmpty() );
-    }
-
-    @Test
-    void shouldGetMultiLabelForAnyOfTheLabels()
-    {
-        assertThat( indexMap.getRelatedIndexes( entityTokens( 3 ), noEntityToken, IntSets.immutable.empty(), NODE ),
-                containsInAnyOrder( schema3_4, node35_8 ) );
-
-        assertThat( indexMap.getRelatedIndexes( entityTokens( 5 ), noEntityToken, IntSets.immutable.empty(), NODE ),
-                containsInAnyOrder( schema5_8, schema5_6_7, node35_8 ) );
-    }
-
-    @Test
-    void shouldOnlyGetRelIndexesForRelUpdates()
-    {
-        assertThat( indexMap.getRelatedIndexes( entityTokens( 3 ), noEntityToken, IntSets.immutable.empty(), RELATIONSHIP ),
-                containsInAnyOrder( rel35_8 ) );
-
-        assertThat( indexMap.getRelatedIndexes( entityTokens( 5 ), noEntityToken, IntSets.immutable.empty(), RELATIONSHIP ),
-                containsInAnyOrder( rel35_8 ) );
-    }
-
-    @Test
-    void removalsShouldOnlyRemoveCorrectProxy()
-    {
-        indexMap.removeIndexProxy( 4 );
-        assertThat( indexMap.getRelatedIndexes( entityTokens( 3 ), noEntityToken, IntSets.immutable.empty(), NODE ),
-                containsInAnyOrder( schema3_4 ) );
-        assertThat( indexMap.getRelatedIndexes( entityTokens( 3 ), noEntityToken, IntSets.immutable.empty(), RELATIONSHIP ),
-                containsInAnyOrder( rel35_8 ) );
-
-        indexMap.removeIndexProxy( 7 );
-        assertThat( indexMap.getRelatedIndexes( entityTokens( 5 ), noEntityToken, IntSets.immutable.empty(), NODE ),
-                containsInAnyOrder( schema5_8, schema5_6_7 ) );
-        assertThat( indexMap.getRelatedIndexes( entityTokens( 5 ), noEntityToken, IntSets.immutable.empty(), RELATIONSHIP ),
-                containsInAnyOrder( rel35_8 ) );
-
+        assertEquals( schema5_8, indexMap.getIndexProxy( schema5_8 ).getDescriptor().schema() );
+        assertEquals( node35_8, indexMap.getIndexProxy( node35_8 ).getDescriptor().schema() );
     }
 
     // HELPERS
-
-    private long[] entityTokens( long... entityTokenIds )
-    {
-        return entityTokenIds;
-    }
-
-    private IntSet properties( int... propertyIds )
-    {
-        return new IntHashSet( propertyIds );
-    }
 
     private class TestIndexProxy extends IndexProxyAdapter
     {

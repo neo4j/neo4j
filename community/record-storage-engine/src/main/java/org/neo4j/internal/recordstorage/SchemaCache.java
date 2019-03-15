@@ -21,10 +21,8 @@ package org.neo4j.internal.recordstorage;
 
 import org.eclipse.collections.api.iterator.IntIterator;
 import org.eclipse.collections.api.map.primitive.IntObjectMap;
-import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
 import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
 import org.eclipse.collections.api.set.primitive.IntSet;
-import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
 import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap;
 
 import java.util.Collections;
@@ -42,15 +40,13 @@ import java.util.function.Function;
 import org.neo4j.common.EntityType;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.internal.schema.ConstraintDescriptor;
+import org.neo4j.internal.schema.LabelPropertyMultiSet;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorPredicates;
-import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.storageengine.api.ConstraintRule;
 import org.neo4j.storageengine.api.ConstraintRuleAccessor;
 import org.neo4j.storageengine.api.StorageIndexReference;
-
-import static java.util.Collections.emptyIterator;
 
 /**
  * A cache of {@link SchemaRule schema rules} as well as enforcement of schema consistency.
@@ -180,11 +176,11 @@ public class SchemaCache
         return schemaCacheState.indexDescriptorByName( name );
     }
 
-    public <INDEX_KEY extends SchemaDescriptorSupplier> Set<INDEX_KEY> getIndexesRelatedTo(
-            long[] changedEntityTokens, long[] unchangedEntityTokens, IntSet properties, EntityType entityType,
-            Function<StorageIndexReference,INDEX_KEY> converter )
+    public Set<SchemaDescriptor> getIndexesRelatedTo(
+            long[] changedEntityTokens, long[] unchangedEntityTokens, int[] properties,
+            boolean propertyListIsComplete, EntityType entityType )
     {
-        return schemaCacheState.getIndexesRelatedTo( changedEntityTokens, unchangedEntityTokens, properties, entityType, converter );
+        return schemaCacheState.getIndexesRelatedTo( entityType, changedEntityTokens, unchangedEntityTokens, properties, propertyListIsComplete );
     }
 
     private static class SchemaCacheState
@@ -195,8 +191,8 @@ public class SchemaCache
         private final MutableLongObjectMap<ConstraintRule> constraintRuleById;
 
         private final Map<SchemaDescriptor,StorageIndexReference> indexDescriptors;
-        private final EntityDescriptors indexDescriptorsByNode;
-        private final EntityDescriptors indexDescriptorsByRelationship;
+        private final LabelPropertyMultiSet indexDescriptorsByNode;
+        private final LabelPropertyMultiSet indexDescriptorsByRelationship;
         private final Map<String,StorageIndexReference> indexDescriptorsByName;
 
         private final Map<Class<?>,Object> dependantState;
@@ -209,8 +205,8 @@ public class SchemaCache
             this.constraintRuleById = new LongObjectHashMap<>();
 
             this.indexDescriptors = new HashMap<>();
-            this.indexDescriptorsByNode = new EntityDescriptors();
-            this.indexDescriptorsByRelationship = new EntityDescriptors();
+            this.indexDescriptorsByNode = new LabelPropertyMultiSet();
+            this.indexDescriptorsByRelationship = new LabelPropertyMultiSet();
             this.indexDescriptorsByName = new HashMap<>();
             this.dependantState = new ConcurrentHashMap<>();
             load( rules );
@@ -224,8 +220,10 @@ public class SchemaCache
             this.constraints = new HashSet<>( schemaCacheState.constraints );
 
             this.indexDescriptors = new HashMap<>( schemaCacheState.indexDescriptors );
-            this.indexDescriptorsByNode = new EntityDescriptors( schemaCacheState.indexDescriptorsByNode );
-            this.indexDescriptorsByRelationship = new EntityDescriptors( schemaCacheState.indexDescriptorsByRelationship );
+            this.indexDescriptorsByNode = new LabelPropertyMultiSet();
+            this.indexDescriptorsByRelationship = new LabelPropertyMultiSet();
+            // Now fill the indexDescriptorsByNode/Relationship
+            this.indexDescriptorById.forEachValue( index -> selectSetByEntityType( index.schema().entityType() ).add( index.schema() ) );
             this.indexDescriptorsByName = new HashMap<>( schemaCacheState.indexDescriptorsByName );
             this.dependantState = new ConcurrentHashMap<>();
         }
@@ -280,37 +278,62 @@ public class SchemaCache
 
         Iterator<StorageIndexReference> indexesByNodeProperty( int propertyId )
         {
-            Set<StorageIndexReference> indexes = indexDescriptorsByNode.byPropertyKey.get( propertyId );
-            return (indexes == null) ? emptyIterator() : indexes.iterator();
+            throw new UnsupportedOperationException( "It'll go away the next commit anyway" );
         }
 
         Iterator<StorageIndexReference> indexDescriptorsForLabel( int labelId )
         {
-            Set<StorageIndexReference> forLabel = indexDescriptorsByNode.byEntity.get( labelId );
-            return forLabel == null ? emptyIterator() : forLabel.iterator();
+            throw new UnsupportedOperationException( "It'll go away the next commit anyway" );
         }
 
-        <INDEX_KEY extends SchemaDescriptorSupplier> Set<INDEX_KEY> getIndexesRelatedTo( long[] changedEntityTokens, long[] unchangedEntityTokens,
-                IntSet properties, EntityType entityType, Function<StorageIndexReference,INDEX_KEY> converter )
+        Set<SchemaDescriptor> getIndexesRelatedTo( EntityType entityType, long[] changedEntityTokens,
+                long[] unchangedEntityTokens, int[] properties, boolean propertyListIsComplete )
         {
-            EntityDescriptors entityDescriptors = descriptorsByEntityType( entityType );
+            return getIndexesRelatedTo( selectSetByEntityType( entityType ), changedEntityTokens, unchangedEntityTokens, properties, propertyListIsComplete );
+        }
 
-            // Grab all indexes relevant to a changed property.
-            Set<StorageIndexReference> indexesByProperties = extractIndexesByProperties( properties, entityDescriptors.byPropertyKey );
+        Set<SchemaDescriptor> getIndexesRelatedTo( LabelPropertyMultiSet set, long[] changedEntityTokens,
+                long[] unchangedEntityTokens, int[] properties, boolean propertyListIsComplete )
+        {
+            if ( indexDescriptorById.isEmpty() )
+            {
+                return Collections.emptySet();
+            }
 
-            // Make sure that that index really is relevant by intersecting it with indexes relevant for unchanged entity tokens.
-            Set<StorageIndexReference> indexesByUnchangedEntityTokens = new HashSet<>();
-            visitIndexesByEntityTokens( unchangedEntityTokens, entityDescriptors.byEntity, indexesByUnchangedEntityTokens::add );
-            indexesByProperties.retainAll( indexesByUnchangedEntityTokens );
-
-            // Add the indexes relevant for the changed entity tokens.
-            Set<INDEX_KEY> descriptors = new HashSet<>();
-            visitIndexesByEntityTokens( changedEntityTokens, entityDescriptors.byEntity, index -> descriptors.add( converter.apply( index ) ) );
-            indexesByProperties.forEach( index -> descriptors.add( converter.apply( index ) ) );
+            Set<SchemaDescriptor> descriptors = new HashSet<>();
+            if ( propertyListIsComplete )
+            {
+                set.matchingDescriptorsForCompleteListOfProperties( descriptors, changedEntityTokens, properties );
+            }
+            else
+            {
+                // At the time of writing this the commit process won't load the complete list of property keys for an entity.
+                // Because of this the matching cannot be as precise as if the complete list was known.
+                // Anyway try to make the best out of it and narrow down the list of potentially related indexes as much as possible.
+                if ( properties.length == 0 )
+                {
+                    // Only labels changed. Since we don't know which properties this entity has let's include all indexes for the changed labels.
+                    set.matchingDescriptors( descriptors, changedEntityTokens );
+                }
+                else if ( changedEntityTokens.length == 0 )
+                {
+                    // Only properties changed. Since we don't know which other properties this entity has let's include all indexes
+                    // for the (unchanged) labels on this entity that has any match on any of the changed properties.
+                    set.matchingDescriptorsForPartialListOfProperties( descriptors, unchangedEntityTokens, properties );
+                }
+                else
+                {
+                    // Both labels and properties changed.
+                    // All indexes for the changed labels must be included.
+                    // Also include all indexes for any of the changed or unchanged labels that has any match on any of the changed properties.
+                    set.matchingDescriptors( descriptors, changedEntityTokens );
+                    set.matchingDescriptorsForPartialListOfProperties( descriptors, unchangedEntityTokens, properties );
+                }
+            }
             return descriptors;
         }
 
-        private EntityDescriptors descriptorsByEntityType( EntityType entityType )
+        private LabelPropertyMultiSet selectSetByEntityType( EntityType entityType )
         {
             switch ( entityType )
             {
@@ -373,17 +396,7 @@ public class SchemaCache
                 SchemaDescriptor schemaDescriptor = index.schema();
                 indexDescriptors.put( schemaDescriptor, index );
                 indexDescriptorsByName.put( rule.name(), index );
-
-                // Per entity type
-                EntityDescriptors entityDescriptors = descriptorsByEntityType( schemaDescriptor.entityType() );
-                for ( int entityToken : schemaDescriptor.getEntityTokenIds() )
-                {
-                    entityDescriptors.byEntity.getIfAbsentPut( entityToken, HashSet::new ).add( index );
-                }
-                for ( int propertyKeyToken : schemaDescriptor.getPropertyIds() )
-                {
-                    entityDescriptors.byPropertyKey.getIfAbsentPut( propertyKeyToken, HashSet::new ).add( index );
-                }
+                selectSetByEntityType( schemaDescriptor.entityType() ).add( schemaDescriptor );
             }
         }
 
@@ -400,47 +413,7 @@ public class SchemaCache
                 SchemaDescriptor schema = index.schema();
                 indexDescriptors.remove( schema );
                 indexDescriptorsByName.remove( index.name(), index );
-
-                EntityDescriptors entityDescriptors = descriptorsByEntityType( schema.entityType() );
-                for ( int entityTokenId : schema.getEntityTokenIds() )
-                {
-                    Set<StorageIndexReference> forLabel = entityDescriptors.byEntity.get( entityTokenId );
-                    forLabel.remove( index );
-                    if ( forLabel.isEmpty() )
-                    {
-                        entityDescriptors.byEntity.remove( entityTokenId );
-                    }
-                }
-
-                for ( int propertyId : index.schema().getPropertyIds() )
-                {
-                    Set<StorageIndexReference> forProperty = entityDescriptors.byPropertyKey.get( propertyId );
-                    forProperty.remove( index );
-                    if ( forProperty.isEmpty() )
-                    {
-                        entityDescriptors.byPropertyKey.remove( propertyId );
-                    }
-                }
-            }
-        }
-
-        private static class EntityDescriptors
-        {
-            private final MutableIntObjectMap<Set<StorageIndexReference>> byEntity;
-            private final MutableIntObjectMap<Set<StorageIndexReference>> byPropertyKey;
-
-            EntityDescriptors( EntityDescriptors copyFrom )
-            {
-                byEntity = new IntObjectHashMap<>( copyFrom.byEntity.size() );
-                byPropertyKey = new IntObjectHashMap<>( copyFrom.byPropertyKey.size() );
-                copyFrom.byEntity.forEachKeyValue( ( k, v ) -> byEntity.put( k, new HashSet<>( v ) ) );
-                copyFrom.byPropertyKey.forEachKeyValue( ( k, v ) -> byPropertyKey.put( k, new HashSet<>( v ) ) );
-            }
-
-            EntityDescriptors()
-            {
-                byEntity = new IntObjectHashMap<>();
-                byPropertyKey = new IntObjectHashMap<>();
+                selectSetByEntityType( schema.entityType() ).remove( schema );
             }
         }
     }

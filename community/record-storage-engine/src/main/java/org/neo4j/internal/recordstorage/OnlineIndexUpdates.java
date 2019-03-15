@@ -24,12 +24,10 @@ import java.util.Collection;
 import java.util.Iterator;
 
 import org.neo4j.common.EntityType;
-import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.internal.recordstorage.Command.NodeCommand;
 import org.neo4j.internal.recordstorage.Command.PropertyCommand;
 import org.neo4j.internal.recordstorage.Command.RelationshipCommand;
 import org.neo4j.internal.schema.SchemaDescriptor;
-import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.storageengine.api.EntityUpdates;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
@@ -37,6 +35,8 @@ import org.neo4j.storageengine.api.StorageNodeCursor;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.StorageRelationshipScanCursor;
 
+import static org.neo4j.internal.recordstorage.Command.Mode.CREATE;
+import static org.neo4j.internal.recordstorage.Command.Mode.DELETE;
 import static org.neo4j.io.IOUtils.closeAllUnchecked;
 import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
 
@@ -112,8 +112,9 @@ public class OnlineIndexUpdates implements IndexUpdates
         Iterable<SchemaDescriptor> relatedIndexes = schemaCache.getIndexesRelatedTo(
                 entityUpdates.entityTokensChanged(),
                 entityUpdates.entityTokensUnchanged(),
-                entityUpdates.propertiesChanged(), entityType,
-                SchemaDescriptorSupplier::schema );
+                entityUpdates.propertiesChanged(),
+                entityUpdates.isPropertyListComplete(),
+                entityType );
         // we need to materialize the IndexEntryUpdates here, because when we
         // consume (later in separate thread) the store might have changed.
         entityUpdates.forIndexKeys( relatedIndexes, reader, entityType ).forEach( updates::add );
@@ -153,11 +154,18 @@ public class OnlineIndexUpdates implements IndexUpdates
         }
 
         // First get possible Label changes
-        EntityUpdates.Builder nodePropertyUpdates = EntityUpdates.forEntity( nodeId ).withTokens( nodeLabelsBefore ).withTokensAfter( nodeLabelsAfter );
+        boolean complete = providesCompleteListOfProperties( nodeChanges );
+        EntityUpdates.Builder nodePropertyUpdates =
+                EntityUpdates.forEntity( nodeId, complete ).withTokens( nodeLabelsBefore ).withTokensAfter( nodeLabelsAfter );
 
         // Then look for property changes
         converter.convertPropertyRecord( propertyCommandsForNode, nodePropertyUpdates );
         return nodePropertyUpdates;
+    }
+
+    private static boolean providesCompleteListOfProperties( Command entityCommand )
+    {
+        return entityCommand != null && (entityCommand.getMode() == CREATE || entityCommand.getMode() == DELETE);
     }
 
     private EntityUpdates.Builder gatherUpdatesFromCommandsForRelationship( long relationshipId, RelationshipCommand relationshipCommand,
@@ -174,8 +182,9 @@ public class OnlineIndexUpdates implements IndexUpdates
         {
             reltypeBefore = reltypeAfter = loadRelationship( relationshipId ).type();
         }
+        boolean complete = providesCompleteListOfProperties( relationshipCommand );
         EntityUpdates.Builder relationshipPropertyUpdates =
-                EntityUpdates.forEntity( relationshipId ).withTokens( reltypeBefore ).withTokensAfter( reltypeAfter );
+                EntityUpdates.forEntity( relationshipId, complete ).withTokens( reltypeBefore ).withTokensAfter( reltypeAfter );
         converter.convertPropertyRecord( propertyCommands, relationshipPropertyUpdates );
         return relationshipPropertyUpdates;
     }

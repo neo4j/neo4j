@@ -19,12 +19,8 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import org.eclipse.collections.api.set.primitive.IntSet;
-
-import java.util.Set;
 import java.util.function.Function;
 
-import org.neo4j.common.EntityType;
 import org.neo4j.function.ThrowingFunction;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.schema.SchemaDescriptor;
@@ -103,12 +99,6 @@ public class IndexMapReference implements IndexMapSnapshotProvider
     public Iterable<IndexProxy> getAllIndexProxies()
     {
         return indexMap.getAllIndexProxies();
-    }
-
-    public Set<SchemaDescriptor> getRelatedIndexes( long[] changedEntityTokens, long[] unchangedEntityTokens, IntSet properties,
-            EntityType entityType )
-    {
-        return indexMap.getRelatedIndexes( changedEntityTokens, unchangedEntityTokens, properties, entityType );
     }
 
     public IndexUpdaterMap createIndexUpdaterMap( IndexUpdateMode mode )

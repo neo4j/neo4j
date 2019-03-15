@@ -271,7 +271,7 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
                 return null;
             }
             nodeCursor.properties( propertyCursor );
-            EntityUpdates.Builder update = EntityUpdates.forEntity( nodeId ).withTokens( labels );
+            EntityUpdates.Builder update = EntityUpdates.forEntity( nodeId, true ).withTokens( labels );
             while ( propertyCursor.next() )
             {
                 update.added( propertyCursor.propertyKey(), propertyCursor.propertyValue() );

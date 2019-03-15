@@ -21,7 +21,6 @@ package org.neo4j.storageengine.api;
 
 import org.eclipse.collections.api.iterator.IntIterator;
 import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
-import org.eclipse.collections.api.set.primitive.IntSet;
 import org.eclipse.collections.api.set.primitive.MutableIntSet;
 import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
 import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
@@ -56,8 +55,10 @@ public class EntityUpdates
     // ASSUMPTION: these long arrays are actually sorted sets
     private long[] entityTokensBefore;
     private long[] entityTokensAfter;
-
+    private final boolean propertyListComplete;
     private final MutableIntObjectMap<PropertyValue> knownProperties;
+    private int[] propertyKeyIds;
+    private int propertyKeyIdsCursor;
     private boolean hasLoadedAdditionalProperties;
 
     public static class Builder
@@ -114,20 +115,30 @@ public class EntityUpdates
 
     private void put( int propertyKeyId, PropertyValue propertyValue )
     {
-        knownProperties.put( propertyKeyId, propertyValue );
+        PropertyValue existing = knownProperties.put( propertyKeyId, propertyValue );
+        if ( existing == null )
+        {
+            if ( propertyKeyIdsCursor >= propertyKeyIds.length )
+            {
+                propertyKeyIds = Arrays.copyOf( propertyKeyIds, propertyKeyIdsCursor * 2 );
+            }
+            propertyKeyIds[propertyKeyIdsCursor++] = propertyKeyId;
+        }
     }
 
-    public static Builder forEntity( long entityId )
+    public static Builder forEntity( long entityId, boolean propertyListIsComplete )
     {
-        return new Builder( new EntityUpdates( entityId, EMPTY_LONG_ARRAY, EMPTY_LONG_ARRAY ) );
+        return new Builder( new EntityUpdates( entityId, EMPTY_LONG_ARRAY, EMPTY_LONG_ARRAY, propertyListIsComplete ) );
     }
 
-    private EntityUpdates( long entityId, long[] entityTokensBefore, long[] entityTokensAfter )
+    private EntityUpdates( long entityId, long[] entityTokensBefore, long[] entityTokensAfter, boolean propertyListComplete )
     {
         this.entityId = entityId;
         this.entityTokensBefore = entityTokensBefore;
         this.entityTokensAfter = entityTokensAfter;
+        this.propertyListComplete = propertyListComplete;
         this.knownProperties = new IntObjectHashMap<>();
+        this.propertyKeyIds = new int[8];
     }
 
     public final long getEntityId()
@@ -145,11 +156,21 @@ public class EntityUpdates
         return PrimitiveArrays.intersect( entityTokensBefore, entityTokensAfter );
     }
 
-    public IntSet propertiesChanged()
+    public int[] propertiesChanged()
     {
         assert !hasLoadedAdditionalProperties : "Calling propertiesChanged() is not valid after non-changed " +
                                                 "properties have already been loaded.";
-        return knownProperties.keySet().toImmutable();
+        Arrays.sort( propertyKeyIds, 0, propertyKeyIdsCursor );
+        return propertyKeyIdsCursor == propertyKeyIds.length ? propertyKeyIds : Arrays.copyOf( propertyKeyIds, propertyKeyIdsCursor );
+    }
+
+    /**
+     * @return whether or not the list provided from {@link #propertiesChanged()} is the complete list of properties on this node.
+     * If {@code false} then the list may contain some properties, whereas there may be other unloaded properties on the persisted existing node.
+     */
+    public boolean isPropertyListComplete()
+    {
+        return propertyListComplete;
     }
 
     /**
@@ -235,7 +256,6 @@ public class EntityUpdates
                 }
             }
         }
-
         return indexUpdates;
     }
 
@@ -273,7 +293,7 @@ public class EntityUpdates
         final IntIterator propertiesWithNoValue = additionalPropertiesToLoad.intIterator();
         while ( propertiesWithNoValue.hasNext() )
         {
-            knownProperties.put( propertiesWithNoValue.next(), noValue );
+            put( propertiesWithNoValue.next(), noValue );
         }
     }
 
