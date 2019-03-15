@@ -19,15 +19,9 @@
  */
 package org.neo4j.internal.recordstorage;
 
-import org.eclipse.collections.api.map.primitive.LongObjectMap;
-import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
-import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap;
-
-import java.util.ArrayList;
-import java.util.List;
-
 import org.neo4j.internal.recordstorage.Command.NodeCommand;
 import org.neo4j.internal.recordstorage.Command.PropertyCommand;
+import org.neo4j.internal.recordstorage.Command.RelationshipCommand;
 import org.neo4j.lock.LockGroup;
 import org.neo4j.storageengine.api.CommandsToApply;
 
@@ -40,10 +34,9 @@ import static org.neo4j.kernel.impl.store.NodeLabelsField.fieldPointsToDynamicRe
 public class PropertyCommandsExtractor extends TransactionApplier.Adapter
         implements BatchTransactionApplier
 {
-    private final MutableLongObjectMap<NodeCommand> nodeCommandsById = new LongObjectHashMap<>();
-    private final MutableLongObjectMap<Command.RelationshipCommand> relationshipCommandsById = new LongObjectHashMap<>();
-    private final MutableLongObjectMap<List<PropertyCommand>> propertyCommandsByNodeIds = new LongObjectHashMap<>();
-    private final MutableLongObjectMap<List<PropertyCommand>> propertyCommandsByRelationshipIds = new LongObjectHashMap<>();
+    // A list of relevant commands, sorted to be Node(N),Property(N),Property(N)...,Node(O),Property(O),Property(O)...,
+    private final EntityCommandGrouper<NodeCommand> nodeCommands = new EntityCommandGrouper<>( NodeCommand.class, 16 );
+    private final EntityCommandGrouper<RelationshipCommand> relationshipCommands = new EntityCommandGrouper<>( RelationshipCommand.class, 16 );
     private boolean hasUpdates;
 
     @Override
@@ -61,16 +54,14 @@ public class PropertyCommandsExtractor extends TransactionApplier.Adapter
     @Override
     public void close()
     {
-        nodeCommandsById.clear();
-        relationshipCommandsById.clear();
-        propertyCommandsByNodeIds.clear();
-        propertyCommandsByRelationshipIds.clear();
+        nodeCommands.clear();
+        relationshipCommands.clear();
     }
 
     @Override
     public boolean visitNodeCommand( NodeCommand command )
     {
-        nodeCommandsById.put( command.getKey(), command );
+        nodeCommands.add( command );
         if ( !hasUpdates && mayResultInIndexUpdates( command ) )
         {
             hasUpdates = true;
@@ -79,9 +70,9 @@ public class PropertyCommandsExtractor extends TransactionApplier.Adapter
     }
 
     @Override
-    public boolean visitRelationshipCommand( Command.RelationshipCommand command )
+    public boolean visitRelationshipCommand( RelationshipCommand command )
     {
-        relationshipCommandsById.put( command.getKey(), command );
+        relationshipCommands.add( command );
         hasUpdates = true;
         return false;
     }
@@ -101,24 +92,15 @@ public class PropertyCommandsExtractor extends TransactionApplier.Adapter
     {
         if ( command.getAfter().isNodeSet() )
         {
-            createOrAddToGroup( command, command.getAfter().getNodeId(), propertyCommandsByNodeIds );
+            nodeCommands.add( command );
+            hasUpdates = true;
         }
         else if ( command.getAfter().isRelSet() )
         {
-            createOrAddToGroup( command, command.getAfter().getRelId(), propertyCommandsByRelationshipIds );
+            relationshipCommands.add( command );
+            hasUpdates = true;
         }
         return false;
-    }
-
-    private void createOrAddToGroup( PropertyCommand command, long entityId, MutableLongObjectMap<List<PropertyCommand>> propertyCommandsByEntityIds )
-    {
-        List<PropertyCommand> group = propertyCommandsByEntityIds.get( entityId );
-        if ( group == null )
-        {
-            propertyCommandsByEntityIds.put( entityId, group = new ArrayList<>() );
-        }
-        group.add( command );
-        hasUpdates = true;
     }
 
     public boolean containsAnyEntityOrPropertyUpdate()
@@ -126,23 +108,15 @@ public class PropertyCommandsExtractor extends TransactionApplier.Adapter
         return hasUpdates;
     }
 
-    public LongObjectMap<NodeCommand> nodeCommandsById()
+    public EntityCommandGrouper<NodeCommand> getNodeCommands()
     {
-        return nodeCommandsById;
+        nodeCommands.sort();
+        return nodeCommands;
     }
 
-    public LongObjectMap<Command.RelationshipCommand> relationshipCommandsById()
+    public EntityCommandGrouper<RelationshipCommand> getRelationshipCommands()
     {
-        return relationshipCommandsById;
-    }
-
-    public LongObjectMap<List<PropertyCommand>> propertyCommandsByNodeIds()
-    {
-        return propertyCommandsByNodeIds;
-    }
-
-    public LongObjectMap<List<PropertyCommand>> propertyCommandsByRelationshipIds()
-    {
-        return propertyCommandsByRelationshipIds;
+        relationshipCommands.sort();
+        return relationshipCommands;
     }
 }

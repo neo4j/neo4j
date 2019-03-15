@@ -19,13 +19,8 @@
  */
 package org.neo4j.internal.recordstorage;
 
-import org.eclipse.collections.api.map.primitive.LongObjectMap;
-
 import java.util.Iterator;
-import java.util.List;
 
-import org.neo4j.internal.recordstorage.Command.NodeCommand;
-import org.neo4j.internal.recordstorage.Command.PropertyCommand;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 
@@ -48,8 +43,7 @@ public class DirectIndexUpdates implements IndexUpdates
     }
 
     @Override
-    public void feed( LongObjectMap<List<PropertyCommand>> propCommandsByNodeId, LongObjectMap<List<PropertyCommand>> propCommandsByRelationshipId,
-            LongObjectMap<NodeCommand> nodeCommands, LongObjectMap<Command.RelationshipCommand> relationshipCommandPrimitiveLongObjectMap )
+    public void feed( EntityCommandGrouper<Command.NodeCommand> nodeCommands, EntityCommandGrouper<Command.RelationshipCommand> relationshipCommands )
     {
         throw new UnsupportedOperationException();
     }

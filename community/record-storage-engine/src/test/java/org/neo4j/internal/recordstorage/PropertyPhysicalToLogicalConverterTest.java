@@ -25,13 +25,13 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import org.neo4j.configuration.Config;
-import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
+import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.logging.NullLogProvider;
@@ -45,6 +45,7 @@ import org.neo4j.values.storable.Values;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @PageCacheExtension
 class PropertyPhysicalToLogicalConverterTest
@@ -122,9 +123,7 @@ class PropertyPhysicalToLogicalConverterTest
         PropertyRecord after = propertyRecord( property( key, value ) );
 
         // WHEN
-        assertThat(
-                convert( none, none, change( before, after ) ),
-                equalTo( EntityUpdates.forEntity( 0 ).build() ) );
+        assertThat( convert( none, none, change( before, after ) ), equalTo( EntityUpdates.forEntity( 0 ).build() ) );
     }
 
     @Test
@@ -153,9 +152,7 @@ class PropertyPhysicalToLogicalConverterTest
         PropertyRecord after = propertyRecord( property( key, longString ) );
 
         // THEN
-        assertThat(
-                convert( none, none, change( before, after ) ),
-                equalTo( EntityUpdates.forEntity( 0 ).added( key, longString ).build() ) );
+        assertThat( convert( none, none, change( before, after ) ), equalTo( EntityUpdates.forEntity( 0 ).added( key, longString ).build() ) );
     }
 
     @Test
@@ -197,12 +194,8 @@ class PropertyPhysicalToLogicalConverterTest
         int key = 12;
         Value oldValue = Values.of( "value1" );
         Value newValue = Values.of( "value two" );
-        PropertyRecordChange movedFrom = change(
-                propertyRecord( property( key, oldValue ) ),
-                propertyRecord() );
-        PropertyRecordChange movedTo = change(
-                propertyRecord(),
-                propertyRecord( property( key, newValue ) ) );
+        Command.PropertyCommand movedFrom = change( propertyRecord( property( key, oldValue ) ), propertyRecord() );
+        Command.PropertyCommand movedTo = change( propertyRecord(), propertyRecord( property( key, newValue ) ) );
 
         // WHEN
         EntityUpdates update = convert( none, none, movedFrom, movedTo );
@@ -235,34 +228,23 @@ class PropertyPhysicalToLogicalConverterTest
     }
 
     private EntityUpdates convert( long[] labelsBefore,
-            long[] labelsAfter, PropertyRecordChange change )
+            long[] labelsAfter, Command.PropertyCommand... changes )
     {
-        return convert( labelsBefore, labelsAfter, new PropertyRecordChange[] {change} );
-    }
-
-    private EntityUpdates convert( long[] labelsBefore,
-            long[] labelsAfter, PropertyRecordChange... changes )
-    {
+        long nodeId = 0;
         EntityUpdates.Builder updates = EntityUpdates.forEntity( (long) 0 ).withTokens( labelsBefore ).withTokensAfter( labelsAfter );
-        converter.convertPropertyRecord( 0, Iterables.iterable( changes ), updates );
+        EntityCommandGrouper grouper = new EntityCommandGrouper<>( Command.NodeCommand.class, 8 );
+        grouper.add( new Command.NodeCommand( new NodeRecord( nodeId ), new NodeRecord( nodeId ) ) );
+        for ( Command.PropertyCommand change : changes )
+        {
+            grouper.add( change );
+        }
+        assertTrue( grouper.nextEntity() );
+        converter.convertPropertyRecord( grouper, updates );
         return updates.build();
     }
 
-    private PropertyRecordChange change( final PropertyRecord before, final PropertyRecord after )
+    private Command.PropertyCommand change( final PropertyRecord before, final PropertyRecord after )
     {
-        return new PropertyRecordChange()
-        {
-            @Override
-            public PropertyRecord getBefore()
-            {
-                return before;
-            }
-
-            @Override
-            public PropertyRecord getAfter()
-            {
-                return after;
-            }
-        };
+        return new Command.PropertyCommand( before, after );
     }
 }

@@ -19,7 +19,6 @@
  */
 package org.neo4j.internal.recordstorage;
 
-import org.eclipse.collections.impl.factory.primitive.LongObjectMaps;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -58,7 +57,6 @@ import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
-import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.not;
@@ -151,8 +149,7 @@ class OnlineIndexUpdatesTest
         StorageIndexReference indexDescriptor = new DefaultStorageIndexReference( multiToken( ENTITY_TOKENS, NODE, 1, 4, 6 ), false, 0, null );
         createIndexes( indexDescriptor );
 
-        onlineIndexUpdates.feed( LongObjectMaps.immutable.of( nodeId, singletonList( propertyCommand ) ), LongObjectMaps.immutable.empty(),
-                LongObjectMaps.immutable.of( nodeId, nodeCommand ), LongObjectMaps.immutable.empty() );
+        onlineIndexUpdates.feed( nodeGroup( nodeCommand, propertyCommand ), relationshipGroup( null ) );
         assertTrue( onlineIndexUpdates.hasUpdates() );
         Iterator<IndexEntryUpdate<SchemaDescriptor>> iterator = onlineIndexUpdates.iterator();
         assertEquals( iterator.next(), IndexEntryUpdate.remove( nodeId, indexDescriptor, propertyValue, null, null ) );
@@ -180,8 +177,7 @@ class OnlineIndexUpdatesTest
         StorageIndexReference indexDescriptor = new DefaultStorageIndexReference( multiToken( ENTITY_TOKENS, RELATIONSHIP, 1, 4, 6 ), false, 0, null );
         createIndexes( indexDescriptor );
 
-        onlineIndexUpdates.feed( LongObjectMaps.immutable.empty(), LongObjectMaps.immutable.of( relId, singletonList( propertyCommand ) ),
-                LongObjectMaps.immutable.empty(), LongObjectMaps.immutable.of( relId, relationshipCommand ) );
+        onlineIndexUpdates.feed( nodeGroup( null ), relationshipGroup( relationshipCommand, propertyCommand ) );
         assertTrue( onlineIndexUpdates.hasUpdates() );
         Iterator<IndexEntryUpdate<SchemaDescriptor>> iterator = onlineIndexUpdates.iterator();
         assertEquals( iterator.next(), IndexEntryUpdate.remove( relId, indexDescriptor, propertyValue, null, null ) );
@@ -227,9 +223,7 @@ class OnlineIndexUpdatesTest
                 new DefaultStorageIndexReference( multiToken( ENTITY_TOKENS, RELATIONSHIP, 1, 4, 6 ), false, 1, null );
         createIndexes( relationshipIndexDescriptor );
 
-        onlineIndexUpdates.feed( LongObjectMaps.immutable.of( nodeId, singletonList( nodePropertyCommand ) ),
-                LongObjectMaps.immutable.of( relId, singletonList( relationshipPropertyCommand ) ), LongObjectMaps.immutable.of( nodeId, nodeCommand ),
-                LongObjectMaps.immutable.of( relId, relationshipCommand ) );
+        onlineIndexUpdates.feed( nodeGroup( nodeCommand, nodePropertyCommand ), relationshipGroup( relationshipCommand, relationshipPropertyCommand ) );
         assertTrue( onlineIndexUpdates.hasUpdates() );
         assertThat( onlineIndexUpdates,
                 containsInAnyOrder( IndexEntryUpdate.remove( relId, relationshipIndexDescriptor, relationshipPropertyValue, null, null ),
@@ -268,8 +262,7 @@ class OnlineIndexUpdatesTest
                 false, 3, null );
         createIndexes( indexDescriptor0, indexDescriptor1, indexDescriptor2 );
 
-        onlineIndexUpdates.feed( LongObjectMaps.immutable.empty(), LongObjectMaps.immutable.of( relId, asList( propertyCommand, propertyCommand2 ) ),
-                LongObjectMaps.immutable.empty(), LongObjectMaps.immutable.of( relId, relationshipCommand ) );
+        onlineIndexUpdates.feed( nodeGroup( null ), relationshipGroup( relationshipCommand, propertyCommand, propertyCommand2 ) );
         assertTrue( onlineIndexUpdates.hasUpdates() );
         assertThat( onlineIndexUpdates, containsInAnyOrder( IndexEntryUpdate.remove( relId, indexDescriptor0, propertyValue, propertyValue2, null ),
                 IndexEntryUpdate.remove( relId, indexDescriptor1, null, propertyValue2, null ),
@@ -283,6 +276,31 @@ class OnlineIndexUpdatesTest
         {
             schemaCache.addSchemaRule( indexDescriptor );
         }
+    }
+
+    private EntityCommandGrouper<Command.NodeCommand> nodeGroup( Command.NodeCommand nodeCommand, Command.PropertyCommand... propertyCommands )
+    {
+        return group( nodeCommand, Command.NodeCommand.class, propertyCommands );
+    }
+
+    private EntityCommandGrouper<Command.RelationshipCommand> relationshipGroup( Command.RelationshipCommand relationshipCommand,
+            Command.PropertyCommand... propertyCommands )
+    {
+        return group( relationshipCommand, Command.RelationshipCommand.class, propertyCommands );
+    }
+
+    private <ENTITY extends Command> EntityCommandGrouper<ENTITY> group( ENTITY entityCommand, Class<ENTITY> cls, Command.PropertyCommand... propertyCommands )
+    {
+        EntityCommandGrouper<ENTITY> grouper = new EntityCommandGrouper<>( cls, 8 );
+        if ( entityCommand != null )
+        {
+            grouper.add( entityCommand );
+        }
+        for ( Command.PropertyCommand propertyCommand : propertyCommands )
+        {
+            grouper.add( propertyCommand );
+        }
+        return grouper;
     }
 
     private long createRelationshipProperty( RelationshipRecord relRecord, Value propertyValue, int propertyKey )

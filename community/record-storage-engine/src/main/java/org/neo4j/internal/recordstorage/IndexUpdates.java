@@ -19,12 +19,6 @@
  */
 package org.neo4j.internal.recordstorage;
 
-import org.eclipse.collections.api.map.primitive.LongObjectMap;
-
-import java.util.List;
-
-import org.neo4j.internal.recordstorage.Command.NodeCommand;
-import org.neo4j.internal.recordstorage.Command.PropertyCommand;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 
@@ -35,13 +29,10 @@ public interface IndexUpdates extends Iterable<IndexEntryUpdate<SchemaDescriptor
 {
     /**
      * Feeds updates raw material in the form of node/property commands, to create updates from.
-     * @param propCommandsByNodeId {@link PropertyCommand} grouped by node id.
-     * @param propCommandsByRelationshipId
-     * @param nodeCommands {@link NodeCommand} by node id.
-     * @param relationshipCommandPrimitiveLongObjectMap
+     *  @param nodeCommands node data
+     * @param relationshipCommands relationship data
      */
-    void feed( LongObjectMap<List<PropertyCommand>> propCommandsByNodeId, LongObjectMap<List<PropertyCommand>> propCommandsByRelationshipId,
-            LongObjectMap<NodeCommand> nodeCommands, LongObjectMap<Command.RelationshipCommand> relationshipCommandPrimitiveLongObjectMap );
+    void feed( EntityCommandGrouper<Command.NodeCommand> nodeCommands, EntityCommandGrouper<Command.RelationshipCommand> relationshipCommands );
 
     boolean hasUpdates();
 

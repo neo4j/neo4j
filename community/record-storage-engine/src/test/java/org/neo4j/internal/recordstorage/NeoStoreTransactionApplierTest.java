@@ -899,7 +899,7 @@ public class NeoStoreTransactionApplierTest
     private BatchTransactionApplier newIndexApplier()
     {
         return new IndexBatchTransactionApplier( indexingService, labelScanStoreSynchronizer,
-                indexUpdatesSync, nodeStore, neoStores.getRelationshipStore(), new PropertyPhysicalToLogicalConverter( propertyStore ),
+                indexUpdatesSync, nodeStore, neoStores.getRelationshipStore(), propertyStore,
                 mock( StorageEngine.class ), schemaCache, indexActivator );
     }
 

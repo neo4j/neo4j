@@ -77,8 +77,7 @@ class SchemaRuleCommandTest
     private final PropertyStore propertyStore = mock( PropertyStore.class );
     private final IndexBatchTransactionApplier indexApplier =
             new IndexBatchTransactionApplier( indexUpdateListener, labelScanStoreSynchronizer, indexUpdatesSync, mock( NodeStore.class ),
-                    neoStores.getRelationshipStore(), new PropertyPhysicalToLogicalConverter( propertyStore ), storageEngine, schemaCache,
-                    new IndexActivator( indexes ) );
+                    neoStores.getRelationshipStore(), propertyStore, storageEngine, schemaCache, new IndexActivator( indexes ) );
     private final BaseCommandReader reader = new PhysicalLogCommandReaderV4_0();
     private final StorageIndexReference rule = new DefaultStorageIndexReference( SchemaDescriptorFactory.forLabel( labelId, propertyKey ), false, id, null );
 

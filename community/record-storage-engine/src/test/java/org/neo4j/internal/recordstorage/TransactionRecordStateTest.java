@@ -233,14 +233,12 @@ public class TransactionRecordStateTest
         // -- later recovering that tx, there should be only one update for each type
         assertTrue( extractor.containsAnyEntityOrPropertyUpdate() );
         MutableLongSet recoveredNodeIds = new LongHashSet();
-        recoveredNodeIds.addAll( extractor.nodeCommandsById().keySet() );
-        recoveredNodeIds.addAll( extractor.propertyCommandsByNodeIds().keySet() );
+        recoveredNodeIds.addAll( extractor.getNodeCommands().entityIds() );
         assertEquals( 1, recoveredNodeIds.size() );
         assertEquals( nodeId, recoveredNodeIds.longIterator().next() );
 
         MutableLongSet recoveredRelIds = new LongHashSet();
-        recoveredRelIds.addAll( extractor.relationshipCommandsById().keySet() );
-        recoveredRelIds.addAll( extractor.propertyCommandsByRelationshipIds().keySet() );
+        recoveredRelIds.addAll( extractor.getRelationshipCommands().entityIds() );
         assertEquals( 1, recoveredRelIds.size() );
         assertEquals( relId, recoveredRelIds.longIterator().next() );
     }
@@ -1438,8 +1436,7 @@ public class TransactionRecordStateTest
         List<Iterable<IndexEntryUpdate<SchemaDescriptor>>> updates = new ArrayList<>();
         OnlineIndexUpdates onlineIndexUpdates =
                 new OnlineIndexUpdates( neoStores.getNodeStore(), schemaCache, new PropertyPhysicalToLogicalConverter( neoStores.getPropertyStore() ), reader );
-        onlineIndexUpdates.feed( extractor.propertyCommandsByNodeIds(), extractor.propertyCommandsByRelationshipIds(), extractor.nodeCommandsById(),
-                extractor.relationshipCommandsById() );
+        onlineIndexUpdates.feed( extractor.getNodeCommands(), extractor.getRelationshipCommands() );
         updates.add( onlineIndexUpdates );
         reader.close();
         return updates;

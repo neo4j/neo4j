@@ -62,7 +62,7 @@ public class IndexBatchTransactionApplierTest
         WorkSync<IndexUpdateListener,IndexUpdatesWork> indexUpdatesSync = new WorkSync<>( indexUpdateListener );
         PropertyStore propertyStore = mock( PropertyStore.class );
         try ( IndexBatchTransactionApplier applier = new IndexBatchTransactionApplier( indexUpdateListener, labelScanSync, indexUpdatesSync,
-                mock( NodeStore.class ), mock( RelationshipStore.class ), new PropertyPhysicalToLogicalConverter( propertyStore ),
+                mock( NodeStore.class ), mock( RelationshipStore.class ), propertyStore,
                 mock( StorageEngine.class ), mock( SchemaCache.class ), new IndexActivator( indexUpdateListener ) ) )
         {
             try ( TransactionApplier txApplier = applier.startTx( new GroupOfCommands() ) )
@@ -100,7 +100,7 @@ public class IndexBatchTransactionApplierTest
         StorageIndexReference rule2 = uniqueForSchema( forLabel( 2, 1 ), providerKey, providerVersion, indexId2, constraintId2 );
         StorageIndexReference rule3 = uniqueForSchema( forLabel( 3, 1 ), providerKey, providerVersion, indexId3, constraintId3 );
         try ( IndexBatchTransactionApplier applier = new IndexBatchTransactionApplier( indexUpdateListener, labelScanSync,
-                indexUpdatesSync, mock( NodeStore.class ), mock( RelationshipStore.class ), new PropertyPhysicalToLogicalConverter( propertyStore ),
+                indexUpdatesSync, mock( NodeStore.class ), mock( RelationshipStore.class ), propertyStore,
                 mock( StorageEngine.class ), mock( SchemaCache.class ), indexActivator ) )
         {
             try ( TransactionApplier txApplier = applier.startTx( new GroupOfCommands() ) )
