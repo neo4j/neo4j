@@ -116,33 +116,41 @@ public class BoltResponseRecorder implements BoltResponseHandler
         return hasMore;
     }
 
-    private class DiscardingBoltResultVisitor implements BoltResult.RecordConsumer
+    private class DiscardingBoltResultVisitor extends BoltResult.DiscardingRecordConsumer
     {
         @Override
         public void addMetadata( String key, AnyValue value )
         {
             currentResponse.addMetadata( key, value );
-        }
-
-        @Override
-        public void accept( AnyValue[] anyValues )
-        {
-            //discard the result
         }
     }
 
     private class RecordingBoltResultRecordConsumer implements BoltResult.RecordConsumer
     {
-        @Override
-        public void accept( AnyValue[] anyValues )
-        {
-            currentResponse.addFields(  anyValues.clone() );
-        }
+        private AnyValue[] anyValues;
 
         @Override
         public void addMetadata( String key, AnyValue value )
         {
             currentResponse.addMetadata( key, value );
+        }
+
+        @Override
+        public void beginRecord( int numberOfFields )
+        {
+            anyValues = new AnyValue[numberOfFields];
+        }
+
+        @Override
+        public void consumeField( int offset, AnyValue value )
+        {
+         anyValues[offset] = value;
+        }
+
+        @Override
+        public void endRecord()
+        {
+            currentResponse.addFields( anyValues );
         }
     }
 }

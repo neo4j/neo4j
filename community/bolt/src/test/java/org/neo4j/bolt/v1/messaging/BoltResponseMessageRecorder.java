@@ -24,10 +24,13 @@ import java.util.List;
 
 import org.neo4j.bolt.messaging.BoltResponseMessageWriter;
 import org.neo4j.bolt.messaging.ResponseMessage;
+import org.neo4j.bolt.v1.messaging.response.RecordMessage;
+import org.neo4j.values.AnyValue;
 
 public class BoltResponseMessageRecorder implements BoltResponseMessageWriter
 {
     private final List<ResponseMessage> messages = new ArrayList<>();
+    private AnyValue[] fields;
 
     public List<ResponseMessage> asList()
     {
@@ -38,5 +41,23 @@ public class BoltResponseMessageRecorder implements BoltResponseMessageWriter
     public void write( ResponseMessage message )
     {
         messages.add( message.copy() );
+    }
+
+    @Override
+    public void beginRecord( int numberOfFields )
+    {
+        fields = new AnyValue[numberOfFields];
+    }
+
+    @Override
+    public void consumeField( int offset, AnyValue value )
+    {
+        fields[offset] = value;
+    }
+
+    @Override
+    public void endRecord()
+    {
+        messages.add( new RecordMessage( fields ) );
     }
 }

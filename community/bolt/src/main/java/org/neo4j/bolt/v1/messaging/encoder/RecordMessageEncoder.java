@@ -39,4 +39,15 @@ public class RecordMessageEncoder implements ResponseMessageEncoder<RecordMessag
             packer.pack( field );
         }
     }
+
+    public void beginRecord( Neo4jPack.Packer packer, int numberOfFields ) throws IOException
+    {
+        packer.packStructHeader( 1, RecordMessage.SIGNATURE );
+        packer.packListHeader( numberOfFields );
+    }
+
+    public void onField( Neo4jPack.Packer packer, AnyValue field ) throws IOException
+    {
+        packer.pack( field );
+    }
 }

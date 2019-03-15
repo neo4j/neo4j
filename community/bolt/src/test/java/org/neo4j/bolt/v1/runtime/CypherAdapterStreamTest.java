@@ -266,15 +266,8 @@ public class CypherAdapterStreamTest
     private MapValue metadataOf( CypherAdapterStream stream ) throws Throwable
     {
         final MapValueBuilder meta = new MapValueBuilder();
-        stream.handleRecords( new BoltResult.RecordConsumer()
+        stream.handleRecords( new BoltResult.DiscardingRecordConsumer()
         {
-
-            @Override
-            public void accept( AnyValue[] values )
-            {
-                //discard
-            }
-
             @Override
             public void addMetadata( String key, AnyValue value )
             {

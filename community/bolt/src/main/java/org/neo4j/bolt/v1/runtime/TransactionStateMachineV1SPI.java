@@ -33,7 +33,6 @@ import org.neo4j.bolt.runtime.TransactionStateMachineSPI;
 import org.neo4j.cypher.CypherExecutionException;
 import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.exceptions.KernelException;
-import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.graphdb.QueryStatistics;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
@@ -245,33 +244,33 @@ public class TransactionStateMachineV1SPI implements TransactionStateMachineSPI
 
     public static class BoltAdapterSubscriber implements QuerySubscriber
     {
-        private ThrowingConsumer<AnyValue[],IOException> recordConsumer;
+        private BoltResult.RecordConsumer recordConsumer;
         private Throwable error;
         private QueryStatistics statistics;
-        private AnyValue[] values;
+        private int numberOfFields;
 
         @Override
         public void onResult( int numberOfFields )
         {
-            this.values = new AnyValue[numberOfFields];
+            this.numberOfFields = numberOfFields;
         }
 
         @Override
-        public void onRecord()
+        public void onRecord() throws IOException
         {
-            //do nothing
+            recordConsumer.beginRecord( numberOfFields );
         }
 
         @Override
-        public void onField( int offset, AnyValue value )
+        public void onField( int offset, AnyValue value ) throws IOException
         {
-           values[offset] = value;
+            recordConsumer.consumeField( offset, value );
         }
 
         @Override
         public void onRecordCompleted() throws Exception
         {
-            recordConsumer.accept(values);
+            recordConsumer.endRecord();
         }
 
         @Override
@@ -291,7 +290,7 @@ public class TransactionStateMachineV1SPI implements TransactionStateMachineSPI
             return statistics;
         }
 
-        void setRecordConsumer( ThrowingConsumer<AnyValue[],IOException> recordConsumer )
+        void setRecordConsumer( BoltResult.RecordConsumer recordConsumer )
         {
             this.recordConsumer = recordConsumer;
         }

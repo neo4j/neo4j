@@ -19,9 +19,7 @@
  */
 package org.neo4j.bolt.runtime;
 
-import java.io.IOException;
-
-import org.neo4j.function.ThrowingConsumer;
+import org.neo4j.bolt.messaging.BoltRecordConsumer;
 import org.neo4j.values.AnyValue;
 
 /**
@@ -40,13 +38,34 @@ public interface BoltResult extends AutoCloseable
     @Override
     void close();
 
-    interface RecordConsumer extends ThrowingConsumer<AnyValue[],IOException>
+    interface RecordConsumer extends BoltRecordConsumer
     {
         /**
          * Associate arbitrary metadata with the result stream. This will get transferred at the end of the stream.
          * Please stick to Neo4j type system types (Map, List, Integer, Float, Boolean, String etc)
          */
         void addMetadata( String key, AnyValue value );
+    }
+
+    abstract class DiscardingRecordConsumer implements RecordConsumer
+    {
+        @Override
+        public void beginRecord( int numberOfFields )
+        {
+            //discard
+        }
+
+        @Override
+        public void consumeField( int offset, AnyValue value )
+        {
+            //discard
+        }
+
+        @Override
+        public void endRecord()
+        {
+            //discard
+        }
     }
 
     BoltResult EMPTY = new BoltResult()

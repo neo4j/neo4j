@@ -35,7 +35,7 @@ public abstract class EmtpyQuerySubscription implements QuerySubscription
     }
 
     @Override
-    public void request( long numberOfRecords )
+    public void request( long numberOfRecords ) throws Exception
     {
         subscriber.onResult( 0 );
         subscriber.onResultCompleted( queryStatistics() );

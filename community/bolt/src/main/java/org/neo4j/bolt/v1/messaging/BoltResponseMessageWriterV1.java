@@ -42,6 +42,7 @@ import org.neo4j.bolt.v1.packstream.PackOutput;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.internal.LogService;
+import org.neo4j.values.AnyValue;
 
 import static java.lang.String.format;
 
@@ -116,5 +117,43 @@ public class BoltResponseMessageWriterV1 implements BoltResponseMessageWriter
             }
             throw error;
         }
+    }
+
+    public void beginRecord( int numberOfFields ) throws IOException
+    {
+        output.beginMessage();
+        try
+        {
+            recordMessageEncoder.beginRecord( packer, numberOfFields );
+        }
+        catch ( Throwable error )
+        {
+            // packing failed, there might be some half-written data in the output buffer right now
+            // notify output about the failure so that it cleans up the buffer
+            output.messageFailed();
+            log.error( "Failed to write new record because: %s", error.getMessage() );
+            throw error;
+        }
+    }
+
+    public void consumeField( int offset, AnyValue value ) throws IOException
+    {
+        try
+        {
+            recordMessageEncoder.onField( packer, value );
+        }
+        catch ( Throwable error )
+        {
+            // packing failed, there might be some half-written data in the output buffer right now
+            // notify output about the failure so that it cleans up the buffer
+            output.messageFailed();
+            log.error( "Failed to write value %s because: %s", value, error.getMessage() );
+            throw error;
+        }
+    }
+
+    public void endRecord() throws IOException
+    {
+        output.messageSucceeded();
     }
 }

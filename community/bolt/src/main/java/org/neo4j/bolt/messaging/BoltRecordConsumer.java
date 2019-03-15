@@ -21,11 +21,13 @@ package org.neo4j.bolt.messaging;
 
 import java.io.IOException;
 
-/**
- * Interface defining simple encoders for each defined
- * Bolt response message.
- */
-public interface BoltResponseMessageWriter extends BoltRecordConsumer
+import org.neo4j.values.AnyValue;
+
+public interface BoltRecordConsumer
 {
-    void write( ResponseMessage message ) throws IOException;
+    void beginRecord( int numberOfFields ) throws IOException;
+
+    void consumeField( int offset, AnyValue value ) throws IOException;
+
+    void endRecord() throws IOException;
 }

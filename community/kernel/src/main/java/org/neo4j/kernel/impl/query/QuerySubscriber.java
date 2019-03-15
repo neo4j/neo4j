@@ -53,12 +53,12 @@ public interface QuerySubscriber
      *
      * @param numberOfFields the number of fields each record of the stream will contain
      */
-    void onResult( int numberOfFields );
+    void onResult( int numberOfFields ) throws Exception;
 
     /**
      * Called whenever a new record is ready to be written
      */
-    void onRecord();
+    void onRecord() throws Exception;
 
     /**
      * Writes the field at a particular offset.
@@ -69,7 +69,7 @@ public interface QuerySubscriber
      * @param offset the offset of the field
      * @param value the value of the field
      */
-    void onField( int offset, AnyValue value );
+    void onField( int offset, AnyValue value ) throws Exception;
 
     /**
      * The current record has been completed

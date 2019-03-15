@@ -24,7 +24,6 @@ import java.io.IOException;
 import org.neo4j.bolt.messaging.BoltResponseMessageWriter;
 import org.neo4j.bolt.runtime.BoltConnection;
 import org.neo4j.bolt.runtime.BoltResult;
-import org.neo4j.bolt.v1.messaging.response.RecordMessage;
 import org.neo4j.logging.Log;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.BooleanValue;
@@ -58,24 +57,30 @@ public class ResultHandler extends MessageProcessingHandler
         }
 
         @Override
-        public void accept( AnyValue[] values ) throws IOException
+        public void beginRecord( int numberOfFields ) throws IOException
         {
-            messageWriter.write( new RecordMessage( values ) );
+            messageWriter.beginRecord( numberOfFields );
+        }
+
+        @Override
+        public void consumeField( int offset, AnyValue value ) throws IOException
+        {
+            messageWriter.consumeField( offset, value );
+        }
+
+        @Override
+        public void endRecord() throws IOException
+        {
+            messageWriter.endRecord();
         }
     }
 
-    private class RecordDiscardingBoltResultRecordConsumer implements BoltResult.RecordConsumer
+    private class RecordDiscardingBoltResultRecordConsumer extends BoltResult.DiscardingRecordConsumer
     {
         @Override
         public void addMetadata( String key, AnyValue value )
         {
             onMetadata( key, value );
-        }
-
-        @Override
-        public void accept( AnyValue[] anyValues )
-        {
-            //discard
         }
     }
 
