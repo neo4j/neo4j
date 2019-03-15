@@ -138,7 +138,7 @@ class ProcedureCallRuntimeResult(context: QueryContext,
 
   override def await(): Boolean = {
     if (reactiveIterator == null) {
-      throw new InternalException("Call to await before calling request");
+      throw new InternalException("Call to await before calling request")
     }
     reactiveIterator.await(subscriber)
   }

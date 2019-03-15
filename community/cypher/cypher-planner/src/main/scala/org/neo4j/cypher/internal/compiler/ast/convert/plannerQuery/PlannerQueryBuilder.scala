@@ -126,7 +126,7 @@ case class PlannerQueryBuilder(private val q: PlannerQuery, semanticTable: Seman
 
       val patternNodes = patternRelationships.flatMap(relationship => Set(relationship.nodes._1, relationship.nodes._2))
       plannerQuery
-        .amendQueryGraph(_.addPatternRelationships(patternRelationships.toSeq).addPatternNodes(patternNodes.toSeq:_*))
+        .amendQueryGraph(_.addPatternRelationships(patternRelationships).addPatternNodes(patternNodes:_*))
         .updateTail(fixQueriesWithOnlyRelationshipIndex)
     }
 

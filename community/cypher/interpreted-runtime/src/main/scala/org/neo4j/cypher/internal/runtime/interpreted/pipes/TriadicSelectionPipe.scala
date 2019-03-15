@@ -68,8 +68,8 @@ abstract class LazyGroupingIterator[ROW >: Null <: AnyRef](val input: Iterator[R
   def getKey(row: ROW): Any
   def getValue(row: ROW): Option[Long]
 
-  var current: Iterator[ROW] = null
-  var nextRow: ROW = null
+  var current: Iterator[ROW] = _
+  var nextRow: ROW = _
 
   override def next() = if(hasNext) current.next() else Iterator.empty.next()
 

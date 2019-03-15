@@ -52,8 +52,7 @@ abstract class CypherType {
 
   def greatestLowerBound(other: CypherType): Option[CypherType] =
     if (this.isAssignableFrom(other)) Some(other)
-    else if (other.isAssignableFrom(this)) Some(this)
-    else None
+    else Some(this).filter(other.isAssignableFrom)
 
   lazy val covariant: TypeSpec = TypeSpec.all constrain this
   lazy val invariant: TypeSpec = TypeSpec.exact(this)

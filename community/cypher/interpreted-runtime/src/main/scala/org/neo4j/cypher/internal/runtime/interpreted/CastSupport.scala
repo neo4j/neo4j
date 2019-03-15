@@ -85,9 +85,9 @@ object CastSupport {
 
       case (p1: PointValue, p2: PointValue) =>
         if (p1.getCoordinateReferenceSystem != p2.getCoordinateReferenceSystem) {
-          throw new CypherTypeException("Collections containing point values with different CRS can not be stored in properties.");
+          throw new CypherTypeException("Collections containing point values with different CRS can not be stored in properties.")
         } else if(p1.coordinate().length != p2.coordinate().length) {
-          throw new CypherTypeException("Collections containing point values with different dimensions can not be stored in properties.");
+          throw new CypherTypeException("Collections containing point values with different dimensions can not be stored in properties.")
         } else {
           p1
         }
@@ -161,7 +161,7 @@ object CastSupport {
   private class ArrayConverterWriter(typ: Class[_], transformer: AnyRef => ArrayValue)
     extends AnyValueWriter[RuntimeException] {
 
-    private var _array: AnyRef = null
+    private var _array: AnyRef = _
     private var index = 0
 
     private def fail() = throw new CypherTypeException(

@@ -131,7 +131,7 @@ trait CardinalityTestHelper extends QueryGraphProducer with CardinalityCustomMat
       )
 
     def prepareTestContext:(GraphStatistics, SemanticTable) = {
-      val labelIds: Map[String, Int] = knownLabelCardinality.map(_._1).zipWithIndex.toMap
+      val labelIds: Map[String, Int] = knownLabelCardinality.keys.zipWithIndex.toMap
       val propertyIds: Map[String, Int] = knownProperties.zipWithIndex.toMap
       val relTypeIds: Map[String, Int] = knownRelationshipCardinality.map(_._1._2).toSeq.distinct.zipWithIndex.toMap
 

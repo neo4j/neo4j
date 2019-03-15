@@ -69,7 +69,7 @@ class UpdateCountingQueryContextTest extends CypherFunSuite {
   when(inner.addIndexRule(anyInt(), any()))
     .thenReturn(IdempotentResult(mock[IndexReference]))
 
-  var context: UpdateCountingQueryContext = null
+  var context: UpdateCountingQueryContext = _
 
   override def beforeEach() {
     super.beforeEach()

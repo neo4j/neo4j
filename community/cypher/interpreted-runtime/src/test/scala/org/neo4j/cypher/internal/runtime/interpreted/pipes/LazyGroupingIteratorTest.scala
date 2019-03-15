@@ -89,7 +89,7 @@ class LazyGroupingIteratorTest extends CypherFunSuite {
   }
 
   class LazyGroupingRowIterator(rows: Row*) extends LazyGroupingIterator[Row](rows.iterator) {
-    var state: LongHashSet = null
+    var state: LongHashSet = _
 
     override def setState(state: LongHashSet) = {
       this.state = state

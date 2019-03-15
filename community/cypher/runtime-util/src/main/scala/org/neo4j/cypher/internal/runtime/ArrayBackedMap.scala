@@ -28,7 +28,7 @@ import scala.reflect._
  * @param keyToIndexMap the mapping from keys to array indexes
  */
 class ArrayBackedMap[K, V](keyToIndexMap: Map[K, Int])(implicit val tag: ClassTag[V]) extends Map[K, V] {
-  private var valueArray: Array[V] = null
+  private var valueArray: Array[V] = _
 
   /**
    * Writes values by reference straight into the map.

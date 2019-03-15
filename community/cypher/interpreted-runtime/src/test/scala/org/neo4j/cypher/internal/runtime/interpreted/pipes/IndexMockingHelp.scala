@@ -89,7 +89,7 @@ trait IndexMockingHelp extends CypherFunSuite with ImplicitDummyPos {
 
   case class PredefinedCursor[T](nodeValueHits: Iterable[NodeValueHit] = Nil) extends NodeValueIndexCursor {
 
-    private var iter = nodeValueHits.iterator
+    private val iter = nodeValueHits.iterator
     private var current: NodeValueHit = _
 
     override def numberOfProperties(): Int = current.numberOfProperties()

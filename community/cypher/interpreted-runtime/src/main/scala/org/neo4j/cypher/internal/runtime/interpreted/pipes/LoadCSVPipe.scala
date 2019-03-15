@@ -97,7 +97,7 @@ case class LoadCSVPipe(source: Pipe,
         //reference, e.g. EagerPipe
 
 
-        var builder = new MapValueBuilder
+        val builder = new MapValueBuilder
         for ((key, maybeNull) <- internalMap) {
           val value = if (maybeNull == null) Values.NO_VALUE else maybeNull
           builder.add(key, value)

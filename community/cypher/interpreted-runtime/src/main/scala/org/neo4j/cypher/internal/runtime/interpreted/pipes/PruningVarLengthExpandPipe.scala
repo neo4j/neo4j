@@ -321,7 +321,7 @@ case class PruningVarLengthExpandPipe(source: Pipe,
   ) extends Iterator[ExecutionContext] {
 
     var outputRow:ExecutionContext = _
-    var fullPruneState:FullPruneState = new FullPruneState( queryState )
+    val fullPruneState:FullPruneState = new FullPruneState( queryState )
     var hasPrefetched = false
 
     override def hasNext: Boolean = {

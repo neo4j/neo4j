@@ -425,7 +425,7 @@ trait UpdateGraph {
     case p: SetNodePropertiesFromMapPattern => p
   }
 
-  def mergeQueryGraph: Option[QueryGraph] = mutatingPatterns.collect {
+  def mergeQueryGraph: Option[QueryGraph] = mutatingPatterns.collectFirst {
     case c: MergePattern => c.matchGraph
-  }.headOption
+  }
 }

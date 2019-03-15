@@ -150,18 +150,14 @@ case class PatternSelectivityCalculator(stats: GraphStatistics, combiner: Select
     if (input.isEmpty)
       Seq(Unspecified)
     else
-      input.toIndexedSeq.map {
-        case label =>
-          semanticTable.id(label).map(SpecifiedAndKnown.apply).getOrElse(SpecifiedButUnknown())
-      }
+      input.toIndexedSeq.map(label =>
+        semanticTable.id(label).map(SpecifiedAndKnown.apply).getOrElse(SpecifiedButUnknown()))
 
 
   private def mapToRelTokenSpecs(input: Set[RelTypeName])(implicit semanticTable: SemanticTable): Seq[TokenSpec[RelTypeId]] =
     if (input.isEmpty)
       Seq(Unspecified)
     else
-      input.toIndexedSeq.map {
-        case rel =>
-          semanticTable.id(rel).map(SpecifiedAndKnown.apply).getOrElse(SpecifiedButUnknown())
-      }
+      input.toIndexedSeq.map(rel =>
+        semanticTable.id(rel).map(SpecifiedAndKnown.apply).getOrElse(SpecifiedButUnknown()))
 }

@@ -58,7 +58,7 @@ case class PathImpl(pathEntities: PropertyContainer*)
   require(isProperPath, s"Tried to construct a path that is not built like a path: $pathEntities")
 
   def isProperPath: Boolean = {
-    val atLeastOneNode = nodeList.length > 0
+    val atLeastOneNode = nodeList.nonEmpty
     val relsLengthEqualsToNodesLengthMinusOne = relList.length == nodeList.length - 1
     atLeastOneNode && relsLengthEqualsToNodesLengthMinusOne
   }

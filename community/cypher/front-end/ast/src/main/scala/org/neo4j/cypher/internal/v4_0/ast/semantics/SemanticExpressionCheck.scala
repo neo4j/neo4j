@@ -318,9 +318,9 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
         check(ctx, x.expr) chain
           check(ctx, x.idx) chain
           typeSwitch(x.expr) {
-            case exprT =>
+            exprT =>
               typeSwitch(x.idx) {
-                case idxT =>
+                idxT =>
                   val listT = CTList(CTAny).covariant & exprT
                   val mapT = CTMap.covariant & exprT
                   val exprIsList = listT != TypeSpec.none

@@ -96,8 +96,8 @@ abstract class Expression extends ASTNode {
   // (i.e. excluding occurrences referring to shadowing redefinitions of variable)
   def occurrences(variable: LogicalVariable): Set[Ref[Variable]] =
     this.treeFold(TreeAcc[Set[Ref[Variable]]](Set.empty)) {
-      case scope: ScopeExpression => {
-        case acc =>
+      case scope: ScopeExpression =>
+        acc =>
           val newAcc = acc.pushScope(scope.introducedVariables)
           (newAcc, Some(x => x.popScope))
       case occurrence: Variable if occurrence.name == variable.name => acc => {

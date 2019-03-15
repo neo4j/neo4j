@@ -26,13 +26,13 @@ import scala.util.Random
 class IndexedInclusiveLongRangeTest extends CypherFunSuite {
 
   test("single element") {
-    IndexedInclusiveLongRange(0L, 0L, 1L).toIndexedSeq should equal(IndexedSeq(0L))
+    IndexedInclusiveLongRange(0L, 0L, 1L) should equal(IndexedSeq(0L))
   }
 
   test("step length 1"){
     val range= IndexedInclusiveLongRange(0L, 11L, 1L)
 
-    range.toIndexedSeq should equal(IndexedSeq(0L, 1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L, 10L, 11L))
+    range should equal(IndexedSeq(0L, 1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L, 10L, 11L))
     range should have length 12
 
     for (i <- 0 to 11) {
@@ -43,7 +43,7 @@ class IndexedInclusiveLongRangeTest extends CypherFunSuite {
   test("step length 3"){
     val range= IndexedInclusiveLongRange(3L, 14L, 3L)
 
-    range.toIndexedSeq should equal(IndexedSeq(3L, 6L, 9L, 12L))
+    range should equal(IndexedSeq(3L, 6L, 9L, 12L))
     range should have length 4
     range(0) should equal(3L)
     range(1) should equal(6L)
@@ -54,7 +54,7 @@ class IndexedInclusiveLongRangeTest extends CypherFunSuite {
   test("negative step"){
     val range= IndexedInclusiveLongRange(14L, 3L, -3L)
 
-    range.toIndexedSeq should equal(IndexedSeq(14L, 11L, 8L, 5L))
+    range should equal(IndexedSeq(14L, 11L, 8L, 5L))
     range should have length 4
     range(0) should equal(14L)
     range(1) should equal(11L)

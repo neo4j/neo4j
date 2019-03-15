@@ -86,7 +86,7 @@ case class ResolvedCall(signature: ProcedureSignature,
   }
 
   def callResultTypes: Seq[(String, CypherType)] = {
-    if (signature.outputSignature == None && callResults.size > 0) {
+    if (signature.outputSignature.isEmpty && callResults.nonEmpty) {
       throw new SyntaxException("Cannot yield value from void procedure.")
     }
     val outputTypes = callOutputTypes

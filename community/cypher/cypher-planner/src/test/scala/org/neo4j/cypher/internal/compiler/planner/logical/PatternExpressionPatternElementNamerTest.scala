@@ -76,7 +76,7 @@ class PatternExpressionPatternElementNamerTest extends CypherFunSuite with Logic
     map.collect {
       case (pattern: NodePattern, ident) => pattern.position.offset -> ident.name
       case (pattern: RelationshipChain, ident) => pattern.relationship.position.offset -> ident.name
-    }.toMap
+    }
   }
 
   private def parsePatternExpression(query: String): PatternExpression = {

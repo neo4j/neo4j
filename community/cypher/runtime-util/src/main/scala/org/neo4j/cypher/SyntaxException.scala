@@ -40,7 +40,7 @@ class SyntaxException(message: String, val query:String,  val offset: Option[Int
   override val status = Status.Statement.SyntaxError
 
   private def findErrorLine(idx: Int, message: List[String]): String =
-    message.toList match {
+    message match {
       case Nil => throw new IllegalArgumentException("message converted to empty list")
 
       case List(x) =>

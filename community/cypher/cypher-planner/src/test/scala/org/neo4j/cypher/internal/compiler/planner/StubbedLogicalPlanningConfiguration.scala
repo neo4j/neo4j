@@ -38,8 +38,8 @@ class StubbedLogicalPlanningConfiguration(val parent: LogicalPlanningConfigurati
   var cardinality: PartialFunction[PlannerQuery, Cardinality] = PartialFunction.empty
   var cost: PartialFunction[(LogicalPlan, QueryGraphSolverInput, Cardinalities), Cost] = PartialFunction.empty
   var labelCardinality: Map[String, Cardinality] = Map.empty
-  var statistics: GraphStatistics = null
-  var qg: QueryGraph = null
+  var statistics: GraphStatistics = _
+  var qg: QueryGraph = _
   var expressionEvaluator: ExpressionEvaluator = new ExpressionEvaluator {
     override def evaluateExpression(expr: Expression): Option[Any] = ???
 

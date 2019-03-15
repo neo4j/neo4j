@@ -256,7 +256,7 @@ class AssumeIndependenceQueryGraphCardinalityModelTest extends RandomizedCardina
     val maxRelCount = A * N * B
     val l1Selectivity = A_T1_B / maxRelCount
     val l2Selectivities = Seq(A_T1_ANY / maxRelCount, ANY_T1_B / maxRelCount)
-    val l2Selectivity = l2Selectivities.reduce(_ * _)
+    val l2Selectivity = l2Selectivities.product
     val totalSelectivity = or(l1Selectivity, l2Selectivity)
 
     forQuery("MATCH (a:A)-[r:T1*1..2]->(b:B)").

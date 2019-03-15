@@ -93,7 +93,7 @@ case class joinSolverStep(qg: QueryGraph) extends IDPSolverStep[PatternRelations
     solveds.get(plan.id).queryGraph.patternNodes
 
   private def show(goal: Goal, symbols: Set[String]) =
-    s"${showIds(goal.toSet)}: ${showNames(symbols)}"
+    s"${showIds(goal)}: ${showNames(symbols)}"
 
   private def goalSymbols(goal: Goal, registry: IdRegistry[PatternRelationship]) =
     registry.explode(goal).flatMap(_.coveredIds)
