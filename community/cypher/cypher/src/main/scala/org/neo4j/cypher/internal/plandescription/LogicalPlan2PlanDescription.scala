@@ -472,7 +472,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
           case PointDistanceSeekRangeWrapper(PointDistanceRange(point, distance, inclusive)) =>
             val funcName = Point.name
             val poi = point match {
-              case FunctionInvocation(Namespace(List()), FunctionName(funcName), _, Seq(MapExpression(args))) =>
+              case FunctionInvocation(Namespace(List()), FunctionName(`funcName`), _, Seq(MapExpression(args))) =>
                 s"point(${args.map(_._1.name).mkString(",")})"
               case _ => point.toString
             }
