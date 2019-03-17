@@ -19,148 +19,110 @@
  */
 package org.neo4j.ext.udc.impl;
 
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpHost;
-import org.apache.http.HttpStatus;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.client.DefaultHttpClient;
-import org.apache.http.localserver.LocalServerTestBase;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.util.HashMap;
+import java.net.URI;
+import java.net.http.HttpRequest;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 import org.neo4j.ext.udc.UdcConstants;
 import org.neo4j.helpers.HostnamePort;
+import org.neo4j.helpers.SocketAddress;
+import org.neo4j.io.IOUtils;
+import org.neo4j.test.extension.SuppressOutputExtension;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
+import static java.net.http.HttpClient.newHttpClient;
+import static java.net.http.HttpResponse.BodyHandlers.discarding;
+import static java.util.Collections.emptyMap;
+import static org.eclipse.jetty.http.HttpStatus.OK_200;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.ext.udc.UdcConstants.ID;
 
-/**
- * Unit tests for the UDC statistics pinger.
- */
-public class PingerTest extends LocalServerTestBase
+@ExtendWith( SuppressOutputExtension.class )
+class PingerTest
 {
-    private final String EXPECTED_KERNEL_VERSION = "1.0";
-    private final String EXPECTED_STORE_ID = "CAFE";
-    private String hostname = "localhost";
+    private static final String EXPECTED_KERNEL_VERSION = "1.0";
+    private static final String EXPECTED_STORE_ID = "CAFE";
+
+    private PingerServer server;
     private String serverUrl;
 
-    PingerHandler handler;
-
-    @Before
-    @Override
-    public void setUp() throws Exception
+    @BeforeEach
+    void beforeEach() throws Exception
     {
-        super.setUp();
-        handler = new PingerHandler();
-        this.serverBootstrap.registerHandler( "/*", handler );
-        HttpHost target = start();
-        hostname = target.getHostName();
-        serverUrl = "http://" + hostname + ":" + target.getPort();
+        server = new PingerServer();
+        serverUrl = "http://" + SocketAddress.format( server.getHost(), server.getPort() );
     }
 
-    @Override
-    @After
-    public void shutDown() throws Exception
+    @AfterEach
+    void afterEach()
     {
-        if ( httpclient != null )
-        {
-            httpclient.close();
-        }
-        if ( server != null )
-        {
-            server.shutdown( 0, TimeUnit.MILLISECONDS );
-        }
+        IOUtils.closeAllSilently( server );
     }
 
     @Test
-    public void shouldRespondToHttpClientGet() throws Exception
+    void shouldRespondToHttpClientGet() throws Exception
     {
-        try ( DefaultHttpClient httpclient = new DefaultHttpClient() )
-        {
-            HttpGet httpget = new HttpGet( serverUrl + "/?id=storeId+v=kernelVersion" );
-            try ( CloseableHttpResponse response = httpclient.execute( httpget ) )
-            {
-                HttpEntity entity = response.getEntity();
-                if ( entity != null )
-                {
-                    try ( InputStream instream = entity.getContent() )
-                    {
-                        byte[] tmp = new byte[2048];
-                        while ( (instream.read( tmp )) != -1 )
-                        {
-                        }
-                    }
-                }
-                assertThat( response, notNullValue() );
-                assertThat( response.getStatusLine().getStatusCode(), is( HttpStatus.SC_OK ) );
-            }
-        }
+        var request = HttpRequest.newBuilder( URI.create( serverUrl + "/?id=storeId+v=kernelVersion" ) ).GET().build();
+
+        var response = newHttpClient().send( request, discarding() );
+
+        assertEquals( OK_200, response.statusCode() );
     }
 
     @Test
-    public void shouldPingServer() throws IOException
+    void shouldPingServer() throws IOException
     {
-        final HostnamePort hostURL = new HostnamePort( hostname, server.getLocalPort() );
-        final Map<String,String> udcFields = new HashMap<>();
-        udcFields.put( ID, EXPECTED_STORE_ID );
-        udcFields.put( UdcConstants.VERSION, EXPECTED_KERNEL_VERSION );
+        var hostURL = new HostnamePort( server.getHost(), server.getPort() );
+        var udcFields = Map.of(
+                ID, EXPECTED_STORE_ID,
+                UdcConstants.VERSION, EXPECTED_KERNEL_VERSION );
 
-        Pinger p = new Pinger( hostURL, new TestUdcCollector( udcFields ) );
-        p.ping();
+        new Pinger( hostURL, new TestUdcCollector( udcFields ) ).ping();
 
-        Map<String,String> actualQueryMap = handler.getQueryMap();
-        assertThat( actualQueryMap, notNullValue() );
-        assertThat( actualQueryMap.get( ID ), is( EXPECTED_STORE_ID ) );
+        var actualQueryMap = server.getQueryMap();
+        assertEquals( EXPECTED_STORE_ID, actualQueryMap.get( ID ) );
     }
 
     @Test
-    public void shouldIncludePingCountInURI() throws IOException
+    void shouldIncludePingCountInURI() throws IOException
     {
-        final int EXPECTED_PING_COUNT = 16;
-        final HostnamePort hostURL = new HostnamePort( hostname, server.getLocalPort() );
-        final Map<String,String> udcFields = new HashMap<>();
+        var expectedPingCount = 16;
+        var hostURL = new HostnamePort( server.getHost(), server.getPort() );
 
-        Pinger p = new Pinger( hostURL, new TestUdcCollector( udcFields ) );
-        for ( int i = 0; i < EXPECTED_PING_COUNT; i++ )
+        var pinger = new Pinger( hostURL, new TestUdcCollector( emptyMap() ) );
+        for ( int i = 0; i < expectedPingCount; i++ )
         {
-            p.ping();
+            pinger.ping();
         }
 
-        assertThat( p.getPingCount(), is( equalTo( EXPECTED_PING_COUNT ) ) );
+        assertEquals( expectedPingCount, pinger.getPingCount() );
 
-        Map<String,String> actualQueryMap = handler.getQueryMap();
-        assertThat( actualQueryMap.get( UdcConstants.PING ), is( Integer.toString( EXPECTED_PING_COUNT ) ) );
+        var actualQueryMap = server.getQueryMap();
+        assertEquals( Integer.toString( expectedPingCount ), actualQueryMap.get( UdcConstants.PING ) );
     }
 
     @Test
-    public void normalPingSequenceShouldBeOneThenTwoThenThreeEtc() throws Exception
+    void normalPingSequenceShouldBeOneThenTwoThenThreeEtc() throws Exception
     {
-        int[] expectedSequence = {1, 2, 3, 4};
-        final HostnamePort hostURL = new HostnamePort( hostname, server.getLocalPort() );
-        final Map<String,String> udcFields = new HashMap<>();
+        var hostURL = new HostnamePort( server.getHost(), server.getPort() );
 
-        Pinger p = new Pinger( hostURL, new TestUdcCollector( udcFields ) );
-        for ( int s : expectedSequence )
+        var pinger = new Pinger( hostURL, new TestUdcCollector( emptyMap() ) );
+
+        for ( int i = 1; i < 5; i++ )
         {
-            p.ping();
-            int count = Integer.parseInt( handler.getQueryMap().get( UdcConstants.PING ) );
-            assertEquals( s, count );
+            pinger.ping();
+
+            int count = Integer.parseInt( server.getQueryMap().get( UdcConstants.PING ) );
+            assertEquals( i, count );
         }
     }
 
-    static class TestUdcCollector implements UdcInformationCollector
+    private static class TestUdcCollector implements UdcInformationCollector
     {
         private final Map<String,String> params;
 

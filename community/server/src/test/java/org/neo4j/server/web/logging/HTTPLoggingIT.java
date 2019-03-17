@@ -19,7 +19,6 @@
  */
 package org.neo4j.server.web.logging;
 
-import org.apache.http.HttpStatus;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -44,6 +43,7 @@ import org.neo4j.server.rest.RestRequest;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 
+import static org.eclipse.jetty.http.HttpStatus.OK_200;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertThat;
@@ -84,7 +84,7 @@ public class HTTPLoggingIT extends ExclusiveServerTestBase
             String query = "?implicitlyDisabled" + randomString();
             JaxRsResponse response = new RestRequest().get( functionalTestHelper.managementUri() + query );
 
-            assertThat( response.getStatus(), is( HttpStatus.SC_OK ) );
+            assertThat( response.getStatus(), is( OK_200 ) );
             response.close();
 
             // then
@@ -119,7 +119,7 @@ public class HTTPLoggingIT extends ExclusiveServerTestBase
 
             // when
             JaxRsResponse response = new RestRequest().get( functionalTestHelper.managementUri() + query );
-            assertThat( response.getStatus(), is( HttpStatus.SC_OK ) );
+            assertThat( response.getStatus(), is( OK_200 ) );
             response.close();
 
             // then

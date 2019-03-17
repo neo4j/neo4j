@@ -19,42 +19,39 @@
  */
 package org.neo4j.ext.udc.impl;
 
-import org.apache.http.HttpRequest;
-import org.apache.http.HttpResponse;
-import org.apache.http.protocol.HttpContext;
-import org.apache.http.protocol.HttpRequestHandler;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.handler.AbstractHandler;
 
-import java.io.IOException;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
-public class PingerHandler implements HttpRequestHandler
+public class PingerHandler extends AbstractHandler
 {
-    private final Map<String, String> queryMap = new HashMap<>();
+    private final Map<String,String> queryMap = new ConcurrentHashMap<>();
 
     @Override
-    public void handle( HttpRequest httpRequest, HttpResponse httpResponse, HttpContext httpContext )
-            throws IOException
+    public void handle( String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response )
     {
-        final String requestUri = httpRequest.getRequestLine().getUri();
-        final int offset = requestUri.indexOf( '?' );
-        if ( offset > -1 )
+        String query = request.getQueryString();
+        if ( query != null )
         {
-            String query = requestUri.substring( offset + 1 );
             String[] params = query.split( "\\+" );
             if ( params.length > 0 )
             {
                 for ( String param : params )
                 {
                     String[] pair = param.split( "=" );
-                    String key = URLDecoder.decode( pair[0], StandardCharsets.UTF_8.name() );
-                    String value = URLDecoder.decode( pair[1], StandardCharsets.UTF_8.name() );
+                    String key = URLDecoder.decode( pair[0], StandardCharsets.UTF_8 );
+                    String value = URLDecoder.decode( pair[1], StandardCharsets.UTF_8 );
                     queryMap.put( key, value );
                 }
             }
         }
+        baseRequest.setHandled( true );
     }
 
     public Map<String, String> getQueryMap()

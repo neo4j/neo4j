@@ -19,213 +19,153 @@
  */
 package org.neo4j.server.rest;
 
-import org.apache.http.HttpResponse;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.client.DefaultHttpClient;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 
 import org.neo4j.server.helpers.FunctionalTestHelper;
 
-import static org.junit.Assert.assertFalse;
+import static java.lang.Integer.parseInt;
+import static java.net.http.HttpClient.newHttpClient;
+import static java.net.http.HttpResponse.BodyHandlers.ofByteArray;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class ConfigureBaseUriIT extends AbstractRestFunctionalTestBase
 {
     private static FunctionalTestHelper functionalTestHelper;
+    private static HttpClient httpClient;
 
     @BeforeClass
     public static void setupServer()
     {
         functionalTestHelper = new FunctionalTestHelper( server() );
+        httpClient = newHttpClient();
     }
 
     @Test
     public void shouldForwardHttpAndHost() throws Exception
     {
-        URI rootUri = functionalTestHelper.baseUri();
+        var request = HttpRequest.newBuilder( functionalTestHelper.baseUri() )
+                .GET()
+                .header( "Accept", "application/json" )
+                .header( "X-Forwarded-Host", "foobar.com" )
+                .header( "X-Forwarded-Proto", "http" )
+                .build();
 
-        HttpClient httpclient = new DefaultHttpClient();
-        try
-        {
-            HttpGet httpget = new HttpGet( rootUri );
+        var response = httpClient.send( request, ofByteArray() );
 
-            httpget.setHeader( "Accept", "application/json" );
-            httpget.setHeader( "X-Forwarded-Host", "foobar.com" );
-            httpget.setHeader( "X-Forwarded-Proto", "http" );
+        verifyContentLength( response );
 
-            HttpResponse response = httpclient.execute( httpget );
-
-            String length = response.getHeaders( "CONTENT-LENGTH" )[0].getValue();
-            byte[] data = new byte[Integer.valueOf( length )];
-            response.getEntity().getContent().read( data );
-
-            String responseEntityBody = new String( data );
-
-            assertTrue( responseEntityBody.contains( "http://foobar.com" ) );
-            assertFalse( responseEntityBody.contains( "http://localhost" ) );
-        }
-        finally
-        {
-            httpclient.getConnectionManager().shutdown();
-        }
+        var responseBodyString = new String( response.body() );
+        assertThat( responseBodyString, containsString( "http://foobar.com" ) );
+        assertThat( responseBodyString, not( containsString( "http://localhost" ) ) );
     }
 
     @Test
     public void shouldForwardHttpsAndHost() throws Exception
     {
-        URI rootUri = functionalTestHelper.baseUri();
+        var request = HttpRequest.newBuilder( functionalTestHelper.baseUri() )
+                .GET()
+                .header( "Accept", "application/json" )
+                .header( "X-Forwarded-Host", "foobar.com" )
+                .header( "X-Forwarded-Proto", "https" )
+                .build();
 
-        HttpClient httpclient = new DefaultHttpClient();
-        try
-        {
-            HttpGet httpget = new HttpGet( rootUri );
+        var response = httpClient.send( request, ofByteArray() );
 
-            httpget.setHeader( "Accept", "application/json" );
-            httpget.setHeader( "X-Forwarded-Host", "foobar.com" );
-            httpget.setHeader( "X-Forwarded-Proto", "https" );
+        verifyContentLength( response );
 
-            HttpResponse response = httpclient.execute( httpget );
-
-            String length = response.getHeaders( "CONTENT-LENGTH" )[0].getValue();
-            byte[] data = new byte[Integer.valueOf( length )];
-            response.getEntity().getContent().read( data );
-
-            String responseEntityBody = new String( data );
-
-            assertTrue( responseEntityBody.contains( "https://foobar.com" ) );
-            assertFalse( responseEntityBody.contains( "https://localhost" ) );
-        }
-        finally
-        {
-            httpclient.getConnectionManager().shutdown();
-        }
+        var responseBodyString = new String( response.body() );
+        assertThat( responseBodyString, containsString( "https://foobar.com" ) );
+        assertThat( responseBodyString, not( containsString( "https://localhost" ) ) );
     }
 
     @Test
     public void shouldForwardHttpAndHostOnDifferentPort() throws Exception
     {
+        var request = HttpRequest.newBuilder( functionalTestHelper.baseUri() )
+                .GET()
+                .header( "Accept", "application/json" )
+                .header( "X-Forwarded-Host", "foobar.com:9999" )
+                .header( "X-Forwarded-Proto", "http" )
+                .build();
 
-        URI rootUri = functionalTestHelper.baseUri();
+        var response = httpClient.send( request, ofByteArray() );
 
-        HttpClient httpclient = new DefaultHttpClient();
-        try
-        {
-            HttpGet httpget = new HttpGet( rootUri );
+        verifyContentLength( response );
 
-            httpget.setHeader( "Accept", "application/json" );
-            httpget.setHeader( "X-Forwarded-Host", "foobar.com:9999" );
-            httpget.setHeader( "X-Forwarded-Proto", "http" );
-
-            HttpResponse response = httpclient.execute( httpget );
-
-            String length = response.getHeaders( "CONTENT-LENGTH" )[0].getValue();
-            byte[] data = new byte[Integer.valueOf( length )];
-            response.getEntity().getContent().read( data );
-
-            String responseEntityBody = new String( data );
-
-            assertTrue( responseEntityBody.contains( "http://foobar.com:9999" ) );
-            assertFalse( responseEntityBody.contains( "http://localhost" ) );
-        }
-        finally
-        {
-            httpclient.getConnectionManager().shutdown();
-        }
+        var responseBodyString = new String( response.body() );
+        assertThat( responseBodyString, containsString( "http://foobar.com:9999" ) );
+        assertThat( responseBodyString, not( containsString( "http://localhost" ) ) );
     }
 
     @Test
     public void shouldForwardHttpAndFirstHost() throws Exception
     {
-        URI rootUri = functionalTestHelper.baseUri();
+        var request = HttpRequest.newBuilder( functionalTestHelper.baseUri() )
+                .GET()
+                .header( "Accept", "application/json" )
+                .header( "X-Forwarded-Host", "foobar.com, bazbar.com" )
+                .header( "X-Forwarded-Proto", "http" )
+                .build();
 
-        HttpClient httpclient = new DefaultHttpClient();
-        try
-        {
-            HttpGet httpget = new HttpGet( rootUri );
+        var response = httpClient.send( request, ofByteArray() );
 
-            httpget.setHeader( "Accept", "application/json" );
-            httpget.setHeader( "X-Forwarded-Host", "foobar.com, bazbar.com" );
-            httpget.setHeader( "X-Forwarded-Proto", "http" );
+        verifyContentLength( response );
 
-            HttpResponse response = httpclient.execute( httpget );
-
-            String length = response.getHeaders( "CONTENT-LENGTH" )[0].getValue();
-            byte[] data = new byte[Integer.valueOf( length )];
-            response.getEntity().getContent().read( data );
-
-            String responseEntityBody = new String( data );
-
-            assertTrue( responseEntityBody.contains( "http://foobar.com" ) );
-            assertFalse( responseEntityBody.contains( "http://localhost" ) );
-        }
-        finally
-        {
-            httpclient.getConnectionManager().shutdown();
-        }
+        var responseBodyString = new String( response.body() );
+        assertThat( responseBodyString, containsString( "http://foobar.com" ) );
+        assertThat( responseBodyString, not( containsString( "http://localhost" ) ) );
     }
 
     @Test
     public void shouldForwardHttpsAndHostOnDifferentPort() throws Exception
     {
-        URI rootUri = functionalTestHelper.baseUri();
+        var request = HttpRequest.newBuilder( functionalTestHelper.baseUri() )
+                .GET()
+                .header( "Accept", "application/json" )
+                .header( "X-Forwarded-Host", "foobar.com:9999" )
+                .header( "X-Forwarded-Proto", "https" )
+                .build();
 
-        HttpClient httpclient = new DefaultHttpClient();
-        try
-        {
-            HttpGet httpget = new HttpGet( rootUri );
+        var response = httpClient.send( request, ofByteArray() );
 
-            httpget.setHeader( "Accept", "application/json" );
-            httpget.setHeader( "X-Forwarded-Host", "foobar.com:9999" );
-            httpget.setHeader( "X-Forwarded-Proto", "https" );
+        verifyContentLength( response );
 
-            HttpResponse response = httpclient.execute( httpget );
-
-            String length = response.getHeaders( "CONTENT-LENGTH" )[0].getValue();
-            byte[] data = new byte[Integer.valueOf( length )];
-            response.getEntity().getContent().read( data );
-
-            String responseEntityBody = new String( data );
-
-            assertTrue( responseEntityBody.contains( "https://foobar.com:9999" ) );
-            assertFalse( responseEntityBody.contains( "https://localhost" ) );
-        }
-        finally
-        {
-            httpclient.getConnectionManager().shutdown();
-        }
+        var responseBodyString = new String( response.body() );
+        assertThat( responseBodyString, containsString( "https://foobar.com:9999" ) );
+        assertThat( responseBodyString, not( containsString( "https://localhost" ) ) );
     }
 
     @Test
     public void shouldUseRequestUriWhenNoXForwardHeadersPresent() throws Exception
     {
-        URI rootUri = functionalTestHelper.baseUri();
+        var request = HttpRequest.newBuilder( functionalTestHelper.baseUri() )
+                .GET()
+                .header( "Accept", "application/json" )
+                .build();
 
-        HttpClient httpclient = new DefaultHttpClient();
-        try
-        {
-            HttpGet httpget = new HttpGet( rootUri );
+        var response = httpClient.send( request, ofByteArray() );
 
-            httpget.setHeader( "Accept", "application/json" );
+        verifyContentLength( response );
 
-            HttpResponse response = httpclient.execute( httpget );
+        var responseBodyString = new String( response.body() );
+        assertThat( responseBodyString, containsString( "http://localhost" ) );
+        assertThat( responseBodyString, not( containsString( "https://foobar.com" ) ) );
+        assertThat( responseBodyString, not( containsString( ":0" ) ) );
+    }
 
-            String length = response.getHeaders( "CONTENT-LENGTH" )[0].getValue();
-            byte[] data = new byte[Integer.valueOf( length )];
-            response.getEntity().getContent().read( data );
-
-            String responseEntityBody = new String( data );
-
-            assertFalse( responseEntityBody.contains( "https://foobar.com" ) );
-            assertFalse( responseEntityBody.contains( ":0" ) );
-            assertTrue( responseEntityBody.contains( "http://localhost" ) );
-        }
-        finally
-        {
-            httpclient.getConnectionManager().shutdown();
-        }
+    private static void verifyContentLength( HttpResponse<byte[]> response )
+    {
+        var contentLengthValue = response.headers().firstValue( "CONTENT-LENGTH" );
+        assertTrue( contentLengthValue.isPresent() );
+        assertEquals( parseInt( contentLengthValue.get() ), response.body().length );
     }
 }

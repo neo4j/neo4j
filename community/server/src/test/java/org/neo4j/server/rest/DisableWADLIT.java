@@ -19,14 +19,14 @@
  */
 package org.neo4j.server.rest;
 
-import org.apache.http.HttpResponse;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.client.DefaultHttpClient;
 import org.junit.Test;
 
 import java.net.URI;
+import java.net.http.HttpRequest;
 
+import static java.net.http.HttpClient.newHttpClient;
+import static java.net.http.HttpResponse.BodyHandlers.discarding;
+import static org.eclipse.jetty.http.HttpStatus.NOT_FOUND_404;
 import static org.junit.Assert.assertEquals;
 
 public class DisableWADLIT extends AbstractRestFunctionalTestBase
@@ -34,22 +34,15 @@ public class DisableWADLIT extends AbstractRestFunctionalTestBase
     @Test
     public void should404OnAnyUriEndingInWADL() throws Exception
     {
-        URI nodeUri = new URI( server().baseUri() + "db/data/application.wadl" );
+        var nodeUri = new URI( server().baseUri() + "db/data/application.wadl" );
 
-        HttpClient httpclient = new DefaultHttpClient();
-        try
-        {
-            HttpGet httpget = new HttpGet( nodeUri );
+        var request = HttpRequest.newBuilder( nodeUri )
+                .GET()
+                .header( "Accept", "*/*" )
+                .build();
 
-            httpget.setHeader( "Accept", "*/*" );
-            HttpResponse response = httpclient.execute( httpget );
+        var response = newHttpClient().send( request, discarding() );
 
-            assertEquals( 404, response.getStatusLine().getStatusCode() );
-
-        }
-        finally
-        {
-            httpclient.getConnectionManager().shutdown();
-        }
+        assertEquals( NOT_FOUND_404, response.statusCode() );
     }
 }
