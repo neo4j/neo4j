@@ -85,6 +85,7 @@ import org.neo4j.util.Preconditions;
 import org.neo4j.util.VisibleForTesting;
 import org.neo4j.util.concurrent.WorkSync;
 
+import static org.neo4j.function.ThrowingAction.executeAll;
 import static org.neo4j.lock.LockService.NO_LOCK_SERVICE;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.RECOVERY;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.REVERSE_RECOVERY;
@@ -144,13 +145,13 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             schemaRuleAccess = SchemaRuleAccess.getSchemaRuleAccess( neoStores.getSchemaStore(), tokenHolders );
             schemaCache = new SchemaCache( constraintSemantics );
 
-            countsStore = openCountsStore( fs, pageCache, databaseLayout, config, logProvider, versionContextSupplier );
-
             integrityValidator = new IntegrityValidator( neoStores );
             cacheAccess = new BridgingCacheAccess( schemaCache, schemaState, tokenHolders );
 
             denseNodeThreshold = config.get( GraphDatabaseSettings.dense_node_threshold );
             recordIdBatchSize = config.get( GraphDatabaseSettings.record_id_batch_size );
+
+            countsStore = openCountsStore( fs, pageCache, databaseLayout, config, logProvider, versionContextSupplier );
         }
         catch ( Throwable failure )
         {
@@ -353,15 +354,13 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     @Override
     public void stop() throws Exception
     {
-        idController.stop();
-        countsStore.stop();
+        executeAll( idController::stop, countsStore::stop );
     }
 
     @Override
     public void shutdown() throws Exception
     {
-        countsStore.shutdown();
-        neoStores.close();
+        executeAll( countsStore::shutdown, neoStores::close );
     }
 
     @Override
