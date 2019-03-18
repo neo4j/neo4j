@@ -20,18 +20,18 @@ import org.neo4j.cypher.internal.v4_0.util.Unchangeable
 
 import scala.collection.mutable.ArrayBuffer
 
-trait Attribute[T] {
+trait Attribute[KEY <: Identifiable, VALUE] {
 
-  private val array: ArrayBuffer[Unchangeable[T]] = new ArrayBuffer[Unchangeable[T]]()
+  private val array: ArrayBuffer[Unchangeable[VALUE]] = new ArrayBuffer[Unchangeable[VALUE]]()
 
-  def set(id: Id, t: T): Unit = {
+  def set(id: Id, t: VALUE): Unit = {
     val requiredSize = id.x + 1
     if (array.size < requiredSize)
       resizeArray(requiredSize)
     array(id.x).value = t
   }
 
-  def get(id: Id): T = {
+  def get(id: Id): VALUE = {
     array(id.x).value
   }
 
@@ -39,13 +39,13 @@ trait Attribute[T] {
     array.size > id.x && array(id.x).hasValue
   }
 
-  def getOrElse(id: Id, other: => T): T = {
+  def getOrElse(id: Id, other: => VALUE): VALUE = {
     if (isDefinedAt(id)) get(id) else other
   }
 
-  def iterator: Iterator[(Id, T)] = new Iterator[(Id, T)]() {
+  def iterator: Iterator[(Id, VALUE)] = new Iterator[(Id, VALUE)]() {
     private var currentId = -1
-    private var nextTup: (Id, T) = _
+    private var nextTup: (Id, VALUE) = _
 
     private def fetchNext(): Unit = {
       nextTup = null
@@ -58,7 +58,7 @@ trait Attribute[T] {
       }
     }
 
-    override def hasNext = {
+    override def hasNext: Boolean = {
       if (currentId >= array.size)
         false
       else {
@@ -69,7 +69,7 @@ trait Attribute[T] {
       }
     }
 
-    override def next() = {
+    override def next(): (Id, VALUE) = {
       if (hasNext) {
         val res = nextTup
         nextTup = null
@@ -80,27 +80,16 @@ trait Attribute[T] {
     }
   }
 
-  def size = iterator.size
+  def size: Int = iterator.size
 
-  def apply(id: Id): T = get(id)
+  def apply(id: Id): VALUE = get(id)
 
   def copy(from:Id, to:Id): Unit = {
     if(isDefinedAt(from))
       set(to, get(from))
   }
 
-  def mapTo[U](otherAttribute: Attribute[U], f: T => U): Unit = {
-    var i = 0
-    while(i < array.size) {
-      val id = Id(i)
-      if(isDefinedAt(id)) {
-        otherAttribute.set(id, f(this.get(id)))
-      }
-      i = i + 1
-    }
-  }
-
-  override def toString(): String = {
+  override def toString: String = {
     val sb = new StringBuilder
     sb ++= this.getClass.getSimpleName + "\n"
     for (i <- array.indices)
@@ -121,7 +110,7 @@ trait Attribute[T] {
   * @param idGen the IdGen used to provide new IDs
   * @param attributes the attributes encapsulated
   */
-case class Attributes(idGen: IdGen, private val attributes: Attribute[_]*) {
+case class Attributes[KEY <: Identifiable](idGen: IdGen, private val attributes: Attribute[KEY, _]*) {
   def copy(from: Id): IdGen = new IdGen {
     override def id(): Id = {
       val to = idGen.id()
@@ -132,7 +121,7 @@ case class Attributes(idGen: IdGen, private val attributes: Attribute[_]*) {
     }
   }
 
-  def withAlso(attributes: Attribute[_]*) : Attributes = {
+  def withAlso(attributes: Attribute[KEY, _]*) : Attributes[KEY] = {
     Attributes(this.idGen, this.attributes ++ attributes: _*)
   }
 }

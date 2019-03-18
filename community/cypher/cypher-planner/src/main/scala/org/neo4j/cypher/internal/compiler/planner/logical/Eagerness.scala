@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.ir.{PlannerQuery, QueryGraph}
-import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Solveds
 import org.neo4j.cypher.internal.logical.plans._
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Solveds
 import org.neo4j.cypher.internal.v4_0.util.attribution.{Attributes, SameId}
 import org.neo4j.cypher.internal.v4_0.util.helpers.fixedPoint
 import org.neo4j.cypher.internal.v4_0.util.{Rewriter, bottomUp}
@@ -272,7 +272,7 @@ object Eagerness {
 
   private def hasRelationships(queryGraph: QueryGraph) = queryGraph.allPatternRelationships.nonEmpty
 
-  case class unnestEager(solveds: Solveds, attributes: Attributes) extends Rewriter {
+  case class unnestEager(solveds: Solveds, attributes: Attributes[LogicalPlan]) extends Rewriter {
 
     /*
     Based on unnestApply (which references a paper)

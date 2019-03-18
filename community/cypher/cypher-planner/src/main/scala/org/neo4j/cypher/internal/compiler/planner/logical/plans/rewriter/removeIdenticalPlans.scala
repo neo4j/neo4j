@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter
 
+import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.v4_0.util.attribution.Attributes
 import org.neo4j.cypher.internal.v4_0.util.{Rewriter, bottomUp}
-import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 
 import scala.collection.mutable
 
@@ -29,7 +29,7 @@ import scala.collection.mutable
  * Runs through LogicalPlan and copies duplicate plans to make sure the
  * plan doesn't contain elements that are ID identical.
  */
-case class removeIdenticalPlans(attributes:Attributes) extends Rewriter {
+case class removeIdenticalPlans(attributes:Attributes[LogicalPlan]) extends Rewriter {
 
   override def apply(input: AnyRef) = {
     val seenIDs = mutable.Set.empty[Int]

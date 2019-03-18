@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.runtime
 
+import org.neo4j.cypher.internal.logical.plans.{LogicalPlan, NestedPlanExpression, PruningVarExpand, VarExpand}
 import org.neo4j.cypher.internal.runtime.ast.ExpressionVariable
 import org.neo4j.cypher.internal.v4_0.expressions.{LogicalVariable, ScopeExpression}
-import org.neo4j.cypher.internal.logical.plans.{NestedPlanExpression, PruningVarExpand, VarExpand}
 import org.neo4j.cypher.internal.v4_0.util.attribution.Attribute
 import org.neo4j.cypher.internal.v4_0.util.{Foldable, Rewritable, Rewriter, topDown}
 
@@ -40,7 +40,7 @@ object expressionVariableAllocation {
     * Attribute listing the expression variables in scope for nested logical plans. Only the root
     * of the nested plan tree will have in expression variables listed here.
     */
-  class AvailableExpressionVariables extends Attribute[Seq[ExpressionVariable]]
+  class AvailableExpressionVariables extends Attribute[LogicalPlan, Seq[ExpressionVariable]]
 
   case class Result[T](rewritten: T,
                        nExpressionSlots: Int,

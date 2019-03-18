@@ -20,39 +20,35 @@
 package org.neo4j.cypher.internal.compiler.planner
 
 import org.neo4j.csv.reader.Configuration
-import org.neo4j.cypher.internal.compiler.{CypherPlannerConfiguration, NotImplementedPlanContext, StatsDivergenceCalculator, SyntaxExceptionCreator}
 import org.neo4j.cypher.internal.compiler.phases._
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.{CardinalityModel, QueryGraphCardinalityModel, QueryGraphSolverInput}
+import org.neo4j.cypher.internal.compiler.planner.logical._
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.QueryGraphCardinalityModel
 import org.neo4j.cypher.internal.compiler.planner.logical.idp._
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.unnestApply
-import org.neo4j.cypher.internal.compiler.planner.logical.steps.replacePropertyLookupsWithVariables
-import org.neo4j.cypher.internal.compiler.planner.logical.steps.{LogicalPlanProducer, devNullListener}
-import org.neo4j.cypher.internal.compiler.planner.logical._
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.{LogicalPlanProducer, devNullListener, replacePropertyLookupsWithVariables}
 import org.neo4j.cypher.internal.compiler.test_helpers.ContextHelper
+import org.neo4j.cypher.internal.compiler.{CypherPlannerConfiguration, NotImplementedPlanContext, StatsDivergenceCalculator, SyntaxExceptionCreator}
 import org.neo4j.cypher.internal.ir.{PeriodicCommit, PlannerQuery, ProvidedOrder, QueryGraph}
-import org.neo4j.cypher.internal.planner.spi._
+import org.neo4j.cypher.internal.logical.plans._
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor.{OrderCapability, ValueCapability}
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.{Cardinalities, ProvidedOrders, Solveds}
-import org.neo4j.cypher.internal.logical.plans._
-import org.neo4j.helpers.collection.Visitable
-import org.neo4j.kernel.impl.util.dbstructure.DbStructureVisitor
+import org.neo4j.cypher.internal.planner.spi._
 import org.neo4j.cypher.internal.v4_0.ast._
 import org.neo4j.cypher.internal.v4_0.ast.semantics.{SemanticFeature, SemanticTable}
 import org.neo4j.cypher.internal.v4_0.expressions.PatternExpression
 import org.neo4j.cypher.internal.v4_0.frontend.phases._
 import org.neo4j.cypher.internal.v4_0.parser.CypherParser
-import org.neo4j.cypher.internal.v4_0.rewriting.{Deprecations, RewriterStepSequencer, ValidatingRewriterStepSequencer}
 import org.neo4j.cypher.internal.v4_0.rewriting.RewriterStepSequencer.newPlain
 import org.neo4j.cypher.internal.v4_0.rewriting.rewriters._
-import org.neo4j.cypher.internal.v4_0.util.attribution.Attribute
-import org.neo4j.cypher.internal.v4_0.util.attribution.Attributes
+import org.neo4j.cypher.internal.v4_0.rewriting.{Deprecations, RewriterStepSequencer, ValidatingRewriterStepSequencer}
+import org.neo4j.cypher.internal.v4_0.util.attribution.{Attribute, Attributes}
 import org.neo4j.cypher.internal.v4_0.util.helpers.fixedPoint
-import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherTestSupport
+import org.neo4j.cypher.internal.v4_0.util.test_helpers.{CypherFunSuite, CypherTestSupport}
 import org.neo4j.cypher.internal.v4_0.util.{Cardinality, Cost, PropertyKeyId}
-import org.scalatest.matchers.BeMatcher
-import org.scalatest.matchers.MatchResult
+import org.neo4j.helpers.collection.Visitable
+import org.neo4j.kernel.impl.util.dbstructure.DbStructureVisitor
+import org.scalatest.matchers.{BeMatcher, MatchResult}
 
 import scala.language.reflectiveCalls
 import scala.reflect.ClassTag
@@ -176,7 +172,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
       Do[PlannerContext, LogicalPlanState, LogicalPlanState]((state, context) => removeApply(state, context, state.planningAttributes.solveds, Attributes(idGen, state.planningAttributes.cardinalities)))
 
 
-    private def removeApply(input: LogicalPlanState, context: PlannerContext, solveds: Solveds, attributes: Attributes): LogicalPlanState = {
+    private def removeApply(input: LogicalPlanState, context: PlannerContext, solveds: Solveds, attributes: Attributes[LogicalPlan]): LogicalPlanState = {
       val newPlan = input.logicalPlan.endoRewrite(fixedPoint(unnestApply(solveds, attributes)))
       input.copy(maybeLogicalPlan = Some(newPlan))
     }
@@ -249,7 +245,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
     }
   }
 
-  def set[T](plan: LogicalPlan, attribute: Attribute[T], t: T): LogicalPlan = {
+  def set[T](plan: LogicalPlan, attribute: Attribute[LogicalPlan, T], t: T): LogicalPlan = {
     attribute.set(plan.id, t)
     plan
   }

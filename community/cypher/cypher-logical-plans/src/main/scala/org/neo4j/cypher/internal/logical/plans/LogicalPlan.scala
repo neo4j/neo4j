@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.ir.{PlannerQuery, Strictness}
 import org.neo4j.cypher.internal.v4_0.expressions._
 import org.neo4j.cypher.internal.v4_0.util.Foldable._
 import org.neo4j.cypher.internal.v4_0.util.Rewritable._
-import org.neo4j.cypher.internal.v4_0.util.attribution.{Id, IdGen, SameId}
+import org.neo4j.cypher.internal.v4_0.util.attribution.{Id, IdGen, Identifiable, SameId}
 import org.neo4j.cypher.internal.v4_0.util.{Foldable, InternalException, Rewritable}
 
 import scala.collection.mutable
@@ -45,7 +45,8 @@ abstract class LogicalPlan(idGen: IdGen)
   extends Product
   with Foldable
   with Strictness
-  with Rewritable {
+  with Rewritable
+  with Identifiable {
 
   self =>
 
@@ -61,7 +62,7 @@ abstract class LogicalPlan(idGen: IdGen)
       rhs.fold(Map.empty[Property, CachedNodeProperty])(_.availableCachedNodeProperties)
   }
 
-  val id: Id = idGen.id()
+  override val id: Id = idGen.id()
 
   override val hashCode: Int = MurmurHash3.productHash(self)
 

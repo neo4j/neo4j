@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter
 
 import org.neo4j.cypher.internal.compiler.phases.{LogicalPlanState, PlannerContext}
+import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.neo4j.cypher.internal.v4_0.frontend.phases.CompilationPhaseTracer.CompilationPhase
 import org.neo4j.cypher.internal.v4_0.frontend.phases.CompilationPhaseTracer.CompilationPhase.LOGICAL_PLANNING
@@ -38,7 +39,7 @@ case class PlanRewriter(rewriterSequencer: String => RewriterStepSequencer) exte
 
   override def postConditions: Set[Condition] = Set.empty
 
-  override def instance(context: PlannerContext, solveds: Solveds, cardinalities: Cardinalities, otherAttributes: Attributes) = fixedPoint(rewriterSequencer("LogicalPlanRewriter")(
+  override def instance(context: PlannerContext, solveds: Solveds, cardinalities: Cardinalities, otherAttributes: Attributes[LogicalPlan]) = fixedPoint(rewriterSequencer("LogicalPlanRewriter")(
     fuseSelections,
     unnestApply(solveds, otherAttributes.withAlso(cardinalities)),
     cleanUpEager(solveds, otherAttributes.withAlso(cardinalities)),
@@ -55,11 +56,11 @@ case class PlanRewriter(rewriterSequencer: String => RewriterStepSequencer) exte
 trait LogicalPlanRewriter extends Phase[PlannerContext, LogicalPlanState, LogicalPlanState] {
   override def phase: CompilationPhase = LOGICAL_PLANNING
 
-  def instance(context: PlannerContext, solveds: Solveds, cardinalities: Cardinalities, otherAttributes: Attributes): Rewriter
+  def instance(context: PlannerContext, solveds: Solveds, cardinalities: Cardinalities, otherAttributes: Attributes[LogicalPlan]): Rewriter
 
   override def process(from: LogicalPlanState, context: PlannerContext): LogicalPlanState = {
     val idGen = context.logicalPlanIdGen
-    val otherAttributes = Attributes(idGen)
+    val otherAttributes = Attributes[LogicalPlan](idGen)
     val rewritten = from.logicalPlan.endoRewrite(instance(context, from.planningAttributes.solveds, from.planningAttributes.cardinalities, otherAttributes))
     from.copy(maybeLogicalPlan = Some(rewritten))
   }

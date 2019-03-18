@@ -20,14 +20,12 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
 import org.neo4j.cypher.internal.ir.{PlannerQuery, Predicate, QueryProjection}
-import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Solveds
 import org.neo4j.cypher.internal.logical.plans._
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Solveds
 import org.neo4j.cypher.internal.v4_0.expressions._
 import org.neo4j.cypher.internal.v4_0.util.Foldable.FoldableAny
-import org.neo4j.cypher.internal.v4_0.util.InputPosition
-import org.neo4j.cypher.internal.v4_0.util.Rewriter
 import org.neo4j.cypher.internal.v4_0.util.attribution.Attributes
-import org.neo4j.cypher.internal.v4_0.util.topDown
+import org.neo4j.cypher.internal.v4_0.util.{InputPosition, Rewriter, topDown}
 
 /**
   * This updates index leaf plans such that they have the right GetValueFromIndexBehavior.
@@ -38,7 +36,7 @@ object alignGetValueFromIndexBehavior {
   // How many QGs to look into the future for variable accesses
   private val recursionLimit = 5
 
-  def apply(query: PlannerQuery, plan: LogicalPlan, lpp: LogicalPlanProducer, solveds: Solveds, attributes: Attributes): LogicalPlan = {
+  def apply(query: PlannerQuery, plan: LogicalPlan, lpp: LogicalPlanProducer, solveds: Solveds, attributes: Attributes[LogicalPlan]): LogicalPlan = {
     val usedExps = usedExpressionsRecursive(query, firstPart = true, recursionLimit)
     rewriter(usedExps, query, solveds, attributes)(plan).asInstanceOf[LogicalPlan]
   }
@@ -132,7 +130,7 @@ object alignGetValueFromIndexBehavior {
     }
   }
 
-  private def rewriter(usedExpressions: Set[Expression], query: PlannerQuery, solveds: Solveds, attributes: Attributes): Rewriter = topDown(Rewriter.lift {
+  private def rewriter(usedExpressions: Set[Expression], query: PlannerQuery, solveds: Solveds, attributes: Attributes[LogicalPlan]): Rewriter = topDown(Rewriter.lift {
 
     case x: NodeIndexSeek =>
       val aligned = alignedProperties(x, usedExpressions, query, solveds)
