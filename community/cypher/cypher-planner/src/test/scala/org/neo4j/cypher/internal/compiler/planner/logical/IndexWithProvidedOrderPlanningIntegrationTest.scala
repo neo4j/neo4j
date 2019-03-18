@@ -372,12 +372,13 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
       } getLogicalPlanFor s"MATCH (a:A)-[r]->(b) WHERE a.prop > 'foo' RETURN DISTINCT a.prop ORDER BY a.prop $cypherToken"
 
       plan._2 should equal(
-        Distinct(
+        OrderedDistinct(
           Expand(
             IndexSeek(
               "a:A(prop > 'foo')", indexOrder = plannedOrder),
             "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r"),
-          Map("a.prop" -> prop("a", "prop")))
+          Map("a.prop" -> prop("a", "prop")),
+          Seq(prop("a", "prop")))
       )
     }
 
