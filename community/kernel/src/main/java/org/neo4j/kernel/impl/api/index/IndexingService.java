@@ -45,6 +45,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -824,6 +825,11 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
         {
             userLog.info( joiner.toString() );
         }
+    }
+
+    public Collection<SchemaDescriptor> getRelatedIndexes( long[] labels, int propertyKeyId, EntityType entityType )
+    {
+        return indexMapRef.getRelatedIndexes( PrimitiveLongCollections.EMPTY_LONG_ARRAY, labels, new int[] {propertyKeyId}, false, entityType );
     }
 
     private final class IndexPopulationStarter implements Function<IndexMap,IndexMap>

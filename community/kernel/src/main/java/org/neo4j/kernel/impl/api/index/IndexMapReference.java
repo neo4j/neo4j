@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import java.util.Set;
+import java.util.Collection;
 import java.util.function.Function;
 
 import org.neo4j.function.ThrowingFunction;
@@ -103,7 +103,7 @@ public class IndexMapReference implements IndexMapSnapshotProvider
         return indexMap.getAllIndexProxies();
     }
 
-    public Set<SchemaDescriptor> getRelatedIndexes( long[] changedEntityTokens, long[] unchangedEntityTokens, int[] sortedProperties, boolean mode,
+    public Collection<SchemaDescriptor> getRelatedIndexes( long[] changedEntityTokens, long[] unchangedEntityTokens, int[] sortedProperties, boolean mode,
             EntityType entityType )
     {
         return indexMap.getRelatedIndexes( changedEntityTokens, unchangedEntityTokens, sortedProperties, mode, entityType );

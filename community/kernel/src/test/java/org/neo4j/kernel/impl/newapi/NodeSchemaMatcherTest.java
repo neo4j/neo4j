@@ -112,7 +112,7 @@ public class NodeSchemaMatcherTest
         // when
         List<IndexDescriptor> matched = new ArrayList<>();
         NodeSchemaMatcher.onMatchingSchema( iterator( indexWithMissingLabel ), node, new StubPropertyCursor(),
-                unIndexedPropId, ( schema, props ) -> matched.add( schema ) );
+                node.labels().all(), unIndexedPropId, ( schema, props ) -> matched.add( schema ) );
 
         // then
         assertThat( matched, empty() );

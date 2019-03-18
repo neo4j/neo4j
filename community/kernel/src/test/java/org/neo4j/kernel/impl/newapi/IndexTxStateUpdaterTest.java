@@ -24,7 +24,9 @@ import org.junit.Test;
 
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.helpers.StubNodeCursor;
@@ -40,6 +42,7 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueTuple;
 import org.neo4j.values.storable.Values;
 
+import static org.apache.commons.lang3.ArrayUtils.contains;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -117,8 +120,22 @@ public class IndexTxStateUpdaterTest
         IndexingService indexingService = mock( IndexingService.class );
         IndexProxy indexProxy = mock( IndexProxy.class );
         when( indexingService.getIndexProxy( any( SchemaDescriptor.class ) ) ).thenReturn( indexProxy );
-        indexTxUpdater = new IndexTxStateUpdater( storageReader, readOps, indexingService );
+        when( indexingService.getRelatedIndexes( any(), anyInt(), any() ) ).thenAnswer( invocationOnMock ->
+        {
+            long[] labels = invocationOnMock.getArgument( 0 );
+            int propertyKeyId = invocationOnMock.getArgument( 1 );
+            Set<SchemaDescriptor> descriptors = new HashSet<>();
+            for ( IndexDescriptor index : indexes )
+            {
+                if ( contains( labels, index.schema().keyId() ) && contains( index.schema().getPropertyIds(), propertyKeyId ) )
+                {
+                    descriptors.add( index.schema() );
+                }
+            }
+            return descriptors;
+        } );
 
+        indexTxUpdater = new IndexTxStateUpdater( storageReader, readOps, indexingService );
     }
 
     // LABELS
@@ -161,9 +178,9 @@ public class IndexTxStateUpdaterTest
     public void shouldNotUpdateIndexesOnChangedIrrelevantProperty()
     {
         // WHEN
-        indexTxUpdater.onPropertyAdd( node, propertyCursor, unIndexedPropId, Values.of( "whAt" ) );
-        indexTxUpdater.onPropertyRemove( node, propertyCursor, unIndexedPropId, Values.of( "whAt" ) );
-        indexTxUpdater.onPropertyChange( node, propertyCursor, unIndexedPropId, Values.of( "whAt" ), Values.of( "whAt2" ) );
+        indexTxUpdater.onPropertyAdd( node, propertyCursor, node.labels().all(), unIndexedPropId, Values.of( "whAt" ) );
+        indexTxUpdater.onPropertyRemove( node, propertyCursor, node.labels().all(), unIndexedPropId, Values.of( "whAt" ) );
+        indexTxUpdater.onPropertyChange( node, propertyCursor, node.labels().all(), unIndexedPropId, Values.of( "whAt" ), Values.of( "whAt2" ) );
 
         // THEN
         verify( txState, never() ).indexDoUpdateEntry( any(), anyInt(), any(), any() );
@@ -173,7 +190,7 @@ public class IndexTxStateUpdaterTest
     public void shouldUpdateIndexesOnAddedProperty()
     {
         // WHEN
-        indexTxUpdater.onPropertyAdd( node, propertyCursor, newPropId, Values.of( "newHi" ) );
+        indexTxUpdater.onPropertyAdd( node, propertyCursor, node.labels().all(), newPropId, Values.of( "newHi" ) );
 
         // THEN
         verifyIndexUpdate( indexOn2_new.schema(), node.nodeReference(), null, values( "newHi" ) );
@@ -185,7 +202,7 @@ public class IndexTxStateUpdaterTest
     public void shouldUpdateIndexesOnRemovedProperty()
     {
         // WHEN
-        indexTxUpdater.onPropertyRemove( node, propertyCursor, propId2, Values.of( "hi2" ) );
+        indexTxUpdater.onPropertyRemove( node, propertyCursor, node.labels().all(), propId2, Values.of( "hi2" ) );
 
         // THEN
         verifyIndexUpdate( uniqueOn1_2.schema(), node.nodeReference(), values( "hi2" ), null );
@@ -197,7 +214,7 @@ public class IndexTxStateUpdaterTest
     public void shouldUpdateIndexesOnChangesProperty()
     {
         // WHEN
-        indexTxUpdater.onPropertyChange( node, propertyCursor, propId2, Values.of( "hi2" ), Values.of( "new2" ) );
+        indexTxUpdater.onPropertyChange( node, propertyCursor, node.labels().all(), propId2, Values.of( "hi2" ), Values.of( "new2" ) );
 
         // THEN
         verifyIndexUpdate( uniqueOn1_2.schema(), node.nodeReference(), values( "hi2" ), values( "new2" ) );
