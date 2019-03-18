@@ -21,6 +21,8 @@ package org.neo4j.lock;
 
 import org.neo4j.kernel.api.exceptions.Status;
 
+import static org.neo4j.kernel.api.exceptions.Status.Transaction.Interrupted;
+
 public enum LockWaitStrategies implements WaitStrategy
 {
     SPIN
@@ -72,7 +74,7 @@ public enum LockWaitStrategies implements WaitStrategy
             catch ( InterruptedException e )
             {
                 Thread.interrupted();
-                throw new AcquireLockTimeoutException( e, "Interrupted while waiting.", Status.Transaction.Interrupted );
+                throw new AcquireLockTimeoutException( e, "Interrupted while waiting.", Interrupted );
             }
         }
     },

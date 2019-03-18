@@ -26,7 +26,7 @@ import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.LabelSchemaSupplier;
 import org.neo4j.token.api.TokenIdPrettyPrinter;
 
-public abstract class IndexBackedConstraintDescriptor extends DefaultConstraintDescriptor implements LabelSchemaSupplier
+public abstract class IndexBackedConstraintDescriptor extends AbstractConstraintDescriptor implements LabelSchemaSupplier
 {
     private final LabelSchemaDescriptor schema;
     private final IndexDescriptor ownedIndexDescriptor;

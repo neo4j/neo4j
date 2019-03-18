@@ -51,8 +51,8 @@ import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelExcept
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.constraints.AbstractConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
-import org.neo4j.internal.schema.constraints.DefaultConstraintDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.index.IndexProviderDescriptor;
@@ -92,7 +92,7 @@ class BuiltInProceduresTest
 {
     private final List<IndexReference> indexes = new LinkedList<>();
     private final List<IndexReference> uniqueIndexes = new LinkedList<>();
-    private final List<DefaultConstraintDescriptor> constraints = new LinkedList<>();
+    private final List<AbstractConstraintDescriptor> constraints = new LinkedList<>();
     private final Map<Integer,String> labels = new HashMap<>();
     private final Map<Integer,String> propKeys = new HashMap<>();
     private final Map<Integer,String> relTypes = new HashMap<>();

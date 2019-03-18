@@ -54,7 +54,7 @@ public class ConstraintDescriptorFactory
         return new NodeKeyConstraintDescriptor( SchemaDescriptorFactory.forLabel( labelId, propertyIds ) );
     }
 
-    public static DefaultConstraintDescriptor existsForSchema( SchemaDescriptor schema )
+    public static AbstractConstraintDescriptor existsForSchema( SchemaDescriptor schema )
     {
         return schema.computeWith( convertToExistenceConstraint );
     }
@@ -79,23 +79,23 @@ public class ConstraintDescriptorFactory
         return schema.computeWith( convertToNodeKeyConstraint );
     }
 
-    private static SchemaComputer<DefaultConstraintDescriptor> convertToExistenceConstraint =
-            new SchemaComputer<DefaultConstraintDescriptor>()
+    private static SchemaComputer<AbstractConstraintDescriptor> convertToExistenceConstraint =
+            new SchemaComputer<AbstractConstraintDescriptor>()
             {
                 @Override
-                public DefaultConstraintDescriptor computeSpecific( LabelSchemaDescriptor schema )
+                public AbstractConstraintDescriptor computeSpecific( LabelSchemaDescriptor schema )
                 {
                     return new NodeExistenceConstraintDescriptor( schema );
                 }
 
                 @Override
-                public DefaultConstraintDescriptor computeSpecific( RelationTypeSchemaDescriptor schema )
+                public AbstractConstraintDescriptor computeSpecific( RelationTypeSchemaDescriptor schema )
                 {
                     return new RelExistenceConstraintDescriptor( schema );
                 }
 
                 @Override
-                public DefaultConstraintDescriptor computeSpecific( SchemaDescriptor schema )
+                public AbstractConstraintDescriptor computeSpecific( SchemaDescriptor schema )
                 {
                     throw new UnsupportedOperationException(
                             format( "Cannot create existence constraint for schema '%s' of type %s",

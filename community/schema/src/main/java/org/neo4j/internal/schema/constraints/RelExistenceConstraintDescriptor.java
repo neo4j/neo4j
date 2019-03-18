@@ -22,7 +22,7 @@ package org.neo4j.internal.schema.constraints;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.internal.schema.RelationTypeSchemaDescriptor;
 
-public class RelExistenceConstraintDescriptor extends DefaultConstraintDescriptor
+public class RelExistenceConstraintDescriptor extends AbstractConstraintDescriptor
 {
     private final RelationTypeSchemaDescriptor schema;
 

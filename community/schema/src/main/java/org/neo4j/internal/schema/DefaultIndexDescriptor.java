@@ -30,10 +30,10 @@ import static java.lang.String.format;
  */
 public class DefaultIndexDescriptor implements IndexDescriptor
 {
+    protected final Optional<String> name;
     private final SchemaDescriptor schema;
     private final String providerKey;
     private final String providerVersion;
-    protected final Optional<String> name;
     private final boolean isUnique;
     private final boolean isEventuallyConsistent;
 

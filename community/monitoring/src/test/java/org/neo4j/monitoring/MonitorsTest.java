@@ -22,6 +22,8 @@ package org.neo4j.monitoring;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
+import static org.mockito.Mockito.mock;
+
 class MonitorsTest
 {
     interface MyMonitor
@@ -50,7 +52,7 @@ class MonitorsTest
         // Given
         Monitors monitors = new Monitors();
 
-        MyMonitor listener = Mockito.mock( MyMonitor.class );
+        MyMonitor listener = mock( MyMonitor.class );
         MyMonitor monitor = monitors.newMonitor( MyMonitor.class );
         Object obj = new Object();
 
@@ -70,7 +72,7 @@ class MonitorsTest
         // Given
         Monitors monitors = new Monitors();
 
-        MyMonitor listener = Mockito.mock( MyMonitor.class );
+        MyMonitor listener = mock( MyMonitor.class );
         MyMonitor monitor = monitors.newMonitor( MyMonitor.class );
         Object obj = new Object();
 
@@ -91,7 +93,7 @@ class MonitorsTest
         // Given
         Monitors monitors = new Monitors();
 
-        MyMonitor listener = Mockito.mock( MyMonitor.class );
+        MyMonitor listener = mock( MyMonitor.class );
         MyMonitor monitorTag1 = monitors.newMonitor( MyMonitor.class, "tag1" );
         MyMonitor monitorTag2 = monitors.newMonitor( MyMonitor.class, "tag2" );
 
@@ -110,11 +112,11 @@ class MonitorsTest
     void eventShouldBubbleUp()
     {
         Monitors parent = new Monitors();
-        MyMonitor parentListener = Mockito.mock( MyMonitor.class );
+        MyMonitor parentListener = mock( MyMonitor.class );
         parent.addMonitorListener( parentListener );
 
         Monitors child = new Monitors( parent );
-        MyMonitor childListener = Mockito.mock( MyMonitor.class );
+        MyMonitor childListener = mock( MyMonitor.class );
         child.addMonitorListener( childListener );
 
         // Calls on monitors from parent should not reach child listeners

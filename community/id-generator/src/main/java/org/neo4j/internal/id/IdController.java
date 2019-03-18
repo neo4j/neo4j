@@ -29,8 +29,18 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
  */
 public interface IdController extends Lifecycle
 {
+    /**
+     * Essentially a snapshot of whatever data this {@link IdController} needs to decide whether or not
+     * a batch of ids can be released, in maintenance. For a concrete example it can be a snapshot of
+     * ongoing transactions. Then given that snapshot {@link #conditionMet()} would check whether or not
+     * all of those transactions from the snapshot were closed.
+     */
     interface ConditionSnapshot
     {
+        /**
+         * @return whether or not the condition in this snapshot has been met so that maintenance can
+         * release a specific batch of ids.
+         */
         boolean conditionMet();
     }
 

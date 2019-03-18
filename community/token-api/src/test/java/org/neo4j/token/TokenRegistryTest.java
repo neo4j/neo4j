@@ -17,14 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.core;
+package org.neo4j.token;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.Collection;
 
-import org.neo4j.token.TokenRegistry;
 import org.neo4j.token.api.NamedToken;
 import org.neo4j.token.api.NonUniqueTokenException;
 
@@ -210,7 +209,6 @@ class TokenRegistryTest
         assertThat( registry.getIdInternal( INBOUND1_TYPE ), is( nullValue() ) );
         assertThat( registry.getIdInternal( INBOUND2_TYPE ), is( nullValue() ) );
     }
-
     @Test
     void putAllMustThrowOnDuplicateIdWithExistingTokenEvenAcrossInternalAndPublicTokens()
     {

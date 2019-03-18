@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
-import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
 
 public class LogPosition implements Comparable<LogPosition>
 {
@@ -46,7 +46,7 @@ public class LogPosition implements Comparable<LogPosition>
 
     public static LogPosition start( long logVersion )
     {
-        return new LogPosition( logVersion, LogHeader.LOG_HEADER_SIZE );
+        return new LogPosition( logVersion, LOG_HEADER_SIZE );
     }
 
     private final long logVersion;

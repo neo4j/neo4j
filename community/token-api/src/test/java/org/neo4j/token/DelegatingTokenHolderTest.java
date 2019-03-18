@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.core;
+package org.neo4j.token;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -28,8 +28,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.IntPredicate;
 
 import org.neo4j.exceptions.KernelException;
-import org.neo4j.token.DelegatingTokenHolder;
-import org.neo4j.token.TokenCreator;
 import org.neo4j.token.api.NamedToken;
 import org.neo4j.token.api.TokenHolder;
 

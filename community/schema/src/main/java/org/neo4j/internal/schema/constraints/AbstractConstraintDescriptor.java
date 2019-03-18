@@ -28,11 +28,11 @@ import static java.lang.String.format;
  * Internal representation of a graph constraint, including the schema unit it targets (eg. label-property combination)
  * and the how that schema unit is constrained (eg. "has to exist", or "must be unique").
  */
-public abstract class DefaultConstraintDescriptor implements ConstraintDescriptor
+public abstract class AbstractConstraintDescriptor implements ConstraintDescriptor
 {
     private final Type type;
 
-    DefaultConstraintDescriptor( Type type )
+    protected AbstractConstraintDescriptor( Type type )
     {
         this.type = type;
     }

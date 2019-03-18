@@ -47,6 +47,8 @@ import org.neo4j.util.FeatureToggles;
 import static java.lang.String.format;
 import static java.lang.System.currentTimeMillis;
 import static java.util.Comparator.comparing;
+import static java.util.concurrent.TimeUnit.DAYS;
+import static org.neo4j.io.ByteUnit.mebiBytes;
 
 /**
  * A {@link NativeLabelScanWriter.WriteMonitor} which writes all interactions to a .writelog file, which has configurable rotation and pruning.
@@ -56,8 +58,8 @@ public class LabelScanWriteMonitor implements NativeLabelScanWriter.WriteMonitor
 {
     // configuration for this monitor
     static final boolean ENABLED = FeatureToggles.flag( LabelScanWriteMonitor.class, "enabled", false );
-    private static final long ROTATION_SIZE_THRESHOLD = FeatureToggles.getLong( LabelScanWriteMonitor.class, "rotationThreshold", ByteUnit.mebiBytes( 200 ) );
-    private static final long PRUNE_THRESHOLD = FeatureToggles.getLong( LabelScanWriteMonitor.class, "pruneThreshold", TimeUnit.DAYS.toMillis( 2 ) );
+    private static final long ROTATION_SIZE_THRESHOLD = FeatureToggles.getLong( LabelScanWriteMonitor.class, "rotationThreshold", mebiBytes( 200 ) );
+    private static final long PRUNE_THRESHOLD = FeatureToggles.getLong( LabelScanWriteMonitor.class, "pruneThreshold", DAYS.toMillis( 2 ) );
 
     private static final byte TYPE_PREPARE_ADD = 0;
     private static final byte TYPE_PREPARE_REMOVE = 1;

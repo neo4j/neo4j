@@ -24,7 +24,7 @@ import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.LabelSchemaSupplier;
 import org.neo4j.token.api.TokenIdPrettyPrinter;
 
-public class NodeExistenceConstraintDescriptor extends DefaultConstraintDescriptor implements LabelSchemaSupplier
+public class NodeExistenceConstraintDescriptor extends AbstractConstraintDescriptor implements LabelSchemaSupplier
 {
     private LabelSchemaDescriptor schema;
 
