@@ -162,11 +162,11 @@ public abstract class AbstractEditionModule
 
                     if ( innerErrorMessage != null )
                     {
-                        log.error( errorMessage + " Caused by: " + innerErrorMessage );
+                        log.error( errorMessage + " Caused by: " + innerErrorMessage, e );
                     }
                     else
                     {
-                        log.error( errorMessage );
+                        log.error( errorMessage, e );
                     }
                     throw new RuntimeException( errorMessage, e );
                 }
