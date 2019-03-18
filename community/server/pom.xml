@@ -22,7 +22,7 @@
     <licensing.prepend.text>licensing/notice-gpl-prefix.txt</licensing.prepend.text>
 
     <neo4j.version>${project.version}</neo4j.version>
-    <neo4j-browser.version>3.2.16</neo4j-browser.version>
+    <neo4j-browser.version>3.2.18</neo4j-browser.version>
 
     <neo4j-server.mainClass>org.neo4j.server.CommunityEntryPoint</neo4j-server.mainClass>
 
