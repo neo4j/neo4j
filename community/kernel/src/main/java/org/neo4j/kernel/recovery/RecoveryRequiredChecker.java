@@ -38,7 +38,7 @@ import static org.neo4j.kernel.recovery.RecoveryStartInformationProvider.NO_MONI
 /**
  * Utility that can determine if a given store will need recovery.
  */
-public class RecoveryRequiredChecker
+class RecoveryRequiredChecker
 {
     private final FileSystemAbstraction fs;
     private final PageCache pageCache;

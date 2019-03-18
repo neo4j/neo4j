@@ -121,7 +121,7 @@ public final class Recovery
     }
 
     /**
-     * Return helper that can be used to check if some database described by {@link DatabaseLayout} requires recovery.
+     * Provide recovery helper that can perform recovery of some database described by {@link DatabaseLayout}.
      *
      * @param fs database filesystem
      * @param pageCache page cache used to perform database recovery.
@@ -129,10 +129,10 @@ public final class Recovery
      * @param storageEngineFactory {@link StorageEngineFactory} for the storage to recover.
      * @return helper recovery checker
      */
-    public static RecoveryRequiredChecker recoveryRequiredChecker( FileSystemAbstraction fs, PageCache pageCache, Config config,
+    public static RecoveryFacade recoveryFacade( FileSystemAbstraction fs, PageCache pageCache, Config config,
             StorageEngineFactory storageEngineFactory )
     {
-        return new RecoveryRequiredChecker( fs, pageCache, config, storageEngineFactory );
+        return new RecoveryFacade( fs, pageCache, config, storageEngineFactory );
     }
 
     /**
@@ -391,7 +391,7 @@ public final class Recovery
     private static boolean isRecoveryRequired( FileSystemAbstraction fs, PageCache pageCache, DatabaseLayout databaseLayout,
             StorageEngineFactory storageEngineFactory, Config config, Optional<LogTailScanner> logTailScanner ) throws IOException
     {
-        RecoveryRequiredChecker requiredChecker = recoveryRequiredChecker( fs, pageCache, config, storageEngineFactory );
+        RecoveryRequiredChecker requiredChecker = new RecoveryRequiredChecker( fs, pageCache, config, storageEngineFactory );
         return logTailScanner.isPresent() ? requiredChecker.isRecoveryRequiredAt( databaseLayout, logTailScanner.get() )
                                           : requiredChecker.isRecoveryRequiredAt( databaseLayout );
     }
