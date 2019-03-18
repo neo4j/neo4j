@@ -44,12 +44,12 @@ abstract class BaseCreatePipe(src: Pipe) extends PipeWithSource(src) {
     val value = properties(context, state)
     value match {
       case _: NodeValue | _: RelationshipValue =>
-        throw new CypherTypeException(s"Parameter provided for node creation is not a Map, instead got a ${value.getTypeName}")
+        throw new CypherTypeException(s"Parameter provided for node creation is not a Map, instead got $value")
       case IsMap(map) =>
         map(state).foreach((k: String, v: AnyValue) => setProperty(entityId, k, v, state.query, ops))
 
       case _ =>
-        throw new CypherTypeException(s"Parameter provided for node creation is not a Map, instead got a ${value.getTypeName}")
+        throw new CypherTypeException(s"Parameter provided for node creation is not a Map, instead got $value")
     }
   }
 
