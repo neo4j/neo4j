@@ -19,9 +19,11 @@
  */
 package org.neo4j.internal.recordstorage;
 
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.function.Function;
 
+import org.neo4j.common.EntityType;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.kernel.impl.store.MetaDataStore;
@@ -40,6 +42,7 @@ import org.neo4j.storageengine.api.StorageRelationshipGroupCursor;
 import org.neo4j.storageengine.api.StorageRelationshipTraversalCursor;
 import org.neo4j.token.TokenHolders;
 
+import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.helpers.collection.Iterators.map;
 import static org.neo4j.register.Registers.newDoubleLongRegister;
 import static org.neo4j.token.api.TokenConstants.ANY_LABEL;
@@ -107,9 +110,9 @@ public class RecordStorageReader implements StorageReader
     }
 
     @Override
-    public Iterator<StorageIndexReference> indexesGetRelatedToNodeProperty( int propertyId )
+    public Collection<SchemaDescriptor> indexesGetRelated( long[] labels, int propertyKeyId, EntityType entityType )
     {
-        return map( descriptor -> descriptor, schemaCache.indexesByNodeProperty( propertyId ) );
+        return schemaCache.getIndexesRelatedTo( EMPTY_LONG_ARRAY, labels, new int[]{propertyKeyId}, false, entityType );
     }
 
     @Override

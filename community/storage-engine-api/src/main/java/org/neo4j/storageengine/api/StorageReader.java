@@ -19,9 +19,11 @@
  */
 package org.neo4j.storageengine.api;
 
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.function.Function;
 
+import org.neo4j.common.EntityType;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 
@@ -55,9 +57,9 @@ public interface StorageReader extends AutoCloseable
     Iterator<StorageIndexReference> indexesGetAll();
 
     /**
-     * Returns all indexes (including unique) related to a property.
+     * Returns all indexes (including unique) related to a property, any of the labels and the entity type.
      */
-    Iterator<StorageIndexReference> indexesGetRelatedToNodeProperty( int propertyId );
+    Collection<SchemaDescriptor> indexesGetRelated( long[] labels, int propertyKeyId, EntityType entityType );
 
     /**
      * Looks for a stored index by given {@code descriptor}

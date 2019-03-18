@@ -329,9 +329,11 @@ public class Operations implements Write, SchemaWrite
     /**
      * Assuming that the nodeCursor have been initialized to the node that labels are retrieved from
      */
-    private void acquireSharedNodeLabelLocks()
+    private long[] acquireSharedNodeLabelLocks()
     {
-        ktx.statementLocks().optimistic().acquireShared( ktx.lockTracer(), ResourceTypes.LABEL, nodeCursor.labels().all() );
+        long[] labels = nodeCursor.labels().all();
+        ktx.statementLocks().optimistic().acquireShared( ktx.lockTracer(), ResourceTypes.LABEL, labels );
+        return labels;
     }
 
     private boolean relationshipDelete( long relationship, boolean lock )
@@ -503,34 +505,36 @@ public class Operations implements Write, SchemaWrite
         ktx.assertOpen();
 
         singleNode( node );
-        acquireSharedNodeLabelLocks();
-        Iterator<ConstraintDescriptor> constraints = allStoreHolder.constraintsGetForProperty( propertyKey );
-        Iterator<IndexBackedConstraintDescriptor> uniquenessConstraints =
-                new CastingIterator<>( constraints, IndexBackedConstraintDescriptor.class );
-
-        NodeSchemaMatcher.onMatchingSchema( uniquenessConstraints, nodeCursor, propertyCursor, propertyKey,
-                ( constraint, propertyIds ) ->
-                {
-                    if ( propertyIds.contains( propertyKey ) )
-                    {
-                        Value previousValue = readNodeProperty( propertyKey );
-                        if ( value.equals( previousValue ) )
-                        {
-                            // since we are changing to the same value, there is no need to check
-                            return;
-                        }
-                    }
-                    validateNoExistingNodeWithExactValues( constraint,
-                            getAllPropertyValues( constraint.schema(), propertyKey, value ), node );
-                } );
-
+        long[] labels = acquireSharedNodeLabelLocks();
         Value existingValue = readNodeProperty( propertyKey );
+        if ( !existingValue.equals( value ) )
+        {
+            // The value changed so let's check uniqueness constraints.
+            Iterator<ConstraintDescriptor> constraints = allStoreHolder.constraintsGetForProperty( propertyKey );
+            Iterator<IndexBackedConstraintDescriptor> uniquenessConstraints =
+                    new CastingIterator<>( constraints, IndexBackedConstraintDescriptor.class );
+            NodeSchemaMatcher.onMatchingSchema( uniquenessConstraints, nodeCursor, propertyCursor, labels, propertyKey,
+                    ( constraint, propertyIds ) ->
+                    {
+                        if ( propertyIds.contains( propertyKey ) )
+                        {
+                            Value previousValue = readNodeProperty( propertyKey );
+                            if ( value.equals( previousValue ) )
+                            {
+                                // since we are changing to the same value, there is no need to check
+                                return;
+                            }
+                        }
+                        validateNoExistingNodeWithExactValues( constraint,
+                                getAllPropertyValues( constraint.schema(), propertyKey, value ), node );
+                    } );
+        }
 
         if ( existingValue == NO_VALUE )
         {
             //no existing value, we just add it
             ktx.txState().nodeDoAddProperty( node, propertyKey, value );
-            updater.onPropertyAdd( nodeCursor, propertyCursor, propertyKey, value );
+            updater.onPropertyAdd( nodeCursor, propertyCursor, labels, propertyKey, value );
             return NO_VALUE;
         }
         else
@@ -539,7 +543,7 @@ public class Operations implements Write, SchemaWrite
             {
                 //the value has changed to a new value
                 ktx.txState().nodeDoChangeProperty( node, propertyKey, value );
-                updater.onPropertyChange( nodeCursor, propertyCursor, propertyKey, existingValue, value );
+                updater.onPropertyChange( nodeCursor, propertyCursor, labels, propertyKey, existingValue, value );
             }
             return existingValue;
         }
@@ -556,9 +560,9 @@ public class Operations implements Write, SchemaWrite
 
         if ( existingValue != NO_VALUE )
         {
-            acquireSharedNodeLabelLocks();
+            long[] labels = acquireSharedNodeLabelLocks();
             ktx.txState().nodeDoRemoveProperty( node, propertyKey );
-            updater.onPropertyRemove( nodeCursor, propertyCursor, propertyKey, existingValue );
+            updater.onPropertyRemove( nodeCursor, propertyCursor, labels, propertyKey, existingValue );
         }
 
         return existingValue;

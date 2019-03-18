@@ -19,11 +19,12 @@
  */
 package org.neo4j.internal.schema;
 
-import org.apache.commons.lang3.ArrayUtils;
-
 import java.util.function.Predicate;
+import java.util.stream.LongStream;
 
 import org.neo4j.common.EntityType;
+
+import static org.apache.commons.lang3.ArrayUtils.contains;
 
 public class SchemaDescriptorPredicates
 {
@@ -36,7 +37,17 @@ public class SchemaDescriptorPredicates
         return supplier ->
         {
             SchemaDescriptor schema = supplier.schema();
-            return schema.entityType() == EntityType.NODE && ArrayUtils.contains( schema.getEntityTokenIds(), labelId );
+            return schema.entityType() == EntityType.NODE && contains( schema.getEntityTokenIds(), labelId );
+        };
+    }
+
+    public static <T extends SchemaDescriptorSupplier> Predicate<T> hasEntityToken( long[] entityTokens, EntityType entityType )
+    {
+        return supplier ->
+        {
+            SchemaDescriptor schema = supplier.schema();
+            return schema.entityType() == entityType && LongStream.of( entityTokens )
+                    .anyMatch( entityToken -> contains( schema.getEntityTokenIds(), (int) entityToken ) );
         };
     }
 
@@ -45,7 +56,7 @@ public class SchemaDescriptorPredicates
         return supplier ->
         {
             SchemaDescriptor schema = supplier.schema();
-            return schema.entityType() == EntityType.RELATIONSHIP && ArrayUtils.contains( schema.getEntityTokenIds(), relTypeId );
+            return schema.entityType() == EntityType.RELATIONSHIP && contains( schema.getEntityTokenIds(), relTypeId );
         };
     }
 
@@ -57,13 +68,13 @@ public class SchemaDescriptorPredicates
     public static boolean hasLabel( SchemaDescriptorSupplier supplier, int labelId )
     {
         SchemaDescriptor schema = supplier.schema();
-        return schema.entityType() == EntityType.NODE && ArrayUtils.contains( schema.getEntityTokenIds(), labelId );
+        return schema.entityType() == EntityType.NODE && contains( schema.getEntityTokenIds(), labelId );
     }
 
     public static boolean hasRelType( SchemaDescriptorSupplier supplier, int relTypeId )
     {
         SchemaDescriptor schema = supplier.schema();
-        return schema.entityType() == EntityType.RELATIONSHIP && ArrayUtils.contains( schema.getEntityTokenIds(), relTypeId );
+        return schema.entityType() == EntityType.RELATIONSHIP && contains( schema.getEntityTokenIds(), relTypeId );
     }
 
     public static boolean hasProperty( SchemaDescriptorSupplier supplier, int propertyId )

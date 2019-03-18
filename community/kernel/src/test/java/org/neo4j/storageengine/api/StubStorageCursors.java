@@ -19,12 +19,14 @@
  */
 package org.neo4j.storageengine.api;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 
+import org.neo4j.common.EntityType;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.schema.ConstraintDescriptor;
@@ -133,7 +135,7 @@ public class StubStorageCursors implements StorageReader
     }
 
     @Override
-    public Iterator<StorageIndexReference> indexesGetRelatedToNodeProperty( int propertyId )
+    public Collection<SchemaDescriptor> indexesGetRelated( long[] labels, int propertyKeyId, EntityType entityType )
     {
         throw new UnsupportedOperationException( "Not implemented yet" );
     }
