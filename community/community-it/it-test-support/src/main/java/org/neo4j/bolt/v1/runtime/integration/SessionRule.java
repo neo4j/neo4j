@@ -70,8 +70,7 @@ public class SessionRule implements TestRule
                 configMap.put( GraphDatabaseSettings.auth_enabled, Boolean.toString( authEnabled ) );
                 gdb = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabase( configMap );
                 DependencyResolver resolver = gdb.getDependencyResolver();
-                @SuppressWarnings( "unchecked" )
-                DatabaseManager<? extends DatabaseContext> databaseManager = resolver.resolveDependency( DatabaseManager.class );
+                DatabaseManager<?> databaseManager = resolver.resolveDependency( DatabaseManager.class );
                 Config config = gdb.getDependencyResolver().resolveDependency( Config.class );
                 Authentication authentication = authentication( resolver.resolveDependency( AuthManager.class ),
                         resolver.resolveDependency( UserManagerSupplier.class ) );

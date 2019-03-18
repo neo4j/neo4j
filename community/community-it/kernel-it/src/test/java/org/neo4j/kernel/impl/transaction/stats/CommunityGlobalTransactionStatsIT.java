@@ -73,9 +73,9 @@ class CommunityGlobalTransactionStatsIT
     void useAggregatedTransactionMonitorForSystemAndDefaultDatabase() throws InterruptedException
     {
         ExecutorService transactionExecutor = Executors.newSingleThreadExecutor();
-        DatabaseManager<StandaloneDatabaseContext> databaseManager = getDatabaseManager();
-        Optional<StandaloneDatabaseContext> defaultDatabase = databaseManager.getDatabaseContext( DEFAULT_DATABASE_NAME );
-        Optional<StandaloneDatabaseContext> systemDatabase = databaseManager.getDatabaseContext( SYSTEM_DATABASE_NAME );
+        DatabaseManager<?> databaseManager = getDatabaseManager();
+        var defaultDatabase = databaseManager.getDatabaseContext( DEFAULT_DATABASE_NAME );
+        var systemDatabase = databaseManager.getDatabaseContext( SYSTEM_DATABASE_NAME );
 
         assertTrue( defaultDatabase.isPresent() );
         assertTrue( systemDatabase.isPresent() );
@@ -108,8 +108,7 @@ class CommunityGlobalTransactionStatsIT
         }
     }
 
-    @SuppressWarnings( "unchecked" )
-    private DatabaseManager<StandaloneDatabaseContext> getDatabaseManager()
+    private DatabaseManager<?> getDatabaseManager()
     {
         return ((GraphDatabaseAPI) database).getDependencyResolver().resolveDependency( DatabaseManager.class );
     }

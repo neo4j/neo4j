@@ -24,6 +24,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.Collections;
+import java.util.Optional;
 import java.util.TreeMap;
 
 import org.neo4j.collection.Dependencies;
@@ -40,7 +41,6 @@ import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 
 import static java.util.Collections.singletonMap;
-import static java.util.Optional.of;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -57,6 +57,7 @@ class DbmsDiagnosticsManagerTest
     private Database defaultDatabase;
 
     @BeforeEach
+    @SuppressWarnings( "unchecked" )
     void setUp() throws IOException
     {
         logProvider = new AssertableLogProvider();
@@ -73,7 +74,7 @@ class DbmsDiagnosticsManagerTest
 
         StandaloneDatabaseContext context = mock( StandaloneDatabaseContext.class );
         when( context.database() ).thenReturn( defaultDatabase );
-        when( databaseManager.getDatabaseContext( DEFAULT_DATABASE_NAME ) ).thenReturn( of( context ) );
+        when( databaseManager.getDatabaseContext( DEFAULT_DATABASE_NAME ) ).thenReturn( Optional.of( context ) );
         when( databaseManager.registeredDatabases() ).thenReturn( new TreeMap<>( singletonMap( DEFAULT_DATABASE_NAME, context ) ) );
 
         diagnosticsManager = new DbmsDiagnosticsManager( dependencies, new SimpleLogService( logProvider ) );

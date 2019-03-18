@@ -45,9 +45,9 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLog;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.monitoring.DatabaseEventHandlers;
-import org.neo4j.monitoring.DatabaseHealth;
+import org.neo4j.monitoring.Health;
 import org.neo4j.monitoring.DatabasePanicEventGenerator;
-import org.neo4j.monitoring.SingleDatabaseHealth;
+import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.storageengine.api.ConstraintRule;
 import org.neo4j.storageengine.api.ConstraintRuleAccessor;
 import org.neo4j.storageengine.api.IndexUpdateListener;
@@ -82,7 +82,7 @@ public class RecordStorageEngineRule extends ExternalResource
         return new Builder( fs, pageCache, databaseLayout );
     }
 
-    private RecordStorageEngine get( FileSystemAbstraction fs, PageCache pageCache, DatabaseHealth databaseHealth,
+    private RecordStorageEngine get( FileSystemAbstraction fs, PageCache pageCache, Health databaseHealth,
             DatabaseLayout databaseLayout, Function<BatchTransactionApplierFacade,BatchTransactionApplierFacade> transactionApplierTransformer,
             IndexUpdateListener indexUpdateListener, NodeLabelUpdateListener nodeLabelUpdateListener, LockService lockService, TokenHolders tokenHolders,
             Config config, ConstraintRuleAccessor constraintSemantics )
@@ -109,7 +109,7 @@ public class RecordStorageEngineRule extends ExternalResource
     {
         private final FileSystemAbstraction fs;
         private final PageCache pageCache;
-        private DatabaseHealth databaseHealth = new SingleDatabaseHealth(
+        private Health databaseHealth = new DatabaseHealth(
                 new DatabasePanicEventGenerator( new DatabaseEventHandlers( NullLog.getInstance() ) ),
                 NullLog.getInstance() );
         private final DatabaseLayout databaseLayout;
@@ -161,7 +161,7 @@ public class RecordStorageEngineRule extends ExternalResource
             return this;
         }
 
-        public Builder databaseHealth( DatabaseHealth databaseHealth )
+        public Builder databaseHealth( Health databaseHealth )
         {
             this.databaseHealth = databaseHealth;
             return this;
@@ -218,7 +218,7 @@ public class RecordStorageEngineRule extends ExternalResource
         ExtendedRecordStorageEngine( DatabaseLayout databaseLayout, Config config, PageCache pageCache, FileSystemAbstraction fs,
                 LogProvider logProvider, TokenHolders tokenHolders, SchemaState schemaState,
                 ConstraintRuleAccessor constraintSemantics,
-                LockService lockService, DatabaseHealth databaseHealth,
+                LockService lockService, Health databaseHealth,
                 IdGeneratorFactory idGeneratorFactory, IdController idController,
                 Function<BatchTransactionApplierFacade,BatchTransactionApplierFacade> transactionApplierTransformer )
         {

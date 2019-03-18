@@ -142,6 +142,7 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.monitoring.DatabaseEventHandlers;
 import org.neo4j.monitoring.DatabaseHealth;
+import org.neo4j.monitoring.Health;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.resources.CpuClock;
 import org.neo4j.resources.HeapAllocation;
@@ -425,6 +426,7 @@ public class Database extends LifecycleAdapter
 
             databaseDependencies.resolveDependency( DbmsDiagnosticsManager.class ).dumpDatabaseDiagnostics( this );
 
+            life.add( databaseHealth );
             life.add( databaseAvailabilityGuard );
             life.add( databaseAvailability );
             life.setLast( checkpointerLifecycle );
@@ -852,7 +854,7 @@ public class Database extends LifecycleAdapter
         return databaseAvailabilityGuard;
     }
 
-    public DatabaseHealth getDatabaseHealth()
+    public Health getDatabaseHealth()
     {
         return databaseHealth;
     }

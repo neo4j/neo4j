@@ -92,12 +92,12 @@ import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointerImpl;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.monitoring.SingleDatabaseHealth;
+import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.NullLog;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.monitoring.DatabaseHealth;
+import org.neo4j.monitoring.Health;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.NodePropertyAccessor;
@@ -781,10 +781,10 @@ class DatabaseRecoveryIT
         assertThrows( NotFoundException.class, () -> db.getRelationshipById( id ) );
     }
 
-    private static DatabaseHealth healthOf( GraphDatabaseService db )
+    private static Health healthOf( GraphDatabaseService db )
     {
         DependencyResolver resolver = ((GraphDatabaseAPI) db).getDependencyResolver();
-        return resolver.resolveDependency( SingleDatabaseHealth.class );
+        return resolver.resolveDependency( DatabaseHealth.class );
     }
 
     private static String createLongString()

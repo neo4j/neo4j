@@ -53,9 +53,9 @@ import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.monitoring.SingleDatabaseHealth;
-import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.monitoring.DatabaseHealth;
+import org.neo4j.logging.AssertableLogProvider;
+import org.neo4j.monitoring.Health;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.Race;
@@ -221,7 +221,7 @@ class RecoveryCleanupIT
     {
         db = startDatabase();
 
-        DatabaseHealth databaseHealth = databaseHealth( db );
+        Health databaseHealth = databaseHealth( db );
         index( db );
         someData( db );
         checkpoint( db );
@@ -299,9 +299,9 @@ class RecoveryCleanupIT
         return builder.newGraphDatabase();
     }
 
-    private static DatabaseHealth databaseHealth( GraphDatabaseService db )
+    private static Health databaseHealth( GraphDatabaseService db )
     {
-        return dependencyResolver( db ).resolveDependency( SingleDatabaseHealth.class );
+        return dependencyResolver( db ).resolveDependency( DatabaseHealth.class );
     }
 
     private static CheckPointer checkPointer( GraphDatabaseService db )

@@ -26,7 +26,7 @@ import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.dmbs.database.DefaultDatabaseManager;
 import org.neo4j.graphdb.factory.module.GlobalModule;
 import org.neo4j.graphdb.factory.module.edition.context.StandaloneDatabaseComponents;
-import org.neo4j.graphdb.factory.module.edition.context.DatabaseComponents;
+import org.neo4j.graphdb.factory.module.edition.context.EditionDatabaseComponents;
 import org.neo4j.graphdb.factory.module.id.IdContextFactory;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
@@ -44,7 +44,7 @@ public abstract class StandaloneEditionModule extends AbstractEditionModule
     protected Function<Locks,StatementLocksFactory> statementLocksFactoryProvider;
 
     @Override
-    public DatabaseComponents createDatabaseComponents( String databaseName )
+    public EditionDatabaseComponents createDatabaseComponents( String databaseName )
     {
         return new StandaloneDatabaseComponents( this, databaseName );
     }

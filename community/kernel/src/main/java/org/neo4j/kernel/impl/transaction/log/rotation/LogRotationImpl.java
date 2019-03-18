@@ -27,7 +27,7 @@ import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.rotation.monitor.LogRotationMonitor;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogRotateEvent;
-import org.neo4j.monitoring.DatabaseHealth;
+import org.neo4j.monitoring.Health;
 import org.neo4j.util.VisibleForTesting;
 
 /**
@@ -38,10 +38,10 @@ public class LogRotationImpl implements LogRotation
     private final Clock clock;
     private final LogRotationMonitor monitor;
     private final LogFiles logFiles;
-    private final DatabaseHealth databaseHealth;
+    private final Health databaseHealth;
     private final LogFile logFile;
 
-    public LogRotationImpl( LogFiles logFiles, Clock clock, DatabaseHealth databaseHealth, LogRotationMonitor monitor )
+    public LogRotationImpl( LogFiles logFiles, Clock clock, Health databaseHealth, LogRotationMonitor monitor )
     {
         this.clock = clock;
         this.monitor = monitor;

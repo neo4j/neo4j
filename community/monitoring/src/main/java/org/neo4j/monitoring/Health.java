@@ -17,29 +17,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.dbms.database;
+package org.neo4j.monitoring;
 
-/** * An error
- */
-public class UnableToStartDatabaseException extends DatabaseManagerException
+public interface Health
 {
-    public UnableToStartDatabaseException()
-    {
-        super();
-    }
+    <EXCEPTION extends Throwable> void assertHealthy( Class<EXCEPTION> panicDisguise ) throws EXCEPTION;
 
-    public UnableToStartDatabaseException( String message )
-    {
-        super( message );
-    }
+    void panic( Throwable cause );
 
-    public UnableToStartDatabaseException( String message, Throwable cause )
-    {
-        super( message, cause );
-    }
+    boolean isHealthy();
 
-    public UnableToStartDatabaseException( Throwable cause )
-    {
-        super( cause );
-    }
+    boolean healed();
+
+    Throwable cause();
 }

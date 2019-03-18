@@ -30,7 +30,7 @@ import org.neo4j.dbms.database.DatabaseManager;
 
 public class TransactionStateMachineSPIProviderV1 extends DefaultDatabaseTransactionStatementSPIProvider
 {
-    TransactionStateMachineSPIProviderV1( DatabaseManager databaseManager, String activeDatabaseName, BoltChannel boltChannel, Duration awaitDuration,
+    TransactionStateMachineSPIProviderV1( DatabaseManager<?> databaseManager, String activeDatabaseName, BoltChannel boltChannel, Duration awaitDuration,
             Clock clock )
     {
         super( databaseManager, activeDatabaseName, boltChannel, awaitDuration, clock );

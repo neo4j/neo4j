@@ -26,7 +26,6 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 
 public interface DatabaseManager<DB extends DatabaseContext> extends Lifecycle
 {
-
     /**
      * Returns a given {@link DatabaseContext} object by name, or `Optional.empty()` if the database does not exist
      *
@@ -74,5 +73,4 @@ public interface DatabaseManager<DB extends DatabaseContext> extends Lifecycle
      * @return a Map from database names to database objects.
      */
     SortedMap<String,DB> registeredDatabases();
-
 }

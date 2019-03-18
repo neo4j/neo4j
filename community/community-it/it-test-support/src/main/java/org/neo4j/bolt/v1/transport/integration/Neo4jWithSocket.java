@@ -95,7 +95,7 @@ public class Neo4jWithSocket extends ExternalResource
         return workingDirectory;
     }
 
-    public DatabaseManager getDatabaseManager()
+    public DatabaseManager<?> getDatabaseManager()
     {
         DependencyResolver resolver = ((GraphDatabaseAPI) gdb).getDependencyResolver();
         return resolver.resolveDependency( DatabaseManager.class );

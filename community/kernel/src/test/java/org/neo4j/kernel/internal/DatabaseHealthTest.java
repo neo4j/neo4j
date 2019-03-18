@@ -25,9 +25,9 @@ import java.io.IOException;
 
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.monitoring.DatabaseHealth;
+import org.neo4j.monitoring.Health;
 import org.neo4j.monitoring.DatabasePanicEventGenerator;
-import org.neo4j.monitoring.SingleDatabaseHealth;
+import org.neo4j.monitoring.DatabaseHealth;
 
 import static org.hamcrest.Matchers.sameInstance;
 import static org.hamcrest.core.Is.is;
@@ -38,14 +38,14 @@ import static org.mockito.Mockito.verify;
 import static org.neo4j.graphdb.event.ErrorState.TX_MANAGER_NOT_OK;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 
-class SingleDatabaseHealthTest
+class DatabaseHealthTest
 {
     @Test
     void shouldGenerateDatabasePanicEvents()
     {
         // GIVEN
         DatabasePanicEventGenerator generator = mock( DatabasePanicEventGenerator.class );
-        DatabaseHealth databaseHealth = new SingleDatabaseHealth( generator, NullLogProvider.getInstance().getLog( SingleDatabaseHealth.class ) );
+        Health databaseHealth = new DatabaseHealth( generator, NullLogProvider.getInstance().getLog( DatabaseHealth.class ) );
         databaseHealth.healed();
 
         // WHEN
@@ -62,8 +62,8 @@ class SingleDatabaseHealthTest
     {
         // GIVEN
         AssertableLogProvider logProvider = new AssertableLogProvider();
-        DatabaseHealth databaseHealth = new SingleDatabaseHealth( mock( DatabasePanicEventGenerator.class ),
-                logProvider.getLog( SingleDatabaseHealth.class ) );
+        Health databaseHealth = new DatabaseHealth( mock( DatabasePanicEventGenerator.class ),
+                logProvider.getLog( DatabaseHealth.class ) );
         databaseHealth.healed();
 
         // WHEN
@@ -73,7 +73,7 @@ class SingleDatabaseHealthTest
 
         // THEN
         logProvider.assertAtLeastOnce(
-                inLog( SingleDatabaseHealth.class ).error(
+                inLog( DatabaseHealth.class ).error(
                         is( "Database panic: The database has encountered a critical error, " +
                                 "and needs to be restarted. Please see database logs for more details." ),
                         sameInstance( exception )
@@ -85,8 +85,8 @@ class SingleDatabaseHealthTest
     void healDatabaseWithoutCriticalErrors()
     {
         AssertableLogProvider logProvider = new AssertableLogProvider();
-        DatabaseHealth databaseHealth = new SingleDatabaseHealth( mock( DatabasePanicEventGenerator.class ),
-                logProvider.getLog( SingleDatabaseHealth.class ) );
+        Health databaseHealth = new DatabaseHealth( mock( DatabasePanicEventGenerator.class ),
+                logProvider.getLog( DatabaseHealth.class ) );
 
         assertTrue( databaseHealth.isHealthy() );
 
@@ -102,8 +102,8 @@ class SingleDatabaseHealthTest
     void databaseWithCriticalErrorsCanNotBeHealed()
     {
         AssertableLogProvider logProvider = new AssertableLogProvider();
-        DatabaseHealth databaseHealth = new SingleDatabaseHealth( mock( DatabasePanicEventGenerator.class ),
-                logProvider.getLog( SingleDatabaseHealth.class ) );
+        Health databaseHealth = new DatabaseHealth( mock( DatabasePanicEventGenerator.class ),
+                logProvider.getLog( DatabaseHealth.class ) );
 
         assertTrue( databaseHealth.isHealthy() );
 

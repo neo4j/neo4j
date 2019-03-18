@@ -25,7 +25,7 @@ import org.neo4j.common.DependencyResolver;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.DatabaseConfig;
-import org.neo4j.graphdb.factory.module.edition.context.DatabaseComponents;
+import org.neo4j.graphdb.factory.module.edition.context.EditionDatabaseComponents;
 import org.neo4j.function.Factory;
 import org.neo4j.graphdb.factory.module.id.DatabaseIdContext;
 import org.neo4j.internal.id.IdController;
@@ -54,12 +54,12 @@ import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.StoreCopyCheckPointMutex;
 import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier;
-import org.neo4j.monitoring.SingleDatabaseHealth;
+import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.kernel.internal.TransactionEventHandlers;
 import org.neo4j.kernel.monitoring.tracing.Tracers;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.monitoring.DatabaseEventHandlers;
-import org.neo4j.monitoring.DatabaseHealth;
+import org.neo4j.monitoring.Health;
 import org.neo4j.monitoring.DatabasePanicEventGenerator;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.scheduler.JobScheduler;
@@ -109,7 +109,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     private final DatabaseMigratorFactory databaseMigratorFactory;
     private final StorageEngineFactory storageEngineFactory;
 
-    ModularDatabaseCreationContext( String databaseName, GlobalModule globalModule, DatabaseComponents perEditionComponents,
+    ModularDatabaseCreationContext( String databaseName, GlobalModule globalModule, EditionDatabaseComponents perEditionComponents,
             GlobalProcedures globalProcedures, GraphDatabaseFacade facade )
     {
         this.databaseName = databaseName;
@@ -131,8 +131,9 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
         this.fs = globalModule.getFileSystem();
         this.transactionStats = perEditionComponents.getTransactionMonitor();
         this.eventHandlers = new DatabaseEventHandlers( logService.getInternalLog( DatabaseEventHandlers.class ) );
-        this.databaseHealth = perEditionComponents.createDatabaseHealth( new DatabasePanicEventGenerator( eventHandlers ),
-                logService.getInternalLog( SingleDatabaseHealth.class ) );
+        this.databaseHealth = globalModule.getGlobalHealthService()
+                .createDatabaseHealth( new DatabasePanicEventGenerator( eventHandlers ),
+                        logService.getInternalLog( DatabaseHealth.class ) );
         this.transactionHeaderInformationFactory = perEditionComponents.getHeaderInformationFactory();
         this.commitProcessFactory = perEditionComponents.getCommitProcessFactory();
         this.pageCache = globalModule.getPageCache();

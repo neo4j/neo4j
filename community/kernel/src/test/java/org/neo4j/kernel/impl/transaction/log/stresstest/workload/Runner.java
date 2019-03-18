@@ -41,12 +41,12 @@ import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotationImpl;
 import org.neo4j.kernel.impl.transaction.log.rotation.monitor.LogRotationMonitorAdapter;
-import org.neo4j.monitoring.SingleDatabaseHealth;
+import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLog;
 import org.neo4j.monitoring.DatabaseEventHandlers;
-import org.neo4j.monitoring.DatabaseHealth;
+import org.neo4j.monitoring.Health;
 import org.neo4j.monitoring.DatabasePanicEventGenerator;
 import org.neo4j.storageengine.api.TransactionIdStore;
 
@@ -114,7 +114,7 @@ public class Runner implements Callable<Long>
         Log log = NullLog.getInstance();
         DatabaseEventHandlers databaseEventHandlers = new DatabaseEventHandlers( log );
         DatabasePanicEventGenerator panicEventGenerator = new DatabasePanicEventGenerator( databaseEventHandlers );
-        DatabaseHealth databaseHealth = new SingleDatabaseHealth( panicEventGenerator, log );
+        Health databaseHealth = new DatabaseHealth( panicEventGenerator, log );
         LogRotationImpl logRotation = new LogRotationImpl( logFiles, Clock.systemUTC(), databaseHealth, LogRotationMonitorAdapter.EMPTY );
         return new BatchingTransactionAppender( logFiles, logRotation,
                 transactionMetadataCache, transactionIdStore, databaseHealth );

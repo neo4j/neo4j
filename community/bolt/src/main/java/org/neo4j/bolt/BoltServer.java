@@ -42,7 +42,6 @@ import org.neo4j.bolt.transport.NettyServer.ProtocolInitializer;
 import org.neo4j.bolt.transport.SocketTransport;
 import org.neo4j.bolt.transport.TransportThrottleGroup;
 import org.neo4j.common.DependencyResolver;
-import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.BoltConnector;
@@ -67,7 +66,7 @@ import static java.util.stream.Collectors.toMap;
 public class BoltServer extends LifecycleAdapter
 {
     // platform dependencies
-    private final DatabaseManager<? extends DatabaseContext> databaseManager;
+    private final DatabaseManager<?> databaseManager;
     private final JobScheduler jobScheduler;
     private final ConnectorPortRegister connectorPortRegister;
     private final NetworkConnectionTracker connectionTracker;
@@ -81,7 +80,7 @@ public class BoltServer extends LifecycleAdapter
 
     private final LifeSupport life = new LifeSupport();
 
-    public BoltServer( DatabaseManager databaseManager, JobScheduler jobScheduler,
+    public BoltServer( DatabaseManager<?> databaseManager, JobScheduler jobScheduler,
             ConnectorPortRegister connectorPortRegister, NetworkConnectionTracker connectionTracker, Config config, Clock clock,
             Monitors monitors, LogService logService, DependencyResolver dependencyResolver )
     {

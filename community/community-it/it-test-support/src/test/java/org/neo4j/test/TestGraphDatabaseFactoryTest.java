@@ -71,7 +71,7 @@ class TestGraphDatabaseFactoryTest
     private void checkAvailableDatabases( GraphDatabaseAPI database )
     {
         DependencyResolver resolver = database.getDependencyResolver();
-        DatabaseManager databaseManager = resolver.resolveDependency( DatabaseManager.class );
+        DatabaseManager<?> databaseManager = resolver.resolveDependency( DatabaseManager.class );
         Config config = resolver.resolveDependency( Config.class );
 
         assertTrue( databaseManager.getDatabaseContext( SYSTEM_DATABASE_NAME ).isPresent() );

@@ -86,6 +86,7 @@ class StoreSizeBeanTest
 
         Dependencies dependencies = new Dependencies();
         Config config = Config.defaults( default_schema_provider, indexProvider.getProviderDescriptor().name() );
+        @SuppressWarnings( "unchecked" )
         DatabaseManager<StandaloneDatabaseContext> databaseManager = mock( DatabaseManager.class );
         StandaloneDatabaseContext context = mock( StandaloneDatabaseContext.class );
         GraphDatabaseAPI db = mock( GraphDatabaseAPI.class );

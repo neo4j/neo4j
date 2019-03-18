@@ -19,6 +19,9 @@
  */
 package org.neo4j.dbms.database;
 
+/**
+ * A {@link DatabaseManager} tried to create a new database, but a database with that name already exists.
+ */
 public class DatabaseExistsException extends DatabaseManagerException
 {
     public DatabaseExistsException()

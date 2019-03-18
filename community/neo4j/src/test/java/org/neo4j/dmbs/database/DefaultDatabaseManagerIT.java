@@ -28,6 +28,7 @@ import java.util.ArrayList;
 import java.util.Map;
 import java.util.Optional;
 
+import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseExistsException;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.dbms.database.StandaloneDatabaseContext;
@@ -67,16 +68,16 @@ class DefaultDatabaseManagerIT
     @Test
     void createDatabase()
     {
-        DatabaseManager<StandaloneDatabaseContext> databaseManager = getDatabaseManager();
-        assertThrows( DatabaseExistsException.class, () -> databaseManager.createDatabase( DEFAULT_DATABASE_NAME ) );
+        DatabaseManager<?> databaseManager = getDatabaseManager();
+        assertThrows( IllegalStateException.class, () -> databaseManager.createDatabase( DEFAULT_DATABASE_NAME ) );
     }
 
     @Test
     void lookupExistingDatabase()
     {
-        DatabaseManager<StandaloneDatabaseContext> databaseManager = getDatabaseManager();
-        Optional<StandaloneDatabaseContext> defaultDatabaseContext = databaseManager.getDatabaseContext( DEFAULT_DATABASE_NAME );
-        Optional<StandaloneDatabaseContext> systemDatabaseContext = databaseManager.getDatabaseContext( SYSTEM_DATABASE_NAME );
+        DatabaseManager<?> databaseManager = getDatabaseManager();
+        var defaultDatabaseContext = databaseManager.getDatabaseContext( DEFAULT_DATABASE_NAME );
+        var systemDatabaseContext = databaseManager.getDatabaseContext( SYSTEM_DATABASE_NAME );
 
         assertTrue( defaultDatabaseContext.isPresent() );
         assertTrue( systemDatabaseContext.isPresent() );
@@ -85,8 +86,8 @@ class DefaultDatabaseManagerIT
     @Test
     void listDatabases()
     {
-        DatabaseManager<StandaloneDatabaseContext> databaseManager = getDatabaseManager();
-        Map<String,StandaloneDatabaseContext> databases = databaseManager.registeredDatabases();
+        DatabaseManager<?> databaseManager = getDatabaseManager();
+        var databases = databaseManager.registeredDatabases();
         assertEquals( 2, databases.size()  );
         ArrayList<String> databaseNames = new ArrayList<>( databases.keySet() );
         assertEquals( DEFAULT_DATABASE_NAME, databaseNames.get( 0 ) );
@@ -96,13 +97,12 @@ class DefaultDatabaseManagerIT
     @Test
     void shutdownDatabaseOnStop() throws Throwable
     {
-        DatabaseManager<StandaloneDatabaseContext> databaseManager = getDatabaseManager();
+        DatabaseManager<?> databaseManager = getDatabaseManager();
         databaseManager.stop();
         assertFalse( database.isAvailable( 0 ) );
     }
 
-    @SuppressWarnings( "unchecked" )
-    private DatabaseManager<StandaloneDatabaseContext> getDatabaseManager()
+    private DatabaseManager<?> getDatabaseManager()
     {
         return ((GraphDatabaseAPI)database).getDependencyResolver().resolveDependency( DatabaseManager.class );
     }

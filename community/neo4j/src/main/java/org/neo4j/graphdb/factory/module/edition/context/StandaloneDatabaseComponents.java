@@ -33,12 +33,12 @@ import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.StatementLocksFactory;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats;
-import org.neo4j.monitoring.SingleDatabaseHealth;
+import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.logging.Log;
 import org.neo4j.monitoring.DatabasePanicEventGenerator;
 import org.neo4j.token.TokenHolders;
 
-public class StandaloneDatabaseComponents implements DatabaseComponents
+public class StandaloneDatabaseComponents implements EditionDatabaseComponents
 {
     private final Function<DatabaseLayout,DatabaseLayoutWatcher> watcherServiceFactory;
     private final AccessCapability accessCapability;
@@ -139,11 +139,5 @@ public class StandaloneDatabaseComponents implements DatabaseComponents
     public DatabaseTransactionStats getTransactionMonitor()
     {
         return transactionMonitor;
-    }
-
-    @Override
-    public SingleDatabaseHealth createDatabaseHealth( DatabasePanicEventGenerator dbpe, Log log )
-    {
-        return new SingleDatabaseHealth( dbpe, log );
     }
 }

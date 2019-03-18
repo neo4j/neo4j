@@ -19,45 +19,109 @@
  */
 package org.neo4j.monitoring;
 
-public interface DatabaseHealth
+import java.util.Objects;
+
+import org.neo4j.graphdb.event.ErrorState;
+import org.neo4j.helpers.Exceptions;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.logging.Log;
+
+public class DatabaseHealth extends LifecycleAdapter implements Health
 {
-    static <EXCEPTION extends Throwable> EXCEPTION constructPanicDisguise( Class<EXCEPTION> panicDisguise, String panicMessage, Throwable causeOfPanic )
+    private static final String panicMessage = "The database has encountered a critical error, " +
+            "and needs to be restarted. Please see database logs for more details.";
+    private static final Class<?>[] CRITICAL_EXCEPTIONS = new Class[]{OutOfMemoryError.class};
+
+    private volatile boolean healthy = true;
+    private final DatabasePanicEventGenerator dbpe;
+    private final Log log;
+    private volatile Throwable causeOfPanic;
+    private final CompositeDatabaseHealth globalHealth;
+
+    public DatabaseHealth( DatabasePanicEventGenerator dbpe, Log log )
     {
-        EXCEPTION exception;
-        try
-        {
-            try
-            {
-                exception = panicDisguise.getConstructor( String.class, Throwable.class )
-                        .newInstance( panicMessage, causeOfPanic );
-            }
-            catch ( NoSuchMethodException e )
-            {
-                exception = panicDisguise.getConstructor( String.class ).newInstance( panicMessage );
-                try
-                {
-                    exception.initCause( causeOfPanic );
-                }
-                catch ( IllegalStateException ignored )
-                {
-                }
-            }
-        }
-        catch ( Exception e )
-        {
-            throw new Error( panicMessage + ". An exception of type " + panicDisguise.getName() +
-                    " was requested to be thrown but that proved impossible", e );
-        }
-        return exception;
+        this( dbpe, log, null );
     }
 
-    <EXCEPTION extends Throwable> void assertHealthy( Class<EXCEPTION> panicDisguise ) throws EXCEPTION;
+    public DatabaseHealth( DatabasePanicEventGenerator dbpe, Log log, CompositeDatabaseHealth globalHealth )
+    {
+        this.dbpe = dbpe;
+        this.log = log;
+        this.globalHealth = globalHealth;
+    }
 
-    void panic( Throwable cause );
+    @Override
+    public void stop() throws Exception
+    {
+       if ( globalHealth != null )
+       {
+           globalHealth.removeDatabaseHealth( this );
+       }
+    }
 
-    boolean isHealthy();
+    /**
+     * Asserts that the database is in good health. If that is not the case then the cause of the
+     * unhealthy state is wrapped in an exception of the given type, i.e. the panic disguise.
+     *
+     * @param panicDisguise the cause of the unhealthy state wrapped in an exception of this type.
+     * @throws EXCEPTION exception type to wrap cause in.
+     */
+    @Override
+    public <EXCEPTION extends Throwable> void assertHealthy( Class<EXCEPTION> panicDisguise ) throws EXCEPTION
+    {
+        if ( !healthy )
+        {
+            throw Exceptions.disguiseException( panicDisguise, panicMessage, causeOfPanic );
+        }
+    }
 
-    boolean healed();
+    @Override
+    public synchronized void panic( Throwable cause )
+    {
+        if ( !healthy )
+        {
+            return;
+        }
 
-    Throwable cause();
+        Objects.requireNonNull( cause, "Must provide a non null cause for the database panic" );
+        this.causeOfPanic = cause;
+        this.healthy = false;
+        log.error( "Database panic: " + panicMessage, cause );
+        dbpe.generateEvent( ErrorState.TX_MANAGER_NOT_OK, causeOfPanic );
+    }
+
+    @Override
+    public boolean isHealthy()
+    {
+        return healthy;
+    }
+
+    @Override
+    public synchronized boolean healed()
+    {
+        if ( hasCriticalFailure() )
+        {
+            log.error( "Database encountered a critical error and can't be healed. Restart required." );
+            return false;
+        }
+        else
+        {
+            healthy = true;
+            causeOfPanic = null;
+            log.info( "Database health set to OK" );
+            return true;
+        }
+    }
+
+    private boolean hasCriticalFailure()
+    {
+        return !isHealthy() && Exceptions.contains( causeOfPanic, CRITICAL_EXCEPTIONS );
+    }
+
+    @Override
+    public Throwable cause()
+    {
+        return causeOfPanic;
+    }
+
 }

@@ -23,7 +23,7 @@ import java.util.function.Supplier;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.module.edition.AbstractEditionModule;
-import org.neo4j.graphdb.factory.module.edition.context.DatabaseComponents;
+import org.neo4j.graphdb.factory.module.edition.context.EditionDatabaseComponents;
 import org.neo4j.kernel.api.InwardKernel;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.database.Database;
@@ -43,7 +43,7 @@ public class DatabaseModule
 
     public DatabaseModule( String databaseName, GlobalModule globalModule, AbstractEditionModule editionModule, GraphDatabaseFacade graphDatabaseFacade )
     {
-        DatabaseComponents editionDatabaseComponents = editionModule.createDatabaseComponents( databaseName );
+        EditionDatabaseComponents editionDatabaseComponents = editionModule.createDatabaseComponents( databaseName );
         GlobalProcedures globalProcedures = editionModule.getGlobalProcedures();
         ModularDatabaseCreationContext context = new ModularDatabaseCreationContext( databaseName, globalModule, editionDatabaseComponents,
                 globalProcedures, graphDatabaseFacade );

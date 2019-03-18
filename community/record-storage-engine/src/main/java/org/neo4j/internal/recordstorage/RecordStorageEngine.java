@@ -63,7 +63,7 @@ import org.neo4j.lock.LockService;
 import org.neo4j.lock.ResourceLocker;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.monitoring.DatabaseHealth;
+import org.neo4j.monitoring.Health;
 import org.neo4j.storageengine.api.CommandCreationContext;
 import org.neo4j.storageengine.api.CommandsToApply;
 import org.neo4j.storageengine.api.ConstraintRuleAccessor;
@@ -94,7 +94,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
 {
     private final NeoStores neoStores;
     private final TokenHolders tokenHolders;
-    private final DatabaseHealth databaseHealth;
+    private final Health databaseHealth;
     private final SchemaCache schemaCache;
     private final IntegrityValidator integrityValidator;
     private final CacheAccessBackDoor cacheAccess;
@@ -124,7 +124,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             SchemaState schemaState,
             ConstraintRuleAccessor constraintSemantics,
             LockService lockService,
-            DatabaseHealth databaseHealth,
+            Health databaseHealth,
             IdGeneratorFactory idGeneratorFactory,
             IdController idController,
             VersionContextSupplier versionContextSupplier )

@@ -352,4 +352,33 @@ public class Exceptions
         return initial;
     }
 
+    public static <EXCEPTION extends Throwable> EXCEPTION disguiseException( Class<EXCEPTION> disguise, String message, Throwable disguised )
+    {
+        EXCEPTION exception;
+        try
+        {
+            try
+            {
+                exception = disguise.getConstructor( String.class, Throwable.class )
+                        .newInstance( message, disguised );
+            }
+            catch ( NoSuchMethodException e )
+            {
+                exception = disguise.getConstructor( String.class ).newInstance( message );
+                try
+                {
+                    exception.initCause( disguised );
+                }
+                catch ( IllegalStateException ignored )
+                {
+                }
+            }
+        }
+        catch ( Exception e )
+        {
+            throw new Error( message + ". An exception of type " + disguise.getName() +
+                    " was requested to be thrown but that proved impossible", e );
+        }
+        return exception;
+    }
 }

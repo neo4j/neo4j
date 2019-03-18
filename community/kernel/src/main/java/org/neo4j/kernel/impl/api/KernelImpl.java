@@ -36,7 +36,7 @@ import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.impl.newapi.DefaultThreadSafeCursors;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-import org.neo4j.monitoring.DatabaseHealth;
+import org.neo4j.monitoring.Health;
 import org.neo4j.storageengine.api.StorageEngine;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_timeout;
@@ -59,14 +59,14 @@ public class KernelImpl extends LifecycleAdapter implements InwardKernel
 {
     private final KernelTransactions transactions;
     private final TransactionHooks hooks;
-    private final DatabaseHealth health;
+    private final Health health;
     private final TransactionMonitor transactionMonitor;
     private final GlobalProcedures globalProcedures;
     private final Config config;
     private DefaultThreadSafeCursors cursors;
     private volatile boolean isRunning;
 
-    public KernelImpl( KernelTransactions transactionFactory, TransactionHooks hooks, DatabaseHealth health,
+    public KernelImpl( KernelTransactions transactionFactory, TransactionHooks hooks, Health health,
                        TransactionMonitor transactionMonitor,
                        GlobalProcedures globalProcedures, Config config, StorageEngine storageEngine )
     {

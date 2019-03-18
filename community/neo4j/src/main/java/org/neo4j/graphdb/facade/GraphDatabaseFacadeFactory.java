@@ -144,7 +144,7 @@ public class GraphDatabaseFacadeFactory
 
         LogService logService = globalModule.getLogService();
         Logger logger = logService.getInternalLog( getClass() ).infoLogger();
-        DatabaseManager<? extends DatabaseContext> databaseManager = createAndInitializeDatabaseManager( globalModule, edition, graphDatabaseFacade, logger );
+        DatabaseManager<?> databaseManager = createAndInitializeDatabaseManager( globalModule, edition, graphDatabaseFacade, logger );
 
         GlobalProcedures globalProcedures = setupProcedures( globalModule, edition, databaseManager );
         globalDependencies.satisfyDependency( new NonTransactionalDbmsOperations( globalProcedures ) );
@@ -215,7 +215,7 @@ public class GraphDatabaseFacadeFactory
      */
     @SuppressWarnings( "unused" )
     private static GlobalProcedures setupProcedures( GlobalModule platform, AbstractEditionModule editionModule,
-            DatabaseManager<? extends DatabaseContext> databaseManager )
+            DatabaseManager<?> databaseManager )
     {
         Config globalConfig = platform.getGlobalConfig();
         File proceduresDirectory = globalConfig.get( GraphDatabaseSettings.plugin_dir );
@@ -272,17 +272,17 @@ public class GraphDatabaseFacadeFactory
     }
 
     private static BoltServer createBoltServer( GlobalModule platform, AbstractEditionModule edition,
-            DatabaseManager<? extends DatabaseContext> databaseManager )
+            DatabaseManager<?> databaseManager )
     {
         return new BoltServer( databaseManager, platform.getJobScheduler(), platform.getConnectorPortRegister(), edition.getConnectionTracker(),
                 platform.getGlobalConfig(), platform.getGlobalClock(), platform.getGlobalMonitors(), platform.getLogService(),
                 platform.getGlobalDependencies() );
     }
 
-    private static DatabaseManager<? extends DatabaseContext> createAndInitializeDatabaseManager( GlobalModule platform,
+    private static DatabaseManager<?> createAndInitializeDatabaseManager( GlobalModule platform,
             AbstractEditionModule edition, GraphDatabaseFacade facade, Logger logger )
     {
-        DatabaseManager<? extends DatabaseContext> databaseManager = edition.createDatabaseManager( facade, platform, logger );
+        DatabaseManager<?> databaseManager = edition.createDatabaseManager( facade, platform, logger );
         if ( !edition.handlesDatabaseManagerLifecycle() )
         {
             // only add database manager to the lifecycle when edition doesn't manage it already

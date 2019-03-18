@@ -71,14 +71,13 @@ class DatabaseAvailabilityIT
     {
         AvailabilityRequirement outerSpaceRequirement = () -> "outer space";
         DependencyResolver dependencyResolver = database.getDependencyResolver();
-        @SuppressWarnings( "unchecked" )
-        DatabaseManager<StandaloneDatabaseContext> databaseManager = dependencyResolver.resolveDependency( DatabaseManager.class );
+        DatabaseManager<?> databaseManager = dependencyResolver.resolveDependency( DatabaseManager.class );
         Config config = dependencyResolver.resolveDependency( Config.class );
         CompositeDatabaseAvailabilityGuard compositeGuard = dependencyResolver.resolveDependency( CompositeDatabaseAvailabilityGuard.class );
         assertTrue( compositeGuard.isAvailable() );
 
-        StandaloneDatabaseContext systemContext = databaseManager.getDatabaseContext( SYSTEM_DATABASE_NAME ).get();
-        StandaloneDatabaseContext defaultContext = databaseManager.getDatabaseContext( config.get( default_database ) ).get();
+        DatabaseContext systemContext = databaseManager.getDatabaseContext( SYSTEM_DATABASE_NAME ).get();
+        DatabaseContext defaultContext = databaseManager.getDatabaseContext( config.get( default_database ) ).get();
 
         AvailabilityGuard systemGuard = systemContext.dependencies().resolveDependency( DatabaseAvailabilityGuard.class );
         systemGuard.require( outerSpaceRequirement );

@@ -60,7 +60,7 @@ import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
-import org.neo4j.monitoring.SingleDatabaseHealth;
+import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.lock.LockService;
 import org.neo4j.lock.ResourceLocker;
@@ -356,7 +356,7 @@ class BatchingNeoStoresTest
                     new RecordStorageEngine( testDirectory.databaseLayout(), Config.defaults(), pageCache, fileSystem, NullLogProvider.getInstance(),
                             tokenHolders, new DatabaseSchemaState( NullLogProvider.getInstance() ),
                             new StandardConstraintSemantics(), LockService.NO_LOCK_SERVICE,
-                            new SingleDatabaseHealth( new DatabasePanicEventGenerator( new DatabaseEventHandlers( nullLog ) ), nullLog ),
+                            new DatabaseHealth( new DatabasePanicEventGenerator( new DatabaseEventHandlers( nullLog ) ), nullLog ),
                             new DefaultIdGeneratorFactory( fileSystem ), new DefaultIdController(), EmptyVersionContextSupplier.EMPTY ) );
             // Create the relationship type token
             TxState txState = new TxState();

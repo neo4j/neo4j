@@ -77,6 +77,7 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.logging.internal.StoreLogService;
+import org.neo4j.monitoring.CompositeDatabaseHealth;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.scheduler.DeferredExecutor;
 import org.neo4j.scheduler.Group;
@@ -118,6 +119,7 @@ public class GlobalModule
     private final CollectionsFactorySupplier collectionsFactorySupplier;
     private final ConnectorPortRegister connectorPortRegister;
     private final CompositeDatabaseAvailabilityGuard globalAvailabilityGuard;
+    private final CompositeDatabaseHealth globalHealthService;
     private final FileSystemWatcherService fileSystemWatcher;
     // In the future this may not be a global decision, but for now this is a good central place to make the decision about which storage engine to use
     private final StorageEngineFactory storageEngineFactory;
@@ -167,6 +169,8 @@ public class GlobalModule
         globalAvailabilityGuard = new CompositeDatabaseAvailabilityGuard( globalClock, logService );
         globalDependencies.satisfyDependency( globalAvailabilityGuard );
         globalLife.setLast( globalAvailabilityGuard );
+
+        globalHealthService = new CompositeDatabaseHealth();
 
         String desiredImplementationName = globalConfig.get( GraphDatabaseSettings.tracer );
         tracers = globalDependencies.satisfyDependency( new Tracers( desiredImplementationName,
@@ -491,6 +495,11 @@ public class GlobalModule
     public CompositeDatabaseAvailabilityGuard getGlobalAvailabilityGuard()
     {
         return globalAvailabilityGuard;
+    }
+
+    public CompositeDatabaseHealth getGlobalHealthService()
+    {
+        return globalHealthService;
     }
 
     public StorageEngineFactory getStorageEngineFactory()

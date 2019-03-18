@@ -40,15 +40,15 @@ import org.neo4j.logging.internal.LogService;
 
 public class BoltStateMachineFactoryImpl implements BoltStateMachineFactory
 {
-    private final DatabaseManager<? extends DatabaseContext> databaseManager;
+    private final DatabaseManager<?> databaseManager;
     private final LogService logging;
     private final Authentication authentication;
     private final Config config;
     private final Clock clock;
     private final String defaultDatabaseName;
 
-    public BoltStateMachineFactoryImpl( DatabaseManager<? extends DatabaseContext> databaseManager,
-            Authentication authentication, Clock clock, Config config, LogService logging )
+    public BoltStateMachineFactoryImpl( DatabaseManager<?> databaseManager, Authentication authentication,
+            Clock clock, Config config, LogService logging )
     {
         this.databaseManager = databaseManager;
         this.logging = logging;

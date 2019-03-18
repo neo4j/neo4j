@@ -40,9 +40,9 @@ public abstract class DefaultDatabaseTransactionStatementSPIProvider implements 
     final Clock clock;
     final BoltChannel boltChannel;
     private final String defaultDatabaseName;
-    private final DatabaseManager databaseManager;
+    private final DatabaseManager<?> databaseManager;
 
-    public DefaultDatabaseTransactionStatementSPIProvider( DatabaseManager databaseManager, String defaultDatabaseName, BoltChannel boltChannel,
+    public DefaultDatabaseTransactionStatementSPIProvider( DatabaseManager<?> databaseManager, String defaultDatabaseName, BoltChannel boltChannel,
             Duration awaitDuration, Clock clock )
     {
         this.databaseManager = databaseManager;
@@ -70,12 +70,8 @@ public abstract class DefaultDatabaseTransactionStatementSPIProvider implements 
 
     private DatabaseContext getDefaultDatabase() throws BoltIOException
     {
-        Optional<DatabaseContext> databaseContext = databaseManager.getDatabaseContext( defaultDatabaseName );
-        if ( !databaseContext.isPresent() )
-        {
-            throw new BoltIOException( Status.Database.DatabaseNotFound,
-                    format( "Default database does not exist. Default database name: '%s'", defaultDatabaseName ) );
-        }
-        return databaseContext.get();
+        return databaseManager.getDatabaseContext( defaultDatabaseName )
+                .orElseThrow( () -> new BoltIOException( Status.Database.DatabaseNotFound,
+                        format( "Default database does not exists. Default database name: '%s'", defaultDatabaseName ) ) );
     }
 }

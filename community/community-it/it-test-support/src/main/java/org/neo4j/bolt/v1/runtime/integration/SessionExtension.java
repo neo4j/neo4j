@@ -73,7 +73,7 @@ public class SessionExtension implements BeforeEachCallback, AfterEachCallback
         return machine;
     }
 
-    public DatabaseManager databaseManager()
+    public DatabaseManager<?> databaseManager()
     {
         assertTestStarted();
         DependencyResolver resolver = gdb.getDependencyResolver();
@@ -97,8 +97,7 @@ public class SessionExtension implements BeforeEachCallback, AfterEachCallback
         DependencyResolver resolver = gdb.getDependencyResolver();
         Authentication authentication = authentication( resolver.resolveDependency( AuthManager.class ),
                 resolver.resolveDependency( UserManagerSupplier.class ) );
-        @SuppressWarnings( "unchecked" )
-        DatabaseManager<? extends DatabaseContext> databaseManager = resolver.resolveDependency( DatabaseManager.class );
+        DatabaseManager<?> databaseManager = resolver.resolveDependency( DatabaseManager.class );
         Config config = resolver.resolveDependency( Config.class );
         boltFactory = new BoltStateMachineFactoryImpl(
                 databaseManager,

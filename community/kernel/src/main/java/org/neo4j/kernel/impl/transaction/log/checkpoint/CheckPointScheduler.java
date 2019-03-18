@@ -25,7 +25,7 @@ import java.util.function.BooleanSupplier;
 import org.neo4j.function.Predicates;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-import org.neo4j.monitoring.DatabaseHealth;
+import org.neo4j.monitoring.Health;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobHandle;
 import org.neo4j.scheduler.JobScheduler;
@@ -47,7 +47,7 @@ public class CheckPointScheduler extends LifecycleAdapter
     private final IOLimiter ioLimiter;
     private final JobScheduler scheduler;
     private final long recurringPeriodMillis;
-    private final DatabaseHealth health;
+    private final Health health;
     private final Throwable[] failures = new Throwable[MAX_CONSECUTIVE_FAILURES_TOLERANCE];
     private volatile int consecutiveFailures;
     private final Runnable job = new Runnable()
@@ -120,7 +120,7 @@ public class CheckPointScheduler extends LifecycleAdapter
     };
 
     public CheckPointScheduler( CheckPointer checkPointer, IOLimiter ioLimiter, JobScheduler scheduler, long recurringPeriodMillis,
-            DatabaseHealth health )
+            Health health )
     {
         this.checkPointer = checkPointer;
         this.ioLimiter = ioLimiter;

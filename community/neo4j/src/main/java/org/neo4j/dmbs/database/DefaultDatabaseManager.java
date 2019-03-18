@@ -24,6 +24,7 @@ import java.util.Optional;
 import java.util.SortedMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 
+import org.neo4j.dbms.database.DatabaseExistsException;
 import org.neo4j.dbms.database.StandaloneDatabaseContext;
 import org.neo4j.graphdb.factory.module.GlobalModule;
 import org.neo4j.graphdb.factory.module.edition.AbstractEditionModule;
@@ -31,6 +32,7 @@ import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.logging.Logger;
 
+import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 import static org.neo4j.util.Preconditions.checkState;
 
@@ -53,7 +55,8 @@ public final class DefaultDatabaseManager extends AbstractDatabaseManager<Standa
     public synchronized StandaloneDatabaseContext createDatabase( String databaseName )
     {
         requireNonNull( databaseName );
-        checkState( databases.size() < 2, "System and default database are already created. Fail to create another database:" + databaseName );
+        checkState( databases.size() < 2,
+                format( "System and default database are already created. Fail to create another database: %s", databaseName ) );
         StandaloneDatabaseContext databaseContext = createNewDatabaseContext( databaseName );
         databases.put( databaseName, databaseContext );
         return databaseContext;

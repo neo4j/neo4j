@@ -37,7 +37,7 @@ public class DummyExtensionFactory extends ExtensionFactory<DummyExtensionFactor
 
         KernelData getKernel();
 
-        DatabaseManager<StandaloneDatabaseContext> getDatabaseManager();
+        DatabaseManager<?> getDatabaseManager();
     }
 
     static final String EXTENSION_ID = "dummy";

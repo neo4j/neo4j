@@ -46,11 +46,11 @@ import org.neo4j.kernel.impl.transaction.tracing.LogForceEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogForceWaitEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogRotateEvent;
 import org.neo4j.kernel.impl.transaction.tracing.SerializeTransactionEvent;
-import org.neo4j.monitoring.SingleDatabaseHealth;
+import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.NullLog;
 import org.neo4j.monitoring.DatabaseEventHandlers;
-import org.neo4j.monitoring.DatabaseHealth;
+import org.neo4j.monitoring.Health;
 import org.neo4j.monitoring.DatabasePanicEventGenerator;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.storageengine.api.StorageCommand;
@@ -81,7 +81,7 @@ class BatchingTransactionAppenderRotationIT
     {
         LogFiles logFiles = getLogFiles( logVersionRepository, transactionIdStore );
         life.add( logFiles );
-        DatabaseHealth databaseHealth = getDatabaseHealth();
+        Health databaseHealth = getDatabaseHealth();
 
         LogRotationImpl logRotation =
                 new LogRotationImpl( logFiles, Clock.systemUTC(), databaseHealth, monitors.newMonitor( LogRotationMonitor.class ) );
@@ -125,11 +125,11 @@ class BatchingTransactionAppenderRotationIT
                 .build();
     }
 
-    private static DatabaseHealth getDatabaseHealth()
+    private static Health getDatabaseHealth()
     {
         DatabasePanicEventGenerator databasePanicEventGenerator =
                 new DatabasePanicEventGenerator( new DatabaseEventHandlers( NullLog.getInstance() ) );
-        return new SingleDatabaseHealth( databasePanicEventGenerator, NullLog.getInstance() );
+        return new DatabaseHealth( databasePanicEventGenerator, NullLog.getInstance() );
     }
 
     private static class RotationLogAppendEvent implements LogAppendEvent

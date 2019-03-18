@@ -24,13 +24,12 @@ import java.util.function.Predicate;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.dbms.database.DatabaseExistsException;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory;
 import org.neo4j.graphdb.factory.module.GlobalModule;
-import org.neo4j.graphdb.factory.module.edition.context.DatabaseComponents;
+import org.neo4j.graphdb.factory.module.edition.context.EditionDatabaseComponents;
 import org.neo4j.internal.collector.DataCollectorProcedures;
 import org.neo4j.io.fs.watcher.DatabaseLayoutWatcher;
 import org.neo4j.io.fs.watcher.FileWatcher;
@@ -80,7 +79,7 @@ public abstract class AbstractEditionModule
     protected SecurityProvider securityProvider;
     protected GlobalProcedures globalProcedures;
 
-    public abstract DatabaseComponents createDatabaseComponents( String databaseName );
+    public abstract EditionDatabaseComponents createDatabaseComponents( String databaseName );
 
     protected DatabaseLayoutWatcher createDatabaseFileSystemWatcher( FileWatcher watcher, DatabaseLayout databaseLayout, LogService logging,
             Predicate<String> fileNameFilter )
@@ -111,7 +110,7 @@ public abstract class AbstractEditionModule
 
     protected abstract void registerEditionSpecificProcedures( GlobalProcedures globalProcedures ) throws KernelException;
 
-    public abstract DatabaseManager<? extends DatabaseContext> createDatabaseManager( GraphDatabaseFacade graphDatabaseFacade,
+    public abstract DatabaseManager<?> createDatabaseManager( GraphDatabaseFacade graphDatabaseFacade,
             GlobalModule globalModule, Logger msgLog );
 
     /**
@@ -175,7 +174,7 @@ public abstract class AbstractEditionModule
         return transactionStatistic;
     }
 
-    public void createDatabases( DatabaseManager<? extends DatabaseContext> databaseManager, Config config ) throws DatabaseExistsException
+    public void createDatabases( DatabaseManager<?> databaseManager, Config config ) throws DatabaseExistsException
     {
         databaseManager.createDatabase( GraphDatabaseSettings.SYSTEM_DATABASE_NAME );
         databaseManager.createDatabase( config.get( GraphDatabaseSettings.default_database ) );

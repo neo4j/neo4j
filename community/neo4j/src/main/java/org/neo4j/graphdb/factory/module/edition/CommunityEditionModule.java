@@ -31,6 +31,7 @@ import org.neo4j.configuration.connectors.ConnectorPortRegister;
 import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.dbms.database.StandaloneDatabaseContext;
+import org.neo4j.dmbs.database.DefaultDatabaseManager;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.factory.module.GlobalModule;
 import org.neo4j.graphdb.factory.module.id.IdContextFactory;
@@ -137,9 +138,8 @@ public class CommunityEditionModule extends StandaloneEditionModule
     protected Function<String,TokenHolders> createTokenHolderProvider( GlobalModule platform )
     {
         Config globalConfig = platform.getGlobalConfig();
-        @SuppressWarnings( "unchecked" )
         Supplier<Kernel> kernelSupplier = () ->
-                ((DatabaseManager<StandaloneDatabaseContext>) platform.getGlobalDependencies().resolveDependency( DatabaseManager.class ))
+                platform.getGlobalDependencies().resolveDependency( DefaultDatabaseManager.class )
                         .getDatabaseContext( config.get( GraphDatabaseSettings.default_database ) )
                         .map( DatabaseContext::database )
                         .map( Database::getKernel )

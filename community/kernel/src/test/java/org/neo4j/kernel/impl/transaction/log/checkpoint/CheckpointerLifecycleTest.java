@@ -22,8 +22,8 @@ package org.neo4j.kernel.impl.transaction.log.checkpoint;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import org.neo4j.monitoring.SingleDatabaseHealth;
 import org.neo4j.monitoring.DatabaseHealth;
+import org.neo4j.monitoring.Health;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -34,7 +34,7 @@ import static org.mockito.Mockito.when;
 class CheckpointerLifecycleTest
 {
     private final CheckPointer checkPointer = mock( CheckPointer.class );
-    private final DatabaseHealth databaseHealth = mock( SingleDatabaseHealth.class );
+    private final Health databaseHealth = mock( DatabaseHealth.class );
     private CheckpointerLifecycle checkpointLifecycle = new CheckpointerLifecycle( checkPointer, databaseHealth );
 
     @BeforeEach

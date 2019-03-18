@@ -20,15 +20,15 @@
 package org.neo4j.kernel.impl.transaction.log.checkpoint;
 
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-import org.neo4j.monitoring.DatabaseHealth;
+import org.neo4j.monitoring.Health;
 
 public class CheckpointerLifecycle extends LifecycleAdapter
 {
     private final CheckPointer checkPointer;
-    private final DatabaseHealth databaseHealth;
+    private final Health databaseHealth;
     private volatile boolean checkpointOnShutdown = true;
 
-    public CheckpointerLifecycle( CheckPointer checkPointer, DatabaseHealth databaseHealth )
+    public CheckpointerLifecycle( CheckPointer checkPointer, Health databaseHealth )
     {
         this.checkPointer = checkPointer;
         this.databaseHealth = databaseHealth;
