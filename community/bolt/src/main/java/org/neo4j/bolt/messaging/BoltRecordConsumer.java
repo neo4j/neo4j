@@ -23,11 +23,35 @@ import java.io.IOException;
 
 import org.neo4j.values.AnyValue;
 
+/**
+ * Defines how a record is consumed.
+ * <p>
+ * The consumer expects to be called like:
+ * <pre>
+ *     beginRecord(3);
+ *     consumeField(0, "foo");
+ *     consumeField(1, "bar");
+ *     consumeField(2, "baz");
+ *     endRecord();
+ * </pre>
+ */
 public interface BoltRecordConsumer
 {
+    /**
+     * Called once before the each received record.
+     * @param numberOfFields The number of fields in the record
+     */
     void beginRecord( int numberOfFields ) throws IOException;
 
+    /**
+     * Called once for each field of the record
+     * @param offset the offset this field has in the record
+     * @param value the value of this field
+     */
     void consumeField( int offset, AnyValue value ) throws IOException;
 
+    /**
+     * Called once at the end of each received record.
+     */
     void endRecord() throws IOException;
 }
