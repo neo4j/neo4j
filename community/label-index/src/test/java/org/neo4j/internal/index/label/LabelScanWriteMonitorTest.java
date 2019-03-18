@@ -19,9 +19,9 @@
  */
 package org.neo4j.internal.index.label;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
 
@@ -30,34 +30,41 @@ import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.io.ByteUnit;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.test.extension.DefaultFileSystemExtension;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static java.lang.Math.abs;
 import static java.lang.System.currentTimeMillis;
+import static java.util.Objects.requireNonNull;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.lessThan;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 
+@ExtendWith( {DefaultFileSystemExtension.class, TestDirectoryExtension.class} )
 public class LabelScanWriteMonitorTest
 {
-    @Rule
-    public final DefaultFileSystemRule fs = new DefaultFileSystemRule();
-    @Rule
-    public final TestDirectory directory = TestDirectory.testDirectory( fs );
+    @Inject
+    private DefaultFileSystemAbstraction fs;
+    @Inject
+    public TestDirectory directory;
 
     private String baseName;
 
-    @Before
-    public void before()
+    @BeforeEach
+    void before()
     {
         baseName = LabelScanWriteMonitor.writeLogBaseFile( directory.databaseLayout() ).getName();
     }
 
     @Test
-    public void shouldRotateExistingFileOnOpen()
+    void shouldRotateExistingFileOnOpen()
     {
         // given
         LabelScanWriteMonitor writeMonitor = new LabelScanWriteMonitor( fs, directory.databaseLayout() );
@@ -68,11 +75,11 @@ public class LabelScanWriteMonitorTest
         secondWriteMonitor.close();
 
         // then
-        assertEquals( 2, directory.databaseDir().listFiles( ( dir, name ) -> name.startsWith( baseName ) ).length );
+        assertEquals( 2, requireNonNull( directory.databaseDir().listFiles( ( dir, name ) -> name.startsWith( baseName ) ) ).length );
     }
 
     @Test
-    public void shouldLogAndDumpData() throws IOException
+    void shouldLogAndDumpData() throws IOException
     {
         // given
         DatabaseLayout databaseLayout = this.directory.databaseLayout();
@@ -115,7 +122,7 @@ public class LabelScanWriteMonitorTest
     }
 
     @Test
-    public void shouldParseSimpleSingleTxFilter()
+    void shouldParseSimpleSingleTxFilter()
     {
         // given
         LabelScanWriteMonitor.TxFilter txFilter = LabelScanWriteMonitor.parseTxFilter( "123" );
@@ -127,7 +134,7 @@ public class LabelScanWriteMonitorTest
     }
 
     @Test
-    public void shouldParseRangedSingleTxFilter()
+    void shouldParseRangedSingleTxFilter()
     {
         // given
         LabelScanWriteMonitor.TxFilter txFilter = LabelScanWriteMonitor.parseTxFilter( "123-126" );
@@ -142,7 +149,7 @@ public class LabelScanWriteMonitorTest
     }
 
     @Test
-    public void shouldParseSimpleMultipleTxFilters()
+    void shouldParseSimpleMultipleTxFilters()
     {
         // given
         LabelScanWriteMonitor.TxFilter txFilter = LabelScanWriteMonitor.parseTxFilter( "123,146,123456" );
@@ -156,7 +163,7 @@ public class LabelScanWriteMonitorTest
     }
 
     @Test
-    public void shouldParseRangedMultipleTxFilters()
+    void shouldParseRangedMultipleTxFilters()
     {
         // given
         LabelScanWriteMonitor.TxFilter txFilter = LabelScanWriteMonitor.parseTxFilter( "123-125,345-567" );
@@ -174,7 +181,7 @@ public class LabelScanWriteMonitorTest
     }
 
     @Test
-    public void shouldRotateAtConfiguredThreshold()
+    void shouldRotateAtConfiguredThreshold()
     {
         // given
         File storeDir = this.directory.databaseDir();
@@ -182,7 +189,7 @@ public class LabelScanWriteMonitorTest
         LabelScanWriteMonitor writeMonitor = new LabelScanWriteMonitor( fs, directory.databaseLayout(), rotationThreshold, ByteUnit.Byte, 1, TimeUnit.DAYS );
 
         // when
-        for ( int i = 0; storeDir.listFiles().length < 5; i++ )
+        for ( int i = 0; requireNonNull( storeDir.listFiles() ).length < 5; i++ )
         {
             writeMonitor.range( i, 1 );
             writeMonitor.prepareAdd( i, 5 );
@@ -192,7 +199,7 @@ public class LabelScanWriteMonitorTest
 
         // then
         writeMonitor.close();
-        for ( File file : storeDir.listFiles( ( dir, name ) -> !name.equals( baseName ) ) )
+        for ( File file : requireNonNull( storeDir.listFiles( ( dir, name ) -> !name.equals( baseName ) ) ) )
         {
             long sizeDiff = abs( rotationThreshold - fs.getFileSize( file ) );
             assertTrue( sizeDiff < rotationThreshold / 10D );
@@ -200,11 +207,11 @@ public class LabelScanWriteMonitorTest
     }
 
     @Test
-    public void shouldPruneAtConfiguredThreshold()
+    void shouldPruneAtConfiguredThreshold()
     {
         // given
         File storeDir = this.directory.databaseDir();
-        int pruneThreshold = 200;
+        long pruneThreshold = 200;
         LabelScanWriteMonitor writeMonitor =
                 new LabelScanWriteMonitor( fs, directory.databaseLayout(), 1_000, ByteUnit.Byte, pruneThreshold, TimeUnit.MILLISECONDS );
 
@@ -218,14 +225,15 @@ public class LabelScanWriteMonitorTest
             writeMonitor.mergeAdd( new LabelScanValue(), new LabelScanValue().set( 5 ) );
             writeMonitor.writeSessionEnded();
         }
+        long loopEnded = currentTimeMillis();
 
         // then
         writeMonitor.close();
-        for ( File file : storeDir.listFiles( ( dir, name ) -> !name.equals( baseName ) ) )
+        for ( File file : requireNonNull( storeDir.listFiles( ( dir, name ) -> !name.equals( baseName ) ) ) )
         {
             long timestamp = LabelScanWriteMonitor.millisOf( file );
             long diff = endTime - timestamp;
-            assertTrue( diff < pruneThreshold * 2 );
+            assertThat( diff, lessThan( (loopEnded - endTime) + pruneThreshold * 2 ) );
         }
     }
 }
