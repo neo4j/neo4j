@@ -83,6 +83,7 @@ public enum Group
     DOWNLOAD_SNAPSHOT( "DownloadSnapshot" ),
     CATCHUP_CLIENT( "CatchupClient" ),
     CATCHUP_SERVER( "CatchupServer" ),
+    THROUGHPUT_MONITOR( "ThroughputMonitor" ),
 
     /** Rolls back idle transactions on the server. */
     SERVER_TRANSACTION_TIMEOUT( "ServerTransactionTimeout" ),
