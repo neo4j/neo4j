@@ -481,6 +481,24 @@ public interface Status
         }
     }
 
+    enum Database implements Status
+    {
+        DatabaseNotFound( ClientError, "The request referred to a database that does not exist." );
+
+        private final Code code;
+
+        @Override
+        public Code code()
+        {
+            return code;
+        }
+
+        Database( Classification classification, String description )
+        {
+            this.code = new Code( classification, this, description );
+        }
+    }
+
     enum Cluster implements Status
     {
         // transient errors

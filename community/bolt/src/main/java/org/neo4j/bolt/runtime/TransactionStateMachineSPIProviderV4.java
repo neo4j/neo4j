@@ -63,8 +63,8 @@ public class TransactionStateMachineSPIProviderV4 implements TransactionStateMac
         Optional<DatabaseContext> databaseContextOptional = databaseManager.getDatabaseContext( databaseName );
         if ( !databaseContextOptional.isPresent() )
         {
-            throw new BoltIOException( Status.Request.Invalid,
-                    String.format( "The database requested does not exists. " + "Requested database name: '%s'.", databaseName ) );
+            throw new BoltIOException( Status.Database.DatabaseNotFound,
+                    String.format( "The database requested does not exist. " + "Requested database name: '%s'.", databaseName ) );
         }
         DatabaseContext databaseContext = databaseContextOptional.get();
         return new TransactionStateMachineV4SPI( databaseContext, boltChannel, txAwaitDuration, clock, resourceReleaseManger );

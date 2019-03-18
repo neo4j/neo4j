@@ -73,8 +73,8 @@ public abstract class DefaultDatabaseTransactionStatementSPIProvider implements 
         Optional<DatabaseContext> databaseContext = databaseManager.getDatabaseContext( defaultDatabaseName );
         if ( !databaseContext.isPresent() )
         {
-            throw new BoltIOException( Status.Request.Invalid,
-                    format( "Default database does not exists. Default database name: '%s'", defaultDatabaseName ) );
+            throw new BoltIOException( Status.Database.DatabaseNotFound,
+                    format( "Default database does not exist. Default database name: '%s'", defaultDatabaseName ) );
         }
         return databaseContext.get();
     }
