@@ -312,6 +312,11 @@ public class Database extends LifecycleAdapter
             databaseDependencies.satisfyDependency( new IdBasedStoreEntityCounters( this.idGeneratorFactory ) );
             databaseDependencies.satisfyDependency( lockService );
             databaseDependencies.satisfyDependency( new DefaultValueMapper( facade ) );
+            databaseDependencies.satisfyDependency( versionContextSupplier );
+            databaseDependencies.satisfyDependency( databaseLayout );
+            databaseDependencies.satisfyDependency( fs );
+            databaseDependencies.satisfyDependency( logService );
+            databaseDependencies.satisfyDependency( constraintSemantics );
 
             DefaultLogRotationMonitor logRotationMonitor = new DefaultLogRotationMonitor();
             DefaultCheckPointMonitor checkPointMonitor = new DefaultCheckPointMonitor();
@@ -355,11 +360,14 @@ public class Database extends LifecycleAdapter
 
             // Build all modules and their services
             DatabaseSchemaState databaseSchemaState = new DatabaseSchemaState( logProvider );
+            databaseDependencies.satisfyDependency( databaseSchemaState );
 
             Supplier<IdController.ConditionSnapshot> transactionsSnapshotSupplier = () -> kernelModule.kernelTransactions().get();
             idController.initialize( transactionsSnapshotSupplier );
 
-            storageEngine = buildStorageEngine( databasePageCache, databaseSchemaState, versionContextSupplier, storageEngineFactory );
+            storageEngine = storageEngineFactory.instantiate( databaseDependencies );
+            life.add( storageEngine );
+            life.add( storageEngine.schemaAndTokensLifecycle() );
             life.add( logFiles );
 
             // Label index
@@ -485,19 +493,6 @@ public class Database extends LifecycleAdapter
     private void upgradeStore() throws IOException
     {
         databaseMigratorFactory.createDatabaseMigrator( databaseLayout, databaseDependencies ).migrate();
-    }
-
-    private StorageEngine buildStorageEngine( PageCache pageCache, SchemaState schemaState, VersionContextSupplier versionContextSupplier,
-            StorageEngineFactory storageEngineFactory )
-    {
-        Dependencies storageEngineDependencies = new Dependencies();
-        storageEngineDependencies.satisfyDependencies( databaseLayout, config, pageCache, fs, logService, tokenHolders, schemaState, constraintSemantics,
-                lockService, databaseHealth, idGeneratorFactory, idController, versionContextSupplier );
-
-        StorageEngine storageEngine = storageEngineFactory.instantiate( storageEngineDependencies, databaseDependencies );
-        life.add( storageEngine );
-        life.add( storageEngine.schemaAndTokensLifecycle() );
-        return storageEngine;
     }
 
     /**
