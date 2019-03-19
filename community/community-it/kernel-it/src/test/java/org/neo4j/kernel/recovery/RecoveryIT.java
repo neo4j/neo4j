@@ -65,10 +65,11 @@ import static org.neo4j.kernel.recovery.Recovery.performRecovery;
 @ExtendWith( {DefaultFileSystemExtension.class, TestDirectoryExtension.class} )
 class RecoveryIT
 {
+    private static final int TEN_KB = (int) ByteUnit.kibiBytes( 10 );
     @Inject
-    public DefaultFileSystemAbstraction fileSystem;
+    private DefaultFileSystemAbstraction fileSystem;
     @Inject
-    public TestDirectory directory;
+    private TestDirectory directory;
 
     @Test
     void recoveryRequiredOnDatabaseWithoutCorrectCheckpoints() throws Exception
@@ -539,7 +540,7 @@ class RecoveryIT
                 Node node1 = database.createNode();
                 Node node2 = database.createNode();
                 node1.createRelationshipTo( node2, withName( "Type" + i ) );
-                node2.setProperty( "a", randomAlphanumeric( (int) ByteUnit.kibiBytes( 10 ) ) );
+                node2.setProperty( "a", randomAlphanumeric( TEN_KB ) );
                 transaction.success();
             }
         }

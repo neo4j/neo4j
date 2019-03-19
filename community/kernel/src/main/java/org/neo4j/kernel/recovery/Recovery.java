@@ -359,8 +359,8 @@ public final class Recovery
             StorageEngine storageEngine, LogicalTransactionStore logicalTransactionStore, LogVersionRepository logVersionRepository,
             Lifecycle schemaLife, DatabaseLayout databaseLayout, boolean failOnCorruptedLogFiles, Log log )
     {
-        RecoveryService recoveryService =
-                new DefaultRecoveryService( storageEngine, tailScanner, transactionIdStore, logicalTransactionStore, logVersionRepository, positionMonitor, log );
+        RecoveryService recoveryService = new DefaultRecoveryService( storageEngine, tailScanner, transactionIdStore, logicalTransactionStore,
+                logVersionRepository, positionMonitor, log );
         CorruptedLogsTruncator logsTruncator = new CorruptedLogsTruncator( databaseLayout.databaseDirectory(), logFiles, fileSystemAbstraction );
         ProgressReporter progressReporter = new LogProgressReporter( log );
         return new TransactionLogsRecovery( recoveryService, logsTruncator, schemaLife, recoveryMonitor, progressReporter, failOnCorruptedLogFiles );
