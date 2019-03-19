@@ -37,7 +37,7 @@ object AggregationConverter {
     e match {
       case func: ast.FunctionInvocation => func.function match {
         case ast.functions.Count if groupingVariables.isEmpty =>
-          SimpleCount(variable, createExpression(func.args(0)), func.distinct)
+          SimpleCount(opName, variable, createExpression(func.args(0)), func.distinct)
         case ast.functions.Count  =>
           new DynamicCount(opName, variable, createExpression(func.args(0)), groupingVariables, func.distinct)
 

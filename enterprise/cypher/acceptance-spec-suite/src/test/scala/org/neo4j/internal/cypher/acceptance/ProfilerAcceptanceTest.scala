@@ -692,6 +692,19 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
 
   }
 
+  test("profiling with compiled runtime") {
+    //given
+    createLabeledNode("L")
+    createLabeledNode("L")
+    createLabeledNode("L")
+
+    //when
+    val result = innerExecuteDeprecated("PROFILE CYPHER runtime=compiled MATCH (n:L) RETURN count(n.prop)", Map.empty)
+
+    //then
+    assertRows(1)(result)("EagerAggregation")
+  }
+
   private def assertRows(expectedRows: Int)(result: InternalExecutionResult)(names: String*) {
     getPlanDescriptions(result, names).foreach {
       plan => assert(expectedRows === getArgument[Rows](plan).value, s" wrong row count for plan: ${plan.name}")
