@@ -59,6 +59,36 @@
             <version>${project.version}</version>
         </dependency>
 
+        <dependency>
+            <groupId>org.neo4j</groupId>
+            <artifactId>neo4j-parser-4.0</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.neo4j</groupId>
+            <artifactId>neo4j-ast-4.0</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.neo4j</groupId>
+            <artifactId>neo4j-expressions-4.0</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.neo4j</groupId>
+            <artifactId>neo4j-cypher-runtime-util</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.neo4j</groupId>
+            <artifactId>neo4j-cypher-interpreted-runtime</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
         <!-- scala -->
 
         <dependency>
