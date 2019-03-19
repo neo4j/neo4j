@@ -35,7 +35,7 @@
     <properties>
         <license-text.header>headers/GPL-3-header.txt</license-text.header>
         <licensing.prepend.text>licensing/notice-gpl-prefix.txt</licensing.prepend.text>
-        <moduleName>org.neo4j.test.storageengine</moduleName>
+        <moduleName>org.neo4j.test.wal</moduleName>
     </properties>
 
     <name>Neo4j - Write-Ahead Logging Test Utilities</name>

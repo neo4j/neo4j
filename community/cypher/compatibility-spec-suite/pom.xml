@@ -25,7 +25,7 @@
     </scm>
 
     <properties>
-        <moduleName>org.neo4j.cypher.internal.runtime.util</moduleName>
+        <moduleName>org.neo4j.cypher.internal.compatibility.spec.suite</moduleName>
         <license-text.header>headers/GPL-3-header.txt</license-text.header>
     </properties>
 
