@@ -42,7 +42,6 @@ import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.api.security.SecurityModule;
 import org.neo4j.kernel.api.security.provider.NoAuthSecurityProvider;
 import org.neo4j.kernel.database.Database;
-import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.core.DefaultLabelIdCreator;
@@ -126,8 +125,6 @@ public class CommunityEditionModule extends DefaultEditionModule
 
         headerInformationFactory = createHeaderInformationFactory();
 
-        schemaWriteGuard = createSchemaWriteGuard();
-
         transactionStartTimeout = globalConfig.get( GraphDatabaseSettings.transaction_start_timeout ).toMillis();
 
         constraintSemantics = createSchemaRuleVerifier();
@@ -176,11 +173,6 @@ public class CommunityEditionModule extends DefaultEditionModule
     protected StatementLocksFactory createStatementLocksFactory( Locks locks, Config config, LogService logService )
     {
         return new SimpleStatementLocksFactory( locks );
-    }
-
-    protected SchemaWriteGuard createSchemaWriteGuard()
-    {
-        return SchemaWriteGuard.ALLOW_ALL_WRITES;
     }
 
     protected static TokenCreator createRelationshipTypeCreator( Config config, Supplier<Kernel> kernelSupplier )

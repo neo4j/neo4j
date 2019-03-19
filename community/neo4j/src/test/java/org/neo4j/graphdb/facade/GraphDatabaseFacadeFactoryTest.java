@@ -31,7 +31,6 @@ import org.neo4j.graphdb.factory.module.GlobalModule;
 import org.neo4j.graphdb.factory.module.edition.AbstractEditionModule;
 import org.neo4j.graphdb.factory.module.edition.CommunityEditionModule;
 import org.neo4j.helpers.Exceptions;
-import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -101,11 +100,6 @@ class GraphDatabaseFacadeFactoryTest
         GlobalModule globalModule = new GlobalModule( testDirectory.storeDir(), Config.defaults(), COMMUNITY, newDependencies() );
         AbstractEditionModule editionModule = new CommunityEditionModule( globalModule )
         {
-            @Override
-            protected SchemaWriteGuard createSchemaWriteGuard()
-            {
-                return SchemaWriteGuard.ALLOW_ALL_WRITES;
-            }
         };
         return new GraphDatabaseFacadeFactory( DatabaseInfo.UNKNOWN, p -> editionModule )
         {

@@ -84,7 +84,6 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
     private final StatementLocksFactory statementLocksFactory;
     private final ConstraintIndexCreator constraintIndexCreator;
     private final StatementOperationParts statementOperations;
-    private final SchemaWriteGuard schemaWriteGuard;
     private final TransactionHeaderInformationFactory transactionHeaderInformationFactory;
     private final TransactionCommitProcess transactionCommitProcess;
     private final TransactionHooks hooks;
@@ -141,7 +140,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
     private volatile boolean stopped = true;
 
     public KernelTransactions( Config config, StatementLocksFactory statementLocksFactory, ConstraintIndexCreator constraintIndexCreator,
-            StatementOperationParts statementOperations, SchemaWriteGuard schemaWriteGuard, TransactionHeaderInformationFactory txHeaderFactory,
+            StatementOperationParts statementOperations, TransactionHeaderInformationFactory txHeaderFactory,
             TransactionCommitProcess transactionCommitProcess, TransactionHooks hooks, TransactionMonitor transactionMonitor,
             AvailabilityGuard databaseAvailabilityGuard, Tracers tracers, StorageEngine storageEngine, GlobalProcedures globalProcedures,
             TransactionIdStore transactionIdStore, SystemNanoClock clock, AtomicReference<CpuClock> cpuClockRef,
@@ -154,7 +153,6 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
         this.statementLocksFactory = statementLocksFactory;
         this.constraintIndexCreator = constraintIndexCreator;
         this.statementOperations = statementOperations;
-        this.schemaWriteGuard = schemaWriteGuard;
         this.transactionHeaderInformationFactory = txHeaderFactory;
         this.transactionCommitProcess = transactionCommitProcess;
         this.hooks = hooks;
@@ -371,7 +369,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
         public KernelTransactionImplementation newInstance()
         {
             KernelTransactionImplementation tx =
-                    new KernelTransactionImplementation( config, statementOperations, schemaWriteGuard, hooks,
+                    new KernelTransactionImplementation( config, statementOperations, hooks,
                             constraintIndexCreator, globalProcedures, transactionHeaderInformationFactory,
                             transactionCommitProcess, transactionMonitor, localTxPool, clock, cpuClockRef, heapAllocationRef,
                             tracers.getTransactionTracer(),

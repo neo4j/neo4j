@@ -26,7 +26,6 @@ import org.neo4j.io.fs.watcher.DatabaseLayoutWatcher;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
-import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.factory.AccessCapability;
 import org.neo4j.kernel.impl.locking.Locks;
@@ -52,8 +51,6 @@ public interface EditionDatabaseContext
     CommitProcessFactory getCommitProcessFactory();
 
     TransactionHeaderInformationFactory getHeaderInformationFactory();
-
-    SchemaWriteGuard getSchemaWriteGuard();
 
     long getTransactionStartTimeout();
 

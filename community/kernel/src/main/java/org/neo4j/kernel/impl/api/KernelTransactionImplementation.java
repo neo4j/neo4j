@@ -138,7 +138,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private final CollectionsFactory collectionsFactory;
 
     // Logic
-    private final SchemaWriteGuard schemaWriteGuard;
     private final TransactionHooks hooks;
     private final ConstraintIndexCreator constraintIndexCreator;
     private final StorageEngine storageEngine;
@@ -200,7 +199,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
      */
     private final Lock terminationReleaseLock = new ReentrantLock();
 
-    public KernelTransactionImplementation( Config config, StatementOperationParts statementOperations, SchemaWriteGuard schemaWriteGuard,
+    public KernelTransactionImplementation( Config config, StatementOperationParts statementOperations,
             TransactionHooks hooks, ConstraintIndexCreator constraintIndexCreator, GlobalProcedures globalProcedures,
             TransactionHeaderInformationFactory headerInformationFactory, TransactionCommitProcess commitProcess, TransactionMonitor transactionMonitor,
             Pool<KernelTransactionImplementation> pool, Clock clock,
@@ -211,7 +210,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             LabelScanStore labelScanStore, IndexStatisticsStore indexStatisticsStore, Dependencies dependencies,
             AvailabilityGuard databaseAvailabilityGuard )
     {
-        this.schemaWriteGuard = schemaWriteGuard;
         this.hooks = hooks;
         this.constraintIndexCreator = constraintIndexCreator;
         this.headerInformationFactory = headerInformationFactory;
@@ -467,7 +465,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
     private void upgradeToSchemaWrites() throws InvalidTransactionTypeKernelException
     {
-        schemaWriteGuard.assertSchemaWritesAllowed();
         writeState = writeState.upgradeToSchemaWrites();
     }
 

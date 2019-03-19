@@ -67,7 +67,6 @@ import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.api.DatabaseSchemaState;
 import org.neo4j.kernel.impl.api.KernelImpl;
 import org.neo4j.kernel.impl.api.KernelTransactions;
-import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.api.StackingQueryRegistrationOperations;
 import org.neo4j.kernel.impl.api.StatementOperationParts;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
@@ -179,7 +178,6 @@ public class Database extends LifecycleAdapter
     private final TokenNameLookup tokenNameLookup;
     private final TokenHolders tokenHolders;
     private final StatementLocksFactory statementLocksFactory;
-    private final SchemaWriteGuard schemaWriteGuard;
     private final TransactionEventHandlers transactionEventHandlers;
     private final IdGeneratorFactory idGeneratorFactory;
     private final JobScheduler scheduler;
@@ -243,7 +241,6 @@ public class Database extends LifecycleAdapter
         this.tokenHolders = context.getTokenHolders();
         this.locks = context.getLocks();
         this.statementLocksFactory = context.getStatementLocksFactory();
-        this.schemaWriteGuard = context.getSchemaWriteGuard();
         this.transactionEventHandlers = context.getTransactionEventHandlers();
         this.fs = context.getFs();
         this.transactionStats = context.getTransactionStats();
@@ -636,7 +633,7 @@ public class Database extends LifecycleAdapter
         TransactionHooks hooks = new TransactionHooks();
 
         KernelTransactions kernelTransactions = life.add(
-                new KernelTransactions( config, statementLocksFactory, constraintIndexCreator, statementOperationParts, schemaWriteGuard,
+                new KernelTransactions( config, statementLocksFactory, constraintIndexCreator, statementOperationParts,
                         transactionHeaderInformationFactory, transactionCommitProcess, hooks, transactionStats, databaseAvailabilityGuard, globalTracers,
                         storageEngine, globalProcedures, transactionIdStore, clock, cpuClockRef,
                         heapAllocationRef, accessCapability, versionContextSupplier, collectionsFactorySupplier,

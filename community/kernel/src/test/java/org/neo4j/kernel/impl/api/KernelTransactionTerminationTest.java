@@ -346,7 +346,7 @@ public class KernelTransactionTerminationTest
 
         TestKernelTransaction( CommitTrackingMonitor monitor, Dependencies dependencies )
         {
-            super( Config.defaults(), mock( StatementOperationParts.class ), mock( SchemaWriteGuard.class ), new TransactionHooks(),
+            super( Config.defaults(), mock( StatementOperationParts.class ), new TransactionHooks(),
                     mock( ConstraintIndexCreator.class ), mock( GlobalProcedures.class ), TransactionHeaderInformationFactory.DEFAULT,
                     mock( TransactionCommitProcess.class ), monitor, mock( Pool.class ), Clocks.fakeClock(),
                     new AtomicReference<>( CpuClock.NOT_AVAILABLE ), new AtomicReference<>( HeapAllocation.NOT_AVAILABLE ), TransactionTracer.NULL,

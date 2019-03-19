@@ -52,7 +52,6 @@ import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.extension.ExtensionType;
 import org.neo4j.kernel.extension.context.ExtensionContext;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
-import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.context.TransactionVersionContextSupplier;
@@ -157,7 +156,7 @@ public class DatabaseRule extends ExternalResource
 
         database = new Database( new TestDatabaseCreationContext( databaseName, databaseLayout, config, idGeneratorFactory, logService,
                 mock( JobScheduler.class, RETURNS_MOCKS ), mock( TokenNameLookup.class ), mutableDependencies, mockedTokenHolders(), locksFactory,
-                mock( SchemaWriteGuard.class ), mock( TransactionEventHandlers.class ), fs, transactionStats, databaseHealth,
+                mock( TransactionEventHandlers.class ), fs, transactionStats, databaseHealth,
                 TransactionHeaderInformationFactory.DEFAULT, new CommunityCommitProcessFactory(),
                 pageCache, new StandardConstraintSemantics(), monitors,
                 new Tracers( "null", NullLog.getInstance(), monitors, jobScheduler, clock ),
@@ -216,7 +215,6 @@ public class DatabaseRule extends ExternalResource
         private final DependencyResolver dependencyResolver;
         private final TokenHolders tokenHolders;
         private final StatementLocksFactory statementLocksFactory;
-        private final SchemaWriteGuard schemaWriteGuard;
         private final TransactionEventHandlers transactionEventHandlers;
         private final FileSystemAbstraction fs;
         private final DatabaseTransactionStats databaseTransactionStats;
@@ -246,7 +244,7 @@ public class DatabaseRule extends ExternalResource
 
         TestDatabaseCreationContext( String databaseName, DatabaseLayout databaseLayout, Config config, IdGeneratorFactory idGeneratorFactory,
                 LogService logService, JobScheduler scheduler, TokenNameLookup tokenNameLookup, DependencyResolver dependencyResolver,
-                TokenHolders tokenHolders, StatementLocksFactory statementLocksFactory, SchemaWriteGuard schemaWriteGuard,
+                TokenHolders tokenHolders, StatementLocksFactory statementLocksFactory,
                 TransactionEventHandlers transactionEventHandlers, FileSystemAbstraction fs, DatabaseTransactionStats databaseTransactionStats,
                 DatabaseHealth databaseHealth, TransactionHeaderInformationFactory transactionHeaderInformationFactory,
                 CommitProcessFactory commitProcessFactory, PageCache pageCache, ConstraintSemantics constraintSemantics, Monitors monitors, Tracers tracers,
@@ -268,7 +266,6 @@ public class DatabaseRule extends ExternalResource
             this.dependencyResolver = dependencyResolver;
             this.tokenHolders = tokenHolders;
             this.statementLocksFactory = statementLocksFactory;
-            this.schemaWriteGuard = schemaWriteGuard;
             this.transactionEventHandlers = transactionEventHandlers;
             this.fs = fs;
             this.databaseTransactionStats = databaseTransactionStats;
@@ -371,12 +368,6 @@ public class DatabaseRule extends ExternalResource
         public StatementLocksFactory getStatementLocksFactory()
         {
             return statementLocksFactory;
-        }
-
-        @Override
-        public SchemaWriteGuard getSchemaWriteGuard()
-        {
-            return schemaWriteGuard;
         }
 
         @Override

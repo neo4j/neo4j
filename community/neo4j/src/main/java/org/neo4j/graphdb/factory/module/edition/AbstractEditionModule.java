@@ -40,7 +40,6 @@ import org.neo4j.kernel.api.net.NetworkConnectionTracker;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.api.security.SecurityModule;
 import org.neo4j.kernel.api.security.provider.SecurityProvider;
-import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.factory.AccessCapability;
@@ -76,7 +75,6 @@ public abstract class AbstractEditionModule
     protected ThreadToStatementContextBridge threadToTransactionBridge;
     protected long transactionStartTimeout;
     protected TransactionHeaderInformationFactory headerInformationFactory;
-    protected SchemaWriteGuard schemaWriteGuard;
     protected ConstraintSemantics constraintSemantics;
     protected AccessCapability accessCapability;
     protected IOLimiter ioLimiter;
@@ -182,11 +180,6 @@ public abstract class AbstractEditionModule
     public long getTransactionStartTimeout()
     {
         return transactionStartTimeout;
-    }
-
-    public SchemaWriteGuard getSchemaWriteGuard()
-    {
-        return schemaWriteGuard;
     }
 
     public TransactionHeaderInformationFactory getHeaderInformationFactory()

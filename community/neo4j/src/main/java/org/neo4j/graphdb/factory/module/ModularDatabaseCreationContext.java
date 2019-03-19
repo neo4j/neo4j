@@ -42,7 +42,6 @@ import org.neo4j.kernel.database.DatabaseCreationContext;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.api.NonTransactionalTokenNameLookup;
-import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.factory.AccessCapability;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
@@ -80,7 +79,6 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     private final TokenHolders tokenHolders;
     private final Locks locks;
     private final StatementLocksFactory statementLocksFactory;
-    private final SchemaWriteGuard schemaWriteGuard;
     private final TransactionEventHandlers transactionEventHandlers;
     private final FileSystemAbstraction fs;
     private final DatabaseTransactionStats transactionStats;
@@ -127,7 +125,6 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
         this.tokenNameLookup = new NonTransactionalTokenNameLookup( tokenHolders );
         this.locks = editionContext.getLocks();
         this.statementLocksFactory = editionContext.getStatementLocksFactory();
-        this.schemaWriteGuard = editionContext.getSchemaWriteGuard();
         this.transactionEventHandlers = new TransactionEventHandlers( facade );
         this.globalMonitors = globalModule.getGlobalMonitors();
         this.fs = globalModule.getFileSystem();
@@ -226,12 +223,6 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     public StatementLocksFactory getStatementLocksFactory()
     {
         return statementLocksFactory;
-    }
-
-    @Override
-    public SchemaWriteGuard getSchemaWriteGuard()
-    {
-        return schemaWriteGuard;
     }
 
     @Override
