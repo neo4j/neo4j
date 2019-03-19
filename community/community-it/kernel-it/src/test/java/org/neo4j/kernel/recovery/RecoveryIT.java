@@ -379,7 +379,7 @@ class RecoveryIT
     }
 
     @Test
-    void startDatabaseAfterTransactionLogsAndKillAfterRecovery() throws Exception
+    void startDatabaseAfterTransactionLogsRemovalAndKillAfterRecovery() throws Exception
     {
         GraphDatabaseService database = new TestGraphDatabaseFactory()
                 .newEmbeddedDatabaseBuilder( directory.databaseDir() )

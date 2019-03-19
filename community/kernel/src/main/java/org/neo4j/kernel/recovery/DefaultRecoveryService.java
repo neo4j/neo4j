@@ -30,6 +30,7 @@ import org.neo4j.kernel.impl.transaction.log.TransactionCursor;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
+import org.neo4j.logging.Log;
 import org.neo4j.storageengine.api.LogVersionRepository;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
@@ -44,15 +45,17 @@ public class DefaultRecoveryService implements RecoveryService
     private final TransactionIdStore transactionIdStore;
     private final LogicalTransactionStore logicalTransactionStore;
     private final LogVersionRepository logVersionRepository;
+    private final Log log;
 
-    public DefaultRecoveryService( StorageEngine storageEngine, LogTailScanner logTailScanner,
-            TransactionIdStore transactionIdStore, LogicalTransactionStore logicalTransactionStore,
-            LogVersionRepository logVersionRepository, RecoveryStartInformationProvider.Monitor monitor )
+    DefaultRecoveryService( StorageEngine storageEngine, LogTailScanner logTailScanner, TransactionIdStore transactionIdStore,
+            LogicalTransactionStore logicalTransactionStore, LogVersionRepository logVersionRepository, RecoveryStartInformationProvider.Monitor monitor,
+            Log log )
     {
         this.storageEngine = storageEngine;
         this.transactionIdStore = transactionIdStore;
         this.logicalTransactionStore = logicalTransactionStore;
         this.logVersionRepository = logVersionRepository;
+        this.log = log;
         this.recoveryStartInformationProvider = new RecoveryStartInformationProvider( logTailScanner, monitor );
     }
 
@@ -102,7 +105,10 @@ public class DefaultRecoveryService implements RecoveryService
             // it will still reference old offset from logs that are gone and as result log position in checkpoint record will be incorrect
             // and that can cause partial next recovery.
             long[] lastClosedTransaction = transactionIdStore.getLastClosedTransaction();
-            transactionIdStore.setLastClosedTransaction( lastClosedTransaction[0], lastClosedTransaction[1], LogHeader.LOG_HEADER_SIZE );
+            long logVersion = lastClosedTransaction[1];
+            log.warn( "Recovery detected that transaction logs were missing. " +
+                    "Resetting offset of last closed transaction to point to the head of %d transaction log file.", logVersion );
+            transactionIdStore.setLastClosedTransaction( lastClosedTransaction[0], logVersion, LogHeader.LOG_HEADER_SIZE );
             return;
         }
         long recoveredTransactionLogVersion = positionAfterLastRecoveredTransaction.getLogVersion();
