@@ -67,6 +67,7 @@ import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.api.security.OverriddenAccessMode;
 import org.neo4j.kernel.impl.api.security.RestrictedAccessMode;
 import org.neo4j.kernel.impl.index.schema.IndexDescriptorFactory;
+import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.util.DefaultValueMapper;
 import org.neo4j.lock.ResourceTypes;
 import org.neo4j.register.Register.DoubleLongRegister;
@@ -346,8 +347,9 @@ public class AllStoreHolder extends Read
                     return (IndexReference) index;
                 }
 
-                throw new IllegalStateException( format( "Wasn't able to convert %s into an %s because it was neither already of that type nor a %s",
-                        index, IndexReference.class, StorageIndexReference.class ) );
+                // The index is committed since it's a StorageIndexReference, but we couldn't look it up in IndexingService for some reason.
+                // Anyway we know how to make this into an IndexReference that the rest of the stack understands. This should be a rare event.
+                return new StoreIndexDescriptor( (StorageIndexReference) index );
             }
         }
         // This index isn't committed yet, go for the kernel-version of IndexDescriptor
