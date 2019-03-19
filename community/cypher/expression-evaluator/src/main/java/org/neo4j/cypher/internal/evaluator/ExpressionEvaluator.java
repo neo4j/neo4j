@@ -17,24 +17,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.evaluator
-
-import org.neo4j.values.AnyValue
+package org.neo4j.cypher.internal.evaluator;
 
 /**
-  * Evaluates an arbitrary Cypher expression
-  */
-trait InternalExpressionEvaluator {
-
-  /**
-    * Evaluates a Cypher expression provided as a String to an instance of [[AnyValue]]
-    *
-    * @param expression The cypher expression string
-    * @return An instance of [[AnyValue]] corresponding to the provided expression string
-    * @throws EvaluationException if evaluation fails
-    */
-  @throws(classOf[EvaluationException])
-  def evaluate(expression: String): AnyValue
+ * An ExpressionEvaluator takes an arbitrary Cypher expression and evaluates it to a java value.
+ */
+public interface ExpressionEvaluator
+{
+    /**
+     * Evaluates a Cypher expression
+     *
+     * @param expression The expression to evaluate.
+     * @param type The type that we expect the returned value to have
+     * @return The evaluated Cypher expression.
+     * @throws EvaluationException if the evaluation fails.
+     */
+    <T> T evaluate( String expression, Class<T> type ) throws EvaluationException;
 }
-
-

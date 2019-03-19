@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.evaluator
 
-import org.neo4j.cypher.evaluator.EvaluationException
 import org.neo4j.cypher.internal.planner.spi.TokenContext
 import org.neo4j.cypher.internal.runtime.expressionVariableAllocation.Result
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
