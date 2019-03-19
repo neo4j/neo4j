@@ -59,6 +59,36 @@
             <version>${project.version}</version>
         </dependency>
 
+        <dependency>
+            <groupId>org.neo4j</groupId>
+            <artifactId>neo4j-parser-3.5</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.neo4j</groupId>
+            <artifactId>neo4j-ast-3.5</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.neo4j</groupId>
+            <artifactId>neo4j-expressions-3.5</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.neo4j</groupId>
+            <artifactId>neo4j-cypher-runtime-util</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.neo4j</groupId>
+            <artifactId>neo4j-cypher-interpreted-runtime</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
         <!-- scala -->
 
         <dependency>
@@ -86,24 +116,6 @@
 
 
         <!-- test dependencies -->
-
-
-
-        <!--<dependency>-->
-            <!--<groupId>org.neo4j</groupId>-->
-            <!--<artifactId>neo4j-expressions-4.0</artifactId>-->
-            <!--<version>${project.version}</version>-->
-            <!--<type>test-jar</type>-->
-            <!--<scope>test</scope>-->
-        <!--</dependency>-->
-
-        <!--<dependency>-->
-            <!--<groupId>org.neo4j</groupId>-->
-            <!--<artifactId>neo4j-ast-4.0</artifactId>-->
-            <!--<version>${project.version}</version>-->
-            <!--<type>test-jar</type>-->
-            <!--<scope>test</scope>-->
-        <!--</dependency>-->
 
 
     </dependencies>
