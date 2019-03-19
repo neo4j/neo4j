@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.api.security;
 
+import java.io.IOException;
+
 import org.neo4j.helpers.Service;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -41,7 +43,7 @@ public abstract class SecurityModule extends Service implements Lifecycle, Secur
         super( key, altKeys );
     }
 
-    public abstract void setup( Dependencies dependencies ) throws KernelException;
+    public abstract void setup( Dependencies dependencies ) throws KernelException, IOException;
 
     @Override
     public void init() throws Throwable

@@ -158,7 +158,16 @@ public abstract class AbstractEditionModule
                 catch ( Exception e )
                 {
                     String errorMessage = "Failed to load security module.";
-                    log.error( errorMessage );
+                    String innerErrorMessage = e.getMessage();
+
+                    if ( innerErrorMessage != null )
+                    {
+                        log.error( errorMessage + " Caused by: " + innerErrorMessage, e );
+                    }
+                    else
+                    {
+                        log.error( errorMessage, e );
+                    }
                     throw new RuntimeException( errorMessage, e );
                 }
             }
