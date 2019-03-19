@@ -60,7 +60,7 @@ public class HandshakeServerInitializer implements ChildInitializer
     @Override
     public void initChannel( SocketChannel ch ) throws Exception
     {
-        log.info( "Installing handshake server local %s remote %s", ch.localAddress(), ch.remoteAddress() );
+        log.info( "Installing handshake server on channel %s", ch );
 
         pipelineBuilderFactory.server( ch, log )
                 .addFraming()
@@ -96,18 +96,20 @@ public class HandshakeServerInitializer implements ChildInitializer
     {
         if ( failure != null )
         {
-            log.error( "Error when negotiating protocol stack", failure );
+            log.error( String.format( "Error when negotiating protocol stack on channel %s", channel ), failure );
             return;
         }
 
         try
         {
+            log.info( "Handshake completed on channel %s. Installing: %s", channel, protocolStack );
+
             protocolInstallerRepository.installerFor( protocolStack ).install( channel );
             channel.parent().pipeline().fireUserEventTriggered( new ServerHandshakeFinishedEvent.Created( toSocketAddress( channel ), protocolStack ) );
         }
         catch ( Throwable t )
         {
-            log.error( "Error installing protocol stack", t );
+            log.error( String.format( "Error installing protocol stack on channel %s", channel ), t );
         }
     }
 
