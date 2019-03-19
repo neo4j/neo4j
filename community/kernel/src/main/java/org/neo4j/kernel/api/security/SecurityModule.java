@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.api.security;
 
+import java.io.IOException;
+
 import org.neo4j.annotations.service.Service;
 import org.neo4j.common.DependencySatisfier;
 import org.neo4j.configuration.Config;
@@ -38,7 +40,7 @@ public abstract class SecurityModule implements Lifecycle, SecurityProvider, Nam
 {
     protected final LifeSupport life = new LifeSupport();
 
-    public abstract void setup( Dependencies dependencies ) throws KernelException;
+    public abstract void setup( Dependencies dependencies ) throws KernelException, IOException;
 
     @Override
     public void init()
