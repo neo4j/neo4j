@@ -115,7 +115,11 @@ trait RowOrderMatcher extends RowsMatcher {
     this
   }
   def groupBy(columns: String*): RowOrderMatcher = {
-    append(new GroupBy(columns:_*))
+    append(new GroupBy(None, columns:_*))
+    this
+  }
+  def groupBy(groupSize: Int, columns: String*): RowOrderMatcher = {
+    append(new GroupBy(Some(groupSize), columns:_*))
     this
   }
 
@@ -134,7 +138,7 @@ trait RowOrderMatcher extends RowsMatcher {
         return false
       }
     }
-    true
+    onComplete()
   }
 
   def foreach(f: RowOrderMatcher => Unit): Unit = {
@@ -148,11 +152,13 @@ trait RowOrderMatcher extends RowsMatcher {
 
   def reset(): Unit
   def onRow(columns: IndexedSeq[String], row: Array[AnyValue]): Boolean
+  def onComplete(): Boolean
 }
 
-class GroupBy(val groupingColumns: String*) extends RowOrderMatcher {
+class GroupBy(val groupSize: Option[Int], val groupingColumns: String*) extends RowOrderMatcher {
   def description: String = s"grouped by '${groupingColumns.mkString(",")}'"
 
+  private var currentCount: Int = 0
   private var previous: Seq[AnyValue] = _
   private val seenGroupingKeys = mutable.Set[Seq[AnyValue]]()
 
@@ -173,10 +179,15 @@ class GroupBy(val groupingColumns: String*) extends RowOrderMatcher {
 
     val current = is.map(row)
     if (current == previous) {
+      currentCount += 1
       inner.forall(_.onRow(columns, row))
     } else {
       if (!seenGroupingKeys.add(current)) false
       else {
+        if (currentCount > 0 && groupSize.exists(_ != currentCount)) {
+          return false
+        }
+        currentCount = 1
         previous = current
         inner.forall { tail =>
           tail.reset()
@@ -184,6 +195,10 @@ class GroupBy(val groupingColumns: String*) extends RowOrderMatcher {
         }
       }
     }
+  }
+
+  override def onComplete(): Boolean = {
+    groupSize.forall(_ == currentCount)
   }
 }
 
@@ -229,6 +244,8 @@ abstract class Sort extends RowOrderMatcher {
       false
     }
   }
+
+  override def onComplete(): Boolean = true
 
   def column: String
   def initialValue: AnyValue

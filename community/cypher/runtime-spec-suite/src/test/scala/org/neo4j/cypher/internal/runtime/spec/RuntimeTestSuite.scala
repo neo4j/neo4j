@@ -398,7 +398,9 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
     CustomRowsMatcher(matchPattern(func))
   }
 
-  def groupedBy(columns: String*): RowOrderMatcher = new GroupBy(columns: _*)
+  def groupedBy(columns: String*): RowOrderMatcher = new GroupBy(None, columns: _*)
+
+  def groupedBy(groupSize: Int, columns: String*): RowOrderMatcher = new GroupBy(Some(groupSize), columns: _*)
 
   def sortedAsc(column: String): RowOrderMatcher = new Ascending(column)
 
