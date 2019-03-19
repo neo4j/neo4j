@@ -48,6 +48,7 @@
         <module>acceptance-spec-suite</module>
         <module>compatibility-spec-suite</module>
         <module>spec-suite-tools</module>
+        <module>expression-evaluator</module>
       </modules>
     </profile>
   </profiles>
