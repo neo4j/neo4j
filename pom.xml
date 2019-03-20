@@ -1598,6 +1598,10 @@
                         <artifactId>truth</artifactId>
                     </exclusion>
                     <exclusion>
+                        <groupId>com.google.truth.extensions</groupId>
+                        <artifactId>truth-java8-extension</artifactId>
+                    </exclusion>
+                    <exclusion>
                         <groupId>com.google.auto</groupId>
                         <artifactId>auto-common</artifactId>
                     </exclusion>

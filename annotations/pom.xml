@@ -89,10 +89,15 @@
             <groupId>com.google.testing.compile</groupId>
             <artifactId>compile-testing</artifactId>
         </dependency>
+
         <dependency>
             <groupId>com.google.truth</groupId>
             <artifactId>truth</artifactId>
+            <!-- this version is required for compile-testing to work, otherwise it fails with NoSuchMethodError -->
+            <version>0.37</version>
+            <scope>test</scope>
         </dependency>
+
         <dependency>
             <groupId>org.hamcrest</groupId>
             <artifactId>hamcrest</artifactId>
