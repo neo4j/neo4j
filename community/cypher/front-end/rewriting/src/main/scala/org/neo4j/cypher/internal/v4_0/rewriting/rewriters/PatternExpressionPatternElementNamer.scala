@@ -29,11 +29,28 @@ object PatternExpressionPatternElementNamer {
     (namedExpr, unnamedMap)
   }
 
+  def apply(expr: NodePatternExpression): (NodePatternExpression, Map[PatternElement, Variable]) = {
+    val unnamedMap = nameUnnamedPatternElements(expr.patterns)
+    val namedPattern = expr.patterns.map(_.endoRewrite(namePatternElementsFromMap(unnamedMap)))
+    val namedExpr = expr.copy(patterns = namedPattern)(expr.position)
+    (namedExpr, unnamedMap)
+  }
+
   def apply(expr: PatternComprehension): (PatternComprehension, Map[PatternElement, Variable]) = {
     val unnamedMap = nameUnnamedPatternElements(expr.pattern)
     val namedPattern = expr.pattern.endoRewrite(namePatternElementsFromMap(unnamedMap))
     val namedExpr = expr.copy(pattern = namedPattern)(expr.position, expr.outerScope)
     (namedExpr, unnamedMap)
+  }
+
+  private def nameUnnamedPatternElements(patterns: List[NodePattern]): Map[PatternElement, Variable] = {
+    val unnamedElements = patterns.flatMap(findPatternElements(_)).filter(_.variable.isEmpty)
+    IdentityMap(unnamedElements.map {
+      case elem: NodePattern =>
+        elem -> Variable(NodeNameGenerator.name(elem.position.bumped()))(elem.position)
+      case _ =>
+        throw new IllegalStateException("This is not supposed to be anything else than a NodePattern.")
+    }: _*)
   }
 
   private def nameUnnamedPatternElements(pattern: RelationshipsPattern): Map[PatternElement, Variable] = {

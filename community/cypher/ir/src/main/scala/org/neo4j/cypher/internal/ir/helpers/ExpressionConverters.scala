@@ -21,11 +21,10 @@ package org.neo4j.cypher.internal.ir.helpers
 
 import org.neo4j.cypher.internal.v4_0.util.{Rewriter, topDown}
 import org.neo4j.cypher.internal.v4_0.rewriting.rewriters._
-import org.neo4j.cypher.internal.v4_0.expressions.{Ands, Expression, HasLabels, Not, Ors, PatternComprehension, PatternExpression, RelationshipChain, Variable}
+import org.neo4j.cypher.internal.v4_0.expressions.{Ands, Expression, HasLabels, NodePatternExpression, Not, Ors, PatternComprehension, PatternExpression, Range, RelationshipChain, Variable}
 import org.neo4j.cypher.internal.v4_0.util.UnNamedNameGenerator._
 import org.neo4j.cypher.internal.ir._
 import org.neo4j.cypher.internal.ir.helpers.PatternConverters._
-import org.neo4j.cypher.internal.v4_0.expressions.Range
 
 object ExpressionConverters {
   val normalizer = MatchPredicateNormalizerChain(PropertyPredicateNormalizer, LabelPredicateNormalizer)
@@ -46,6 +45,19 @@ object ExpressionConverters {
     val qg = QueryGraph(
       patternRelationships = patternContent.rels.toSet,
       patternNodes = patternContent.nodeIds.toSet
+    ).addPredicates(predicates: _*)
+    qg.addArgumentIds(qg.idsWithoutOptionalMatchesOrUpdates.filter(_.isNamed).toIndexedSeq)
+  }
+
+  def asQueryGraph(exp: NodePatternExpression, innerVariableNamer: InnerVariableNamer): QueryGraph = {
+    val predicates: Seq[Expression] = exp.patterns.collect {
+      case pattern if normalizer.extract.isDefinedAt(pattern) => normalizer.extract(pattern)
+    }.flatten
+
+    val rewrittenPattern = exp.patterns.map(_.endoRewrite(topDown(Rewriter.lift(normalizer.replace))))
+
+    val qg = QueryGraph(
+      patternNodes = rewrittenPattern.map(_.variable.get.name).toSet
     ).addPredicates(predicates: _*)
     qg.addArgumentIds(qg.idsWithoutOptionalMatchesOrUpdates.filter(_.isNamed).toIndexedSeq)
   }

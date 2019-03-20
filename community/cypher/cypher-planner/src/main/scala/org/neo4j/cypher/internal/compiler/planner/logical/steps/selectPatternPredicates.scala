@@ -59,30 +59,53 @@ case object selectPatternPredicates extends CandidateGenerator[LogicalPlan] {
       }
   }
 
-  // TODO: consider to put the 3 methods below in some helper class to be shared with PatternExpressionSolver
   private def planInnerOfSubquery(lhs: LogicalPlan, context: LogicalPlanningContext, interestingOrder: InterestingOrder, e: ExistsSubClause): LogicalPlan = {
 
-    val patternExpr = PatternExpression(RelationshipsPattern(e.pattern.patternParts.head.element.asInstanceOf[RelationshipChain])(e.position))
-    val (namedExpr, namedMap) = PatternExpressionPatternElementNamer.apply(patternExpr)
+    var (namedMap, qg) = e.pattern.patternParts.head.element match {
+      case elem: RelationshipChain =>
+        val patternExpr = PatternExpression(RelationshipsPattern(elem)(elem.position))
+        val (namedExpr, namedMap) = PatternExpressionPatternElementNamer.apply(patternExpr)
+        val qg = extractQG(lhs, namedExpr, context)
 
-    val innerContext = createPlannerContext(context, namedMap)
+        (namedMap, qg)
 
-    var qg = extractQG(lhs, namedExpr, context)
+      case elem: NodePattern =>
+        val patternExpr = NodePatternExpression(List(elem))(elem.position)
+        val (namedExpr, namedMap) = PatternExpressionPatternElementNamer.apply(patternExpr)
+        val qg = extractQG(lhs, namedExpr, context)
+
+        (namedMap, qg)
+    }
+
+    // TODO: Can we do this more efficient (without a var qg)
     e.optionalWhereExpression.foreach(p => qg = qg.addPredicates(p))
 
+    val innerContext = createPlannerContext(context, namedMap)
     innerContext.strategy.plan(qg, interestingOrder, innerContext)
+
+  }
+
+  private def extractQG(source: LogicalPlan, namedExpr: NodePatternExpression, context: LogicalPlanningContext): QueryGraph = {
+    import org.neo4j.cypher.internal.ir.helpers.ExpressionConverters._
+
+    val qgArguments = getQueryGraphArguments(source, namedExpr)
+    asQueryGraph(namedExpr, context.innerVariableNamer).withArgumentIds(qgArguments)
   }
 
   private def extractQG(source: LogicalPlan, namedExpr: PatternExpression, context: LogicalPlanningContext): QueryGraph = {
     import org.neo4j.cypher.internal.ir.helpers.ExpressionConverters._
 
+    val qgArguments = getQueryGraphArguments(source, namedExpr)
+    asQueryGraph(namedExpr, context.innerVariableNamer).withArgumentIds(qgArguments)
+  }
+
+  private def getQueryGraphArguments(source: LogicalPlan, namedExpr: Expression) = {
     val dependencies = namedExpr.
       dependencies.
       map(_.name).
       filter(id => UnNamedNameGenerator.isNamed(id))
 
-    val qgArguments = source.availableSymbols intersect dependencies
-    asQueryGraph(namedExpr, context.innerVariableNamer).withArgumentIds(qgArguments)
+    source.availableSymbols intersect dependencies
   }
 
   private def createPlannerContext(context: LogicalPlanningContext, namedMap: Map[PatternElement, Variable]): LogicalPlanningContext = {
