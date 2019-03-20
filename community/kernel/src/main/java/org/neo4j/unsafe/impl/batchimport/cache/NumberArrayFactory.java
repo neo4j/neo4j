@@ -30,6 +30,7 @@ import java.util.function.Function;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.memory.GlobalMemoryTracker;
+import org.neo4j.unsafe.impl.internal.dragons.NativeMemoryAllocationRefusedError;
 
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
@@ -224,7 +225,7 @@ public interface NumberArrayFactory
                 Function<NumberArrayFactory,T> allocator )
         {
             List<AllocationFailure> failures = new ArrayList<>();
-            OutOfMemoryError error = null;
+            Error error = null;
             for ( NumberArrayFactory candidate : candidates )
             {
                 try
@@ -240,7 +241,7 @@ public interface NumberArrayFactory
                         throw new OutOfMemoryError( e.getMessage() );
                     }
                 }
-                catch ( OutOfMemoryError e )
+                catch ( OutOfMemoryError | NativeMemoryAllocationRefusedError e )
                 {   // Alright let's try the next one
                     if ( error == null )
                     {
@@ -257,7 +258,7 @@ public interface NumberArrayFactory
             throw error( length, itemSize, error );
         }
 
-        private OutOfMemoryError error( long length, int itemSize, OutOfMemoryError error )
+        private Error error( long length, int itemSize, Error error )
         {
             return Exceptions.withMessage( error, format( "%s: Not enough memory available for allocating %s, tried %s",
                     error.getMessage(), bytes( length * itemSize ), Arrays.toString( candidates ) ) );
