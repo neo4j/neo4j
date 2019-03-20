@@ -26,6 +26,7 @@ import org.junit.Test;
 import java.io.File;
 import java.util.HashMap;
 
+import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.gis.spatial.index.curves.SpaceFillingCurveConfiguration;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
@@ -33,31 +34,37 @@ import org.neo4j.internal.kernel.api.schema.IndexProviderDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
+import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.index.schema.config.ConfiguredSpaceFillingCurveSettingsCache;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettingsCache;
 import org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettingsFactory;
-import org.neo4j.storageengine.api.schema.IndexDescriptorFactory;
 import org.neo4j.storageengine.api.schema.SimpleNodeValueClient;
 import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
 import org.neo4j.test.rule.PageCacheAndDependenciesRule;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.Values;
 
+import static java.util.Collections.singleton;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 import static org.neo4j.kernel.api.index.IndexEntryUpdate.add;
 import static org.neo4j.kernel.api.index.IndexProvider.Monitor.EMPTY;
+import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forLabel;
 import static org.neo4j.kernel.impl.api.index.PhaseTracker.nullInstance;
+import static org.neo4j.storageengine.api.schema.IndexDescriptorFactory.forSchema;
+import static org.neo4j.storageengine.api.schema.IndexDescriptorFactory.uniqueForSchema;
 import static org.neo4j.values.storable.Values.stringValue;
 
 public class GenericBlockBasedIndexPopulatorTest
 {
-    private static final StoreIndexDescriptor INDEX_DESCRIPTOR = IndexDescriptorFactory.forSchema( SchemaDescriptorFactory.forLabel( 1, 1 ) ).withId( 1 );
+    private static final StoreIndexDescriptor INDEX_DESCRIPTOR = forSchema( forLabel( 1, 1 ) ).withId( 1 );
+    private static final StoreIndexDescriptor UNIQUE_INDEX_DESCRIPTOR = uniqueForSchema( forLabel( 1, 1 ) ).withId( 1 );
 
     private IndexDirectoryStructure directoryStructure;
     private File indexFile;
@@ -82,7 +89,7 @@ public class GenericBlockBasedIndexPopulatorTest
     public void shouldSeeExternalUpdateBothBeforeAndAfterScanCompleted() throws IndexEntryConflictException
     {
         // given
-        BlockBasedIndexPopulator<GenericKey,NativeIndexValue> populator = instantiatePopulator();
+        BlockBasedIndexPopulator<GenericKey,NativeIndexValue> populator = instantiatePopulator( INDEX_DESCRIPTOR );
         try
         {
             // when
@@ -101,6 +108,160 @@ public class GenericBlockBasedIndexPopulatorTest
         finally
         {
             populator.close( true );
+        }
+    }
+
+    @Test
+    public void shouldThrowOnDuplicatedValuesFromScan()
+    {
+        // given
+        BlockBasedIndexPopulator<GenericKey,NativeIndexValue> populator = instantiatePopulator( UNIQUE_INDEX_DESCRIPTOR );
+        boolean closed = false;
+        try
+        {
+            // when
+            Value duplicate = Values.of( "duplicate" );
+            IndexEntryUpdate<?> firstScanUpdate = IndexEntryUpdate.add( 1, INDEX_DESCRIPTOR, duplicate );
+            IndexEntryUpdate<?> secondScanUpdate = IndexEntryUpdate.add( 2, INDEX_DESCRIPTOR, duplicate );
+            try
+            {
+                populator.add( singleton( firstScanUpdate ) );
+                populator.add( singleton( secondScanUpdate ) );
+                populator.scanCompleted( nullInstance );
+
+                fail( "Expected to throw" );
+            }
+            catch ( IndexEntryConflictException e )
+            {
+                // then
+            }
+        }
+        finally
+        {
+            if ( !closed )
+            {
+                populator.close( true );
+            }
+        }
+    }
+
+    @Test
+    public void shouldThrowOnDuplicatedValuesFromExternalUpdates()
+    {
+        // given
+        BlockBasedIndexPopulator<GenericKey,NativeIndexValue> populator = instantiatePopulator( UNIQUE_INDEX_DESCRIPTOR );
+        boolean closed = false;
+        try
+        {
+            // when
+            Value duplicate = Values.of( "duplicate" );
+            IndexEntryUpdate<?> firstExternalUpdate = IndexEntryUpdate.add( 1, INDEX_DESCRIPTOR, duplicate );
+            IndexEntryUpdate<?> secondExternalUpdate = IndexEntryUpdate.add( 2, INDEX_DESCRIPTOR, duplicate );
+            try
+            {
+                try ( IndexUpdater updater = populator.newPopulatingUpdater() )
+                {
+                    updater.process( firstExternalUpdate );
+                    updater.process( secondExternalUpdate );
+                }
+                populator.scanCompleted( nullInstance );
+
+                fail( "Expected to throw" );
+            }
+            catch ( IndexEntryConflictException e )
+            {
+                // then
+            }
+        }
+        finally
+        {
+            if ( !closed )
+            {
+                populator.close( true );
+            }
+        }
+    }
+
+    @Test
+    public void shouldThrowOnDuplicatedValuesFromScanAndExternalUpdates()
+    {
+        // given
+        BlockBasedIndexPopulator<GenericKey,NativeIndexValue> populator = instantiatePopulator( UNIQUE_INDEX_DESCRIPTOR );
+        boolean closed = false;
+        try
+        {
+            // when
+            Value duplicate = Values.of( "duplicate" );
+            IndexEntryUpdate<?> externalUpdate = IndexEntryUpdate.add( 1, INDEX_DESCRIPTOR, duplicate );
+            IndexEntryUpdate<?> scanUpdate = IndexEntryUpdate.add( 2, INDEX_DESCRIPTOR, duplicate );
+            try
+            {
+                try ( IndexUpdater updater = populator.newPopulatingUpdater() )
+                {
+                    updater.process( externalUpdate );
+                }
+                populator.add( singleton( scanUpdate ) );
+                populator.scanCompleted( nullInstance );
+
+                fail( "Expected to throw" );
+            }
+            catch ( IndexEntryConflictException e )
+            {
+                // then
+            }
+        }
+        finally
+        {
+            if ( !closed )
+            {
+                populator.close( true );
+            }
+        }
+    }
+
+    @Test
+    public void shouldNotThrowOnDuplicationsLaterFixedByExternalUpdates() throws IndexEntryConflictException
+    {
+        // given
+        BlockBasedIndexPopulator<GenericKey,NativeIndexValue> populator = instantiatePopulator( UNIQUE_INDEX_DESCRIPTOR );
+        boolean closed = false;
+        try
+        {
+            // when
+            Value duplicate = Values.of( "duplicate" );
+            Value unique = Values.of( "unique" );
+            IndexEntryUpdate<?> firstScanUpdate = IndexEntryUpdate.add( 1, INDEX_DESCRIPTOR, duplicate );
+            IndexEntryUpdate<?> secondScanUpdate = IndexEntryUpdate.add( 2, INDEX_DESCRIPTOR, duplicate );
+            IndexEntryUpdate<?> externalUpdate = IndexEntryUpdate.change( 1, INDEX_DESCRIPTOR, duplicate, unique );
+            populator.add( singleton( firstScanUpdate ) );
+            try ( IndexUpdater updater = populator.newPopulatingUpdater() )
+            {
+                updater.process( externalUpdate );
+            }
+            populator.add( singleton( secondScanUpdate ) );
+            populator.scanCompleted( nullInstance );
+
+            // then
+            assertHasEntry( populator, unique, 1 );
+            assertHasEntry( populator, duplicate, 2 );
+        }
+        finally
+        {
+            if ( !closed )
+            {
+                populator.close( true );
+            }
+        }
+    }
+
+    private void assertHasEntry( BlockBasedIndexPopulator<GenericKey,NativeIndexValue> populator, Value duplicate, int expectedId )
+    {
+        try ( NativeIndexReader<GenericKey,NativeIndexValue> reader = populator.newReader() )
+        {
+            PrimitiveLongResourceIterator query = reader.query( IndexQuery.exact( INDEX_DESCRIPTOR.properties()[0], duplicate ) );
+            assertTrue( query.hasNext() );
+            long id = query.next();
+            assertEquals( expectedId, id );
         }
     }
 
@@ -127,7 +288,7 @@ public class GenericBlockBasedIndexPopulatorTest
         }
     }
 
-    private GenericBlockBasedIndexPopulator instantiatePopulator()
+    private GenericBlockBasedIndexPopulator instantiatePopulator( StoreIndexDescriptor indexDescriptor )
     {
         Config config = Config.defaults();
         ConfiguredSpaceFillingCurveSettingsCache settingsCache = new ConfiguredSpaceFillingCurveSettingsCache( config );
@@ -136,7 +297,7 @@ public class GenericBlockBasedIndexPopulatorTest
         SpaceFillingCurveConfiguration configuration =
                 SpaceFillingCurveSettingsFactory.getConfiguredSpaceFillingCurveConfiguration( config );
         GenericBlockBasedIndexPopulator populator =
-                new GenericBlockBasedIndexPopulator( storage.pageCache(), fs, indexFile, layout, EMPTY, INDEX_DESCRIPTOR, spatialSettings, directoryStructure,
+                new GenericBlockBasedIndexPopulator( storage.pageCache(), fs, indexFile, layout, EMPTY, indexDescriptor, spatialSettings, directoryStructure,
                         configuration, dropAction, false );
         populator.create();
         return populator;
