@@ -60,22 +60,22 @@ public class SingleFilePageSwapper implements PageSwapper
     private static final boolean PRINT_REFLECTION_EXCEPTIONS = flag( SingleFilePageSwapper.class, "printReflectionExceptions", false );
 
     // Exponent of 2 of how many channels we open per file:
-    private static final int globalChannelStripePower = getInteger( SingleFilePageSwapper.class, "channelStripePower", defaultChannelStripePower() );
+    private static final int GLOBAL_CHANNEL_STRIPE_POWER = getInteger( SingleFilePageSwapper.class, "channelStripePower", defaultChannelStripePower() );
 
     // Exponent of 2 of how many consecutive pages go to the same stripe
-    private static final int channelStripeShift = getInteger( SingleFilePageSwapper.class, "channelStripeShift", 4 );
+    private static final int CHANNEL_STRIPE_SHIFT = getInteger( SingleFilePageSwapper.class, "channelStripeShift", 4 );
 
-    private static final int globalChannelStripeCount = 1 << globalChannelStripePower;
-    private static final int globalChannelStripeMask = stripeMask( globalChannelStripeCount );
+    private static final int GLOBAL_CHANNEL_STRIPE_COUNT = 1 << GLOBAL_CHANNEL_STRIPE_POWER;
+    private static final int GLOBAL_CHANNEL_STRIPE_MASK = stripeMask( GLOBAL_CHANNEL_STRIPE_COUNT );
 
-    private static final int tokenChannelStripe = 0;
-    private static final long tokenFilePageId = 0;
+    private static final int TOKEN_CHANNEL_STRIPE = 0;
+    private static final long TOKEN_FILE_PAGE_ID = 0;
 
-    private static final long fileSizeOffset = UnsafeUtil.getFieldOffset( SingleFilePageSwapper.class, "fileSize" );
+    private static final long FILE_SIZE_OFFSET = UnsafeUtil.getFieldOffset( SingleFilePageSwapper.class, "fileSize" );
 
-    private static final ThreadLocal<ByteBuffer> proxyCache = new ThreadLocal<>();
+    private static final ThreadLocal<ByteBuffer> PROXY_CACHE = new ThreadLocal<>();
     private static final Class<?> CLS_FILE_CHANNEL_IMPL = getInternalFileChannelClass();
-    private static final MethodHandle positionLockGetter = getPositionLockGetter();
+    private static final MethodHandle POSITION_LOCK_GETTER = getPositionLockGetter();
 
     private static int defaultChannelStripePower()
     {
@@ -136,7 +136,7 @@ public class SingleFilePageSwapper implements PageSwapper
 
     private static ByteBuffer proxy( long buffer, int bufferLength ) throws IOException
     {
-        ByteBuffer buf = proxyCache.get();
+        ByteBuffer buf = PROXY_CACHE.get();
         if ( buf != null )
         {
             UnsafeUtil.initDirectByteBuffer( buf, buffer, bufferLength );
@@ -156,7 +156,7 @@ public class SingleFilePageSwapper implements PageSwapper
         {
             throw new IOException( e );
         }
-        proxyCache.set( buf );
+        PROXY_CACHE.set( buf );
         return buf;
     }
 
@@ -176,7 +176,7 @@ public class SingleFilePageSwapper implements PageSwapper
     @SuppressWarnings( "unused" ) // Accessed through unsafe
     private volatile long fileSize;
 
-    public SingleFilePageSwapper( File file, FileSystemAbstraction fs, int filePageSize, PageEvictionCallback onEviction, boolean noChannelStriping )
+    SingleFilePageSwapper( File file, FileSystemAbstraction fs, int filePageSize, PageEvictionCallback onEviction, boolean noChannelStriping )
             throws IOException
     {
         this.fs = fs;
@@ -188,8 +188,8 @@ public class SingleFilePageSwapper implements PageSwapper
         }
         else
         {
-            this.channelStripeCount = globalChannelStripeCount;
-            this.channelStripeMask = globalChannelStripeMask;
+            this.channelStripeCount = GLOBAL_CHANNEL_STRIPE_COUNT;
+            this.channelStripeMask = GLOBAL_CHANNEL_STRIPE_MASK;
         }
         this.channels = new StoreChannel[channelStripeCount];
         for ( int i = 0; i < channelStripeCount; i++ )
@@ -198,7 +198,7 @@ public class SingleFilePageSwapper implements PageSwapper
         }
         this.filePageSize = filePageSize;
         this.onEviction = onEviction;
-        increaseFileSizeTo( channels[tokenChannelStripe].size() );
+        increaseFileSizeTo( channels[TOKEN_CHANNEL_STRIPE].size() );
 
         try
         {
@@ -220,17 +220,17 @@ public class SingleFilePageSwapper implements PageSwapper
             currentFileSize = getCurrentFileSize();
         }
         while ( currentFileSize < newFileSize && !UnsafeUtil.compareAndSwapLong(
-                this, fileSizeOffset, currentFileSize, newFileSize ) );
+                this, FILE_SIZE_OFFSET, currentFileSize, newFileSize ) );
     }
 
     private long getCurrentFileSize()
     {
-        return UnsafeUtil.getLongVolatile( this, fileSizeOffset );
+        return UnsafeUtil.getLongVolatile( this, FILE_SIZE_OFFSET );
     }
 
     private void setCurrentFileSize( long size )
     {
-        UnsafeUtil.putLongVolatile( this, fileSizeOffset, size );
+        UnsafeUtil.putLongVolatile( this, FILE_SIZE_OFFSET, size );
     }
 
     private void acquireLock() throws IOException
@@ -248,7 +248,7 @@ public class SingleFilePageSwapper implements PageSwapper
 
         try
         {
-            fileLock = channels[tokenChannelStripe].tryLock();
+            fileLock = channels[TOKEN_CHANNEL_STRIPE].tryLock();
             if ( fileLock == null )
             {
                 throw new FileLockException( file );
@@ -268,7 +268,7 @@ public class SingleFilePageSwapper implements PageSwapper
 
     private int stripe( long filePageId )
     {
-        return (int) (filePageId >>> channelStripeShift) & channelStripeMask;
+        return (int) (filePageId >>> CHANNEL_STRIPE_SHIFT) & channelStripeMask;
     }
 
     private int swapIn( StoreChannel channel, long bufferAddress, int bufferSize, long fileOffset, int filePageSize ) throws IOException
@@ -370,7 +370,7 @@ public class SingleFilePageSwapper implements PageSwapper
     @Override
     public long read( long startFilePageId, long[] bufferAddresses, int bufferSize, int arrayOffset, int length ) throws IOException
     {
-        if ( positionLockGetter != null && hasPositionLock )
+        if ( POSITION_LOCK_GETTER != null && hasPositionLock )
         {
             try
             {
@@ -512,7 +512,7 @@ public class SingleFilePageSwapper implements PageSwapper
     @Override
     public long write( long startFilePageId, long[] bufferAddresses, int arrayOffset, int length ) throws IOException
     {
-        if ( positionLockGetter != null && hasPositionLock )
+        if ( POSITION_LOCK_GETTER != null && hasPositionLock )
         {
             try
             {
@@ -522,10 +522,14 @@ public class SingleFilePageSwapper implements PageSwapper
             {
                 throw ioe;
             }
-            catch ( Exception ignore )
+            catch ( Exception exception )
             {
                 // There's a lot of reflection going on in that method. We ignore everything that can go wrong, and
                 // isn't exactly an IOException. Instead, we'll try our fallback code and see what it says.
+                if ( PRINT_REFLECTION_EXCEPTIONS )
+                {
+                    exception.printStackTrace();
+                }
             }
         }
         return writePositionVectoredFallback( startFilePageId, bufferAddresses, arrayOffset, length );
@@ -600,7 +604,7 @@ public class SingleFilePageSwapper implements PageSwapper
     {
         try
         {
-            return (Object) positionLockGetter.invoke( channel );
+            return (Object) POSITION_LOCK_GETTER.invoke( channel );
         }
         catch ( Throwable th )
         {
@@ -697,7 +701,7 @@ public class SingleFilePageSwapper implements PageSwapper
         try
         {
             channels[stripe] = fs.open( file, OpenMode.READ_WRITE );
-            if ( stripe == tokenChannelStripe )
+            if ( stripe == TOKEN_CHANNEL_STRIPE )
             {
                 // The closing of a FileChannel also releases all associated file locks.
                 acquireLock();
@@ -775,11 +779,11 @@ public class SingleFilePageSwapper implements PageSwapper
     {
         try
         {
-            channel( tokenFilePageId ).force( false );
+            channel( TOKEN_FILE_PAGE_ID ).force( false );
         }
         catch ( ClosedChannelException e )
         {
-            tryReopen( tokenFilePageId, e );
+            tryReopen( TOKEN_FILE_PAGE_ID, e );
 
             if ( attemptsLeft < 1 )
             {
@@ -819,11 +823,11 @@ public class SingleFilePageSwapper implements PageSwapper
         setCurrentFileSize( 0 );
         try
         {
-            channel( tokenFilePageId ).truncate( 0 );
+            channel( TOKEN_FILE_PAGE_ID ).truncate( 0 );
         }
         catch ( ClosedChannelException e )
         {
-            tryReopen( tokenFilePageId, e );
+            tryReopen( TOKEN_FILE_PAGE_ID, e );
 
             if ( attemptsLeft < 1 )
             {
