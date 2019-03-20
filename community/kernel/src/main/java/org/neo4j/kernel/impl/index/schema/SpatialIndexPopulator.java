@@ -34,8 +34,8 @@ import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettings;
+import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.storageengine.api.schema.IndexSample;
 import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
@@ -170,12 +170,12 @@ class SpatialIndexPopulator extends SpatialIndexCache<WorkSyncedNativeIndexPopul
         }
 
         @Override
-        ConflictDetectingValueMerger<SpatialIndexKey,NativeIndexValue> getMainConflictDetector()
+        ConflictDetectingValueMerger<SpatialIndexKey,NativeIndexValue,Value[]> getMainConflictDetector()
         {
             // Because of lossy point representation in index we need to always compare on node id,
             // even for unique indexes. If we don't we risk throwing constraint violation exception
             // for points that are in fact unique.
-            return new ConflictDetectingValueMerger<>( true );
+            return new ThrowingConflictDetector<>( true );
         }
 
         @Override
