@@ -32,23 +32,24 @@ import org.neo4j.values.virtual.VirtualValues
 
 class SimpleInternalExpressionEvaluator extends InternalExpressionEvaluator {
 
-  import SimpleInternalExpressionEvaluator.COLUMN
+  import SimpleInternalExpressionEvaluator.{COLUMN, CONVERTERS}
 
   private val parser = new CypherParser()
 
   override def evaluate(expression: String): AnyValue = {
-    val e = parseToExpression(expression)
-    val converters = new ExpressionConverters(CommunityExpressionConverter(TokenContext.EMPTY))
-    val commandExpr = converters.toCommandExpression(Id.INVALID_ID, e)
 
     val emptyQueryState = new QueryState(null,
                                          null,
                                          VirtualValues.EMPTY_MAP)
+
     try {
+      val e = parseToExpression(expression)
+      val commandExpr = CONVERTERS.toCommandExpression(Id.INVALID_ID, e)
       commandExpr(ExecutionContext.empty, emptyQueryState)
     }
     catch {
-      case e: Exception => throw new EvaluationException(s"Failed to evaluate expression $expression", e)
+      case e: Exception =>
+        throw new EvaluationException(s"Failed to evaluate expression $expression", e)
     }
   }
 
@@ -65,6 +66,6 @@ class SimpleInternalExpressionEvaluator extends InternalExpressionEvaluator {
 }
 
 object SimpleInternalExpressionEvaluator {
-
+  private val CONVERTERS = new ExpressionConverters(CommunityExpressionConverter(TokenContext.EMPTY))
   private val COLUMN = "RESULT"
 }
