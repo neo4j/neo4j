@@ -84,7 +84,7 @@ public class NeoStores implements AutoCloseable
 
     private static final StoreType[] STORE_TYPES = StoreType.values();
 
-    private final Predicate<StoreType> INSTANTIATED_STORES = new Predicate<StoreType>()
+    private final Predicate<StoreType> INSTANTIATED_STORES = new Predicate<>()
     {
         @Override
         public boolean test( StoreType type )
@@ -370,7 +370,7 @@ public class NeoStores implements AutoCloseable
     private Iterable<CommonAbstractStore> instantiatedRecordStores()
     {
         Iterator<StoreType> storeTypes = new FilteringIterator<>( iterator( STORE_TYPES ), INSTANTIATED_STORES );
-        return loop( new IteratorWrapper<CommonAbstractStore,StoreType>( storeTypes )
+        return loop( new IteratorWrapper<>( storeTypes )
         {
             @Override
             protected CommonAbstractStore underlyingObjectToObject( StoreType type )

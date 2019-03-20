@@ -268,7 +268,7 @@ class DumpCommandIT
             try ( Closeable ignored = withPermissions( storeLayout.storeLockFile().toPath(), emptySet() ) )
             {
                 CommandFailed commandFailed = assertThrows( CommandFailed.class, () -> execute( "foo" ) );
-                assertEquals( commandFailed.getMessage(), "you do not have permission to dump the database -- is Neo4j running as a different user?" );
+                assertEquals( "you do not have permission to dump the database -- is Neo4j running as a different user?", commandFailed.getMessage() );
             }
         }
     }

@@ -22,7 +22,6 @@ package org.neo4j.unsafe.batchinsert;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.Map;
 
@@ -53,18 +52,18 @@ public class BatchInsertersTest
     @Test
     public void automaticallyCloseCreatedFileSystemOnShutdown() throws Exception
     {
-        verifyInserterFileSystemClose( inserter( getStoreDir() ) );
-        verifyInserterFileSystemClose( inserter( getStoreDir(), getConfig() ) );
-        verifyInserterFileSystemClose( inserter( getStoreDir(), getConfig(), getExtensions() ) );
+        verifyInserterFileSystemClose( inserter( testDirectory.databaseLayout() ) );
+        verifyInserterFileSystemClose( inserter( testDirectory.databaseLayout(), getConfig() ) );
+        verifyInserterFileSystemClose( inserter( testDirectory.databaseLayout(), getConfig(), getExtensions() ) );
     }
 
     @Test
     public void providedFileSystemNotClosedAfterShutdown() throws IOException
     {
         EphemeralFileSystemAbstraction fs = fileSystemRule.get();
-        verifyProvidedFileSystemOpenAfterShutdown( inserter( getStoreDir(), fs ), fs );
-        verifyProvidedFileSystemOpenAfterShutdown( inserter( getStoreDir(), fs, getConfig() ), fs );
-        verifyProvidedFileSystemOpenAfterShutdown( inserter( getStoreDir(), fs, getConfig(), getExtensions() ), fs );
+        verifyProvidedFileSystemOpenAfterShutdown( inserter( testDirectory.databaseLayout(), fs ), fs );
+        verifyProvidedFileSystemOpenAfterShutdown( inserter( testDirectory.databaseLayout(), fs, getConfig() ), fs );
+        verifyProvidedFileSystemOpenAfterShutdown( inserter( testDirectory.databaseLayout(), fs, getConfig(), getExtensions() ), fs );
     }
 
     private static Iterable<ExtensionFactory<?>> getExtensions()
@@ -81,11 +80,6 @@ public class BatchInsertersTest
     {
         inserter.shutdown();
         assertFalse( fileSystemAbstraction.isClosed() );
-    }
-
-    private File getStoreDir()
-    {
-        return testDirectory.storeDir();
     }
 
     private static void verifyInserterFileSystemClose( BatchInserter inserter )

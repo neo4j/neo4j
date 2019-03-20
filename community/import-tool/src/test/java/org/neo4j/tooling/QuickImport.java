@@ -163,7 +163,8 @@ public class QuickImport
                 final JobScheduler jobScheduler = life.add( createScheduler() );
                 consumer = BatchImporterFactory.withHighestPriority().instantiate( DatabaseLayout.of( dir ), fileSystem, null, importConfig,
                         new SimpleLogService( logging, logging ), defaultVisible( jobScheduler ), EMPTY, dbConfig,
-                        RecordFormatSelector.selectForConfig( dbConfig, logging ), NO_MONITOR, jobScheduler, Collector.EMPTY );
+                        RecordFormatSelector.selectForConfig( dbConfig, logging ), NO_MONITOR, jobScheduler, Collector.EMPTY,
+                        TransactionLogsInitializer.INSTANCE );
                 ImportTool.printOverview( dir, Collections.emptyList(), Collections.emptyList(), importConfig, System.out );
             }
             consumer.doImport( input );

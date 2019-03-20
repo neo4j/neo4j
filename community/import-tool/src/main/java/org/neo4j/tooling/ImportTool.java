@@ -575,7 +575,7 @@ public class ImportTool
                 EMPTY,
                 dbConfig,
                 RecordFormatSelector.selectForConfig( dbConfig, logService.getInternalLogProvider() ),
-                new PrintingImportLogicMonitor( out, err ), jobScheduler, badCollector );
+                new PrintingImportLogicMonitor( out, err ), jobScheduler, badCollector, TransactionLogsInitializer.INSTANCE );
         printOverview( databaseLayout.databaseDirectory(), nodesFiles, relationshipsFiles, configuration, out );
         success = false;
         try

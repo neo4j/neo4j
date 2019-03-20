@@ -96,7 +96,7 @@ public class RelationshipGroupDefragmenterTest
     {
         jobScheduler = new ThreadPoolJobScheduler();
         stores = BatchingNeoStores.batchingNeoStores( fileSystemRule.get(),
-                directory.absolutePath(), format, CONFIG, NullLogService.getInstance(),
+                directory.databaseLayout(), format, CONFIG, NullLogService.getInstance(),
                 AdditionalInitialIds.EMPTY, Config.defaults(), jobScheduler );
         stores.createNew();
     }

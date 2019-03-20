@@ -64,6 +64,7 @@ import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
+import org.neo4j.tooling.TransactionLogsInitializer;
 import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.input.Group;
 import org.neo4j.unsafe.impl.batchimport.input.Groups;
@@ -171,7 +172,7 @@ public class ParallelBatchImporterTest
         Config dbConfig = Config.defaults( GraphDatabaseSettings.dense_node_threshold, String.valueOf( RELATIONSHIPS_PER_NODE * 2 ) );
         final BatchImporter inserter = new ParallelBatchImporter( databaseLayout,
                 fileSystemRule.get(), null, config, NullLogService.getInstance(),
-                processorAssigner, EMPTY, dbConfig, getFormat(), NO_MONITOR, jobScheduler, Collector.EMPTY );
+                processorAssigner, EMPTY, dbConfig, getFormat(), NO_MONITOR, jobScheduler, Collector.EMPTY, TransactionLogsInitializer.INSTANCE );
         try
         {
             // WHEN

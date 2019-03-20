@@ -223,6 +223,13 @@ public class TestDirectory extends ExternalResource
         return databaseLayout;
     }
 
+    public DatabaseLayout databaseLayout( File storeDir, StoreLayoutConfig storeLayoutConfig )
+    {
+        DatabaseLayout databaseLayout = StoreLayout.of( storeDir, storeLayoutConfig ).databaseLayout( DEFAULT_DATABASE_DIRECTORY );
+        createDirectory( databaseLayout );
+        return databaseLayout;
+    }
+
     public DatabaseLayout databaseLayout( String name )
     {
         DatabaseLayout databaseLayout = storeLayout.databaseLayout( name );

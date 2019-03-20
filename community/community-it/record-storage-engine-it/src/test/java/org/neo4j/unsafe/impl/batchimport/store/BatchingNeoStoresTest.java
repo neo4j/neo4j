@@ -125,7 +125,7 @@ class BatchingNeoStoresTest
             try ( JobScheduler jobScheduler = new ThreadPoolJobScheduler() )
             {
                 RecordFormats recordFormats = RecordFormatSelector.selectForConfig( Config.defaults(), NullLogProvider.getInstance() );
-                try ( BatchingNeoStores store = BatchingNeoStores.batchingNeoStores( fileSystem, testDirectory.databaseDir(), recordFormats, DEFAULT,
+                try ( BatchingNeoStores store = BatchingNeoStores.batchingNeoStores( fileSystem, testDirectory.databaseLayout(), recordFormats, DEFAULT,
                         NullLogService.getInstance(), EMPTY, Config.defaults(), jobScheduler ) )
                 {
                     store.createNew();
@@ -148,7 +148,7 @@ class BatchingNeoStoresTest
         RecordFormats recordFormats = LATEST_RECORD_FORMATS;
         int headerSize = recordFormats.dynamic().getRecordHeaderSize();
         try ( JobScheduler jobScheduler = new ThreadPoolJobScheduler();
-              BatchingNeoStores store = BatchingNeoStores.batchingNeoStores( fileSystem, testDirectory.absolutePath(),
+              BatchingNeoStores store = BatchingNeoStores.batchingNeoStores( fileSystem, testDirectory.databaseLayout(),
               recordFormats, DEFAULT, NullLogService.getInstance(), EMPTY, config, jobScheduler ) )
         {
             store.createNew();
@@ -168,7 +168,7 @@ class BatchingNeoStoresTest
             // given all the stores with some records in them
             testDirectory.cleanup();
             try ( BatchingNeoStores stores = BatchingNeoStores.batchingNeoStoresWithExternalPageCache( fileSystem, pageCache,
-                    PageCacheTracer.NULL, testDirectory.absolutePath(), LATEST_RECORD_FORMATS, DEFAULT, NullLogService.getInstance(), EMPTY,
+                    PageCacheTracer.NULL, testDirectory.databaseLayout(), LATEST_RECORD_FORMATS, DEFAULT, NullLogService.getInstance(), EMPTY,
                     Config.defaults() ) )
             {
                 stores.createNew();
@@ -180,7 +180,7 @@ class BatchingNeoStoresTest
 
             // when opening and pruning all except the one we test
             try ( BatchingNeoStores stores = BatchingNeoStores.batchingNeoStoresWithExternalPageCache( fileSystem, pageCache,
-                    PageCacheTracer.NULL, testDirectory.absolutePath(), LATEST_RECORD_FORMATS, DEFAULT, NullLogService.getInstance(), EMPTY,
+                    PageCacheTracer.NULL, testDirectory.databaseLayout(), LATEST_RECORD_FORMATS, DEFAULT, NullLogService.getInstance(), EMPTY,
                     Config.defaults() ) )
             {
                 stores.pruneAndOpenExistingStore( type -> type == typeToTest, Predicates.alwaysFalse() );
@@ -208,7 +208,7 @@ class BatchingNeoStoresTest
         // given
         RecordFormats formats = new ForcedSecondaryUnitRecordFormats( LATEST_RECORD_FORMATS );
         try ( BatchingNeoStores stores = BatchingNeoStores.batchingNeoStoresWithExternalPageCache( fileSystem,
-                pageCache, PageCacheTracer.NULL, testDirectory.absolutePath(), formats, DEFAULT,
+                pageCache, PageCacheTracer.NULL, testDirectory.databaseLayout(), formats, DEFAULT,
                 NullLogService.getInstance(), EMPTY, Config.defaults() ) )
         {
             stores.createNew();
@@ -228,7 +228,7 @@ class BatchingNeoStoresTest
         // given
         RecordFormats formats = new ForcedSecondaryUnitRecordFormats( LATEST_RECORD_FORMATS );
         try ( BatchingNeoStores stores = BatchingNeoStores.batchingNeoStoresWithExternalPageCache( fileSystem,
-                pageCache, PageCacheTracer.NULL, testDirectory.absolutePath(), formats, DEFAULT,
+                pageCache, PageCacheTracer.NULL, testDirectory.databaseLayout(), formats, DEFAULT,
                 NullLogService.getInstance(), EMPTY, Config.defaults() ) )
         {
             stores.createNew();
@@ -248,7 +248,7 @@ class BatchingNeoStoresTest
         // given
         RecordFormats formats = LATEST_RECORD_FORMATS;
         try ( BatchingNeoStores stores = BatchingNeoStores.batchingNeoStoresWithExternalPageCache( fileSystem,
-                pageCache, PageCacheTracer.NULL, testDirectory.absolutePath(), formats, DEFAULT,
+                pageCache, PageCacheTracer.NULL, testDirectory.databaseLayout(), formats, DEFAULT,
                 NullLogService.getInstance(), EMPTY, Config.defaults() ) )
         {
             stores.createNew();
@@ -268,7 +268,7 @@ class BatchingNeoStoresTest
         // given
         long expectedHighId;
         try ( BatchingNeoStores stores = BatchingNeoStores.batchingNeoStoresWithExternalPageCache( fileSystem,
-                pageCache, PageCacheTracer.NULL, testDirectory.absolutePath(), LATEST_RECORD_FORMATS, DEFAULT,
+                pageCache, PageCacheTracer.NULL, testDirectory.databaseLayout(), LATEST_RECORD_FORMATS, DEFAULT,
                 NullLogService.getInstance(), EMPTY, Config.defaults() ) )
         {
             stores.createNew();
@@ -285,7 +285,7 @@ class BatchingNeoStoresTest
 
         // when
         try ( BatchingNeoStores stores = BatchingNeoStores.batchingNeoStoresWithExternalPageCache( fileSystem,
-                pageCache, PageCacheTracer.NULL, testDirectory.absolutePath(), LATEST_RECORD_FORMATS, DEFAULT,
+                pageCache, PageCacheTracer.NULL, testDirectory.databaseLayout(), LATEST_RECORD_FORMATS, DEFAULT,
                 NullLogService.getInstance(), EMPTY, Config.defaults() ) )
         {
             stores.pruneAndOpenExistingStore( Predicates.alwaysTrue(), Predicates.alwaysTrue() );

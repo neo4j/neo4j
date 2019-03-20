@@ -163,7 +163,7 @@ public interface TransactionIdStore
      * @param logVersion new last closed transaction log version
      * @param byteOffset new last closed transaction offset
      */
-    void setLastClosedTransaction( long transactionId, long logVersion, long byteOffset );
+    void resetLastClosedTransaction( long transactionId, long logVersion, long byteOffset );
 
     /**
      * Forces the transaction id counters to persistent storage.

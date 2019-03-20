@@ -36,6 +36,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.counts.CountsAccessor;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.RecordStore;
@@ -134,7 +135,7 @@ public class ImportLogic implements Closeable
         }
     };
 
-    private final File storeDir;
+    private final File databaseDirectory;
     private final FileSystemAbstraction fileSystem;
     private final BatchingNeoStores neoStore;
     private final Configuration config;
@@ -166,8 +167,8 @@ public class ImportLogic implements Closeable
     private long availableMemoryForLinking;
 
     /**
-     * @param storeDir directory which the db will be created in.
-     * @param fileSystem {@link FileSystemAbstraction} that the {@code storeDir} lives in.
+     * @param databaseLayout directory which the db will be created in.
+     * @param fileSystem {@link FileSystemAbstraction} that the {@code databaseLayout} lives in.
      * @param neoStore {@link BatchingNeoStores} to import into.
      * @param config import-specific {@link Configuration}.
      * @param logService {@link LogService} to use.
@@ -176,11 +177,11 @@ public class ImportLogic implements Closeable
      * @param badCollector {@link Collector} for bad entries.
      * @param monitor {@link Monitor} for some events.
      */
-    public ImportLogic( File storeDir, FileSystemAbstraction fileSystem, BatchingNeoStores neoStore,
+    public ImportLogic( DatabaseLayout databaseLayout, FileSystemAbstraction fileSystem, BatchingNeoStores neoStore,
             Configuration config, Config dbConfig, LogService logService, ExecutionMonitor executionMonitor,
             RecordFormats recordFormats, Collector badCollector, Monitor monitor )
     {
-        this.storeDir = storeDir;
+        this.databaseDirectory = databaseLayout.databaseDirectory();
         this.fileSystem = fileSystem;
         this.neoStore = neoStore;
         this.config = config;
@@ -199,7 +200,7 @@ public class ImportLogic implements Closeable
         startTime = currentTimeMillis();
         this.input = input;
         PageCacheArrayFactoryMonitor numberArrayFactoryMonitor = new PageCacheArrayFactoryMonitor();
-        numberArrayFactory = auto( neoStore.getPageCache(), storeDir, config.allowCacheAllocationOnHeap(), numberArrayFactoryMonitor );
+        numberArrayFactory = auto( neoStore.getPageCache(), databaseDirectory, config.allowCacheAllocationOnHeap(), numberArrayFactoryMonitor );
         // Some temporary caches and indexes in the import
         idMapper = instantiateIdMapper( input );
         nodeRelationshipCache = new NodeRelationshipCache( numberArrayFactory, dbConfig.get( GraphDatabaseSettings.dense_node_threshold ) );
@@ -546,18 +547,18 @@ public class ImportLogic implements Closeable
         peakMemoryUsage = max( peakMemoryUsage, totalMemoryUsageOf( nodeRelationshipCache, idMapper, neoStore ) );
     }
 
-    public static BatchingNeoStores instantiateNeoStores( FileSystemAbstraction fileSystem, File storeDir,
+    public static BatchingNeoStores instantiateNeoStores( FileSystemAbstraction fileSystem, DatabaseLayout databaseLayout,
             PageCache externalPageCache, RecordFormats recordFormats, Configuration config,
             LogService logService, AdditionalInitialIds additionalInitialIds, Config dbConfig, JobScheduler scheduler )
     {
         if ( externalPageCache == null )
         {
-            return BatchingNeoStores.batchingNeoStores( fileSystem, storeDir, recordFormats, config, logService,
+            return BatchingNeoStores.batchingNeoStores( fileSystem, databaseLayout, recordFormats, config, logService,
                     additionalInitialIds, dbConfig, scheduler );
         }
 
         return BatchingNeoStores.batchingNeoStoresWithExternalPageCache( fileSystem, externalPageCache,
-                PageCacheTracer.NULL, storeDir, recordFormats, config, logService, additionalInitialIds, dbConfig );
+                PageCacheTracer.NULL, databaseLayout, recordFormats, config, logService, additionalInitialIds, dbConfig );
     }
 
     private static long totalMemoryUsageOf( MemoryStatsVisitor.Visitable... users )

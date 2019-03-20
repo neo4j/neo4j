@@ -64,7 +64,7 @@ public class BatchInserterImplTest
     @Test
     public void testHonorsPassedInParams() throws Exception
     {
-        BatchInserter inserter = BatchInserters.inserter( testDirectory.databaseDir(), fileSystemRule.get(),
+        BatchInserter inserter = BatchInserters.inserter( testDirectory.databaseLayout(), fileSystemRule.get(),
                 stringMap( GraphDatabaseSettings.pagecache_memory.name(), "280K" ) );
         NeoStores neoStores = ReflectionUtil.getPrivateField( inserter, "neoStores", NeoStores.class );
         PageCache pageCache = ReflectionUtil.getPrivateField( neoStores, "pageCache", PageCache.class );
@@ -81,7 +81,7 @@ public class BatchInserterImplTest
         DatabaseLayout databaseLayout = testDirectory.databaseLayout();
 
         // When
-        BatchInserter inserter = BatchInserters.inserter( databaseLayout.databaseDirectory(), fileSystemRule.get() );
+        BatchInserter inserter = BatchInserters.inserter( databaseLayout, fileSystemRule.get() );
 
         // Then
         assertThat( databaseLayout.getStoreLayout().storeLockFile().exists(), equalTo( true ) );
@@ -102,7 +102,7 @@ public class BatchInserterImplTest
             expected.expect( StoreLockException.class );
             expected.expectMessage( "Unable to obtain lock on store lock file" );
             // When
-            BatchInserters.inserter( storeLayout.databaseLayout( "any" ).databaseDirectory(), fileSystemAbstraction );
+            BatchInserters.inserter( storeLayout.databaseLayout( "any" ), fileSystemAbstraction );
         }
     }
 }

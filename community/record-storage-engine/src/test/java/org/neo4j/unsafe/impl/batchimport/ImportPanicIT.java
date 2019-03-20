@@ -82,7 +82,7 @@ public class ImportPanicIT
         {
             BatchImporter importer = new ParallelBatchImporter( directory.databaseLayout(), fs, null, Configuration.DEFAULT,
                     NullLogService.getInstance(), ExecutionMonitors.invisible(), AdditionalInitialIds.EMPTY,
-                    Config.defaults(), StandardV3_4.RECORD_FORMATS, NO_MONITOR, jobScheduler, Collector.EMPTY );
+                    Config.defaults(), StandardV3_4.RECORD_FORMATS, NO_MONITOR, jobScheduler, Collector.EMPTY, EmptyLogFilesInitializer.INSTANCE );
             Iterable<DataFactory> nodeData =
                     datas( data( NO_DECORATOR, fileAsCharReadable( nodeCsvFileWithBrokenEntries() ) ) );
             Input brokenCsvInput = new CsvInput(

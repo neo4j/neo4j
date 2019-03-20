@@ -67,6 +67,7 @@ import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.internal.recordstorage.SchemaRuleAccess;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
@@ -215,7 +216,7 @@ public class BatchInsertTest
         // Global inserter can be used in tests which simply want to verify "local" behaviour,
         // e.g. create a node with some properties and read them back.
         globalInserter = BatchInserters.inserter(
-                globalTestDirectory.directory( "global" ), fileSystemRule.get(), stringMap() );
+                globalTestDirectory.databaseLayout( "global" ), fileSystemRule.get(), stringMap() );
     }
 
     @After
@@ -597,10 +598,10 @@ public class BatchInsertTest
     @Test
     public void messagesLogGetsClosed() throws Exception
     {
-        File storeDir = localTestDirectory.databaseDir();
-        BatchInserter inserter = BatchInserters.inserter( storeDir, fileSystemRule.get(), stringMap() );
+        DatabaseLayout databaseLayout = localTestDirectory.databaseLayout();
+        BatchInserter inserter = BatchInserters.inserter( databaseLayout, fileSystemRule.get(), stringMap() );
         inserter.shutdown();
-        assertTrue( new File( storeDir, INTERNAL_LOG_FILE ).delete() );
+        assertTrue( new File( databaseLayout.databaseDirectory(), INTERNAL_LOG_FILE ).delete() );
     }
 
     @Test
@@ -1398,14 +1399,14 @@ public class BatchInsertTest
 
     private BatchInserter newBatchInserter() throws Exception
     {
-        return BatchInserters.inserter( localTestDirectory.databaseDir(), fileSystemRule.get(), configuration() );
+        return BatchInserters.inserter( localTestDirectory.databaseLayout(), fileSystemRule.get(), configuration() );
     }
 
     private BatchInserter newBatchInserterWithIndexProvider( ExtensionFactory<?> provider, IndexProviderDescriptor providerDescriptor ) throws Exception
     {
         Map<String,String> configuration = configuration();
         configuration.put( GraphDatabaseSettings.default_schema_provider.name(), providerDescriptor.name() );
-        return BatchInserters.inserter( localTestDirectory.databaseDir(), fileSystemRule.get(), configuration, singletonList( provider ) );
+        return BatchInserters.inserter( localTestDirectory.databaseLayout(), fileSystemRule.get(), configuration, singletonList( provider ) );
     }
 
     private GraphDatabaseService switchToEmbeddedGraphDatabaseService( BatchInserter inserter )

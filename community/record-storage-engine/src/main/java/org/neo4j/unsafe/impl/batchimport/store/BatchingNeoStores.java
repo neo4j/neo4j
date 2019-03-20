@@ -129,7 +129,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
 
     private boolean successful;
 
-    private BatchingNeoStores( FileSystemAbstraction fileSystem, PageCache pageCache, File databaseDirectory,
+    private BatchingNeoStores( FileSystemAbstraction fileSystem, PageCache pageCache, DatabaseLayout databaseLayout,
             RecordFormats recordFormats, Config neo4jConfig, Configuration importConfiguration, LogService logService,
             AdditionalInitialIds initialIds, boolean externalPageCache, IoTracer ioTracer )
     {
@@ -138,7 +138,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
         this.importConfiguration = importConfiguration;
         this.initialIds = initialIds;
         this.logProvider = logService.getInternalLogProvider();
-        this.databaseLayout = DatabaseLayout.of( databaseDirectory );
+        this.databaseLayout = databaseLayout;
         this.temporaryDatabaseLayout = DatabaseLayout.of( databaseLayout.file( TEMP_STORE_NAME ), TEMP_STORE_NAME );
         this.neo4jConfig = neo4jConfig;
         this.pageCache = pageCache;
@@ -264,25 +264,25 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
         return newStoreFactory( temporaryDatabaseLayout ).openNeoStores( true, TEMP_STORE_TYPES );
     }
 
-    public static BatchingNeoStores batchingNeoStores( FileSystemAbstraction fileSystem, File storeDir,
+    public static BatchingNeoStores batchingNeoStores( FileSystemAbstraction fileSystem, DatabaseLayout databaseLayout,
             RecordFormats recordFormats, Configuration config, LogService logService, AdditionalInitialIds initialIds,
             Config dbConfig, JobScheduler jobScheduler )
     {
         Config neo4jConfig = getNeo4jConfig( config, dbConfig );
         final PageCacheTracer tracer = new DefaultPageCacheTracer();
-        PageCache pageCache = createPageCache( fileSystem, neo4jConfig, logService.getInternalLogProvider(), tracer, jobScheduler );
+        PageCache pageCache = createPageCache( fileSystem, neo4jConfig, tracer, jobScheduler );
 
-        return new BatchingNeoStores( fileSystem, pageCache, storeDir, recordFormats, neo4jConfig, config, logService,
+        return new BatchingNeoStores( fileSystem, pageCache, databaseLayout, recordFormats, neo4jConfig, config, logService,
                 initialIds, false, tracer::bytesWritten );
     }
 
     public static BatchingNeoStores batchingNeoStoresWithExternalPageCache( FileSystemAbstraction fileSystem,
-            PageCache pageCache, PageCacheTracer tracer, File storeDir, RecordFormats recordFormats,
+            PageCache pageCache, PageCacheTracer tracer, DatabaseLayout databaseLayout, RecordFormats recordFormats,
             Configuration config, LogService logService, AdditionalInitialIds initialIds, Config dbConfig )
     {
         Config neo4jConfig = getNeo4jConfig( config, dbConfig );
 
-        return new BatchingNeoStores( fileSystem, pageCache, storeDir, recordFormats, neo4jConfig, config, logService,
+        return new BatchingNeoStores( fileSystem, pageCache, databaseLayout, recordFormats, neo4jConfig, config, logService,
                 initialIds, true, tracer::bytesWritten );
     }
 
@@ -292,8 +292,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
         return dbConfig;
     }
 
-    private static PageCache createPageCache(
-            FileSystemAbstraction fileSystem, Config config, LogProvider log, PageCacheTracer tracer, JobScheduler jobScheduler )
+    private static PageCache createPageCache( FileSystemAbstraction fileSystem, Config config, PageCacheTracer tracer, JobScheduler jobScheduler )
     {
         SingleFilePageSwapperFactory swapperFactory = new SingleFilePageSwapperFactory();
         swapperFactory.open( fileSystem, config );

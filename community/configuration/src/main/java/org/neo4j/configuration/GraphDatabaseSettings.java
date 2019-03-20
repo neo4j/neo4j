@@ -631,6 +631,11 @@ public class GraphDatabaseSettings implements LoadableConfig
     @Internal
     public static final Setting<Boolean> fail_on_corrupted_log_files = setting("unsupported.dbms.tx_log.fail_on_corrupted_log_files", BOOLEAN, TRUE );
 
+    @Description( "If `true`, Neo4j will abort recovery if logical log files are missing. Setting " +
+            "this to `false` will allow Neo4j to create new empty missing files for already existing database, but, " +
+            "the integrity of the database might be compromised." )
+    public static final Setting<Boolean> fail_on_missing_files = setting( "dbms.recovery.fail_on_missing_files", BOOLEAN, TRUE );
+
     @Description( "Use a quick approach for rebuilding the ID generators. This give quicker recovery time, " +
             "but will limit the ability to reuse the space of deleted entities." )
     @Internal

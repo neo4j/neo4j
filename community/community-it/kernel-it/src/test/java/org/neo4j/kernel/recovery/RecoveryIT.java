@@ -36,6 +36,7 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.CheckPoint;
@@ -44,6 +45,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.extension.DefaultFileSystemExtension;
 import org.neo4j.test.extension.Inject;
@@ -52,13 +54,22 @@ import org.neo4j.test.rule.TestDirectory;
 
 import static java.lang.String.valueOf;
 import static org.apache.commons.lang3.RandomStringUtils.randomAlphanumeric;
+import static org.apache.commons.lang3.exception.ExceptionUtils.getRootCause;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.Config.defaults;
+import static org.neo4j.configuration.GraphDatabaseSettings.fail_on_missing_files;
+import static org.neo4j.configuration.Settings.FALSE;
 import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.helpers.collection.Iterables.count;
+import static org.neo4j.kernel.impl.store.MetaDataStore.Position.LAST_MISSING_STORE_FILES_RECOVERY_TIMESTAMP;
+import static org.neo4j.kernel.impl.store.MetaDataStore.getRecord;
 import static org.neo4j.kernel.recovery.Recovery.isRecoveryRequired;
 import static org.neo4j.kernel.recovery.Recovery.performRecovery;
 
@@ -279,7 +290,7 @@ class RecoveryIT
     }
 
     @Test
-    void startDatabaseWithRemovedSingleTransactionLogFile() throws Exception
+    void failToStartDatabaseWithRemovedTransactionLogs() throws Exception
     {
         GraphDatabaseService database = createDatabase();
         generateSomeData( database );
@@ -287,11 +298,32 @@ class RecoveryIT
 
         removeTransactionLogs();
 
-        startStopDatabase();
+        RuntimeException exception = assertThrows( RuntimeException.class, this::startStopDatabase );
 
+        assertThat( getRootCause( exception ).getMessage(),
+                containsString( "Transaction logs are missing and recovery is not possible." ) );
+    }
+
+    @Test
+    void startDatabaseWithRemovedSingleTransactionLogFile() throws Exception
+    {
+        GraphDatabaseService database = createDatabase();
+        GraphDatabaseAPI databaseAPI = (GraphDatabaseAPI) database;
+        PageCache pageCache = getDatabasePageCache( databaseAPI );
+        generateSomeData( database );
+
+        assertEquals( -1, getRecord( pageCache, databaseAPI.databaseLayout().metadataStore(), LAST_MISSING_STORE_FILES_RECOVERY_TIMESTAMP ) );
+
+        database.shutdown();
+
+        removeTransactionLogs();
+
+        startStopDatabaseWithForcedRecovery();
         assertFalse( isRecoveryRequired( fileSystem, directory.databaseLayout(), defaults() ) );
         // we will have 2 checkpoints: first will be created as part of recovery and another on shutdown
         assertEquals( 2, countCheckPointsInTransactionLogs() );
+
+        verifyRecoveryTimestampPresent( databaseAPI );
     }
 
     @Test
@@ -309,7 +341,7 @@ class RecoveryIT
 
         removeTransactionLogs();
 
-        startStopDatabase();
+        startStopDatabaseWithForcedRecovery();
 
         assertFalse( isRecoveryRequired( fileSystem, directory.databaseLayout(), defaults() ) );
         // we will have 2 checkpoints: first will be created as part of recovery and another on shutdown
@@ -333,7 +365,7 @@ class RecoveryIT
         assertTrue( isRecoveryRequired( fileSystem, directory.databaseLayout(), defaults() ) );
         assertEquals( 0, countTransactionLogFiles() );
 
-        GraphDatabaseService service = createDatabase();
+        GraphDatabaseService service = startDatabaseWithForcedRecovery();
         createSingleNode( service );
         service.shutdown();
 
@@ -549,5 +581,36 @@ class RecoveryIT
     private GraphDatabaseService createDatabase()
     {
         return new TestGraphDatabaseFactory().newEmbeddedDatabase( directory.databaseDir() );
+    }
+
+    private void startStopDatabaseWithForcedRecovery()
+    {
+        startDatabaseWithForcedRecovery().shutdown();
+    }
+
+    private GraphDatabaseService startDatabaseWithForcedRecovery()
+    {
+        return new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( directory.databaseDir() )
+                .setConfig( fail_on_missing_files, FALSE ).newGraphDatabase();
+    }
+
+    private PageCache getDatabasePageCache( GraphDatabaseAPI databaseAPI )
+    {
+        return databaseAPI.getDependencyResolver().resolveDependency( PageCache.class );
+    }
+
+    private void verifyRecoveryTimestampPresent( GraphDatabaseAPI databaseAPI ) throws IOException
+    {
+        GraphDatabaseService restartedDatabase = createDatabase();
+        try
+        {
+            PageCache restartedCache = getDatabasePageCache( (GraphDatabaseAPI) restartedDatabase );
+            assertThat( getRecord( restartedCache, databaseAPI.databaseLayout().metadataStore(), LAST_MISSING_STORE_FILES_RECOVERY_TIMESTAMP ),
+                    greaterThan( 0L ) );
+        }
+        finally
+        {
+            restartedDatabase.shutdown();
+        }
     }
 }

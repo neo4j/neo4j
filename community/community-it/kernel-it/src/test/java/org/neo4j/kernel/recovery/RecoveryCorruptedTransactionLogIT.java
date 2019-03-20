@@ -121,7 +121,6 @@ class RecoveryCorruptedTransactionLogIT
                 .setFileSystem( fileSystem );
         createEmptyDatabase();
         logFiles = buildDefaultLogFiles();
-        removeCreatedLogFiles();
     }
 
     @Test
@@ -608,14 +607,6 @@ class RecoveryCorruptedTransactionLogIT
         return (GraphDatabaseAPI) databaseFactory.newEmbeddedDatabaseBuilder( databaseDirectory )
                 .setConfig( GraphDatabaseSettings.fail_on_corrupted_log_files, Settings.FALSE )
                 .newGraphDatabase();
-    }
-
-    private void removeCreatedLogFiles() throws IOException
-    {
-        for ( File file : logFiles.logFiles() )
-        {
-            fileSystem.deleteFileOrThrow( file );
-        }
     }
 
     private void createEmptyDatabase()

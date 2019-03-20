@@ -61,6 +61,7 @@ import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 import org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds;
 import org.neo4j.unsafe.impl.batchimport.Configuration;
+import org.neo4j.unsafe.impl.batchimport.EmptyLogFilesInitializer;
 import org.neo4j.unsafe.impl.batchimport.ParallelBatchImporter;
 import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.input.Distribution;
@@ -120,8 +121,9 @@ public class CsvInputEstimateCalculationIT
         FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
         try ( JobScheduler jobScheduler = new ThreadPoolJobScheduler() )
         {
-            new ParallelBatchImporter( databaseLayout, fs, null, Configuration.DEFAULT, NullLogService.getInstance(), ExecutionMonitors.invisible(),
-                    AdditionalInitialIds.EMPTY, config, format, NO_MONITOR, jobScheduler, Collector.EMPTY ).doImport( input );
+            new ParallelBatchImporter( databaseLayout, fs, null, Configuration.DEFAULT, NullLogService.getInstance(),
+                    ExecutionMonitors.invisible(), AdditionalInitialIds.EMPTY, config, format, NO_MONITOR, jobScheduler, Collector.EMPTY,
+                    EmptyLogFilesInitializer.INSTANCE ).doImport( input );
 
             // then compare estimates with actual disk sizes
             VersionContextSupplier contextSupplier = EmptyVersionContextSupplier.EMPTY;

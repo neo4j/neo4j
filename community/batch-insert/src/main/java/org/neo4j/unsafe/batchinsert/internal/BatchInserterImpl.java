@@ -145,6 +145,11 @@ import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.TokenRecord;
+import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
+import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
+import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
+import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.impl.transaction.state.DefaultIndexProviderMap;
 import org.neo4j.kernel.impl.transaction.state.storeview.DynamicIndexStoreView;
 import org.neo4j.kernel.impl.transaction.state.storeview.NeoStoreIndexStoreView;
@@ -152,6 +157,7 @@ import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.kernel.internal.locker.GlobalStoreLocker;
 import org.neo4j.kernel.internal.locker.StoreLocker;
 import org.neo4j.kernel.lifecycle.LifeSupport;
+import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLog;
@@ -209,7 +215,7 @@ public class BatchInserterImpl implements BatchInserter
     private boolean labelsTouched;
     private boolean isShutdown;
 
-    private final LongFunction<Label> labelIdToLabelFunction = new LongFunction<Label>()
+    private final LongFunction<Label> labelIdToLabelFunction = new LongFunction<>()
     {
         @Override
         public Label apply( long from )
@@ -245,7 +251,7 @@ public class BatchInserterImpl implements BatchInserter
     private final Locks.Client noopLockClient = new NoOpClient();
     private final long maxNodeId;
 
-    public BatchInserterImpl( final File databaseDirectory, final FileSystemAbstraction fileSystem,
+    public BatchInserterImpl( final DatabaseLayout databaseLayout, final FileSystemAbstraction fileSystem,
                        Map<String, String> stringParams, Iterable<ExtensionFactory<?>> extensions ) throws IOException
     {
         rejectAutoUpgrade( stringParams );
@@ -255,7 +261,7 @@ public class BatchInserterImpl implements BatchInserter
         this.fileSystem = fileSystem;
 
         life = new LifeSupport();
-        this.databaseLayout = DatabaseLayout.of( databaseDirectory );
+        this.databaseLayout = databaseLayout;
         this.jobScheduler = JobSchedulerFactory.createInitialisedScheduler();
         life.add( jobScheduler );
 
@@ -266,7 +272,7 @@ public class BatchInserterImpl implements BatchInserter
         PageCache pageCache = pageCacheFactory.getOrCreatePageCache();
         life.add( new PageCacheLifecycle( pageCache ) );
 
-        config.augment( logs_directory, databaseDirectory.getCanonicalPath() );
+        config.augment( logs_directory, databaseLayout.databaseDirectory().getAbsolutePath() );
         File internalLog = config.get( store_internal_log_path );
 
         logService = life.add( StoreLogService.withInternalLog( internalLog).build( fileSystem ) );
@@ -276,7 +282,7 @@ public class BatchInserterImpl implements BatchInserter
         this.idGeneratorFactory = new DefaultIdGeneratorFactory( fileSystem );
 
         LogProvider internalLogProvider = logService.getInternalLogProvider();
-        RecordFormats recordFormats = RecordFormatSelector.selectForStoreOrConfig( config, databaseLayout, fileSystem,
+        RecordFormats recordFormats = RecordFormatSelector.selectForStoreOrConfig( config, this.databaseLayout, fileSystem,
                 pageCache, internalLogProvider );
         StoreFactory sf = new StoreFactory( this.databaseLayout, config, idGeneratorFactory, pageCache, fileSystem,
                 recordFormats, internalLogProvider );
@@ -301,7 +307,8 @@ public class BatchInserterImpl implements BatchInserter
         RecordStore<RelationshipGroupRecord> relationshipGroupStore = neoStores.getRelationshipGroupStore();
         schemaStore = neoStores.getSchemaStore();
         labelTokenStore = neoStores.getLabelTokenStore();
-        counts = new CountsTracker( logService.getInternalLogProvider(), fileSystem, pageCache, config, databaseLayout, EmptyVersionContextSupplier.EMPTY );
+        counts = new CountsTracker( logService.getInternalLogProvider(), fileSystem, pageCache, config, this.databaseLayout,
+                EmptyVersionContextSupplier.EMPTY );
         counts.setInitializer( DataInitializer.empty() );
         life.add( counts );
 
@@ -313,7 +320,7 @@ public class BatchInserterImpl implements BatchInserter
         deps.satisfyDependencies( fileSystem, config, logService, storeIndexStoreView, pageCache, monitors, RecoveryCleanupWorkCollector.immediate() );
 
         DatabaseExtensions databaseExtensions = life.add( new DatabaseExtensions(
-                new DatabaseExtensionContext( databaseLayout, DatabaseInfo.TOOL, deps ),
+                new DatabaseExtensionContext( this.databaseLayout, DatabaseInfo.TOOL, deps ),
                 extensions, deps, ExtensionFailureStrategies.ignore() ) );
 
         indexProviderMap = life.add( new DefaultIndexProviderMap( databaseExtensions, config ) );
@@ -574,6 +581,25 @@ public class BatchInserterImpl implements BatchInserter
         CountsComputer.recomputeCounts( neoStores, counts, pageCache, databaseLayout );
     }
 
+    private void createEmptyTransactionLog()
+    {
+        try
+        {
+            final LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader = new VersionAwareLogEntryReader<>();
+            LogFiles logFiles = LogFilesBuilder.builder( databaseLayout, fileSystem )
+                                               .withLogEntryReader( logEntryReader )
+                                               .withTransactionIdStore( neoStores.getMetaDataStore() )
+                                               .withLogVersionRepository( neoStores.getMetaDataStore() )
+                                               .withConfig( config )
+                                               .build();
+            new Lifespan( logFiles ).close();
+        }
+        catch ( IOException e )
+        {
+            throw new UnderlyingStorageException( "Fail to create empty transaction log file.", e );
+        }
+    }
+
     private StorageIndexReference[] getIndexesNeedingPopulation()
     {
         List<StorageIndexReference> indexesNeedingPopulation = new ArrayList<>();
@@ -756,13 +782,12 @@ public class BatchInserterImpl implements BatchInserter
         {
             return emptyIterator();
         }
-        return new IteratorWrapper<PropertyBlock, Map.Entry<String,Object>>( properties.entrySet().iterator() )
+        return new IteratorWrapper<>( properties.entrySet().iterator() )
         {
             @Override
-            protected PropertyBlock underlyingObjectToObject( Entry<String, Object> property )
+            protected PropertyBlock underlyingObjectToObject( Entry<String,Object> property )
             {
-                return propertyCreator.encodePropertyValue(
-                        getOrCreatePropertyKeyId( property.getKey() ), ValueUtils.asValue( property.getValue() ) );
+                return propertyCreator.encodePropertyValue( getOrCreatePropertyKeyId( property.getKey() ), ValueUtils.asValue( property.getValue() ) );
             }
         };
     }
@@ -925,7 +950,7 @@ public class BatchInserterImpl implements BatchInserter
     public Iterable<Long> getRelationshipIds( long nodeId )
     {
         flushStrategy.forceFlush();
-        return new BatchRelationshipIterable<Long>( storageReader, nodeId )
+        return new BatchRelationshipIterable<>( storageReader, nodeId )
         {
             @Override
             protected Long nextFrom( long relId, int type, long startNode, long endNode )
@@ -939,7 +964,7 @@ public class BatchInserterImpl implements BatchInserter
     public Iterable<BatchRelationship> getRelationships( long nodeId )
     {
         flushStrategy.forceFlush();
-        return new BatchRelationshipIterable<BatchRelationship>( storageReader, nodeId )
+        return new BatchRelationshipIterable<>( storageReader, nodeId )
         {
             @Override
             protected BatchRelationship nextFrom( long relId, int type, long startNode, long endNode )
@@ -992,7 +1017,6 @@ public class BatchInserterImpl implements BatchInserter
         flushStrategy.forceFlush();
 
         rebuildCounts();
-
         try
         {
             NativeLabelScanStore labelIndex = buildLabelIndex();
@@ -1004,8 +1028,9 @@ public class BatchInserterImpl implements BatchInserter
         }
         finally
         {
-            neoStores.close();
+            createEmptyTransactionLog();
 
+            neoStores.close();
             try
             {
                 storeLocker.close();

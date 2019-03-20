@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.store;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -49,9 +50,9 @@ class PropertyKeyTest
     private TestDirectory testDirectory;
 
     @Test
-    void lazyLoadWithinWriteTransaction() throws Exception
+    void lazyLoadWithinWriteTransaction() throws IOException
     {
-        BatchInserter inserter = BatchInserters.inserter( testDirectory.databaseDir(), fs );
+        BatchInserter inserter = BatchInserters.inserter( testDirectory.databaseLayout(), fs );
         int count = 3000;
         long nodeId = inserter.createNode( mapWithManyProperties( count /* larger than initial property index load threshold */ ) );
         inserter.shutdown();

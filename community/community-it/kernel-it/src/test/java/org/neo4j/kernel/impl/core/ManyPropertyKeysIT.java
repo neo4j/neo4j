@@ -24,6 +24,8 @@ import org.junit.jupiter.api.Test;
 import java.util.Collection;
 
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.configuration.Settings;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -85,8 +87,7 @@ class ManyPropertyKeysIT
     }
 
     @Test
-    void concurrently_creating_same_property_key_in_different_transactions_should_end_up_with_same_key_id()
-            throws Exception
+    void concurrently_creating_same_property_key_in_different_transactions_should_end_up_with_same_key_id() throws Exception
     {
         // GIVEN
         GraphDatabaseAPI db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabase();
@@ -111,7 +112,10 @@ class ManyPropertyKeysIT
 
     private GraphDatabaseAPI database()
     {
-        return (GraphDatabaseAPI) new TestGraphDatabaseFactory().newEmbeddedDatabase( testDirectory.databaseDir() );
+        return (GraphDatabaseAPI) new TestGraphDatabaseFactory()
+                .newEmbeddedDatabaseBuilder( testDirectory.databaseDir() )
+                .setConfig( GraphDatabaseSettings.fail_on_missing_files, Settings.FALSE )
+                .newGraphDatabase();
     }
 
     private GraphDatabaseAPI databaseWithManyPropertyKeys( int propertyKeyCount )

@@ -37,6 +37,7 @@ import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
+import org.neo4j.unsafe.impl.batchimport.EmptyLogFilesInitializer;
 import org.neo4j.unsafe.impl.batchimport.ParallelBatchImporter;
 import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.input.DataGeneratorInput;
@@ -85,8 +86,9 @@ class HumanUnderstandableExecutionMonitorIT
         // when
         try ( JobScheduler jobScheduler = new ThreadPoolJobScheduler() )
         {
-            new ParallelBatchImporter( testDirectory.databaseLayout(), fileSystem, pageCache, DEFAULT, NullLogService.getInstance(),
-                    monitor, EMPTY, defaults(), LATEST_RECORD_FORMATS, NO_MONITOR, jobScheduler, Collector.EMPTY ).doImport( input );
+            new ParallelBatchImporter( testDirectory.databaseLayout(), fileSystem, pageCache, DEFAULT, NullLogService.getInstance(), monitor,
+                    EMPTY, defaults(), LATEST_RECORD_FORMATS, NO_MONITOR, jobScheduler, Collector.EMPTY, EmptyLogFilesInitializer.INSTANCE )
+                    .doImport( input );
 
             // then
             progress.assertAllProgressReachedEnd();

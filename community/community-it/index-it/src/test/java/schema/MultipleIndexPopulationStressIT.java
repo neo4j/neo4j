@@ -58,6 +58,7 @@ import org.neo4j.test.rule.RepeatRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
+import org.neo4j.tooling.TransactionLogsInitializer;
 import org.neo4j.unsafe.impl.batchimport.BatchImporter;
 import org.neo4j.unsafe.impl.batchimport.GeneratingInputIterator;
 import org.neo4j.unsafe.impl.batchimport.InputIterable;
@@ -77,6 +78,7 @@ import static java.lang.System.currentTimeMillis;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.neo4j.configuration.GraphDatabaseSettings.multi_threaded_schema_index_population_enabled;
 import static org.neo4j.helpers.progress.ProgressMonitorFactory.NONE;
 import static org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds.EMPTY;
 import static org.neo4j.unsafe.impl.batchimport.Configuration.DEFAULT;
@@ -175,7 +177,7 @@ public class MultipleIndexPopulationStressIT
     {
         final GraphDatabaseService db = new TestGraphDatabaseFactory()
                 .newEmbeddedDatabaseBuilder( directory.databaseDir() )
-                .setConfig( GraphDatabaseSettings.multi_threaded_schema_index_population_enabled, multiThreaded + "" )
+                .setConfig( multi_threaded_schema_index_population_enabled, multiThreaded + "" )
                 .newGraphDatabase();
         try
         {
@@ -301,8 +303,9 @@ public class MultipleIndexPopulationStressIT
         try ( RandomDataInput input = new RandomDataInput( count );
               JobScheduler jobScheduler = new ThreadPoolJobScheduler() )
         {
-            BatchImporter importer = new ParallelBatchImporter( directory.databaseLayout(), fileSystemRule.get(), null, DEFAULT, NullLogService.getInstance(),
-                    ExecutionMonitors.invisible(), EMPTY, config, recordFormats, NO_MONITOR, jobScheduler, Collector.EMPTY );
+            BatchImporter importer = new ParallelBatchImporter( directory.databaseLayout(), fileSystemRule.get(), null, DEFAULT,
+                    NullLogService.getInstance(), ExecutionMonitors.invisible(), EMPTY, config, recordFormats, NO_MONITOR, jobScheduler, Collector.EMPTY,
+                    TransactionLogsInitializer.INSTANCE );
             importer.doImport( input );
         }
     }

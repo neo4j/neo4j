@@ -36,6 +36,8 @@ import java.util.function.LongSupplier;
 
 import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.configuration.Settings;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -829,7 +831,9 @@ public class NeoStoresTest
     private void initializeStores( DatabaseLayout databaseLayout, Map<String,String> additionalConfig )
     {
         Dependencies dependencies = new Dependencies();
-        dependencies.satisfyDependency( Config.defaults( additionalConfig ) );
+        Config config = Config.defaults( additionalConfig );
+        config.augment( GraphDatabaseSettings.fail_on_missing_files, Settings.FALSE );
+        dependencies.satisfyDependency( config );
         ds = dsRule.getDatabase( databaseLayout, fs.get(), pageCache, dependencies );
         ds.start();
 

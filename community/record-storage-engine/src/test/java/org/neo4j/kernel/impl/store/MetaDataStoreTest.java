@@ -248,14 +248,14 @@ class MetaDataStoreTest
     {
         MetaDataStore metaDataStore = newMetaDataStore();
         metaDataStore.close();
-        assertThrows( StoreFileClosedException.class, () -> metaDataStore.setLastClosedTransaction( 1, 2, 3 ) );
+        assertThrows( StoreFileClosedException.class, () -> metaDataStore.resetLastClosedTransaction( 1, 2, 3 ) );
     }
 
     @Test
     void setLastClosedTransactionOverridesLastClosedTransactionInformation()
     {
         MetaDataStore metaDataStore = newMetaDataStore();
-        metaDataStore.setLastClosedTransaction( 3, 4, 5 );
+        metaDataStore.resetLastClosedTransaction( 3, 4, 5 );
 
         assertEquals( 3L, metaDataStore.getLastClosedTransactionId() );
         assertArrayEquals( new long[]{3, 4, 5}, metaDataStore.getLastClosedTransaction() );

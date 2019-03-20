@@ -314,6 +314,9 @@ public final class Recovery
 
         Boolean failOnCorruptedLogFiles = config.get( GraphDatabaseSettings.fail_on_corrupted_log_files );
         LogTailScanner logTailScanner = providedLogScanner.orElseGet( () -> new LogTailScanner( logFiles, logEntryReader, monitors, failOnCorruptedLogFiles ) );
+
+        checkForMissingLogFiles( config, logTailScanner, recoveryLog );
+
         TransactionMetadataCache metadataCache = new TransactionMetadataCache();
         PhysicalLogicalTransactionStore transactionStore = new PhysicalLogicalTransactionStore( logFiles, metadataCache, logEntryReader, monitors,
                 failOnCorruptedLogFiles );
@@ -352,6 +355,22 @@ public final class Recovery
             checkPointer.forceCheckPoint( new SimpleTriggerInfo( "Recovery completed." ) );
         }
         recoveryLife.shutdown();
+    }
+
+    private static void checkForMissingLogFiles( Config config, LogTailScanner logTailScanner, Log recoveryLog )
+    {
+        if ( logTailScanner.getTailInformation().logsMissing() )
+        {
+            if ( config.get( GraphDatabaseSettings.fail_on_missing_files ) )
+            {
+                throw new RuntimeException(
+                        "Transaction logs are missing and recovery is not possible. To force the database to start anyway, you can specify '" +
+                                GraphDatabaseSettings.fail_on_missing_files.name() + "=false'. This will create new transaction log and " +
+                                "will update database metadata accordingly. Doing this means your database " +
+                                "integrity might be compromised, please consider restoring from a consistent backup instead." );
+            }
+            recoveryLog.warn( "No transaction logs were detected, but recovery was forced by user." );
+        }
     }
 
     private static TransactionLogsRecovery transactionLogRecovery( FileSystemAbstraction fileSystemAbstraction, TransactionIdStore transactionIdStore,

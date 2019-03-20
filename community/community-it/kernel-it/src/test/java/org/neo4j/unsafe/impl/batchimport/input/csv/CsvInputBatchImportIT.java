@@ -19,8 +19,10 @@
  */
 package org.neo4j.unsafe.impl.batchimport.input.csv;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.hamcrest.MatcherAssert;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.io.IOException;
@@ -61,6 +63,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.TokenStore;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
@@ -71,11 +74,15 @@ import org.neo4j.logging.LogTimeZone;
 import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.extension.DefaultFileSystemExtension;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.RandomExtension;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 import org.neo4j.token.api.NamedToken;
+import org.neo4j.tooling.TransactionLogsInitializer;
 import org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds;
 import org.neo4j.unsafe.impl.batchimport.BatchImporter;
 import org.neo4j.unsafe.impl.batchimport.Configuration;
@@ -91,9 +98,6 @@ import org.neo4j.values.storable.PointValue;
 import static java.lang.String.format;
 import static java.nio.charset.Charset.defaultCharset;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.db_timezone;
 import static org.neo4j.configuration.GraphDatabaseSettings.dense_node_threshold;
 import static org.neo4j.helpers.collection.Iterators.asSet;
@@ -111,22 +115,23 @@ import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.defaultF
 import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.defaultFormatRelationshipFileHeader;
 import static org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitors.invisible;
 
-public class CsvInputBatchImportIT
+@ExtendWith( {DefaultFileSystemExtension.class, TestDirectoryExtension.class, RandomExtension.class} )
+class CsvInputBatchImportIT
 {
     /** Don't support these counts at the moment so don't compute them */
     private static final boolean COMPUTE_DOUBLE_SIDED_RELATIONSHIP_COUNTS = false;
 
-    @Rule
-    public final TestDirectory directory = TestDirectory.testDirectory();
-    @Rule
-    public final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
-    @Rule
-    public final RandomRule random = new RandomRule();
+    @Inject
+    private TestDirectory directory;
+    @Inject
+    private FileSystemAbstraction fileSystem;
+    @Inject
+    private RandomRule random;
 
     private static final Supplier<ZoneId> testDefaultTimeZone = () -> ZoneId.of( "Asia/Shanghai" );
 
     @Test
-    public void shouldImportDataComingFromCsvFiles() throws Exception
+    void shouldImportDataComingFromCsvFiles() throws Exception
     {
         // GIVEN
         Config dbConfig = Config.builder()
@@ -136,8 +141,9 @@ public class CsvInputBatchImportIT
         try ( JobScheduler scheduler = new ThreadPoolJobScheduler() )
         {
             BatchImporter importer =
-                    new ParallelBatchImporter( directory.databaseLayout(), fileSystemRule.get(), null, smallBatchSizeConfig(), NullLogService.getInstance(),
-                            invisible(), AdditionalInitialIds.EMPTY, dbConfig, RecordFormatSelector.defaultFormat(), NO_MONITOR, scheduler, Collector.EMPTY );
+                    new ParallelBatchImporter( directory.databaseLayout(), fileSystem, null, smallBatchSizeConfig(), NullLogService.getInstance(),
+                            invisible(), AdditionalInitialIds.EMPTY, dbConfig, RecordFormatSelector.defaultFormat(), NO_MONITOR, scheduler, Collector.EMPTY,
+                            TransactionLogsInitializer.INSTANCE );
             List<InputEntity> nodeData = randomNodeData();
             List<InputEntity> relationshipData = randomRelationshipData( nodeData );
 
@@ -148,8 +154,7 @@ public class CsvInputBatchImportIT
         }
     }
 
-    public static Input csv( File nodes, File relationships, IdType idType,
-            org.neo4j.unsafe.impl.batchimport.input.csv.Configuration configuration )
+    static Input csv( File nodes, File relationships, IdType idType, org.neo4j.unsafe.impl.batchimport.input.csv.Configuration configuration )
     {
         return new CsvInput(
                 datas( data( NO_DECORATOR, defaultCharset(), nodes ) ),
@@ -220,7 +225,7 @@ public class CsvInputBatchImportIT
     private File relationshipDataAsFile( List<InputEntity> relationshipData ) throws IOException
     {
         File file = directory.file( "relationships.csv" );
-        try ( Writer writer = fileSystemRule.get().openAsWriter( file, StandardCharsets.UTF_8, false ) )
+        try ( Writer writer = fileSystem.openAsWriter( file, StandardCharsets.UTF_8, false ) )
         {
             // Header
             println( writer, ":start_id,:end_id,:type" );
@@ -237,7 +242,7 @@ public class CsvInputBatchImportIT
     private File nodeDataAsFile( List<InputEntity> nodeData ) throws IOException
     {
         File file = directory.file( "nodes.csv" );
-        try ( Writer writer = fileSystemRule.get().openAsWriter( file, StandardCharsets.UTF_8, false ) )
+        try ( Writer writer = fileSystem.openAsWriter( file, StandardCharsets.UTF_8, false ) )
         {
             // Header
             println( writer, "id:ID,name,pointA:Point{crs:WGS-84},pointB:Point,date:Date,time:Time,dateTime:DateTime,dateTime2:DateTime,localTime:LocalTime," +
@@ -319,7 +324,7 @@ public class CsvInputBatchImportIT
             {
                 String name = (String) node.getProperty( "name" );
                 String[] labels = expectedNodeNames.remove( name );
-                assertEquals( asSet( labels ), names( node.getLabels() ) );
+                Assertions.assertEquals( asSet( labels ), names( node.getLabels() ) );
 
                 // Verify node properties
                 Map<String,Consumer<Object>> expectedPropertyVerifiers = expectedNodePropertyVerifiers.remove( name );
@@ -334,7 +339,7 @@ public class CsvInputBatchImportIT
                     }
                 }
             }
-            assertEquals( 0, expectedNodeNames.size() );
+            Assertions.assertEquals( 0, expectedNodeNames.size() );
 
             // Verify relationships
             for ( Relationship relationship : db.getAllRelationships() )
@@ -345,7 +350,7 @@ public class CsvInputBatchImportIT
                 Map<String, AtomicInteger> innerInner = inner.get( endNodeName );
                 String type = relationship.getType().name();
                 int countAfterwards = innerInner.get( type ).decrementAndGet();
-                assertThat( countAfterwards, greaterThanOrEqualTo( 0 ) );
+                MatcherAssert.assertThat( countAfterwards, greaterThanOrEqualTo( 0 ) );
                 if ( countAfterwards == 0 )
                 {
                     innerInner.remove( type );
@@ -359,7 +364,7 @@ public class CsvInputBatchImportIT
                     }
                 }
             }
-            assertEquals( 0, expectedRelationships.size() );
+            Assertions.assertEquals( 0, expectedRelationships.size() );
 
             // Verify counts, TODO how to get counts store other than this way?
             RecordStorageEngine storageEngine = ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency( RecordStorageEngine.class );
@@ -369,9 +374,8 @@ public class CsvInputBatchImportIT
                     translationTable( neoStores.getLabelTokenStore(), ANY_LABEL );
             for ( Pair<Integer,Long> count : allNodeCounts( labelTranslationTable, expectedNodeCounts ) )
             {
-                assertEquals( "Label count mismatch for label " + count.first(),
-                        count.other().longValue(),
-                        counts.nodeCount( count.first(), newDoubleLongRegister() ).readSecond() );
+                Assertions.assertEquals( count.other().longValue(),
+                        counts.nodeCount( count.first(), newDoubleLongRegister() ).readSecond(), "Label count mismatch for label " + count.first() );
             }
 
             Function<String, Integer> relationshipTypeTranslationTable =
@@ -380,9 +384,9 @@ public class CsvInputBatchImportIT
                     relationshipTypeTranslationTable, expectedRelationshipCounts ) )
             {
                 RelationshipCountKey key = count.first();
-                assertEquals( "Label count mismatch for label " + key,
-                        count.other().longValue(),
-                        counts.relationshipCount( key.startLabel, key.type, key.endLabel, newDoubleLongRegister() ).readSecond() );
+                Assertions.assertEquals( count.other().longValue(),
+                        counts.relationshipCount( key.startLabel, key.type, key.endLabel, newDoubleLongRegister() ).readSecond(),
+                        "Label count mismatch for label " + key );
             }
 
             tx.success();
@@ -479,7 +483,7 @@ public class CsvInputBatchImportIT
             expectedNodeNames.put( nameOf( node ), node.labels() );
 
             // Build default verifiers for all the properties that compares the property value using equals
-            assertTrue( !node.hasIntPropertyKeyIds );
+            Assertions.assertFalse( node.hasIntPropertyKeyIds );
             Map<String,Consumer<Object>> propertyVerifiers = new TreeMap<>();
             for ( int i = 0; i < node.propertyCount(); i++ )
             {
@@ -494,7 +498,7 @@ public class CsvInputBatchImportIT
                         LocalDateTime referenceTemporal = LocalDateTime.of( 0, 1, 1, 0, 0 );
                         LocalDateTime expected = referenceTemporal.plus( (TemporalAmount) expectedValue );
                         LocalDateTime actual = referenceTemporal.plus( (TemporalAmount) actualValue );
-                        assertEquals( expected, actual );
+                        Assertions.assertEquals( expected, actual );
                     };
                 }
                 else if ( expectedValue instanceof Temporal )
@@ -509,25 +513,25 @@ public class CsvInputBatchImportIT
                         LocalTime actualTime = ((Temporal) actualValue).query( TemporalQueries.localTime() );
                         ZoneId actualZoneId = ((Temporal) actualValue).query( TemporalQueries.zone() );
 
-                        assertEquals( expectedDate, actualDate );
-                        assertEquals( expectedTime, actualTime );
+                        Assertions.assertEquals( expectedDate, actualDate );
+                        Assertions.assertEquals( expectedTime, actualTime );
                         if ( expectedZoneId == null )
                         {
                             if ( actualZoneId != null )
                             {
                                 // If the actual value is zoned it should have the default zone
-                                assertEquals( testDefaultTimeZone.get(), actualZoneId );
+                                Assertions.assertEquals( testDefaultTimeZone.get(), actualZoneId );
                             }
                         }
                         else
                         {
-                            assertEquals( expectedZoneId, actualZoneId );
+                            Assertions.assertEquals( expectedZoneId, actualZoneId );
                         }
                     };
                 }
                 else
                 {
-                    verify = actualValue -> assertEquals( expectedValue, actualValue );
+                    verify = actualValue -> Assertions.assertEquals( expectedValue, actualValue );
                 }
                 propertyVerifiers.put( (String) node.propertyKey( i ), verify  );
             }
@@ -540,9 +544,9 @@ public class CsvInputBatchImportIT
                 double actualY = v.getCoordinates().get( 0 ).getCoordinate().get( 1 );
                 double expectedY = indexOf( node );
                 String message = actualValue.toString() + " does not have y=" + expectedY;
-                assertEquals( message, expectedY, actualY, 0.1 );
+                Assertions.assertEquals( expectedY, actualY, 0.1, message );
                 message = actualValue.toString() + " does not have crs=wgs-84";
-                assertEquals( message, CoordinateReferenceSystem.WGS84.getName(), v.getCoordinateReferenceSystem().getName() );
+                Assertions.assertEquals( CoordinateReferenceSystem.WGS84.getName(), v.getCoordinateReferenceSystem().getName(), message );
             };
             propertyVerifiers.put( "pointA", verifyPointA );
 
@@ -554,9 +558,9 @@ public class CsvInputBatchImportIT
                 double actualY = v.getCoordinates().get( 0 ).getCoordinate().get( 1 );
                 double expectedY = indexOf( node );
                 String message = actualValue.toString() + " does not have y=" + expectedY;
-                assertEquals( message, expectedY, actualY, 0.1 );
+                Assertions.assertEquals( expectedY, actualY, 0.1, message );
                 message = actualValue.toString() + " does not have crs=cartesian";
-                assertEquals( message, CoordinateReferenceSystem.Cartesian.getName(), v.getCoordinateReferenceSystem().getName() );
+                Assertions.assertEquals( CoordinateReferenceSystem.Cartesian.getName(), v.getCoordinateReferenceSystem().getName(), message );
             };
             propertyVerifiers.put( "pointB", verifyPointB );
 

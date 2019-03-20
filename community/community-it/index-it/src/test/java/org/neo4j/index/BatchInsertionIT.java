@@ -22,7 +22,6 @@ package org.neo4j.index;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
 
@@ -52,8 +51,7 @@ public class BatchInsertionIT
     public void shouldIndexNodesWithMultipleLabels() throws Exception
     {
         // Given
-        File path = dbRule.databaseLayout().databaseDirectory();
-        BatchInserter inserter = BatchInserters.inserter( path, fileSystemRule.get() );
+        BatchInserter inserter = BatchInserters.inserter( dbRule.databaseLayout(), fileSystemRule.get() );
 
         inserter.createNode( map( "name", "Bob" ), label( "User" ), label( "Admin" ) );
 
@@ -80,8 +78,7 @@ public class BatchInsertionIT
     public void shouldNotIndexNodesWithWrongLabel() throws Exception
     {
         // Given
-        File file = new File( dbRule.getDatabaseDirAbsolutePath() );
-        BatchInserter inserter = BatchInserters.inserter( file, fileSystemRule.get() );
+        BatchInserter inserter = BatchInserters.inserter( dbRule.databaseLayout(), fileSystemRule.get() );
 
         inserter.createNode( map("name", "Bob"), label( "User" ), label("Admin"));
 
@@ -106,8 +103,7 @@ public class BatchInsertionIT
     @Test
     public void shouldBeAbleToMakeRepeatedCallsToSetNodeProperty() throws Exception
     {
-        File file = dbRule.databaseLayout().databaseDirectory();
-        BatchInserter inserter = BatchInserters.inserter( file, fileSystemRule.get() );
+        BatchInserter inserter = BatchInserters.inserter( dbRule.databaseLayout(), fileSystemRule.get() );
         long nodeId = inserter.createNode( Collections.emptyMap() );
 
         final Object finalValue = 87;
@@ -132,8 +128,7 @@ public class BatchInsertionIT
     @Test
     public void shouldBeAbleToMakeRepeatedCallsToSetNodePropertyWithMultiplePropertiesPerBlock() throws Exception
     {
-        File file = dbRule.databaseLayout().databaseDirectory();
-        BatchInserter inserter = BatchInserters.inserter( file, fileSystemRule.get() );
+        BatchInserter inserter = BatchInserters.inserter( dbRule.databaseLayout(), fileSystemRule.get() );
         long nodeId = inserter.createNode( Collections.emptyMap() );
 
         final Object finalValue1 = 87;
@@ -162,15 +157,12 @@ public class BatchInsertionIT
     public void makeSureCantCreateNodeWithMagicNumber() throws IOException
     {
         // given
-        File path = dbRule.databaseLayout().databaseDirectory();
-        BatchInserter inserter = BatchInserters.inserter( path, fileSystemRule.get() );
-
+        BatchInserter inserter = BatchInserters.inserter( dbRule.databaseLayout(), fileSystemRule.get() );
         try
         {
             // when
             long id = IdGeneratorImpl.INTEGER_MINUS_ONE;
             inserter.createNode( id, null );
-
             // then throws
         }
         finally

@@ -49,7 +49,6 @@ public class TransactionLogFiles extends LifecycleAdapter implements LogFiles
 {
     public static final String DEFAULT_NAME = "neostore.transaction.db";
     public static final FilenameFilter DEFAULT_FILENAME_FILTER = TransactionLogFilesHelper.DEFAULT_FILENAME_FILTER;
-    private static final File[] EMPTY_FILES_ARRAY = {};
 
     private final TransactionLogFilesContext logFilesContext;
     private final TransactionLogFileInformation logFileInformation;

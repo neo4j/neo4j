@@ -32,6 +32,7 @@ import java.util.List;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.configuration.LayoutConfig;
 import org.neo4j.configuration.ssl.LegacySslPolicyConfig;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -48,13 +49,13 @@ import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.server.HTTP;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.time.ZoneOffset.UTC;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_TX_LOGS_ROOT_DIR_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.data_directory;
 import static org.neo4j.configuration.GraphDatabaseSettings.databases_root_path;
 import static org.neo4j.server.ServerTestUtils.getRelativePath;
@@ -127,9 +128,12 @@ public class JUnitRuleTestIT
     {
         // given a root folder, create /databases/neo4j folders.
         File oldDir = testDirectory.directory( "old" );
-        DatabaseLayout databaseLayout =
-                DatabaseLayout.of( Config.defaults( data_directory, oldDir.toPath().toString() ).get( databases_root_path ), DEFAULT_DATABASE_NAME );
-        GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( databaseLayout.databaseDirectory() );
+        Config config = Config.defaults( data_directory, oldDir.toPath().toString() );
+        File rootDirectory = config.get( databases_root_path );
+        DatabaseLayout databaseLayout = DatabaseLayout.of( rootDirectory, LayoutConfig.of( config ), DEFAULT_DATABASE_NAME );
+        GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( databaseLayout.databaseDirectory() )
+                .setConfig( GraphDatabaseSettings.transaction_logs_root_path, new File( oldDir, DEFAULT_TX_LOGS_ROOT_DIR_NAME ).getAbsolutePath() )
+                .newGraphDatabase();
 
         try
         {
@@ -142,8 +146,7 @@ public class JUnitRuleTestIT
 
         // When a rule with an pre-populated graph db directory is used
         File newDir = testDirectory.directory( "new" );
-        final Neo4jRule ruleWithDirectory = new Neo4jRule( newDir )
-                .copyFrom( oldDir );
+        final Neo4jRule ruleWithDirectory = new Neo4jRule( newDir ).copyFrom( oldDir );
         Statement statement = ruleWithDirectory.apply( new Statement()
         {
             @Override
@@ -176,7 +179,7 @@ public class JUnitRuleTestIT
         GraphDatabaseAPI api = (GraphDatabaseAPI) neo4j.getGraphDatabaseService();
         Config config = api.getDependencyResolver().resolveDependency( Config.class );
         File dataDirectory = config.get( GraphDatabaseSettings.data_directory );
-        return new String( Files.readAllBytes( new File( dataDirectory, file ).toPath() ), UTF_8 );
+        return Files.readString( new File( dataDirectory, file ).toPath() );
     }
 
     private static String currentTimeZoneOffsetString()

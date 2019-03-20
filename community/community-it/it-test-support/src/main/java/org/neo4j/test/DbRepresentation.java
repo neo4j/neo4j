@@ -89,14 +89,14 @@ public class DbRepresentation
         }
     }
 
-    public static DbRepresentation of( File storeDir )
+    public static DbRepresentation of( File databaseDirectory )
     {
-        return of( storeDir, Config.defaults() );
+        return of( databaseDirectory, Config.defaults() );
     }
 
-    public static DbRepresentation of( File storeDir, Config config )
+    public static DbRepresentation of( File databaseDirectory, Config config )
     {
-        GraphDatabaseBuilder builder = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir );
+        GraphDatabaseBuilder builder = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( databaseDirectory );
         builder.setConfig( config.getRaw() );
 
         GraphDatabaseService db = builder.newGraphDatabase();

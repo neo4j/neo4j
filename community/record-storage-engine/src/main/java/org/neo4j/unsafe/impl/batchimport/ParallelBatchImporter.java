@@ -48,7 +48,7 @@ import static org.neo4j.unsafe.impl.batchimport.ImportLogic.instantiateNeoStores
 public class ParallelBatchImporter implements BatchImporter
 {
     private final PageCache externalPageCache;
-    private final DatabaseLayout directoryStructure;
+    private final DatabaseLayout databaseLayout;
     private final FileSystemAbstraction fileSystem;
     private final Configuration config;
     private final LogService logService;
@@ -59,14 +59,15 @@ public class ParallelBatchImporter implements BatchImporter
     private final ImportLogic.Monitor monitor;
     private final JobScheduler jobScheduler;
     private final Collector badCollector;
+    private final LogFilesInitializer logFilesInitializer;
 
-    public ParallelBatchImporter( DatabaseLayout directoryStructure, FileSystemAbstraction fileSystem, PageCache externalPageCache,
+    public ParallelBatchImporter( DatabaseLayout databaseLayout, FileSystemAbstraction fileSystem, PageCache externalPageCache,
             Configuration config, LogService logService, ExecutionMonitor executionMonitor,
             AdditionalInitialIds additionalInitialIds, Config dbConfig, RecordFormats recordFormats, ImportLogic.Monitor monitor,
-            JobScheduler jobScheduler, Collector badCollector )
+            JobScheduler jobScheduler, Collector badCollector, LogFilesInitializer logFilesInitializer )
     {
         this.externalPageCache = externalPageCache;
-        this.directoryStructure = directoryStructure;
+        this.databaseLayout = databaseLayout;
         this.fileSystem = fileSystem;
         this.config = config;
         this.logService = logService;
@@ -77,14 +78,15 @@ public class ParallelBatchImporter implements BatchImporter
         this.monitor = monitor;
         this.jobScheduler = jobScheduler;
         this.badCollector = badCollector;
+        this.logFilesInitializer = logFilesInitializer;
     }
 
     @Override
     public void doImport( Input input ) throws IOException
     {
-        try ( BatchingNeoStores store = instantiateNeoStores( fileSystem, directoryStructure.databaseDirectory(), externalPageCache, recordFormats,
+        try ( BatchingNeoStores store = instantiateNeoStores( fileSystem, databaseLayout, externalPageCache, recordFormats,
                       config, logService, additionalInitialIds, dbConfig, jobScheduler );
-              ImportLogic logic = new ImportLogic( directoryStructure.databaseDirectory(), fileSystem, store, config, dbConfig, logService,
+              ImportLogic logic = new ImportLogic( databaseLayout, fileSystem, store, config, dbConfig, logService,
                       executionMonitor, recordFormats, badCollector, monitor ) )
         {
             store.createNew();
@@ -97,6 +99,7 @@ public class ParallelBatchImporter implements BatchImporter
             logic.linkRelationshipsOfAllTypes();
             logic.defragmentRelationshipGroups();
             logic.buildCountsStore();
+            logFilesInitializer.initializeLogFiles( dbConfig, databaseLayout, store.getNeoStores(), fileSystem );
 
             logic.success();
         }
