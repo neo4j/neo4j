@@ -19,7 +19,7 @@
  */
 package org.neo4j.bolt.v1.runtime;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.time.Clock;
 import java.util.Arrays;
@@ -36,7 +36,6 @@ import org.neo4j.graphdb.InputPosition;
 import org.neo4j.graphdb.QueryStatistics;
 import org.neo4j.graphdb.impl.notification.NotificationCode;
 import org.neo4j.kernel.impl.query.QueryExecution;
-import org.neo4j.kernel.impl.query.TransactionalContext;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.DoubleValue;
 import org.neo4j.values.virtual.MapValue;
@@ -49,8 +48,10 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.closeTo;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.bolt.v1.ResultConsumerV1Adaptor.PULL_DISCARD_ALL_N_SIZE;
+import static org.neo4j.bolt.v4.messaging.AbstractStreamingMessage.STREAM_LIMIT_UNLIMITED;
 import static org.neo4j.graphdb.QueryExecutionType.QueryType.READ_ONLY;
 import static org.neo4j.graphdb.QueryExecutionType.QueryType.READ_WRITE;
 import static org.neo4j.graphdb.QueryExecutionType.explained;
@@ -62,10 +63,46 @@ import static org.neo4j.values.storable.Values.longValue;
 import static org.neo4j.values.storable.Values.stringValue;
 import static org.neo4j.values.virtual.VirtualValues.list;
 
-public class CypherAdapterStreamTest
+class CypherAdapterStreamTest
 {
     @Test
-    public void shouldIncludeBasicMetadata() throws Throwable
+    void shouldPullAll() throws Throwable
+    {
+        // Given
+        QueryExecution queryExecution = mock( QueryExecution.class );
+        when( queryExecution.fieldNames() ).thenReturn( new String[0] );
+        when( queryExecution.executionType() ).thenReturn( query( READ_WRITE ) );
+        when( queryExecution.getNotifications() ).thenReturn( Collections.emptyList() );
+        when( queryExecution.await() ).thenReturn( true ).thenReturn( false );
+
+        BoltAdapterSubscriber subscriber = new BoltAdapterSubscriber();
+        QueryStatistics queryStatistics = mock( QueryStatistics.class );
+        when( queryStatistics.containsUpdates() ).thenReturn( false );
+        when( queryStatistics.getNodesCreated() ).thenReturn( 0 );
+        when( queryStatistics.getNodesDeleted() ).thenReturn( 0 );
+        when( queryStatistics.getRelationshipsCreated() ).thenReturn( 0 );
+        when( queryStatistics.getRelationshipsDeleted() ).thenReturn( 0 );
+        when( queryStatistics.getPropertiesSet() ).thenReturn( 0 );
+        when( queryStatistics.getIndexesAdded() ).thenReturn( 0 );
+        when( queryStatistics.getIndexesRemoved() ).thenReturn( 0 );
+        when( queryStatistics.getConstraintsAdded() ).thenReturn( 0 );
+        when( queryStatistics.getConstraintsRemoved() ).thenReturn( 0 );
+        when( queryStatistics.getLabelsAdded() ).thenReturn( 0 );
+        when( queryStatistics.getLabelsRemoved() ).thenReturn( 0 );
+        subscriber.onResultCompleted( queryStatistics );
+
+        Clock clock = mock( Clock.class );
+        CypherAdapterStream stream = new CypherAdapterStream( queryExecution, subscriber, clock );
+        // When
+        stream.handleRecords( mock( BoltResult.RecordConsumer.class ), -1 );
+
+        // Then
+        verify( queryExecution, times( 2 ) ).request( Long.MAX_VALUE );
+        verify( queryExecution, times( 2 ) ).await();
+    }
+
+    @Test
+    void shouldIncludeBasicMetadata() throws Throwable
     {
         // Given
         QueryStatistics queryStatistics = mock( QueryStatistics.class );
@@ -92,7 +129,6 @@ public class CypherAdapterStreamTest
         Clock clock = mock( Clock.class );
         when( clock.millis() ).thenReturn( 0L, 1337L );
 
-        TransactionalContext tc = mock( TransactionalContext.class );
         CypherAdapterStream stream = new CypherAdapterStream( result, subscriber, clock );
 
         // When
@@ -117,7 +153,7 @@ public class CypherAdapterStreamTest
     }
 
     @Test
-    public void shouldIncludePlanIfPresent() throws Throwable
+    void shouldIncludePlanIfPresent() throws Throwable
     {
         // Given
         QueryStatistics queryStatistics = mock( QueryStatistics.class );
@@ -154,7 +190,7 @@ public class CypherAdapterStreamTest
     }
 
     @Test
-    public void shouldIncludeProfileIfPresent() throws Throwable
+    void shouldIncludeProfileIfPresent() throws Throwable
     {
         // Given
         QueryStatistics queryStatistics = mock( QueryStatistics.class );
@@ -170,7 +206,6 @@ public class CypherAdapterStreamTest
                 plan( "Join", map( "arg1", 1 ), 2, 4, 3, 1, 2, singletonList( "id1" ),
                         plan( "Scan", map( "arg2", 1 ), 2, 4, 7, 1, 1, singletonList( "id2" ) ) ) );
 
-        TransactionalContext tc = mock( TransactionalContext.class );
         CypherAdapterStream stream = new CypherAdapterStream( result, subscriber, Clock.systemUTC() );
 
         // When
@@ -218,7 +253,7 @@ public class CypherAdapterStreamTest
     }
 
     @Test
-    public void shouldIncludeNotificationsIfPresent() throws Throwable
+    void shouldIncludeNotificationsIfPresent() throws Throwable
     {
         // Given
         QueryExecution result = mock( QueryExecution.class );
@@ -236,7 +271,6 @@ public class CypherAdapterStreamTest
                 NotificationCode.INDEX_HINT_UNFULFILLABLE.notification( InputPosition.empty ),
                 NotificationCode.PLANNER_UNSUPPORTED.notification( new InputPosition( 4, 5, 6 ) )
         ) );
-        TransactionalContext tc = mock( TransactionalContext.class );
         CypherAdapterStream stream = new CypherAdapterStream( result, subscriber, Clock.systemUTC() );
 
         // When
@@ -273,7 +307,7 @@ public class CypherAdapterStreamTest
             {
                 meta.add( key, value );
             }
-        }, PULL_DISCARD_ALL_N_SIZE );
+        }, STREAM_LIMIT_UNLIMITED );
         return meta.build();
     }
 

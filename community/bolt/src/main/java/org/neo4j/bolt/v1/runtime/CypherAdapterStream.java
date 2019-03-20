@@ -39,6 +39,7 @@ import org.neo4j.values.virtual.MapValueBuilder;
 import org.neo4j.values.virtual.VirtualValues;
 
 import static java.lang.String.format;
+import static org.neo4j.bolt.v4.messaging.AbstractStreamingMessage.STREAM_LIMIT_UNLIMITED;
 import static org.neo4j.values.storable.Values.intValue;
 import static org.neo4j.values.storable.Values.longValue;
 import static org.neo4j.values.storable.Values.stringValue;
@@ -60,6 +61,8 @@ public class CypherAdapterStream implements BoltResult
     private final String[] fieldNames;
     protected final Clock clock;
     private final TransactionStateMachineV1SPI.BoltAdapterSubscriber querySubscriber;
+
+    private static final Long STREAM_UNLIMITED_BATCH_SIZE = Long.MAX_VALUE;
 
     public CypherAdapterStream( QueryExecution queryExecution,
             TransactionStateMachineV1SPI.BoltAdapterSubscriber querySubscriber, Clock clock )
@@ -87,9 +90,23 @@ public class CypherAdapterStream implements BoltResult
     {
         long start = clock.millis();
         this.querySubscriber.setRecordConsumer( recordConsumer );
-        queryExecution.request( size );
 
-        boolean hasMore = queryExecution.await();
+        boolean hasMore = true;
+        if ( size == STREAM_LIMIT_UNLIMITED )
+        {
+            while ( hasMore )
+            {
+                // Continuously pull until the whole stream is done
+                queryExecution.request( STREAM_UNLIMITED_BATCH_SIZE );
+                hasMore = queryExecution.await();
+            }
+        }
+        else
+        {
+            queryExecution.request( size );
+            hasMore = queryExecution.await();
+        }
+
         querySubscriber.assertSucceeded();
         if ( !hasMore )
         {

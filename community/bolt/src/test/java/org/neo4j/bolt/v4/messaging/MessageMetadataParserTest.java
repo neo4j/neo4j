@@ -46,14 +46,14 @@ class MessageMetadataParserTest
     void shouldParseDatabaseName() throws Exception
     {
         String databaseName = "cat_pictures";
-        assertThat( parseDatabaseName( asMapValue( map( "db_name", databaseName ) ) ), equalTo( databaseName ) );
+        assertThat( parseDatabaseName( asMapValue( map( "db", databaseName ) ) ), equalTo( databaseName ) );
     }
 
     @Test
     void shouldThrowForIncorrectDatabaseName()
     {
         BoltIOException e = assertThrows( BoltIOException.class,
-                () -> parseDatabaseName( asMapValue( map( "db_name", 10L ) ) ) );
+                () -> parseDatabaseName( asMapValue( map( "db", 10L ) ) ) );
 
         assertTrue( e.causesFailureMessage() );
     }

@@ -23,10 +23,10 @@ import org.neo4j.bolt.runtime.BoltResult;
 import org.neo4j.bolt.runtime.StateMachineContext;
 import org.neo4j.bolt.v4.messaging.ResultConsumer;
 
+import static org.neo4j.bolt.v4.messaging.AbstractStreamingMessage.STREAM_LIMIT_UNLIMITED;
+
 public class ResultConsumerV1Adaptor implements ResultConsumer
 {
-    public static final long PULL_DISCARD_ALL_N_SIZE = Long.MAX_VALUE;
-
     private final boolean pull;
     private final StateMachineContext context;
 
@@ -47,11 +47,11 @@ public class ResultConsumerV1Adaptor implements ResultConsumer
     {
         if ( pull )
         {
-            context.connectionState().getResponseHandler().onPullRecords( boltResult, PULL_DISCARD_ALL_N_SIZE );
+            context.connectionState().getResponseHandler().onPullRecords( boltResult, STREAM_LIMIT_UNLIMITED );
         }
         else
         {
-            context.connectionState().getResponseHandler().onDiscardRecords( boltResult, PULL_DISCARD_ALL_N_SIZE );
+            context.connectionState().getResponseHandler().onDiscardRecords( boltResult, STREAM_LIMIT_UNLIMITED );
         }
     }
 }

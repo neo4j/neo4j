@@ -32,7 +32,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.neo4j.bolt.v1.ResultConsumerV1Adaptor.PULL_DISCARD_ALL_N_SIZE;
+import static org.neo4j.bolt.v4.messaging.AbstractStreamingMessage.STREAM_LIMIT_UNLIMITED;
 import static org.neo4j.kernel.api.exceptions.Status.Request.Invalid;
 import static org.neo4j.values.storable.Values.stringValue;
 
@@ -48,7 +48,7 @@ class MutableConnectionStateTest
     {
         state.setResponseHandler( null );
 
-        state.onPullRecords( result, PULL_DISCARD_ALL_N_SIZE );
+        state.onPullRecords( result, STREAM_LIMIT_UNLIMITED );
 
         assertNull( state.getPendingError() );
         assertFalse( state.hasPendingIgnore() );
@@ -59,9 +59,9 @@ class MutableConnectionStateTest
     {
         state.setResponseHandler( responseHandler );
 
-        state.onPullRecords( result, PULL_DISCARD_ALL_N_SIZE );
+        state.onPullRecords( result, STREAM_LIMIT_UNLIMITED );
 
-        verify( responseHandler ).onPullRecords( result, PULL_DISCARD_ALL_N_SIZE );
+        verify( responseHandler ).onPullRecords( result, STREAM_LIMIT_UNLIMITED );
     }
 
     @Test
@@ -69,7 +69,7 @@ class MutableConnectionStateTest
     {
         state.setResponseHandler( null );
 
-        state.onDiscardRecords( result, PULL_DISCARD_ALL_N_SIZE );
+        state.onDiscardRecords( result, STREAM_LIMIT_UNLIMITED );
 
         assertNull( state.getPendingError() );
         assertFalse( state.hasPendingIgnore() );
@@ -80,9 +80,9 @@ class MutableConnectionStateTest
     {
         state.setResponseHandler( responseHandler );
 
-        state.onDiscardRecords( result, PULL_DISCARD_ALL_N_SIZE );
+        state.onDiscardRecords( result, STREAM_LIMIT_UNLIMITED );
 
-        verify( responseHandler ).onDiscardRecords( result, PULL_DISCARD_ALL_N_SIZE );
+        verify( responseHandler ).onDiscardRecords( result, STREAM_LIMIT_UNLIMITED );
     }
 
     @Test

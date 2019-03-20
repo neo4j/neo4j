@@ -38,7 +38,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.mockito.Mockito.mock;
-import static org.neo4j.bolt.v1.ResultConsumerV1Adaptor.PULL_DISCARD_ALL_N_SIZE;
+import static org.neo4j.bolt.v4.messaging.AbstractStreamingMessage.STREAM_LIMIT_UNLIMITED;
 import static org.neo4j.values.storable.Values.values;
 
 class ResultHandlerTest
@@ -53,7 +53,7 @@ class ResultHandlerTest
         Value[] record2 = values( "1", "2", "3" );
         BoltResult result = new TestBoltResult( record1, record2 );
 
-        handler.onPullRecords( result, PULL_DISCARD_ALL_N_SIZE );
+        handler.onPullRecords( result, STREAM_LIMIT_UNLIMITED );
         handler.onFinish();
 
         List<ResponseMessage> messages = messageWriter.asList();
@@ -73,7 +73,7 @@ class ResultHandlerTest
         Value[] record2 = values( "1", "2", "3" );
         BoltResult result = new TestBoltResult( record1, record2 );
 
-        handler.onDiscardRecords( result, PULL_DISCARD_ALL_N_SIZE );
+        handler.onDiscardRecords( result, STREAM_LIMIT_UNLIMITED );
         handler.onFinish();
 
         List<ResponseMessage> messages = messageWriter.asList();

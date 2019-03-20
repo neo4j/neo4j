@@ -26,9 +26,9 @@ import org.neo4j.bolt.messaging.Neo4jPack;
 import org.neo4j.bolt.messaging.RequestMessage;
 import org.neo4j.bolt.v1.messaging.BoltRequestMessageWriter;
 import org.neo4j.bolt.v3.messaging.BoltRequestMessageWriterV3;
-import org.neo4j.bolt.v4.messaging.AbstractHandleNMessage;
-import org.neo4j.bolt.v4.messaging.DiscardNMessage;
-import org.neo4j.bolt.v4.messaging.PullNMessage;
+import org.neo4j.bolt.v4.messaging.AbstractStreamingMessage;
+import org.neo4j.bolt.v4.messaging.DiscardMessage;
+import org.neo4j.bolt.v4.messaging.PullMessage;
 
 /**
  * This writer simulates the client.
@@ -43,13 +43,13 @@ public class BoltRequestMessageWriterV4 extends BoltRequestMessageWriterV3
     @Override
     public BoltRequestMessageWriter write( RequestMessage message ) throws IOException
     {
-        if ( message instanceof PullNMessage )
+        if ( message instanceof PullMessage )
         {
-            writeHandleN( (PullNMessage) message, PullNMessage.SIGNATURE );
+            writeHandleN( (PullMessage) message, PullMessage.SIGNATURE );
         }
-        else if ( message instanceof DiscardNMessage )
+        else if ( message instanceof DiscardMessage )
         {
-            writeHandleN( (DiscardNMessage) message, DiscardNMessage.SIGNATURE );
+            writeHandleN( (DiscardMessage) message, DiscardMessage.SIGNATURE );
         }
         else
         {
@@ -58,7 +58,7 @@ public class BoltRequestMessageWriterV4 extends BoltRequestMessageWriterV3
         return this;
     }
 
-    private void writeHandleN( AbstractHandleNMessage message, byte signature )
+    private void writeHandleN( AbstractStreamingMessage message, byte signature )
     {
         try
         {

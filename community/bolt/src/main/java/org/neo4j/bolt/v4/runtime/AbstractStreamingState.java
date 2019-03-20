@@ -24,8 +24,8 @@ import org.neo4j.bolt.runtime.BoltStateMachineState;
 import org.neo4j.bolt.runtime.StateMachineContext;
 import org.neo4j.bolt.v3.runtime.FailSafeBoltStateMachineState;
 import org.neo4j.bolt.v4.messaging.DiscardResultConsumer;
-import org.neo4j.bolt.v4.messaging.DiscardNMessage;
-import org.neo4j.bolt.v4.messaging.PullNMessage;
+import org.neo4j.bolt.v4.messaging.DiscardMessage;
+import org.neo4j.bolt.v4.messaging.PullMessage;
 import org.neo4j.bolt.v4.messaging.PullResultConsumer;
 import org.neo4j.bolt.v4.messaging.ResultConsumer;
 
@@ -43,15 +43,15 @@ public abstract class AbstractStreamingState extends FailSafeBoltStateMachineSta
     @Override
     protected BoltStateMachineState processUnsafe( RequestMessage message, StateMachineContext context ) throws Throwable
     {
-        if ( message instanceof PullNMessage )
+        if ( message instanceof PullMessage )
         {
-            PullNMessage pullNMessage = (PullNMessage) message;
-            return processStreamResultMessage( pullNMessage.statementId(), new PullResultConsumer( context, pullNMessage.n() ), context );
+            PullMessage pullMessage = (PullMessage) message;
+            return processStreamResultMessage( pullMessage.statementId(), new PullResultConsumer( context, pullMessage.n() ), context );
         }
-        if ( message instanceof DiscardNMessage )
+        if ( message instanceof DiscardMessage )
         {
-            DiscardNMessage discardNMessage = (DiscardNMessage) message;
-            return processStreamResultMessage( discardNMessage.statementId(), new DiscardResultConsumer( context, discardNMessage.n() ), context );
+            DiscardMessage discardMessage = (DiscardMessage) message;
+            return processStreamResultMessage( discardMessage.statementId(), new DiscardResultConsumer( context, discardMessage.n() ), context );
         }
         return null;
     }

@@ -274,7 +274,7 @@ public class TransactionStateMachine implements StatementProcessor
                         boolean failed = true;
                         try
                         {
-                            int statementId = StatementMetadata.ABSENT_STATEMENT_ID;
+                            int statementId = StatementMetadata.ABSENT_QUERY_ID;
 
                             BoltResultHandle resultHandle = spi.executeQuery( ctx.loginContext, statement, params, txTimeout, txMetadata );
                             BoltResult result = startExecution( resultHandle );
@@ -360,7 +360,7 @@ public class TransactionStateMachine implements StatementProcessor
                     State rollbackTransaction( MutableTransactionState ctx, TransactionStateMachineSPI spi )
                     {
                         // add dummy outcome useful for < Bolt V3, i.e. `RUN "ROLLBACK" & PULL_ALL`
-                        int statementId = StatementMetadata.ABSENT_STATEMENT_ID;
+                        int statementId = StatementMetadata.ABSENT_QUERY_ID;
                         ctx.statementOutcomes.put( statementId, new StatementOutcome( BoltResult.EMPTY ) );
 
                         return AUTO_COMMIT;
@@ -392,7 +392,7 @@ public class TransactionStateMachine implements StatementProcessor
                         else
                         {
                             // generate real statement ID only when nested statements in transaction are supported
-                            int statementId = spi.supportsNestedStatementsInTransaction() ? ctx.nextStatementId() : StatementMetadata.ABSENT_STATEMENT_ID;
+                            int statementId = spi.supportsNestedStatementsInTransaction() ? ctx.nextStatementId() : StatementMetadata.ABSENT_QUERY_ID;
 
                             BoltResultHandle resultHandle = spi.executeQuery( ctx.loginContext, statement, params, null, null /*ignored in explict tx run*/ );
                             BoltResult result = startExecution( resultHandle );
@@ -410,7 +410,7 @@ public class TransactionStateMachine implements StatementProcessor
                     Bookmark streamResult( MutableTransactionState ctx, TransactionStateMachineSPI spi, int statementId, ResultConsumer resultConsumer )
                             throws Throwable
                     {
-                        if ( statementId == StatementMetadata.ABSENT_STATEMENT_ID )
+                        if ( statementId == StatementMetadata.ABSENT_QUERY_ID )
                         {
                             statementId = ctx.lastStatementId;
                         }
@@ -644,9 +644,9 @@ public class TransactionStateMachine implements StatementProcessor
         final Clock clock;
 
         /**
-         * Used to handle RUN + PULL combo that arrives at the same time. PULL will not contain stmt_id in this case
+         * Used to handle RUN + PULL combo that arrives at the same time. PULL will not contain qid in this case
          */
-        int lastStatementId = StatementMetadata.ABSENT_STATEMENT_ID;
+        int lastStatementId = StatementMetadata.ABSENT_QUERY_ID;
 
         StatementMetadata lastStatementMetadata;
 

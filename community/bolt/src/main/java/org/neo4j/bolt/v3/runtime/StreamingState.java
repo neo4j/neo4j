@@ -39,7 +39,7 @@ public class StreamingState extends AbstractStreamingState
     @Override
     protected BoltStateMachineState processStreamResultMessage( ResultConsumer resultConsumer, StateMachineContext context ) throws Throwable
     {
-        int statementId = StatementMetadata.ABSENT_STATEMENT_ID;
+        int statementId = StatementMetadata.ABSENT_QUERY_ID;
         Bookmark bookmark = context.connectionState().getStatementProcessor().streamResult( statementId, resultConsumer );
         bookmark.attachTo( context.connectionState() );
         return readyState;

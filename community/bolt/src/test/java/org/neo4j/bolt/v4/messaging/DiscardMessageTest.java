@@ -20,6 +20,8 @@
 package org.neo4j.bolt.v4.messaging;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.Map;
 
@@ -32,21 +34,21 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.kernel.impl.util.ValueUtils.asMapValue;
 
-class PullNMessageTest
+class DiscardMessageTest
 {
-    @Test
-    void shouldParsePullNMetadataCorrectly() throws Throwable
+    @ParameterizedTest
+    @ValueSource( longs = {-1L, 100L} )
+    void shouldParseDiscardMetadataCorrectly( long value ) throws Throwable
     {
         // When
-        PullNMessage message = new PullNMessage( asMapValue( singletonMap( "n", 100L ) ) );
+        DiscardMessage message = new DiscardMessage( asMapValue( singletonMap( "n", value ) ) );
 
         // Then
-        assertThat( message.n(), equalTo( 100L ) );
+        assertThat( message.n(), equalTo( value ) );
     }
 
     @Test
@@ -56,39 +58,36 @@ class PullNMessageTest
         Map<String,Object> msgMetadata = map( "n", "invalid value type" );
         MapValue meta = ValueUtils.asMapValue( msgMetadata );
         // When & Then
-        BoltIOException exception = assertThrows( BoltIOException.class, () -> new PullNMessage( meta ) );
-        assertThat( exception.getMessage(), startsWith( "Expecting PULL_N size n to be a Long value, but got: String(\"invalid value type\")" ) );
+        BoltIOException exception = assertThrows( BoltIOException.class, () -> new DiscardMessage( meta ) );
+        assertThat( exception.getMessage(), startsWith( "Expecting DISCARD size n to be a Long value, but got: String(\"invalid value type\")" ) );
+    }
+
+    @ParameterizedTest
+    @ValueSource( longs = {-100L, 0L} )
+    void shouldThrowExceptionIfZero( long value ) throws Throwable
+    {
+        // When & Then
+        BoltIOException exception = assertThrows( BoltIOException.class, () -> new DiscardMessage( asMapValue( singletonMap( "n", value ) ) ) );
+        assertThat( exception.getMessage(), startsWith( "Expecting DISCARD size to be at least 1" ) );
     }
 
     @Test
     void shouldThrowExceptionIfMissingMeta() throws Throwable
     {
         // When & Then
-        BoltIOException exception = assertThrows( BoltIOException.class, () -> new PullNMessage( MapValue.EMPTY ) );
-        assertThat( exception.getMessage(), startsWith( "Expecting PULL_N size n to be a Long value, but got: NO_VALUE" ) );
+        BoltIOException exception = assertThrows( BoltIOException.class, () -> new DiscardMessage( MapValue.EMPTY ) );
+        assertThat( exception.getMessage(), startsWith( "Expecting DISCARD size n to be a Long value, but got: NO_VALUE" ) );
     }
 
     @Test
     void shouldBeEqual() throws Throwable
     {
         // Given
-        PullNMessage message = new PullNMessage( asMapValue( singletonMap( "n", 100L ) ) );
+        DiscardMessage message = new DiscardMessage( asMapValue( singletonMap( "n", 100L ) ) );
 
-        PullNMessage messageEqual = new PullNMessage( asMapValue( singletonMap( "n", 100L ) ) );
+        DiscardMessage messageEqual = new DiscardMessage( asMapValue( singletonMap( "n", 100L ) ) );
 
         // When & Then
         assertEquals( message, messageEqual );
-    }
-
-    @Test
-    void shouldNotBeEqualWithDiscardN() throws Throwable
-    {
-        // Given
-        PullNMessage pull = new PullNMessage( asMapValue( singletonMap( "n", 100L ) ) );
-
-        DiscardNMessage discard = new DiscardNMessage( asMapValue( singletonMap( "n", 100L ) ) );
-
-        // When & Then
-        assertNotEquals( pull, discard );
     }
 }

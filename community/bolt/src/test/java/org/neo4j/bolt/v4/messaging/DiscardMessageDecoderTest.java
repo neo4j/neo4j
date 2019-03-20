@@ -35,15 +35,15 @@ import static org.mockito.Mockito.mock;
 import static org.neo4j.bolt.v4.BoltProtocolV4ComponentFactory.encode;
 import static org.neo4j.bolt.v4.BoltProtocolV4ComponentFactory.newNeo4jPack;
 
-class DiscardNMessageDecoderTest
+class DiscardMessageDecoderTest
 {
     private final BoltResponseHandler responseHandler = mock( BoltResponseHandler.class );
-    private final RequestMessageDecoder decoder = new DiscardNMessageDecoder( responseHandler );
+    private final RequestMessageDecoder decoder = new DiscardMessageDecoder( responseHandler );
 
     @Test
     void shouldReturnCorrectSignature()
     {
-        assertEquals( DiscardNMessage.SIGNATURE, decoder.signature() );
+        assertEquals( DiscardMessage.SIGNATURE, decoder.signature() );
     }
 
     @Test
@@ -55,7 +55,7 @@ class DiscardNMessageDecoderTest
     @Test
     void shouldDecodeBeginMessage() throws Exception
     {
-        DiscardNMessage originalMessage = new DiscardNMessage( ValueUtils.asMapValue( Collections.singletonMap( "n", Long.MAX_VALUE ) ) );
+        DiscardMessage originalMessage = new DiscardMessage( ValueUtils.asMapValue( Collections.singletonMap( "n", Long.MAX_VALUE ) ) );
         assertOriginalMessageEqualsToDecoded( originalMessage, decoder );
     }
 

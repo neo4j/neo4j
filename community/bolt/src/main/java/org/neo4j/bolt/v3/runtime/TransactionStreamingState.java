@@ -35,7 +35,7 @@ public class TransactionStreamingState extends AbstractStreamingState
     @Override
     protected BoltStateMachineState processStreamResultMessage( ResultConsumer resultConsumer, StateMachineContext context ) throws Throwable
     {
-        int statementId = StatementMetadata.ABSENT_STATEMENT_ID;
+        int statementId = StatementMetadata.ABSENT_QUERY_ID;
         context.connectionState().getStatementProcessor().streamResult( statementId, resultConsumer );
         return readyState;
     }

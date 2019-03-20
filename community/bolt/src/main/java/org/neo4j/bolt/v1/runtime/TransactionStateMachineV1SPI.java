@@ -206,8 +206,7 @@ public class TransactionStateMachineV1SPI implements TransactionStateMachineSPI
             try
             {
                 BoltAdapterSubscriber subscriber = new BoltAdapterSubscriber();
-                QueryExecution result = queryExecutionEngine.executeQuery( statement, params, transactionalContext, true,
-                        subscriber );
+                QueryExecution result = queryExecutionEngine.executeQuery( statement, params, transactionalContext, true, subscriber );
                 subscriber.assertSucceeded();
                 return newBoltResult( result, subscriber, clock );
             }

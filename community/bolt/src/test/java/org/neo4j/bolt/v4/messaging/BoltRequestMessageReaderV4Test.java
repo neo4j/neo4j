@@ -120,8 +120,8 @@ class BoltRequestMessageReaderV4Test
     private static Stream<RequestMessage> boltV4Messages() throws BoltIOException
     {
         return Stream.of(
-                new PullNMessage( asMapValue( singletonMap( "n",  100L ) ) ),
-                new DiscardNMessage( asMapValue( singletonMap( "n", 100L ) ) ),
+                new PullMessage( asMapValue( singletonMap( "n",  100L ) ) ),
+                new DiscardMessage( asMapValue( singletonMap( "n", 100L ) ) ),
                 new RunMessage( "RETURN 1", EMPTY_MAP, EMPTY_MAP ),
                 new BeginMessage(),
 

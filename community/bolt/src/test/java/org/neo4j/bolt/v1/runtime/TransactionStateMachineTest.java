@@ -345,7 +345,7 @@ class TransactionStateMachineTest
         TransactionStateMachine stateMachine = newTransactionStateMachine( stateMachineSPI );
 
         stateMachine.run( "SOME STATEMENT", null );
-        stateMachine.streamResult( StatementMetadata.ABSENT_STATEMENT_ID, EMPTY );
+        stateMachine.streamResult( StatementMetadata.ABSENT_QUERY_ID, EMPTY );
 
         verify( stateMachineSPI, times( 2 ) ).unbindTransactionFromCurrentThread();
     }
@@ -374,14 +374,14 @@ class TransactionStateMachineTest
 
         stateMachine.run( "SOME STATEMENT", null );
 
-        StatementOutcome outcome = stateMachine.ctx.statementOutcomes.get( StatementMetadata.ABSENT_STATEMENT_ID );
+        StatementOutcome outcome = stateMachine.ctx.statementOutcomes.get( StatementMetadata.ABSENT_QUERY_ID );
         assertNotNull( outcome );
         assertNotNull( outcome.resultHandle );
         assertNotNull( outcome.result );
 
         RuntimeException e = assertThrows( RuntimeException.class, () ->
         {
-            stateMachine.streamResult( StatementMetadata.ABSENT_STATEMENT_ID, ERROR );
+            stateMachine.streamResult( StatementMetadata.ABSENT_QUERY_ID, ERROR );
         } );
         assertEquals( "some error", e.getMessage() );
 
@@ -418,14 +418,14 @@ class TransactionStateMachineTest
         stateMachine.beginTransaction( null );
         stateMachine.run( "SOME STATEMENT", null );
 
-        StatementOutcome outcome = stateMachine.ctx.statementOutcomes.get( StatementMetadata.ABSENT_STATEMENT_ID );
+        StatementOutcome outcome = stateMachine.ctx.statementOutcomes.get( StatementMetadata.ABSENT_QUERY_ID );
         assertNotNull( outcome );
         assertNotNull( outcome.resultHandle );
         assertNotNull( outcome.result );
 
         RuntimeException e = assertThrows( RuntimeException.class, () ->
         {
-            stateMachine.streamResult( StatementMetadata.ABSENT_STATEMENT_ID, ERROR );
+            stateMachine.streamResult( StatementMetadata.ABSENT_QUERY_ID, ERROR );
         } );
         assertEquals( "some error", e.getMessage() );
 

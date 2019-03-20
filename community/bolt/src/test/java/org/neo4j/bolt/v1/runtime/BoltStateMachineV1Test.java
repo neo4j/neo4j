@@ -75,13 +75,13 @@ import static org.neo4j.bolt.testing.BoltMatchers.succeeded;
 import static org.neo4j.bolt.testing.BoltMatchers.verifyOneResponse;
 import static org.neo4j.bolt.testing.BoltMatchers.wasIgnored;
 import static org.neo4j.bolt.testing.NullResponseHandler.nullResponseHandler;
-import static org.neo4j.bolt.v1.ResultConsumerV1Adaptor.PULL_DISCARD_ALL_N_SIZE;
 import static org.neo4j.bolt.v1.runtime.MachineRoom.EMPTY_PARAMS;
 import static org.neo4j.bolt.v1.runtime.MachineRoom.USER_AGENT;
 import static org.neo4j.bolt.v1.runtime.MachineRoom.init;
 import static org.neo4j.bolt.v1.runtime.MachineRoom.newMachine;
 import static org.neo4j.bolt.v1.runtime.MachineRoom.newMachineWithTransaction;
 import static org.neo4j.bolt.v1.runtime.MachineRoom.newMachineWithTransactionSPI;
+import static org.neo4j.bolt.v4.messaging.AbstractStreamingMessage.STREAM_LIMIT_UNLIMITED;
 
 public class BoltStateMachineV1Test
 {
@@ -454,11 +454,11 @@ public class BoltStateMachineV1Test
         // Given
         BoltResponseHandler responseHandler = mock( BoltResponseHandler.class );
         doThrow( new AuthorizationExpiredException( "Auth expired!" ) ).when( responseHandler )
-                .onPullRecords( any(), eq( PULL_DISCARD_ALL_N_SIZE ) );
+                .onPullRecords( any(), eq( STREAM_LIMIT_UNLIMITED ) );
         BoltStateMachine machine = init( newMachine() );
         machine.process( new RunMessage( "RETURN 1", EMPTY_PARAMS ), nullResponseHandler() ); // move to streaming state
         // We assume the only implementation of statement processor is TransactionStateMachine
-        txStateMachine( machine ).ctx.statementOutcomes.put( StatementMetadata.ABSENT_STATEMENT_ID, new StatementOutcome( BoltResult.EMPTY ) );
+        txStateMachine( machine ).ctx.statementOutcomes.put( StatementMetadata.ABSENT_QUERY_ID, new StatementOutcome( BoltResult.EMPTY ) );
 
         // When & Then
         try
@@ -471,7 +471,7 @@ public class BoltStateMachineV1Test
             assertEquals( "Auth expired!", e.getCause().getMessage() );
         }
 
-        verify( responseHandler ).onPullRecords( any(), eq( PULL_DISCARD_ALL_N_SIZE ) );
+        verify( responseHandler ).onPullRecords( any(), eq( STREAM_LIMIT_UNLIMITED ) );
     }
 
     @Test
@@ -480,11 +480,11 @@ public class BoltStateMachineV1Test
         // Given
         BoltResponseHandler responseHandler = mock( BoltResponseHandler.class );
         doThrow( new AuthorizationExpiredException( "Auth expired!" ) ).when( responseHandler )
-                .onDiscardRecords( any(), eq( PULL_DISCARD_ALL_N_SIZE ) );
+                .onDiscardRecords( any(), eq( STREAM_LIMIT_UNLIMITED ) );
         BoltStateMachine machine = init( newMachine() );
         machine.process( new RunMessage( "RETURN 1", EMPTY_PARAMS ), nullResponseHandler() ); // move to streaming state
         // We assume the only implementation of statement processor is TransactionStateMachine
-        txStateMachine( machine ).ctx.statementOutcomes.put( StatementMetadata.ABSENT_STATEMENT_ID, new StatementOutcome( BoltResult.EMPTY ) );
+        txStateMachine( machine ).ctx.statementOutcomes.put( StatementMetadata.ABSENT_QUERY_ID, new StatementOutcome( BoltResult.EMPTY ) );
 
         // When & Then
         try
@@ -647,7 +647,7 @@ public class BoltStateMachineV1Test
         BoltStateMachineV1SPI spi = mock( BoltStateMachineV1SPI.class, RETURNS_MOCKS );
         BoltStateMachine machine = init( newMachine( spi ) );
         machine.process( new RunMessage( "RETURN 42", EMPTY_PARAMS ), nullResponseHandler() ); // move to streaming state
-        txStateMachine( machine ).ctx.statementOutcomes.put( StatementMetadata.ABSENT_STATEMENT_ID, new StatementOutcome( BoltResult.EMPTY ) );
+        txStateMachine( machine ).ctx.statementOutcomes.put( StatementMetadata.ABSENT_QUERY_ID, new StatementOutcome( BoltResult.EMPTY ) );
 
         BoltResponseHandler responseHandler = mock( BoltResponseHandler.class );
 

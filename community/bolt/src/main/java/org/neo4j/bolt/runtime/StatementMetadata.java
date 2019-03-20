@@ -25,11 +25,11 @@ package org.neo4j.bolt.runtime;
  */
 public interface StatementMetadata
 {
-    int ABSENT_STATEMENT_ID = -1;
+    int ABSENT_QUERY_ID = -1;
 
     String[] fieldNames();
 
-    int statementId();
+    int queryId();
 
     StatementMetadata EMPTY = new StatementMetadata()
     {
@@ -42,9 +42,9 @@ public interface StatementMetadata
         }
 
         @Override
-        public int statementId()
+        public int queryId()
         {
-            return ABSENT_STATEMENT_ID;
+            return ABSENT_QUERY_ID;
         }
     };
 }

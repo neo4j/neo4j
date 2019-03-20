@@ -22,11 +22,11 @@ package org.neo4j.bolt.v4.messaging;
 import org.neo4j.bolt.messaging.BoltIOException;
 import org.neo4j.values.virtual.MapValue;
 
-public class DiscardNMessage extends AbstractHandleNMessage
+public class DiscardMessage extends AbstractStreamingMessage
 {
     public static final byte SIGNATURE = 0x2F;
 
-    public DiscardNMessage( MapValue meta ) throws BoltIOException
+    public DiscardMessage( MapValue meta ) throws BoltIOException
     {
         super( meta );
     }
@@ -40,6 +40,6 @@ public class DiscardNMessage extends AbstractHandleNMessage
     @Override
     String name()
     {
-        return "DISCARD_N";
+        return "DISCARD";
     }
 }

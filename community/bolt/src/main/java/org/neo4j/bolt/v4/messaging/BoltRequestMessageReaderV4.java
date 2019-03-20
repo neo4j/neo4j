@@ -55,8 +55,8 @@ public class BoltRequestMessageReaderV4 extends BoltRequestMessageReader
         return Arrays.asList(
                 new HelloMessageDecoder( defaultHandler ),
                 new RunMessageDecoder( defaultHandler ), // New
-                new DiscardNMessageDecoder( resultHandler ), // New
-                new PullNMessageDecoder( resultHandler ), // New
+                new DiscardMessageDecoder( resultHandler ), // New
+                new PullMessageDecoder( resultHandler ), // New
                 new BeginMessageDecoder( defaultHandler ), // New
                 new CommitMessageDecoder( resultHandler ),
                 new RollbackMessageDecoder( resultHandler ),

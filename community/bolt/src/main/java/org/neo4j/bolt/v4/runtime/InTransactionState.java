@@ -38,7 +38,7 @@ import static org.neo4j.values.storable.Values.stringArray;
 
 public class InTransactionState extends AbstractStreamingState
 {
-    public static final String STATEMENT_ID_KEY = "stmt_id";
+    public static final String QUERY_ID_KEY = "qid";
 
     @Override
     protected BoltStateMachineState processUnsafe( RequestMessage message, StateMachineContext context ) throws Throwable
@@ -83,7 +83,7 @@ public class InTransactionState extends AbstractStreamingState
 
         context.connectionState().onMetadata( FIELDS_KEY, stringArray( statementMetadata.fieldNames() ) );
         context.connectionState().onMetadata( FIRST_RECORD_AVAILABLE_KEY, Values.longValue( end - start ) );
-        context.connectionState().onMetadata( STATEMENT_ID_KEY, Values.longValue( statementMetadata.statementId() ) );
+        context.connectionState().onMetadata( QUERY_ID_KEY, Values.longValue( statementMetadata.queryId() ) );
 
         return this;
     }

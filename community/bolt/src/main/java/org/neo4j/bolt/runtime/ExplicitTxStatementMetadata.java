@@ -37,7 +37,7 @@ public class ExplicitTxStatementMetadata implements StatementMetadata
     }
 
     @Override
-    public int statementId()
+    public int queryId()
     {
         return statementId;
     }

@@ -109,7 +109,7 @@ public class StreamingState implements BoltStateMachineState
     {
         try
         {
-            int statementId = StatementMetadata.ABSENT_STATEMENT_ID;
+            int statementId = StatementMetadata.ABSENT_QUERY_ID;
             ResultConsumer resultConsumer = new ResultConsumerV1Adaptor( context, pull );
             context.connectionState().getStatementProcessor().streamResult( statementId, resultConsumer );
 

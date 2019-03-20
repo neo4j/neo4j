@@ -28,7 +28,7 @@ import org.neo4j.values.virtual.MapValue;
 
 public final class MessageMetadataParser
 {
-    private static final String DB_NAME = "db_name";
+    private static final String DB_NAME = "db";
     public static final String ABSENT_DB_NAME = "";
 
     /**

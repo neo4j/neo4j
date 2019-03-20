@@ -101,14 +101,14 @@ class InTransactionStateIT extends BoltStateMachineStateTestBase
     }
 
     @Test
-    void shouldStayInTxOnDiscardN_succ() throws Throwable
+    void shouldStayInTxOnDiscard_succ() throws Throwable
     {
         // Given
         BoltStateMachineV4 machine = getBoltStateMachineInTxState();
 
         // When
         BoltResponseRecorder recorder = new BoltResponseRecorder();
-        machine.process( newDiscardNMessage( 100L ), recorder );
+        machine.process( newDiscardMessage( 100L ), recorder );
 
         // Then
         RecordedBoltResponse response = recorder.nextResponse();
@@ -118,21 +118,21 @@ class InTransactionStateIT extends BoltStateMachineStateTestBase
     }
 
     @Test
-    void shouldStayInTxOnDiscardN_succ_hasMore() throws Throwable
+    void shouldStayInTxOnDiscard_succ_hasMore() throws Throwable
     {
         // Given
         BoltStateMachineV4 machine = getBoltStateMachineInTxState( "Unwind [1, 2, 3] as n return n" );
 
         // When
         BoltResponseRecorder recorder = new BoltResponseRecorder();
-        machine.process( newDiscardNMessage( 2 ), recorder );
+        machine.process( newDiscardMessage( 2 ), recorder );
 
         // Then
         RecordedBoltResponse response = recorder.nextResponse();
         assertThat( response, containsNoRecord() );
         assertThat( response, succeededWithMetadata( "has_more", BooleanValue.TRUE ) );
 
-        machine.process( newDiscardNMessage( 2 ), recorder );
+        machine.process( newDiscardMessage( 2 ), recorder );
         response = recorder.nextResponse();
         assertThat( response, containsNoRecord() );
         assertTrue( response.hasMetadata( "type" ) );
@@ -143,14 +143,14 @@ class InTransactionStateIT extends BoltStateMachineStateTestBase
     }
 
     @Test
-    void shouldStayInTxOnPullN_succ() throws Throwable
+    void shouldStayInTxOnPull_succ() throws Throwable
     {
         // Given
         BoltStateMachineV4 machine = getBoltStateMachineInTxState();
 
         // When
         BoltResponseRecorder recorder = new BoltResponseRecorder();
-        machine.process( newPullNMessage( 100 ), recorder );
+        machine.process( newPullMessage( 100 ), recorder );
 
         // Then
         RecordedBoltResponse response = recorder.nextResponse();
@@ -162,21 +162,21 @@ class InTransactionStateIT extends BoltStateMachineStateTestBase
     }
 
     @Test
-    void shouldStayInTxOnPullN_succ_hasMore() throws Throwable
+    void shouldStayInTxOnPull_succ_hasMore() throws Throwable
     {
         // Given
         BoltStateMachineV4 machine = getBoltStateMachineInTxState( "Unwind [1, 2, 3] as n return n" );
 
         // When
         BoltResponseRecorder recorder = new BoltResponseRecorder();
-        machine.process( newPullNMessage( 2 ), recorder );
+        machine.process( newPullMessage( 2 ), recorder );
 
         // Then
         RecordedBoltResponse response = recorder.nextResponse();
         assertThat( response, containsRecord( 1L ) );
         assertThat( response, succeededWithMetadata( "has_more", BooleanValue.TRUE ) );
 
-        machine.process( newPullNMessage( 2 ), recorder );
+        machine.process( newPullMessage( 2 ), recorder );
         response = recorder.nextResponse();
         assertThat( response, containsRecord( 3L ) );
         assertTrue( response.hasMetadata( "type" ) );
@@ -285,7 +285,7 @@ class InTransactionStateIT extends BoltStateMachineStateTestBase
 
     private static Stream<RequestMessage> pullAllDiscardAllMessages() throws BoltIOException
     {
-        return Stream.of( newPullNMessage( 100L ), newDiscardNMessage( 100L ) );
+        return Stream.of( newPullMessage( 100L ), newDiscardMessage( 100L ) );
     }
 
     private BoltStateMachineV4 getBoltStateMachineInTxState() throws BoltConnectionFatality, BoltIOException

@@ -35,15 +35,15 @@ import static org.mockito.Mockito.mock;
 import static org.neo4j.bolt.v4.BoltProtocolV4ComponentFactory.encode;
 import static org.neo4j.bolt.v4.BoltProtocolV4ComponentFactory.newNeo4jPack;
 
-class PullNMessageDecoderTest
+class PullMessageDecoderTest
 {
     private final BoltResponseHandler responseHandler = mock( BoltResponseHandler.class );
-    private final RequestMessageDecoder decoder = new PullNMessageDecoder( responseHandler );
+    private final RequestMessageDecoder decoder = new PullMessageDecoder( responseHandler );
 
     @Test
     void shouldReturnCorrectSignature()
     {
-        assertEquals( PullNMessage.SIGNATURE, decoder.signature() );
+        assertEquals( PullMessage.SIGNATURE, decoder.signature() );
     }
 
     @Test
@@ -55,7 +55,7 @@ class PullNMessageDecoderTest
     @Test
     void shouldDecodeBeginMessage() throws Exception
     {
-        PullNMessage originalMessage = new PullNMessage( ValueUtils.asMapValue( Collections.singletonMap( "n", Long.MAX_VALUE ) ) );
+        PullMessage originalMessage = new PullMessage( ValueUtils.asMapValue( Collections.singletonMap( "n", Long.MAX_VALUE ) ) );
         assertOriginalMessageEqualsToDecoded( originalMessage, decoder );
     }
 

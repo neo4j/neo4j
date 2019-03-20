@@ -32,18 +32,19 @@ import org.neo4j.values.virtual.MapValue;
 
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
-import static org.neo4j.bolt.v4.runtime.InTransactionState.STATEMENT_ID_KEY;
+import static org.neo4j.bolt.v4.runtime.InTransactionState.QUERY_ID_KEY;
 
-public abstract class AbstractHandleNMessage implements RequestMessage
+public abstract class AbstractStreamingMessage implements RequestMessage
 {
-    private static final String PULL_N_KEY = "n";
-    private static final long MINIMAL_N_SIZE = 1;
+    private static final String STREAM_LIMIT_KEY = "n";
+    private static final long STREAM_LIMIT_MINIMAL = 1;
+    public static final long STREAM_LIMIT_UNLIMITED = -1;
 
     private final MapValue meta;
     private final long n;
     private final int statementId;
 
-    public AbstractHandleNMessage( MapValue meta ) throws BoltIOException
+    public AbstractStreamingMessage( MapValue meta ) throws BoltIOException
     {
         this.meta = requireNonNull( meta );
         this.n = parseN( meta );
@@ -52,13 +53,14 @@ public abstract class AbstractHandleNMessage implements RequestMessage
 
     private long parseN( MapValue meta ) throws BoltIOException
     {
-        AnyValue anyValue = meta.get( PULL_N_KEY );
+        AnyValue anyValue = meta.get( STREAM_LIMIT_KEY );
         if ( anyValue != Values.NO_VALUE && anyValue instanceof LongValue )
         {
             long size = ((LongValue) anyValue).longValue();
-            if ( size < MINIMAL_N_SIZE )
+            if ( size != STREAM_LIMIT_UNLIMITED && size < STREAM_LIMIT_MINIMAL )
             {
-                throw new BoltIOException( Status.Request.Invalid, format( "Expecting %s size to be at least %s, but got: %s", name(), MINIMAL_N_SIZE, n ) );
+                throw new BoltIOException( Status.Request.Invalid,
+                        format( "Expecting %s size to be at least %s, but got: %s", name(), STREAM_LIMIT_MINIMAL, n ) );
             }
             return size;
         }
@@ -70,7 +72,7 @@ public abstract class AbstractHandleNMessage implements RequestMessage
 
     private int parseStatementId( MapValue meta )
     {
-        AnyValue anyValue = meta.get( STATEMENT_ID_KEY );
+        AnyValue anyValue = meta.get( QUERY_ID_KEY );
         if ( anyValue != Values.NO_VALUE && anyValue instanceof LongValue )
         {
             long id = ((LongValue) anyValue).longValue();
@@ -78,7 +80,7 @@ public abstract class AbstractHandleNMessage implements RequestMessage
         }
         else
         {
-            return StatementMetadata.ABSENT_STATEMENT_ID;
+            return StatementMetadata.ABSENT_QUERY_ID;
         }
     }
 
@@ -114,7 +116,7 @@ public abstract class AbstractHandleNMessage implements RequestMessage
         {
             return false;
         }
-        AbstractHandleNMessage that = (AbstractHandleNMessage) o;
+        AbstractStreamingMessage that = (AbstractStreamingMessage) o;
         return Objects.equals( meta, that.meta );
     }
 

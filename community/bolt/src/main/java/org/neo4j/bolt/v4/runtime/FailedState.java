@@ -27,8 +27,8 @@ import org.neo4j.bolt.v1.messaging.request.InterruptSignal;
 import org.neo4j.bolt.v3.messaging.request.CommitMessage;
 import org.neo4j.bolt.v3.messaging.request.RollbackMessage;
 import org.neo4j.bolt.v3.messaging.request.RunMessage;
-import org.neo4j.bolt.v4.messaging.DiscardNMessage;
-import org.neo4j.bolt.v4.messaging.PullNMessage;
+import org.neo4j.bolt.v4.messaging.DiscardMessage;
+import org.neo4j.bolt.v4.messaging.PullMessage;
 
 import static org.neo4j.util.Preconditions.checkState;
 
@@ -76,7 +76,7 @@ public class FailedState implements BoltStateMachineState
 
     private static boolean shouldIgnore( RequestMessage message )
     {
-        return message instanceof RunMessage || message instanceof PullNMessage || message instanceof DiscardNMessage
+        return message instanceof RunMessage || message instanceof PullMessage || message instanceof DiscardMessage
                 || message instanceof CommitMessage || message instanceof RollbackMessage;
     }
 }

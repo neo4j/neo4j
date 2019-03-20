@@ -30,8 +30,8 @@ import org.neo4j.bolt.v3.messaging.request.HelloMessage;
 import org.neo4j.bolt.v1.runtime.integration.SessionExtension;
 import org.neo4j.bolt.v4.BoltProtocolV4;
 import org.neo4j.bolt.v4.BoltStateMachineV4;
-import org.neo4j.bolt.v4.messaging.DiscardNMessage;
-import org.neo4j.bolt.v4.messaging.PullNMessage;
+import org.neo4j.bolt.v4.messaging.DiscardMessage;
+import org.neo4j.bolt.v4.messaging.PullMessage;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.values.virtual.MapValue;
@@ -56,13 +56,13 @@ public class BoltStateMachineStateTestBase
         return new HelloMessage( MapUtil.map( "user_agent", USER_AGENT ) );
     }
 
-    protected static PullNMessage newPullNMessage( long size ) throws BoltIOException
+    protected static PullMessage newPullMessage( long size ) throws BoltIOException
     {
-        return new PullNMessage( ValueUtils.asMapValue( Collections.singletonMap( "n", size ) ) );
+        return new PullMessage( ValueUtils.asMapValue( Collections.singletonMap( "n", size ) ) );
     }
 
-    protected static DiscardNMessage newDiscardNMessage( long size ) throws BoltIOException
+    protected static DiscardMessage newDiscardMessage( long size ) throws BoltIOException
     {
-        return new DiscardNMessage( ValueUtils.asMapValue( Collections.singletonMap( "n", size ) ) );
+        return new DiscardMessage( ValueUtils.asMapValue( Collections.singletonMap( "n", size ) ) );
     }
 }

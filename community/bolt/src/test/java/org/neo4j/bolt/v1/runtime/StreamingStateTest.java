@@ -101,7 +101,7 @@ class StreamingStateTest
         BoltStateMachineState nextState = state.process( PullAllMessage.INSTANCE, context );
 
         assertEquals( readyState, nextState );
-        verify( statementProcessor ).streamResult( eq( StatementMetadata.ABSENT_STATEMENT_ID ), any() );
+        verify( statementProcessor ).streamResult( eq( StatementMetadata.ABSENT_QUERY_ID ), any() );
     }
 
     @Test
@@ -110,7 +110,7 @@ class StreamingStateTest
         AuthorizationExpiredException error = new AuthorizationExpiredException( "Hello" );
 
         StatementProcessor statementProcessor = mock( StatementProcessor.class );
-        doThrow( error ).when( statementProcessor ).streamResult( eq( StatementMetadata.ABSENT_STATEMENT_ID ), any() );
+        doThrow( error ).when( statementProcessor ).streamResult( eq( StatementMetadata.ABSENT_QUERY_ID ), any() );
         connectionState.setStatementProcessor( statementProcessor );
 
         BoltStateMachineState nextState = state.process( PullAllMessage.INSTANCE, context );
@@ -125,7 +125,7 @@ class StreamingStateTest
         RuntimeException error = new RuntimeException( "Hello" );
 
         StatementProcessor statementProcessor = mock( StatementProcessor.class );
-        doThrow( error ).when( statementProcessor ).streamResult( eq( StatementMetadata.ABSENT_STATEMENT_ID ), any() );
+        doThrow( error ).when( statementProcessor ).streamResult( eq( StatementMetadata.ABSENT_QUERY_ID ), any() );
         connectionState.setStatementProcessor( statementProcessor );
 
         BoltStateMachineState nextState = state.process( PullAllMessage.INSTANCE, context );
@@ -143,7 +143,7 @@ class StreamingStateTest
         BoltStateMachineState nextState = state.process( DiscardAllMessage.INSTANCE, context );
 
         assertEquals( readyState, nextState );
-        verify( statementProcessor ).streamResult( eq( StatementMetadata.ABSENT_STATEMENT_ID ), any() );
+        verify( statementProcessor ).streamResult( eq( StatementMetadata.ABSENT_QUERY_ID ), any() );
     }
 
     @Test
@@ -152,7 +152,7 @@ class StreamingStateTest
         AuthorizationExpiredException error = new AuthorizationExpiredException( "Hello" );
 
         StatementProcessor statementProcessor = mock( StatementProcessor.class );
-        doThrow( error ).when( statementProcessor ).streamResult( eq( StatementMetadata.ABSENT_STATEMENT_ID ), any() );
+        doThrow( error ).when( statementProcessor ).streamResult( eq( StatementMetadata.ABSENT_QUERY_ID ), any() );
         connectionState.setStatementProcessor( statementProcessor );
 
         BoltStateMachineState nextState = state.process( DiscardAllMessage.INSTANCE, context );
@@ -167,7 +167,7 @@ class StreamingStateTest
         RuntimeException error = new RuntimeException( "Hello" );
 
         StatementProcessor statementProcessor = mock( StatementProcessor.class );
-        doThrow( error ).when( statementProcessor ).streamResult( eq( StatementMetadata.ABSENT_STATEMENT_ID ), any() );
+        doThrow( error ).when( statementProcessor ).streamResult( eq( StatementMetadata.ABSENT_QUERY_ID ), any() );
         connectionState.setStatementProcessor( statementProcessor );
 
         BoltStateMachineState nextState = state.process( DiscardAllMessage.INSTANCE, context );

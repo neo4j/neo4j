@@ -27,11 +27,11 @@ import org.neo4j.bolt.messaging.RequestMessageDecoder;
 import org.neo4j.bolt.runtime.BoltResponseHandler;
 import org.neo4j.values.virtual.MapValue;
 
-public class DiscardNMessageDecoder implements RequestMessageDecoder
+public class DiscardMessageDecoder implements RequestMessageDecoder
 {
     private final BoltResponseHandler responseHandler;
 
-    public DiscardNMessageDecoder( BoltResponseHandler responseHandler )
+    public DiscardMessageDecoder( BoltResponseHandler responseHandler )
     {
         this.responseHandler = responseHandler;
     }
@@ -39,7 +39,7 @@ public class DiscardNMessageDecoder implements RequestMessageDecoder
     @Override
     public int signature()
     {
-        return DiscardNMessage.SIGNATURE;
+        return DiscardMessage.SIGNATURE;
     }
 
     @Override
@@ -52,7 +52,7 @@ public class DiscardNMessageDecoder implements RequestMessageDecoder
     public RequestMessage decode( Neo4jPack.Unpacker unpacker ) throws IOException
     {
         MapValue meta = unpacker.unpackMap();
-        return new DiscardNMessage( meta );
+        return new DiscardMessage( meta );
     }
 }
 

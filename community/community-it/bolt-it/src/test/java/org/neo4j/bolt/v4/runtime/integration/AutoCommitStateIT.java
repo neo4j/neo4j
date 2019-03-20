@@ -60,14 +60,14 @@ import static org.neo4j.bolt.v3.messaging.request.RollbackMessage.ROLLBACK_MESSA
 class AutoCommitStateIT extends BoltStateMachineStateTestBase
 {
     @Test
-    void shouldMoveFromAutoCommitToReadyOnPullN_succ() throws Throwable
+    void shouldMoveFromAutoCommitToReadyOnPull_succ() throws Throwable
     {
         // Given
         BoltStateMachineV4 machine = getBoltStateMachineInAutoCommitState();
 
         // When
         BoltResponseRecorder recorder = new BoltResponseRecorder();
-        machine.process( newPullNMessage( 100L ), recorder );
+        machine.process( newPullMessage( 100L ), recorder );
 
         // Then
         RecordedBoltResponse response = recorder.nextResponse();
@@ -79,21 +79,21 @@ class AutoCommitStateIT extends BoltStateMachineStateTestBase
     }
 
     @Test
-    void shouldMoveFromAutoCommitToReadyOnPullN_succ_hasMore() throws Throwable
+    void shouldMoveFromAutoCommitToReadyOnPull_succ_hasMore() throws Throwable
     {
         // Given
         BoltStateMachineV4 machine = getBoltStateMachineInAutoCommitState( "Unwind [1, 2, 3] as n return n" );
 
         // When
         BoltResponseRecorder recorder = new BoltResponseRecorder();
-        machine.process( newPullNMessage( 2L ), recorder );
+        machine.process( newPullMessage( 2L ), recorder );
 
         // Then
         RecordedBoltResponse response = recorder.nextResponse();
         assertThat( response, containsRecord( 1L ) );
         assertThat( response, succeededWithMetadata( "has_more", BooleanValue.TRUE ) );
 
-        machine.process( newPullNMessage( 2L ), recorder );
+        machine.process( newPullMessage( 2L ), recorder );
         response = recorder.nextResponse();
         assertThat( response, containsRecord( 3L ) );
         assertTrue( response.hasMetadata( "type" ) );
@@ -110,7 +110,7 @@ class AutoCommitStateIT extends BoltStateMachineStateTestBase
 
         // When
         BoltResponseRecorder recorder = new BoltResponseRecorder();
-        machine.process( newDiscardNMessage( 2L ), recorder );
+        machine.process( newDiscardMessage( 2L ), recorder );
 
         // Then
         RecordedBoltResponse response = recorder.nextResponse();

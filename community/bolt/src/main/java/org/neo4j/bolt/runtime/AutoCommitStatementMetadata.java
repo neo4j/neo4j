@@ -35,8 +35,8 @@ public class AutoCommitStatementMetadata implements StatementMetadata
     }
 
     @Override
-    public int statementId()
+    public int queryId()
     {
-        return ABSENT_STATEMENT_ID;
+        return ABSENT_QUERY_ID;
     }
 }
