@@ -26,8 +26,6 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.NoSuchFileException;
-import java.nio.file.OpenOption;
-import java.nio.file.StandardOpenOption;
 import java.util.Collection;
 import java.util.function.Consumer;
 
@@ -37,7 +35,6 @@ import org.neo4j.index.internal.gbptree.Writer;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.PageCacheOpenOptions;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
@@ -79,9 +76,9 @@ public abstract class NativeIndexPopulator<KEY extends NativeIndexKey<KEY>, VALU
     private boolean closed;
 
     NativeIndexPopulator( PageCache pageCache, FileSystemAbstraction fs, File storeFile, IndexLayout<KEY,VALUE> layout, IndexProvider.Monitor monitor,
-            StoreIndexDescriptor descriptor, Consumer<PageCursor> additionalHeaderWriter, OpenOption... openOptions )
+            StoreIndexDescriptor descriptor, Consumer<PageCursor> additionalHeaderWriter )
     {
-        super( pageCache, fs, storeFile, layout, monitor, descriptor, withNoStriping( openOptions ) );
+        super( pageCache, fs, storeFile, layout, monitor, descriptor );
         this.treeKey = layout.newKey();
         this.treeValue = layout.newValue();
         this.additionalHeaderWriter = additionalHeaderWriter;
@@ -96,14 +93,6 @@ public abstract class NativeIndexPopulator<KEY extends NativeIndexKey<KEY>, VALU
         default:
             throw new IllegalArgumentException( "Unexpected index type " + descriptor.type() );
         }
-    }
-
-    /**
-     * Because index population is effectively single-threaded. For parallel population each thread has its own part so single-threaded even there.
-     */
-    private static OpenOption[] withNoStriping( OpenOption[] openOptions )
-    {
-        return ArrayUtils.add( openOptions, PageCacheOpenOptions.NO_CHANNEL_STRIPING );
     }
 
     public void clear()
@@ -144,12 +133,7 @@ public abstract class NativeIndexPopulator<KEY extends NativeIndexKey<KEY>, VALU
         try
         {
             closeTree();
-            if ( !hasOpenOption( StandardOpenOption.DELETE_ON_CLOSE ) )
-            {
-                // This deletion is guarded by a seemingly unnecessary check of this specific open option, but is checked before deletion
-                // due to observed problems on some Windows versions where the deletion could otherwise throw j.n.f.AccessDeniedException
-                deleteFileIfPresent( fileSystem, storeFile );
-            }
+            deleteFileIfPresent( fileSystem, storeFile );
         }
         finally
         {

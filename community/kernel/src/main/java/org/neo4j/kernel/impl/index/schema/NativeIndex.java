@@ -19,12 +19,9 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.apache.commons.lang3.ArrayUtils;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.nio.file.OpenOption;
 import java.util.function.Consumer;
 
 import org.neo4j.index.internal.gbptree.GBPTree;
@@ -46,12 +43,11 @@ abstract class NativeIndex<KEY extends NativeIndexKey<KEY>, VALUE extends Native
     final FileSystemAbstraction fileSystem;
     final StoreIndexDescriptor descriptor;
     private final IndexProvider.Monitor monitor;
-    private final OpenOption[] openOptions;
 
     protected GBPTree<KEY,VALUE> tree;
 
     NativeIndex( PageCache pageCache, FileSystemAbstraction fs, File storeFile, IndexLayout<KEY,VALUE> layout, IndexProvider.Monitor monitor,
-            StoreIndexDescriptor descriptor, OpenOption... openOptions )
+            StoreIndexDescriptor descriptor )
     {
         this.pageCache = pageCache;
         this.storeFile = storeFile;
@@ -59,14 +55,13 @@ abstract class NativeIndex<KEY extends NativeIndexKey<KEY>, VALUE extends Native
         this.fileSystem = fs;
         this.descriptor = descriptor;
         this.monitor = monitor;
-        this.openOptions = openOptions;
     }
 
     void instantiateTree( RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, Consumer<PageCursor> headerWriter )
     {
         ensureDirectoryExist();
         GBPTree.Monitor monitor = treeMonitor();
-        tree = new GBPTree<>( pageCache, storeFile, layout, 0, monitor, NO_HEADER_READER, headerWriter, recoveryCleanupWorkCollector, openOptions );
+        tree = new GBPTree<>( pageCache, storeFile, layout, 0, monitor, NO_HEADER_READER, headerWriter, recoveryCleanupWorkCollector );
         afterTreeInstantiation( tree );
     }
 
@@ -115,11 +110,6 @@ abstract class NativeIndex<KEY extends NativeIndexKey<KEY>, VALUE extends Native
         {
             throw new UncheckedIOException( e );
         }
-    }
-
-    boolean hasOpenOption( OpenOption option )
-    {
-        return ArrayUtils.contains( openOptions, option );
     }
 
     private class NativeIndexTreeMonitor extends GBPTree.Monitor.Adaptor
