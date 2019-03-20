@@ -37,8 +37,8 @@ public class CypherAdapterStreamV3 extends CypherAdapterStream
     }
 
     @Override
-    protected void addRecordStreamingTime( long time )
+    protected void addRecordStreamingTime( long time, RecordConsumer recordConsumer )
     {
-        metadata.put( LAST_RESULT_CONSUMED_KEY, longValue( time ) );
+        recordConsumer.addMetadata( LAST_RESULT_CONSUMED_KEY, longValue( time ) );
     }
 }

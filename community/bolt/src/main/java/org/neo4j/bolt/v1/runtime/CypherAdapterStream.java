@@ -22,9 +22,7 @@ package org.neo4j.bolt.v1.runtime;
 import java.time.Clock;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import org.neo4j.bolt.runtime.BoltResult;
 import org.neo4j.graphdb.ExecutionPlanDescription;
@@ -34,21 +32,33 @@ import org.neo4j.graphdb.QueryExecutionType;
 import org.neo4j.graphdb.QueryStatistics;
 import org.neo4j.kernel.impl.query.QueryExecution;
 import org.neo4j.values.AnyValue;
+import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.MapValueBuilder;
 import org.neo4j.values.virtual.VirtualValues;
 
+import static java.lang.String.format;
 import static org.neo4j.values.storable.Values.intValue;
 import static org.neo4j.values.storable.Values.longValue;
 import static org.neo4j.values.storable.Values.stringValue;
 
 public class CypherAdapterStream implements BoltResult
 {
-    protected final QueryExecution queryExecution;
+    private static final String RESULT_CONSUMED_AFTER = "result_consumed_after";
+    private static final String TYPE = "type";
+    private static final String STATS = "stats";
+    private static final String PROFILE = "profile";
+    private static final String PLAN = "plan";
+    private static final String NOTIFICATIONS = "notifications";
+    private final TextValue READ_ONLY = Values.utf8Value( new byte[]{'r'} );
+    private final TextValue READ_WRITE = Values.utf8Value( new byte[]{'r', 'w'} );
+    private final TextValue WRITE = Values.utf8Value( new byte[]{'w'} );
+    private final TextValue SCHEMA_WRITE = Values.utf8Value( new byte[]{'s'} );
+
+    private final QueryExecution queryExecution;
     private final String[] fieldNames;
     protected final Clock clock;
-    protected final Map<String, AnyValue> metadata = new HashMap<>();
     private final TransactionStateMachineV1SPI.BoltAdapterSubscriber querySubscriber;
 
     public CypherAdapterStream( QueryExecution queryExecution,
@@ -83,46 +93,46 @@ public class CypherAdapterStream implements BoltResult
         querySubscriber.assertSucceeded();
         if ( !hasMore )
         {
-            addRecordStreamingTime( clock.millis() - start );
-            addMetadata( querySubscriber.queryStatistics() );
-            metadata.forEach( recordConsumer::addMetadata );
+            addRecordStreamingTime( clock.millis() - start, recordConsumer );
+            addMetadata( querySubscriber.queryStatistics(), recordConsumer );
         }
         return hasMore;
     }
 
-    protected void addRecordStreamingTime( long time )
+    protected void addRecordStreamingTime( long time, RecordConsumer recordConsumer )
     {
-        metadata.put( "result_consumed_after", longValue( time ) );
+        recordConsumer.addMetadata( RESULT_CONSUMED_AFTER, longValue( time ) );
     }
 
-    private void addMetadata( QueryStatistics statistics )
+    private void addMetadata( QueryStatistics statistics, RecordConsumer recordConsumer )
     {
         QueryExecutionType qt = queryExecution.executionType();
-        metadata.put( "type", Values.stringValue( queryTypeCode( qt.queryType() ) ) );
+        recordConsumer.addMetadata( TYPE, queryTypeCode( qt.queryType() ) );
 
         if ( statistics.containsUpdates() )
         {
             MapValue stats = queryStats( statistics );
-            metadata.put( "stats", stats );
+            recordConsumer.addMetadata( STATS, stats );
         }
         if ( qt.requestedExecutionPlanDescription() )
         {
             ExecutionPlanDescription rootPlanTreeNode = queryExecution.executionPlanDescription();
-            String metadataFieldName = rootPlanTreeNode.hasProfilerStatistics() ? "profile" : "plan";
-            metadata.put( metadataFieldName, ExecutionPlanConverter.convert( rootPlanTreeNode ) );
+            String metadataFieldName = rootPlanTreeNode.hasProfilerStatistics() ? PROFILE : PLAN;
+            recordConsumer.addMetadata( metadataFieldName, ExecutionPlanConverter.convert( rootPlanTreeNode ) );
         }
 
         Iterable<Notification> notifications = queryExecution.getNotifications();
         if ( notifications.iterator().hasNext() )
         {
-            metadata.put( "notifications", NotificationConverter.convert( notifications ) );
+            recordConsumer.addMetadata( NOTIFICATIONS, NotificationConverter.convert( notifications ) );
         }
     }
 
     @Override
     public String toString()
     {
-        return "CypherAdapterStream{" + "delegate=" + queryExecution + ", fieldNames=" + Arrays.toString( fieldNames ) + '}';
+        return "CypherAdapterStream{" + "delegate=" + queryExecution + ", fieldNames=" + Arrays.toString( fieldNames ) +
+               '}';
     }
 
     private MapValue queryStats( QueryStatistics queryStatistics )
@@ -150,24 +160,24 @@ public class CypherAdapterStream implements BoltResult
         }
     }
 
-    private String queryTypeCode( QueryExecutionType.QueryType queryType )
+    private TextValue queryTypeCode( QueryExecutionType.QueryType queryType )
     {
         switch ( queryType )
         {
         case READ_ONLY:
-            return "r";
+            return READ_ONLY;
 
         case READ_WRITE:
-            return "rw";
+            return READ_WRITE;
 
         case WRITE:
-            return "w";
+            return WRITE;
 
         case SCHEMA_WRITE:
-            return "s";
+            return SCHEMA_WRITE;
 
         default:
-            return queryType.name();
+            throw new IllegalStateException( format( "%s is not a known query type", queryType ) );
         }
     }
 
@@ -195,7 +205,7 @@ public class CypherAdapterStream implements BoltResult
                             new AnyValue[]{
                                     intValue( pos.getOffset() ),
                                     intValue( pos.getLine() ),
-                                    intValue( pos.getColumn() )  } ) );
+                                    intValue( pos.getColumn() )} ) );
                 }
 
                 out.add( builder.build() );
