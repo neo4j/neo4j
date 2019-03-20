@@ -33,6 +33,7 @@ import org.neo4j.kernel.availability.CompositeDatabaseAvailabilityGuard;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.availability.DescriptiveAvailabilityRequirement;
 import org.neo4j.kernel.availability.UnavailableException;
+import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLog;
 import org.neo4j.time.Clocks;
@@ -338,6 +339,6 @@ class DatabaseAvailabilityGuardTest
 
     private static DatabaseAvailabilityGuard getDatabaseAvailabilityGuard( Clock clock, Log log )
     {
-        return new DatabaseAvailabilityGuard( DEFAULT_DATABASE_NAME, clock, log, mock( CompositeDatabaseAvailabilityGuard.class ) );
+        return new DatabaseAvailabilityGuard( new DatabaseId( DEFAULT_DATABASE_NAME ), clock, log, mock( CompositeDatabaseAvailabilityGuard.class ) );
     }
 }

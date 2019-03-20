@@ -57,6 +57,7 @@ import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.availability.AvailabilityGuard;
 import org.neo4j.kernel.availability.CompositeDatabaseAvailabilityGuard;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
+import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
@@ -144,7 +145,7 @@ public class KernelTransactionsTest
     @Before
     public void setUp()
     {
-        databaseAvailabilityGuard = new DatabaseAvailabilityGuard( DEFAULT_DATABASE_NAME, clock, NullLog.getInstance(),
+        databaseAvailabilityGuard = new DatabaseAvailabilityGuard( new DatabaseId( DEFAULT_DATABASE_NAME ), clock, NullLog.getInstance(),
                 mock( CompositeDatabaseAvailabilityGuard.class ) );
     }
 
@@ -732,7 +733,7 @@ public class KernelTransactionsTest
                 new AtomicReference<>( CpuClock.NOT_AVAILABLE ), new AtomicReference<>( HeapAllocation.NOT_AVAILABLE ),
                 new CanWrite(), EmptyVersionContextSupplier.EMPTY, ON_HEAP,
                 mock( ConstraintSemantics.class ), mock( SchemaState.class ),
-                mockedTokenHolders(), DEFAULT_DATABASE_NAME, mock( IndexingService.class ), mock( LabelScanStore.class ),
+                mockedTokenHolders(), new DatabaseId( DEFAULT_DATABASE_NAME ), mock( IndexingService.class ), mock( LabelScanStore.class ),
                 mock( IndexStatisticsStore.class ), createDependencies() );
     }
 
@@ -807,7 +808,7 @@ public class KernelTransactionsTest
                     storageEngine, globalProcedures, transactionIdStore, clock, new AtomicReference<>( CpuClock.NOT_AVAILABLE ),
                     new AtomicReference<>( HeapAllocation.NOT_AVAILABLE ), accessCapability,
                     versionContextSupplier, ON_HEAP, new StandardConstraintSemantics(), mock( SchemaState.class ), tokenHolders,
-                    DEFAULT_DATABASE_NAME, mock( IndexingService.class ), mock( LabelScanStore.class ), mock( IndexStatisticsStore.class ),
+                    new DatabaseId( DEFAULT_DATABASE_NAME ), mock( IndexingService.class ), mock( LabelScanStore.class ), mock( IndexStatisticsStore.class ),
                     databaseDependencies );
         }
 

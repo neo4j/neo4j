@@ -26,6 +26,7 @@ import org.mockito.stubbing.Answer;
 
 import java.time.Clock;
 
+import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.logging.internal.NullLogService;
 
@@ -55,8 +56,8 @@ class CompositeDatabaseAvailabilityGuardTest
     {
         mockClock = mock( Clock.class );
         compositeGuard = new CompositeDatabaseAvailabilityGuard( mockClock, NullLogService.getInstance() );
-        defaultGuard = compositeGuard.createDatabaseAvailabilityGuard( DEFAULT_DATABASE_NAME );
-        systemGuard = compositeGuard.createDatabaseAvailabilityGuard( SYSTEM_DATABASE_NAME );
+        defaultGuard = compositeGuard.createDatabaseAvailabilityGuard( new DatabaseId( DEFAULT_DATABASE_NAME ) );
+        systemGuard = compositeGuard.createDatabaseAvailabilityGuard( new DatabaseId( SYSTEM_DATABASE_NAME ) );
         compositeGuard.start();
     }
 
@@ -152,8 +153,8 @@ class CompositeDatabaseAvailabilityGuardTest
     void stopOfAvailabilityGuardDeregisterItInCompositeParent()
     {
         int initialGuards = compositeGuard.getGuards().size();
-        DatabaseAvailabilityGuard firstGuard = compositeGuard.createDatabaseAvailabilityGuard( "first" );
-        DatabaseAvailabilityGuard secondGuard = compositeGuard.createDatabaseAvailabilityGuard( "second" );
+        DatabaseAvailabilityGuard firstGuard = compositeGuard.createDatabaseAvailabilityGuard( new DatabaseId( "first" ) );
+        DatabaseAvailabilityGuard secondGuard = compositeGuard.createDatabaseAvailabilityGuard( new DatabaseId( "second" ) );
 
         assertEquals( 2, countNewGuards( initialGuards ) );
 

@@ -103,7 +103,7 @@ public class DbmsDiagnosticsManager
         StorageEngineFactory storageEngineFactory = databaseResolver.resolveDependency( StorageEngineFactory.class );
         StorageEngine storageEngine = databaseResolver.resolveDependency( StorageEngine.class );
 
-        diagnosticsManager.section( log, "Database: " + database.getDatabaseName() );
+        diagnosticsManager.section( log, "Database: " + database.getDatabaseId().name() );
         diagnosticsManager.dump( new VersionDiagnostics( databaseInfo, database.getStoreId() ), log );
         diagnosticsManager.dump( new StoreFilesDiagnostics( storageEngineFactory, fs, database.getDatabaseLayout() ), log );
         diagnosticsManager.dump( new TransactionRangeDiagnostics( database ), log );

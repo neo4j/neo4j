@@ -23,6 +23,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 
 import org.neo4j.kernel.api.query.ExecutingQuery;
+import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.impl.api.operations.QueryRegistrationOperations;
 import org.neo4j.kernel.impl.util.MonotonicCounter;
 import org.neo4j.resources.CpuClock;
@@ -36,17 +37,18 @@ public class StackingQueryRegistrationOperations implements QueryRegistrationOpe
     private final SystemNanoClock clock;
     private final AtomicReference<CpuClock> cpuClockRef;
     private final AtomicReference<HeapAllocation> heapAllocationRef;
-    private final String databaseName;
+    private final DatabaseId databaseId;
 
     public StackingQueryRegistrationOperations(
             SystemNanoClock clock,
             AtomicReference<CpuClock> cpuClockRef,
-            AtomicReference<HeapAllocation> heapAllocationRef, String databaseName )
+            AtomicReference<HeapAllocation> heapAllocationRef,
+            DatabaseId databaseId )
     {
         this.clock = clock;
         this.cpuClockRef = cpuClockRef;
         this.heapAllocationRef = heapAllocationRef;
-        this.databaseName = databaseName;
+        this.databaseId = databaseId;
     }
 
     @Override
@@ -73,7 +75,7 @@ public class StackingQueryRegistrationOperations implements QueryRegistrationOpe
         long threadId = thread.getId();
         String threadName = thread.getName();
         ExecutingQuery executingQuery =
-                new ExecutingQuery( queryId, statement.getTransaction().clientInfo(), databaseName, statement.username(), queryText, queryParameters,
+                new ExecutingQuery( queryId, statement.getTransaction().clientInfo(), databaseId, statement.username(), queryText, queryParameters,
                         statement.getTransaction().getMetaData(), () -> statement.locks().activeLockCount(),
                         statement.getPageCursorTracer(),
                         threadId, threadName, clock, cpuClockRef.get(), heapAllocationRef.get() );

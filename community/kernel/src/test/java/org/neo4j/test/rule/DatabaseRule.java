@@ -47,6 +47,7 @@ import org.neo4j.kernel.availability.CompositeDatabaseAvailabilityGuard;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.database.DatabaseCreationContext;
+import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.diagnostics.providers.DbmsDiagnosticsManager;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.extension.ExtensionType;
@@ -445,7 +446,11 @@ public class DatabaseRule extends ExternalResource
         @Override
         public Factory<DatabaseAvailabilityGuard> getDatabaseAvailabilityGuardFactory()
         {
-            return () -> new DatabaseAvailabilityGuard( databaseName, clock, NullLog.getInstance(), mock( CompositeDatabaseAvailabilityGuard.class ) );
+            return () -> new DatabaseAvailabilityGuard(
+                    new DatabaseId( databaseName ),
+                    clock,
+                    NullLog.getInstance(),
+                    mock( CompositeDatabaseAvailabilityGuard.class ) );
         }
 
         @Override

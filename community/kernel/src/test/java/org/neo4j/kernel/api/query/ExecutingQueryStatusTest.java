@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
+import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.impl.locking.ActiveLock;
 import org.neo4j.lock.ResourceType;
 import org.neo4j.lock.WaitStrategy;
@@ -98,7 +99,7 @@ class ExecutingQueryStatusTest
                         new ExecutingQuery(
                                 12,
                                 null,
-                                DEFAULT_DATABASE_NAME,
+                                new DatabaseId( DEFAULT_DATABASE_NAME ),
                                 null,
                                 "",
                                 VirtualValues.emptyMap(),

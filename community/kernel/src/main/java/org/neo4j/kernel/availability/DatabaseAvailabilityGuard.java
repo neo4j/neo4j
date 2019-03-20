@@ -28,6 +28,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.neo4j.helpers.Format;
 import org.neo4j.helpers.Listeners;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 
@@ -45,18 +46,18 @@ public class DatabaseAvailabilityGuard extends LifecycleAdapter implements Avail
     private final Set<AvailabilityRequirement> blockingRequirements = new CopyOnWriteArraySet<>();
     private final AtomicBoolean isShutdown = new AtomicBoolean( false );
     private final Listeners<AvailabilityListener> listeners = new Listeners<>();
-    private final String databaseName;
+    private final DatabaseId databaseId;
     private final Clock clock;
     private final Log log;
     private final CompositeDatabaseAvailabilityGuard globalGuard;
 
-    public DatabaseAvailabilityGuard( String databaseName, Clock clock, Log log, CompositeDatabaseAvailabilityGuard globalGuard )
+    public DatabaseAvailabilityGuard( DatabaseId databaseId, Clock clock, Log log, CompositeDatabaseAvailabilityGuard globalGuard )
     {
-        this.databaseName = databaseName;
+        this.databaseId = databaseId;
         this.clock = clock;
         this.log = log;
         this.globalGuard = globalGuard;
-        this.listeners.add( new LoggingAvailabilityListener( log, databaseName ) );
+        this.listeners.add( new LoggingAvailabilityListener( log, databaseId ) );
     }
 
     @Override
@@ -77,7 +78,7 @@ public class DatabaseAvailabilityGuard extends LifecycleAdapter implements Avail
         {
             if ( requirementCount.getAndIncrement() == 0 && !isShutdown.get() )
             {
-                log.info( DATABASE_UNAVAILABLE_MSG, requirement.description(), databaseName );
+                log.info( DATABASE_UNAVAILABLE_MSG, requirement.description(), databaseId );
                 listeners.notify( AvailabilityListener::unavailable );
             }
         }
@@ -95,7 +96,7 @@ public class DatabaseAvailabilityGuard extends LifecycleAdapter implements Avail
         {
             if ( requirementCount.getAndDecrement() == 1 && !isShutdown.get() )
             {
-                log.info( DATABASE_AVAILABLE_MSG, requirement.description(), databaseName );
+                log.info( DATABASE_AVAILABLE_MSG, requirement.description(), databaseId );
                 listeners.notify( AvailabilityListener::available );
             }
         }
@@ -239,24 +240,24 @@ public class DatabaseAvailabilityGuard extends LifecycleAdapter implements Avail
     private static class LoggingAvailabilityListener implements AvailabilityListener
     {
         private final Log log;
-        private final String databaseName;
+        private final DatabaseId databaseId;
 
-        LoggingAvailabilityListener( Log log, String databaseName )
+        LoggingAvailabilityListener( Log log, DatabaseId databaseId )
         {
             this.log = log;
-            this.databaseName = databaseName;
+            this.databaseId = databaseId;
         }
 
         @Override
         public void available()
         {
-            log.info( "Database %s is ready.", databaseName );
+            log.info( "Database %s is ready.", databaseId.name() );
         }
 
         @Override
         public void unavailable()
         {
-            log.info( "Database %s is unavailable.", databaseName );
+            log.info( "Database %s is unavailable.", databaseId.name() );
         }
     }
 }

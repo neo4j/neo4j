@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.internal.LogService;
@@ -50,12 +51,21 @@ public class CompositeDatabaseAvailabilityGuard extends LifecycleAdapter impleme
         this.logService = logService;
     }
 
-    public DatabaseAvailabilityGuard createDatabaseAvailabilityGuard( String databaseName )
+    public DatabaseAvailabilityGuard createDatabaseAvailabilityGuard( DatabaseId databaseId )
     {
         Log guardLog = logService.getInternalLog( DatabaseAvailabilityGuard.class );
-        DatabaseAvailabilityGuard guard = new DatabaseAvailabilityGuard( databaseName, clock, guardLog, this );
+        DatabaseAvailabilityGuard guard = new DatabaseAvailabilityGuard( databaseId, clock, guardLog, this );
         guards.add( guard );
         return guard;
+    }
+
+    /**
+     * TODO remove
+     */
+    @Deprecated
+    public DatabaseAvailabilityGuard createDatabaseAvailabilityGuard( String databaseName )
+    {
+        return createDatabaseAvailabilityGuard( new DatabaseId( databaseName ) );
     }
 
     void removeDatabaseAvailabilityGuard( DatabaseAvailabilityGuard guard )

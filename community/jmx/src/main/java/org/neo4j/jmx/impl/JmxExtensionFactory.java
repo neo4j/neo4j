@@ -55,7 +55,7 @@ public final class JmxExtensionFactory extends ExtensionFactory<JmxExtensionFact
     public Lifecycle newInstance( ExtensionContext context, Dependencies dependencies )
     {
         String defaultDatabaseName = dependencies.getKernelData().getConfig().get( GraphDatabaseSettings.default_database );
-        if ( !dependencies.getDatabase().getDatabaseName().equals( defaultDatabaseName ) )
+        if ( !dependencies.getDatabase().getDatabaseId().name().equals( defaultDatabaseName ) )
         {
             return new LifecycleAdapter();
         }

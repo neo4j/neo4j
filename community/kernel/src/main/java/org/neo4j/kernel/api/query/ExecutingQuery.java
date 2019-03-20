@@ -33,6 +33,7 @@ import java.util.function.Supplier;
 import org.neo4j.graphdb.ExecutionPlanDescription;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorCounters;
+import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.impl.locking.ActiveLock;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.LockWaitEvent;
@@ -61,7 +62,7 @@ public class ExecutingQuery
     private final MapValue queryParameters;
     private final long startTimeNanos;
     private final long startTimestampMillis;
-    private final String databaseName;
+    private final DatabaseId databaseId;
     /** Uses write barrier of {@link #status}. */
     private long compilationCompletedNanos;
     private Supplier<ExecutionPlanDescription> planDescriptionSupplier;
@@ -83,11 +84,11 @@ public class ExecutingQuery
     @SuppressWarnings( "unused" )
     private volatile long waitTimeNanos;
 
-    public ExecutingQuery( long queryId, ClientConnectionInfo clientConnection, String databaseName, String username, String queryText,
+    public ExecutingQuery( long queryId, ClientConnectionInfo clientConnection, DatabaseId databaseId, String username, String queryText,
             MapValue queryParameters, Map<String,Object> transactionAnnotationData, LongSupplier activeLockCount, PageCursorCounters pageCursorCounters,
             long threadExecutingTheQueryId, String threadExecutingTheQueryName, SystemNanoClock clock, CpuClock cpuClock, HeapAllocation heapAllocation )
     {
-        this.databaseName = databaseName;
+        this.databaseId = databaseId;
         // Capture timestamps first
         this.cpuTimeNanosWhenQueryStarted = cpuClock.cpuTimeNanos( threadExecutingTheQueryId );
         this.startTimeNanos = clock.nanos();
@@ -253,9 +254,9 @@ public class ExecutingQuery
         return queryParameters;
     }
 
-    public String databaseName()
+    public DatabaseId databaseId()
     {
-        return databaseName;
+        return databaseId;
     }
 
     public long startTimestampMillis()

@@ -38,6 +38,7 @@ import org.neo4j.configuration.connectors.HttpConnector;
 import org.neo4j.graphdb.config.InvalidSettingException;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
 public class DatabaseConfig extends Config implements Lifecycle
@@ -45,15 +46,24 @@ public class DatabaseConfig extends Config implements Lifecycle
     Config globalConfig;
     private Map<Setting,Collection<SettingChangeListener>> registeredListeners = new ConcurrentHashMap<>();
 
-    public static DatabaseConfig from( Config globalConfig, String databaseName )
+    public static DatabaseConfig from( Config globalConfig, DatabaseId databaseId )
     {
-        if ( Objects.equals( databaseName, GraphDatabaseSettings.SYSTEM_DATABASE_NAME ) )
+        if ( Objects.equals( databaseId.name(), GraphDatabaseSettings.SYSTEM_DATABASE_NAME ) )
         {
             Map<String,String> overriddenConfigs = MapUtil.stringMap( GraphDatabaseSettings.record_format.name(), "" );
             return new OverriddenDatabaseConfig( globalConfig, overriddenConfigs );
         }
 
         return new DatabaseConfig( globalConfig );
+    }
+
+    /**
+     * TODO remove when spreading DatabaseId
+     */
+    @Deprecated
+    public static DatabaseConfig from( Config globalConfig, String databaseName )
+    {
+        return from( globalConfig, new DatabaseId( databaseName ) );
     }
 
     DatabaseConfig( Config globalConfig )

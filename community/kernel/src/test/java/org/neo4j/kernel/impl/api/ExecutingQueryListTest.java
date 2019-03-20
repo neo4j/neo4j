@@ -28,6 +28,7 @@ import java.util.stream.Collectors;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.query.ExecutingQuery;
+import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.resources.CpuClock;
 import org.neo4j.resources.HeapAllocation;
 import org.neo4j.time.Clocks;
@@ -119,7 +120,7 @@ class ExecutingQueryListTest
 
     private ExecutingQuery createExecutingQuery( int queryId, String query )
     {
-        return new ExecutingQuery( queryId, ClientConnectionInfo.EMBEDDED_CONNECTION, DEFAULT_DATABASE_NAME, "me", query,
+        return new ExecutingQuery( queryId, ClientConnectionInfo.EMBEDDED_CONNECTION, new DatabaseId( DEFAULT_DATABASE_NAME ), "me", query,
                 EMPTY_MAP, Collections.emptyMap(), () -> 0, PageCursorTracer.NULL,
                 Thread.currentThread().getId(), Thread.currentThread().getName(),
                 Clocks.nanoClock(), CpuClock.CPU_CLOCK, HeapAllocation.HEAP_ALLOCATION );

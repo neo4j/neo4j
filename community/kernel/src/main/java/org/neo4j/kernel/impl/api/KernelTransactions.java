@@ -48,6 +48,7 @@ import org.neo4j.kernel.api.KernelTransactionHandle;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.availability.AvailabilityGuard;
+import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
@@ -101,7 +102,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
     private final ReentrantReadWriteLock newTransactionsLock = new ReentrantReadWriteLock();
     private final MonotonicCounter userTransactionIdCounter = MonotonicCounter.newAtomicMonotonicCounter();
     private final TokenHolders tokenHolders;
-    private final String databaseName;
+    private final DatabaseId databaseId;
     private final IndexingService indexingService;
     private final LabelScanStore labelScanStore;
     private final IndexStatisticsStore indexStatisticsStore;
@@ -146,7 +147,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
             TransactionIdStore transactionIdStore, SystemNanoClock clock, AtomicReference<CpuClock> cpuClockRef,
             AtomicReference<HeapAllocation> heapAllocationRef, AccessCapability accessCapability, VersionContextSupplier versionContextSupplier,
             CollectionsFactorySupplier collectionsFactorySupplier, ConstraintSemantics constraintSemantics, SchemaState schemaState,
-            TokenHolders tokenHolders, String databaseName, IndexingService indexingService, LabelScanStore labelScanStore,
+            TokenHolders tokenHolders, DatabaseId databaseId, IndexingService indexingService, LabelScanStore labelScanStore,
             IndexStatisticsStore indexStatisticsStore, Dependencies databaseDependencies )
     {
         this.config = config;
@@ -166,7 +167,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
         this.heapAllocationRef = heapAllocationRef;
         this.accessCapability = accessCapability;
         this.tokenHolders = tokenHolders;
-        this.databaseName = databaseName;
+        this.databaseId = databaseId;
         this.indexingService = indexingService;
         this.labelScanStore = labelScanStore;
         this.indexStatisticsStore = indexStatisticsStore;
@@ -185,7 +186,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<IdC
     public KernelTransaction newInstance( KernelTransaction.Type type, LoginContext loginContext, ClientConnectionInfo clientInfo, long timeout )
     {
         assertCurrentThreadIsNotBlockingNewTransactions();
-        SecurityContext securityContext = loginContext.authorize( tokenHolders.propertyKeyTokens()::getOrCreateId, databaseName );
+        SecurityContext securityContext = loginContext.authorize( tokenHolders.propertyKeyTokens()::getOrCreateId, databaseId.name() );
         try
         {
             while ( !newTransactionsLock.readLock().tryLock( 1, TimeUnit.SECONDS ) )

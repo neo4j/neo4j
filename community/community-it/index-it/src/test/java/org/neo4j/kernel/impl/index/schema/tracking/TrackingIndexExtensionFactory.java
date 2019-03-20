@@ -24,6 +24,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.neo4j.kernel.api.impl.schema.NativeLuceneFusionIndexProviderFactory20;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.database.Database;
+import org.neo4j.kernel.database.DatabaseId;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.extension.ExtensionType;
 import org.neo4j.kernel.extension.context.ExtensionContext;
@@ -45,8 +46,8 @@ public class TrackingIndexExtensionFactory extends ExtensionFactory<TrackingInde
     @Override
     public synchronized IndexProvider newInstance( ExtensionContext context, Dependencies dependencies )
     {
-        String databaseName = dependencies.database().getDatabaseName();
-        return indexProvider.computeIfAbsent( databaseName, s ->
+        DatabaseId databaseName = dependencies.database().getDatabaseId();
+        return indexProvider.computeIfAbsent( databaseName.name(), s ->
         {
             IndexProvider indexProvider = new NativeLuceneFusionIndexProviderFactory20().newInstance( context, dependencies );
             return new TrackingReadersIndexProvider( indexProvider );

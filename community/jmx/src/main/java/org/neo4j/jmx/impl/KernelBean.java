@@ -53,7 +53,7 @@ public class KernelBean extends Neo4jMBean implements Kernel
             StoreId storeId = database.getStoreId();
             LogVersionRepository versionRepository = database.getDependencyResolver().resolveDependency( LogVersionRepository.class );
             return new DatabaseInfo( database.isReadOnly(), storeId.getCreationTime(), storeId.getRandomId(), versionRepository.getCurrentLogVersion(),
-                    database.getDatabaseName() );
+                    database.getDatabaseId().name() );
         } );
     }
 

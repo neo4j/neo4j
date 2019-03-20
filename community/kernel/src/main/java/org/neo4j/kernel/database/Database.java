@@ -203,7 +203,7 @@ public class Database extends LifecycleAdapter
     private DatabaseConfig config;
     private DatabaseAvailabilityGuard databaseAvailabilityGuard;
     private DatabaseAvailability databaseAvailability;
-    private final String databaseName;
+    private final DatabaseId databaseId;
     private final DatabaseLayout databaseLayout;
     private final boolean readOnly;
     private final IdController idController;
@@ -227,7 +227,7 @@ public class Database extends LifecycleAdapter
 
     public Database( DatabaseCreationContext context )
     {
-        this.databaseName = context.getDatabaseName();
+        this.databaseId = new DatabaseId( context.getDatabaseName() );
         this.databaseLayout = context.getDatabaseLayout();
         this.config = context.getDatabaseConfig();
         this.idGeneratorFactory = context.getIdGeneratorFactory();
@@ -637,7 +637,7 @@ public class Database extends LifecycleAdapter
                         transactionHeaderInformationFactory, transactionCommitProcess, hooks, transactionStats, databaseAvailabilityGuard, globalTracers,
                         storageEngine, globalProcedures, transactionIdStore, clock, cpuClockRef,
                         heapAllocationRef, accessCapability, versionContextSupplier, collectionsFactorySupplier,
-                        constraintSemantics, databaseSchemaState, tokenHolders, getDatabaseName(), indexingService, labelScanStore, indexStatisticsStore,
+                        constraintSemantics, databaseSchemaState, tokenHolders, getDatabaseId(), indexingService, labelScanStore, indexStatisticsStore,
                         databaseDependencies ) );
 
         buildTransactionMonitor( kernelTransactions, clock, config );
@@ -733,7 +733,7 @@ public class Database extends LifecycleAdapter
         }
         catch ( IOException e )
         {
-            logService.getInternalLog( Database.class ).warn( format( "Failed to remove dropped database '%s' files.", databaseName ), e );
+            logService.getInternalLog( Database.class ).warn( format( "Failed to remove dropped database '%s' files.", databaseId ), e );
             throw new UncheckedIOException( e );
         }
     }
@@ -813,7 +813,7 @@ public class Database extends LifecycleAdapter
             AtomicReference<HeapAllocation> heapAllocationRef )
     {
         QueryRegistrationOperations queryRegistrationOperations =
-                new StackingQueryRegistrationOperations( clock, cpuClockRef, heapAllocationRef, databaseName );
+                new StackingQueryRegistrationOperations( clock, cpuClockRef, heapAllocationRef, databaseId );
 
         return new StatementOperationParts( queryRegistrationOperations );
     }
@@ -823,9 +823,18 @@ public class Database extends LifecycleAdapter
         return storeCopyCheckPointMutex;
     }
 
+    public DatabaseId getDatabaseId()
+    {
+        return databaseId;
+    }
+
+    /*
+     * TODO temporary, remove when spreading DBID to other modules
+     */
+    @Deprecated
     public String getDatabaseName()
     {
-        return databaseName;
+        return databaseId.name();
     }
 
     public TokenHolders getTokenHolders()
