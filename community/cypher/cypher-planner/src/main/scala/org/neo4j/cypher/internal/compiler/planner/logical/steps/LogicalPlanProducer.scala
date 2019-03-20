@@ -225,7 +225,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
 
   def planNodeIndexScan(idName: String,
                         label: LabelToken,
-                        property: IndexedProperty,
+                        properties: Seq[IndexedProperty],
                         solvedPredicates: Seq[Expression] = Seq.empty,
                         solvedHint: Option[UsingIndexHint] = None,
                         argumentIds: Set[String],
@@ -237,12 +237,12 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
       .addHints(solvedHint)
       .addArgumentIds(argumentIds.toIndexedSeq)
     )
-    annotate(NodeIndexScan(idName, label, property, argumentIds, toIndexOrder(providedOrder)), solved, providedOrder, context)
+    annotate(NodeIndexScan(idName, label, properties, argumentIds, toIndexOrder(providedOrder)), solved, providedOrder, context)
   }
 
   def planNodeIndexContainsScan(idName: String,
                                 label: LabelToken,
-                                property: IndexedProperty,
+                                properties: Seq[IndexedProperty],
                                 solvedPredicates: Seq[Expression],
                                 solvedHint: Option[UsingIndexHint],
                                 valueExpr: Expression,
@@ -255,12 +255,13 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
       .addHints(solvedHint)
       .addArgumentIds(argumentIds.toIndexedSeq)
     )
-    annotate(NodeIndexContainsScan(idName, label, property, valueExpr, argumentIds, toIndexOrder(providedOrder)), solved, providedOrder, context)
+    // TODO uses .head at the moment
+    annotate(NodeIndexContainsScan(idName, label, properties.head, valueExpr, argumentIds, toIndexOrder(providedOrder)), solved, providedOrder, context)
   }
 
   def planNodeIndexEndsWithScan(idName: String,
                                 label: LabelToken,
-                                property: IndexedProperty,
+                                properties: Seq[IndexedProperty],
                                 solvedPredicates: Seq[Expression],
                                 solvedHint: Option[UsingIndexHint],
                                 valueExpr: Expression,
@@ -273,7 +274,8 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
       .addHints(solvedHint)
       .addArgumentIds(argumentIds.toIndexedSeq)
     )
-    annotate(NodeIndexEndsWithScan(idName, label, property, valueExpr, argumentIds, toIndexOrder(providedOrder)), solved, providedOrder, context)
+    // TODO uses .head at the moment
+    annotate(NodeIndexEndsWithScan(idName, label, properties.head, valueExpr, argumentIds, toIndexOrder(providedOrder)), solved, providedOrder, context)
   }
 
   def planNodeHashJoin(nodes: Set[String], left: LogicalPlan, right: LogicalPlan, hints: Seq[UsingJoinHint], context: LogicalPlanningContext): LogicalPlan = {
@@ -774,13 +776,11 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     * There probably exists some type level way of achieving this with type safety instead of manually searching through the expression tree like this
     */
   private def assertNoBadExpressionsExists(root: Any): Unit = {
-    AssertionRunner.runUnderAssertion(new Thunk {
-      override def apply(): Unit = new FoldableAny(root).treeExists {
-        case _: PatternComprehension | _: PatternExpression | _: MapProjection =>
-          throw new InternalException(s"This expression should not be added to a logical plan:\n$root")
-        case _ =>
-          false
-      }
+    AssertionRunner.runUnderAssertion(() => new FoldableAny(root).treeExists {
+      case _: PatternComprehension | _: PatternExpression | _: MapProjection =>
+        throw new InternalException(s"This expression should not be added to a logical plan:\n$root")
+      case _ =>
+        false
     })
   }
 

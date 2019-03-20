@@ -45,6 +45,7 @@ import org.neo4j.cypher.internal.v4_0.expressions.{LabelToken, PropertyKeyToken,
 import org.neo4j.cypher.internal.v4_0.frontend.phases.devNullLogger
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.v4_0.util.{LabelId, PropertyKeyId}
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacade
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
@@ -101,7 +102,7 @@ class ActualCostCalculationTest extends CypherFunSuite {
       graph.createIndex(LABEL, PROPERTY)
       val results = ResultTable.empty
       val chunk = N / STEPS
-      for (count <- 1 to STEPS) {
+      for (_ <- 1 to STEPS) {
         setUpDb(graph, chunk)
         results.addAll("Eager", runSimulation(graph, eager(allNodes)))
       }
@@ -160,20 +161,20 @@ class ActualCostCalculationTest extends CypherFunSuite {
   class ResultTable {
     private val table = mutable.HashMap.empty[String, ListBuffer[DataPoint]]
 
-    def foreach(f: ((String, Seq[DataPoint])) => Unit) = table.foreach(f)
-    def add(name: String, dataPoint: DataPoint) =
+    def foreach(f: ((String, Seq[DataPoint])) => Unit): Unit = table.foreach(f)
+    def add(name: String, dataPoint: DataPoint): Unit =
       table.getOrElseUpdate(name, ListBuffer.empty).append(dataPoint)
 
-    def addAll(name: String, dataPoints: Seq[DataPoint]) =
+    def addAll(name: String, dataPoints: Seq[DataPoint]): Unit =
       table.getOrElseUpdate(name, ListBuffer.empty).appendAll(dataPoints)
 
-    def normalizedResult = {
+    def normalizedResult: collection.Map[String, Double] = {
       val result = table.mapValues(calculateSimpleResult)
       val minValue = result.values.min
       result.mapValues(_/minValue)
     }
 
-    def result = table.mapValues(calculateSimpleResult)
+    def result: collection.Map[String, Double] = table.mapValues(calculateSimpleResult)
 
     override def toString: String = table.map{
       case (name, dataPoints) => s"$name: $dataPoints"
@@ -186,7 +187,7 @@ class ActualCostCalculationTest extends CypherFunSuite {
   }
 
   case class DataPoint(elapsed: Double, numberOfRows: Long) {
-    def subtractTime(subtract: Double) = copy(elapsed = elapsed - subtract)
+    def subtractTime(subtract: Double): DataPoint = copy(elapsed = elapsed - subtract)
 
     override def toString: String = s"$numberOfRows, $elapsed"
   }
@@ -260,7 +261,7 @@ class ActualCostCalculationTest extends CypherFunSuite {
 
   private def setUpDb(graph: GraphDatabaseQueryService, chunkSize: Int) {
     graph.withTx { _ =>
-      for (i <- 1 to chunkSize) {
+      for (_ <- 1 to chunkSize) {
         val node = graph.createNode(LABEL)
         node.createRelationshipTo(graph.createNode(),
           RelationshipType.withName(RELATIONSHIP))
@@ -270,7 +271,7 @@ class ActualCostCalculationTest extends CypherFunSuite {
   }
 
   //create a database where each subsequent label is more frequent
-  private def setupDbForJoins(graph: GraphDatabaseQueryService, labels: Seq[String]) = {
+  private def setupDbForJoins(graph: GraphDatabaseQueryService, labels: Seq[String]): Unit = {
     val nLabels = labels.size
     //divide so that each subsequent label is more frequent,
     //e.g. [100, 200, 300,...] with 100 + 200 + 300 ~ N
@@ -280,7 +281,7 @@ class ActualCostCalculationTest extends CypherFunSuite {
       for (i <- labels.indices) {
         val label = labels(i)
         val size = sizes(i)
-        for (c <- 1 to size) {
+        for (_ <- 1 to size) {
           graph.createNode(Label.label(label))
         }
       }
@@ -329,7 +330,7 @@ class ActualCostCalculationTest extends CypherFunSuite {
       val propertyKeyToken = PropertyKeyToken(PROPERTY, PropertyKeyId(propKeyId))
       // We are calculating the cost excluding deserialization of values from the index
 
-      NodeIndexScanPipe(LABEL.name(), labelToken, IndexedProperty(propertyKeyToken, DoNotGetValue), 0, IndexOrderNone)()
+      NodeIndexScanPipe(LABEL.name(), labelToken, Seq(IndexedProperty(propertyKeyToken, DoNotGetValue)), 0, IndexOrderNone)()
     }
   }
 
@@ -343,7 +344,7 @@ class ActualCostCalculationTest extends CypherFunSuite {
   }
 
   implicit class RichGraph(graph: GraphDatabaseQueryService) {
-    val gds = graph.asInstanceOf[GraphDatabaseCypherService].getGraphDatabaseService
+    val gds: GraphDatabaseFacade = graph.asInstanceOf[GraphDatabaseCypherService].getGraphDatabaseService
 
     def withTx[T](f: InternalTransaction => T): T = {
       val tx = graph.beginTransaction(Type.explicit, LoginContext.AUTH_DISABLED)
@@ -356,13 +357,13 @@ class ActualCostCalculationTest extends CypherFunSuite {
       }
     }
 
-    def shutdown() = gds.shutdown()
+    def shutdown(): Unit = gds.shutdown()
 
-    def createNode() = gds.createNode()
+    def createNode(): Node = gds.createNode()
 
-    def createNode(label: Label) = gds.createNode(label)
+    def createNode(label: Label): Node = gds.createNode(label)
 
-    def createIndex(label: Label, propertyName: String) = {
+    def createIndex(label: Label, propertyName: String): Unit = {
       graph.withTx { _ =>
         gds.schema().indexFor(label).on(propertyName).create()
       }

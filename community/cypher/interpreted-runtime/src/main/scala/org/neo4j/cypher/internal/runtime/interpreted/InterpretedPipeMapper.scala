@@ -92,8 +92,8 @@ case class InterpretedPipeMapper(readOnly: Boolean,
         NodeIndexSeekPipe(ident, label, properties.toArray, queryIndexes.registerQueryIndex(label, properties),
                           valueExpr.map(buildExpression), indexSeekMode, indexOrder)(id = id)
 
-      case NodeIndexScan(ident, label, property, _, indexOrder) =>
-        NodeIndexScanPipe(ident, label, property, queryIndexes.registerQueryIndex(label, property), indexOrder)(id = id)
+      case NodeIndexScan(ident, label, properties, _, indexOrder) =>
+        NodeIndexScanPipe(ident, label, properties, queryIndexes.registerQueryIndex(label, properties), indexOrder)(id = id)
 
       case NodeIndexContainsScan(ident, label, property, valueExpr, _, indexOrder) =>
         NodeIndexContainsScanPipe(ident, label, property, queryIndexes.registerQueryIndex(label, property),

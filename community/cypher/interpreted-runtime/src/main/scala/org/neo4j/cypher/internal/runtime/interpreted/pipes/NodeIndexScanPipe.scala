@@ -28,15 +28,16 @@ import scala.collection.Iterator
 
 case class NodeIndexScanPipe(ident: String,
                              label: LabelToken,
-                             property: IndexedProperty,
+                             properties: Seq[IndexedProperty],
                              queryIndexId: Int,
                              indexOrder: IndexOrder)
                             (val id: Id = Id.INVALID_ID) extends Pipe with IndexPipeWithValues {
 
-  private val needsValues = property.shouldGetValue
-  override val indexPropertyIndices: Array[Int] = if (needsValues) Array(0) else Array.empty
+  override val indexPropertyIndices: Array[Int] =
+    properties.indices.filter(properties(_).shouldGetValue).toArray
   override val indexCachedNodeProperties: Array[CachedNodeProperty] =
-    if (needsValues) Array(property.asCachedNodeProperty(ident)) else Array.empty
+    indexPropertyIndices.map(offset => properties(offset).asCachedNodeProperty(ident))
+  private val needsValues: Boolean = indexPropertyIndices.nonEmpty
 
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
     val baseContext = state.newExecutionContext(executionContextFactory)

@@ -72,76 +72,143 @@ trait NodeIndexSeeker {
       // Index range seek over range of values
       case RangeQueryExpression(rangeWrapper) =>
         assert(propertyIds.length == 1)
-        rangeWrapper match {
-          case PrefixSeekRangeExpression(range) =>
-            val expr = range.prefix
-            expr(row, state) match {
-              case text: TextValue =>
-                Array(Seq(IndexQuery.stringPrefix(propertyIds.head, text)))
-              case Values.NO_VALUE =>
-                Nil
-              case other =>
-                throw new CypherTypeException("Expected TextValue, got "+other )
-            }
+        computeRangeQueries(state, row, rangeWrapper, propertyIds.head).map(Seq(_))
 
-          case InequalitySeekRangeExpression(innerRange) =>
-            val valueRange: InequalitySeekRange[Value] = innerRange.mapBounds(expr => makeValueNeoSafe(expr(row, state)))
-            val groupedRanges = valueRange.groupBy(bound => bound.endPoint.valueGroup())
-            if (groupedRanges.size > 1) {
-              Nil // predicates of more than one value group mean that no node can ever match
-            } else {
-              val (valueGroup, range) = groupedRanges.head
-              range match {
-                case rangeLessThan: RangeLessThan[Value] =>
-                  rangeLessThan.limit(BY_VALUE).map( limit =>
-                    List(IndexQuery.range(propertyIds.head, null, false, limit.endPoint, limit.isInclusive))
-                  ).toSeq
+      // Index composite seek over all values
+      case CompositeQueryExpression(exprs) =>
+        // ex:   x in [1] AND y in ["a", "b"] AND z > 3.0 AND exists(p)
+        assert(exprs.lengthCompare(propertyIds.length) == 0)
 
-                case rangeGreaterThan: RangeGreaterThan[Value] =>
-                  rangeGreaterThan.limit(BY_VALUE).map( limit =>
-                    List(IndexQuery.range(propertyIds.head, limit.endPoint, limit.isInclusive, null, false))
-                  ).toSeq
-
-                case RangeBetween(rangeGreaterThan, rangeLessThan) =>
-                  val greaterThanLimit = rangeGreaterThan.limit(BY_VALUE).get
-                  val lessThanLimit = rangeLessThan.limit(BY_VALUE).get
-
-                  val compare = Values.COMPARATOR.compare(greaterThanLimit.endPoint, lessThanLimit.endPoint)
-                  if (compare < 0) {
-                    List(List(IndexQuery.range(propertyIds.head,
-                                         greaterThanLimit.endPoint,
-                                         greaterThanLimit.isInclusive,
-                                         lessThanLimit.endPoint,
-                                         lessThanLimit.isInclusive)))
-                  } else if (compare == 0 && greaterThanLimit.isInclusive && lessThanLimit.isInclusive) {
-                    List(List(IndexQuery.exact(propertyIds.head, lessThanLimit.endPoint)))
-                  } else {
-                    Nil
-                  }
-              }
-            }
-
-          case PointDistanceSeekRangeExpression(range) =>
-            val valueRange = range.map(expr => makeValueNeoSafe(expr(row, state)))
-            (valueRange.distance, valueRange.point) match {
-              case (distance: NumberValue, point: PointValue) =>
-                val bboxes = point.getCoordinateReferenceSystem.getCalculator.boundingBox(point, distance.doubleValue()).asScala
-                // The geographic calculator pads the range to avoid numerical errors, which means we rely more on post-filtering
-                // This also means we can fix the date-line '<' case by simply being inclusive in the index seek, and again rely on post-filtering
-                val inclusive = if (bboxes.length > 1) true else range.inclusive
-                bboxes.map( bbox => List(IndexQuery.range(propertyIds.head,
-                  bbox.first(),
-                  inclusive,
-                  bbox.other(),
-                  inclusive
-                )))
-              case _ => Nil
-            }
+        // indexQueries = [
+        //                  [exact(1)],
+        //                  [exact("a"), exact("b")],
+        //                  [greaterThan(3.0)],
+        //                  [exists(p)]
+        //                ]
+        val indexQueries = exprs.zip(propertyIds).map {
+          case (expr, propId) =>
+            computeCompositeQueries(state, row)(expr, propId)
         }
 
-      case exactQuery =>
+        // [
+        //  [exact(1), exact("a"), greaterThan(3.0), exists(p)],
+        //  [exact(1), exact("b"), greaterThan(3.0), exists(p)]
+        // ]
+        combine(indexQueries)
+
+      case ExistenceQueryExpression() =>
+        throw new InternalException("An ExistenceQueryExpression shouldn't be found outside of a CompositeQueryExpression")
+
+      case _ =>
         computeExactQueries(state, row)
     }
+
+  private def computeRangeQueries(state: QueryState, row: ExecutionContext, rangeWrapper: Expression, propertyId: Int): Seq[IndexQuery] = {
+    rangeWrapper match {
+      case PrefixSeekRangeExpression(range) =>
+        val expr = range.prefix
+        expr(row, state) match {
+          case text: TextValue =>
+            Array(IndexQuery.stringPrefix(propertyId, text))
+          case Values.NO_VALUE =>
+            Nil
+          case other =>
+            throw new CypherTypeException("Expected TextValue, got " + other)
+        }
+
+      case InequalitySeekRangeExpression(innerRange) =>
+        val valueRange: InequalitySeekRange[Value] = innerRange.mapBounds(expr => makeValueNeoSafe(expr(row, state)))
+        val groupedRanges = valueRange.groupBy(bound => bound.endPoint.valueGroup())
+        if (groupedRanges.size > 1) {
+          Nil // predicates of more than one value group mean that no node can ever match
+        } else {
+          val (valueGroup, range) = groupedRanges.head
+          range match {
+            case rangeLessThan: RangeLessThan[Value] =>
+              rangeLessThan.limit(BY_VALUE).map(limit => {
+                valueGroup match {
+                  case ValueGroup.BOOLEAN =>
+                    (limit.endPoint.equals(true), limit.isInclusive) match {
+                      case (true, true) => // <= true, always true
+                        IndexQuery.exists(propertyId)
+                      case (false, false) => // < false, always false
+                        return Nil
+                      case _ => // true only for false
+                        IndexQuery.exact(propertyId, makeValueNeoSafe(BooleanValue.FALSE))
+                    }
+                  case _ =>
+                    IndexQuery.range(propertyId, null, false, limit.endPoint, limit.isInclusive)
+                }
+              }).toSeq
+
+            case rangeGreaterThan: RangeGreaterThan[Value] =>
+              rangeGreaterThan.limit(BY_VALUE).map(limit => {
+                valueGroup match {
+                  case ValueGroup.BOOLEAN =>
+                    (limit.endPoint.equals(true), limit.isInclusive) match {
+                      case (true, false) => // > true, always false
+                        return Nil
+                      case (false, true) => // >= false, always true
+                        IndexQuery.exists(propertyId)
+                      case _ => // true only for true
+                        IndexQuery.exact(propertyId, makeValueNeoSafe(BooleanValue.TRUE))
+                    }
+                  case _ =>
+                    IndexQuery.range(propertyId, limit.endPoint, limit.isInclusive, null, false)
+                }
+              }).toSeq
+
+            case RangeBetween(rangeGreaterThan, rangeLessThan) =>
+              val greaterThanLimit = rangeGreaterThan.limit(BY_VALUE).get
+              val lessThanLimit = rangeLessThan.limit(BY_VALUE).get
+
+              val compare = Values.COMPARATOR.compare(greaterThanLimit.endPoint, lessThanLimit.endPoint)
+              if (compare < 0) {
+                valueGroup match {
+                  case ValueGroup.BOOLEAN =>
+                    (greaterThanLimit.isInclusive, lessThanLimit.isInclusive) match {
+                      case (true, true) => // false <= x <= true, always true
+                        List(IndexQuery.exists(propertyId))
+                      case (true, _) => // false <= x < true, true only for false
+                        List(IndexQuery.exact(propertyId, makeValueNeoSafe(BooleanValue.FALSE)))
+                      case (_, true) => // false < x <= true, true only for true
+                        List(IndexQuery.exact(propertyId, makeValueNeoSafe(BooleanValue.TRUE)))
+                      case _ => // false < x < true, always false
+                        Nil
+                    }
+                  case _ =>
+                    List(IndexQuery.range(propertyId,
+                      greaterThanLimit.endPoint,
+                      greaterThanLimit.isInclusive,
+                      lessThanLimit.endPoint,
+                      lessThanLimit.isInclusive))
+                }
+              } else if (compare == 0 && greaterThanLimit.isInclusive && lessThanLimit.isInclusive) {
+                List(IndexQuery.exact(propertyId, lessThanLimit.endPoint))
+              } else {
+                Nil
+              }
+          }
+        }
+
+      case PointDistanceSeekRangeExpression(range) =>
+        val valueRange = range.map(expr => makeValueNeoSafe(expr(row, state)))
+        (valueRange.distance, valueRange.point) match {
+          case (distance: NumberValue, point: PointValue) =>
+            val bboxes = point.getCoordinateReferenceSystem.getCalculator.boundingBox(point, distance.doubleValue()).asScala
+            // The geographic calculator pads the range to avoid numerical errors, which means we rely more on post-filtering
+            // This also means we can fix the date-line '<' case by simply being inclusive in the index seek, and again rely on post-filtering
+            val inclusive = if (bboxes.length > 1) true else range.inclusive
+            bboxes.map(bbox => IndexQuery.range(propertyId,
+              bbox.first(),
+              inclusive,
+              bbox.other(),
+              inclusive
+            ))
+          case _ => Nil
+        }
+    }
+  }
 
   private def computeExactQueries(state: QueryState, row: ExecutionContext): Seq[Seq[IndexQuery.ExactPredicate]] =
     valueExpr match {
@@ -168,37 +235,43 @@ trait NodeIndexSeeker {
 
       // Index exact value seek on multiple values, making use of a composite index over all values
       //    eg:   x in [1] AND y in ["a", "b"] AND z in [3.0]
+      // Should only get here from LockingUniqueIndexSeek
       case CompositeQueryExpression(exprs) =>
         assert(exprs.lengthCompare(propertyIds.length) == 0)
 
-        // seekValues = [[1], ["a", "b"], [3.0]]
-        val seekValues = exprs.map(expressionValues(row, state))
+        // indexQueries = [[1], ["a", "b"], [3.0]]
+        val indexQueries: Seq[Seq[IndexQuery.ExactPredicate]] = exprs.zip(propertyIds).map {
+          case (expr, propId) =>
+            computeCompositeQueries(state, row)(expr, propId).flatMap {
+              case e: IndexQuery.ExactPredicate => Some(e)
+              case _ => throw new InternalException("Expected only exact for LockingUniqueIndexSeek")
+            }
+        }
 
         // combined = [[1, "a", 3.0], [1, "b", 3.0]]
-        val combined = combine(seekValues)
-        combined.map(seekTuple => seekTuple.zip(propertyIds)
-          .map { case (v,propId) => IndexQuery.exact(propId, makeValueNeoSafe(v))}
-        )
+        combine(indexQueries)
     }
 
-  private def expressionValues(m: ExecutionContext, state: QueryState)(queryExpression: QueryExpression[Expression]): Seq[AnyValue] = {
+  private def computeCompositeQueries(state: QueryState, row: ExecutionContext)(queryExpression: QueryExpression[Expression], propertyId: Int): Seq[IndexQuery] =
     queryExpression match {
-
       case SingleQueryExpression(inner) =>
-        Seq(inner(m, state))
+        Seq(IndexQuery.exact(propertyId, makeValueNeoSafe(inner(row, state))))
 
       case ManyQueryExpression(inner) =>
-        inner(m, state) match {
+        val expr: Seq[AnyValue] = inner(row, state) match {
           case IsList(coll) => coll.asArray()
           case null => Seq.empty
           case _ => throw new CypherTypeException(s"Expected the value for $inner to be a collection but it was not.")
         }
+        expr.map(e => IndexQuery.exact(propertyId, makeValueNeoSafe(e)))
 
-      case CompositeQueryExpression(innerExpressions) =>
+      case CompositeQueryExpression(_) =>
         throw new InternalException("A CompositeQueryExpression can't be nested in a CompositeQueryExpression")
 
       case RangeQueryExpression(rangeWrapper) =>
-        throw new InternalException("Range queries on composite indexes not yet supported")
+        computeRangeQueries(state, row, rangeWrapper, propertyId)
+
+      case ExistenceQueryExpression() =>
+        Seq(IndexQuery.exists(propertyId))
     }
-  }
 }

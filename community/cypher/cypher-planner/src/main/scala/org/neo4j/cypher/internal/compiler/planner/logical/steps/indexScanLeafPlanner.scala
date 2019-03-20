@@ -45,21 +45,22 @@ object indexScanLeafPlanner extends LeafPlanner with LeafPlanFromExpression {
     e match {
       // MATCH (n:User) WHERE n.prop CONTAINS 'substring' RETURN n
       case predicate@Contains(prop@Property(Variable(name), _), expr) if onlyArgumentDependencies(expr) =>
-        val plans = produce(name, qg, interestingOrder, prop, CTString, predicate,
+        val plans = produce(name, qg, interestingOrder, prop, CTString, Some(predicate),
                             lpp.planNodeIndexContainsScan(_, _, _, _, _, expr, _, _, context), context)
         maybeLeafPlans(name, plans)
 
       // MATCH (n:User) WHERE n.prop ENDS WITH 'substring' RETURN n
       case predicate@EndsWith(prop@Property(Variable(name), _), expr) if onlyArgumentDependencies(expr) =>
-        val plans = produce(name, qg, interestingOrder, prop, CTString, predicate,
+        val plans = produce(name, qg, interestingOrder, prop, CTString, Some(predicate),
                             lpp.planNodeIndexEndsWithScan(_, _, _, _, _, expr, _, _, context), context)
         maybeLeafPlans(name, plans)
 
       // MATCH (n:User) WHERE exists(n.prop) RETURN n
       case AsPropertyScannable(scannable) =>
         val name = scannable.name
+        val predicate = if (scannable.solvesPredicate) Some(scannable.expr) else None
 
-        val plans = produce(name, qg, interestingOrder, scannable.property, CTAny, scannable.expr, lpp.planNodeIndexScan(_, _, _, _, _, _, _, context), context)
+        val plans = produce(name, qg, interestingOrder, scannable.property, CTAny, predicate, lpp.planNodeIndexScan(_, _, _, _, _, _, _, context), context)
         maybeLeafPlans(name, plans)
 
       // MATCH (n:User) with existence/node key constraint on :User(prop) or aggregation on n.prop
@@ -109,14 +110,14 @@ object indexScanLeafPlanner extends LeafPlanner with LeafPlanFromExpression {
         None
     }.toSet
 
-  type PlanProducer = (String, LabelToken, IndexedProperty, Seq[Expression], Option[UsingIndexHint], Set[String], ProvidedOrder) => LogicalPlan
+  type PlanProducer = (String, LabelToken, Seq[IndexedProperty], Seq[Expression], Option[UsingIndexHint], Set[String], ProvidedOrder) => LogicalPlan
 
   private def produce(variableName: String,
                       qg: QueryGraph,
                       interestingOrder: InterestingOrder,
                       property: LogicalProperty,
                       propertyType: CypherType,
-                      predicate: Expression,
+                      predicate: Option[Expression],
                       planProducer: PlanProducer,
                       context: LogicalPlanningContext): Set[LogicalPlan] = {
     val semanticTable = context.semanticTable
@@ -148,7 +149,7 @@ object indexScanLeafPlanner extends LeafPlanner with LeafPlanFromExpression {
         val maybeIndexDescriptor = context.planContext.indexGetForLabelAndProperties(labelName.name, Seq(property.propertyKey.name))
         (maybeIndexDescriptor, maybePropId) match {
           case (Some(indexDescriptor), Some(_)) =>
-            Some(produceInner(variableName, qg, interestingOrder, property, propertyType, predicate, planProducer, semanticTable, predicate, labelName, labelId, indexDescriptor))
+            Some(produceInner(variableName, qg, interestingOrder, property, propertyType, Some(predicate), planProducer, semanticTable, predicate, labelName, labelId, indexDescriptor))
           case _ =>
             None
         }
@@ -161,7 +162,7 @@ object indexScanLeafPlanner extends LeafPlanner with LeafPlanFromExpression {
                            interestingOrder: InterestingOrder,
                            property: LogicalProperty,
                            propertyType: CypherType,
-                           predicate: Expression,
+                           predicate: Option[Expression],
                            planProducer: PlanProducer,
                            semanticTable: SemanticTable,
                            labelPredicate: HasLabels,
@@ -179,7 +180,7 @@ object indexScanLeafPlanner extends LeafPlanner with LeafPlanFromExpression {
     val providedOrder = ResultOrdering.withIndexOrderCapability(interestingOrder, Seq(orderProperty), Seq(propertyType), indexDescriptor.orderCapability)
 
     val labelToken = LabelToken(labelName, labelId)
-    val predicates = Seq(predicate, labelPredicate)
-    planProducer(variableName, labelToken, indexProperty, predicates, hint, qg.argumentIds, providedOrder)
+    val predicates = predicate.toSeq :+ labelPredicate
+    planProducer(variableName, labelToken, Seq(indexProperty), predicates, hint, qg.argumentIds, providedOrder)
   }
 }

@@ -45,7 +45,7 @@ object AsIdSeekable {
 
 object AsPropertySeekable {
   def unapply(v: Any): Option[PropertySeekable] = v match {
-    case WithSeekableArgs(prop@Property(ident: LogicalVariable, propertyKey), rhs)
+    case WithSeekableArgs(prop@Property(ident: LogicalVariable, _), rhs)
       if !rhs.dependencies(ident) =>
       Some(PropertySeekable(prop, ident, rhs))
     case _ =>
@@ -61,33 +61,33 @@ object AsPropertyScannable {
       Some(ExplicitlyPropertyScannable(func, ident, property))
 
     case expr@IsNotNull(Property(_, _)) =>
-      partialPropertyPredicate(expr, expr.lhs)
+      partialPropertyPredicate(expr, expr.lhs, solves = true)
 
     case expr: Equals =>
-      partialPropertyPredicate(expr, expr.lhs)
+      partialPropertyPredicate(expr, expr.lhs, solves = false)
 
     case expr: InequalityExpression =>
-      partialPropertyPredicate(expr, expr.lhs)
+      partialPropertyPredicate(expr, expr.lhs, solves = false)
 
     case startsWith: StartsWith =>
-      partialPropertyPredicate(startsWith, startsWith.lhs)
+      partialPropertyPredicate(startsWith, startsWith.lhs, solves = false)
 
     case regex: RegexMatch =>
-      partialPropertyPredicate(regex, regex.lhs)
+      partialPropertyPredicate(regex, regex.lhs, solves = false)
 
     case expr: NotEquals =>
-      partialPropertyPredicate(expr, expr.lhs)
+      partialPropertyPredicate(expr, expr.lhs, solves = false)
 
     case _ =>
       None
   }
 
-  private def partialPropertyPredicate[P <: Expression](predicate: P, lhs: Expression) = lhs match {
+  private def partialPropertyPredicate[P <: Expression](predicate: P, lhs: Expression, solves: Boolean) = lhs match {
     case property@Property(ident: LogicalVariable, _) =>
       PartialPredicate.ifNotEqual(
         FunctionInvocation(FunctionName(functions.Exists.name)(predicate.position), property)(predicate.position),
         predicate
-      ).map(ImplicitlyPropertyScannable(_, ident, property))
+      ).map(ImplicitlyPropertyScannable(_, ident, property, solves))
 
     case _ =>
       None
@@ -299,12 +299,15 @@ case class InequalityRangeSeekable(ident: LogicalVariable, propertyKeyName: Prop
 sealed trait Scannable[+T <: Expression] extends Sargable[T] {
   def ident: LogicalVariable
   def property: LogicalProperty
+  def solvesPredicate: Boolean
 
   def propertyKey: PropertyKeyName = property.propertyKey
 }
 
 case class ExplicitlyPropertyScannable(expr: FunctionInvocation, ident: LogicalVariable, property: LogicalProperty)
-  extends Scannable[FunctionInvocation]
+  extends Scannable[FunctionInvocation] {
+  val solvesPredicate = true
+}
 
-case class ImplicitlyPropertyScannable[+T <: Expression](expr: PartialPredicate[T], ident: LogicalVariable, property: LogicalProperty)
+case class ImplicitlyPropertyScannable[+T <: Expression](expr: PartialPredicate[T], ident: LogicalVariable, property: LogicalProperty, solvesPredicate: Boolean)
   extends Scannable[PartialPredicate[T]]

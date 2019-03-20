@@ -27,20 +27,18 @@ import org.neo4j.cypher.internal.v4_0.util.attribution.{IdGen, SameId}
   */
 case class NodeIndexScan(idName: String,
                          label: LabelToken,
-                         property: IndexedProperty,
+                         properties: Seq[IndexedProperty],
                          argumentIds: Set[String],
                          indexOrder: IndexOrder)
                         (implicit idGen: IdGen)
   extends IndexLeafPlan(idGen) {
 
-  override def properties: Seq[IndexedProperty] = Seq(property)
-
-  override def cachedNodeProperties: Traversable[CachedNodeProperty] = property.maybeCachedNodeProperty(idName)
+  override def cachedNodeProperties: Traversable[CachedNodeProperty] = properties.filter(_.shouldGetValue).map(_.asCachedNodeProperty(idName))
 
   override val availableSymbols: Set[String] = argumentIds + idName
 
-  override def availableCachedNodeProperties: Map[Property, CachedNodeProperty] = property.asAvailablePropertyMap(idName)
+  override def availableCachedNodeProperties: Map[Property, CachedNodeProperty] = properties.flatMap(_.asAvailablePropertyMap(idName)).toMap
 
   override def copyWithoutGettingValues: NodeIndexScan =
-    NodeIndexScan(idName, label, IndexedProperty(property.propertyKeyToken, DoNotGetValue), argumentIds, indexOrder)(SameId(this.id))
+    NodeIndexScan(idName, label, properties.map{ p => IndexedProperty(p.propertyKeyToken, DoNotGetValue) }, argumentIds, indexOrder)(SameId(this.id))
 }

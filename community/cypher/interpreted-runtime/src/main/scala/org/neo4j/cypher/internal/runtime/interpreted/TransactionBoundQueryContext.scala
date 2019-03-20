@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.runtime.interpreted
 
 import java.net.URL
-import java.util.function.Predicate
 
 import org.eclipse.collections.api.iterator.LongIterator
 import org.neo4j.collection.PrimitiveLongResourceIterator
@@ -242,6 +241,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     val impossiblePredicate =
       predicates.exists {
         case p: IndexQuery.ExactPredicate => p.value() == Values.NO_VALUE
+        case _: IndexQuery.ExistsPredicate if predicates.length > 1 => false
         case p: IndexQuery =>
           !RANGE_SEEKABLE_VALUE_GROUPS.contains(p.valueGroup())
       }
@@ -878,14 +878,10 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     }
 
     val expanderWithNodeFilters = expander.nodeFilters.foldLeft(startExpander) {
-      case (acc, filter) => acc.addNodeFilter(new Predicate[PropertyContainer] {
-        override def test(t: PropertyContainer): Boolean = filter.test(t)
-      })
+      case (acc, filter) => acc.addNodeFilter((t: PropertyContainer) => filter.test(t))
     }
     val expanderWithAllPredicates = expander.relFilters.foldLeft(expanderWithNodeFilters) {
-      case (acc, filter) => acc.addRelationshipFilter(new Predicate[PropertyContainer] {
-        override def test(t: PropertyContainer): Boolean = filter.test(t)
-      })
+      case (acc, filter) => acc.addRelationshipFilter((t: PropertyContainer) => filter.test(t))
     }
     val shortestPathPredicate = new ShortestPathPredicate {
       override def test(path: Path): Boolean = pathPredicate.test(path)

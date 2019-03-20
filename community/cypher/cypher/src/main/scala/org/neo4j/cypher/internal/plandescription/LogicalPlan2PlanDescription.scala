@@ -104,14 +104,14 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
         val arguments = Seq(Index(label.name, Seq(property.propertyKeyToken.name)), Expression(valueExpr))
         PlanDescriptionImpl(id, "NodeIndexEndsWithScan", NoChildren, arguments, variables)
 
-      case NodeIndexScan(_, label, property, _, _) =>
-        PlanDescriptionImpl(id, "NodeIndexScan", NoChildren, Seq(Index(label.name, Seq(property.propertyKeyToken.name))), variables)
+      case NodeIndexScan(_, label, properties, _, _) =>
+        PlanDescriptionImpl(id, "NodeIndexScan", NoChildren, Seq(Index(label.name, properties.map(_.propertyKeyToken.name))), variables)
 
       case ProcedureCall(_, call) =>
         val signature = Signature(call.qualifiedName, call.callArguments, call.callResultTypes)
         PlanDescriptionImpl(id, "ProcedureCall", NoChildren, Seq(signature), variables)
 
-      case StandAloneProcedureCall(signature, args, resultSymbols, callResultIndices) =>
+      case StandAloneProcedureCall(signature, _, resultSymbols, _) =>
         val signatureDesc = Signature(signature.name, Seq.empty, resultSymbols)
         PlanDescriptionImpl(id, "ProcedureCall", NoChildren, Seq(signatureDesc), resultSymbols.map(_._1).toSet)
 
@@ -199,17 +199,17 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
       case _: DropResult =>
         PlanDescriptionImpl(id, "DropResult", children, Seq.empty, variables)
 
-      case NodeCountFromCountStore(id, labelName, arguments) =>
-        PlanDescriptionImpl(id = plan.id, "NodeCountFromCountStore", NoChildren,
-                            Seq(CountNodesExpression(id, labelName.map(l => l.map(_.name)))), variables)
+      case NodeCountFromCountStore(idName, labelName, _) =>
+        PlanDescriptionImpl(id, "NodeCountFromCountStore", NoChildren,
+                            Seq(CountNodesExpression(idName, labelName.map(l => l.map(_.name)))), variables)
 
-      case RelationshipCountFromCountStore(id, start, types, end, arguments) =>
-        PlanDescriptionImpl(id = plan.id, "RelationshipCountFromCountStore", NoChildren,
+      case RelationshipCountFromCountStore(idName, start, types, end, _) =>
+        PlanDescriptionImpl(id, "RelationshipCountFromCountStore", NoChildren,
                             Seq(
-                              CountRelationshipsExpression(id, start.map(_.name), types.map(_.name), end.map(_.name))),
+                              CountRelationshipsExpression(idName, start.map(_.name), types.map(_.name), end.map(_.name))),
                             variables)
 
-      case NodeUniqueIndexSeek(id, label, properties, value, arguments, _) =>
+      case NodeUniqueIndexSeek(_, label, properties, _, _, _) =>
         PlanDescriptionImpl(id = plan.id, "NodeUniqueIndexSeek", NoChildren,
                             Seq(Index(label.name, properties.map(_.propertyKeyToken.name))), variables)
 
@@ -452,9 +452,13 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
                               unique: Boolean,
                               readOnly: Boolean): (String, Argument) = {
 
+    def findName = if (unique && readOnly) "NodeUniqueIndexSeek"
+                          else if (unique) "NodeUniqueIndexSeek(Locking)"
+                          else "NodeIndexSeek"
+
     val (name, indexDesc) = valueExpr match {
       case e: RangeQueryExpression[_] =>
-        assert(propertyKeys.size == 1, "Range queries not yet supported for composite indexes")
+        assert(propertyKeys.size == 1)
         val propertyKey = propertyKeys.head.name
         val name = if (unique) "NodeUniqueIndexSeekByRange" else "NodeIndexSeekByRange"
         e.expression match {
@@ -482,12 +486,16 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
             (name, PointDistanceIndex(label.name, propertyKey, poi, distance.toString, inclusive))
           case _ => throw new InternalException("This should never happen. Missing a case?")
         }
-      case _ =>
-        val name =
-          if (unique && readOnly) "NodeUniqueIndexSeek"
-          else if (unique) "NodeUniqueIndexSeek(Locking)"
-          else "NodeIndexSeek"
-        (name, Index(label.name, propertyKeys.map(_.name)))
+      case e: CompositeQueryExpression[_] =>
+        val predicates = e.inner.map {
+          case _: ExistenceQueryExpression[Expression] => "exists"
+          case _: RangeQueryExpression[Expression] => "range"
+          case _: CompositeQueryExpression[Expression] =>
+            throw new InternalException("A CompositeQueryExpression can't be nested in a CompositeQueryExpression")
+          case _ => "equality"
+        }
+        (s"$findName(${predicates.mkString(",")})", Index(label.name, propertyKeys.map(_.name)))
+      case _ => (findName, Index(label.name, propertyKeys.map(_.name)))
     }
 
     (name, indexDesc)

@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.v4_0.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.v4_0.expressions.LabelToken
 import org.neo4j.cypher.internal.v4_0.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.v4_0.expressions.PropertyKeyToken
-import org.neo4j.cypher.internal.v4_0.parser.ParserFixture
+import org.neo4j.cypher.internal.v4_0.parser.{CypherParser, ParserFixture}
 import org.neo4j.cypher.internal.v4_0.util.Cardinality
 import org.neo4j.cypher.internal.v4_0.util.LabelId
 import org.neo4j.cypher.internal.v4_0.util.PropertyKeyId
@@ -39,7 +39,7 @@ import scala.language.implicitConversions
 trait LogicalPlanConstructionTestSupport extends CypherTestSupport {
   self: AstConstructionTestSupport =>
 
-  implicit val idGen = new SequentialIdGen()
+  implicit val idGen: SequentialIdGen = new SequentialIdGen()
 
   implicit protected def idSymbol(name: Symbol): String = name.name
 
@@ -74,7 +74,7 @@ trait LogicalPlanConstructionTestSupport extends CypherTestSupport {
   }
 
   def nodeIndexScan(node: String, label: String, property: String) =
-    NodeIndexScan(node, LabelToken(label, LabelId(1)), IndexedProperty(PropertyKeyToken(property, PropertyKeyId(1)), GetValue), Set.empty, IndexOrderNone)
+    NodeIndexScan(node, LabelToken(label, LabelId(1)), Seq(IndexedProperty(PropertyKeyToken(property, PropertyKeyId(1)), GetValue)), Set.empty, IndexOrderNone)
 
   def cached(varAndProp: String): CachedNodeProperty = {
     val array = varAndProp.split("\\.", 2)
@@ -85,5 +85,5 @@ trait LogicalPlanConstructionTestSupport extends CypherTestSupport {
 }
 
 trait AstRewritingTestSupport extends CypherTestSupport with AstConstructionTestSupport {
-  val parser = ParserFixture.parser
+  val parser: CypherParser = ParserFixture.parser
 }

@@ -149,7 +149,7 @@ object alignGetValueFromIndexBehavior {
       NodeIndexEndsWithScan(x.idName, x.label, aligned, x.valueExpr, x.argumentIds, x.indexOrder)(attributes.copy(x.id))
 
     case x: NodeIndexScan =>
-      val aligned = alignedProperties(x, usedExpressions, query, solveds).head
+      val aligned = alignedProperties(x, usedExpressions, query, solveds)
       NodeIndexScan(x.idName, x.label, aligned, x.argumentIds, x.indexOrder)(attributes.copy(x.id))
     })
 

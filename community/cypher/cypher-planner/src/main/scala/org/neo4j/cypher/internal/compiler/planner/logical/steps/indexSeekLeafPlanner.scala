@@ -35,9 +35,12 @@ object indexSeekLeafPlanner extends AbstractIndexSeekLeafPlanner {
                                        hint: Option[UsingIndexHint],
                                        argumentIds: Set[String],
                                        providedOrder: ProvidedOrder,
-                                       context: LogicalPlanningContext)
+                                       context: LogicalPlanningContext,
+                                       onlyExists: Boolean)
                                       (solvedPredicates: Seq[Expression], predicatesForCardinalityEstimation: Seq[Expression]): LogicalPlan =
-    if (isUnique) {
+    if (onlyExists) {
+      context.logicalPlanProducer.planNodeIndexScan(idName, label, properties, solvedPredicates, hint, argumentIds, providedOrder, context)
+    } else if (isUnique) {
       context.logicalPlanProducer.planNodeUniqueIndexSeek(idName,
                                                           label,
                                                           properties,

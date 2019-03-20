@@ -725,7 +725,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
         NodeIndexScan(
           "n",
           LabelToken("Awesome", LabelId(0)),
-          indexedProperty("prop", 0, GetValue),
+          Seq(indexedProperty("prop", 0, GetValue)),
           Set.empty,
           IndexOrderNone),
         Map(cachedNodePropertyProj("n", "prop"))
@@ -743,7 +743,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
         NodeIndexScan(
           "n",
           LabelToken("Awesome", LabelId(0)),
-          indexedProperty("prop", 0, DoNotGetValue),
+          Seq(indexedProperty("prop", 0, DoNotGetValue)),
           Set.empty,
           IndexOrderNone),
         Map(propertyProj("n", "prop"))
@@ -764,7 +764,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
         NodeIndexScan(
           "n",
           LabelToken("Awesome", LabelId(0)),
-          indexedProperty("prop", 0, GetValue),
+          Seq(indexedProperty("prop", 0, GetValue)),
           Set.empty,
           IndexOrderNone),
         Map(cachedNodePropertyProj("n", "prop"))
@@ -783,7 +783,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
         NodeIndexScan(
           "n",
           LabelToken("Awesome", LabelId(0)),
-          indexedProperty("prop", 0, DoNotGetValue),
+          Seq(indexedProperty("prop", 0, DoNotGetValue)),
           Set.empty,
           IndexOrderNone),
         Map(propertyProj("n", "prop"))
@@ -802,7 +802,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
         NodeIndexScan(
           "n",
           LabelToken("Awesome", LabelId(0)),
-          indexedProperty("prop2", 0, GetValue),
+          Seq(indexedProperty("prop2", 0, GetValue)),
           Set.empty,
           IndexOrderNone),
         Map(cachedNodePropertyProj("n", "prop2"))
@@ -821,7 +821,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
         NodeIndexScan(
           "n",
           LabelToken("Awesome", LabelId(0)),
-          indexedProperty("prop2", 0, DoNotGetValue),
+          Seq(indexedProperty("prop2", 0, DoNotGetValue)),
           Set.empty,
           IndexOrderNone),
         Map(propertyProj("n", "prop2"))
@@ -900,7 +900,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
         NodeIndexScan(
           "n",
           LabelToken("Awesome", LabelId(0)),
-          indexedProperty("prop", 0, GetValue),
+          Seq(indexedProperty("prop", 0, GetValue)),
           Set.empty,
           IndexOrderNone),
         Map.empty,
@@ -919,7 +919,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
         NodeIndexScan(
           "n",
           LabelToken("Awesome", LabelId(0)),
-          indexedProperty("prop", 0, DoNotGetValue),
+          Seq(indexedProperty("prop", 0, DoNotGetValue)),
           Set.empty,
           IndexOrderNone),
         Map.empty,
@@ -938,7 +938,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
         NodeIndexScan(
           "n",
           LabelToken("Awesome", LabelId(0)),
-          indexedProperty("prop", 0, GetValue),
+          Seq(indexedProperty("prop", 0, GetValue)),
           Set.empty,
           IndexOrderNone),
         Map.empty,
@@ -957,7 +957,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
         NodeIndexScan(
           "n",
           LabelToken("Awesome", LabelId(0)),
-          indexedProperty("prop", 0, DoNotGetValue),
+          Seq(indexedProperty("prop", 0, DoNotGetValue)),
           Set.empty,
           IndexOrderNone),
         Map.empty,

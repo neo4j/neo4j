@@ -58,11 +58,17 @@ class IndexSeekTest extends CypherFunSuite {
     (getValue, args, indexOrder) => "b:Y(name <= 'hi')" -> createSeek("b", label("Y"), Seq(prop("name", getValue)), lte(string("hi")), args, indexOrder),
     (getValue, args, indexOrder) => "b:Y(name > 'hi')" -> createSeek("b", label("Y"), Seq(prop("name", getValue)), gt(string("hi")), args, indexOrder),
     (getValue, args, indexOrder) => "b:Y(name >= 'hi')" -> createSeek("b", label("Y"), Seq(prop("name", getValue)), gte(string("hi")), args, indexOrder),
+    (getValue, args, indexOrder) => "b:Y(dogs < 3, cats >= 4)" -> createSeek("b", label("Y"), Seq(prop("dogs", getValue, 0), prop("cats", getValue, 1)), CompositeQueryExpression(Seq(lt(intLiteral(3)), exists())), args, indexOrder),
+    (getValue, args, indexOrder) => "b:Y(dogs = 3, cats >= 4)" -> createSeek("b", label("Y"), Seq(prop("dogs", getValue, 0), prop("cats", getValue, 1)), CompositeQueryExpression(Seq(exactInt(3), gte(intLiteral(4)))), args, indexOrder),
     (getValue, args, indexOrder) => "b:Y(name STARTS WITH 'hi')" -> createSeek("b", label("Y"), Seq(prop("name", getValue)), startsWith("hi"), args, indexOrder),
+    (getValue, args, indexOrder) => "b:Y(name STARTS WITH 'hi', cats)" -> createSeek("b", label("Y"), Seq(prop("name", getValue, 0), prop("cats", getValue, 1)), CompositeQueryExpression(Seq(startsWith("hi"), exists())), args, indexOrder),
     (getValue, args, indexOrder) => "b:Y(name ENDS WITH 'hi')" -> (_ => NodeIndexEndsWithScan("b", label("Y"), prop("name", getValue), string("hi"), args, indexOrder)),
+//    (getValue, args, indexOrder) => "b:Y(dogs = 1, name ENDS WITH 'hi')" -> (_ => NodeIndexEndsWithScan("b", label("Y"), Seq(prop("dogs", getValue, 0), prop("name", getValue, 1)), CompositeQueryExpression(Seq(exactInt(1), string("hi"))), args, indexOrder)),
     (getValue, args, indexOrder) => "b:Y(name CONTAINS 'hi')" -> (_ => NodeIndexContainsScan("b", label("Y"), prop("name", getValue), string("hi"), args, indexOrder)),
-    (getValue, args, indexOrder) => "b:Y(name)" -> (_ => NodeIndexScan("b", label("Y"), prop("name", getValue), args, indexOrder))
-  )
+//    (getValue, args, indexOrder) => "b:Y(name CONTAINS 'hi', dogs)" -> (_ => NodeIndexContainsScan("b", label("Y"), Seq(prop("name", getValue, 0), prop("dogs", getValue, 1)), CompositeQueryExpression(Seq(string("hi"), exists()), args, indexOrder)),
+    (getValue, args, indexOrder) => "b:Y(name)" -> (_ => NodeIndexScan("b", label("Y"), Seq(prop("name", getValue)), args, indexOrder)),
+    (getValue, args, indexOrder) => "b:Y(name, dogs)" -> (_ => NodeIndexScan("b", label("Y"), Seq(prop("name", getValue, 0), prop("dogs", getValue, 1)), args, indexOrder))
+  ) //TODO ends with and contains for composite
 
   for {
     getValue <- List(CanGetValue, GetValue, DoNotGetValue)
@@ -95,14 +101,14 @@ class IndexSeekTest extends CypherFunSuite {
   private def prop(name: String, getValue: GetValueFromIndexBehavior, propId: Int = 0) =
     IndexedProperty(PropertyKeyToken(name, PropertyKeyId(propId)), getValue)
 
-  private def exactInt(int: Int) = SingleQueryExpression(SignedDecimalIntegerLiteral(int.toString)(pos))
+  private def exactInt(int: Int) = SingleQueryExpression(intLiteral(int))
 
-
-  private def exactInts(ints: Int*) = ManyQueryExpression(ListLiteral(ints.map(i => SignedDecimalIntegerLiteral(i.toString)(pos)))(pos))
+  private def exactInts(ints: Int*) = ManyQueryExpression(ListLiteral(ints.map(i => intLiteral(i)))(pos))
 
   private def exactString(x: String) = SingleQueryExpression(string(x))
 
   private def string(x: String) = StringLiteral(x)(pos)
+  private def intLiteral(x: Int) = SignedDecimalIntegerLiteral(x.toString)(pos)
 
   private def lt(x: Literal) = RangeQueryExpression(InequalitySeekRangeWrapper(RangeLessThan(NonEmptyList(ExclusiveBound(x))))(pos))
   private def lte(x: Literal) = RangeQueryExpression(InequalitySeekRangeWrapper(RangeLessThan(NonEmptyList(InclusiveBound(x))))(pos))
@@ -110,5 +116,7 @@ class IndexSeekTest extends CypherFunSuite {
   private def gte(x: Literal) = RangeQueryExpression(InequalitySeekRangeWrapper(RangeGreaterThan(NonEmptyList(InclusiveBound(x))))(pos))
 
   private def startsWith(x: String) = RangeQueryExpression(PrefixSeekRangeWrapper(PrefixRange(string(x)))(pos))
+
+  private def exists() = ExistenceQueryExpression()
 
 }

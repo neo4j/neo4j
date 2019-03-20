@@ -187,8 +187,8 @@ abstract class LogicalPlan(idGen: IdGen)
         acc => acc :+ SchemaIndexSeekUsage(idName, label.nameId.id, label.name, properties.map(_.propertyKeyToken.name))
       case NodeUniqueIndexSeek(idName, label, properties, _, _, _) =>
         acc => acc :+ SchemaIndexSeekUsage(idName, label.nameId.id, label.name, properties.map(_.propertyKeyToken.name))
-      case NodeIndexScan(idName, label, property, _, _) =>
-        acc => acc :+ SchemaIndexScanUsage(idName, label.nameId.id, label.name, property.propertyKeyToken.name)
+      case NodeIndexScan(idName, label, properties, _, _) =>
+        acc => acc :+ SchemaIndexScanUsage(idName, label.nameId.id, label.name, properties.map(_.propertyKeyToken.name))
       }
   }
 }
@@ -255,4 +255,4 @@ sealed trait IndexUsage {
 }
 
 final case class SchemaIndexSeekUsage(identifier: String, labelId : Int, label: String, propertyKeys: Seq[String]) extends IndexUsage
-final case class SchemaIndexScanUsage(identifier: String, labelId : Int, label: String, propertyKey: String) extends IndexUsage
+final case class SchemaIndexScanUsage(identifier: String, labelId : Int, label: String, propertyKeys: Seq[String]) extends IndexUsage

@@ -157,14 +157,25 @@ object IndexSeek {
           createSeek(List(prop(propStr)), customQueryExpression.get)
 
         case EXISTS(propStr) =>
-          NodeIndexScan(node, label, prop(propStr), argumentIds, indexOrder)
+          NodeIndexScan(node, label, Seq(prop(propStr)), argumentIds, indexOrder)
       }
     } else if (predicates.length > 1) {
-
+      // TODO ENDS WITH and CONTAINS
       val properties = new ArrayBuffer[IndexedProperty]()
       val valueExprs = new ArrayBuffer[QueryExpression[Expression]]()
 
-      for (predicate <- predicates)
+      val equalityPred = predicates.takeWhile {
+        case EXACT_TWO(_, _, _) => true
+        case EXACT(_, _) => true
+        case _ => false
+      }
+      val equalityAndNextPred =
+        if(equalityPred sameElements predicates) equalityPred
+        else equalityPred :+ predicates(equalityPred.length)
+
+      val restOfPred = predicates.slice(equalityAndNextPred.length, predicates.length)
+
+      for (predicate <- equalityAndNextPred)
         predicate match {
           case EXACT_TWO(propStr, valueAStr, valueBStr) =>
             valueExprs += ManyQueryExpression(ListLiteral(Seq(value(valueAStr), value(valueBStr)))(pos))
@@ -172,10 +183,63 @@ object IndexSeek {
           case EXACT(propStr, valueStr) =>
             valueExprs += SingleQueryExpression(value(valueStr))
             properties += prop(propStr)
-          case _ => throw new IllegalArgumentException("Only exact predicates are allowed in composite seeks.")
+          case LESS_THAN(propStr, valueStr) =>
+            valueExprs += RangeQueryExpression(InequalitySeekRangeWrapper(RangeLessThan(NonEmptyList(ExclusiveBound(value(valueStr)))))(pos))
+            properties += prop(propStr)
+          case LESS_THAN_OR_EQ(propStr, valueStr) =>
+            valueExprs += RangeQueryExpression(InequalitySeekRangeWrapper(RangeLessThan(NonEmptyList(InclusiveBound(value(valueStr)))))(pos))
+            properties += prop(propStr)
+          case GREATER_THAN(propStr, valueStr) =>
+            valueExprs += RangeQueryExpression(InequalitySeekRangeWrapper(RangeGreaterThan(NonEmptyList(ExclusiveBound(value(valueStr)))))(pos))
+            properties += prop(propStr)
+          case GREATER_THAN_OR_EQ(propStr, valueStr) =>
+            valueExprs += RangeQueryExpression(InequalitySeekRangeWrapper(RangeGreaterThan(NonEmptyList(InclusiveBound(value(valueStr)))))(pos))
+            properties += prop(propStr)
+          case STARTS_WITH(propStr, string) =>
+            valueExprs += RangeQueryExpression(PrefixSeekRangeWrapper(PrefixRange(value(string)))(pos))
+            properties += prop(propStr)
+          case EXISTS(propStr) =>
+            valueExprs += ExistenceQueryExpression()
+            properties += prop(propStr)
+          case _ => throw new IllegalArgumentException(s"$predicate is not allowed in composite seeks.")
         }
 
-      createSeek(properties, CompositeQueryExpression(valueExprs))
+      for(predicate <- restOfPred)
+        predicate match {
+          case EXACT_TWO(propStr, _, _) =>
+            valueExprs += ExistenceQueryExpression()
+            properties += prop(propStr)
+          case EXACT(propStr, _) =>
+            valueExprs += ExistenceQueryExpression()
+            properties += prop(propStr)
+          case LESS_THAN(propStr, _) =>
+            valueExprs += ExistenceQueryExpression()
+            properties += prop(propStr)
+          case LESS_THAN_OR_EQ(propStr, _) =>
+            valueExprs += ExistenceQueryExpression()
+            properties += prop(propStr)
+          case GREATER_THAN(propStr, _) =>
+            valueExprs += ExistenceQueryExpression()
+            properties += prop(propStr)
+          case GREATER_THAN_OR_EQ(propStr, _) =>
+            valueExprs += ExistenceQueryExpression()
+            properties += prop(propStr)
+          case STARTS_WITH(propStr, _) =>
+            valueExprs += ExistenceQueryExpression()
+            properties += prop(propStr)
+          case EXISTS(propStr) =>
+            valueExprs += ExistenceQueryExpression()
+            properties += prop(propStr)
+          case _ => throw new IllegalArgumentException(s"$predicate is not allowed in composite seeks.")
+        }
+
+      if (equalityAndNextPred.length == 1 && (equalityAndNextPred.head match {
+        case EXISTS(_) => true
+        case _ => false
+      }))
+        NodeIndexScan(node, label, properties, argumentIds, indexOrder)
+      else
+        createSeek(properties, CompositeQueryExpression(valueExprs))
     } else
       throw new IllegalArgumentException(s"Cannot parse `$indexSeekString` as a index seek.")
   }

@@ -30,7 +30,7 @@ trait SingleExpression[+T] {
 
   def expression: T
 
-  def expressions = Seq(expression)
+  def expressions: Seq[T] = Seq(expression)
 }
 
 case class SingleQueryExpression[T](expression: T) extends QueryExpression[T] with SingleExpression[T] {
@@ -42,11 +42,17 @@ case class ManyQueryExpression[T](expression: T) extends QueryExpression[T] with
 }
 
 case class RangeQueryExpression[T](expression: T) extends QueryExpression[T] with SingleExpression[T] {
-  override def map[R](f: T => R) = RangeQueryExpression(f(expression))
+  def map[R](f: T => R) = RangeQueryExpression(f(expression))
 }
 
 case class CompositeQueryExpression[T](inner: Seq[QueryExpression[T]]) extends QueryExpression[T] {
   def map[R](f: T => R) = CompositeQueryExpression(inner.map(_.map(f)))
 
-  override def expressions: Seq[T] = inner.flatMap(_.expressions)
+  def expressions: Seq[T] = inner.flatMap(_.expressions)
+}
+
+case class ExistenceQueryExpression[T]() extends QueryExpression[T] {
+  def map[R](f: T => R) = ExistenceQueryExpression()
+
+  def expressions: Seq[T] = Seq.empty
 }
