@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.v4_0.{expressions => ast}
 
 sealed abstract class Argument extends Product {
 
-  def name = productPrefix
+  def name: String = productPrefix
 }
 
 object Arguments {
@@ -45,8 +45,6 @@ object Arguments {
   case class PageCacheMisses(value: Long) extends Argument
 
   case class PageCacheHitRatio(value: Double) extends Argument
-
-  case class ColumnsLeft(value: Seq[String]) extends Argument
 
   case class Expression(value: ast.Expression) extends Argument
 
@@ -124,11 +122,11 @@ object Arguments {
 
   case class SourceCode(className: String, sourceCode: String) extends Argument {
 
-    override def name = "source:" + className
+    override def name: String = "source:" + className
   }
 
   case class ByteCode(className: String, disassembly: String) extends Argument {
 
-    override def name = "bytecode:" + className
+    override def name: String = "bytecode:" + className
   }
 }

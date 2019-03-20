@@ -40,7 +40,6 @@ object PlanDescriptionArgumentSerializer {
   def serialize(arg: Argument): AnyRef = {
 
     arg match {
-      case ColumnsLeft(columns) => s"keep columns ${columns.mkString(SEPARATOR)}"
       case Expression(expr) => asPrettyString(expr)
       case Expressions(expressions) => expressions.map {
         case (k, v) => s"$k : ${asPrettyString(v)}"
