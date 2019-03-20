@@ -269,29 +269,6 @@ public class TransactionIT
     }
 
     @Test
-    public void shouldInterpretEmptyStatementAsReuseLastStatementInExplicitTransaction() throws Throwable
-    {
-        // Given
-        final BoltStateMachine machine = env.newMachine( BOLT_CHANNEL );
-        machine.process( new InitMessage( USER_AGENT, emptyMap() ), nullResponseHandler() );
-        BoltResponseRecorder recorder = new BoltResponseRecorder();
-
-        // When
-        machine.process( new RunMessage( "BEGIN", EMPTY_MAP ), nullResponseHandler() );
-        machine.process( DiscardAllMessage.INSTANCE, nullResponseHandler() );
-        machine.process( new RunMessage( "RETURN 1", EMPTY_MAP ), nullResponseHandler() );
-        machine.process( PullAllMessage.INSTANCE, recorder );
-        machine.process( new RunMessage( "", EMPTY_MAP ), nullResponseHandler() );
-        machine.process( PullAllMessage.INSTANCE, recorder );
-        machine.process( new RunMessage( "COMMIT", EMPTY_MAP ), nullResponseHandler() );
-        machine.process( DiscardAllMessage.INSTANCE, nullResponseHandler() );
-
-        // Then
-        assertThat( recorder.nextResponse(), succeededWithRecord( 1L ) );
-        assertThat( recorder.nextResponse(), succeededWithRecord( 1L ) );
-    }
-
-    @Test
     public void beginShouldNotOverwriteLastStatement() throws Throwable
     {
         // Given

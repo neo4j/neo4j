@@ -256,23 +256,9 @@ public class TransactionStateMachine implements StatementProcessor
                             Duration txTimeout, Map<String,Object> txMetadata )
                             throws KernelException
                     {
-                        statement = parseStatement( ctx, statement );
                         waitForBookmark( spi, bookmark );
                         execute( ctx, spi, statement, params, spi.isPeriodicCommit( statement ), txTimeout, txMetadata );
                         return AUTO_COMMIT;
-                    }
-
-                    private String parseStatement( MutableTransactionState ctx, String statement )
-                    {
-                        if ( statement.isEmpty() )
-                        {
-                            statement = ctx.lastStatement;
-                        }
-                        else
-                        {
-                            ctx.lastStatement = statement;
-                        }
-                        return statement;
                     }
 
                     void execute( MutableTransactionState ctx, TransactionStateMachineSPI spi, String statement, MapValue params, boolean isPeriodicCommit,
@@ -397,14 +383,6 @@ public class TransactionStateMachine implements StatementProcessor
                         checkState( ignored1 == null, "Explicit Transaction should not run with tx_timeout" );
                         checkState( ignored2 == null, "Explicit Transaction should not run with tx_metadata" );
 
-                        if ( statement.isEmpty() )
-                        {
-                            statement = ctx.lastStatement;
-                        }
-                        else
-                        {
-                            ctx.lastStatement = statement;
-                        }
                         if ( spi.isPeriodicCommit( statement ) )
                         {
                             throw new QueryExecutionKernelException( new InvalidSemanticsException(
@@ -660,9 +638,6 @@ public class TransactionStateMachine implements StatementProcessor
 
         /** The current transaction, if present */
         KernelTransaction currentTransaction;
-
-        /** Last Cypher statement executed */
-        String lastStatement = "";
 
         final Map<Integer,StatementOutcome> statementOutcomes = new HashMap<>();
 
