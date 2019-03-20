@@ -132,7 +132,7 @@ public class FulltextProcedures
             @Name( "indexName" ) String name,
             @Name( "labels" ) List<String> labels,
             @Name( "propertyNames" ) List<String> properties,
-            @Name( value = "config", defaultValue = "" ) Map<String,String> indexConfigurationMap )
+            @Name( value = "config", defaultValue = "{}" ) Map<String,String> indexConfigurationMap )
             throws InvalidTransactionTypeKernelException, SchemaKernelException
     {
         Properties indexConfiguration = new Properties();
@@ -158,7 +158,7 @@ public class FulltextProcedures
             @Name( "indexName" ) String name,
             @Name( "relationshipTypes" ) List<String> relTypes,
             @Name( "propertyNames" ) List<String> properties,
-            @Name( value = "config", defaultValue = "" ) Map<String,String> config )
+            @Name( value = "config", defaultValue = "{}" ) Map<String,String> config )
             throws InvalidTransactionTypeKernelException, SchemaKernelException
     {
         Properties settings = new Properties();
