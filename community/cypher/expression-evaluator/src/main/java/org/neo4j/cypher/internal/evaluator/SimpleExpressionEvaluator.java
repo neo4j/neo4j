@@ -19,8 +19,6 @@
  */
 package org.neo4j.cypher.internal.evaluator;
 
-import org.neo4j.cypher.internal.evaluator.InternalExpressionEvaluator;
-import org.neo4j.cypher.internal.evaluator.SimpleInternalExpressionEvaluator;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.ValueMapper;
 import org.neo4j.values.virtual.PathValue;

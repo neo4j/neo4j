@@ -33,29 +33,28 @@ import org.neo4j.values.AnyValue
 
 class SimpleInternalExpressionEvaluator extends InternalExpressionEvaluator {
 
-  import SimpleInternalExpressionEvaluator.COLUMN
+  import SimpleInternalExpressionEvaluator.{COLUMN, CONVERTERS}
 
   private val parser = new CypherParser()
 
   override def evaluate(expression: String): AnyValue = {
-    val e = parseToExpression(expression)
-    val Result(rewritten, nExpressionSlots, _) = expressionVariableAllocation.allocate(e)
-    val converters = new ExpressionConverters(CommunityExpressionConverter(TokenContext.EMPTY))
-    val commandExpr = converters.toCommandExpression(Id.INVALID_ID, rewritten)
-
-    val emptyQueryState = new QueryState(null,
-                                         null,
-                                         Array.empty,
-                                         null,
-                                         Array.empty[IndexReadSession],
-                                         new Array(nExpressionSlots))
     try {
-      commandExpr(ExecutionContext.empty, emptyQueryState)
+      val Result(rewritten, nExpressionSlots, _) = expressionVariableAllocation.allocate(parseToExpression(expression))
+      val commandExpr = CONVERTERS.toCommandExpression(Id.INVALID_ID, rewritten)
+      commandExpr(ExecutionContext.empty, queryState(nExpressionSlots))
     }
     catch {
-      case e: Exception => throw new EvaluationException(s"Failed to evaluate expression $expression", e)
+      case e: Exception =>
+        throw new EvaluationException(s"Failed to evaluate expression $expression", e)
     }
   }
+
+  private def queryState(nExpressionSlots: Int) =  new QueryState(null,
+                                             null,
+                                             Array.empty,
+                                             null,
+                                             Array.empty[IndexReadSession],
+                                             new Array(nExpressionSlots))
 
   private def parseToExpression(expression: String): Expression = {
     val statement: Statement = parser.parse(s"RETURN $expression AS $COLUMN", None)
@@ -70,6 +69,6 @@ class SimpleInternalExpressionEvaluator extends InternalExpressionEvaluator {
 }
 
 object SimpleInternalExpressionEvaluator {
-
+  private val CONVERTERS = new ExpressionConverters(CommunityExpressionConverter(TokenContext.EMPTY))
   private val COLUMN = "RESULT"
 }
