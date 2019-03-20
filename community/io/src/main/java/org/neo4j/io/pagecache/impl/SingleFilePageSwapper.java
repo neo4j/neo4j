@@ -20,7 +20,6 @@
 package org.neo4j.io.pagecache.impl;
 
 import org.apache.commons.lang3.SystemUtils;
-import sun.nio.ch.FileChannelImpl;
 
 import java.io.File;
 import java.io.IOException;
@@ -45,6 +44,8 @@ import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 
 import static java.lang.String.format;
+import static org.neo4j.util.FeatureToggles.flag;
+import static org.neo4j.util.FeatureToggles.getInteger;
 
 /**
  * A simple PageSwapper implementation that directs all page swapping to a
@@ -56,6 +57,25 @@ import static java.lang.String.format;
 public class SingleFilePageSwapper implements PageSwapper
 {
     private static final int MAX_INTERRUPTED_CHANNEL_REOPEN_ATTEMPTS = 42;
+    private static final boolean PRINT_REFLECTION_EXCEPTIONS = flag( SingleFilePageSwapper.class, "printReflectionExceptions", false );
+
+    // Exponent of 2 of how many channels we open per file:
+    private static final int globalChannelStripePower = getInteger( SingleFilePageSwapper.class, "channelStripePower", defaultChannelStripePower() );
+
+    // Exponent of 2 of how many consecutive pages go to the same stripe
+    private static final int channelStripeShift = getInteger( SingleFilePageSwapper.class, "channelStripeShift", 4 );
+
+    private static final int globalChannelStripeCount = 1 << globalChannelStripePower;
+    private static final int globalChannelStripeMask = stripeMask( globalChannelStripeCount );
+
+    private static final int tokenChannelStripe = 0;
+    private static final long tokenFilePageId = 0;
+
+    private static final long fileSizeOffset = UnsafeUtil.getFieldOffset( SingleFilePageSwapper.class, "fileSize" );
+
+    private static final ThreadLocal<ByteBuffer> proxyCache = new ThreadLocal<>();
+    private static final Class<?> CLS_FILE_CHANNEL_IMPL = getInternalFileChannelClass();
+    private static final MethodHandle positionLockGetter = getPositionLockGetter();
 
     private static int defaultChannelStripePower()
     {
@@ -65,26 +85,22 @@ public class SingleFilePageSwapper implements PageSwapper
         return Math.min( 64, Math.max( 1, stripePower ) );
     }
 
-    // Exponent of 2 of how many channels we open per file:
-    private static final int globalChannelStripePower = Integer.getInteger(
-            "org.neo4j.io.pagecache.implSingleFilePageSwapper.channelStripePower",
-            defaultChannelStripePower() );
-
-    // Exponent of 2 of how many consecutive pages go to the same stripe
-    private static final int channelStripeShift = Integer.getInteger(
-            "org.neo4j.io.pagecache.implSingleFilePageSwapper.channelStripeShift", 4 );
-
-    private static final int globalChannelStripeCount = 1 << globalChannelStripePower;
-    private static final int globalChannelStripeMask = stripeMask( globalChannelStripeCount );
-
-    private static final int tokenChannelStripe = 0;
-    private static final long tokenFilePageId = 0;
-
-    private static final long fileSizeOffset =
-            UnsafeUtil.getFieldOffset( SingleFilePageSwapper.class, "fileSize" );
-
-    private static final ThreadLocal<ByteBuffer> proxyCache = new ThreadLocal<>();
-    private static final MethodHandle positionLockGetter = getPositionLockGetter();
+    private static Class<?> getInternalFileChannelClass()
+    {
+        Class<?> cls = null;
+        try
+        {
+            cls = Class.forName( "sun.nio.ch.FileChannelImpl" );
+        }
+        catch ( Throwable throwable )
+        {
+            if ( PRINT_REFLECTION_EXCEPTIONS )
+            {
+                throwable.printStackTrace();
+            }
+        }
+        return cls;
+    }
 
     private static int stripeMask( int count )
     {
@@ -96,13 +112,24 @@ public class SingleFilePageSwapper implements PageSwapper
     {
         try
         {
-            MethodHandles.Lookup lookup = MethodHandles.lookup();
-            Field field = FileChannelImpl.class.getDeclaredField( "positionLock" );
-            field.setAccessible( true );
-            return lookup.unreflectGetter( field );
+            if ( CLS_FILE_CHANNEL_IMPL != null )
+            {
+                MethodHandles.Lookup lookup = MethodHandles.lookup();
+                Field field = CLS_FILE_CHANNEL_IMPL.getDeclaredField( "positionLock" );
+                field.setAccessible( true );
+                return lookup.unreflectGetter( field );
+            }
+            else
+            {
+                return null;
+            }
         }
-        catch ( Exception e )
+        catch ( Throwable e )
         {
+            if ( PRINT_REFLECTION_EXCEPTIONS )
+            {
+                e.printStackTrace();
+            }
             return null;
         }
     }
@@ -182,7 +209,7 @@ public class SingleFilePageSwapper implements PageSwapper
             closeAndCollectExceptions( 0, e );
         }
         hasPositionLock = channels[0].getClass() == StoreFileChannel.class
-                && StoreFileChannelUnwrapper.unwrap( channels[0] ).getClass() == sun.nio.ch.FileChannelImpl.class;
+                && StoreFileChannelUnwrapper.unwrap( channels[0] ).getClass() == CLS_FILE_CHANNEL_IMPL;
     }
 
     private void increaseFileSizeTo( long newFileSize )
@@ -571,10 +598,9 @@ public class SingleFilePageSwapper implements PageSwapper
 
     private Object positionLock( FileChannel channel )
     {
-        sun.nio.ch.FileChannelImpl impl = (FileChannelImpl) channel;
         try
         {
-            return (Object) positionLockGetter.invokeExact( impl );
+            return (Object) positionLockGetter.invoke( channel );
         }
         catch ( Throwable th )
         {
