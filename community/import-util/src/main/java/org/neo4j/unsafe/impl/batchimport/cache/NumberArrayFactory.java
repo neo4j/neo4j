@@ -28,9 +28,9 @@ import java.util.Objects;
 import java.util.function.Function;
 
 import org.neo4j.helpers.Exceptions;
+import org.neo4j.internal.unsafe.NativeMemoryAllocationRefusedError;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.memory.GlobalMemoryTracker;
-import org.neo4j.unsafe.impl.internal.dragons.NativeMemoryAllocationRefusedError;
 
 import static java.lang.Math.toIntExact;
 import static java.lang.String.format;

@@ -21,7 +21,7 @@ package org.neo4j.unsafe.impl.batchimport.cache;
 
 import org.junit.Test;
 
-import org.neo4j.unsafe.impl.internal.dragons.NativeMemoryAllocationRefusedError;
+import org.neo4j.internal.unsafe.NativeMemoryAllocationRefusedError;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
@@ -36,6 +36,7 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.helpers.collection.Iterables.single;
 import static org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory.NO_MONITOR;
